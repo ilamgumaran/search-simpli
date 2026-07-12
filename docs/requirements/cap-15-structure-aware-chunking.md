@@ -32,7 +32,10 @@ Status: Proposed · Evidence: future option
 
 ## 5. Contracts touched (CON)
 
-- `CON-03` (`snapshot-interchange.schema.json`): optionally record the chunk's structural kind (function/class/block/line-window) and the chunker id/version already carried. Additive, versioned (INV-07).
+Two distinct `CON-03` (`snapshot-interchange.schema.json`) changes:
+
+- **Optional structural-kind field** (additive, versioned per INV-07): record the chunk's structural kind (function/class/block/line-window).
+- **Required chunker-identity field** (durable path, currently **missing**): `CON-03` and the Zig manifest/`index_status` do **not** carry a chunker id/version today, so the durable path cannot validate chunker identity. Adding a versioned chunker id/version (with a migration/backcompat plan) is required to unblock **CFT-09**; until then the durable path stays blocked and CAP-15 is Python-only.
 
 ## 6. Invariant compliance (INV)
 

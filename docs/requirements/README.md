@@ -230,7 +230,10 @@ Every change:
 validates the register against **every declared source of truth** on each push/PR
 (see `.github/workflows/checks.yml`): unique IDs; allowed status tokens; valid
 CAP/UC/CON references; existing capability-spec, use-case, and schema files;
-one-to-one FR/NFR coverage between the register and `specification.md`; each
-capability spec carrying a Dependencies section and a maintainer-approval block;
-and the rule that an INV conflict is never merely "Accepted". Each failure mode has
-a negative unit fixture in `tests/test_requirements_validator.py`. Drift fails CI.
+one-to-one FR/NFR coverage between the register and `specification.md`;
+**catalog ↔ FR-index ↔ capability-spec requirement agreement** (a capability's
+catalog Key requirements, the FR-index reverse mapping, and the spec's declared
+FRs must match); each capability spec carrying a Dependencies section and a
+maintainer-approval block; and the rule that an INV conflict is never merely
+"Accepted". Each failure mode has a negative unit fixture in
+`tests/test_requirements_validator.py`. Drift fails CI.

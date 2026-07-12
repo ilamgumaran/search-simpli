@@ -46,7 +46,8 @@ def _first_token(text):
 
 
 def _ids(text, prefix):
-    return set(re.findall(rf"{prefix}-\d+", text))
+    # Negative lookbehind so FR does not match inside NFR, etc.
+    return set(re.findall(rf"(?<![A-Za-z]){prefix}-\d+", text))
 
 
 def validate(root):
@@ -71,6 +72,10 @@ def validate(root):
     uc_refs = []           # (where, uc_id, lineno)
     con_refs = []          # (where, con_id, lineno)
     cap_spec_links = {}    # CAP id -> spec filename
+    catalog_frs = {}       # CAP id -> {FR ids} from the catalog Key-requirements cell
+    catalog_nfrs = {}      # CAP id -> {NFR ids} from the catalog Key-requirements cell
+    fr_to_cap = {}         # FR id -> primary CAP from the FR index
+    nfr_applies = {}       # NFR id -> {CAP ids} from the NFR index
 
     for lineno, raw in enumerate(reg_text.splitlines(), 1):
         h = re.match(r"#{2,3}\s+(.*)", raw)
@@ -95,6 +100,9 @@ def validate(root):
                     errors.append(f"register L{lineno}: {rid} links missing spec '{target}'")
             for uc in _ids(row[2], "UC"):
                 uc_refs.append(("register", uc, lineno))
+            key_reqs = row[3] if len(row) > 3 else ""
+            catalog_frs[rid] = _ids(key_reqs, "FR")
+            catalog_nfrs[rid] = _ids(key_reqs, "NFR")
 
         elif section.startswith("Functional requirements") and re.match(r"FR-\d+$", rid):
             if rid in seen["FR"]:
@@ -103,7 +111,10 @@ def validate(root):
             reg_fr.add(rid)
             if _first_token(row[-1]) not in ALLOWED_STATUS:
                 errors.append(f"register L{lineno}: {rid} status '{row[-1]}' not in allowed vocabulary")
-            for m in _ids(row[2], "CAP"):
+            caps = re.findall(r"CAP-\d+", row[2])
+            if caps:
+                fr_to_cap[rid] = caps[0]
+            for m in set(caps):
                 fr_nfr_cap_refs.append((rid, m, lineno))
 
         elif section.startswith("Non-functional requirements") and re.match(r"NFR-\d+$", rid):
@@ -113,7 +124,8 @@ def validate(root):
             reg_nfr.add(rid)
             if _first_token(row[-1]) not in ALLOWED_STATUS:
                 errors.append(f"register L{lineno}: {rid} status '{row[-1]}' not in allowed vocabulary")
-            for m in _ids(row[2], "CAP"):
+            nfr_applies[rid] = set(re.findall(r"CAP-\d+", row[2]))
+            for m in nfr_applies[rid]:
                 fr_nfr_cap_refs.append((rid, m, lineno))
 
         elif section.startswith("Contracts") and re.match(r"CON-\d+$", rid):
@@ -143,6 +155,23 @@ def validate(root):
     for rid, capref, lineno in fr_nfr_cap_refs:
         if capref not in cap_ids:
             errors.append(f"register L{lineno}: {rid} references {capref}, absent from the capability catalog")
+
+    # 3b. Catalog <-> FR-index agreement (bidirectional, FR); NFR one-direction
+    for fr, cap in fr_to_cap.items():
+        if fr not in catalog_frs.get(cap, set()):
+            errors.append(f"agreement: {fr} maps to {cap} in the FR index but is absent from "
+                          f"{cap}'s catalog Key requirements")
+    for cap, frs in catalog_frs.items():
+        for fr in frs:
+            mapped = fr_to_cap.get(fr)
+            if mapped != cap:
+                errors.append(f"agreement: {cap} lists {fr} in its catalog Key requirements but the "
+                              f"FR index maps {fr} to {mapped or 'no capability'}")
+    for cap, nfrs in catalog_nfrs.items():
+        for nfr in nfrs:
+            if cap not in nfr_applies.get(nfr, set()):
+                errors.append(f"agreement: {cap} lists {nfr} in its catalog Key requirements but the "
+                              f"NFR index does not apply {nfr} to {cap}")
 
     # 6. UC references resolve, and catalogued UCs have files
     uc_defined = {}
@@ -200,6 +229,23 @@ def validate(root):
         for con in _ids(text, "CON"):
             if con not in con_defined:
                 errors.append(f"{target}: {cap} references {con}, absent from the register CON table")
+
+        # Spec's declared FRs (first column of the "## 3 ... Functional requirements"
+        # table) must match the catalog Key requirements for this capability.
+        spec_frs = set()
+        in_fr_table = False
+        for line in text.splitlines():
+            if re.match(r"#+\s", line):
+                in_fr_table = bool(re.match(r"(?i)#+\s*3\b.*functional requirements", line))
+                continue
+            if in_fr_table and line.lstrip().startswith("|"):
+                m = re.match(r"FR-\d+", _cells(line)[0])
+                if m:
+                    spec_frs.add(m.group(0))
+        if spec_frs and spec_frs != catalog_frs.get(cap, set()):
+            errors.append(f"{target}: {cap} spec's functional-requirements table declares "
+                          f"{sorted(spec_frs)} but the catalog Key requirements list "
+                          f"{sorted(catalog_frs.get(cap, set()))}")
 
     return errors
 
