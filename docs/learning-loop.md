@@ -45,10 +45,17 @@ used as the regression gate. This must remain fully functional forever.
 Learning is an improvement layer, never a dependency. A brand-new install, a
 new user, or a new corpus works on day zero with no history.
 
-*Evidence gate:* the existing offline evaluation (recall@k, success@k, MRR,
-citation support, unanswerable precision) on a representative user-derived
-corpus — this is the project's current E005B blocker and a prerequisite for
-everything below.
+*Evidence gate:*
+
+- **Implemented today:** the offline evaluator reports recall@k, success@k, MRR,
+  first-relevant rank, and returned ids/paths.
+- **Required before Stage 1/3 (not yet implemented):** run those metrics on a
+  representative user-derived corpus (the project's current E005B blocker), and
+  add citation-support and unanswerable-precision evaluation (improvement board
+  item E-02).
+
+The distinction matters: the loop must not treat the future metrics as if they
+already gate the system.
 
 ### Evaluation datasets are kept separate (no leakage)
 
@@ -74,12 +81,19 @@ is training data and may not be added to the holdout.
 ### Stage 1 — Interaction ledger (foundation for learning)
 
 Capture, but do not yet act on, a **principal-scoped interaction ledger**. For
-each search record the full **impression**: every candidate that was shown and
-*at what position*, not only the ones acted on. Then record which `read_chunk`
-calls followed, which chunk an answering model actually cited, any explicit
-rating, and whether the user re-queried shortly after (a reformulation is a
-failure signal). Recording impressions and positions — not just clicks — is what
-makes later position-bias correction possible (see Stage 2).
+each search record the full **impression**: every candidate that was shown, *at
+what position*, plus the **logging policy id** (which ranking/exploration policy
+version produced this list) and the **selection propensity** with which each
+shown candidate was chosen at that position — not only the ones acted on. Then
+record which `read_chunk` calls followed, which chunk an answering model actually
+cited, any explicit rating, and whether the user re-queried shortly after (a
+reformulation is a failure signal).
+
+Positions alone are **not** enough for the inverse-propensity correction in
+Stage 2: without the policy id and the per-candidate selection probability
+(especially under randomized exploration), those propensities cannot be
+reconstructed reliably. Policy id + selection propensity are therefore part of
+the impression contract, not optional.
 
 This mirrors the discipline of [`EXPERIMENTS.md`](../EXPERIMENTS.md): raw,
 honest, no success-only narrative. It is the raw material; it changes no result.
@@ -91,8 +105,13 @@ just a schema:
 
 - **Consent:** capture is **opt-in**, off by default, with a visible switch.
 - **Data minimization:** store the least that makes the signal useful; prefer
-  chunk/candidate ids and positions over free text where the id suffices;
-  support query redaction/hashing for users who want signal without stored text.
+  chunk/candidate ids and positions over free text where the id suffices.
+  For users who want signal without stored query text, prefer redaction or
+  derived non-reversible features. A plain (unkeyed) hash is **not** a privacy
+  control — natural-language queries are often low-entropy and guessable, so an
+  unkeyed hash is open to dictionary attack and still leaks equality. If equality
+  tracking is genuinely required, specify a **keyed, rotatable HMAC with scoped
+  keys**, and state plainly that this is *pseudonymization, not anonymization*.
 - **Retention:** a configurable retention window with automatic expiry; no
   indefinite default.
 - **Deletion and export:** a principal can export or delete their own ledger.
@@ -131,9 +150,10 @@ naively as relevance would just reinforce the ranking we already have and never
 discover relevant passages that were never shown. Mitigations, all resting on the
 recorded impressions/positions from Stage 1:
 
-- **Position-bias correction** when converting behavior to labels (e.g. weight a
-  read by the inverse propensity of its shown position), rather than counting a
-  click at rank 1 the same as a click at rank 8.
+- **Position-bias correction** when converting behavior to labels, using the
+  selection propensity and logging policy id recorded in Stage 1 (inverse-
+  propensity weighting), rather than counting a click at rank 1 the same as a
+  click at rank 8.
 - **Explicit negatives and skips:** a shown-but-skipped high position is signal
   too; let the human mark "shown, not relevant," not only "relevant."
 - **Controlled exploration:** occasionally surface lower-ranked or
@@ -169,8 +189,9 @@ the 20-query diagnostic) is exactly the kind of thing this stage fixes: it is a
 signal that blind, uniform fusion is wrong for some queries, and that routing
 learned from behavior can recover it.
 
-*Evidence gate:* on held-out queries, the adapted ranker beats the static
-ranker for the target user/context, with no regression on the frozen gate.
+*Evidence gate:* on the held-out set, the adapted ranker improves the target
+user/context with no measured regression beyond defined per-query and
+per-segment thresholds on the versioned holdout gate.
 
 ### Stage 4 — Shared learning across a cognitive unit (org scale)
 

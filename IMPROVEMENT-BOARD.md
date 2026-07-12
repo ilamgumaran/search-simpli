@@ -22,10 +22,16 @@ hands touch it.
    who it serves (human user, agent user, or contributor), and how we will know
    it worked. If you cannot state the why and the exit check, it is not ready
    for the board — put it under *Ideas needing shaping*.
-2. **Claim before you build.** Set `Status: in-progress` and put your handle or
-   agent name in `Owner` so two contributors do not collide. Work on a feature
-   branch created from `main` (e.g. `git checkout -b <short-item-name> main`) and
-   open a pull request; if a `CONTRIBUTING.md` is added later, follow it instead.
+2. **Claim before you build — make the claim centrally visible first.** A local
+   branch and an open PR do **not** serialize the board: two contributors can each
+   branch from `main`, mark the same item in-progress locally, and start building
+   before either claim is visible. So the claim must land somewhere atomic and
+   shared *before* substantive work begins — the canonical mechanism is a GitHub
+   **issue** assigned to you and referenced from the item (or, if issues are off, a
+   tiny claim-only PR that just sets `Status: in-progress` + `Owner` and is merged
+   fast). Only then create a feature branch from `main`
+   (e.g. `git checkout -b <short-item-name> main`) and open the working PR. If a
+   `CONTRIBUTING.md` is added later, follow it instead.
 3. **Land with evidence, then record it.** Follow the existing project
    discipline: append an entry to [`EXPERIMENTS.md`](EXPERIMENTS.md) (hypothesis,
    setup, observation, what worked, what failed, limits, conclusion) and update
@@ -84,11 +90,14 @@ each earns the next with evidence.
   which query got rephrased) is the richest and cheapest relevance signal there
   is, and today it is discarded. Without capturing it, no learning is possible.
 - **What:** A principal-scoped ledger recording each search's full **impression**
-  (every candidate shown *and its position*, not just clicks), subsequent
-  `read_chunk` calls, the chunk an answering model cited, explicit ratings, and
-  quick re-queries. It changes no result yet. Ships with a privacy/deletion
-  lifecycle: opt-in, data minimization, retention limits, deletion/export,
-  encryption, and authorization-change behavior (see the doc).
+  (every candidate shown, its position, the logging policy id, and the selection
+  propensity — required for later inverse-propensity correction, not just
+  clicks), subsequent `read_chunk` calls, the chunk an answering model cited,
+  explicit ratings, and quick re-queries. It changes no result yet. Ships with a
+  privacy/deletion lifecycle: opt-in, data minimization (unkeyed query hashes are
+  not a privacy control — use redaction or a keyed rotatable HMAC), retention
+  limits, deletion/export, encryption, and authorization-change behavior (see the
+  doc).
 - **Exit check:** A session reconstructs faithfully from the ledger; no entry
   ever crosses an authorization boundary; opt-in/retention/deletion are honored
   and a deletion request provably removes data (including derived copies);
