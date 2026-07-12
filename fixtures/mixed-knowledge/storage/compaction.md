@@ -1,0 +1,1 @@
+Incremental indexing creates multiple immutable segments. Background compaction merges smaller segments, applies tombstones for deleted documents, and publishes the merged generation. Old files can be reclaimed only after no reader can still reference their snapshot.

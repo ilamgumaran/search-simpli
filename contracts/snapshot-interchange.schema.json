@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/snapshot-interchange.schema.json",
+  "title": "SearchSnapshotInterchangeV1",
+  "type": "object",
+  "required": ["format_version", "generation", "analyzer_id", "embedding_model_id", "documents"],
+  "properties": {
+    "format_version": { "const": 1 },
+    "generation": { "type": "integer", "minimum": 1 },
+    "analyzer_id": { "const": "ascii-alnum-v1" },
+    "embedding_model_id": { "type": "string", "minLength": 1 },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "start_line", "end_line", "text", "vector", "required_labels"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "start_line": { "type": "integer", "minimum": 1 },
+          "end_line": { "type": "integer", "minimum": 1 },
+          "text": { "type": "string" },
+          "vector": { "type": "array", "items": { "type": "number" } },
+          "required_labels": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

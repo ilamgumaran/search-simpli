@@ -1,0 +1,45 @@
+{
+  "benchmark": "zig-exhaustive-hybrid-ranking-v1",
+  "recorded_at": "2026-07-12",
+  "platform": "macOS arm64",
+  "zig": "0.16.0",
+  "build": "ReleaseFast",
+  "configuration": {
+    "dimensions": 32,
+    "top_k": 10,
+    "candidate_k": 100,
+    "query": "common search",
+    "documents": "equal-score synthetic documents",
+    "scope": "real postings score plus exhaustive cosine plus channel ranks and RRF"
+  },
+  "notes": [
+    "Wall-clock microseconds; one untimed warmup precedes each run.",
+    "The corpus intentionally makes every document a lexical and vector candidate.",
+    "Baseline and final rows use the same executable benchmark contract and 21 measured queries.",
+    "Intermediate heap rows use 11 measured queries and exist to record the failed implementation, not for exact speedup claims."
+  ],
+  "baseline_nested_rank_and_insertion_sort": [
+    {"documents": 500, "queries": 21, "p50_us": 486.792, "p95_us": 516.291},
+    {"documents": 1000, "queries": 21, "p50_us": 1886.667, "p95_us": 2199.500},
+    {"documents": 2000, "queries": 21, "p50_us": 7746.417, "p95_us": 9654.125},
+    {"documents": 4000, "queries": 21, "p50_us": 43249.834, "p95_us": 44282.167},
+    {"documents": 8000, "queries": 21, "p50_us": 174570.334, "p95_us": 177428.958}
+  ],
+  "intermediate_heap_sort": [
+    {"documents": 1000, "queries": 11, "p50_us": 1891.250, "lexical_p50_us": 4.042, "ranking_p50_us": 1887.250},
+    {"documents": 2000, "queries": 11, "p50_us": 4292.250, "lexical_p50_us": 9.291, "ranking_p50_us": 4281.708},
+    {"documents": 4000, "queries": 11, "p50_us": 9841.375, "lexical_p50_us": 16.583, "ranking_p50_us": 9824.792},
+    {"documents": 8000, "queries": 11, "p50_us": 43026.042, "lexical_p50_us": 48.500, "ranking_p50_us": 42967.667}
+  ],
+  "final_pdq_sort": [
+    {"documents": 500, "queries": 21, "p50_us": 24.000, "p95_us": 24.209, "lexical_p50_us": 2.000, "ranking_p50_us": 22.000, "baseline_speedup": 20.283},
+    {"documents": 1000, "queries": 21, "p50_us": 48.625, "p95_us": 48.833, "lexical_p50_us": 4.125, "ranking_p50_us": 44.542, "baseline_speedup": 38.800},
+    {"documents": 2000, "queries": 21, "p50_us": 104.292, "p95_us": 120.708, "lexical_p50_us": 7.834, "ranking_p50_us": 96.000, "baseline_speedup": 74.276},
+    {"documents": 4000, "queries": 21, "p50_us": 207.667, "p95_us": 270.291, "lexical_p50_us": 15.041, "ranking_p50_us": 190.833, "baseline_speedup": 208.266},
+    {"documents": 8000, "queries": 21, "p50_us": 417.458, "p95_us": 455.708, "lexical_p50_us": 30.375, "ranking_p50_us": 386.958, "baseline_speedup": 418.181}
+  ],
+  "final_extension": [
+    {"documents": 16000, "queries": 51, "p50_us": 827.166, "p95_us": 1050.459, "lexical_p50_us": 59.333, "ranking_p50_us": 765.958},
+    {"documents": 32000, "queries": 51, "p50_us": 1691.917, "p95_us": 2134.500, "lexical_p50_us": 118.292, "ranking_p50_us": 1571.333}
+  ]
+}

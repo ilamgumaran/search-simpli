@@ -1,0 +1,1 @@
+A grounded answer includes the retrieved passage together with its source path and line range. The model should cite those locations for factual claims. When the evidence does not support an answer, it should say that the available sources are insufficient instead of inventing a response.

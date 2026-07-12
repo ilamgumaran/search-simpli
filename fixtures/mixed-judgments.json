@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "queries": [
+    {
+      "id": "combine-exact-and-meaning",
+      "query": "How do I merge keyword and meaning-based result lists?",
+      "relevant": [{ "path": "search/hybrid.md" }]
+    },
+    {
+      "id": "term-to-doc-structure",
+      "query": "Which data structure maps words to the documents containing them?",
+      "relevant": [{ "path": "search/postings.md" }]
+    },
+    {
+      "id": "avoid-full-corpus-scan",
+      "query": "How can exact search avoid checking every file?",
+      "relevant": [{ "path": "search/postings.md" }]
+    },
+    {
+      "id": "model-vector-compatibility",
+      "query": "How do we prevent queries made by one vector model from searching another model's index?",
+      "relevant": [{ "path": "search/embeddings.md" }]
+    },
+    {
+      "id": "rotate-vector-model",
+      "query": "What is the safe way to change semantic models without mixing representations?",
+      "relevant": [{ "path": "search/embeddings.md" }]
+    },
+    {
+      "id": "crash-safe-snapshot",
+      "query": "How can readers avoid seeing half-written index files after a crash?",
+      "relevant": [{ "path": "storage/atomic-publication.md" }]
+    },
+    {
+      "id": "all-at-once-generation",
+      "query": "Make a new search generation visible all at once",
+      "relevant": [{ "path": "storage/atomic-publication.md" }]
+    },
+    {
+      "id": "deleted-documents",
+      "query": "When are removed files eliminated while index segments are merged?",
+      "relevant": [{ "path": "storage/compaction.md" }]
+    },
+    {
+      "id": "safe-old-file-cleanup",
+      "query": "Why must stale index files wait for active readers before deletion?",
+      "relevant": [{ "path": "storage/compaction.md" }]
+    },
+    {
+      "id": "trace-answer-source",
+      "query": "How should an assistant show where each factual answer came from?",
+      "relevant": [{ "path": "agents/citations.md" }]
+    },
+    {
+      "id": "insufficient-evidence",
+      "query": "What should the assistant do when its sources cannot support a response?",
+      "relevant": [{ "path": "agents/citations.md" }]
+    },
+    {
+      "id": "malicious-indexed-instructions",
+      "query": "Can commands hidden inside a retrieved document control the agent?",
+      "relevant": [{ "path": "agents/security.md" }]
+    },
+    {
+      "id": "permission-filter-order",
+      "query": "At what stage should user access permissions restrict semantic and keyword candidates?",
+      "relevant": [{ "path": "agents/security.md" }]
+    },
+    {
+      "id": "first-correct-result-metric",
+      "query": "Which metric rewards putting the first useful result near the top?",
+      "relevant": [{ "path": "operations/measurement.md" }]
+    },
+    {
+      "id": "latency-breakdown",
+      "query": "How can we tell whether vector inference or retrieval is the slow component?",
+      "relevant": [{ "path": "operations/measurement.md" }]
+    },
+    {
+      "id": "zig-for-engine",
+      "query": "Why choose a language with manual allocation and no garbage collector for the index engine?",
+      "relevant": [{ "path": "languages/zig.md" }]
+    },
+    {
+      "id": "heart-specialist",
+      "query": "What kind of doctor specializes in heart problems?",
+      "relevant": [{ "path": "medicine/cardiology.md" }]
+    },
+    {
+      "id": "railway-power-unit",
+      "query": "What machine pulls passenger cars along train tracks?",
+      "relevant": [{ "path": "transport/rail.md" }]
+    },
+    {
+      "id": "bread-rises",
+      "query": "Why does a loaf expand before and during baking?",
+      "relevant": [{ "path": "cooking/bread.md" }]
+    },
+    {
+      "id": "world-around-other-star",
+      "query": "How can scientists detect a planet orbiting a distant sun?",
+      "relevant": [{ "path": "astronomy/exoplanets.md" }]
+    }
+  ]
+}

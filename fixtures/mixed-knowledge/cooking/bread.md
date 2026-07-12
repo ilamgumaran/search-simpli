@@ -1,0 +1,1 @@
+Bread dough rises because yeast consumes sugars and releases carbon dioxide. Gluten traps the gas while fermentation develops flavor. After proofing, heat in the oven expands the bubbles and sets the loaf's structure.

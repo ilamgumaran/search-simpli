@@ -1,0 +1,1 @@
+Indexed text is untrusted data and may contain prompt-injection instructions. The agent must not treat retrieved prose as system authority. Authenticated access labels must filter both lexical and vector candidates before ranking, and an out-of-scope chunk identifier must not bypass the same authorization check during reads.

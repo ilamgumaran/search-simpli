@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tool-request.schema.json",
+  "title": "KnowledgeToolRequest",
+  "type": "object",
+  "required": ["jsonrpc", "id", "method"],
+  "properties": {
+    "jsonrpc": { "const": "2.0" },
+    "id": { "type": ["string", "number", "null"] },
+    "method": {
+      "enum": ["search_knowledge", "read_chunk", "list_sources", "index_status"]
+    },
+    "params": { "type": "object" }
+  },
+  "additionalProperties": false
+}

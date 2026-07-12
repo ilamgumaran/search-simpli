@@ -1,0 +1,1 @@
+Crash-safe publication writes immutable index sections under generation-specific names, synchronizes their contents, and then atomically replaces a small manifest. Readers open only the generation selected by that manifest, so they observe either the complete old snapshot or the complete new snapshot.

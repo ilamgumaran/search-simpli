@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "path_prefix": "private/",
+      "required_labels": ["tenant:acme"]
+    },
+    {
+      "path_prefix": "private/engineering/",
+      "required_labels": ["group:engineering"]
+    }
+  ]
+}

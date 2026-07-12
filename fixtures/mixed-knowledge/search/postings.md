@@ -1,0 +1,1 @@
+An inverted index maps each normalized term to a postings list of document identifiers, term frequencies, and optional positions. Query evaluation visits the postings for matching terms instead of scanning every document. Block-level upper bounds can later skip ranges that cannot enter the top results.

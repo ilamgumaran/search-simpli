@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/search-tool.schema.json",
+  "title": "SearchKnowledgeResult",
+  "type": "object",
+  "required": ["tool", "query", "index", "retrieval", "results", "answer_policy"],
+  "properties": {
+    "tool": { "const": "search_knowledge" },
+    "query": { "type": "string" },
+    "index": {
+      "type": "object",
+      "required": ["version"],
+      "properties": {
+        "root": { "type": "string" },
+        "version": { "type": "integer" },
+        "generation": { "type": "integer", "minimum": 1 },
+        "analyzer_id": { "type": "string" },
+        "embedding_model_id": { "type": "string" }
+      }
+    },
+    "retrieval": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["lexical", "vector", "hybrid"] },
+        "vector_mode": { "type": "string" },
+        "vector_dimensions": { "type": "integer", "minimum": 0 },
+        "candidate_k": { "type": "integer", "minimum": 1 },
+        "embedding": { "type": ["object", "null"] },
+        "authorization": {
+          "type": "object",
+          "required": ["semantics", "principal_label_count"],
+          "properties": {
+            "semantics": { "const": "all-required-labels-v1" },
+            "principal_label_count": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["chunk_id", "citation", "content", "score", "ranking"],
+        "properties": {
+          "chunk_id": { "type": "string" },
+          "citation": {
+            "type": "object",
+            "required": ["path", "start_line", "end_line"],
+            "properties": {
+              "path": { "type": "string" },
+              "start_line": { "type": "integer", "minimum": 1 },
+              "end_line": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "content": { "type": "string" },
+          "score": { "type": "number" },
+          "ranking": { "type": "object" }
+        }
+      }
+    },
+    "answer_policy": {
+      "type": "object",
+      "required": ["ground_in_results", "cite_path_and_lines", "say_when_evidence_is_insufficient"],
+      "properties": {
+        "ground_in_results": { "const": true },
+        "cite_path_and_lines": { "const": true },
+        "say_when_evidence_is_insufficient": { "const": true }
+      }
+    }
+  }
+}

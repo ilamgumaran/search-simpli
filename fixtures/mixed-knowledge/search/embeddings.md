@@ -1,0 +1,1 @@
+Document and query vectors are comparable only when they come from the same embedding artifact. A safe index records the model identity, dimensions, tokenizer or runtime contract, and an immutable generation. Model rotation builds new document vectors before query routing switches to the new fingerprint.

@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.search/
+zig/.zig-cache/
+zig/zig-out/

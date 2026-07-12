@@ -1,0 +1,1 @@
+Zig is a compiled systems programming language with explicit allocation, predictable control flow, C interoperability, and no hidden garbage collector. Those properties suit binary index formats, memory-mapped segments, postings traversal, and latency-sensitive search services.

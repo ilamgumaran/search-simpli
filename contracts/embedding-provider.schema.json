@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/embedding-provider.schema.json",
+  "title": "Embedding provider batch protocol",
+  "oneOf": [
+    { "$ref": "#/$defs/describeRequest" },
+    { "$ref": "#/$defs/embedRequest" },
+    { "$ref": "#/$defs/describeResponse" },
+    { "$ref": "#/$defs/embedResponse" },
+    { "$ref": "#/$defs/errorResponse" }
+  ],
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "required": ["model_id", "model_family", "dimensions", "normalization", "provider"],
+      "properties": {
+        "model_id": { "type": "string", "minLength": 1 },
+        "model_family": { "type": "string", "minLength": 1 },
+        "dimensions": { "type": "integer", "minimum": 1 },
+        "normalization": { "const": "l2" },
+        "type": { "type": "string" },
+        "semantic": { "type": "boolean" },
+        "provider": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "describeRequest": {
+      "type": "object",
+      "required": ["version", "id", "operation"],
+      "properties": {
+        "version": { "const": 1 },
+        "id": { "type": ["string", "integer"] },
+        "operation": { "const": "describe" }
+      },
+      "additionalProperties": false
+    },
+    "embedRequest": {
+      "type": "object",
+      "required": ["version", "id", "operation", "texts"],
+      "properties": {
+        "version": { "const": 1 },
+        "id": { "type": ["string", "integer"] },
+        "operation": { "enum": ["embed_documents", "embed_queries"] },
+        "texts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "describeResponse": {
+      "type": "object",
+      "required": ["version", "id", "metadata"],
+      "properties": {
+        "version": { "const": 1 },
+        "id": { "type": ["string", "integer"] },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      },
+      "additionalProperties": false
+    },
+    "embedResponse": {
+      "type": "object",
+      "required": ["version", "id", "model_id", "vectors"],
+      "properties": {
+        "version": { "const": 1 },
+        "id": { "type": ["string", "integer"] },
+        "model_id": { "type": "string", "minLength": 1 },
+        "vectors": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "number" }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "errorResponse": {
+      "type": "object",
+      "required": ["version", "id", "error"],
+      "properties": {
+        "version": { "const": 1 },
+        "id": { "type": ["string", "integer"] },
+        "error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "properties": {
+            "code": { "type": "string" },
+            "message": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

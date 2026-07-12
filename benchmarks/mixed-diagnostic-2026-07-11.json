@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "date": "2026-07-11",
+  "corpus": "fixtures/mixed-knowledge",
+  "judgments": "fixtures/mixed-judgments.json",
+  "documents": 13,
+  "chunks": 13,
+  "queries": 20,
+  "warning": "Curated mixed-domain diagnostic corpus; not representative user data and not a production benchmark.",
+  "systems": {
+    "lexical": {
+      "description": "BM25 lexical retrieval",
+      "model": "none"
+    },
+    "ppmi": {
+      "description": "Corpus-trained ground-up distributional vectors",
+      "model_family": "cooccurrence-ppmi-v1"
+    },
+    "neural": {
+      "description": "Local ONNX pretrained dense embeddings",
+      "provider": "fastembed",
+      "runtime_version": "0.8.0",
+      "model_family": "BAAI/bge-small-en-v1.5",
+      "dimensions": 384,
+      "model_id": "fastembed-0.8.0-BAAI/bge-small-en-v1.5-sha256-5a374383942f282a09d4eb4674b187c5f5ee3a046f5457659e183bb2cb1dfcd5"
+    }
+  },
+  "results": [
+    { "system": "lexical", "mode": "lexical", "k": 1, "success": 0.60, "mrr": 0.60 },
+    { "system": "ppmi", "mode": "vector", "k": 1, "success": 0.70, "mrr": 0.70 },
+    { "system": "ppmi", "mode": "hybrid", "k": 1, "success": 0.60, "mrr": 0.60 },
+    { "system": "neural", "mode": "vector", "k": 1, "success": 0.90, "mrr": 0.90 },
+    { "system": "neural", "mode": "hybrid", "k": 1, "success": 0.85, "mrr": 0.85 },
+    { "system": "lexical", "mode": "lexical", "k": 3, "success": 1.00, "mrr": 0.775 },
+    { "system": "ppmi", "mode": "vector", "k": 3, "success": 0.95, "mrr": 0.80 },
+    { "system": "ppmi", "mode": "hybrid", "k": 3, "success": 0.95, "mrr": 0.75 },
+    { "system": "neural", "mode": "vector", "k": 3, "success": 1.00, "mrr": 0.95 },
+    { "system": "neural", "mode": "hybrid", "k": 3, "success": 1.00, "mrr": 0.925 }
+  ],
+  "observations": [
+    "Neural vector retrieval improved success@1 by 0.30 absolute over BM25 and 0.20 over PPMI.",
+    "Equal-weight RRF reduced neural success@1 from 0.90 to 0.85.",
+    "Two hybrid losses were symmetric rank swaps: lexical rank 1/vector rank 2 tied lexical rank 2/vector rank 1, leaving stable id ordering to choose the winner.",
+    "At k=3, neural vector and hybrid both found a relevant result for every query, but vector-only had higher MRR.",
+    "These results justify testing fusion weights or query routing, not changing the production default from this diagnostic alone."
+  ]
+}

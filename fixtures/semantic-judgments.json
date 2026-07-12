@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "queries": [
+    {
+      "id": "car-to-automobile",
+      "query": "car",
+      "path_prefix": "target/",
+      "relevant": [{ "path": "target/automobile.md" }]
+    },
+    {
+      "id": "doctor-to-physician",
+      "query": "doctor",
+      "path_prefix": "target/",
+      "relevant": [{ "path": "target/physician.md" }]
+    }
+  ]
+}

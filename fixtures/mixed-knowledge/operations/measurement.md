@@ -1,0 +1,1 @@
+Search evaluation tracks recall at a cutoff, success rate, reciprocal rank of the first relevant result, and per-query failures. Production telemetry separates extraction, embedding, lexical retrieval, vector retrieval, fusion, and answer-generation latency so optimization targets the measured bottleneck.

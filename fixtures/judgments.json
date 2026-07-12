@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "queries": [
+    {
+      "id": "hybrid-fusion",
+      "query": "How should lexical and semantic result lists be combined?",
+      "relevant": [{ "path": "hybrid-search.md" }]
+    },
+    {
+      "id": "agent-evidence",
+      "query": "What evidence should the model receive and cite?",
+      "relevant": [{ "path": "llm-contract.md" }]
+    }
+  ]
+}

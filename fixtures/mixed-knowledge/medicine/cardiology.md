@@ -1,0 +1,1 @@
+A cardiologist is a physician who diagnoses and treats diseases of the heart and blood vessels. Cardiology includes management of abnormal rhythms, coronary artery disease, heart failure, and cardiovascular risk.

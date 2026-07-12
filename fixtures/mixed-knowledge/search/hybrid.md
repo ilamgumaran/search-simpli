@@ -1,0 +1,1 @@
+Hybrid retrieval runs exact lexical ranking and dense semantic ranking independently. Reciprocal rank fusion combines their rank positions without assuming that BM25 and cosine scores share a numeric scale. Candidate depth controls how far down each channel may influence the fused list.

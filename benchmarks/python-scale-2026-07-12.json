@@ -1,0 +1,70 @@
+{
+  "benchmark": "python-files-folders-indexing-v1",
+  "recorded_at": "2026-07-12T13:21:43.927260+00:00",
+  "python": "3.11.1",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "notes": [
+    "Corpus creation is excluded from build timings.",
+    "Synthetic vectors measure pipeline and JSON costs, not model inference latency.",
+    "Each document is one small UTF-8 Markdown file and produces one chunk."
+  ],
+  "results": [
+    {
+      "documents": 100,
+      "chunks": 100,
+      "none": {
+        "full_build_ms": 14.618,
+        "unchanged_incremental_ms": 10.558,
+        "artifact_bytes": 65776,
+        "reused_chunks": 100
+      },
+      "synthetic_neural": {
+        "dimensions": 384,
+        "full_build_ms": 62.913,
+        "unchanged_incremental_ms": 40.078,
+        "artifact_bytes": 219259,
+        "full_embedded_chunks": 100,
+        "incremental_embedded_chunks": 0,
+        "reused_chunks": 100
+      }
+    },
+    {
+      "documents": 1000,
+      "chunks": 1000,
+      "none": {
+        "full_build_ms": 110.071,
+        "unchanged_incremental_ms": 165.745,
+        "artifact_bytes": 660485,
+        "reused_chunks": 1000
+      },
+      "synthetic_neural": {
+        "dimensions": 384,
+        "full_build_ms": 467.08,
+        "unchanged_incremental_ms": 512.671,
+        "artifact_bytes": 2193669,
+        "full_embedded_chunks": 1000,
+        "incremental_embedded_chunks": 0,
+        "reused_chunks": 1000
+      }
+    },
+    {
+      "documents": 5000,
+      "chunks": 5000,
+      "none": {
+        "full_build_ms": 591.62,
+        "unchanged_incremental_ms": 524.202,
+        "artifact_bytes": 3311665,
+        "reused_chunks": 5000
+      },
+      "synthetic_neural": {
+        "dimensions": 384,
+        "full_build_ms": 4538.518,
+        "unchanged_incremental_ms": 2018.367,
+        "artifact_bytes": 10976849,
+        "full_embedded_chunks": 5000,
+        "incremental_embedded_chunks": 0,
+        "reused_chunks": 5000
+      }
+    }
+  ]
+}
