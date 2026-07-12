@@ -32,20 +32,28 @@ hands touch it.
    fast). Only then create a feature branch from `main`
    (e.g. `git checkout -b <short-item-name> main`) and open the working PR. If a
    `CONTRIBUTING.md` is added later, follow it instead.
-3. **Land with evidence, then record it.** Follow the existing project
+3. **If the item is a new capability, run the capability process.** An item that
+   introduces new observable behavior, a new requirement, or a new contract is a
+   *capability*, not a tweak: follow [`docs/capability-process.md`](docs/capability-process.md)
+   so its use case and requirements land in the
+   [requirements register](docs/requirements/README.md) and its conflicts are
+   checked before you build. Small invariant-preserving changes skip this.
+4. **Land with evidence, then record it.** Follow the existing project
    discipline: append an entry to [`EXPERIMENTS.md`](EXPERIMENTS.md) (hypothesis,
    setup, observation, what worked, what failed, limits, conclusion) and update
    [`PROJECT-STATE.md`](PROJECT-STATE.md). Then set the item `Status: done` here
    with a one-line result and a link. **Never** mark an item done because code
    runs — done means the exit check was met with evidence.
-4. **Improve the board itself.** Sharpen a why, split an item that is too big,
+5. **Improve the board itself.** Sharpen a why, split an item that is too big,
    add an exit check, correct a wrong assumption, or add a new item using the
    template. That is welcome and expected — this document is a work product, not
    a fixed spec.
-5. **Respect the invariants.** Nothing here may erase the retrieval-vs-generation
+6. **Respect the invariants.** Nothing here may erase the retrieval-vs-generation
    boundary, ship a change that regresses the frozen judged corpus, remove
    citations/provenance, or let learning become a source of truth. If an item
-   seems to require breaking one of these, stop and raise it, do not proceed.
+   seems to require breaking one of these, stop and raise it, do not proceed. The
+   canonical list of invariants (INV-01…INV-11) lives in the
+   [requirements register](docs/requirements/README.md#invariants-inv).
 
 ### Status legend
 

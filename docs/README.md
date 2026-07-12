@@ -10,6 +10,8 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 | Understand the required behavior | [Executable specification](recreation/specification.md) |
 | Give the build to a coding agent | [Recreation prompts](recreation/prompts.md) |
 | Add or review a product scenario | [Use-case library](use-cases/README.md) |
+| See every requirement in one place / resolve conflicts | [Requirements register](requirements/README.md) |
+| Add a new capability or use case (the process) | [Capability process](capability-process.md) |
 | Understand retrieval and grounding | [Search and answer theory](theory.md) |
 | Compare simple, single-node, and distributed options | [Architecture](architecture.md) |
 | See completed and failed experiments | [Experiment ledger](../EXPERIMENTS.md) |

@@ -1,0 +1,33 @@
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate requirements register
+        run: python3 scripts/check_requirements.py
+
+      - name: Python behavioral tests (dependency-free base)
+        run: python3 -m unittest discover -s tests -v
+
+      - name: No trailing whitespace in docs/scripts
+        run: |
+          if git grep -nP ' +$' -- '*.md' '*.py' ; then
+            echo "Trailing whitespace found (see above)."; exit 1
+          fi
+          echo "No trailing whitespace."
+
+# Zig tests (57/57) are run locally with the pinned toolchain; see EXPERIMENTS.md.
+# They are intentionally not in CI until a pinned Zig toolchain step is justified.
