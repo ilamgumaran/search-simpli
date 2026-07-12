@@ -2,13 +2,15 @@
 
 Last updated: 2026-07-12
 
+Project: **Search Simpli** (`search-simpli`)
+
 ## Goal
 
 Build toward a search solution that begins with files/folders and an LLM-friendly tool boundary, then evolves into a ground-up Zig hybrid lexical/semantic indexing platform.
 
 ## Current state
 
-- The workspace began empty and was not a Git repository.
+- The workspace began empty and is now a local Git repository on `main`; the remote is intentionally pending.
 - A dependency-free Python behavioral reference is runnable.
 - The reference scans selected UTF-8 text/source formats, makes cited chunks, calculates BM25, supports an offline vector channel, fuses by RRF, filters by path prefix, and emits an LLM evidence envelope.
 - A Zig 0.16.0 in-memory retrieval core implements ASCII analysis, corpus-level BM25, exact cosine scoring for supplied vectors, independent candidate ranks, candidate cutoffs, RRF, deterministic top-k, and component explanations.

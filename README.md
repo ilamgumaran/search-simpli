@@ -1,6 +1,8 @@
-# Search Platform Exploration
+# Search Simpli
 
-This repository explores one search product with two deliberately different operating modes:
+**Search from first principles—from local files and LLM tools to scalable hybrid retrieval in Zig.**
+
+Search Simpli (`search-simpli`) explores one search product with two deliberately different operating modes:
 
 1. **Local knowledge mode** — index files and folders, retrieve cited passages, and hand a compact evidence pack to an LLM acting through a tool or agent.
 2. **Search platform mode** — evolve the same contracts into a Zig service with persistent lexical and vector indexes, hybrid ranking, filters, observability, and horizontal scaling.
