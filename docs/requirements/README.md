@@ -98,7 +98,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-08 | Incremental preparation | UC-001, UC-002 | FR-09 | Implemented |
 | CAP-09 | Python→Zig interchange | UC-002 | FR-10 | Implemented |
 | CAP-10 | Durable Zig snapshot engine | UC-002, UC-003 | FR-11 | Implemented |
-| CAP-11 | Evaluation & benchmarks | all | FR-12 | Diagnostic / implemented |
+| CAP-11 | Evaluation & benchmarks | all, UC-005 | FR-12 | Diagnostic / graded smoke gate implemented |
 | CAP-12 | Adaptive learning loop | UC-001, UC-003 | (new FRs on intake) | Proposed / future — board L-01…L-05 |
 | CAP-13 | [MCP tool adapter](cap-13-mcp-adapter.md) | UC-004, UC-002, UC-003 | FR-13, NFR-09 | Proposed / future — board I-01 |
 | CAP-14 | [Trust-calibration signal](cap-14-trust-calibration.md) | UC-001, UC-002, UC-003 | FR-14 | Proposed / future — board S-01, E-02 |
@@ -129,7 +129,7 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-09 | Incremental preparation (reuse/relabel/delete/embed-changed, fail-closed) | CAP-08 | Implemented |
 | FR-10 | Python/Zig interchange (versioned neutral JSON, validated bounds) | CAP-09 | Implemented |
 | FR-11 | Durable snapshot (checksummed sections, manifest, atomic publish, writer lock) | CAP-10 | Implemented |
-| FR-12 | Evaluation & benchmarks (judged modes, machine-readable, stated limits) | CAP-11 | Implemented (diagnostic) |
+| FR-12 | Evaluation & benchmarks (binary/graded judgments, nDCG + retrieval diagnostics, reproducible profiles, regression gates, machine-readable limits/evidence) | CAP-11 | Implemented (diagnostic) |
 | FR-13 | MCP adapter binds FR-07 operations, injects trusted principal, forbids caller vectors, parity with direct surface | CAP-13 | Proposed |
 | FR-14 | First-class retrieval-derived support/confidence signal in the evidence response; low-support flagging; never generative | CAP-14 (changes FR-06) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages, deterministic identity, deterministic line-window fallback | CAP-15 (changes FR-02) | Proposed |

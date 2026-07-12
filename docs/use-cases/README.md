@@ -10,6 +10,7 @@ This directory records the situations Search Simpli is intended to serve. A use 
 | UC-002 | [Codebase search for an agent](uc-002-codebase-agent.md) | Developer or coding agent | Source, docs, configs | Core retrieval/tools implemented; structure-aware chunks pending |
 | UC-003 | [Authorized team knowledge](uc-003-authorized-team-knowledge.md) | Team member or internal agent | Shared public/private documents | Static required-label path implemented; authentication pending |
 | UC-004 | [External agent via MCP](uc-004-mcp-external-agent.md) | MCP client / agent host | Any bound snapshot | Proposed (CAP-13) |
+| UC-005 | [Relevance regression gate on new sample data](uc-005-relevance-regression-gate.md) | Maintainer, contributor, or coding agent | Graded product/user search collections | Diagnostic (CAP-11 / FR-12) |
 
 ## Adding a use case
 

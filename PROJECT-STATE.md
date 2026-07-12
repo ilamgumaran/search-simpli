@@ -43,10 +43,16 @@ Build toward a search solution that begins with files/folders and an LLM-friendl
 - Python and Zig now share the `candidate_k >= top_k` fusion-depth rule. A live Zig request with `candidate_k=2` returned `hybrid-guide` with both component ranks equal to 2.
 - The root test harness explicitly loads every engine module; 57/57 Zig tests actually execute and pass using the temporary official toolchain. Live process tests cover Python export, Zig import/publication, semantic query, and principal-isolated authorization.
 - A local JSON-lines tool process exposes `search_knowledge`, `read_chunk`, `list_sources`, and `index_status` for an LLM/skill/agent wrapper.
-- Retrieval can run as lexical-only, vector-only, or hybrid, and a judged-query harness reports recall@k, success@k, MRR, returned paths, and per-query failures. The Python suite now has forty tests.
+- Retrieval can run as lexical-only, vector-only, or hybrid. Evaluation suite v2 adds graded 1–3 judgments and nDCG@k while retaining recall@k, success@k, MRR, returned paths, matched grades, and per-query failures. Version 1 binary suites remain supported.
+- `relevance_smoke.py` binds corpus hashes, suite, model identity, modes, and cutoff into a profile id; it enforces explicit floors or same-profile baseline tolerances. The 10-product/4-query dependency-free fixture scores 1.0 on nDCG@10, MRR@10, success@10, and macro recall@10 and runs in CI.
+- Expensive smoke profiles can save a newly built index and reuse it later; prebuilt reuse validates the corpus root and reconstructs the exact neural provider identity before semantic evaluation.
+- A deterministic WANDS adapter downloads no external data into the repository. A requested 10,000-product/1,000-query cap honestly produced 10,000 products and 47 queries because WANDS has only 480 queries and the sample preserves every Exact/Partial product for each retained query.
+- The corrected one-product/one-chunk WANDS lexical run scored nDCG@10 0.6866, MRR@10 0.8574, success@10 0.9149, and macro recall@10 0.0528. The failed first representation produced 41,377 chunks and nDCG@10 0.5562 because duplicate chunks consumed result slots; both raw runs are preserved.
+- A 500-product/11-query WANDS neural profile completed with nDCG@10 lexical/vector/hybrid of 0.4176/0.4550/0.4287. BGE vector improved every aggregate over lexical; equal-RRF improved nDCG, success, and recall but regressed MRR and underperformed vector-only. Neural construction took 313.4 seconds while three-mode evaluation took 0.934 seconds. Larger 10k and 2k neural attempts were stopped after exceeding an interactive smoke duration.
+- The dependency-free Python suite now executes 61/61 tests; the pinned Zig suite executes 57/57 tests.
 - The first judged run showed hash-vector hybrid retrieval regressing from 1.0 to 0.5 at `k=1`, so new indexes default to no vectors; hash mode is explicit test-only behavior.
 - A dependency-free `cooccurrence-ppmi-v1` distributional model provides real corpus-trained semantic vectors. On two controlled vocabulary-mismatch queries, lexical scored 0.0 and vector/hybrid scored 1.0 at `k=1`; this is synthetic evidence, not a modern embedding benchmark.
-- There is no representative user-derived judged corpus, authenticated identity/token adapter, label-aware BM25 statistics, directory-sync backend, reader-safe generation GC, WAL/delta-segment writer, filesystem watcher, MCP/network adapter, or direct LLM generation call yet. Incremental preparation still publishes a complete Zig snapshot. Scale evidence is synthetic and does not yet cover 384-dimensional Zig queries, persisted startup/memory, or concurrency.
+- There is no representative user-derived judged corpus, authenticated identity/token adapter, label-aware BM25 statistics, directory-sync backend, reader-safe generation GC, WAL/delta-segment writer, filesystem watcher, MCP/network adapter, or direct LLM generation call yet. WANDS is real-label product-domain evidence but the 10k capped profile is biased and not score-comparable to full WANDS. Incremental preparation still publishes a complete Zig snapshot. Scale evidence is synthetic and does not yet cover 384-dimensional Zig queries, persisted startup/memory, or concurrency.
 
 ## Important decisions
 
@@ -66,6 +72,11 @@ python3 search.py index fixtures/knowledge --out .search/index.json
 python3 search.py context .search/index.json "How should hybrid search combine results?"
 python3 knowledge_tools.py .search/index.json
 python3 evaluate.py .search/index.json fixtures/judgments.json --top-k 1
+python3 relevance_smoke.py fixtures/relevance-smoke/corpus \
+  fixtures/relevance-smoke/judgments.json --mode lexical --top-k 10 \
+  --min-ndcg 1 --min-mrr 1 --min-recall 1 --min-success 1
+python3 scripts/prepare_wands_smoke.py /tmp/WANDS/dataset \
+  /tmp/search-simpli-wands-10k --max-products 10000 --max-queries 1000
 python3 benchmark_scale.py --sizes 100 1000 5000 --dimensions 384
 python3 search.py index fixtures/semantic-knowledge --vector-mode cooccurrence --out /tmp/python-index.json
 python3 search.py index fixtures/semantic-knowledge --vector-mode cooccurrence \
@@ -100,13 +111,12 @@ Otherwise repeat the official download commands in `EXPERIMENTS.md`, or install 
 
 ## Best next step
 
-Do E005B before making production relevance claims:
+Complete the real-label relevance sequence before making production claims:
 
-1. Select a representative user folder corpus.
-2. Write 20 initial queries and identify expected supporting passages.
-3. Reuse the implemented provider protocol and pinned local BGE adapter.
-4. Compare BM25-only, semantic-only, equal/weighted RRF, and optionally reranking on held-out queries.
-5. Save judgments and metrics in a machine-readable evaluation file.
+1. Use persisted neural-index reuse to run a larger identical WANDS lexical/BGE/equal-RRF profile and preserve per-query wins/losses.
+2. Run full 42,994-product/480-query WANDS or document why a capped profile is sufficient for a specific decision.
+3. Add a second domain or a representative user folder with independently authored held-out queries.
+4. Set regression tolerances from repeated profiles/seeds, then evaluate weighted fusion or reranking against the frozen baseline.
 
 This experiment determines whether semantic retrieval produces enough value on the real corpus to justify the vector infrastructure.
 

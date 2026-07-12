@@ -25,6 +25,7 @@ Non-negotiable constraints:
 - Keep exact vector scan as the correctness oracle.
 - Add ANN, WAND, quantization, delta segments, or sharding only after a measured target fails.
 - Tests must actually execute; compilation is not passing-test evidence.
+- Relevance claims require a pinned judged profile, graded nDCG@10 plus diagnostic metrics, a lexical baseline, per-query failures, and explicit sampling limits.
 - Preserve documentation of theory, prompts, experiments, failures, raw metrics, and continuation state.
 
 Required documents:
@@ -71,6 +72,8 @@ Implement:
 - cosine similarity and independent candidate lists;
 - reciprocal-rank fusion with component ranks/scores and candidate_k >= top_k validation;
 - a judged-query evaluator reporting success/recall at k, MRR, returned paths, and failures;
+- backward-compatible graded judgments (1–3), nDCG@k, duplicate-judgment rejection, and one gain per judged path/chunk;
+- a one-command smoke runner with machine-readable output, explicit metric floors, and same-profile baseline regression tolerances;
 - a small experiment proving whether hash fusion helps or harms;
 - a dependency-free corpus-trained co-occurrence PPMI model with deterministic exact model fingerprint;
 - controlled vocabulary-mismatch judgments where lexical fails and PPMI can succeed;
@@ -145,6 +148,16 @@ Test cross-channel isolation, principal forgery, change/add/delete, ACL-only rel
 
 ```text
 Build reproducible benchmarks before selecting scale features.
+
+Relevance harness:
+- commit a tiny dependency-free graded fixture that runs in CI and proves evaluator/gate mechanics only;
+- add a deterministic adapter for a separately downloaded public judged dataset such as WANDS;
+- bind dataset version/license, seed, selection rule, product rendering, grade mapping, corpus hashes, model identity, modes, and cutoff into one profile;
+- use nDCG@10 as the primary graded metric and retain MRR@10, success@10, macro recall@10, and per-query failures;
+- preserve every positive for a selected query; if a requested cap makes that impossible, reduce the actual query count and report requested versus actual counts;
+- compare lexical, semantic, and hybrid modes on the identical profile; never call hash vectors semantic or compare sampled scores to full-dataset published scores;
+- persist and reuse expensive neural indexes so repeated evidence runs do not re-embed an unchanged corpus;
+- record the first failed representation and its correction rather than keeping only the best run.
 
 Python harness:
 - generate 100, 1,000, and 5,000 one-chunk files outside measured time;

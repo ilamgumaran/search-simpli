@@ -13,6 +13,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 | See every requirement in one place / resolve conflicts | [Requirements register](requirements/README.md) |
 | Add a new capability or use case (the process) | [Capability process](capability-process.md) |
 | Understand retrieval and grounding | [Search and answer theory](theory.md) |
+| Measure relevance and run the product-search smoke gate | [Relevance benchmark](relevance-benchmark.md) |
 | Compare simple, single-node, and distributed options | [Architecture](architecture.md) |
 | See completed and failed experiments | [Experiment ledger](../EXPERIMENTS.md) |
 | Continue current implementation work | [Project state](../PROJECT-STATE.md) |
@@ -28,6 +29,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 - [Why Zig and where it belongs](decisions/0001-zig-engine-boundary.md)
 - [Ground-up PPMI semantics](cooccurrence-semantics.md)
 - [Measured scale behavior](scale-benchmark.md)
+- [Product-search relevance benchmark and smoke gate](relevance-benchmark.md)
 
 ## Interfaces and safety
 
