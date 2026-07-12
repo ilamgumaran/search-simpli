@@ -50,20 +50,66 @@ citation support, unanswerable precision) on a representative user-derived
 corpus — this is the project's current E005B blocker and a prerequisite for
 everything below.
 
+### Evaluation datasets are kept separate (no leakage)
+
+Learning safely requires that the data used to *tune* a ranker is never the data
+used to *judge* it. The loop therefore keeps three distinct, versioned datasets,
+and behavioral signal never silently crosses between them:
+
+1. **Feedback / training judgments** — labels derived from behavior and confirmed
+   by a human (Stage 2). Used to tune weights, routing, and preferences. Grows
+   continuously.
+2. **Frozen holdout regression set** — an immutable, versioned judged set that is
+   **never** used for tuning. It is the gate: an adapted ranker is measured
+   against it and cannot see it during training. This is what "the frozen judged
+   corpus" means everywhere below.
+3. **Audit set (optional, future)** — a periodically refreshed, held-back set for
+   detecting drift and overfitting to the holdout itself.
+
+Promotion of new examples into a *new version* of the holdout gate is an explicit,
+recorded act (a dataset version bump in `EXPERIMENTS.md`), never an automatic
+side effect of collecting feedback. If an example has ever influenced tuning, it
+is training data and may not be added to the holdout.
+
 ### Stage 1 — Interaction ledger (foundation for learning)
 
-Capture, but do not yet act on, an **append-only, principal-scoped interaction
-ledger**. For each search: the query, the returned candidates with their
-component ranks, which `read_chunk` calls followed, which chunk an answering
-model actually cited, any explicit rating, and whether the user re-queried
-shortly after (a reformulation is a failure signal).
+Capture, but do not yet act on, a **principal-scoped interaction ledger**. For
+each search record the full **impression**: every candidate that was shown and
+*at what position*, not only the ones acted on. Then record which `read_chunk`
+calls followed, which chunk an answering model actually cited, any explicit
+rating, and whether the user re-queried shortly after (a reformulation is a
+failure signal). Recording impressions and positions — not just clicks — is what
+makes later position-bias correction possible (see Stage 2).
 
 This mirrors the discipline of [`EXPERIMENTS.md`](../EXPERIMENTS.md): raw,
-honest, append-only, no success-only narrative. It is the raw material; it
-changes no result.
+honest, no success-only narrative. It is the raw material; it changes no result.
 
-*Evidence gate:* the ledger reconstructs a session faithfully and never records
-across an authorization boundary.
+**Privacy and deletion lifecycle (required before L-01 is accepted).** This
+ledger holds sensitive behavioral data — raw queries, candidate history, reads,
+citations, ratings, and reformulations — so it must ship with a lifecycle, not
+just a schema:
+
+- **Consent:** capture is **opt-in**, off by default, with a visible switch.
+- **Data minimization:** store the least that makes the signal useful; prefer
+  chunk/candidate ids and positions over free text where the id suffices;
+  support query redaction/hashing for users who want signal without stored text.
+- **Retention:** a configurable retention window with automatic expiry; no
+  indefinite default.
+- **Deletion and export:** a principal can export or delete their own ledger.
+  "Append-only" refers to *integrity within the retention window* (entries are
+  not silently rewritten), reconciled with deletion via tombstones and
+  compaction that physically remove expired or deleted records — not an excuse
+  to keep data forever.
+- **Encryption and derived copies:** encrypt at rest; the deletion/retention
+  policy must also cover backups and any logs that echo ledger content.
+- **Authorization-change behavior:** when a principal's access is revoked or
+  relabeled, their ledger entries follow the same boundary — signal derived
+  under access a user no longer has must not keep influencing shared results.
+
+*Evidence gate:* the ledger reconstructs a session faithfully, never records
+across an authorization boundary, honors opt-in/retention/deletion, and a
+deletion request provably removes the data (including derived copies) within the
+stated window.
 
 ### Stage 2 — Derived judgments (human-in-the-loop)
 
@@ -71,14 +117,33 @@ Turn behavior into weak relevance labels, then let a human confirm them. The
 **inorganic** side proposes ("these three passages were read and cited for this
 query, so they were probably relevant"); the **organic** side confirms,
 corrects, or overrules — applying scarce human judgment only where it matters.
-Confirmed labels fold into the judged corpus.
+Confirmed labels fold into the **feedback / training judgment set** — never
+directly into the frozen holdout gate (see *Evaluation datasets are kept
+separate* above).
 
 This is the AI-assisted judgment loop from the improvement board (item L-02). It
 converts the corpus-building chore into a fast partnership and is the bridge
 from "we captured behavior" to "we can safely learn from it."
 
-*Evidence gate:* derived-then-confirmed judgments measurably grow the judged set
-without contradicting existing hand-authored judgments.
+**Guard against the exposure/position-bias feedback loop.** Reads and citations
+are conditional on what the current ranker put near the top, so treating them
+naively as relevance would just reinforce the ranking we already have and never
+discover relevant passages that were never shown. Mitigations, all resting on the
+recorded impressions/positions from Stage 1:
+
+- **Position-bias correction** when converting behavior to labels (e.g. weight a
+  read by the inverse propensity of its shown position), rather than counting a
+  click at rank 1 the same as a click at rank 8.
+- **Explicit negatives and skips:** a shown-but-skipped high position is signal
+  too; let the human mark "shown, not relevant," not only "relevant."
+- **Controlled exploration:** occasionally surface lower-ranked or
+  alternately-retrieved candidates so the system can *learn about* passages the
+  current ranker would never expose. Human confirmation (above) keeps this cheap
+  and safe.
+
+*Evidence gate:* derived-then-confirmed judgments measurably grow the training
+set without contradicting existing hand-authored judgments, and the frozen
+holdout gate remains untouched.
 
 ### Stage 3 — Per-context adaptation (the payoff)
 
@@ -86,10 +151,15 @@ Only now does behavior change results. Tune **inspectable** parameters —
 fusion weights, lexical/semantic routing, per-principal or per-profile
 preferences — from the accumulated signal. Two hard rules:
 
-1. **No learned change ships unless it holds or improves the frozen judged
-   corpus.** This is the existing before/after discipline applied to learning.
-   A learned adjustment that regresses the gate is rejected automatically, the
-   same way a code change that fails tests is.
+1. **No learned change ships unless it shows no measured regression on the
+   versioned holdout gate, within defined thresholds.** This is the existing
+   before/after discipline applied to learning. The check is not a single
+   aggregate number: it includes per-query and per-segment (per-principal)
+   deltas and a statistical tolerance, so an improvement in the mean cannot hide
+   a regression for one query or one user. A change that fails is rejected
+   automatically, the same way a code change that fails tests is; a change that
+   passes offline is still rolled out as a monitored canary with a fast rollback,
+   because a finite gate cannot prove the absence of every regression.
 2. **Every adaptation is explainable and reversible.** "Your results lean
    lexical because your queries are mostly exact identifier lookups" — a
    sentence the user can read, and a switch they can flip back.
@@ -122,8 +192,12 @@ These keep the loop aligned with the project's founding invariants.
   passage. Retrieval stays separate from generation; behavior never becomes a
   source of truth. It changes *which* real, cited passages surface first —
   nothing else.
-- **The frozen judged corpus is the ratchet.** No learned change is deployed if
-  it regresses the gate. Learning can only move relevance up or leave it equal.
+- **The versioned holdout gate is the ratchet.** No learned change is deployed if
+  it shows a measured regression on the gate beyond defined per-query and
+  per-segment thresholds. This bounds relevance to "no measured regression within
+  tolerance," not the stronger and unprovable "can only ever improve" — a finite
+  judged set and aggregate metrics cannot guarantee the latter, so learned
+  changes also ride a monitored canary with rollback.
 - **Everything is inspectable and reversible.** Every learned adjustment can be
   explained in plain language and turned off. This extends the existing
   "explain why a result ranked" trace to "explain why the ranking adapted."

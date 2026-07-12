@@ -23,8 +23,9 @@ hands touch it.
    it worked. If you cannot state the why and the exit check, it is not ready
    for the board — put it under *Ideas needing shaping*.
 2. **Claim before you build.** Set `Status: in-progress` and put your handle or
-   agent name in `Owner` so two contributors do not collide. Prefer the
-   development branch named in the project's contribution guidance.
+   agent name in `Owner` so two contributors do not collide. Work on a feature
+   branch created from `main` (e.g. `git checkout -b <short-item-name> main`) and
+   open a pull request; if a `CONTRIBUTING.md` is added later, follow it instead.
 3. **Land with evidence, then record it.** Follow the existing project
    discipline: append an entry to [`EXPERIMENTS.md`](EXPERIMENTS.md) (hypothesis,
    setup, observation, what worked, what failed, limits, conclusion) and update
@@ -82,12 +83,16 @@ each earns the next with evidence.
 - **Why:** User/agent behavior (which passage was read, which answer was cited,
   which query got rephrased) is the richest and cheapest relevance signal there
   is, and today it is discarded. Without capturing it, no learning is possible.
-- **What:** An append-only, principal-scoped ledger recording each search, its
-  returned candidates and component ranks, subsequent `read_chunk` calls, the
-  chunk an answering model cited, explicit ratings, and quick re-queries. It
-  changes no result yet.
+- **What:** A principal-scoped ledger recording each search's full **impression**
+  (every candidate shown *and its position*, not just clicks), subsequent
+  `read_chunk` calls, the chunk an answering model cited, explicit ratings, and
+  quick re-queries. It changes no result yet. Ships with a privacy/deletion
+  lifecycle: opt-in, data minimization, retention limits, deletion/export,
+  encryption, and authorization-change behavior (see the doc).
 - **Exit check:** A session reconstructs faithfully from the ledger; no entry
-  ever crosses an authorization boundary; overhead is negligible.
+  ever crosses an authorization boundary; opt-in/retention/deletion are honored
+  and a deletion request provably removes data (including derived copies);
+  overhead is negligible.
 - **HIO tie:** Build-side. Creates the shared memory both intelligences will edit.
 - **Owner-type:** either
 - **Status:** proposed
@@ -101,10 +106,11 @@ each earns the next with evidence.
   matters. Turns the corpus chore into a fast partnership.
 - **What:** Tooling that proposes candidate relevance labels (from L-01 signal
   and top candidates) and presents them for one-tap human confirm/correct;
-  confirmed labels fold into the judged corpus.
-- **Exit check:** Derived-then-confirmed judgments measurably grow the judged set
-  without contradicting existing hand-authored judgments; time-per-query drops
-  materially vs. manual authoring.
+  confirmed labels fold into the **feedback/training** set, kept separate from
+  the frozen holdout gate (three versioned datasets; see the doc).
+- **Exit check:** Derived-then-confirmed judgments measurably grow the training
+  set without contradicting existing hand-authored judgments and without touching
+  the holdout gate; time-per-query drops materially vs. manual authoring.
 - **HIO tie:** Use-side + build-side. Inorganic proposes, organic decides.
 - **Owner-type:** either (human owns the confirming taste)
 - **Status:** proposed
@@ -116,12 +122,14 @@ each earns the next with evidence.
   inspectable knobs (fusion weights, lexical/semantic routing, per-principal
   preferences) so results get better for *this* user/agent — the payoff of the
   whole loop.
-- **What:** Learn fusion weights / routing from accumulated signal, gated so no
-  change ships unless it holds or improves the frozen judged corpus, and every
-  adaptation is explainable and reversible.
-- **Exit check:** On held-out queries the adapted ranker beats the static ranker
-  for the target context, with **zero** regression on the frozen gate; the
-  adaptation can be explained in one sentence and switched off.
+- **What:** Learn fusion weights / routing from accumulated signal, with
+  position-bias correction, gated so no change ships that shows a measured
+  regression on the versioned holdout gate beyond defined per-query/per-segment
+  thresholds, then rolled out as a monitored canary. Every adaptation is
+  explainable and reversible.
+- **Exit check:** On the held-out gate the adapted ranker shows no measured
+  per-query or per-segment regression within tolerance and improves the target
+  context; the adaptation can be explained in one sentence and switched off.
 - **HIO tie:** Use-side. Inorganic optimization steered by organic behavior.
 - **Owner-type:** either
 - **Status:** proposed
@@ -129,14 +137,18 @@ each earns the next with evidence.
 - **Links:** docs/learning-loop.md (Stage 3)
 
 ### L-04 — Regression gate as an automatic ratchet
-- **Why:** Learning is only safe if it can never make relevance worse. The frozen
-  judged corpus must act like a test suite: a learned change that regresses it is
-  rejected automatically.
+- **Why:** Learning is only safe if a change that makes relevance worse is caught
+  before it ships. The versioned holdout gate must act like a test suite —
+  acknowledging that a finite gate bounds risk within thresholds rather than
+  proving perfection, which is why per-segment checks and canary/rollback back it.
 - **What:** A gate that evaluates any candidate ranking change (learned or coded)
-  against the frozen judged corpus and blocks deployment on regression, wired so
-  agents and humans get the same pass/fail signal.
+  against the versioned holdout set — reporting per-query and per-segment deltas
+  with a statistical tolerance, not just an aggregate — and blocks deployment on
+  regression beyond threshold, wired so agents and humans get the same pass/fail
+  signal, with a canary/rollback path for what passes offline.
 - **Exit check:** A deliberately bad weight change is caught and rejected by the
-  gate without human intervention.
+  gate without human intervention, including one that improves the mean while
+  regressing a single segment.
 - **HIO tie:** Build-side. The shared, trustworthy referee both sides submit to.
 - **Owner-type:** either
 - **Status:** proposed
