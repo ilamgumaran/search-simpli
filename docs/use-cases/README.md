@@ -9,6 +9,7 @@ This directory records the situations Search Simpli is intended to serve. A use 
 | UC-001 | [Personal files knowledge assistant](uc-001-personal-files.md) | Individual | Notes, Markdown, source/text files | Implemented reference path; real user judgments pending |
 | UC-002 | [Codebase search for an agent](uc-002-codebase-agent.md) | Developer or coding agent | Source, docs, configs | Core retrieval/tools implemented; structure-aware chunks pending |
 | UC-003 | [Authorized team knowledge](uc-003-authorized-team-knowledge.md) | Team member or internal agent | Shared public/private documents | Static required-label path implemented; authentication pending |
+| UC-004 | [External agent via MCP](uc-004-mcp-external-agent.md) | MCP client / agent host | Any bound snapshot | Proposed (CAP-13) |
 
 ## Adding a use case
 

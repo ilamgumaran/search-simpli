@@ -94,9 +94,12 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-10 | Durable Zig snapshot engine | UC-002, UC-003 | FR-11 | Implemented |
 | CAP-11 | Evaluation & benchmarks | all | FR-12 | Diagnostic / implemented |
 | CAP-12 | Adaptive learning loop | UC-001, UC-003 | (new FRs on intake) | Proposed / future — board L-01…L-05 |
-| CAP-13 | MCP / network tool adapter | UC-002, UC-003 | (new FRs on intake) | Proposed / future — board I-01 |
+| CAP-13 | [MCP tool adapter](cap-13-mcp-adapter.md) | UC-004, UC-002, UC-003 | FR-13, NFR-09 | Proposed / future — board I-01 |
+| CAP-14 | [Trust-calibration signal](cap-14-trust-calibration.md) | UC-001, UC-002, UC-003 | FR-14 | Proposed / future — board S-01, E-02 |
+| CAP-15 | [Structure-aware code chunking](cap-15-structure-aware-chunking.md) | UC-002 | FR-15 | Proposed / future |
 
-New capabilities append here as `CAP-14`, `CAP-15`, … via the process.
+New capabilities append here as `CAP-16`, `CAP-17`, … via the process, each with
+a filled spec (see the three above as worked examples).
 
 ## Functional requirements (FR)
 
@@ -117,6 +120,9 @@ This index adds status and traceability.
 | FR-10 | Python/Zig interchange (versioned neutral JSON, validated bounds) | CAP-09 | Implemented |
 | FR-11 | Durable snapshot (checksummed sections, manifest, atomic publish, writer lock) | CAP-10 | Implemented |
 | FR-12 | Evaluation & benchmarks (judged modes, machine-readable, stated limits) | CAP-11 | Implemented (diagnostic) |
+| FR-13 | MCP adapter binds FR-07 operations, injects trusted principal, forbids caller vectors, parity with direct surface | CAP-13 | Proposed |
+| FR-14 | First-class retrieval-derived support/confidence signal in the evidence response; low-support flagging; never generative | CAP-14 (changes FR-06) | Proposed |
+| FR-15 | Structure-aware chunking on syntactic units for supported languages, deterministic identity, deterministic line-window fallback | CAP-15 (changes FR-02) | Proposed |
 
 ## Non-functional requirements (NFR)
 
@@ -132,6 +138,7 @@ Canonical text lives in [specification.md §3](../recreation/specification.md).
 | NFR-06 | Optional neural imports are lazy and fail with concise errors | CAP-03 | Implemented |
 | NFR-07 | Every material change backed by tests or a recorded experiment | all | Process |
 | NFR-08 | Docs distinguish implementation, observation, hypothesis, future option | all | Process |
+| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free | CAP-13 | Proposed |
 
 ## Contracts (CON)
 
@@ -142,6 +149,11 @@ Canonical text lives in [specification.md §3](../recreation/specification.md).
 | CON-03 | `contracts/snapshot-interchange.schema.json` | Python→Zig interchange |
 | CON-04 | `contracts/embedding-provider.schema.json` | Embedding provider protocol |
 | CON-05 | `contracts/access-rules.schema.json` | Path→label access rules |
+
+Pending additive, versioned changes (backward compatible, INV-07):
+
+- CON-01 gains an optional `support`/`confidence` field for CAP-14 (FR-14).
+- CON-03 gains an optional structural-kind field for CAP-15 (FR-15).
 
 ## Conflict register (CFT)
 
@@ -155,8 +167,13 @@ the whole register.
 | CFT-01 | CAP-12 (per-user adaptive ranking) ↔ INV-08 / NFR-03 (deterministic ordering) & recreation "reproducible results" | Per-principal, history-dependent ranking makes output depend on who asks and when, which reads as non-deterministic/non-reproducible. | Determinism is scoped to the tuple *(index generation, principal, policy id)*. Given a fixed policy id and principal, ordering stays deterministic for equal scores; the frozen holdout gate always evaluates under a pinned policy id. Adaptation is versioned and replayable, not free-running. | Resolved (design) |
 | CFT-02 | CAP-13 (MCP/network adapter) ↔ INV-06 / NFR-01 (dependency-free base) | A network adapter pulls in dependencies and a transport the base mode does not have. | The adapter is an **optional layer**; the base local mode stays dependency-free and runnable without it. Authorization (INV-03) and the text-only/no-caller-vectors boundary still apply through the adapter. | Resolved (design) |
 | CFT-03 | CAP-12 (interaction ledger) ↔ INV-09 (complexity earned by measurement) | Building learning infrastructure before a measured relevance bottleneck could be "complexity in anticipation." | Staged per `docs/learning-loop.md`: the ledger only *captures* (Stage 1) and each later stage has an evidence gate; no ranking change ships without beating the held-out gate. Capture is cheap and reversible; adaptation is earned. | Accepted with rationale |
+| CFT-04 | CAP-14 (trust-calibration) ↔ INV-01 (retrieval≠generation) | A "confidence" score could drift into a generative judgment of whether the answer is true, blurring the retrieval/generation line. | The signal is defined strictly as a deterministic function of retrieval features (scores, rank agreement, gaps, supporting count) — no model call. It calibrates evidence strength, not answer truth. | Resolved (design) |
+| CFT-05 | CAP-14 (support field) ↔ CON-01 / INV-07 (contract backcompat) | Adding a field to the evidence response could break existing consumers. | Optional, versioned field; unaware consumers ignore it. | Resolved (design) |
+| CFT-06 | CAP-15 (structure-aware chunking) ↔ FR-02 / INV-04 (chunk identity) & FR-09 (incremental reuse) | New chunk boundaries change chunk ids, silently invalidating reused chunks/vectors from a line-window index. | Chunker id/version is bumped; FR-09 already fails closed on chunker change, forcing a clean re-embed (a migration), never a silent mismatch. Identity stays deterministic. | Resolved (existing behavior) |
+| CFT-07 | CAP-15 (structure-aware chunking) ↔ INV-06 / NFR-01 (dependency-free base) | Syntactic parsing may need a language-parser dependency. | Opt-in per language; base mode stays dependency-free line-window; parse failure falls back deterministically. | Resolved (design) |
+| CFT-08 | CAP-13 (MCP adapter) ↔ INV-03 (pre-rank authorization) | An external agent could try to supply its own principal or query vectors to widen access. | Adapter injects the trusted principal from config/host context and rejects caller-supplied principal/vectors — the boundary already proven for the JSON-RPC gateway. | Resolved (design) |
 
-New conflicts append as `CFT-04`, … Record the conflict even if you resolve it
+New conflicts append as `CFT-09`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability
