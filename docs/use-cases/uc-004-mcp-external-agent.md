@@ -60,7 +60,7 @@ over MCP. It stops when it has cited support or a clear "not supported."
 
 - Retrieval metric and target: parity with the direct JSON-RPC tool surface on the same snapshot (identical results for identical requests)
 - Citation-support target: every returned passage carries id + path + line span
-- Unanswerable behavior: absent-topic queries return insufficient support, unchanged from the engine
+- Unanswerable behavior: **parity** with the current engine's behavior on absent-topic queries (CAP-13 adds no new insufficient-support guarantee; that is CAP-14/E-02)
 - Freshness target: `index_status` reflects the bound generation
 - Performance target: adapter round-trip overhead recorded and bounded (state the number when measured)
 - Security/isolation tests: agent-supplied principal or query vector is rejected; unauthorized labels never appear; malformed input does not crash the server

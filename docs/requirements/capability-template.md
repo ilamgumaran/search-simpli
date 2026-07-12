@@ -60,7 +60,7 @@ State, for each invariant the capability could affect, how it complies. Any
 
 ## 7. Register updates (fill when consolidating — step 4)
 
-- Capability catalog row (CAP-NN): 
+- Capability catalog row (CAP-NN):
 - FR/NFR index rows added:
 - Contracts rows added:
 
@@ -70,22 +70,39 @@ List every tension found against existing invariants/requirements. Each becomes 
 `CFT-NN` row in the [conflict register](README.md#conflict-register-cft). Do not
 proceed to build with an unresolved conflict.
 
-| CFT | Between | Tension | Resolution (reconcile / scope / supersede / accept) | Status |
+**Resolution type depends on what the conflict touches:** a conflict between
+non-invariant requirements may be `Resolved` or `Accepted with rationale`; a
+conflict involving an **invariant (INV)** may only be `Resolved` (with evidence),
+`Blocked`, or `Invariant-change` (maintainer-approved) — never a bare `Accepted`.
+
+| CFT | Between | Tension | Resolution (reconcile / scope / supersede / accept*) | Status |
 |---|---|---|---|---|
-| CFT-?? |  |  |  | Resolved / Accepted |
+| CFT-?? |  |  |  | Resolved / Blocked / Accepted (non-INV only) |
 
 If none: state explicitly "No conflicts found against the current register as of
 <date/commit>."
 
-## 9. Acceptance gate (step 6 — measurable before building)
+## 8b. Dependencies
 
-- Retrieval metric + target:
+- Capabilities/datasets this one depends on:
+- Is any acceptance criterion dependent on an **unbuilt** capability? If so, the
+  capability is **not build-ready** — rescope to current behavior or mark those
+  criteria `pending`.
+
+## 9. Acceptance gate (step 6 — decidable before building)
+
+Each criterion states **metric · baseline · fixture/split · threshold/tolerance ·
+decision rule**, or is explicitly marked `pending` (blocked on named prerequisite
+data — do not fabricate a threshold).
+
+- Primary metric (metric/baseline/fixture-split/threshold/rule):
 - Citation-support behavior:
 - Unanswerable / negative behavior:
 - Freshness target:
 - Performance / scale target:
 - Security / isolation tests:
 - Judged fixture / benchmark artifact:
+- `pending` criteria (with the prerequisite that unblocks each):
 
 ## 10. Evidence plan (step 8)
 
@@ -99,3 +116,14 @@ If none: state explicitly "No conflicts found against the current register as of
 - Decision:
 - Owner:
 - Evidence needed:
+
+## 12. Maintainer approval (step 6b — required before build)
+
+An independent maintainer (**not the author**) approves invariant compliance,
+every conflict resolution, and the acceptance gate. An agent may draft but may not
+self-approve.
+
+- Approver:
+- Date:
+- Commit:
+- Status: Pending approval

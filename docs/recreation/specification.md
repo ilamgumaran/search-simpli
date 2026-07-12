@@ -177,3 +177,19 @@ After each phase:
 3. update architecture/theory only when evidence changes a durable conclusion;
 4. store raw judgments and benchmark results in machine-readable files;
 5. never replace a failed attempt with a success-only narrative.
+
+## Proposed requirements (pending promotion)
+
+These requirements have been drafted through the
+[capability process](../capability-process.md) but are **not yet built**. Their
+canonical text lives in their capability spec until step 8 promotes it into §2/§3
+above. They are listed here so the authoritative specification acknowledges every
+requirement the [register](../requirements/README.md) tracks — no requirement
+exists only in the register.
+
+| ID | Short text | Capability spec | Status |
+|---|---|---|---|
+| FR-13 | MCP adapter binds the FR-07 operations with injected trusted principal, no caller vectors, and semantic (not byte) parity with the direct surface. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Proposed |
+| FR-14 | First-class, retrieval-derived (non-generative) support/confidence signal in the evidence response; low-support flagging; changes FR-06. | [CAP-14](../requirements/cap-14-trust-calibration.md) | Proposed |
+| FR-15 | Structure-aware chunking on syntactic units for supported languages with deterministic line-window fallback; changes FR-02. | [CAP-15](../requirements/cap-15-structure-aware-chunking.md) | Proposed |
+| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Proposed |

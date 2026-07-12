@@ -60,10 +60,21 @@ indexes, contracts. Add the detailed behavior to
 
 Read the new requirements against **every** invariant and existing requirement
 in the register. For each real tension, add a `CFT-NN` row to the
-[conflict register](requirements/README.md#conflict-register-cft) with the
-tension and a resolution (reconcile, scope, supersede, or *accept with
-rationale*). A capability may not proceed to build while it has an **unresolved**
-conflict.
+[conflict register](requirements/README.md#conflict-register-cft).
+
+**Resolution types are constrained by what the conflict touches:**
+
+- A conflict **between non-invariant requirements** may be `Resolved` (reconcile,
+  scope, supersede) or `Accepted with rationale` (a deliberate tradeoff).
+- A conflict **involving an invariant (INV)** may **not** be `Accepted`.
+  Invariants are non-negotiable, so an INV conflict must be either `Resolved`
+  with evidence that the capability actually complies, `Blocked` until such
+  evidence exists, or explicitly changed via an `Invariant-change` decision that
+  a named maintainer signs off (step 6b). "Accepted with rationale" on an
+  unmeasured assertion is not permitted for an INV.
+
+A capability may not proceed to build while it has an **unresolved** conflict, or
+any INV conflict that is not `Resolved` or an approved `Invariant-change`.
 
 Ask specifically:
 
@@ -75,26 +86,64 @@ Ask specifically:
 - Does it change a **contract** in a way that breaks a consumer?
 - Does it overlap another capability such that two features now own the same
   behavior?
+- Does its acceptance gate **depend on another capability that is not yet built**
+  (see step 6 dependencies)?
 
-- **Artifact:** conflict-register rows, all *resolved* or *accepted*.
-- **Exit:** no unresolved conflict remains.
+- **Artifact:** conflict-register rows, each `Resolved` / `Blocked` /
+  `Accepted with rationale` (non-INV only) / `Invariant-change` (approved).
+- **Exit:** no unresolved conflict, and no INV conflict left as a bare acceptance.
 
 ### 6. Set the acceptance gate
 
-State the evidence that will prove the capability works: retrieval metric +
-target, citation-support behavior, unanswerable behavior, freshness, performance,
-and security/isolation tests. Reuse the [evaluation](../EXPERIMENTS.md) and
-benchmark discipline; name the judged fixture or benchmark artifact.
+State the evidence that will prove the capability works. It is not enough to name
+a direction ("improves", "bounded", "high precision"); each criterion must be
+**decidable**, meaning it states:
 
-- **Artifact:** an acceptance gate in the capability spec and the use case.
-- **Exit:** passing is defined in measurable terms *before* building.
+1. the **exact metric** (e.g. success@3, unanswerable-class F1, p95 overhead ms);
+2. the **baseline** it is compared against;
+3. the **fixture and split** (which judged corpus, tuning vs. held-out);
+4. the **threshold or tolerance** that counts as pass;
+5. the **decision rule** (what result ships, what blocks).
+
+**Dependencies.** List any capability or dataset the gate depends on. A capability
+whose gate depends on another *proposed/unbuilt* capability is **not build-ready**;
+either rescope the gate to current behavior, or record the dependency and mark
+the gate `pending` (blocked) until the prerequisite lands. Model this explicitly
+so nothing is declared ready while its evidence rests on something that does not
+exist yet.
+
+If a threshold genuinely cannot be set until a corpus exists (e.g. E-01/E-02),
+mark that criterion `pending` and the capability's Step 6 as **not complete** —
+do not fabricate a number.
+
+- **Artifact:** a decidable acceptance gate + a dependencies list in the
+  capability spec; each criterion is either fully specified or explicitly `pending`.
+- **Exit:** every criterion is decidable or marked `pending`; no fabricated targets.
+
+### 6b. Maintainer approval gate
+
+Governance requires an **independent** check: the capability author (human or
+agent) does not approve their own exceptions. Before step 7, a **named
+maintainer/reviewer** (not the author) must approve, in the capability spec:
+
+- invariant compliance (§6 of the spec);
+- every conflict resolution, especially any `Blocked`, `Accepted`, or
+  `Invariant-change`;
+- the acceptance gate (and that any `pending` criteria are acceptable to defer).
+
+Record **approver, date, and commit** in the spec's approval block. An agent may
+draft and recommend, but may not record itself as the approver.
+
+- **Artifact:** an approval block (approver · date · commit) in the capability spec.
+- **Exit:** a maintainer other than the author has signed off.
 
 ### 7. Build
 
-Claim the work centrally first (assigned issue or a merged claim-only change —
-see the [improvement board](../IMPROVEMENT-BOARD.md) rules), branch from `main`,
-and implement. Keep the base mode dependency-free; keep authorization pre-rank;
-keep formats versioned/checksummed.
+Only after the maintainer approval gate (6b). Claim the work centrally first
+(assigned issue or a merged claim-only change — see the
+[improvement board](../IMPROVEMENT-BOARD.md) rules), branch from `main`, and
+implement. Keep the base mode dependency-free; keep authorization pre-rank; keep
+formats versioned/checksummed.
 
 - **Artifact:** the implementation on a feature branch + PR.
 - **Exit:** the acceptance gate is met with recorded evidence.
@@ -117,8 +166,12 @@ evidence warrants). Never replace a failed attempt with a success-only narrative
 [ ] 2. Use case written with measurable acceptance + a negative question
 [ ] 3. Capability requirements drafted (FR/NFR/CON/INV), all testable
 [ ] 4. Register updated: CAP + FR/NFR rows + contracts
-[ ] 5. Conflict check done; every CFT resolved or accepted with rationale
-[ ] 6. Acceptance gate defined in measurable terms before building
+[ ] 5. Conflict check done; non-INV = resolved/accepted, INV = resolved/blocked/
+      invariant-change (never a bare "accepted")
+[ ] 6. Acceptance gate is decidable (metric/baseline/fixture-split/threshold/
+      rule) or explicitly pending; dependencies on unbuilt capabilities listed
+[ ] 6b. Maintainer (not the author) approved invariants, conflicts, and the gate;
+      approver + date + commit recorded
 [ ] 7. Built on a claimed branch; invariants held (auth pre-rank, deps, formats)
 [ ] 8. EXPERIMENTS.md + PROJECT-STATE.md + register status updated
 ```

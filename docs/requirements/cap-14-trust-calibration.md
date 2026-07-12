@@ -55,14 +55,32 @@ Status: Proposed · Evidence: future option
 
 No other conflicts found against the register as of this commit.
 
+## 8b. Dependencies
+
+- **E-02** (negative/unanswerable evaluation) and **E-01** (representative judged
+  corpus) — the primary quality metric cannot be set without them.
+- Open design input: the exact support formula and low-support floor (§11).
+
+Because the primary metric depends on unbuilt work, **Step 6 is not complete for
+CAP-14**: its status is `pending` and it is **not build-ready** until E-01/E-02
+land and the formula/floor are fixed. What *can* be specified now is specified.
+
 ## 9. Acceptance gate
 
-- Retrieval metric + target: on a judged set including **negative/unanswerable** queries (E-02), low-support flagging has high precision/recall for the unanswerable class.
-- Citation-support: unchanged; signal is additive.
-- Unanswerable/negative behavior: absent-topic queries are marked low-support at the configured floor.
-- Determinism: identical requests yield identical signals (test).
-- Security/isolation: signal computed only from authorized candidates (post-authorization).
-- Fixture: extend judged fixtures with unanswerable cases and expected support bands.
+Decidable now:
+
+- **Determinism:** identical requests yield identical support signals · exact-match test · any deviation blocks.
+- **Additive compatibility:** a consumer unaware of the new field is unaffected · CON-01 versioned-field test · any break blocks.
+- **Post-authorization:** the signal is computed only over authorized candidates · adversarial label test · 100%.
+
+`pending` (blocked on E-01/E-02 — do not fabricate a threshold):
+
+- **Primary metric:** unanswerable-class detection quality — *metric* = F1 of the
+  low-support flag vs. judged unanswerable label; *baseline* = no-signal (always
+  "answerable"); *fixture/split* = E-02 negatives, tuning vs. held-out; *threshold*
+  = **to be set on tuning data before held-out evaluation**; *rule* = ship only if
+  held-out F1 ≥ threshold with no regression on answerable queries.
+- **Floor calibration:** the low-support floor is fit on tuning data, not guessed.
 
 ## 10. Evidence plan
 
@@ -76,3 +94,13 @@ No other conflicts found against the register as of this commit.
 - Decision: exact support formula and the low-support floor (needs tuning on E-01/E-02 data).
 - Owner: (maintainer).
 - Evidence needed: which retrieval features best predict unanswerability on the real corpus.
+
+## 12. Maintainer approval (process step 6b)
+
+Required before build. Note the acceptance gate has `pending` criteria (blocked on
+E-01/E-02); approval must explicitly accept deferring those.
+
+- Approver:
+- Date:
+- Commit:
+- Status: **Pending approval** · Step 6 gate `pending` (not build-ready)

@@ -21,7 +21,7 @@ Status: Proposed · Evidence: future option
 
 | ID | Requirement (testable) | New / changes | Traces to |
 |---|---|---|---|
-| FR-13 | An MCP adapter binds the existing FR-07 operations (`search_knowledge`, `read_chunk`, `list_sources`, `index_status`) to the Model Context Protocol with identical semantics and structured errors. It exposes **no** operation beyond FR-07, injects the trusted principal from configuration/host context (never from the caller), forbids caller-supplied query vectors, and returns results byte-identical to the direct tool surface for identical requests. | new | UC-004, FR-07 |
+| FR-13 | An MCP adapter binds the existing FR-07 operations (`search_knowledge`, `read_chunk`, `list_sources`, `index_status`) to the Model Context Protocol with identical semantics and structured errors. It exposes **no** operation beyond FR-07, injects the trusted principal from configuration/host context (never from the caller), and forbids caller-supplied query vectors. For identical requests it returns a result that is **semantically equal** to the direct tool surface: deep equality of a canonical Search Simpli result object after stripping transport envelopes, with normalized error-code mapping and normalized ordering. Byte equality across transports is explicitly **not** required. | new | UC-004, FR-07 |
 
 ## 4. Non-functional impact
 
@@ -57,15 +57,30 @@ Status: Proposed · Evidence: future option
 
 No other conflicts found against the register as of this commit.
 
+## 8b. Dependencies
+
+- **None.** CAP-13 is scoped to parity with the engine's **current** behavior; it
+  does not depend on CAP-14 (trust-calibration) or E-02. (See the unanswerable
+  criterion below — it asserts parity, not a new insufficient-support guarantee.)
+
 ## 9. Acceptance gate
 
-- Retrieval metric + target: **result parity** with the direct tool surface on the same snapshot (identical in → identical out).
-- Citation-support: every passage carries id + path + line span.
-- Unanswerable/negative: absent-topic query returns insufficient support (unchanged).
-- Freshness: `index_status` reflects the bound generation.
-- Performance: recorded, bounded adapter round-trip overhead.
-- Security/isolation: caller-supplied principal/vector rejected; unauthorized labels never surface; malformed input does not crash the server.
-- Fixture/benchmark: reuse snapshot judged queries + an adapter-overhead micro-benchmark.
+Decidable criteria (metric · baseline · fixture/split · threshold · rule):
+
+- **Semantic parity:** deep equality of the canonical result object (transport
+  envelopes stripped, error codes normalized, ordering normalized) vs. the direct
+  JSON-RPC surface · baseline = direct surface · fixture = the snapshot's existing
+  judged query set · threshold = 100% of requests equal · rule = any mismatch blocks.
+- **Citation-support:** every returned passage carries id + path + line span · 100% · any miss blocks.
+- **Unanswerable/negative:** the adapter returns **the same outcome the current
+  engine returns** for an absent-topic query (parity, *not* a new insufficient-support
+  guarantee — that is CAP-14/E-02, which CAP-13 does not depend on) · baseline = direct surface · 100% match.
+- **Freshness:** `index_status` over MCP reports the bound generation · exact match.
+- **Performance:** p95 adapter round-trip overhead ≤ **5 ms** above the direct
+  tool call on the same request set · baseline = direct call · fixture = overhead
+  micro-benchmark · rule = record the number; > 5 ms is a finding to justify, not an auto-block.
+- **Security/isolation:** caller-supplied principal/vector rejected; unauthorized
+  labels never surface; malformed input does not crash the server · 100% of adversarial cases.
 
 ## 10. Evidence plan
 
@@ -79,3 +94,13 @@ No other conflicts found against the register as of this commit.
 - Decision: stdio-only first vs. also a network transport (and its auth).
 - Owner: operator.
 - Evidence needed: whether networked deployment is required before building transport auth.
+
+## 12. Maintainer approval (process step 6b)
+
+Required before build. A maintainer other than the author must approve invariant
+compliance (§6), every conflict resolution (§8), and the acceptance gate (§9).
+
+- Approver:
+- Date:
+- Commit:
+- Status: **Pending approval** (drafted by an agent; not self-approvable)

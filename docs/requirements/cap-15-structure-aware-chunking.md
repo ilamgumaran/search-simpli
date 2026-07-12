@@ -37,7 +37,7 @@ Status: Proposed · Evidence: future option
 ## 6. Invariant compliance (INV)
 
 - INV-02 citations: complies — spans still map to path + line range, now more meaningful.
-- INV-04 model/chunker identity is index data: complies — records chunker id/version; re-chunking is a migration.
+- INV-04 model/chunker identity is index data: complies **in the Python path** (records chunker id/version). The **durable Zig path does not carry chunker identity yet** — see CFT-09; CAP-15 is scoped to Python until that contract exists.
 - INV-06 dependency-free base: complies — opt-in; base stays line-window and dependency-free (CFT-07).
 - INV-08 determinism: complies — identity and fallback are deterministic.
 - Others: no impact.
@@ -45,25 +45,38 @@ Status: Proposed · Evidence: future option
 ## 7. Register updates (done in step 4)
 
 - Capability catalog: add CAP-15.
-- FR index: add FR-15 (changes FR-02). Contracts: note CON-03 optional structural-kind field.
+- FR index: add FR-15 (changes FR-02). Contracts: note CON-03 optional structural-kind field, **and** a required new chunker-identity field on CON-03 + Zig manifest/`index_status` to unblock CFT-09.
 
 ## 8. Conflict check (required)
 
 | CFT | Between | Tension | Resolution | Status |
 |---|---|---|---|---|
-| CFT-06 | CAP-15 ↔ FR-02 / INV-04 (chunk identity) & FR-09 (incremental reuse) | New chunk boundaries change chunk ids, which would silently invalidate reused chunks/vectors from a line-window index. | Chunker id/version is bumped; FR-09 already **fails closed** on chunker change, so a mode switch forces a clean re-embed (a migration), never a silent mismatch. Identity stays deterministic. | Resolved (by existing behavior) |
-| CFT-07 | CAP-15 ↔ INV-06 / NFR-01 (dependency-free base) | Syntactic parsing may require a language-parser dependency. | Structure-aware chunking is opt-in per language; the base mode stays dependency-free with line-window chunking; parse failure falls back deterministically. | Resolved |
+| CFT-06 | CAP-15 ↔ FR-09 (incremental reuse), **Python path** | New chunk boundaries change chunk ids, which could silently invalidate reused chunks/vectors. | Python records chunker id (FR-02); FR-09 reuse already **fails closed** on chunker change, forcing a clean re-embed (a migration). Identity stays deterministic. | Resolved |
+| CFT-07 | CAP-15 ↔ INV-06 / NFR-01 (dependency-free base) | Syntactic parsing may require a language-parser dependency. | Opt-in per language; base mode stays dependency-free line-window; parse failure falls back deterministically. | Resolved |
+| CFT-09 | CAP-15 ↔ INV-04 (chunker identity), **durable Zig path** | CON-03 and the Zig manifest/`index_status` do **not** carry a chunker id/version, so the durable path cannot validate chunker identity or fail closed on mismatch. | **Blocked** until a versioned chunker-identity field is added through CON-03 → Zig manifest/status with a migration/backcompat plan (INV-07). Until then CAP-15 ships **Python-only**. | Blocked |
 
-No other conflicts found against the register as of this commit.
+## 8b. Dependencies
+
+- To ship the **durable path**: the chunker-identity contract change (CFT-09).
+  CAP-15's Python-path scope has no blocking dependency.
 
 ## 9. Acceptance gate
 
-- Retrieval metric + target: on a judged **code** set, structure-aware chunking improves exact-symbol success@k and citation coherence vs. line-window, with no regression on prose.
-- Citation-support: a returned function chunk cites its full span.
-- Unanswerable/negative: unchanged.
-- Determinism: identical inputs → identical chunk ids and fallback (test).
-- Migration: switching chunker forces re-embed via FR-09 fail-closed (test).
-- Fixture: a small multi-language code corpus with symbol-lookup judgments.
+Decidable now (Python path):
+
+- **Determinism:** identical inputs → identical chunk ids and identical fallback · exact-match test · any deviation blocks.
+- **Fallback:** on parse failure / unsupported language / oversize unit, deterministically produce line-window chunks · unit test · any nondeterminism blocks.
+- **Citation-support:** a returned function chunk cites its full line span · 100%.
+- **Migration:** switching chunker forces re-embed via FR-09 fail-closed · test · any silent reuse blocks.
+- **No new base dependency:** base mode imports no parser · import test · any new base dep blocks.
+
+`pending` (blocked on a code judged corpus — do not fabricate a threshold):
+
+- **Primary quality metric:** *metric* = exact-symbol success@3 and a citation-coherence
+  score (fraction of returned code chunks whose span is a complete syntactic unit);
+  *baseline* = line-window chunking; *fixture/split* = a multi-language code judged
+  set, tuning vs. held-out; *threshold* = **to be set on tuning data**; *rule* = ship
+  only if success@3 and coherence improve on held-out with **no regression on prose**.
 
 ## 10. Evidence plan
 
@@ -77,3 +90,13 @@ No other conflicts found against the register as of this commit.
 - Decision: which languages first, and which parsing approach (lightweight heuristics vs. a real parser) stays inside the dependency-free base.
 - Owner: (maintainer).
 - Evidence needed: whether heuristic boundary detection is good enough to avoid a parser dependency for the first languages.
+
+## 12. Maintainer approval (process step 6b)
+
+Required before build. Note the durable-path conflict CFT-09 is `Blocked`;
+approval covers the **Python-only** scope, with the durable path deferred.
+
+- Approver:
+- Date:
+- Commit:
+- Status: **Pending approval** · durable path blocked (CFT-09) · quality metric `pending`

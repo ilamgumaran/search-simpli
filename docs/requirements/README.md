@@ -54,10 +54,16 @@ Requirement/capability lifecycle (aligned with the use-case library):
 - **Validated** — evaluated against representative user-derived judgments.
 - **Operational** — reliability, security, freshness, performance targets also met.
 - **Blocked** — a named decision or capability prevents progress.
+- **Standing** — a continuously-enforced process rule, not a lifecycle item (e.g. NFR-07/08).
 - **Withdrawn** — retired; ID retained for traceability.
 
 Evidence tag (orthogonal, per the project's evidence rule): each claim is
 *implemented*, *observed*, *hypothesis*, or *future option*.
+
+A status cell is written `Lifecycle · evidence` (e.g. `Operational · implemented`,
+`Proposed · future`). The **allowed status tokens** are exactly the lifecycle
+words above plus the evidence tag `implemented`; anything else (e.g. "Validated-lite")
+is invalid and is rejected by the [register validator](#change-control).
 
 ## Invariants (INV)
 
@@ -82,8 +88,8 @@ require breaking one of these must be resolved as a conflict, not merged.
 
 | ID | Capability | Use cases | Key requirements | Status / evidence |
 |---|---|---|---|---|
-| CAP-01 | Local file indexing & chunking | UC-001, UC-002 | FR-01, FR-02 | Operational-ish / implemented |
-| CAP-02 | Lexical retrieval (BM25) | UC-001, UC-002 | FR-03 | Validated-lite / implemented |
+| CAP-01 | Local file indexing & chunking | UC-001, UC-002 | FR-01, FR-02 | Operational · implemented |
+| CAP-02 | Lexical retrieval (BM25) | UC-001, UC-002 | FR-03 | Diagnostic · implemented |
 | CAP-03 | Semantic retrieval (none/hash/PPMI/neural) | UC-001, UC-002 | FR-04 | Diagnostic / implemented |
 | CAP-04 | Hybrid fusion (RRF) | UC-001, UC-002 | FR-05 | Diagnostic / implemented |
 | CAP-05 | Cited evidence envelope | UC-001, UC-002, UC-003 | FR-06 | Implemented |
@@ -103,8 +109,12 @@ a filled spec (see the three above as worked examples).
 
 ## Functional requirements (FR)
 
-Canonical text lives in [specification.md §2](../recreation/specification.md).
-This index adds status and traceability.
+Canonical text for **accepted/implemented** requirements lives in
+[specification.md §2](../recreation/specification.md). A **proposed** requirement
+(e.g. FR-13/14/15) lives in its capability spec and in specification.md's
+[proposed-requirements appendix](../recreation/specification.md#proposed-requirements-pending-promotion)
+until it is built, at which point step 8 promotes its canonical text into §2. This
+index adds status and traceability. No requirement exists *only* here.
 
 | ID | Requirement (short) | Capability | Status / evidence |
 |---|---|---|---|
@@ -126,7 +136,10 @@ This index adds status and traceability.
 
 ## Non-functional requirements (NFR)
 
-Canonical text lives in [specification.md §3](../recreation/specification.md).
+Canonical text for accepted requirements lives in
+[specification.md §3](../recreation/specification.md); proposed ones (e.g. NFR-09)
+live in the [proposed-requirements appendix](../recreation/specification.md#proposed-requirements-pending-promotion)
+until promoted.
 
 | ID | Requirement (short) | Applies to | Status |
 |---|---|---|---|
@@ -136,8 +149,8 @@ Canonical text lives in [specification.md §3](../recreation/specification.md).
 | NFR-04 | Zig query core uses caller-owned bounded workspaces | CAP-10 | Implemented |
 | NFR-05 | Forbidden content filtered before ranks, not only from output | CAP-07 | Implemented |
 | NFR-06 | Optional neural imports are lazy and fail with concise errors | CAP-03 | Implemented |
-| NFR-07 | Every material change backed by tests or a recorded experiment | all | Process |
-| NFR-08 | Docs distinguish implementation, observation, hypothesis, future option | all | Process |
+| NFR-07 | Every material change backed by tests or a recorded experiment | all | Standing |
+| NFR-08 | Docs distinguish implementation, observation, hypothesis, future option | all | Standing |
 | NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free | CAP-13 | Proposed |
 
 ## Contracts (CON)
@@ -154,26 +167,39 @@ Pending additive, versioned changes (backward compatible, INV-07):
 
 - CON-01 gains an optional `support`/`confidence` field for CAP-14 (FR-14).
 - CON-03 gains an optional structural-kind field for CAP-15 (FR-15).
+- CON-03 **and** the Zig manifest/`index_status` gain a chunker id/version so the
+  durable path can validate chunker identity — required to unblock CFT-09.
 
 ## Conflict register (CFT)
 
 Every recorded tension between requirements. A capability may not move past the
-process's **conflict-check gate** until each conflict it touches is either
-*resolved* or explicitly *accepted with rationale*. This section is the point of
-the whole register.
+process's **conflict-check gate** until each conflict it touches is settled. This
+section is the point of the whole register.
+
+**Resolution types depend on what the conflict touches** (enforced by the
+[validator](#change-control)):
+
+- Conflict **between non-invariant requirements** → `Resolved` or
+  `Accepted with rationale`.
+- Conflict **involving an invariant (INV)** → `Resolved` (with evidence of
+  compliance), `Blocked` (until evidence exists), or `Invariant-change` (a named
+  maintainer explicitly changes the invariant). An INV conflict may **not** be
+  `Accepted with rationale` on an unmeasured assertion — invariants are
+  non-negotiable.
 
 | ID | Between | Tension | Resolution | Status |
 |---|---|---|---|---|
 | CFT-01 | CAP-12 (per-user adaptive ranking) ↔ INV-08 / NFR-03 (deterministic ordering) & recreation "reproducible results" | Per-principal, history-dependent ranking makes output depend on who asks and when, which reads as non-deterministic/non-reproducible. | Determinism is scoped to the tuple *(index generation, principal, policy id)*. Given a fixed policy id and principal, ordering stays deterministic for equal scores; the frozen holdout gate always evaluates under a pinned policy id. Adaptation is versioned and replayable, not free-running. | Resolved (design) |
 | CFT-02 | CAP-13 (MCP/network adapter) ↔ INV-06 / NFR-01 (dependency-free base) | A network adapter pulls in dependencies and a transport the base mode does not have. | The adapter is an **optional layer**; the base local mode stays dependency-free and runnable without it. Authorization (INV-03) and the text-only/no-caller-vectors boundary still apply through the adapter. | Resolved (design) |
-| CFT-03 | CAP-12 (interaction ledger) ↔ INV-09 (complexity earned by measurement) | Building learning infrastructure before a measured relevance bottleneck could be "complexity in anticipation." | Staged per `docs/learning-loop.md`: the ledger only *captures* (Stage 1) and each later stage has an evidence gate; no ranking change ships without beating the held-out gate. Capture is cheap and reversible; adaptation is earned. | Accepted with rationale |
+| CFT-03 | CAP-12 (interaction ledger) ↔ INV-09 (complexity earned by measurement) | Building learning infrastructure before a measured relevance bottleneck could be "complexity in anticipation." The claim that capture is cheap/reversible is currently unmeasured. | INV conflict — cannot be accepted on assertion. **Blocked** until Stage-1 capture overhead is measured (its own acceptance gate) and a maintainer confirms it does not violate INV-09; each later adaptation stage remains independently gated by measurement per `docs/learning-loop.md`. | Blocked |
 | CFT-04 | CAP-14 (trust-calibration) ↔ INV-01 (retrieval≠generation) | A "confidence" score could drift into a generative judgment of whether the answer is true, blurring the retrieval/generation line. | The signal is defined strictly as a deterministic function of retrieval features (scores, rank agreement, gaps, supporting count) — no model call. It calibrates evidence strength, not answer truth. | Resolved (design) |
 | CFT-05 | CAP-14 (support field) ↔ CON-01 / INV-07 (contract backcompat) | Adding a field to the evidence response could break existing consumers. | Optional, versioned field; unaware consumers ignore it. | Resolved (design) |
-| CFT-06 | CAP-15 (structure-aware chunking) ↔ FR-02 / INV-04 (chunk identity) & FR-09 (incremental reuse) | New chunk boundaries change chunk ids, silently invalidating reused chunks/vectors from a line-window index. | Chunker id/version is bumped; FR-09 already fails closed on chunker change, forcing a clean re-embed (a migration), never a silent mismatch. Identity stays deterministic. | Resolved (existing behavior) |
-| CFT-07 | CAP-15 (structure-aware chunking) ↔ INV-06 / NFR-01 (dependency-free base) | Syntactic parsing may need a language-parser dependency. | Opt-in per language; base mode stays dependency-free line-window; parse failure falls back deterministically. | Resolved (design) |
-| CFT-08 | CAP-13 (MCP adapter) ↔ INV-03 (pre-rank authorization) | An external agent could try to supply its own principal or query vectors to widen access. | Adapter injects the trusted principal from config/host context and rejects caller-supplied principal/vectors — the boundary already proven for the JSON-RPC gateway. | Resolved (design) |
+| CFT-06 | CAP-15 (structure-aware chunking) ↔ FR-09 (incremental reuse), Python path | New chunk boundaries change chunk ids, which could silently invalidate reused chunks/vectors. | Scoped to the **Python** reference path, which records chunker id (FR-02) and whose FR-09 reuse already fails closed on chunker change, forcing a clean re-embed. Identity stays deterministic. | Resolved |
+| CFT-07 | CAP-15 (structure-aware chunking) ↔ INV-06 / NFR-01 (dependency-free base) | Syntactic parsing may need a language-parser dependency. | Opt-in per language; base mode stays dependency-free line-window; parse failure falls back deterministically. | Resolved |
+| CFT-08 | CAP-13 (MCP adapter) ↔ INV-03 (pre-rank authorization) | An external agent could try to supply its own principal or query vectors to widen access. | Adapter injects the trusted principal from config/host context and rejects caller-supplied principal/vectors — the boundary already proven for the JSON-RPC gateway. | Resolved |
+| CFT-09 | CAP-15 (structure-aware chunking) ↔ INV-04 (chunker identity as index data), durable Zig path | The interchange schema (CON-03) and the Zig manifest/status do **not** carry a chunker id/version today, so the durable path cannot validate that a snapshot's chunker matches, and cannot fail closed on a mismatch. | **Blocked** until a versioned chunker-identity field is added through CON-03 → Zig manifest/`index_status`, with a migration/backcompat plan (INV-07). Until then CAP-15 is scoped to the Python path only. | Blocked |
 
-New conflicts append as `CFT-09`, … Record the conflict even if you resolve it
+New conflicts append as `CFT-10`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability
@@ -199,3 +225,8 @@ Every change:
 2. records any new conflict in the conflict register;
 3. is landed with the same evidence discipline as code (tests / `EXPERIMENTS.md`);
 4. is reflected in [`PROJECT-STATE.md`](../../PROJECT-STATE.md) when it changes current behavior.
+
+**Automated guard.** [`scripts/check_requirements.py`](../../scripts/check_requirements.py)
+validates this register on every push/PR (see `.github/workflows/checks.yml`): unique
+IDs, allowed status tokens, valid CAP references, existing capability-spec links, and
+the rule that an INV conflict is never merely "Accepted". Drift fails CI.
