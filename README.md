@@ -122,6 +122,9 @@ The Python vector benchmark uses a synthetic provider, so it measures indexing, 
 
 ## Direction
 
+- [Documentation index](docs/README.md)
+- [Objective, specification, and prompts for recreating Search Simpli](docs/recreation/README.md)
+- [Use-case library and contribution template](docs/use-cases/README.md)
 - [Architecture and option comparison](docs/architecture.md)
 - [Search and answer theory](docs/theory.md)
 - [Experiment-driven roadmap](docs/roadmap.md)
