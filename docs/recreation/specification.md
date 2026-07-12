@@ -2,6 +2,12 @@
 
 Status: reconstruction contract for the implemented reference and durable-engine path.
 
+> This document is authoritative for the **detailed behavior** of functional
+> requirements (FR) and non-functional requirements (NFR). For the consolidated
+> view of every requirement — capabilities, use cases, invariants, and the
+> conflict register — see the [requirements register](../requirements/README.md).
+> New requirements enter via the [capability process](../capability-process.md).
+
 ## 1. Scope
 
 ### In scope

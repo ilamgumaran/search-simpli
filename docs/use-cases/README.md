@@ -12,6 +12,11 @@ This directory records the situations Search Simpli is intended to serve. A use 
 
 ## Adding a use case
 
+A use case that introduces new functionality is step 2 of the
+[capability process](../capability-process.md); the requirements it implies are
+consolidated into the [requirements register](../requirements/README.md), where
+conflicts are checked before anything is built.
+
 1. Copy [TEMPLATE.md](TEMPLATE.md) to `uc-NNN-short-name.md`.
 2. Give it a stable ID; do not recycle IDs after removal.
 3. Include at least five representative questions, including an unanswerable or negative case.
