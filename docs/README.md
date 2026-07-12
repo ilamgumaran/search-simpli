@@ -14,12 +14,15 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 | Compare simple, single-node, and distributed options | [Architecture](architecture.md) |
 | See completed and failed experiments | [Experiment ledger](../EXPERIMENTS.md) |
 | Continue current implementation work | [Project state](../PROJECT-STATE.md) |
+| Pick up the next improvement (human or agent) | [Improvement board](../IMPROVEMENT-BOARD.md) |
+| Understand how search should learn from use | [The learning loop](learning-loop.md) |
 
 ## Theory and decisions
 
 - [Search and answer theory](theory.md)
 - [Architecture and option comparison](architecture.md)
 - [Experiment-driven roadmap](roadmap.md)
+- [The learning loop: search that improves from use](learning-loop.md)
 - [Why Zig and where it belongs](decisions/0001-zig-engine-boundary.md)
 - [Ground-up PPMI semantics](cooccurrence-semantics.md)
 - [Measured scale behavior](scale-benchmark.md)
