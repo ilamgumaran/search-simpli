@@ -1,28 +1,35 @@
 #!/usr/bin/env python3
-"""Validate the requirements register so the consolidated view cannot drift.
+"""Validate the requirements register against every declared source of truth.
 
 Dependency-free (stdlib only), per NFR-01. Run from the repo root:
 
     python3 scripts/check_requirements.py
 
-Checks:
-  1. IDs are unique within their defining table (CAP/FR/NFR/CFT).
-  2. Capability/FR/NFR status tokens are in the allowed vocabulary.
-  3. Every CAP referenced by an FR/NFR row exists in the capability catalog.
-  4. Every capability-catalog row that links a cap-*.md spec resolves to a file.
-  5. Conflict rows have a status, and an INV conflict is never merely "Accepted".
+It checks, across the register, the executable specification, the use-case
+catalog, the contracts directory, and each capability spec:
 
-Exits non-zero with a list of violations if the register is inconsistent.
+  1.  IDs are unique within their defining table (CAP/FR/NFR/CFT).
+  2.  Capability/FR/NFR status tokens are in the allowed vocabulary.
+  3.  Every CAP referenced by an FR/NFR row exists in the capability catalog.
+  4.  Every capability-catalog spec link resolves to a file.
+  5.  Conflict rows have a valid status, and an INV conflict is never "Accepted".
+  6.  Every UC referenced (register + capability specs) is defined in the
+      use-case catalog, and every catalogued UC has a file.
+  7.  Every CON referenced is defined in the register's CON table, and every
+      defined CON schema file exists.
+  8.  One-to-one FR/NFR coverage between the register and specification.md
+      (proposed appendix counts) — no requirement lives in only one place.
+  9.  Each capability spec that the catalog links exists, carries a Dependencies
+      section and a maintainer-approval block, references only defined UCs, and
+      only mentions register-defined FRs.
+
+Exits non-zero with a list of violations if anything is inconsistent. The core
+logic is `validate(root)`, exercised by tests/test_requirements_validator.py.
 """
 import re
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
-REGISTER = REPO / "docs" / "requirements" / "README.md"
-
-# A status cell may combine a lifecycle status with an evidence tag, e.g.
-# "Operational · implemented". Only the first token is checked.
 ALLOWED_STATUS = {
     "proposed", "diagnostic", "validated", "operational",
     "blocked", "standing", "withdrawn", "implemented",
@@ -30,95 +37,183 @@ ALLOWED_STATUS = {
 ALLOWED_CFT_STATUS = {"resolved", "blocked", "accepted", "invariant-change"}
 
 
-def cells(line):
-    # "| a | b | c |" -> ["a", "b", "c"]
-    inner = line.strip().strip("|")
-    return [c.strip() for c in inner.split("|")]
+def _cells(line):
+    return [c.strip() for c in line.strip().strip("|").split("|")]
 
 
-def first_token(text):
+def _first_token(text):
     return re.split(r"[\s·/(]", text.strip(), maxsplit=1)[0].lower()
 
 
-def main():
-    errors = []
-    if not REGISTER.exists():
-        print(f"register not found: {REGISTER}", file=sys.stderr)
-        return 1
+def _ids(text, prefix):
+    return set(re.findall(rf"{prefix}-\d+", text))
 
+
+def validate(root):
+    """Return a list of violation strings (empty when the register is consistent)."""
+    root = Path(root)
+    register = root / "docs" / "requirements" / "README.md"
+    spec = root / "docs" / "recreation" / "specification.md"
+    uc_catalog = root / "docs" / "use-cases" / "README.md"
+    errors = []
+
+    if not register.exists():
+        return [f"register not found: {register}"]
+
+    reg_text = register.read_text()
     section = ""
     seen = {"CAP": {}, "FR": {}, "NFR": {}, "CFT": {}}
     cap_ids = set()
-    fr_nfr_cap_refs = []  # (row_id, capref, lineno)
+    reg_fr = set()
+    reg_nfr = set()
+    con_defined = {}       # CON id -> schema path
+    fr_nfr_cap_refs = []   # (row_id, capref, lineno)
+    uc_refs = []           # (where, uc_id, lineno)
+    con_refs = []          # (where, con_id, lineno)
+    cap_spec_links = {}    # CAP id -> spec filename
 
-    for lineno, raw in enumerate(REGISTER.read_text().splitlines(), 1):
+    for lineno, raw in enumerate(reg_text.splitlines(), 1):
         h = re.match(r"#{2,3}\s+(.*)", raw)
         if h:
             section = h.group(1)
             continue
         if not raw.lstrip().startswith("|"):
             continue
-        row = cells(raw)
-        if not row:
-            continue
+        row = _cells(raw)
         rid = row[0]
 
-        # Capability catalog defining table
         if section.startswith("Capability catalog") and re.match(r"CAP-\d+$", rid):
             if rid in seen["CAP"]:
-                errors.append(f"L{lineno}: duplicate {rid} in capability catalog")
+                errors.append(f"register L{lineno}: duplicate {rid} in capability catalog")
             seen["CAP"][rid] = lineno
             cap_ids.add(rid)
-            status = row[-1]
-            if first_token(status) not in ALLOWED_STATUS:
-                errors.append(f"L{lineno}: {rid} status '{status}' not in allowed vocabulary")
-            # spec link existence
+            if _first_token(row[-1]) not in ALLOWED_STATUS:
+                errors.append(f"register L{lineno}: {rid} status '{row[-1]}' not in allowed vocabulary")
             for target in re.findall(r"\(([^)]+\.md)\)", row[1]):
-                if not (REGISTER.parent / target).exists():
-                    errors.append(f"L{lineno}: {rid} links missing spec '{target}'")
+                cap_spec_links[rid] = target
+                if not (register.parent / target).exists():
+                    errors.append(f"register L{lineno}: {rid} links missing spec '{target}'")
+            for uc in _ids(row[2], "UC"):
+                uc_refs.append(("register", uc, lineno))
 
         elif section.startswith("Functional requirements") and re.match(r"FR-\d+$", rid):
             if rid in seen["FR"]:
-                errors.append(f"L{lineno}: duplicate {rid} in FR index")
+                errors.append(f"register L{lineno}: duplicate {rid} in FR index")
             seen["FR"][rid] = lineno
-            if first_token(row[-1]) not in ALLOWED_STATUS:
-                errors.append(f"L{lineno}: {rid} status '{row[-1]}' not in allowed vocabulary")
-            for m in re.findall(r"CAP-\d+", row[2]):
+            reg_fr.add(rid)
+            if _first_token(row[-1]) not in ALLOWED_STATUS:
+                errors.append(f"register L{lineno}: {rid} status '{row[-1]}' not in allowed vocabulary")
+            for m in _ids(row[2], "CAP"):
                 fr_nfr_cap_refs.append((rid, m, lineno))
 
         elif section.startswith("Non-functional requirements") and re.match(r"NFR-\d+$", rid):
             if rid in seen["NFR"]:
-                errors.append(f"L{lineno}: duplicate {rid} in NFR index")
+                errors.append(f"register L{lineno}: duplicate {rid} in NFR index")
             seen["NFR"][rid] = lineno
-            if first_token(row[-1]) not in ALLOWED_STATUS:
-                errors.append(f"L{lineno}: {rid} status '{row[-1]}' not in allowed vocabulary")
-            for m in re.findall(r"CAP-\d+", row[2]):
+            reg_nfr.add(rid)
+            if _first_token(row[-1]) not in ALLOWED_STATUS:
+                errors.append(f"register L{lineno}: {rid} status '{row[-1]}' not in allowed vocabulary")
+            for m in _ids(row[2], "CAP"):
                 fr_nfr_cap_refs.append((rid, m, lineno))
+
+        elif section.startswith("Contracts") and re.match(r"CON-\d+$", rid):
+            con_defined[rid] = row[1]
+            for target in re.findall(r"`([^`]+\.json)`", row[1]):
+                if not (root / target).exists():
+                    errors.append(f"register L{lineno}: {rid} schema '{target}' does not exist")
 
         elif section.startswith("Conflict register") and re.match(r"CFT-\d+$", rid):
             if rid in seen["CFT"]:
-                errors.append(f"L{lineno}: duplicate {rid} in conflict register")
+                errors.append(f"register L{lineno}: duplicate {rid} in conflict register")
             seen["CFT"][rid] = lineno
             status, between = row[-1], row[1]
-            tok = first_token(status)
+            tok = _first_token(status)
             if not status or tok not in ALLOWED_CFT_STATUS:
-                errors.append(f"L{lineno}: {rid} conflict status '{status}' invalid (need {sorted(ALLOWED_CFT_STATUS)})")
+                errors.append(f"register L{lineno}: {rid} conflict status '{status}' invalid")
             if "INV-" in between and tok == "accepted":
-                errors.append(
-                    f"L{lineno}: {rid} touches an invariant but is 'Accepted' — INV conflicts must be Resolved/Blocked/Invariant-change"
-                )
+                errors.append(f"register L{lineno}: {rid} touches an invariant but is 'Accepted' "
+                              "(INV conflicts must be Resolved/Blocked/Invariant-change)")
 
+    # CON references anywhere in the register
+    for lineno, raw in enumerate(reg_text.splitlines(), 1):
+        for con in _ids(raw, "CON"):
+            con_refs.append(("register", con, lineno))
+
+    # 3. CAP references resolve
     for rid, capref, lineno in fr_nfr_cap_refs:
         if capref not in cap_ids:
-            errors.append(f"L{lineno}: {rid} references {capref}, absent from the capability catalog")
+            errors.append(f"register L{lineno}: {rid} references {capref}, absent from the capability catalog")
 
+    # 6. UC references resolve, and catalogued UCs have files
+    uc_defined = {}
+    if uc_catalog.exists():
+        for lineno, raw in enumerate(uc_catalog.read_text().splitlines(), 1):
+            if raw.lstrip().startswith("|"):
+                row = _cells(raw)
+                if re.match(r"UC-\d+$", row[0]):
+                    uc_defined[row[0]] = lineno
+                    for target in re.findall(r"\(([^)]+\.md)\)", row[1] if len(row) > 1 else ""):
+                        if not (uc_catalog.parent / target).exists():
+                            errors.append(f"use-cases L{lineno}: {row[0]} links missing file '{target}'")
+    else:
+        errors.append("use-case catalog not found")
+    for where, uc, lineno in uc_refs:
+        if uc not in uc_defined:
+            errors.append(f"{where} L{lineno}: references {uc}, absent from the use-case catalog")
+
+    # 7. CON references resolve
+    for where, con, lineno in con_refs:
+        if con not in con_defined:
+            errors.append(f"{where} L{lineno}: references {con}, absent from the register CON table")
+
+    # 8. One-to-one FR/NFR coverage with the specification
+    if spec.exists():
+        spec_text = spec.read_text()
+        spec_fr, spec_nfr = _ids(spec_text, "FR"), _ids(spec_text, "NFR")
+        for fid in sorted(reg_fr - spec_fr):
+            errors.append(f"coverage: {fid} is in the register but absent from specification.md")
+        for fid in sorted(spec_fr - reg_fr):
+            errors.append(f"coverage: {fid} appears in specification.md but is not a register FR")
+        for nid in sorted(reg_nfr - spec_nfr):
+            errors.append(f"coverage: {nid} is in the register but absent from specification.md")
+        for nid in sorted(spec_nfr - reg_nfr):
+            errors.append(f"coverage: {nid} appears in specification.md but is not a register NFR")
+    else:
+        errors.append("specification.md not found")
+
+    # 9. Capability specs: dependencies + approval + valid UC/FR references
+    for cap, target in cap_spec_links.items():
+        specfile = register.parent / target
+        if not specfile.exists():
+            continue  # already reported in check 4
+        text = specfile.read_text()
+        if not re.search(r"(?im)^#+.*dependencies", text):
+            errors.append(f"{target}: {cap} spec is missing a Dependencies section (step 6)")
+        if not re.search(r"(?im)^#+.*maintainer approval", text):
+            errors.append(f"{target}: {cap} spec is missing a maintainer-approval block (step 6b)")
+        for uc in _ids(text, "UC"):
+            if uc not in uc_defined:
+                errors.append(f"{target}: {cap} references {uc}, absent from the use-case catalog")
+        for fr in _ids(text, "FR"):
+            if fr not in reg_fr:
+                errors.append(f"{target}: {cap} mentions {fr}, which is not a register-defined FR")
+        for con in _ids(text, "CON"):
+            if con not in con_defined:
+                errors.append(f"{target}: {cap} references {con}, absent from the register CON table")
+
+    return errors
+
+
+def main():
+    root = Path(__file__).resolve().parents[1]
+    errors = validate(root)
     if errors:
         print("Requirements register validation FAILED:")
         for e in errors:
             print(f"  - {e}")
         return 1
-    print(f"Requirements register OK: {len(seen['CAP'])} capabilities, "
-          f"{len(seen['FR'])} FR, {len(seen['NFR'])} NFR, {len(seen['CFT'])} conflicts.")
+    print("Requirements register OK: consistent across register, "
+          "specification, use-cases, contracts, and capability specs.")
     return 0
 
 

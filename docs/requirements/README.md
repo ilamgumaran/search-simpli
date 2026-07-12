@@ -227,6 +227,10 @@ Every change:
 4. is reflected in [`PROJECT-STATE.md`](../../PROJECT-STATE.md) when it changes current behavior.
 
 **Automated guard.** [`scripts/check_requirements.py`](../../scripts/check_requirements.py)
-validates this register on every push/PR (see `.github/workflows/checks.yml`): unique
-IDs, allowed status tokens, valid CAP references, existing capability-spec links, and
-the rule that an INV conflict is never merely "Accepted". Drift fails CI.
+validates the register against **every declared source of truth** on each push/PR
+(see `.github/workflows/checks.yml`): unique IDs; allowed status tokens; valid
+CAP/UC/CON references; existing capability-spec, use-case, and schema files;
+one-to-one FR/NFR coverage between the register and `specification.md`; each
+capability spec carrying a Dependencies section and a maintainer-approval block;
+and the rule that an INV conflict is never merely "Accepted". Each failure mode has
+a negative unit fixture in `tests/test_requirements_validator.py`. Drift fails CI.

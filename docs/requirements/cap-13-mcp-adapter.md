@@ -78,7 +78,10 @@ Decidable criteria (metric · baseline · fixture/split · threshold · rule):
 - **Freshness:** `index_status` over MCP reports the bound generation · exact match.
 - **Performance:** p95 adapter round-trip overhead ≤ **5 ms** above the direct
   tool call on the same request set · baseline = direct call · fixture = overhead
-  micro-benchmark · rule = record the number; > 5 ms is a finding to justify, not an auto-block.
+  micro-benchmark · **rule = p95 > 5 ms blocks the build.** A higher threshold may
+  be adopted only via a recorded maintainer decision (named approver, rationale,
+  the replacement threshold, and a CFT/decision entry) — not an open-ended
+  justification.
 - **Security/isolation:** caller-supplied principal/vector rejected; unauthorized
   labels never surface; malformed input does not crash the server · 100% of adversarial cases.
 
