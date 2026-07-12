@@ -63,6 +63,20 @@ Gate policy:
 4. A different dataset/sample is a new profile, never a continuation of the old
    score series.
 
+`profile_id` deliberately draws the boundary between the **evaluation profile**
+and the **ranking implementation under test**:
+
+- corpus content hashes, suite bytes, selected modes, `top_k`, vector mode, and
+  exact embedding identity are inside the profile. Changing data/rendering,
+  judgments, mode/cutoff, or embedding is a re-baseline; the old baseline is
+  rejected. This is consistent with INV-04: re-embedding is a migration.
+- tokenizer, chunker, lexical scoring, fusion, and reranking implementation are
+  outside the profile identity. Changing them on otherwise identical inputs is
+  exactly what the regression gate must compare against the frozen baseline.
+
+The report still records the index/chunker/model metadata for diagnosis; exclusion
+from `profile_id` is not permission to hide an implementation change.
+
 ## Benchmark tiers
 
 | Tier | Corpus and queries | Purpose | Claim allowed |
@@ -90,8 +104,11 @@ python3 relevance_smoke.py \
   --min-ndcg 1 --min-mrr 1 --min-recall 1 --min-success 1
 ```
 
-The fixture is intentionally easy and synthetic. Its `1.0` scores prove only
-that the ranking/evaluation path and gate are wired correctly.
+The fixture is intentionally easy and synthetic. Its strict `1.0` floors are a
+**mechanical invariant**: they prove only that the ranking/evaluation path and
+frozen fixture contract are wired correctly. A drop requires deliberate harness
+or fixture review; it is not automatically evidence of a production relevance
+regression.
 
 ## Prepare and run WANDS
 

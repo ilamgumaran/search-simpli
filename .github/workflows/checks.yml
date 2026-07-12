@@ -22,7 +22,8 @@ jobs:
       - name: Python behavioral tests (dependency-free base)
         run: python3 -m unittest discover -s tests -v
 
-      - name: Dependency-free relevance smoke gate
+      # Strict 1.0 is a mechanical fixture invariant, not a production relevance target.
+      - name: Dependency-free relevance mechanics invariant
         run: >-
           python3 relevance_smoke.py
           fixtures/relevance-smoke/corpus

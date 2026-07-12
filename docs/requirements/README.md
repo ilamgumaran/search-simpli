@@ -98,7 +98,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-08 | Incremental preparation | UC-001, UC-002 | FR-09 | Implemented |
 | CAP-09 | Python→Zig interchange | UC-002 | FR-10 | Implemented |
 | CAP-10 | Durable Zig snapshot engine | UC-002, UC-003 | FR-11 | Implemented |
-| CAP-11 | Evaluation & benchmarks | all, UC-005 | FR-12 | Diagnostic / graded smoke gate implemented |
+| CAP-11 | [Evaluation & benchmarks](cap-11-evaluation-benchmarks.md) | all, UC-005 | FR-12 | Diagnostic / graded smoke gate implemented |
 | CAP-12 | Adaptive learning loop | UC-001, UC-003 | (new FRs on intake) | Proposed / future — board L-01…L-05 |
 | CAP-13 | [MCP tool adapter](cap-13-mcp-adapter.md) | UC-004, UC-002, UC-003 | FR-13, NFR-09 | Proposed / future — board I-01 |
 | CAP-14 | [Trust-calibration signal](cap-14-trust-calibration.md) | UC-001, UC-002, UC-003 | FR-14 | Proposed / future — board S-01, E-02 |
@@ -198,8 +198,9 @@ section is the point of the whole register.
 | CFT-07 | CAP-15 (structure-aware chunking) ↔ INV-06 / NFR-01 (dependency-free base) | Syntactic parsing may need a language-parser dependency. | Opt-in per language; base mode stays dependency-free line-window; parse failure falls back deterministically. | Resolved |
 | CFT-08 | CAP-13 (MCP adapter) ↔ INV-03 (pre-rank authorization) | An external agent could try to supply its own principal or query vectors to widen access. | Adapter injects the trusted principal from config/host context and rejects caller-supplied principal/vectors — the boundary already proven for the JSON-RPC gateway. | Resolved |
 | CFT-09 | CAP-15 (structure-aware chunking) ↔ INV-04 (chunker identity as index data), durable Zig path | The interchange schema (CON-03) and the Zig manifest/status do **not** carry a chunker id/version today, so the durable path cannot validate that a snapshot's chunker matches, and cannot fail closed on a mismatch. | **Blocked** until a versioned chunker-identity field is added through CON-03 → Zig manifest/`index_status`, with a migration/backcompat plan (INV-07). Until then CAP-15 is scoped to the Python path only. | Blocked |
+| CFT-10 | CAP-11 / FR-12 graded relevance gate ↔ INV-09 (complexity earned by measurement) | A new evaluator, WANDS adapter, CI gate, and evidence artifacts could become complexity in anticipation. | Resolved by recorded evidence: an existing hash/fusion regression, the failed 41,377-chunk WANDS representation, the corrected 10k lexical run, and the BGE comparison all exercise the mechanism; CI remains tiny and dependency-free. | Resolved |
 
-New conflicts append as `CFT-10`, … Record the conflict even if you resolve it
+New conflicts append as `CFT-11`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability
