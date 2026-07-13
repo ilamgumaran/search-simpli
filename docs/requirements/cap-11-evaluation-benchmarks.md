@@ -134,11 +134,13 @@ No other conflicts were found against the register at reviewed commit `a5bb976`.
 
 ## 12. Maintainer approval
 
-- **Approver:** `ilamgumaran` (repository owner; not the implementing agent)
-- **Date:** 2026-07-12
-- **Reviewed commit:** `a5bb976`
-- **Evidence:** [PR #3 review](https://github.com/ilamgumaran/search-simpli/pull/3#issuecomment-4953041857)
-- **Status:** Approved for the diagnostic FR-12 / UC-005 scope. The review
-  verified the formulas, one-gain behavior, profile boundary, validator, tests,
-  fixture gate, and evidence claims; the current follow-up records that approval
-  and applies the requested governance/documentation hardening.
+- **Approver:** Pending — must be an explicit human maintainer/reviewer sign-off,
+  independent of the implementing agent.
+- **Date:** Pending.
+- **Reviewed commit:** Pending; approval must name the final reviewed commit.
+- **Evidence:** Pending; link an explicit human approval review or confirmation
+  that covers invariant compliance (§6), CFT-10 (§8), and the acceptance gate
+  (§9). Automated review comments and change requests do not qualify.
+- **Status:** **Pending approval.** The implementation and evidence remain
+  Diagnostic, but process step 6b is incomplete and this change must not merge
+  until the approval evidence above is recorded.
