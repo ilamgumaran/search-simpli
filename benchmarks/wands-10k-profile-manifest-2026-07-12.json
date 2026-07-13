@@ -1,0 +1,27 @@
+{
+  "selection_version": "wands-closed-positive-v1",
+  "product_render_version": "wands-product-summary-v1",
+  "product_max_chars": 1500,
+  "seed": "search-simpli-wands-v1",
+  "available": {
+    "products": 42994,
+    "queries": 480,
+    "labels": 233448
+  },
+  "selected": {
+    "products": 10000,
+    "queries": 47,
+    "positive_judgments": 20669,
+    "explicit_irrelevant_pairs_in_corpus": 1681
+  },
+  "requested_caps": {
+    "products": 10000,
+    "queries": 1000
+  },
+  "selection_rule": "SHA-256 query order; retain a query only when all Exact/Partial products fit; fill remaining product slots with explicitly judged negatives then stable distractors",
+  "limitations": [
+    "This capped diagnostic is not score-comparable to full-corpus WANDS runs.",
+    "WANDS has 480 queries, so a 1,000-query WANDS profile is impossible.",
+    "Unjudged products are treated as grade 0, as in pooled offline evaluation."
+  ]
+}

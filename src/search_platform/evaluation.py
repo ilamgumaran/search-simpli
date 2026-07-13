@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -10,7 +11,8 @@ from .core import load_index, search
 from .providers import EmbeddingProvider, ProviderError, provider_from_index
 
 
-SUITE_VERSION = 1
+SUITE_VERSION = 2
+SUPPORTED_SUITE_VERSIONS = (1, 2)
 RETRIEVAL_MODES = ("lexical", "vector", "hybrid")
 
 
@@ -21,8 +23,11 @@ def load_suite(path: Path) -> dict:
 
 
 def validate_suite(suite: object) -> None:
-    if not isinstance(suite, dict) or suite.get("version") != SUITE_VERSION:
-        raise ValueError(f"evaluation suite version must be {SUITE_VERSION}")
+    if not isinstance(suite, dict) or suite.get("version") not in SUPPORTED_SUITE_VERSIONS:
+        raise ValueError(
+            f"evaluation suite version must be one of {SUPPORTED_SUITE_VERSIONS}"
+        )
+    suite_version = suite["version"]
     queries = suite.get("queries")
     if not isinstance(queries, list) or not queries:
         raise ValueError("evaluation suite must contain at least one query")
@@ -43,6 +48,7 @@ def validate_suite(suite: object) -> None:
         relevant = item.get("relevant")
         if not isinstance(relevant, list) or not relevant:
             raise ValueError(f"queries[{position}].relevant must contain at least one judgment")
+        seen_judgments: set[tuple[object, object]] = set()
         for judgment_position, judgment in enumerate(relevant):
             if not isinstance(judgment, dict) or not any(
                 isinstance(judgment.get(field), str) and judgment[field]
@@ -50,6 +56,18 @@ def validate_suite(suite: object) -> None:
             ):
                 raise ValueError(
                     f"queries[{position}].relevant[{judgment_position}] must contain chunk_id or path"
+                )
+            identity = (judgment.get("chunk_id"), judgment.get("path"))
+            if identity in seen_judgments:
+                raise ValueError(f"queries[{position}] contains duplicate judgment {identity!r}")
+            seen_judgments.add(identity)
+            grade = judgment.get("grade")
+            if suite_version == 1:
+                if grade is not None:
+                    raise ValueError("graded judgments require evaluation suite version 2")
+            elif isinstance(grade, bool) or not isinstance(grade, int) or not 1 <= grade <= 3:
+                raise ValueError(
+                    f"queries[{position}].relevant[{judgment_position}].grade must be an integer from 1 to 3"
                 )
 
 
@@ -59,6 +77,44 @@ def _matches(result: dict, judgment: dict) -> bool:
     if "path" in judgment and result["citation"]["path"] != judgment["path"]:
         return False
     return True
+
+
+def _grade(judgment: dict, suite_version: int) -> int:
+    return 1 if suite_version == 1 else judgment["grade"]
+
+
+def _ranked_relevance(
+    results: list[dict], judgments: list[dict], suite_version: int
+) -> tuple[list[int], set[int]]:
+    """Map ranked results to grades while counting each judgment at most once."""
+    unmatched = set(range(len(judgments)))
+    matched: set[int] = set()
+    grades: list[int] = []
+    for result in results:
+        candidates = [index for index in unmatched if _matches(result, judgments[index])]
+        if not candidates:
+            grades.append(0)
+            continue
+        best = max(candidates, key=lambda index: (_grade(judgments[index], suite_version), -index))
+        unmatched.remove(best)
+        matched.add(best)
+        grades.append(_grade(judgments[best], suite_version))
+    return grades, matched
+
+
+def discounted_cumulative_gain(grades: Iterable[int]) -> float:
+    return sum(
+        ((2**grade) - 1) / math.log2(rank + 1)
+        for rank, grade in enumerate(grades, start=1)
+        if grade > 0
+    )
+
+
+def normalized_dcg(ranked_grades: list[int], ideal_grades: list[int], top_k: int) -> float:
+    ideal = discounted_cumulative_gain(sorted(ideal_grades, reverse=True)[:top_k])
+    if ideal == 0.0:
+        return 0.0
+    return discounted_cumulative_gain(ranked_grades[:top_k]) / ideal
 
 
 def evaluate_mode(
@@ -74,6 +130,7 @@ def evaluate_mode(
     per_query = []
     reciprocal_rank_sum = 0.0
     recall_sum = 0.0
+    ndcg_sum = 0.0
     successful_queries = 0
     for item in suite["queries"]:
         results = search(
@@ -84,23 +141,23 @@ def evaluate_mode(
             retrieval_mode=mode,
             embedding_provider=embedding_provider,
         )
-        matched_judgments = [
-            judgment
-            for judgment in item["relevant"]
-            if any(_matches(result, judgment) for result in results)
-        ]
-        recall = len(matched_judgments) / len(item["relevant"])
+        ranked_grades, matched_judgment_indexes = _ranked_relevance(
+            results, item["relevant"], suite["version"]
+        )
+        recall = len(matched_judgment_indexes) / len(item["relevant"])
         first_rank = next(
-            (
-                rank
-                for rank, result in enumerate(results, start=1)
-                if any(_matches(result, judgment) for judgment in item["relevant"])
-            ),
+            (rank for rank, grade in enumerate(ranked_grades, start=1) if grade > 0),
             None,
         )
         reciprocal_rank = 1.0 / first_rank if first_rank is not None else 0.0
+        ndcg = normalized_dcg(
+            ranked_grades,
+            [_grade(judgment, suite["version"]) for judgment in item["relevant"]],
+            top_k,
+        )
         recall_sum += recall
         reciprocal_rank_sum += reciprocal_rank
+        ndcg_sum += ndcg
         if first_rank is not None:
             successful_queries += 1
         per_query.append(
@@ -109,8 +166,10 @@ def evaluate_mode(
                 "query": item["query"],
                 "first_relevant_rank": first_rank,
                 "recall": recall,
+                "ndcg_at_k": ndcg,
                 "returned": [result["chunk_id"] for result in results],
                 "returned_paths": [result["citation"]["path"] for result in results],
+                "returned_relevance_grades": ranked_grades,
             }
         )
 
@@ -122,6 +181,7 @@ def evaluate_mode(
         "macro_recall_at_k": recall_sum / query_count,
         "success_at_k": successful_queries / query_count,
         "mean_reciprocal_rank": reciprocal_rank_sum / query_count,
+        "mean_ndcg_at_k": ndcg_sum / query_count,
         "queries": per_query,
     }
 

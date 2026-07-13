@@ -30,6 +30,12 @@ Compare retrieval modes against relevance judgments:
 
 ```sh
 python3 evaluate.py .search/index.json fixtures/judgments.json --top-k 1
+
+python3 relevance_smoke.py \
+  fixtures/relevance-smoke/corpus \
+  fixtures/relevance-smoke/judgments.json \
+  --mode lexical --top-k 10 \
+  --min-ndcg 1 --min-mrr 1 --min-recall 1 --min-success 1
 ```
 
 Carry a real files-and-folders snapshot across the language boundary:
@@ -110,7 +116,9 @@ Recorded locally on 2026-07-12. These are diagnostic baselines, not production c
 
 | Area | Result |
 |---|---|
-| Automated validation | 40/40 Python tests and 57/57 Zig tests pass |
+| Automated validation | 61/61 Python tests, dependency-free graded relevance smoke, and 57/57 Zig tests pass |
+| WANDS sampled lexical relevance (10,000 products, 47 queries) | nDCG@10 0.6866; MRR@10 0.8574; success@10 0.9149; macro recall@10 0.0528 |
+| WANDS sampled neural comparison (500 products, 11 queries) | nDCG@10: lexical 0.4176, BGE vector 0.4550, equal-RRF hybrid 0.4287; neural build 313.4 s |
 | Mixed-domain success@1 (20 authored queries) | BM25 0.60; PPMI vector 0.70; BGE vector 0.90; equal-RRF BGE hybrid 0.85 |
 | Python build, 5,000 small one-chunk files | No vectors: 591.6 ms and 3.31 MB JSON |
 | Python synthetic 384-d build, 5,000 chunks | Full: 4.54 s and 10.98 MB JSON; unchanged: 2.02 s and zero embedding calls |
@@ -149,6 +157,9 @@ The Python vector benchmark uses a synthetic provider, so it measures indexing, 
 - [Inverted postings design and verified invariants](docs/postings-design.md)
 - [Local LLM/agent tool protocol](docs/tool-protocol.md)
 - [Judged-query evaluation and first observed regression](docs/evaluation.md)
+- [Product-search relevance benchmark, WANDS adapter, and smoke gate](docs/relevance-benchmark.md)
+- [Recorded WANDS 10k lexical relevance run](benchmarks/wands-10k-lexical-2026-07-12.json)
+- [Recorded WANDS 500-product neural/hybrid run](benchmarks/wands-500-neural-hybrid-2026-07-12.json)
 - [Ground-up PPMI distributional semantic baseline](docs/cooccurrence-semantics.md)
 - [Python-to-Zig indexing and query-model bridge](docs/python-zig-bridge.md)
 - [Automatic query-embedding gateway and scale options](docs/query-embedding-gateway.md)

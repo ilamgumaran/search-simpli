@@ -22,6 +22,15 @@ jobs:
       - name: Python behavioral tests (dependency-free base)
         run: python3 -m unittest discover -s tests -v
 
+      # Strict 1.0 is a mechanical fixture invariant, not a production relevance target.
+      - name: Dependency-free relevance mechanics invariant
+        run: >-
+          python3 relevance_smoke.py
+          fixtures/relevance-smoke/corpus
+          fixtures/relevance-smoke/judgments.json
+          --mode lexical --top-k 10
+          --min-ndcg 1 --min-mrr 1 --min-recall 1 --min-success 1
+
       - name: No trailing whitespace in docs/scripts
         run: |
           if git grep -nP ' +$' -- '*.md' '*.py' ; then

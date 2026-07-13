@@ -487,3 +487,81 @@ cd zig
 **Decision:** Keep exact vector scan and the new deterministic `O(n log n)` ranking for the single-node baseline. Do not add HNSW, WAND, quantization, delta segments, or sharding from this result. First measure 384-dimensional persisted snapshots, memory/startup, concurrency, and a representative corpus. Incremental Python reuse remains the simple middle tier when embedding cost is the problem; watcher/delta machinery requires a measured freshness or write-amplification failure.
 
 **Artifacts:** `benchmark_scale.py`, `zig/src/benchmark.zig`, `docs/scale-benchmark.md`, `benchmarks/python-scale-2026-07-12.json`, and `benchmarks/zig-ranking-scale-2026-07-12.json`.
+
+## 2026-07-12 — E005N: graded relevance smoke gate and WANDS 10k diagnostic
+
+**Hypothesis:** A versioned graded evaluator plus a deterministic public-data
+adapter can catch ranking regressions on new product data without claiming that
+one synthetic fixture or one sampled score proves general relevance.
+
+**Research and protocol:** WANDS was selected as the first real-label profile
+because it publishes 42,994 products, 480 queries, and 233,448 Exact/Partial/
+Irrelevant judgments under MIT. nDCG@10 is primary because it incorporates graded
+usefulness and early rank; MRR@10, success@10, and macro recall@10 remain visible
+diagnostics. Exact maps to grade 2, Partial to 1, and Irrelevant/unjudged to 0.
+The sampler orders queries by SHA-256 and accepts a query only when all of its
+positive products fit the cap, then fills with judged negatives and stable
+distractors.
+
+**Implementation:** Evaluation suite v2 validates integer grades 1–3, rejects
+duplicate judgments, computes exponential-gain nDCG, and allows a judged path to
+earn gain only once when multiple chunks appear. Binary v1 suites remain
+compatible. `relevance_smoke.py` builds/evaluates a corpus, writes a
+machine-readable report, binds corpus/suite/model/modes/cutoff into `profile_id`,
+and fails explicit floors or same-profile regression tolerances. CI runs a
+10-product/4-query dependency-free fixture. `prepare_wands_smoke.py` emits a
+manifest, bounded product corpus, and v2 suite without committing WANDS data.
+The runner can also `--save-index` once and reuse it with `--index`, validating
+the corpus root and exact provider identity before vector/hybrid evaluation.
+
+**Sampling result:** The requested 10,000-product/1,000-query WANDS profile
+became 10,000 products and 47 queries with 20,669 positive judgments. WANDS has
+only 480 total queries, and the positive union for many queries is large; silently
+forcing 1,000 or dropping known positives would make the score misleading. The
+manifest records requested and actual counts and marks the sample non-comparable
+to full WANDS.
+
+**What did not work:** The first adapter rendered five product fields on separate
+lines. Search Simpli's line chunker produced 41,377 chunks from 10,000 products,
+and repeated chunks from one product occupied top-10 slots. Lexical nDCG@10 was
+0.5562, MRR@10 0.8830, success@10 0.8936, and macro recall@10 0.0468. The run
+took 5.85 s to build and 12.19 s to evaluate 47 queries.
+
+**What worked:** A deterministic 1,500-character one-line product summary aligned
+the retrieval unit with the judged product unit and produced exactly 10,000
+chunks. Lexical nDCG@10 improved to 0.6866, success@10 to 0.9149, and macro
+recall@10 to 0.0528; build/evaluation fell to 2.78 s/4.56 s. MRR@10 decreased to
+0.8574, showing why no single metric should hide the other diagnostics. Four
+queries—`living room ideas`, `large bases`, `promo codes or discounts`, and
+`white abstract`—had no known positive in the first ten; several exact-name
+queries reached nDCG@10 1.0.
+
+**Did not prove:** The capped query set is biased by the closed-positive rule,
+unjudged products are treated as zero, WANDS is one product domain, and the run
+has no repeated seeds or confidence interval. The authored CI fixture proves
+only mechanics. Offline retrieval does not establish user satisfaction, answer
+groundedness, latency under load, or calibrated no-answer behavior.
+
+**Neural scale attempt:** A 10,000-product exact BGE run and then a
+2,000-product run were terminated after exceeding an interactive smoke-test
+duration without producing a report. The failure was neural index construction,
+not the relevance formula. A 500-product/11-query/500-positive profile completed:
+index construction took 313.4 seconds and three-mode evaluation took 0.934
+seconds. Lexical/vector/hybrid nDCG@10 was 0.4176/0.4550/0.4287; MRR@10 was
+0.5909/0.6169/0.5584; success@10 was 0.6364/0.8182/0.7273; macro recall@10 was
+0.1745/0.2503/0.2048. BGE vector improved every aggregate over lexical.
+Equal-RRF improved nDCG, success, and recall over lexical but lost to vector-only
+and regressed MRR below lexical. Neural profiles need persisted-index reuse or a
+scheduled evidence tier rather than PR CI.
+
+**Decision:** Keep the tiny gate in CI and use the corrected WANDS lexical profile
+as a frozen diagnostic baseline. Do not set a universal nDCG target. Treat the
+500-product neural result as evidence that semantic retrieval helps and that
+equal-RRF still needs tuning, not as a scale claim. Reuse the now-supported
+persisted neural index to run a larger identical profile without rebuilding embeddings,
+then run full WANDS and a second/user-derived domain before making a production
+relevance claim.
+
+**Artifacts:** `relevance_smoke.py`, `scripts/prepare_wands_smoke.py`,
+`fixtures/relevance-smoke/`, `docs/relevance-benchmark.md`, UC-005, and the three
+`benchmarks/wands-10k-*.json` and `benchmarks/wands-500-neural-*.json` evidence files.

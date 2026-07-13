@@ -3,7 +3,11 @@ import unittest
 from pathlib import Path
 
 from src.search_platform.core import build_index
-from src.search_platform.evaluation import evaluate_modes, validate_suite
+from src.search_platform.evaluation import (
+    evaluate_modes,
+    normalized_dcg,
+    validate_suite,
+)
 
 
 class EvaluationTests(unittest.TestCase):
@@ -72,6 +76,64 @@ class EvaluationTests(unittest.TestCase):
             report = evaluate_modes(index, suite, ["vector"], top_k=2)
 
         self.assertIn("not a modern neural embedding model", report["warnings"][0])
+
+    def test_graded_ndcg_rewards_ideal_early_ordering(self) -> None:
+        ideal = normalized_dcg([3, 2, 1], [3, 2, 1], 3)
+        swapped = normalized_dcg([2, 3, 1], [3, 2, 1], 3)
+
+        self.assertEqual(ideal, 1.0)
+        self.assertGreater(swapped, 0.0)
+        self.assertLess(swapped, ideal)
+
+    def test_duplicate_chunks_from_one_relevant_path_gain_only_once(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "product.md").write_text(
+                ("bronze reading lamp " * 100) + "\n" + ("bronze reading lamp " * 100),
+                encoding="utf-8",
+            )
+            index = build_index(root, vector_mode="none")
+            suite = {
+                "version": 2,
+                "queries": [
+                    {
+                        "id": "lamp",
+                        "query": "bronze reading lamp",
+                        "relevant": [{"path": "product.md", "grade": 3}],
+                    }
+                ],
+            }
+            report = evaluate_modes(index, suite, ["lexical"], top_k=2)["reports"][0]
+
+        self.assertEqual(report["queries"][0]["returned_relevance_grades"], [3, 0])
+        self.assertEqual(report["mean_ndcg_at_k"], 1.0)
+
+    def test_version_two_requires_bounded_integer_grades(self) -> None:
+        suite = {
+            "version": 2,
+            "queries": [
+                {"id": "one", "query": "lamp", "relevant": [{"path": "one.md"}]}
+            ],
+        }
+        with self.assertRaisesRegex(ValueError, "grade must be an integer from 1 to 3"):
+            validate_suite(suite)
+
+    def test_duplicate_judgments_are_rejected(self) -> None:
+        suite = {
+            "version": 2,
+            "queries": [
+                {
+                    "id": "one",
+                    "query": "lamp",
+                    "relevant": [
+                        {"path": "one.md", "grade": 3},
+                        {"path": "one.md", "grade": 1},
+                    ],
+                }
+            ],
+        }
+        with self.assertRaisesRegex(ValueError, "duplicate judgment"):
+            validate_suite(suite)
 
 
 if __name__ == "__main__":

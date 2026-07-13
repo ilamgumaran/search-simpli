@@ -94,7 +94,16 @@ The Zig path stores versioned checksummed document/vector and lexical sections. 
 
 ### FR-12 — Evaluation and benchmarks
 
-Judged queries compare lexical, vector, and hybrid modes using at least success/recall at k and MRR. Raw benchmark results are machine-readable and documentation states hardware/runtime, synthetic assumptions, and what is not proven.
+Judged queries compare lexical, vector, and hybrid modes. Binary suites remain
+backward compatible; graded suites record relevance 1–3 and report nDCG@k in
+addition to success@k, macro recall@k, and MRR@k. A result can satisfy one
+path/chunk judgment at most once. A reproducible profile binds corpus hashes,
+suite, selection/rendering rules, retrieval modes, vector/model identity, and
+cutoff. Smoke gates support explicit metric floors and same-profile baseline
+regression tolerances; a baseline from a different profile fails closed. Raw
+results are machine-readable and documentation states dataset/license,
+hardware/runtime, sampling, grade mapping, synthetic assumptions, failures, and
+what is not proven.
 
 ## 3. Non-functional requirements
 

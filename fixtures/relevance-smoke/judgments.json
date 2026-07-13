@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "metadata": {
+    "purpose": "deterministic CI mechanics and regression smoke test",
+    "representative": false,
+    "grade_mapping": {"exact": 2, "partial": 1}
+  },
+  "queries": [
+    {
+      "id": "lamp",
+      "query": "red ceramic table lamp",
+      "relevant": [
+        {"path": "product-00001.md", "grade": 2},
+        {"path": "product-00002.md", "grade": 1}
+      ]
+    },
+    {
+      "id": "sofa-bed",
+      "query": "queen sleeper sofa bed",
+      "relevant": [
+        {"path": "product-00003.md", "grade": 2},
+        {"path": "product-00004.md", "grade": 1}
+      ]
+    },
+    {
+      "id": "slow-cooker",
+      "query": "stainless steel slow cooker",
+      "relevant": [
+        {"path": "product-00005.md", "grade": 2},
+        {"path": "product-00006.md", "grade": 1}
+      ]
+    },
+    {
+      "id": "dinosaur-decal",
+      "query": "dinosaur wall decal",
+      "relevant": [
+        {"path": "product-00007.md", "grade": 2},
+        {"path": "product-00008.md", "grade": 1}
+      ]
+    }
+  ]
+}
