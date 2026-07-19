@@ -25,7 +25,9 @@ beyond an approved tolerance.
   public judged product collection; later, user-owned files/products.
 - **Approximate files/chunks/bytes:** CI = 10 products/10 chunks; recorded WANDS
   lexical profile = 10,000 products/10,000 chunks; recorded neural profile = 500
-  products/500 chunks.
+  products/500 chunks. Proposed E-01A = one representative single-owner folder
+  with 50–100 human-authored questions split into tuning and frozen holdout;
+  corpus size remains a human choice and must be recorded rather than guessed.
 - **Languages or domains:** current evidence is English product search, mainly
   furniture/home goods; other domains remain unproven.
 - **Update pattern:** frozen per profile. New data, rendering, vector identity,
@@ -64,6 +66,14 @@ ranked retrieval only.
 5. Stop and re-baseline when `profile_id` changes. Refine ranking only when the
    profile matches and failures show a real retrieval issue.
 
+For the proposed E-01A real-folder flow, the data owner first initializes a
+content-free pack scaffold outside the repository, authors both suites, reviews
+every expected path/passage, and creates an explicit confirmation over the exact
+corpus/catalog/suite hashes. The runner must refuse draft, stale, cross-split,
+or post-confirmation-mutated packs. It then builds one compatible index and
+reports tuning and holdout separately; holdout results are not an automatic
+model-selection input.
+
 ## Retrieval expectations
 
 - **Lexical strengths needed:** exact product names, attributes, model numbers,
@@ -85,12 +95,19 @@ ranked retrieval only.
 - **Principal source:** no principal is required for public fixtures; private
   profiles use the existing trusted principal configuration.
 - **Required labels or tenant boundary:** any private evaluation must preserve
-  the same pre-rank authorization rules as ordinary search.
+  the same pre-rank authorization rules as ordinary search. E-01A v1 therefore
+  accepts only a single-owner corpus with one visibility boundary; mixed-label
+  or team evaluation is unsupported until an authorization-aware profile is
+  designed.
 - **Hosted-model/egress policy:** base and WANDS lexical paths are local;
   recorded neural evidence uses a pinned local FastEmbed provider. Hosted
   inference requires explicit owner approval.
 - **Logging and retention expectations:** commit only authored fixtures,
   manifests, and authorized/derived reports; do not commit private corpus text.
+  E-01A pack metadata still contains relative paths, query text, hashes, and
+  judgments and must remain local unless the data owner explicitly authorizes
+  publication. Generated pack/default-report artifacts omit source content and
+  the absolute corpus root.
 - **Required denial behavior:** unauthorized products/passages must receive no
   rank and must remain absent from per-query diagnostics.
 
@@ -113,6 +130,11 @@ ranked retrieval only.
   neural construction is saved and reused rather than repeated per mode/run.
 - **Security/isolation tests:** external catalogs are not committed; private
   corpora/judgments require explicit publication authority.
+- **Proposed E-01A pack gate:** initialization is byte-deterministic; corpus
+  add/change/delete, split leakage, unknown citations, missing confirmation, and
+  any post-confirmation mutation fail closed; an `e01` confirmation requires
+  50–100 questions and a named human reviewer. Smaller confirmed packs remain
+  explicitly Diagnostic.
 
 ## Evaluation assets
 
@@ -122,13 +144,17 @@ ranked retrieval only.
 - **Relevant experiment entry:** `EXPERIMENTS.md` E005N.
 - **Test files:** `tests/test_evaluation.py`, `tests/test_relevance_smoke.py`, and
   `tests/test_wands_smoke.py`.
+- **Pending change record:**
+  `docs/requirements/cap-11-e01a-judgment-packs.md` (not build-ready until its
+  step-6b approval is recorded).
 
 ## Risks and failure modes
 
 - **Retrieval:** an easy or cap-biased sample can inflate scores; multiple chunks
   from one product can consume top-k; one metric can hide another regression.
 - **Authorization/privacy:** derived reports may expose private query or path
-  data; external license/provenance may be lost.
+  data; external license/provenance may be lost. Hashes and filenames are
+  metadata, not anonymization.
 - **Staleness/deletion:** corpus or judgment changes can make an old baseline
   invalid; `profile_id` must reject it.
 - **Prompt injection:** retrieved text is evidence only and cannot change suite,
@@ -143,3 +169,8 @@ ranked retrieval only.
 - **Owner:** maintainer.
 - **Evidence needed:** larger same-profile comparison, repeated samples, and a
   second or user-derived held-out domain.
+- **Decision:** which single-owner folder and 50–100 independently reviewed
+  questions become the first E-01 pack.
+- **Owner:** human maintainer/data owner.
+- **Evidence needed:** explicit corpus/publication boundary, confirmed
+  tuning/holdout judgments, and the sealed held-out evaluation.
