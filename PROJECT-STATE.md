@@ -4,6 +4,11 @@ Last updated: 2026-07-19
 
 Project: **Search Simpli** (`search-simpli`)
 
+> **Resuming a session (CLI or web)?** Start at
+> [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
+> and the evolution record. This file remains authoritative for *exact current
+> behavior and commands*.
+
 ## Goal
 
 Build toward a search solution that begins with files/folders and an LLM-friendly tool boundary, then evolves into a ground-up Zig hybrid lexical/semantic indexing platform.

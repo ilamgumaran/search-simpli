@@ -130,6 +130,7 @@ The Python vector benchmark uses a synthetic provider, so it measures indexing, 
 
 ## Direction
 
+- [Start here / resume a session — the journey](docs/journey/README.md)
 - [Documentation index](docs/README.md)
 - [Requirements register (all requirements in one place)](docs/requirements/README.md)
 - [Capability process (how to add a new capability)](docs/capability-process.md)
