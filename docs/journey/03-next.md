@@ -1,6 +1,6 @@
 # Next — the live queue
 
-Updated: 2026-07-13. Keep this short and current. The full backlog with *why* and
+Updated: 2026-07-19. Keep this short and current. The full backlog with *why* and
 exit checks is [`IMPROVEMENT-BOARD.md`](../../IMPROVEMENT-BOARD.md); the exact
 implementation state is [`PROJECT-STATE.md`](../../PROJECT-STATE.md).
 
@@ -16,10 +16,23 @@ relevance claim. Until a real corpus with independently authored queries exists:
 - CAP-15 (structure-aware chunking) cannot prove a code-search gain;
 - fusion/routing work (F-01) cannot be trusted beyond the diagnostic.
 
-The leverage move is **L-02** — do not hand-label from zero. Let the system
+### It now has a specified path — awaiting one human decision
+
+[**E-01A — real-folder judgment packs**](../requirements/cap-11-e01a-judgment-packs.md)
+(merged as specification only) defines the privacy-bounded workflow: inventory a
+real single-owner folder without copying content, separate tuning from a frozen
+holdout, seal both with an explicit human confirmation over exact hashes, and
+fail closed on drift, split leakage, or post-confirmation edits.
+
+> **Blocking action, and it is a human one.** Implementation cannot begin until a
+> maintainer posts an explicit step-6b approval covering §6 (invariants), §8
+> (CFT-11–13), and §9 (the acceptance gate and its named `pending` criteria), and
+> the approval block cites that comment. An agent may not supply this.
+
+The leverage move remains **L-02** — do not hand-label from zero. Let the system
 propose labels from behavior and have a human confirm, correct, or overrule.
 That turns the corpus chore into a partnership and builds the Stage-2 machinery
-at the same time.
+at the same time. E-01A is the safe intake half of exactly that.
 
 ## Ready to build now
 

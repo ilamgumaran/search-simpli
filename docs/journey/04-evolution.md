@@ -149,6 +149,47 @@ the adversarial review that has already improved this project four times over.
 
 ---
 
+## 2026-07-19 — The process absorbed its own past exception (E-01A)
+
+**What changed.** Merged the
+[E-01A real-folder judgment-pack specification](../requirements/cap-11-e01a-judgment-packs.md)
+(PR #5) — specification only, deliberately stopping at step 6b. It records
+CFT-11 (single-owner authorization scope), CFT-12 (holdout contamination), and
+CFT-13 (bounded experiment with removal as rollback).
+
+**Why it matters to the record.** Two firsts:
+
+- **A spec that is mergeable without being build-ready.** §12 says approval is
+  required *before build*, not before merge. That resolves the self-contradiction
+  from PR #3, where a merged record read "must not merge." Landing a
+  decision-ready specification and gating only the implementation is the right
+  shape for this process.
+- **The missing approval on PR #3 was recorded as a historical process
+  exception rather than retroactively invented.** CAP-11 §12 now states plainly
+  that PR #3 merged without qualifying step-6b evidence, and that the automated
+  review was a change request, not an approval. Preserving the gap is more
+  valuable than a tidy record.
+
+**What review caught — in my own tooling this time.** The E-01A record sits in
+`docs/requirements/` but was **not linked from the capability catalog**, and the
+validator keyed its per-record checks on catalog links. So the first sub-record
+the project ever produced was entirely unvalidated: its references, Dependencies
+section, and approval block were all unchecked. The file happened to be
+compliant, but the hole was real and would recur for every future tranche.
+
+→ The validator now checks **every** `docs/requirements/cap-*.md`, deriving the
+capability id from the filename and rejecting a record that names an unknown
+capability. The strict "§3 table must equal the catalog" check stays limited to
+the canonical catalog-linked spec, since a sub-record legitimately restates a
+subset. Four negative fixtures cover it (16 validator tests, up from 12), and the
+mutations that previously passed now fail.
+
+**Lesson.** A validator's *coverage rule* is itself a place drift hides. Keying
+checks on "is it linked?" quietly created a category of file that could not fail.
+Enumerate the artifacts, do not wait to be pointed at them.
+
+---
+
 ## 2026-07-13 — Continuity became a first-class concern
 
 **What changed.** Added this `docs/journey/` directory — vision, approach, next,
@@ -181,3 +222,6 @@ Distilled from the entries above. These are why the rules look the way they do.
    are worth more in the record than any clean success narrative.
 7. **Measure before adding machinery.** The first real bottleneck was never the
    one we expected.
+8. **A check's coverage rule is itself a hiding place.** Validating only the
+   artifacts you are *pointed at* creates a category of artifact that cannot
+   fail. Enumerate them instead.

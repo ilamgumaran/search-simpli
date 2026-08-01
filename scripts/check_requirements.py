@@ -210,11 +210,23 @@ def validate(root):
     else:
         errors.append("specification.md not found")
 
-    # 9. Capability specs: dependencies + approval + valid UC/FR references
-    for cap, target in cap_spec_links.items():
-        specfile = register.parent / target
-        if not specfile.exists():
-            continue  # already reported in check 4
+    # 9. Capability records: dependencies + approval + valid UC/FR/CON references.
+    #
+    # Checked for EVERY docs/requirements/cap-*.md, not only catalog-linked ones,
+    # so a sub-record (e.g. a follow-on tranche of an existing capability) cannot
+    # escape validation by not being linked from the catalog. The capability id is
+    # taken from the filename prefix (`cap-11-...` -> CAP-11).
+    linked_targets = set(cap_spec_links.values())
+    records = sorted(register.parent.glob("cap-*.md"))
+    for specfile in records:
+        m = re.match(r"cap-(\d+)-", specfile.name)
+        if not m:
+            errors.append(f"{specfile.name}: capability record filename must start with 'cap-<NN>-'")
+            continue
+        cap = f"CAP-{m.group(1)}"
+        target = specfile.name
+        if cap not in cap_ids:
+            errors.append(f"{target}: names {cap}, which is absent from the capability catalog")
         text = specfile.read_text()
         if not re.search(r"(?im)^#+.*dependencies", text):
             errors.append(f"{target}: {cap} spec is missing a Dependencies section (step 6)")
@@ -230,22 +242,24 @@ def validate(root):
             if con not in con_defined:
                 errors.append(f"{target}: {cap} references {con}, absent from the register CON table")
 
-        # Spec's declared FRs (first column of the "## 3 ... Functional requirements"
-        # table) must match the catalog Key requirements for this capability.
-        spec_frs = set()
-        in_fr_table = False
-        for line in text.splitlines():
-            if re.match(r"#+\s", line):
-                in_fr_table = bool(re.match(r"(?i)#+\s*3\b.*functional requirements", line))
-                continue
-            if in_fr_table and line.lstrip().startswith("|"):
-                m = re.match(r"FR-\d+", _cells(line)[0])
-                if m:
-                    spec_frs.add(m.group(0))
-        if spec_frs and spec_frs != catalog_frs.get(cap, set()):
-            errors.append(f"{target}: {cap} spec's functional-requirements table declares "
-                          f"{sorted(spec_frs)} but the catalog Key requirements list "
-                          f"{sorted(catalog_frs.get(cap, set()))}")
+        # The canonical (catalog-linked) spec's declared FRs must match the catalog
+        # Key requirements. Sub-records are exempt from this equality check: they
+        # legitimately restate a subset of an existing capability's requirements.
+        if target in linked_targets:
+            spec_frs = set()
+            in_fr_table = False
+            for line in text.splitlines():
+                if re.match(r"#+\s", line):
+                    in_fr_table = bool(re.match(r"(?i)#+\s*3\b.*functional requirements", line))
+                    continue
+                if in_fr_table and line.lstrip().startswith("|"):
+                    fm = re.match(r"FR-\d+", _cells(line)[0])
+                    if fm:
+                        spec_frs.add(fm.group(0))
+            if spec_frs and spec_frs != catalog_frs.get(cap, set()):
+                errors.append(f"{target}: {cap} spec's functional-requirements table declares "
+                              f"{sorted(spec_frs)} but the catalog Key requirements list "
+                              f"{sorted(catalog_frs.get(cap, set()))}")
 
     return errors
 
