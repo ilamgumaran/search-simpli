@@ -107,6 +107,19 @@ require breaking one of these must be resolved as a conflict, not merged.
 New capabilities append here as `CAP-16`, `CAP-17`, … via the process, each with
 a filled spec (see the three above as worked examples).
 
+### Sub-records
+
+A follow-on tranche of an existing capability gets its own record rather than a
+new `CAP` id. Sub-records are listed here for discoverability and are validated
+exactly like catalog-linked specs — the
+[validator](../../scripts/check_requirements.py) checks **every**
+`docs/requirements/cap-*.md`, so a record cannot escape validation by not being
+linked from the catalog above.
+
+| Record | Extends | Status |
+|---|---|---|
+| [CAP-11 / E-01A — real-folder judgment packs](cap-11-e01a-judgment-packs.md) | CAP-11 / FR-12 | Proposed · pending step-6b approval, not build-ready |
+
 ## Functional requirements (FR)
 
 Canonical text for **accepted/implemented** requirements lives in

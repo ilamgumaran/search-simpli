@@ -112,11 +112,13 @@ zig build -Doptimize=ReleaseFast
 
 ## Measured status
 
-Recorded locally on 2026-07-12. These are diagnostic baselines, not production capacity promises.
+Performance and relevance baselines were recorded locally on 2026-07-12; the
+Python validation count was refreshed on 2026-07-31. These are diagnostic
+baselines, not production capacity promises.
 
 | Area | Result |
 |---|---|
-| Automated validation | 61/61 Python tests, dependency-free graded relevance smoke, and 57/57 Zig tests pass |
+| Automated validation | 67/67 Python tests and the dependency-free graded relevance smoke pass; the latest recorded pinned-toolchain Zig run remains 57/57 |
 | WANDS sampled lexical relevance (10,000 products, 47 queries) | nDCG@10 0.6866; MRR@10 0.8574; success@10 0.9149; macro recall@10 0.0528 |
 | WANDS sampled neural comparison (500 products, 11 queries) | nDCG@10: lexical 0.4176, BGE vector 0.4550, equal-RRF hybrid 0.4287; neural build 313.4 s |
 | Mixed-domain success@1 (20 authored queries) | BM25 0.60; PPMI vector 0.70; BGE vector 0.90; equal-RRF BGE hybrid 0.85 |
@@ -130,6 +132,7 @@ The Python vector benchmark uses a synthetic provider, so it measures indexing, 
 
 ## Direction
 
+- [Start here / resume a session — the journey](docs/journey/README.md)
 - [Documentation index](docs/README.md)
 - [Requirements register (all requirements in one place)](docs/requirements/README.md)
 - [Capability process (how to add a new capability)](docs/capability-process.md)

@@ -152,6 +152,26 @@ class RequirementsValidatorTests(unittest.TestCase):
         (root / "docs" / "requirements" / "cap-01-x.md").unlink()
         self._assert_fails(root, "missing spec")
 
+    def test_catalog_link_cannot_bypass_record_validation(self):
+        root = self._with_tree()
+        register = self._reg(root)
+        register.write_text(
+            register.read_text().replace("cap-01-x.md", "not-a-cap.md")
+        )
+        (root / "docs" / "requirements" / "not-a-cap.md").write_text(
+            "# Not a capability record\n"
+        )
+        (root / "docs" / "requirements" / "cap-01-x.md").unlink()
+        self._assert_fails(root, "filename must start with 'cap-<NN>-'")
+
+    def test_catalog_link_must_name_the_same_capability(self):
+        root = self._with_tree()
+        register = self._reg(root)
+        register.write_text(register.read_text().replace(
+            "[X](cap-01-x.md)", "[X](cap-02-y.md)"
+        ))
+        self._assert_fails(root, "catalog links it as CAP-01")
+
     def test_catalog_vs_fr_index_disagreement(self):
         # Point CAP-01's catalog Key requirements at FR-02, which the FR index
         # maps to CAP-02 (the reviewer's exact scenario).
@@ -168,6 +188,39 @@ class RequirementsValidatorTests(unittest.TestCase):
         cap.write_text(cap.read_text().replace("| FR-01 | x | new | UC-001 |",
                                                "| FR-02 | x | new | UC-001 |"))
         self._assert_fails(root, "functional-requirements table declares")
+
+    # --- sub-records: capability records NOT linked from the catalog ---
+    # A follow-on tranche of an existing capability lives in docs/requirements/
+    # without a catalog link. It must still be validated.
+
+    def _sub_record(self, root, name="cap-01-sub.md", body=None):
+        path = root / "docs" / "requirements" / name
+        path.write_text(body if body is not None else _cap_spec(
+            "CAP-01 — X, follow-on tranche", "FR-01", "UC-001"))
+        return path
+
+    def test_valid_unlinked_sub_record_passes(self):
+        root = self._with_tree()
+        self._sub_record(root)
+        self.assertEqual(checker.validate(root), [])
+
+    def test_unlinked_sub_record_with_undefined_uc_fails(self):
+        root = self._with_tree()
+        self._sub_record(root, body=_cap_spec(
+            "CAP-01 — X, follow-on tranche", "FR-01", "UC-999"))
+        self._assert_fails(root, "UC-999")
+
+    def test_unlinked_sub_record_missing_approval_fails(self):
+        root = self._with_tree()
+        path = self._sub_record(root)
+        path.write_text(path.read_text().replace("## 12. Maintainer approval",
+                                                 "## 12. Notes"))
+        self._assert_fails(root, "maintainer-approval block")
+
+    def test_sub_record_naming_unknown_capability_fails(self):
+        root = self._with_tree()
+        self._sub_record(root, name="cap-77-orphan.md")
+        self._assert_fails(root, "CAP-77")
 
 
 if __name__ == "__main__":

@@ -4,6 +4,11 @@ Last updated: 2026-07-19
 
 Project: **Search Simpli** (`search-simpli`)
 
+> **Resuming a session (CLI or web)?** Start at
+> [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
+> and the evolution record. This file remains authoritative for *exact current
+> behavior and commands*.
+
 ## Goal
 
 Build toward a search solution that begins with files/folders and an LLM-friendly tool boundary, then evolves into a ground-up Zig hybrid lexical/semantic indexing platform.
@@ -49,7 +54,8 @@ Build toward a search solution that begins with files/folders and an LLM-friendl
 - A deterministic WANDS adapter downloads no external data into the repository. A requested 10,000-product/1,000-query cap honestly produced 10,000 products and 47 queries because WANDS has only 480 queries and the sample preserves every Exact/Partial product for each retained query.
 - The corrected one-product/one-chunk WANDS lexical run scored nDCG@10 0.6866, MRR@10 0.8574, success@10 0.9149, and macro recall@10 0.0528. The failed first representation produced 41,377 chunks and nDCG@10 0.5562 because duplicate chunks consumed result slots; both raw runs are preserved.
 - A 500-product/11-query WANDS neural profile completed with nDCG@10 lexical/vector/hybrid of 0.4176/0.4550/0.4287. BGE vector improved every aggregate over lexical; equal-RRF improved nDCG, success, and recall but regressed MRR and underperformed vector-only. Neural construction took 313.4 seconds while three-mode evaluation took 0.934 seconds. Larger 10k and 2k neural attempts were stopped after exceeding an interactive smoke duration.
-- The dependency-free Python suite now executes 61/61 tests; the pinned Zig suite executes 57/57 tests.
+- The dependency-free Python suite now executes 67/67 tests; the latest recorded
+  pinned-toolchain Zig run executes 57/57 tests.
 - The CAP-11 graded-relevance extension now has a formal capability change record,
   template-aligned UC-005, and resolved CFT-10 against INV-09. Process step 6b
   did not receive qualifying approval before PR #3 merged as `2a512cb`; the

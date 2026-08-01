@@ -6,11 +6,12 @@ Intelligence Orchestration (HIO) idea: the same board that a person scans to
 decide what to do next is the board an agent reads to pick up a well-scoped
 task, do it, and record the outcome.
 
-> **New here?** Read [`README.md`](README.md) for what the project is,
-> [`PROJECT-STATE.md`](PROJECT-STATE.md) for exactly where it stands, and
+> **New here?** Start at [`docs/journey/`](docs/journey/README.md) — the vision,
+> how we work, the live next-task queue, and how the project evolved. Then
+> [`PROJECT-STATE.md`](PROJECT-STATE.md) for exactly where it stands and
 > [`docs/learning-loop.md`](docs/learning-loop.md) for the adaptive-learning
-> vision that most of the top items serve. This board is the *what next*;
-> those are the *why* and the *where we are*.
+> vision that most of the top items serve. This board is the full *what next*
+> with a why and an exit check per item.
 
 ## How to use this board
 

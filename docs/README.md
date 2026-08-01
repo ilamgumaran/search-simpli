@@ -6,6 +6,11 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 
 | Need | Read |
 |---|---|
+| **Start or resume a session (CLI or web)** | [**The journey**](journey/README.md) |
+| Understand the vision, principles, and objective | [Vision](journey/01-vision.md) |
+| Know how we work (evidence, governance, protocol) | [Approach](journey/02-approach.md) |
+| Find the next task and current blockers | [Next](journey/03-next.md) |
+| See how the project evolved and why | [Evolution record](journey/04-evolution.md) |
 | Re-create the project from an empty repository | [Recreation kit](recreation/README.md) |
 | Understand the required behavior | [Executable specification](recreation/specification.md) |
 | Give the build to a coding agent | [Recreation prompts](recreation/prompts.md) |
