@@ -105,6 +105,13 @@ results are machine-readable and documentation states dataset/license,
 hardware/runtime, sampling, grade mapping, synthetic assumptions, failures, and
 what is not proven.
 
+**Proposed E-01A amendment (not built):** add a versioned real-folder judgment
+pack that inventories source/chunk identity without copying content, separates
+tuning from holdout, requires an explicit human confirmation over corpus and
+suite hashes, rejects drift or split leakage, and evaluates both splits over one
+compatible index. See the pending
+[CAP-11 E-01A record](../requirements/cap-11-e01a-judgment-packs.md).
+
 ## 3. Non-functional requirements
 
 | ID | Requirement |

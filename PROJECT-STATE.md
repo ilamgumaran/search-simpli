@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-07-12
+Last updated: 2026-07-19
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -52,9 +52,13 @@ Build toward a search solution that begins with files/folders and an LLM-friendl
 - The dependency-free Python suite now executes 61/61 tests; the pinned Zig suite executes 57/57 tests.
 - The CAP-11 graded-relevance extension now has a formal capability change record,
   template-aligned UC-005, and resolved CFT-10 against INV-09. Process step 6b
-  remains pending: an automated review/change request is not maintainer approval,
-  so PR #3 must record an explicit human sign-off on its final reviewed commit
-  before merge.
+  did not receive qualifying approval before PR #3 merged as `2a512cb`; the
+  record now preserves that historical process exception rather than inventing
+  retroactive approval.
+- E-01A real-folder judgment packs are claimed in issue #4 and specified through
+  capability-process step 6. Implementation is intentionally paused at step 6b
+  until a human maintainer approves its invariants, CFT-11–13 resolutions, and
+  acceptance gate on the final specification commit.
 - The first judged run showed hash-vector hybrid retrieval regressing from 1.0 to 0.5 at `k=1`, so new indexes default to no vectors; hash mode is explicit test-only behavior.
 - A dependency-free `cooccurrence-ppmi-v1` distributional model provides real corpus-trained semantic vectors. On two controlled vocabulary-mismatch queries, lexical scored 0.0 and vector/hybrid scored 1.0 at `k=1`; this is synthetic evidence, not a modern embedding benchmark.
 - There is no representative user-derived judged corpus, authenticated identity/token adapter, label-aware BM25 statistics, directory-sync backend, reader-safe generation GC, WAL/delta-segment writer, filesystem watcher, MCP/network adapter, or direct LLM generation call yet. WANDS is real-label product-domain evidence but the 10k capped profile is biased and not score-comparable to full WANDS. Incremental preparation still publishes a complete Zig snapshot. Scale evidence is synthetic and does not yet cover 384-dimensional Zig queries, persisted startup/memory, or concurrency.
@@ -116,14 +120,20 @@ Otherwise repeat the official download commands in `EXPERIMENTS.md`, or install 
 
 ## Best next step
 
-Complete the real-label relevance sequence before making production claims:
+Complete the E-01 real-folder relevance sequence before making production claims:
 
-1. Use persisted neural-index reuse to run a larger identical WANDS lexical/BGE/equal-RRF profile and preserve per-query wins/losses.
-2. Run full 42,994-product/480-query WANDS or document why a capped profile is sufficient for a specific decision.
-3. Add a second domain or a representative user folder with independently authored held-out queries.
-4. Set regression tolerances from repeated profiles/seeds, then evaluate weighted fusion or reranking against the frozen baseline.
+1. Review and explicitly approve the pending E-01A specification on its final
+   commit, covering invariant compliance, CFT-11–13, and the acceptance gate.
+2. Implement and verify the content-free judgment-pack workflow described there.
+3. Select one representative single-owner folder and have a human data owner
+   author/confirm 50–100 tuning/holdout questions with expected passages.
+4. Compare BM25, PPMI, BGE, and equal-RRF on the sealed pack, preserving
+   per-query wins/losses; only then test weighted fusion or routing.
+5. Use WANDS full/larger repeated profiles as a complementary product-domain
+   check, not a substitute for the intended files-and-folders evidence.
 
-This experiment determines whether semantic retrieval produces enough value on the real corpus to justify the vector infrastructure.
+This sequence determines whether semantic retrieval produces enough value on
+the real target corpus to justify the vector infrastructure and default mode.
 
 In parallel, the next self-contained scale milestone is a persisted 384-dimensional benchmark covering snapshot bytes, open/startup time, resident memory, and concurrent long-lived queries. That evidence decides whether the next engine feature should be candidate-union fusion, ANN, lexical pruning, or only better process/service management.
 

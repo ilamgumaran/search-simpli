@@ -247,9 +247,11 @@ each earns the next with evidence.
   gain either survives real use or is shown not to.
 - **HIO tie:** Build-side. The shared ground truth for all future work.
 - **Owner-type:** human (needs real corpus + judgment)
-- **Status:** accepted
-- **Owner:**
-- **Links:** docs/roadmap.md (Phase 1), PROJECT-STATE.md "best next step"
+- **Status:** in-progress (tooling/specification only; human corpus and judgments pending)
+- **Owner:** `ilamgumaran` + implementing agent
+- **Links:** [issue #4](https://github.com/ilamgumaran/search-simpli/issues/4),
+  [E-01A proposed change record](docs/requirements/cap-11-e01a-judgment-packs.md),
+  docs/roadmap.md (Phase 1), PROJECT-STATE.md "best next step"
 
 ### E-02 — Negative / unanswerable evaluation
 - **Why:** Current judged sets test "did it find the right thing," not "did it

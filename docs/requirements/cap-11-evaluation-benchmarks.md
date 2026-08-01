@@ -6,6 +6,9 @@ Status: Diagnostic · Evidence: implemented smoke gate and WANDS experiments
 > follows the [capability process](../capability-process.md) for PR #3 rather
 > than treating the new UC-005/FR-12 behavior as a small-process exception.
 
+Proposed follow-on: [E-01A real-folder judgment packs](cap-11-e01a-judgment-packs.md),
+currently pending its independent step-6b approval before implementation.
+
 ## 1. Proposal
 
 - **Problem / what should be possible:** A ranking, chunking, tokenizer,
@@ -134,13 +137,13 @@ No other conflicts were found against the register at reviewed commit `a5bb976`.
 
 ## 12. Maintainer approval
 
-- **Approver:** Pending — must be an explicit human maintainer/reviewer sign-off,
-  independent of the implementing agent.
-- **Date:** Pending.
-- **Reviewed commit:** Pending; approval must name the final reviewed commit.
-- **Evidence:** Pending; link an explicit human approval review or confirmation
-  that covers invariant compliance (§6), CFT-10 (§8), and the acceptance gate
-  (§9). Automated review comments and change requests do not qualify.
-- **Status:** **Pending approval.** The implementation and evidence remain
-  Diagnostic, but process step 6b is incomplete and this change must not merge
-  until the approval evidence above is recorded.
+- **Historical result:** PR #3 merged as `2a512cb` on 2026-07-12 without the
+  explicit independent approval evidence required by step 6b.
+- **Evidence:** the automated review requested governance corrections and did
+  not constitute approval; the final capability record correctly remained
+  `Pending approval` when the PR merged.
+- **Status:** **Historical process exception; not retroactively approved.** The
+  technical evidence remains Diagnostic. This record preserves the gap rather
+  than converting the merge action into an approval that was never stated.
+- **Future rule:** every subsequent CAP-11 extension, beginning with E-01A, must
+  obtain its own explicit human approval before implementation.

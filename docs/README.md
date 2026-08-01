@@ -30,6 +30,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 - [Ground-up PPMI semantics](cooccurrence-semantics.md)
 - [Measured scale behavior](scale-benchmark.md)
 - [Product-search relevance benchmark and smoke gate](relevance-benchmark.md)
+- [Proposed E-01A real-folder judgment-pack workflow](requirements/cap-11-e01a-judgment-packs.md)
 
 ## Interfaces and safety
 
