@@ -1,6 +1,6 @@
 # Next — the live queue
 
-Updated: 2026-07-19. Keep this short and current. The full backlog with *why* and
+Updated: 2026-07-31. Keep this short and current. The full backlog with *why* and
 exit checks is [`IMPROVEMENT-BOARD.md`](../../IMPROVEMENT-BOARD.md); the exact
 implementation state is [`PROJECT-STATE.md`](../../PROJECT-STATE.md).
 
@@ -38,23 +38,19 @@ at the same time. E-01A is the safe intake half of exactly that.
 
 | Item | Why it is ready | Note |
 |---|---|---|
-| **CAP-13 / I-01 — MCP adapter** | Requirements, conflicts (CFT-02, CFT-08), and a fully decidable acceptance gate are recorded. **Dependencies: none** — scoped to parity with current behavior. | Needs step-6b maintainer approval before build |
 | **E-02 — negative / unanswerable evaluation** | Small, self-contained, and it is the empirical guard on the source-of-truth invariant | Feeds CAP-14 |
 
 ## Blocked, with the named unblocker
 
 | Blocked | Blocked by | Unblocker |
 |---|---|---|
+| **CAP-13 / I-01 — MCP adapter** | Step-6b maintainer approval is still pending | A named maintainer other than the author approves the recorded requirements, conflicts (CFT-02, CFT-08), and acceptance gate |
 | **CFT-03** — CAP-12 interaction ledger vs INV-09 | The "capture is cheap and reversible" claim is unmeasured | Measure Stage-1 capture overhead, then a maintainer confirms INV-09 compliance |
 | **CFT-09** — CAP-15 durable path vs INV-04 | `CON-03` and the Zig manifest/`index_status` do not carry a chunker id/version | Add a versioned chunker-identity field through interchange → manifest/status, with a migration plan. Until then CAP-15 is **Python-only** |
 | **CAP-14 threshold** | No negative-bearing judged corpus | E-01 + E-02 |
 
-## Open loose ends
+## Open loose end
 
-- **CAP-11 §12 approval block** still reads *pending* even though the change
-  merged. Either record the approval that occurred or note explicitly that the
-  merge itself was the maintainer decision — the written record should not
-  contradict the merged state.
 - **Persisted 384-d startup / memory / concurrency benchmark** remains the gate
   that decides whether the next engine work is ANN, lexical pruning, or simply
   better process management. No scale machinery before it.

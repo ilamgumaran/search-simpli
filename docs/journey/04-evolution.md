@@ -149,7 +149,7 @@ the adversarial review that has already improved this project four times over.
 
 ---
 
-## 2026-07-19 — The process absorbed its own past exception (E-01A)
+## 2026-07-31 — The process absorbed its own past exception (E-01A)
 
 **What changed.** Merged the
 [E-01A real-folder judgment-pack specification](../requirements/cap-11-e01a-judgment-packs.md)
@@ -177,12 +177,13 @@ the project ever produced was entirely unvalidated: its references, Dependencies
 section, and approval block were all unchecked. The file happened to be
 compliant, but the hole was real and would recur for every future tranche.
 
-→ The validator now checks **every** `docs/requirements/cap-*.md`, deriving the
-capability id from the filename and rejecting a record that names an unknown
-capability. The strict "§3 table must equal the catalog" check stays limited to
-the canonical catalog-linked spec, since a sub-record legitimately restates a
-subset. Four negative fixtures cover it (16 validator tests, up from 12), and the
-mutations that previously passed now fail.
+→ The validator now checks the union of **every**
+`docs/requirements/cap-*.md` and every existing catalog-linked target. It
+derives the capability id from the filename, rejects unknown or mismatched ids,
+and limits the strict "§3 table must equal the catalog" check to canonical
+catalog links because a sub-record legitimately restates a subset. Six fixtures
+(five negative) cover it (18 validator tests, up from 12), and the mutations
+that previously passed now fail.
 
 **Lesson.** A validator's *coverage rule* is itself a place drift hides. Keying
 checks on "is it linked?" quietly created a category of file that could not fail.
@@ -190,7 +191,7 @@ Enumerate the artifacts, do not wait to be pointed at them.
 
 ---
 
-## 2026-07-13 — Continuity became a first-class concern
+## 2026-07-31 — Continuity became a first-class concern
 
 **What changed.** Added this `docs/journey/` directory — vision, approach, next,
 and this record — so work can move between a CLI session, a web session, and

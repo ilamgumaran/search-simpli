@@ -152,6 +152,26 @@ class RequirementsValidatorTests(unittest.TestCase):
         (root / "docs" / "requirements" / "cap-01-x.md").unlink()
         self._assert_fails(root, "missing spec")
 
+    def test_catalog_link_cannot_bypass_record_validation(self):
+        root = self._with_tree()
+        register = self._reg(root)
+        register.write_text(
+            register.read_text().replace("cap-01-x.md", "not-a-cap.md")
+        )
+        (root / "docs" / "requirements" / "not-a-cap.md").write_text(
+            "# Not a capability record\n"
+        )
+        (root / "docs" / "requirements" / "cap-01-x.md").unlink()
+        self._assert_fails(root, "filename must start with 'cap-<NN>-'")
+
+    def test_catalog_link_must_name_the_same_capability(self):
+        root = self._with_tree()
+        register = self._reg(root)
+        register.write_text(register.read_text().replace(
+            "[X](cap-01-x.md)", "[X](cap-02-y.md)"
+        ))
+        self._assert_fails(root, "catalog links it as CAP-01")
+
     def test_catalog_vs_fr_index_disagreement(self):
         # Point CAP-01's catalog Key requirements at FR-02, which the FR index
         # maps to CAP-02 (the reviewer's exact scenario).
