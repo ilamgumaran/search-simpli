@@ -9,6 +9,9 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
+## Standalone platform plan (2026-09-13)
+ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
+
 ## Goal
 
 Build toward a search solution that begins with files/folders and an LLM-friendly tool boundary, then evolves into a ground-up Zig hybrid lexical/semantic indexing platform.

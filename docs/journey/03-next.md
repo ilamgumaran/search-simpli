@@ -1,3 +1,9 @@
+# Next
+
+**From 2026-09-13 (owner's decision): Search Simpli becomes standalone and portable, then the family app adopts it.** See `docs/decisions/0002-standalone-portable-platform.md` and the tasks in `docs/tasks/` (S1-T0 C ABI + libraries, S1-T1 native chunker/Unicode analyzer/CLI, S1-T2 Dart FFI package, S1-T3 incremental folder indexing). Round A (S1-T0 + S1-T1) starts Thursday 17 Sep after 23:00 ET, orchestrated from the `vizhi-family-helper` session; process in `docs/process/ROLES.md`.
+
+---
+
 # Next — the live queue
 
 Updated: 2026-07-31. Keep this short and current. The full backlog with *why* and
