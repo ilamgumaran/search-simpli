@@ -58,7 +58,7 @@ pub fn handleLine(
     };
 
     if (std.mem.eql(u8, method, "search_knowledge")) {
-        try handleSearch(service, id, params, workspaces, output);
+        try handleSearch(service, allocator, id, params, workspaces, output);
     } else if (std.mem.eql(u8, method, "read_chunk")) {
         try handleRead(service, id, params, output);
     } else if (std.mem.eql(u8, method, "list_sources")) {
@@ -76,6 +76,7 @@ pub fn handleLine(
 
 fn handleSearch(
     service: service_module.Service,
+    allocator: std.mem.Allocator,
     id: ?std.json.Value,
     params: std.json.ObjectMap,
     workspaces: Workspaces,
@@ -136,6 +137,7 @@ fn handleSearch(
         return;
     };
     const evidence = service.searchKnowledge(
+        allocator,
         query,
         query_vector,
         .{

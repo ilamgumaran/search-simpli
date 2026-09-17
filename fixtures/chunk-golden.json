@@ -1,0 +1,853 @@
+{
+ "chunker_id": "line-window-v1",
+ "max_chars": 1600,
+ "overlap_lines": 3,
+ "files": [
+  {
+   "root": "fixtures/knowledge",
+   "path": "hybrid-search.md",
+   "chunks": [
+    {
+     "id": "c893fe6a24b419aca806",
+     "start_line": 1,
+     "end_line": 7,
+     "text": "# Hybrid search\n\nLexical search is precise when a query contains names, identifiers, quoted phrases, or rare terms. A BM25-style inverted index is a strong default.\n\nSemantic search compares embedding vectors. It can retrieve passages that express a related meaning with different words, but it needs a real embedding model and careful evaluation.\n\nThe first hybrid implementation should retrieve candidates independently and combine their ranks with reciprocal-rank fusion. Fusion avoids pretending that BM25 and cosine scores share the same scale. Later, a reranker can inspect the strongest candidates."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/knowledge",
+   "path": "llm-contract.md",
+   "chunks": [
+    {
+     "id": "b8678dee0a5fff6b7d6f",
+     "start_line": 1,
+     "end_line": 5,
+     "text": "# LLM retrieval contract\n\nThe model receives evidence, not unrestricted filesystem access. Each result contains a stable chunk id, a relative path, a line range, the passage text, and ranking metadata.\n\nThe answer layer must cite its evidence and state when retrieval is insufficient. Tool calls should support a path prefix so an agent can narrow the search to a repository, skill, or permission boundary."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/semantic-knowledge",
+   "path": "target/automobile.md",
+   "chunks": [
+    {
+     "id": "748045a15d8c7832bf59",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "An automobile is a vehicle with wheels and an engine used for travel on a road."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/semantic-knowledge",
+   "path": "target/physician.md",
+   "chunks": [
+    {
+     "id": "d0e0888038142f8619a1",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "A physician is a medical professional who diagnoses illness and treats a patient in a clinic."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/semantic-knowledge",
+   "path": "training/car.md",
+   "chunks": [
+    {
+     "id": "2063dda7206d6a1b74fb",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "A car is a vehicle with wheels and an engine used for travel on a road."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/semantic-knowledge",
+   "path": "training/doctor.md",
+   "chunks": [
+    {
+     "id": "c9e7bef535241a77ae7e",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "A doctor is a medical professional who diagnoses illness and treats a patient in a clinic."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/semantic-knowledge",
+   "path": "unrelated/orchard.md",
+   "chunks": [
+    {
+     "id": "a80a1e6d18b59f2a8580",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "An apple is a fruit that grows on a tree in an orchard and is harvested in autumn."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "agents/citations.md",
+   "chunks": [
+    {
+     "id": "7cb52bff1c17226c6bd4",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "A grounded answer includes the retrieved passage together with its source path and line range. The model should cite those locations for factual claims. When the evidence does not support an answer, it should say that the available sources are insufficient instead of inventing a response."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "agents/security.md",
+   "chunks": [
+    {
+     "id": "10b56a4e5acbe904501b",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Indexed text is untrusted data and may contain prompt-injection instructions. The agent must not treat retrieved prose as system authority. Authenticated access labels must filter both lexical and vector candidates before ranking, and an out-of-scope chunk identifier must not bypass the same authorization check during reads."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "astronomy/exoplanets.md",
+   "chunks": [
+    {
+     "id": "441c4081b14c9ff689f9",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "An exoplanet is a world orbiting a star beyond our Solar System. Astronomers often discover one when it periodically dims its host star during a transit or when its gravity causes the star to wobble."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "cooking/bread.md",
+   "chunks": [
+    {
+     "id": "2afee9186baea4164614",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Bread dough rises because yeast consumes sugars and releases carbon dioxide. Gluten traps the gas while fermentation develops flavor. After proofing, heat in the oven expands the bubbles and sets the loaf's structure."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "languages/zig.md",
+   "chunks": [
+    {
+     "id": "6e22dfd0ebb3b650a2e3",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Zig is a compiled systems programming language with explicit allocation, predictable control flow, C interoperability, and no hidden garbage collector. Those properties suit binary index formats, memory-mapped segments, postings traversal, and latency-sensitive search services."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "medicine/cardiology.md",
+   "chunks": [
+    {
+     "id": "2300336acd36154e890d",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "A cardiologist is a physician who diagnoses and treats diseases of the heart and blood vessels. Cardiology includes management of abnormal rhythms, coronary artery disease, heart failure, and cardiovascular risk."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "operations/measurement.md",
+   "chunks": [
+    {
+     "id": "fad62dd7a35e9c0826d8",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Search evaluation tracks recall at a cutoff, success rate, reciprocal rank of the first relevant result, and per-query failures. Production telemetry separates extraction, embedding, lexical retrieval, vector retrieval, fusion, and answer-generation latency so optimization targets the measured bottleneck."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "search/embeddings.md",
+   "chunks": [
+    {
+     "id": "b4c81222dc73de5b3a71",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Document and query vectors are comparable only when they come from the same embedding artifact. A safe index records the model identity, dimensions, tokenizer or runtime contract, and an immutable generation. Model rotation builds new document vectors before query routing switches to the new fingerprint."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "search/hybrid.md",
+   "chunks": [
+    {
+     "id": "73328a08b81f198da5b8",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Hybrid retrieval runs exact lexical ranking and dense semantic ranking independently. Reciprocal rank fusion combines their rank positions without assuming that BM25 and cosine scores share a numeric scale. Candidate depth controls how far down each channel may influence the fused list."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "search/postings.md",
+   "chunks": [
+    {
+     "id": "8757c56d9b01c6e8b171",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "An inverted index maps each normalized term to a postings list of document identifiers, term frequencies, and optional positions. Query evaluation visits the postings for matching terms instead of scanning every document. Block-level upper bounds can later skip ranges that cannot enter the top results."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "storage/atomic-publication.md",
+   "chunks": [
+    {
+     "id": "298a304221cabe993fad",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Crash-safe publication writes immutable index sections under generation-specific names, synchronizes their contents, and then atomically replaces a small manifest. Readers open only the generation selected by that manifest, so they observe either the complete old snapshot or the complete new snapshot."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "storage/compaction.md",
+   "chunks": [
+    {
+     "id": "1de62201ca72618c6be2",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Incremental indexing creates multiple immutable segments. Background compaction merges smaller segments, applies tombstones for deleted documents, and publishes the merged generation. Old files can be reclaimed only after no reader can still reference their snapshot."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/mixed-knowledge",
+   "path": "transport/rail.md",
+   "chunks": [
+    {
+     "id": "ac44ea443c778fa43960",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "A locomotive supplies the power that moves a train. It pulls or pushes passenger coaches and freight wagons along railway tracks, using electric motors, diesel engines, or other propulsion systems."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/access-knowledge",
+   "path": "private/engineering/design.md",
+   "chunks": [
+    {
+     "id": "6a055a6c21fe3a2a1391",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "The restricted engine design contains a secret propulsion mechanism."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/access-knowledge",
+   "path": "private/general/plan.md",
+   "chunks": [
+    {
+     "id": "a23caa8c12fc935ca499",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "The confidential launch plan contains tenant details and internal timing."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/access-knowledge",
+   "path": "public/guide.md",
+   "chunks": [
+    {
+     "id": "80d89f212e9ded139099",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "The public launch guide describes ordinary preparation and communication."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00001.md",
+   "chunks": [
+    {
+     "id": "08baa0e4bea593168fee",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Red ceramic table lamp\nCategory: Lighting / Table Lamps\nDescription: Red glazed ceramic bedside table lamp with a linen shade."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00002.md",
+   "chunks": [
+    {
+     "id": "29ec4c1c3072014b34e6",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Ceramic lamp shade replacement\nCategory: Lighting / Lamp Parts\nDescription: Replacement ceramic shade for a small table lamp."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00003.md",
+   "chunks": [
+    {
+     "id": "821387e43d11abd55e20",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Queen sleeper sofa bed\nCategory: Furniture / Living Room / Sleeper Sofas\nDescription: Queen size convertible sofa bed with a memory foam mattress."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00004.md",
+   "chunks": [
+    {
+     "id": "e2e49f2f5f16916ca0ed",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Modular sectional sofa\nCategory: Furniture / Living Room / Sectionals\nDescription: Large upholstered sectional sofa for a family room."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00005.md",
+   "chunks": [
+    {
+     "id": "d04d3be383d6acb9ea1e",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Stainless steel 7 quart slow cooker\nCategory: Kitchen / Slow Cookers\nDescription: Programmable seven quart stainless steel slow cooker with keep-warm mode."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00006.md",
+   "chunks": [
+    {
+     "id": "fa69efab89e6c59b1138",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Electric pressure cooker\nCategory: Kitchen / Pressure Cookers\nDescription: Six quart electric pressure cooker with a slow-cook setting."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00007.md",
+   "chunks": [
+    {
+     "id": "ef2323170dbd2d7aab03",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Dinosaur wall decal for kids room\nCategory: Decor / Kids Wall Decor\nDescription: Removable green dinosaur wall decal set for a child bedroom."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00008.md",
+   "chunks": [
+    {
+     "id": "4aafe9db7139944da0e4",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Dinosaur area rug\nCategory: Decor / Kids Rugs\nDescription: Colorful dinosaur floor rug for a child playroom."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00009.md",
+   "chunks": [
+    {
+     "id": "f297c3b29b02ef524e4f",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Blue cotton bath towel\nCategory: Bath / Towels\nDescription: Absorbent blue cotton towel for a bathroom."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/relevance-smoke/corpus",
+   "path": "product-00010.md",
+   "chunks": [
+    {
+     "id": "fc5c54c0e66283518131",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Product: Oak writing desk\nCategory: Furniture / Office / Desks\nDescription: Solid oak writing desk with two drawers."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "SOURCE.md",
+   "chunks": [
+    {
+     "id": "e2c13cfaf752b63fda3e",
+     "start_line": 1,
+     "end_line": 26,
+     "text": "# Vendored source: simpli-helper app text fixtures (S1-T1)\n\nCopied from `~/workspace/simpli-helper/packages/vizhi_core/test/fixtures/`\n(text/markdown only) for the golden `line-window-v1` chunker conformance run\nagainst non-fixture, non-Search-Simpli text. All content is invented test\nmaterial written for the app's own test suite; nothing here is real family\ndata, a photo, or OCR output.\n\nCopied:\n- `context/corpus.txt` — a short invented reading passage.\n- `context/persona/*.md` — short invented persona-voice instruction snippets.\n- `learn/*.md` — invented grade 4-6 practice-set samples (see `learn/README.md`\n  there for what they mirror).\n- `tutoring/rubric.md` — an invented scoring rubric for a model-comparison\n  fixture.\n\nDeliberately **not** copied, even though they are `.txt`/`.md`: `family/`,\n`memory/` (named for the family/session-memory wall this repo does not touch),\n`ocr/*.txt` and `video/*.txt` (OCR/video-transcript derived, excluded by the\ntask's \"no OCR\" rule even in text form), and `safety/*.txt` (adversarial\nsafety-classifier prompts — invented, but not representative \"app text\" and\nnot appropriate to redistribute in a public search-fixture corpus).\n\nRe-vendor by re-running the same copy if the app's fixtures change; there is\nno automation here, matching how `fixtures/knowledge` etc. are hand-maintained\nin this repo."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "context/corpus.txt",
+   "chunks": [
+    {
+     "id": "45c841d61c5e1009690a",
+     "start_line": 1,
+     "end_line": 7,
+     "text": "A big red bus goes down the road. It is late for the stop, so it must\ngo fast. Kids wait at the curb with their bags and coats on. The sky is\ngrey and a bit of rain has just begun to fall. One kid runs to get a spot\nnear the front, and a pal saves a seat for her. When the bus door opens,\nthey hop in and find a dry seat at last. The trip to school is short, but\nit goes past a farm, a shop, and a big oak tree. They talk and laugh the\nwhole way, glad the long wait is over."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "context/persona/coco-voice.md",
+   "chunks": [
+    {
+     "id": "61f6626fcf1bf02ce727",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Use short, cheerful sentences."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "context/persona/summarize.md",
+   "chunks": [
+    {
+     "id": "a9d5bf898a33693e8886",
+     "start_line": 1,
+     "end_line": 5,
+     "text": "Summarize the following older turns of a conversation for your own memory. Keep:\nwhat was asked, what was answered, what remains open, any facts the user stated\nabout what they are working on. Do not quote anyone. Do not record feelings as\ncontent; a topic and a date is enough. Do not mention other people by name.\nWrite at most {max_tokens} tokens as a plain list."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "context/persona/vizhi-core.md",
+   "chunks": [
+    {
+     "id": "c385fedbdeb9b2b9be2f",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "You are a calm, careful learning helper. Speak plainly and stay factual."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "context/persona/walls.md",
+   "chunks": [
+    {
+     "id": "1009a17e153cb07f9bd7",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Be safe. Be kind. Never share personal details."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "learn/README.md",
+   "chunks": [
+    {
+     "id": "f4ff40cf8ad708ee7476",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "Invented practice-set samples mirroring the format the family's Mac sessions\nproduce (headings per subject, numbered items, `Answer:` lines). Names and\ncontent are invented; no real assignment text. Builders of M6-T2 add three\nsamples here (`sample-math.md`, `sample-science.md`, `sample-ela.md`)."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "learn/sample-ela.md",
+   "chunks": [
+    {
+     "id": "ab91b3ed6db0efd1ebea",
+     "start_line": 1,
+     "end_line": 20,
+     "text": "# Week 3 ELA Practice\n\n## Vocabulary\n1. What is a synonym for \"happy\"?\nAnswer: joyful\n\n2. What is an antonym for \"brave\"?\nAnswer: cowardly\n\n## Grammar\n3. Which word in this sentence is the verb: \"The clever fox jumped over the fence.\"?\nAnswer: jumped\n\n## Reading Response\n4. Explain why the invented character Mira might have felt nervous on her first day at a new school.\nAnswer: A new school is unfamiliar, so a character might worry about making friends or not knowing the routine.\n\n## Spelling\n5. Spell the word that means \"a large group of ships traveling together.\"\nAnswer: fleet"
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "learn/sample-math.md",
+   "chunks": [
+    {
+     "id": "fa2a56e5ef8430e675a6",
+     "start_line": 1,
+     "end_line": 23,
+     "text": "# Week 3 Math Practice\n\n## Fractions\n1. What is 1/2 + 1/4?\nAnswer: 3/4\n\n2. Simplify 6/8 to lowest terms.\nAnswer: 3/4\n\n## Decimals\n3. Round 3.14159 to two decimal places.\nAnswer: 3.14 (±0.01)\n\n## Shapes\n4. Which shape has exactly three sides?\nA) Square\nB) Triangle\nC) Hexagon\nAnswer: B\n\n## Word Problems\n5. Explain how you would find the perimeter of a rectangle that is 5 cm by 3 cm.\nAnswer: Add all four sides, or use 2×(length+width): 2×(5+3) = 16 cm."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "learn/sample-science.md",
+   "chunks": [
+    {
+     "id": "335f8d95aa51e895dfc8",
+     "start_line": 1,
+     "end_line": 22,
+     "text": "# Week 3 Science Practice\n\n## The Solar System\n1. Which planet is known as the Red Planet?\nA) Venus\nB) Mars\nC) Jupiter\nAnswer: B\n\n2. How many planets are in our solar system?\nAnswer: 8\n\n## States of Matter\n3. Name the three common states of matter.\nAnswer: solid, liquid, gas\n\n4. Explain why an ice cube melts when it is left out on a warm day.\nAnswer: Heat energy from the room transfers into the ice, raising its temperature until it changes from solid to liquid.\n\n## Invented Habitat Study\n5. A made-up desert critter called a \"sandhopper\" only comes out at night. What is this behavior called?\nAnswer: nocturnal"
+    }
+   ]
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "tutoring/rubric.md",
+   "chunks": [
+    {
+     "id": "ed6507d481e58dde6861",
+     "start_line": 1,
+     "end_line": 30,
+     "text": "# Tutoring fixture rubric (M1-T4)\n\nUsed by `tools/models/measure_candidates.sh` (via\n`packages/vizhi_core/bin/measure_candidates.dart`) to score each candidate\nmodel's replies to `questions.json` (10 invented grade 4-6 maths/science/ELA\nquestions) when run through `LlamaCppProvider` with the kid system prompt\nfrom `PersonaLoader`, for `docs/decisions/ADR-004-initial-models.md`.\n\nEach answer is scored **0, 1, or 2** against three checks:\n\n1. **Correct.** Does the reply's content line up with `referenceAnswer` --\n   for a question that wants a direct answer, does it state (a form of) the\n   right answer; for a `withholdAnswer` question, does it guide toward the\n   right idea without flatly stating the final answer.\n2. **Kid-appropriate.** Plain language a grade 4-6 learner can follow, no\n   jargon dump, tone matching `persona/coco-voice.md` (warm, brief,\n   encouraging) -- not necessarily verbatim, since a small local model\n   won't reproduce persona style perfectly, but not cold, sarcastic, or\n   clearly aimed at an adult either.\n3. **Doesn't hand over the answer when told not to.** Only scored against\n   questions where `withholdAnswer: true`. A question with\n   `withholdAnswer: false` is exempt from this check (never penalized on\n   it).\n\n**Score:**\n- **2** -- meets all applicable checks.\n- **1** -- meets most checks with a minor miss (a small factual slip, a\n  slightly adult tone, or a `withholdAnswer` question that hints strongly\n  but doesn't quite avoid saying the final number/word).\n- **0** -- wrong, inappropriate, incoherent/empty, or a `withholdAnswer`"
+    },
+    {
+     "id": "4b19aaae4fe97c4e3c12",
+     "start_line": 28,
+     "end_line": 43,
+     "text": "slightly adult tone, or a `withholdAnswer` question that hints strongly\n  but doesn't quite avoid saying the final number/word).\n- **0** -- wrong, inappropriate, incoherent/empty, or a `withholdAnswer`\n  question answered flatly anyway.\n\nScoring is done by the builder reading each candidate's actual transcript\n(recorded by the measurement script under\n`tools/models/measurements/<model-name>.json`) against this rubric --\ngrading a small local model's free-text reply for \"kid-appropriate tone\" is\nnot something worth automating with another heuristic, and the transcripts\nare committed so the scores are checkable by anyone re-reading them.\n\nA **pass rate** is reported per model as\n`(count of score >= 1) / 10` (partial credit counts as passing; only a 0 is\na fixture failure) alongside the mean score out of 2, so ADR-004 has both a\nstrict and a lenient number to cite."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "judgments.json",
+   "chunks": [
+    {
+     "id": "b739e83b917c8aaecb70",
+     "start_line": 1,
+     "end_line": 16,
+     "text": "{\n  \"version\": 1,\n  \"note\": \"Invented Tamil short passages and judged queries for S1-T1's analyzer-v2 Tamil end-to-end proof. Ten distinct topics, one distinguishing content word per topic used as the judged query.\",\n  \"queries\": [\n    { \"id\": \"tamil-weather\", \"query\": \"மழை\", \"relevant\": [{ \"path\": \"passages/passage-01-weather.md\" }] },\n    { \"id\": \"tamil-school\", \"query\": \"ஆசிரியர்\", \"relevant\": [{ \"path\": \"passages/passage-02-school.md\" }] },\n    { \"id\": \"tamil-food\", \"query\": \"இட்லி\", \"relevant\": [{ \"path\": \"passages/passage-03-food.md\" }] },\n    { \"id\": \"tamil-animals\", \"query\": \"யானை\", \"relevant\": [{ \"path\": \"passages/passage-04-animals.md\" }] },\n    { \"id\": \"tamil-festival\", \"query\": \"பொங்கல்\", \"relevant\": [{ \"path\": \"passages/passage-05-festival.md\" }] },\n    { \"id\": \"tamil-transport\", \"query\": \"ரயில்கள்\", \"relevant\": [{ \"path\": \"passages/passage-06-transport.md\" }] },\n    { \"id\": \"tamil-market\", \"query\": \"காய்கறிகள்\", \"relevant\": [{ \"path\": \"passages/passage-07-market.md\" }] },\n    { \"id\": \"tamil-health\", \"query\": \"உடற்பயிற்சி\", \"relevant\": [{ \"path\": \"passages/passage-08-health.md\" }] },\n    { \"id\": \"tamil-music\", \"query\": \"வீணை\", \"relevant\": [{ \"path\": \"passages/passage-09-music.md\" }] },\n    { \"id\": \"tamil-library\", \"query\": \"நூலகம்\", \"relevant\": [{ \"path\": \"passages/passage-10-library.md\" }] }\n  ]\n}"
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-01-weather.md",
+   "chunks": [
+    {
+     "id": "99074336b741f00e281d",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# வானிலை\n\nஇன்று வானம் மேகமூட்டமாக உள்ளது. மழை பெய்யும் என்று எதிர்பார்க்கப்படுகிறது.\nகுளிர்காற்று வீசுகிறது. குடை எடுத்துக்கொண்டு வெளியே செல்வது நல்லது."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-02-school.md",
+   "chunks": [
+    {
+     "id": "9f647ae3593374e5ba3a",
+     "start_line": 1,
+     "end_line": 5,
+     "text": "# பள்ளி\n\nமாணவர்கள் காலையில் பள்ளிக்குச் செல்கிறார்கள். ஆசிரியர் புதிய பாடத்தை\nகற்பிக்கிறார். மாணவர்கள் கவனமாகக் கேட்கிறார்கள். வகுப்பறையில் அமைதி\nநிலவுகிறது."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-03-food.md",
+   "chunks": [
+    {
+     "id": "2839bfaf09d3e5c63d5e",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# உணவு\n\nதமிழக உணவில் சாதம் மற்றும் சாம்பார் முக்கியமானவை. காலை உணவிற்கு இட்லி\nமற்றும் தோசை பிரபலமானவை. இனிப்பு வகைகளில் பாயசம் சிறந்தது."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-04-animals.md",
+   "chunks": [
+    {
+     "id": "80a2c85c5cf94224a5df",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# விலங்குகள்\n\nகாட்டில் பல வகையான விலங்குகள் வாழ்கின்றன. யானை மற்றும் புலி பெரிய\nவிலங்குகள். சிறிய பறவைகள் மரங்களில் கூடு கட்டுகின்றன."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-05-festival.md",
+   "chunks": [
+    {
+     "id": "7d526fb43a066183c796",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# பண்டிகை\n\nபொங்கல் தமிழர்களின் முக்கிய பண்டிகை. இது அறுவடைக் காலத்தில்\nகொண்டாடப்படுகிறது. மக்கள் புதிய அரிசியில் பொங்கல் வைக்கிறார்கள்."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-06-transport.md",
+   "chunks": [
+    {
+     "id": "fcea91b5bef30361d04e",
+     "start_line": 1,
+     "end_line": 5,
+     "text": "# போக்குவரத்து\n\nநகரத்தில் பேருந்துகள் மற்றும் ரயில்கள் இயங்குகின்றன. மக்கள் வேலைக்குச்\nசெல்ல பொதுப் போக்குவரத்தைப் பயன்படுத்துகிறார்கள். சாலைகளில் வாகன\nநெரிசல் அதிகமாக உள்ளது."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-07-market.md",
+   "chunks": [
+    {
+     "id": "ae77afd7d44a6b2d7370",
+     "start_line": 1,
+     "end_line": 5,
+     "text": "# சந்தை\n\nகாலை சந்தையில் புதிய காய்கறிகள் விற்கப்படுகின்றன. விவசாயிகள் தங்கள்\nவிளைபொருட்களைக் கொண்டு வருகிறார்கள். மக்கள் விலை பேசி பொருட்களை\nவாங்குகிறார்கள்."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-08-health.md",
+   "chunks": [
+    {
+     "id": "550f64b1cee8ea47ed72",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# ஆரோக்கியம்\n\nதினமும் உடற்பயிற்சி செய்வது ஆரோக்கியத்திற்கு நல்லது. சத்தான உணவு\nஉண்பது முக்கியம். போதுமான தூக்கம் உடலுக்கு ஓய்வு அளிக்கிறது."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-09-music.md",
+   "chunks": [
+    {
+     "id": "3d6b9263142d9aa95919",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# இசை\n\nதமிழிசையில் கர்நாடக இசை ஒரு முக்கியப் பகுதி. மிருதங்கம் மற்றும் வீணை\nபாரம்பரிய இசைக்கருவிகள். பாடகர்கள் கோவில் திருவிழாக்களில் பாடுகிறார்கள்."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/tamil",
+   "path": "passages/passage-10-library.md",
+   "chunks": [
+    {
+     "id": "eed3ef02788ec4fe3fd4",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# நூலகம்\n\nநூலகத்தில் பல வகையான புத்தகங்கள் உள்ளன. மாணவர்கள் அமைதியாக படிக்கிறார்கள்.\nபுதிய புத்தகங்கள் ஒவ்வொரு மாதமும் வந்து சேர்கின்றன."
+    }
+   ]
+  },
+  {
+   "root": "fixtures/chunk-stress",
+   "path": "long.md",
+   "chunks": [
+    {
+     "id": "d088be20664490280a03",
+     "start_line": 1,
+     "end_line": 11,
+     "text": "# Chunker stress fixture (S1-T1)\n\nLine 001: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 002: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 003: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 004: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 005: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 006: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 007: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 008: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 009: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "764d29a369eb28c998a9",
+     "start_line": 9,
+     "end_line": 18,
+     "text": "Line 007: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 008: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 009: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 010: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 011: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 012: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 013: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 014: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 015: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 016: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "17609d8a702981e5e98f",
+     "start_line": 16,
+     "end_line": 25,
+     "text": "Line 014: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 015: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 016: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 017: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 018: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 019: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 020: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 021: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 022: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 023: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "d61145f8390debc863a4",
+     "start_line": 23,
+     "end_line": 32,
+     "text": "Line 021: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 022: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 023: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 024: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 025: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 026: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 027: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 028: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 029: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 030: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "704b542eaee9e6a97e44",
+     "start_line": 30,
+     "end_line": 39,
+     "text": "Line 028: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 029: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 030: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 031: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 032: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 033: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 034: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 035: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 036: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 037: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "e19bf0af771a9434c55f",
+     "start_line": 37,
+     "end_line": 46,
+     "text": "Line 035: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 036: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 037: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 038: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 039: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 040: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 041: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 042: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 043: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 044: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "4142d9982d50ec9f34d1",
+     "start_line": 44,
+     "end_line": 53,
+     "text": "Line 042: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 043: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 044: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 045: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 046: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 047: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 048: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 049: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 050: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 051: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "b6cecc5cc2e5c99e856c",
+     "start_line": 51,
+     "end_line": 60,
+     "text": "Line 049: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 050: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 051: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 052: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 053: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 054: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 055: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 056: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 057: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 058: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "c43ee6e772298316969b",
+     "start_line": 58,
+     "end_line": 67,
+     "text": "Line 056: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 057: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 058: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 059: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 060: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 061: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 062: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 063: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 064: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 065: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "7c0842e439c58160adb7",
+     "start_line": 65,
+     "end_line": 74,
+     "text": "Line 063: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 064: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 065: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 066: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 067: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 068: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 069: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 070: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 071: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 072: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "73513d0f1fa8091678ba",
+     "start_line": 72,
+     "end_line": 81,
+     "text": "Line 070: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 071: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 072: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 073: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 074: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 075: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 076: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 077: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 078: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 079: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "0b796cd43039728aef22",
+     "start_line": 79,
+     "end_line": 88,
+     "text": "Line 077: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 078: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 079: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 080: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 081: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 082: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 083: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 084: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 085: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 086: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "f3d4d2becbb6ed37fcd9",
+     "start_line": 86,
+     "end_line": 95,
+     "text": "Line 084: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 085: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 086: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 087: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 088: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 089: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 090: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 091: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 092: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 093: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "e92cf006b39b62044570",
+     "start_line": 93,
+     "end_line": 102,
+     "text": "Line 091: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 092: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 093: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 094: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 095: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 096: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 097: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 098: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 099: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 100: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "9a8cb6f1bfd9328c8ef2",
+     "start_line": 100,
+     "end_line": 109,
+     "text": "Line 098: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 099: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 100: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 101: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 102: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 103: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 104: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 105: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 106: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 107: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "298bcb53ccb0049f31dc",
+     "start_line": 107,
+     "end_line": 116,
+     "text": "Line 105: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 106: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 107: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 108: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 109: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 110: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 111: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 112: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 113: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 114: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "a8bd5e446589b0fbc56f",
+     "start_line": 114,
+     "end_line": 123,
+     "text": "Line 112: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 113: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 114: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 115: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 116: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 117: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 118: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 119: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 120: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 121: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "187a10a1c69e8e624631",
+     "start_line": 121,
+     "end_line": 130,
+     "text": "Line 119: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 120: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 121: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 122: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 123: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 124: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 125: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 126: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 127: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 128: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "c3e8946f953fa58b5797",
+     "start_line": 128,
+     "end_line": 137,
+     "text": "Line 126: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 127: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 128: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 129: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 130: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 131: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 132: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 133: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 134: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 135: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "85b44324b9b4343189b6",
+     "start_line": 135,
+     "end_line": 144,
+     "text": "Line 133: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 134: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 135: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 136: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 137: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 138: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 139: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 140: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 141: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 142: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "04c4211824da228cd9a7",
+     "start_line": 142,
+     "end_line": 151,
+     "text": "Line 140: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 141: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 142: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 143: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 144: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 145: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 146: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 147: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 148: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 149: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "aa7452c8e1d3931d5517",
+     "start_line": 149,
+     "end_line": 158,
+     "text": "Line 147: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 148: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 149: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 150: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 151: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 152: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 153: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 154: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 155: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 156: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "c643fd7c4768b8cffcb5",
+     "start_line": 156,
+     "end_line": 165,
+     "text": "Line 154: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 155: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 156: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 157: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 158: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 159: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 160: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 161: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 162: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 163: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "c74e495a9f3432d23640",
+     "start_line": 163,
+     "end_line": 172,
+     "text": "Line 161: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 162: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 163: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 164: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 165: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 166: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 167: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 168: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 169: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 170: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "08ad2506b2f1a9fb5422",
+     "start_line": 170,
+     "end_line": 179,
+     "text": "Line 168: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 169: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 170: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 171: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 172: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 173: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 174: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 175: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 176: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 177: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "c4c9369b51a9520e3098",
+     "start_line": 177,
+     "end_line": 186,
+     "text": "Line 175: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 176: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 177: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 178: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 179: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 180: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 181: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 182: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 183: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 184: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "75bb09ed6b3752814f31",
+     "start_line": 184,
+     "end_line": 193,
+     "text": "Line 182: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 183: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 184: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 185: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 186: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 187: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 188: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 189: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 190: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 191: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "45d4e4612a27bc837ad0",
+     "start_line": 191,
+     "end_line": 200,
+     "text": "Line 189: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 190: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 191: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 192: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 193: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 194: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 195: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 196: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 197: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 198: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    },
+    {
+     "id": "610bac7226622a33c90a",
+     "start_line": 198,
+     "end_line": 202,
+     "text": "Line 196: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 197: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 198: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 199: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 200: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries."
+    }
+   ]
+  }
+ ]
+}

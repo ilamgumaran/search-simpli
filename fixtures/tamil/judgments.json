@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "note": "Invented Tamil short passages and judged queries for S1-T1's analyzer-v2 Tamil end-to-end proof. Ten distinct topics, one distinguishing content word per topic used as the judged query.",
+  "queries": [
+    { "id": "tamil-weather", "query": "மழை", "relevant": [{ "path": "passages/passage-01-weather.md" }] },
+    { "id": "tamil-school", "query": "ஆசிரியர்", "relevant": [{ "path": "passages/passage-02-school.md" }] },
+    { "id": "tamil-food", "query": "இட்லி", "relevant": [{ "path": "passages/passage-03-food.md" }] },
+    { "id": "tamil-animals", "query": "யானை", "relevant": [{ "path": "passages/passage-04-animals.md" }] },
+    { "id": "tamil-festival", "query": "பொங்கல்", "relevant": [{ "path": "passages/passage-05-festival.md" }] },
+    { "id": "tamil-transport", "query": "ரயில்கள்", "relevant": [{ "path": "passages/passage-06-transport.md" }] },
+    { "id": "tamil-market", "query": "காய்கறிகள்", "relevant": [{ "path": "passages/passage-07-market.md" }] },
+    { "id": "tamil-health", "query": "உடற்பயிற்சி", "relevant": [{ "path": "passages/passage-08-health.md" }] },
+    { "id": "tamil-music", "query": "வீணை", "relevant": [{ "path": "passages/passage-09-music.md" }] },
+    { "id": "tamil-library", "query": "நூலகம்", "relevant": [{ "path": "passages/passage-10-library.md" }] }
+  ]
+}

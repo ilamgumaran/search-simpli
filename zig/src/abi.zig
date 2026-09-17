@@ -298,7 +298,14 @@ fn queryImpl(
     const evidence = try allocator.alloc(engine_module.Evidence, document_count);
     defer allocator.free(evidence);
 
-    const found = try service.searchKnowledge(query_text, effective_vector, .{
+    // S1-T1 threaded an allocator through `searchKnowledge` so query
+    // tokenization dispatches on the snapshot's `analyzer_id`
+    // (`Engine.queryTokenized`): an `analyzer-v2` snapshot has to NFC-normalise
+    // and Unicode-tokenize the query text, which allocates. The per-call arena
+    // above already owns everything this call needs and is torn down before
+    // `ss_query` returns, so the ABI keeps its "no hidden allocator, nothing
+    // retained between calls" contract.
+    const found = try service.searchKnowledge(arena.allocator(), query_text, effective_vector, .{
         .top_k = top_k,
         .candidate_k = candidate_k,
         .retrieval_mode = mode,
@@ -527,7 +534,7 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     var scores: [documents.len]f32 = undefined;
     var results: [documents.len]hybrid.Result = undefined;
     var evidence_storage: [documents.len]engine_module.Evidence = undefined;
-    const evidence = try service.searchKnowledge("hybrid", &query_vector, .{ .top_k = 1 }, &scores, &results, &evidence_storage);
+    const evidence = try service.searchKnowledge(std.testing.allocator, "hybrid", &query_vector, .{ .top_k = 1 }, &scores, &results, &evidence_storage);
     var golden: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer golden.deinit();
     var golden_json = std.json.Stringify{ .writer = &golden.writer };
