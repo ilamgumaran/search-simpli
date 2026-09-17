@@ -110,6 +110,92 @@ zig build -Doptimize=ReleaseFast
 ./zig-out/bin/searchd benchmark 8000 32 51 hybrid
 ```
 
+## Standalone
+
+`searchd` also runs with **no Python and no third-party dependencies at
+all**: a single static binary indexes a folder of UTF-8 text, markdown, or
+source files, chunks and tokenizes it natively in Zig, and serves BM25
+queries from the published index (S1-T1, ADR 0002).
+
+Install nothing beyond the binary itself:
+
+```sh
+# Build once (see "Binaries" below for prebuilt sizes), then:
+searchd index ./my-notes --out .search/native-index
+searchd query .search/native-index "how does hybrid ranking work"
+searchd query .search/native-index "how does hybrid ranking work" --json
+searchd evidence .search/native-index "how does hybrid ranking work" --top-k 3
+```
+
+`index` walks the folder (skipping `.git/`, `.search/`, `.zig-cache/`,
+`__pycache__/`, `node_modules/`, `zig-out/`, and any dotfile/dotdirectory --
+the same rules as the Python reference's `DEFAULT_EXTENSIONS`/
+`IGNORED_DIRECTORIES`), chunks each file with the `line-window-v1` chunker
+(byte-for-byte identical to `search_platform.core._line_chunks` -- see the
+golden conformance test, `zig/src/chunker_test.zig`), and publishes a
+lexical-only snapshot (no embeddings; `embedding_model_id` is `"none"`).
+`query`/`evidence` then run BM25 against that snapshot. Both commands accept
+`--top-k N`; `query` additionally accepts `--json` for machine-readable
+output, and `evidence` always emits a JSON evidence envelope (citation,
+content, and scores) intended for an LLM tool call.
+
+**Two analyzers**, selected with `--analyzer` at index time and recorded in
+the manifest so query time picks the matching tokenizer automatically:
+
+- `analyzer-v1` (default before this task; still available): ASCII-only
+  letters and digits, ASCII case folding.
+- `analyzer-v2` (default now): Unicode-aware -- NFC normalization, Unicode
+  general-category letters (Lu/Ll/Lt/Lm/Lo) and digits (Nd/Nl/No), and
+  simple per-codepoint case folding. Tables are generated from Python's own
+  `unicodedata` module (Unicode 13.0.0; see `scripts/gen_unicode_tables.py`
+  and `zig/src/unicode_tables.zig`), since Zig 0.16's `std.unicode` carries
+  no category, case-folding, or normalization data of its own. Tamil is the
+  first proven non-Latin corpus: `fixtures/tamil/` has ten invented short
+  passages with judged queries, and every one of them retrieves its own
+  passage as the top hit end to end through `searchd index`/`query`.
+
+`serve <dir>` is unchanged: JSON-RPC 2.0 requests, one per line, on
+stdin/stdout. `serve <dir> --http 127.0.0.1:<port>` additionally accepts the
+same JSON-RPC request as an HTTP POST body on a loopback-only address (any
+other host is refused) and returns the JSON-RPC response as the HTTP body --
+useful for a local tool or browser call without opening a stdio pipe. Both
+serving modes, and the RPC `search_knowledge` method behind them, dispatch
+query tokenization by the snapshot's recorded analyzer, so `analyzer-v2`
+snapshots are queried correctly over RPC and HTTP too, not just through the
+`query`/`evidence` CLI commands.
+
+### Binaries
+
+One static binary per platform, built with `zig build -Doptimize=ReleaseSafe
+-Dtarget=<target> -p dist/<platform>` from the pinned Zig 0.16.0 toolchain,
+no sysroot required (ADR 0002):
+
+| Platform | Target triple | Size |
+|---|---|---|
+| macOS (Apple Silicon) | `aarch64-macos` | 0.81 MiB (851,080 bytes; ±32 bytes seen between rebuilds, presumably a build-metadata artifact) |
+| Linux x86_64 | `x86_64-linux-musl` | 5.05 MiB (5,293,344 bytes; statically linked, confirmed with `file`) |
+
+(This binary calls no libc functions, so plain `x86_64-linux` (glibc) also
+comes out statically linked and the same size here — `x86_64-linux-musl` is
+recorded as the conventional, unambiguous way to ask Zig for a static Linux
+binary in general, not because glibc failed to produce one for this specific
+program. See `docs/tasks/S1-T1.md` for the side-by-side check.)
+
+(macOS binaries always link the OS-provided `libSystem.dylib`, which is the
+platform's floor for "static" -- there is no fully static executable format
+on macOS. The Linux binary has no dynamic dependencies at all.)
+
+Measured on a 1,000-file, ~3.9 MB invented-text corpus (generated with
+`scripts/gen_timing_corpus.py`, not committed):
+
+| Operation | Analyzer | Time (3 runs, `/usr/bin/time -p`) |
+|---|---|---|
+| `index` (1,000 files, 1,021 chunks) | `analyzer-v2` | 0.28s / 0.08s / 0.08s wall (first run pays cold-disk cost) |
+| `index` (1,000 files, 1,021 chunks) | `analyzer-v1` | 0.05s wall |
+| `query` (top-5, over the 1,021-chunk index) | either | <0.01s wall |
+
+See `docs/tasks/S1-T1.md` for the exact commands and full pasted output.
+
 ## Measured status
 
 Performance and relevance baselines were recorded locally on 2026-07-12; the

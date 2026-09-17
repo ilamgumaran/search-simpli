@@ -3,4 +3,7 @@ __pycache__/
 .pytest_cache/
 .search/
 zig/.zig-cache/
+zig/.zig-cache*/
 zig/zig-out/
+zig/dist/
+zig/dist-check/
