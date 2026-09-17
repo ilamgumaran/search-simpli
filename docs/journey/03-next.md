@@ -1,6 +1,15 @@
 # Next
 
-**From 2026-09-13 (owner's decision): Search Simpli becomes standalone and portable, then the family app adopts it.** See `docs/decisions/0002-standalone-portable-platform.md` and the tasks in `docs/tasks/` (S1-T0 C ABI + libraries, S1-T1 native chunker/Unicode analyzer/CLI, S1-T2 Dart FFI package, S1-T3 incremental folder indexing). Round A (S1-T0 + S1-T1) starts Thursday 17 Sep after 23:00 ET, orchestrated from the `vizhi-family-helper` session; process in `docs/process/ROLES.md`.
+**From 2026-09-13 (owner's decision): Search Simpli becomes standalone and portable, then the family app adopts it.** See `docs/decisions/0002-standalone-portable-platform.md` and the tasks in `docs/tasks/` (S1-T0 C ABI + libraries, S1-T1 native chunker/Unicode analyzer/CLI, S1-T2 Dart FFI package, S1-T3 incremental folder indexing). Process in `docs/process/ROLES.md`.
+
+**Round A is done (17 Sep).** S1-T0 and S1-T1 are `verified` and merged to `main` (`3466083`, `3a17af8`). The engine has a C ABI and static/shared libraries for macOS arm64, Android arm64, and Linux x86_64; `searchd index/query/evidence/serve` indexes a folder natively with `analyzer-v2` (NFC, Unicode categories, case folding) and `line-window-v1`, both conformant to the Python reference (85/85 chunks, 36/36 full BM25 rankings, Tamil 10/10). Numbers, sizes, and the carried-forward gaps are in `PROJECT-STATE.md`'s "Standalone platform status" and in each task file's Verdict.
+
+**Round B is S1-T2 + S1-T3.**
+
+- **S1-T2 — Dart FFI package** under `bindings/dart/` (Android arm64 + macOS arm64 prebuilt), over the S1-T0 ABI, pinning `contracts/CONTRACTS_VERSION` and running the same conformance fixtures every other binding runs. This is what lets `simpli-helper` (M12-T0) drop its Dart lexical port for the real engine.
+- **S1-T3 — incremental folder indexing in the core**: content hashes, tombstones, rescan on demand. It should also close round A's sharpest rough edge — `searchd index` today cannot re-publish into an output directory that already holds that generation, failing with a bare `error: PathAlreadyExists` unless `--generation N` is passed, which is precisely the case incremental indexing exists to handle.
+
+Two round-A findings are worth folding into round B's planning rather than leaving as loose ends: `lexical_build.build`'s linear per-token term scan (9.69 s for 1,000 files at a realistic 20,000-word vocabulary, vs 0.08 s for the low-vocabulary timing corpus) should become a hash map before a binding points the core at a real folder; and `analyzer-v2`'s case folding is simple rather than full, so `ß`, `ﬁ`, `ﬀ`, and `İ` do not fold — fine for the current fixtures, a decision to make explicit before the app ships it.
 
 ---
 
