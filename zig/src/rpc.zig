@@ -248,6 +248,21 @@ fn writeSearchResult(
     var json = std.json.Stringify{ .writer = output };
     try responseStart(&json, id);
     try json.objectField("result");
+    try writeSearchResultValue(&json, service, query, mode, principal_label_count, evidence);
+    try json.endObject();
+}
+
+/// The `result` value of a `search_knowledge` JSON-RPC response, factored out
+/// so the C ABI (`abi.zig`'s `ss_query`) emits byte-identical JSON for the
+/// same query without duplicating the field layout.
+pub fn writeSearchResultValue(
+    json: *std.json.Stringify,
+    service: service_module.Service,
+    query: []const u8,
+    mode: hybrid.RetrievalMode,
+    principal_label_count: usize,
+    evidence: []const engine_module.Evidence,
+) !void {
     try json.beginObject();
     try json.objectField("tool");
     try json.write("search_knowledge");
@@ -324,7 +339,6 @@ fn writeSearchResult(
         .say_when_evidence_is_insufficient = true,
     });
     try json.endObject();
-    try json.endObject();
 }
 
 fn writeStatus(output: *std.Io.Writer, id: ?std.json.Value, status: service_module.Status) !void {
@@ -335,7 +349,9 @@ fn writeStatus(output: *std.Io.Writer, id: ?std.json.Value, status: service_modu
     try json.endObject();
 }
 
-fn writeChunkFields(json: *std.json.Stringify, chunk: service_module.Chunk) !void {
+/// The fields of one chunk (chunk_id, citation, content), factored out so the
+/// C ABI's `ss_evidence` shares this exact field layout with `read_chunk`.
+pub fn writeChunkFields(json: *std.json.Stringify, chunk: service_module.Chunk) !void {
     try json.objectField("chunk_id");
     try json.write(chunk.chunk_id);
     try json.objectField("citation");
@@ -423,7 +439,9 @@ fn parsePrincipalLabels(
     return labels;
 }
 
-fn parseMode(value: []const u8) ?hybrid.RetrievalMode {
+/// Shared with the C ABI (`abi.zig`) so `ss_query`'s `retrieval_mode` option
+/// accepts exactly the same three strings as `search_knowledge`.
+pub fn parseMode(value: []const u8) ?hybrid.RetrievalMode {
     if (std.mem.eql(u8, value, "lexical")) return .lexical;
     if (std.mem.eql(u8, value, "vector")) return .vector;
     if (std.mem.eql(u8, value, "hybrid")) return .hybrid;

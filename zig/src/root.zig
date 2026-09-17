@@ -12,6 +12,7 @@ pub const service = @import("service.zig");
 pub const rpc = @import("rpc.zig");
 pub const importer = @import("importer.zig");
 pub const benchmark = @import("benchmark.zig");
+pub const abi = @import("abi.zig");
 
 pub const Bm25Parameters = scoring.Bm25Parameters;
 pub const bm25Contribution = scoring.bm25Contribution;
@@ -33,6 +34,7 @@ comptime {
     _ = rpc.handleLine;
     _ = importer.importJson;
     _ = benchmark.run;
+    _ = abi.ss_open;
 }
 
 test "load every engine module test suite" {
@@ -50,4 +52,5 @@ test "load every engine module test suite" {
     _ = rpc;
     _ = importer;
     _ = benchmark;
+    _ = abi;
 }
