@@ -12,6 +12,13 @@ pub const service = @import("service.zig");
 pub const rpc = @import("rpc.zig");
 pub const importer = @import("importer.zig");
 pub const benchmark = @import("benchmark.zig");
+pub const unicode_tables = @import("unicode_tables.zig");
+pub const nfc = @import("nfc.zig");
+pub const chunker = @import("chunker.zig");
+pub const analyzer_v2 = @import("analyzer_v2.zig");
+pub const lexical_build = @import("lexical_build.zig");
+pub const indexer = @import("indexer.zig");
+pub const chunker_golden_test = @import("chunker_test.zig");
 
 pub const Bm25Parameters = scoring.Bm25Parameters;
 pub const bm25Contribution = scoring.bm25Contribution;
@@ -33,6 +40,10 @@ comptime {
     _ = rpc.handleLine;
     _ = importer.importJson;
     _ = benchmark.run;
+    _ = chunker.chunk;
+    _ = analyzer_v2.tokenize;
+    _ = lexical_build.build;
+    _ = indexer.indexFolder;
 }
 
 test "load every engine module test suite" {
@@ -50,4 +61,11 @@ test "load every engine module test suite" {
     _ = rpc;
     _ = importer;
     _ = benchmark;
+    _ = unicode_tables;
+    _ = nfc;
+    _ = chunker;
+    _ = analyzer_v2;
+    _ = lexical_build;
+    _ = indexer;
+    _ = chunker_golden_test;
 }

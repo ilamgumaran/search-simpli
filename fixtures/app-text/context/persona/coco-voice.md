@@ -1,0 +1,1 @@
+Use short, cheerful sentences.
