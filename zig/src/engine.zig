@@ -1,4 +1,6 @@
+const analyzer_v2 = @import("analyzer_v2.zig");
 const hybrid = @import("hybrid.zig");
+const lexical_build = @import("lexical_build.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
@@ -63,6 +65,38 @@ pub const Engine = struct {
         options: hybrid.SearchOptions,
     ) ![]hybrid.Result {
         const lexical_scores = try postings.scoreQuery(engine.lexical_index, query_text, lexical_score_output, options.bm25);
+        return hybrid.searchWithLexicalScores(query_vector, engine.documents, lexical_scores, result_output, options);
+    }
+
+    /// Like `query`, but dispatches tokenization by `engine.analyzer_id`
+    /// instead of assuming `analysis.zig`'s ASCII tokenizer (S1-T1,
+    /// `searchd index`/`query`/`evidence`/`serve` on natively-indexed
+    /// folders). `analyzer-v1`-labeled snapshots (native ASCII, lowercased
+    /// at index time) and legacy `ascii-alnum-v1`/`ascii-v1` snapshots both
+    /// still match case-insensitively through the existing `query` path
+    /// (`postings.scoreQuery` case-folds at lookup), so only `analyzer-v2`
+    /// needs a different tokenizer here. `allocator` is used only for the
+    /// `analyzer-v2` case (NFC + Unicode tokenization of the query text);
+    /// callers on a one-shot CLI path or a per-request arena may pass any
+    /// allocator.
+    pub fn queryTokenized(
+        engine: Engine,
+        allocator: std.mem.Allocator,
+        query_text: []const u8,
+        query_vector: []const f32,
+        lexical_score_output: []f32,
+        result_output: []hybrid.Result,
+        options: hybrid.SearchOptions,
+    ) ![]hybrid.Result {
+        if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id)) {
+            return engine.query(query_text, query_vector, lexical_score_output, result_output, options);
+        }
+        const tokens = try analyzer_v2.tokenize(allocator, query_text);
+        defer {
+            for (tokens) |token| allocator.free(token);
+            allocator.free(tokens);
+        }
+        const lexical_scores = try lexical_build.scoreQuery(engine.lexical_index, tokens, lexical_score_output, options.bm25);
         return hybrid.searchWithLexicalScores(query_vector, engine.documents, lexical_scores, result_output, options);
     }
 

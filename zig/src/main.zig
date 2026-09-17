@@ -1,7 +1,10 @@
 const engine_module = @import("engine.zig");
 const benchmark = @import("benchmark.zig");
+const chunker = @import("chunker.zig");
+const cli = @import("cli.zig");
 const hybrid = @import("hybrid.zig");
 const importer = @import("importer.zig");
+const indexer = @import("indexer.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const lifecycle = @import("lifecycle.zig");
 const manifest = @import("manifest.zig");
@@ -46,29 +49,148 @@ pub fn main(init: std.process.Init) !void {
     }
     if (std.mem.eql(u8, command, "serve")) {
         const path = arguments.next() orelse return error.MissingSnapshotDirectory;
-        try serveSnapshot(init.io, init.gpa, path);
+        var http_address: ?[]const u8 = null;
+        while (arguments.next()) |flag| {
+            if (std.mem.eql(u8, flag, "--http")) {
+                http_address = arguments.next() orelse return error.MissingHttpAddress;
+            } else {
+                std.debug.print("unknown serve flag: {s}\n", .{flag});
+                return error.InvalidArgument;
+            }
+        }
+        if (http_address) |address| {
+            try serveHttp(init.io, init.gpa, path, address);
+        } else {
+            try serveSnapshot(init.io, init.gpa, path);
+        }
+        return;
+    }
+    if (std.mem.eql(u8, command, "index")) {
+        try runIndexCommand(init.io, init.gpa, &arguments);
+        return;
+    }
+    if (std.mem.eql(u8, command, "query")) {
+        try runQueryCommand(init.io, init.gpa, &arguments);
+        return;
+    }
+    if (std.mem.eql(u8, command, "evidence")) {
+        try runEvidenceCommand(init.io, init.gpa, &arguments);
         return;
     }
     std.debug.print("unknown command: {s}\n", .{command});
     printHelp();
 }
 
+fn runIndexCommand(io: std.Io, allocator: std.mem.Allocator, arguments: *std.process.Args.Iterator) !void {
+    const folder = arguments.next() orelse return error.MissingFolder;
+    var options = cli.IndexOptions{};
+    var out_path: ?[]const u8 = null;
+    while (arguments.next()) |flag| {
+        if (std.mem.eql(u8, flag, "--out")) {
+            out_path = arguments.next() orelse return error.MissingOutDirectory;
+        } else if (std.mem.eql(u8, flag, "--analyzer")) {
+            const value = arguments.next() orelse return error.MissingAnalyzer;
+            options.analyzer = indexer.AnalyzerId.parse(value) orelse return error.InvalidAnalyzer;
+        } else if (std.mem.eql(u8, flag, "--max-chars")) {
+            options.max_chars = try parsePositiveUsize(arguments.next() orelse return error.MissingMaxChars);
+        } else if (std.mem.eql(u8, flag, "--overlap-lines")) {
+            options.overlap_lines = try parseUsize(arguments.next() orelse return error.MissingOverlapLines);
+        } else if (std.mem.eql(u8, flag, "--generation")) {
+            options.generation = try std.fmt.parseInt(u64, arguments.next() orelse return error.MissingGeneration, 10);
+        } else {
+            std.debug.print("unknown index flag: {s}\n", .{flag});
+            return error.InvalidArgument;
+        }
+    }
+    const out = out_path orelse return error.MissingOutDirectory;
+
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writerStreaming(io, &stdout_buffer);
+    try cli.runIndex(io, allocator, folder, out, options, &stdout_writer.interface);
+    try stdout_writer.flush();
+}
+
+fn parseQueryFlags(arguments: *std.process.Args.Iterator) !cli.QueryOptions {
+    var options = cli.QueryOptions{};
+    while (arguments.next()) |flag| {
+        if (std.mem.eql(u8, flag, "--json")) {
+            options.json = true;
+        } else if (std.mem.eql(u8, flag, "--top-k")) {
+            options.top_k = try parsePositiveUsize(arguments.next() orelse return error.MissingTopK);
+        } else {
+            std.debug.print("unknown query flag: {s}\n", .{flag});
+            return error.InvalidArgument;
+        }
+    }
+    return options;
+}
+
+fn runQueryCommand(io: std.Io, allocator: std.mem.Allocator, arguments: *std.process.Args.Iterator) !void {
+    const path = arguments.next() orelse return error.MissingSnapshotDirectory;
+    const query_text = arguments.next() orelse return error.MissingQueryText;
+    const options = try parseQueryFlags(arguments);
+
+    var stdout_buffer: [8192]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writerStreaming(io, &stdout_buffer);
+    try cli.runQuery(io, allocator, path, query_text, options, &stdout_writer.interface);
+    try stdout_writer.flush();
+}
+
+fn runEvidenceCommand(io: std.Io, allocator: std.mem.Allocator, arguments: *std.process.Args.Iterator) !void {
+    const path = arguments.next() orelse return error.MissingSnapshotDirectory;
+    const query_text = arguments.next() orelse return error.MissingQueryText;
+    const options = try parseQueryFlags(arguments);
+
+    var stdout_buffer: [8192]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writerStreaming(io, &stdout_buffer);
+    try cli.runEvidence(io, allocator, path, query_text, options, &stdout_writer.interface);
+    try stdout_writer.flush();
+}
+
 fn printHelp() void {
     std.debug.print(
-        \\searchd — Zig hybrid search engine
+        \\searchd — standalone Zig hybrid search engine and indexer
         \\
         \\Commands:
+        \\  index <folder> --out <dir> [--analyzer v1|v2] [--max-chars N]
+        \\                       [--overlap-lines N] [--generation N]
+        \\                       chunk (line-window-v1) and index UTF-8
+        \\                       text/markdown/source files under <folder>,
+        \\                       natively (no Python), and publish a
+        \\                       lexical-only snapshot to <dir>. --analyzer
+        \\                       selects the tokenizer/analyzer id recorded in
+        \\                       the manifest: v1 is ASCII-only (analyzer-v1),
+        \\                       v2 is Unicode-aware (analyzer-v2, NFC +
+        \\                       case folding + Unicode letter/digit
+        \\                       categories; default).
+        \\  query <dir> "<text>" [--json] [--top-k N]
+        \\                       BM25 lexical query against a published
+        \\                       snapshot; human-readable by default, or a
+        \\                       JSON result list with --json.
+        \\  evidence <dir> "<text>" [--top-k N]
+        \\                       same query, always emitted as a JSON
+        \\                       evidence envelope (citation + content +
+        \\                       scores) intended for an LLM tool call.
+        \\  serve <dir> [--http 127.0.0.1:<port>]
+        \\                       serve JSON-RPC 2.0 requests. With no
+        \\                       --http, reads requests as newline-delimited
+        \\                       JSON on stdin and writes responses to
+        \\                       stdout (unchanged). With --http, additionally
+        \\                       accepts one JSON-RPC request per HTTP POST
+        \\                       body on the given loopback address/port
+        \\                       (127.0.0.1 only; refuses any other host).
         \\  demo                 run an in-memory cited hybrid query
         \\  benchmark <docs> <dimensions> <queries> <mode>
         \\                       benchmark the real in-memory engine query path
         \\  init-demo <dir>      publish a small persistent demo snapshot
         \\  import-json <dir> <file>
         \\                       import neutral JSON and publish a snapshot
-        \\  serve <dir>          serve JSON-RPC 2.0 requests on stdin/stdout
         \\  help                 show this message
         \\
         \\Vector/hybrid RPC requests must provide a query_vector matching the
         \\embedding dimensions recorded by the snapshot. Lexical mode does not.
+        \\`index` never produces vectors (embedding_model_id "none"); its
+        \\snapshots only support lexical (BM25) queries.
         \\
     , .{});
 }
@@ -161,7 +283,12 @@ fn initDemoSnapshot(io: std.Io, path: []const u8) !void {
     std.debug.print("published demo generation 1 to {s}\n", .{path});
 }
 
-fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !void {
+const ServeContext = struct {
+    service: service_module.Service,
+    workspaces: rpc.Workspaces,
+};
+
+fn openServeContext(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !ServeContext {
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
 
@@ -170,28 +297,20 @@ fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !vo
     manifest_file.close(io);
     const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
     const manifest_buffer = try allocator.alloc(u8, manifest_size);
-    defer allocator.free(manifest_buffer);
     const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
     const metadata = try manifest.decode(manifest_encoded);
 
     const documents_buffer = try allocator.alloc(u8, metadata.documents_bytes);
-    defer allocator.free(documents_buffer);
     const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
-    defer allocator.free(lexical_buffer);
     const snapshot = try publication.loadCurrent(dir, io, manifest_buffer, documents_buffer, lexical_buffer);
 
     const documents = try allocator.alloc(hybrid.Document, metadata.document_count);
-    defer allocator.free(documents);
     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch
         return error.IndexTooLarge;
     const vectors = try allocator.alloc(f32, vector_count);
-    defer allocator.free(vectors);
     const terms = try allocator.alloc(postings.TermEntry, metadata.term_count);
-    defer allocator.free(terms);
     const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
-    defer allocator.free(posting_storage);
     const document_lengths = try allocator.alloc(u32, metadata.document_count);
-    defer allocator.free(document_lengths);
     const opened = try engine_module.Engine.open(
         snapshot,
         documents,
@@ -203,15 +322,10 @@ fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !vo
     const service = service_module.Service{ .engine = opened };
 
     const query_vector = try allocator.alloc(f32, metadata.vector_dimensions);
-    defer allocator.free(query_vector);
     const lexical_scores = try allocator.alloc(f32, metadata.document_count);
-    defer allocator.free(lexical_scores);
     const results = try allocator.alloc(hybrid.Result, metadata.document_count);
-    defer allocator.free(results);
     const evidence = try allocator.alloc(engine_module.Evidence, metadata.document_count);
-    defer allocator.free(evidence);
     const sources = try allocator.alloc(service_module.Source, metadata.document_count);
-    defer allocator.free(sources);
     const workspaces = rpc.Workspaces{
         .query_vector = query_vector,
         .lexical_scores = lexical_scores,
@@ -219,6 +333,13 @@ fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !vo
         .evidence = evidence,
         .sources = sources,
     };
+    return .{ .service = service, .workspaces = workspaces };
+}
+
+fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !void {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const context = try openServeContext(io, arena_state.allocator(), path);
 
     const request_buffer = try allocator.alloc(u8, 1024 * 1024);
     defer allocator.free(request_buffer);
@@ -231,10 +352,98 @@ fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !vo
         if (std.mem.trim(u8, line, " \t\r").len == 0) continue;
         var arena = std.heap.ArenaAllocator.init(allocator);
         defer arena.deinit();
-        try rpc.handleLine(service, line, arena.allocator(), workspaces, &stdout_writer.interface);
+        try rpc.handleLine(context.service, line, arena.allocator(), context.workspaces, &stdout_writer.interface);
         try stdout_writer.interface.writeByte('\n');
         try stdout_writer.flush();
     }
+}
+
+/// `serve <dir> --http 127.0.0.1:<port>`: a minimal, loopback-only HTTP
+/// front end over the same JSON-RPC handler as stdio `serve`. One
+/// connection at a time (accept, read exactly one request, write exactly
+/// one response, close); enough to let a local tool or browser issue a
+/// request without opening a stdio pipe, without taking on a concurrent
+/// server's complexity for a task about indexing, not serving. Only
+/// 127.0.0.1 is accepted (an explicit host check, not just bind-address
+/// discipline), matching the task's "local only" requirement.
+fn serveHttp(io: std.Io, allocator: std.mem.Allocator, path: []const u8, address_text: []const u8) !void {
+    const colon = std.mem.lastIndexOfScalar(u8, address_text, ':') orelse return error.InvalidHttpAddress;
+    const host = address_text[0..colon];
+    if (!std.mem.eql(u8, host, "127.0.0.1") and !std.mem.eql(u8, host, "localhost")) {
+        std.debug.print("refusing non-loopback --http host: {s} (only 127.0.0.1/localhost are allowed)\n", .{host});
+        return error.NonLoopbackHttpHost;
+    }
+    const port = try std.fmt.parseInt(u16, address_text[colon + 1 ..], 10);
+
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const context = try openServeContext(io, arena_state.allocator(), path);
+
+    var loopback = std.Io.net.IpAddress.fromIp6(std.Io.net.Ip6Address.fromIp4(std.Io.net.Ip4Address.loopback(port)));
+    var server = try loopback.listen(io, .{});
+    defer server.deinit(io);
+    std.debug.print("serving http://127.0.0.1:{d} (POST a JSON-RPC request body to any path)\n", .{port});
+
+    while (true) {
+        var stream = server.accept(io) catch |err| {
+            std.debug.print("accept failed: {t}\n", .{err});
+            continue;
+        };
+        defer stream.close(io);
+        handleHttpConnection(io, allocator, context, stream) catch |err| {
+            std.debug.print("http connection error: {t}\n", .{err});
+        };
+    }
+}
+
+fn handleHttpConnection(
+    io: std.Io,
+    allocator: std.mem.Allocator,
+    context: ServeContext,
+    stream: std.Io.net.Stream,
+) !void {
+    var read_buffer: [64 * 1024]u8 = undefined;
+    var stream_reader = stream.reader(io, &read_buffer);
+    var write_buffer: [64 * 1024]u8 = undefined;
+    var stream_writer = stream.writer(io, &write_buffer);
+
+    // Minimal request parse: read the header block, pull Content-Length,
+    // then read exactly that many body bytes. No keep-alive, no chunked
+    // transfer encoding, no routing by path -- any method/path with a
+    // JSON-RPC body works, matching this server's single purpose.
+    const header_end = try stream_reader.interface.takeDelimiterInclusive('\n');
+    _ = header_end; // request line, ignored (method/path/version not inspected)
+    var content_length: usize = 0;
+    while (true) {
+        const header_line = stream_reader.interface.takeDelimiterInclusive('\n') catch break;
+        const trimmed = std.mem.trim(u8, header_line, " \t\r\n");
+        if (trimmed.len == 0) break;
+        if (std.ascii.startsWithIgnoreCase(trimmed, "content-length:")) {
+            const value = std.mem.trim(u8, trimmed["content-length:".len..], " \t");
+            content_length = std.fmt.parseInt(usize, value, 10) catch 0;
+        }
+    }
+
+    var response_storage: [64 * 1024]u8 = undefined;
+    var response_writer = std.Io.Writer.fixed(&response_storage);
+    if (content_length == 0 or content_length > read_buffer.len) {
+        try response_writer.writeAll("{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"Parse error\"}}");
+    } else {
+        const body = try allocator.alloc(u8, content_length);
+        defer allocator.free(body);
+        try stream_reader.interface.readSliceAll(body);
+        var arena = std.heap.ArenaAllocator.init(allocator);
+        defer arena.deinit();
+        try rpc.handleLine(context.service, body, arena.allocator(), context.workspaces, &response_writer);
+    }
+    const body_written = response_writer.buffered();
+
+    try stream_writer.interface.print(
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {d}\r\nConnection: close\r\n\r\n",
+        .{body_written.len},
+    );
+    try stream_writer.interface.writeAll(body_written);
+    try stream_writer.interface.flush();
 }
 
 fn demoDocuments() [3]hybrid.Document {

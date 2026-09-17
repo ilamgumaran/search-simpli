@@ -18,7 +18,9 @@ pub const chunker = @import("chunker.zig");
 pub const analyzer_v2 = @import("analyzer_v2.zig");
 pub const lexical_build = @import("lexical_build.zig");
 pub const indexer = @import("indexer.zig");
+pub const snapshot_open = @import("snapshot_open.zig");
 pub const chunker_golden_test = @import("chunker_test.zig");
+pub const bm25_conformance_test = @import("bm25_conformance_test.zig");
 
 pub const Bm25Parameters = scoring.Bm25Parameters;
 pub const bm25Contribution = scoring.bm25Contribution;
@@ -67,5 +69,7 @@ test "load every engine module test suite" {
     _ = analyzer_v2;
     _ = lexical_build;
     _ = indexer;
+    _ = snapshot_open;
     _ = chunker_golden_test;
+    _ = bm25_conformance_test;
 }

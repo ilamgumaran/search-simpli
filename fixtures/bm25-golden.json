@@ -1,0 +1,884 @@
+{
+ "bm25": {
+  "k1": 1.2,
+  "b": 0.75
+ },
+ "app_text": [
+  {
+   "query": "Fractions",
+   "ranking": [
+    {
+     "path": "learn/sample-math.md",
+     "start_line": 1,
+     "end_line": 23,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 2.2031592116998455
+    }
+   ]
+  },
+  {
+   "query": "ANSWER",
+   "ranking": [
+    {
+     "path": "learn/sample-math.md",
+     "start_line": 1,
+     "end_line": 23,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 1.5369749976830833
+    },
+    {
+     "path": "learn/sample-ela.md",
+     "start_line": 1,
+     "end_line": 20,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 1.5182025185980217
+    },
+    {
+     "path": "learn/sample-science.md",
+     "start_line": 1,
+     "end_line": 22,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 1.4908881510808003
+    },
+    {
+     "path": "tutoring/rubric.md",
+     "start_line": 1,
+     "end_line": 30,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 1.2445808712740083
+    },
+    {
+     "path": "learn/README.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 1.089044546601485
+    }
+   ]
+  },
+  {
+   "query": "shapes",
+   "ranking": [
+    {
+     "path": "learn/sample-math.md",
+     "start_line": 1,
+     "end_line": 23,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 2.2031592116998455
+    }
+   ]
+  },
+  {
+   "query": "Decimals",
+   "ranking": [
+    {
+     "path": "learn/sample-math.md",
+     "start_line": 1,
+     "end_line": 23,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 2.2031592116998455
+    }
+   ]
+  },
+  {
+   "query": "practice",
+   "ranking": [
+    {
+     "path": "learn/README.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 1.089044546601485
+    },
+    {
+     "path": "learn/sample-math.md",
+     "start_line": 1,
+     "end_line": 23,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 0.87759859418268
+    },
+    {
+     "path": "learn/sample-ela.md",
+     "start_line": 1,
+     "end_line": 20,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.8476745567157776
+    },
+    {
+     "path": "learn/sample-science.md",
+     "start_line": 1,
+     "end_line": 22,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.806428593678284
+    },
+    {
+     "path": "SOURCE.md",
+     "start_line": 1,
+     "end_line": 26,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.5754340180732738
+    }
+   ]
+  },
+  {
+   "query": "Persona",
+   "ranking": [
+    {
+     "path": "SOURCE.md",
+     "start_line": 1,
+     "end_line": 26,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 1.6914356217892195
+    },
+    {
+     "path": "tutoring/rubric.md",
+     "start_line": 1,
+     "end_line": 30,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 1.5760420313897867
+    }
+   ]
+  },
+  {
+   "query": "learner",
+   "ranking": [
+    {
+     "path": "tutoring/rubric.md",
+     "start_line": 1,
+     "end_line": 30,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 1.3186843487895556
+    }
+   ]
+  },
+  {
+   "query": "Rubric",
+   "ranking": [
+    {
+     "path": "SOURCE.md",
+     "start_line": 1,
+     "end_line": 26,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 1.3462330929385635
+    },
+    {
+     "path": "tutoring/rubric.md",
+     "start_line": 28,
+     "end_line": 43,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 1.0967462471124765
+    },
+    {
+     "path": "tutoring/rubric.md",
+     "start_line": 1,
+     "end_line": 30,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.8012837576113384
+    }
+   ]
+  }
+ ],
+ "tamil": [
+  {
+   "query": "மழை",
+   "ranking": [
+    {
+     "path": "passage-01-weather.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 1.9420347579787496
+    }
+   ]
+  },
+  {
+   "query": "ஆசிரியர்",
+   "ranking": [
+    {
+     "path": "passage-02-school.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 4.1294734719047765
+    },
+    {
+     "path": "passage-07-market.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 0.2430748267253368
+    },
+    {
+     "path": "passage-10-library.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.2346929361486011
+    },
+    {
+     "path": "passage-09-music.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.23000906967410795
+    },
+    {
+     "path": "passage-01-weather.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.22728742672503224
+    },
+    {
+     "path": "passage-06-transport.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015151515151515152,
+     "lexical_rank": 6,
+     "lexical_score": 0.2203349691142742
+    },
+    {
+     "path": "passage-03-food.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014925373134328358,
+     "lexical_rank": 7,
+     "lexical_score": 0.15690217531953127
+    },
+    {
+     "path": "passage-04-animals.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014705882352941176,
+     "lexical_rank": 8,
+     "lexical_score": 0.1507453930651025
+    },
+    {
+     "path": "passage-05-festival.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014492753623188406,
+     "lexical_rank": 9,
+     "lexical_score": 0.1507453930651025
+    }
+   ]
+  },
+  {
+   "query": "இட்லி",
+   "ranking": [
+    {
+     "path": "passage-03-food.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 2.3875803756840113
+    },
+    {
+     "path": "passage-06-transport.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 0.2690479161744446
+    },
+    {
+     "path": "passage-02-school.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.24540395594727732
+    },
+    {
+     "path": "passage-04-animals.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.23374096371965866
+    },
+    {
+     "path": "passage-09-music.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.23000906967410795
+    },
+    {
+     "path": "passage-07-market.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015151515151515152,
+     "lexical_rank": 6,
+     "lexical_score": 0.22462943966613763
+    },
+    {
+     "path": "passage-05-festival.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014925373134328358,
+     "lexical_rank": 7,
+     "lexical_score": 0.2054609184300684
+    },
+    {
+     "path": "passage-01-weather.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014705882352941176,
+     "lexical_rank": 8,
+     "lexical_score": 0.19804653083636103
+    },
+    {
+     "path": "passage-10-library.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014492753623188406,
+     "lexical_rank": 9,
+     "lexical_score": 0.15193778938922445
+    }
+   ]
+  },
+  {
+   "query": "யானை",
+   "ranking": [
+    {
+     "path": "passage-04-animals.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 1.0972216488303126
+    },
+    {
+     "path": "passage-10-library.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 0.9523902902085593
+    },
+    {
+     "path": "passage-08-health.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.8068501800798658
+    },
+    {
+     "path": "passage-05-festival.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.8048891251789241
+    },
+    {
+     "path": "passage-07-market.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.7926472984158341
+    },
+    {
+     "path": "passage-01-weather.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015151515151515152,
+     "lexical_rank": 6,
+     "lexical_score": 0.7730317062236283
+    },
+    {
+     "path": "passage-02-school.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.014925373134328358,
+     "lexical_rank": 7,
+     "lexical_score": 0.39972664434530125
+    },
+    {
+     "path": "passage-09-music.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014705882352941176,
+     "lexical_rank": 8,
+     "lexical_score": 0.35377249905636043
+    },
+    {
+     "path": "passage-06-transport.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.014492753623188406,
+     "lexical_rank": 9,
+     "lexical_score": 0.3523361396944922
+    }
+   ]
+  },
+  {
+   "query": "பொங்கல்",
+   "ranking": [
+    {
+     "path": "passage-05-festival.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 4.942938757452612
+    },
+    {
+     "path": "passage-07-market.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 1.4897357276533336
+    },
+    {
+     "path": "passage-03-food.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.084503670029986
+    },
+    {
+     "path": "passage-06-transport.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.08307799854106576
+    },
+    {
+     "path": "passage-02-school.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.07787125053114588
+    },
+    {
+     "path": "passage-10-library.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015151515151515152,
+     "lexical_rank": 6,
+     "lexical_score": 0.07447244425287229
+    },
+    {
+     "path": "passage-09-music.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014925373134328358,
+     "lexical_rank": 7,
+     "lexical_score": 0.07298616609455258
+    },
+    {
+     "path": "passage-04-animals.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014705882352941176,
+     "lexical_rank": 8,
+     "lexical_score": 0.0651965800293151
+    },
+    {
+     "path": "passage-01-weather.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014492753623188406,
+     "lexical_rank": 9,
+     "lexical_score": 0.06284385661205834
+    },
+    {
+     "path": "passage-08-health.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014285714285714285,
+     "lexical_rank": 10,
+     "lexical_score": 0.048212693299934724
+    }
+   ]
+  },
+  {
+   "query": "ரயில்கள்",
+   "ranking": [
+    {
+     "path": "passage-06-transport.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 2.5457354351164407
+    },
+    {
+     "path": "passage-07-market.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 0.7121728740616415
+    },
+    {
+     "path": "passage-04-animals.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.6956834787449354
+    },
+    {
+     "path": "passage-02-school.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.6769918410903479
+    },
+    {
+     "path": "passage-09-music.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.6657724145057493
+    },
+    {
+     "path": "passage-05-festival.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015151515151515152,
+     "lexical_rank": 6,
+     "lexical_score": 0.6165372917251416
+    },
+    {
+     "path": "passage-10-library.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014925373134328358,
+     "lexical_rank": 7,
+     "lexical_score": 0.5948427142767416
+    },
+    {
+     "path": "passage-03-food.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014705882352941176,
+     "lexical_rank": 8,
+     "lexical_score": 0.5311258789389982
+    },
+    {
+     "path": "passage-01-weather.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014492753623188406,
+     "lexical_rank": 9,
+     "lexical_score": 0.19804653083636103
+    }
+   ]
+  },
+  {
+   "query": "காய்கறிகள்",
+   "ranking": [
+    {
+     "path": "passage-07-market.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 2.415605962313455
+    },
+    {
+     "path": "passage-02-school.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 2.3652451419450724
+    },
+    {
+     "path": "passage-04-animals.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.9914161404406462
+    },
+    {
+     "path": "passage-10-library.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.9355686964115153
+    },
+    {
+     "path": "passage-05-festival.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.9140272063554471
+    },
+    {
+     "path": "passage-09-music.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015151515151515152,
+     "lexical_rank": 6,
+     "lexical_score": 0.8747430548800268
+    },
+    {
+     "path": "passage-06-transport.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.014925373134328358,
+     "lexical_rank": 7,
+     "lexical_score": 0.5335819178317116
+    },
+    {
+     "path": "passage-01-weather.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014705882352941176,
+     "lexical_rank": 8,
+     "lexical_score": 0.48952758689140907
+    },
+    {
+     "path": "passage-08-health.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014492753623188406,
+     "lexical_rank": 9,
+     "lexical_score": 0.3607981337278988
+    },
+    {
+     "path": "passage-03-food.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014285714285714285,
+     "lexical_rank": 10,
+     "lexical_score": 0.3569161006079128
+    }
+   ]
+  },
+  {
+   "query": "உடற்பயிற்சி",
+   "ranking": [
+    {
+     "path": "passage-08-health.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 4.26094777186562
+    },
+    {
+     "path": "passage-03-food.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 0.1566806077504952
+    },
+    {
+     "path": "passage-01-weather.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.14071510714320423
+    },
+    {
+     "path": "passage-02-school.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.13496639465658333
+    },
+    {
+     "path": "passage-06-transport.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.13027111079401454
+    },
+    {
+     "path": "passage-07-market.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015151515151515152,
+     "lexical_rank": 6,
+     "lexical_score": 0.11563260405025311
+    },
+    {
+     "path": "passage-04-animals.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014925373134328358,
+     "lexical_rank": 7,
+     "lexical_score": 0.11303090374457994
+    },
+    {
+     "path": "passage-09-music.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014705882352941176,
+     "lexical_rank": 8,
+     "lexical_score": 0.11020947388890788
+    },
+    {
+     "path": "passage-10-library.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014492753623188406,
+     "lexical_rank": 9,
+     "lexical_score": 0.09642538659986945
+    },
+    {
+     "path": "passage-05-festival.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014285714285714285,
+     "lexical_rank": 10,
+     "lexical_score": 0.0956686474305297
+    }
+   ]
+  },
+  {
+   "query": "வீணை",
+   "ranking": [
+    {
+     "path": "passage-09-music.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 1.3268607741563423
+    },
+    {
+     "path": "passage-01-weather.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 1.3027980350895545
+    },
+    {
+     "path": "passage-07-market.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 1.3018363514363094
+    },
+    {
+     "path": "passage-05-festival.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 1.184183924916544
+    },
+    {
+     "path": "passage-04-animals.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.44145794350085116
+    },
+    {
+     "path": "passage-06-transport.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015151515151515152,
+     "lexical_rank": 6,
+     "lexical_score": 0.3345055404214282
+    },
+    {
+     "path": "passage-08-health.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014925373134328358,
+     "lexical_rank": 7,
+     "lexical_score": 0.2672104813579155
+    },
+    {
+     "path": "passage-10-library.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.014705882352941176,
+     "lexical_rank": 8,
+     "lexical_score": 0.2672104813579155
+    }
+   ]
+  },
+  {
+   "query": "நூலகம்",
+   "ranking": [
+    {
+     "path": "passage-10-library.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.01639344262295082,
+     "lexical_rank": 1,
+     "lexical_score": 3.324324569370008
+    },
+    {
+     "path": "passage-06-transport.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.016129032258064516,
+     "lexical_rank": 2,
+     "lexical_score": 1.1596325661846805
+    },
+    {
+     "path": "passage-09-music.md",
+     "start_line": 1,
+     "end_line": 4,
+     "fused_score": 0.015873015873015872,
+     "lexical_rank": 3,
+     "lexical_score": 0.8910974293247009
+    },
+    {
+     "path": "passage-02-school.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.8712101499464839
+    }
+   ]
+  }
+ ]
+}
