@@ -31,9 +31,12 @@
 //!   handle is not.
 
 const std = @import("std");
+const chunker = @import("chunker.zig");
 const engine_module = @import("engine.zig");
+const generation_alloc = @import("generation_alloc.zig");
 const hybrid = @import("hybrid.zig");
 const importer = @import("importer.zig");
+const indexer = @import("indexer.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
@@ -457,6 +460,13 @@ fn errorCode(err: anyerror) i64 {
         error.InvalidRequiredLabel,
         error.DuplicateRequiredLabel,
         error.IndexTooLarge,
+        // S1-T3 (`ss_index_folder`): a folder with no indexable files, an
+        // unrecognized `opts.analyzer` value, or an `--update` run whose
+        // `out_dir` was already published with a different analyzer --
+        // all caller mistakes, not corruption or I/O.
+        error.NoDocuments,
+        error.InvalidAnalyzer,
+        error.AnalyzerMismatch,
         => SS_ERR_INVALID_ARGUMENT,
 
         else => SS_ERR_INTERNAL,
@@ -469,6 +479,209 @@ fn errorCode(err: anyerror) i64 {
 pub export fn ss_free(ptr: ?[*:0]u8) callconv(.c) void {
     if (ptr) |p| std.c.free(p);
 }
+
+// === S1-T3: ss_index_folder ================================================
+// Additive only (docs/tasks/S1-T3.md): appended at the end of the file so it
+// merges cleanly alongside S1-T2's Dart FFI package, which does not bind
+// this function.
+
+const IndexFolderOptions = struct {
+    /// `"analyzer-v1"`/`"v1"` or `"analyzer-v2"`/`"v2"` (default), same
+    /// spelling `indexer.AnalyzerId.parse` and `searchd index --analyzer`
+    /// accept.
+    analyzer: []const u8 = "analyzer-v2",
+    max_chars: ?usize = null,
+    overlap_lines: ?usize = null,
+    /// `false` (default): full rebuild, always publishing the next free
+    /// generation in `dir_path` (S1-T3 criterion 5 -- never
+    /// `PathAlreadyExists` on a directory that already holds a snapshot).
+    /// `true`: incremental update (`indexer.indexFolderIncremental`) --
+    /// content hashes, unchanged files skipped, deleted files tombstoned.
+    update: bool = false,
+    max_file_bytes: ?u64 = null,
+    max_total_bytes: ?u64 = null,
+};
+
+/// Index the folder at `folder_path` and atomically publish (or
+/// re-publish/update) a lexical-only snapshot into `dir_path` (created,
+/// including parent directories, if it does not already exist) -- the
+/// native-engine equivalent of `searchd index`/`searchd index --update`
+/// (S1-T3, `docs/tasks/S1-T3.md`).
+///
+/// This function mutates the directory identified by `dir_path` rather than
+/// operating on an already-`ss_open`-ed handle: indexing publishes a *new*
+/// generation, and a `Handle`'s decoded arrays are a snapshot of one
+/// specific already-published generation, so there is nothing for an open
+/// handle to do here that reopening afterward does not already cover. Close
+/// and reopen (`ss_close` + `ss_open`) any handle on `dir_path` after this
+/// call to see the new generation.
+///
+/// `opts_json` may be `NULL`/empty for defaults, or a JSON object with any
+/// of `analyzer`, `max_chars`, `overlap_lines`, `update`, `max_file_bytes`,
+/// `max_total_bytes` (see `IndexFolderOptions` above; same meanings as the
+/// `searchd index` flags of the same names).
+///
+/// Returns a heap-allocated, null-terminated JSON report object on success
+/// -- the caller must free it with `ss_free` -- with fields `generation`,
+/// `analyzer_id`, `added`, `changed`, `removed`, `skipped`, `too_large`,
+/// `unreadable`, `documents`, `terms`, `postings`. A non-`--update` run
+/// always reports `changed`/`removed`/`too_large`/`unreadable` as 0 and
+/// `added`/`skipped` as the files indexed/skipped (matching `IndexReport`);
+/// an `--update` run reports the full incremental breakdown
+/// (`IncrementalReport`). Returns `NULL` on failure -- a missing/unreadable
+/// `folder_path`, a folder with no indexable files, an unrecognized
+/// `analyzer`, or (on `--update`) `dir_path` already holding a snapshot
+/// published with a different analyzer -- see `ss_last_error()`.
+pub export fn ss_index_folder(
+    dir_path: [*:0]const u8,
+    folder_path: [*:0]const u8,
+    opts_json: ?[*:0]const u8,
+) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const options_text = if (opts_json) |ptr| std.mem.span(ptr) else "";
+    return indexFolderImpl(std.mem.span(dir_path), std.mem.span(folder_path), options_text) catch |err| {
+        setLastError("ss_index_folder: {s}", .{@errorName(err)});
+        return null;
+    };
+}
+
+fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []const u8) ![*:0]u8 {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const arena_allocator = arena.allocator();
+
+    const options: IndexFolderOptions = if (opts_json.len == 0)
+        .{}
+    else blk: {
+        const parsed = try std.json.parseFromSlice(IndexFolderOptions, arena_allocator, opts_json, .{});
+        break :blk parsed.value;
+    };
+    const analyzer = indexer.AnalyzerId.parse(options.analyzer) orelse return error.InvalidAnalyzer;
+    const max_chars = options.max_chars orelse chunker.default_max_chars;
+    const overlap_lines = options.overlap_lines orelse chunker.default_overlap_lines;
+    const default_caps = indexer.Caps{};
+    const caps = indexer.Caps{
+        .max_file_bytes = options.max_file_bytes orelse default_caps.max_file_bytes,
+        .max_total_bytes = options.max_total_bytes orelse default_caps.max_total_bytes,
+    };
+
+    const gio = io();
+    var root = try std.Io.Dir.cwd().openDir(gio, folder_path, .{ .iterate = true });
+    defer root.close(gio);
+    var out_dir = try std.Io.Dir.cwd().createDirPathOpen(gio, dir_path, .{ .open_options = .{ .iterate = true } });
+    defer out_dir.close(gio);
+
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    errdefer out.deinit();
+    var json = std.json.Stringify{ .writer = &out.writer };
+
+    if (options.update) {
+        const report = try indexer.indexFolderIncremental(arena_allocator, gio, root, out_dir, analyzer, max_chars, overlap_lines, caps);
+        try json.beginObject();
+        try json.objectField("generation");
+        try json.write(report.generation);
+        try json.objectField("analyzer_id");
+        try json.write(report.analyzer_id);
+        try json.objectField("added");
+        try json.write(report.added);
+        try json.objectField("changed");
+        try json.write(report.changed);
+        try json.objectField("removed");
+        try json.write(report.removed);
+        try json.objectField("skipped");
+        try json.write(report.skipped);
+        try json.objectField("too_large");
+        try json.write(report.too_large);
+        try json.objectField("unreadable");
+        try json.write(report.unreadable);
+        try json.objectField("documents");
+        try json.write(report.documents);
+        try json.objectField("terms");
+        try json.write(report.terms);
+        try json.objectField("postings");
+        try json.write(report.postings);
+        try json.endObject();
+    } else {
+        const generation = try generation_alloc.nextFreeGeneration(arena_allocator, gio, out_dir);
+        const report = try indexer.indexFolder(arena_allocator, gio, root, out_dir, analyzer, generation, max_chars, overlap_lines);
+        try json.beginObject();
+        try json.objectField("generation");
+        try json.write(report.generation);
+        try json.objectField("analyzer_id");
+        try json.write(report.analyzer_id);
+        try json.objectField("added");
+        try json.write(report.files_indexed);
+        try json.objectField("changed");
+        try json.write(@as(usize, 0));
+        try json.objectField("removed");
+        try json.write(@as(usize, 0));
+        try json.objectField("skipped");
+        try json.write(report.files_skipped);
+        try json.objectField("too_large");
+        try json.write(@as(usize, 0));
+        try json.objectField("unreadable");
+        try json.write(@as(usize, 0));
+        try json.objectField("documents");
+        try json.write(report.documents);
+        try json.objectField("terms");
+        try json.write(report.terms);
+        try json.objectField("postings");
+        try json.write(report.postings);
+        try json.endObject();
+    }
+    const owned = try out.toOwnedSliceSentinel(0);
+    return owned.ptr;
+}
+
+test "ss_index_folder publishes and re-publishes, full and incremental" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io_impl = std.testing.io;
+
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/a.md", .data = "hybrid retrieval combines lexical and semantic ranks\n" });
+
+    const notes_path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_path_z);
+    const out_path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_path_z);
+
+    const first_json = ss_index_folder(out_path_z, notes_path_z, null) orelse {
+        std.debug.print("ss_index_folder failed: {s}\n", .{ss_last_error()});
+        return error.IndexFailed;
+    };
+    defer ss_free(first_json);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(first_json), "\"generation\":1") != null);
+
+    // Criterion 5: re-running without --update re-publishes rather than
+    // failing with PathAlreadyExists.
+    const second_json = ss_index_folder(out_path_z, notes_path_z, null) orelse {
+        std.debug.print("ss_index_folder failed: {s}\n", .{ss_last_error()});
+        return error.IndexFailed;
+    };
+    defer ss_free(second_json);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(second_json), "\"generation\":2") != null);
+
+    // --update: no changes yet, but the previous publish did not go through
+    // the incremental path, so there is no INDEX-STATE.json and everything
+    // is reported "added" once, establishing a baseline.
+    const update_json = ss_index_folder(out_path_z, notes_path_z, "{\"update\":true}") orelse {
+        std.debug.print("ss_index_folder failed: {s}\n", .{ss_last_error()});
+        return error.IndexFailed;
+    };
+    defer ss_free(update_json);
+    var parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, std.mem.span(update_json), .{});
+    defer parsed.deinit();
+    try std.testing.expectEqual(@as(i64, 3), parsed.value.object.get("generation").?.integer);
+    try std.testing.expectEqual(@as(i64, 1), parsed.value.object.get("added").?.integer);
+
+    const handle = ss_open(out_path_z) orelse return error.OpenFailed;
+    defer ss_close(handle);
+    const query_json = ss_query(handle, "hybrid", null, 0, 1, "{\"retrieval_mode\":\"lexical\"}") orelse return error.QueryFailed;
+    defer ss_free(query_json);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(query_json), "a.md") != null);
+}
+// === end S1-T3 ==============================================================
 
 test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence agree with the RPC path" {
     const segment = @import("segment.zig");

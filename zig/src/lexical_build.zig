@@ -39,41 +39,41 @@ pub fn build(
     var document_lengths = try allocator.alloc(u32, documents.len);
     var total_length: usize = 0;
 
+    // Global term -> index into `terms`/`postings_by_term`. A hash map here
+    // (S1-T3, `docs/tasks/S1-T3.md` criterion 4, replacing the linear scans
+    // this used to do) is what makes `build` linear in total tokens instead
+    // of superlinear in vocabulary size: the old code re-walked the entire
+    // (growing) term list, and the entire per-document "seen so far" list,
+    // for every token of every document -- O(unique terms x total tokens).
+    // The round-A verdict measured this at 9.69s on a realistic
+    // 20,000-term/1,000-file corpus; see docs/tasks/S1-T3.md's Report for
+    // the hash-map timing on the same corpus.
+    var term_index_by_name = std.StringHashMap(usize).init(allocator);
+    defer term_index_by_name.deinit();
+
     for (token_lists, 0..) |tokens, document_index| {
         document_lengths[document_index] = @intCast(tokens.len);
         total_length += tokens.len;
 
-        // Per-document term frequency, first-seen order (mirrors
-        // `postings.build`'s dictionary insertion order for determinism).
-        var seen = std.ArrayList([]const u8).empty;
-        defer seen.deinit(allocator);
-        var counts = std.ArrayList(u32).empty;
-        defer counts.deinit(allocator);
+        // Per-document term frequency via a hash map instead of a linear
+        // scan of tokens seen so far in this document.
+        var doc_counts = std.StringHashMap(u32).init(allocator);
+        defer doc_counts.deinit();
         for (tokens) |token| {
-            var found: ?usize = null;
-            for (seen.items, 0..) |candidate, index| {
-                if (std.mem.eql(u8, candidate, token)) {
-                    found = index;
-                    break;
-                }
-            }
-            if (found) |index| {
-                counts.items[index] += 1;
+            const gop = try doc_counts.getOrPut(token);
+            if (gop.found_existing) {
+                gop.value_ptr.* += 1;
             } else {
-                try seen.append(allocator, token);
-                try counts.append(allocator, 1);
+                gop.value_ptr.* = 1;
             }
         }
 
-        for (seen.items, counts.items) |token, count| {
-            var term_index: ?usize = null;
-            for (terms.items, 0..) |entry, index| {
-                if (std.mem.eql(u8, entry.term, token)) {
-                    term_index = index;
-                    break;
-                }
-            }
-            const index = term_index orelse blk: {
+        var doc_iterator = doc_counts.iterator();
+        while (doc_iterator.next()) |doc_entry| {
+            const token = doc_entry.key_ptr.*;
+            const count = doc_entry.value_ptr.*;
+            const gop = try term_index_by_name.getOrPut(token);
+            if (!gop.found_existing) {
                 try terms.append(allocator, .{
                     .term = token,
                     .document_frequency = 0,
@@ -81,8 +81,9 @@ pub fn build(
                     .postings_length = 0,
                 });
                 try postings_by_term.append(allocator, std.ArrayList(postings.Posting).empty);
-                break :blk terms.items.len - 1;
-            };
+                gop.value_ptr.* = terms.items.len - 1;
+            }
+            const index = gop.value_ptr.*;
             terms.items[index].document_frequency += 1;
             try postings_by_term.items[index].append(allocator, .{
                 .document_index = @intCast(document_index),

@@ -18,10 +18,30 @@ the oracle. Two corpora:
   Tamil script (documented, not silently claimed).
 
 Run: `python3 scripts/gen_bm25_golden.py > fixtures/bm25-golden.json`
+
+Determinism (S1-T3, docs/tasks/S1-T3.md, optional-if-cheap item; round-A
+verdict, docs/tasks/S1-T1.md non-blocking finding 4): three consecutive runs
+used to produce three different files (md5s differed) in the last ULP of a
+couple of `lexical_score` values, because the Python reference's BM25
+accumulation order depends on dict/set iteration order, which depends on
+`PYTHONHASHSEED`. Pinning the seed makes "regenerate and diff" a meaningful
+byte-for-byte check instead of one that happens to pass because the Zig
+test's 1e-4 tolerance absorbs the drift. `PYTHONHASHSEED` must be set before
+the interpreter starts (it cannot be changed from within a running
+process), so this script pins it by re-executing itself once with the
+environment variable set, rather than requiring every caller to remember
+`PYTHONHASHSEED=0 python3 scripts/gen_bm25_golden.py`.
 """
 import json
+import os
 import sys
 from pathlib import Path
+
+_PINNED_HASH_SEED = "0"
+
+if os.environ.get("PYTHONHASHSEED") != _PINNED_HASH_SEED:
+    os.environ["PYTHONHASHSEED"] = _PINNED_HASH_SEED
+    os.execv(sys.executable, [sys.executable] + sys.argv)
 
 sys.path.insert(0, "src")
 from search_platform import core  # noqa: E402

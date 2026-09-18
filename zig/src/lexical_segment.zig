@@ -18,6 +18,11 @@ pub const EncodeError = error{
     InvalidPostingRange,
     DocumentFrequencyMismatch,
     InvalidPosting,
+    // S1-T3 (docs/tasks/S1-T3.md criterion 4): `validateIndex`'s duplicate-term
+    // check now uses a hash set (page allocator, scoped to that one check)
+    // instead of an O(terms^2) linear scan, so it can now fail with
+    // OutOfMemory like any other allocating operation.
+    OutOfMemory,
 };
 
 pub const DecodeError = error{
@@ -38,6 +43,11 @@ pub const DecodeError = error{
     DocumentFrequencyMismatch,
     InvalidPosting,
     SizeOverflow,
+    // S1-T3 (docs/tasks/S1-T3.md criterion 4): see EncodeError.OutOfMemory
+    // above -- `decode`'s duplicate-term check was the same O(terms^2)
+    // linear scan, on the hot path of every snapshot open, not just every
+    // publish.
+    OutOfMemory,
 };
 
 pub const Header = struct {
@@ -176,14 +186,20 @@ pub fn decode(
     if (lengths_cursor.offset != document_length_bytes.len) return error.InvalidSectionLength;
 
     var dictionary_cursor = Cursor{ .bytes = dictionary_bytes };
-    for (term_output[0..header.term_count], 0..) |*entry, term_index| {
+    // Same O(terms^2) -> O(terms) fix as `validateIndex` above: a
+    // page-allocator hash set scoped to this one loop, not threaded through
+    // `decode`'s own allocation-free signature.
+    var seen_terms = std.StringHashMap(void).init(std.heap.page_allocator);
+    defer seen_terms.deinit();
+    for (term_output[0..header.term_count]) |*entry| {
         const term_length = try castToUsize(try dictionary_cursor.readU32());
         const document_frequency = try dictionary_cursor.readU32();
         const postings_start = try castToUsize(try dictionary_cursor.readU64());
         const postings_length = try castToUsize(try dictionary_cursor.readU64());
         const term = try dictionary_cursor.take(term_length);
         if (term.len == 0) return error.InvalidTerm;
-        if (postings.findTerm(term_output[0..term_index], term) != null) return error.DuplicateTerm;
+        const duplicate = seen_terms.getOrPut(term) catch return error.OutOfMemory;
+        if (duplicate.found_existing) return error.DuplicateTerm;
         const postings_end = try decodeCheckedAdd(postings_start, postings_length);
         if (postings_end > header.posting_count) return error.InvalidPostingRange;
         if (document_frequency != postings_length) return error.DocumentFrequencyMismatch;
@@ -222,9 +238,27 @@ fn validateIndex(index: postings.Index) EncodeError!void {
     if (!std.math.isFinite(index.average_document_length) or index.average_document_length < 0) {
         return error.InvalidAverageDocumentLength;
     }
-    for (index.terms, 0..) |entry, term_index| {
-        if (entry.term.len == 0 or entry.term.len > std.math.maxInt(u32)) return error.InvalidTerm;
-        if (postings.findTerm(index.terms[0..term_index], entry.term) != null) return error.DuplicateTerm;
+    // Duplicate-term detection used to be an O(terms^2) linear scan
+    // (`postings.findTerm` re-scanning every term seen so far for every
+    // term) -- fine for a handful of terms, but the dominant cost of every
+    // publish once a realistic-vocabulary corpus is indexed (S1-T3,
+    // docs/tasks/S1-T3.md criterion 4: the same "superlinear in vocabulary"
+    // class of bug the round-A verdict found in `lexical_build.build`,
+    // just one layer further down the publish path). A hash set scoped to
+    // this one check -- this function's own signature stays
+    // allocation-free, matching `encode`/`encodedLength`'s existing
+    // fixed-buffer/no-allocator contract used throughout the test suite --
+    // makes it linear instead.
+    {
+        var seen = std.StringHashMap(void).init(std.heap.page_allocator);
+        defer seen.deinit();
+        for (index.terms) |entry| {
+            if (entry.term.len == 0 or entry.term.len > std.math.maxInt(u32)) return error.InvalidTerm;
+            const duplicate = seen.getOrPut(entry.term) catch return error.OutOfMemory;
+            if (duplicate.found_existing) return error.DuplicateTerm;
+        }
+    }
+    for (index.terms) |entry| {
         const postings_end = std.math.add(usize, entry.postings_start, entry.postings_length) catch
             return error.InvalidPostingRange;
         if (postings_end > index.postings.len) return error.InvalidPostingRange;

@@ -97,6 +97,12 @@ fn runIndexCommand(io: std.Io, allocator: std.mem.Allocator, arguments: *std.pro
             options.overlap_lines = try parseUsize(arguments.next() orelse return error.MissingOverlapLines);
         } else if (std.mem.eql(u8, flag, "--generation")) {
             options.generation = try std.fmt.parseInt(u64, arguments.next() orelse return error.MissingGeneration, 10);
+        } else if (std.mem.eql(u8, flag, "--update")) {
+            options.update = true;
+        } else if (std.mem.eql(u8, flag, "--max-file-bytes")) {
+            options.caps.max_file_bytes = try std.fmt.parseInt(u64, arguments.next() orelse return error.MissingMaxFileBytes, 10);
+        } else if (std.mem.eql(u8, flag, "--max-total-bytes")) {
+            options.caps.max_total_bytes = try std.fmt.parseInt(u64, arguments.next() orelse return error.MissingMaxTotalBytes, 10);
         } else {
             std.debug.print("unknown index flag: {s}\n", .{flag});
             return error.InvalidArgument;
@@ -154,6 +160,8 @@ fn printHelp() void {
         \\Commands:
         \\  index <folder> --out <dir> [--analyzer v1|v2] [--max-chars N]
         \\                       [--overlap-lines N] [--generation N]
+        \\                       [--update] [--max-file-bytes N]
+        \\                       [--max-total-bytes N]
         \\                       chunk (line-window-v1) and index UTF-8
         \\                       text/markdown/source files under <folder>,
         \\                       natively (no Python), and publish a
@@ -162,7 +170,21 @@ fn printHelp() void {
         \\                       the manifest: v1 is ASCII-only (analyzer-v1),
         \\                       v2 is Unicode-aware (analyzer-v2, NFC +
         \\                       case folding + Unicode letter/digit
-        \\                       categories; default).
+        \\                       categories; default). Re-running `index`
+        \\                       into an existing --out directory publishes
+        \\                       the next generation instead of failing.
+        \\                       --update runs incremental indexing instead
+        \\                       of a full rebuild: per-file content hashes
+        \\                       (persisted in <dir>/INDEX-STATE.json) skip
+        \\                       unchanged files, deleted files are
+        \\                       tombstoned, and a JSON report
+        \\                       (added/changed/removed/skipped/too_large/
+        \\                       unreadable/documents/terms/postings) is
+        \\                       printed. --max-file-bytes/--max-total-bytes
+        \\                       cap, respectively, one file's size (files
+        \\                       over the cap count as too_large and are
+        \\                       excluded) and the total bytes read in one
+        \\                       --update run (default 10 MiB / 512 MiB).
         \\  query <dir> "<text>" [--json] [--top-k N]
         \\                       BM25 lexical query against a published
         \\                       snapshot; human-readable by default, or a
