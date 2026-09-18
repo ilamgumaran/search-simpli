@@ -7,3 +7,16 @@ zig/.zig-cache*/
 zig/zig-out/
 zig/dist/
 zig/dist-check/
+
+# S1-T2: bindings/dart/search_simpli (Dart/Flutter build artifacts; the
+# prebuilt native/ libraries and the ffigen-generated bindings ARE tracked).
+bindings/dart/search_simpli/.dart_tool/
+bindings/dart/search_simpli/build/
+bindings/dart/search_simpli/pubspec.lock
+bindings/dart/search_simpli/example/.dart_tool/
+bindings/dart/search_simpli/example/build/
+bindings/dart/search_simpli/example/pubspec.lock
+bindings/dart/search_simpli/example/.flutter-plugins
+bindings/dart/search_simpli/example/.flutter-plugins-dependencies
+bindings/dart/search_simpli/example/android/.gradle/
+bindings/dart/search_simpli/example/android/local.properties
