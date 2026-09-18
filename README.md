@@ -185,16 +185,57 @@ program. See `docs/tasks/S1-T1.md` for the side-by-side check.)
 platform's floor for "static" -- there is no fully static executable format
 on macOS. The Linux binary has no dynamic dependencies at all.)
 
-Measured on a 1,000-file, ~3.9 MB invented-text corpus (generated with
-`scripts/gen_timing_corpus.py`, not committed):
+Measured on a 1,000-file, ~3.9 MB invented-text corpus with a **24,000-term
+guaranteed-distinct vocabulary** (generated with `scripts/gen_timing_corpus.py`,
+not committed) -- S1-T3 retired the original generator's ~30-word vocabulary,
+which only ever produced 57 distinct terms over 1,000 files and hid a
+superlinear-in-vocabulary cost in both `lexical_build.build` and
+`lexical_segment.zig`'s duplicate-term check (round-A verdict,
+`docs/tasks/S1-T1.md`; both fixed with hash-based dictionaries in S1-T3,
+`docs/tasks/S1-T3.md`):
 
-| Operation | Analyzer | Time (3 runs, `/usr/bin/time -p`) |
-|---|---|---|
-| `index` (1,000 files, 1,021 chunks) | `analyzer-v2` | 0.28s / 0.08s / 0.08s wall (first run pays cold-disk cost) |
-| `index` (1,000 files, 1,021 chunks) | `analyzer-v1` | 0.05s wall |
-| `query` (top-5, over the 1,021-chunk index) | either | <0.01s wall |
+| Operation | Time (`/usr/bin/time -p`, ReleaseSafe) |
+|---|---|
+| `index` full rebuild, generation 1 (1,000 files, 1,001 chunks, 24,057 terms) | 0.30s wall |
+| `index` full rebuild re-run into the same `--out` (generation 2 -- see "re-publishing" below) | 0.11s wall |
+| `index --update`, no prior `INDEX-STATE.json` (baseline, everything reported `added`) | 0.16s wall |
+| `index --update`, one file changed out of 1,000 (999 `skipped`) | 0.07s wall |
+| `index` on this repository's own tree (208 files, 1,355 chunks, 13,718 terms) | 0.19s wall |
 
-See `docs/tasks/S1-T1.md` for the exact commands and full pasted output.
+**The two earlier "warm run" figures in this table were never genuine
+second/third runs**: `searchd index` used to fail every re-run into an
+existing `--out` directory with a bare `PathAlreadyExists` (S1-T1 non-blocking
+finding 1), so the old 0.08s/0.08s captions were coincidentally-correct
+numbers from a *failure*, not a rebuild. S1-T3 fixes re-publishing (see
+"Re-publishing into an existing directory" below), so every row above is a
+real, complete run. See `docs/tasks/S1-T3.md` for the exact commands and full
+pasted output, including the five-step incremental-mutation demonstration.
+
+### Re-publishing into an existing directory
+
+`searchd index <folder> --out <dir>` run again with the same `--out`
+publishes the *next* generation instead of failing (S1-T3): it picks the
+smallest unused generation number in `<dir>` rather than always defaulting to
+1. Pass `--generation N` explicitly to override this.
+
+### Incremental updates
+
+`searchd index <folder> --out <dir> --update` only re-reads and re-chunks
+files whose content actually changed since the last run (a persisted SHA-256
+per file, `<dir>/INDEX-STATE.json`), tombstones deleted files, and prints a
+JSON report:
+
+```sh
+searchd index ./my-notes --out .search/native-index --update
+# {"generation":2,"analyzer_id":"analyzer-v2","added":0,"changed":1,
+#  "removed":0,"skipped":11,"too_large":0,"unreadable":0,
+#  "documents":12,"terms":233,"postings":410}
+```
+
+`--max-file-bytes`/`--max-total-bytes` cap, respectively, one file's size
+(over the cap: excluded, counted `too_large`) and the total bytes read in one
+`--update` run (default 10 MiB / 512 MiB). See `docs/tasks/S1-T3.md` and
+`docs/incremental-indexing.md` for the full design and test results.
 
 ## Measured status
 

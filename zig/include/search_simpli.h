@@ -212,6 +212,75 @@ int64_t ss_import_json(const char *dir_path, const char *bytes, size_t bytes_len
  */
 void ss_free(char *ptr);
 
+/* -------------------------------------------------------------------------
+ * S1-T3: incremental folder indexing (docs/tasks/S1-T3.md). Additive; does
+ * not change the shape or behavior of anything above.
+ * ---------------------------------------------------------------------- */
+
+/*
+ * Index the folder at `folder_path` and atomically publish (or
+ * re-publish/update) a lexical-only snapshot into `dir_path` (created,
+ * including parent directories, if it does not already exist) — the
+ * native-engine equivalent of `searchd index` / `searchd index --update`.
+ *
+ * This call mutates the directory identified by `dir_path` rather than
+ * operating on an already-open ss_handle: indexing publishes a *new*
+ * generation, and a handle is a decoded snapshot of one already-published
+ * generation, so there is nothing for an open handle to do here that
+ * closing and reopening afterward (ss_close then ss_open) does not already
+ * cover — do that to see the new generation through a handle.
+ *
+ *   dir_path      Snapshot directory to publish/update (created if
+ *                  missing).
+ *   folder_path    Folder to index.
+ *   opts_json      NULL or "" for defaults, or a null-terminated JSON
+ *                  object with any of:
+ *                    "analyzer"          "analyzer-v1"/"v1" or
+ *                                        "analyzer-v2"/"v2" (default),
+ *                                        same spelling as `searchd index
+ *                                        --analyzer`
+ *                    "max_chars"         chunker max characters per chunk
+ *                                        (default 1600)
+ *                    "overlap_lines"     chunker overlap lines (default 3)
+ *                    "update"            bool, default false. false: full
+ *                                        rebuild, always publishing the
+ *                                        next free generation in
+ *                                        `dir_path` (never fails with
+ *                                        PathAlreadyExists on a directory
+ *                                        that already holds a snapshot).
+ *                                        true: incremental update —
+ *                                        per-file content hashes (persisted
+ *                                        in `dir_path`/INDEX-STATE.json)
+ *                                        skip unchanged files, deleted
+ *                                        files are tombstoned. Fails
+ *                                        closed (see below) if `dir_path`
+ *                                        already holds a snapshot published
+ *                                        with a different analyzer.
+ *                    "max_file_bytes"    per-file size cap in bytes
+ *                                        (default 10 MiB); a larger file is
+ *                                        never read and is excluded,
+ *                                        counted under the report's
+ *                                        "too_large"
+ *                    "max_total_bytes"   total bytes read in one call
+ *                                        before remaining unprocessed files
+ *                                        are left untouched for this
+ *                                        generation (default 512 MiB)
+ *
+ * Returns a heap-allocated, null-terminated JSON report object on success —
+ * the caller must free it with ss_free() — with fields "generation"
+ * (integer), "analyzer_id" (string), "added", "changed", "removed",
+ * "skipped", "too_large", "unreadable", "documents", "terms", "postings"
+ * (all integers). A non-"update" run always reports "changed"/"removed"/
+ * "too_large"/"unreadable" as 0 and "added"/"skipped" as the files
+ * indexed/skipped; an "update" run reports the full incremental breakdown.
+ *
+ * Returns NULL on failure — a missing/unreadable folder_path, a folder with
+ * no indexable files, an unrecognized "analyzer", or (with "update": true)
+ * `dir_path` already holding a snapshot published with a different
+ * analyzer — see ss_last_error().
+ */
+char *ss_index_folder(const char *dir_path, const char *folder_path, const char *opts_json);
+
 #ifdef __cplusplus
 }
 #endif

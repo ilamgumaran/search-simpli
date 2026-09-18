@@ -15,6 +15,7 @@
 const std = @import("std");
 const chunker = @import("chunker.zig");
 const engine_module = @import("engine.zig");
+const generation_alloc = @import("generation_alloc.zig");
 const hybrid = @import("hybrid.zig");
 const indexer = @import("indexer.zig");
 const snapshot_open = @import("snapshot_open.zig");
@@ -23,7 +24,17 @@ pub const IndexOptions = struct {
     analyzer: indexer.AnalyzerId = .v2,
     max_chars: usize = chunker.default_max_chars,
     overlap_lines: usize = chunker.default_overlap_lines,
-    generation: u64 = 1,
+    /// `null` means "pick the next generation not already used in `--out`"
+    /// (S1-T3 criterion 5: re-running `index` into an existing directory
+    /// re-publishes instead of failing with `PathAlreadyExists`). An
+    /// explicit value is used as-is, including a deliberate collision.
+    generation: ?u64 = null,
+    /// S1-T3 criterion 1: `searchd index --update` runs incremental
+    /// indexing (`indexer.indexFolderIncremental`) instead of a full
+    /// rebuild -- content hashes, unchanged files skipped, deleted files
+    /// tombstoned, same atomic publication path.
+    update: bool = false,
+    caps: indexer.Caps = .{},
 };
 
 pub fn runIndex(
@@ -36,19 +47,61 @@ pub fn runIndex(
 ) !void {
     var root = try std.Io.Dir.cwd().openDir(io, folder_path, .{ .iterate = true });
     defer root.close(io);
-    var out_dir = try std.Io.Dir.cwd().createDirPathOpen(io, out_path, .{});
+    var out_dir = try std.Io.Dir.cwd().createDirPathOpen(io, out_path, .{ .open_options = .{ .iterate = true } });
     defer out_dir.close(io);
 
     var arena_state = std.heap.ArenaAllocator.init(allocator);
     defer arena_state.deinit();
+    const arena = arena_state.allocator();
 
+    if (options.update) {
+        const report = try indexer.indexFolderIncremental(
+            arena,
+            io,
+            root,
+            out_dir,
+            options.analyzer,
+            options.max_chars,
+            options.overlap_lines,
+            options.caps,
+        );
+        var json = std.json.Stringify{ .writer = output };
+        try json.beginObject();
+        try json.objectField("generation");
+        try json.write(report.generation);
+        try json.objectField("analyzer_id");
+        try json.write(report.analyzer_id);
+        try json.objectField("added");
+        try json.write(report.added);
+        try json.objectField("changed");
+        try json.write(report.changed);
+        try json.objectField("removed");
+        try json.write(report.removed);
+        try json.objectField("skipped");
+        try json.write(report.skipped);
+        try json.objectField("too_large");
+        try json.write(report.too_large);
+        try json.objectField("unreadable");
+        try json.write(report.unreadable);
+        try json.objectField("documents");
+        try json.write(report.documents);
+        try json.objectField("terms");
+        try json.write(report.terms);
+        try json.objectField("postings");
+        try json.write(report.postings);
+        try json.endObject();
+        try output.writeByte('\n');
+        return;
+    }
+
+    const generation = options.generation orelse try generation_alloc.nextFreeGeneration(arena, io, out_dir);
     const report = try indexer.indexFolder(
-        arena_state.allocator(),
+        arena,
         io,
         root,
         out_dir,
         options.analyzer,
-        options.generation,
+        generation,
         options.max_chars,
         options.overlap_lines,
     );

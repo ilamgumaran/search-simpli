@@ -57,19 +57,72 @@ pub fn loadCurrent(
 }
 
 fn writeImmutable(dir: std.Io.Dir, io: std.Io, filename: []const u8, bytes: []const u8) !void {
-    var atomic_file = try dir.createFileAtomic(io, filename, .{ .replace = false });
-    defer atomic_file.deinit(io);
-    try atomic_file.file.writeStreamingAll(io, bytes);
-    try atomic_file.file.sync(io);
-    try atomic_file.link(io);
+    try writeAtomicFile(dir, io, filename, bytes, false);
 }
 
 fn replaceCurrentManifest(dir: std.Io.Dir, io: std.Io, bytes: []const u8) !void {
-    var atomic_file = try dir.createFileAtomic(io, current_manifest_file, .{ .replace = true });
-    defer atomic_file.deinit(io);
-    try atomic_file.file.writeStreamingAll(io, bytes);
-    try atomic_file.file.sync(io);
-    try atomic_file.replace(io);
+    try writeAtomicFile(dir, io, current_manifest_file, bytes, true);
+}
+
+/// Portable atomic file write: create a uniquely-named temporary file in
+/// `dir` (`Dir.createFile` with `.exclusive = true`, i.e. plain
+/// `open(O_CREAT|O_EXCL)`), write `bytes`, sync, then materialize it at
+/// `filename` -- `dir.rename` (replacing) when `replace_existing` is true,
+/// `dir.renamePreserve` (failing with `error.PathAlreadyExists` if
+/// `filename` already exists, exactly as the immutable-section contract
+/// requires) when false.
+///
+/// Deliberately does *not* use `Dir.createFileAtomic`: on Linux (Android
+/// included), that function opens an *unnamed* temporary file with
+/// `O_TMPFILE` whenever its `replace` option is false. Found on an Android
+/// emulator (API 37, S1-T2's builder): the app's SELinux policy denies
+/// `O_TMPFILE` inside the app's own private data directory, so publishing
+/// the immutable `documents-N.hybseg`/`lexical-N.hyblex` sections (and
+/// therefore `ss_import_json`, `searchd index`, and `searchd index
+/// --update`) failed with `AccessDenied` on-device even though the
+/// identical code worked on macOS, Linux desktop, and every emulator
+/// version tested before. This helper never issues `O_TMPFILE`, on any
+/// platform -- it always goes straight to the named-temp-file-plus-rename
+/// sequence that `Dir.createFileAtomic`/`File.Atomic.link` themselves only
+/// fall back to once a named temp file already exists -- so behavior is
+/// identical everywhere the library runs, including inside an Android
+/// app's private storage. See `docs/publication-recovery.md`.
+pub fn writeAtomicFile(
+    dir: std.Io.Dir,
+    io: std.Io,
+    filename: []const u8,
+    bytes: []const u8,
+    replace_existing: bool,
+) !void {
+    while (true) {
+        var random_integer: u64 = undefined;
+        io.random(std.mem.asBytes(&random_integer));
+        const tmp_name = std.fmt.hex(random_integer);
+
+        var file = dir.createFile(io, &tmp_name, .{ .exclusive = true }) catch |err| switch (err) {
+            error.PathAlreadyExists => continue,
+            else => |e| return e,
+        };
+        var file_open = true;
+        var temp_exists = true;
+        defer {
+            if (file_open) file.close(io);
+            if (temp_exists) dir.deleteFile(io, &tmp_name) catch {};
+        }
+
+        try file.writeStreamingAll(io, bytes);
+        try file.sync(io);
+        file.close(io);
+        file_open = false;
+
+        if (replace_existing) {
+            try dir.rename(&tmp_name, dir, filename, io);
+        } else {
+            try dir.renamePreserve(&tmp_name, dir, filename, io);
+        }
+        temp_exists = false;
+        return;
+    }
 }
 
 const Fixture = struct {
@@ -196,4 +249,67 @@ test "invalid snapshot is rejected before MANIFEST visibility" {
     documents_encoded[documents_encoded.len - 1] ^= 0xff;
     try std.testing.expectError(error.InvalidDocumentSection, publish(tmp.dir, io, manifest_encoded, documents_encoded, fixture.lexicalEncoded()));
     try std.testing.expectError(error.FileNotFound, tmp.dir.openFile(io, current_manifest_file, .{}));
+}
+
+// S1-T3 (docs/tasks/S1-T3.md criterion 6, added by the orchestrator after
+// S1-T2's builder found `ss_import_json` failing with AccessDenied on an
+// Android emulator): `writeAtomicFile` must never depend on `O_TMPFILE`
+// (SELinux denies it inside an app's private directory) and must leave no
+// stray temp file behind, on both the success path and a `renamePreserve`
+// failure.
+test "writeAtomicFile materializes bytes at the destination and leaves no stray temp file" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    try writeAtomicFile(tmp.dir, io, "dest.txt", "hello", false);
+
+    var read_buffer: [16]u8 = undefined;
+    const read_back = try tmp.dir.readFile(io, "dest.txt", &read_buffer);
+    try std.testing.expectEqualStrings("hello", read_back);
+
+    // Exactly one file exists: the destination itself. No leftover
+    // 16-hex-character temp file from the create-temp/rename sequence.
+    var count: usize = 0;
+    var iterator = tmp.dir.iterate();
+    while (try iterator.next(io)) |_| count += 1;
+    try std.testing.expectEqual(@as(usize, 1), count);
+}
+
+test "writeAtomicFile with replace_existing=false fails closed and cleans up its temp file" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    try writeAtomicFile(tmp.dir, io, "dest.txt", "first", false);
+    try std.testing.expectError(error.PathAlreadyExists, writeAtomicFile(tmp.dir, io, "dest.txt", "second", false));
+
+    // The original content is untouched, and the failed attempt's named
+    // temp file was cleaned up rather than left as an orphan.
+    var read_buffer: [16]u8 = undefined;
+    const read_back = try tmp.dir.readFile(io, "dest.txt", &read_buffer);
+    try std.testing.expectEqualStrings("first", read_back);
+
+    var count: usize = 0;
+    var iterator = tmp.dir.iterate();
+    while (try iterator.next(io)) |_| count += 1;
+    try std.testing.expectEqual(@as(usize, 1), count);
+}
+
+test "writeAtomicFile with replace_existing=true overwrites and leaves no stray temp file" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    try writeAtomicFile(tmp.dir, io, "dest.txt", "first", true);
+    try writeAtomicFile(tmp.dir, io, "dest.txt", "second-and-longer", true);
+
+    var read_buffer: [32]u8 = undefined;
+    const read_back = try tmp.dir.readFile(io, "dest.txt", &read_buffer);
+    try std.testing.expectEqualStrings("second-and-longer", read_back);
+
+    var count: usize = 0;
+    var iterator = tmp.dir.iterate();
+    while (try iterator.next(io)) |_| count += 1;
+    try std.testing.expectEqual(@as(usize, 1), count);
 }
