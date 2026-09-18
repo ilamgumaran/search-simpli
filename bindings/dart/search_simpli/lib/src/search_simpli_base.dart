@@ -227,6 +227,58 @@ class SearchSimpli {
     _bindings.ss_close(_handle);
     _closed = true;
   }
+
+  /// `ss_index_folder()`: indexes the folder at [folderPath] and atomically
+  /// publishes (or re-publishes/updates) a lexical-only snapshot into
+  /// [dirPath] (created, including parent directories, if missing) —
+  /// exactly what `searchd index` does. Returns the typed
+  /// [IndexFolderReport] (docs/tasks/S1-T4.md criterion 1).
+  ///
+  /// A static method rather than an instance method, deliberately: it takes
+  /// a directory path, not an open [SearchSimpli] handle, the same shape as
+  /// [importSnapshotJson] and `ss_index_folder` itself — an already-open
+  /// handle is a read-only view of one immutable generation and has nothing
+  /// to contribute to publishing a new one (see the S1-T3 tester's verdict,
+  /// `docs/tasks/S1-T3.md` criterion 1, and `ss_index_folder`'s doc comment
+  /// in `zig/include/search_simpli.h`).
+  ///
+  /// [options.update] (default `false`) selects a full rebuild (always
+  /// publishing the next free generation) or an incremental update
+  /// (content-hash reuse, tombstoned deletions) — see
+  /// docs/incremental-indexing.md. Throws [SearchSimpliException] if
+  /// `ss_index_folder` fails (missing/unreadable [folderPath], an
+  /// unrecognized `options.analyzer`, or — with `options.update: true` —
+  /// [dirPath] already holding a snapshot published with a different
+  /// analyzer — see `ss_last_error()`).
+  static IndexFolderReport indexFolder(
+    String dirPath,
+    String folderPath, {
+    IndexFolderOptions options = const IndexFolderOptions(),
+    DynamicLibrary? library,
+  }) {
+    final dylib = library ?? openSearchSimpliLibrary();
+    final bindings = SearchSimpliBindings(dylib);
+
+    final dirPtr = dirPath.toNativeUtf8();
+    final folderPtr = folderPath.toNativeUtf8();
+    final optsPtr = jsonEncode(options.toJson()).toNativeUtf8();
+    try {
+      final resultPtr = bindings.ss_index_folder(dirPtr.cast(), folderPtr.cast(), optsPtr.cast());
+      if (resultPtr == nullptr) {
+        throw SearchSimpliException(_lastError(bindings));
+      }
+      try {
+        final json = jsonDecode(resultPtr.cast<Utf8>().toDartString());
+        return IndexFolderReport.fromJson(json as Map<String, Object?>);
+      } finally {
+        bindings.ss_free(resultPtr);
+      }
+    } finally {
+      malloc.free(dirPtr);
+      malloc.free(folderPtr);
+      malloc.free(optsPtr);
+    }
+  }
 }
 
 /// Publishes [bytesJson] (neutral interchange JSON,

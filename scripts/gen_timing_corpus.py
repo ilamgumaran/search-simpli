@@ -89,15 +89,18 @@ def main() -> None:
     rng = random.Random(20260917)
 
     vocabulary = build_vocabulary(vocabulary_size)
-    shuffled = list(vocabulary)
-    rng.shuffle(shuffled)
 
     # Guarantee every vocabulary word is used at least once -- partition the
-    # shuffled vocabulary into per-file quotas up front. Each file's random
-    # paragraphs (below) draw further words from the whole vocabulary with
-    # replacement (realistic Zipfian repetition); the quota sentence is what
-    # makes "the corpus has >=vocabulary_size distinct terms" a guarantee
-    # rather than a probabilistic hope.
+    # vocabulary (in its deterministic build order) into per-file quotas up
+    # front. Each file's random paragraphs (below) draw further words from
+    # the whole vocabulary with replacement (realistic Zipfian repetition);
+    # the quota sentence is what makes "the corpus has >=vocabulary_size
+    # distinct terms" a guarantee rather than a probabilistic hope. (S1-T4,
+    # docs/tasks/S1-T4.md criterion 4: this used to build a `shuffled` copy
+    # of the vocabulary and never use it -- the quota loop below always
+    # iterated the unshuffled `vocabulary` -- so the dead `rng.shuffle` call
+    # only perturbed the RNG stream without changing which file each word
+    # landed in.)
     per_file_quota: list[list[str]] = [[] for _ in range(file_count)]
     for i, word in enumerate(vocabulary):
         per_file_quota[i % file_count].append(word)

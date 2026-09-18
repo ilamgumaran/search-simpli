@@ -196,11 +196,11 @@ superlinear-in-vocabulary cost in both `lexical_build.build` and
 
 | Operation | Time (`/usr/bin/time -p`, ReleaseSafe) |
 |---|---|
-| `index` full rebuild, generation 1 (1,000 files, 1,001 chunks, 24,057 terms) | 0.30s wall |
+| `index` full rebuild, generation 1 (1,000 files, 1,004 documents, 24,057 terms) | 0.12s wall (0.17s on the first, cold-cache run; 0.12s on two subsequent fresh-`--out` runs — S1-T4, `docs/tasks/S1-T4.md` criterion 4 re-measurement) |
 | `index` full rebuild re-run into the same `--out` (generation 2 -- see "re-publishing" below) | 0.11s wall |
-| `index --update`, no prior `INDEX-STATE.json` (baseline, everything reported `added`) | 0.16s wall |
-| `index --update`, one file changed out of 1,000 (999 `skipped`) | 0.07s wall |
-| `index` on this repository's own tree (208 files, 1,355 chunks, 13,718 terms) | 0.19s wall |
+| `index --update`, no prior `INDEX-STATE.json` (baseline, everything reported `added`) | 0.12s wall |
+| `index --update`, one file changed out of 1,000 (999 `unchanged`) | 0.08s wall |
+| `index` on this repository's own tree (216 files, 1,462 documents, 14,099 terms) | 0.20s wall |
 
 **The two earlier "warm run" figures in this table were never genuine
 second/third runs**: `searchd index` used to fail every re-run into an
@@ -210,6 +210,12 @@ numbers from a *failure*, not a rebuild. S1-T3 fixes re-publishing (see
 "Re-publishing into an existing directory" below), so every row above is a
 real, complete run. See `docs/tasks/S1-T3.md` for the exact commands and full
 pasted output, including the five-step incremental-mutation demonstration.
+The full-rebuild figure was re-measured for S1-T4 (`docs/tasks/S1-T4.md`
+criterion 4): the previously recorded 0.30s did not reproduce on this
+machine against the corpus this same generator now produces (0.12-0.17s
+across three fresh runs); the S1-T3 tester's own independent re-run found
+the same thing (0.12-0.13s, "consistent with a warm page cache" against the
+builder's originally reported 0.30s) — see `docs/tasks/S1-T3.md`'s Verdict.
 
 ### Re-publishing into an existing directory
 
@@ -228,13 +234,17 @@ JSON report:
 ```sh
 searchd index ./my-notes --out .search/native-index --update
 # {"generation":2,"analyzer_id":"analyzer-v2","added":0,"changed":1,
-#  "removed":0,"skipped":11,"too_large":0,"unreadable":0,
+#  "removed":0,"unchanged":11,"budget_exhausted":0,"too_large":0,
+#  "unreadable":0,"too_large_paths":[],"unreadable_paths":[],
 #  "documents":12,"terms":233,"postings":410}
 ```
 
 `--max-file-bytes`/`--max-total-bytes` cap, respectively, one file's size
-(over the cap: excluded, counted `too_large`) and the total bytes read in one
-`--update` run (default 10 MiB / 512 MiB). See `docs/tasks/S1-T3.md` and
+(over the cap: tombstoned, named in `too_large_paths`) and the total bytes
+read in one `--update` run (files left over count as `budget_exhausted`,
+default 10 MiB / 512 MiB). An empty folder, or a folder whose last
+indexable file was just deleted, publishes an empty generation instead of
+failing. See `docs/tasks/S1-T3.md`, `docs/tasks/S1-T4.md`, and
 `docs/incremental-indexing.md` for the full design and test results.
 
 ## Measured status

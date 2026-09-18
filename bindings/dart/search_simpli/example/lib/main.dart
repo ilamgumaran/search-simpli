@@ -11,8 +11,8 @@
 // ss_close) on a real published snapshot.
 //
 // This deliberately does NOT call `ss_import_json` on-device. It was tried
-// first and failed on this API-37 emulator with `ss_import_json:
-// AccessDenied`: Zig 0.16's `Dir.createFileAtomic` (used by the engine's
+// first and failed on this API-34 (Android 14) emulator with
+// `ss_import_json: AccessDenied`: Zig 0.16's `Dir.createFileAtomic` (used by the engine's
 // atomic-publication path, `zig/src/publication.zig`) opens an `O_TMPFILE`
 // descriptor on Linux targets before renaming it into place, and this
 // device's SELinux policy denies `O_TMPFILE` inside an app's private

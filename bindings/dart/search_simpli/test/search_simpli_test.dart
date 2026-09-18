@@ -73,4 +73,88 @@ void main() {
       expect(() => engine.query('tiny'), throwsA(isA<StateError>()));
     });
   });
+
+  group('SearchSimpli.indexFolder (docs/tasks/S1-T4.md criterion 1)', () {
+    late Directory folderDir;
+    late Directory outDir;
+
+    setUp(() {
+      folderDir = Directory.systemTemp.createTempSync('ss-dart-index-folder-');
+      outDir = Directory.systemTemp.createTempSync('ss-dart-index-out-');
+      outDir.deleteSync(); // ss_index_folder must create it.
+      File('${folderDir.path}/one.md').writeAsStringSync(
+        'hybrid ranking combines lexical and semantic evidence',
+      );
+    });
+
+    tearDown(() {
+      folderDir.deleteSync(recursive: true);
+      if (outDir.existsSync()) outDir.deleteSync(recursive: true);
+    });
+
+    test('publishes a queryable generation and returns a typed report', () {
+      final report = SearchSimpli.indexFolder(outDir.path, folderDir.path);
+
+      expect(report.generation, 1);
+      expect(report.added, 1);
+      expect(report.changed, 0);
+      expect(report.removed, 0);
+      expect(report.unchanged, 0);
+      expect(report.budgetExhausted, 0);
+      expect(report.tooLarge, 0);
+      expect(report.unreadable, 0);
+      expect(report.tooLargePaths, isEmpty);
+      expect(report.unreadablePaths, isEmpty);
+      expect(report.documents, 1);
+
+      final engine = SearchSimpli.open(outDir.path);
+      try {
+        final result = engine.query('hybrid', topK: 5, mode: RetrievalMode.lexical);
+        expect(result.results, isNotEmpty);
+        expect(result.results.first.citation.path, 'one.md');
+      } finally {
+        engine.close();
+      }
+    });
+
+    test('an empty folder publishes an empty generation instead of throwing', () {
+      final emptyDir = Directory.systemTemp.createTempSync('ss-dart-index-empty-');
+      addTearDown(() => emptyDir.deleteSync(recursive: true));
+
+      final report = SearchSimpli.indexFolder(outDir.path, emptyDir.path);
+      expect(report.documents, 0);
+      expect(report.terms, 0);
+      expect(report.postings, 0);
+
+      final engine = SearchSimpli.open(outDir.path);
+      try {
+        expect(engine.status().documents, 0);
+      } finally {
+        engine.close();
+      }
+    });
+
+    test('an update run reports unreadable files by relative path', () {
+      SearchSimpli.indexFolder(outDir.path, folderDir.path);
+      File('${folderDir.path}/bad.md').writeAsBytesSync([0xff, 0xfe, 0x00]);
+
+      final report = SearchSimpli.indexFolder(
+        outDir.path,
+        folderDir.path,
+        options: const IndexFolderOptions(update: true),
+      );
+      expect(report.unreadable, 1);
+      expect(report.unreadablePaths, ['bad.md']);
+    });
+
+    test('a folder that fails to index throws SearchSimpliException', () {
+      expect(
+        () => SearchSimpli.indexFolder(
+          outDir.path,
+          '/nonexistent/search-simpli-dart-test-folder',
+        ),
+        throwsA(isA<SearchSimpliException>()),
+      );
+    });
+  });
 }

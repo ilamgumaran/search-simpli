@@ -19,7 +19,10 @@ The directory must be opened with iteration capability. The scanner:
 3. counts other `*.hybseg` files as unreferenced document generations;
 4. counts other `*.hyblex` files as unreferenced lexical generations;
 5. reports unrelated files separately;
-6. ignores the control files `MANIFEST` and `WRITER.LOCK`.
+6. ignores the control files `MANIFEST`, `WRITER.LOCK`, and `INDEX-STATE.json`
+   (S1-T4, `docs/tasks/S1-T4.md` criterion 3: the incremental indexer's own
+   bookkeeping file is not an operator-facing anomaly, so it no longer counts
+   toward "unrelated files").
 
 If no manifest exists, every recognized generation file is classified as unreferenced. If a manifest exists but is invalid, scanning returns the validation error rather than guessing at recovery.
 

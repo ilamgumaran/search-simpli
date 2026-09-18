@@ -57,6 +57,11 @@ pub const IndexReport = struct {
     analyzer_id: []const u8,
     files_indexed: usize,
     files_skipped: usize,
+    /// Relative paths of every file counted under `files_skipped` (stat
+    /// failure, oversized-for-usize, read failure, invalid UTF-8, or a
+    /// chunker error) -- S1-T4 criterion 3: a skipped file is never silent,
+    /// it is always named.
+    unreadable_paths: [][]const u8,
     documents: usize,
     terms: usize,
     postings: usize,
@@ -137,6 +142,12 @@ pub fn tokenize(allocator: std.mem.Allocator, analyzer: AnalyzerId, text: []cons
 /// generation into `out_dir`. `allocator` is expected to be an arena: every
 /// document, token list, and encoded buffer this function produces is freed
 /// together when the caller tears the arena down.
+///
+/// An empty folder (no candidate files, or every candidate file skipped)
+/// publishes an empty generation (0 documents/terms/postings) rather than
+/// failing -- S1-T4 criterion 3. Only a missing/unreadable `root` itself
+/// (the caller's `openDir` failing before this function is even called)
+/// stops a snapshot from being published.
 pub fn indexFolder(
     allocator: std.mem.Allocator,
     io: std.Io,
@@ -151,28 +162,34 @@ pub fn indexFolder(
 
     var documents = std.ArrayList(hybrid.Document).empty;
     var files_skipped: usize = 0;
+    var unreadable_paths = std.ArrayList([]const u8).empty;
 
     for (paths) |relative_path| {
         const stat = root.statFile(io, relative_path, .{}) catch {
             files_skipped += 1;
+            try unreadable_paths.append(allocator, relative_path);
             continue;
         };
         const size = std.math.cast(usize, stat.size) orelse {
             files_skipped += 1;
+            try unreadable_paths.append(allocator, relative_path);
             continue;
         };
         const buffer = try allocator.alloc(u8, size);
         const content = root.readFile(io, relative_path, buffer) catch {
             files_skipped += 1;
+            try unreadable_paths.append(allocator, relative_path);
             continue;
         };
         if (!std.unicode.utf8ValidateSlice(content)) {
             files_skipped += 1;
+            try unreadable_paths.append(allocator, relative_path);
             continue;
         }
 
         const spans = chunker.chunk(allocator, content, max_chars, overlap_lines) catch {
             files_skipped += 1;
+            try unreadable_paths.append(allocator, relative_path);
             continue;
         };
         for (spans) |span| {
@@ -189,8 +206,6 @@ pub fn indexFolder(
             });
         }
     }
-
-    if (documents.items.len == 0) return error.NoDocuments;
 
     var token_lists = try allocator.alloc([][]const u8, documents.items.len);
     for (documents.items, 0..) |document, i| {
@@ -230,6 +245,7 @@ pub fn indexFolder(
         .analyzer_id = analyzer.label(),
         .files_indexed = paths.len - files_skipped,
         .files_skipped = files_skipped,
+        .unreadable_paths = try unreadable_paths.toOwnedSlice(allocator),
         .documents = documents.items.len,
         .terms = lexical_index.terms.len,
         .postings = lexical_index.postings.len,
@@ -258,9 +274,29 @@ pub const IncrementalReport = struct {
     added: usize,
     changed: usize,
     removed: usize,
-    skipped: usize,
+    /// Unchanged since the previous generation (content hash matched
+    /// `INDEX-STATE.json`) -- nothing to do. S1-T4 criterion 3 splits this
+    /// out of the old, ambiguous `skipped` (round-B non-blocking finding 5):
+    /// a caller can no longer confuse "finished, nothing changed" with
+    /// "ran out of budget, try again".
+    unchanged: usize,
+    /// Left untouched for this generation because `caps.max_total_bytes`
+    /// was exhausted first; the file's previous chunks (if any) are carried
+    /// forward unchanged and it is eligible again on the next run.
+    budget_exhausted: usize,
     too_large: usize,
     unreadable: usize,
+    /// Relative paths of every file counted under `too_large` -- S1-T4
+    /// criterion 3. A file that grows past `caps.max_file_bytes` is
+    /// tombstoned (its previous chunks are not carried forward: see the
+    /// call site in `indexFolderIncremental`), never silently kept, and
+    /// this path list is what keeps that tombstoning from being silent
+    /// about *which* file it happened to.
+    too_large_paths: [][]const u8,
+    /// Relative paths of every file counted under `unreadable` -- S1-T4
+    /// criterion 3 (round-B non-blocking finding 6). Unlike `too_large`,
+    /// an unreadable file's previous chunks (if any) are carried forward.
+    unreadable_paths: [][]const u8,
     documents: usize,
     terms: usize,
     postings: usize,
@@ -334,6 +370,13 @@ fn reconstructTokensFromPostings(
 /// `analyzer-v2` documents in one lexical index would silently produce
 /// incoherent tokenization.
 ///
+/// An empty folder, or a folder whose last indexable file was just deleted,
+/// publishes an empty generation (0 documents/terms/postings, `removed`
+/// counting every tombstoned path) instead of failing -- S1-T4 criterion 3
+/// (round-B non-blocking finding 2): the final deletion in a folder must be
+/// tombstoned the same as any other, not leave the previous generation
+/// permanently stuck.
+///
 /// `allocator` is expected to be an arena, exactly like `indexFolder`.
 pub fn indexFolderIncremental(
     allocator: std.mem.Allocator,
@@ -381,9 +424,12 @@ pub fn indexFolderIncremental(
 
     var added: usize = 0;
     var changed: usize = 0;
-    var skipped: usize = 0;
+    var unchanged: usize = 0;
+    var budget_exhausted_count: usize = 0;
     var too_large: usize = 0;
     var unreadable: usize = 0;
+    var too_large_paths = std.ArrayList([]const u8).empty;
+    var unreadable_paths = std.ArrayList([]const u8).empty;
     var total_bytes_processed: u64 = 0;
     var budget_exhausted = false;
 
@@ -418,23 +464,32 @@ pub fn indexFolderIncremental(
 
         const stat = root.statFile(io, relative_path, .{}) catch {
             unreadable += 1;
+            try unreadable_paths.append(allocator, relative_path);
             try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
             continue;
         };
         const size = std.math.cast(usize, stat.size) orelse {
             unreadable += 1;
+            try unreadable_paths.append(allocator, relative_path);
             try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
             continue;
         };
 
+        // A file over `max_file_bytes` is tombstoned, not carried forward:
+        // no `carryForward` call, and its `INDEX-STATE.json` entry (if any)
+        // is dropped by simply never being re-appended to
+        // `new_state_entries` -- S1-T4 criterion 3 makes this an explicit,
+        // reported removal (`too_large` plus `too_large_paths`) rather than
+        // an unlabeled loss (round-B non-blocking finding 4).
         if (size > caps.max_file_bytes) {
             too_large += 1;
+            try too_large_paths.append(allocator, relative_path);
             continue;
         }
 
         if (budget_exhausted or total_bytes_processed + size > caps.max_total_bytes) {
             budget_exhausted = true;
-            skipped += 1;
+            budget_exhausted_count += 1;
             try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
             continue;
         }
@@ -442,11 +497,13 @@ pub fn indexFolderIncremental(
         const buffer = try allocator.alloc(u8, size);
         const content = root.readFile(io, relative_path, buffer) catch {
             unreadable += 1;
+            try unreadable_paths.append(allocator, relative_path);
             try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
             continue;
         };
         if (!std.unicode.utf8ValidateSlice(content)) {
             unreadable += 1;
+            try unreadable_paths.append(allocator, relative_path);
             try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
             continue;
         }
@@ -455,7 +512,7 @@ pub fn indexFolderIncremental(
         const digest_hex = hashHex(content);
         if (previous_entry) |entry| {
             if (std.mem.eql(u8, entry.hash, &digest_hex)) {
-                skipped += 1;
+                unchanged += 1;
                 try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, null);
                 try new_state_entries.append(allocator, entry);
                 continue;
@@ -464,6 +521,7 @@ pub fn indexFolderIncremental(
 
         const spans = chunker.chunk(allocator, content, max_chars, overlap_lines) catch {
             unreadable += 1;
+            try unreadable_paths.append(allocator, relative_path);
             try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
             continue;
         };
@@ -495,8 +553,6 @@ pub fn indexFolderIncremental(
             if (!current_path_set.contains(entry.path)) removed += 1;
         }
     }
-
-    if (documents.items.len == 0) return error.NoDocuments;
 
     const lexical_index = try lexical_build.build(allocator, documents.items, token_lists.items);
 
@@ -544,9 +600,12 @@ pub fn indexFolderIncremental(
         .added = added,
         .changed = changed,
         .removed = removed,
-        .skipped = skipped,
+        .unchanged = unchanged,
+        .budget_exhausted = budget_exhausted_count,
         .too_large = too_large,
         .unreadable = unreadable,
+        .too_large_paths = try too_large_paths.toOwnedSlice(allocator),
+        .unreadable_paths = try unreadable_paths.toOwnedSlice(allocator),
         .documents = documents.items.len,
         .terms = lexical_index.terms.len,
         .postings = lexical_index.postings.len,
@@ -572,6 +631,61 @@ test "indexFolder publishes a queryable generation from a real folder" {
     try std.testing.expectEqual(@as(usize, 1), report.files_indexed);
     try std.testing.expect(report.documents >= 1);
     try std.testing.expectEqualStrings("analyzer-v2", report.analyzer_id);
+}
+
+test "indexFolder publishes an empty generation for an empty folder instead of NoDocuments" {
+    const allocator = std.testing.allocator;
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    try tmp.dir.createDir(io, "root", .default_dir);
+    var root = try tmp.dir.openDir(io, "root", .{ .iterate = true });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out_dir = try tmp.dir.openDir(io, "out", .{});
+    defer out_dir.close(io);
+
+    const report = try indexFolder(arena, io, root, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines);
+    try std.testing.expectEqual(@as(usize, 0), report.files_indexed);
+    try std.testing.expectEqual(@as(usize, 0), report.documents);
+    try std.testing.expectEqual(@as(usize, 0), report.terms);
+    try std.testing.expectEqual(@as(usize, 0), report.postings);
+    try std.testing.expectEqual(@as(usize, 0), report.unreadable_paths.len);
+
+    // The empty generation is durably published and queryable (0 results,
+    // never an open failure).
+    const opened = try snapshot_open.open(arena, io, out_dir);
+    try std.testing.expectEqual(@as(u64, 1), opened.generation);
+    try std.testing.expectEqual(@as(usize, 0), opened.documents.len);
+}
+
+test "indexFolder lists the paths of files it could not read" {
+    const allocator = std.testing.allocator;
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "good.md", .data = "search evidence combines lexical and semantic ranks\n" });
+    // Invalid UTF-8 -- rejected the same way a genuinely unreadable file is.
+    try tmp.dir.writeFile(io, .{ .sub_path = "bad.md", .data = &[_]u8{ 0xff, 0xfe, 0x00 } });
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out_dir = try tmp.dir.openDir(io, "out", .{});
+    defer out_dir.close(io);
+
+    const report = try indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines);
+    try std.testing.expectEqual(@as(usize, 1), report.files_indexed);
+    try std.testing.expectEqual(@as(usize, 1), report.files_skipped);
+    try std.testing.expectEqual(@as(usize, 1), report.unreadable_paths.len);
+    try std.testing.expectEqualStrings("bad.md", report.unreadable_paths[0]);
 }
 
 test "hasAllowedExtension matches DEFAULT_EXTENSIONS case-insensitively" {

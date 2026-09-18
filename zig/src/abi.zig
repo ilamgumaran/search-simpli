@@ -460,11 +460,13 @@ fn errorCode(err: anyerror) i64 {
         error.InvalidRequiredLabel,
         error.DuplicateRequiredLabel,
         error.IndexTooLarge,
-        // S1-T3 (`ss_index_folder`): a folder with no indexable files, an
-        // unrecognized `opts.analyzer` value, or an `--update` run whose
-        // `out_dir` was already published with a different analyzer --
-        // all caller mistakes, not corruption or I/O.
-        error.NoDocuments,
+        // S1-T3/S1-T4 (`ss_index_folder`): an unrecognized `opts.analyzer`
+        // value, or an `--update` run whose `out_dir` was already published
+        // with a different analyzer -- caller mistakes, not corruption or
+        // I/O. (`error.NoDocuments` used to appear here too, for a folder
+        // with no indexable files; S1-T4 criterion 3 makes that publish an
+        // empty generation instead of failing, so `indexFolder`/
+        // `indexFolderIncremental` no longer raise it.)
         error.InvalidAnalyzer,
         error.AnalyzerMismatch,
         => SS_ERR_INVALID_ARGUMENT,
@@ -523,15 +525,23 @@ const IndexFolderOptions = struct {
 ///
 /// Returns a heap-allocated, null-terminated JSON report object on success
 /// -- the caller must free it with `ss_free` -- with fields `generation`,
-/// `analyzer_id`, `added`, `changed`, `removed`, `skipped`, `too_large`,
-/// `unreadable`, `documents`, `terms`, `postings`. A non-`--update` run
-/// always reports `changed`/`removed`/`too_large`/`unreadable` as 0 and
-/// `added`/`skipped` as the files indexed/skipped (matching `IndexReport`);
-/// an `--update` run reports the full incremental breakdown
-/// (`IncrementalReport`). Returns `NULL` on failure -- a missing/unreadable
-/// `folder_path`, a folder with no indexable files, an unrecognized
-/// `analyzer`, or (on `--update`) `dir_path` already holding a snapshot
-/// published with a different analyzer -- see `ss_last_error()`.
+/// `analyzer_id`, `added`, `changed`, `removed`, `unchanged`,
+/// `budget_exhausted`, `too_large`, `unreadable`, `too_large_paths` (array
+/// of relative paths), `unreadable_paths` (array of relative paths),
+/// `documents`, `terms`, `postings` (S1-T4, `docs/tasks/S1-T4.md` criterion
+/// 3: `unchanged`/`budget_exhausted` replace the old, ambiguous `skipped`
+/// field -- "nothing to do" and "left for a later run" are no longer the
+/// same number -- and every `too_large`/`unreadable` file is named, not
+/// just counted). A non-`--update` run always reports
+/// `changed`/`removed`/`unchanged`/`budget_exhausted`/`too_large` as 0,
+/// `too_large_paths` as `[]`, and `added`/`unreadable`/`unreadable_paths` as
+/// the files indexed/skipped (matching `IndexReport`); an `--update` run
+/// reports the full incremental breakdown (`IncrementalReport`). An empty
+/// folder, or a folder whose last indexable file was just deleted, publishes
+/// an empty generation (0 documents/terms/postings) rather than failing.
+/// Returns `NULL` on failure -- a missing/unreadable `folder_path`, an
+/// unrecognized `analyzer`, or (on `--update`) `dir_path` already holding a
+/// snapshot published with a different analyzer -- see `ss_last_error()`.
 pub export fn ss_index_folder(
     dir_path: [*:0]const u8,
     folder_path: [*:0]const u8,
@@ -588,12 +598,22 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
         try json.write(report.changed);
         try json.objectField("removed");
         try json.write(report.removed);
-        try json.objectField("skipped");
-        try json.write(report.skipped);
+        try json.objectField("unchanged");
+        try json.write(report.unchanged);
+        try json.objectField("budget_exhausted");
+        try json.write(report.budget_exhausted);
         try json.objectField("too_large");
         try json.write(report.too_large);
         try json.objectField("unreadable");
         try json.write(report.unreadable);
+        try json.objectField("too_large_paths");
+        try json.beginArray();
+        for (report.too_large_paths) |path| try json.write(path);
+        try json.endArray();
+        try json.objectField("unreadable_paths");
+        try json.beginArray();
+        for (report.unreadable_paths) |path| try json.write(path);
+        try json.endArray();
         try json.objectField("documents");
         try json.write(report.documents);
         try json.objectField("terms");
@@ -615,12 +635,21 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
         try json.write(@as(usize, 0));
         try json.objectField("removed");
         try json.write(@as(usize, 0));
-        try json.objectField("skipped");
-        try json.write(report.files_skipped);
+        try json.objectField("unchanged");
+        try json.write(@as(usize, 0));
+        try json.objectField("budget_exhausted");
+        try json.write(@as(usize, 0));
         try json.objectField("too_large");
         try json.write(@as(usize, 0));
         try json.objectField("unreadable");
-        try json.write(@as(usize, 0));
+        try json.write(report.files_skipped);
+        try json.objectField("too_large_paths");
+        try json.beginArray();
+        try json.endArray();
+        try json.objectField("unreadable_paths");
+        try json.beginArray();
+        for (report.unreadable_paths) |path| try json.write(path);
+        try json.endArray();
         try json.objectField("documents");
         try json.write(report.documents);
         try json.objectField("terms");

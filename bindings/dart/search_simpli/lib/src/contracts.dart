@@ -102,11 +102,20 @@ class SearchIndexInfo {
   final String analyzerId;
   final String embeddingModelId;
 
+  /// `index.root` in `contracts/search-tool.schema.json` — the indexed
+  /// folder's root path. Schema-optional: the engine does not emit it
+  /// today (docs/tasks/S1-T4.md criterion 4), so this is `null` for every
+  /// snapshot `ss_query` currently produces; the field exists so a future
+  /// engine that does emit it round-trips through `fromJson`/`toJson`
+  /// without silently dropping it.
+  final String? root;
+
   const SearchIndexInfo({
     required this.version,
     required this.generation,
     required this.analyzerId,
     required this.embeddingModelId,
+    this.root,
   });
 
   factory SearchIndexInfo.fromJson(Map<String, Object?> json) => SearchIndexInfo(
@@ -114,6 +123,7 @@ class SearchIndexInfo {
         generation: json['generation']! as int,
         analyzerId: json['analyzer_id']! as String,
         embeddingModelId: json['embedding_model_id']! as String,
+        root: json['root'] as String?,
       );
 
   Map<String, Object?> toJson() => {
@@ -121,6 +131,7 @@ class SearchIndexInfo {
         'generation': generation,
         'analyzer_id': analyzerId,
         'embedding_model_id': embeddingModelId,
+        if (root != null) 'root': root,
       };
 }
 
@@ -130,10 +141,27 @@ class SearchRetrieval {
   final int vectorDimensions;
   final SearchAuthorization authorization;
 
+  /// `retrieval.vector_mode` — the vector projection/model family in use
+  /// (e.g. `"neural"`, `"cooccurrence"`). Schema-optional and not emitted by
+  /// the engine today (docs/tasks/S1-T4.md criterion 4); see [SearchIndexInfo.root].
+  final String? vectorMode;
+
+  /// `retrieval.candidate_k` — the candidate pool size actually used for
+  /// this query. Schema-optional and not emitted by the engine today.
+  final int? candidateK;
+
+  /// `retrieval.embedding` — an open object describing the query embedding
+  /// (or explicit JSON `null`). Schema-optional and not emitted by the
+  /// engine today; kept as a raw map, like [SearchResultItem.ranking].
+  final Map<String, Object?>? embedding;
+
   const SearchRetrieval({
     required this.mode,
     required this.vectorDimensions,
     required this.authorization,
+    this.vectorMode,
+    this.candidateK,
+    this.embedding,
   });
 
   factory SearchRetrieval.fromJson(Map<String, Object?> json) => SearchRetrieval(
@@ -142,12 +170,18 @@ class SearchRetrieval {
         authorization: SearchAuthorization.fromJson(
           json['authorization']! as Map<String, Object?>,
         ),
+        vectorMode: json['vector_mode'] as String?,
+        candidateK: json['candidate_k'] as int?,
+        embedding: json['embedding'] as Map<String, Object?>?,
       );
 
   Map<String, Object?> toJson() => {
         'mode': mode.toJson(),
         'vector_dimensions': vectorDimensions,
         'authorization': authorization.toJson(),
+        if (vectorMode != null) 'vector_mode': vectorMode,
+        if (candidateK != null) 'candidate_k': candidateK,
+        if (embedding != null) 'embedding': embedding,
       };
 }
 
@@ -337,4 +371,150 @@ class EvidenceChunk {
 
   @override
   String toString() => 'EvidenceChunk($chunkId, found: $found)';
+}
+
+/// Options for [SearchSimpli.indexFolder] — mirrors
+/// `zig/src/abi.zig`'s `IndexFolderOptions` and `ss_index_folder`'s
+/// `opts_json` (`zig/include/search_simpli.h`), same field meanings as the
+/// `searchd index` flags of the same names.
+class IndexFolderOptions {
+  /// `"analyzer-v1"`/`"v1"` (ASCII) or `"analyzer-v2"`/`"v2"` (Unicode,
+  /// default).
+  final String analyzer;
+  final int? maxChars;
+  final int? overlapLines;
+
+  /// `false` (default): full rebuild, always publishing the next free
+  /// generation. `true`: incremental update (content hashes, unchanged
+  /// files skipped, deleted files tombstoned) — see
+  /// docs/incremental-indexing.md.
+  final bool update;
+
+  /// Per-file size cap in bytes (native default 10 MiB). A file over this
+  /// cap is never read, and is reported (and tombstoned) under `tooLarge`/
+  /// `tooLargePaths`.
+  final int? maxFileBytes;
+
+  /// Total bytes read across all files in one call before the rest are left
+  /// for a later run (native default 512 MiB); left-over files are reported
+  /// under `budgetExhausted`.
+  final int? maxTotalBytes;
+
+  const IndexFolderOptions({
+    this.analyzer = 'analyzer-v2',
+    this.maxChars,
+    this.overlapLines,
+    this.update = false,
+    this.maxFileBytes,
+    this.maxTotalBytes,
+  });
+
+  Map<String, Object?> toJson() => {
+        'analyzer': analyzer,
+        if (maxChars != null) 'max_chars': maxChars,
+        if (overlapLines != null) 'overlap_lines': overlapLines,
+        'update': update,
+        if (maxFileBytes != null) 'max_file_bytes': maxFileBytes,
+        if (maxTotalBytes != null) 'max_total_bytes': maxTotalBytes,
+      };
+}
+
+/// `ss_index_folder()`'s JSON report object — mirrors `zig/src/indexer.zig`'s
+/// `IndexReport`/`IncrementalReport` as unified by `zig/src/abi.zig`
+/// (docs/tasks/S1-T4.md criterion 1). A non-`update` run always reports
+/// `changed`/`removed`/`unchanged`/`budgetExhausted`/`tooLarge` as 0 and
+/// `tooLargePaths` as empty; an `update` run reports the full incremental
+/// breakdown — see docs/incremental-indexing.md.
+class IndexFolderReport {
+  final int generation;
+  final String analyzerId;
+  final int added;
+  final int changed;
+  final int removed;
+
+  /// Unchanged since the previous generation (content hash matched) —
+  /// nothing to do. Distinct from [budgetExhausted]: docs/tasks/S1-T4.md
+  /// criterion 3.
+  final int unchanged;
+
+  /// Left untouched this run because `maxTotalBytes` was exhausted first;
+  /// eligible again on the next run.
+  final int budgetExhausted;
+
+  final int tooLarge;
+  final int unreadable;
+
+  /// Relative paths of every file counted under [tooLarge]. A file this
+  /// large is tombstoned (its previous chunks, if any, are dropped), never
+  /// silently kept.
+  final List<String> tooLargePaths;
+
+  /// Relative paths of every file counted under [unreadable]. Unlike
+  /// [tooLargePaths], an unreadable file's previous chunks (if any) are
+  /// carried forward.
+  final List<String> unreadablePaths;
+
+  final int documents;
+  final int terms;
+  final int postings;
+
+  const IndexFolderReport({
+    required this.generation,
+    required this.analyzerId,
+    required this.added,
+    required this.changed,
+    required this.removed,
+    required this.unchanged,
+    required this.budgetExhausted,
+    required this.tooLarge,
+    required this.unreadable,
+    required this.tooLargePaths,
+    required this.unreadablePaths,
+    required this.documents,
+    required this.terms,
+    required this.postings,
+  });
+
+  factory IndexFolderReport.fromJson(Map<String, Object?> json) => IndexFolderReport(
+        generation: json['generation']! as int,
+        analyzerId: json['analyzer_id']! as String,
+        added: json['added']! as int,
+        changed: json['changed']! as int,
+        removed: json['removed']! as int,
+        unchanged: json['unchanged']! as int,
+        budgetExhausted: json['budget_exhausted']! as int,
+        tooLarge: json['too_large']! as int,
+        unreadable: json['unreadable']! as int,
+        tooLargePaths: (json['too_large_paths']! as List<Object?>)
+            .map((e) => e! as String)
+            .toList(growable: false),
+        unreadablePaths: (json['unreadable_paths']! as List<Object?>)
+            .map((e) => e! as String)
+            .toList(growable: false),
+        documents: json['documents']! as int,
+        terms: json['terms']! as int,
+        postings: json['postings']! as int,
+      );
+
+  Map<String, Object?> toJson() => {
+        'generation': generation,
+        'analyzer_id': analyzerId,
+        'added': added,
+        'changed': changed,
+        'removed': removed,
+        'unchanged': unchanged,
+        'budget_exhausted': budgetExhausted,
+        'too_large': tooLarge,
+        'unreadable': unreadable,
+        'too_large_paths': tooLargePaths,
+        'unreadable_paths': unreadablePaths,
+        'documents': documents,
+        'terms': terms,
+        'postings': postings,
+      };
+
+  @override
+  String toString() =>
+      'IndexFolderReport(generation: $generation, documents: $documents, '
+      'added: $added, changed: $changed, removed: $removed)';
 }
