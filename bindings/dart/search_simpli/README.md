@@ -101,6 +101,17 @@ wrote — see the [root README](../../../README.md) and
   publishes neutral interchange JSON as a new generation, exactly what
   `searchd import-json` / `ss_import_json` do. Returns the published
   generation number.
+- `SearchSimpli.indexFolder(String dirPath, String folderPath, {IndexFolderOptions
+  options, DynamicLibrary? library})` → `IndexFolderReport` (docs/tasks/S1-T4.md
+  criterion 1) — indexes `folderPath` and atomically publishes (or
+  re-publishes/updates) a lexical-only snapshot into `dirPath`, exactly what
+  `searchd index` does; `ss_index_folder` under the hood. A static method,
+  not an instance method, for the same reason as `importSnapshotJson`: it
+  takes a directory, not an open handle. `options.update: true` selects an
+  incremental update (content-hash reuse, tombstoned deletions) instead of a
+  full rebuild — see [docs/incremental-indexing.md](../../../docs/incremental-indexing.md).
+  An empty folder, or a folder whose last indexable file was just deleted,
+  publishes an empty generation instead of throwing.
 
 Every `ss_*` failure surfaces as `SearchSimpliException` with the
 human-readable `ss_last_error()` message.
@@ -121,10 +132,18 @@ library_loader.dart` resolves which one to load:
    abiFilters += listOf("arm64-v8a") }` block in `example/android/app/
    build.gradle.kts` for a worked Flutter example). Once packaged, Android's
    own dynamic linker finds it by name.
-3. **macOS:** resolves `native/macos-arm64/libsearch_simpli.dylib` relative
-   to this package's own directory — works when `dart test`/`dart run` is
-   invoked from inside `bindings/dart/search_simpli/` (this package's
-   documented dev workflow).
+3. **macOS/Linux:** resolves `native/<macos-arm64|linux-x64>/libsearch_simpli.*`
+   **package-relatively** (docs/tasks/S1-T4.md criterion 2), so a plain
+   `path:` dependency on this package works unaided, from any working
+   directory — no environment variable needed. This is done by locating and
+   parsing the nearest `.dart_tool/package_config.json` (the same file
+   `Isolate.resolvePackageUri` resolves against) and reading this package's
+   own `rootUri` out of it directly, since `openSearchSimpliLibrary` must
+   stay synchronous and `resolvePackageUri` is `Future`-returning. Falls
+   back to the current working directory and the running script's directory
+   only if no `package_config.json` can be found (e.g. `pub get` was never
+   run) — this package's own dev workflow (`dart test` from inside
+   `bindings/dart/search_simpli/`) still works either way.
 
 Every other platform throws `UnsupportedError` from `SearchSimpli.open`
 (pass your own library via `SEARCH_SIMPLI_LIBRARY_PATH` or the `library`
@@ -230,10 +249,15 @@ header comment.
 - Only macOS arm64 and Android arm64 have prebuilt libraries (ADR 0002's
   current target set). Other platforms need `SEARCH_SIMPLI_LIBRARY_PATH`
   pointed at a library you build yourself.
-- `ss_import_json` (`importSnapshotJson`) is not proven to work from an
-  Android app's private storage on every device/OS combination — see
-  "Why the example publishes nothing on-device" above. It works fine from
-  Dart on macOS (exercised by every test in `test/`).
-- No incremental folder indexing yet (`ss_index_folder`, ADR 0002 step 5,
-  is a separate task in flight); this package only opens snapshots that
-  already exist.
+- `ss_import_json` (`importSnapshotJson`)'s original `O_TMPFILE`/`AccessDenied`
+  failure on Android private storage (see "Why the example publishes nothing
+  on-device" above) was root-caused and fixed at the engine level by S1-T3's
+  portable atomic publish, and confirmed working on-device by the S1-T2/S1-T3
+  testers using the rebuilt library directly. This package's own example
+  still ships a pre-published asset rather than calling `importSnapshotJson`
+  on-device (a separate, still-valid smoke test of `ss_open`/`ss_query`
+  alone), so it is not exercised by this package's own instrumentation test.
+- `ss_index_folder` is bound as `SearchSimpli.indexFolder` (docs/tasks/S1-T4.md
+  criterion 1), with a Mac `dart test` suite and an Android instrumentation
+  test against the app's own private storage — see
+  `example/integration_test/app_test.dart`.

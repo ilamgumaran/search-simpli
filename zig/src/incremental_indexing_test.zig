@@ -382,3 +382,63 @@ test "an unreadable file's path is listed and its previous chunks are kept" {
     const hits = try queryPaths(arena, io, out, "hybrid");
     try std.testing.expect(containsPath(hits, "alpha.md"));
 }
+
+test "a file grown past max_file_bytes is reported too_large and its old chunks are tombstoned" {
+    // docs/tasks/S1-T4.md criterion 3: unlike an unreadable file (kept), a
+    // file that grows past the cap must lose its previously indexed chunks
+    // -- this is the "grown past the cap", not "new and already oversized",
+    // case the five-step fixture's `huge.md` step does not cover.
+    const allocator = std.testing.allocator;
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+
+    // grows.md starts small (indexed normally); keeper.md never changes,
+    // so its continued presence proves the tombstoning is specific to
+    // grows.md, not a wipe of the whole generation.
+    try root.writeFile(io, .{ .sub_path = "grows.md", .data = "a short document about hybrid retrieval\n" });
+    try root.writeFile(io, .{ .sub_path = "keeper.md", .data = "an unrelated document about lexical scoring\n" });
+
+    const small_caps = indexer.Caps{ .max_file_bytes = 64 };
+    const first = try indexer.indexFolderIncremental(arena, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, small_caps);
+    try std.testing.expectEqual(@as(usize, 2), first.added);
+    try std.testing.expectEqual(@as(usize, 0), first.too_large);
+    try std.testing.expectEqual(@as(usize, 2), first.documents);
+
+    const before_hits = try queryPaths(arena, io, out, "hybrid");
+    try std.testing.expect(containsPath(before_hits, "grows.md"));
+
+    // grows.md grows past the 64-byte cap.
+    const grown_content = try arena.alloc(u8, 128);
+    @memset(grown_content, 'z');
+    try root.writeFile(io, .{ .sub_path = "grows.md", .data = grown_content });
+
+    const second = try indexer.indexFolderIncremental(arena, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, small_caps);
+    try std.testing.expectEqual(@as(usize, 1), second.too_large);
+    try std.testing.expectEqual(@as(usize, 1), second.too_large_paths.len);
+    try std.testing.expectEqualStrings("grows.md", second.too_large_paths[0]);
+    try std.testing.expectEqual(@as(usize, 1), second.unchanged); // keeper.md
+    // Tombstoned, not silently kept: grows.md's previous chunk is gone from
+    // the new generation entirely -- documents drops from 2 to 1.
+    try std.testing.expectEqual(@as(usize, 1), second.documents);
+
+    const after_hits = try queryPaths(arena, io, out, "hybrid");
+    try std.testing.expect(!containsPath(after_hits, "grows.md"));
+    try std.testing.expect(containsPath(try queryPaths(arena, io, out, "lexical"), "keeper.md"));
+
+    // And it stays gone on the next run: not re-carried-forward from stale
+    // INDEX-STATE.json, and not re-admitted just because the cap wasn't
+    // re-checked.
+    const third = try indexer.indexFolderIncremental(arena, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, small_caps);
+    try std.testing.expectEqual(@as(usize, 1), third.too_large);
+    try std.testing.expectEqual(@as(usize, 1), third.documents);
+}
