@@ -1,3 +1,4 @@
+const incremental_state = @import("incremental_state.zig");
 const manifest = @import("manifest.zig");
 const publication = @import("publication.zig");
 const std = @import("std");
@@ -49,7 +50,11 @@ pub fn publishSerialized(
 
 /// Classify generation files without deleting anything. Orphans may still be
 /// held by readers of an older immutable manifest, so cleanup requires an
-/// external retention/lease policy.
+/// external retention/lease policy. `MANIFEST`, `WRITER.LOCK`, and
+/// `INDEX-STATE.json` (S1-T4 criterion 3, round-B non-blocking finding 3)
+/// are all known, non-generation files and never counted under
+/// `unknown_files`: an incrementally indexed directory's own bookkeeping
+/// file is not an operator-facing anomaly.
 pub fn scan(
     iterable_dir: std.Io.Dir,
     io: std.Io,
@@ -80,7 +85,8 @@ pub fn scan(
     while (try iterator.next(io)) |entry| {
         if (entry.kind != .file) continue;
         if (std.mem.eql(u8, entry.name, publication.current_manifest_file) or
-            std.mem.eql(u8, entry.name, writer_lock_file)) continue;
+            std.mem.eql(u8, entry.name, writer_lock_file) or
+            std.mem.eql(u8, entry.name, incremental_state.state_file)) continue;
         if (current_metadata) |metadata| {
             if (std.mem.eql(u8, entry.name, metadata.documents_file) or
                 std.mem.eql(u8, entry.name, metadata.lexical_file))
@@ -145,6 +151,39 @@ test "scanner distinguishes current generation and conservative orphans" {
     try std.testing.expectEqual(@as(usize, 1), report.orphan_document_files);
     try std.testing.expectEqual(@as(usize, 1), report.orphan_lexical_files);
     try std.testing.expectEqual(@as(usize, 1), report.unknown_files);
+}
+
+test "scanner does not count INDEX-STATE.json as an unknown file" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    const documents = [_]@import("hybrid.zig").Document{.{ .id = "one", .text = "search evidence" }};
+    var document_storage: [256]u8 = undefined;
+    const documents_encoded = try @import("segment.zig").encode(&documents, &document_storage);
+    var terms: [8]@import("postings.zig").TermEntry = undefined;
+    var posting_storage: [8]@import("postings.zig").Posting = undefined;
+    var lengths: [1]u32 = undefined;
+    var fills: [8]usize = undefined;
+    const index = try @import("postings.zig").build(&documents, &terms, &posting_storage, &lengths, &fills);
+    var lexical_storage: [512]u8 = undefined;
+    const lexical_encoded = try @import("lexical_segment.zig").encode(index, &lexical_storage);
+    const metadata = try manifest.create(1, "analyzer-v2", "none", "documents-1.hybseg", "lexical-1.hyblex", documents_encoded, lexical_encoded);
+    var manifest_storage: [512]u8 = undefined;
+    const manifest_encoded = try manifest.encode(metadata, &manifest_storage);
+    try publishSerialized(tmp.dir, io, manifest_encoded, documents_encoded, lexical_encoded);
+
+    try incremental_state.save(io, tmp.dir, std.testing.allocator, .{
+        .generation = 1,
+        .analyzer_id = "analyzer-v2",
+        .files = &.{},
+    });
+
+    var manifest_read: [512]u8 = undefined;
+    var document_read: [256]u8 = undefined;
+    var lexical_read: [512]u8 = undefined;
+    const report = try scan(tmp.dir, io, &manifest_read, &document_read, &lexical_read);
+    try std.testing.expectEqual(@as(usize, 0), report.unknown_files);
 }
 
 test "scanner treats generation files as orphans when no manifest exists" {

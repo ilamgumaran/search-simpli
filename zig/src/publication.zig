@@ -75,7 +75,7 @@ fn replaceCurrentManifest(dir: std.Io.Dir, io: std.Io, bytes: []const u8) !void 
 /// Deliberately does *not* use `Dir.createFileAtomic`: on Linux (Android
 /// included), that function opens an *unnamed* temporary file with
 /// `O_TMPFILE` whenever its `replace` option is false. Found on an Android
-/// emulator (API 37, S1-T2's builder): the app's SELinux policy denies
+/// emulator (API 34/Android 14, S1-T2's builder): the app's SELinux policy denies
 /// `O_TMPFILE` inside the app's own private data directory, so publishing
 /// the immutable `documents-N.hybseg`/`lexical-N.hyblex` sections (and
 /// therefore `ss_import_json`, `searchd index`, and `searchd index

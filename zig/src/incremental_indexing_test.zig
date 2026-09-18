@@ -73,7 +73,8 @@ test "five-step fixture mutation: add, edit, delete, rename, oversize" {
         try std.testing.expectEqual(@as(usize, 2), report.added);
         try std.testing.expectEqual(@as(usize, 0), report.changed);
         try std.testing.expectEqual(@as(usize, 0), report.removed);
-        try std.testing.expectEqual(@as(usize, 0), report.skipped);
+        try std.testing.expectEqual(@as(usize, 0), report.unchanged);
+        try std.testing.expectEqual(@as(usize, 0), report.budget_exhausted);
         try std.testing.expectEqual(@as(usize, 0), report.too_large);
         try std.testing.expectEqual(@as(usize, 0), report.unreadable);
 
@@ -89,7 +90,8 @@ test "five-step fixture mutation: add, edit, delete, rename, oversize" {
         try std.testing.expectEqual(@as(usize, 1), report.added);
         try std.testing.expectEqual(@as(usize, 0), report.changed);
         try std.testing.expectEqual(@as(usize, 0), report.removed);
-        try std.testing.expectEqual(@as(usize, 2), report.skipped); // alpha, beta unchanged
+        try std.testing.expectEqual(@as(usize, 2), report.unchanged); // alpha, beta unchanged
+        try std.testing.expectEqual(@as(usize, 0), report.budget_exhausted);
 
         const hits = try queryPaths(arena, io, out, "embeddings");
         try std.testing.expect(containsPath(hits, "gamma.md"));
@@ -103,7 +105,7 @@ test "five-step fixture mutation: add, edit, delete, rename, oversize" {
         try std.testing.expectEqual(@as(usize, 0), report.added);
         try std.testing.expectEqual(@as(usize, 1), report.changed);
         try std.testing.expectEqual(@as(usize, 0), report.removed);
-        try std.testing.expectEqual(@as(usize, 2), report.skipped); // alpha, gamma unchanged
+        try std.testing.expectEqual(@as(usize, 2), report.unchanged); // alpha, gamma unchanged
 
         const old_hits = try queryPaths(arena, io, out, "ranking");
         try std.testing.expect(!containsPath(old_hits, "beta.md"));
@@ -119,7 +121,7 @@ test "five-step fixture mutation: add, edit, delete, rename, oversize" {
         try std.testing.expectEqual(@as(usize, 0), report.added);
         try std.testing.expectEqual(@as(usize, 0), report.changed);
         try std.testing.expectEqual(@as(usize, 1), report.removed);
-        try std.testing.expectEqual(@as(usize, 2), report.skipped); // alpha, beta unchanged
+        try std.testing.expectEqual(@as(usize, 2), report.unchanged); // alpha, beta unchanged
 
         const hits = try queryPaths(arena, io, out, "embeddings");
         try std.testing.expect(!containsPath(hits, "gamma.md"));
@@ -135,7 +137,7 @@ test "five-step fixture mutation: add, edit, delete, rename, oversize" {
         try std.testing.expectEqual(@as(usize, 1), report.added); // delta.md, new path
         try std.testing.expectEqual(@as(usize, 0), report.changed);
         try std.testing.expectEqual(@as(usize, 1), report.removed); // alpha.md gone
-        try std.testing.expectEqual(@as(usize, 1), report.skipped); // beta.md unchanged
+        try std.testing.expectEqual(@as(usize, 1), report.unchanged); // beta.md unchanged
 
         const hits = try queryPaths(arena, io, out, "hybrid");
         try std.testing.expect(containsPath(hits, "delta.md"));
@@ -163,7 +165,9 @@ test "five-step fixture mutation: add, edit, delete, rename, oversize" {
         try std.testing.expectEqual(@as(usize, 0), report.changed);
         try std.testing.expectEqual(@as(usize, 0), report.removed);
         try std.testing.expectEqual(@as(usize, 1), report.too_large); // huge.md excluded
-        try std.testing.expectEqual(@as(usize, 2), report.skipped); // beta.md, delta.md unchanged
+        try std.testing.expectEqual(@as(usize, 1), report.too_large_paths.len);
+        try std.testing.expectEqualStrings("huge.md", report.too_large_paths[0]);
+        try std.testing.expectEqual(@as(usize, 2), report.unchanged); // beta.md, delta.md unchanged
 
         const hits = try queryPaths(arena, io, out, "zzz");
         try std.testing.expectEqual(@as(usize, 0), hits.len); // huge.md never indexed
@@ -222,7 +226,7 @@ test "crash mid-publication: an orphaned generation file does not corrupt the cu
     const second = try indexOnce(arena, io, root, out);
     try std.testing.expectEqual(@as(u64, 3), second.generation); // skipped the occupied generation 2
     try std.testing.expectEqual(@as(usize, 1), second.added);
-    try std.testing.expectEqual(@as(usize, 1), second.skipped);
+    try std.testing.expectEqual(@as(usize, 1), second.unchanged);
 
     const opened_after = try snapshot_open.open(arena, io, out);
     try std.testing.expectEqual(@as(u64, 3), opened_after.generation);
@@ -267,4 +271,114 @@ test "AnalyzerMismatch is rejected rather than silently mixing tokenizations" {
         chunker.default_overlap_lines,
         default_caps,
     ));
+}
+
+test "last-file deletion publishes an empty generation instead of NoDocuments" {
+    const allocator = std.testing.allocator;
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+
+    try root.writeFile(io, .{ .sub_path = "only.md", .data = "the only file in this folder, about to be deleted\n" });
+    const first = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(usize, 1), first.documents);
+
+    try root.deleteFile(io, "only.md");
+    const second = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(u64, 2), second.generation);
+    try std.testing.expectEqual(@as(usize, 1), second.removed);
+    try std.testing.expectEqual(@as(usize, 0), second.documents);
+    try std.testing.expectEqual(@as(usize, 0), second.terms);
+
+    const opened = try snapshot_open.open(arena, io, out);
+    try std.testing.expectEqual(@as(u64, 2), opened.generation);
+    try std.testing.expectEqual(@as(usize, 0), opened.documents.len);
+
+    // A folder that was never indexed and has no candidate files at all
+    // also publishes (generation 1, not an error).
+    var tmp2 = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp2.cleanup();
+    var empty_root = try tmp2.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer empty_root.close(io);
+    try tmp2.dir.createDir(io, "out", .default_dir);
+    var empty_out = try tmp2.dir.openDir(io, "out", .{ .iterate = true });
+    defer empty_out.close(io);
+    const empty_report = try indexOnce(arena, io, empty_root, empty_out);
+    try std.testing.expectEqual(@as(u64, 1), empty_report.generation);
+    try std.testing.expectEqual(@as(usize, 0), empty_report.documents);
+}
+
+test "a file over max_total_bytes is reported budget_exhausted, distinct from unchanged" {
+    const allocator = std.testing.allocator;
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+
+    try root.writeFile(io, .{ .sub_path = "alpha.md", .data = "alpha document about hybrid retrieval systems\n" });
+    try root.writeFile(io, .{ .sub_path = "beta.md", .data = "beta document about lexical search ranking\n" });
+
+    // A budget that only ever admits the first (alphabetically sorted)
+    // candidate file: alpha.md is read, beta.md is left for a later run.
+    const tiny_budget = indexer.Caps{ .max_total_bytes = 48 };
+    const report = try indexer.indexFolderIncremental(arena, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, tiny_budget);
+    try std.testing.expectEqual(@as(usize, 1), report.added);
+    try std.testing.expectEqual(@as(usize, 0), report.unchanged);
+    try std.testing.expectEqual(@as(usize, 1), report.budget_exhausted);
+
+    // A second run with the default (huge) budget picks up beta.md, which
+    // the first run left untouched -- it is reported "added", not
+    // "unchanged", because it was never actually indexed before.
+    const second = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(usize, 1), second.added);
+    try std.testing.expectEqual(@as(usize, 0), second.budget_exhausted);
+}
+
+test "an unreadable file's path is listed and its previous chunks are kept" {
+    const allocator = std.testing.allocator;
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+
+    try root.writeFile(io, .{ .sub_path = "alpha.md", .data = "alpha document about hybrid retrieval systems\n" });
+    const first = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(usize, 1), first.documents);
+
+    // A file that becomes invalid UTF-8 after it was already indexed is
+    // "unreadable", not "too_large": its previous chunks are kept.
+    try root.writeFile(io, .{ .sub_path = "alpha.md", .data = &[_]u8{ 0xff, 0xfe, 0x00 } });
+    const second = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(usize, 1), second.unreadable);
+    try std.testing.expectEqual(@as(usize, 1), second.unreadable_paths.len);
+    try std.testing.expectEqualStrings("alpha.md", second.unreadable_paths[0]);
+    try std.testing.expectEqual(@as(usize, 1), second.documents); // kept, not tombstoned
+
+    const hits = try queryPaths(arena, io, out, "hybrid");
+    try std.testing.expect(containsPath(hits, "alpha.md"));
 }

@@ -210,8 +210,8 @@ inside that workspace's shared emulator lock convention.
 
 **Why the example publishes nothing on-device.** An earlier version of this
 example called `importSnapshotJson` (`ss_import_json`) directly on the
-device and failed with `ss_import_json: AccessDenied` on a fresh API-37
-emulator. The cause is in Zig 0.16's standard library, not this binding:
+device and failed with `ss_import_json: AccessDenied` on a fresh API 34
+(Android 14) emulator. The cause is in Zig 0.16's standard library, not this binding:
 `Dir.createFileAtomic` (used by the engine's atomic-publication path,
 `zig/src/publication.zig`) opens an `O_TMPFILE` descriptor before renaming
 it into place on Linux targets, and this device's SELinux policy denies

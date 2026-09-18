@@ -177,14 +177,20 @@ fn printHelp() void {
         \\                       of a full rebuild: per-file content hashes
         \\                       (persisted in <dir>/INDEX-STATE.json) skip
         \\                       unchanged files, deleted files are
-        \\                       tombstoned, and a JSON report
-        \\                       (added/changed/removed/skipped/too_large/
-        \\                       unreadable/documents/terms/postings) is
-        \\                       printed. --max-file-bytes/--max-total-bytes
-        \\                       cap, respectively, one file's size (files
-        \\                       over the cap count as too_large and are
-        \\                       excluded) and the total bytes read in one
-        \\                       --update run (default 10 MiB / 512 MiB).
+        \\                       tombstoned, and a JSON report (added/
+        \\                       changed/removed/unchanged/budget_exhausted/
+        \\                       too_large/unreadable/too_large_paths/
+        \\                       unreadable_paths/documents/terms/postings)
+        \\                       is printed. An empty folder, or a folder
+        \\                       whose last file was just deleted, publishes
+        \\                       an empty generation instead of failing.
+        \\                       --max-file-bytes/--max-total-bytes cap,
+        \\                       respectively, one file's size (files over
+        \\                       the cap are tombstoned, named in
+        \\                       too_large_paths) and the total bytes read
+        \\                       in one --update run (files left over count
+        \\                       as budget_exhausted, default 10 MiB /
+        \\                       512 MiB).
         \\  query <dir> "<text>" [--json] [--top-k N]
         \\                       BM25 lexical query against a published
         \\                       snapshot; human-readable by default, or a

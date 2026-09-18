@@ -269,15 +269,31 @@ void ss_free(char *ptr);
  * Returns a heap-allocated, null-terminated JSON report object on success —
  * the caller must free it with ss_free() — with fields "generation"
  * (integer), "analyzer_id" (string), "added", "changed", "removed",
- * "skipped", "too_large", "unreadable", "documents", "terms", "postings"
- * (all integers). A non-"update" run always reports "changed"/"removed"/
- * "too_large"/"unreadable" as 0 and "added"/"skipped" as the files
- * indexed/skipped; an "update" run reports the full incremental breakdown.
+ * "unchanged", "budget_exhausted", "too_large", "unreadable" (all
+ * integers), "too_large_paths", "unreadable_paths" (arrays of the relative
+ * paths counted under "too_large"/"unreadable" — never just a bare count),
+ * "documents", "terms", "postings" (all integers). A non-"update" run
+ * always reports "changed"/"removed"/"unchanged"/"budget_exhausted"/
+ * "too_large" as 0, "too_large_paths" as an empty array, and
+ * "added"/"unreadable"/"unreadable_paths" as the files indexed/skipped; an
+ * "update" run reports the full incremental breakdown. "unchanged" and
+ * "budget_exhausted" are reported separately — "nothing to do" and "left
+ * for a later run because max_total_bytes ran out" are never the same
+ * number. An empty folder_path, or a folder whose last indexable file was
+ * just deleted, publishes an empty generation (0 documents/terms/postings)
+ * instead of failing.
  *
- * Returns NULL on failure — a missing/unreadable folder_path, a folder with
- * no indexable files, an unrecognized "analyzer", or (with "update": true)
- * `dir_path` already holding a snapshot published with a different
- * analyzer — see ss_last_error().
+ * A file larger than max_file_bytes is tombstoned, not silently kept: it is
+ * counted (and named) under "too_large"/"too_large_paths", and its
+ * previously indexed chunks (if any) are dropped from this generation. A
+ * file that is merely unreadable this run (permissions, a transient I/O
+ * error, invalid UTF-8) keeps its previously indexed chunks instead — see
+ * docs/incremental-indexing.md.
+ *
+ * Returns NULL on failure — a missing/unreadable folder_path, an
+ * unrecognized "analyzer", or (with "update": true) `dir_path` already
+ * holding a snapshot published with a different analyzer — see
+ * ss_last_error().
  */
 char *ss_index_folder(const char *dir_path, const char *folder_path, const char *opts_json);
 

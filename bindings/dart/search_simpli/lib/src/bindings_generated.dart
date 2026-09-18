@@ -260,6 +260,104 @@ class SearchSimpliBindings {
           'ss_free');
   late final _ss_free =
       _ss_freePtr.asFunction<void Function(ffi.Pointer<ffi.Char>)>();
+
+  /// Index the folder at `folder_path` and atomically publish (or
+  /// re-publish/update) a lexical-only snapshot into `dir_path` (created,
+  /// including parent directories, if it does not already exist) — the
+  /// native-engine equivalent of `searchd index` / `searchd index --update`.
+  ///
+  /// This call mutates the directory identified by `dir_path` rather than
+  /// operating on an already-open ss_handle: indexing publishes a *new*
+  /// generation, and a handle is a decoded snapshot of one already-published
+  /// generation, so there is nothing for an open handle to do here that
+  /// closing and reopening afterward (ss_close then ss_open) does not already
+  /// cover — do that to see the new generation through a handle.
+  ///
+  /// dir_path      Snapshot directory to publish/update (created if
+  /// missing).
+  /// folder_path    Folder to index.
+  /// opts_json      NULL or "" for defaults, or a null-terminated JSON
+  /// object with any of:
+  /// "analyzer"          "analyzer-v1"/"v1" or
+  /// "analyzer-v2"/"v2" (default),
+  /// same spelling as `searchd index
+  /// --analyzer`
+  /// "max_chars"         chunker max characters per chunk
+  /// (default 1600)
+  /// "overlap_lines"     chunker overlap lines (default 3)
+  /// "update"            bool, default false. false: full
+  /// rebuild, always publishing the
+  /// next free generation in
+  /// `dir_path` (never fails with
+  /// PathAlreadyExists on a directory
+  /// that already holds a snapshot).
+  /// true: incremental update —
+  /// per-file content hashes (persisted
+  /// in `dir_path`/INDEX-STATE.json)
+  /// skip unchanged files, deleted
+  /// files are tombstoned. Fails
+  /// closed (see below) if `dir_path`
+  /// already holds a snapshot published
+  /// with a different analyzer.
+  /// "max_file_bytes"    per-file size cap in bytes
+  /// (default 10 MiB); a larger file is
+  /// never read and is excluded,
+  /// counted under the report's
+  /// "too_large"
+  /// "max_total_bytes"   total bytes read in one call
+  /// before remaining unprocessed files
+  /// are left untouched for this
+  /// generation (default 512 MiB)
+  ///
+  /// Returns a heap-allocated, null-terminated JSON report object on success —
+  /// the caller must free it with ss_free() — with fields "generation"
+  /// (integer), "analyzer_id" (string), "added", "changed", "removed",
+  /// "unchanged", "budget_exhausted", "too_large", "unreadable" (all
+  /// integers), "too_large_paths", "unreadable_paths" (arrays of the relative
+  /// paths counted under "too_large"/"unreadable" — never just a bare count),
+  /// "documents", "terms", "postings" (all integers). A non-"update" run
+  /// always reports "changed"/"removed"/"unchanged"/"budget_exhausted"/
+  /// "too_large" as 0, "too_large_paths" as an empty array, and
+  /// "added"/"unreadable"/"unreadable_paths" as the files indexed/skipped; an
+  /// "update" run reports the full incremental breakdown. "unchanged" and
+  /// "budget_exhausted" are reported separately — "nothing to do" and "left
+  /// for a later run because max_total_bytes ran out" are never the same
+  /// number. An empty folder_path, or a folder whose last indexable file was
+  /// just deleted, publishes an empty generation (0 documents/terms/postings)
+  /// instead of failing.
+  ///
+  /// A file larger than max_file_bytes is tombstoned, not silently kept: it is
+  /// counted (and named) under "too_large"/"too_large_paths", and its
+  /// previously indexed chunks (if any) are dropped from this generation. A
+  /// file that is merely unreadable this run (permissions, a transient I/O
+  /// error, invalid UTF-8) keeps its previously indexed chunks instead — see
+  /// docs/incremental-indexing.md.
+  ///
+  /// Returns NULL on failure — a missing/unreadable folder_path, an
+  /// unrecognized "analyzer", or (with "update": true) `dir_path` already
+  /// holding a snapshot published with a different analyzer — see
+  /// ss_last_error().
+  ffi.Pointer<ffi.Char> ss_index_folder(
+    ffi.Pointer<ffi.Char> dir_path,
+    ffi.Pointer<ffi.Char> folder_path,
+    ffi.Pointer<ffi.Char> opts_json,
+  ) {
+    return _ss_index_folder(
+      dir_path,
+      folder_path,
+      opts_json,
+    );
+  }
+
+  late final _ss_index_folderPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>)>>('ss_index_folder');
+  late final _ss_index_folder = _ss_index_folderPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>();
 }
 
 final class ss_handle extends ffi.Opaque {}
