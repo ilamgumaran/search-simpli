@@ -12,6 +12,10 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (round D/E, 2026-09-26)
+
+**S1-T5 is `verified` and merged to `main`** — merge `c4cd8d0` over the round-E rework `b65f0f3` and the verdict `1e9d20a` (round D was `rejected`; both verdicts are in `docs/tasks/S1-T5.md`): `--max-file-bytes`/`--max-total-bytes` now apply on a full rebuild exactly as on `--update`, the non-`--update` CLI line reports `too_large`/`unreadable` separately, a full rebuild writes `INDEX-STATE.json` so the next `--update` reports `unchanged`, and no tracked file carries a spelled-out home path (`scripts/check_no_home_paths.py` runs in the Python suite). Suites 97/97, 12/12, 15/15, 68, 18/18; shipped libraries rebuilt byte-identical (`dylib` 382,088 B `cbaaa9f6…`, `.so` 382,288 B `c5f0b056…`); `ss_index_folder`'s signature and `CONTRACTS_VERSION` (`1.0.0`) unchanged.
+
 ## Standalone platform status (round C, 2026-09-17)
 
 **S1-T4 is `verified` and merged to `main`** — merge commit `d860bb1` (branch `task/S1-T4` `0bcc446`, which continued a rate-limited builder's `wip` `60be2dc`), then the verdict commit `ddb72a6`, which is `main`'s head. Round C is hardening only: it closes the round-B verdicts' non-blocking findings rather than adding a capability. The owner has paused this work after round C until later in the weekend.

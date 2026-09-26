@@ -1,6 +1,6 @@
 # Next
 
-**26 Sep:** S1-T5 rejected on its first pass (verdict on `task/S1-T5`); rework on Sonnet 5 in flight; then the owner decides.
+**26 Sep:** S1-T5 is `verified` and merged to `main` (`c4cd8d0`) after being rejected on its first pass and reworked on Sonnet 5 — both verdicts are in `docs/tasks/S1-T5.md`. The round-C follow-ups are closed; **next is the owner's call**, with the two queued items below (`simpli-helper` M12-T0 re-pinning to this `main`, then M11-T1 using `indexFolder`) still the standing candidates. An adopter re-pinning now should note the shipped libraries changed again (`dylib` 382,088 B `cbaaa9f6…`, `.so` 382,288 B `c5f0b056…`) and that the two size caps now bite on a full rebuild where they were silently inert; `CONTRACTS_VERSION` is still `1.0.0`.
 
 
 **From 2026-09-13 (owner's decision): Search Simpli becomes standalone and portable, then the family app adopts it.** See `docs/decisions/0002-standalone-portable-platform.md` and the tasks in `docs/tasks/` (S1-T0 C ABI + libraries, S1-T1 native chunker/Unicode analyzer/CLI, S1-T2 Dart FFI package, S1-T3 incremental folder indexing, S1-T4 round-C hardening). Process in `docs/process/ROLES.md`.
