@@ -38,7 +38,7 @@ fn indexAndOpen(
     // Intentionally not cleaned up per-call: each call gets a fresh unique
     // tmp dir from the standard library, and the whole process exits when
     // the test binary finishes.
-    const report = try indexer.indexFolder(arena, io, root_dir, tmp.dir, analyzer, 1, chunker.default_max_chars, chunker.default_overlap_lines);
+    const report = try indexer.indexFolder(arena, io, root_dir, tmp.dir, analyzer, 1, chunker.default_max_chars, chunker.default_overlap_lines, .{});
     try std.testing.expect(report.documents > 0);
     return snapshot_open.open(arena, io, tmp.dir);
 }

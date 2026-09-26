@@ -148,6 +148,13 @@ pub fn tokenize(allocator: std.mem.Allocator, analyzer: AnalyzerId, text: []cons
 /// failing -- S1-T4 criterion 3. Only a missing/unreadable `root` itself
 /// (the caller's `openDir` failing before this function is even called)
 /// stops a snapshot from being published.
+///
+/// Caps are applied the same as in `indexFolderIncremental`: a file over
+/// `caps.max_file_bytes` is not read and is reported as `too_large` --
+/// S1-T5 criterion 1. The return type is `IncrementalReport` to unify the
+/// output shape between full rebuilds and incremental runs; a non-update run
+/// reports `changed`/`removed`/`unchanged`/`budget_exhausted` as 0 and
+/// `added` as the number of files indexed.
 pub fn indexFolder(
     allocator: std.mem.Allocator,
     io: std.Io,
@@ -157,38 +164,51 @@ pub fn indexFolder(
     generation: u64,
     max_chars: usize,
     overlap_lines: usize,
-) !IndexReport {
+    caps: Caps,
+) !IncrementalReport {
     const paths = try collectCandidatePaths(allocator, io, root);
 
     var documents = std.ArrayList(hybrid.Document).empty;
-    var files_skipped: usize = 0;
+    var unreadable: usize = 0;
+    var too_large: usize = 0;
     var unreadable_paths = std.ArrayList([]const u8).empty;
+    var too_large_paths = std.ArrayList([]const u8).empty;
+    var state_entries = std.ArrayList(incremental_state.Entry).empty;
+    var indexed_files = std.StringHashMap(void).init(allocator);
 
     for (paths) |relative_path| {
         const stat = root.statFile(io, relative_path, .{}) catch {
-            files_skipped += 1;
+            unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
             continue;
         };
         const size = std.math.cast(usize, stat.size) orelse {
-            files_skipped += 1;
+            unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
             continue;
         };
+
+        // A file over `max_file_bytes` is not read -- S1-T5 criterion 1.
+        if (size > caps.max_file_bytes) {
+            too_large += 1;
+            try too_large_paths.append(allocator, relative_path);
+            continue;
+        }
+
         const buffer = try allocator.alloc(u8, size);
         const content = root.readFile(io, relative_path, buffer) catch {
-            files_skipped += 1;
+            unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
             continue;
         };
         if (!std.unicode.utf8ValidateSlice(content)) {
-            files_skipped += 1;
+            unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
             continue;
         }
 
         const spans = chunker.chunk(allocator, content, max_chars, overlap_lines) catch {
-            files_skipped += 1;
+            unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
             continue;
         };
@@ -203,6 +223,17 @@ pub fn indexFolder(
                 .path = relative_path,
                 .start_line = span.start_line,
                 .end_line = span.end_line,
+            });
+        }
+
+        // Track this file as successfully indexed for INDEX-STATE.json.
+        if (!indexed_files.contains(relative_path)) {
+            try indexed_files.put(relative_path, {});
+            const digest_hex = hashHex(content);
+            try state_entries.append(allocator, .{
+                .path = relative_path,
+                .hash = try allocator.dupe(u8, &digest_hex),
+                .size = size,
             });
         }
     }
@@ -240,11 +271,26 @@ pub fn indexFolder(
 
     try lifecycle.publishSerialized(out_dir, io, manifest_encoded, documents_encoded, lexical_encoded);
 
+    // After a full rebuild, write INDEX-STATE.json so the first `--update`
+    // after it will report unchanged files instead of re-indexing everything
+    // as `added` (S1-T5 criterion 2).
+    try incremental_state.save(io, out_dir, allocator, .{
+        .generation = generation,
+        .analyzer_id = analyzer.label(),
+        .files = state_entries.items,
+    });
+
     return .{
         .generation = generation,
         .analyzer_id = analyzer.label(),
-        .files_indexed = paths.len - files_skipped,
-        .files_skipped = files_skipped,
+        .added = paths.len - unreadable - too_large,
+        .changed = 0,
+        .removed = 0,
+        .unchanged = 0,
+        .budget_exhausted = 0,
+        .too_large = too_large,
+        .unreadable = unreadable,
+        .too_large_paths = try too_large_paths.toOwnedSlice(allocator),
         .unreadable_paths = try unreadable_paths.toOwnedSlice(allocator),
         .documents = documents.items.len,
         .terms = lexical_index.terms.len,
@@ -627,8 +673,8 @@ test "indexFolder publishes a queryable generation from a real folder" {
     var out_dir = try tmp.dir.openDir(io, "out", .{});
     defer out_dir.close(io);
 
-    const report = try indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines);
-    try std.testing.expectEqual(@as(usize, 1), report.files_indexed);
+    const report = try indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    try std.testing.expectEqual(@as(usize, 1), report.added);
     try std.testing.expect(report.documents >= 1);
     try std.testing.expectEqualStrings("analyzer-v2", report.analyzer_id);
 }
@@ -650,8 +696,8 @@ test "indexFolder publishes an empty generation for an empty folder instead of N
     var out_dir = try tmp.dir.openDir(io, "out", .{});
     defer out_dir.close(io);
 
-    const report = try indexFolder(arena, io, root, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines);
-    try std.testing.expectEqual(@as(usize, 0), report.files_indexed);
+    const report = try indexFolder(arena, io, root, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    try std.testing.expectEqual(@as(usize, 0), report.added);
     try std.testing.expectEqual(@as(usize, 0), report.documents);
     try std.testing.expectEqual(@as(usize, 0), report.terms);
     try std.testing.expectEqual(@as(usize, 0), report.postings);
@@ -681,9 +727,9 @@ test "indexFolder lists the paths of files it could not read" {
     var out_dir = try tmp.dir.openDir(io, "out", .{});
     defer out_dir.close(io);
 
-    const report = try indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines);
-    try std.testing.expectEqual(@as(usize, 1), report.files_indexed);
-    try std.testing.expectEqual(@as(usize, 1), report.files_skipped);
+    const report = try indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    try std.testing.expectEqual(@as(usize, 1), report.added);
+    try std.testing.expectEqual(@as(usize, 1), report.unreadable);
     try std.testing.expectEqual(@as(usize, 1), report.unreadable_paths.len);
     try std.testing.expectEqualStrings("bad.md", report.unreadable_paths[0]);
 }
@@ -700,4 +746,64 @@ test "isIgnoredPath skips dotfiles and ignored directories" {
     try std.testing.expect(isIgnoredPath("node_modules/pkg/index.js"));
     try std.testing.expect(isIgnoredPath("src/.hidden.md"));
     try std.testing.expect(!isIgnoredPath("src/main.md"));
+}
+
+test "indexFolder applies max_file_bytes cap on a full rebuild (S1-T5 criterion 1)" {
+    const allocator = std.testing.allocator;
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    // A 41-byte file with a 10-byte cap should be reported too_large and
+    // not indexed -- S1-T5 criterion 1 example.
+    try tmp.dir.writeFile(io, .{ .sub_path = "oversized.md", .data = "123456789\n123456789\n123456789\n123456789\na" });
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out_dir = try tmp.dir.openDir(io, "out", .{});
+    defer out_dir.close(io);
+
+    const caps = Caps{ .max_file_bytes = 10 };
+    const report = try indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, caps);
+    try std.testing.expectEqual(@as(usize, 0), report.added);
+    try std.testing.expectEqual(@as(usize, 1), report.too_large);
+    try std.testing.expectEqual(@as(usize, 1), report.too_large_paths.len);
+    try std.testing.expectEqualStrings("oversized.md", report.too_large_paths[0]);
+    try std.testing.expectEqual(@as(usize, 0), report.documents);
+
+    // The generation is published but empty (0 documents), and queryable.
+    const opened = try snapshot_open.open(arena, io, out_dir);
+    try std.testing.expectEqual(@as(u64, 1), opened.generation);
+    try std.testing.expectEqual(@as(usize, 0), opened.documents.len);
+}
+
+test "full rebuild writes INDEX-STATE.json, first --update reports unchanged (S1-T5 criterion 2)" {
+    const allocator = std.testing.allocator;
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "note.md", .data = "hybrid ranking combines lexical and semantic evidence\n" });
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out_dir = try tmp.dir.openDir(io, "out", .{});
+    defer out_dir.close(io);
+
+    // Full rebuild (generation 1).
+    const report1 = try indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    try std.testing.expectEqual(@as(usize, 1), report1.added);
+    try std.testing.expectEqual(@as(usize, 1), report1.documents);
+
+    // Verify that INDEX-STATE.json was written with the correct state.
+    const state = try incremental_state.load(arena, io, out_dir);
+    try std.testing.expect(state != null);
+    if (state) |s| {
+        try std.testing.expectEqual(@as(usize, 1), s.files.len);
+        try std.testing.expectEqualStrings("note.md", s.files[0].path);
+    }
 }

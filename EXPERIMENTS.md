@@ -52,7 +52,7 @@ Source: <https://ziglang.org/download/>
 /tmp/zig-aarch64-macos-0.16.0/zig build test
 ```
 
-Zig could not open its default global cache at `/Users/ilam/.cache/zig` because the workspace sandbox denied that write.
+Zig could not open its default global cache at `<home>/.cache/zig` because the workspace sandbox denied that write.
 
 **Adjustment:** Use explicit writable cache paths under `/tmp`.
 

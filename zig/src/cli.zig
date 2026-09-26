@@ -114,11 +114,12 @@ pub fn runIndex(
         generation,
         options.max_chars,
         options.overlap_lines,
+        options.caps,
     );
 
     try output.print(
         "indexed {s}: analyzer={s} generation={d} files_indexed={d} files_skipped={d} documents={d} terms={d} postings={d}\n",
-        .{ folder_path, report.analyzer_id, report.generation, report.files_indexed, report.files_skipped, report.documents, report.terms, report.postings },
+        .{ folder_path, report.analyzer_id, report.generation, report.added, report.too_large + report.unreadable, report.documents, report.terms, report.postings },
     );
 }
 
