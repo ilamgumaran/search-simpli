@@ -1,6 +1,6 @@
 # Next
 
-**26 Sep:** S1-T5 (round-C follow-ups) in flight on Haiku 4.5; then the owner decides.
+**26 Sep:** S1-T5 rejected on its first pass (verdict on `task/S1-T5`); rework on Sonnet 5 in flight; then the owner decides.
 
 
 **From 2026-09-13 (owner's decision): Search Simpli becomes standalone and portable, then the family app adopts it.** See `docs/decisions/0002-standalone-portable-platform.md` and the tasks in `docs/tasks/` (S1-T0 C ABI + libraries, S1-T1 native chunker/Unicode analyzer/CLI, S1-T2 Dart FFI package, S1-T3 incremental folder indexing, S1-T4 round-C hardening). Process in `docs/process/ROLES.md`.
