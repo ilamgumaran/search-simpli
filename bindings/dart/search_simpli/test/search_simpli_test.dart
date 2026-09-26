@@ -157,4 +157,68 @@ void main() {
       );
     });
   });
+
+  group('SearchSimpli.indexFolder caps on a non-update run (S1-T5 criterion 1)', () {
+    test('maxFileBytes caps a file on a full rebuild', () {
+      // Own plant: a folder containing only one oversized file, not shared
+      // with any other test's fixture.
+      final folder = Directory.systemTemp.createTempSync('ss-dart-cap-file-');
+      final out = Directory.systemTemp.createTempSync('ss-dart-cap-file-out-');
+      out.deleteSync(); // ss_index_folder must create it.
+      addTearDown(() => folder.deleteSync(recursive: true));
+      addTearDown(() {
+        if (out.existsSync()) out.deleteSync(recursive: true);
+      });
+      File('${folder.path}/oversized.md').writeAsStringSync(
+        '123456789\n123456789\n123456789\n123456789\na', // 41 bytes
+      );
+
+      final report = SearchSimpli.indexFolder(
+        out.path,
+        folder.path,
+        options: const IndexFolderOptions(update: false, maxFileBytes: 10),
+      );
+
+      expect(report.added, 0);
+      expect(report.tooLarge, 1);
+      expect(report.tooLargePaths, ['oversized.md']);
+      expect(report.documents, 0);
+
+      final engine = SearchSimpli.open(out.path);
+      try {
+        final result = engine.query('123456789', topK: 5, mode: RetrievalMode.lexical);
+        expect(result.results, isEmpty);
+      } finally {
+        engine.close();
+      }
+    });
+
+    test('maxTotalBytes caps files on a full rebuild', () {
+      // Own plant: three ~41-byte files and a 50-byte budget, so only the
+      // first (sorted by path) is read and the other two are left over.
+      final folder = Directory.systemTemp.createTempSync('ss-dart-cap-total-');
+      final out = Directory.systemTemp.createTempSync('ss-dart-cap-total-out-');
+      out.deleteSync();
+      addTearDown(() => folder.deleteSync(recursive: true));
+      addTearDown(() {
+        if (out.existsSync()) out.deleteSync(recursive: true);
+      });
+      for (final name in ['a.md', 'b.md', 'c.md']) {
+        File('${folder.path}/$name').writeAsStringSync(
+          '123456789\n123456789\n123456789\n123456789\na', // 41 bytes each
+        );
+      }
+
+      final report = SearchSimpli.indexFolder(
+        out.path,
+        folder.path,
+        options: const IndexFolderOptions(update: false, maxTotalBytes: 50),
+      );
+
+      expect(report.added, 1);
+      expect(report.budgetExhausted, 2);
+      expect(report.tooLarge, 0);
+      expect(report.documents, greaterThanOrEqualTo(1));
+    });
+  });
 }

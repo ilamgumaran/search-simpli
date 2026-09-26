@@ -131,7 +131,7 @@ Build toward a search solution that begins with files/folders and an LLM-friendl
 ## Resume commands
 
 ```sh
-cd /Users/ilam/workspace/search-platform-exploration
+cd <home>/workspace/search-platform-exploration
 python3 -m unittest discover -s tests -v
 python3 search.py index fixtures/knowledge --out .search/index.json
 python3 search.py context .search/index.json "How should hybrid search combine results?"
@@ -160,7 +160,7 @@ python3 zig_gateway.py /tmp/python-index.json /tmp/search-snapshot
 If `/tmp/zig-aarch64-macos-0.16.0` still exists:
 
 ```sh
-cd /Users/ilam/workspace/search-platform-exploration/zig
+cd <home>/workspace/search-platform-exploration/zig
 /tmp/zig-aarch64-macos-0.16.0/zig build \
   --global-cache-dir /tmp/zig-global-cache \
   --cache-dir /tmp/search-zig-test-cache test

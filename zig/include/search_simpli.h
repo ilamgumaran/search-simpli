@@ -273,15 +273,17 @@ void ss_free(char *ptr);
  * integers), "too_large_paths", "unreadable_paths" (arrays of the relative
  * paths counted under "too_large"/"unreadable" — never just a bare count),
  * "documents", "terms", "postings" (all integers). A non-"update" run
- * always reports "changed"/"removed"/"unchanged"/"budget_exhausted"/
- * "too_large" as 0, "too_large_paths" as an empty array, and
- * "added"/"unreadable"/"unreadable_paths" as the files indexed/skipped; an
- * "update" run reports the full incremental breakdown. "unchanged" and
- * "budget_exhausted" are reported separately — "nothing to do" and "left
- * for a later run because max_total_bytes ran out" are never the same
- * number. An empty folder_path, or a folder whose last indexable file was
- * just deleted, publishes an empty generation (0 documents/terms/postings)
- * instead of failing.
+ * always reports "changed"/"removed"/"unchanged" as 0 (a full rebuild never
+ * compares against a previous generation); an "update" run additionally
+ * reports "changed"/"removed". max_file_bytes/max_total_bytes are enforced
+ * on a non-"update" run exactly as on an "update" run (S1-T5), so
+ * "too_large"/"too_large_paths"/"budget_exhausted" can be nonzero either
+ * way — "added" only counts the files a non-"update" run actually indexed.
+ * "unchanged" and "budget_exhausted" are reported separately — "nothing to
+ * do" and "left for a later run because max_total_bytes ran out" are never
+ * the same number. An empty folder_path, or a folder whose last indexable
+ * file was just deleted, publishes an empty generation (0
+ * documents/terms/postings) instead of failing.
  *
  * A file larger than max_file_bytes is tombstoned, not silently kept: it is
  * counted (and named) under "too_large"/"too_large_paths", and its

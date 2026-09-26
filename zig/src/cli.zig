@@ -114,11 +114,17 @@ pub fn runIndex(
         generation,
         options.max_chars,
         options.overlap_lines,
+        options.caps,
     );
 
+    // S1-T5 criterion 1 (round-E rework): `too_large` and `unreadable` used
+    // to be folded into one `files_skipped` count on this (non-`--update`)
+    // path, which meant an operator could not tell "over a size cap" from
+    // "could not be read at all" on a full rebuild -- the exact distinction
+    // S1-T4 criterion 3 already gave `--update`.
     try output.print(
-        "indexed {s}: analyzer={s} generation={d} files_indexed={d} files_skipped={d} documents={d} terms={d} postings={d}\n",
-        .{ folder_path, report.analyzer_id, report.generation, report.files_indexed, report.files_skipped, report.documents, report.terms, report.postings },
+        "indexed {s}: analyzer={s} generation={d} files_indexed={d} too_large={d} unreadable={d} documents={d} terms={d} postings={d}\n",
+        .{ folder_path, report.analyzer_id, report.generation, report.added, report.too_large, report.unreadable, report.documents, report.terms, report.postings },
     );
 }
 

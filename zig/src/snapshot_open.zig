@@ -55,7 +55,7 @@ test "open reproduces a published demo generation" {
     var out_dir = try tmp.dir.openDir(io, "out", .{});
     defer out_dir.close(io);
 
-    _ = try indexer.indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines);
+    _ = try indexer.indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, .{});
 
     const opened = try open(arena, io, out_dir);
     try std.testing.expectEqualStrings("analyzer-v2", opened.analyzer_id);

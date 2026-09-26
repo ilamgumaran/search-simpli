@@ -186,11 +186,15 @@ fn printHelp() void {
         \\                       an empty generation instead of failing.
         \\                       --max-file-bytes/--max-total-bytes cap,
         \\                       respectively, one file's size (files over
-        \\                       the cap are tombstoned, named in
+        \\                       the cap are excluded, named in
         \\                       too_large_paths) and the total bytes read
-        \\                       in one --update run (files left over count
-        \\                       as budget_exhausted, default 10 MiB /
-        \\                       512 MiB).
+        \\                       in one run (files left over count as
+        \\                       budget_exhausted, default 10 MiB /
+        \\                       512 MiB); both apply on a full rebuild and
+        \\                       on --update alike (S1-T5). Without --update
+        \\                       the summary line prints files_indexed/
+        \\                       too_large/unreadable; only --update also
+        \\                       prints the full JSON report above.
         \\  query <dir> "<text>" [--json] [--top-k N]
         \\                       BM25 lexical query against a published
         \\                       snapshot; human-readable by default, or a

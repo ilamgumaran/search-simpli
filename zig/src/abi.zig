@@ -533,12 +533,14 @@ const IndexFolderOptions = struct {
 /// field -- "nothing to do" and "left for a later run" are no longer the
 /// same number -- and every `too_large`/`unreadable` file is named, not
 /// just counted). A non-`--update` run always reports
-/// `changed`/`removed`/`unchanged`/`budget_exhausted`/`too_large` as 0,
-/// `too_large_paths` as `[]`, and `added`/`unreadable`/`unreadable_paths` as
-/// the files indexed/skipped (matching `IndexReport`); an `--update` run
-/// reports the full incremental breakdown (`IncrementalReport`). An empty
-/// folder, or a folder whose last indexable file was just deleted, publishes
-/// an empty generation (0 documents/terms/postings) rather than failing.
+/// `changed`/`removed`/`unchanged` as 0 (a full rebuild never compares
+/// against a previous generation); `max_file_bytes`/`max_total_bytes` are
+/// enforced on both a non-`--update` and an `--update` run alike (S1-T5,
+/// round-E rework), so `too_large`/`budget_exhausted` (and their path
+/// arrays) can be nonzero either way. An `--update` run additionally
+/// reports `changed`/`removed`. An empty folder, or a folder whose last
+/// indexable file was just deleted, publishes an empty generation (0
+/// documents/terms/postings) rather than failing.
 /// Returns `NULL` on failure -- a missing/unreadable `folder_path`, an
 /// unrecognized `analyzer`, or (on `--update`) `dir_path` already holding a
 /// snapshot published with a different analyzer -- see `ss_last_error()`.
@@ -623,28 +625,29 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
         try json.endObject();
     } else {
         const generation = try generation_alloc.nextFreeGeneration(arena_allocator, gio, out_dir);
-        const report = try indexer.indexFolder(arena_allocator, gio, root, out_dir, analyzer, generation, max_chars, overlap_lines);
+        const report = try indexer.indexFolder(arena_allocator, gio, root, out_dir, analyzer, generation, max_chars, overlap_lines, caps);
         try json.beginObject();
         try json.objectField("generation");
         try json.write(report.generation);
         try json.objectField("analyzer_id");
         try json.write(report.analyzer_id);
         try json.objectField("added");
-        try json.write(report.files_indexed);
+        try json.write(report.added);
         try json.objectField("changed");
-        try json.write(@as(usize, 0));
+        try json.write(report.changed);
         try json.objectField("removed");
-        try json.write(@as(usize, 0));
+        try json.write(report.removed);
         try json.objectField("unchanged");
-        try json.write(@as(usize, 0));
+        try json.write(report.unchanged);
         try json.objectField("budget_exhausted");
-        try json.write(@as(usize, 0));
+        try json.write(report.budget_exhausted);
         try json.objectField("too_large");
-        try json.write(@as(usize, 0));
+        try json.write(report.too_large);
         try json.objectField("unreadable");
-        try json.write(report.files_skipped);
+        try json.write(report.unreadable);
         try json.objectField("too_large_paths");
         try json.beginArray();
+        for (report.too_large_paths) |path| try json.write(path);
         try json.endArray();
         try json.objectField("unreadable_paths");
         try json.beginArray();
@@ -691,9 +694,9 @@ test "ss_index_folder publishes and re-publishes, full and incremental" {
     defer ss_free(second_json);
     try std.testing.expect(std.mem.indexOf(u8, std.mem.span(second_json), "\"generation\":2") != null);
 
-    // --update: no changes yet, but the previous publish did not go through
-    // the incremental path, so there is no INDEX-STATE.json and everything
-    // is reported "added" once, establishing a baseline.
+    // --update: full rebuilds now write INDEX-STATE.json (S1-T5 criterion 2), so
+    // the first --update reports unchanged files, not added (generation 3 because
+    // generation 2 was the second full rebuild).
     const update_json = ss_index_folder(out_path_z, notes_path_z, "{\"update\":true}") orelse {
         std.debug.print("ss_index_folder failed: {s}\n", .{ss_last_error()});
         return error.IndexFailed;
@@ -702,7 +705,8 @@ test "ss_index_folder publishes and re-publishes, full and incremental" {
     var parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, std.mem.span(update_json), .{});
     defer parsed.deinit();
     try std.testing.expectEqual(@as(i64, 3), parsed.value.object.get("generation").?.integer);
-    try std.testing.expectEqual(@as(i64, 1), parsed.value.object.get("added").?.integer);
+    try std.testing.expectEqual(@as(i64, 0), parsed.value.object.get("added").?.integer);
+    try std.testing.expectEqual(@as(i64, 1), parsed.value.object.get("unchanged").?.integer);
 
     const handle = ss_open(out_path_z) orelse return error.OpenFailed;
     defer ss_close(handle);
