@@ -420,11 +420,14 @@ class IndexFolderOptions {
 }
 
 /// `ss_index_folder()`'s JSON report object — mirrors `zig/src/indexer.zig`'s
-/// `IndexReport`/`IncrementalReport` as unified by `zig/src/abi.zig`
-/// (docs/tasks/S1-T4.md criterion 1). A non-`update` run always reports
-/// `changed`/`removed`/`unchanged`/`budgetExhausted`/`tooLarge` as 0 and
-/// `tooLargePaths` as empty; an `update` run reports the full incremental
-/// breakdown — see docs/incremental-indexing.md.
+/// `IncrementalReport` as unified by `zig/src/abi.zig` (docs/tasks/S1-T4.md
+/// criterion 1). A non-`update` run always reports
+/// `changed`/`removed`/`unchanged` as 0 (a full rebuild never compares
+/// against a previous generation); an `update` run additionally reports
+/// `changed`/`removed`. `maxFileBytes`/`maxTotalBytes` (`IndexFolderOptions`)
+/// are enforced on a non-`update` run exactly as on an `update` run
+/// (docs/tasks/S1-T5.md), so `tooLarge`/`tooLargePaths`/`budgetExhausted`
+/// can be nonzero either way — see docs/incremental-indexing.md.
 class IndexFolderReport {
   final int generation;
   final String analyzerId;

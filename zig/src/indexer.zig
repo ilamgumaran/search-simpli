@@ -150,11 +150,21 @@ pub fn tokenize(allocator: std.mem.Allocator, analyzer: AnalyzerId, text: []cons
 /// stops a snapshot from being published.
 ///
 /// Caps are applied the same as in `indexFolderIncremental`: a file over
-/// `caps.max_file_bytes` is not read and is reported as `too_large` --
-/// S1-T5 criterion 1. The return type is `IncrementalReport` to unify the
-/// output shape between full rebuilds and incremental runs; a non-update run
-/// reports `changed`/`removed`/`unchanged`/`budget_exhausted` as 0 and
-/// `added` as the number of files indexed.
+/// `caps.max_file_bytes` is not read and is reported as `too_large`, and
+/// once `caps.max_total_bytes` has been read from disk in this run every
+/// remaining candidate file is left untouched and counted as
+/// `budget_exhausted` -- S1-T5 criterion 1 (round-E rework: `max_total_bytes`
+/// was not applied here at all in the round-D build). The return type is
+/// `IncrementalReport` to unify the output shape between full rebuilds and
+/// incremental runs; a non-update run reports `changed`/`removed`/`unchanged`
+/// as 0 (a full rebuild never compares against a previous generation) and
+/// `added` as the number of files it actually indexed. Unlike
+/// `indexFolderIncremental`, a file left over by `max_total_bytes` here has
+/// no previous generation to carry chunks forward from -- it is simply
+/// absent from this generation, exactly like a file over `max_file_bytes`,
+/// but reported as `budget_exhausted` rather than `too_large` so a caller
+/// can tell "skipped for good" from "skipped for now, try again" (the same
+/// distinction `indexFolderIncremental` makes).
 pub fn indexFolder(
     allocator: std.mem.Allocator,
     io: std.Io,
@@ -171,10 +181,13 @@ pub fn indexFolder(
     var documents = std.ArrayList(hybrid.Document).empty;
     var unreadable: usize = 0;
     var too_large: usize = 0;
+    var budget_exhausted: usize = 0;
     var unreadable_paths = std.ArrayList([]const u8).empty;
     var too_large_paths = std.ArrayList([]const u8).empty;
     var state_entries = std.ArrayList(incremental_state.Entry).empty;
     var indexed_files = std.StringHashMap(void).init(allocator);
+    var total_bytes_processed: u64 = 0;
+    var over_budget = false;
 
     for (paths) |relative_path| {
         const stat = root.statFile(io, relative_path, .{}) catch {
@@ -195,6 +208,18 @@ pub fn indexFolder(
             continue;
         }
 
+        // Once `max_total_bytes` has been read from disk this run, every
+        // remaining candidate file is left out of this generation entirely
+        // (there is no previous generation for a full rebuild to carry its
+        // chunks forward from) and counted as `budget_exhausted` -- S1-T5
+        // criterion 1 (round-E rework), same semantics as
+        // `indexFolderIncremental`'s accumulator below.
+        if (over_budget or total_bytes_processed + size > caps.max_total_bytes) {
+            over_budget = true;
+            budget_exhausted += 1;
+            continue;
+        }
+
         const buffer = try allocator.alloc(u8, size);
         const content = root.readFile(io, relative_path, buffer) catch {
             unreadable += 1;
@@ -206,6 +231,7 @@ pub fn indexFolder(
             try unreadable_paths.append(allocator, relative_path);
             continue;
         }
+        total_bytes_processed += size;
 
         const spans = chunker.chunk(allocator, content, max_chars, overlap_lines) catch {
             unreadable += 1;
@@ -283,11 +309,11 @@ pub fn indexFolder(
     return .{
         .generation = generation,
         .analyzer_id = analyzer.label(),
-        .added = paths.len - unreadable - too_large,
+        .added = paths.len - unreadable - too_large - budget_exhausted,
         .changed = 0,
         .removed = 0,
         .unchanged = 0,
-        .budget_exhausted = 0,
+        .budget_exhausted = budget_exhausted,
         .too_large = too_large,
         .unreadable = unreadable,
         .too_large_paths = try too_large_paths.toOwnedSlice(allocator),
@@ -298,19 +324,24 @@ pub fn indexFolder(
     };
 }
 
-/// Caps applied to a single `indexFolderIncremental` run. Both come from the
-/// caller's `opts` (CLI flags or `ss_index_folder`'s `opts` JSON object) --
-/// see `docs/tasks/S1-T3.md` criterion 2.
+/// Caps applied to a single `indexFolder` or `indexFolderIncremental` run
+/// alike (S1-T5, round-E rework: `indexFolder` did not enforce
+/// `max_total_bytes` at all before this). Both come from the caller's
+/// `opts` (CLI flags or `ss_index_folder`'s `opts` JSON object) -- see
+/// `docs/tasks/S1-T3.md` criterion 2.
 pub const Caps = struct {
     /// A file larger than this (bytes) is never read; it is excluded from
     /// the index and counted under the report's `too_large`.
     max_file_bytes: u64 = 10 * 1024 * 1024,
     /// Once this many bytes have been read from disk in this run, remaining
     /// unprocessed candidate files are left untouched for this generation
-    /// (their previous chunks, if any, are carried forward unchanged) and
-    /// counted under the report's `skipped`. Guards worst-case run time on
-    /// an enormous folder; a later `--update` run picks up where this one
-    /// left off.
+    /// and counted under the report's `budget_exhausted`. On
+    /// `indexFolderIncremental`, a left-over file's previous chunks (if any)
+    /// are carried forward unchanged; `indexFolder` (a full rebuild) has no
+    /// previous generation to carry anything forward from, so a left-over
+    /// file there is simply absent from the new generation, the same as a
+    /// file over `max_file_bytes`. Guards worst-case run time on an enormous
+    /// folder; a later `--update` run picks up where this one left off.
     max_total_bytes: u64 = 512 * 1024 * 1024,
 };
 
@@ -779,6 +810,41 @@ test "indexFolder applies max_file_bytes cap on a full rebuild (S1-T5 criterion 
     try std.testing.expectEqual(@as(usize, 0), opened.documents.len);
 }
 
+test "indexFolder applies max_total_bytes cap on a full rebuild (S1-T5 criterion 1 rework)" {
+    const allocator = std.testing.allocator;
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    // Three ~41-byte files and a 50-byte budget: only the first (sorted by
+    // path) fits, the other two are left out and counted budget_exhausted --
+    // same fixture shape the round-D tester's own rejection probe used.
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.md", .data = "123456789\n123456789\n123456789\n123456789\na" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "b.md", .data = "123456789\n123456789\n123456789\n123456789\na" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "c.md", .data = "123456789\n123456789\n123456789\n123456789\na" });
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out_dir = try tmp.dir.openDir(io, "out", .{});
+    defer out_dir.close(io);
+
+    const caps = Caps{ .max_total_bytes = 50 };
+    const report = try indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, caps);
+    try std.testing.expectEqual(@as(usize, 1), report.added);
+    try std.testing.expectEqual(@as(usize, 2), report.budget_exhausted);
+    try std.testing.expectEqual(@as(usize, 0), report.too_large);
+    try std.testing.expectEqual(@as(usize, 1), report.documents);
+
+    // Only the processed file's state entry is persisted -- the two left
+    // over by the budget are eligible again on the next run, exactly like
+    // `indexFolderIncremental`'s budget_exhausted files.
+    const state = try incremental_state.load(arena, io, out_dir);
+    try std.testing.expect(state != null);
+    if (state) |s| try std.testing.expectEqual(@as(usize, 1), s.files.len);
+}
+
 test "full rebuild writes INDEX-STATE.json, first --update reports unchanged (S1-T5 criterion 2)" {
     const allocator = std.testing.allocator;
     var arena_state = std.heap.ArenaAllocator.init(allocator);
@@ -789,13 +855,20 @@ test "full rebuild writes INDEX-STATE.json, first --update reports unchanged (S1
     defer tmp.cleanup();
     const io = std.testing.io;
 
-    try tmp.dir.writeFile(io, .{ .sub_path = "note.md", .data = "hybrid ranking combines lexical and semantic evidence\n" });
+    // `root` and `out_dir` are siblings, not nested (an --out directory
+    // living inside the folder it indexes would see its own INDEX-STATE.json
+    // as a candidate .json file to index -- a hazard for a real caller who
+    // nests them, not something this test should also fall into).
+    try tmp.dir.createDir(io, "notes", .default_dir);
+    var root = try tmp.dir.openDir(io, "notes", .{ .iterate = true });
+    defer root.close(io);
+    try root.writeFile(io, .{ .sub_path = "note.md", .data = "hybrid ranking combines lexical and semantic evidence\n" });
     try tmp.dir.createDir(io, "out", .default_dir);
     var out_dir = try tmp.dir.openDir(io, "out", .{});
     defer out_dir.close(io);
 
     // Full rebuild (generation 1).
-    const report1 = try indexFolder(arena, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    const report1 = try indexFolder(arena, io, root, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, .{});
     try std.testing.expectEqual(@as(usize, 1), report1.added);
     try std.testing.expectEqual(@as(usize, 1), report1.documents);
 
@@ -806,4 +879,14 @@ test "full rebuild writes INDEX-STATE.json, first --update reports unchanged (S1
         try std.testing.expectEqual(@as(usize, 1), s.files.len);
         try std.testing.expectEqualStrings("note.md", s.files[0].path);
     }
+
+    // The criterion's own wording ("first --update reports unchanged"): run
+    // an actual --update (indexFolderIncremental) against the same
+    // directory and check it reports the file unchanged, not added --
+    // round-D's test never ran this part despite its name claiming to
+    // (round-D tester's Verdict, criterion 2).
+    const report2 = try indexFolderIncremental(arena, io, root, out_dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    try std.testing.expectEqual(@as(usize, 0), report2.added);
+    try std.testing.expectEqual(@as(usize, 1), report2.unchanged);
+    try std.testing.expectEqual(@as(u64, 2), report2.generation);
 }

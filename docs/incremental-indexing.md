@@ -59,6 +59,17 @@ doc comment). `lifecycle.scan`'s recovery scanner knows this file by name
 and never counts it as an operator-facing anomaly
 (`docs/generation-lifecycle.md`).
 
+A full rebuild (`searchd index` without `--update`, `ss_index_folder` with
+`"update": false`/omitted, `indexer.indexFolder`) writes `INDEX-STATE.json`
+too, for exactly the files it indexed (S1-T5 criterion 2) — so the *first*
+`--update`/`opts.update: true` run after a full rebuild reports every
+untouched file `unchanged`, not `added`; before this it re-read and
+re-chunked everything the very next run and called that `added`, which is
+what the round-B non-blocking finding (`docs/tasks/S1-T4.md`) flagged. A file
+left out of a full rebuild by `max_total_bytes` (see Caps below) gets no
+state entry — nothing was read for it this run — so it looks new to the
+next `--update` the same as if the folder had just grown that file.
+
 ### Caps, and why the report has both `unchanged` and `budget_exhausted`
 
 Two independent caps, both overridable (`--max-file-bytes`/
@@ -72,14 +83,20 @@ Two independent caps, both overridable (`--max-file-bytes`/
   appear in the new one. This is a deliberate policy choice, the same one a
   deleted file gets, not an accident.
 - **`max_total_bytes`** — once this many bytes have been read from disk in
-  *this run*, every remaining candidate file is left untouched for this
-  generation: its previous chunks (if any) are carried forward unchanged,
-  and it is eligible again on the next run. This is reported as
-  `budget_exhausted`, a field distinct from `unchanged` (a file whose hash
-  genuinely matched the previous run) — the two used to be the same
-  `skipped` number, which meant a caller could not tell "this run finished,
-  nothing changed" from "this run gave up partway through" by the report
-  alone (round-B non-blocking finding, `docs/tasks/S1-T3.md`).
+  *this run*, every remaining candidate file is left out of this generation
+  and reported as `budget_exhausted`, a field distinct from `unchanged` (a
+  file whose hash genuinely matched the previous run) — the two used to be
+  the same `skipped` number, which meant a caller could not tell "this run
+  finished, nothing changed" from "this run gave up partway through" by the
+  report alone (round-B non-blocking finding, `docs/tasks/S1-T3.md`). On
+  `--update`/`opts.update: true` (`indexFolderIncremental`) a left-over
+  file's previous chunks (if any) are carried forward unchanged, and it is
+  eligible again on the next run. A full rebuild (`indexFolder`, S1-T5
+  criterion 1) enforces the same cap but has no previous generation to
+  carry anything forward from: a left-over file there is simply absent from
+  the new generation — the same outcome as a file over `max_file_bytes`,
+  just reported under a different field so a caller can still tell "skipped
+  for good, over the cap" from "skipped for now, try `--update` again".
 
 A file that is merely **unreadable this run** (stat failure, a transient I/O
 error, or invalid UTF-8) is a third, different outcome: it is counted under

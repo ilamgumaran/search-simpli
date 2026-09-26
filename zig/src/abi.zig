@@ -533,12 +533,14 @@ const IndexFolderOptions = struct {
 /// field -- "nothing to do" and "left for a later run" are no longer the
 /// same number -- and every `too_large`/`unreadable` file is named, not
 /// just counted). A non-`--update` run always reports
-/// `changed`/`removed`/`unchanged`/`budget_exhausted`/`too_large` as 0,
-/// `too_large_paths` as `[]`, and `added`/`unreadable`/`unreadable_paths` as
-/// the files indexed/skipped (matching `IndexReport`); an `--update` run
-/// reports the full incremental breakdown (`IncrementalReport`). An empty
-/// folder, or a folder whose last indexable file was just deleted, publishes
-/// an empty generation (0 documents/terms/postings) rather than failing.
+/// `changed`/`removed`/`unchanged` as 0 (a full rebuild never compares
+/// against a previous generation); `max_file_bytes`/`max_total_bytes` are
+/// enforced on both a non-`--update` and an `--update` run alike (S1-T5,
+/// round-E rework), so `too_large`/`budget_exhausted` (and their path
+/// arrays) can be nonzero either way. An `--update` run additionally
+/// reports `changed`/`removed`. An empty folder, or a folder whose last
+/// indexable file was just deleted, publishes an empty generation (0
+/// documents/terms/postings) rather than failing.
 /// Returns `NULL` on failure -- a missing/unreadable `folder_path`, an
 /// unrecognized `analyzer`, or (on `--update`) `dir_path` already holding a
 /// snapshot published with a different analyzer -- see `ss_last_error()`.
