@@ -1,5 +1,8 @@
 # Next
 
+**26 Sep:** S1-T5 (round-C follow-ups) in flight on Haiku 4.5; then the owner decides.
+
+
 **From 2026-09-13 (owner's decision): Search Simpli becomes standalone and portable, then the family app adopts it.** See `docs/decisions/0002-standalone-portable-platform.md` and the tasks in `docs/tasks/` (S1-T0 C ABI + libraries, S1-T1 native chunker/Unicode analyzer/CLI, S1-T2 Dart FFI package, S1-T3 incremental folder indexing, S1-T4 round-C hardening). Process in `docs/process/ROLES.md`.
 
 **Round A is done (17 Sep).** S1-T0 and S1-T1 are `verified` and merged to `main` (`3466083`, `3a17af8`). The engine has a C ABI and static/shared libraries for macOS arm64, Android arm64, and Linux x86_64; `searchd index/query/evidence/serve` indexes a folder natively with `analyzer-v2` (NFC, Unicode categories, case folding) and `line-window-v1`, both conformant to the Python reference (85/85 chunks, 36/36 full BM25 rankings, Tamil 10/10). Numbers, sizes, and the carried-forward gaps are in `PROJECT-STATE.md`'s "Standalone platform status" and in each task file's Verdict.
