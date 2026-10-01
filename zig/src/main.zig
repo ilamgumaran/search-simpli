@@ -193,8 +193,9 @@ fn printHelp() void {
         \\                       512 MiB); both apply on a full rebuild and
         \\                       on --update alike (S1-T5). Without --update
         \\                       the summary line prints files_indexed/
-        \\                       too_large/unreadable; only --update also
-        \\                       prints the full JSON report above.
+        \\                       too_large/unreadable/budget_exhausted; only
+        \\                       --update also prints the full JSON report
+        \\                       above.
         \\  query <dir> "<text>" [--json] [--top-k N]
         \\                       BM25 lexical query against a published
         \\                       snapshot; human-readable by default, or a
