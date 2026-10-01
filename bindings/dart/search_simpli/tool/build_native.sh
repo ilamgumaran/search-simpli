@@ -67,3 +67,8 @@ else
   echo "  SS_ANDROID_NDK to the NDK root and re-run to update it." >&2
   exit 1
 fi
+
+# Freshness stamp: tests/test_native_freshness.py recomputes this digest with
+# the same script and fails when the Zig source has moved on.
+python3 "$SCRIPT_DIR/source_digest.py" > "$PACKAGE_DIR/native/SOURCE-SHA256"
+echo "tool/build_native.sh: wrote native/SOURCE-SHA256 ($(cat "$PACKAGE_DIR/native/SOURCE-SHA256"))"
