@@ -163,7 +163,7 @@ copies the two artifacts into `native/`, plus (if `example/` exists) into
 `example/android/app/src/main/jniLibs/arm64-v8a/` so the example app's
 copy stays in sync. Without `SS_ANDROID_NDK` set, the macOS library still
 rebuilds but the script exits 1 rather than silently leaving a stale
-Android library in place. The script also writes `native/SOURCE-SHA256`, a digest of the Zig sources and C header the libraries were built from (computed by `tool/source_digest.py`); the Python test `tests/test_native_freshness.py` recomputes it and fails when the libraries are older than the source.
+Android library in place. The script also writes `native/SOURCE-SHA256`, a digest of the Zig sources, C header and `contracts/CONTRACTS_VERSION` the libraries were built from (computed by `tool/source_digest.py`); the Python test `tests/test_native_freshness.py` recomputes it and fails when the libraries are older than the source.
 
 ## Regenerating the FFI bindings
 

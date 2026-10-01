@@ -4,7 +4,8 @@
 Used by tool/build_native.sh (writes native/SOURCE-SHA256) and by
 tests/test_native_freshness.py (recomputes and compares), so the two cannot
 drift. Inputs, sorted by repo-relative path: zig/build.zig, zig/build.zig.zon
-(if present), every zig/src/**/*.zig, zig/include/search_simpli.h. Each file
+(if present), every zig/src/**/*.zig, zig/include/search_simpli.h, and
+contracts/CONTRACTS_VERSION (zig/build.zig compiles it into ss_version()). Each file
 contributes its path, a NUL, its bytes and a NUL.
 """
 import hashlib
@@ -16,7 +17,12 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 
 def source_files(root=REPO_ROOT):
     zig = root / "zig"
-    files = [zig / "build.zig", zig / "build.zig.zon", zig / "include" / "search_simpli.h"]
+    files = [
+        zig / "build.zig",
+        zig / "build.zig.zon",
+        zig / "include" / "search_simpli.h",
+        root / "contracts" / "CONTRACTS_VERSION",
+    ]
     files += (zig / "src").rglob("*.zig")
     return sorted((f for f in files if f.is_file()), key=lambda f: f.relative_to(root).as_posix())
 

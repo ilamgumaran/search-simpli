@@ -24,6 +24,22 @@ class NativeFreshnessTest(unittest.TestCase):
             "prebuilt libraries are older than the Zig source; run tool/build_native.sh",
         )
 
+    def test_changing_contracts_version_changes_the_digest(self):
+        """S1-T7 criterion 1: build.zig compiles CONTRACTS_VERSION into ss_version()."""
+        import shutil
+        import tempfile
+
+        digest = _load_digest()
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp)
+            shutil.copytree(ROOT / "zig", copy / "zig", ignore=shutil.ignore_patterns(".zig-cache", "zig-out"))
+            (copy / "contracts").mkdir()
+            shutil.copy(ROOT / "contracts" / "CONTRACTS_VERSION", copy / "contracts" / "CONTRACTS_VERSION")
+            before = digest(copy)
+            self.assertEqual(before, digest(ROOT))
+            (copy / "contracts" / "CONTRACTS_VERSION").write_text("9.9.9\n")
+            self.assertNotEqual(before, digest(copy))
+
 
 if __name__ == "__main__":
     unittest.main()
