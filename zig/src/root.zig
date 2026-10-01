@@ -22,6 +22,7 @@ pub const incremental_state = @import("incremental_state.zig");
 pub const generation_alloc = @import("generation_alloc.zig");
 pub const indexer = @import("indexer.zig");
 pub const snapshot_open = @import("snapshot_open.zig");
+pub const cli_test = @import("cli_test.zig");
 pub const chunker_golden_test = @import("chunker_test.zig");
 pub const bm25_conformance_test = @import("bm25_conformance_test.zig");
 pub const incremental_indexing_test = @import("incremental_indexing_test.zig");
@@ -84,4 +85,5 @@ test "load every engine module test suite" {
     _ = chunker_golden_test;
     _ = bm25_conformance_test;
     _ = incremental_indexing_test;
+    _ = cli_test;
 }

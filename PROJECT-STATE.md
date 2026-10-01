@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-09-17
+Last updated: 2026-09-30
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -11,6 +11,10 @@ Project: **Search Simpli** (`search-simpli`)
 
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
+
+## Standalone platform status (S1-T6, 2026-09-30)
+
+**S1-T6 is `verified` and merged to `main`** (branch `task/S1-T6` `1ff7ee8`; Verdict in `docs/tasks/S1-T6.md`). `searchd index` without `--update` now prints `budget_exhausted=` on its summary line (three 41-byte files with `--max-total-bytes 50` give `files_indexed=1 … budget_exhausted=2`). The README timing table keeps only generated-corpus rows. `scripts/check_no_home_paths.py` lists files from the repository root whatever the caller's directory. `docs/incremental-indexing.md` §Caps says the table's last two columns describe `--update`. **Freshness guard:** `tool/build_native.sh` writes `bindings/dart/search_simpli/native/SOURCE-SHA256`, and `tests/test_native_freshness.py` fails when the Zig source moves on without a rebuild. The prebuilt libraries were **not** stale: a tester rebuild with the NDK is byte-identical (dylib `cbaaa9f6…10f9`, `.so` `c5f0b056…0aac4`). The two S1-T5 `dart test` failures came from `SEARCH_SIMPLI_LIBRARY_PATH`, which `simpli-helper/tools/env.sh` exports, so run the suites with it unset (`docs/process/ROLES.md`). **Suites on the merge:** `zig build test` 98/98, `test-abi` 12/12, `lib` 10/10 (15/15 with the NDK), Python 70/70, `dart test` 18/18. **Open (non-blocking):** the digest omits `contracts/CONTRACTS_VERSION`, which is compiled into `ss_version()`.
 
 ## Standalone platform status (round D/E, 2026-09-26)
 

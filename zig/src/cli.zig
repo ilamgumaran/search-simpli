@@ -123,8 +123,8 @@ pub fn runIndex(
     // "could not be read at all" on a full rebuild -- the exact distinction
     // S1-T4 criterion 3 already gave `--update`.
     try output.print(
-        "indexed {s}: analyzer={s} generation={d} files_indexed={d} too_large={d} unreadable={d} documents={d} terms={d} postings={d}\n",
-        .{ folder_path, report.analyzer_id, report.generation, report.added, report.too_large, report.unreadable, report.documents, report.terms, report.postings },
+        "indexed {s}: analyzer={s} generation={d} files_indexed={d} too_large={d} unreadable={d} budget_exhausted={d} documents={d} terms={d} postings={d}\n",
+        .{ folder_path, report.analyzer_id, report.generation, report.added, report.too_large, report.unreadable, report.budget_exhausted, report.documents, report.terms, report.postings },
     );
 }
 

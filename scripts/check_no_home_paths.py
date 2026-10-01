@@ -11,13 +11,17 @@ import sys
 from pathlib import Path
 
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
 def get_tracked_text_files():
-    """Return the list of tracked text files from git."""
+    """Return the list of tracked text files from git (paths relative to REPO_ROOT)."""
     try:
         # Get all tracked files
         result = subprocess.run(
             ["git", "ls-files"],
             check=True,
+            cwd=REPO_ROOT,
             capture_output=True,
             text=True,
         )
@@ -51,7 +55,7 @@ def check_file_for_home_paths(file_path):
     home_path_pattern = re.compile(r'(?:^|[^<])/(?:Users|home)/[a-zA-Z0-9_\-\.]+/')
 
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(REPO_ROOT / file_path, 'r', encoding='utf-8') as f:
             for line_num, line in enumerate(f, 1):
                 if home_path_pattern.search(line):
                     violations.append((line_num, line.rstrip()))

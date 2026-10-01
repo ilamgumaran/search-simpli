@@ -102,7 +102,9 @@ A file that is merely **unreadable this run** (stat failure, a transient I/O
 error, or invalid UTF-8) is a third, different outcome: it is counted under
 `unreadable` (and named in `unreadable_paths`), but its previous chunks *are*
 carried forward, exactly like `budget_exhausted` — availability is favored
-over freshness for a file that might come back on the next run. The table:
+over freshness for a file that might come back on the next run. The
+"Previous chunks" and "State entry" columns below describe `--update` runs;
+a full rebuild has neither to keep. The table:
 
 | Outcome | Counted as | Previous chunks | State entry |
 |---|---|---|---|

@@ -200,7 +200,8 @@ superlinear-in-vocabulary cost in both `lexical_build.build` and
 | `index` full rebuild re-run into the same `--out` (generation 2 -- see "re-publishing" below) | 0.11s wall |
 | `index --update`, no prior `INDEX-STATE.json` (baseline, everything reported `added`) | 0.12s wall |
 | `index --update`, one file changed out of 1,000 (999 `unchanged`) | 0.08s wall |
-| `index` on this repository's own tree (216 files, 1,462 documents, 14,099 terms) | 0.20s wall |
+
+The table uses only the generated corpus: a row that indexes this repository's own tree drifts with every commit, so none is kept.
 
 **The two earlier "warm run" figures in this table were never genuine
 second/third runs**: `searchd index` used to fail every re-run into an
