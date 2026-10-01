@@ -9,3 +9,6 @@ Check command here: `python3 -m unittest discover -s tests` plus `zig build test
 in `zig/` with the pinned toolchain (`~/development/zig/zig-0.16.0-macos-aarch64/zig` (Zig 0.16.0)).
 Measured numbers only; no `Claude-Session:` trailers (public repo); no home
 paths or device identifiers in tracked files.
+
+## Rule added 2026-09-30 (S1-T6)
+Run this repository's suites with `SEARCH_SIMPLI_LIBRARY_PATH` **unset**. `simpli-helper/tools/env.sh` exports it (pointing at the app's pinned copy in the pub cache), and it outranks the package's own `native/` libraries, so a shell that sourced that file tests an older library and reports failures that are not in this repository. Source it for the Dart/Flutter PATH if needed, then `unset SEARCH_SIMPLI_LIBRARY_PATH`.
