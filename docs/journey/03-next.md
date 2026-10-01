@@ -1,5 +1,12 @@
 # Next
 
+**1 Oct (orchestrator, M1 laptop):** two small rounds landed on `main` on 30 Sep and both are `verified`: **S1-T6** (`ccd8076`: `budget_exhausted` on the CLI's non-update line, the self-referential README row removed, `check_no_home_paths.py` anchored at the repo root, one sentence above the caps table, and a freshness guard, `native/SOURCE-SHA256`, that fails when the prebuilt libraries are older than the Zig source) and **S1-T7** (`c8e2d16`: the digest covers `contracts/CONTRACTS_VERSION`; bad numbers on the CLI fail with one line and no stack trace). Suites: Zig 103, ABI 12/12, Python 71, Dart 18. **Anyone holding a local S1-T6 draft on another machine: pull first; that id is taken.** Run this repository's suites with `SEARCH_SIMPLI_LIBRARY_PATH` unset (`docs/process/ROLES.md`, rule of 30 Sep).
+
+**What is not next here any more:** the list further down this file still names M12-T0 and M11-T1 as the queue; both merged in the app on 18 and 19 Sep. **Hybrid ranking:** the core accepts query vectors, the native folder indexer builds lexical segments only, and the app pins lexical mode; the app's own record of why is `simpli-helper/docs/tasks/M12-T0.md` criterion 3 (no embedding channel in the app yet; M12-T1 is where hybrid becomes real). The app pins `fd80e6b`; moving the pin to `main` is a small app task, not yet cut.
+
+**Open, small, not scheduled** (from the S1-T7 verdict): the byte-count options accept `+5`, `-0` and `1_000`; an unknown flag still prints a stack trace after its message; an unknown command and a bare `searchd` exit 0.
+
+
 **26 Sep:** S1-T5 is `verified` and merged to `main` (`c4cd8d0`) after being rejected on its first pass and reworked on Sonnet 5 — both verdicts are in `docs/tasks/S1-T5.md`. The round-C follow-ups are closed; **next is the owner's call**, with the two queued items below (`simpli-helper` M12-T0 re-pinning to this `main`, then M11-T1 using `indexFolder`) still the standing candidates. An adopter re-pinning now should note the shipped libraries changed again (`dylib` 382,088 B `cbaaa9f6…`, `.so` 382,288 B `c5f0b056…`) and that the two size caps now bite on a full rebuild where they were silently inert; `CONTRACTS_VERSION` is still `1.0.0`.
 
 
