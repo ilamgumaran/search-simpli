@@ -37,6 +37,18 @@ pub const IndexOptions = struct {
     caps: indexer.Caps = .{},
 };
 
+/// S1-T7 criterion 2: parse the value of a byte-count option
+/// (`--max-file-bytes`, `--max-total-bytes`). A value that is not a
+/// non-negative decimal integer that fits in u64 prints one line naming the
+/// option and the value to `output` and returns `error.InvalidArgument`; the
+/// caller turns that into the usage-error exit status, with no stack trace.
+pub fn parseByteCount(option: []const u8, value: []const u8, output: *std.Io.Writer) error{ InvalidArgument, WriteFailed }!u64 {
+    return std.fmt.parseInt(u64, value, 10) catch {
+        try output.print("searchd: invalid value for {s}: {s} (expected a non-negative whole number of bytes)\n", .{ option, value });
+        return error.InvalidArgument;
+    };
+}
+
 pub fn runIndex(
     io: std.Io,
     allocator: std.mem.Allocator,

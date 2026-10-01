@@ -34,3 +34,39 @@ test "index summary line prints budget_exhausted (S1-T6 criterion 1)" {
         "files_indexed=1 too_large=0 unreadable=0 budget_exhausted=2 documents=",
     ) != null);
 }
+
+// S1-T7 criterion 2: bad byte counts fail cleanly (one line naming the option
+// and the value, `error.InvalidArgument` for the caller to turn into exit 1).
+fn expectBadByteCount(option: []const u8, value: []const u8) !void {
+    var output: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer output.deinit();
+    try std.testing.expectError(error.InvalidArgument, cli.parseByteCount(option, value, &output.writer));
+    const text = output.written();
+    try std.testing.expect(std.mem.indexOf(u8, text, option) != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, value) != null);
+    try std.testing.expectEqual(@as(usize, 1), std.mem.count(u8, text, "\n"));
+}
+
+test "--max-total-bytes rejects a negative number (S1-T7 criterion 2)" {
+    try expectBadByteCount("--max-total-bytes", "-1");
+}
+
+test "--max-total-bytes rejects a non-number (S1-T7 criterion 2)" {
+    try expectBadByteCount("--max-total-bytes", "abc");
+}
+
+test "--max-file-bytes rejects a negative number (S1-T7 criterion 2)" {
+    try expectBadByteCount("--max-file-bytes", "-1");
+}
+
+test "--max-file-bytes rejects a non-number (S1-T7 criterion 2)" {
+    try expectBadByteCount("--max-file-bytes", "abc");
+}
+
+test "byte counts accept valid numbers (S1-T7 criterion 2)" {
+    var output: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer output.deinit();
+    try std.testing.expectEqual(@as(u64, 0), try cli.parseByteCount("--max-file-bytes", "0", &output.writer));
+    try std.testing.expectEqual(@as(u64, 1048576), try cli.parseByteCount("--max-total-bytes", "1048576", &output.writer));
+    try std.testing.expectEqual(@as(usize, 0), output.written().len);
+}

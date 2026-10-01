@@ -100,9 +100,9 @@ fn runIndexCommand(io: std.Io, allocator: std.mem.Allocator, arguments: *std.pro
         } else if (std.mem.eql(u8, flag, "--update")) {
             options.update = true;
         } else if (std.mem.eql(u8, flag, "--max-file-bytes")) {
-            options.caps.max_file_bytes = try std.fmt.parseInt(u64, arguments.next() orelse return error.MissingMaxFileBytes, 10);
+            options.caps.max_file_bytes = try parseByteCountOrExit("--max-file-bytes", arguments.next() orelse return error.MissingMaxFileBytes);
         } else if (std.mem.eql(u8, flag, "--max-total-bytes")) {
-            options.caps.max_total_bytes = try std.fmt.parseInt(u64, arguments.next() orelse return error.MissingMaxTotalBytes, 10);
+            options.caps.max_total_bytes = try parseByteCountOrExit("--max-total-bytes", arguments.next() orelse return error.MissingMaxTotalBytes);
         } else {
             std.debug.print("unknown index flag: {s}\n", .{flag});
             return error.InvalidArgument;
@@ -114,6 +114,23 @@ fn runIndexCommand(io: std.Io, allocator: std.mem.Allocator, arguments: *std.pro
     var stdout_writer = std.Io.File.stdout().writerStreaming(io, &stdout_buffer);
     try cli.runIndex(io, allocator, folder, out, options, &stdout_writer.interface);
     try stdout_writer.flush();
+}
+
+/// S1-T7 criterion 2: one stderr line, no stack trace, exit status 1 (the
+/// status every other bad `searchd` argument already ends with).
+fn parseByteCountOrExit(option: []const u8, value: []const u8) !u64 {
+    var buffer: [512]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&buffer);
+    return cli.parseByteCount(option, value, &writer) catch |err| switch (err) {
+        error.InvalidArgument => {
+            std.debug.print("{s}", .{writer.buffered()});
+            std.process.exit(1);
+        },
+        error.WriteFailed => {
+            std.debug.print("searchd: invalid value for {s}\n", .{option});
+            std.process.exit(1);
+        },
+    };
 }
 
 fn parseQueryFlags(arguments: *std.process.Args.Iterator) !cli.QueryOptions {
