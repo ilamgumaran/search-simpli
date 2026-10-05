@@ -37,7 +37,10 @@ class NativeFreshnessTest(unittest.TestCase):
             shutil.copy(ROOT / "contracts" / "CONTRACTS_VERSION", copy / "contracts" / "CONTRACTS_VERSION")
             before = digest(copy)
             self.assertEqual(before, digest(ROOT))
-            (copy / "contracts" / "CONTRACTS_VERSION").write_text("9.9.9\n")
+            version_file = copy / "contracts" / "CONTRACTS_VERSION"
+            # Append to whatever is there, so the mutation cannot equal the
+            # current content by coincidence (S1-T8 criterion 4).
+            version_file.write_bytes(version_file.read_bytes() + b"x")
             self.assertNotEqual(before, digest(copy))
 
 

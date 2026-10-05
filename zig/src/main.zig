@@ -16,250 +16,56 @@ const service_module = @import("service.zig");
 const std = @import("std");
 
 pub fn main(init: std.process.Init) !void {
+    // Every argument is judged by `cli.parseArgs` (S1-T8 criterion 1); this
+    // function only prints what it returns and exits.
+    var collected: std.ArrayList([]const u8) = .empty;
+    defer collected.deinit(init.gpa);
     var arguments = init.minimal.args.iterate();
     _ = arguments.next();
-    const command = arguments.next() orelse "help";
-    if (std.mem.eql(u8, command, "--help") or std.mem.eql(u8, command, "help")) {
-        printHelp();
-        return;
-    }
-    if (std.mem.eql(u8, command, "demo")) {
-        try runDemo();
-        return;
-    }
-    if (std.mem.eql(u8, command, "benchmark")) {
-        const document_count = try parsePositiveUsize(arguments.next() orelse return error.MissingDocumentCount);
-        const dimensions = try parseUsize(arguments.next() orelse return error.MissingDimensions);
-        const query_count = try parsePositiveUsize(arguments.next() orelse return error.MissingQueryCount);
-        const mode = parseRetrievalMode(arguments.next() orelse return error.MissingRetrievalMode) orelse
-            return error.InvalidRetrievalMode;
-        try benchmark.run(init.io, init.gpa, document_count, dimensions, query_count, mode);
-        return;
-    }
-    if (std.mem.eql(u8, command, "init-demo")) {
-        const path = arguments.next() orelse return error.MissingSnapshotDirectory;
-        try initDemoSnapshot(init.io, path);
-        return;
-    }
-    if (std.mem.eql(u8, command, "import-json")) {
-        const snapshot_path = arguments.next() orelse return error.MissingSnapshotDirectory;
-        const interchange_path = arguments.next() orelse return error.MissingInterchangeFile;
-        try importSnapshot(init.io, init.gpa, snapshot_path, interchange_path);
-        return;
-    }
-    if (std.mem.eql(u8, command, "serve")) {
-        const path = arguments.next() orelse return error.MissingSnapshotDirectory;
-        var http_address: ?[]const u8 = null;
-        while (arguments.next()) |flag| {
-            if (std.mem.eql(u8, flag, "--http")) {
-                http_address = arguments.next() orelse return error.MissingHttpAddress;
-            } else {
-                std.debug.print("unknown serve flag: {s}\n", .{flag});
-                return error.InvalidArgument;
-            }
-        }
-        if (http_address) |address| {
-            try serveHttp(init.io, init.gpa, path, address);
-        } else {
-            try serveSnapshot(init.io, init.gpa, path);
-        }
-        return;
-    }
-    if (std.mem.eql(u8, command, "index")) {
-        try runIndexCommand(init.io, init.gpa, &arguments);
-        return;
-    }
-    if (std.mem.eql(u8, command, "query")) {
-        try runQueryCommand(init.io, init.gpa, &arguments);
-        return;
-    }
-    if (std.mem.eql(u8, command, "evidence")) {
-        try runEvidenceCommand(init.io, init.gpa, &arguments);
-        return;
-    }
-    std.debug.print("unknown command: {s}\n", .{command});
-    printHelp();
-}
+    while (arguments.next()) |argument| try collected.append(init.gpa, argument);
 
-fn runIndexCommand(io: std.Io, allocator: std.mem.Allocator, arguments: *std.process.Args.Iterator) !void {
-    const folder = arguments.next() orelse return error.MissingFolder;
-    var options = cli.IndexOptions{};
-    var out_path: ?[]const u8 = null;
-    while (arguments.next()) |flag| {
-        if (std.mem.eql(u8, flag, "--out")) {
-            out_path = arguments.next() orelse return error.MissingOutDirectory;
-        } else if (std.mem.eql(u8, flag, "--analyzer")) {
-            const value = arguments.next() orelse return error.MissingAnalyzer;
-            options.analyzer = indexer.AnalyzerId.parse(value) orelse return error.InvalidAnalyzer;
-        } else if (std.mem.eql(u8, flag, "--max-chars")) {
-            options.max_chars = try parsePositiveUsize(arguments.next() orelse return error.MissingMaxChars);
-        } else if (std.mem.eql(u8, flag, "--overlap-lines")) {
-            options.overlap_lines = try parseUsize(arguments.next() orelse return error.MissingOverlapLines);
-        } else if (std.mem.eql(u8, flag, "--generation")) {
-            options.generation = try std.fmt.parseInt(u64, arguments.next() orelse return error.MissingGeneration, 10);
-        } else if (std.mem.eql(u8, flag, "--update")) {
-            options.update = true;
-        } else if (std.mem.eql(u8, flag, "--max-file-bytes")) {
-            options.caps.max_file_bytes = try parseByteCountOrExit("--max-file-bytes", arguments.next() orelse return error.MissingMaxFileBytes);
-        } else if (std.mem.eql(u8, flag, "--max-total-bytes")) {
-            options.caps.max_total_bytes = try parseByteCountOrExit("--max-total-bytes", arguments.next() orelse return error.MissingMaxTotalBytes);
-        } else {
-            std.debug.print("unknown index flag: {s}\n", .{flag});
-            return error.InvalidArgument;
-        }
-    }
-    const out = out_path orelse return error.MissingOutDirectory;
-
-    var stdout_buffer: [4096]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writerStreaming(io, &stdout_buffer);
-    try cli.runIndex(io, allocator, folder, out, options, &stdout_writer.interface);
-    try stdout_writer.flush();
-}
-
-/// S1-T7 criterion 2: one stderr line, no stack trace, exit status 1 (the
-/// status every other bad `searchd` argument already ends with).
-fn parseByteCountOrExit(option: []const u8, value: []const u8) !u64 {
-    var buffer: [512]u8 = undefined;
-    var writer = std.Io.Writer.fixed(&buffer);
-    return cli.parseByteCount(option, value, &writer) catch |err| switch (err) {
-        error.InvalidArgument => {
-            std.debug.print("{s}", .{writer.buffered()});
-            std.process.exit(1);
+    var message_buffer: [512]u8 = undefined;
+    switch (cli.parseArgs(collected.items, &message_buffer)) {
+        .usage_error => |usage| {
+            std.debug.print("{s}", .{usage.message});
+            std.process.exit(usage.status);
         },
-        error.WriteFailed => {
-            std.debug.print("searchd: invalid value for {s}\n", .{option});
-            std.process.exit(1);
+        .help => try printHelp(init.io),
+        .demo => try runDemo(),
+        .benchmark => |b| try benchmark.run(init.io, init.gpa, b.documents, b.dimensions, b.queries, b.mode),
+        .init_demo => |path| try initDemoSnapshot(init.io, path),
+        .import_json => |i| try importSnapshot(init.io, init.gpa, i.snapshot, i.file),
+        .serve => |s| if (s.http) |address|
+            try serveHttp(init.io, init.gpa, s.path, address)
+        else
+            try serveSnapshot(init.io, init.gpa, s.path),
+        .index => |i| {
+            var stdout_buffer: [4096]u8 = undefined;
+            var stdout_writer = std.Io.File.stdout().writerStreaming(init.io, &stdout_buffer);
+            try cli.runIndex(init.io, init.gpa, i.folder, i.out, i.options, &stdout_writer.interface);
+            try stdout_writer.flush();
         },
-    };
-}
-
-fn parseQueryFlags(arguments: *std.process.Args.Iterator) !cli.QueryOptions {
-    var options = cli.QueryOptions{};
-    while (arguments.next()) |flag| {
-        if (std.mem.eql(u8, flag, "--json")) {
-            options.json = true;
-        } else if (std.mem.eql(u8, flag, "--top-k")) {
-            options.top_k = try parsePositiveUsize(arguments.next() orelse return error.MissingTopK);
-        } else {
-            std.debug.print("unknown query flag: {s}\n", .{flag});
-            return error.InvalidArgument;
-        }
+        .query => |q| {
+            var stdout_buffer: [8192]u8 = undefined;
+            var stdout_writer = std.Io.File.stdout().writerStreaming(init.io, &stdout_buffer);
+            try cli.runQuery(init.io, init.gpa, q.path, q.text, q.options, &stdout_writer.interface);
+            try stdout_writer.flush();
+        },
+        .evidence => |q| {
+            var stdout_buffer: [8192]u8 = undefined;
+            var stdout_writer = std.Io.File.stdout().writerStreaming(init.io, &stdout_buffer);
+            try cli.runEvidence(init.io, init.gpa, q.path, q.text, q.options, &stdout_writer.interface);
+            try stdout_writer.flush();
+        },
     }
-    return options;
 }
 
-fn runQueryCommand(io: std.Io, allocator: std.mem.Allocator, arguments: *std.process.Args.Iterator) !void {
-    const path = arguments.next() orelse return error.MissingSnapshotDirectory;
-    const query_text = arguments.next() orelse return error.MissingQueryText;
-    const options = try parseQueryFlags(arguments);
-
-    var stdout_buffer: [8192]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writerStreaming(io, &stdout_buffer);
-    try cli.runQuery(io, allocator, path, query_text, options, &stdout_writer.interface);
-    try stdout_writer.flush();
-}
-
-fn runEvidenceCommand(io: std.Io, allocator: std.mem.Allocator, arguments: *std.process.Args.Iterator) !void {
-    const path = arguments.next() orelse return error.MissingSnapshotDirectory;
-    const query_text = arguments.next() orelse return error.MissingQueryText;
-    const options = try parseQueryFlags(arguments);
-
-    var stdout_buffer: [8192]u8 = undefined;
-    var stdout_writer = std.Io.File.stdout().writerStreaming(io, &stdout_buffer);
-    try cli.runEvidence(io, allocator, path, query_text, options, &stdout_writer.interface);
-    try stdout_writer.flush();
-}
-
-fn printHelp() void {
-    std.debug.print(
-        \\searchd — standalone Zig hybrid search engine and indexer
-        \\
-        \\Commands:
-        \\  index <folder> --out <dir> [--analyzer v1|v2] [--max-chars N]
-        \\                       [--overlap-lines N] [--generation N]
-        \\                       [--update] [--max-file-bytes N]
-        \\                       [--max-total-bytes N]
-        \\                       chunk (line-window-v1) and index UTF-8
-        \\                       text/markdown/source files under <folder>,
-        \\                       natively (no Python), and publish a
-        \\                       lexical-only snapshot to <dir>. --analyzer
-        \\                       selects the tokenizer/analyzer id recorded in
-        \\                       the manifest: v1 is ASCII-only (analyzer-v1),
-        \\                       v2 is Unicode-aware (analyzer-v2, NFC +
-        \\                       case folding + Unicode letter/digit
-        \\                       categories; default). Re-running `index`
-        \\                       into an existing --out directory publishes
-        \\                       the next generation instead of failing.
-        \\                       --update runs incremental indexing instead
-        \\                       of a full rebuild: per-file content hashes
-        \\                       (persisted in <dir>/INDEX-STATE.json) skip
-        \\                       unchanged files, deleted files are
-        \\                       tombstoned, and a JSON report (added/
-        \\                       changed/removed/unchanged/budget_exhausted/
-        \\                       too_large/unreadable/too_large_paths/
-        \\                       unreadable_paths/documents/terms/postings)
-        \\                       is printed. An empty folder, or a folder
-        \\                       whose last file was just deleted, publishes
-        \\                       an empty generation instead of failing.
-        \\                       --max-file-bytes/--max-total-bytes cap,
-        \\                       respectively, one file's size (files over
-        \\                       the cap are excluded, named in
-        \\                       too_large_paths) and the total bytes read
-        \\                       in one run (files left over count as
-        \\                       budget_exhausted, default 10 MiB /
-        \\                       512 MiB); both apply on a full rebuild and
-        \\                       on --update alike (S1-T5). Without --update
-        \\                       the summary line prints files_indexed/
-        \\                       too_large/unreadable/budget_exhausted; only
-        \\                       --update also prints the full JSON report
-        \\                       above.
-        \\  query <dir> "<text>" [--json] [--top-k N]
-        \\                       BM25 lexical query against a published
-        \\                       snapshot; human-readable by default, or a
-        \\                       JSON result list with --json.
-        \\  evidence <dir> "<text>" [--top-k N]
-        \\                       same query, always emitted as a JSON
-        \\                       evidence envelope (citation + content +
-        \\                       scores) intended for an LLM tool call.
-        \\  serve <dir> [--http 127.0.0.1:<port>]
-        \\                       serve JSON-RPC 2.0 requests. With no
-        \\                       --http, reads requests as newline-delimited
-        \\                       JSON on stdin and writes responses to
-        \\                       stdout (unchanged). With --http, additionally
-        \\                       accepts one JSON-RPC request per HTTP POST
-        \\                       body on the given loopback address/port
-        \\                       (127.0.0.1 only; refuses any other host).
-        \\  demo                 run an in-memory cited hybrid query
-        \\  benchmark <docs> <dimensions> <queries> <mode>
-        \\                       benchmark the real in-memory engine query path
-        \\  init-demo <dir>      publish a small persistent demo snapshot
-        \\  import-json <dir> <file>
-        \\                       import neutral JSON and publish a snapshot
-        \\  help                 show this message
-        \\
-        \\Vector/hybrid RPC requests must provide a query_vector matching the
-        \\embedding dimensions recorded by the snapshot. Lexical mode does not.
-        \\`index` never produces vectors (embedding_model_id "none"); its
-        \\snapshots only support lexical (BM25) queries.
-        \\
-    , .{});
-}
-
-fn parseUsize(value: []const u8) !usize {
-    return std.fmt.parseInt(usize, value, 10) catch error.InvalidInteger;
-}
-
-fn parsePositiveUsize(value: []const u8) !usize {
-    const parsed = try parseUsize(value);
-    if (parsed == 0) return error.InvalidInteger;
-    return parsed;
-}
-
-fn parseRetrievalMode(value: []const u8) ?hybrid.RetrievalMode {
-    if (std.mem.eql(u8, value, "lexical")) return .lexical;
-    if (std.mem.eql(u8, value, "vector")) return .vector;
-    if (std.mem.eql(u8, value, "hybrid")) return .hybrid;
-    return null;
+/// `--help` goes to stdout and exits 0 (S1-T8 criterion 3).
+fn printHelp(io: std.Io) !void {
+    var buffer: [256]u8 = undefined;
+    var writer = std.Io.File.stdout().writerStreaming(io, &buffer);
+    try writer.interface.writeAll(cli.usage_text);
+    try writer.flush();
 }
 
 fn importSnapshot(
@@ -417,13 +223,9 @@ fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !vo
 /// 127.0.0.1 is accepted (an explicit host check, not just bind-address
 /// discipline), matching the task's "local only" requirement.
 fn serveHttp(io: std.Io, allocator: std.mem.Allocator, path: []const u8, address_text: []const u8) !void {
-    const colon = std.mem.lastIndexOfScalar(u8, address_text, ':') orelse return error.InvalidHttpAddress;
-    const host = address_text[0..colon];
-    if (!std.mem.eql(u8, host, "127.0.0.1") and !std.mem.eql(u8, host, "localhost")) {
-        std.debug.print("refusing non-loopback --http host: {s} (only 127.0.0.1/localhost are allowed)\n", .{host});
-        return error.NonLoopbackHttpHost;
-    }
-    const port = try std.fmt.parseInt(u16, address_text[colon + 1 ..], 10);
+    // `cli.parseArgs` already judged the address (loopback host, numeric port).
+    const colon = std.mem.lastIndexOfScalar(u8, address_text, ':').?;
+    const port = cli.parseDigits(u16, address_text[colon + 1 ..]).?;
 
     var arena_state = std.heap.ArenaAllocator.init(allocator);
     defer arena_state.deinit();
