@@ -299,7 +299,14 @@ fn parseInner(p: *Parser) error{Usage}!Command {
         var http: ?[]const u8 = null;
         while (p.next()) |flag| {
             if (std.mem.eql(u8, flag, "--http")) {
-                http = try p.valueOf("--http");
+                const address = try p.valueOf("--http");
+                const colon = std.mem.lastIndexOfScalar(u8, address, ':');
+                const host = if (colon) |c| address[0..c] else "";
+                if (colon == null or parseDigits(u16, address[colon.? + 1 ..]) == null)
+                    return p.usage("invalid value for", "--http", address, " (expected 127.0.0.1:<port>)");
+                if (!std.mem.eql(u8, host, "127.0.0.1") and !std.mem.eql(u8, host, "localhost"))
+                    return p.usage("invalid value for", "--http", address, " (only 127.0.0.1 or localhost are allowed)");
+                http = address;
             } else {
                 return p.usage("unknown flag for", "serve", flag, " (see searchd --help)");
             }

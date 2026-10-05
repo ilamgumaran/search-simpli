@@ -105,6 +105,9 @@ test "a missing positional argument (S1-T8 criterion 1)" {
 }
 
 test "invalid enumerated values (S1-T8 criterion 1)" {
+    try expectUsage(&.{ "serve", "d", "--http", "8080" }, &.{ "invalid value for --http", "'8080'" });
+    try expectUsage(&.{ "serve", "d", "--http", "127.0.0.1:99999" }, &.{ "invalid value for --http", "'127.0.0.1:99999'" });
+    try expectUsage(&.{ "serve", "d", "--http", "0.0.0.0:80" }, &.{ "invalid value for --http", "only 127.0.0.1" });
     try expectUsage(&.{ "index", "f", "--out", "o", "--analyzer", "v3" }, &.{ "invalid value for --analyzer", "'v3'" });
     try expectUsage(&.{ "benchmark", "1", "1", "1", "fast" }, &.{ "invalid value for benchmark <mode>", "'fast'" });
 }
