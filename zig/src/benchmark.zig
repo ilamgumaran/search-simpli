@@ -3,6 +3,11 @@ const hybrid = @import("hybrid.zig");
 const postings = @import("postings.zig");
 const std = @import("std");
 
+/// Limits of `run`; `cli.parseArgs` judges the same limits before any work starts (S1-T8).
+pub const max_documents: usize = 100_000;
+pub const max_dimensions: usize = 4_096;
+pub const max_queries: usize = 10_000;
+
 pub fn run(
     io: std.Io,
     allocator: std.mem.Allocator,
@@ -11,10 +16,10 @@ pub fn run(
     query_count: usize,
     mode: hybrid.RetrievalMode,
 ) !void {
-    if (document_count == 0 or document_count > 100_000) return error.InvalidDocumentCount;
-    if (dimensions > 4_096) return error.InvalidDimensions;
+    if (document_count == 0 or document_count > max_documents) return error.InvalidDocumentCount;
+    if (dimensions > max_dimensions) return error.InvalidDimensions;
     if (mode != .lexical and dimensions == 0) return error.InvalidDimensions;
-    if (query_count == 0 or query_count > 10_000) return error.InvalidQueryCount;
+    if (query_count == 0 or query_count > max_queries) return error.InvalidQueryCount;
 
     const documents = try allocator.alloc(hybrid.Document, document_count);
     defer allocator.free(documents);

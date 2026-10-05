@@ -136,13 +136,41 @@ test "options positive today still reject 0, the others accept it (S1-T8 criteri
     try expectUsage(&.{ "benchmark", "0", "1", "1", "lexical" }, &.{ "<docs>", "'0'" });
     try expectUsage(&.{ "benchmark", "1", "1", "0", "lexical" }, &.{ "<queries>", "'0'" });
     var buffer: [512]u8 = undefined;
-    const accepted = cli.parseArgs(&.{ "index", "f", "--out", "o", "--max-file-bytes", "0", "--max-total-bytes", "0", "--overlap-lines", "0", "--generation", "0" }, &buffer);
+    const accepted = cli.parseArgs(&.{ "index", "f", "--out", "o", "--max-file-bytes", "0", "--max-total-bytes", "0", "--overlap-lines", "0" }, &buffer);
     try std.testing.expectEqual(@as(u64, 0), accepted.index.options.caps.max_file_bytes);
     try std.testing.expectEqual(@as(u64, 0), accepted.index.options.caps.max_total_bytes);
     try std.testing.expectEqual(@as(usize, 0), accepted.index.options.overlap_lines);
-    try std.testing.expectEqual(@as(?u64, 0), accepted.index.options.generation);
-    const bench = cli.parseArgs(&.{ "benchmark", "5", "0", "7", "hybrid" }, &buffer);
+    try std.testing.expectEqual(@as(?u64, null), accepted.index.options.generation);
+    const bench = cli.parseArgs(&.{ "benchmark", "5", "0", "7", "lexical" }, &buffer);
     try std.testing.expectEqual(@as(usize, 0), bench.benchmark.dimensions);
+}
+
+test "values only the work used to reject are usage errors, decided before any work (S1-T8 round 2, criterion 1)" {
+    // `index --generation 0` used to fail after indexing (GenerationZero, exit 1, a trace).
+    try expectUsage(&.{ "index", "f", "--out", "o", "--generation", "0" }, &.{ "--generation", "'0'" });
+    try expectUsage(&.{ "index", "f", "--out", "o", "--generation", "00" }, &.{ "--generation", "'00'" });
+    var buffer: [512]u8 = undefined;
+    const one = cli.parseArgs(&.{ "index", "f", "--out", "o", "--generation", "1" }, &buffer);
+    try std.testing.expectEqual(@as(?u64, 1), one.index.options.generation);
+    // `benchmark` limits, the same ones `benchmark.run` enforces.
+    try expectUsage(&.{ "benchmark", "100001", "1", "1", "lexical" }, &.{"<docs>"});
+    try expectUsage(&.{ "benchmark", "1", "4097", "1", "lexical" }, &.{"<dimensions>"});
+    try expectUsage(&.{ "benchmark", "1", "0", "1", "vector" }, &.{"<dimensions>"});
+    try expectUsage(&.{ "benchmark", "1", "0", "1", "hybrid" }, &.{"<dimensions>"});
+    try expectUsage(&.{ "benchmark", "1", "1", "10001", "lexical" }, &.{"<queries>"});
+    // The boundaries themselves are accepted.
+    const edge = cli.parseArgs(&.{ "benchmark", "100000", "4096", "10000", "hybrid" }, &buffer);
+    try std.testing.expectEqual(@as(usize, 100000), edge.benchmark.documents);
+    const lexical_zero = cli.parseArgs(&.{ "benchmark", "1", "0", "1", "lexical" }, &buffer);
+    try std.testing.expectEqual(@as(usize, 0), lexical_zero.benchmark.dimensions);
+}
+
+test "index --generation 0 creates no --out directory (S1-T8 round 2, criterion 1)" {
+    // main.zig only runs the work when parseArgs returns .index; a usage error returns first.
+    var buffer: [512]u8 = undefined;
+    const result = cli.parseArgs(&.{ "index", "f", "--out", ".zig-cache/tmp/never-created-by-generation-zero", "--generation", "0" }, &buffer);
+    try std.testing.expect(result == .usage_error);
+    try std.testing.expectError(error.FileNotFound, std.Io.Dir.cwd().openDir(std.testing.io, ".zig-cache/tmp/never-created-by-generation-zero", .{}));
 }
 
 test "valid arguments parse (S1-T8 criterion 2)" {

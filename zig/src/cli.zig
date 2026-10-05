@@ -13,6 +13,7 @@
 //! `Service.searchKnowledge` (`service.zig`) -- which means `searchd serve`,
 //! stdio and `--http` alike, is analyzer-aware too, not just this CLI path.
 const std = @import("std");
+const benchmark = @import("benchmark.zig");
 const chunker = @import("chunker.zig");
 const engine_module = @import("engine.zig");
 const generation_alloc = @import("generation_alloc.zig");
@@ -280,6 +281,15 @@ fn parseInner(p: *Parser) error{Usage}!Command {
         const mode_text = p.next() orelse return p.missingArgument("benchmark", "<mode>");
         const mode = parseRetrievalMode(mode_text) orelse
             return p.usage("invalid value for", "benchmark <mode>", mode_text, " (expected lexical, vector or hybrid)");
+        // The limits `benchmark.run` enforces, judged here so nothing starts first.
+        if (documents > benchmark.max_documents)
+            return p.usage("invalid value for", "benchmark <docs>", null, " (at most 100000)");
+        if (dimensions > benchmark.max_dimensions)
+            return p.usage("invalid value for", "benchmark <dimensions>", null, " (at most 4096)");
+        if (mode != .lexical and dimensions == 0)
+            return p.usage("invalid value for", "benchmark <dimensions>", null, " (must be at least 1 for vector and hybrid)");
+        if (queries > benchmark.max_queries)
+            return p.usage("invalid value for", "benchmark <queries>", null, " (at most 10000)");
         try p.noMoreArguments("benchmark");
         return .{ .benchmark = .{ .documents = documents, .dimensions = dimensions, .queries = queries, .mode = mode } };
     }
@@ -331,7 +341,9 @@ fn parseInner(p: *Parser) error{Usage}!Command {
             } else if (std.mem.eql(u8, flag, "--generation")) {
                 const value = try p.valueOf("--generation");
                 options.generation = parseDigits(u64, value) orelse
-                    return p.usage("invalid value for", "--generation", value, " (expected a non-negative whole number)");
+                    return p.usage("invalid value for", "--generation", value, " (expected a positive whole number)");
+                if (options.generation.? == 0)
+                    return p.usage("invalid value for", "--generation", value, " (expected a positive whole number)");
             } else if (std.mem.eql(u8, flag, "--update")) {
                 options.update = true;
             } else if (std.mem.eql(u8, flag, "--max-file-bytes")) {
