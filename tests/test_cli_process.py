@@ -4,7 +4,9 @@ statuses, so a usage error (2), a failure of the work (1) and `--help` (stdout,
 
 Finding the binary: `$SEARCHD_BINARY` if set; otherwise one `zig build
 --prefix <tmp>` (Debug) of `zig/`, which needs `zig` on PATH (the env file
-puts it there). The test fails, not skips, if neither is available."""
+puts it there). The test fails, not skips, if neither is available, with one
+exception: `SEARCH_SIMPLI_NO_ZIG=1`, which the CI workflow sets because its runner
+deliberately has no Zig. Only that explicit opt-out skips; nothing implicit does."""
 
 import os
 import shutil
@@ -19,6 +21,11 @@ ROOT = Path(__file__).resolve().parents[1]
 class CliProcessTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        if os.environ.get("SEARCH_SIMPLI_NO_ZIG") == "1":
+            raise unittest.SkipTest(
+                "SEARCH_SIMPLI_NO_ZIG=1: this environment deliberately has no Zig (CI); "
+                "run locally with the pinned toolchain"
+            )
         cls.scratch = tempfile.TemporaryDirectory()
         override = os.environ.get("SEARCHD_BINARY")
         if override:

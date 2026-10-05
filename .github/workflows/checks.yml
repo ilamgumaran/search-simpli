@@ -20,6 +20,9 @@ jobs:
         run: python3 scripts/check_requirements.py
 
       - name: Python behavioral tests (dependency-free base)
+        env:
+          # This runner has no Zig on purpose; tests/test_cli_process.py skips only on this flag.
+          SEARCH_SIMPLI_NO_ZIG: "1"
         run: python3 -m unittest discover -s tests -v
 
       # Strict 1.0 is a mechanical fixture invariant, not a production relevance target.
@@ -38,5 +41,6 @@ jobs:
           fi
           echo "No trailing whitespace."
 
-# Zig tests (57/57) are run locally with the pinned toolchain; see EXPERIMENTS.md.
-# They are intentionally not in CI until a pinned Zig toolchain step is justified.
+# Zig tests and the searchd process test (tests/test_cli_process.py) run locally with
+# the pinned toolchain; see docs/process/ROLES.md. They are intentionally not in CI
+# until a pinned Zig toolchain step is justified (proposed after S1-T8).
