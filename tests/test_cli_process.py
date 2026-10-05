@@ -82,6 +82,29 @@ class CliProcessTests(unittest.TestCase):
             self.assertIn("Commands:", result.stdout)
             self.assertEqual(result.stderr, "", flag)
 
+    def test_unreadable_file_is_counted_not_a_failure_and_help_says_so(self) -> None:
+        folder = Path(self.scratch.name) / "unreadable-docs"
+        folder.mkdir(exist_ok=True)
+        (folder / "a.md").write_text("hello\n", encoding="utf-8")
+        locked = folder / "b.md"
+        locked.write_text("secret\n", encoding="utf-8")
+        locked.chmod(0)
+        try:
+            try:
+                locked.read_bytes()
+                self.skipTest("cannot make a file unreadable here (running as root?)")
+            except PermissionError:
+                pass
+            result = self.run_searchd("index", str(folder), "--out", str(Path(self.scratch.name) / "unreadable-out"))
+        finally:
+            locked.chmod(0o644)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("unreadable=1", result.stdout)
+        # The usage text must say what the binary does, not the opposite.
+        text = self.run_searchd("--help").stdout.replace("\n", " ")
+        self.assertNotIn("an unreadable file)", text)
+        self.assertIn("An unreadable file inside the folder does not fail `index`: it exits 0 and counts the file in `unreadable`", " ".join(text.split()))
+
     def test_bare_invocation_prints_usage_to_stderr_and_exits_2(self) -> None:
         result = self.run_searchd()
         self.assertEqual(result.returncode, 2)

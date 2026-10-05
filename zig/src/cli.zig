@@ -112,9 +112,10 @@ pub const usage_text =
         \\snapshots only support lexical (BM25) queries.
         \\
         \\Exit status: 0 success; 1 the work failed (a missing folder or
-        \\snapshot, an unreadable file); 2 usage error (unknown command or flag,
-        \\missing or invalid argument; one line on stderr). A bare `searchd`
-        \\prints this text on stderr and exits 2.
+        \\snapshot); 2 usage error (unknown command or flag, missing or invalid
+        \\argument; one line on stderr). A bare `searchd` prints this text on
+        \\stderr and exits 2. An unreadable file inside the folder does not fail
+        \\`index`: it exits 0 and counts the file in `unreadable`.
         \\
     ;
 
