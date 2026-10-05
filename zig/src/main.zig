@@ -223,13 +223,9 @@ fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !vo
 /// 127.0.0.1 is accepted (an explicit host check, not just bind-address
 /// discipline), matching the task's "local only" requirement.
 fn serveHttp(io: std.Io, allocator: std.mem.Allocator, path: []const u8, address_text: []const u8) !void {
-    const colon = std.mem.lastIndexOfScalar(u8, address_text, ':') orelse return error.InvalidHttpAddress;
-    const host = address_text[0..colon];
-    if (!std.mem.eql(u8, host, "127.0.0.1") and !std.mem.eql(u8, host, "localhost")) {
-        std.debug.print("refusing non-loopback --http host: {s} (only 127.0.0.1/localhost are allowed)\n", .{host});
-        return error.NonLoopbackHttpHost;
-    }
-    const port = try std.fmt.parseInt(u16, address_text[colon + 1 ..], 10);
+    // `cli.parseArgs` already judged the address (loopback host, numeric port).
+    const colon = std.mem.lastIndexOfScalar(u8, address_text, ':').?;
+    const port = cli.parseDigits(u16, address_text[colon + 1 ..]).?;
 
     var arena_state = std.heap.ArenaAllocator.init(allocator);
     defer arena_state.deinit();
