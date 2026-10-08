@@ -20,6 +20,7 @@ const lexical_segment = @import("lexical_segment.zig");
 const lifecycle = @import("lifecycle.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
+const publication = @import("publication.zig");
 const segment = @import("segment.zig");
 const snapshot_open = @import("snapshot_open.zig");
 
@@ -295,7 +296,7 @@ pub fn indexFolder(
     const manifest_buffer = try allocator.alloc(u8, manifest_len);
     const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
 
-    try lifecycle.publishSerialized(out_dir, io, manifest_encoded, documents_encoded, lexical_encoded);
+    const prune = try lifecycle.publishSerializedKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, caps.keep_generations);
 
     // After a full rebuild, write INDEX-STATE.json so the first `--update`
     // after it will report unchanged files instead of re-indexing everything
@@ -321,6 +322,8 @@ pub fn indexFolder(
         .documents = documents.items.len,
         .terms = lexical_index.terms.len,
         .postings = lexical_index.postings.len,
+        .pruned_files = prune.deleted,
+        .prune_failures = prune.failed,
     };
 }
 
@@ -330,6 +333,12 @@ pub fn indexFolder(
 /// `opts` (CLI flags or `ss_index_folder`'s `opts` JSON object) -- see
 /// `docs/tasks/S1-T3.md` criterion 2.
 pub const Caps = struct {
+    /// S2-T5, opt-in (`null`, the default, deletes nothing): after a
+    /// successful publish, delete the section files of generations older
+    /// than the newest `keep_generations` (>= 1). Carried here because
+    /// `Caps` already travels from every caller (CLI, `ss_index_folder`)
+    /// through `indexFolder`/`indexFolderIncremental` to the publish call.
+    keep_generations: ?usize = null,
     /// A file larger than this (bytes) is never read; it is excluded from
     /// the index and counted under the report's `too_large`.
     max_file_bytes: u64 = 10 * 1024 * 1024,
@@ -377,6 +386,15 @@ pub const IncrementalReport = struct {
     documents: usize,
     terms: usize,
     postings: usize,
+    /// S2-T5: superseded section files deleted by `caps.keep_generations`
+    /// after this publish, and deletions that failed (the publish itself
+    /// still succeeded). Both 0 when the option is off.
+    pruned_files: usize = 0,
+    prune_failures: usize = 0,
+    /// S2-T5 rework: non-null (`"missing_section"`) when `MANIFEST` named a
+    /// section that could not be read, so `INDEX-STATE.json` was discarded
+    /// and every file re-indexed into a full generation.
+    recovered: ?[]const u8 = null,
 };
 
 fn hashHex(content: []const u8) [64]u8 {
@@ -467,8 +485,19 @@ pub fn indexFolderIncremental(
 ) !IncrementalReport {
     const paths = try collectCandidatePaths(allocator, io, root);
 
+    // S2-T5 rework: a MANIFEST that exists but names a section that is
+    // missing or unreadable is NOT "no previous index". Trusting
+    // INDEX-STATE.json then would mark every file unchanged and publish an
+    // empty generation. Instead the state is discarded, every file is
+    // re-indexed, and the report says `recovered: "missing_section"`.
+    var recovered: ?[]const u8 = null;
     const previous_engine: ?engine_module.Engine = snapshot_open.open(allocator, io, out_dir) catch |err| switch (err) {
-        error.FileNotFound => null,
+        error.FileNotFound, error.AccessDenied, error.InputOutput => blk: {
+            const manifest_present = if (out_dir.statFile(io, publication.current_manifest_file, .{})) |_| true else |_| false;
+            if (!manifest_present) break :blk null;
+            recovered = "missing_section";
+            break :blk null;
+        },
         else => return err,
     };
     if (previous_engine) |prev| {
@@ -486,7 +515,7 @@ pub fn indexFolderIncremental(
         }
     }
 
-    const previous_state = try incremental_state.load(allocator, io, out_dir);
+    const previous_state = if (recovered != null) null else try incremental_state.load(allocator, io, out_dir);
     var previous_entry_by_path = std.StringHashMap(incremental_state.Entry).init(allocator);
     if (previous_state) |state| {
         for (state.files) |entry| try previous_entry_by_path.put(entry.path, entry);
@@ -658,7 +687,7 @@ pub fn indexFolderIncremental(
     const manifest_buffer = try allocator.alloc(u8, manifest_len);
     const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
 
-    try lifecycle.publishSerialized(out_dir, io, manifest_encoded, documents_encoded, lexical_encoded);
+    const prune = try lifecycle.publishSerializedKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, caps.keep_generations);
 
     // Only after the generation is durably published: persist the state
     // that lets the *next* incremental run skip unchanged files again. A
@@ -686,6 +715,9 @@ pub fn indexFolderIncremental(
         .documents = documents.items.len,
         .terms = lexical_index.terms.len,
         .postings = lexical_index.postings.len,
+        .recovered = recovered,
+        .pruned_files = prune.deleted,
+        .prune_failures = prune.failed,
     };
 }
 

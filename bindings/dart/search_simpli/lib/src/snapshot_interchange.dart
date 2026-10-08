@@ -57,16 +57,29 @@ class SnapshotInterchangeV1 {
 
   final List<SnapshotInterchangeDocument> documents;
 
+  /// Optional publication option (S2-T5), not snapshot content: after a
+  /// successful import, delete the section files of generations older than
+  /// the newest N. `null` (the default) deletes nothing. Must be >= 1.
+  final int? keepGenerations;
+
   SnapshotInterchangeV1({
     required this.generation,
     required this.analyzer,
     required this.embeddingModelId,
     List<SnapshotInterchangeDocument>? documents,
+    this.keepGenerations,
   }) : documents = List.unmodifiable(
           documents ?? const <SnapshotInterchangeDocument>[],
         ) {
     if (generation < 1) {
       throw ArgumentError.value(generation, 'generation', 'must be >= 1');
+    }
+    if (keepGenerations != null && keepGenerations! < 1) {
+      throw ArgumentError.value(
+        keepGenerations,
+        'keepGenerations',
+        'must be >= 1',
+      );
     }
     if (embeddingModelId.isEmpty) {
       throw ArgumentError.value(
@@ -90,6 +103,7 @@ class SnapshotInterchangeV1 {
           .map((e) =>
               SnapshotInterchangeDocument.fromJson(e! as Map<String, Object?>))
           .toList(growable: false),
+      keepGenerations: json['keep_generations'] as int?,
     );
   }
 
@@ -98,6 +112,7 @@ class SnapshotInterchangeV1 {
         'generation': generation,
         'analyzer_id': analyzerId,
         'embedding_model_id': embeddingModelId,
+        if (keepGenerations != null) 'keep_generations': keepGenerations,
         'documents': documents.map((d) => d.toJson()).toList(growable: false),
       };
 

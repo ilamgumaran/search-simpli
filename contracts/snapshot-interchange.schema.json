@@ -9,6 +9,11 @@
     "generation": { "type": "integer", "minimum": 1 },
     "analyzer_id": { "enum": ["ascii-alnum-v1", "analyzer-v2"] },
     "embedding_model_id": { "type": "string", "minLength": 1 },
+    "keep_generations": {
+      "description": "Publication option, not snapshot content. A publisher (ss_import_json, searchd import-json) deletes the section files of generations older than the newest N after a successful publish; a consumer that is not a publisher ignores it.",
+      "type": "integer",
+      "minimum": 1
+    },
     "documents": {
       "type": "array",
       "items": {

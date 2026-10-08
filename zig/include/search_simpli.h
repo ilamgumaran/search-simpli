@@ -213,6 +213,12 @@ char *ss_evidence(ss_handle *handle, const char *ids_json);
  * ss_error_code (SS_ERR_* above) on failure — see ss_last_error() for the
  * specific reason (e.g. unsupported analyzer/format version, inconsistent
  * vector dimensions, a document missing its id/path, or an I/O error).
+ *
+ * The payload may carry one optional extra top-level field,
+ * "keep_generations" (integer >= 1, opt-in), with the same meaning as
+ * ss_index_folder's option: after the publish succeeds, section files of
+ * generations older than the newest N are deleted. Absent: nothing is
+ * deleted. 0 returns SS_ERR_INVALID_ARGUMENT.
  */
 int64_t ss_import_json(const char *dir_path, const char *bytes, size_t bytes_len);
 
@@ -276,6 +282,21 @@ void ss_free(char *ptr);
  *                                        before remaining unprocessed files
  *                                        are left untouched for this
  *                                        generation (default 512 MiB)
+ *                    "keep_generations"  integer >= 1, opt-in. After a
+ *                                        successful publish, delete the
+ *                                        section files of generations older
+ *                                        than the newest N (the current
+ *                                        generation is always kept; so are
+ *                                        MANIFEST, WRITER.LOCK and
+ *                                        INDEX-STATE.json). Absent: nothing
+ *                                        is deleted. 0 is an error. A failed
+ *                                        deletion never fails the call; the
+ *                                        report then carries "pruned_files"
+ *                                        and "prune_failures" (integers,
+ *                                        present only when this option is
+ *                                        set). Close handles on a pruned
+ *                                        generation first if they matter to
+ *                                        you: see docs/generation-lifecycle.md.
  *
  * Returns a heap-allocated, null-terminated JSON report object on success —
  * the caller must free it with ss_free() — with fields "generation"
@@ -295,6 +316,11 @@ void ss_free(char *ptr);
  * the same number. An empty folder_path, or a folder whose last indexable
  * file was just deleted, publishes an empty generation (0
  * documents/terms/postings) instead of failing.
+ *
+ * With "update": true, if MANIFEST exists but a section file it names is
+ * missing or unreadable, the update does not trust INDEX-STATE.json: it
+ * re-indexes every file, publishes a full next generation, and the report
+ * carries "recovered": "missing_section" (the field is absent otherwise).
  *
  * A file larger than max_file_bytes is tombstoned, not silently kept: it is
  * counted (and named) under "too_large"/"too_large_paths", and its

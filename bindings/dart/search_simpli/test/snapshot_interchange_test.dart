@@ -73,6 +73,30 @@ void main() {
     }
   });
 
+  test('keepGenerations is optional, validated, and round-trips beside the analyzer', () {
+    final schema = jsonDecode(File(p.join(
+            _repoRoot, 'contracts', 'snapshot-interchange.schema.json'))
+        .readAsStringSync()) as Map<String, Object?>;
+    expect((schema['properties']! as Map<String, Object?>).containsKey('keep_generations'), isTrue);
+    const v2 = InterchangeAnalyzer.analyzerV2;
+    expect(_tamilSnapshot(v2).toJson().containsKey('keep_generations'), isFalse);
+    final snapshot = SnapshotInterchangeV1(
+      generation: 1,
+      analyzer: v2,
+      embeddingModelId: 'none',
+      keepGenerations: 2,
+    );
+    final json = snapshot.toJson();
+    expect(json['analyzer_id'], 'analyzer-v2');
+    expect(json['keep_generations'], 2);
+    expect(SnapshotInterchangeV1.fromJson(json).keepGenerations, 2);
+    expect(
+      () => SnapshotInterchangeV1(
+          generation: 1, analyzer: v2, embeddingModelId: 'none', keepGenerations: 0),
+      throwsArgumentError,
+    );
+  });
+
   group('importSnapshotJson with the Tamil fixture', () {
     late Directory dir;
     setUp(() => dir = Directory.systemTemp.createTempSync('ss-dart-s2t1-'));
