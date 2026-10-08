@@ -12,6 +12,15 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S2-T12, 2026-10-08)
+
+**S2-T12 is `verified` and merged to `main`** (branch `task/S2-T12` `2df286b`; Verdict in `docs/tasks/S2-T12.md`).
+
+- **No empty generation after a lost `MANIFEST`.** If `MANIFEST` is missing, `--update` / `ss_index_folder` update mode no longer loads `INDEX-STATE.json`. It re-indexes every file, publishes a full generation and reports `"recovered": "missing_manifest"` when a state file was present. A fresh directory reports no `recovered`. With `keep_generations`, pruning runs only after the full generation is published.
+- **Dart:** `IndexFolderOptions.keepGenerations` (checked at use: `ArgumentError` below 1, before any native call); `IndexFolderReport.recovered` (`IndexRecovery`, with an `unknown` fallback), `recoveredRaw`, `prunedFiles`, `pruneFailures`.
+- **Libraries:** dylib 417,496 B, stamp `7c21ea77…d496bb`.
+- **Open (non-blocking):** generation numbers can go backwards after a lost `MANIFEST` (older than this task); the Dart `indexFolder` leaks two small native strings on the `ArgumentError` path.
+
 ## Standalone platform status (S2-T5, 2026-10-08)
 
 **S2-T5 is `verified` and merged to `main`** (branch `task/S2-T5` `41a0186`, second round; Verdict in `docs/tasks/S2-T5.md`).
