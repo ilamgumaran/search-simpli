@@ -100,7 +100,8 @@ bool isInsideMacApp(String executable) {
 ///    everything the bare name can reach from inside an app (the cwd, the
 ///    engine's rpaths, `/usr/local/lib`, `/usr/lib`) is outside what the app
 ///    ships. If the file is missing, a [StateError] says the app did not ship
-///    the library. Inside an app only the shipped copy is ever loaded.
+///    the library; if it exists but fails to open, the [StateError] says it
+///    was found but could not be opened, with the underlying error. Inside an app only the shipped copy is ever loaded.
 /// 4. **macOS/Linux, a development checkout** (not inside an app):
 ///    `native/<subdir>/<filename>` under this package's own root, resolved
 ///    package-relatively (docs/tasks/S1-T4.md criterion 2) via
@@ -185,10 +186,22 @@ DynamicLibrary openSearchSimpliLibraryWith({
       }
     }
     if (inApp) {
+      final shipped = candidates.first.name;
+      if (failures.isNotEmpty) {
+        throw StateError(
+          'search_simpli: the library was found but could not be opened. '
+          'Looked only at:\n$shipped\n'
+          'It existed but failed to open:\n${failures.join('\n')}\n'
+          'The shipped copy may be unreadable, built for the wrong '
+          'architecture, or damaged. Inside an app only the bundled copy is '
+          'loaded (no search path, no bare name). Re-embed it in '
+          'Contents/Frameworks, or set SEARCH_SIMPLI_LIBRARY_PATH to an '
+          'explicit path.',
+        );
+      }
       throw StateError(
         'search_simpli: the app did not ship $filename. Looked only at:\n'
-        '${candidates.first.name}\n'
-        '${failures.isEmpty ? '' : 'It existed but failed to open:\n${failures.join('\n')}\n'}'
+        '$shipped\n'
         'Inside an app only the bundled copy is loaded (no search path, no '
         'bare name). Embed the library in Contents/Frameworks, or set '
         'SEARCH_SIMPLI_LIBRARY_PATH to an explicit path.',
