@@ -67,6 +67,19 @@ String? _rootUriFromPackageConfig(File configFile, String packageName) {
   return null;
 }
 
+/// True when [executable] lies inside a macOS app bundle, that is, its
+/// directory ends in `<Name>.app/Contents/MacOS`. A pure function of the
+/// path (docs/tasks/S1-T12.md), so tests can pass a fake one.
+bool isInsideMacApp(String executable) {
+  final parts = path.split(path.normalize(path.dirname(executable)));
+  if (parts.length < 3) return false;
+  final n = parts.length;
+  return parts[n - 1] == 'MacOS' &&
+      parts[n - 2] == 'Contents' &&
+      parts[n - 3].endsWith('.app') &&
+      parts[n - 3].length > 4;
+}
+
 /// Opens the platform's prebuilt `search_simpli` shared library.
 ///
 /// Resolution order:
@@ -80,20 +93,21 @@ String? _rootUriFromPackageConfig(File configFile, String packageName) {
 ///    as a jniLib for `arm64-v8a` (see this package's README and
 ///    `example/android/app/build.gradle.kts` for a worked Flutter example);
 ///    once packaged, the OS's own dynamic linker finds it by soname.
-/// 3. **macOS/Linux, a built app bundle (docs/tasks/S1-T10.md, order fixed
-///    by docs/tasks/S1-T11.md):** first the app's own copy,
-///    `<executable dir>/../Frameworks/libsearch_simpli.dylib` (macOS) or
-///    `<executable dir>/lib/libsearch_simpli.so` (Linux), from
-///    [Platform.resolvedExecutable], as an exact path so a stray copy in the
-///    cwd or `/usr/local/lib` can never win; then the bare file name through
-///    the loader's search path (`@rpath` resolves it to `Contents/Frameworks`
-///    in a macOS app, after the cwd and the engine's other rpaths).
-/// 4. **macOS/Linux, a development checkout:** `native/<subdir>/<filename>`
-///    under this package's own root, resolved package-relatively
-///    (docs/tasks/S1-T4.md criterion 2) so a plain `path:` dependency works
-///    with no environment variable at all: first via
+/// 3. **macOS, inside an app** ([isInsideMacApp], docs/tasks/S1-T12.md):
+///    only the override and the exact path
+///    `<executable dir>/../Frameworks/libsearch_simpli.dylib`. No bare name:
+///    everything the bare name can reach from inside an app (the cwd, the
+///    engine's rpaths, `/usr/local/lib`, `/usr/lib`) is outside what the app
+///    ships. If the file is missing, a [StateError] says the app did not ship
+///    the library. Inside an app only the shipped copy is ever loaded.
+/// 4. **macOS/Linux, a development checkout** (not inside an app):
+///    `native/<subdir>/<filename>` under this package's own root, resolved
+///    package-relatively (docs/tasks/S1-T4.md criterion 2) via
 ///    `_resolvePackageRootViaPackageConfig`, then the current working
-///    directory and the running script's directory.
+///    directory and the running script's directory; **then** the bare name
+///    as the last fallback for a system-installed library. (Linux also tries
+///    `<executable dir>/lib/libsearch_simpli.so` first, an exact path.) The
+///    package's own copy is preferred over a stray one.
 ///
 /// A candidate that fails to open never stops the search; the final
 /// [StateError] lists every candidate tried, in order.
@@ -136,28 +150,29 @@ DynamicLibrary openSearchSimpliLibraryWith({
     final script = scriptDir ?? path.dirname(Platform.script.toFilePath());
     final workDir = cwd ?? Directory.current.path;
 
-    // (path, needsFileCheck): the app's own copy comes first, as an exact
-    // path, so a stray copy on dyld's search path (cwd, /usr/local/lib) can
-    // never beat it; the bare name goes straight to the loader.
-    final candidates = <({String name, bool check})>[
-      (
-        name: mac
-            ? path.join(exeDir, '..', 'Frameworks', filename)
-            : path.join(exeDir, 'lib', filename),
-        check: true,
-      ),
-      (name: filename, check: false),
-    ];
-    final packageRoot = packageRootOverride ??
-        _resolvePackageRootViaPackageConfig('search_simpli');
-    if (packageRoot != null) {
-      candidates.add((name: path.joinAll([packageRoot, ...relative]), check: true));
+    final exe = executablePath ?? Platform.resolvedExecutable;
+    final inApp = mac && isInsideMacApp(exe);
+
+    // Inside an app: only the exact Frameworks path (no bare name, no
+    // checkout candidates). Outside: the package's own copy first, then the
+    // bare name last.
+    final candidates = <({String name, bool check})>[];
+    if (inApp) {
+      candidates.add((name: path.join(exeDir, '..', 'Frameworks', filename), check: true));
+    } else {
+      if (linux) candidates.add((name: path.join(exeDir, 'lib', filename), check: true));
+      final packageRoot = packageRootOverride ??
+          _resolvePackageRootViaPackageConfig('search_simpli');
+      if (packageRoot != null) {
+        candidates.add((name: path.joinAll([packageRoot, ...relative]), check: true));
+      }
+      candidates.addAll([
+        (name: path.joinAll([workDir, ...relative]), check: true),
+        (name: path.joinAll([script, '..', ...relative]), check: true),
+        (name: path.joinAll([script, ...relative]), check: true),
+        (name: filename, check: false),
+      ]);
     }
-    candidates.addAll([
-      (name: path.joinAll([workDir, ...relative]), check: true),
-      (name: path.joinAll([script, '..', ...relative]), check: true),
-      (name: path.joinAll([script, ...relative]), check: true),
-    ]);
 
     final failures = <String>[];
     for (final candidate in candidates) {
@@ -167,6 +182,16 @@ DynamicLibrary openSearchSimpliLibraryWith({
       } on ArgumentError catch (e) {
         failures.add('${candidate.name} ($e)');
       }
+    }
+    if (inApp) {
+      throw StateError(
+        'search_simpli: the app did not ship $filename. Looked only at:\n'
+        '${candidates.first.name}\n'
+        '${failures.isEmpty ? '' : 'It existed but failed to open:\n${failures.join('\n')}\n'}'
+        'Inside an app only the bundled copy is loaded (no search path, no '
+        'bare name). Embed the library in Contents/Frameworks, or set '
+        'SEARCH_SIMPLI_LIBRARY_PATH to an explicit path.',
+      );
     }
     throw StateError(
       'search_simpli: could not find $filename. Tried:\n'

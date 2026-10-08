@@ -25,7 +25,7 @@ class SearchSimpliBindings {
       : _lookup = lookup;
 
   /// The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
-  /// "1.0.0". The returned pointer is static storage owned by the library:
+  /// "1.1.0". The returned pointer is static storage owned by the library:
   /// never pass it to ss_free(). Cannot fail.
   ffi.Pointer<ffi.Char> ss_version() {
     return _ss_version();
@@ -220,6 +220,17 @@ class SearchSimpliBindings {
   /// (contracts/snapshot-interchange.schema.json) and atomically publish it as
   /// a new generation under `dir_path` (created, including parent directories,
   /// if it does not already exist) — exactly what `searchd import-json` does.
+  ///
+  /// `analyzer_id` selects how the documents' text is tokenized and is
+  /// recorded in the snapshot; queries on it use the same analyzer:
+  /// "ascii-alnum-v1"  ASCII letters/digits only, case-insensitive; text in
+  /// any other script yields no terms. Unchanged since
+  /// contract 1.0.0.
+  /// "analyzer-v2"     Unicode (NFC, simple case folding, Unicode letter and
+  /// digit categories), since contract 1.1.0. Builds the
+  /// same index `searchd index` (and ss_index_folder with
+  /// the default analyzer) builds from the same chunks.
+  /// Any other value fails with SS_ERR_INVALID_ARGUMENT.
   ///
   /// Returns the published generation number (>= 1) on success, or a negative
   /// ss_error_code (SS_ERR_* above) on failure — see ss_last_error() for the

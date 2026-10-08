@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-09-30
+Last updated: 2026-10-08
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -11,6 +11,17 @@ Project: **Search Simpli** (`search-simpli`)
 
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
+
+## Standalone platform status (S2-T1, 2026-10-08)
+
+**S2-T1 is `verified` and merged to `main`** (branch `task/S2-T1` `ff8a902`; Verdict in `docs/tasks/S2-T1.md`). `ss_import_json` / `searchd import-json` now accept `"analyzer_id": "analyzer-v2"`. They build the same index `searchd index` builds from the same chunks: 33/33 published files are byte-identical, and 814/814 full ranked lists are identical over 11 corpora. `ascii-alnum-v1` imports are byte-identical to before (21/21). The Tamil fixture through import is success@1 0.00 → 1.00.
+
+**The contract is now `1.1.0`.** The schema's `analyzer_id` is an `enum`; `ss_version()` and the Dart `expectedContractsVersion` are `1.1.0`. The shipped libraries were rebuilt: dylib 382,328 B `94915340…`, `.so` 383,840 B `406ea699…`, stamp `a55edf92…3e3b`. The package also exports `SnapshotInterchangeV1` / `InterchangeAnalyzer`.
+
+**What the app must change:**
+1. Send `analyzer-v2` (its `SnapshotInterchangeV1` hard-codes `ascii-alnum-v1`).
+2. Re-pin the core to this `main` or later; its contracts pin becomes `1.1.0`, or `SearchSimpli.open` throws `ContractsVersionMismatchException`.
+3. Republish once, so on-device snapshots stop being ASCII-only.
 
 ## Standalone platform status (S1-T7, 2026-09-30)
 
@@ -29,7 +40,7 @@ ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Un
 **S1-T4 is `verified` and merged to `main`** — merge commit `d860bb1` (branch `task/S1-T4` `0bcc446`, which continued a rate-limited builder's `wip` `60be2dc`), then the verdict commit `ddb72a6`, which is `main`'s head. Round C is hardening only: it closes the round-B verdicts' non-blocking findings rather than adding a capability. The owner has paused this work after round C until later in the weekend.
 
 - **`ss_index_folder` is bound in Dart.** `SearchSimpli.indexFolder(dirPath, folderPath, {options, library})` → a typed `IndexFolderReport`; `IndexFolderOptions` carries `analyzer`, `maxChars`, `overlapLines`, `update`, `maxFileBytes`, `maxTotalBytes`. A static method, not an instance one, because it takes a directory rather than an open handle (same shape as `importSnapshotJson`/`ss_import_json`). Proven by the tester on the Mac and **on the API 34 emulator against the app's own private storage** (`/data/user/0/<pkg>/files`), where it published generation 1, answered a query, tombstoned a file grown past the cap, and published an empty generation when the last file was deleted.
-- **The Dart package loads its library package-relatively.** `library_loader.dart` finds the nearest `.dart_tool/package_config.json` and reads `search_simpli`'s own `rootUri` out of it (read directly rather than via `Isolate.resolvePackageUri`, which is `Future`-returning and would force `SearchSimpli.open` to become async). A `path:` dependency now works from any working directory with **no environment variable** — verified by the tester from a fresh consumer package outside the checkout, following the README literally with `SEARCH_SIMPLI_LIBRARY_PATH` unset. `SEARCH_SIMPLI_LIBRARY_PATH` still overrides, on every platform. In a built app the order is: the override; `<executable dir>/../Frameworks/libsearch_simpli.dylib` (Linux `<exe dir>/lib/...so`), the app's own copy as an exact path; the bare name; then the development-checkout candidates (S1-T10, order fixed by S1-T11, so a stray copy in the cwd or `/usr/local/lib` cannot win). A sandboxed process starts in its container, not in the cwd it was launched from.
+- **The Dart package loads its library package-relatively.** `library_loader.dart` finds the nearest `.dart_tool/package_config.json` and reads `search_simpli`'s own `rootUri` out of it (read directly rather than via `Isolate.resolvePackageUri`, which is `Future`-returning and would force `SearchSimpli.open` to become async). A `path:` dependency now works from any working directory with **no environment variable** — verified by the tester from a fresh consumer package outside the checkout, following the README literally with `SEARCH_SIMPLI_LIBRARY_PATH` unset. `SEARCH_SIMPLI_LIBRARY_PATH` still overrides, on every platform. Inside a built macOS app (`Platform.resolvedExecutable` under `*.app/Contents/MacOS/`) only the override and the exact `<executable dir>/../Frameworks/libsearch_simpli.dylib` are tried; no bare name, and a missing library is a `StateError` saying the app did not ship it (S1-T12). In a development checkout the order is: the override; the package's own `native/` copy (package config); the cwd- and script-relative `native/` candidates; then the bare name last (Linux first tries the exact `<exe dir>/lib/...so`). The exact claim: inside an app only the shipped copy is ever loaded; in a checkout the package's own copy is preferred, and the bare name is the last fallback. A sandboxed process starts in its container, not in the cwd it was launched from.
 - **The report JSON names files instead of only counting them, and `skipped` is gone.** One shape for both entry points: `generation`, `analyzer_id`, `added`, `changed`, `removed`, `unchanged`, `budget_exhausted`, `too_large`, `unreadable`, `too_large_paths`, `unreadable_paths`, `documents`, `terms`, `postings`. `unchanged` ("hash matched, nothing to do") and `budget_exhausted` ("left for a later run because `--max-total-bytes` ran out") are now distinct numbers, and `too_large`/`unreadable` files come with relative-path arrays (properly JSON-escaped — the tester checked quotes, backslashes, tabs, newlines, Cyrillic and emoji in filenames).
 - **An empty folder, or a folder that lost its last file, publishes an empty generation.** Measured against the previous binary built from the same tree: `origin/main` exits 1 with `error: NoDocuments` in both cases, the merge publishes a real, openable generation with 0 documents/terms/postings that answers `query` and `evidence` with empty arrays.
 - **A file grown past `--max-file-bytes` is reported *and* tombstoned.** It is named in `too_large_paths`, its previous chunks and its `INDEX-STATE.json` entry are dropped, it stays dropped on the next run, and it comes back as `added` if it shrinks below the cap — while an unrelated file in the same run stays `unchanged`. (An *unreadable* file keeps its chunks; the two policies differ by design, and `docs/incremental-indexing.md` now tabulates all six outcomes.)

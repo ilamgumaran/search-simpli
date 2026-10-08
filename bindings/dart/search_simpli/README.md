@@ -18,6 +18,7 @@ bindings/dart/search_simpli/
       search_simpli_base.dart   # SearchSimpli: the class you actually use
       contracts.dart            # typed result classes (SearchKnowledgeResult, SnapshotStatus, ...)
       contracts_version.dart    # the CONTRACTS_VERSION this package expects
+      snapshot_interchange.dart # SnapshotInterchangeV1: the JSON importSnapshotJson publishes
       library_loader.dart       # finds/opens the right native library for the platform
   native/
     macos-arm64/libsearch_simpli.dylib
@@ -75,7 +76,7 @@ wrote — see the [root README](../../../README.md) and
 
 - `SearchSimpli.open(String snapshotDir, {DynamicLibrary? library})` — opens
   a snapshot. Asserts the native library's `ss_version()` equals this
-  package's `CONTRACTS_VERSION` (`1.0.0`) before touching `snapshotDir` at
+  package's `CONTRACTS_VERSION` (`1.1.0`) before touching `snapshotDir` at
   all; throws `ContractsVersionMismatchException` on a mismatch and
   `SearchSimpliException` if `ss_open` itself fails (missing/corrupt
   snapshot, I/O error — see the thrown exception's `message`, which is
@@ -100,7 +101,12 @@ wrote — see the [root README](../../../README.md) and
   library})` — a free function (it takes a directory, not an open handle),
   publishes neutral interchange JSON as a new generation, exactly what
   `searchd import-json` / `ss_import_json` do. Returns the published
-  generation number.
+  generation number. Build the JSON with `SnapshotInterchangeV1`
+  (`jsonEncode(snapshot.toJson())`); its `analyzer` is
+  `InterchangeAnalyzer.asciiAlnumV1` (`"ascii-alnum-v1"`, ASCII only: no
+  terms for Tamil or other non-ASCII scripts) or, since contract 1.1.0,
+  `InterchangeAnalyzer.analyzerV2` (`"analyzer-v2"`, Unicode; the same index
+  `indexFolder` builds from the same chunks).
 - `SearchSimpli.indexFolder(String dirPath, String folderPath, {IndexFolderOptions
   options, DynamicLibrary? library})` → `IndexFolderReport` (docs/tasks/S1-T4.md
   criterion 1) — indexes `folderPath` and atomically publishes (or
@@ -132,22 +138,23 @@ library_loader.dart` resolves which one to load:
    abiFilters += listOf("arm64-v8a") }` block in `example/android/app/
    build.gradle.kts` for a worked Flutter example). Once packaged, Android's
    own dynamic linker finds it by name.
-3. **macOS/Linux, inside a built app (docs/tasks/S1-T10.md, order fixed by
-   docs/tasks/S1-T11.md):** first the app's own copy,
-   `<executable dir>/../Frameworks/libsearch_simpli.dylib` (macOS) or
-   `<executable dir>/lib/libsearch_simpli.so` (Linux), from
-   `Platform.resolvedExecutable`, as an exact path, so a stray copy in the
-   working directory or `/usr/local/lib` can never win; then
-   `DynamicLibrary.open('libsearch_simpli.dylib')` (`.so` on Linux) by bare
-   name, which the loader resolves through its search path and `@rpath`.
+3. **macOS, inside a built app (`Platform.resolvedExecutable` under
+   `*.app/Contents/MacOS/`; docs/tasks/S1-T12.md):** only the override and the
+   exact path `<executable dir>/../Frameworks/libsearch_simpli.dylib`. No bare
+   name: everything it can reach from inside an app (the working directory,
+   the engine's rpaths, `/usr/local/lib`, `/usr/lib`) is outside what the app
+   ships. If the file is missing, a `StateError` says the app did not ship the
+   library and names the path it looked at. Inside an app only the shipped
+   copy is ever loaded.
    **An app must ship the `.dylib` in `Contents/Frameworks`, signed with the
    app**; a sandboxed app has no `.dart_tool/` and cannot see the checkout,
    so nothing below can help it. `tool/bundle_probe.sh` builds a throwaway
    macOS app and proves this (sandbox on and off,
    `SEARCH_SIMPLI_LIBRARY_PATH` unset, launched from cwd `/`; a sandboxed
    process starts in its container, `~/Library/Containers/<bundle id>/Data`).
-4. **macOS/Linux, a development checkout:** resolves `native/<macos-arm64|linux-x64>/libsearch_simpli.*`
-   **package-relatively** (docs/tasks/S1-T4.md criterion 2), so a plain
+4. **macOS/Linux, a development checkout (not inside an app):** the override;
+   then the package's own `native/<macos-arm64|linux-x64>/libsearch_simpli.*`,
+   resolved **package-relatively** (docs/tasks/S1-T4.md criterion 2), so a plain
    `path:` dependency on this package works unaided, from any working
    directory — no environment variable needed. This is done by locating and
    parsing the nearest `.dart_tool/package_config.json` (the same file
@@ -157,7 +164,14 @@ library_loader.dart` resolves which one to load:
    back to the current working directory and the running script's directory
    only if no `package_config.json` can be found (e.g. `pub get` was never
    run) — this package's own dev workflow (`dart test` from inside
-   `bindings/dart/search_simpli/`) still works either way.
+   `bindings/dart/search_simpli/`) still works either way. **Only then**, as
+   the last fallback for a system-installed library, the bare name
+   `libsearch_simpli.dylib` (`.so` on Linux), so a stray copy in the working
+   directory or `/usr/local/lib` does not beat the package's own copy. (Linux
+   first tries the exact `<executable dir>/lib/libsearch_simpli.so`.) The
+   exact claim: inside an app only the shipped copy is ever loaded; in a
+   checkout the package's own copy is preferred, and the bare name is the last
+   fallback.
 
 A candidate that fails to open never masks a later one; if none opens,
 `StateError` lists every path tried, in order.
