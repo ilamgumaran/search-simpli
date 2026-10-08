@@ -80,12 +80,14 @@ String? _rootUriFromPackageConfig(File configFile, String packageName) {
 ///    as a jniLib for `arm64-v8a` (see this package's README and
 ///    `example/android/app/build.gradle.kts` for a worked Flutter example);
 ///    once packaged, the OS's own dynamic linker finds it by soname.
-/// 3. **macOS/Linux, a built app bundle (docs/tasks/S1-T10.md):** first the
-///    bare file name through the loader's search path (`@rpath` resolves it
-///    to `Contents/Frameworks` in a macOS app), then
+/// 3. **macOS/Linux, a built app bundle (docs/tasks/S1-T10.md, order fixed
+///    by docs/tasks/S1-T11.md):** first the app's own copy,
 ///    `<executable dir>/../Frameworks/libsearch_simpli.dylib` (macOS) or
-///    `<executable dir>/lib/libsearch_simpli.so` (Linux) from
-///    [Platform.resolvedExecutable].
+///    `<executable dir>/lib/libsearch_simpli.so` (Linux), from
+///    [Platform.resolvedExecutable], as an exact path so a stray copy in the
+///    cwd or `/usr/local/lib` can never win; then the bare file name through
+///    the loader's search path (`@rpath` resolves it to `Contents/Frameworks`
+///    in a macOS app, after the cwd and the engine's other rpaths).
 /// 4. **macOS/Linux, a development checkout:** `native/<subdir>/<filename>`
 ///    under this package's own root, resolved package-relatively
 ///    (docs/tasks/S1-T4.md criterion 2) so a plain `path:` dependency works
@@ -134,15 +136,17 @@ DynamicLibrary openSearchSimpliLibraryWith({
     final script = scriptDir ?? path.dirname(Platform.script.toFilePath());
     final workDir = cwd ?? Directory.current.path;
 
-    // (path, needsFileCheck): the bare name goes straight to the loader.
+    // (path, needsFileCheck): the app's own copy comes first, as an exact
+    // path, so a stray copy on dyld's search path (cwd, /usr/local/lib) can
+    // never beat it; the bare name goes straight to the loader.
     final candidates = <({String name, bool check})>[
-      (name: filename, check: false),
       (
         name: mac
             ? path.join(exeDir, '..', 'Frameworks', filename)
             : path.join(exeDir, 'lib', filename),
         check: true,
       ),
+      (name: filename, check: false),
     ];
     final packageRoot = packageRootOverride ??
         _resolvePackageRootViaPackageConfig('search_simpli');
