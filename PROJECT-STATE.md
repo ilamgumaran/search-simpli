@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-09-30
+Last updated: 2026-10-08
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -11,6 +11,17 @@ Project: **Search Simpli** (`search-simpli`)
 
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
+
+## Standalone platform status (S2-T1, 2026-10-08)
+
+**S2-T1 is `verified` and merged to `main`** (branch `task/S2-T1` `ff8a902`; Verdict in `docs/tasks/S2-T1.md`). `ss_import_json` / `searchd import-json` now accept `"analyzer_id": "analyzer-v2"`. They build the same index `searchd index` builds from the same chunks: 33/33 published files are byte-identical, and 814/814 full ranked lists are identical over 11 corpora. `ascii-alnum-v1` imports are byte-identical to before (21/21). The Tamil fixture through import is success@1 0.00 → 1.00.
+
+**The contract is now `1.1.0`.** The schema's `analyzer_id` is an `enum`; `ss_version()` and the Dart `expectedContractsVersion` are `1.1.0`. The shipped libraries were rebuilt: dylib 382,328 B `94915340…`, `.so` 383,840 B `406ea699…`, stamp `a55edf92…3e3b`. The package also exports `SnapshotInterchangeV1` / `InterchangeAnalyzer`.
+
+**What the app must change:**
+1. Send `analyzer-v2` (its `SnapshotInterchangeV1` hard-codes `ascii-alnum-v1`).
+2. Re-pin the core to this `main` or later; its contracts pin becomes `1.1.0`, or `SearchSimpli.open` throws `ContractsVersionMismatchException`.
+3. Republish once, so on-device snapshots stop being ASCII-only.
 
 ## Standalone platform status (S1-T7, 2026-09-30)
 

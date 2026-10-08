@@ -1,6 +1,8 @@
 const analysis = @import("analysis.zig");
 const engine_module = @import("engine.zig");
 const hybrid = @import("hybrid.zig");
+const indexer = @import("indexer.zig");
+const lexical_build = @import("lexical_build.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const lifecycle = @import("lifecycle.zig");
 const manifest = @import("manifest.zig");
@@ -10,7 +12,30 @@ const segment = @import("segment.zig");
 const std = @import("std");
 
 pub const format_version: u16 = 1;
+/// The analyzer every interchange file named before contract 1.1.0, and
+/// still the Python export's default: ASCII letters/digits, case-folded at
+/// lookup (`analysis.zig`, `postings.build`).
 pub const analyzer_id = "ascii-alnum-v1";
+/// Accepted since contract 1.1.0 (S2-T1): the Unicode analyzer
+/// `searchd index` uses by default. An import with this id is tokenized and
+/// built exactly as `indexer.indexFolder` builds an `analyzer-v2` folder
+/// (`indexer.tokenize(.v2, ...)` then `lexical_build.build`), and the
+/// manifest records `analyzer-v2`, so the query path dispatches to the
+/// Unicode tokenizer (`Engine.queryTokenized`).
+pub const analyzer_v2_id = "analyzer-v2";
+
+/// The two `analyzer_id` values `contracts/snapshot-interchange.schema.json`
+/// accepts. Anything else is `error.UnsupportedAnalyzer`, as before.
+const ImportAnalyzer = enum {
+    ascii_alnum_v1,
+    analyzer_v2,
+
+    fn parse(text: []const u8) error{UnsupportedAnalyzer}!ImportAnalyzer {
+        if (std.mem.eql(u8, text, analyzer_id)) return .ascii_alnum_v1;
+        if (std.mem.eql(u8, text, analyzer_v2_id)) return .analyzer_v2;
+        return error.UnsupportedAnalyzer;
+    }
+};
 
 const ImportDocument = struct {
     id: []const u8,
@@ -48,7 +73,7 @@ pub fn importJson(
     defer parsed.deinit();
     const payload = parsed.value;
     if (payload.format_version != format_version) return error.UnsupportedInterchangeVersion;
-    if (!std.mem.eql(u8, payload.analyzer_id, analyzer_id)) return error.UnsupportedAnalyzer;
+    const analyzer = try ImportAnalyzer.parse(payload.analyzer_id);
     if (payload.generation == 0) return error.GenerationZero;
     if (payload.embedding_model_id.len == 0) return error.InvalidEmbeddingModel;
 
@@ -90,21 +115,28 @@ pub fn importJson(
     defer allocator.free(document_encoded_storage);
     const documents_encoded = try segment.encode(documents, document_encoded_storage);
 
-    const terms = try allocator.alloc(postings.TermEntry, total_tokens);
+    // `ascii-alnum-v1` keeps its original build below, unchanged. The
+    // `analyzer-v2` index lives in this arena until it has been encoded.
+    var lexical_arena = std.heap.ArenaAllocator.init(allocator);
+    defer lexical_arena.deinit();
+    const terms = try allocator.alloc(postings.TermEntry, if (analyzer == .ascii_alnum_v1) total_tokens else 0);
     defer allocator.free(terms);
-    const posting_storage = try allocator.alloc(postings.Posting, total_tokens);
+    const posting_storage = try allocator.alloc(postings.Posting, if (analyzer == .ascii_alnum_v1) total_tokens else 0);
     defer allocator.free(posting_storage);
-    const document_lengths = try allocator.alloc(u32, documents.len);
+    const document_lengths = try allocator.alloc(u32, if (analyzer == .ascii_alnum_v1) documents.len else 0);
     defer allocator.free(document_lengths);
-    const posting_fills = try allocator.alloc(usize, total_tokens);
+    const posting_fills = try allocator.alloc(usize, if (analyzer == .ascii_alnum_v1) total_tokens else 0);
     defer allocator.free(posting_fills);
-    const lexical_index = try postings.build(
-        documents,
-        terms,
-        posting_storage,
-        document_lengths,
-        posting_fills,
-    );
+    const lexical_index = switch (analyzer) {
+        .ascii_alnum_v1 => try postings.build(
+            documents,
+            terms,
+            posting_storage,
+            document_lengths,
+            posting_fills,
+        ),
+        .analyzer_v2 => try buildAnalyzerV2(lexical_arena.allocator(), documents),
+    };
 
     const lexical_encoded_length = try lexical_segment.encodedLength(lexical_index);
     const lexical_encoded_storage = try allocator.alloc(u8, lexical_encoded_length);
@@ -137,6 +169,19 @@ pub fn importJson(
         .postings = lexical_index.postings.len,
         .vector_dimensions = vector_dimensions,
     };
+}
+
+/// The `analyzer-v2` lexical build, step for step what `indexer.indexFolder`
+/// does for a folder (`indexer.zig`, "token_lists" through
+/// `lexical_build.build`): the same tokenizer over each document's text, in
+/// document order, into the same hash-map build. Same chunks in, same
+/// dictionary, postings, document lengths and average length out.
+fn buildAnalyzerV2(arena: std.mem.Allocator, documents: []const hybrid.Document) !postings.Index {
+    const token_lists = try arena.alloc([][]const u8, documents.len);
+    for (documents, token_lists) |document, *tokens| {
+        tokens.* = try indexer.tokenize(arena, .v2, document.text);
+    }
+    return lexical_build.build(arena, documents, token_lists);
 }
 
 fn packRequiredLabels(allocator: std.mem.Allocator, source: []const []const u8) ![]u8 {
