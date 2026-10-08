@@ -130,6 +130,17 @@ documents/terms/postings) instead of failing. Before S1-T4 this returned
 be updated again — the empty generation is just as real and queryable as any
 other, and a file re-added later publishes normally on top of it.
 
+### A `MANIFEST` whose section is missing: self-heal (S2-T5)
+
+If `MANIFEST` exists but a section it names is missing or unreadable (a lost
+file, or a crash that left a `MANIFEST` without its sections), `--update` /
+`ss_index_folder` with `"update": true` does **not** treat that as "no
+previous index" while trusting `INDEX-STATE.json` (which would mark every file
+unchanged and publish an empty generation). It discards the state, re-indexes
+every file, publishes a full next generation, and the report JSON carries the
+additive field `"recovered": "missing_section"` (absent otherwise). A phone
+with no human to delete the directory heals itself on the next import.
+
 ### Fails closed on analyzer mismatch
 
 `--update`/`opts.update: true` refuses to run (`error.AnalyzerMismatch`) if

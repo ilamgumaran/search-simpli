@@ -360,6 +360,11 @@ class SearchSimpliBindings {
   /// file was just deleted, publishes an empty generation (0
   /// documents/terms/postings) instead of failing.
   ///
+  /// With "update": true, if MANIFEST exists but a section file it names is
+  /// missing or unreadable, the update does not trust INDEX-STATE.json: it
+  /// re-indexes every file, publishes a full next generation, and the report
+  /// carries "recovered": "missing_section" (the field is absent otherwise).
+  ///
   /// A file larger than max_file_bytes is tombstoned, not silently kept: it is
   /// counted (and named) under "too_large"/"too_large_paths", and its
   /// previously indexed chunks (if any) are dropped from this generation. A

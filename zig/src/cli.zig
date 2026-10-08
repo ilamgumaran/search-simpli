@@ -467,6 +467,10 @@ pub fn runIndex(
         try json.write(report.terms);
         try json.objectField("postings");
         try json.write(report.postings);
+        if (report.recovered) |why| {
+            try json.objectField("recovered");
+            try json.write(why);
+        }
         if (options.caps.keep_generations != null) {
             try json.objectField("pruned_files");
             try json.write(report.pruned_files);

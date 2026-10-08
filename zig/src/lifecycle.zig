@@ -78,15 +78,17 @@ pub const PruneReport = struct {
 ///   `INDEX-STATE.json`, temp files and unknown files are never touched;
 /// - the current generation's two files (by name, from its manifest) are
 ///   never touched whatever their numbers;
-/// - the kept set is the newest `keep` distinct generation numbers that are
-///   <= `current_generation`; and
+/// - the kept set is the current generation plus the newest `keep - 1`
+///   COMPLETE older generations (both section files present). An incomplete
+///   older leftover (one lone section file) is never counted and is always
+///   deleted; and
 /// - no error is returned: a failed unlink is counted in `failed`.
 ///
 /// A reader in another process that already opened an older generation keeps
 /// working: on macOS/Linux/Android unlinking an open file only removes the
 /// name. A reader that opens `MANIFEST` and then the sections can lose that
 /// race only if it started before the publish that superseded the generation
-/// it chose; retention `keep >= 2` leaves one full generation for it.
+/// it chose; retention `keep >= 2` leaves the newest complete older generation for it.
 pub fn pruneSuperseded(
     allocator: std.mem.Allocator,
     dir: std.Io.Dir,
@@ -104,8 +106,13 @@ pub fn pruneSuperseded(
     };
     defer iterable.close(io);
 
-    var generations = std.ArrayList(u64).empty;
-    defer generations.deinit(allocator);
+    // Per generation number below the current one: which of its two section
+    // files exist. A generation counts toward `keep` only when BOTH exist; a
+    // lone leftover (a crash between the two section links) is never
+    // counted and is always pruned.
+    const Seen = struct { number: u64, documents: bool, lexical: bool };
+    var seen = std.ArrayList(Seen).empty;
+    defer seen.deinit(allocator);
     var names = std.ArrayList([]u8).empty;
     defer {
         for (names.items) |name| allocator.free(name);
@@ -120,13 +127,21 @@ pub fn pruneSuperseded(
         }) orelse break;
         if (entry.kind != .file) continue;
         const number = sectionGeneration(entry.name) orelse continue;
-        if (number > current_generation) continue;
+        if (number >= current_generation) continue;
         if (std.mem.eql(u8, entry.name, current_documents_file) or std.mem.eql(u8, entry.name, current_lexical_file)) continue;
-        const duplicate = std.mem.indexOfScalar(u64, generations.items, number) != null;
-        if (!duplicate) generations.append(allocator, number) catch {
-            report.failed += 1;
-            return report;
-        };
+        const is_documents = std.mem.startsWith(u8, entry.name, document_prefix);
+        var slot: ?*Seen = null;
+        for (seen.items) |*item| {
+            if (item.number == number) slot = item;
+        }
+        if (slot == null) {
+            seen.append(allocator, .{ .number = number, .documents = false, .lexical = false }) catch {
+                report.failed += 1;
+                return report;
+            };
+            slot = &seen.items[seen.items.len - 1];
+        }
+        if (is_documents) slot.?.documents = true else slot.?.lexical = true;
         const owned = allocator.dupe(u8, entry.name) catch {
             report.failed += 1;
             return report;
@@ -138,15 +153,21 @@ pub fn pruneSuperseded(
         };
     }
 
-    // `generations` holds the superseded numbers present (the current one is
-    // excluded above), so `keep - 1` of them survive besides the current.
-    std.mem.sort(u64, generations.items, {}, std.sort.desc(u64));
-    const survivors = keep - 1;
-    if (generations.items.len <= survivors) return report;
-    const cutoff = generations.items[survivors]; // first (newest) number to delete
+    // Complete older generations, newest first; the newest `keep - 1` of
+    // them survive beside the current generation.
+    var complete = std.ArrayList(u64).empty;
+    defer complete.deinit(allocator);
+    for (seen.items) |item| {
+        if (item.documents and item.lexical) complete.append(allocator, item.number) catch {
+            report.failed += 1;
+            return report;
+        };
+    }
+    std.mem.sort(u64, complete.items, {}, std.sort.desc(u64));
+    const survivors = @min(keep - 1, complete.items.len);
     for (names.items) |name| {
         const number = sectionGeneration(name).?;
-        if (number > cutoff) continue;
+        if (std.mem.indexOfScalar(u64, complete.items[0..survivors], number) != null) continue;
         dir.deleteFile(io, name) catch {
             report.failed += 1;
             continue;

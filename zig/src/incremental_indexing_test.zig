@@ -563,3 +563,89 @@ test "keep_generations of zero is rejected before anything is written" {
         lifecycle.publishSerializedKeeping(arena_state.allocator(), tmp.dir, io, "", "", "", 0),
     );
 }
+
+// S2-T5 rework: a lone crash leftover is never counted as a kept generation.
+test "keep_generations counts only complete generations and always prunes a lone leftover" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+    try root.writeFile(io, .{ .sub_path = "note.md", .data = "search evidence combines lexical and semantic ranks\n" });
+
+    // Generations 1..4 complete, no pruning.
+    for (1..5) |g| {
+        _ = try indexer.indexFolder(arena, io, root, out, .v2, g, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    }
+    // A crash between the two section links left a lone generation-5 file.
+    try out.writeFile(io, .{ .sub_path = "documents-5.hybseg", .data = "half-written leftover" });
+
+    var caps = indexer.Caps{};
+    caps.keep_generations = 2;
+    const report = try indexer.indexFolder(arena, io, root, out, .v2, 6, chunker.default_max_chars, chunker.default_overlap_lines, caps);
+    // Deleted: generations 1, 2, 3 (2 files each) and the lone leftover.
+    try std.testing.expectEqual(@as(usize, 7), report.pruned_files);
+    try std.testing.expectEqual(@as(usize, 0), report.prune_failures);
+
+    // Kept: the current generation 6 and the newest COMPLETE older one, 4.
+    inline for (.{ "documents-4.hybseg", "lexical-4.hyblex", "documents-6.hybseg", "lexical-6.hyblex" }) |name| {
+        _ = try out.statFile(io, name, .{});
+    }
+    inline for (.{ "documents-5.hybseg", "documents-3.hybseg", "lexical-3.hyblex", "documents-1.hybseg" }) |name| {
+        try std.testing.expectError(error.FileNotFound, out.statFile(io, name, .{}));
+    }
+    const counted = try countFiles(io, out);
+    try std.testing.expectEqual(@as(usize, 2), counted.documents);
+    try std.testing.expectEqual(@as(usize, 2), counted.lexical);
+}
+
+// S2-T5 rework: MANIFEST present but a section it names is gone. `--update`
+// must not trust INDEX-STATE.json (which marks everything unchanged) and
+// publish an empty generation; it re-indexes everything and says so.
+test "update with a missing section re-indexes every file instead of publishing an empty generation" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+    try root.writeFile(io, .{ .sub_path = "a.md", .data = "alpha evidence about recovery\n" });
+    try root.writeFile(io, .{ .sub_path = "b.md", .data = "beta evidence about publication\n" });
+    try root.writeFile(io, .{ .sub_path = "c.md", .data = "gamma evidence about directories\n" });
+
+    const first = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(u64, 1), first.generation);
+    try std.testing.expectEqual(@as(usize, 3), first.documents);
+    try std.testing.expect(first.recovered == null);
+
+    try out.deleteFile(io, "lexical-1.hyblex");
+
+    const healed = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(u64, 2), healed.generation);
+    try std.testing.expectEqual(@as(usize, 3), healed.documents); // never 0
+    try std.testing.expectEqual(@as(usize, 3), healed.added);
+    try std.testing.expectEqual(@as(usize, 0), healed.unchanged);
+    try std.testing.expectEqualStrings("missing_section", healed.recovered.?);
+
+    const opened = try snapshot_open.open(arena, io, out);
+    try std.testing.expectEqual(@as(u64, 2), opened.generation);
+    try std.testing.expectEqual(@as(usize, 3), opened.documents.len);
+
+    // The next run is an ordinary update again.
+    const again = try indexOnce(arena, io, root, out);
+    try std.testing.expect(again.recovered == null);
+    try std.testing.expectEqual(@as(usize, 3), again.unchanged);
+}

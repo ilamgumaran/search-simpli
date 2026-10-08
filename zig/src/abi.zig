@@ -630,6 +630,10 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
         try json.write(report.terms);
         try json.objectField("postings");
         try json.write(report.postings);
+        if (report.recovered) |why| {
+            try json.objectField("recovered");
+            try json.write(why);
+        }
         if (options.keep_generations != null) {
             try json.objectField("pruned_files");
             try json.write(report.pruned_files);

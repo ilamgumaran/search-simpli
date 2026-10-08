@@ -20,6 +20,7 @@ const lexical_segment = @import("lexical_segment.zig");
 const lifecycle = @import("lifecycle.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
+const publication = @import("publication.zig");
 const segment = @import("segment.zig");
 const snapshot_open = @import("snapshot_open.zig");
 
@@ -390,6 +391,10 @@ pub const IncrementalReport = struct {
     /// still succeeded). Both 0 when the option is off.
     pruned_files: usize = 0,
     prune_failures: usize = 0,
+    /// S2-T5 rework: non-null (`"missing_section"`) when `MANIFEST` named a
+    /// section that could not be read, so `INDEX-STATE.json` was discarded
+    /// and every file re-indexed into a full generation.
+    recovered: ?[]const u8 = null,
 };
 
 fn hashHex(content: []const u8) [64]u8 {
@@ -480,8 +485,19 @@ pub fn indexFolderIncremental(
 ) !IncrementalReport {
     const paths = try collectCandidatePaths(allocator, io, root);
 
+    // S2-T5 rework: a MANIFEST that exists but names a section that is
+    // missing or unreadable is NOT "no previous index". Trusting
+    // INDEX-STATE.json then would mark every file unchanged and publish an
+    // empty generation. Instead the state is discarded, every file is
+    // re-indexed, and the report says `recovered: "missing_section"`.
+    var recovered: ?[]const u8 = null;
     const previous_engine: ?engine_module.Engine = snapshot_open.open(allocator, io, out_dir) catch |err| switch (err) {
-        error.FileNotFound => null,
+        error.FileNotFound, error.AccessDenied, error.InputOutput => blk: {
+            const manifest_present = if (out_dir.statFile(io, publication.current_manifest_file, .{})) |_| true else |_| false;
+            if (!manifest_present) break :blk null;
+            recovered = "missing_section";
+            break :blk null;
+        },
         else => return err,
     };
     if (previous_engine) |prev| {
@@ -499,7 +515,7 @@ pub fn indexFolderIncremental(
         }
     }
 
-    const previous_state = try incremental_state.load(allocator, io, out_dir);
+    const previous_state = if (recovered != null) null else try incremental_state.load(allocator, io, out_dir);
     var previous_entry_by_path = std.StringHashMap(incremental_state.Entry).init(allocator);
     if (previous_state) |state| {
         for (state.files) |entry| try previous_entry_by_path.put(entry.path, entry);
@@ -699,6 +715,7 @@ pub fn indexFolderIncremental(
         .documents = documents.items.len,
         .terms = lexical_index.terms.len,
         .postings = lexical_index.postings.len,
+        .recovered = recovered,
         .pruned_files = prune.deleted,
         .prune_failures = prune.failed,
     };

@@ -36,6 +36,11 @@ pub const Recorder = struct {
 
     entries: [32]Entry = undefined,
     len: usize = 0,
+    /// Test-only fault injection: make the N-th (1-based) directory sync of
+    /// this publish fail with `error.InputOutput` after it is recorded.
+    /// 0 = never fail.
+    fail_dir_sync: usize = 0,
+    dir_syncs_seen: usize = 0,
 
     fn note(recorder: ?*Recorder, kind: Kind, name: []const u8) void {
         const self = recorder orelse return;
@@ -82,14 +87,22 @@ pub fn publishRecorded(
     const metadata = try manifest.decode(manifest_encoded);
     try manifest.validateSnapshot(metadata, documents_encoded, lexical_encoded);
 
+    // Cleanup of the two section files is right only while MANIFEST has not
+    // moved. Once the MANIFEST rename succeeds, the new generation is
+    // visible and these files are what it names: nothing may be deleted
+    // after that point, whatever happens (S2-T5 rework).
+    var manifest_visible = false;
     try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
-    errdefer dir.deleteFile(io, metadata.documents_file) catch {};
+    errdefer if (!manifest_visible) dir.deleteFile(io, metadata.documents_file) catch {};
     try writeAtomicFileRecorded(dir, io, metadata.lexical_file, lexical_encoded, false, recorder);
-    errdefer dir.deleteFile(io, metadata.lexical_file) catch {};
+    errdefer if (!manifest_visible) dir.deleteFile(io, metadata.lexical_file) catch {};
     // Make both section renames durable before MANIFEST can name them.
     try syncDirectory(dir, io, recorder);
     try writeAtomicFileRecorded(dir, io, current_manifest_file, manifest_encoded, true, recorder);
-    // Make the MANIFEST rename itself durable before acknowledging.
+    manifest_visible = true;
+    // Make the MANIFEST rename itself durable before acknowledging. If this
+    // fails the error is returned (the generation is visible but not known
+    // to be durable), and the complete generation stays on disk.
     try syncDirectory(dir, io, recorder);
 }
 
@@ -117,6 +130,10 @@ pub const DirSyncError = error{ InputOutput, NoSpaceLeft, DiskQuota, Unexpected 
 pub fn syncDirectory(dir: std.Io.Dir, io: std.Io, recorder: ?*Recorder) DirSyncError!void {
     _ = io;
     Recorder.note(recorder, .dir_sync, "");
+    if (recorder) |r| {
+        r.dir_syncs_seen += 1;
+        if (r.fail_dir_sync != 0 and r.dir_syncs_seen == r.fail_dir_sync) return error.InputOutput;
+    }
     if (comptime builtin.os.tag == .windows or builtin.os.tag == .wasi) {
         return;
     } else {
@@ -465,4 +482,67 @@ test "syncDirectory succeeds on a real directory handle" {
     var tmp = std.testing.tmpDir(.{});
     defer tmp.cleanup();
     try syncDirectory(tmp.dir, std.testing.io, null);
+}
+
+fn manifestBytes(dir: std.Io.Dir, io: std.Io, buffer: []u8) ![]u8 {
+    return dir.readFile(io, current_manifest_file, buffer);
+}
+
+// S2-T5 rework (a): the second directory sync fails after MANIFEST was
+// renamed in. The error is returned, but the new generation stays complete.
+test "failed directory sync after MANIFEST keeps the new generation complete" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    var fixture = try Fixture.init();
+    var m1: [512]u8 = undefined;
+    const manifest_one = try fixture.encodeManifest(1, "documents-1.hybseg", "lexical-1.hyblex", &m1);
+    try publish(tmp.dir, io, manifest_one, fixture.documentsEncoded(), fixture.lexicalEncoded());
+
+    var m2: [512]u8 = undefined;
+    const manifest_two = try fixture.encodeManifest(2, "documents-2.hybseg", "lexical-2.hyblex", &m2);
+    var recorder = Recorder{ .fail_dir_sync = 2 };
+    try std.testing.expectError(error.InputOutput, publishRecorded(tmp.dir, io, manifest_two, fixture.documentsEncoded(), fixture.lexicalEncoded(), &recorder));
+
+    var mb: [512]u8 = undefined;
+    try std.testing.expectEqualSlices(u8, manifest_two, try manifestBytes(tmp.dir, io, &mb));
+    _ = try tmp.dir.statFile(io, "documents-2.hybseg", .{});
+    _ = try tmp.dir.statFile(io, "lexical-2.hyblex", .{});
+    var manifest_read: [512]u8 = undefined;
+    var documents_read: [512]u8 = undefined;
+    var lexical_read: [2048]u8 = undefined;
+    const loaded = try loadCurrent(tmp.dir, io, &manifest_read, &documents_read, &lexical_read);
+    try std.testing.expectEqual(@as(u64, 2), loaded.metadata.generation);
+}
+
+// S2-T5 rework (b): the first directory sync fails, before MANIFEST moves.
+// MANIFEST is byte-identical, the old generation answers, and the new
+// section files are cleaned up.
+test "failed directory sync before MANIFEST leaves it untouched and cleans new sections" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    var fixture = try Fixture.init();
+    var m1: [512]u8 = undefined;
+    const manifest_one = try fixture.encodeManifest(1, "documents-1.hybseg", "lexical-1.hyblex", &m1);
+    try publish(tmp.dir, io, manifest_one, fixture.documentsEncoded(), fixture.lexicalEncoded());
+
+    var m2: [512]u8 = undefined;
+    const manifest_two = try fixture.encodeManifest(2, "documents-2.hybseg", "lexical-2.hyblex", &m2);
+    var recorder = Recorder{ .fail_dir_sync = 1 };
+    try std.testing.expectError(error.InputOutput, publishRecorded(tmp.dir, io, manifest_two, fixture.documentsEncoded(), fixture.lexicalEncoded(), &recorder));
+
+    var mb: [512]u8 = undefined;
+    try std.testing.expectEqualSlices(u8, manifest_one, try manifestBytes(tmp.dir, io, &mb));
+    try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "documents-2.hybseg", .{}));
+    try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, "lexical-2.hyblex", .{}));
+    var manifest_read: [512]u8 = undefined;
+    var documents_read: [512]u8 = undefined;
+    var lexical_read: [2048]u8 = undefined;
+    const loaded = try loadCurrent(tmp.dir, io, &manifest_read, &documents_read, &lexical_read);
+    try std.testing.expectEqual(@as(u64, 1), loaded.metadata.generation);
+    var count: usize = 0;
+    var iterator = tmp.dir.iterate();
+    while (try iterator.next(io)) |_| count += 1;
+    try std.testing.expectEqual(@as(usize, 3), count); // MANIFEST, documents-1, lexical-1 (no temp files)
 }

@@ -33,7 +33,7 @@ Opt-in. `"keep_generations": N` (N >= 1; `0` is an error, `InvalidKeepGeneration
 
 After a **successful** publish, still holding `WRITER.LOCK`, `lifecycle.pruneSuperseded` deletes the files of generations older than the newest N:
 
-- the kept set is the current generation plus the N-1 newest older generation numbers present on disk;
+- the kept set is the current generation plus the N-1 newest older **complete** generations (both `documents-N.hybseg` and `lexical-N.hyblex` present). An incomplete older leftover (a lone section file from a crash between the two links) is never counted toward N and is always deleted, so `keep_generations: 2` after a crash leaves the current generation plus the newest complete older one;
 - only canonical `documents-<N>.hybseg` / `lexical-<N>.hyblex` names (plain decimal, no leading zeros) with `N` strictly below the current generation are ever candidates. `MANIFEST`, `WRITER.LOCK`, `INDEX-STATE.json`, temp files, oddly named files and any section file at or past the current generation (a crash leftover) are never touched;
 - the current generation's two files, by the names in its manifest, are never touched;
 - a failed unlink does not fail the publish: it is counted in `prune_failures` (reports carry `pruned_files` and `prune_failures` only when the option is set), the file stays, and the next pruned publish retries it;
@@ -44,7 +44,7 @@ After a **successful** publish, still holding `WRITER.LOCK`, `lifecycle.pruneSup
 ### A reader holding an older generation
 
 - **Another process, already open:** on macOS, Linux and Android, unlinking a file that is open removes the name only; the reader's descriptor, and any memory it already read, stay valid until it closes. The engine reads sections fully into memory at `ss_open`, so an opened handle is unaffected whatever pruning does afterward.
-- **Another process, mid-open:** a reader that read an old `MANIFEST` and has not yet read the sections can find them gone and fail with `FileNotFound`; retry reads the new `MANIFEST`. `keep_generations >= 2` narrows this to a reader that is a whole publish behind.
+- **Another process, mid-open:** a reader that read an old `MANIFEST` and has not yet read the sections can find them gone and fail with `FileNotFound`; retry reads the new `MANIFEST`. `keep_generations >= 2` keeps the newest complete older generation, so only a reader that is a whole publish behind can lose the race.
 - **Windows:** deleting an open file fails; that shows up as `prune_failures`, not as a failed publish.
 - **In-process (the phone app):** the app knows when no `ss_handle` uses an old generation, and a handle holds decoded memory, not open files, so pruning never invalidates a live handle. The app can pass `keep_generations` on every import and reopen on the new generation afterwards.
 
