@@ -68,7 +68,8 @@ String? _rootUriFromPackageConfig(File configFile, String packageName) {
 }
 
 /// True when [executable] lies inside a macOS app bundle, that is, its
-/// directory ends in `<Name>.app/Contents/MacOS`. A pure function of the
+/// directory ends in `<Name>.app/Contents/MacOS` (`.app` compared
+/// case-insensitively; `Contents` and `MacOS` exact, as macOS writes them). A pure function of the
 /// path (docs/tasks/S1-T12.md), so tests can pass a fake one.
 bool isInsideMacApp(String executable) {
   final parts = path.split(path.normalize(path.dirname(executable)));
@@ -76,7 +77,7 @@ bool isInsideMacApp(String executable) {
   final n = parts.length;
   return parts[n - 1] == 'MacOS' &&
       parts[n - 2] == 'Contents' &&
-      parts[n - 3].endsWith('.app') &&
+      parts[n - 3].toLowerCase().endsWith('.app') &&
       parts[n - 3].length > 4;
 }
 

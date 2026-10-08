@@ -55,6 +55,14 @@ void main() {
     expect(isInsideMacApp('/tmp/MacOS/app'), isFalse);
   });
 
+  test('isInsideMacApp compares .app case-insensitively, Contents/MacOS exactly', () {
+    for (final ext in ['.APP', '.App', '.app']) {
+      expect(isInsideMacApp('/Upper$ext/Contents/MacOS/x'), isTrue, reason: ext);
+    }
+    expect(isInsideMacApp('/Upper.APP/contents/MacOS/x'), isFalse);
+    expect(isInsideMacApp('/Upper.APP/Contents/macos/x'), isFalse);
+  });
+
   test('in an app, the library present: only the Frameworks path is tried', () {
     final lib = _self();
     final result = run(exe: appExe, opener: (p) {
