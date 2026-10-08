@@ -391,9 +391,10 @@ pub const IncrementalReport = struct {
     /// still succeeded). Both 0 when the option is off.
     pruned_files: usize = 0,
     prune_failures: usize = 0,
-    /// S2-T5 rework: non-null (`"missing_section"`) when `MANIFEST` named a
-    /// section that could not be read, so `INDEX-STATE.json` was discarded
-    /// and every file re-indexed into a full generation.
+    /// Non-null when `INDEX-STATE.json` was discarded and every file
+    /// re-indexed into a full generation: `"missing_section"` (S2-T5:
+    /// `MANIFEST` named a section that could not be read) or
+    /// `"missing_manifest"` (S2-T12: no `MANIFEST`, but a state file exists).
     recovered: ?[]const u8 = null,
 };
 
@@ -491,10 +492,19 @@ pub fn indexFolderIncremental(
     // empty generation. Instead the state is discarded, every file is
     // re-indexed, and the report says `recovered: "missing_section"`.
     var recovered: ?[]const u8 = null;
+    var no_previous = false;
     const previous_engine: ?engine_module.Engine = snapshot_open.open(allocator, io, out_dir) catch |err| switch (err) {
         error.FileNotFound, error.AccessDenied, error.InputOutput => blk: {
             const manifest_present = if (out_dir.statFile(io, publication.current_manifest_file, .{})) |_| true else |_| false;
-            if (!manifest_present) break :blk null;
+            if (!manifest_present) {
+                // S2-T12: no MANIFEST means no previous engine, so
+                // INDEX-STATE.json (if any) cannot be trusted either. A truly
+                // fresh directory has no state file and reports nothing.
+                const state_present = if (out_dir.statFile(io, incremental_state.state_file, .{})) |_| true else |_| false;
+                if (state_present) recovered = "missing_manifest";
+                no_previous = true;
+                break :blk null;
+            }
             recovered = "missing_section";
             break :blk null;
         },
@@ -515,7 +525,7 @@ pub fn indexFolderIncremental(
         }
     }
 
-    const previous_state = if (recovered != null) null else try incremental_state.load(allocator, io, out_dir);
+    const previous_state = if (recovered != null or no_previous) null else try incremental_state.load(allocator, io, out_dir);
     var previous_entry_by_path = std.StringHashMap(incremental_state.Entry).init(allocator);
     if (previous_state) |state| {
         for (state.files) |entry| try previous_entry_by_path.put(entry.path, entry);
