@@ -62,12 +62,19 @@ fn depthCut(json: *std.json.Stringify, channel: []const u8, offered: usize, extr
     try warning(json, "candidate_depth_cut", message, null);
 }
 
-/// Write `warnings`, `request` and, if the trace profiles, `profile` as
-/// further fields of the report object that `json` is inside.
-pub fn write(json: *std.json.Stringify, extras: Extras) !void {
+fn hasWarnings(extras: Extras) bool {
     const trace = extras.trace;
-    try json.objectField("warnings");
-    try json.beginArray();
+    if (extras.vector_ignored != null) return true;
+    if (extras.mode != .vector) {
+        if (trace.unique_terms == 0 or trace.unmatched.items.len != 0) return true;
+        if (trace.lexical_candidates > trace.depth) return true;
+    }
+    if (extras.mode != .lexical and trace.semantic_candidates > trace.depth) return true;
+    return false;
+}
+
+fn writeWarnings(json: *std.json.Stringify, extras: Extras) !void {
+    const trace = extras.trace;
     if (extras.mode != .vector) {
         if (trace.unique_terms == 0) {
             try warning(json, "query_empty_after_analysis", "the query has no searchable terms after analysis", null);
@@ -84,21 +91,29 @@ pub fn write(json: *std.json.Stringify, extras: Extras) !void {
     if (extras.vector_ignored) |reason| try warning(json, "vector_ignored", reason.message(), null);
     if (extras.mode != .vector) try depthCut(json, "lexical", trace.lexical_candidates, extras);
     if (extras.mode != .lexical) try depthCut(json, "vector", trace.semantic_candidates, extras);
-    try json.endArray();
+}
 
-    try json.objectField("request");
-    try json.beginObject();
-    try json.objectField("analyzer_id");
-    try json.write(extras.analyzer_id);
-    try json.objectField("retrieval_mode");
-    try json.write(@tagName(extras.mode));
-    try json.objectField("top_k");
-    try json.write(extras.top_k);
-    try json.objectField("candidate_k");
-    try json.write(extras.candidate_k);
-    try json.objectField("path_prefix");
-    try json.write(extras.path_prefix);
-    try json.endObject();
+/// Write `warnings`, `request` and, if the trace profiles, `profile` as
+/// further fields of the report object that `json` is inside.
+pub fn write(json: *std.json.Stringify, extras: Extras) !void {
+    const trace = extras.trace;
+    try json.objectFieldRaw("\"warnings\"");
+    if (hasWarnings(extras)) {
+        try json.beginArray();
+        try writeWarnings(json, extras);
+        try json.endArray();
+    } else {
+        try json.print("[]", .{});
+    }
+
+    // One formatted write: this is on the path of every query, and the
+    // field-by-field `Stringify` calls cost measurably more than the lexical
+    // search of a one-word query. Strings still go through the JSON encoder.
+    try json.objectFieldRaw("\"request\"");
+    try json.print(
+        "{{\"analyzer_id\":{f},\"retrieval_mode\":\"{s}\",\"top_k\":{d},\"candidate_k\":{d},\"path_prefix\":{f}}}",
+        .{ std.json.fmt(extras.analyzer_id, .{}), @tagName(extras.mode), extras.top_k, extras.candidate_k, std.json.fmt(extras.path_prefix, .{}) },
+    );
 
     if (trace.profile) {
         // `serialize_us` is the time to write everything before this field;
