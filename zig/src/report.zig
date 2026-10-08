@@ -11,7 +11,7 @@
 //! | `query_term_unmatched`       | yes     | yes    | no     |
 //! | `query_empty_after_analysis` | yes     | yes    | no     |
 //! | `vector_ignored`             | when a vector was passed | when passed and the snapshot has no vectors | same |
-//! | `candidate_depth_cut`        | lexical list | each channel | semantic list |
+//! | `candidate_depth_cut`        | lexical list, if candidate_k < top_k | each channel | semantic list, if candidate_k < top_k |
 
 const hybrid = @import("hybrid.zig");
 const std = @import("std");
@@ -54,9 +54,18 @@ fn warning(json: *std.json.Stringify, code: []const u8, message: []const u8, ter
     try json.endObject();
 }
 
+/// Whether a channel that offered `offered` candidates gets a
+/// `candidate_depth_cut`. In hybrid mode any cut changes the fusion. In a
+/// single-channel mode it can change the list only when `candidate_k < top_k`,
+/// so a default-depth query on a common word does not warn.
+fn depthCutApplies(extras: Extras, offered: usize) bool {
+    if (offered <= extras.trace.depth) return false;
+    return extras.mode == .hybrid or extras.candidate_k < extras.top_k;
+}
+
 fn depthCut(json: *std.json.Stringify, channel: []const u8, offered: usize, extras: Extras) !void {
     const depth = extras.trace.depth;
-    if (offered <= depth) return;
+    if (!depthCutApplies(extras, offered)) return;
     var buffer: [160]u8 = undefined;
     const message = try std.fmt.bufPrint(&buffer, "candidate_k {d} kept {d} of {d} {s} candidates", .{ extras.candidate_k, depth, offered, channel });
     try warning(json, "candidate_depth_cut", message, null);
@@ -67,9 +76,9 @@ fn hasWarnings(extras: Extras) bool {
     if (extras.vector_ignored != null) return true;
     if (extras.mode != .vector) {
         if (trace.unique_terms == 0 or trace.unmatched.items.len != 0) return true;
-        if (trace.lexical_candidates > trace.depth) return true;
+        if (depthCutApplies(extras, trace.lexical_candidates)) return true;
     }
-    if (extras.mode != .lexical and trace.semantic_candidates > trace.depth) return true;
+    if (extras.mode != .lexical and depthCutApplies(extras, trace.semantic_candidates)) return true;
     return false;
 }
 
@@ -83,7 +92,7 @@ fn writeWarnings(json: *std.json.Stringify, extras: Extras) !void {
             try warning(
                 json,
                 "query_term_unmatched",
-                if (item.in_dictionary) "the term matches no chunk in the searched scope" else "the term matches no chunk",
+                if (item.in_dictionary) "the term was not found in the files this query may search" else "the term was not found in the searched files",
                 item.term,
             );
         }

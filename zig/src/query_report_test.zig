@@ -5,6 +5,8 @@
 //! candidate counts.
 const std = @import("std");
 const abi = @import("abi.zig");
+const hybrid_module = @import("hybrid.zig");
+const report_module = @import("report.zig");
 
 const ascii_docs =
     \\{"format_version":1,"generation":1,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"none","documents":[
@@ -202,31 +204,65 @@ test "vector_ignored when a vector is passed and not used" {
     try std.testing.expectEqual(@as(usize, 1), countWarnings(plain_hybrid.value, "vector_ignored", null));
 }
 
-test "candidate_depth_cut when a channel offers more candidates than candidate_k" {
-    var fixture = try Fixture.open(ascii_docs);
+test "candidate_depth_cut in hybrid mode, for each channel that offered more than candidate_k" {
+    var fixture = try Fixture.open(vector_docs);
     defer fixture.close();
-    // `hybrid` is in 3 chunks; candidate_k 2 keeps 2.
-    var cut = try run(fixture, "hybrid", &.{}, 1, "{\"retrieval_mode\":\"lexical\",\"candidate_k\":2}");
+    // `hybrid` is in 2 chunks and the query vector scores 2 chunks above zero.
+    var cut = try run(fixture, "hybrid", &.{ 1, 0 }, 1, "{\"candidate_k\":1}");
     defer cut.deinit();
-    try std.testing.expectEqual(@as(usize, 1), countWarnings(cut.value, "candidate_depth_cut", null));
-    // candidate_k equal to the matches, or above, cuts nothing.
-    var exact = try run(fixture, "hybrid", &.{}, 1, "{\"retrieval_mode\":\"lexical\",\"candidate_k\":3}");
+    try std.testing.expectEqual(@as(usize, 2), countWarnings(cut.value, "candidate_depth_cut", null));
+    // candidate_k equal to the candidates, or above, cuts nothing.
+    var exact = try run(fixture, "hybrid", &.{ 1, 0 }, 1, "{\"candidate_k\":2}");
     defer exact.deinit();
     try std.testing.expectEqual(@as(usize, 0), countWarnings(exact.value, "candidate_depth_cut", null));
-    var deep = try run(fixture, "hybrid", &.{}, 1, null);
+    var deep = try run(fixture, "hybrid", &.{ 1, 0 }, 1, null);
     defer deep.deinit();
     try std.testing.expectEqual(@as(usize, 0), countWarnings(deep.value, "candidate_depth_cut", null));
-    // The path prefix shrinks the list first: 2 public matches fit in 2.
-    var scoped = try run(fixture, "hybrid", &.{}, 1, "{\"retrieval_mode\":\"lexical\",\"candidate_k\":2,\"path_prefix\":\"public/\"}");
-    defer scoped.deinit();
-    try std.testing.expectEqual(@as(usize, 0), countWarnings(scoped.value, "candidate_depth_cut", null));
+}
 
-    // The vector channel counts separately.
+test "candidate_depth_cut stays quiet in single-channel modes when candidate_k >= top_k" {
+    var fixture = try Fixture.open(ascii_docs);
+    defer fixture.close();
+    // `hybrid` is in 3 chunks; candidate_k 2 cuts the list, but top_k 1 <= 2
+    // so the returned list cannot change: no warning.
+    var cut = try run(fixture, "hybrid", &.{}, 1, "{\"retrieval_mode\":\"lexical\",\"candidate_k\":2}");
+    defer cut.deinit();
+    try std.testing.expectEqual(@as(usize, 0), countWarnings(cut.value, "candidate_depth_cut", null));
+    var deep = try run(fixture, "hybrid", &.{}, 1, "{\"retrieval_mode\":\"lexical\"}");
+    defer deep.deinit();
+    try std.testing.expectEqual(@as(usize, 0), countWarnings(deep.value, "candidate_depth_cut", null));
+
     var vectors = try Fixture.open(vector_docs);
     defer vectors.close();
     var vector_cut = try run(vectors, "zzz", &.{ 1, 1 }, 1, "{\"retrieval_mode\":\"vector\",\"candidate_k\":1}");
     defer vector_cut.deinit();
-    try std.testing.expectEqual(@as(usize, 1), countWarnings(vector_cut.value, "candidate_depth_cut", null));
+    try std.testing.expectEqual(@as(usize, 0), countWarnings(vector_cut.value, "candidate_depth_cut", null));
+}
+
+/// The ABI rejects `candidate_k < top_k`, so the single-channel positive case
+/// is tested on the writer directly.
+fn depthCutCount(mode: hybrid_module.RetrievalMode, top_k: usize, candidate_k: usize, offered: usize) !usize {
+    var trace = hybrid_module.Trace{ .allocator = std.testing.allocator, .io = std.testing.io };
+    trace.unique_terms = 1;
+    trace.depth = @min(candidate_k, offered);
+    trace.lexical_candidates = offered;
+    trace.semantic_candidates = 0;
+    var out: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer out.deinit();
+    var json = std.json.Stringify{ .writer = &out.writer };
+    try json.beginObject();
+    try report_module.write(&json, .{ .trace = &trace, .mode = mode, .analyzer_id = "ascii-alnum-v1", .top_k = top_k, .candidate_k = candidate_k, .path_prefix = null });
+    try json.endObject();
+    var parsed = try parse(out.written());
+    defer parsed.deinit();
+    return countWarnings(parsed.value, "candidate_depth_cut", null);
+}
+
+test "candidate_depth_cut in lexical mode needs candidate_k < top_k" {
+    try std.testing.expectEqual(@as(usize, 1), try depthCutCount(.lexical, 5, 2, 9875));
+    try std.testing.expectEqual(@as(usize, 0), try depthCutCount(.lexical, 5, 100, 9875));
+    try std.testing.expectEqual(@as(usize, 0), try depthCutCount(.lexical, 5, 5, 9875));
+    try std.testing.expectEqual(@as(usize, 1), try depthCutCount(.hybrid, 5, 100, 9875));
 }
 
 test "request echoes what was used, defaults included" {

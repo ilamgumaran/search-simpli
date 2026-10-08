@@ -54,8 +54,11 @@ void main() {
   });
 
   test('a shallow candidate_k reports the cut', () {
-    final result = engine.query('hybrid', topK: 1, candidateK: 2, mode: RetrievalMode.lexical);
+    final result = engine.query('hybrid', topK: 1, candidateK: 2, mode: RetrievalMode.hybrid);
     expect(result.warnings!.map((w) => w.code), [SearchWarningCode.candidateDepthCut]);
+    // Single-channel mode with candidate_k >= top_k: the list cannot change.
+    final lexical = engine.query('hybrid', topK: 1, candidateK: 2, mode: RetrievalMode.lexical);
+    expect(lexical.warnings, isEmpty);
   });
 
   test('request echoes the defaults and the options used', () {

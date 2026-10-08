@@ -169,7 +169,7 @@ char *ss_status(ss_handle *handle);
  *   "warnings"  array, always present, usually empty, of
  *               {"code", "message", "term"?}. Codes:
  *                 query_term_unmatched       an analysed query word that
- *                     matches no chunk the request may see ("term" holds
+ *                     is not found in the files the request may see ("term" holds
  *                     it; lowercased/NFC-folded as the index stores terms).
  *                     Lexical and hybrid modes only: vector mode does not
  *                     use the words and says nothing about them.
@@ -182,6 +182,9 @@ char *ss_status(ss_handle *handle);
  *                 candidate_depth_cut        a channel produced more
  *                     candidates than candidate_k, so lower ranks were not
  *                     kept ("lexical" and/or "vector" in the message).
+ *                     In hybrid mode, for each such channel; in lexical or
+ *                     vector mode only when candidate_k < top_k (which this
+ *                     function currently rejects, so there it does not occur).
  *   "request"   {"analyzer_id", "retrieval_mode", "top_k", "candidate_k",
  *               "path_prefix"}: what the engine used, defaults filled in
  *               (path_prefix is null when none).

@@ -151,7 +151,7 @@ int main(void) {
         char *report = ss_query(handle, "hybrid dinosaurus", query_vector, 2, 1,
                                 "{\"retrieval_mode\":\"lexical\",\"profile\":true}");
         expect_true("ss_query warns about an unmatched term",
-                    report != NULL && strstr(report, "{\"code\":\"query_term_unmatched\",\"message\":\"the term matches no chunk\",\"term\":\"dinosaurus\"}") != NULL,
+                    report != NULL && strstr(report, "{\"code\":\"query_term_unmatched\",\"message\":\"the term was not found in the searched files\",\"term\":\"dinosaurus\"}") != NULL,
                     "missing query_term_unmatched");
         expect_true("ss_query warns that the vector was ignored in lexical mode",
                     report != NULL && strstr(report, "\"code\":\"vector_ignored\"") != NULL,
