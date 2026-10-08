@@ -400,6 +400,15 @@ class IndexFolderOptions {
   /// under `budgetExhausted`.
   final int? maxTotalBytes;
 
+  /// Opt-in pruning (S2-T5 / S2-T12): after a successful publish, section
+  /// files older than the newest N complete generations are deleted. Must
+  /// be at least 1; `null` (default) deletes nothing. When set, the report
+  /// carries [IndexFolderReport.prunedFiles]/[IndexFolderReport.pruneFailures].
+  /// The check happens at use, not in the `const` constructor: [toJson]
+  /// (and so [SearchSimpli.indexFolder], before any native call) throws
+  /// [ArgumentError] for a value below 1.
+  final int? keepGenerations;
+
   const IndexFolderOptions({
     this.analyzer = 'analyzer-v2',
     this.maxChars,
@@ -407,16 +416,53 @@ class IndexFolderOptions {
     this.update = false,
     this.maxFileBytes,
     this.maxTotalBytes,
+    this.keepGenerations,
   });
 
-  Map<String, Object?> toJson() => {
+  /// Throws [ArgumentError] when [keepGenerations] is below 1. (Checked
+  /// here, not in the constructor, so the constructor stays `const`;
+  /// [SearchSimpli.indexFolder] calls this before touching the native
+  /// library.)
+  Map<String, Object?> toJson() {
+    final keep = keepGenerations;
+    if (keep != null && keep < 1) {
+      throw ArgumentError.value(keep, 'keepGenerations', 'must be at least 1');
+    }
+    return _toJson();
+  }
+
+  Map<String, Object?> _toJson() => {
         'analyzer': analyzer,
         if (maxChars != null) 'max_chars': maxChars,
         if (overlapLines != null) 'overlap_lines': overlapLines,
         'update': update,
         if (maxFileBytes != null) 'max_file_bytes': maxFileBytes,
         if (maxTotalBytes != null) 'max_total_bytes': maxTotalBytes,
+        if (keepGenerations != null) 'keep_generations': keepGenerations,
       };
+}
+
+/// Why an update discarded `INDEX-STATE.json` and re-indexed every file
+/// (`"recovered"` in the report; docs/incremental-indexing.md).
+enum IndexRecovery {
+  /// `MANIFEST` named a section that was missing or unreadable.
+  missingSection('missing_section'),
+
+  /// No `MANIFEST`, but `INDEX-STATE.json` was present.
+  missingManifest('missing_manifest'),
+
+  /// A value this package does not know; see [IndexFolderReport.recoveredRaw].
+  unknown('');
+
+  final String wire;
+  const IndexRecovery(this.wire);
+
+  static IndexRecovery parse(String raw) {
+    for (final value in values) {
+      if (value != unknown && value.wire == raw) return value;
+    }
+    return unknown;
+  }
 }
 
 /// `ss_index_folder()`'s JSON report object — mirrors `zig/src/indexer.zig`'s
@@ -461,6 +507,17 @@ class IndexFolderReport {
   final int terms;
   final int postings;
 
+  /// Non-null when this run recovered (discarded the state file and
+  /// re-indexed everything); `null` for an ordinary run. [recoveredRaw]
+  /// carries the exact string, also for [IndexRecovery.unknown].
+  final IndexRecovery? recovered;
+  final String? recoveredRaw;
+
+  /// Superseded section files deleted by `keepGenerations`, and deletions
+  /// that failed. `null` when the option was not set.
+  final int? prunedFiles;
+  final int? pruneFailures;
+
   const IndexFolderReport({
     required this.generation,
     required this.analyzerId,
@@ -476,6 +533,10 @@ class IndexFolderReport {
     required this.documents,
     required this.terms,
     required this.postings,
+    this.recovered,
+    this.recoveredRaw,
+    this.prunedFiles,
+    this.pruneFailures,
   });
 
   factory IndexFolderReport.fromJson(Map<String, Object?> json) => IndexFolderReport(
@@ -497,6 +558,10 @@ class IndexFolderReport {
         documents: json['documents']! as int,
         terms: json['terms']! as int,
         postings: json['postings']! as int,
+        recovered: json['recovered'] == null ? null : IndexRecovery.parse(json['recovered']! as String),
+        recoveredRaw: json['recovered'] as String?,
+        prunedFiles: json['pruned_files'] as int?,
+        pruneFailures: json['prune_failures'] as int?,
       );
 
   Map<String, Object?> toJson() => {
@@ -514,6 +579,9 @@ class IndexFolderReport {
         'documents': documents,
         'terms': terms,
         'postings': postings,
+        if (recoveredRaw != null) 'recovered': recoveredRaw,
+        if (prunedFiles != null) 'pruned_files': prunedFiles,
+        if (pruneFailures != null) 'prune_failures': pruneFailures,
       };
 
   @override
