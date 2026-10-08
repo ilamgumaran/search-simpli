@@ -136,12 +136,46 @@ class SearchSimpliBindings {
   /// returned if the caller holds every
   /// one of its required labels (see
   /// docs/authorization.md)
+  /// "profile"           boolean, default false (since
+  /// contract 1.2.0); true adds the
+  /// `profile` field described below
   ///
   /// Returns a heap-allocated, null-terminated JSON object on success — the
   /// caller must free it with ss_free() — with fields `tool`, `query`, `index`,
   /// `retrieval`, `results` (array of chunk_id/citation/content/score/ranking),
-  /// and `answer_policy`. This is exactly the `result` value a `search_knowledge`
-  /// JSON-RPC response carries for the same request (docs/zig-rpc-service.md).
+  /// and `answer_policy`. These are exactly the fields of the `result` value a
+  /// `search_knowledge` JSON-RPC response carries for the same request
+  /// (docs/zig-rpc-service.md), in the same order and byte for byte.
+  ///
+  /// Since contract 1.2.0 the object ends with three more fields (additive;
+  /// removing them gives the 1.1.0 output exactly):
+  ///
+  /// "warnings"  array, always present, usually empty, of
+  /// {"code", "message", "term"?}. Codes:
+  /// query_term_unmatched       an analysed query word that
+  /// matches no chunk the request may see ("term" holds
+  /// it; lowercased/NFC-folded as the index stores terms).
+  /// Lexical and hybrid modes only: vector mode does not
+  /// use the words and says nothing about them.
+  /// query_empty_after_analysis the query has no searchable
+  /// terms (empty, punctuation, unknown script for the
+  /// analyzer). Lexical and hybrid modes only.
+  /// vector_ignored             a query vector was passed but
+  /// not used: retrieval_mode is "lexical", or the
+  /// snapshot stores no vectors.
+  /// candidate_depth_cut        a channel produced more
+  /// candidates than candidate_k, so lower ranks were not
+  /// kept ("lexical" and/or "vector" in the message).
+  /// "request"   {"analyzer_id", "retrieval_mode", "top_k", "candidate_k",
+  /// "path_prefix"}: what the engine used, defaults filled in
+  /// (path_prefix is null when none).
+  /// "profile"   only when options "profile" is true: {"tokenize_us",
+  /// "score_us", "rank_us", "serialize_us", "matched_chunks"}.
+  /// Microseconds on a monotonic clock; matched_chunks is the
+  /// number of chunks holding at least one query term (0 in
+  /// vector mode). serialize_us covers writing the report up to
+  /// the "profile" field itself. With "profile" off no clock is
+  /// read.
   ///
   /// Returns NULL on failure — invalid top_k/candidate_k, a wrong-sized or
   /// non-finite query_vector, malformed options_json, or an unknown
