@@ -42,11 +42,11 @@ void main() {
     }
   }
 
-  test('macOS: bundle (bare name, Frameworks), then package root, then the rest', () {
+  test('macOS: bundle (Frameworks, bare name), then package root, then the rest', () {
     run();
     expect(attempts, [
-      'libsearch_simpli.dylib',
       '/App.app/Contents/MacOS/../Frameworks/libsearch_simpli.dylib',
+      'libsearch_simpli.dylib',
       '/pkg/native/macos-arm64/libsearch_simpli.dylib',
       '/cwd/native/macos-arm64/libsearch_simpli.dylib',
       '/script/../native/macos-arm64/libsearch_simpli.dylib',
@@ -54,11 +54,11 @@ void main() {
     ]);
   });
 
-  test('Linux: bare .so, then <exe dir>/lib, then the rest', () {
+  test('Linux: <exe dir>/lib, then bare .so, then the rest', () {
     run(mac: false);
     expect(attempts.take(3), [
-      'libsearch_simpli.so',
       '/App.app/Contents/MacOS/lib/libsearch_simpli.so',
+      'libsearch_simpli.so',
       '/pkg/native/linux-x64/libsearch_simpli.so',
     ]);
   });
@@ -83,8 +83,8 @@ void main() {
   test('the error lists every candidate in order and keeps the advice', () {
     final e = run(exists: (_) => false) as StateError;
     final lines = e.message.split('\n');
-    expect(lines[1], 'libsearch_simpli.dylib');
-    expect(lines[2], '/App.app/Contents/MacOS/../Frameworks/libsearch_simpli.dylib');
+    expect(lines[1], '/App.app/Contents/MacOS/../Frameworks/libsearch_simpli.dylib');
+    expect(lines[2], 'libsearch_simpli.dylib');
     expect(lines[3], '/pkg/native/macos-arm64/libsearch_simpli.dylib');
     expect(e.message, contains('SEARCH_SIMPLI_LIBRARY_PATH'));
     // The bare name is always tried; missing files are not opened.

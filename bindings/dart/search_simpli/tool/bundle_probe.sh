@@ -3,6 +3,10 @@
 # libsearch_simpli.dylib inside a BUILT macOS .app (Contents/Frameworks), with
 # SEARCH_SIMPLI_LIBRARY_PATH unset, cwd "/", with the app sandbox off and on.
 # Builds a throwaway Flutter app in a temp directory (never inside the repo).
+# Exits non-zero if any run that should answer does not print PROBE_ANSWER.
+# The app's cwd is "/" only unsandboxed; a sandboxed process starts in its
+# container. macOS leaves ~/Library/Containers/com.example.probeApp behind
+# after a run; this script does not (and cannot sensibly) remove it.
 # Usage: tool/bundle_probe.sh   (needs: source ~/development/env.sh; Xcode)
 set -euo pipefail
 
@@ -10,7 +14,8 @@ PKG="$(cd "$(dirname "$0")/.." && pwd)"
 DYLIB="$PKG/native/macos-arm64/libsearch_simpli.dylib"
 SNAP="$PKG/example/assets/demo_snapshot"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/ss-bundle-probe.XXXXXX")"
-echo "probe workdir: $WORK"
+echo "probe workdir (removed on exit): $WORK"
+trap 'rm -rf "$WORK"' EXIT
 cd "$WORK"
 unset SEARCH_SIMPLI_LIBRARY_PATH
 
@@ -66,21 +71,29 @@ set_sandbox() { # $1 = true|false
   for f in macos/Runner/DebugProfile.entitlements macos/Runner/Release.entitlements; do
     /usr/libexec/PlistBuddy -c "Set :com.apple.security.app-sandbox $1" "$f"
   done
-  echo "--- entitlement com.apple.security.app-sandbox = $(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' macos/Runner/DebugProfile.entitlements)"
+  echo "--- entitlement (plist) com.apple.security.app-sandbox = $(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' macos/Runner/DebugProfile.entitlements)"
 }
 
-run_app() { # run from cwd "/" with the env var unset; 40 s bound
+FAILED=0
+run_app() { # $1 = expect (answer|fail); run from cwd "/" with the env var unset; 40 s bound
+  local expect="$1" out
   local app="$PWD/build/macos/Build/Products/Debug/probe_app.app"
   echo "command: cd / && env -u SEARCH_SIMPLI_LIBRARY_PATH <app>/Contents/MacOS/probe_app"
-  ( cd / && env -u SEARCH_SIMPLI_LIBRARY_PATH perl -e 'alarm 40; exec @ARGV' -- "$app/Contents/MacOS/probe_app" 2>&1 ) \
-    | grep -E 'PROBE_|search_simpli: could not|^/|^libsearch' | head -12 || true
+  out="$( ( cd / && env -u SEARCH_SIMPLI_LIBRARY_PATH perl -e 'alarm 40; exec @ARGV' -- "$app/Contents/MacOS/probe_app" 2>&1 ) \
+    | grep -E 'PROBE_|search_simpli: could not|^/|^libsearch' | head -12 || true )"
+  echo "$out"
+  if [ "$expect" = answer ] && ! grep -q PROBE_ANSWER <<<"$out"; then
+    echo "!!! FAIL: expected PROBE_ANSWER"; FAILED=1
+  elif [ "$expect" = fail ] && ! grep -q PROBE_FAIL <<<"$out"; then
+    echo "!!! FAIL: expected PROBE_FAIL (negative control)"; FAILED=1
+  fi
 }
 
 APP=build/macos/Build/Products/Debug/probe_app.app
 # Re-signing must pass the entitlements again, or codesign drops them (and the
 # "sandbox on" run would silently not be sandboxed).
 sign_app() { codesign --force --deep -s - --entitlements macos/Runner/DebugProfile.entitlements "$APP" 2>/dev/null; }
-show_sandbox() { echo "--- signed app-sandbox entitlement: $(codesign -d --entitlements - "$APP" 2>&1 | grep -c 'com.apple.security.app-sandbox') (1 = present; value below)"; codesign -d --entitlements - "$APP" 2>&1 | grep -A1 app-sandbox | tr -d '\n'; echo; }
+show_sandbox() { echo "--- signed app-sandbox entitlement: $(codesign -d --entitlements - "$APP" 2>&1 | grep -A2 'com.apple.security.app-sandbox' | tr -s '\n\t' ' ')"; }
 for sandbox in false true; do
   echo "=== sandbox=$sandbox ==="
   set_sandbox "$sandbox"
@@ -88,12 +101,13 @@ for sandbox in false true; do
   echo "--- negative control: no dylib in Contents/Frameworks (expect PROBE_FAIL listing candidates)"
   rm -f "$APP/Contents/Frameworks/libsearch_simpli.dylib"
   sign_app
-  run_app
+  run_app fail
   echo "--- dylib copied into Contents/Frameworks, signed with the app"
   cp "$DYLIB" "$APP/Contents/Frameworks/"
   codesign --force -s - "$APP/Contents/Frameworks/libsearch_simpli.dylib" 2>/dev/null
   sign_app
   show_sandbox
-  run_app
+  run_app answer
 done
-echo "probe workdir (delete when done): $WORK"
+if [ "$FAILED" -ne 0 ]; then echo "PROBE RESULT: FAILED"; exit 1; fi
+echo "PROBE RESULT: ok"
