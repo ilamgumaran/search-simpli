@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const hybrid = @import("hybrid.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const manifest = @import("manifest.zig");
@@ -14,9 +15,52 @@ pub const LoadedSnapshot = struct {
     lexical_encoded: []u8,
 };
 
+/// Ordered record of the durability-relevant steps of one publish, for the
+/// S2-T5 "recording shim" test. Production callers pass no recorder (`null`)
+/// and pay nothing; a test passes one and reads back the exact order in
+/// which files were synced, renamed into place, and the directory synced.
+/// The recorder observes the real calls (they still run against the real
+/// filesystem); it does not replace them.
+pub const Recorder = struct {
+    pub const Kind = enum { file_sync, rename, dir_sync };
+    pub const Entry = struct {
+        kind: Kind,
+        /// Destination name for `.rename`; empty otherwise.
+        name: [48]u8 = [_]u8{0} ** 48,
+        name_len: u8 = 0,
+
+        pub fn nameSlice(entry: *const Entry) []const u8 {
+            return entry.name[0..entry.name_len];
+        }
+    };
+
+    entries: [32]Entry = undefined,
+    len: usize = 0,
+
+    fn note(recorder: ?*Recorder, kind: Kind, name: []const u8) void {
+        const self = recorder orelse return;
+        if (self.len == self.entries.len) return;
+        var entry = Entry{ .kind = kind };
+        const n = @min(name.len, entry.name.len);
+        @memcpy(entry.name[0..n], name[0..n]);
+        entry.name_len = @intCast(n);
+        self.entries[self.len] = entry;
+        self.len += 1;
+    }
+
+    pub fn slice(self: *const Recorder) []const Entry {
+        return self.entries[0..self.len];
+    }
+};
+
 /// Publish immutable generation files first and make them visible only by an
 /// atomic replacement of MANIFEST after all bytes and metadata validate.
 /// Generation files use non-replacing links, preventing accidental mutation.
+///
+/// Durability order (S2-T5): each file is fsynced before its rename; the
+/// *directory* is fsynced after the two section renames and again after the
+/// MANIFEST rename. Without the directory syncs, ext4/f2fs may persist the
+/// MANIFEST rename while losing the section renames before it.
 pub fn publish(
     dir: std.Io.Dir,
     io: std.Io,
@@ -24,14 +68,78 @@ pub fn publish(
     documents_encoded: []const u8,
     lexical_encoded: []const u8,
 ) !void {
+    try publishRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, null);
+}
+
+pub fn publishRecorded(
+    dir: std.Io.Dir,
+    io: std.Io,
+    manifest_encoded: []const u8,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+    recorder: ?*Recorder,
+) !void {
     const metadata = try manifest.decode(manifest_encoded);
     try manifest.validateSnapshot(metadata, documents_encoded, lexical_encoded);
 
-    try writeImmutable(dir, io, metadata.documents_file, documents_encoded);
+    try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
     errdefer dir.deleteFile(io, metadata.documents_file) catch {};
-    try writeImmutable(dir, io, metadata.lexical_file, lexical_encoded);
+    try writeAtomicFileRecorded(dir, io, metadata.lexical_file, lexical_encoded, false, recorder);
     errdefer dir.deleteFile(io, metadata.lexical_file) catch {};
-    try replaceCurrentManifest(dir, io, manifest_encoded);
+    // Make both section renames durable before MANIFEST can name them.
+    try syncDirectory(dir, io, recorder);
+    try writeAtomicFileRecorded(dir, io, current_manifest_file, manifest_encoded, true, recorder);
+    // Make the MANIFEST rename itself durable before acknowledging.
+    try syncDirectory(dir, io, recorder);
+}
+
+pub const DirSyncError = error{ InputOutput, NoSpaceLeft, DiskQuota, Unexpected };
+
+/// fsync a directory so renames/links inside it reach stable storage.
+///
+/// Zig 0.16's `std.Io.Dir` has no sync method (`File.sync` only flushes a
+/// file's own data and says so); a `Dir.Handle` is the plain POSIX fd, so on
+/// POSIX (Linux, Android, macOS) this calls `fsync(dir.handle)` directly,
+/// retrying on `EINTR`. It deliberately does not go through `File.sync`,
+/// which treats `EINVAL` as a programmer bug (a panic in Debug builds).
+///
+/// `EINVAL` / `ENOTSUP` / `EOPNOTSUPP` mean "this filesystem cannot sync a
+/// directory" (some FUSE, network and overlay mounts); those are ignored and
+/// nothing else is. Every other error propagates and fails the publish.
+/// On Windows (NTFS journals directory metadata; a directory handle cannot be
+/// flushed the POSIX way) and WASI the function does nothing.
+///
+/// macOS: `fsync` there does not force the drive's write cache (that needs
+/// `fcntl(F_FULLFSYNC)`). This code uses plain `fsync` for directories, the
+/// same call `File.sync` already uses for the section files, so the two
+/// stay consistent; macOS is a development host here, the target is
+/// Linux/Android where `fsync` is the full barrier.
+pub fn syncDirectory(dir: std.Io.Dir, io: std.Io, recorder: ?*Recorder) DirSyncError!void {
+    _ = io;
+    Recorder.note(recorder, .dir_sync, "");
+    if (comptime builtin.os.tag == .windows or builtin.os.tag == .wasi) {
+        return;
+    } else {
+        const posix = std.posix;
+        while (true) {
+            const errno = posix.errno(posix.system.fsync(dir.handle));
+            if (errno == .SUCCESS) return;
+            if (errno == .INTR) continue;
+            if (errno == .INVAL) return;
+            if (comptime @hasField(posix.E, "NOTSUP")) {
+                if (errno == .NOTSUP) return;
+            }
+            if (comptime @hasField(posix.E, "OPNOTSUPP")) {
+                if (errno == .OPNOTSUPP) return;
+            }
+            return switch (errno) {
+                .IO => error.InputOutput,
+                .NOSPC => error.NoSpaceLeft,
+                .DQUOT => error.DiskQuota,
+                else => error.Unexpected,
+            };
+        }
+    }
 }
 
 /// Load the atomically selected generation into caller-owned buffers, then
@@ -54,14 +162,6 @@ pub fn loadCurrent(
         .documents_encoded = documents_encoded,
         .lexical_encoded = lexical_encoded,
     };
-}
-
-fn writeImmutable(dir: std.Io.Dir, io: std.Io, filename: []const u8, bytes: []const u8) !void {
-    try writeAtomicFile(dir, io, filename, bytes, false);
-}
-
-fn replaceCurrentManifest(dir: std.Io.Dir, io: std.Io, bytes: []const u8) !void {
-    try writeAtomicFile(dir, io, current_manifest_file, bytes, true);
 }
 
 /// Portable atomic file write: create a uniquely-named temporary file in
@@ -94,6 +194,17 @@ pub fn writeAtomicFile(
     bytes: []const u8,
     replace_existing: bool,
 ) !void {
+    try writeAtomicFileRecorded(dir, io, filename, bytes, replace_existing, null);
+}
+
+fn writeAtomicFileRecorded(
+    dir: std.Io.Dir,
+    io: std.Io,
+    filename: []const u8,
+    bytes: []const u8,
+    replace_existing: bool,
+    recorder: ?*Recorder,
+) !void {
     while (true) {
         var random_integer: u64 = undefined;
         io.random(std.mem.asBytes(&random_integer));
@@ -112,6 +223,7 @@ pub fn writeAtomicFile(
 
         try file.writeStreamingAll(io, bytes);
         try file.sync(io);
+        Recorder.note(recorder, .file_sync, "");
         file.close(io);
         file_open = false;
 
@@ -120,6 +232,7 @@ pub fn writeAtomicFile(
         } else {
             try dir.renamePreserve(&tmp_name, dir, filename, io);
         }
+        Recorder.note(recorder, .rename, filename);
         temp_exists = false;
         return;
     }
@@ -312,4 +425,44 @@ test "writeAtomicFile with replace_existing=true overwrites and leaves no stray 
     var iterator = tmp.dir.iterate();
     while (try iterator.next(io)) |_| count += 1;
     try std.testing.expectEqual(@as(usize, 1), count);
+}
+
+// S2-T5 bar (a): the directory is fsynced after the section renames and
+// again after the MANIFEST rename, in that order, with every file synced
+// before its own rename. The recorder observes the real publish; removing
+// either `syncDirectory` call from `publishRecorded` makes this fail.
+test "publish syncs the directory after the section renames and again after MANIFEST" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    var fixture = try Fixture.init();
+    var manifest_storage: [512]u8 = undefined;
+    const manifest_encoded = try fixture.encodeManifest(1, "documents-1.hybseg", "lexical-1.hyblex", &manifest_storage);
+
+    var recorder = Recorder{};
+    try publishRecorded(tmp.dir, io, manifest_encoded, fixture.documentsEncoded(), fixture.lexicalEncoded(), &recorder);
+
+    const K = Recorder.Kind;
+    const expected = [_]struct { kind: K, name: []const u8 }{
+        .{ .kind = .file_sync, .name = "" },
+        .{ .kind = .rename, .name = "documents-1.hybseg" },
+        .{ .kind = .file_sync, .name = "" },
+        .{ .kind = .rename, .name = "lexical-1.hyblex" },
+        .{ .kind = .dir_sync, .name = "" },
+        .{ .kind = .file_sync, .name = "" },
+        .{ .kind = .rename, .name = "MANIFEST" },
+        .{ .kind = .dir_sync, .name = "" },
+    };
+    const entries = recorder.slice();
+    try std.testing.expectEqual(expected.len, entries.len);
+    for (expected, entries) |want, got| {
+        try std.testing.expectEqual(want.kind, got.kind);
+        try std.testing.expectEqualStrings(want.name, got.nameSlice());
+    }
+}
+
+test "syncDirectory succeeds on a real directory handle" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    try syncDirectory(tmp.dir, std.testing.io, null);
 }
