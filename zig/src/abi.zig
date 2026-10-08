@@ -294,11 +294,13 @@ fn queryImpl(
 
     const service = service_module.Service{ .engine = h.engine };
     const document_count = h.engine.documents.len;
-    const lexical_scores = try allocator.alloc(f32, document_count);
-    defer allocator.free(lexical_scores);
-    const results = try allocator.alloc(hybrid.Result, document_count);
+    // S2-T3: nothing here scales with the corpus. The ranking selection
+    // allocates from the per-call arena (sized by the matched chunks and
+    // `candidate_k`); only the final `top_k` rows need these two arrays.
+    const result_capacity = @min(top_k, document_count);
+    const results = try allocator.alloc(hybrid.Result, result_capacity);
     defer allocator.free(results);
-    const evidence = try allocator.alloc(engine_module.Evidence, document_count);
+    const evidence = try allocator.alloc(engine_module.Evidence, result_capacity);
     defer allocator.free(evidence);
 
     // S1-T1 threaded an allocator through `searchKnowledge` so query
@@ -314,7 +316,7 @@ fn queryImpl(
         .retrieval_mode = mode,
         .path_prefix = options.path_prefix,
         .principal_labels = options.principal_labels,
-    }, lexical_scores, results, evidence);
+    }, results, evidence);
 
     var out: std.Io.Writer.Allocating = .init(allocator);
     errdefer out.deinit();
@@ -845,10 +847,9 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     try std.testing.expectEqualStrings("both", first.get("chunk_id").?.string);
 
     const service = service_module.Service{ .engine = handle.engine };
-    var scores: [documents.len]f32 = undefined;
     var results: [documents.len]hybrid.Result = undefined;
     var evidence_storage: [documents.len]engine_module.Evidence = undefined;
-    const evidence = try service.searchKnowledge(std.testing.allocator, "hybrid", &query_vector, .{ .top_k = 1 }, &scores, &results, &evidence_storage);
+    const evidence = try service.searchKnowledge(std.testing.allocator, "hybrid", &query_vector, .{ .top_k = 1 }, &results, &evidence_storage);
     var golden: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer golden.deinit();
     var golden_json = std.json.Stringify{ .writer = &golden.writer };

@@ -138,7 +138,7 @@ library_loader.dart` resolves which one to load:
    abiFilters += listOf("arm64-v8a") }` block in `example/android/app/
    build.gradle.kts` for a worked Flutter example). Once packaged, Android's
    own dynamic linker finds it by name.
-3. **macOS, inside a built app (`Platform.resolvedExecutable` under
+3. **macOS, inside a built app (`Platform.resolvedExecutable` sits directly in
    `*.app/Contents/MacOS/`; docs/tasks/S1-T12.md):** only the override and the
    exact path `<executable dir>/../Frameworks/libsearch_simpli.dylib`. No bare
    name: everything it can reach from inside an app (the working directory,
@@ -167,8 +167,9 @@ library_loader.dart` resolves which one to load:
    `bindings/dart/search_simpli/`) still works either way. **Only then**, as
    the last fallback for a system-installed library, the bare name
    `libsearch_simpli.dylib` (`.so` on Linux), so a stray copy in the working
-   directory or `/usr/local/lib` does not beat the package's own copy. (Linux
-   first tries the exact `<executable dir>/lib/libsearch_simpli.so`.) The
+   directory or `/usr/local/lib` does not beat the package's own copy. (On Linux the order is exact: first
+   `<executable dir>/lib/libsearch_simpli.so`, then the package's own copy,
+   then the working-directory and script candidates, then the bare name.) The
    exact claim: inside an app only the shipped copy is ever loaded; in a
    checkout the package's own copy is preferred, and the bare name is the last
    fallback.

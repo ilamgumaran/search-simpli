@@ -179,13 +179,11 @@ fn openServeContext(io: std.Io, allocator: std.mem.Allocator, path: []const u8) 
     const service = service_module.Service{ .engine = opened };
 
     const query_vector = try allocator.alloc(f32, metadata.vector_dimensions);
-    const lexical_scores = try allocator.alloc(f32, metadata.document_count);
     const results = try allocator.alloc(hybrid.Result, metadata.document_count);
     const evidence = try allocator.alloc(engine_module.Evidence, metadata.document_count);
     const sources = try allocator.alloc(service_module.Source, metadata.document_count);
     const workspaces = rpc.Workspaces{
         .query_vector = query_vector,
-        .lexical_scores = lexical_scores,
         .results = results,
         .evidence = evidence,
         .sources = sources,

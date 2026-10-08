@@ -55,6 +55,20 @@ void main() {
     expect(isInsideMacApp('/tmp/MacOS/app'), isFalse);
   });
 
+  test('an executable under Contents/MacOS with no .app ancestor is outside an app', () {
+    expect(isInsideMacApp('/Foo/Contents/MacOS/x'), isFalse);
+    expect(isInsideMacApp('/Foo.app/Sub/Contents/MacOS/x'), isFalse);
+    expect(isInsideMacApp('/opt/App.app/Resources/Contents/MacOS/x'), isFalse);
+  });
+
+  test('isInsideMacApp compares .app case-insensitively, Contents/MacOS exactly', () {
+    for (final ext in ['.APP', '.App', '.app']) {
+      expect(isInsideMacApp('/Upper$ext/Contents/MacOS/x'), isTrue, reason: ext);
+    }
+    expect(isInsideMacApp('/Upper.APP/contents/MacOS/x'), isFalse);
+    expect(isInsideMacApp('/Upper.APP/Contents/macos/x'), isFalse);
+  });
+
   test('in an app, the library present: only the Frameworks path is tried', () {
     final lib = _self();
     final result = run(exe: appExe, opener: (p) {
@@ -69,9 +83,21 @@ void main() {
     final e = run(exe: appExe, exists: (_) => false) as StateError;
     expect(attempts, isEmpty);
     expect(e.message, contains('did not ship'));
+    expect(e.message, isNot(contains('could not be opened')));
     expect(e.message, contains(frameworks));
     expect(e.message, isNot(contains('/pkg/native')));
     expect(attempts, isNot(contains('libsearch_simpli.dylib')));
+  });
+
+  test('in an app, an existing copy that cannot be opened is "found but could not be opened"', () {
+    final e = run(exe: appExe, opener: (p) {
+      attempts.add(p);
+      throw ArgumentError('wrong architecture: $p');
+    }) as StateError;
+    expect(attempts, [frameworks]);
+    expect(e.message, contains('found but could not be opened'));
+    expect(e.message, contains('wrong architecture'));
+    expect(e.message, isNot(contains('did not ship')));
   });
 
   test('in an app, a Frameworks copy that fails to open never falls back to the bare name', () {
@@ -107,6 +133,19 @@ void main() {
           throwsArgumentError);
       expect(attempts, ['/forced/lib.dylib']);
     }
+  });
+
+  test('a failed earlier candidate does not mask a later one (first candidates all fail)', () {
+    final lib = _self();
+    final result = run(opener: (p) {
+      attempts.add(p);
+      if (p == 'libsearch_simpli.dylib') return lib;
+      throw ArgumentError('no such file: $p');
+    });
+    expect(result, same(lib));
+    expect(attempts.length, greaterThan(1));
+    expect(attempts.last, 'libsearch_simpli.dylib');
+    expect(attempts.take(attempts.length - 1), everyElement(contains('/native/')));
   });
 
   test('a failed earlier candidate does not mask a later one', () {
