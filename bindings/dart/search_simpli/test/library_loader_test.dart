@@ -20,7 +20,7 @@ void main() {
 
   Object? run({
     bool mac = true,
-    String exe = '/Users/x/checkout/.dart_tool/bin/dart',
+    String exe = '/checkout/bin/dart',
     Map<String, String> env = const {},
     bool Function(String)? exists,
     DynamicLibrary Function(String)? opener,
@@ -93,7 +93,7 @@ void main() {
 
   test('Linux checkout: the bare .so is last', () {
     run(mac: false);
-    expect(attempts.first, '/Users/x/checkout/.dart_tool/bin/lib/libsearch_simpli.so');
+    expect(attempts.first, '/checkout/bin/lib/libsearch_simpli.so');
     expect(attempts.last, 'libsearch_simpli.so');
     expect(attempts.indexOf('/pkg/native/linux-x64/libsearch_simpli.so'),
         lessThan(attempts.indexOf('libsearch_simpli.so')));
