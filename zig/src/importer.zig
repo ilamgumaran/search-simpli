@@ -1,4 +1,3 @@
-const analysis = @import("analysis.zig");
 const engine_module = @import("engine.zig");
 const hybrid = @import("hybrid.zig");
 const indexer = @import("indexer.zig");
@@ -107,15 +106,12 @@ pub fn importJsonKeeping(
     var allocated_label_buffers: usize = 0;
     defer for (label_buffers[0..allocated_label_buffers]) |buffer| allocator.free(buffer);
     var vector_dimensions: usize = 0;
-    var total_tokens: usize = 0;
     for (payload.documents, documents, 0..) |source, *document, document_index| {
         if (source.id.len == 0 or source.path.len == 0) return error.InvalidDocument;
         if (source.vector.len != 0) {
             if (vector_dimensions == 0) vector_dimensions = source.vector.len;
             if (source.vector.len != vector_dimensions) return error.VectorDimensionsInconsistent;
         }
-        total_tokens = std.math.add(usize, total_tokens, analysis.tokenCount(source.text)) catch
-            return error.IndexTooLarge;
         const required_labels = try packRequiredLabels(allocator, source.required_labels);
         label_buffers[document_index] = required_labels;
         allocated_label_buffers += 1;
@@ -138,26 +134,12 @@ pub fn importJsonKeeping(
     defer allocator.free(document_encoded_storage);
     const documents_encoded = try segment.encode(documents, document_encoded_storage);
 
-    // `ascii-alnum-v1` keeps its original build below, unchanged. The
-    // `analyzer-v2` index lives in this arena until it has been encoded.
+    // Both analyzers build through the hash-map path in `lexical_build.zig`;
+    // the index lives in this arena until it has been encoded.
     var lexical_arena = std.heap.ArenaAllocator.init(allocator);
     defer lexical_arena.deinit();
-    const terms = try allocator.alloc(postings.TermEntry, if (analyzer == .ascii_alnum_v1) total_tokens else 0);
-    defer allocator.free(terms);
-    const posting_storage = try allocator.alloc(postings.Posting, if (analyzer == .ascii_alnum_v1) total_tokens else 0);
-    defer allocator.free(posting_storage);
-    const document_lengths = try allocator.alloc(u32, if (analyzer == .ascii_alnum_v1) documents.len else 0);
-    defer allocator.free(document_lengths);
-    const posting_fills = try allocator.alloc(usize, if (analyzer == .ascii_alnum_v1) total_tokens else 0);
-    defer allocator.free(posting_fills);
     const lexical_index = switch (analyzer) {
-        .ascii_alnum_v1 => try postings.build(
-            documents,
-            terms,
-            posting_storage,
-            document_lengths,
-            posting_fills,
-        ),
+        .ascii_alnum_v1 => try lexical_build.buildAscii(lexical_arena.allocator(), documents),
         .analyzer_v2 => try buildAnalyzerV2(lexical_arena.allocator(), documents),
     };
 

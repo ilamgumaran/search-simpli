@@ -12,6 +12,15 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S2-T2, 2026-10-08)
+
+**S2-T2 is `verified` and merged to `main`** (branch `task/S2-T2` `7f69688`, second round; Verdict in `docs/tasks/S2-T2.md`).
+
+- **The app's import door is now linear-time.** `ss_import_json` / `searchd import-json` with `ascii-alnum-v1` build through `lexical_build.buildAscii` (one hash-map pass) instead of `postings.build`: 10k documents import in ~0.2 s (was ~110 s), 1k in ~0.04 s (was ~12.5 s).
+- **Byte-identical output.** The published files and the query results are the same as the old build's (`import_parity.py --baseline` 10/10; 218 CLI queries and 654 `ss_query` calls at 1k, 0 differences; `diff -r` empty at 1k and 10k). No contract change.
+- **Plant:** `zig/src/import_build_timing_test.zig` checks the growth from 125 to 1,000 documents (interleaved runs, best of five, `< 24x`). It gives 7.1 to 8.1x under load and about 51x on the old build.
+- **Libraries:** dylib 417,464 B, stamp `788f5e3f…2bba`.
+
 ## Standalone platform status (S2-T12, 2026-10-08)
 
 **S2-T12 is `verified` and merged to `main`** (branch `task/S2-T12` `2df286b`; Verdict in `docs/tasks/S2-T12.md`).

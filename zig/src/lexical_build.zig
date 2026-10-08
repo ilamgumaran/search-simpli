@@ -17,6 +17,7 @@
 //! left for a case-insensitive comparator to do (unlike `analysis.zig`,
 //! where tokens are stored unfolded and folded only at comparison time).
 const std = @import("std");
+const analysis = @import("analysis.zig");
 const hybrid = @import("hybrid.zig");
 const postings = @import("postings.zig");
 const scoring = @import("scoring.zig");
@@ -109,6 +110,105 @@ pub fn build(
     return .{
         .terms = try terms.toOwnedSlice(allocator),
         .postings = try all_postings.toOwnedSlice(allocator),
+        .document_lengths = document_lengths,
+        .average_document_length = average_document_length,
+    };
+}
+
+/// The `ascii-alnum-v1` twin of `build` (S2-T2): the same dictionary,
+/// postings, document lengths and average length as `postings.build`, in
+/// the same term order (first seen, document order), but in time linear in
+/// total tokens. `postings.build` scans the growing term list and re-scans
+/// the document for every token; this keys one hash map on the
+/// ASCII-lowercased token instead. A term's bytes stay the first-seen
+/// spelling (a slice of the document text, as `postings.build` stores
+/// them), so the encoded lexical section is byte-identical to the old path.
+/// Document text must outlive the returned index; the rest is owned by
+/// `allocator` (an arena).
+pub fn buildAscii(
+    allocator: std.mem.Allocator,
+    documents: []const hybrid.Document,
+) (BuildError || postings.BuildError)!postings.Index {
+    if (documents.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
+
+    const Entry = struct { term: u32, document: u32, frequency: u32 };
+    var terms = std.ArrayList(postings.TermEntry).empty;
+    // Per term: the last document that counted it, and its slot in `entries`.
+    var last_document = std.ArrayList(u32).empty;
+    var last_entry = std.ArrayList(usize).empty;
+    var entries = std.ArrayList(Entry).empty;
+    var folded = std.ArrayList(u8).empty;
+    const document_lengths = try allocator.alloc(u32, documents.len);
+    var total_length: usize = 0;
+
+    var term_index_by_name = std.StringHashMap(u32).init(allocator);
+    defer term_index_by_name.deinit();
+
+    for (documents, 0..) |document, document_index| {
+        var length: usize = 0;
+        var tokens = analysis.TokenIterator.init(document.text);
+        while (tokens.next()) |token| {
+            length += 1;
+            folded.clearRetainingCapacity();
+            try folded.ensureTotalCapacity(allocator, token.bytes.len);
+            for (token.bytes) |byte| folded.appendAssumeCapacity(std.ascii.toLower(byte));
+            const term_index: u32 = if (term_index_by_name.get(folded.items)) |found| found else add: {
+                if (terms.items.len >= std.math.maxInt(u32)) return error.TermCountOverflow;
+                const index: u32 = @intCast(terms.items.len);
+                try term_index_by_name.put(try allocator.dupe(u8, folded.items), index);
+                try terms.append(allocator, .{
+                    .term = token.bytes,
+                    .document_frequency = 0,
+                    .postings_start = 0,
+                    .postings_length = 0,
+                });
+                try last_document.append(allocator, std.math.maxInt(u32));
+                try last_entry.append(allocator, 0);
+                break :add index;
+            };
+            if (last_document.items[term_index] == document_index) {
+                entries.items[last_entry.items[term_index]].frequency += 1;
+            } else {
+                last_document.items[term_index] = @intCast(document_index);
+                last_entry.items[term_index] = entries.items.len;
+                terms.items[term_index].document_frequency += 1;
+                try entries.append(allocator, .{
+                    .term = term_index,
+                    .document = @intCast(document_index),
+                    .frequency = 1,
+                });
+            }
+        }
+        if (length > std.math.maxInt(u32)) return error.DocumentLengthOverflow;
+        document_lengths[document_index] = @intCast(length);
+        total_length = std.math.add(usize, total_length, length) catch return error.DocumentLengthOverflow;
+    }
+
+    // Counting sort of the entries by term; entries are already in document
+    // order, so each term's postings stay in document order.
+    const fills = try allocator.alloc(usize, terms.items.len);
+    @memset(fills, 0);
+    var posting_count: usize = 0;
+    for (terms.items) |*entry| {
+        entry.postings_start = posting_count;
+        entry.postings_length = entry.document_frequency;
+        posting_count = std.math.add(usize, posting_count, entry.postings_length) catch
+            return error.PostingCountOverflow;
+    }
+    const all_postings = try allocator.alloc(postings.Posting, posting_count);
+    for (entries.items) |entry| {
+        const slot = terms.items[entry.term].postings_start + fills[entry.term];
+        all_postings[slot] = .{ .document_index = entry.document, .term_frequency = entry.frequency };
+        fills[entry.term] += 1;
+    }
+
+    const average_document_length = if (documents.len == 0)
+        0
+    else
+        @as(f32, @floatFromInt(total_length)) / @as(f32, @floatFromInt(documents.len));
+    return .{
+        .terms = try terms.toOwnedSlice(allocator),
+        .postings = all_postings,
         .document_lengths = document_lengths,
         .average_document_length = average_document_length,
     };

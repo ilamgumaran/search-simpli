@@ -27,6 +27,7 @@ pub const chunker_golden_test = @import("chunker_test.zig");
 pub const bm25_conformance_test = @import("bm25_conformance_test.zig");
 pub const incremental_indexing_test = @import("incremental_indexing_test.zig");
 pub const import_analyzer_test = @import("import_analyzer_test.zig");
+pub const import_build_timing_test = @import("import_build_timing_test.zig");
 
 pub const Bm25Parameters = scoring.Bm25Parameters;
 pub const bm25Contribution = scoring.bm25Contribution;
@@ -87,5 +88,6 @@ test "load every engine module test suite" {
     _ = bm25_conformance_test;
     _ = incremental_indexing_test;
     _ = import_analyzer_test;
+    _ = import_build_timing_test;
     _ = cli_test;
 }
