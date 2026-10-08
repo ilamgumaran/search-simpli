@@ -131,6 +131,11 @@ class SearchSimpli {
   ///                       with this prefix.
   ///   [principalLabels]   A chunk is only returned if the caller holds
   ///                       every one of its required labels.
+  ///   [profile]           Contract 1.2.0: `true` adds per-phase timings
+  ///                       ([SearchKnowledgeResult.profile]); `false` (the
+  ///                       default) sends no option and reads no clock.
+  ///
+  /// The result's `warnings` and `request` (contract 1.2.0) are always set.
   SearchKnowledgeResult query(
     String queryText, {
     List<double>? queryVector,
@@ -139,6 +144,7 @@ class SearchSimpli {
     int? candidateK,
     String? pathPrefix,
     List<String>? principalLabels,
+    bool profile = false,
   }) {
     _checkOpen();
 
@@ -147,6 +153,7 @@ class SearchSimpli {
       if (candidateK != null) 'candidate_k': candidateK,
       if (pathPrefix != null) 'path_prefix': pathPrefix,
       if (principalLabels != null) 'principal_labels': principalLabels,
+      if (profile) 'profile': true,
     };
     final optionsJson = options.isEmpty ? null : jsonEncode(options);
 

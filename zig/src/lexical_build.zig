@@ -161,6 +161,18 @@ pub fn resolveTokens(
     index: postings.Index,
     query_tokens: []const []const u8,
 ) std.mem.Allocator.Error![]postings.TermEntry {
+    return resolveTokensTraced(allocator, index, query_tokens, null, true);
+}
+
+/// `resolveTokens` that also records unique-term and unmatched-term counts in
+/// `trace` (S2-T4); see `postings.resolveQueryTraced`.
+pub fn resolveTokensTraced(
+    allocator: std.mem.Allocator,
+    index: postings.Index,
+    query_tokens: []const []const u8,
+    trace: ?*hybrid.Trace,
+    lookup: bool,
+) std.mem.Allocator.Error![]postings.TermEntry {
     var resolved = std.ArrayList(postings.TermEntry).empty;
     errdefer resolved.deinit(allocator);
     for (query_tokens, 0..) |query_token, position| {
@@ -172,7 +184,14 @@ pub fn resolveTokens(
             }
         }
         if (already_scored) continue;
-        const term_index = findExact(index.terms, query_token) orelse continue;
+        if (trace) |t| t.unique_terms += 1;
+        if (!lookup) continue;
+        const term_index = findExact(index.terms, query_token) orelse {
+            if (trace) |t| {
+                try t.unmatched.append(t.allocator, .{ .term = try t.allocator.dupe(u8, query_token), .in_dictionary = false });
+            }
+            continue;
+        };
         try resolved.append(allocator, index.terms[term_index]);
     }
     return resolved.toOwnedSlice(allocator);

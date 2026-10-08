@@ -67,6 +67,14 @@ const String goldenQueryResultJson =
     '"answer_policy":{"ground_in_results":true,"cite_path_and_lines":true,'
     '"say_when_evidence_is_insufficient":true}}';
 
+/// Contract 1.2.0 appends `warnings` and `request` to `ss_query`'s report.
+/// The demo query's vector channel offers 3 candidates against `candidate_k` 2.
+const String goldenQueryTail =
+    ',"warnings":[{"code":"candidate_depth_cut","message":'
+    '"candidate_k 2 kept 2 of 3 vector candidates"}],'
+    '"request":{"analyzer_id":"ascii-alnum-v1","retrieval_mode":"hybrid",'
+    '"top_k":1,"candidate_k":2,"path_prefix":"guides/"}}';
+
 const String goldenEvidenceFoundJson =
     '[{"chunk_id":"hybrid-guide","citation":{"path":"guides/hybrid.md",'
     '"start_line":1,"end_line":6},"content":"hybrid retrieval combines lexical and semantic '
@@ -112,7 +120,12 @@ void main() {
         candidateK: 2,
         pathPrefix: 'guides/',
       );
-      expect(jsonEncode(result.toJson()), goldenQueryResultJson);
+      final shared = goldenQueryResultJson.substring(0, goldenQueryResultJson.length - 1);
+      expect(jsonEncode(result.toJson()), shared + goldenQueryTail);
+      // The shared fields alone are the S1-T0 golden, unchanged.
+      expect(jsonEncode(SearchKnowledgeResult.fromJson(
+        {...result.toJson()}..remove('warnings')..remove('request'),
+      ).toJson()), goldenQueryResultJson);
 
       final found = engine.evidence(['hybrid-guide']);
       expect(jsonEncode(found.map((e) => e.toJson()).toList()), goldenEvidenceFoundJson);

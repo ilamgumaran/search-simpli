@@ -97,7 +97,7 @@ int main(void) {
         return 1;
     }
 
-    expect_streq("ss_version", "1.1.0", ss_version());
+    expect_streq("ss_version", "1.2.0", ss_version());
 
     long long generation = ss_import_json(dir, demo_interchange_json, strlen(demo_interchange_json));
     expect_true("ss_import_json publishes generation 1", generation == 1, "unexpected generation/error code");
@@ -128,8 +128,40 @@ int main(void) {
         1,
         "{\"retrieval_mode\":\"hybrid\",\"path_prefix\":\"guides/\",\"candidate_k\":2}"
     );
-    expect_streq("ss_query matches the captured search_knowledge result byte for byte", golden_query_result_json, query_json);
+    /* Contract 1.2.0 appends warnings/request (and profile on request) after
+     * `answer_policy`: the captured JSON-RPC result is the report up to the
+     * final brace, byte for byte, and the new keys are checked separately. */
+    {
+        static const char *tail =
+            ",\"warnings\":[{\"code\":\"candidate_depth_cut\",\"message\":"
+            "\"candidate_k 2 kept 2 of 3 vector candidates\"}],"
+            "\"request\":{\"analyzer_id\":\"ascii-alnum-v1\","
+            "\"retrieval_mode\":\"hybrid\",\"top_k\":1,\"candidate_k\":2,"
+            "\"path_prefix\":\"guides/\"}}";
+        size_t golden_len = strlen(golden_query_result_json);
+        char *expected = malloc(golden_len + strlen(tail) + 1);
+        memcpy(expected, golden_query_result_json, golden_len - 1);
+        strcpy(expected + golden_len - 1, tail);
+        expect_streq("ss_query matches the captured search_knowledge result byte for byte, plus warnings and request", expected, query_json);
+        free(expected);
+    }
     ss_free(query_json);
+
+    {
+        char *report = ss_query(handle, "hybrid dinosaurus", query_vector, 2, 1,
+                                "{\"retrieval_mode\":\"lexical\",\"profile\":true}");
+        expect_true("ss_query warns about an unmatched term",
+                    report != NULL && strstr(report, "{\"code\":\"query_term_unmatched\",\"message\":\"the term matches no chunk\",\"term\":\"dinosaurus\"}") != NULL,
+                    "missing query_term_unmatched");
+        expect_true("ss_query warns that the vector was ignored in lexical mode",
+                    report != NULL && strstr(report, "\"code\":\"vector_ignored\"") != NULL,
+                    "missing vector_ignored");
+        expect_true("ss_query adds profile only on request",
+                    report != NULL && strstr(report, "\"profile\":{\"tokenize_us\":") != NULL
+                       ,
+                    "missing profile");
+        ss_free(report);
+    }
 
     char *evidence_found_json = ss_evidence(handle, "{\"ids\":[\"hybrid-guide\"]}");
     expect_streq("ss_evidence matches the captured read_chunk result", golden_evidence_found_json, evidence_found_json);

@@ -24,7 +24,7 @@ void main() {
 
     final text = tester.widget<Text>(textFinder).data ?? '';
     expect(text, isNot(startsWith('FAIL')));
-    expect(text, contains('contracts_version=1.1.0'));
+    expect(text, contains('contracts_version=1.2.0'));
     // Top hybrid result over the full 3-document demo snapshot (no
     // path_prefix filter, default candidate_k) — measured directly from a
     // real run on the emulator (docs/tasks/S1-T2.md's Report has the exact

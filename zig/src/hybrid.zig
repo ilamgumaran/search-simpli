@@ -203,8 +203,12 @@ fn candidateLess(_: void, left: Candidate, right: Candidate) bool {
 const TopK = struct {
     items: []Candidate,
     count: usize = 0,
+    /// Every candidate offered, kept or not (S2-T4: the size of the list that
+    /// `candidate_k` may have cut).
+    offered: usize = 0,
 
     fn offer(top: *TopK, candidate: Candidate) void {
+        top.offered += 1;
         if (top.items.len == 0) return;
         if (top.count < top.items.len) {
             top.items[top.count] = candidate;
@@ -265,6 +269,46 @@ fn fusedBefore(_: void, left: Fused, right: Fused) bool {
     return left.document_index < right.document_index;
 }
 
+/// S2-T4: what a traced query reports about itself. Filled by
+/// `Engine.queryTraced` and `searchSparseTraced`; read by `report.zig`. A query
+/// with no trace (`null`) does none of this work, and reads no clock.
+pub const Trace = struct {
+    pub const Unmatched = struct {
+        term: []const u8,
+        /// `true`: the term is in the dictionary but occurs in no chunk the
+        /// path prefix and labels allow; `false`: it is not in the dictionary.
+        in_dictionary: bool,
+    };
+
+    allocator: std.mem.Allocator,
+    /// Only used for the monotonic clock, and only when `profile` is set.
+    io: std.Io,
+    profile: bool = false,
+
+    tokenize_ns: u64 = 0,
+    score_ns: u64 = 0,
+    rank_ns: u64 = 0,
+
+    /// Unique analysed query terms (0 means the query analysed to nothing).
+    unique_terms: usize = 0,
+    unmatched: std.ArrayList(Unmatched) = .empty,
+    /// Chunks holding at least one query term (before path and label scope).
+    matched_chunks: usize = 0,
+    /// Candidates each channel offered (positive score, in scope), and the
+    /// depth `candidate_k` allowed (`min(candidate_k, documents)`).
+    lexical_candidates: usize = 0,
+    semantic_candidates: usize = 0,
+    depth: usize = 0,
+
+    /// Nanoseconds on a monotonic clock, or 0 without reading any clock when
+    /// profiling is off.
+    pub fn stamp(trace: ?*const Trace) u64 {
+        const t = trace orelse return 0;
+        if (!t.profile) return 0;
+        return @intCast(std.Io.Clock.awake.now(t.io).nanoseconds);
+    }
+};
+
 /// Ranks only the chunks that can reach the result list. Produces exactly the
 /// output of `searchWithLexicalScores` (same scores, ranks, fused scores and
 /// order, including every `document_index` tiebreak) without ordering the
@@ -292,6 +336,22 @@ pub fn searchSparse(
     workspace: []Result,
     options: SearchOptions,
 ) (SearchError || std.mem.Allocator.Error)![]Result {
+    return searchSparseTraced(Lexical, allocator, lexical, query_vector, documents, workspace, options, null);
+}
+
+/// `searchSparse` that also fills `trace` (matched chunks, candidate counts,
+/// and the score and rank phase times when `trace.profile`). The ranking is
+/// the same code; with `trace == null` no extra work is done.
+pub fn searchSparseTraced(
+    comptime Lexical: type,
+    allocator: std.mem.Allocator,
+    lexical: *Lexical,
+    query_vector: []const f32,
+    documents: []const Document,
+    workspace: []Result,
+    options: SearchOptions,
+    trace: ?*Trace,
+) (SearchError || std.mem.Allocator.Error)![]Result {
     if (workspace.len < @min(options.top_k, documents.len)) return error.WorkspaceTooSmall;
     if (documents.len == 0 or options.top_k == 0) return workspace[0..0];
 
@@ -305,9 +365,12 @@ pub fn searchSparse(
     defer allocator.free(semantic_storage);
     var lexical_top = TopK{ .items = lexical_storage };
     var semantic_top = TopK{ .items = semantic_storage };
+    var matched: usize = 0;
+    const score_start = Trace.stamp(trace);
 
     if (want_lexical) {
         while (lexical.next()) |match| {
+            matched += 1;
             if (!(match.score <= 0)) {
                 const document = documents[match.document_index];
                 if (matchesPath(document.path, options.path_prefix) and
@@ -325,6 +388,14 @@ pub fn searchSparse(
             const score = semanticScore(query_vector, document.vector) catch return error.VectorDimensionMismatch;
             if (!(score <= 0)) semantic_top.offer(.{ .document_index = @intCast(document_index), .score = score });
         }
+    }
+
+    const rank_start = Trace.stamp(trace);
+    if (trace) |t| {
+        t.matched_chunks = matched;
+        t.lexical_candidates = lexical_top.offered;
+        t.semantic_candidates = semantic_top.offered;
+        t.depth = depth;
     }
 
     const lexical_ranked = lexical_top.sorted();
@@ -407,10 +478,14 @@ pub fn searchSparse(
             .fused_score = entry.fused_score,
         };
     }
+    if (trace) |t| if (t.profile) {
+        t.score_ns = rank_start - score_start;
+        t.rank_ns = Trace.stamp(trace) - rank_start;
+    };
     return workspace[0..result_count];
 }
 
-fn matchesPath(path: []const u8, prefix: ?[]const u8) bool {
+pub fn matchesPath(path: []const u8, prefix: ?[]const u8) bool {
     const required = prefix orelse return true;
     return std.mem.startsWith(u8, path, required);
 }

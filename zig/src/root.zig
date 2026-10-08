@@ -10,6 +10,7 @@ pub const lifecycle = @import("lifecycle.zig");
 pub const engine = @import("engine.zig");
 pub const service = @import("service.zig");
 pub const rpc = @import("rpc.zig");
+pub const report = @import("report.zig");
 pub const importer = @import("importer.zig");
 pub const benchmark = @import("benchmark.zig");
 pub const abi = @import("abi.zig");
@@ -27,6 +28,7 @@ pub const chunker_golden_test = @import("chunker_test.zig");
 pub const bm25_conformance_test = @import("bm25_conformance_test.zig");
 pub const incremental_indexing_test = @import("incremental_indexing_test.zig");
 pub const import_analyzer_test = @import("import_analyzer_test.zig");
+pub const query_report_test = @import("query_report_test.zig");
 
 pub const Bm25Parameters = scoring.Bm25Parameters;
 pub const bm25Contribution = scoring.bm25Contribution;
@@ -71,6 +73,7 @@ test "load every engine module test suite" {
     _ = engine;
     _ = service;
     _ = rpc;
+    _ = report;
     _ = importer;
     _ = benchmark;
     _ = abi;
@@ -87,5 +90,6 @@ test "load every engine module test suite" {
     _ = bm25_conformance_test;
     _ = incremental_indexing_test;
     _ = import_analyzer_test;
+    _ = query_report_test;
     _ = cli_test;
 }

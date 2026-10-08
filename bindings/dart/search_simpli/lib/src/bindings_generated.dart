@@ -25,7 +25,7 @@ class SearchSimpliBindings {
       : _lookup = lookup;
 
   /// The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
-  /// "1.1.0". The returned pointer is static storage owned by the library:
+  /// "1.2.0". The returned pointer is static storage owned by the library:
   /// never pass it to ss_free(). Cannot fail.
   ffi.Pointer<ffi.Char> ss_version() {
     return _ss_version();

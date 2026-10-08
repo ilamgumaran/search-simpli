@@ -149,12 +149,35 @@ pub fn scoreQuery(
 /// order -- exactly the terms (and the order) `scoreQuery` accumulates over.
 /// Caller frees the slice.
 pub fn resolveQuery(allocator: std.mem.Allocator, index: Index, query: []const u8) std.mem.Allocator.Error![]TermEntry {
+    return resolveQueryTraced(allocator, index, query, null, true);
+}
+
+/// `resolveQuery` that also records, in `trace` (S2-T4), how many unique terms
+/// the query analysed to and which of them are not in the dictionary
+/// (lowercased, as the index stores them). `lookup == false` still counts the
+/// terms but skips the dictionary (vector mode never uses the result).
+pub fn resolveQueryTraced(
+    allocator: std.mem.Allocator,
+    index: Index,
+    query: []const u8,
+    trace: ?*hybrid.Trace,
+    lookup: bool,
+) std.mem.Allocator.Error![]TermEntry {
     var resolved = std.ArrayList(TermEntry).empty;
     errdefer resolved.deinit(allocator);
     var query_tokens = analysis.TokenIterator.init(query);
     while (query_tokens.next()) |query_token| {
         if (!analysis.isFirstOccurrence(query, query_token)) continue;
-        const term_index = findTerm(index.terms, query_token.bytes) orelse continue;
+        if (trace) |t| t.unique_terms += 1;
+        if (!lookup) continue;
+        const term_index = findTerm(index.terms, query_token.bytes) orelse {
+            if (trace) |t| {
+                const lowered = try t.allocator.dupe(u8, query_token.bytes);
+                for (lowered) |*byte| byte.* = std.ascii.toLower(byte.*);
+                try t.unmatched.append(t.allocator, .{ .term = lowered, .in_dictionary = false });
+            }
+            continue;
+        };
         try resolved.append(allocator, index.terms[term_index]);
     }
     return resolved.toOwnedSlice(allocator);

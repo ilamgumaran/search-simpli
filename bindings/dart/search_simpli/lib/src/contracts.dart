@@ -288,8 +288,147 @@ class AnswerPolicy {
       };
 }
 
-/// `ss_query()`'s JSON object — exactly a `search_knowledge` JSON-RPC
-/// response's `result` value (`zig/include/search_simpli.h`).
+/// The codes of [SearchWarning] (contract 1.2.0). A code this mirror does not
+/// know (a later minor version) is kept as [unknown] with the raw string in
+/// [SearchWarning.codeName].
+enum SearchWarningCode {
+  queryTermUnmatched('query_term_unmatched'),
+  queryEmptyAfterAnalysis('query_empty_after_analysis'),
+  vectorIgnored('vector_ignored'),
+  candidateDepthCut('candidate_depth_cut'),
+  unknown('');
+
+  final String wire;
+  const SearchWarningCode(this.wire);
+
+  static SearchWarningCode fromWire(String value) {
+    for (final code in SearchWarningCode.values) {
+      if (code != unknown && code.wire == value) return code;
+    }
+    return unknown;
+  }
+}
+
+/// One entry of `ss_query`'s `warnings` array (contract 1.2.0): why a result
+/// list is empty or poor.
+class SearchWarning {
+  /// The wire value of `code`, exactly as sent.
+  final String codeName;
+  final String message;
+
+  /// The analysed query word (`query_term_unmatched` only).
+  final String? term;
+
+  const SearchWarning({
+    required this.codeName,
+    required this.message,
+    this.term,
+  });
+
+  SearchWarningCode get code => SearchWarningCode.fromWire(codeName);
+
+  factory SearchWarning.fromJson(Map<String, Object?> json) => SearchWarning(
+        codeName: json['code']! as String,
+        message: json['message']! as String,
+        term: json['term'] as String?,
+      );
+
+  Map<String, Object?> toJson() => {
+        'code': codeName,
+        'message': message,
+        if (term != null) 'term': term,
+      };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SearchWarning &&
+          other.codeName == codeName &&
+          other.message == message &&
+          other.term == term);
+
+  @override
+  int get hashCode => Object.hash(codeName, message, term);
+
+  @override
+  String toString() => 'SearchWarning($codeName${term == null ? '' : ': $term'})';
+}
+
+/// `ss_query`'s `request` object (contract 1.2.0): the request as the engine
+/// used it, defaults filled in.
+class SearchRequestEcho {
+  final String analyzerId;
+  final RetrievalMode retrievalMode;
+  final int topK;
+  final int candidateK;
+  final String? pathPrefix;
+
+  const SearchRequestEcho({
+    required this.analyzerId,
+    required this.retrievalMode,
+    required this.topK,
+    required this.candidateK,
+    this.pathPrefix,
+  });
+
+  factory SearchRequestEcho.fromJson(Map<String, Object?> json) => SearchRequestEcho(
+        analyzerId: json['analyzer_id']! as String,
+        retrievalMode: RetrievalMode.fromJson(json['retrieval_mode']! as String),
+        topK: json['top_k']! as int,
+        candidateK: json['candidate_k']! as int,
+        pathPrefix: json['path_prefix'] as String?,
+      );
+
+  Map<String, Object?> toJson() => {
+        'analyzer_id': analyzerId,
+        'retrieval_mode': retrievalMode.toJson(),
+        'top_k': topK,
+        'candidate_k': candidateK,
+        'path_prefix': pathPrefix,
+      };
+}
+
+/// `ss_query`'s `profile` object (contract 1.2.0), present only for a query
+/// made with `profile: true`. Microseconds on a monotonic clock.
+class SearchProfile {
+  final int tokenizeUs;
+  final int scoreUs;
+  final int rankUs;
+
+  /// Time to write the report up to the `profile` field itself.
+  final int serializeUs;
+
+  /// Chunks holding at least one query term (0 in vector mode).
+  final int matchedChunks;
+
+  const SearchProfile({
+    required this.tokenizeUs,
+    required this.scoreUs,
+    required this.rankUs,
+    required this.serializeUs,
+    required this.matchedChunks,
+  });
+
+  factory SearchProfile.fromJson(Map<String, Object?> json) => SearchProfile(
+        tokenizeUs: json['tokenize_us']! as int,
+        scoreUs: json['score_us']! as int,
+        rankUs: json['rank_us']! as int,
+        serializeUs: json['serialize_us']! as int,
+        matchedChunks: json['matched_chunks']! as int,
+      );
+
+  Map<String, Object?> toJson() => {
+        'tokenize_us': tokenizeUs,
+        'score_us': scoreUs,
+        'rank_us': rankUs,
+        'serialize_us': serializeUs,
+        'matched_chunks': matchedChunks,
+      };
+}
+
+/// `ss_query()`'s JSON object — the `search_knowledge` JSON-RPC `result`
+/// value (`zig/include/search_simpli.h`) plus, since contract 1.2.0, the
+/// `ss_query`-only [warnings], [request] and (opt-in) [profile].
 class SearchKnowledgeResult {
   final String tool;
   final String query;
@@ -298,6 +437,17 @@ class SearchKnowledgeResult {
   final List<SearchResultItem> results;
   final AnswerPolicy answerPolicy;
 
+  /// Why the list is empty or poor (contract 1.2.0). `null` for a result
+  /// that did not come from `ss_query` (a JSON-RPC `search_knowledge`
+  /// result carries none); an empty list from `ss_query` means nothing to say.
+  final List<SearchWarning>? warnings;
+
+  /// The request as used (contract 1.2.0); `null` outside `ss_query`.
+  final SearchRequestEcho? request;
+
+  /// Per-phase timings; `null` unless the query asked for `profile: true`.
+  final SearchProfile? profile;
+
   const SearchKnowledgeResult({
     required this.tool,
     required this.query,
@@ -305,6 +455,9 @@ class SearchKnowledgeResult {
     required this.retrieval,
     required this.results,
     required this.answerPolicy,
+    this.warnings,
+    this.request,
+    this.profile,
   });
 
   factory SearchKnowledgeResult.fromJson(Map<String, Object?> json) =>
@@ -318,6 +471,15 @@ class SearchKnowledgeResult {
             .toList(growable: false),
         answerPolicy:
             AnswerPolicy.fromJson(json['answer_policy']! as Map<String, Object?>),
+        warnings: (json['warnings'] as List<Object?>?)
+            ?.map((e) => SearchWarning.fromJson(e! as Map<String, Object?>))
+            .toList(growable: false),
+        request: json['request'] == null
+            ? null
+            : SearchRequestEcho.fromJson(json['request']! as Map<String, Object?>),
+        profile: json['profile'] == null
+            ? null
+            : SearchProfile.fromJson(json['profile']! as Map<String, Object?>),
       );
 
   Map<String, Object?> toJson() => {
@@ -327,6 +489,9 @@ class SearchKnowledgeResult {
         'retrieval': retrieval.toJson(),
         'results': results.map((r) => r.toJson()).toList(growable: false),
         'answer_policy': answerPolicy.toJson(),
+        if (warnings != null) 'warnings': warnings!.map((w) => w.toJson()).toList(growable: false),
+        if (request != null) 'request': request!.toJson(),
+        if (profile != null) 'profile': profile!.toJson(),
       };
 
   @override
