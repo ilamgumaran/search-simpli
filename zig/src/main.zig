@@ -34,7 +34,7 @@ pub fn main(init: std.process.Init) !void {
         .demo => try runDemo(),
         .benchmark => |b| try benchmark.run(init.io, init.gpa, b.documents, b.dimensions, b.queries, b.mode),
         .init_demo => |path| try initDemoSnapshot(init.io, path),
-        .import_json => |i| try importSnapshot(init.io, init.gpa, i.snapshot, i.file),
+        .import_json => |i| try importSnapshot(init.io, init.gpa, i.snapshot, i.file, i.keep_generations),
         .serve => |s| if (s.http) |address|
             try serveHttp(init.io, init.gpa, s.path, address)
         else
@@ -73,6 +73,7 @@ fn importSnapshot(
     allocator: std.mem.Allocator,
     snapshot_path: []const u8,
     interchange_path: []const u8,
+    keep_generations: ?usize,
 ) !void {
     const cwd = std.Io.Dir.cwd();
     var source_file = try cwd.openFile(io, interchange_path, .{});
@@ -85,7 +86,7 @@ fn importSnapshot(
 
     var snapshot_dir = try cwd.createDirPathOpen(io, snapshot_path, .{});
     defer snapshot_dir.close(io);
-    const report = try importer.importJson(snapshot_dir, io, allocator, source);
+    const report = try importer.importJsonKeeping(snapshot_dir, io, allocator, source, keep_generations);
     std.debug.print(
         "imported generation {d}: documents={d} terms={d} postings={d} vector_dimensions={d}\n",
         .{ report.generation, report.documents, report.terms, report.postings, report.vector_dimensions },

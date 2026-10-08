@@ -12,6 +12,17 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S2-T5, 2026-10-08)
+
+**S2-T5 is `verified` and merged to `main`** (branch `task/S2-T5` `41a0186`, second round; Verdict in `docs/tasks/S2-T5.md`).
+
+- **Directory sync.** Every publish path (`index`, `index --update`, `import-json`, `ss_index_folder`, `ss_import_json`, `init-demo`) now fsyncs the directory after the section renames and again after the `MANIFEST` rename. If the first sync fails, `MANIFEST` is untouched and the new sections are removed. If the second fails, the error is returned and nothing is deleted.
+- **`keep_generations: N`** (opt-in, N >= 1). It is set through `ss_index_folder`'s options, a top-level field in the `ss_import_json` payload (a publication option, not snapshot content; the contract stays `1.1.0`), and `--keep-generations` on the CLI. After a successful publish it deletes generations older than the newest N, and only complete generations count toward N. Reports then carry `pruned_files`/`prune_failures`.
+- **`"recovered": "missing_section"`** (additive). An `--update` whose `MANIFEST` names a missing or unreadable section re-indexes every file instead of publishing an empty generation.
+- **`lifecycle.scan`** now separates `superseded_*` from `orphan_*`.
+- **Libraries:** dylib 417,496 B, stamp `a80c90b9…ef55`.
+- **Open (non-blocking):** with `MANIFEST` missing but `INDEX-STATE.json` present, `--update` still publishes an empty generation (older than this task). The Dart wrapper does not yet expose `keepGenerations` on `IndexFolderOptions` or `recovered` on the report.
+
 ## Standalone platform status (S2-T1, 2026-10-08)
 
 **S2-T1 is `verified` and merged to `main`** (branch `task/S2-T1` `ff8a902`; Verdict in `docs/tasks/S2-T1.md`). `ss_import_json` / `searchd import-json` now accept `"analyzer_id": "analyzer-v2"`. They build the same index `searchd index` builds from the same chunks: 33/33 published files are byte-identical, and 814/814 full ranked lists are identical over 11 corpora. `ascii-alnum-v1` imports are byte-identical to before (21/21). The Tamil fixture through import is success@1 0.00 → 1.00.
