@@ -30,7 +30,14 @@ The neutral interchange contract at `contracts/snapshot-interchange.schema.json`
 - stable chunk id, source path, line range, and text;
 - one stored vector per chunk when a vector model is present.
 
-Zig rebuilds lexical postings with the declared `ascii-alnum-v1` analyzer. It does not import Python term tables. This makes analyzer ownership explicit and prevents silent lexical incompatibility.
+Zig rebuilds lexical postings with the analyzer the file declares in `analyzer_id`. It does not import Python term tables. This makes analyzer ownership explicit and prevents silent lexical incompatibility. The schema accepts two values (contract 1.1.0, S2-T1):
+
+| `analyzer_id` | Tokenization | Since |
+|---|---|---|
+| `ascii-alnum-v1` | ASCII letters and digits, case-insensitive. Text in any other script yields no terms, and `café` is indexed as `caf`. `export_zig.py` writes this by default. | 1.0.0 |
+| `analyzer-v2` | Unicode: NFC, simple case folding, Unicode letter and digit categories (`zig/src/analyzer_v2.zig`). The import builds the same index `searchd index` builds from the same chunks: same tokens, document frequencies, term frequencies, document lengths and `MANIFEST`, byte for byte. Use it for any text that is not plain ASCII. `export_zig.py --analyzer analyzer-v2` writes it. | 1.1.0 |
+
+Any other value is rejected (`UnsupportedAnalyzer`, `SS_ERR_INVALID_ARGUMENT` through `ss_import_json`). The recorded id also decides how queries on the snapshot are tokenized, so an `analyzer-v2` snapshot is queried with the Unicode tokenizer.
 
 JSON is appropriate for a small, inspectable bootstrap and golden tests. A production bulk loader should eventually use a bounded streaming or binary transport while preserving the same logical contract.
 
@@ -83,7 +90,7 @@ That gateway is now implemented and fails closed when the model is unavailable o
 ## Remaining boundaries
 
 - `cooccurrence-ppmi-v1` is a ground-up controlled baseline, not a modern pretrained semantic model.
-- Python's Unicode-aware token behavior and Zig's ASCII analyzer are not yet equivalent; the interchange declares Zig's current analyzer rather than hiding that limitation.
+- Python's Unicode-aware token behavior and Zig's `ascii-alnum-v1` analyzer are not equivalent; the interchange declares which analyzer Zig must use rather than hiding that limitation. `analyzer-v2` matches Python's `[^\W_]+` + casefold except for full (multi-codepoint) case folding (`zig/src/analyzer_v2.zig`).
 - Path-prefix scope is a retrieval constraint, not authenticated authorization.
 - Full JSON materialization is not suitable for very large imports.
 - Content-hash preparation can now reuse unchanged extraction/vectors before exporting another complete snapshot. There is still no filesystem watcher, incremental interchange stream, tombstone segment, or reader-safe generation garbage collection.

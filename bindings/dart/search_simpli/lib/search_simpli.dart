@@ -18,6 +18,7 @@ library;
 
 export 'src/contracts.dart';
 export 'src/contracts_version.dart' show expectedContractsVersion;
+export 'src/snapshot_interchange.dart';
 export 'src/library_loader.dart' show openSearchSimpliLibrary;
 export 'src/search_simpli_base.dart'
     show

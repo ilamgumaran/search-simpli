@@ -8,12 +8,18 @@ from .core import load_index
 
 
 INTERCHANGE_VERSION = 1
+# The default stays the ASCII analyzer every interchange file named before
+# contract 1.1.0, so existing exports are unchanged.
 ZIG_ANALYZER_ID = "ascii-alnum-v1"
+# contracts/snapshot-interchange.schema.json's `analyzer_id` enum (1.1.0).
+SUPPORTED_ANALYZER_IDS = ("ascii-alnum-v1", "analyzer-v2")
 
 
-def build_interchange(index: dict, *, generation: int = 1) -> dict:
+def build_interchange(index: dict, *, generation: int = 1, analyzer_id: str = ZIG_ANALYZER_ID) -> dict:
     if isinstance(generation, bool) or not isinstance(generation, int) or generation < 1:
         raise ValueError("generation must be a positive integer")
+    if analyzer_id not in SUPPORTED_ANALYZER_IDS:
+        raise ValueError(f"analyzer_id must be one of {', '.join(SUPPORTED_ANALYZER_IDS)}")
     embedding = index.get("embedding")
     embedding_model_id = embedding["model_id"] if embedding else "none"
     documents = []
@@ -41,7 +47,7 @@ def build_interchange(index: dict, *, generation: int = 1) -> dict:
     return {
         "format_version": INTERCHANGE_VERSION,
         "generation": generation,
-        "analyzer_id": ZIG_ANALYZER_ID,
+        "analyzer_id": analyzer_id,
         "embedding_model_id": embedding_model_id,
         "documents": documents,
     }
@@ -60,8 +66,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("index", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--generation", type=int, default=1)
+    parser.add_argument(
+        "--analyzer",
+        choices=SUPPORTED_ANALYZER_IDS,
+        default=ZIG_ANALYZER_ID,
+        help="analyzer_id Zig tokenizes with (default: %(default)s; analyzer-v2 is Unicode-aware)",
+    )
     args = parser.parse_args(argv)
-    payload = build_interchange(load_index(args.index), generation=args.generation)
+    payload = build_interchange(load_index(args.index), generation=args.generation, analyzer_id=args.analyzer)
     save_interchange(payload, args.out)
     print(
         json.dumps(

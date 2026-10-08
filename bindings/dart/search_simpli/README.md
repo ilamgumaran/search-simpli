@@ -18,6 +18,7 @@ bindings/dart/search_simpli/
       search_simpli_base.dart   # SearchSimpli: the class you actually use
       contracts.dart            # typed result classes (SearchKnowledgeResult, SnapshotStatus, ...)
       contracts_version.dart    # the CONTRACTS_VERSION this package expects
+      snapshot_interchange.dart # SnapshotInterchangeV1: the JSON importSnapshotJson publishes
       library_loader.dart       # finds/opens the right native library for the platform
   native/
     macos-arm64/libsearch_simpli.dylib
@@ -75,7 +76,7 @@ wrote — see the [root README](../../../README.md) and
 
 - `SearchSimpli.open(String snapshotDir, {DynamicLibrary? library})` — opens
   a snapshot. Asserts the native library's `ss_version()` equals this
-  package's `CONTRACTS_VERSION` (`1.0.0`) before touching `snapshotDir` at
+  package's `CONTRACTS_VERSION` (`1.1.0`) before touching `snapshotDir` at
   all; throws `ContractsVersionMismatchException` on a mismatch and
   `SearchSimpliException` if `ss_open` itself fails (missing/corrupt
   snapshot, I/O error — see the thrown exception's `message`, which is
@@ -100,7 +101,12 @@ wrote — see the [root README](../../../README.md) and
   library})` — a free function (it takes a directory, not an open handle),
   publishes neutral interchange JSON as a new generation, exactly what
   `searchd import-json` / `ss_import_json` do. Returns the published
-  generation number.
+  generation number. Build the JSON with `SnapshotInterchangeV1`
+  (`jsonEncode(snapshot.toJson())`); its `analyzer` is
+  `InterchangeAnalyzer.asciiAlnumV1` (`"ascii-alnum-v1"`, ASCII only: no
+  terms for Tamil or other non-ASCII scripts) or, since contract 1.1.0,
+  `InterchangeAnalyzer.analyzerV2` (`"analyzer-v2"`, Unicode; the same index
+  `indexFolder` builds from the same chunks).
 - `SearchSimpli.indexFolder(String dirPath, String folderPath, {IndexFolderOptions
   options, DynamicLibrary? library})` → `IndexFolderReport` (docs/tasks/S1-T4.md
   criterion 1) — indexes `folderPath` and atomically publishes (or

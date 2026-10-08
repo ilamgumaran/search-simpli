@@ -282,9 +282,12 @@ class SearchSimpli {
 }
 
 /// Publishes [bytesJson] (neutral interchange JSON,
-/// `contracts/snapshot-interchange.schema.json`) as a new generation under
-/// [dirPath] — `ss_import_json`, exactly what `searchd import-json` does.
-/// Returns the published generation number (>= 1).
+/// `contracts/snapshot-interchange.schema.json`; build it with
+/// `SnapshotInterchangeV1`) as a new generation under [dirPath] —
+/// `ss_import_json`, exactly what `searchd import-json` does. Its
+/// `analyzer_id` is `"ascii-alnum-v1"` or, since contract 1.1.0,
+/// `"analyzer-v2"` (Unicode: see `InterchangeAnalyzer`). Returns the
+/// published generation number (>= 1).
 ///
 /// A free function, not a [SearchSimpli] method, because it takes a
 /// directory path rather than an open handle (mirrors

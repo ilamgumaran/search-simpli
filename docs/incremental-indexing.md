@@ -174,6 +174,10 @@ cd zig
 zig build run -- import-json /srv/search /tmp/generation-5.json
 ```
 
+The export writes `"analyzer_id": "ascii-alnum-v1"` unless given
+`--analyzer analyzer-v2` (contract 1.1.0), in which case `import-json`
+tokenizes with the same Unicode analyzer as the native path above.
+
 Python reuses extracted chunks and vectors for unchanged files (matched by
 SHA-256 content hash, the same idea as the native path above but computed
 and stored independently); Zig still constructs a complete document/vector

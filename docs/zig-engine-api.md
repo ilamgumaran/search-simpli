@@ -64,13 +64,13 @@ Status: implemented in `zig/src/abi.zig`; header in `zig/include/search_simpli.h
 
 | Function | Summary |
 |---|---|
-| `ss_version()` | Returns `contracts/CONTRACTS_VERSION` (e.g. `"1.0.0"`), baked in at build time via a `build.zig`-generated `build_options` module (`@embedFile` cannot reach outside `zig/`'s module package). |
+| `ss_version()` | Returns `contracts/CONTRACTS_VERSION` (e.g. `"1.1.0"`), baked in at build time via a `build.zig`-generated `build_options` module (`@embedFile` cannot reach outside `zig/`'s module package). |
 | `ss_open(dir)` | Opens a published snapshot directory into freshly allocated workspaces; returns an opaque handle or `NULL`. |
 | `ss_close(handle)` | Frees a handle's workspaces. |
 | `ss_status(handle)` | JSON with the same fields as JSON-RPC `index_status`'s `result`. |
 | `ss_query(handle, text, vec, dims, k, opts)` | JSON identical to `search_knowledge`'s `result` for an equivalent request. `opts` is a JSON object: `retrieval_mode`, `candidate_k`, `path_prefix`, `principal_labels` (all optional). |
 | `ss_evidence(handle, ids)` | Looks up stored chunks by id (`{"ids": [...], "path_prefix": ..., "principal_labels": [...]}`); returns a JSON array, one entry per id, in `read_chunk`'s shape or `{"chunk_id": "...", "found": false}`. |
-| `ss_import_json(dir, bytes)` | Validates and publishes neutral interchange JSON, exactly like `searchd import-json`; returns the generation or a negative `ss_error_code`. |
+| `ss_import_json(dir, bytes)` | Validates and publishes neutral interchange JSON, exactly like `searchd import-json`; returns the generation or a negative `ss_error_code`. `analyzer_id` is `"ascii-alnum-v1"` (ASCII) or, since contract 1.1.0, `"analyzer-v2"` (Unicode; the same index `searchd index` builds from the same chunks). |
 | `ss_free(ptr)` | Frees a pointer returned by `ss_status`/`ss_query`/`ss_evidence`. |
 | `ss_last_error()` | Thread-local diagnostic string for the most recent failure on the calling thread. |
 
