@@ -490,6 +490,7 @@ fn errorCode(err: anyerror) i64 {
         // `indexFolderIncremental` no longer raise it.)
         error.InvalidAnalyzer,
         error.AnalyzerMismatch,
+        error.InvalidKeepGenerations,
         => SS_ERR_INVALID_ARGUMENT,
 
         else => SS_ERR_INTERNAL,
@@ -523,6 +524,9 @@ const IndexFolderOptions = struct {
     update: bool = false,
     max_file_bytes: ?u64 = null,
     max_total_bytes: ?u64 = null,
+    /// S2-T5, opt-in: keep only the newest N generations (N >= 1) after a
+    /// successful publish. Absent: nothing is deleted.
+    keep_generations: ?usize = null,
 };
 
 /// Index the folder at `folder_path` and atomically publish (or
@@ -596,7 +600,9 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
     const caps = indexer.Caps{
         .max_file_bytes = options.max_file_bytes orelse default_caps.max_file_bytes,
         .max_total_bytes = options.max_total_bytes orelse default_caps.max_total_bytes,
+        .keep_generations = options.keep_generations,
     };
+    if (caps.keep_generations != null and caps.keep_generations.? == 0) return error.InvalidKeepGenerations;
 
     const gio = io();
     var root = try std.Io.Dir.cwd().openDir(gio, folder_path, .{ .iterate = true });
@@ -643,6 +649,16 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
         try json.write(report.terms);
         try json.objectField("postings");
         try json.write(report.postings);
+        if (report.recovered) |why| {
+            try json.objectField("recovered");
+            try json.write(why);
+        }
+        if (options.keep_generations != null) {
+            try json.objectField("pruned_files");
+            try json.write(report.pruned_files);
+            try json.objectField("prune_failures");
+            try json.write(report.prune_failures);
+        }
         try json.endObject();
     } else {
         const generation = try generation_alloc.nextFreeGeneration(arena_allocator, gio, out_dir);
@@ -680,6 +696,12 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
         try json.write(report.terms);
         try json.objectField("postings");
         try json.write(report.postings);
+        if (options.keep_generations != null) {
+            try json.objectField("pruned_files");
+            try json.write(report.pruned_files);
+            try json.objectField("prune_failures");
+            try json.write(report.prune_failures);
+        }
         try json.endObject();
     }
     const owned = try out.toOwnedSliceSentinel(0);
@@ -734,6 +756,56 @@ test "ss_index_folder publishes and re-publishes, full and incremental" {
     const query_json = ss_query(handle, "hybrid", null, 0, 1, "{\"retrieval_mode\":\"lexical\"}") orelse return error.QueryFailed;
     defer ss_free(query_json);
     try std.testing.expect(std.mem.indexOf(u8, std.mem.span(query_json), "a.md") != null);
+}
+// === S2-T5: keep_generations through the C ABI ===============================
+test "keep_generations prunes through ss_index_folder and ss_import_json; zero is rejected" {
+    const io_impl = io();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/a.md", .data = "hybrid retrieval combines lexical and semantic ranks\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+
+    try std.testing.expect(ss_index_folder(out_z, notes_z, "{\"keep_generations\":0}") == null);
+    // Default: nothing deleted, and the report has no prune fields.
+    for (0..3) |_| ss_free(ss_index_folder(out_z, notes_z, null) orelse return error.IndexFailed);
+    var out_dir = try tmp.dir.openDir(io_impl, "out", .{ .iterate = true });
+    defer out_dir.close(io_impl);
+    try std.testing.expectEqual(@as(usize, 3), try countSections(io_impl, out_dir, ".hybseg"));
+
+    const json_ptr = ss_index_folder(out_z, notes_z, "{\"keep_generations\":2}") orelse return error.IndexFailed;
+    defer ss_free(json_ptr);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(json_ptr), "\"pruned_files\":4") != null); // gens 1,2: 2 files each
+    try std.testing.expectEqual(@as(usize, 2), try countSections(io_impl, out_dir, ".hybseg"));
+    try std.testing.expectEqual(@as(usize, 2), try countSections(io_impl, out_dir, ".hyblex"));
+
+    // ss_import_json: optional field in the payload.
+    const import_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/imp", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(import_z);
+    const doc = "{\"id\":\"one\",\"path\":\"a.md\",\"start_line\":1,\"end_line\":1,\"text\":\"search evidence\",\"vector\":[],\"required_labels\":[]}";
+    inline for (.{ 1, 2, 3 }) |g| {
+        const payload = std.fmt.comptimePrint("{{\"format_version\":1,\"generation\":{d},\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"keep_generations\":1,\"documents\":[{s}]}}", .{ g, doc });
+        try std.testing.expectEqual(@as(i64, g), ss_import_json(import_z, payload.ptr, payload.len));
+    }
+    var imp_dir = try tmp.dir.openDir(io_impl, "imp", .{ .iterate = true });
+    defer imp_dir.close(io_impl);
+    try std.testing.expectEqual(@as(usize, 1), try countSections(io_impl, imp_dir, ".hybseg"));
+    const zero = "{\"format_version\":1,\"generation\":4,\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"keep_generations\":0,\"documents\":[]}";
+    try std.testing.expectEqual(SS_ERR_INVALID_ARGUMENT, ss_import_json(import_z, zero.ptr, zero.len));
+    const handle = ss_open(import_z) orelse return error.OpenFailed;
+    ss_close(handle);
+}
+
+fn countSections(io_impl: std.Io, dir: std.Io.Dir, suffix: []const u8) !usize {
+    var n: usize = 0;
+    var it = dir.iterate();
+    while (try it.next(io_impl)) |entry| {
+        if (entry.kind == .file and std.mem.endsWith(u8, entry.name, suffix)) n += 1;
+    }
+    return n;
 }
 // === end S1-T3 ==============================================================
 

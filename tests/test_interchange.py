@@ -23,7 +23,8 @@ def schema_errors(value, schema: dict, where: str = "$") -> list[str]:
     later schema edit cannot be silently ignored here.
     """
     known = {"$schema", "$id", "title", "type", "const", "enum", "required", "properties",
-             "additionalProperties", "items", "minimum", "minLength", "uniqueItems"}
+             "additionalProperties", "items", "minimum", "minLength", "uniqueItems",
+             "description"}
     unknown = set(schema) - known
     if unknown:
         return [f"{where}: validator does not implement {sorted(unknown)}"]
@@ -122,6 +123,27 @@ class InterchangeTests(unittest.TestCase):
             self.assertNotEqual(schema_errors(payload, schema), [], rejected)
             with self.assertRaisesRegex(ValueError, "analyzer_id"):
                 build_interchange(index, generation=1, analyzer_id=rejected)
+
+    def test_keep_generations_is_an_optional_publication_option(self) -> None:
+        """S2-T5 ruling 2: `keep_generations` is optional, >= 1, described as an
+        option rather than snapshot content, composes with `analyzer-v2`, and
+        the schema still rejects unknown fields."""
+        schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+        self.assertNotIn("keep_generations", schema["required"])
+        self.assertIn("not snapshot content", schema["properties"]["keep_generations"]["description"])
+        self.assertIn("ignores it", schema["properties"]["keep_generations"]["description"])
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "a.md").write_text("alpha beta", encoding="utf-8")
+            index = build_index(root, vector_mode="cooccurrence")
+        payload = build_interchange(index, generation=1, analyzer_id="analyzer-v2")
+        self.assertEqual(schema_errors(payload, schema), [])
+        both = dict(payload, keep_generations=2)
+        self.assertEqual(both["analyzer_id"], "analyzer-v2")
+        self.assertEqual(schema_errors(both, schema), [])
+        for bad in (0, -1, 1.5, "2"):
+            self.assertNotEqual(schema_errors(dict(payload, keep_generations=bad), schema), [], bad)
+        self.assertNotEqual(schema_errors(dict(payload, keep_generation=2), schema), [])
 
     def test_export_zig_cli_writes_schema_valid_files(self) -> None:
         """The `export_zig.py` command itself: default stays `ascii-alnum-v1`;
