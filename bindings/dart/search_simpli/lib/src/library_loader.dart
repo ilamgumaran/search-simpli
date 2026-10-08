@@ -9,16 +9,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-/// The `native/<subdir>/<filename>` layout for the current desktop platform
-/// (macOS or Linux; Android uses the OS's own jniLibs convention instead —
-/// see [openSearchSimpliLibrary]'s doc comment), or `null` on any other
-/// platform.
-({String subdir, String filename})? _desktopNativeLayout() {
-  if (Platform.isMacOS) return (subdir: 'macos-arm64', filename: 'libsearch_simpli.dylib');
-  if (Platform.isLinux) return (subdir: 'linux-x64', filename: 'libsearch_simpli.so');
-  return null;
-}
-
 /// Finds this package's own root directory by locating and parsing the
 /// nearest `.dart_tool/package_config.json` (searched upward from both
 /// [Directory.current] and the running script's directory) and reading the
@@ -90,56 +80,101 @@ String? _rootUriFromPackageConfig(File configFile, String packageName) {
 ///    as a jniLib for `arm64-v8a` (see this package's README and
 ///    `example/android/app/build.gradle.kts` for a worked Flutter example);
 ///    once packaged, the OS's own dynamic linker finds it by soname.
-/// 3. **macOS/Linux:** `native/<subdir>/<filename>` under this package's own
-///    root, resolved package-relatively (docs/tasks/S1-T4.md criterion 2) so
-///    a plain `path:` dependency works with no environment variable at all:
-///    first via `_resolvePackageRootViaPackageConfig` (accurate for any
-///    consumer, any working directory), then — only if that fails, e.g. no
-///    `package_config.json` has been generated yet — the two paths this
-///    package's own documented dev workflow already covered: the current
-///    working directory (`dart test`/`dart run` invoked from inside
-///    `bindings/dart/search_simpli/`) and the running script's directory.
-DynamicLibrary openSearchSimpliLibrary() {
-  final override = Platform.environment['SEARCH_SIMPLI_LIBRARY_PATH'];
+/// 3. **macOS/Linux, a built app bundle (docs/tasks/S1-T10.md, order fixed
+///    by docs/tasks/S1-T11.md):** first the app's own copy,
+///    `<executable dir>/../Frameworks/libsearch_simpli.dylib` (macOS) or
+///    `<executable dir>/lib/libsearch_simpli.so` (Linux), from
+///    [Platform.resolvedExecutable], as an exact path so a stray copy in the
+///    cwd or `/usr/local/lib` can never win; then the bare file name through
+///    the loader's search path (`@rpath` resolves it to `Contents/Frameworks`
+///    in a macOS app, after the cwd and the engine's other rpaths).
+/// 4. **macOS/Linux, a development checkout:** `native/<subdir>/<filename>`
+///    under this package's own root, resolved package-relatively
+///    (docs/tasks/S1-T4.md criterion 2) so a plain `path:` dependency works
+///    with no environment variable at all: first via
+///    `_resolvePackageRootViaPackageConfig`, then the current working
+///    directory and the running script's directory.
+///
+/// A candidate that fails to open never stops the search; the final
+/// [StateError] lists every candidate tried, in order.
+DynamicLibrary openSearchSimpliLibrary() => openSearchSimpliLibraryWith(
+      environment: Platform.environment,
+      opener: DynamicLibrary.open,
+    );
+
+/// [openSearchSimpliLibrary] with its inputs injected so tests can record the
+/// order of attempts. Not exported from `package:search_simpli/search_simpli.dart`.
+DynamicLibrary openSearchSimpliLibraryWith({
+  required Map<String, String> environment,
+  required DynamicLibrary Function(String) opener,
+  bool Function(String)? exists,
+  String? packageRootOverride,
+  String? executablePath,
+  String? scriptDir,
+  String? cwd,
+  bool? isMacOS,
+  bool? isLinux,
+  bool? isAndroid,
+}) {
+  final override = environment['SEARCH_SIMPLI_LIBRARY_PATH'];
   if (override != null && override.isNotEmpty) {
-    return DynamicLibrary.open(override);
+    return opener(override);
   }
 
-  if (Platform.isAndroid) {
-    return DynamicLibrary.open('libsearch_simpli.so');
+  if (isAndroid ?? Platform.isAndroid) {
+    return opener('libsearch_simpli.so');
   }
 
-  final layout = _desktopNativeLayout();
-  if (layout != null) {
-    final relative = ['native', layout.subdir, layout.filename];
-    final candidates = <String>[];
+  final mac = isMacOS ?? Platform.isMacOS;
+  final linux = isLinux ?? Platform.isLinux;
+  if (mac || linux) {
+    final subdir = mac ? 'macos-arm64' : 'linux-x64';
+    final filename = mac ? 'libsearch_simpli.dylib' : 'libsearch_simpli.so';
+    final relative = ['native', subdir, filename];
+    final fileExists = exists ?? (String p) => File(p).existsSync();
+    final exeDir = path.dirname(executablePath ?? Platform.resolvedExecutable);
+    final script = scriptDir ?? path.dirname(Platform.script.toFilePath());
+    final workDir = cwd ?? Directory.current.path;
 
-    final packageRoot = _resolvePackageRootViaPackageConfig('search_simpli');
+    // (path, needsFileCheck): the app's own copy comes first, as an exact
+    // path, so a stray copy on dyld's search path (cwd, /usr/local/lib) can
+    // never beat it; the bare name goes straight to the loader.
+    final candidates = <({String name, bool check})>[
+      (
+        name: mac
+            ? path.join(exeDir, '..', 'Frameworks', filename)
+            : path.join(exeDir, 'lib', filename),
+        check: true,
+      ),
+      (name: filename, check: false),
+    ];
+    final packageRoot = packageRootOverride ??
+        _resolvePackageRootViaPackageConfig('search_simpli');
     if (packageRoot != null) {
-      candidates.add(path.joinAll([packageRoot, ...relative]));
+      candidates.add((name: path.joinAll([packageRoot, ...relative]), check: true));
     }
     candidates.addAll([
-      path.joinAll([Directory.current.path, ...relative]),
-      path.joinAll([
-        path.dirname(Platform.script.toFilePath()),
-        '..',
-        ...relative,
-      ]),
-      path.joinAll([
-        path.dirname(Platform.script.toFilePath()),
-        ...relative,
-      ]),
+      (name: path.joinAll([workDir, ...relative]), check: true),
+      (name: path.joinAll([script, '..', ...relative]), check: true),
+      (name: path.joinAll([script, ...relative]), check: true),
     ]);
+
+    final failures = <String>[];
     for (final candidate in candidates) {
-      if (File(candidate).existsSync()) {
-        return DynamicLibrary.open(candidate);
+      if (candidate.check && !fileExists(candidate.name)) continue;
+      try {
+        return opener(candidate.name);
+      } on ArgumentError catch (e) {
+        failures.add('${candidate.name} ($e)');
       }
     }
     throw StateError(
-      'search_simpli: could not find ${layout.filename}. Tried:\n'
-      '${candidates.join('\n')}\n'
+      'search_simpli: could not find $filename. Tried:\n'
+      '${candidates.map((c) => c.name).join('\n')}\n'
+      '${failures.isEmpty ? '' : 'Candidates that existed or were tried by name but failed to open:\n${failures.join('\n')}\n'}'
       'Depend on search_simpli as a path: dependency and run `pub get`/'
       '`flutter pub get` first, run from inside bindings/dart/search_simpli/, '
+      'bundle the library in the app (Contents/Frameworks on macOS), '
       'or set SEARCH_SIMPLI_LIBRARY_PATH to an explicit path.',
     );
   }
