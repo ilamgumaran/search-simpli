@@ -499,9 +499,8 @@ fn runSearch(
     top_k: usize,
 ) ![]hybrid.Result {
     const result_output = try allocator.alloc(hybrid.Result, engine.documents.len);
-    const score_output = try allocator.alloc(f32, engine.documents.len);
     const options = hybrid.SearchOptions{ .top_k = top_k, .candidate_k = @max(top_k, engine.documents.len), .retrieval_mode = .lexical };
-    return engine.queryTokenized(allocator, query_text, &.{}, score_output, result_output, options);
+    return engine.queryTokenized(allocator, query_text, &.{}, result_output, options);
 }
 
 pub fn runQuery(

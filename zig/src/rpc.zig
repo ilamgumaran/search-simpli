@@ -6,7 +6,6 @@ const std = @import("std");
 
 pub const Workspaces = struct {
     query_vector: []f32,
-    lexical_scores: []f32,
     results: []hybrid.Result,
     evidence: []engine_module.Evidence,
     sources: []service_module.Source,
@@ -147,7 +146,6 @@ fn handleSearch(
             .path_prefix = path_prefix,
             .principal_labels = principal_labels,
         },
-        workspaces.lexical_scores,
         workspaces.results,
         workspaces.evidence,
     ) catch {
@@ -518,7 +516,6 @@ test "JSON RPC search returns scoped cited evidence" {
         .lexical_index = index,
     } };
     var query_vector: [2]f32 = undefined;
-    var scores: [documents.len]f32 = undefined;
     var results: [documents.len]hybrid.Result = undefined;
     var evidence: [documents.len]engine_module.Evidence = undefined;
     var sources: [documents.len]service_module.Source = undefined;
@@ -528,7 +525,7 @@ test "JSON RPC search returns scoped cited evidence" {
         service,
         "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"search_knowledge\",\"params\":{\"query\":\"exact search\",\"retrieval_mode\":\"vector\",\"path_prefix\":\"public/\",\"query_vector\":[1,0],\"top_k\":1}}",
         std.testing.allocator,
-        .{ .query_vector = &query_vector, .lexical_scores = &scores, .results = &results, .evidence = &evidence, .sources = &sources },
+        .{ .query_vector = &query_vector, .results = &results, .evidence = &evidence, .sources = &sources },
         &output.writer,
     );
     var parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, output.written(), .{});
@@ -555,11 +552,10 @@ test "JSON RPC validates vectors methods scoped reads and principal labels" {
         .lexical_index = index,
     } };
     var vector: [2]f32 = undefined;
-    var scores: [1]f32 = undefined;
     var results: [1]hybrid.Result = undefined;
     var evidence: [1]engine_module.Evidence = undefined;
     var sources: [1]service_module.Source = undefined;
-    const workspaces = Workspaces{ .query_vector = &vector, .lexical_scores = &scores, .results = &results, .evidence = &evidence, .sources = &sources };
+    const workspaces = Workspaces{ .query_vector = &vector, .results = &results, .evidence = &evidence, .sources = &sources };
 
     var missing_vector_output: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer missing_vector_output.deinit();
@@ -617,11 +613,10 @@ test "JSON RPC returns parse errors and status" {
         .lexical_index = .{ .terms = &.{}, .postings = &.{}, .document_lengths = &.{}, .average_document_length = 0 },
     } };
     var no_vectors: [0]f32 = .{};
-    var no_scores: [0]f32 = .{};
     var no_results: [0]hybrid.Result = .{};
     var no_evidence: [0]engine_module.Evidence = .{};
     var no_sources: [0]service_module.Source = .{};
-    const workspaces = Workspaces{ .query_vector = &no_vectors, .lexical_scores = &no_scores, .results = &no_results, .evidence = &no_evidence, .sources = &no_sources };
+    const workspaces = Workspaces{ .query_vector = &no_vectors, .results = &no_results, .evidence = &no_evidence, .sources = &no_sources };
     var parse_output: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer parse_output.deinit();
     try handleLine(service, "not-json", std.testing.allocator, workspaces, &parse_output.writer);

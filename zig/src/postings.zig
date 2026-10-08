@@ -145,6 +145,96 @@ pub fn scoreQuery(
     return scores;
 }
 
+/// The dictionary entries of a query's unique terms, in first-occurrence
+/// order -- exactly the terms (and the order) `scoreQuery` accumulates over.
+/// Caller frees the slice.
+pub fn resolveQuery(allocator: std.mem.Allocator, index: Index, query: []const u8) std.mem.Allocator.Error![]TermEntry {
+    var resolved = std.ArrayList(TermEntry).empty;
+    errdefer resolved.deinit(allocator);
+    var query_tokens = analysis.TokenIterator.init(query);
+    while (query_tokens.next()) |query_token| {
+        if (!analysis.isFirstOccurrence(query, query_token)) continue;
+        const term_index = findTerm(index.terms, query_token.bytes) orelse continue;
+        try resolved.append(allocator, index.terms[term_index]);
+    }
+    return resolved.toOwnedSlice(allocator);
+}
+
+/// Sparse BM25 scoring of a resolved query: yields only the chunks that
+/// contain at least one query term, in ascending `document_index`, with the
+/// per-term contributions summed in query-term order -- the same additions in
+/// the same order as `scoreQuery`, so every score is bit-identical to the
+/// dense array's entry. Needs each term's postings to be strictly ascending by
+/// document (the segment decoder rejects anything else) and keeps no
+/// per-chunk state: only one cursor per query term.
+pub const SparseScorer = struct {
+    index: Index,
+    terms: []const TermEntry,
+    cursors: []usize,
+    parameters: scoring.Bm25Parameters,
+
+    /// `cursors` must hold `terms.len` entries.
+    pub fn init(index: Index, terms: []const TermEntry, cursors: []usize, parameters: scoring.Bm25Parameters) SparseScorer {
+        std.debug.assert(cursors.len >= terms.len);
+        @memset(cursors[0..terms.len], 0);
+        return .{ .index = index, .terms = terms, .cursors = cursors[0..terms.len], .parameters = parameters };
+    }
+
+    fn contribution(scorer: *const SparseScorer, entry: TermEntry, posting: Posting) f32 {
+        const document_index: usize = posting.document_index;
+        return scoring.bm25Contribution(
+            @floatFromInt(posting.term_frequency),
+            @floatFromInt(scorer.index.document_lengths[document_index]),
+            scorer.index.average_document_length,
+            entry.document_frequency,
+            @intCast(scorer.index.document_lengths.len),
+            scorer.parameters,
+        );
+    }
+
+    fn postingsOf(scorer: *const SparseScorer, entry: TermEntry) []const Posting {
+        return scorer.index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
+    }
+
+    pub fn next(scorer: *SparseScorer) ?hybrid.LexicalMatch {
+        var smallest: ?u32 = null;
+        for (scorer.terms, scorer.cursors) |entry, cursor| {
+            const list = scorer.postingsOf(entry);
+            if (cursor >= list.len) continue;
+            const candidate = list[cursor].document_index;
+            if (smallest == null or candidate < smallest.?) smallest = candidate;
+        }
+        const document_index = smallest orelse return null;
+        var score: f32 = 0;
+        for (scorer.terms, scorer.cursors) |entry, *cursor| {
+            const list = scorer.postingsOf(entry);
+            if (cursor.* >= list.len or list[cursor.*].document_index != document_index) continue;
+            score += scorer.contribution(entry, list[cursor.*]);
+            cursor.* += 1;
+        }
+        return .{ .document_index = document_index, .score = score };
+    }
+
+    /// The score `next` yields for `document_index` (0 when no query term
+    /// occurs in it), found by binary search; same summation order.
+    pub fn scoreOf(scorer: *const SparseScorer, document_index: usize) f32 {
+        var score: f32 = 0;
+        for (scorer.terms) |entry| {
+            const list = scorer.postingsOf(entry);
+            var low: usize = 0;
+            var high: usize = list.len;
+            while (low < high) {
+                const middle = low + (high - low) / 2;
+                if (list[middle].document_index < document_index) low = middle + 1 else high = middle;
+            }
+            if (low < list.len and list[low].document_index == document_index) {
+                score += scorer.contribution(entry, list[low]);
+            }
+        }
+        return score;
+    }
+};
+
 pub fn findTerm(terms: []const TermEntry, term: []const u8) ?usize {
     for (terms, 0..) |entry, index| {
         if (analysis.eqlCaseFoldAscii(entry.term, term)) return index;
