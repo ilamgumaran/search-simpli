@@ -12,9 +12,9 @@ const ascii_docs =
     \\{"format_version":1,"generation":1,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"none","documents":[
     \\{"id":"a","path":"public/a.md","start_line":1,"end_line":1,"text":"hybrid retrieval ranks chunks","vector":[],"required_labels":[]},
     \\{"id":"b","path":"public/b.md","start_line":1,"end_line":1,"text":"hybrid search ranks","vector":[],"required_labels":[]},
-    \\{"id":"c","path":"private/c.md","start_line":1,"end_line":1,"text":"secret hybrid zebra","vector":[],"required_labels":[]},
+    \\{"id":"c","path":"private/c.md","start_line":1,"end_line":1,"text":"secret hybrid Zebra","vector":[],"required_labels":[]},
     \\{"id":"d","path":"public/d.md","start_line":1,"end_line":1,"text":"retrieval of things","vector":[],"required_labels":[]},
-    \\{"id":"e","path":"public/e.md","start_line":1,"end_line":1,"text":"labelled quokka","vector":[],"required_labels":["tenant:acme"]}
+    \\{"id":"e","path":"public/e.md","start_line":1,"end_line":1,"text":"labelled Quokka","vector":[],"required_labels":["tenant:acme"]}
     \\]}
 ;
 
@@ -241,12 +241,12 @@ test "candidate_depth_cut stays quiet in single-channel modes when candidate_k >
 
 /// The ABI rejects `candidate_k < top_k`, so the single-channel positive case
 /// is tested on the writer directly.
-fn depthCutCount(mode: hybrid_module.RetrievalMode, top_k: usize, candidate_k: usize, offered: usize) !usize {
+fn depthCutCount(mode: hybrid_module.RetrievalMode, top_k: usize, candidate_k: usize, offered: usize, semantic: usize) !usize {
     var trace = hybrid_module.Trace{ .allocator = std.testing.allocator, .io = std.testing.io };
     trace.unique_terms = 1;
     trace.depth = @min(candidate_k, offered);
     trace.lexical_candidates = offered;
-    trace.semantic_candidates = 0;
+    trace.semantic_candidates = semantic;
     var out: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer out.deinit();
     var json = std.json.Stringify{ .writer = &out.writer };
@@ -259,10 +259,104 @@ fn depthCutCount(mode: hybrid_module.RetrievalMode, top_k: usize, candidate_k: u
 }
 
 test "candidate_depth_cut in lexical mode needs candidate_k < top_k" {
-    try std.testing.expectEqual(@as(usize, 1), try depthCutCount(.lexical, 5, 2, 9875));
-    try std.testing.expectEqual(@as(usize, 0), try depthCutCount(.lexical, 5, 100, 9875));
-    try std.testing.expectEqual(@as(usize, 0), try depthCutCount(.lexical, 5, 5, 9875));
-    try std.testing.expectEqual(@as(usize, 1), try depthCutCount(.hybrid, 5, 100, 9875));
+    try std.testing.expectEqual(@as(usize, 1), try depthCutCount(.lexical, 5, 2, 9875, 0));
+    try std.testing.expectEqual(@as(usize, 0), try depthCutCount(.lexical, 5, 100, 9875, 0));
+    try std.testing.expectEqual(@as(usize, 0), try depthCutCount(.lexical, 5, 5, 9875, 0));
+    // Hybrid: only when both channels contributed (or candidate_k < top_k).
+    try std.testing.expectEqual(@as(usize, 1), try depthCutCount(.hybrid, 5, 100, 9875, 40));
+    try std.testing.expectEqual(@as(usize, 0), try depthCutCount(.hybrid, 5, 100, 9875, 0));
+    try std.testing.expectEqual(@as(usize, 1), try depthCutCount(.hybrid, 5, 2, 9875, 0));
+}
+
+fn manyDocs(allocator: std.mem.Allocator, count: usize) ![]u8 {
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    errdefer out.deinit();
+    try out.writer.writeAll("{\"format_version\":1,\"generation\":1,\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"documents\":[");
+    for (0..count) |i| {
+        if (i != 0) try out.writer.writeAll(",");
+        try out.writer.print("{{\"id\":\"d{d}\",\"path\":\"p/{d}.md\",\"start_line\":1,\"end_line\":1,\"text\":\"common filler {d}\",\"vector\":[],\"required_labels\":[]}}", .{ i, i, i });
+    }
+    try out.writer.writeAll("]}");
+    return out.toOwnedSlice();
+}
+
+test "hybrid on a snapshot without vectors is one channel: a common word does not warn" {
+    const json = try manyDocs(std.testing.allocator, 400);
+    defer std.testing.allocator.free(json);
+    var fixture = try Fixture.open(json);
+    defer fixture.close();
+    // Default mode (hybrid), default depth, 400 matches against candidate_k 100.
+    var report = try run(fixture, "common", &.{}, 5, null);
+    defer report.deinit();
+    try std.testing.expectEqual(@as(usize, 0), report.value.object.get("warnings").?.array.items.len);
+    var lexical = try run(fixture, "common", &.{}, 5, "{\"retrieval_mode\":\"lexical\",\"profile\":true}");
+    defer lexical.deinit();
+    try std.testing.expectEqual(@as(usize, 0), lexical.value.object.get("warnings").?.array.items.len);
+    try std.testing.expectEqual(@as(i64, 400), lexical.value.object.get("profile").?.object.get("matched_chunks").?.integer);
+}
+
+fn warningsText(report: std.json.Value, buffer: []u8) ![]const u8 {
+    var writer: std.Io.Writer = .fixed(buffer);
+    var json = std.json.Stringify{ .writer = &writer };
+    try json.write(report.object.get("warnings").?);
+    return writer.buffered();
+}
+
+test "a word hidden by labels or prefix and a word absent everywhere get identical warnings" {
+    var fixture = try Fixture.open(ascii_docs);
+    defer fixture.close();
+    // `quokka` exists only in a chunk that needs tenant:acme; `zzmiss` nowhere.
+    // Same single-word shape, and the same term text so the bytes can be compared.
+    var hidden = try run(fixture, "quokka", &.{}, 5, "{\"retrieval_mode\":\"lexical\",\"profile\":true}");
+    defer hidden.deinit();
+    var absent = try run(fixture, "zzmiss", &.{}, 5, "{\"retrieval_mode\":\"lexical\",\"profile\":true}");
+    defer absent.deinit();
+    var a: [512]u8 = undefined;
+    var b: [512]u8 = undefined;
+    const hidden_text = try warningsText(hidden.value, &a);
+    const absent_text = try warningsText(absent.value, &b);
+    // Only the echoed term differs.
+    const expected_hidden = "[{\"code\":\"query_term_unmatched\",\"message\":\"the term was not found in the searched files\",\"term\":\"quokka\"}]";
+    try std.testing.expectEqualStrings(expected_hidden, hidden_text);
+    try std.testing.expectEqualStrings(
+        "[{\"code\":\"query_term_unmatched\",\"message\":\"the term was not found in the searched files\",\"term\":\"zzmiss\"}]",
+        absent_text,
+    );
+    // The profile crosses the same wall: a hidden word counts 0, like an absent one.
+    try std.testing.expectEqual(@as(i64, 0), hidden.value.object.get("profile").?.object.get("matched_chunks").?.integer);
+    try std.testing.expectEqual(@as(i64, 0), absent.value.object.get("profile").?.object.get("matched_chunks").?.integer);
+    // Hidden by path prefix: `zebra` is only under private/.
+    var by_path = try run(fixture, "zebra", &.{}, 5, "{\"retrieval_mode\":\"lexical\",\"path_prefix\":\"public/\",\"profile\":true}");
+    defer by_path.deinit();
+    try std.testing.expectEqual(@as(i64, 0), by_path.value.object.get("profile").?.object.get("matched_chunks").?.integer);
+    try std.testing.expectEqual(@as(usize, 1), countWarnings(by_path.value, "query_term_unmatched", "zebra"));
+    // With the label, the chunk is in scope and counted.
+    var visible = try run(fixture, "quokka", &.{}, 5, "{\"retrieval_mode\":\"lexical\",\"principal_labels\":[\"tenant:acme\"],\"profile\":true}");
+    defer visible.deinit();
+    try std.testing.expectEqual(@as(i64, 1), visible.value.object.get("profile").?.object.get("matched_chunks").?.integer);
+}
+
+test "the term of a filtered-out word is the analysed query term, not the dictionary's spelling" {
+    var fixture = try Fixture.open(ascii_docs);
+    defer fixture.close();
+    // The corpus spells them `Zebra` and `Quokka`.
+    var report = try run(fixture, "zebra ZEBRA Quokka", &.{}, 5, "{\"retrieval_mode\":\"lexical\",\"path_prefix\":\"public/\"}");
+    defer report.deinit();
+    try std.testing.expectEqual(@as(usize, 1), countWarnings(report.value, "query_term_unmatched", "zebra"));
+    try std.testing.expectEqual(@as(usize, 1), countWarnings(report.value, "query_term_unmatched", "quokka"));
+    try std.testing.expectEqual(@as(usize, 0), countWarnings(report.value, "query_term_unmatched", "Zebra"));
+}
+
+test "warnings come in query order, each term once" {
+    var fixture = try Fixture.open(ascii_docs);
+    defer fixture.close();
+    // miss, hidden by path, miss, hidden by label, repeated miss, visible word.
+    var report = try run(fixture, "zzmiss Zebra yymiss Quokka ZZMISS hybrid", &.{}, 5, "{\"retrieval_mode\":\"lexical\",\"path_prefix\":\"public/\"}");
+    defer report.deinit();
+    const items = report.value.object.get("warnings").?.array.items;
+    try std.testing.expectEqual(@as(usize, 4), items.len);
+    const want = [_][]const u8{ "zzmiss", "zebra", "yymiss", "quokka" };
+    for (items, want) |item, term| try std.testing.expectEqualStrings(term, item.object.get("term").?.string);
 }
 
 test "request echoes what was used, defaults included" {

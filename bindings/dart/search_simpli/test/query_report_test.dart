@@ -15,7 +15,7 @@ const String _interchange =
     '{"id":"b","path":"public/b.md","start_line":1,"end_line":1,'
     '"text":"hybrid search ranks","vector":[],"required_labels":[]},'
     '{"id":"c","path":"other/c.md","start_line":1,"end_line":1,'
-    '"text":"hybrid zebra","vector":[],"required_labels":[]}'
+    '"text":"hybrid Zebra","vector":[],"required_labels":[]}'
     ']}';
 
 void main() {
@@ -53,12 +53,22 @@ void main() {
     expect(result.warnings!.map((w) => w.code), [SearchWarningCode.vectorIgnored]);
   });
 
-  test('a shallow candidate_k reports the cut', () {
-    final result = engine.query('hybrid', topK: 1, candidateK: 2, mode: RetrievalMode.hybrid);
-    expect(result.warnings!.map((w) => w.code), [SearchWarningCode.candidateDepthCut]);
-    // Single-channel mode with candidate_k >= top_k: the list cannot change.
+  test('a shallow candidate_k on one channel does not warn', () {
+    // No vectors in this snapshot: hybrid is one channel, and the cut cannot
+    // change the list (the two-channel case is the conformance golden).
+    final hybrid = engine.query('hybrid', topK: 1, candidateK: 2, mode: RetrievalMode.hybrid);
+    expect(hybrid.warnings, isEmpty);
     final lexical = engine.query('hybrid', topK: 1, candidateK: 2, mode: RetrievalMode.lexical);
     expect(lexical.warnings, isEmpty);
+  });
+
+  test('a word hidden by the path prefix is reported like an absent word', () {
+    final result = engine.query('Zebra zzmiss', topK: 5, mode: RetrievalMode.lexical, pathPrefix: 'public/', profile: true);
+    expect(result.warnings!.map((w) => (w.code, w.message, w.term)), [
+      (SearchWarningCode.queryTermUnmatched, 'the term was not found in the searched files', 'zebra'),
+      (SearchWarningCode.queryTermUnmatched, 'the term was not found in the searched files', 'zzmiss'),
+    ]);
+    expect(result.profile!.matchedChunks, 0);
   });
 
   test('request echoes the defaults and the options used', () {

@@ -86,7 +86,7 @@
           },
           "message": { "type": "string" },
           "term": {
-            "description": "The analysed query term (query_term_unmatched only).",
+            "description": "The analysed query term (query_term_unmatched only), never the index's spelling. One warning per distinct term, in query order.",
             "type": "string"
           }
         },

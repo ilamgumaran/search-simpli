@@ -273,11 +273,13 @@ fn fusedBefore(_: void, left: Fused, right: Fused) bool {
 /// `Engine.queryTraced` and `searchSparseTraced`; read by `report.zig`. A query
 /// with no trace (`null`) does none of this work, and reads no clock.
 pub const Trace = struct {
+    /// A query word that was not found in the files this query may search:
+    /// the analysed query term (lowercased under ascii-alnum-v1, folded under
+    /// analyzer-v2), never the dictionary's spelling. One message covers
+    /// "in no chunk" and "only in chunks outside the scope", so the report
+    /// cannot tell a caller which hidden files hold a word.
     pub const Unmatched = struct {
         term: []const u8,
-        /// `true`: the term is in the dictionary but occurs in no chunk the
-        /// path prefix and labels allow; `false`: it is not in the dictionary.
-        in_dictionary: bool,
     };
 
     allocator: std.mem.Allocator,
@@ -291,8 +293,16 @@ pub const Trace = struct {
 
     /// Unique analysed query terms (0 means the query analysed to nothing).
     unique_terms: usize = 0,
+    /// In query order, each analysed term once (first occurrence).
     unmatched: std.ArrayList(Unmatched) = .empty,
-    /// Chunks holding at least one query term (before path and label scope).
+    /// The scope that decides whether a dictionary term "matches" (set by
+    /// `Engine.queryTraced` before the terms are resolved).
+    scope_documents: []const Document = &.{},
+    scope_prefix: ?[]const u8 = null,
+    scope_labels: []const []const u8 = &.{},
+    /// Chunks in scope holding at least one query term. Chunks the path
+    /// prefix or the caller's labels exclude are not counted, so a hidden word
+    /// gives the same count as an absent one (0).
     matched_chunks: usize = 0,
     /// Candidates each channel offered (positive score, in scope), and the
     /// depth `candidate_k` allowed (`min(candidate_k, documents)`).
@@ -365,12 +375,10 @@ pub fn searchSparseTraced(
     defer allocator.free(semantic_storage);
     var lexical_top = TopK{ .items = lexical_storage };
     var semantic_top = TopK{ .items = semantic_storage };
-    var matched: usize = 0;
     const score_start = Trace.stamp(trace);
 
     if (want_lexical) {
         while (lexical.next()) |match| {
-            matched += 1;
             if (!(match.score <= 0)) {
                 const document = documents[match.document_index];
                 if (matchesPath(document.path, options.path_prefix) and
@@ -392,7 +400,7 @@ pub fn searchSparseTraced(
 
     const rank_start = Trace.stamp(trace);
     if (trace) |t| {
-        t.matched_chunks = matched;
+        t.matched_chunks = lexical_top.offered;
         t.lexical_candidates = lexical_top.offered;
         t.semantic_candidates = semantic_top.offered;
         t.depth = depth;

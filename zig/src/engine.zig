@@ -112,6 +112,11 @@ pub const Engine = struct {
         trace: ?*hybrid.Trace,
     ) ![]hybrid.Result {
         const lookup = options.retrieval_mode != .vector;
+        if (trace) |t| {
+            t.scope_documents = engine.documents;
+            t.scope_prefix = options.path_prefix;
+            t.scope_labels = options.principal_labels;
+        }
         const tokenize_start = hybrid.Trace.stamp(trace);
         const terms = if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id))
             try postings.resolveQueryTraced(allocator, engine.lexical_index, query_text, trace, lookup)
@@ -125,37 +130,12 @@ pub const Engine = struct {
         };
         defer allocator.free(terms);
         if (trace) |t| {
-            if (lookup) try engine.noteOutOfScopeTerms(t, terms, options);
             if (t.profile) t.tokenize_ns = hybrid.Trace.stamp(trace) - tokenize_start;
         }
         const cursors = try allocator.alloc(usize, terms.len);
         defer allocator.free(cursors);
         var scorer = postings.SparseScorer.init(engine.lexical_index, terms, cursors, options.bm25);
         return hybrid.searchSparseTraced(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options, trace);
-    }
-
-    /// A term found in the dictionary can still match nothing the caller may
-    /// see (all its chunks are outside `path_prefix` or need labels the
-    /// principal lacks). Report those as unmatched too. Stops at the first
-    /// chunk in scope, so an unscoped query reads one posting per term.
-    fn noteOutOfScopeTerms(engine: Engine, trace: *hybrid.Trace, terms: []const postings.TermEntry, options: hybrid.SearchOptions) !void {
-        for (terms) |entry| {
-            const list = engine.lexical_index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
-            var in_scope = false;
-            for (list) |posting| {
-                const document = engine.documents[posting.document_index];
-                if (hybrid.matchesPath(document.path, options.path_prefix) and
-                    hybrid.isAuthorized(document.required_labels, options.principal_labels))
-                {
-                    in_scope = true;
-                    break;
-                }
-            }
-            if (!in_scope) try trace.unmatched.append(trace.allocator, .{
-                .term = try trace.allocator.dupe(u8, entry.term),
-                .in_dictionary = true,
-            });
-        }
     }
 
     pub fn evidence(engine: Engine, result: hybrid.Result) Evidence {

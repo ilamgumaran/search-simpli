@@ -11,7 +11,7 @@
 //! | `query_term_unmatched`       | yes     | yes    | no     |
 //! | `query_empty_after_analysis` | yes     | yes    | no     |
 //! | `vector_ignored`             | when a vector was passed | when passed and the snapshot has no vectors | same |
-//! | `candidate_depth_cut`        | lexical list, if candidate_k < top_k | each channel | semantic list, if candidate_k < top_k |
+//! | `candidate_depth_cut`        | only if candidate_k < top_k | each channel, when both channels offered candidates | only if candidate_k < top_k |
 
 const hybrid = @import("hybrid.zig");
 const std = @import("std");
@@ -55,12 +55,14 @@ fn warning(json: *std.json.Stringify, code: []const u8, message: []const u8, ter
 }
 
 /// Whether a channel that offered `offered` candidates gets a
-/// `candidate_depth_cut`. In hybrid mode any cut changes the fusion. In a
-/// single-channel mode it can change the list only when `candidate_k < top_k`,
-/// so a default-depth query on a common word does not warn.
+/// `candidate_depth_cut`: only when the cut can change the returned list. In
+/// hybrid mode that needs both channels to have offered candidates (a hybrid
+/// query on a snapshot without vectors is one channel); in a single-channel
+/// mode it needs `candidate_k < top_k`. Either way `candidate_k < top_k` counts.
 fn depthCutApplies(extras: Extras, offered: usize) bool {
     if (offered <= extras.trace.depth) return false;
-    return extras.mode == .hybrid or extras.candidate_k < extras.top_k;
+    if (extras.candidate_k < extras.top_k) return true;
+    return extras.mode == .hybrid and extras.trace.lexical_candidates > 0 and extras.trace.semantic_candidates > 0;
 }
 
 fn depthCut(json: *std.json.Stringify, channel: []const u8, offered: usize, extras: Extras) !void {
@@ -89,12 +91,7 @@ fn writeWarnings(json: *std.json.Stringify, extras: Extras) !void {
             try warning(json, "query_empty_after_analysis", "the query has no searchable terms after analysis", null);
         }
         for (trace.unmatched.items) |item| {
-            try warning(
-                json,
-                "query_term_unmatched",
-                if (item.in_dictionary) "the term was not found in the files this query may search" else "the term was not found in the searched files",
-                item.term,
-            );
+            try warning(json, "query_term_unmatched", "the term was not found in the searched files", item.term);
         }
     }
     if (extras.vector_ignored) |reason| try warning(json, "vector_ignored", reason.message(), null);

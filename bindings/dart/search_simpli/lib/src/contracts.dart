@@ -398,7 +398,8 @@ class SearchProfile {
   /// Time to write the report up to the `profile` field itself.
   final int serializeUs;
 
-  /// Chunks holding at least one query term (0 in vector mode).
+  /// In-scope chunks (inside the path prefix and the caller's labels) holding
+  /// at least one query term; hidden chunks are not counted (0 in vector mode).
   final int matchedChunks;
 
   const SearchProfile({

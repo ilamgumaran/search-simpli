@@ -187,11 +187,12 @@ pub fn resolveTokensTraced(
         if (trace) |t| t.unique_terms += 1;
         if (!lookup) continue;
         const term_index = findExact(index.terms, query_token) orelse {
-            if (trace) |t| {
-                try t.unmatched.append(t.allocator, .{ .term = try t.allocator.dupe(u8, query_token), .in_dictionary = false });
-            }
+            if (trace) |t| try postings.noteUnmatched(t, query_token, false);
             continue;
         };
+        if (trace) |t| {
+            if (!postings.hasInScopePosting(index, index.terms[term_index], t)) try postings.noteUnmatched(t, query_token, false);
+        }
         try resolved.append(allocator, index.terms[term_index]);
     }
     return resolved.toOwnedSlice(allocator);
