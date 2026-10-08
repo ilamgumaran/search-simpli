@@ -130,9 +130,8 @@ test "S2-T1: Tamil fixture published through import-json with analyzer-v2 finds 
         const relevant = query_value.object.get("relevant").?.array.items[0].object.get("path").?.string;
         // Judgments name paths relative to fixtures/tamil; the index root is passages/.
         const expected = relevant["passages/".len..];
-        const scores = try arena.alloc(f32, engine.documents.len);
         const results_buffer = try arena.alloc(hybrid.Result, engine.documents.len);
-        const results = try engine.queryTokenized(arena, query_text, &.{}, scores, results_buffer, .{
+        const results = try engine.queryTokenized(arena, query_text, &.{}, results_buffer, .{
             .top_k = 10,
             .candidate_k = engine.documents.len,
             .retrieval_mode = .lexical,

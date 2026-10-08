@@ -40,7 +40,6 @@ pub const Service = struct {
         query_text: []const u8,
         query_vector: []const f32,
         options: hybrid.SearchOptions,
-        lexical_score_output: []f32,
         result_output: []hybrid.Result,
         evidence_output: []engine_module.Evidence,
     ) ![]engine_module.Evidence {
@@ -48,7 +47,6 @@ pub const Service = struct {
             allocator,
             query_text,
             query_vector,
-            lexical_score_output,
             result_output,
             options,
         );
@@ -160,20 +158,19 @@ test "service exposes scoped search read list and status operations" {
         .lexical_index = lexical_index,
     } };
 
-    var score_storage: [documents.len]f32 = undefined;
     var result_storage: [documents.len]hybrid.Result = undefined;
     var evidence_storage: [documents.len]engine_module.Evidence = undefined;
     const lexical = try service.searchKnowledge(std.testing.allocator, "exact search", &.{ 1, 0 }, .{
         .path_prefix = "public/",
         .retrieval_mode = .lexical,
-    }, &score_storage, &result_storage, &evidence_storage);
+    }, &result_storage, &evidence_storage);
     try std.testing.expectEqualStrings("public-lexical", lexical[0].chunk_id);
     for (lexical) |evidence| try std.testing.expect(std.mem.startsWith(u8, evidence.path, "public/"));
 
     const vector = try service.searchKnowledge(std.testing.allocator, "exact search", &.{ 1, 0 }, .{
         .path_prefix = "public/",
         .retrieval_mode = .vector,
-    }, &score_storage, &result_storage, &evidence_storage);
+    }, &result_storage, &evidence_storage);
     try std.testing.expectEqualStrings("public-vector", vector[0].chunk_id);
 
     try std.testing.expect(service.readChunk("private", "public/", &.{}) == null);
@@ -208,10 +205,9 @@ test "service reports evidence and source capacity errors" {
         .documents = &document,
         .lexical_index = index,
     } };
-    var scores: [1]f32 = undefined;
     var results: [1]hybrid.Result = undefined;
     var no_evidence: [0]engine_module.Evidence = .{};
-    try std.testing.expectError(error.EvidenceCapacityTooSmall, service.searchKnowledge(std.testing.allocator, "search", &.{}, .{}, &scores, &results, &no_evidence));
+    try std.testing.expectError(error.EvidenceCapacityTooSmall, service.searchKnowledge(std.testing.allocator, "search", &.{}, .{}, &results, &no_evidence));
     var no_sources: [0]Source = .{};
     try std.testing.expectError(error.SourceCapacityTooSmall, service.listSources(null, &.{}, &no_sources));
 }
@@ -234,15 +230,14 @@ test "service applies required labels to search read and source listing" {
         .documents = &documents,
         .lexical_index = index,
     } };
-    var scores: [documents.len]f32 = undefined;
     var results: [documents.len]hybrid.Result = undefined;
     var evidence: [documents.len]engine_module.Evidence = undefined;
-    const anonymous = try service.searchKnowledge(std.testing.allocator, "confidential launch", &.{}, .{}, &scores, &results, &evidence);
+    const anonymous = try service.searchKnowledge(std.testing.allocator, "confidential launch", &.{}, .{}, &results, &evidence);
     try std.testing.expectEqual(@as(usize, 1), anonymous.len);
     try std.testing.expectEqualStrings("public", anonymous[0].chunk_id);
     const tenant = try service.searchKnowledge(std.testing.allocator, "confidential launch", &.{}, .{
         .principal_labels = &.{"tenant:acme"},
-    }, &scores, &results, &evidence);
+    }, &results, &evidence);
     try std.testing.expectEqualStrings("private", tenant[0].chunk_id);
     try std.testing.expect(service.readChunk("private", null, &.{}) == null);
     try std.testing.expect(service.readChunk("private", null, &.{"tenant:acme"}) != null);

@@ -155,6 +155,261 @@ fn finishSearch(
     return results[0..@min(result_count, options.top_k)];
 }
 
+/// One chunk a lexical source matched, with its summed BM25 score.
+pub const LexicalMatch = struct {
+    document_index: u32,
+    score: f32,
+};
+
+/// Lexical scores supplied as a dense array (one entry per document). Adapter
+/// for callers and tests that already hold dense scores; the persistent
+/// postings path uses `postings.SparseScorer` and never builds this array.
+pub const DenseLexical = struct {
+    scores: []const f32,
+    position: usize = 0,
+
+    pub fn next(source: *DenseLexical) ?LexicalMatch {
+        while (source.position < source.scores.len) {
+            const index = source.position;
+            source.position += 1;
+            if (source.scores[index] != 0) return .{ .document_index = @intCast(index), .score = source.scores[index] };
+        }
+        return null;
+    }
+
+    pub fn scoreOf(source: *const DenseLexical, document_index: usize) f32 {
+        return source.scores[document_index];
+    }
+};
+
+const Candidate = struct {
+    document_index: u32,
+    score: f32,
+};
+
+fn candidateBefore(left: Candidate, right: Candidate) bool {
+    if (left.score != right.score) return left.score > right.score;
+    return left.document_index < right.document_index;
+}
+
+fn candidateLess(_: void, left: Candidate, right: Candidate) bool {
+    return candidateBefore(left, right);
+}
+
+/// Bounded selection of the `capacity` best candidates under
+/// `candidateBefore`, a total order (the document index breaks every tie), so
+/// the survivors are exactly the first `capacity` of a full sort. The heap
+/// root is the worst survivor.
+const TopK = struct {
+    items: []Candidate,
+    count: usize = 0,
+
+    fn offer(top: *TopK, candidate: Candidate) void {
+        if (top.items.len == 0) return;
+        if (top.count < top.items.len) {
+            top.items[top.count] = candidate;
+            top.count += 1;
+            top.siftUp(top.count - 1);
+        } else if (candidateBefore(candidate, top.items[0])) {
+            top.items[0] = candidate;
+            top.siftDown(0);
+        }
+    }
+
+    // Invariant: a parent never comes before (is never better than) its children.
+    fn siftUp(top: *TopK, start: usize) void {
+        var child = start;
+        while (child > 0) {
+            const parent = (child - 1) / 2;
+            if (!candidateBefore(top.items[parent], top.items[child])) break;
+            std.mem.swap(Candidate, &top.items[parent], &top.items[child]);
+            child = parent;
+        }
+    }
+
+    fn siftDown(top: *TopK, start: usize) void {
+        var parent = start;
+        while (true) {
+            var worst = parent;
+            const left = 2 * parent + 1;
+            const right = left + 1;
+            if (left < top.count and candidateBefore(top.items[worst], top.items[left])) worst = left;
+            if (right < top.count and candidateBefore(top.items[worst], top.items[right])) worst = right;
+            if (worst == parent) return;
+            std.mem.swap(Candidate, &top.items[parent], &top.items[worst]);
+            parent = worst;
+        }
+    }
+
+    fn sorted(top: *TopK) []Candidate {
+        std.sort.pdq(Candidate, top.items[0..top.count], {}, candidateLess);
+        return top.items[0..top.count];
+    }
+};
+
+const Fused = struct {
+    document_index: u32,
+    lexical_rank: u32 = 0,
+    semantic_rank: u32 = 0,
+    lexical_score: f32 = 0,
+    semantic_score: f32 = 0,
+    fused_score: f32 = 0,
+};
+
+fn fusedByDocument(_: void, left: Fused, right: Fused) bool {
+    return left.document_index < right.document_index;
+}
+
+fn fusedBefore(_: void, left: Fused, right: Fused) bool {
+    if (left.fused_score != right.fused_score) return left.fused_score > right.fused_score;
+    return left.document_index < right.document_index;
+}
+
+/// Ranks only the chunks that can reach the result list. Produces exactly the
+/// output of `searchWithLexicalScores` (same scores, ranks, fused scores and
+/// order, including every `document_index` tiebreak) without ordering the
+/// corpus:
+///
+/// * the lexical channel ranks only chunks the source matched (nonzero score),
+///   keeping a bounded top `candidate_k`;
+/// * the semantic channel runs only when `query_vector` is non-empty and the
+///   mode is not `.lexical` (the caller passes an empty vector for a snapshot
+///   with zero vector dimensions);
+/// * fusion runs over the union of the two candidate sets.
+///
+/// `lexical` is any type with `next() ?LexicalMatch` (matches in ascending
+/// `document_index`, scores summed in the same order as the dense path) and
+/// `scoreOf(document_index) f32`. Scratch comes from `allocator` and is
+/// released before returning: proportional to `min(candidate_k, documents)`,
+/// never to the corpus. `workspace` only has to hold `min(top_k, documents)`
+/// results.
+pub fn searchSparse(
+    comptime Lexical: type,
+    allocator: std.mem.Allocator,
+    lexical: *Lexical,
+    query_vector: []const f32,
+    documents: []const Document,
+    workspace: []Result,
+    options: SearchOptions,
+) (SearchError || std.mem.Allocator.Error)![]Result {
+    if (workspace.len < @min(options.top_k, documents.len)) return error.WorkspaceTooSmall;
+    if (documents.len == 0 or options.top_k == 0) return workspace[0..0];
+
+    const want_lexical = options.retrieval_mode != .vector;
+    const want_semantic = options.retrieval_mode != .lexical and query_vector.len != 0;
+    const depth = @min(options.candidate_k, documents.len);
+
+    const lexical_storage = try allocator.alloc(Candidate, if (want_lexical) depth else 0);
+    defer allocator.free(lexical_storage);
+    const semantic_storage = try allocator.alloc(Candidate, if (want_semantic) depth else 0);
+    defer allocator.free(semantic_storage);
+    var lexical_top = TopK{ .items = lexical_storage };
+    var semantic_top = TopK{ .items = semantic_storage };
+
+    if (want_lexical) {
+        while (lexical.next()) |match| {
+            if (!(match.score <= 0)) {
+                const document = documents[match.document_index];
+                if (matchesPath(document.path, options.path_prefix) and
+                    isAuthorized(document.required_labels, options.principal_labels))
+                {
+                    lexical_top.offer(.{ .document_index = match.document_index, .score = match.score });
+                }
+            }
+        }
+    }
+    if (want_semantic) {
+        for (documents, 0..) |document, document_index| {
+            if (!matchesPath(document.path, options.path_prefix) or
+                !isAuthorized(document.required_labels, options.principal_labels)) continue;
+            const score = semanticScore(query_vector, document.vector) catch return error.VectorDimensionMismatch;
+            if (!(score <= 0)) semantic_top.offer(.{ .document_index = @intCast(document_index), .score = score });
+        }
+    }
+
+    const lexical_ranked = lexical_top.sorted();
+    const semantic_ranked = semantic_top.sorted();
+
+    const union_storage = try allocator.alloc(Fused, lexical_ranked.len + semantic_ranked.len);
+    defer allocator.free(union_storage);
+    for (lexical_ranked, 0..) |candidate, index| {
+        union_storage[index] = .{
+            .document_index = candidate.document_index,
+            .lexical_rank = @intCast(index + 1),
+            .lexical_score = candidate.score,
+        };
+    }
+    for (semantic_ranked, 0..) |candidate, index| {
+        union_storage[lexical_ranked.len + index] = .{
+            .document_index = candidate.document_index,
+            .semantic_rank = @intCast(index + 1),
+            .semantic_score = candidate.score,
+        };
+    }
+    std.sort.pdq(Fused, union_storage, {}, fusedByDocument);
+
+    // Merge the (at most two) entries of one document.
+    var merged: usize = 0;
+    for (union_storage) |entry| {
+        if (merged > 0 and union_storage[merged - 1].document_index == entry.document_index) {
+            const into = &union_storage[merged - 1];
+            if (entry.lexical_rank != 0) {
+                into.lexical_rank = entry.lexical_rank;
+                into.lexical_score = entry.lexical_score;
+            }
+            if (entry.semantic_rank != 0) {
+                into.semantic_rank = entry.semantic_rank;
+                into.semantic_score = entry.semantic_score;
+            }
+        } else {
+            union_storage[merged] = entry;
+            merged += 1;
+        }
+    }
+    const fused = union_storage[0..merged];
+    for (fused) |*entry| {
+        entry.fused_score = scoring.reciprocalRankContribution(if (entry.lexical_rank != 0) entry.lexical_rank else null, options.rrf_k) +
+            scoring.reciprocalRankContribution(if (entry.semantic_rank != 0) entry.semantic_rank else null, options.rrf_k);
+    }
+    std.sort.pdq(Fused, fused, {}, fusedBefore);
+
+    var result_count: usize = 0;
+    while (result_count < fused.len and fused[result_count].fused_score > 0) result_count += 1;
+    result_count = @min(result_count, options.top_k);
+
+    for (fused[0..result_count], workspace[0..result_count]) |entry, *result| {
+        const document = documents[entry.document_index];
+        // A chunk ranked by one channel still reports its score in the other
+        // (the dense path scored every chunk), even when that rank is past
+        // `candidate_k`.
+        const lexical_score = if (!want_lexical)
+            0
+        else if (entry.lexical_rank != 0)
+            entry.lexical_score
+        else
+            lexical.scoreOf(entry.document_index);
+        const semantic_score = if (!want_semantic)
+            0
+        else if (entry.semantic_rank != 0)
+            entry.semantic_score
+        else
+            semanticScore(query_vector, document.vector) catch return error.VectorDimensionMismatch;
+        result.* = .{
+            .document_index = entry.document_index,
+            .document_id = document.id,
+            .path = document.path,
+            .start_line = document.start_line,
+            .end_line = document.end_line,
+            .lexical_score = lexical_score,
+            .semantic_score = semantic_score,
+            .lexical_rank = if (entry.lexical_rank != 0) entry.lexical_rank else null,
+            .semantic_rank = if (entry.semantic_rank != 0) entry.semantic_rank else null,
+            .fused_score = entry.fused_score,
+        };
+    }
+    return workspace[0..result_count];
+}
+
 fn matchesPath(path: []const u8, prefix: ?[]const u8) bool {
     const required = prefix orelse return true;
     return std.mem.startsWith(u8, path, required);
@@ -410,4 +665,52 @@ test "required labels filter both channels before component ranks" {
 
     try std.testing.expect(isAuthorized("group:engineering\ntenant:acme", &.{ "tenant:acme", "group:engineering" }));
     try std.testing.expect(!isAuthorized("group:engineering\ntenant:acme", &.{"tenant:acme"}));
+}
+
+test "sparse ranking equals the dense reference on random tie-heavy inputs" {
+    var prng = std.Random.DefaultPrng.init(0x53325433);
+    const random = prng.random();
+    const allocator = std.testing.allocator;
+    const count = 60;
+    var documents: [count]Document = undefined;
+    var vectors: [count][3]f32 = undefined;
+    const labels = [_][]const u8{ "", "", "", "tenant:a" };
+    const paths = [_][]const u8{ "a/x.md", "b/y.md", "a/z.md" };
+    for (&documents, &vectors, 0..) |*document, *vector, index| {
+        for (vector) |*component| component.* = @floatFromInt(random.intRangeAtMost(i8, -1, 2));
+        document.* = .{
+            .id = "d",
+            .text = "t",
+            .vector = if (index % 13 == 0) &.{} else vector,
+            .path = paths[random.uintLessThan(usize, paths.len)],
+            .required_labels = labels[random.uintLessThan(usize, labels.len)],
+        };
+    }
+    const modes = [_]RetrievalMode{ .lexical, .vector, .hybrid };
+    const query_vectors = [_][]const f32{ &.{ 1, 0, 1 }, &.{ 0, 0, 0 }, &.{} };
+    var round: usize = 0;
+    while (round < 400) : (round += 1) {
+        var scores: [count]f32 = undefined;
+        for (&scores) |*score| score.* = if (random.uintLessThan(u8, 3) == 0) @floatFromInt(random.intRangeAtMost(u8, 1, 4)) else 0;
+        const query_vector = query_vectors[random.uintLessThan(usize, query_vectors.len)];
+        const options = SearchOptions{
+            .top_k = random.intRangeAtMost(usize, 1, 12),
+            .candidate_k = random.intRangeAtMost(usize, 0, 70),
+            .retrieval_mode = modes[random.uintLessThan(usize, modes.len)],
+            .path_prefix = if (random.boolean()) "a/" else null,
+            .principal_labels = if (random.boolean()) &.{"tenant:a"} else &.{},
+        };
+        var dense_workspace: [count]Result = undefined;
+        var sparse_workspace: [count]Result = undefined;
+        const dense_result = searchWithLexicalScores(query_vector, &documents, &scores, &dense_workspace, options);
+        var source = DenseLexical{ .scores = &scores };
+        const sparse_result = searchSparse(DenseLexical, allocator, &source, query_vector, &documents, &sparse_workspace, options);
+        if (dense_result) |dense| {
+            const sparse = try sparse_result;
+            try std.testing.expectEqual(dense.len, sparse.len);
+            for (dense, sparse) |expected, actual| try std.testing.expectEqualDeep(expected, actual);
+        } else |_| {
+            try std.testing.expectError(error.VectorDimensionMismatch, sparse_result);
+        }
+    }
 }

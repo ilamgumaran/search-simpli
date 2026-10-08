@@ -73,31 +73,42 @@ pub const Engine = struct {
     /// `searchd index`/`query`/`evidence`/`serve` on natively-indexed
     /// folders). `analyzer-v1`-labeled snapshots (native ASCII, lowercased
     /// at index time) and legacy `ascii-alnum-v1`/`ascii-v1` snapshots both
-    /// still match case-insensitively through the existing `query` path
-    /// (`postings.scoreQuery` case-folds at lookup), so only `analyzer-v2`
-    /// needs a different tokenizer here. `allocator` is used only for the
-    /// `analyzer-v2` case (NFC + Unicode tokenization of the query text);
-    /// callers on a one-shot CLI path or a per-request arena may pass any
-    /// allocator.
+    /// still match case-insensitively (the dictionary lookup case-folds),
+    /// so only `analyzer-v2` needs a different tokenizer here.
+    ///
+    /// S2-T3: ranks only the chunks the query matched (and, in hybrid and
+    /// vector modes, a bounded semantic top-`candidate_k`) instead of sorting
+    /// the corpus. Nothing here is sized by the corpus: `allocator` supplies
+    /// the query's resolved terms, its tokens (`analyzer-v2`: NFC + Unicode
+    /// tokenization, which allocates) and the rank selection, all released
+    /// before returning; callers on a one-shot CLI path or a per-request
+    /// arena may pass any allocator. `result_output` only has to hold
+    /// `min(top_k, documents)` results. The output is byte-identical to the
+    /// dense `query` path (`hybrid.searchWithLexicalScores`), which stays as
+    /// the reference.
     pub fn queryTokenized(
         engine: Engine,
         allocator: std.mem.Allocator,
         query_text: []const u8,
         query_vector: []const f32,
-        lexical_score_output: []f32,
         result_output: []hybrid.Result,
         options: hybrid.SearchOptions,
     ) ![]hybrid.Result {
-        if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id)) {
-            return engine.query(query_text, query_vector, lexical_score_output, result_output, options);
-        }
-        const tokens = try analyzer_v2.tokenize(allocator, query_text);
-        defer {
-            for (tokens) |token| allocator.free(token);
-            allocator.free(tokens);
-        }
-        const lexical_scores = try lexical_build.scoreQuery(engine.lexical_index, tokens, lexical_score_output, options.bm25);
-        return hybrid.searchWithLexicalScores(query_vector, engine.documents, lexical_scores, result_output, options);
+        const terms = if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id))
+            try postings.resolveQuery(allocator, engine.lexical_index, query_text)
+        else terms: {
+            const tokens = try analyzer_v2.tokenize(allocator, query_text);
+            defer {
+                for (tokens) |token| allocator.free(token);
+                allocator.free(tokens);
+            }
+            break :terms try lexical_build.resolveTokens(allocator, engine.lexical_index, tokens);
+        };
+        defer allocator.free(terms);
+        const cursors = try allocator.alloc(usize, terms.len);
+        defer allocator.free(cursors);
+        var scorer = postings.SparseScorer.init(engine.lexical_index, terms, cursors, options.bm25);
+        return hybrid.searchSparse(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options);
     }
 
     pub fn evidence(engine: Engine, result: hybrid.Result) Evidence {
