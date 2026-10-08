@@ -9,6 +9,7 @@
     "generation": { "type": "integer", "minimum": 1 },
     "analyzer_id": { "const": "ascii-alnum-v1" },
     "embedding_model_id": { "type": "string", "minLength": 1 },
+    "keep_generations": { "type": "integer", "minimum": 1 },
     "documents": {
       "type": "array",
       "items": {

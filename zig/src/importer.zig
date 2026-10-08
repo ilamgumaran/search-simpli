@@ -28,6 +28,10 @@ const ImportPayload = struct {
     analyzer_id: []const u8,
     embedding_model_id: []const u8,
     documents: []const ImportDocument,
+    /// S2-T5, optional and opt-in: after a successful publish keep only the
+    /// newest N generations (N >= 1). `ss_import_json` has no options
+    /// argument, so this is where its caller sets it.
+    keep_generations: ?u64 = null,
 };
 
 pub const Report = struct {
@@ -36,6 +40,8 @@ pub const Report = struct {
     terms: usize,
     postings: usize,
     vector_dimensions: usize,
+    pruned_files: usize = 0,
+    prune_failures: usize = 0,
 };
 
 pub fn importJson(
@@ -44,12 +50,29 @@ pub fn importJson(
     allocator: std.mem.Allocator,
     json_bytes: []const u8,
 ) !Report {
+    return importJsonKeeping(dir, io, allocator, json_bytes, null);
+}
+
+/// `importJson` with an explicit `keep_generations` that overrides the
+/// payload's own optional field (the CLI's `--keep-generations`).
+pub fn importJsonKeeping(
+    dir: std.Io.Dir,
+    io: std.Io,
+    allocator: std.mem.Allocator,
+    json_bytes: []const u8,
+    keep_override: ?usize,
+) !Report {
     var parsed = try std.json.parseFromSlice(ImportPayload, allocator, json_bytes, .{});
     defer parsed.deinit();
     const payload = parsed.value;
     if (payload.format_version != format_version) return error.UnsupportedInterchangeVersion;
     if (!std.mem.eql(u8, payload.analyzer_id, analyzer_id)) return error.UnsupportedAnalyzer;
     if (payload.generation == 0) return error.GenerationZero;
+    const keep: ?usize = if (keep_override) |k| k else if (payload.keep_generations) |k|
+        (std.math.cast(usize, k) orelse return error.InvalidKeepGenerations)
+    else
+        null;
+    if (keep != null and keep.? == 0) return error.InvalidKeepGenerations;
     if (payload.embedding_model_id.len == 0) return error.InvalidEmbeddingModel;
 
     const documents = try allocator.alloc(hybrid.Document, payload.documents.len);
@@ -128,7 +151,7 @@ pub fn importJson(
     const manifest_encoded_storage = try allocator.alloc(u8, manifest_encoded_length);
     defer allocator.free(manifest_encoded_storage);
     const manifest_encoded = try manifest.encode(metadata, manifest_encoded_storage);
-    try lifecycle.publishSerialized(dir, io, manifest_encoded, documents_encoded, lexical_encoded);
+    const prune = try lifecycle.publishSerializedKeeping(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, keep);
 
     return .{
         .generation = payload.generation,
@@ -136,6 +159,8 @@ pub fn importJson(
         .terms = lexical_index.terms.len,
         .postings = lexical_index.postings.len,
         .vector_dimensions = vector_dimensions,
+        .pruned_files = prune.deleted,
+        .prune_failures = prune.failed,
     };
 }
 

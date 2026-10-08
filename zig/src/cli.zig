@@ -47,7 +47,7 @@ pub const usage_text =
         \\  index <folder> --out <dir> [--analyzer v1|v2] [--max-chars N]
         \\                       [--overlap-lines N] [--generation N]
         \\                       [--update] [--max-file-bytes N]
-        \\                       [--max-total-bytes N]
+        \\                       [--max-total-bytes N] [--keep-generations N]
         \\                       chunk (line-window-v1) and index UTF-8
         \\                       text/markdown/source files under <folder>,
         \\                       natively (no Python), and publish a
@@ -102,7 +102,7 @@ pub const usage_text =
         \\  benchmark <docs> <dimensions> <queries> <mode>
         \\                       benchmark the real in-memory engine query path
         \\  init-demo <dir>      publish a small persistent demo snapshot
-        \\  import-json <dir> <file>
+        \\  import-json <dir> <file> [--keep-generations N]
         \\                       import neutral JSON and publish a snapshot
         \\  help, --help, -h     show this message on stdout (exit 0)
         \\
@@ -136,7 +136,7 @@ pub const BenchmarkArgs = struct {
     queries: usize,
     mode: hybrid.RetrievalMode,
 };
-pub const ImportArgs = struct { snapshot: []const u8, file: []const u8 };
+pub const ImportArgs = struct { snapshot: []const u8, file: []const u8, keep_generations: ?usize = null };
 pub const ServeArgs = struct { path: []const u8, http: ?[]const u8 = null };
 pub const IndexArgs = struct { folder: []const u8, out: []const u8, options: IndexOptions };
 pub const QueryArgs = struct { path: []const u8, text: []const u8, options: QueryOptions };
@@ -302,8 +302,15 @@ fn parseInner(p: *Parser) error{Usage}!Command {
     if (std.mem.eql(u8, command, "import-json")) {
         const snapshot = p.next() orelse return p.missingArgument("import-json", "<dir>");
         const file = p.next() orelse return p.missingArgument("import-json", "<file>");
-        try p.noMoreArguments("import-json");
-        return .{ .import_json = .{ .snapshot = snapshot, .file = file } };
+        var keep: ?usize = null;
+        while (p.next()) |flag| {
+            if (std.mem.eql(u8, flag, "--keep-generations")) {
+                keep = try p.positive("--keep-generations");
+            } else {
+                return p.usage("unexpected argument for", "import-json", flag, " (see searchd --help)");
+            }
+        }
+        return .{ .import_json = .{ .snapshot = snapshot, .file = file, .keep_generations = keep } };
     }
     if (std.mem.eql(u8, command, "serve")) {
         const path = p.next() orelse return p.missingArgument("serve", "<dir>");
@@ -351,6 +358,8 @@ fn parseInner(p: *Parser) error{Usage}!Command {
                 options.caps.max_file_bytes = try p.byteCount("--max-file-bytes");
             } else if (std.mem.eql(u8, flag, "--max-total-bytes")) {
                 options.caps.max_total_bytes = try p.byteCount("--max-total-bytes");
+            } else if (std.mem.eql(u8, flag, "--keep-generations")) {
+                options.caps.keep_generations = try p.positive("--keep-generations");
             } else {
                 return p.usage("unknown flag for", "index", flag, " (see searchd --help)");
             }
@@ -458,6 +467,12 @@ pub fn runIndex(
         try json.write(report.terms);
         try json.objectField("postings");
         try json.write(report.postings);
+        if (options.caps.keep_generations != null) {
+            try json.objectField("pruned_files");
+            try json.write(report.pruned_files);
+            try json.objectField("prune_failures");
+            try json.write(report.prune_failures);
+        }
         try json.endObject();
         try output.writeByte('\n');
         return;
@@ -482,9 +497,13 @@ pub fn runIndex(
     // "could not be read at all" on a full rebuild -- the exact distinction
     // S1-T4 criterion 3 already gave `--update`.
     try output.print(
-        "indexed {s}: analyzer={s} generation={d} files_indexed={d} too_large={d} unreadable={d} budget_exhausted={d} documents={d} terms={d} postings={d}\n",
+        "indexed {s}: analyzer={s} generation={d} files_indexed={d} too_large={d} unreadable={d} budget_exhausted={d} documents={d} terms={d} postings={d}",
         .{ folder_path, report.analyzer_id, report.generation, report.added, report.too_large, report.unreadable, report.budget_exhausted, report.documents, report.terms, report.postings },
     );
+    if (options.caps.keep_generations != null) {
+        try output.print(" pruned_files={d} prune_failures={d}", .{ report.pruned_files, report.prune_failures });
+    }
+    try output.writeByte('\n');
 }
 
 pub const QueryOptions = struct {

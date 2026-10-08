@@ -148,9 +148,9 @@ than a clean error.
   embedding reuse lives.
 - No filesystem watcher, debounce, or connector change feed — every run is
   triggered explicitly (`searchd index --update` / `ss_index_folder`).
-- No query-reader leases or generation garbage collection; superseded
-  generation files become orphans exactly as a full rebuild's do
-  (`docs/generation-lifecycle.md`).
+- No query-reader leases. Superseded generation files stay on disk exactly as
+  a full rebuild's do unless the caller opts in to `keep_generations: N`
+  (S2-T5; `docs/generation-lifecycle.md`).
 - Crash recovery between a linked immutable section and the manifest swap
   has been exercised with a real `SIGKILL` mid-publication run against this
   exact code path (`docs/tasks/S1-T3.md`'s Report), recovered cleanly by the

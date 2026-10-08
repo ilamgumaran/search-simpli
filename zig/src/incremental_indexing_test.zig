@@ -239,8 +239,13 @@ test "crash mid-publication: an orphaned generation file does not corrupt the cu
     // generation 1's superseded document file, two in total.
     const rescan = try lifecycle.scan(out, io, &manifest_buffer, &documents_buffer, &lexical_buffer);
     try std.testing.expectEqual(@as(?u64, 3), rescan.current_generation);
-    try std.testing.expectEqual(@as(usize, 2), rescan.orphan_document_files);
-    try std.testing.expectEqual(@as(usize, 1), rescan.orphan_lexical_files);
+    // S2-T5: files of generations older than the current one are reported
+    // as `superseded_*` (retained history) rather than `orphan_*`; the
+    // total of unreferenced files is unchanged (2 document files, 1 lexical).
+    try std.testing.expectEqual(@as(usize, 2), rescan.orphan_document_files + rescan.superseded_document_files);
+    try std.testing.expectEqual(@as(usize, 1), rescan.orphan_lexical_files + rescan.superseded_lexical_files);
+    try std.testing.expectEqual(@as(usize, 2), rescan.superseded_document_files);
+    try std.testing.expectEqual(@as(usize, 1), rescan.superseded_lexical_files);
 }
 
 test "AnalyzerMismatch is rejected rather than silently mixing tokenizations" {
@@ -441,4 +446,121 @@ test "a file grown past max_file_bytes is reported too_large and its old chunks 
     const third = try indexer.indexFolderIncremental(arena, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, small_caps);
     try std.testing.expectEqual(@as(usize, 1), third.too_large);
     try std.testing.expectEqual(@as(usize, 1), third.documents);
+}
+
+// === S2-T5: keep_generations ================================================
+
+const CountedFiles = struct { documents: usize = 0, lexical: usize = 0, control: usize = 0, other: usize = 0 };
+
+fn countFiles(io: std.Io, dir: std.Io.Dir) !CountedFiles {
+    var counted = CountedFiles{};
+    var iterator = dir.iterate();
+    while (try iterator.next(io)) |entry| {
+        if (entry.kind != .file) continue;
+        if (std.mem.endsWith(u8, entry.name, ".hybseg")) {
+            counted.documents += 1;
+        } else if (std.mem.endsWith(u8, entry.name, ".hyblex")) {
+            counted.lexical += 1;
+        } else if (std.mem.eql(u8, entry.name, "MANIFEST") or std.mem.eql(u8, entry.name, "WRITER.LOCK") or
+            std.mem.eql(u8, entry.name, "INDEX-STATE.json"))
+        {
+            counted.control += 1;
+        } else {
+            counted.other += 1;
+        }
+    }
+    return counted;
+}
+
+fn publishTwenty(arena: std.mem.Allocator, io: std.Io, keep: ?usize) !CountedFiles {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+    try root.writeFile(io, .{ .sub_path = "note.md", .data = "search evidence combines lexical and semantic ranks\n" });
+
+    var caps = indexer.Caps{};
+    caps.keep_generations = keep;
+    var last_pruned: usize = 0;
+    var generation: u64 = 0;
+    for (0..20) |_| {
+        const gio = io;
+        generation = try generation_alloc.nextFreeGeneration(arena, gio, out);
+        const report = try indexer.indexFolder(arena, gio, root, out, .v2, generation, chunker.default_max_chars, chunker.default_overlap_lines, caps);
+        last_pruned = report.pruned_files;
+        try std.testing.expectEqual(@as(usize, 0), report.prune_failures);
+    }
+    try std.testing.expectEqual(@as(u64, 20), generation);
+    if (keep != null) try std.testing.expectEqual(@as(usize, 2), last_pruned); // gen 18's two files
+
+    var manifest_buffer: [4096]u8 = undefined;
+    var documents_buffer: [65536]u8 = undefined;
+    var lexical_buffer: [65536]u8 = undefined;
+    const scan = try lifecycle.scan(out, io, &manifest_buffer, &documents_buffer, &lexical_buffer);
+    try std.testing.expectEqual(@as(?u64, 20), scan.current_generation);
+    try std.testing.expectEqual(@as(usize, 2), scan.current_files);
+    try std.testing.expectEqual(@as(usize, 0), scan.orphan_document_files);
+    try std.testing.expectEqual(@as(usize, 0), scan.orphan_lexical_files);
+    try std.testing.expectEqual(@as(usize, 0), scan.unknown_files);
+    // The current generation is still openable and queryable.
+    const opened = try snapshot_open.open(arena, io, out);
+    try std.testing.expectEqual(@as(u64, 20), opened.generation);
+    return try countFiles(io, out);
+}
+
+test "keep_generations=2 leaves exactly two generations over 20 publishes; absent keeps all" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    const kept = try publishTwenty(arena, io, 2);
+    try std.testing.expectEqual(@as(usize, 2), kept.documents);
+    try std.testing.expectEqual(@as(usize, 2), kept.lexical);
+    try std.testing.expectEqual(@as(usize, 3), kept.control); // MANIFEST, WRITER.LOCK, INDEX-STATE.json
+    try std.testing.expectEqual(@as(usize, 0), kept.other);
+
+    const all = try publishTwenty(arena, io, null);
+    try std.testing.expectEqual(@as(usize, 20), all.documents);
+    try std.testing.expectEqual(@as(usize, 20), all.lexical);
+    try std.testing.expectEqual(@as(usize, 3), all.control);
+}
+
+test "pruning touches only superseded canonical section files" {
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    inline for (.{ "documents-1.hybseg", "lexical-1.hyblex", "documents-2.hybseg", "lexical-2.hyblex", "documents-3.hybseg", "lexical-3.hyblex", "documents-9.hybseg", "documents-04.hybseg", "documents-x.hybseg", "MANIFEST", "INDEX-STATE.json", "WRITER.LOCK", "notes.txt" }) |name| {
+        try tmp.dir.writeFile(io, .{ .sub_path = name, .data = "x" });
+    }
+    // Current generation 3, keep 2: generation 2 survives, generation 1 goes.
+    const report = lifecycle.pruneSuperseded(std.testing.allocator, tmp.dir, io, 2, 3, "documents-3.hybseg", "lexical-3.hyblex");
+    try std.testing.expectEqual(@as(usize, 2), report.deleted);
+    try std.testing.expectEqual(@as(usize, 0), report.failed);
+    inline for (.{ "documents-1.hybseg", "lexical-1.hyblex" }) |gone| {
+        try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, gone, .{}));
+    }
+    inline for (.{ "documents-2.hybseg", "lexical-2.hyblex", "documents-3.hybseg", "lexical-3.hyblex", "documents-9.hybseg", "documents-04.hybseg", "documents-x.hybseg", "MANIFEST", "INDEX-STATE.json", "WRITER.LOCK", "notes.txt" }) |kept| {
+        _ = try tmp.dir.statFile(io, kept, .{});
+    }
+    // keep=1 removes every older generation, still never the current one.
+    const second = lifecycle.pruneSuperseded(std.testing.allocator, tmp.dir, io, 1, 3, "documents-3.hybseg", "lexical-3.hyblex");
+    try std.testing.expectEqual(@as(usize, 2), second.deleted);
+    _ = try tmp.dir.statFile(io, "documents-3.hybseg", .{});
+    _ = try tmp.dir.statFile(io, "lexical-3.hyblex", .{});
+}
+
+test "keep_generations of zero is rejected before anything is written" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try std.testing.expectError(
+        error.InvalidKeepGenerations,
+        lifecycle.publishSerializedKeeping(arena_state.allocator(), tmp.dir, io, "", "", "", 0),
+    );
 }
