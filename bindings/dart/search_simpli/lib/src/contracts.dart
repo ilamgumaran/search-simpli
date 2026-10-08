@@ -33,10 +33,6 @@ class SnapshotStatus {
     required this.documents,
     required this.terms,
     required this.postings,
-    this.recovered,
-    this.recoveredRaw,
-    this.prunedFiles,
-    this.pruneFailures,
   });
 
   factory SnapshotStatus.fromJson(Map<String, Object?> json) => SnapshotStatus(
@@ -48,10 +44,6 @@ class SnapshotStatus {
         documents: json['documents']! as int,
         terms: json['terms']! as int,
         postings: json['postings']! as int,
-        recovered: json['recovered'] == null ? null : IndexRecovery.parse(json['recovered']! as String),
-        recoveredRaw: json['recovered'] as String?,
-        prunedFiles: json['pruned_files'] as int?,
-        pruneFailures: json['prune_failures'] as int?,
       );
 
   Map<String, Object?> toJson() => {
@@ -538,6 +530,10 @@ class IndexFolderReport {
     required this.documents,
     required this.terms,
     required this.postings,
+    this.recovered,
+    this.recoveredRaw,
+    this.prunedFiles,
+    this.pruneFailures,
   });
 
   factory IndexFolderReport.fromJson(Map<String, Object?> json) => IndexFolderReport(
@@ -559,6 +555,10 @@ class IndexFolderReport {
         documents: json['documents']! as int,
         terms: json['terms']! as int,
         postings: json['postings']! as int,
+        recovered: json['recovered'] == null ? null : IndexRecovery.parse(json['recovered']! as String),
+        recoveredRaw: json['recovered'] as String?,
+        prunedFiles: json['pruned_files'] as int?,
+        pruneFailures: json['prune_failures'] as int?,
       );
 
   Map<String, Object?> toJson() => {
