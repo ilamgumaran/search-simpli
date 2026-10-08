@@ -71,9 +71,8 @@ fn checkCorpus(
         const expected_path = expected_top.get("path").?.string;
         const expected_score = expected_top.get("lexical_score").?.float;
 
-        const score_output = try query_arena.alloc(f32, opened.documents.len);
         const result_output = try query_arena.alloc(hybrid.Result, opened.documents.len);
-        const results = try opened.queryTokenized(query_arena, query_text, &.{}, score_output, result_output, .{
+        const results = try opened.queryTokenized(query_arena, query_text, &.{}, result_output, .{
             .top_k = opened.documents.len,
             .candidate_k = opened.documents.len,
             .retrieval_mode = .lexical,

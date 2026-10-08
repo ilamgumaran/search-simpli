@@ -253,6 +253,31 @@ pub fn scoreQuery(
     return scores;
 }
 
+/// The dictionary entries of a tokenised query's unique terms, in first-
+/// occurrence order -- exactly the terms (and the order) `scoreQuery`
+/// accumulates over. Caller frees the slice.
+pub fn resolveTokens(
+    allocator: std.mem.Allocator,
+    index: postings.Index,
+    query_tokens: []const []const u8,
+) std.mem.Allocator.Error![]postings.TermEntry {
+    var resolved = std.ArrayList(postings.TermEntry).empty;
+    errdefer resolved.deinit(allocator);
+    for (query_tokens, 0..) |query_token, position| {
+        var already_scored = false;
+        for (query_tokens[0..position]) |earlier| {
+            if (std.mem.eql(u8, earlier, query_token)) {
+                already_scored = true;
+                break;
+            }
+        }
+        if (already_scored) continue;
+        const term_index = findExact(index.terms, query_token) orelse continue;
+        try resolved.append(allocator, index.terms[term_index]);
+    }
+    return resolved.toOwnedSlice(allocator);
+}
+
 fn findExact(terms: []const postings.TermEntry, term: []const u8) ?usize {
     for (terms, 0..) |entry, index| {
         if (std.mem.eql(u8, entry.term, term)) return index;

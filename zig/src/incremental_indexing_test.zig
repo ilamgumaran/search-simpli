@@ -27,9 +27,8 @@ fn indexOnce(arena: std.mem.Allocator, io: std.Io, root: std.Io.Dir, out: std.Io
 
 fn queryPaths(arena: std.mem.Allocator, io: std.Io, out: std.Io.Dir, query_text: []const u8) ![]const []const u8 {
     const opened = try snapshot_open.open(arena, io, out);
-    const scores = try arena.alloc(f32, opened.documents.len);
     const results = try arena.alloc(hybrid.Result, opened.documents.len);
-    const found = try opened.queryTokenized(arena, query_text, &.{}, scores, results, .{
+    const found = try opened.queryTokenized(arena, query_text, &.{}, results, .{
         .top_k = opened.documents.len,
         .candidate_k = opened.documents.len,
         .retrieval_mode = .lexical,
