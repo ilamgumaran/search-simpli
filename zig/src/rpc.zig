@@ -2,6 +2,7 @@ const engine_module = @import("engine.zig");
 const hybrid = @import("hybrid.zig");
 const postings = @import("postings.zig");
 const report = @import("report.zig");
+const scoring = @import("scoring.zig");
 const service_module = @import("service.zig");
 const std = @import("std");
 
@@ -490,6 +491,8 @@ fn parseQueryVector(
         target.* = @floatCast(number);
         if (!std.math.isFinite(target.*)) return error.InvalidVector;
     }
+    // S2-T13: same rule as `ss_query`: the L2 norm must be a finite f32.
+    if (!scoring.isValidVector(output[0..dimensions])) return error.InvalidVector;
     return output[0..dimensions];
 }
 

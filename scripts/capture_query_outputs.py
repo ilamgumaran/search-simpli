@@ -190,6 +190,12 @@ def main() -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=20261008)
     parser.add_argument("--random-queries", type=int, default=200)
+    parser.add_argument(
+        "--profile",
+        action="store_true",
+        help='send "profile": true with every query (timings differ run to run: '
+        "compare with the profile object cut, see S2-T13)",
+    )
     args = parser.parse_args()
     args.work.mkdir(parents=True, exist_ok=True)
     rng = random.Random(args.seed)
@@ -197,6 +203,8 @@ def main() -> int:
     lines: list[dict] = []
 
     def record(label: str, handle, text: str, vector, top_k: int, options: dict) -> None:
+        if args.profile:
+            options = dict(options, profile=True)
         lines.append(
             {
                 "case": label,

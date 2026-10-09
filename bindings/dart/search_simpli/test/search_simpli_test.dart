@@ -15,7 +15,59 @@ const String _tinyInterchangeJson =
     '"text":"a single tiny document for unit tests","vector":[],"required_labels":[]}'
     ']}';
 
+const String _vectorInterchangeJson =
+    '{"format_version":1,"generation":1,"analyzer_id":"ascii-alnum-v1",'
+    '"embedding_model_id":"m","documents":['
+    '{"id":"a","path":"a.md","start_line":1,"end_line":1,'
+    '"text":"alpha search","vector":[1,0],"required_labels":[]},'
+    '{"id":"b","path":"b.md","start_line":1,"end_line":1,'
+    '"text":"beta search","vector":[0,1],"required_labels":[]}'
+    ']}';
+
 void main() {
+  group('a valid query vector (S2-T13)', () {
+    late Directory dir;
+    late SearchSimpli engine;
+
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('ss-dart-vec-');
+      importSnapshotJson(dir.path, _vectorInterchangeJson);
+      engine = SearchSimpli.open(dir.path);
+    });
+
+    tearDown(() {
+      engine.close();
+      dir.deleteSync(recursive: true);
+    });
+
+    test('a vector with an overflowing norm or a non-finite component is rejected', () {
+      for (final bad in <List<double>>[
+        [2e19, 0],
+        [1e30, 1],
+        [double.nan, 0],
+        [double.infinity, 0],
+        [1e300, 0], // too large for a 32-bit float
+      ]) {
+        for (final mode in [RetrievalMode.vector, RetrievalMode.hybrid]) {
+          expect(
+            () => engine.query('search', queryVector: bad, topK: 2, mode: mode),
+            throwsA(isA<SearchSimpliException>()),
+            reason: '$bad in $mode',
+          );
+        }
+      }
+    });
+
+    test('lexical mode does not read the vector; a large valid one ranks', () {
+      final lexical = engine.query('search',
+          queryVector: [2e19, 0], topK: 2, mode: RetrievalMode.lexical);
+      expect(lexical.results, hasLength(2));
+      final vector = engine.query('search',
+          queryVector: [1.8e19, 0], topK: 2, mode: RetrievalMode.vector);
+      expect(vector.results.first.citation.path, 'a.md');
+    });
+  });
+
   test('SearchSimpli.open on a missing directory throws SearchSimpliException', () {
     expect(
       () => SearchSimpli.open('/nonexistent/search-simpli-dart-test-dir'),
