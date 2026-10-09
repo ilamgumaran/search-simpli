@@ -42,6 +42,7 @@ const postings = @import("postings.zig");
 const publication = @import("publication.zig");
 const query_report = @import("report.zig");
 const rpc = @import("rpc.zig");
+const scoring = @import("scoring.zig");
 const service_module = @import("service.zig");
 
 /// Negative error codes returned by `ss_import_json`. Matches
@@ -257,6 +258,10 @@ pub export fn ss_query(
     const vector: []const f32 = if (query_vector) |ptr| ptr[0..dims] else &.{};
     const options_text = if (options_json) |ptr| std.mem.span(ptr) else "";
     return queryImpl(h, text, vector, top_k, options_text) catch |err| {
+        if (err == error.VectorNormNotFinite) {
+            setLastError("ss_query: invalid query vector: a component is not finite or the L2 norm overflows float32 (VectorNormNotFinite)", .{});
+            return null;
+        }
         setLastError("ss_query: {s}", .{@errorName(err)});
         return null;
     };
@@ -291,7 +296,10 @@ fn queryImpl(
         &.{}
     else vec: {
         if (query_vector.len != h.engine.vector_dimensions) return error.VectorDimensionMismatch;
-        for (query_vector) |value| if (!std.math.isFinite(value)) return error.VectorDimensionMismatch;
+        // S2-T13: non-finite components and a norm that overflows f32 are rejected
+        // (INVALID_ARGUMENT class); lexical mode and zero-dimension snapshots
+        // never get here, so they neither read nor validate the vector.
+        if (!scoring.isValidVector(query_vector)) return error.VectorNormNotFinite;
         break :vec query_vector;
     };
 
@@ -491,6 +499,8 @@ fn errorCode(err: anyerror) i64 {
         error.InvalidAnalyzer,
         error.AnalyzerMismatch,
         error.InvalidKeepGenerations,
+        // S2-T13: a document vector with a non-finite L2 norm.
+        error.VectorNormNotFinite,
         => SS_ERR_INVALID_ARGUMENT,
 
         else => SS_ERR_INTERNAL,
@@ -918,4 +928,70 @@ test "ss_import_json publishes a queryable snapshot and reports negative codes o
     const bad = ss_import_json(path_z, "not json", 8);
     try std.testing.expect(bad < 0);
     try std.testing.expect(std.mem.span(ss_last_error()).len > 0);
+}
+
+test "S2-T13: a vector whose L2 norm is not finite is rejected at query and import" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(path_z);
+
+    const good =
+        \\{"format_version":1,"generation":1,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"m","documents":[
+        \\{"id":"a","path":"a.md","start_line":1,"end_line":1,"text":"alpha search","vector":[1,0],"required_labels":[]},
+        \\{"id":"b","path":"b.md","start_line":1,"end_line":1,"text":"beta search","vector":[0,1],"required_labels":[]}
+        \\]}
+    ;
+    try std.testing.expectEqual(@as(i64, 1), ss_import_json(path_z, good.ptr, good.len));
+    const handle = ss_open(path_z) orelse return error.OpenFailed;
+    defer ss_close(handle);
+
+    const nan = std.math.nan(f32);
+    const inf = std.math.inf(f32);
+    const bad_vectors = [_][2]f32{ .{ 2e19, 0 }, .{ 1e30, 1 }, .{ std.math.floatMax(f32), 0 }, .{ nan, 0 }, .{ 0, inf }, .{ -inf, 0 } };
+    for (bad_vectors) |bad| {
+        for ([_][:0]const u8{ "{\"retrieval_mode\":\"vector\"}", "{\"retrieval_mode\":\"hybrid\"}", "" }) |options| {
+            const out = ss_query(handle, "search", &bad, 2, 2, options.ptr);
+            try std.testing.expect(out == null);
+            try std.testing.expect(std.mem.indexOf(u8, std.mem.span(ss_last_error()), "invalid query vector") != null);
+        }
+        // Lexical mode never reads the vector: no validation, no error, still reported.
+        const lexical = ss_query(handle, "search", &bad, 2, 2, "{\"retrieval_mode\":\"lexical\"}") orelse return error.QueryFailed;
+        defer ss_free(lexical);
+        try std.testing.expect(std.mem.indexOf(u8, std.mem.span(lexical), "\"vector_ignored\"") != null);
+    }
+    // Valid vectors, including the largest accepted norm and an all-zero one, work.
+    for ([_][2]f32{ .{ 1, 0 }, .{ 1.8e19, 0 }, .{ 0, 0 } }) |good_vector| {
+        const out = ss_query(handle, "search", &good_vector, 2, 2, "{\"retrieval_mode\":\"vector\"}") orelse return error.QueryFailed;
+        ss_free(out);
+    }
+
+    // Import: a document vector with a non-finite norm is INVALID_ARGUMENT and
+    // nothing is published (the generation stays 1; a fresh directory stays empty).
+    const bad_import =
+        \\{"format_version":1,"generation":2,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"m","documents":[
+        \\{"id":"a","path":"a.md","start_line":1,"end_line":1,"text":"alpha","vector":[1,0],"required_labels":[]},
+        \\{"id":"b","path":"b.md","start_line":1,"end_line":1,"text":"beta","vector":[2e19,0],"required_labels":[]}
+        \\]}
+    ;
+    try std.testing.expectEqual(SS_ERR_INVALID_ARGUMENT, ss_import_json(path_z, bad_import.ptr, bad_import.len));
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(ss_last_error()), "VectorNormNotFinite") != null);
+    const overflow_import =
+        \\{"format_version":1,"generation":2,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"m","documents":[
+        \\{"id":"b","path":"b.md","start_line":1,"end_line":1,"text":"beta","vector":[1e39,0],"required_labels":[]}
+        \\]}
+    ;
+    try std.testing.expect(ss_import_json(path_z, overflow_import.ptr, overflow_import.len) < 0);
+    const status = ss_status(handle) orelse return error.StatusFailed;
+    ss_free(status);
+    const reopened = ss_open(path_z) orelse return error.OpenFailed;
+    defer ss_close(reopened);
+    try std.testing.expectEqual(@as(usize, 2), reopened.engine.documents.len);
+    // The failed attempts left nothing behind: generation 2 is still free.
+    const next =
+        \\{"format_version":1,"generation":2,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"m","documents":[
+        \\{"id":"a","path":"a.md","start_line":1,"end_line":1,"text":"alpha","vector":[1,0],"required_labels":[]}
+        \\]}
+    ;
+    try std.testing.expectEqual(@as(i64, 2), ss_import_json(path_z, next.ptr, next.len));
 }

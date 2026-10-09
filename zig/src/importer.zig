@@ -7,6 +7,7 @@ const lifecycle = @import("lifecycle.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
+const scoring = @import("scoring.zig");
 const segment = @import("segment.zig");
 const std = @import("std");
 
@@ -109,6 +110,9 @@ pub fn importJsonKeeping(
     for (payload.documents, documents, 0..) |source, *document, document_index| {
         if (source.id.len == 0 or source.path.len == 0) return error.InvalidDocument;
         if (source.vector.len != 0) {
+            // S2-T13: a stored vector must have a finite L2 norm; nothing is
+            // published otherwise (this runs before any file is written).
+            if (!scoring.isValidVector(source.vector)) return error.VectorNormNotFinite;
             if (vector_dimensions == 0) vector_dimensions = source.vector.len;
             if (source.vector.len != vector_dimensions) return error.VectorDimensionsInconsistent;
         }

@@ -122,7 +122,13 @@ class SearchSimpli {
   ///   [queryVector]       Ignored for `RetrievalMode.lexical` and for
   ///                       snapshots with zero vector dimensions; otherwise
   ///                       its length must equal the snapshot's vector
-  ///                       dimensions (see [status]).
+  ///                       dimensions (see [status]). It must be a valid
+  ///                       vector: every component finite (no NaN or
+  ///                       infinity, including a double too large for a
+  ///                       32-bit float) and an L2 norm that fits a 32-bit
+  ///                       float (about 1.8e19 at most; all zeros is valid).
+  ///                       Otherwise the native call fails and this throws.
+  ///                       Lexical mode does not read or check the vector.
   ///   [topK]              Final result count, 1-100.
   ///   [mode]              Default `RetrievalMode.hybrid`.
   ///   [candidateK]        Default 100 on the native side; must be >= topK
