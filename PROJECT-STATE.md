@@ -12,6 +12,17 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S2-T13, 2026-10-08)
+
+**S2-T13 is `verified` and merged to `main`** (branch `task/S2-T13` `56432cf`; Verdict in `docs/tasks/S2-T13.md`). The contract is unchanged (`1.2.0`).
+
+- **What a valid vector is.** Every component is finite, and the sum of squares accumulated in `f32` does not overflow (norm below about 1.8e19). All zeros is valid.
+- **Query.** `ss_query` returns `NULL` with `ss_query: invalid query vector: … (VectorNormNotFinite)` for an invalid vector in vector, hybrid and default mode. `serve` answers `-32602`. Lexical mode does not read the vector and still reports `vector_ignored`.
+- **Import.** `ss_import_json` returns `SS_ERR_INVALID_ARGUMENT` and `searchd import-json` exits 1 for an invalid document vector. Nothing is published either way.
+- **Cosine.** It is bit-identical for every valid pair. It falls back to a clamped `f64` only when the `f32` sums overflow, which only snapshots imported before this task can contain; there it replaces `NaN` and `0` with the true cosine.
+- **Libraries:** dylib 418,168 B, stamp `861bb2c6…6aad`.
+- **Open (non-blocking):** no unit test covers the `serve` check. The `f32` cosine is inaccurate for vectors with norm below about 1e-19 (unchanged). The all-zero vector still gets no warning.
+
 ## Standalone platform status (S2-T4, 2026-10-08)
 
 **S2-T4 is `verified` and merged to `main`** (branch `task/S2-T4` `6428d3e`, second round; Verdict in `docs/tasks/S2-T4.md`). **The contract is now `1.2.0`.**

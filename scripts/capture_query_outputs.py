@@ -192,7 +192,8 @@ def main() -> int:
     parser.add_argument(
         "--profile",
         action="store_true",
-        help='send {"profile": true} with every query (S2-T11 bar b: compare after cutting the profile key)',
+        help='send "profile": true with every query (timings differ run to run: '
+        "compare with the profile object cut, see S2-T13)",
     )
     parser.add_argument(
         "--invalid",

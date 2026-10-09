@@ -145,8 +145,14 @@ char *ss_status(ss_handle *handle);
  *                 Ignored entirely for retrieval_mode "lexical" and for
  *                 snapshots with zero vector dimensions (see ss_status()).
  *                 Otherwise `dims` must equal the snapshot's vector
- *                 dimensions and every element must be finite, or this call
- *                 fails.
+ *                 dimensions and the vector must be valid, or this call
+ *                 fails (NULL, ss_last_error()). A valid vector has only
+ *                 finite components (no NaN, no +-infinity) and a finite L2
+ *                 norm: the sum of squares, accumulated in float, must not
+ *                 overflow, which in practice means a norm below about
+ *                 1.8e19. An all-zero vector is valid (cosine 0). Lexical
+ *                 mode does not read the vector, so it does not validate it
+ *                 either; it still reports vector_ignored.
  *   dims          Length of `query_vector`.
  *   top_k         Final result count, 1-100.
  *   options_json  NULL or "" for defaults, or a null-terminated JSON object
@@ -220,7 +226,7 @@ char *ss_status(ss_handle *handle);
  *               read.
  *
  * Returns NULL on failure — query_text that is not valid UTF-8, invalid top_k/candidate_k, a wrong-sized or
- * non-finite query_vector, malformed options_json, or an unknown
+ * invalid (non-finite or norm-overflowing) query_vector, malformed options_json, or an unknown
  * retrieval_mode — see ss_last_error(). `handle` must not be NULL.
  */
 char *ss_query(
@@ -272,7 +278,10 @@ char *ss_evidence(ss_handle *handle, const char *ids_json);
  * Returns the published generation number (>= 1) on success, or a negative
  * ss_error_code (SS_ERR_* above) on failure — see ss_last_error() for the
  * specific reason (e.g. unsupported analyzer/format version, inconsistent
- * vector dimensions, a document missing its id/path, or an I/O error).
+ * vector dimensions, a document missing its id/path, a stored vector that is
+ * not valid in the sense of ss_query's query_vector -- a non-finite component
+ * or an L2 norm that overflows float, SS_ERR_INVALID_ARGUMENT with nothing
+ * published -- or an I/O error).
  *
  * The payload may carry one optional extra top-level field,
  * "keep_generations" (integer >= 1, opt-in), with the same meaning as
