@@ -12,6 +12,34 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S2-T4, 2026-10-08)
+
+**S2-T4 is `verified` and merged to `main`** (branch `task/S2-T4` `6428d3e`, second round; Verdict in `docs/tasks/S2-T4.md`). **The contract is now `1.2.0`.**
+
+- **What the `ss_query` report carries.** It always has `warnings` (`{code, message, term?}`) and `request` (`analyzer_id`, `retrieval_mode`, `top_k`, `candidate_k`, `path_prefix` as used, defaults filled in). With `"profile": true` it also has `profile` (`tokenize_us`, `score_us`, `rank_us`, `serialize_us`, `matched_chunks`). The three keys come after `answer_policy`, and removing them gives the previous output byte for byte.
+- **The four codes.** `query_term_unmatched` holds the analysed query term (lowercased under `ascii-alnum-v1`, folded under `analyzer-v2`), once per term, in query order. It uses one message whether the word is absent or only in chunks outside `path_prefix` or the caller's labels. `query_empty_after_analysis`. `vector_ignored`. `candidate_depth_cut` appears only in hybrid with both channels offering candidates. `matched_chunks` counts in-scope chunks only. Vector mode reports no term warnings. `serve` and the CLI carry none of the new keys.
+- **The app re-pins once to this merge commit or later** (the commit that adds this entry). Its contracts pin becomes `1.2.0`, or `SearchSimpli.open` throws `ContractsVersionMismatchException`. The Dart types are `SearchWarning`, `SearchWarningCode` (with an `unknown` fallback), `SearchRequestEcho`, `SearchProfile`, and `query(profile: ...)`.
+- **Libraries** (rebuilt on the merge with S2-T2 and S2-T12): dylib 418,200 B, stamp `0d0c2a08…9f19`.
+- **Open (non-blocking):** with `profile` on, a word hidden in thousands of chunks shows in `tokenize_us`/`score_us`. Its wall-time cost was already visible before this task. Candidate for `docs/authorization.md` "Known limits". `analyzer-v2` does not fold U+1E9E. There is no `--json` parity for `serve`/CLI.
+
+## Standalone platform status (S2-T2, 2026-10-08)
+
+**S2-T2 is `verified` and merged to `main`** (branch `task/S2-T2` `7f69688`, second round; Verdict in `docs/tasks/S2-T2.md`).
+
+- **The app's import door is now linear-time.** `ss_import_json` / `searchd import-json` with `ascii-alnum-v1` build through `lexical_build.buildAscii` (one hash-map pass) instead of `postings.build`: 10k documents import in ~0.2 s (was ~110 s), 1k in ~0.04 s (was ~12.5 s).
+- **Byte-identical output.** The published files and the query results are the same as the old build's (`import_parity.py --baseline` 10/10; 218 CLI queries and 654 `ss_query` calls at 1k, 0 differences; `diff -r` empty at 1k and 10k). No contract change.
+- **Plant:** `zig/src/import_build_timing_test.zig` checks the growth from 125 to 1,000 documents (interleaved runs, best of five, `< 24x`). It gives 7.1 to 8.1x under load and about 51x on the old build.
+- **Libraries:** dylib 417,464 B, stamp `788f5e3f…2bba`.
+
+## Standalone platform status (S2-T12, 2026-10-08)
+
+**S2-T12 is `verified` and merged to `main`** (branch `task/S2-T12` `2df286b`; Verdict in `docs/tasks/S2-T12.md`).
+
+- **No empty generation after a lost `MANIFEST`.** If `MANIFEST` is missing, `--update` / `ss_index_folder` update mode no longer loads `INDEX-STATE.json`. It re-indexes every file, publishes a full generation and reports `"recovered": "missing_manifest"` when a state file was present. A fresh directory reports no `recovered`. With `keep_generations`, pruning runs only after the full generation is published.
+- **Dart:** `IndexFolderOptions.keepGenerations` (checked at use: `ArgumentError` below 1, before any native call); `IndexFolderReport.recovered` (`IndexRecovery`, with an `unknown` fallback), `recoveredRaw`, `prunedFiles`, `pruneFailures`.
+- **Libraries:** dylib 417,496 B, stamp `7c21ea77…d496bb`.
+- **Open (non-blocking):** generation numbers can go backwards after a lost `MANIFEST` (older than this task); the Dart `indexFolder` leaks two small native strings on the `ArgumentError` path.
+
 ## Standalone platform status (S2-T5, 2026-10-08)
 
 **S2-T5 is `verified` and merged to `main`** (branch `task/S2-T5` `41a0186`, second round; Verdict in `docs/tasks/S2-T5.md`).

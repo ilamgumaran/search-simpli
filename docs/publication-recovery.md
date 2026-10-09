@@ -73,6 +73,15 @@ The implementation uses error cleanup for newly linked files when later publicat
 
 File contents are synced before atomic materialization and the directory is synced after the section renames and after the `MANIFEST` rename (S2-T5, above). The tests establish the call order and process-level atomic visibility; they are not a proof against every filesystem/power-loss combination (no power was cut). Windows has no directory sync.
 
+### Recovering an update (`"recovered"`)
+
+`--update` / `ss_index_folder` with `"update": true` never trusts `INDEX-STATE.json` without a previous engine to load. The report field `"recovered"` is absent on an ordinary run and otherwise one of:
+
+- `"missing_section"`: `MANIFEST` exists but a section it names is missing or unreadable. Cost: every file is read and indexed again (a full index), and a full generation is published.
+- `"missing_manifest"` (S2-T12): no `MANIFEST`, but `INDEX-STATE.json` exists (an outside deletion, or a filesystem that ignored directory sync). Cost: the same full re-index. Earlier builds published an empty generation here. With `keep_generations`, older generations are pruned only after the full generation has been published.
+
+An update publishes zero documents only when the folder holds zero indexable files. Details: `docs/incremental-indexing.md`.
+
 Garbage collection is opt-in and conservative (S2-T5): `keep_generations: N` deletes section files of generations older than the newest N after a successful publish; see `docs/generation-lifecycle.md`. By default nothing is deleted. Deleting all files not named by the current manifest would still race readers holding an older snapshot, which is why the policy is retention by generation number, not "everything unreferenced".
 
 Writer serialization is now implemented through an advisory exclusive `WRITER.LOCK`; see `docs/generation-lifecycle.md`. Recovery scanning classifies unreferenced generation files but intentionally does not delete them. Reader leases/epochs, compare-and-publish generation checks for distributed failover, and safe garbage collection remain.

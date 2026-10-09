@@ -141,6 +141,32 @@ every file, publishes a full next generation, and the report JSON carries the
 additive field `"recovered": "missing_section"` (absent otherwise). A phone
 with no human to delete the directory heals itself on the next import.
 
+### A missing `MANIFEST` with `INDEX-STATE.json` present (S2-T12)
+
+With no `MANIFEST` there is no previous engine, so the state file's "every file
+unchanged" has nothing to refer to. `INDEX-STATE.json` is **not loaded**: every
+file is re-indexed, a full generation is published, and the report carries
+`"recovered": "missing_manifest"`. Before this, such an update published an
+empty generation with exit 0 (and pruned older complete generations when
+`keep_generations` was set). A directory with no `MANIFEST` **and** no state
+file is simply new, and reports no `recovered`. An update publishes zero
+documents only when the folder holds zero indexable files (`"documents": 0`,
+no `recovered`). The one exception is a double fault: if the folder is empty
+**and** a recovery was needed (`MANIFEST` or a section lost), the report says
+both, `"documents": 0` with `recovered`, because the lost `MANIFEST` or
+section is still worth knowing about.
+
+Values of `"recovered"` (the field is absent on an ordinary run):
+
+| Value | Meaning | Cost |
+| --- | --- | --- |
+| `missing_section` | `MANIFEST` exists but a section it names is missing or unreadable | every file is read, chunked and hashed again: the cost of a full index, not of an update |
+| `missing_manifest` | no `MANIFEST`, but `INDEX-STATE.json` exists | same full re-index; with `keep_generations`, older generations are pruned only after the new full generation is published |
+
+A corrupt `MANIFEST` or a checksum-failing section still fails with its own
+error and publishes nothing. Dart: `IndexFolderReport.recovered`
+(`IndexRecovery`, with an `unknown` fallback) and `recoveredRaw`.
+
 ### Fails closed on analyzer mismatch
 
 `--update`/`opts.update: true` refuses to run (`error.AnalyzerMismatch`) if

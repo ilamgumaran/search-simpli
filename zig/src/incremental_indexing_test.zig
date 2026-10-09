@@ -649,3 +649,76 @@ test "update with a missing section re-indexes every file instead of publishing 
     try std.testing.expect(again.recovered == null);
     try std.testing.expectEqual(@as(usize, 3), again.unchanged);
 }
+
+// === S2-T12: a lost MANIFEST must not publish an empty generation ===========
+test "update with a missing MANIFEST re-indexes every file instead of publishing an empty generation" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+    try root.writeFile(io, .{ .sub_path = "a.md", .data = "alpha evidence about recovery\n" });
+    try root.writeFile(io, .{ .sub_path = "b.md", .data = "beta evidence about publication\n" });
+    try root.writeFile(io, .{ .sub_path = "c.md", .data = "gamma evidence about directories\n" });
+
+    const first = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(usize, 3), first.documents);
+    try std.testing.expect(first.recovered == null);
+    const second = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(usize, 3), second.unchanged);
+
+    try out.deleteFile(io, "MANIFEST");
+
+    // keep_generations 1 too: the older complete generations may go only
+    // after the full generation is visible.
+    var keep_caps = indexer.Caps{};
+    keep_caps.keep_generations = 1;
+    const healed = try indexer.indexFolderIncremental(arena, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, keep_caps);
+    try std.testing.expectEqual(@as(usize, 3), healed.documents); // never 0
+    try std.testing.expectEqual(@as(usize, 3), healed.added);
+    try std.testing.expectEqual(@as(usize, 0), healed.unchanged);
+    try std.testing.expectEqualStrings("missing_manifest", healed.recovered.?);
+    try std.testing.expect(healed.pruned_files > 0);
+
+    const opened = try snapshot_open.open(arena, io, out);
+    try std.testing.expectEqual(healed.generation, opened.generation);
+    try std.testing.expectEqual(@as(usize, 3), opened.documents.len);
+    const hits = try queryPaths(arena, io, out, "gamma");
+    try std.testing.expectEqual(@as(usize, 1), hits.len);
+
+    const again = try indexOnce(arena, io, root, out);
+    try std.testing.expect(again.recovered == null);
+    try std.testing.expectEqual(@as(usize, 3), again.unchanged);
+    try std.testing.expectEqual(@as(usize, 3), again.documents);
+}
+
+test "a fresh directory and an empty folder report no recovery; zero documents only for zero files" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+
+    const empty = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(usize, 0), empty.documents);
+    try std.testing.expect(empty.recovered == null);
+
+    try root.writeFile(io, .{ .sub_path = "a.md", .data = "alpha evidence\n" });
+    const added = try indexOnce(arena, io, root, out);
+    try std.testing.expectEqual(@as(usize, 1), added.documents);
+    try std.testing.expect(added.recovered == null);
+}

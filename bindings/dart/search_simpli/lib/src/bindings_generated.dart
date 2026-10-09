@@ -417,6 +417,9 @@ class SearchSimpliBindings {
   /// missing or unreadable, the update does not trust INDEX-STATE.json: it
   /// re-indexes every file, publishes a full next generation, and the report
   /// carries "recovered": "missing_section" (the field is absent otherwise).
+  /// With no MANIFEST but an INDEX-STATE.json present, the state is likewise
+  /// not trusted: the update re-indexes every file and reports
+  /// "recovered": "missing_manifest".
   ///
   /// A file larger than max_file_bytes is tombstoned, not silently kept: it is
   /// counted (and named) under "too_large"/"too_large_paths", and its
