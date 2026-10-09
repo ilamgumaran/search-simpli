@@ -58,17 +58,21 @@ The engine API is synchronous and in-process. `SearchOptions` now carries princi
 
 Status: implemented in `zig/src/abi.zig`; header in `zig/include/search_simpli.h`; conformance harness in `zig/tests/abi_test.c` (`zig build test-abi`).
 
-`abi.zig` is a thin C wrapper around `Engine`/`Service`, not a second implementation: `ss_query`'s JSON is written by the same function the JSON-RPC service uses (`rpc.writeSearchResultValue`), and `ss_evidence`'s per-chunk JSON is written by the same function `read_chunk` uses (`rpc.writeChunkFields`). This is what lets `zig build test-abi` assert its result is byte-for-byte identical to a captured JSON-RPC response for the same request, rather than merely "close."
+`abi.zig` is a thin C wrapper around `Engine`/`Service`, not a second implementation: `ss_query`'s JSON is written by the same function the JSON-RPC service uses (`rpc.writeSearchResultValue`), and `ss_evidence`'s per-chunk JSON is written by the same function `read_chunk` uses (`rpc.writeChunkFields`). This is what lets `zig build test-abi` assert its result is byte-for-byte identical to a captured JSON-RPC response for the same request, rather than merely "close." Since contract 1.2.0 (S2-T4) `ss_query` appends `warnings`, `request` and, with `"profile": true`, `profile` after the shared fields (`rpc.writeSearchResultValueWith`, `zig/src/report.zig`); the JSON-RPC response does not carry them, and with those three top-level keys removed the two are byte-identical.
+
+#### `ss_query` diagnostics (contract 1.2.0)
+
+`warnings` is always present. Per retrieval mode: `query_term_unmatched` and `query_empty_after_analysis` are produced in `lexical` and `hybrid` only (vector mode does not use the words, and no longer looks them up). `query_term_unmatched` carries the analysed query term (lowercased under `ascii-alnum-v1`, folded under `analyzer-v2`), once per distinct term, with one message ("the term was not found in the searched files") whether the word is in no chunk or only in chunks outside `path_prefix` or without the caller's labels, so the report cannot be used to test which hidden files hold a word (`docs/authorization.md`). `vector_ignored` when a vector was passed and `retrieval_mode` is `lexical` or the snapshot has zero vector dimensions. `candidate_depth_cut` only when the cut can change the list: in `hybrid` mode when both channels produced candidates (hybrid on a snapshot without vectors is one channel), or whenever `candidate_k < top_k` (which `ss_query` rejects). Array order: `query_empty_after_analysis`, the unmatched terms in query order, `vector_ignored`, `candidate_depth_cut`. `request` echoes `analyzer_id`, `retrieval_mode`, `top_k`, `candidate_k` and `path_prefix` as used. `profile` (opt-in) gives `tokenize_us` (analysis and term lookup), `score_us` (matching and candidate selection), `rank_us` (fusion and result rows), `serialize_us` (writing the report up to `profile`) and `matched_chunks` (in-scope chunks holding any query term; hidden chunks are not counted); with profile off no clock is read.
 
 ### Functions
 
 | Function | Summary |
 |---|---|
-| `ss_version()` | Returns `contracts/CONTRACTS_VERSION` (e.g. `"1.1.0"`), baked in at build time via a `build.zig`-generated `build_options` module (`@embedFile` cannot reach outside `zig/`'s module package). |
+| `ss_version()` | Returns `contracts/CONTRACTS_VERSION` (e.g. `"1.2.0"`), baked in at build time via a `build.zig`-generated `build_options` module (`@embedFile` cannot reach outside `zig/`'s module package). |
 | `ss_open(dir)` | Opens a published snapshot directory into freshly allocated workspaces; returns an opaque handle or `NULL`. |
 | `ss_close(handle)` | Frees a handle's workspaces. |
 | `ss_status(handle)` | JSON with the same fields as JSON-RPC `index_status`'s `result`. |
-| `ss_query(handle, text, vec, dims, k, opts)` | JSON identical to `search_knowledge`'s `result` for an equivalent request. `opts` is a JSON object: `retrieval_mode`, `candidate_k`, `path_prefix`, `principal_labels` (all optional). |
+| `ss_query(handle, text, vec, dims, k, opts)` | JSON identical to `search_knowledge`'s `result` for an equivalent request, followed since contract 1.2.0 by `warnings`, `request` and (opt-in) `profile`; see below. `opts` is a JSON object: `retrieval_mode`, `candidate_k`, `path_prefix`, `principal_labels`, `profile` (all optional). |
 | `ss_evidence(handle, ids)` | Looks up stored chunks by id (`{"ids": [...], "path_prefix": ..., "principal_labels": [...]}`); returns a JSON array, one entry per id, in `read_chunk`'s shape or `{"chunk_id": "...", "found": false}`. |
 | `ss_import_json(dir, bytes)` | Validates and publishes neutral interchange JSON, exactly like `searchd import-json`; returns the generation or a negative `ss_error_code`. `analyzer_id` is `"ascii-alnum-v1"` (ASCII) or, since contract 1.1.0, `"analyzer-v2"` (Unicode; the same index `searchd index` builds from the same chunks). |
 | `ss_free(ptr)` | Frees a pointer returned by `ss_status`/`ss_query`/`ss_evidence`. |
@@ -86,7 +90,7 @@ Static and shared `search_simpli` libraries for `aarch64-macos`, `aarch64-linux-
 
 ### C ABI conformance harness (`zig build test-abi`)
 
-`zig/tests/abi_test.c` publishes the same three-document demo as `searchd init-demo` through `ss_import_json`, opens it with `ss_open`, and checks `ss_status`/`ss_query`/`ss_evidence` byte-for-byte against JSON captured from a real `zig build run -- init-demo` + `serve` session (pasted in `docs/tasks/S1-T0.md`'s Report), plus several error paths (missing directory, malformed interchange JSON, out-of-range `top_k`, mismatched vector dimensions).
+`zig/tests/abi_test.c` publishes the same three-document demo as `searchd init-demo` through `ss_import_json`, opens it with `ss_open`, and checks `ss_status`/`ss_query`/`ss_evidence` byte-for-byte against JSON captured from a real `zig build run -- init-demo` + `serve` session (pasted in `docs/tasks/S1-T0.md`'s Report; for `ss_query` that golden is compared after removing the three 1.2.0 keys, and the keys are checked separately), plus several error paths (missing directory, malformed interchange JSON, out-of-range `top_k`, mismatched vector dimensions).
 
 ### Dart loader and app bundles (`docs/tasks/S1-T10.md`)
 

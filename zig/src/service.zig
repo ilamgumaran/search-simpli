@@ -43,12 +43,27 @@ pub const Service = struct {
         result_output: []hybrid.Result,
         evidence_output: []engine_module.Evidence,
     ) ![]engine_module.Evidence {
-        const results = try service.engine.queryTokenized(
+        return service.searchKnowledgeTraced(allocator, query_text, query_vector, options, result_output, evidence_output, null);
+    }
+
+    /// `searchKnowledge` that also fills `trace` (S2-T4).
+    pub fn searchKnowledgeTraced(
+        service: Service,
+        allocator: std.mem.Allocator,
+        query_text: []const u8,
+        query_vector: []const f32,
+        options: hybrid.SearchOptions,
+        result_output: []hybrid.Result,
+        evidence_output: []engine_module.Evidence,
+        trace: ?*hybrid.Trace,
+    ) ![]engine_module.Evidence {
+        const results = try service.engine.queryTraced(
             allocator,
             query_text,
             query_vector,
             result_output,
             options,
+            trace,
         );
         if (evidence_output.len < results.len) return error.EvidenceCapacityTooSmall;
         for (results, evidence_output[0..results.len]) |result, *evidence| {

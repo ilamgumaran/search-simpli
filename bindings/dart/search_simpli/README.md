@@ -76,7 +76,7 @@ wrote — see the [root README](../../../README.md) and
 
 - `SearchSimpli.open(String snapshotDir, {DynamicLibrary? library})` — opens
   a snapshot. Asserts the native library's `ss_version()` equals this
-  package's `CONTRACTS_VERSION` (`1.1.0`) before touching `snapshotDir` at
+  package's `CONTRACTS_VERSION` (`1.2.0`) before touching `snapshotDir` at
   all; throws `ContractsVersionMismatchException` on a mismatch and
   `SearchSimpliException` if `ss_open` itself fails (missing/corrupt
   snapshot, I/O error — see the thrown exception's `message`, which is
@@ -84,12 +84,19 @@ wrote — see the [root README](../../../README.md) and
 - `engine.status()` → `SnapshotStatus` (generation, analyzer, document/term/
   posting counts, vector dimensions).
 - `engine.query(String queryText, {queryVector, topK, mode, candidateK,
-  pathPrefix, principalLabels})` → `SearchKnowledgeResult` — exactly the
+  pathPrefix, principalLabels, profile})` → `SearchKnowledgeResult` — exactly the
   `search_knowledge` JSON-RPC result shape (`tool`, `query`, `index`,
   `retrieval`, `results`, `answerPolicy`), because `ss_query` shares its
   JSON-writing code with the JSON-RPC service (see
   `zig/include/search_simpli.h`'s "JSON shapes" section) — a client already
   written against `search-tool.schema.json` needs no new parsing logic.
+  Since contract 1.2.0 the result also carries `warnings` (why a list is empty
+  or poor: `queryTermUnmatched` with the missing word in `term`,
+  `queryEmptyAfterAnalysis`, `vectorIgnored`, `candidateDepthCut`), `request`
+  (the options as used, defaults filled in) and, only with `profile: true`,
+  `profile` (`tokenizeUs`, `scoreUs`, `rankUs`, `serializeUs`,
+  `matchedChunks`). Query-term warnings are produced in lexical and hybrid
+  mode only.
 - `engine.evidence(List<String> ids, {pathPrefix, principalLabels})` →
   `List<EvidenceChunk>`, one entry per id, in order; an unknown or
   unauthorized id comes back as `EvidenceChunk(found: false)` rather than

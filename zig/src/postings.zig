@@ -149,15 +149,61 @@ pub fn scoreQuery(
 /// order -- exactly the terms (and the order) `scoreQuery` accumulates over.
 /// Caller frees the slice.
 pub fn resolveQuery(allocator: std.mem.Allocator, index: Index, query: []const u8) std.mem.Allocator.Error![]TermEntry {
+    return resolveQueryTraced(allocator, index, query, null, true);
+}
+
+/// `resolveQuery` that also records, in `trace` (S2-T4), how many unique terms
+/// the query analysed to and which of them were not found in the files the
+/// query may search: not in the dictionary, or only in chunks outside the
+/// trace's path prefix and label scope. They are recorded as the analysed
+/// (lowercased) query term, in query order. `lookup == false` still counts the
+/// terms but skips the dictionary (vector mode never uses the result).
+pub fn resolveQueryTraced(
+    allocator: std.mem.Allocator,
+    index: Index,
+    query: []const u8,
+    trace: ?*hybrid.Trace,
+    lookup: bool,
+) std.mem.Allocator.Error![]TermEntry {
     var resolved = std.ArrayList(TermEntry).empty;
     errdefer resolved.deinit(allocator);
     var query_tokens = analysis.TokenIterator.init(query);
     while (query_tokens.next()) |query_token| {
         if (!analysis.isFirstOccurrence(query, query_token)) continue;
-        const term_index = findTerm(index.terms, query_token.bytes) orelse continue;
+        if (trace) |t| t.unique_terms += 1;
+        if (!lookup) continue;
+        const term_index = findTerm(index.terms, query_token.bytes) orelse {
+            if (trace) |t| try noteUnmatched(t, query_token.bytes, true);
+            continue;
+        };
+        if (trace) |t| {
+            if (!hasInScopePosting(index, index.terms[term_index], t)) try noteUnmatched(t, query_token.bytes, true);
+        }
         try resolved.append(allocator, index.terms[term_index]);
     }
     return resolved.toOwnedSlice(allocator);
+}
+
+/// Record `term` (copied, lowercased when `lower`) as unmatched in `trace`.
+pub fn noteUnmatched(trace: *hybrid.Trace, term: []const u8, lower: bool) std.mem.Allocator.Error!void {
+    const copy = try trace.allocator.dupe(u8, term);
+    if (lower) for (copy) |*byte| {
+        byte.* = std.ascii.toLower(byte.*);
+    };
+    try trace.unmatched.append(trace.allocator, .{ .term = copy });
+}
+
+/// Whether `entry` occurs in any chunk inside `trace`'s path prefix and label
+/// scope. Stops at the first such chunk, so an unscoped query reads one
+/// posting per term.
+pub fn hasInScopePosting(index: Index, entry: TermEntry, trace: *const hybrid.Trace) bool {
+    const list = index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
+    for (list) |posting| {
+        const document = trace.scope_documents[posting.document_index];
+        if (hybrid.matchesPath(document.path, trace.scope_prefix) and
+            hybrid.isAuthorized(document.required_labels, trace.scope_labels)) return true;
+    }
+    return false;
 }
 
 /// Sparse BM25 scoring of a resolved query: yields only the chunks that

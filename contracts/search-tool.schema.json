@@ -68,6 +68,56 @@
         "cite_path_and_lines": { "const": true },
         "say_when_evidence_is_insufficient": { "const": true }
       }
+    },
+    "warnings": {
+      "description": "Contract 1.2.0, ss_query only: why a result list is empty or poor. Always present (possibly empty) in an ss_query report; absent from JSON-RPC search_knowledge results. Query-term warnings are only produced in lexical and hybrid retrieval, where the terms are used.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "enum": [
+              "query_term_unmatched",
+              "query_empty_after_analysis",
+              "vector_ignored",
+              "candidate_depth_cut"
+            ]
+          },
+          "message": { "type": "string" },
+          "term": {
+            "description": "The analysed query term (query_term_unmatched only), never the index's spelling. One warning per distinct term, in query order.",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "request": {
+      "description": "Contract 1.2.0, ss_query only: the request as the engine used it (defaults filled in).",
+      "type": "object",
+      "required": ["analyzer_id", "retrieval_mode", "top_k", "candidate_k", "path_prefix"],
+      "properties": {
+        "analyzer_id": { "type": "string" },
+        "retrieval_mode": { "enum": ["lexical", "vector", "hybrid"] },
+        "top_k": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "candidate_k": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "path_prefix": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "profile": {
+      "description": "Contract 1.2.0, ss_query only, present only when options_json has \"profile\": true. Microseconds on a monotonic clock. serialize_us covers the report up to this field.",
+      "type": "object",
+      "required": ["tokenize_us", "score_us", "rank_us", "serialize_us", "matched_chunks"],
+      "properties": {
+        "tokenize_us": { "type": "integer", "minimum": 0 },
+        "score_us": { "type": "integer", "minimum": 0 },
+        "rank_us": { "type": "integer", "minimum": 0 },
+        "serialize_us": { "type": "integer", "minimum": 0 },
+        "matched_chunks": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
     }
   }
 }

@@ -40,6 +40,7 @@ const indexer = @import("indexer.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
+const query_report = @import("report.zig");
 const rpc = @import("rpc.zig");
 const service_module = @import("service.zig");
 
@@ -86,14 +87,14 @@ pub export fn ss_last_error() callconv(.c) [*:0]const u8 {
 }
 
 /// The engine contract/build version (`contracts/CONTRACTS_VERSION`), e.g.
-/// `"1.1.0"`. Static storage: never pass this pointer to `ss_free`.
+/// `"1.2.0"`. Static storage: never pass this pointer to `ss_free`.
 pub export fn ss_version() callconv(.c) [*:0]const u8 {
     return contracts_version.ptr;
 }
 
 /// Opaque handle to one opened, immutable, published snapshot generation.
 /// Every field is owned by the handle and freed together by `ss_close`.
-const Handle = struct {
+pub const Handle = struct {
     manifest_buffer: []u8,
     documents_buffer: []u8,
     lexical_buffer: []u8,
@@ -219,6 +220,8 @@ const QueryOptions = struct {
     candidate_k: ?usize = null,
     path_prefix: ?[]const u8 = null,
     principal_labels: []const []const u8 = &.{},
+    /// S2-T4: add `profile{...}` timings to the report.
+    profile: bool = false,
 };
 
 /// Run one query and return the same `result` JSON object a `search_knowledge`
@@ -292,6 +295,13 @@ fn queryImpl(
         break :vec query_vector;
     };
 
+    const vector_ignored: ?query_report.VectorIgnored = if (query_vector.len == 0 or effective_vector.len != 0)
+        null
+    else if (mode == .lexical)
+        .lexical_mode
+    else
+        .no_vectors_in_snapshot;
+
     const service = service_module.Service{ .engine = h.engine };
     const document_count = h.engine.documents.len;
     // S2-T3: nothing here scales with the corpus. The ranking selection
@@ -310,18 +320,27 @@ fn queryImpl(
     // above already owns everything this call needs and is torn down before
     // `ss_query` returns, so the ABI keeps its "no hidden allocator, nothing
     // retained between calls" contract.
-    const found = try service.searchKnowledge(arena.allocator(), query_text, effective_vector, .{
+    var trace = hybrid.Trace{ .allocator = arena.allocator(), .io = io(), .profile = options.profile };
+    const found = try service.searchKnowledgeTraced(arena.allocator(), query_text, effective_vector, .{
         .top_k = top_k,
         .candidate_k = candidate_k,
         .retrieval_mode = mode,
         .path_prefix = options.path_prefix,
         .principal_labels = options.principal_labels,
-    }, results, evidence);
+    }, results, evidence, &trace);
 
     var out: std.Io.Writer.Allocating = .init(allocator);
     errdefer out.deinit();
     var json = std.json.Stringify{ .writer = &out.writer };
-    try rpc.writeSearchResultValue(&json, service, query_text, mode, options.principal_labels.len, found);
+    try rpc.writeSearchResultValueWith(&json, service, query_text, mode, options.principal_labels.len, found, .{
+        .trace = &trace,
+        .mode = mode,
+        .analyzer_id = h.engine.analyzer_id,
+        .top_k = top_k,
+        .candidate_k = candidate_k,
+        .path_prefix = options.path_prefix,
+        .vector_ignored = vector_ignored,
+    });
     const owned = try out.toOwnedSliceSentinel(0);
     return owned.ptr;
 }
@@ -858,7 +877,14 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     defer golden.deinit();
     var golden_json = std.json.Stringify{ .writer = &golden.writer };
     try rpc.writeSearchResultValue(&golden_json, service, "hybrid", .hybrid, 0, evidence);
-    try std.testing.expectEqualStrings(golden.written(), query_text);
+    // S2-T4: ss_query ends with `warnings` and `request` after the shared
+    // fields; everything before them is the RPC result, byte for byte.
+    const shared = golden.written()[0 .. golden.written().len - 1];
+    try std.testing.expectEqualStrings(shared, query_text[0..shared.len]);
+    try std.testing.expectEqualStrings(
+        ",\"warnings\":[],\"request\":{\"analyzer_id\":\"ascii-alnum-v1\",\"retrieval_mode\":\"hybrid\",\"top_k\":1,\"candidate_k\":100,\"path_prefix\":null}}",
+        query_text[shared.len..],
+    );
 
     const evidence_json = ss_evidence(handle, "{\"ids\":[\"both\",\"missing-id\"]}") orelse return error.EvidenceFailed;
     defer ss_free(evidence_json);
@@ -868,7 +894,7 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     try std.testing.expectEqualStrings("guides/hybrid.md", evidence_items[0].object.get("citation").?.object.get("path").?.string);
     try std.testing.expectEqual(false, evidence_items[1].object.get("found").?.bool);
 
-    try std.testing.expectEqualStrings("1.1.0", std.mem.span(ss_version()));
+    try std.testing.expectEqualStrings("1.2.0", std.mem.span(ss_version()));
 }
 
 test "ss_import_json publishes a queryable snapshot and reports negative codes on failure" {

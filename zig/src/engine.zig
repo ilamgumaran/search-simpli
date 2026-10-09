@@ -94,21 +94,48 @@ pub const Engine = struct {
         result_output: []hybrid.Result,
         options: hybrid.SearchOptions,
     ) ![]hybrid.Result {
+        return engine.queryTraced(allocator, query_text, query_vector, result_output, options, null);
+    }
+
+    /// `queryTokenized` that also fills `trace` (S2-T4). With `trace == null`
+    /// it is exactly `queryTokenized`: no extra allocation, no clock read.
+    /// Query terms are looked up in the dictionary only when the retrieval mode
+    /// uses them (not in `vector` mode); `trace.allocator` owns what the trace
+    /// records.
+    pub fn queryTraced(
+        engine: Engine,
+        allocator: std.mem.Allocator,
+        query_text: []const u8,
+        query_vector: []const f32,
+        result_output: []hybrid.Result,
+        options: hybrid.SearchOptions,
+        trace: ?*hybrid.Trace,
+    ) ![]hybrid.Result {
+        const lookup = options.retrieval_mode != .vector;
+        if (trace) |t| {
+            t.scope_documents = engine.documents;
+            t.scope_prefix = options.path_prefix;
+            t.scope_labels = options.principal_labels;
+        }
+        const tokenize_start = hybrid.Trace.stamp(trace);
         const terms = if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id))
-            try postings.resolveQuery(allocator, engine.lexical_index, query_text)
+            try postings.resolveQueryTraced(allocator, engine.lexical_index, query_text, trace, lookup)
         else terms: {
             const tokens = try analyzer_v2.tokenize(allocator, query_text);
             defer {
                 for (tokens) |token| allocator.free(token);
                 allocator.free(tokens);
             }
-            break :terms try lexical_build.resolveTokens(allocator, engine.lexical_index, tokens);
+            break :terms try lexical_build.resolveTokensTraced(allocator, engine.lexical_index, tokens, trace, lookup);
         };
         defer allocator.free(terms);
+        if (trace) |t| {
+            if (t.profile) t.tokenize_ns = hybrid.Trace.stamp(trace) - tokenize_start;
+        }
         const cursors = try allocator.alloc(usize, terms.len);
         defer allocator.free(cursors);
         var scorer = postings.SparseScorer.init(engine.lexical_index, terms, cursors, options.bm25);
-        return hybrid.searchSparse(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options);
+        return hybrid.searchSparseTraced(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options, trace);
     }
 
     pub fn evidence(engine: Engine, result: hybrid.Result) Evidence {

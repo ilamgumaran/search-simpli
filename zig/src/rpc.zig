@@ -1,6 +1,7 @@
 const engine_module = @import("engine.zig");
 const hybrid = @import("hybrid.zig");
 const postings = @import("postings.zig");
+const report = @import("report.zig");
 const service_module = @import("service.zig");
 const std = @import("std");
 
@@ -263,6 +264,23 @@ pub fn writeSearchResultValue(
     principal_label_count: usize,
     evidence: []const engine_module.Evidence,
 ) !void {
+    return writeSearchResultValueWith(json, service, query, mode, principal_label_count, evidence, null);
+}
+
+/// `writeSearchResultValue` plus, when `extras` is set (the C ABI, S2-T4), the
+/// `warnings`, `request` and optional `profile` fields appended last. JSON-RPC
+/// passes `null`, so its output is unchanged.
+pub fn writeSearchResultValueWith(
+    json: *std.json.Stringify,
+    service: service_module.Service,
+    query: []const u8,
+    mode: hybrid.RetrievalMode,
+    principal_label_count: usize,
+    evidence: []const engine_module.Evidence,
+    extras: ?report.Extras,
+) !void {
+    var tail = extras;
+    if (tail) |*e| e.serialize_start = hybrid.Trace.stamp(e.trace);
     try json.beginObject();
     try json.objectField("tool");
     try json.write("search_knowledge");
@@ -338,6 +356,7 @@ pub fn writeSearchResultValue(
         .cite_path_and_lines = true,
         .say_when_evidence_is_insufficient = true,
     });
+    if (tail) |e| try report.write(json, e);
     try json.endObject();
 }
 
