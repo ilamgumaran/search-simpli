@@ -12,6 +12,16 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S2-T11, 2026-10-08)
+
+**S2-T11 is `verified` and merged to `main`** (branch `task/S2-T11` `6ee394f`, merge `54bea4c`; Verdict in `docs/tasks/S2-T11.md`). The contract is unchanged (`1.2.0`). **Series S2 is closed:** S2-T1..T5 and S2-T11..T13 are on `main`, and S2-T14 is ready.
+
+- **A query can no longer hang.** `ss_query` checks `query_text` as UTF-8 before any analysis, in every mode and analyzer. Invalid text returns `NULL` with `ss_query: query_text is not valid UTF-8 (SS_ERR_INVALID_ARGUMENT)`. Before this, an `analyzer-v2` snapshot looped forever, and an `ascii-alnum-v1` snapshot echoed `query` as a byte array.
+- **The same check everywhere.** `Engine.queryTraced` repeats the check, and `nfc.normalize` validates, so the analyzer ends on any byte string. `searchd query`/`evidence` exit 2 with one line. `serve` answers `-32700` and keeps serving.
+- **Valid queries are byte-identical** to the previous library (capture with profile off and on).
+- **Libraries:** dylib 418,232 B, stamp `a9ea4c22…7b8e`.
+- **Open (non-blocking):** the `rpc.zig` `-32602` guard is unreachable through JSON and untested. Dart turns lone surrogates into U+FFFD rather than erroring. `analyzer-v2` query time grows quadratically with non-ASCII length (13 s for 1 MB, older than this task).
+
 ## Standalone platform status (S2-T13, 2026-10-08)
 
 **S2-T13 is `verified` and merged to `main`** (branch `task/S2-T13` `56432cf`; Verdict in `docs/tasks/S2-T13.md`). The contract is unchanged (`1.2.0`).
