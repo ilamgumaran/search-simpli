@@ -254,6 +254,14 @@ pub export fn ss_query(
         return null;
     };
     const text = std.mem.span(query_text);
+    // S2-T11: validate before any analysis, in every mode and analyzer. The
+    // error class is SS_ERR_INVALID_ARGUMENT (`ss_query` returns a pointer, so
+    // the class is named in the message, as `ss_last_error()` is its only
+    // channel).
+    engine_module.Engine.validateQueryText(text) catch {
+        setLastError("ss_query: query_text is not valid UTF-8 (SS_ERR_INVALID_ARGUMENT)", .{});
+        return null;
+    };
     const vector: []const f32 = if (query_vector) |ptr| ptr[0..dims] else &.{};
     const options_text = if (options_json) |ptr| std.mem.span(ptr) else "";
     return queryImpl(h, text, vector, top_k, options_text) catch |err| {

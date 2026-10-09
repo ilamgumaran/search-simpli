@@ -111,6 +111,9 @@ pub const Engine = struct {
         options: hybrid.SearchOptions,
         trace: ?*hybrid.Trace,
     ) ![]hybrid.Result {
+        // S2-T11: the last door. Every entry point validates first (so it can
+        // say so in its own words); this is the one that cannot be forgotten.
+        try Engine.validateQueryText(query_text);
         const lookup = options.retrieval_mode != .vector;
         if (trace) |t| {
             t.scope_documents = engine.documents;
@@ -136,6 +139,12 @@ pub const Engine = struct {
         defer allocator.free(cursors);
         var scorer = postings.SparseScorer.init(engine.lexical_index, terms, cursors, options.bm25);
         return hybrid.searchSparseTraced(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options, trace);
+    }
+
+    /// `query_text` must be valid UTF-8, for every analyzer and retrieval mode
+    /// (S2-T11). An invalid byte string is an input error, never analysed.
+    pub fn validateQueryText(query_text: []const u8) error{InvalidQueryText}!void {
+        if (!std.unicode.utf8ValidateSlice(query_text)) return error.InvalidQueryText;
     }
 
     pub fn evidence(engine: Engine, result: hybrid.Result) Evidence {

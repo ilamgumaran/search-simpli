@@ -226,3 +226,22 @@ test "a failure of the work is not a usage error and keeps exit 1 (S1-T8 criteri
     try std.testing.expectError(error.FileNotFound, cli.runQuery(io, std.testing.allocator, "no-such-snapshot-s1-t8", "q", .{}, &output.writer));
     try std.testing.expectError(error.FileNotFound, cli.runEvidence(io, std.testing.allocator, "no-such-snapshot-s1-t8", "q", .{}, &output.writer));
 }
+
+// S2-T11: invalid UTF-8 in the query text is a usage error (one line, status 2),
+// for `query` and `evidence`, before any snapshot is opened.
+test "query and evidence reject invalid UTF-8 text with one line and status 2 (S2-T11)" {
+    var buffer: [512]u8 = undefined;
+    for ([_][]const u8{ "query", "evidence" }) |command| {
+        for ([_][]const u8{ "caf\xff", "\x80", "\xfe", "\xc3", "ok \xed\xa0\x80" }) |text| {
+            const parsed = cli.parseArgs(&.{ command, "dir", text }, &buffer);
+            try std.testing.expect(parsed == .usage_error);
+            try std.testing.expectEqual(@as(u8, 2), parsed.usage_error.status);
+            try std.testing.expectEqualStrings(
+                "searchd: invalid value for query text (not valid UTF-8)\n",
+                parsed.usage_error.message,
+            );
+        }
+        const good = cli.parseArgs(&.{ command, "dir", "caf\xc3\xa9" }, &buffer);
+        try std.testing.expect(good != .usage_error);
+    }
+}

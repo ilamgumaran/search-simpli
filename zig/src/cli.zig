@@ -375,6 +375,9 @@ fn parseInner(p: *Parser) error{Usage}!Command {
         const name: []const u8 = if (is_query) "query" else "evidence";
         const path = p.next() orelse return p.missingArgument(name, "<dir>");
         const text = p.next() orelse return p.missingArgument(name, "\"<text>\"");
+        // S2-T11: invalid UTF-8 is a usage error (exit 2), judged here with the others.
+        if (!std.unicode.utf8ValidateSlice(text))
+            return p.usage("invalid value for", "query text", null, " (not valid UTF-8)");
         const args = QueryArgs{ .path = path, .text = text, .options = try parseQueryFlags(p, name) };
         return if (is_query) .{ .query = args } else .{ .evidence = args };
     }
