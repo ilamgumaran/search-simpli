@@ -118,7 +118,11 @@ class SearchSimpli {
   /// `ss_query()`: runs one query against the opened snapshot and returns
   /// the typed `search_knowledge` result envelope.
   ///
-  ///   [queryText]        Must not be empty.
+  ///   [queryText]        Must not be empty and must be valid UTF-8 (S2-T11).
+  ///                       A Dart [String] is encoded as UTF-8 here, so it
+  ///                       always is; if the native side ever reports
+  ///                       otherwise (`ss_query` returns NULL with "query_text
+  ///                       is not valid UTF-8"), the call throws.
   ///   [queryVector]       Ignored for `RetrievalMode.lexical` and for
   ///                       snapshots with zero vector dimensions; otherwise
   ///                       its length must equal the snapshot's vector

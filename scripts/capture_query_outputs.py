@@ -86,12 +86,11 @@ class Library:
             raise RuntimeError(f"ss_open({directory}): {self.lib.ss_last_error().decode()}")
         return handle
 
-    def query(self, handle, text: str, vector, top_k: int, options: dict) -> str:
+    def query(self, handle, text, vector, top_k: int, options: dict) -> str:
         dims = len(vector)
         array = (ctypes.c_float * dims)(*vector) if dims else None
-        pointer = self.lib.ss_query(
-            handle, text.encode(), array, dims, top_k, json.dumps(options).encode()
-        )
+        raw = text if isinstance(text, bytes) else text.encode()
+        pointer = self.lib.ss_query(handle, raw, array, dims, top_k, json.dumps(options).encode())
         if not pointer:
             return "ERROR " + self.lib.ss_last_error().decode()
         try:
@@ -196,19 +195,26 @@ def main() -> int:
         help='send "profile": true with every query (timings differ run to run: '
         "compare with the profile object cut, see S2-T13)",
     )
+    parser.add_argument(
+        "--invalid",
+        choices=("none", "v1", "both"),
+        default="none",
+        help="also capture invalid-UTF-8 queries (3 byte strings x 3 modes) on an ascii-alnum-v1 snapshot "
+        "('v1') or on that and an analyzer-v2 snapshot ('both'; the library before S2-T11 hangs on the latter)",
+    )
     args = parser.parse_args()
     args.work.mkdir(parents=True, exist_ok=True)
     rng = random.Random(args.seed)
     lib = Library(args.lib)
     lines: list[dict] = []
 
-    def record(label: str, handle, text: str, vector, top_k: int, options: dict) -> None:
+    def record(label: str, handle, text, vector, top_k: int, options: dict) -> None:
         if args.profile:
             options = dict(options, profile=True)
         lines.append(
             {
                 "case": label,
-                "query": text,
+                "query": text if isinstance(text, str) else "bytes:" + text.hex(),
                 "vector": vector,
                 "top_k": top_k,
                 "options": options,
@@ -274,6 +280,19 @@ def main() -> int:
                 options = {"retrieval_mode": mode, "candidate_k": candidate_k}
                 record(f"random:{name}:{number}:{mode}:{top_k}/{candidate_k}", handle, text, [], top_k, options)
         lib.lib.ss_close(handle)
+
+    # 5. S2-T11: queries that are not UTF-8 (the library now rejects them).
+    if args.invalid != "none":
+        analyzers = ["v1"] + (["v2"] if args.invalid == "both" else [])
+        for analyzer in analyzers:
+            snapshot = args.work / f"snap-invalid-{analyzer}"
+            if not snapshot.exists():
+                run([args.searchd, "index", str(ROOT / "fixtures" / "knowledge"), "--out", str(snapshot), "--analyzer", analyzer])
+            handle = lib.open(snapshot)
+            for number, raw in enumerate((b"caf\xff", b"\xfe", b"hybrid \x80")):
+                for mode in ("lexical", "vector", "hybrid"):
+                    record(f"invalid:{analyzer}:{number}:{mode}", handle, raw, [], 5, {"retrieval_mode": mode})
+            lib.lib.ss_close(handle)
 
     with args.out.open("w", encoding="utf-8") as stream:
         for line in lines:

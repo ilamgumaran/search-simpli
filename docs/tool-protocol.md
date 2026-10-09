@@ -19,7 +19,7 @@ python3 knowledge_tools.py .search/index.json
 
 ### `search_knowledge`
 
-Parameters: non-empty `query`, optional `top_k` from 1–100, optional `candidate_k`, optional `path_prefix`, and optional `retrieval_mode` (`lexical`, `vector`, or `hybrid`). Zig vector/hybrid requests also supply `query_vector` matching the snapshot model/dimensions; Python’s current local providers embed internally. The response reports retrieval and index/model metadata.
+Parameters: non-empty `query` (valid UTF-8, so the result's `query` is always a string; the Zig service answers invalid text with a JSON-RPC error, `-32700` or `-32602`, and `ss_query` with `NULL` and "query_text is not valid UTF-8", S2-T11), optional `top_k` from 1–100, optional `candidate_k`, optional `path_prefix`, and optional `retrieval_mode` (`lexical`, `vector`, or `hybrid`). Zig vector/hybrid requests also supply `query_vector` matching the snapshot model/dimensions; Python’s current local providers embed internally. The response reports retrieval and index/model metadata.
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"search_knowledge","params":{"query":"how are ranks fused?","top_k":5,"path_prefix":"guides/"}}

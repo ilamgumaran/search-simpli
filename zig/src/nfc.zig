@@ -24,6 +24,11 @@ pub const Error = error{ InvalidUtf8, OutOfMemory };
 /// `allocator`. Returns the input allocator-free (a plain slice) so callers
 /// that only need a lightweight check can free it immediately.
 pub fn normalize(allocator: std.mem.Allocator, text: []const u8) Error![]u8 {
+    // S2-T11: validate before anything walks the bytes. The raw
+    // `Utf8Iterator` below `unreachable`s on a byte that cannot start a
+    // sequence, which in ReleaseSmall is undefined behaviour (it looped
+    // forever). Every later step may therefore assume valid UTF-8.
+    if (!std.unicode.utf8ValidateSlice(text)) return error.InvalidUtf8;
     if (!hasAnyCombiningOrDecomposable(text)) {
         // Fast, allocation-preserving path: nothing to change. Still copy so
         // the caller has a uniformly-owned buffer to free.
@@ -51,9 +56,12 @@ pub fn normalize(allocator: std.mem.Allocator, text: []const u8) Error![]u8 {
 /// non-zero combining class, in which case full normalization is needed.
 /// Plain ASCII and already-precomposed text with no combining marks (the
 /// common case) short-circuits here without allocating a codepoint buffer.
+/// `text` must already be valid UTF-8 (`normalize` checks); an invalid
+/// sequence ends the scan instead of reaching the iterator's `unreachable`.
 fn hasAnyCombiningOrDecomposable(text: []const u8) bool {
-    var view = std.unicode.Utf8Iterator{ .bytes = text, .i = 0 };
-    while (view.nextCodepoint()) |cp| {
+    var view = std.unicode.Utf8View.init(text) catch return false;
+    var iter = view.iterator();
+    while (iter.nextCodepoint()) |cp| {
         if (cp < 0x80) continue;
         if (decompositionOf(cp) != null) return true;
         if (combiningClassOf(cp) != 0) return true;

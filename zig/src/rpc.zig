@@ -95,6 +95,11 @@ fn handleSearch(
         try writeError(output, id, -32602, "Invalid params");
         return;
     }
+    // S2-T11: same rejection as `ss_query` and the CLI; never reaches analysis.
+    engine_module.Engine.validateQueryText(query) catch {
+        try writeError(output, id, -32602, "Invalid params: query is not valid UTF-8");
+        return;
+    };
     const top_k = optionalPositiveInteger(params.get("top_k"), 5) orelse {
         try writeError(output, id, -32602, "Invalid params");
         return;

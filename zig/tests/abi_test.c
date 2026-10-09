@@ -177,6 +177,21 @@ int main(void) {
     char *bad_dims_query = ss_query(handle, "hybrid ranking", query_vector, 1, 1, NULL);
     expect_true("ss_query rejects a mismatched query_vector length", bad_dims_query == NULL, "expected NULL");
 
+    /* S2-T11: query_text must be valid UTF-8, in every mode; rejected before analysis. */
+    static const char *const bad_texts[] = {"caf\xff", "\xfe", "hybrid \x80", "\xc3"};
+    static const char *const modes[] = {"{\"retrieval_mode\":\"lexical\"}", "{\"retrieval_mode\":\"vector\"}", NULL};
+    int invalid_rejected = 1;
+    for (size_t i = 0; i < sizeof bad_texts / sizeof bad_texts[0]; i++) {
+        for (size_t m = 0; m < sizeof modes / sizeof modes[0]; m++) {
+            char *invalid_query = ss_query(handle, bad_texts[i], query_vector, 2, 1, modes[m]);
+            if (invalid_query != NULL || strstr(ss_last_error(), "query_text is not valid UTF-8") == NULL) {
+                invalid_rejected = 0;
+                ss_free(invalid_query);
+            }
+        }
+    }
+    expect_true("ss_query rejects query_text that is not valid UTF-8", invalid_rejected, "expected NULL and the UTF-8 message");
+
     ss_close(handle);
 
     /* Best-effort cleanup of the temporary snapshot directory. */
