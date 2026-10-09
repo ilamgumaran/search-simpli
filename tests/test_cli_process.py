@@ -118,6 +118,41 @@ class CliProcessTests(unittest.TestCase):
         self.assertEqual(result.stdout, "")
         self.assertIn("Commands:", result.stderr)
 
+    def test_invalid_utf8_query_exits_2_with_one_line_and_serve_reports_an_error(self) -> None:
+        """S2-T11: a query text that is not UTF-8 is a usage error, on both analyzers."""
+        folder = Path(self.scratch.name) / "utf8-docs"
+        folder.mkdir(exist_ok=True)
+        (folder / "a.md").write_text("hybrid retrieval ranks documents\n", encoding="utf-8")
+        for analyzer in ("v1", "v2"):
+            snapshot = Path(self.scratch.name) / f"utf8-{analyzer}"
+            built = self.run_searchd("index", str(folder), "--out", str(snapshot), "--analyzer", analyzer)
+            self.assertEqual(built.returncode, 0, built.stderr)
+            for command in ("query", "evidence"):
+                for raw in (b"caf\xff", b"\x80", b"hybrid \xfe\xff"):
+                    result = subprocess.run(
+                        [str(self.binary), command, str(snapshot), raw],
+                        capture_output=True, stdin=subprocess.DEVNULL, timeout=20,
+                    )
+                    self.assertEqual(result.returncode, 2, (analyzer, command, raw, result.stderr))
+                    self.assertEqual(result.stdout, b"")
+                    self.assertEqual(len(result.stderr.splitlines()), 1, result.stderr)
+                    self.assertIn(b"not valid UTF-8", result.stderr)
+            # serve: the JSON-RPC line is an error, never a result, and the server stays up.
+            requests = (
+                b'{"jsonrpc":"2.0","id":1,"method":"search_knowledge","params":{"query":"caf\xff"}}\n'
+                b'{"jsonrpc":"2.0","id":2,"method":"search_knowledge","params":{"query":"caf\\udc00"}}\n'
+                b'{"jsonrpc":"2.0","id":3,"method":"search_knowledge","params":{"query":"hybrid","retrieval_mode":"lexical"}}\n'
+            )
+            served = subprocess.run(
+                [str(self.binary), "serve", str(snapshot)], input=requests,
+                capture_output=True, timeout=20,
+            )
+            lines = served.stdout.splitlines()
+            self.assertEqual(len(lines), 3, served.stdout)
+            self.assertIn(b'"error"', lines[0])
+            self.assertIn(b'"error"', lines[1])
+            self.assertIn(b'"result"', lines[2])
+
 
 if __name__ == "__main__":
     unittest.main()

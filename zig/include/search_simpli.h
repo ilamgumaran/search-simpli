@@ -131,7 +131,14 @@ char *ss_status(ss_handle *handle);
 /*
  * Run one query against `handle`'s snapshot.
  *
- *   query_text    Null-terminated UTF-8 query text. An empty or
+ *   query_text    Null-terminated UTF-8 query text. It MUST be valid UTF-8
+ *                 (checked before any analysis, for every analyzer and
+ *                 retrieval mode; since S2-T11): invalid text -- a byte that
+ *                 cannot start a sequence such as 0xFF or a lone 0x80, a
+ *                 truncated or overlong sequence, a surrogate -- makes
+ *                 ss_query return NULL with ss_last_error() "ss_query:
+ *                 query_text is not valid UTF-8 (SS_ERR_INVALID_ARGUMENT)".
+ *                 An empty or
  *                 punctuation-only query is accepted: it ranks nothing and
  *                 reports query_empty_after_analysis (lexical and hybrid).
  *   query_vector  Array of `dims` 32-bit floats, or NULL when `dims` is 0.
@@ -212,7 +219,7 @@ char *ss_status(ss_handle *handle);
  *               the "profile" field itself. With "profile" off no clock is
  *               read.
  *
- * Returns NULL on failure — invalid top_k/candidate_k, a wrong-sized or
+ * Returns NULL on failure — query_text that is not valid UTF-8, invalid top_k/candidate_k, a wrong-sized or
  * non-finite query_vector, malformed options_json, or an unknown
  * retrieval_mode — see ss_last_error(). `handle` must not be NULL.
  */
