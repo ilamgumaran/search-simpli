@@ -148,7 +148,9 @@ the manifest so query time picks the matching tokenizer automatically:
   general-category letters (Lu/Ll/Lt/Lm/Lo) and digits (Nd/Nl/No), the
   combining marks (Mn/Mc) and inner ZWJ/ZWNJ attached to them (S1-T14: a
   Tamil word such as `கணினி` stays one token), and simple per-codepoint
-  case folding. Tables are generated from Python's own
+  case folding. Variation selectors (U+FE00-FE0F, U+E0100-E01EF) are
+  dropped, not attached, so the keycap `1️⃣` is the token `1`; NFC is
+  complete (singletons, Hangul) since S1-T15. Tables are generated from Python's own
   `unicodedata` module (Unicode 13.0.0; see `scripts/gen_unicode_tables.py`
   and `zig/src/unicode_tables.zig`), since Zig 0.16's `std.unicode` carries
   no category, case-folding, or normalization data of its own. Tamil is the

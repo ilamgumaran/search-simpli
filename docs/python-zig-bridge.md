@@ -35,7 +35,7 @@ Zig rebuilds lexical postings with the analyzer the file declares in `analyzer_i
 | `analyzer_id` | Tokenization | Since |
 |---|---|---|
 | `ascii-alnum-v1` | ASCII letters and digits, case-insensitive. Text in any other script yields no terms, and `café` is indexed as `caf`. `export_zig.py` writes this by default. | 1.0.0 |
-| `analyzer-v2` | Unicode: NFC, simple case folding, Unicode letter and digit categories plus the combining marks (Mn/Mc) and inner ZWJ/ZWNJ attached to them, so a Tamil or Devanagari word is one token (S1-T14; `zig/src/analyzer_v2.zig`). The import builds the same index `searchd index` builds from the same chunks: same tokens, document frequencies, term frequencies, document lengths and `MANIFEST`, byte for byte. Use it for any text that is not plain ASCII. `export_zig.py --analyzer analyzer-v2` writes it. | 1.1.0 |
+| `analyzer-v2` | Unicode: NFC, simple case folding, Unicode letter and digit categories plus the combining marks (Mn/Mc) and inner ZWJ/ZWNJ attached to them, so a Tamil or Devanagari word is one token (S1-T14; `zig/src/analyzer_v2.zig`). Variation selectors are dropped, not attached (S1-T15). The import builds the same index `searchd index` builds from the same chunks: same tokens, document frequencies, term frequencies, document lengths and `MANIFEST`, byte for byte. Use it for any text that is not plain ASCII. `export_zig.py --analyzer analyzer-v2` writes it. | 1.1.0 |
 
 Any other value is rejected (`UnsupportedAnalyzer`, `SS_ERR_INVALID_ARGUMENT` through `ss_import_json`). The recorded id also decides how queries on the snapshot are tokenized, so an `analyzer-v2` snapshot is queried with the Unicode tokenizer.
 
