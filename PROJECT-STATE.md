@@ -12,6 +12,16 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S2-T14, 2026-10-10)
+
+**S2-T14 is `verified` and merged to `main`** (branch `task/S2-T14` `ed41c86`; Verdict in `docs/tasks/S2-T14.md`). The contract is unchanged (`1.2.0`), with no ABI change.
+
+- **Self-numbered generations never go backwards.** `generation_alloc.nextFreeGeneration` is the one place: `ss_index_folder`, `searchd index` without `--generation`, and every `--update`. It starts above the highest of the `MANIFEST`'s generation, every canonical section file present (complete or not) and `INDEX-STATE.json`'s generation. A lost `MANIFEST` with only generation 2 on disk now publishes 3 (was 1). Generation 2 is superseded, and `keep_generations` prunes it after the new `MANIFEST`. At `u64` max the publish fails with `NoFreeGeneration` (was a CLI panic, and `GenerationZero` in the shipped library).
+- **Dart:** `SearchSimpli.indexFolder` encodes its options before any native string, so nothing leaks on the `ArgumentError` path. New optional `Allocator allocator = malloc` parameter, for tests.
+- **Caller-numbered publishes are not checked** (`ss_import_json`, `--generation`). A free lower number is published as given, and a taken one fails with `PathAlreadyExists`; `generation-lifecycle.md` now says so. After a lost `MANIFEST`, the app's `ss_open`-based numbering gets stuck on `PathAlreadyExists` (Verdict finding 1, for M12-T10).
+- **Libraries:** dylib 434,696 B `bdcd6fe1…`, `.so` 426,192 B `30c6a4a8…`, stamp `b2cf76ee…`.
+- **Open (non-blocking):** Verdict findings 2-6: a huge trace blocks numbering; the public `allocator` seam; the free-pair loop has no test; "an arena is fine"; `--update` ignores `--generation`.
+
 ## Standalone platform status (S1-T17, 2026-10-10)
 
 **S1-T17 is `verified` and merged to `main`** (branch `task/S1-T17` `c30d74b`; Verdict in `docs/tasks/S1-T17.md`). The contract is unchanged (`1.2.0`), the analyzer id stays `analyzer-v2`, and no output moved (`nfc_compare.py` 0, goldens identical).
