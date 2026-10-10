@@ -27,6 +27,10 @@ The directory must be opened with iteration capability. The scanner:
 
 If no manifest exists, every recognized generation file is classified as unreferenced. If a manifest exists but is invalid, scanning returns the validation error rather than guessing at recovery.
 
+## Generation numbering (S2-T14)
+
+A publish that picks its own number (`ss_index_folder`, `searchd index` without `--generation`) uses one rule, in `generation_alloc.zig`: **the highest generation the directory has any trace of, plus one.** The traces are the `MANIFEST`'s generation, every canonical `documents-N.hybseg` / `lexical-N.hyblex` present (complete or not), and the generation `INDEX-STATE.json` names; the first free pair above that is used, and a fresh directory starts at 1. A lost `MANIFEST` therefore never makes the counter start over: with only generation 2 on disk the recovery publishes generation 3, generation 2 shows as superseded (not orphaned) and `keep_generations` can prune it. At `u64` max there is no next number and the publish fails with `NoFreeGeneration` instead of overflowing. `ss_import_json` and `--generation` are numbered by the caller and are not changed by this rule.
+
 ## Retention pruning: `keep_generations` (S2-T5)
 
 Opt-in. `"keep_generations": N` (N >= 1; `0` is an error, `InvalidKeepGenerations` / `SS_ERR_INVALID_ARGUMENT`) on `ss_index_folder`, as an optional top-level field of the `ss_import_json` payload (that function has no options argument), and `--keep-generations N` on `searchd index` and `searchd import-json`. Absent: nothing is deleted, as before.

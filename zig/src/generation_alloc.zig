@@ -15,6 +15,8 @@
 const std = @import("std");
 const manifest = @import("manifest.zig");
 const publication = @import("publication.zig");
+const lifecycle = @import("lifecycle.zig");
+const incremental_state = @import("incremental_state.zig");
 
 /// The current generation recorded by `MANIFEST` in `dir`, or `0` if `dir`
 /// has no manifest yet (a fresh output directory).
@@ -40,13 +42,34 @@ fn pathExists(dir: std.Io.Dir, io: std.Io, name: []const u8) !bool {
     return true;
 }
 
-/// The smallest generation number strictly greater than `dir`'s current
-/// generation (0 if none) whose `documents-*.hybseg`/`lexical-*.hyblex`
-/// filenames are both free. `allocator` is used only for the transient read
-/// of `MANIFEST`; an arena is fine.
+/// The highest generation number the directory has any trace of: the
+/// `MANIFEST`'s, any canonical `documents-N.hybseg` / `lexical-N.hyblex`
+/// present (complete or not), and the one `INDEX-STATE.json` names. `0` for
+/// a fresh directory. A lost `MANIFEST` therefore cannot make the counter
+/// start over (S2-T14).
+pub fn highestGenerationOnDisk(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !u64 {
+    var highest = try currentGeneration(allocator, io, dir);
+    if (incremental_state.load(allocator, io, dir) catch null) |state| {
+        highest = @max(highest, state.generation);
+    }
+    var iterable = try dir.openDir(io, ".", .{ .iterate = true });
+    defer iterable.close(io);
+    var iterator = iterable.iterate();
+    while (try iterator.next(io)) |entry| {
+        if (entry.kind != .file) continue;
+        if (lifecycle.sectionGeneration(entry.name)) |number| highest = @max(highest, number);
+    }
+    return highest;
+}
+
+/// The smallest generation number strictly greater than everything
+/// `highestGenerationOnDisk` finds whose `documents-*.hybseg` /
+/// `lexical-*.hyblex` filenames are both free. `allocator` is used only for
+/// transient reads; an arena is fine. At `u64` max there is no next number:
+/// `error.NoFreeGeneration` (previously an integer-overflow panic).
 pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !u64 {
-    const current = try currentGeneration(allocator, io, dir);
-    var candidate = current + 1;
+    const highest = try highestGenerationOnDisk(allocator, io, dir);
+    var candidate = std.math.add(u64, highest, 1) catch return error.NoFreeGeneration;
     var attempts: usize = 0;
     while (attempts < 1_000_000) : (attempts += 1) {
         var name_buffer: [64]u8 = undefined;
@@ -56,7 +79,7 @@ pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.
         const lexical_name = try std.fmt.bufPrint(&lexical_buffer, "lexical-{d}.hyblex", .{candidate});
         const lexical_taken = try pathExists(dir, io, lexical_name);
         if (!documents_taken and !lexical_taken) return candidate;
-        candidate += 1;
+        candidate = std.math.add(u64, candidate, 1) catch return error.NoFreeGeneration;
     }
     return error.NoFreeGeneration;
 }
@@ -79,4 +102,26 @@ test "nextFreeGeneration skips a crash orphan past the current generation" {
     try tmp.dir.writeFile(io, .{ .sub_path = "documents-1.hybseg", .data = "orphan" });
     const generation = try nextFreeGeneration(std.testing.allocator, io, tmp.dir);
     try std.testing.expectEqual(@as(u64, 2), generation);
+}
+
+test "nextFreeGeneration numbers above a lone higher section file and above INDEX-STATE" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "lexical-7.hyblex", .data = "half" });
+    try std.testing.expectEqual(@as(u64, 8), try nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
+    try tmp.dir.writeFile(io, .{ .sub_path = "INDEX-STATE.json", .data = "{\"generation\":11,\"analyzer_id\":\"analyzer-v2\",\"files\":[]}" });
+    try std.testing.expectEqual(@as(u64, 12), try nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
+}
+
+test "nextFreeGeneration at u64 max is an error, not a panic" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "documents-18446744073709551615.hybseg", .data = "x" });
+    try std.testing.expectError(error.NoFreeGeneration, nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
 }

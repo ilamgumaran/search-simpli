@@ -817,6 +817,48 @@ test "keep_generations prunes through ss_index_folder and ss_import_json; zero i
     ss_close(handle);
 }
 
+// === S2-T14: numbering after a lost MANIFEST, through the C ABI ===============
+test "lost MANIFEST: ss_index_folder numbers above generation 2 (full and --update), ss_import_json prunes it as superseded" {
+    const io_impl = io();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/a.md", .data = "hybrid retrieval combines lexical and semantic ranks\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+
+    for (0..2) |_| ss_free(ss_index_folder(out_z, notes_z, null) orelse return error.IndexFailed);
+    var out_dir = try tmp.dir.openDir(io_impl, "out", .{ .iterate = true });
+    defer out_dir.close(io_impl);
+    try out_dir.deleteFile(io_impl, "MANIFEST");
+    try out_dir.deleteFile(io_impl, "documents-1.hybseg");
+    try out_dir.deleteFile(io_impl, "lexical-1.hyblex");
+
+    // Full publish: generation 3, and keep_generations 1 prunes generation 2.
+    const full = ss_index_folder(out_z, notes_z, "{\"keep_generations\":1}") orelse return error.IndexFailed;
+    defer ss_free(full);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(full), "\"generation\":3") != null);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(full), "\"pruned_files\":2") != null);
+    try std.testing.expectEqual(@as(usize, 1), try countSections(io_impl, out_dir, ".hybseg"));
+
+    // --update after a lost MANIFEST (INDEX-STATE.json present): generation 4.
+    try out_dir.deleteFile(io_impl, "MANIFEST");
+    const upd = ss_index_folder(out_z, notes_z, "{\"update\":true}") orelse return error.IndexFailed;
+    defer ss_free(upd);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(upd), "\"generation\":4") != null);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(upd), "missing_manifest") != null);
+
+    // ss_import_json: the caller numbers the generation. Publishing generation
+    // 5 (above the remains of 3 and 4) into a directory with no MANIFEST
+    // leaves the older ones superseded, and keep_generations 1 prunes them.
+    try out_dir.deleteFile(io_impl, "MANIFEST");
+    const payload = "{\"format_version\":1,\"generation\":5,\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"keep_generations\":1,\"documents\":[]}";
+    try std.testing.expectEqual(@as(i64, 5), ss_import_json(out_z, payload.ptr, payload.len));
+    try std.testing.expectEqual(@as(usize, 1), try countSections(io_impl, out_dir, ".hybseg"));
+}
+
 fn countSections(io_impl: std.Io, dir: std.Io.Dir, suffix: []const u8) !usize {
     var n: usize = 0;
     var it = dir.iterate();

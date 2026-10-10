@@ -153,6 +153,50 @@ class CliProcessTests(unittest.TestCase):
             self.assertIn(b'"error"', lines[1])
             self.assertIn(b'"result"', lines[2])
 
+    def test_lost_manifest_numbers_above_what_is_on_disk(self) -> None:
+        """S2-T14: only generation 2 on disk and no MANIFEST -> the update
+        publishes generation 3 (never 1), recovered=missing_manifest, and
+        keep_generations 1 prunes generation 2 after the new MANIFEST."""
+        import json
+
+        base = Path(self.scratch.name) / "lost-manifest"
+        folder = base / "docs"
+        out = base / "out"
+        folder.mkdir(parents=True)
+        (folder / "a.md").write_text("alpha evidence about recovery\n", encoding="utf-8")
+
+        def index(*extra: str) -> dict:
+            result = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2", *extra)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return json.loads(result.stdout) if extra else {}
+
+        index()
+        index("--update")
+        (out / "MANIFEST").unlink()
+        for name in ("documents-1.hybseg", "lexical-1.hyblex"):
+            (out / name).unlink()
+        report = index("--update")
+        self.assertEqual(report["generation"], 3, f"expected 3, found {report['generation']}")
+        self.assertEqual(report.get("recovered"), "missing_manifest")
+        self.assertTrue((out / "documents-2.hybseg").exists())  # superseded, kept without the option
+
+        (out / "MANIFEST").unlink()
+        report = index("--update", "--keep-generations", "1")
+        self.assertEqual(report["generation"], 4, f"expected 4, found {report['generation']}")
+        self.assertEqual(sorted(p.name for p in out.glob("documents-*")), ["documents-4.hybseg"])
+
+        # import-json: the payload names the generation; above the leftovers it
+        # publishes and keep 1 prunes them.
+        (out / "MANIFEST").unlink()
+        payload = base / "p.json"
+        payload.write_text(json.dumps({
+            "format_version": 1, "generation": 5, "analyzer_id": "ascii-alnum-v1",
+            "embedding_model_id": "none", "documents": [],
+        }), encoding="utf-8")
+        imported = self.run_searchd("import-json", str(out), str(payload), "--keep-generations", "1")
+        self.assertEqual(imported.returncode, 0, imported.stderr)
+        self.assertEqual(sorted(p.name for p in out.glob("documents-*")), ["documents-5.hybseg"])
+
 
 if __name__ == "__main__":
     unittest.main()
