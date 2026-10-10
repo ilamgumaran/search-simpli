@@ -13,6 +13,8 @@
 //!      and an absent word matched on one-letter fragments. ASCII and Latin
 //!      text has no Mn/Mc after NFC (a precomposed `é` is a letter), so its
 //!      tokens are unchanged.
+//!      S1-T15: variation selectors (U+FE00-FE0F, U+E0100-E01EF) are removed
+//!      first, so an emoji keycap `1\u{FE0F}\u{20E3}` tokenizes as `1`.
 //!   3. Simple-casefold each codepoint in a run (`unicode_tables.casefold_pairs`).
 //!
 //! The Python reference (`search_platform.core.tokenize`) implements the same
@@ -29,8 +31,8 @@
 //!   for the fixtures this task ships (English and Tamil; Tamil has no
 //!   letter case, and the vendored app-text/README fixtures are plain
 //!   English prose without sharp-s-style multi-codepoint folds).
-//! - NFC (see `nfc.zig`) excludes Hangul syllable algorithmic
-//!   decomposition/composition; irrelevant to this task's fixtures.
+//! - NFC (see `nfc.zig`) is complete since S1-T15 (singletons, Hangul) and is
+//!   checked against Python over every codepoint by `scripts/nfc_compare.py`.
 const std = @import("std");
 const nfc = @import("nfc.zig");
 const tables = @import("unicode_tables.zig");
@@ -68,6 +70,13 @@ fn isJoiner(cp: u21) bool {
     return cp == 0x200C or cp == 0x200D;
 }
 
+/// U+FE00..U+FE0F and U+E0100..U+E01EF. Category Mn, but they only choose a
+/// glyph (emoji versus text, a CJK variant form), so a token never keeps them
+/// and they do not split a token either: `1\u{FE0F}\u{20E3}` is `1`.
+fn isVariationSelector(cp: u21) bool {
+    return (cp >= 0xFE00 and cp <= 0xFE0F) or (cp >= 0xE0100 and cp <= 0xE01EF);
+}
+
 fn casefoldCodepoint(cp: u21) u21 {
     var lo: usize = 0;
     var hi: usize = tables.casefold_pairs.len;
@@ -97,7 +106,10 @@ pub fn tokenize(allocator: std.mem.Allocator, text: []const u8) Error![][]const 
     defer cps.deinit(allocator);
     var view = std.unicode.Utf8View.init(normalized) catch return error.InvalidUtf8;
     var iterator = view.iterator();
-    while (iterator.nextCodepoint()) |cp| try cps.append(allocator, cp);
+    while (iterator.nextCodepoint()) |cp| {
+        if (isVariationSelector(cp)) continue; // S1-T15: presentation only, dropped
+        try cps.append(allocator, cp);
+    }
 
     var current = std.ArrayList(u8).empty;
     defer current.deinit(allocator);
@@ -170,4 +182,18 @@ test "tokenize treats letters and digits uniformly across scripts" {
     const tokens = try tokenize(allocator, "v2 2026 ௨௦௨௬");
     defer freeTokens(allocator, tokens);
     try std.testing.expectEqual(@as(usize, 3), tokens.len);
+}
+
+test "tokenize drops variation selectors (S1-T15)" {
+    try expectTokens("1\u{FE0F}\u{20E3}", &.{"1"});
+    try expectTokens("a\u{FE0F}b", &.{"ab"});
+    try expectTokens("\u{845B}\u{E0100} x", &.{ "\u{845B}", "x" });
+    try expectTokens("\u{FE0F}ab", &.{"ab"});
+}
+
+test "tokenize: decomposed Hangul equals precomposed; CJK compatibility folds (S1-T15)" {
+    try expectTokens("\u{1112}\u{1161}\u{11AB}\u{1100}\u{1173}\u{11AF}", &.{"\u{D55C}\u{AE00}"});
+    try expectTokens("\u{D55C}\u{AE00}", &.{"\u{D55C}\u{AE00}"});
+    try expectTokens("\u{F900}", &.{"\u{8C48}"});
+    try expectTokens("\u{212B}ngstrom", &.{"\u{E5}ngstrom"});
 }

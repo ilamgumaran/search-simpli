@@ -37,6 +37,16 @@ class TokenizeTests(unittest.TestCase):
         self.assertEqual(core.tokenize("்தம்"), ["தம்"])
         self.assertEqual(core.tokenize("‌ab"), ["ab"])
 
+    def test_variation_selectors_are_dropped(self):
+        self.assertEqual(core.tokenize("1\ufe0f\u20e3"), ["1"])
+        self.assertEqual(core.tokenize("a\ufe0fb"), ["ab"])
+        self.assertEqual(core.tokenize("\u845b\U000e0100 x"), ["\u845b", "x"])
+
+    def test_decomposed_hangul_and_cjk_compatibility(self):
+        self.assertEqual(core.tokenize("\u1112\u1161\u11ab\u1100\u1173\u11af"), ["\ud55c\uae00"])
+        self.assertEqual(core.tokenize("\uf900"), ["\u8c48"])
+        self.assertEqual(core.tokenize("\u212bngstrom"), ["\u00e5ngstrom"])
+
     def test_mark_table_matches_this_pythons_unicodedata(self):
         if unicodedata.unidata_version != "13.0.0":
             self.skipTest("table generated with Unicode 13.0.0")

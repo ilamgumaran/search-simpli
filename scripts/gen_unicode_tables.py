@@ -31,7 +31,8 @@ Three tables are produced:
    per-codepoint fold; see the analyzer-v2 doc comment in
    `zig/src/analyzer_v2.zig` for the documented limitation.
 3. NFC support: `decomposition_pairs` (codepoint -> canonical 2-codepoint
-   decomposition only, compatibility decompositions with a <tag> excluded),
+   decomposition, two codepoints or a singleton (stored with b = 0; S1-T15),
+   compatibility decompositions with a <tag> excluded),
    `combining_class_pairs` (codepoint -> non-zero canonical combining
    class), and `composition_pairs` ((starter, combiner) -> composed
    codepoint). The composition table is generated empirically: for every
@@ -41,8 +42,8 @@ Three tables are produced:
    serve as the oracle that naturally excludes the Unicode
    "composition exclusion" set without needing to vendor that list
    separately. Hangul syllable decomposition/composition is algorithmic in
-   the Unicode Standard (not data-table driven) and is deliberately left
-   out of these generated tables; see the same limitation note.
+   the Unicode Standard (not data-table driven) and is left out of these
+   generated tables; `zig/src/nfc.zig` implements it (S1-T15).
 
 Run: `python3 scripts/gen_unicode_tables.py > zig/src/unicode_tables.zig`
 No third-party dependencies; stdlib `unicodedata` only.
@@ -108,15 +109,23 @@ def gen_decomposition_and_combining_class():
         if raw.startswith("<"):
             continue  # compatibility decomposition; NFC only wants canonical
         parts = [int(p, 16) for p in raw.split(" ")]
-        if len(parts) != 2:
-            continue  # singleton canonical decompositions do not affect NFC recomposition
-        decomposition[cp] = tuple(parts)
+        # S1-T15: a singleton (one target codepoint, e.g. U+212B ANGSTROM SIGN
+        # -> U+00C5, CJK compatibility ideographs) DOES change NFC: the
+        # source is replaced by its target. It is stored with b = 0, which no
+        # real decomposition uses. (Before S1-T15 these were skipped on the
+        # wrong belief that they do not matter.)
+        if len(parts) == 1:
+            decomposition[cp] = (parts[0], 0)
+        elif len(parts) == 2:
+            decomposition[cp] = tuple(parts)
     return decomposition, combining
 
 
 def gen_composition_pairs(decomposition):
     pairs = []
     for composed, (a, b) in decomposition.items():
+        if b == 0:
+            continue  # singleton: never the result of composing two codepoints
         if is_hangul_syllable(a) or is_hangul_syllable(b):
             continue
         candidate = chr(a) + chr(b)
@@ -217,8 +226,9 @@ def main():
     out.append(fmt_pairs2(casefold_pairs))
     out.append("};")
     out.append("")
-    out.append(f"/// {len(decomposition_pairs)} canonical (non-compatibility) two-codepoint")
-    out.append("/// decompositions, sorted by `from`. Hangul syllables excluded (algorithmic).")
+    out.append(f"/// {len(decomposition_pairs)} canonical (non-compatibility) decompositions, sorted by")
+    out.append("/// `from`: two-codepoint ones, and singletons with `b == 0` (S1-T15).")
+    out.append("/// Hangul syllables excluded (algorithmic; see nfc.zig).")
     out.append("pub const decomposition_pairs = [_]DecompositionPair{")
     out.append("\n".join(
         f"    .{{ .from = 0x{cp:X}, .a = 0x{a:X}, .b = 0x{b:X} }}," for cp, (a, b) in decomposition_pairs
