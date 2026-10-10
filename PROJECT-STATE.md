@@ -12,6 +12,15 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S1-T17, 2026-10-10)
+
+**S1-T17 is `verified` and merged to `main`** (branch `task/S1-T17` `c30d74b`; Verdict in `docs/tasks/S1-T17.md`). The contract is unchanged (`1.2.0`), the analyzer id stays `analyzer-v2`, and no output moved (`nfc_compare.py` 0, goldens identical).
+
+- **The NFC timing test now guards `compose` itself.** `zig/src/nfc_timing_test.zig` gains a second family: one line of decomposed jamo with no spaces (a single region of 256 KB and 1 MB) against the same jamo with a space after each triple; growth below 5x and at most 2x the twin. With the old shifting `compose` put back it fails at 15.8-16.0x (the S1-T16 line alone did not catch that); on `main` it passes at 3.77-4.13x at rest and under load.
+- **Comments:** `nfc.zig`'s header (syllables are kept whole since S1-T16), the U+D55C test comment (an LVT syllable), `gen_nfc_timing.py`'s docstring; `gen_nfc_timing.py DIR --jamo` writes the jamo lines.
+- **Libraries:** the same bytes as S1-T16's (dylib 434,728 B `f46b91ef…`, `.so` 425,904 B `b5f9932e…`); the stamp moved with the comment change: `477e39a3…`.
+- **Open (non-blocking):** comment nits for the next task that touches these files (the timing test's syllable-twin sentence; 9 of 27 T jamo in the line; `gen_unicode_tables.py`'s docstring still says Hangul decomposition). From S1-T16, still open: `canonicalOrder` on long runs of stacked marks.
+
 ## Standalone platform status (S1-T16, 2026-10-10)
 
 **S1-T16 is `verified` and merged to `main`** (branch `task/S1-T16` `9bc2297`; Verdict in `docs/tasks/S1-T16.md`). The contract is unchanged (`1.2.0`), and the analyzer id stays `analyzer-v2`: NFC output is byte-identical to before, and no golden, captured output or index moved.
