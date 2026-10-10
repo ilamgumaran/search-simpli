@@ -266,19 +266,24 @@ class SearchSimpli {
   /// `ss_index_folder` fails (missing/unreadable [folderPath], an
   /// unrecognized `options.analyzer`, or — with `options.update: true` —
   /// [dirPath] already holding a snapshot published with a different
-  /// analyzer — see `ss_last_error()`).
+  /// analyzer — see `ss_last_error()`). [allocator] is for tests that count
+  /// native allocations; leave it at the default.
   static IndexFolderReport indexFolder(
     String dirPath,
     String folderPath, {
     IndexFolderOptions options = const IndexFolderOptions(),
     DynamicLibrary? library,
+    Allocator allocator = malloc,
   }) {
     final dylib = library ?? openSearchSimpliLibrary();
     final bindings = SearchSimpliBindings(dylib);
 
-    final dirPtr = dirPath.toNativeUtf8();
-    final folderPtr = folderPath.toNativeUtf8();
-    final optsPtr = jsonEncode(options.toJson()).toNativeUtf8();
+    // S2-T14: encode the options first. An invalid `keepGenerations` throws
+    // ArgumentError here, before any native string exists to leak.
+    final optionsJson = jsonEncode(options.toJson());
+    final dirPtr = dirPath.toNativeUtf8(allocator: allocator);
+    final folderPtr = folderPath.toNativeUtf8(allocator: allocator);
+    final optsPtr = optionsJson.toNativeUtf8(allocator: allocator);
     try {
       final resultPtr = bindings.ss_index_folder(dirPtr.cast(), folderPtr.cast(), optsPtr.cast());
       if (resultPtr == nullptr) {
@@ -291,9 +296,9 @@ class SearchSimpli {
         bindings.ss_free(resultPtr);
       }
     } finally {
-      malloc.free(dirPtr);
-      malloc.free(folderPtr);
-      malloc.free(optsPtr);
+      allocator.free(dirPtr);
+      allocator.free(folderPtr);
+      allocator.free(optsPtr);
     }
   }
 }

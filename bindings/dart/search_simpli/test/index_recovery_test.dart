@@ -4,8 +4,10 @@
 library;
 
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 
+import 'package:ffi/ffi.dart';
 import 'package:search_simpli/search_simpli.dart';
 import 'package:test/test.dart';
 
@@ -17,11 +19,42 @@ const String _base =
 IndexFolderReport _parse(String extra) =>
     IndexFolderReport.fromJson(jsonDecode('{$_base$extra}') as Map<String, Object?>);
 
+class _CountingAllocator implements Allocator {
+  int allocations = 0;
+  int live = 0;
+
+  @override
+  Pointer<T> allocate<T extends NativeType>(int byteCount, {int? alignment}) {
+    allocations++;
+    live++;
+    return malloc.allocate<T>(byteCount, alignment: alignment);
+  }
+
+  @override
+  void free(Pointer pointer) {
+    live--;
+    malloc.free(pointer);
+  }
+}
+
 void main() {
   group('IndexFolderOptions.keepGenerations', () {
     test('serialises as keep_generations and is absent by default', () {
       expect(const IndexFolderOptions(keepGenerations: 2).toJson()['keep_generations'], 2);
       expect(const IndexFolderOptions().toJson().containsKey('keep_generations'), isFalse);
+    });
+
+    test('an invalid value allocates no native memory (S2-T14)', () {
+      final counting = _CountingAllocator();
+      expect(
+        () => SearchSimpli.indexFolder('/nonexistent/out', '/nonexistent/in',
+            options: const IndexFolderOptions(keepGenerations: 0),
+            library: DynamicLibrary.process(),
+            allocator: counting),
+        throwsArgumentError,
+      );
+      expect(counting.allocations, 0);
+      expect(counting.live, 0);
     });
 
     test('0 and negatives throw ArgumentError, before the native call', () {
