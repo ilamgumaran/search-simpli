@@ -31,6 +31,41 @@ def unhex(line):
     return "".join(chr(int(x, 16)) for x in line.split())
 
 
+# S1-T15 tester's specific-case table (26 rows), plus S1-T16's Tamil blocking
+# cases: a starter, a mark, then a class-0 second part must NOT compose.
+SPECIFIC = """
+0BC6 0BBE
+0BC6 0BD7
+09C7 09BE
+0B95 0BC6 0BBE 0BB2 0BCD
+0BC6 0BCD 0BBE
+09C7 0301 09BE
+1100 0301 1161
+1100 1161
+AC00 11A8
+1100 1161 11A8
+1112 1161 11AB 1100 1173 11AF
+AC01 11A8
+AC00 11C3
+1100 1161 0301 11A8
+61 0302 0301
+61 0316 0302 0301
+61 0301 0301
+0CC6 0CC2 0CD5
+0CC6 0CC2 0CBC 0CD5
+212B
+F900
+2F800
+37E
+1E0B 323
+61 344
+958
+0BC6 0BCD 0BD7
+0B95 0BC6 0BCD 0BBE
+0BC6 0BCD 0BBE 0BCD 0BBE
+""".strip().splitlines()
+
+
 def build_cases(norm_test):
     cases = []
     origin = []  # codepoint a case came from, or None for the extra sequences
@@ -54,6 +89,7 @@ def build_cases(norm_test):
             cases.append(chr(lv) + chr(t))
     cases += ["가́", "가́", "각́",
               "각ᆨ", "ᄀ́ᅡ", "aᅡ", "ᅡᄀ"]
+    cases += [unhex(line) for line in SPECIFIC]
     if norm_test:
         for line in Path(norm_test).read_text(encoding="utf-8").splitlines():
             if line.startswith("@Part2"):
