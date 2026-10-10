@@ -12,6 +12,17 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S1-T16, 2026-10-10)
+
+**S1-T16 is `verified` and merged to `main`** (branch `task/S1-T16` `9bc2297`; Verdict in `docs/tasks/S1-T16.md`). The contract is unchanged (`1.2.0`), and the analyzer id stays `analyzer-v2`: NFC output is byte-identical to before, and no golden, captured output or index moved.
+
+- **NFC is linear in the text length.** `compose` works in place with a write cursor (no `orderedRemove`); precomposed Hangul syllables are no longer decomposed and recomposed; the slow path normalizes only the regions around non-ASCII, non-syllable codepoints and copies the rest. A 1 MB Korean line with one mark: 11.7 s → 2.2 ms (the same line without the mark: 2.2 ms); `searchd index` on it 13.2 s → 35 ms. One 1 MB line of precomposed French: 5.9 s → 40 ms.
+- **Unchanged output, checked:** `scripts/nfc_compare.py` 0 of 1,136,505; the tester's own oracle, 931,699 edge-targeted strings × 2 seeds, 0 differences from Python and from the previous code; the new `scripts/nfc_random_compare.py` 0.
+- **New:** `zig/src/nfc_timing_test.zig` (growth 256 KB → 1 MB below 5×, and the line with a mark at most 2× its mark-free twin, in one run; fails with the old code at 15.5×), `zig/src/nfc_bench.zig`, `scripts/gen_nfc_timing.py`, `scripts/nfc_random_compare.py`, and four Tamil blocking cases in `nfc_compare.py`.
+- **Libraries:** dylib 434,728 B (`f46b91ef…`), `.so` 425,904 B (`b5f9932e…`), stamp `8afa730e…`.
+- **App:** re-pin when convenient; nothing to republish (output identical), only faster.
+- **Open (non-blocking):** the timing test guards the Korean line but not `compose` on a long single region (the old `compose` alone passes it); add an NFD-jamo line with no spaces. `canonicalOrder` is still quadratic within one run of stacked marks (crafted input only: 64 KB, 0.8 s). Plant runs outside a worktree need fresh Zig cache dirs: the global cache once served the tester another directory's test binary.
+
 ## Standalone platform status (S1-T15, 2026-10-10)
 
 **S1-T15 is `verified` and merged to `main`** (branch `task/S1-T15` `89da8c7`; Verdict in `docs/tasks/S1-T15.md`). The contract is unchanged (`1.2.0`), and the analyzer id stays `analyzer-v2`: no golden, captured output or snapshot of the fixtures moved.
