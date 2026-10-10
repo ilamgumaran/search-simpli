@@ -95,6 +95,7 @@ test "load every engine module test suite" {
     _ = import_analyzer_test;
     _ = query_report_test;
     _ = import_build_timing_test;
+    _ = nfc_timing_test;
     _ = query_utf8_test;
     _ = cli_test;
 }
