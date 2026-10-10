@@ -5,18 +5,26 @@
 //! Annex #15): full canonical decomposition, canonical ordering of
 //! combining marks by combining class, then canonical composition.
 //!
-//! Scope, documented rather than hidden (ROLES.md: report what is not
-//! done): Hangul syllable decomposition/composition is algorithmic in the
-//! Unicode Standard, not table-driven, and `unicode_tables.zig` deliberately
-//! excludes the Hangul syllable block. Composed Hangul syllables already in
-//! NFC form (the overwhelmingly common case for real text) pass through
-//! this implementation unchanged, since they have no entry in the
-//! decomposition table and are therefore never decomposed; text containing
-//! *decomposed* Hangul (rare in practice) will not be recomposed by this
-//! implementation. None of this task's fixtures (English, Tamil, or the
-//! vendored app-text corpus) contain Hangul.
+//! Complete as of S1-T15: singleton canonical decompositions (e.g. U+212B
+//! ANGSTROM SIGN, CJK compatibility ideographs) are in the generated table
+//! with `b == 0`, and Hangul syllable decomposition/composition is done
+//! algorithmically here (UAX #15 / Unicode 3.12), because the generated
+//! tables deliberately exclude the Hangul syllable block. The result equals
+//! Python's `unicodedata.normalize("NFC")` on every codepoint
+//! (`scripts/nfc_compare.py`).
 const std = @import("std");
 const tables = @import("unicode_tables.zig");
+
+// Hangul syllable constants (Unicode Standard 3.12).
+const s_base: u21 = 0xAC00;
+const l_base: u21 = 0x1100;
+const v_base: u21 = 0x1161;
+const t_base: u21 = 0x11A7;
+const l_count: u21 = 19;
+const v_count: u21 = 21;
+const t_count: u21 = 28;
+const n_count: u21 = v_count * t_count;
+const s_count: u21 = l_count * n_count;
 
 pub const Error = error{ InvalidUtf8, OutOfMemory };
 
@@ -61,14 +69,22 @@ pub fn normalize(allocator: std.mem.Allocator, text: []const u8) Error![]u8 {
 fn hasAnyCombiningOrDecomposable(text: []const u8) bool {
     var view = std.unicode.Utf8View.init(text) catch return false;
     var iter = view.iterator();
+    var previous: u21 = 0;
     while (iter.nextCodepoint()) |cp| {
+        defer previous = cp;
         if (cp < 0x80) continue;
         if (decompositionOf(cp) != null) return true;
         if (combiningClassOf(cp) != 0) return true;
+        // Two adjacent starters can still compose: Hangul L + V, LV + T,
+        // and the two-part vowels of Bengali, Oriya, Tamil, ... (U+0BC6 +
+        // U+0BBE -> U+0BCA), whose second codepoint has class 0 and so
+        // would not be caught by the checks above.
+        if (composedOf(previous, cp) != null) return true;
     }
     return false;
 }
 
+/// Table lookup. A singleton decomposition has `b == 0`.
 fn decompositionOf(cp: u21) ?[2]u21 {
     var lo: usize = 0;
     var hi: usize = tables.decomposition_pairs.len;
@@ -94,6 +110,15 @@ pub fn combiningClassOf(cp: u21) u8 {
 }
 
 fn composedOf(a: u21, b: u21) ?u21 {
+    // Hangul: L + V -> LV; LV + T -> LVT (algorithmic, not in the tables).
+    if (a >= l_base and a < l_base + l_count and b >= v_base and b < v_base + v_count) {
+        return s_base + ((a - l_base) * v_count + (b - v_base)) * t_count;
+    }
+    if (a >= s_base and a < s_base + s_count and (a - s_base) % t_count == 0 and
+        b > t_base and b < t_base + t_count)
+    {
+        return a + (b - t_base);
+    }
     // Composition pairs are sorted by (a, b); binary search on `a`, then
     // linear-scan the (small) run sharing that first codepoint.
     var lo: usize = 0;
@@ -118,9 +143,16 @@ fn decomposeAll(allocator: std.mem.Allocator, text: []const u8, out: *std.ArrayL
 }
 
 fn decomposeOne(allocator: std.mem.Allocator, cp: u21, out: *std.ArrayList(u21)) Error!void {
+    if (cp >= s_base and cp < s_base + s_count) {
+        const index = cp - s_base;
+        try out.append(allocator, l_base + index / n_count);
+        try out.append(allocator, v_base + (index % n_count) / t_count);
+        if (index % t_count != 0) try out.append(allocator, t_base + index % t_count);
+        return;
+    }
     if (decompositionOf(cp)) |parts| {
         try decomposeOne(allocator, parts[0], out);
-        try decomposeOne(allocator, parts[1], out);
+        if (parts[1] != 0) try decomposeOne(allocator, parts[1], out);
         return;
     }
     try out.append(allocator, cp);
@@ -176,14 +208,19 @@ fn compose(allocator: std.mem.Allocator, codepoints: []const u21) Error![]u21 {
             last_ccc = ccc;
             continue;
         }
+        // A starter (ccc == 0) is blocked from composing with anything
+        // other than the codepoint right after it: any codepoint between
+        // blocks it (UAX #15). `last_ccc != 0` means a mark sits between.
+        const blocked_starter = ccc == 0 and last_ccc != 0;
         if (starter_index) |s_index| {
-            if (composedOf(out.items[s_index], cp)) |composed| {
+            if (!blocked_starter) if (composedOf(out.items[s_index], cp)) |composed| {
                 out.items[s_index] = composed;
                 _ = out.orderedRemove(i);
                 i -= 1;
-                last_ccc = 0;
+                // `last_ccc` is unchanged: it is the class of the last
+                // codepoint still standing between the starter and `i`.
                 continue;
-            }
+            };
         }
         if (ccc == 0) {
             starter_index = i;
@@ -234,4 +271,32 @@ test "NFC orders multiple combining marks by combining class before composing" {
     // a + dot-below composes to U+1EA1 (LATIN SMALL LETTER A WITH DOT BELOW),
     // the acute then stacks as a combining mark (no further precomposed form).
     try std.testing.expectEqualStrings("\u{1EA1}\u{0301}", normalized);
+}
+
+fn expectNfc(input: []const u8, expected: []const u8) !void {
+    const allocator = std.testing.allocator;
+    const normalized = try normalize(allocator, input);
+    defer allocator.free(normalized);
+    try std.testing.expectEqualStrings(expected, normalized);
+}
+
+test "NFC replaces singleton decompositions (S1-T15)" {
+    try expectNfc("\u{212B}", "\u{00C5}"); // ANGSTROM SIGN -> A WITH RING ABOVE
+    try expectNfc("\u{F900}", "\u{8C48}"); // CJK COMPATIBILITY IDEOGRAPH-F900
+    try expectNfc("\u{037E}", ";"); // GREEK QUESTION MARK -> SEMICOLON
+    try expectNfc("\u{1F71}", "\u{03AC}"); // singleton onto a precomposed letter
+}
+
+test "NFC composes decomposed Hangul and leaves composed Hangul alone (S1-T15)" {
+    try expectNfc("\u{1112}\u{1161}\u{11AB}", "\u{D55C}"); // han
+    try expectNfc("\u{1100}\u{1161}", "\u{AC00}"); // L + V
+    try expectNfc("\u{AC00}\u{11A8}", "\u{AC01}"); // LV + T
+    try expectNfc("\u{D55C}\u{AE00}", "\u{D55C}\u{AE00}");
+    try expectNfc("\u{1100}\u{0301}\u{1161}", "\u{1100}\u{0301}\u{1161}"); // a mark blocks
+    try expectNfc("\u{1161}\u{1100}", "\u{1161}\u{1100}"); // wrong order
+}
+
+test "NFC composes two-part vowels whose second part is a starter (S1-T15)" {
+    try expectNfc("\u{0BC6}\u{0BBE}", "\u{0BCA}"); // Tamil O
+    try expectNfc("\u{09C7}\u{09BE}", "\u{09CB}"); // Bengali O
 }
