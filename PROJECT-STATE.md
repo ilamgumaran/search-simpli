@@ -12,6 +12,15 @@ Project: **Search Simpli** (`search-simpli`)
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
 
+## Standalone platform status (S1-T18, 2026-10-10)
+
+**S1-T18 is `verified` and merged to `main`** (branch `task/S1-T18` `417ed00`; Verdict in `docs/tasks/S1-T18.md`). The contract is unchanged (`1.2.0`), with no ABI change.
+
+- **`NoFreeGeneration` names its cause.** `searchd index` (full or `--update`) prints one line naming the file that supplied the top number (file name only) and that number, then exits 1: `error: NoFreeGeneration: no generation number above 18446744073709551615 (read from lexical-18446744073709551615.hyblex); delete or rename that file to publish here`. `ss_index_folder` puts the same text in `ss_last_error` (prefix `ss_index_folder: `), and the Dart `SearchSimpliException` carries it. The numbering rule of S2-T14 is unchanged.
+- **Dart:** the public `SearchSimpli.indexFolder(dirPath, folderPath, {options, library})` is back to its pre-S2-T14 signature. The counting-allocator seam is `indexFolderWithAllocator` in `lib/src/search_simpli_base.dart`, not exported; the leak test imports it from `src/`.
+- **Libraries:** dylib 434,888 B `4f8f9044…`, `.so` 427,008 B `fa4faf44…`, stamp `9d1813e5…`.
+- **Open (non-blocking):** Verdict finding 1: when several files carry the top number, only the first is named, and "delete that file" does not get a publish through. Findings 2-4 are a doc sentence, an unreachable exit and cosmetics.
+
 ## Standalone platform status (S2-T14, 2026-10-10)
 
 **S2-T14 is `verified` and merged to `main`** (branch `task/S2-T14` `ed41c86`; Verdict in `docs/tasks/S2-T14.md`). The contract is unchanged (`1.2.0`), with no ABI change.
