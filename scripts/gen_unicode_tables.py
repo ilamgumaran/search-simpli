@@ -17,13 +17,13 @@ Three tables are produced:
 1. `letter_digit_ranges`: sorted, non-overlapping inclusive [start, end]
    codepoint ranges whose General_Category is one of Lu/Ll/Lt/Lm/Lo (letter)
    or Nd/Nl/No (number) -- i.e. exactly the categories the task's "letters
-   and digits by Unicode category" criterion names. Combining marks (Mn/Mc)
-   are deliberately excluded: they are neither letters nor digits by
-   category, and this also keeps analyzer-v2 tokenization consistent with
-   `search_platform.core.tokenize`'s existing `[^\\W_]+` regex, whose `\\w`
-   is defined by CPython as alpha-or-numeric-or-underscore, not by
-   mark membership (verified interactively: `'\\u0bcd'.isalnum()` is
-   `False` for the Tamil virama, category `Mn`).
+   and digits by Unicode category" criterion names. Marks are not
+   in this table: they are neither letters nor digits.
+   Table 1b, `mark_ranges` (S1-T14), holds General_Category Mn and Mc. The
+   analyzer lets a token continue through them (Tamil, Devanagari, Thai ...
+   write vowels as marks, so splitting at them cut `கணினி` in two). With
+   `--python-marks` the same table is emitted as `src/search_platform/_marks.py`
+   for the Python reference tokenizer.
 2. `casefold_pairs`: sorted (from, to) codepoint pairs for every codepoint
    whose `str.casefold()` result is a single codepoint different from the
    input. Multi-codepoint casefold expansions (e.g. German sharp s, a
@@ -52,6 +52,9 @@ import unicodedata
 
 MAX_CODEPOINT = 0x110000
 LETTER_DIGIT_CATEGORIES = {"Lu", "Ll", "Lt", "Lm", "Lo", "Nd", "Nl", "No"}
+# S1-T14: marks that stay attached to the letter before them (Tamil, Devanagari
+# and Thai vowel signs are Mn/Mc). Enclosing marks (Me) are not included.
+MARK_CATEGORIES = {"Mn", "Mc"}
 
 # Hangul syllable block: algorithmic in Unicode, not data-table driven.
 # Excluded from decomposition/composition generation (documented above).
@@ -63,12 +66,12 @@ def is_hangul_syllable(cp: int) -> bool:
     return HANGUL_SYLLABLE_START <= cp <= HANGUL_SYLLABLE_END
 
 
-def gen_letter_digit_ranges():
+def gen_letter_digit_ranges(categories=LETTER_DIGIT_CATEGORIES):
     ranges = []
     start = None
     for cp in range(MAX_CODEPOINT):
         cat = unicodedata.category(chr(cp))
-        member = cat in LETTER_DIGIT_CATEGORIES
+        member = cat in categories
         if member and start is None:
             start = cp
         elif not member and start is not None:
@@ -145,11 +148,34 @@ def fmt_triples(triples):
     return "\n".join(lines)
 
 
+def main_python_marks():
+    """`--python-marks`: emit src/search_platform/_marks.py (S1-T14)."""
+    ranges = gen_letter_digit_ranges(MARK_CATEGORIES)
+    out = ['"""Generated file -- do not edit by hand.',
+           "",
+           f"Produced by scripts/gen_unicode_tables.py --python-marks using Python {sys.version.split()[0]}'s",
+           f"`unicodedata` (Unicode {unicodedata.unidata_version}): the {len(ranges)} ranges of General_Category Mn and Mc,",
+           "the same table the Zig analyzer uses (`mark_ranges` in zig/src/unicode_tables.zig).",
+           "Regenerate: python3 scripts/gen_unicode_tables.py --python-marks > src/search_platform/_marks.py",
+           '"""',
+           "",
+           "MARK_RANGES = (",
+           ]
+    out.extend(f"    (0x{a:X}, 0x{b:X})," for a, b in ranges)
+    out.append(")")
+    out.append("")
+    print("\n".join(out))
+
+
 def main():
+    if "--python-marks" in sys.argv[1:]:
+        main_python_marks()
+        return
     unidata_version = unicodedata.unidata_version
     python_version = sys.version.split()[0]
 
     letter_digit_ranges = gen_letter_digit_ranges()
+    mark_ranges = gen_letter_digit_ranges(MARK_CATEGORIES)
     casefold_pairs = gen_casefold_pairs()
     decomposition, combining = gen_decomposition_and_combining_class()
     composition_pairs = gen_composition_pairs(decomposition)
@@ -177,6 +203,12 @@ def main():
     out.append("/// Lu, Ll, Lt, Lm, Lo (letter) and Nd, Nl, No (number).")
     out.append("pub const letter_digit_ranges = [_]CodepointRange{")
     out.append(fmt_ranges(letter_digit_ranges))
+    out.append("};")
+    out.append("")
+    out.append(f"/// {len(mark_ranges)} ranges covering Unicode General_Category Mn and Mc")
+    out.append("/// (S1-T14: marks that stay attached to the letter before them).")
+    out.append("pub const mark_ranges = [_]CodepointRange{")
+    out.append(fmt_ranges(mark_ranges))
     out.append("};")
     out.append("")
     out.append(f"/// {len(casefold_pairs)} single-codepoint simple case-fold exceptions")

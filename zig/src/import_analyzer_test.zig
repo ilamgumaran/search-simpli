@@ -172,3 +172,41 @@ test "S2-T1: import-json still rejects an analyzer id outside the contract's enu
         ));
     }
 }
+
+test "S1-T14: Tamil words absent from the corpus match nothing through either door" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var folder_tmp = std.testing.tmpDir(.{});
+    defer folder_tmp.cleanup();
+    var import_tmp = std.testing.tmpDir(.{});
+    defer import_tmp.cleanup();
+
+    const json_v2 = try folderIndexAndInterchange(arena, io, "../fixtures/tamil/passages", folder_tmp.dir, "analyzer-v2");
+    _ = try importer.importJson(import_tmp.dir, io, arena, json_v2);
+    const folder_engine = try snapshot_open.open(arena, io, folder_tmp.dir);
+    const import_engine = try snapshot_open.open(arena, io, import_tmp.dir);
+
+    const bytes = try readWhole(arena, io, std.Io.Dir.cwd(), "../fixtures/tamil-absent-judgments.json");
+    const parsed = try std.json.parseFromSliceLeaky(std.json.Value, arena, bytes, .{});
+    const queries = parsed.object.get("queries").?.array.items;
+    try std.testing.expect(queries.len >= 10);
+    var total_hits: usize = 0;
+    inline for (.{ folder_engine, import_engine }) |engine| {
+        for (queries) |query_value| {
+            const query_text = query_value.object.get("query").?.string;
+            const results_buffer = try arena.alloc(hybrid.Result, engine.documents.len);
+            const results = try engine.queryTokenized(arena, query_text, &.{}, results_buffer, .{
+                .top_k = 10,
+                .candidate_k = engine.documents.len,
+                .retrieval_mode = .lexical,
+            });
+            total_hits += results.len;
+            if (results.len != 0) std.debug.print("absent query {s} matched {d} passages\n", .{ query_text, results.len });
+        }
+    }
+    std.debug.print("S1-T14 absent Tamil queries: {d} queries x 2 doors, {d} hits\n", .{ queries.len, total_hits });
+    try std.testing.expectEqual(@as(usize, 0), total_hits);
+}

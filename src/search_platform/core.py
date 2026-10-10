@@ -4,14 +4,16 @@ import hashlib
 import json
 import math
 import re
+import unicodedata
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Iterator
 
-from .providers import EmbeddingProvider, ProviderMismatch
+from ._marks import MARK_RANGES
 from .access import ACCESS_SEMANTICS, is_authorized, required_labels_for_path
+from .providers import EmbeddingProvider, ProviderMismatch
 
 
 INDEX_VERSION = 1
@@ -19,7 +21,20 @@ MAX_COOCCURRENCE_TERMS = 512
 CHUNKER_ID = "line-window-v1"
 CHUNK_MAX_CHARS = 1_600
 CHUNK_OVERLAP_LINES = 3
-TOKEN_PATTERN = re.compile(r"[^\W_]+", re.UNICODE)
+
+
+def _build_token_pattern() -> re.Pattern[str]:
+    """analyzer-v2 token: a letter or digit, then letters, digits, the marks
+    attached to them (General_Category Mn, Mc) and ZWJ/ZWNJ that are followed
+    by more of the run. `x-ray` is still `x`, `ray`; `கணினி` is one token."""
+    marks = "".join(
+        f"\\U{lo:08x}" if lo == hi else f"\\U{lo:08x}-\\U{hi:08x}" for lo, hi in MARK_RANGES
+    )
+    body = rf"[^\W_]|[{marks}]"
+    return re.compile(rf"[^\W_](?:{body}|[\u200c\u200d](?=[^\W_]|[{marks}]))*", re.UNICODE)
+
+
+TOKEN_PATTERN = _build_token_pattern()
 DEFAULT_EXTENSIONS = {
     ".c",
     ".cpp",
@@ -65,7 +80,7 @@ class Chunk:
 
 
 def tokenize(text: str) -> list[str]:
-    return [token.casefold() for token in TOKEN_PATTERN.findall(text)]
+    return [token.casefold() for token in TOKEN_PATTERN.findall(unicodedata.normalize("NFC", text))]
 
 
 def _hash_vector(tokens: Iterable[str], dimensions: int = 128) -> list[float]:
