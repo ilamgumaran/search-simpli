@@ -43,21 +43,77 @@ pub fn normalize(allocator: std.mem.Allocator, text: []const u8) Error![]u8 {
         return allocator.dupe(u8, text);
     }
 
+    // S1-T16: the full algorithm runs only on the regions that can change.
+    // Between two adjacent "inert" codepoints (ASCII, or a precomposed
+    // Hangul syllable) nothing can compose, reorder or block: an inert
+    // codepoint is a class-0 starter that has no decomposition and is never
+    // the second part of a composition pair (checked against the tables by a
+    // test below), and no pair joins two inert codepoints. So NFC(text) is
+    // the concatenation of NFC of the regions between such boundaries, and
+    // an inert run is copied unchanged. A region starts at the inert
+    // codepoint just before its first non-inert one (the starter a mark may
+    // compose with) and ends before the next inert codepoint. Work and
+    // memory stay linear in the text, and Korean or English text holding one
+    // mark costs about what a scan of it costs.
+    var out = try std.ArrayList(u8).initCapacity(allocator, text.len + 16);
+    errdefer out.deinit(allocator);
     var codepoints = std.ArrayList(u21).empty;
     defer codepoints.deinit(allocator);
-    try decomposeAll(allocator, text, &codepoints);
-    canonicalOrder(codepoints.items);
-    const composed = try compose(allocator, codepoints.items);
-    defer allocator.free(composed);
 
-    var out = try std.ArrayList(u8).initCapacity(allocator, composed.len * 2);
-    errdefer out.deinit(allocator);
-    var buffer: [4]u8 = undefined;
-    for (composed) |cp| {
-        const len = std.unicode.utf8Encode(cp, &buffer) catch return error.InvalidUtf8;
-        try out.appendSlice(allocator, buffer[0..len]);
+    var copied_to: usize = 0; // text[0..copied_to] is already in `out`
+    var region_start: ?usize = null;
+    var previous_inert: ?usize = null; // offset of the previous codepoint if inert
+    var at: usize = 0;
+    while (at < text.len) {
+        const len = std.unicode.utf8ByteSequenceLength(text[at]) catch return error.InvalidUtf8;
+        const cp = std.unicode.utf8Decode(text[at .. at + len]) catch return error.InvalidUtf8;
+        if (isInert(cp)) {
+            if (region_start) |start| {
+                try normalizeRegion(allocator, text[start..at], &codepoints, &out);
+                region_start = null;
+                copied_to = at;
+            }
+            previous_inert = at;
+        } else {
+            if (region_start == null) {
+                const start = previous_inert orelse at;
+                try out.appendSlice(allocator, text[copied_to..start]);
+                copied_to = start;
+                region_start = start;
+            }
+            previous_inert = null;
+        }
+        at += len;
+    }
+    if (region_start) |start| {
+        try normalizeRegion(allocator, text[start..], &codepoints, &out);
+    } else {
+        try out.appendSlice(allocator, text[copied_to..]);
     }
     return out.toOwnedSlice(allocator);
+}
+
+/// ASCII, or a precomposed Hangul syllable: see `normalize`.
+fn isInert(cp: u21) bool {
+    return cp < 0x80 or (cp >= s_base and cp < s_base + s_count);
+}
+
+/// The three-step algorithm on one region, appending UTF-8 to `out`.
+fn normalizeRegion(
+    allocator: std.mem.Allocator,
+    region: []const u8,
+    codepoints: *std.ArrayList(u21),
+    out: *std.ArrayList(u8),
+) Error!void {
+    codepoints.clearRetainingCapacity();
+    try decomposeAll(allocator, region, codepoints);
+    canonicalOrder(codepoints.items);
+    const composed = compose(codepoints.items);
+    for (composed) |cp| {
+        try out.ensureUnusedCapacity(allocator, 4);
+        const n = std.unicode.utf8Encode(cp, out.unusedCapacitySlice()) catch return error.InvalidUtf8;
+        out.items.len += n;
+    }
 }
 
 /// Cheap pre-check: true if any codepoint has a canonical decomposition or a
@@ -84,8 +140,19 @@ fn hasAnyCombiningOrDecomposable(text: []const u8) bool {
     return false;
 }
 
+/// True for the Hangul jamo block (U+1100..U+11FF) and the precomposed
+/// syllables, which no table row mentions.
+/// The generated tables deliberately exclude both blocks (Hangul is
+/// algorithmic); a test below checks that against every table row, so the
+/// early outs it feeds cannot change a result. (S1-T16: the Korean slow path
+/// otherwise binary-searches three tables for every jamo.)
+fn isHangul(cp: u21) bool {
+    return (cp >= l_base and cp <= 0x11FF) or (cp >= s_base and cp < s_base + s_count);
+}
+
 /// Table lookup. A singleton decomposition has `b == 0`.
 fn decompositionOf(cp: u21) ?[2]u21 {
+    if (isHangul(cp)) return null;
     var lo: usize = 0;
     var hi: usize = tables.decomposition_pairs.len;
     while (lo < hi) {
@@ -98,6 +165,7 @@ fn decompositionOf(cp: u21) ?[2]u21 {
 }
 
 pub fn combiningClassOf(cp: u21) u8 {
+    if (isHangul(cp)) return 0;
     var lo: usize = 0;
     var hi: usize = tables.combining_class_pairs.len;
     while (lo < hi) {
@@ -119,6 +187,7 @@ fn composedOf(a: u21, b: u21) ?u21 {
     {
         return a + (b - t_base);
     }
+    if (isHangul(a)) return null; // no table row starts with Hangul
     // Composition pairs are sorted by (a, b); binary search on `a`, then
     // linear-scan the (small) run sharing that first codepoint.
     var lo: usize = 0;
@@ -143,13 +212,13 @@ fn decomposeAll(allocator: std.mem.Allocator, text: []const u8, out: *std.ArrayL
 }
 
 fn decomposeOne(allocator: std.mem.Allocator, cp: u21, out: *std.ArrayList(u21)) Error!void {
-    if (cp >= s_base and cp < s_base + s_count) {
-        const index = cp - s_base;
-        try out.append(allocator, l_base + index / n_count);
-        try out.append(allocator, v_base + (index % n_count) / t_count);
-        if (index % t_count != 0) try out.append(allocator, t_base + index % t_count);
-        return;
-    }
+    // A precomposed Hangul syllable is kept whole (S1-T16). UAX #15 would
+    // decompose it to L V [T] and recompose it, but the three jamo are
+    // adjacent, all of class 0, and always recompose to the same syllable
+    // (nothing can sit between them), so the round trip is the identity. A
+    // following T jamo still composes with an LV syllable in `composedOf`.
+    // This keeps Korean text on the slow path at about the cost of text
+    // without marks.
     if (decompositionOf(cp)) |parts| {
         try decomposeOne(allocator, parts[0], out);
         if (parts[1] != 0) try decomposeOne(allocator, parts[1], out);
@@ -187,25 +256,28 @@ fn insertionSortByCombiningClass(run: []u21) void {
     }
 }
 
-/// Canonical composition (UAX #15): scan left to right; a "starter" (ccc==0)
-/// may compose with a later combining mark if nothing of equal-or-lower
-/// combining class stands between them (the standard "blocked" check).
-fn compose(allocator: std.mem.Allocator, codepoints: []const u21) Error![]u21 {
-    var out = try std.ArrayList(u21).initCapacity(allocator, codepoints.len);
-    errdefer out.deinit(allocator);
-    for (codepoints) |cp| {
-        try out.append(allocator, cp);
-    }
-
+/// Canonical composition (UAX #15), one pass, in place (S1-T16).
+///
+/// `read` walks the decomposed, canonically ordered codepoints; `write`
+/// is the end of the already-composed prefix, which is rewritten in the same
+/// buffer (`write <= read` always). The only look-back is the index of the
+/// last starter and the combining class of the last codepoint kept after it
+/// (marks are ordered, so that is also the highest since the starter). A
+/// codepoint composes with the last starter only if nothing blocks it; when it
+/// does, it is appended, and when it does not compose it is appended too. The
+/// composed prefix is never rescanned or shifted, so the work is linear.
+/// Returns the composed prefix of `codepoints`.
+fn compose(codepoints: []u21) []u21 {
     var starter_index: ?usize = null;
     var last_ccc: u8 = 0;
-    var i: usize = 0;
-    while (i < out.items.len) : (i += 1) {
-        const cp = out.items[i];
+    var write: usize = 0;
+    for (codepoints) |cp| {
         const ccc = combiningClassOf(cp);
         if (starter_index != null and ccc != 0 and ccc <= last_ccc) {
             // Blocked: cannot compose across an equal-or-lower-class mark.
             last_ccc = ccc;
+            codepoints[write] = cp;
+            write += 1;
             continue;
         }
         // A starter (ccc == 0) is blocked from composing with anything
@@ -213,23 +285,23 @@ fn compose(allocator: std.mem.Allocator, codepoints: []const u21) Error![]u21 {
         // blocks it (UAX #15). `last_ccc != 0` means a mark sits between.
         const blocked_starter = ccc == 0 and last_ccc != 0;
         if (starter_index) |s_index| {
-            if (!blocked_starter) if (composedOf(out.items[s_index], cp)) |composed| {
-                out.items[s_index] = composed;
-                _ = out.orderedRemove(i);
-                i -= 1;
+            if (!blocked_starter) if (composedOf(codepoints[s_index], cp)) |composed| {
+                codepoints[s_index] = composed;
                 // `last_ccc` is unchanged: it is the class of the last
-                // codepoint still standing between the starter and `i`.
+                // codepoint still standing between the starter and here.
                 continue;
             };
         }
         if (ccc == 0) {
-            starter_index = i;
+            starter_index = write;
             last_ccc = 0;
         } else {
             last_ccc = ccc;
         }
+        codepoints[write] = cp;
+        write += 1;
     }
-    return out.toOwnedSlice(allocator);
+    return codepoints[0..write];
 }
 
 test "NFC composes a trailing combining acute accent" {
@@ -299,4 +371,50 @@ test "NFC composes decomposed Hangul and leaves composed Hangul alone (S1-T15)" 
 test "NFC composes two-part vowels whose second part is a starter (S1-T15)" {
     try expectNfc("\u{0BC6}\u{0BBE}", "\u{0BCA}"); // Tamil O
     try expectNfc("\u{09C7}\u{09BE}", "\u{09CB}"); // Bengali O
+}
+
+test "the generated tables have no row in the Hangul blocks (S1-T16 early outs)" {
+    for (tables.combining_class_pairs) |row| try std.testing.expect(!isHangul(row.codepoint));
+    for (tables.decomposition_pairs) |row| {
+        try std.testing.expect(!isHangul(row.from));
+        try std.testing.expect(!isHangul(row.a));
+        try std.testing.expect(!isHangul(row.b));
+    }
+    for (tables.composition_pairs) |row| {
+        try std.testing.expect(!isHangul(row.a));
+        try std.testing.expect(!isHangul(row.b));
+        try std.testing.expect(!isHangul(row.composed));
+    }
+}
+
+test "inert codepoints are never part of a table row except as the first of a pair (S1-T16)" {
+    // The region split in `normalize` rests on this.
+    for (tables.composition_pairs) |row| {
+        try std.testing.expect(!isInert(row.b));
+        try std.testing.expect(!isInert(row.composed));
+    }
+    for (tables.decomposition_pairs) |row| try std.testing.expect(!isInert(row.from));
+    for (tables.combining_class_pairs) |row| try std.testing.expect(!isInert(row.codepoint));
+    // No pair joins two inert codepoints (b is never inert: above), and the
+    // Hangul rule needs a jamo.
+}
+
+test "a mark blocks a starter from its class-0 second part, in Tamil too (S1-T16)" {
+    // starter, mark (pulli, ccc 9), class-0 second: must NOT compose.
+    try expectNfc("\u{0BC6}\u{0BCD}\u{0BBE}", "\u{0BC6}\u{0BCD}\u{0BBE}");
+    try expectNfc("\u{0BC6}\u{0BCD}\u{0BD7}", "\u{0BC6}\u{0BCD}\u{0BD7}");
+    try expectNfc("\u{0B95}\u{0BC6}\u{0BCD}\u{0BBE}", "\u{0B95}\u{0BC6}\u{0BCD}\u{0BBE}");
+    try expectNfc("\u{09C7}\u{0301}\u{09BE}", "\u{09C7}\u{0301}\u{09BE}");
+    // without the mark the pair composes, with ASCII around it
+    try expectNfc("a\u{0BC6}\u{0BBE}b", "a\u{0BCA}b");
+}
+
+test "regions around marks in mixed ASCII, Hangul and Latin text (S1-T16)" {
+    try expectNfc("abc e\u{0301} def", "abc \u{00E9} def");
+    try expectNfc("\u{D55C}\u{AE00} e\u{0301}\u{D55C}", "\u{D55C}\u{AE00} \u{00E9}\u{D55C}");
+    try expectNfc("\u{AC00}\u{11A8}\u{AC00}", "\u{AC01}\u{AC00}"); // LV + T, then a syllable
+    try expectNfc("\u{1100}\u{D55C}\u{1161}", "\u{1100}\u{D55C}\u{1161}"); // jamo around a syllable do not join it
+    try expectNfc("\u{D55C}\u{0301}\u{11A8}", "\u{D55C}\u{0301}\u{11A8}"); // a mark between LV-less syllable and T
+    try expectNfc("\u{0301}a", "\u{0301}a"); // leading mark
+    try expectNfc("a\u{0301}", "\u{00E1}"); // trailing region
 }
