@@ -7,9 +7,11 @@
 //!
 //! Complete as of S1-T15: singleton canonical decompositions (e.g. U+212B
 //! ANGSTROM SIGN, CJK compatibility ideographs) are in the generated table
-//! with `b == 0`, and Hangul syllable decomposition/composition is done
+//! with `b == 0`, and Hangul composition (L + V, LV + T) is done
 //! algorithmically here (UAX #15 / Unicode 3.12), because the generated
-//! tables deliberately exclude the Hangul syllable block. The result equals
+//! tables deliberately exclude the Hangul syllable block. Precomposed
+//! syllables are not decomposed: they are kept whole (S1-T16), which gives the
+//! same result as decomposing and recomposing them. The result equals
 //! Python's `unicodedata.normalize("NFC")` on every codepoint
 //! (`scripts/nfc_compare.py`).
 const std = @import("std");
@@ -414,7 +416,7 @@ test "regions around marks in mixed ASCII, Hangul and Latin text (S1-T16)" {
     try expectNfc("\u{D55C}\u{AE00} e\u{0301}\u{D55C}", "\u{D55C}\u{AE00} \u{00E9}\u{D55C}");
     try expectNfc("\u{AC00}\u{11A8}\u{AC00}", "\u{AC01}\u{AC00}"); // LV + T, then a syllable
     try expectNfc("\u{1100}\u{D55C}\u{1161}", "\u{1100}\u{D55C}\u{1161}"); // jamo around a syllable do not join it
-    try expectNfc("\u{D55C}\u{0301}\u{11A8}", "\u{D55C}\u{0301}\u{11A8}"); // a mark between LV-less syllable and T
+    try expectNfc("\u{D55C}\u{0301}\u{11A8}", "\u{D55C}\u{0301}\u{11A8}"); // a mark between an LVT syllable and a T jamo
     try expectNfc("\u{0301}a", "\u{0301}a"); // leading mark
     try expectNfc("a\u{0301}", "\u{00E1}"); // trailing region
 }
