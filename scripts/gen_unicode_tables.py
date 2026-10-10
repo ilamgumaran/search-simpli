@@ -17,13 +17,13 @@ Three tables are produced:
 1. `letter_digit_ranges`: sorted, non-overlapping inclusive [start, end]
    codepoint ranges whose General_Category is one of Lu/Ll/Lt/Lm/Lo (letter)
    or Nd/Nl/No (number) -- i.e. exactly the categories the task's "letters
-   and digits by Unicode category" criterion names. Combining marks (Mn/Mc)
-   are deliberately excluded: they are neither letters nor digits by
-   category, and this also keeps analyzer-v2 tokenization consistent with
-   `search_platform.core.tokenize`'s existing `[^\\W_]+` regex, whose `\\w`
-   is defined by CPython as alpha-or-numeric-or-underscore, not by
-   mark membership (verified interactively: `'\\u0bcd'.isalnum()` is
-   `False` for the Tamil virama, category `Mn`).
+   and digits by Unicode category" criterion names. Marks are not
+   in this table: they are neither letters nor digits.
+   Table 1b, `mark_ranges` (S1-T14), holds General_Category Mn and Mc. The
+   analyzer lets a token continue through them (Tamil, Devanagari, Thai ...
+   write vowels as marks, so splitting at them cut `கணினி` in two). With
+   `--python-marks` the same table is emitted as `src/search_platform/_marks.py`
+   for the Python reference tokenizer.
 2. `casefold_pairs`: sorted (from, to) codepoint pairs for every codepoint
    whose `str.casefold()` result is a single codepoint different from the
    input. Multi-codepoint casefold expansions (e.g. German sharp s, a
