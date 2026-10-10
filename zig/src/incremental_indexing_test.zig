@@ -699,6 +699,54 @@ test "update with a missing MANIFEST re-indexes every file instead of publishing
     try std.testing.expectEqual(@as(usize, 3), again.documents);
 }
 
+// === S2-T14: generation numbers never go backwards after a lost MANIFEST ====
+test "lost MANIFEST with only generation 2 on disk publishes generation 3, generation 2 is superseded and pruned" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+    defer root.close(io);
+    try tmp.dir.createDir(io, "out", .default_dir);
+    var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+    defer out.close(io);
+    try root.writeFile(io, .{ .sub_path = "a.md", .data = "alpha evidence about recovery\n" });
+
+    var s14_manifest: [4096]u8 = undefined;
+    var s14_documents: [65536]u8 = undefined;
+    var s14_lexical: [65536]u8 = undefined;
+    _ = try indexOnce(arena, io, root, out);
+    _ = try indexOnce(arena, io, root, out);
+    try out.deleteFile(io, "MANIFEST");
+    try out.deleteFile(io, "documents-1.hybseg");
+    try out.deleteFile(io, "lexical-1.hyblex");
+
+    var keep_caps = indexer.Caps{};
+    keep_caps.keep_generations = null;
+    const healed = try indexer.indexFolderIncremental(arena, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, keep_caps);
+    try std.testing.expectEqual(@as(u64, 3), healed.generation);
+    try std.testing.expectEqualStrings("missing_manifest", healed.recovered.?);
+    const scan = try lifecycle.scan(out, io, &s14_manifest, &s14_documents, &s14_lexical);
+    try std.testing.expectEqual(@as(?u64, 3), scan.current_generation);
+    try std.testing.expectEqual(@as(usize, 1), scan.superseded_document_files);
+    try std.testing.expectEqual(@as(usize, 0), scan.orphan_document_files);
+
+    // The same loss, pruned on the run itself.
+    try out.deleteFile(io, "MANIFEST");
+    keep_caps.keep_generations = 1;
+    const pruned = try indexer.indexFolderIncremental(arena, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, keep_caps);
+    try std.testing.expectEqual(@as(u64, 4), pruned.generation);
+    try std.testing.expect(pruned.pruned_files > 0);
+    const after = try lifecycle.scan(out, io, &s14_manifest, &s14_documents, &s14_lexical);
+    try std.testing.expectEqual(@as(usize, 0), after.superseded_document_files);
+    try std.testing.expectEqual(@as(usize, 0), after.orphan_document_files);
+    const opened = try snapshot_open.open(arena, io, out);
+    try std.testing.expectEqual(@as(u64, 4), opened.generation);
+}
+
 test "a fresh directory and an empty folder report no recovery; zero documents only for zero files" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
