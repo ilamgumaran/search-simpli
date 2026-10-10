@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:search_simpli/search_simpli.dart';
+import 'package:search_simpli/src/search_simpli_base.dart' show indexFolderWithAllocator;
 import 'package:test/test.dart';
 
 const String _base =
@@ -47,7 +48,7 @@ void main() {
     test('an invalid value allocates no native memory (S2-T14)', () {
       final counting = _CountingAllocator();
       expect(
-        () => SearchSimpli.indexFolder('/nonexistent/out', '/nonexistent/in',
+        () => indexFolderWithAllocator('/nonexistent/out', '/nonexistent/in',
             options: const IndexFolderOptions(keepGenerations: 0),
             library: DynamicLibrary.process(),
             allocator: counting),

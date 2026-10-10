@@ -18,6 +18,30 @@ const publication = @import("publication.zig");
 const lifecycle = @import("lifecycle.zig");
 const incremental_state = @import("incremental_state.zig");
 
+/// What `error.NoFreeGeneration` was about: the file (name only, never the
+/// directory) that supplied the highest generation, and that generation. Set
+/// by `nextFreeGeneration` just before it returns the error; read by the CLI
+/// and the ABI to say which file to delete (S1-T18).
+threadlocal var cause_name_buffer: [128]u8 = undefined;
+threadlocal var cause_name_len: usize = 0;
+threadlocal var cause_generation: u64 = 0;
+
+fn recordCause(name: []const u8, generation: u64) void {
+    const n = @min(name.len, cause_name_buffer.len);
+    @memcpy(cause_name_buffer[0..n], name[0..n]);
+    cause_name_len = n;
+    cause_generation = generation;
+}
+
+/// One line for `error.NoFreeGeneration`, formatted into `buffer`.
+pub fn describeNoFreeGeneration(buffer: []u8) []const u8 {
+    return std.fmt.bufPrint(
+        buffer,
+        "NoFreeGeneration: no generation number above {d} (read from {s}); delete or rename that file to publish here",
+        .{ cause_generation, cause_name_buffer[0..cause_name_len] },
+    ) catch "NoFreeGeneration";
+}
+
 /// The current generation recorded by `MANIFEST` in `dir`, or `0` if `dir`
 /// has no manifest yet (a fresh output directory).
 pub fn currentGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !u64 {
@@ -49,7 +73,9 @@ fn pathExists(dir: std.Io.Dir, io: std.Io, name: []const u8) !bool {
 /// start over (S2-T14).
 pub fn highestGenerationOnDisk(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !u64 {
     var highest = try currentGeneration(allocator, io, dir);
+    recordCause(publication.current_manifest_file, highest);
     if (incremental_state.load(allocator, io, dir) catch null) |state| {
+        if (state.generation > highest) recordCause("INDEX-STATE.json", state.generation);
         highest = @max(highest, state.generation);
     }
     var iterable = try dir.openDir(io, ".", .{ .iterate = true });
@@ -57,7 +83,10 @@ pub fn highestGenerationOnDisk(allocator: std.mem.Allocator, io: std.Io, dir: st
     var iterator = iterable.iterate();
     while (try iterator.next(io)) |entry| {
         if (entry.kind != .file) continue;
-        if (lifecycle.sectionGeneration(entry.name)) |number| highest = @max(highest, number);
+        if (lifecycle.sectionGeneration(entry.name)) |number| {
+            if (number > highest) recordCause(entry.name, number);
+            highest = @max(highest, number);
+        }
     }
     return highest;
 }
@@ -79,7 +108,12 @@ pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.
         const lexical_name = try std.fmt.bufPrint(&lexical_buffer, "lexical-{d}.hyblex", .{candidate});
         const lexical_taken = try pathExists(dir, io, lexical_name);
         if (!documents_taken and !lexical_taken) return candidate;
-        candidate = std.math.add(u64, candidate, 1) catch return error.NoFreeGeneration;
+        if (std.math.add(u64, candidate, 1)) |next| {
+            candidate = next;
+        } else |_| {
+            recordCause(if (lexical_taken) lexical_name else documents_name, candidate);
+            return error.NoFreeGeneration;
+        }
     }
     return error.NoFreeGeneration;
 }
@@ -124,4 +158,20 @@ test "nextFreeGeneration at u64 max is an error, not a panic" {
     const io = std.testing.io;
     try tmp.dir.writeFile(io, .{ .sub_path = "documents-18446744073709551615.hybseg", .data = "x" });
     try std.testing.expectError(error.NoFreeGeneration, nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
+}
+
+test "NoFreeGeneration names the file and the generation read from it" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "lexical-18446744073709551615.hyblex", .data = "x" });
+    try std.testing.expectError(error.NoFreeGeneration, nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
+    var buffer: [256]u8 = undefined;
+    const line = describeNoFreeGeneration(&buffer);
+    try std.testing.expect(std.mem.indexOf(u8, line, "lexical-18446744073709551615.hyblex") != null);
+    try std.testing.expect(std.mem.indexOf(u8, line, "18446744073709551615") != null);
+    try std.testing.expect(std.mem.indexOfScalar(u8, line, '\n') == null);
+    try std.testing.expect(std.mem.indexOfScalar(u8, line, '/') == null);
 }
