@@ -115,8 +115,9 @@ wrote — see the [root README](../../../README.md) and
   `InterchangeAnalyzer.analyzerV2` (`"analyzer-v2"`, Unicode; the same index
   `indexFolder` builds from the same chunks).
 - `SearchSimpli.indexFolder(String dirPath, String folderPath, {IndexFolderOptions
-  options, DynamicLibrary? library})` → `IndexFolderReport` (docs/tasks/S1-T4.md
-  criterion 1) — indexes `folderPath` and atomically publishes (or
+  options, DynamicLibrary? library, Allocator allocator = malloc})` →
+  `IndexFolderReport` (docs/tasks/S1-T4.md criterion 1; `allocator` since S2-T14,
+  only for tests that count native allocations: leave it at the default) — indexes `folderPath` and atomically publishes (or
   re-publishes/updates) a lexical-only snapshot into `dirPath`, exactly what
   `searchd index` does; `ss_index_folder` under the hood. A static method,
   not an instance method, for the same reason as `importSnapshotJson`: it
