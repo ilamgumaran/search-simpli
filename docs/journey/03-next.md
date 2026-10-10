@@ -1,5 +1,7 @@
 # Next
 
+**10 Oct (orchestrator, Xcode Mac):** **S1-T16 is `ready`**: NFC recomposition is quadratic and now reaches Korean (1 MB line 48 ms → 17 s; S1-T15 finding 1); ruling: linear one-pass composition, byte-identical output, id unchanged. The app's next core pin is `0abbd8b` (S1-T15) or later: simpli-helper M12-T10.
+
 **10 Oct (tester, Xcode Mac): S1-T15 is `verified` and merged to `main`; contract unchanged (1.2.0), id still `analyzer-v2`.** Zig's NFC equals Python's on every codepoint (23,422 differing cases → 0) and on 220,000 random strings of the tester's own; variation selectors are dropped (`1️⃣` → `1`); every golden and captured output is byte-identical. Libraries: stamp `817b1f70…`. A decomposed Tamil `ொ` query now finds precomposed text. Candidates from the Verdict, not scheduled: a linear NFC composition step (quadratic now also for Korean in the slow path: 256 KB one line 11 ms → 1.1 s; joins S2-T11's candidate); the casefold gap (own task, id ruling); a Tamil blocked-starter case in `nfc_compare.py`.
 
 **10 Oct (orchestrator, Xcode Mac):** **S1-T15 is `ready`**: Zig's NFC skips singleton decompositions and Hangul composition (S1-T14 finding 1; 1,020 + 11,172 codepoints differ from Python), and variation selectors now stay on tokens. Ruling: correct NFC, drop variation selectors; the id stays `analyzer-v2` only if every existing golden is byte-identical. The app's re-pin and one-time republish after S1-T14 is simpli-helper M12-T10.
