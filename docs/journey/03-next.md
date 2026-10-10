@@ -1,5 +1,7 @@
 # Next
 
+**10 Oct (orchestrator, Xcode Mac):** **S1-T17 is `ready`** (XS): the NFC timing test guards the Korean line, not `compose` (S1-T16 finding 1); add a decomposed-Latin family; fix two stale comments.
+
 **10 Oct (tester, Xcode Mac): S1-T16 is `verified` and merged to `main`; contract unchanged (1.2.0), id still `analyzer-v2`.** NFC is linear: a 1 MB Korean line with one mark 11.7 s → 2.2 ms, `searchd index` on it 13.2 s → 35 ms; output byte-identical (`nfc_compare.py` 0, the tester's 931,699-string oracle × 2 seeds 0, every golden and captured output identical). Libraries: stamp `8afa730e…`. Candidates from the Verdict, not scheduled: a single-region line (NFD jamo, no spaces) in `nfc_timing_test.zig`, so the test guards `compose` itself; a linear sort for long runs of stacked marks (`canonicalOrder`, crafted input only); fresh Zig cache dirs for plant runs outside a worktree (a `ROLES.md` line).
 
 **10 Oct (orchestrator, Xcode Mac):** **S1-T16 is `ready`**: NFC recomposition is quadratic and now reaches Korean (1 MB line 48 ms → 17 s; S1-T15 finding 1); ruling: linear one-pass composition, byte-identical output, id unchanged. The app's next core pin is `0abbd8b` (S1-T15) or later: simpli-helper M12-T10.
