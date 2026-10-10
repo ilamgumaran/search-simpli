@@ -29,7 +29,7 @@ def main() -> int:
     subprocess.run([searchd, "index", str(ROOT / "fixtures/tamil/passages"), "--out", str(snap)],
                    check=True, capture_output=True)
     ok = True
-    absent = json.loads((ROOT / "fixtures/tamil/absent-judgments.json").read_text("utf-8"))["queries"]
+    absent = json.loads((ROOT / "fixtures/tamil-absent-judgments.json").read_text("utf-8"))["queries"]
     total = 0
     with_hits = 0
     for q in absent:

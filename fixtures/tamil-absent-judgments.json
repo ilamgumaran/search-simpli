@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "S1-T14 bar. Tamil query words that are ABSENT from fixtures/tamil/passages (invented words or real words the corpus never uses). The correct result for every query is zero hits. Before the fix analyzer-v2 cut each word at its vowel signs and matched one-letter fragments.",
+  "note": "S1-T14 bar (kept outside fixtures/tamil, which the chunk golden walks). Tamil query words that are ABSENT from fixtures/tamil/passages (invented words or real words the corpus never uses). The correct result for every query is zero hits. Before the fix analyzer-v2 cut each word at its vowel signs and matched one-letter fragments.",
   "queries": [
     { "id": "absent-elephants", "query": "யானைகள்", "relevant": [] },
     { "id": "absent-computer", "query": "கணினி", "relevant": [] },
