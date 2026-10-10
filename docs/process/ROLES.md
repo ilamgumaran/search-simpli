@@ -20,3 +20,5 @@ Run this repository's suites with `SEARCH_SIMPLI_LIBRARY_PATH` **unset**. `simpl
 - **Every verifier reproduces the defect in a real process when the claim is about the operating system** (a failing `fsync`, a `SIGKILL`, a hang), not only in the shim the builder wrote: S2-T5 was rejected on a bug the shim test could not see.
 - **Testers add the dated `PROJECT-STATE.md` entry at the merge; nobody edits `IMPROVEMENT-BOARD.md` for another orchestrator.** Docs-only pushes to `main` do not force a tester to re-run suites; anything under `zig/`, `contracts/`, `bindings/`, `scripts/` or `tests/` does.
 - Prebuilt libraries and `native/SOURCE-SHA256` are never resolved by picking a side in a merge: rebuild from the merged source with `tool/build_native.sh`, last.
+
+- **Plants in a scratch copy need fresh Zig caches.** `zig test` in a scratch copy can return a binary built from another copy's sources through the global cache (S1-T16 tester, 10 Oct: it got the builder's leftover plant). Pass `--global-cache-dir` and `--cache-dir` pointing at empty folders for every plant run outside a worktree.
