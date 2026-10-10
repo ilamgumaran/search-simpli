@@ -79,8 +79,14 @@ class Chunk:
     required_labels: list[str]
 
 
+# S1-T15: variation selectors only choose a glyph; they are removed before
+# splitting (`1` + U+FE0F + U+20E3 is the token `1`). Mirrors analyzer_v2.zig.
+VARIATION_SELECTORS = re.compile("[\ufe00-\ufe0f\U000e0100-\U000e01ef]")
+
+
 def tokenize(text: str) -> list[str]:
-    return [token.casefold() for token in TOKEN_PATTERN.findall(unicodedata.normalize("NFC", text))]
+    normalized = VARIATION_SELECTORS.sub("", unicodedata.normalize("NFC", text))
+    return [token.casefold() for token in TOKEN_PATTERN.findall(normalized)]
 
 
 def _hash_vector(tokens: Iterable[str], dimensions: int = 128) -> list[float]:
