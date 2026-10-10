@@ -595,7 +595,10 @@ pub export fn ss_index_folder(
     clearLastError();
     const options_text = if (opts_json) |ptr| std.mem.span(ptr) else "";
     return indexFolderImpl(std.mem.span(dir_path), std.mem.span(folder_path), options_text) catch |err| {
-        setLastError("ss_index_folder: {s}", .{@errorName(err)});
+        if (err == error.NoFreeGeneration) {
+            var line_buffer: [384]u8 = undefined;
+            setLastError("ss_index_folder: {s}", .{generation_alloc.describeNoFreeGeneration(&line_buffer)});
+        } else setLastError("ss_index_folder: {s}", .{@errorName(err)});
         return null;
     };
 }
@@ -724,6 +727,28 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
     }
     const owned = try out.toOwnedSliceSentinel(0);
     return owned.ptr;
+}
+
+test "ss_index_folder names the file behind NoFreeGeneration in ss_last_error" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io_impl = std.testing.io;
+
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/a.md", .data = "alpha\n" });
+    try tmp.dir.createDir(io_impl, "out", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "out/lexical-18446744073709551615.hyblex", .data = "x" });
+
+    const notes_path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_path_z);
+    const out_path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_path_z);
+
+    try std.testing.expect(ss_index_folder(out_path_z, notes_path_z, null) == null);
+    const message = std.mem.span(ss_last_error());
+    try std.testing.expect(std.mem.indexOf(u8, message, "NoFreeGeneration") != null);
+    try std.testing.expect(std.mem.indexOf(u8, message, "lexical-18446744073709551615.hyblex") != null);
+    try std.testing.expect(std.mem.indexOf(u8, message, "zig-cache") == null);
 }
 
 test "ss_index_folder publishes and re-publishes, full and incremental" {

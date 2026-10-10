@@ -1,3 +1,4 @@
+const generation_alloc = @import("generation_alloc.zig");
 const engine_module = @import("engine.zig");
 const benchmark = @import("benchmark.zig");
 const chunker = @import("chunker.zig");
@@ -42,7 +43,14 @@ pub fn main(init: std.process.Init) !void {
         .index => |i| {
             var stdout_buffer: [4096]u8 = undefined;
             var stdout_writer = std.Io.File.stdout().writerStreaming(init.io, &stdout_buffer);
-            try cli.runIndex(init.io, init.gpa, i.folder, i.out, i.options, &stdout_writer.interface);
+            cli.runIndex(init.io, init.gpa, i.folder, i.out, i.options, &stdout_writer.interface) catch |err| {
+                if (err == error.NoFreeGeneration) {
+                    var line_buffer: [384]u8 = undefined;
+                    std.debug.print("error: {s}\n", .{generation_alloc.describeNoFreeGeneration(&line_buffer)});
+                    std.process.exit(1);
+                }
+                return err;
+            };
             try stdout_writer.flush();
         },
         .query => |q| {

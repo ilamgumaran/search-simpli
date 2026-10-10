@@ -153,6 +153,27 @@ class CliProcessTests(unittest.TestCase):
             self.assertIn(b'"error"', lines[1])
             self.assertIn(b'"result"', lines[2])
 
+    def test_no_free_generation_names_the_file(self) -> None:
+        """S1-T18: a stray section file at u64 max stops a self-numbered publish;
+        the one stderr line names the file (not the directory) and its number."""
+        base = Path(self.scratch.name) / "no-free-generation"
+        folder = base / "docs"
+        out = base / "out"
+        folder.mkdir(parents=True)
+        (folder / "a.md").write_text("alpha beta\n", encoding="utf-8")
+        first = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        stray = "lexical-18446744073709551615.hyblex"
+        (out / stray).write_bytes(b"x")
+        result = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2", "--update")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        lines = result.stderr.splitlines()
+        self.assertEqual(len(lines), 1, result.stderr)
+        self.assertTrue(lines[0].startswith("error: NoFreeGeneration"), lines[0])
+        self.assertIn(stray, lines[0])
+        self.assertIn("18446744073709551615", lines[0])
+        self.assertNotIn(str(out), lines[0])
+
     def test_lost_manifest_numbers_above_what_is_on_disk(self) -> None:
         """S2-T14: only generation 2 on disk and no MANIFEST -> the update
         publishes generation 3 (never 1), recovered=missing_manifest, and
