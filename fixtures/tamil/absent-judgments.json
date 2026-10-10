@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "note": "S1-T14 bar. Tamil query words that are ABSENT from fixtures/tamil/passages (invented words or real words the corpus never uses). The correct result for every query is zero hits. Before the fix analyzer-v2 cut each word at its vowel signs and matched one-letter fragments.",
+  "queries": [
+    { "id": "absent-elephants", "query": "யானைகள்", "relevant": [] },
+    { "id": "absent-computer", "query": "கணினி", "relevant": [] },
+    { "id": "absent-cat", "query": "பூனை", "relevant": [] },
+    { "id": "absent-doctor", "query": "மருத்துவர்", "relevant": [] },
+    { "id": "absent-chair", "query": "நாற்காலி", "relevant": [] },
+    { "id": "absent-clock", "query": "கடிகாரம்", "relevant": [] },
+    { "id": "absent-telephone", "query": "தொலைபேசி", "relevant": [] },
+    { "id": "absent-aeroplane", "query": "விமானம்", "relevant": [] },
+    { "id": "absent-horse", "query": "குதிரை", "relevant": [] },
+    { "id": "absent-bicycle", "query": "சைக்கிள்", "relevant": [] },
+    { "id": "absent-camel", "query": "ஒட்டகம்", "relevant": [] },
+    { "id": "absent-lion", "query": "சிங்கம்", "relevant": [] }
+  ]
+}
