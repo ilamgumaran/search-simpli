@@ -41,6 +41,52 @@ jobs:
           fi
           echo "No trailing whitespace."
 
-# Zig tests and the searchd process test (tests/test_cli_process.py) run locally with
-# the pinned toolchain; see docs/process/ROLES.md. They are intentionally not in CI
-# until a pinned Zig toolchain step is justified (proposed after S1-T8).
+  native-linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-cache
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned Zig 0.16.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/zig-x86_64-linux-0.16.0.tar.xz"
+          archive_url="https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz"
+          expected_sha256="70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+
+          curl --fail --show-error --location --silent \
+            --connect-timeout 20 --max-time 180 \
+            --retry 3 --retry-delay 2 --retry-max-time 240 \
+            "$archive_url" --output "$archive"
+
+          printf '%s  %s\n' "$expected_sha256" "$archive" | sha256sum --check --status
+          tar -xf "$archive" -C "$RUNNER_TEMP"
+          zig_dir="$RUNNER_TEMP/zig-x86_64-linux-0.16.0"
+          test -x "$zig_dir/zig"
+          test "$("$zig_dir/zig" version)" = "0.16.0"
+          echo "$zig_dir" >> "$GITHUB_PATH"
+
+      - name: Zig engine tests
+        working-directory: zig
+        run: zig build test -j2 --summary all
+
+      - name: Zig C ABI tests
+        working-directory: zig
+        run: zig build test-abi -j2 --summary all
+
+      - name: Python behavioral tests with native CLI
+        run: >-
+          env -u SEARCH_SIMPLI_LIBRARY_PATH
+          -u SEARCH_SIMPLI_NO_ZIG
+          -u SEARCHD_BINARY
+          python3 -m unittest discover -s tests -v
