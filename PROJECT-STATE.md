@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-10-10
+Last updated: 2026-10-13
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -11,6 +11,16 @@ Project: **Search Simpli** (`search-simpli`)
 
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
+
+## Linux native validation (S1-T19, 2026-10-13)
+
+**Review candidate:** branch `task/S1-T19`, runtime/artifact `90f57673b94c2271063c94856a2a537e067dc609`, based on main `b722c45`. [Task and measured verification](docs/tasks/S1-T19.md), [ownership issue #7](https://github.com/ilamgumaran/search-simpli/issues/7). No merge or device deployment performed.
+
+- **Fixed publication on Linux/Android.** Zig 0.16 opens non-iterable directory handles with `O_PATH`; the old `fsync` call returned `EBADF`. Reopening `.` with iteration enabled gives a readable descriptor for the same directory. Both durability barriers sync it and close it on every exit. macOS behavior and genuine error propagation are preserved.
+- **Native CI gate.** A separate Ubuntu 24.04 job downloads checksum-verified Zig 0.16.0, runs existing engine/C ABI tests and the Python process suite without the native opt-out. The Python-only job remains. The C harness now declares its POSIX APIs under C11.
+- **Local evidence.** Zig 173/173, C ABI 16/16, Python 94 pass/4 skip, Dart 57/57 plus clean analysis, relevance mechanics 4/4. The old-call plant fails the existing real-directory regression. Injecting a real `fsync` EIO at the final barrier exits 1 while retaining a queryable complete generation and closing the descriptor. See the task for exact outputs and skips. GitHub-hosted CI status is recorded there separately.
+- **Matching libraries.** macOS stays byte-identical (434888 B, `4f8f9044…`); Android rebuilt (427152 B, `e6920eb9…`), example copy identical. Source stamp `276e7bae…`; contract 1.2.0 unchanged. Linux Dart checks use a fresh default-loader library outside Git; this is not macOS/Android device evidence.
+- **Resume.** Preserve this branch; read the task and live queue before new work. Use Zig 0.16.0, Dart 3.13.2 and NDK r28c for these checks. Unset `SEARCH_SIMPLI_LIBRARY_PATH`, `SEARCH_SIMPLI_NO_ZIG`, and `SEARCHD_BINARY` so the process tests build the current CLI and bindings use the matching library. Run `dart --suppress-analytics pub get --no-example` for the standalone package; the Flutter example requires its own SDK. Regenerate shipped libraries with `tool/build_native.sh` after native source changes.
 
 ## Standalone platform status (S1-T18, 2026-10-10)
 

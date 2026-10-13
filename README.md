@@ -168,6 +168,12 @@ query tokenization by the snapshot's recorded analyzer, so `analyzer-v2`
 snapshots are queried correctly over RPC and HTTP too, not just through the
 `query`/`evidence` CLI commands.
 
+### Linux native validation
+
+The 2026-10-13 Linux validation found and fixed a publication failure: Zig 0.16 directory handles can be `O_PATH`, which Linux rejects for `fsync`. Publication now opens a readable handle for the same directory, syncs and closes it at each durability barrier. The C ABI harness also requests the POSIX declarations it uses.
+
+Local validation passed 173/173 Zig tests, 16/16 C ABI checks, 94 Python tests (four platform/Unicode checks skipped), 57/57 Dart tests, and the four-query relevance mechanics smoke. The new `native-linux` GitHub job installs checksum-verified Zig 0.16.0 and runs the engine, ABI and Python CLI tests alongside the existing dependency-free job. Packaged libraries were rebuilt; contract version remains 1.2.0. See [S1-T19](docs/tasks/S1-T19.md) for exact evidence, CI status and platform limits. Dart validation used a freshly built Linux library; macOS/Android device execution remains separate.
+
 ### Binaries
 
 One static binary per platform, built with `zig build -Doptimize=ReleaseSafe
