@@ -44,8 +44,6 @@ jobs:
   native-linux:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    env:
-      ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-cache
     permissions:
       contents: read
     steps:
@@ -75,6 +73,7 @@ jobs:
           test -x "$zig_dir/zig"
           test "$("$zig_dir/zig" version)" = "0.16.0"
           echo "$zig_dir" >> "$GITHUB_PATH"
+          echo "ZIG_GLOBAL_CACHE_DIR=$RUNNER_TEMP/zig-cache" >> "$GITHUB_ENV"
 
       - name: Zig engine tests
         working-directory: zig
