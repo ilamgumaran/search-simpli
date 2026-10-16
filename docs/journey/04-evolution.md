@@ -226,3 +226,7 @@ Distilled from the entries above. These are why the rules look the way they do.
 8. **A check's coverage rule is itself a hiding place.** Validating only the
    artifacts you are *pointed at* creates a category of artifact that cannot
    fail. Enumerate them instead.
+
+## 2026-10-13 — Exercise the native platform in CI
+
+**Decision.** Add a checksum-pinned Zig/Linux job alongside the dependency-free reference checks. The old native opt-out concealed a real platform mismatch: Zig's `O_PATH` directory handles cannot be synced on Linux, although the publication path had passed on the macOS development host. A C harness declaration gap also prevented execution. The lesson is to run the existing contracts on the target platform, then verify real syscalls and error paths when durability is claimed. [S1-T19](../tasks/S1-T19.md) records the compatibility fixes and measured limits; this decision adds no retrieval capability or contract.

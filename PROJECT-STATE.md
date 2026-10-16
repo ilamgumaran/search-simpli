@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-10-10
+Last updated: 2026-10-15
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -11,6 +11,16 @@ Project: **Search Simpli** (`search-simpli`)
 
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
+
+## Linux native validation (S1-T19, 2026-10-13; merged 2026-10-15)
+
+**S1-T19 is `verified` and merged to `main` (2026-10-15, Xcode Mac tester, round 2).** Built in the owner's Codex cloud session on 13 Oct (branch `task/S1-T19`, runtime/artifact `90f57673b94c2271063c94856a2a537e067dc609`, based on main `b722c45`; [PR #8](https://github.com/ilamgumaran/search-simpli/pull/8), [ownership issue #7](https://github.com/ilamgumaran/search-simpli/issues/7)). Round 1 on this Mac was rejected because the harness's `_POSIX_C_SOURCE` line hid `mkdtemp` on macOS; the round-2 harness fix (`c67ca44`, `zig/tests/abi_test.c` only) also defines `_DARWIN_C_SOURCE` on Apple. The packaged Android library that merged is this Mac's rebuild. [Task, rulings and both Verdicts](docs/tasks/S1-T19.md). No device deployment performed.
+
+- **Fixed publication on Linux/Android.** Zig 0.16 opens non-iterable directory handles with `O_PATH`; the old `fsync` call returned `EBADF`. Reopening `.` with iteration enabled gives a readable descriptor for the same directory. Both durability barriers sync it and close it on every exit. macOS behavior and genuine error propagation are preserved.
+- **Native CI gate.** A separate Ubuntu 24.04 job downloads checksum-verified Zig 0.16.0, runs existing engine/C ABI tests and the Python process suite without the native opt-out. The Python-only job remains. The C harness now declares its POSIX APIs under C11 on Linux and macOS (`_POSIX_C_SOURCE` plus, on Apple, `_DARWIN_C_SOURCE`).
+- **Local evidence.** Zig 173/173, C ABI 16/16, Python 94 pass/4 skip, Dart 57/57 plus clean analysis, relevance mechanics 4/4. The old-call plant fails the existing real-directory regression. Injecting a real `fsync` EIO at the final barrier exits 1 while retaining a queryable complete generation and closing the descriptor. See the task for exact outputs and skips. GitHub-hosted CI status is recorded there separately.
+- **Matching libraries.** macOS stays byte-identical (434888 B, `4f8f9044…`); Android rebuilt (427152 B). The merged Android library (and its identical example copy) is the Xcode Mac's rebuild, `4c8476c5…`; the cloud's `e6920eb9…` differed only in 2 bytes of the NDK toolchain comment string. Source stamp `276e7bae…`; contract 1.2.0 unchanged. Linux Dart checks use a fresh default-loader library outside Git; this is not macOS/Android device evidence.
+- **Resume.** Read the task and live queue before new work. Use Zig 0.16.0, Dart 3.13.2 and NDK r28c for these checks. Unset `SEARCH_SIMPLI_LIBRARY_PATH`, `SEARCH_SIMPLI_NO_ZIG`, and `SEARCHD_BINARY` so the process tests build the current CLI and bindings use the matching library. Run `dart --suppress-analytics pub get --no-example` for the standalone package; the Flutter example requires its own SDK. Regenerate shipped libraries with `tool/build_native.sh` after native source changes.
 
 ## Standalone platform status (S1-T18, 2026-10-10)
 

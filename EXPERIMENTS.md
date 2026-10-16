@@ -565,3 +565,13 @@ relevance claim.
 **Artifacts:** `relevance_smoke.py`, `scripts/prepare_wands_smoke.py`,
 `fixtures/relevance-smoke/`, `docs/relevance-benchmark.md`, UC-005, and the three
 `benchmarks/wands-10k-*.json` and `benchmarks/wands-500-neural-*.json` evidence files.
+
+## 2026-10-13 — Native Linux publication and CI gate (S1-T19)
+
+**Hypothesis:** The current standalone engine should execute its existing native checks on Linux before adding them to CI. Setup used official checksum-verified Zig 0.16.0, then Dart 3.13.2 and NDK r28c, in the existing cloud checkout; library/CLI overrides were unset.
+
+**Observed baseline, main `b722c45`:** 131/173 Zig tests passed, 42 failed; the C ABI harness did not compile (`mkdtemp` undeclared under C11); Python 93 passed, 1 failed, 4 skipped. The four-query relevance smoke passed. A real syscall trace showed an `O_PATH` directory handle followed by `fsync = EBADF`. Section file sync succeeded, isolating a handle incompatibility rather than a filesystem without sync support.
+
+**Change and result, runtime/artifact `90f5767`:** Publication reopens the same directory as a readable descriptor for each barrier and closes it on exit; the C harness requests POSIX declarations. Zig 173/173, C ABI 16/16, Python 94 pass/4 skip, Dart 57/57 plus clean analysis, and relevance smoke all passed. Restoring the old sync call in a scratch copy with fresh Zig caches failed the real-directory regression (132 pass/41 fail overall). Real-process EIO injected at the final directory barrier produced exit 1 and closed the descriptor while keeping a complete, queryable generation. A deliberately wrong toolchain checksum prevented extraction. Packaged libraries were rebuilt and stamped; macOS stayed byte-identical, Android changed, contract 1.2.0 stayed unchanged.
+
+**Limits and decision:** Local Linux tests and syscall probes establish this compatibility fix. A traced full-suite diagnostic was terminated after sufficient syscall evidence (143); the separate untraced full suite passed (0). Three macOS ctypes tests and the Unicode-table check skipped on this Python host. Linux Dart checks used a fresh default-loader library outside Git. macOS/Android device execution and Flutter integration remain separate. Add the pinned native Linux CI gate alongside dependency-free CI; record actual GitHub execution in [S1-T19](docs/tasks/S1-T19.md), and keep delivery as a reviewable branch/PR. These relevance fixtures remain mechanics evidence.

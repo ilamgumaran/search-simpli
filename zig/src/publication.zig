@@ -111,10 +111,11 @@ pub const DirSyncError = error{ InputOutput, NoSpaceLeft, DiskQuota, Unexpected 
 /// fsync a directory so renames/links inside it reach stable storage.
 ///
 /// Zig 0.16's `std.Io.Dir` has no sync method (`File.sync` only flushes a
-/// file's own data and says so); a `Dir.Handle` is the plain POSIX fd, so on
-/// POSIX (Linux, Android, macOS) this calls `fsync(dir.handle)` directly,
-/// retrying on `EINTR`. It deliberately does not go through `File.sync`,
-/// which treats `EINVAL` as a programmer bug (a panic in Debug builds).
+/// file's own data and says so). Linux/Android directory handles may be
+/// `O_PATH`, so open `.` relative to the same directory with iteration enabled
+/// and fsync that owned, readable handle. macOS keeps using the supplied
+/// directory handle. Both paths retry `EINTR` and deliberately avoid
+/// `File.sync`, which treats `EINVAL` as a programmer bug (a panic in Debug).
 ///
 /// `EINVAL` / `ENOTSUP` / `EOPNOTSUPP` mean "this filesystem cannot sync a
 /// directory" (some FUSE, network and overlay mounts); those are ignored and
@@ -128,7 +129,6 @@ pub const DirSyncError = error{ InputOutput, NoSpaceLeft, DiskQuota, Unexpected 
 /// stay consistent; macOS is a development host here, the target is
 /// Linux/Android where `fsync` is the full barrier.
 pub fn syncDirectory(dir: std.Io.Dir, io: std.Io, recorder: ?*Recorder) DirSyncError!void {
-    _ = io;
     Recorder.note(recorder, .dir_sync, "");
     if (recorder) |r| {
         r.dir_syncs_seen += 1;
@@ -138,8 +138,14 @@ pub fn syncDirectory(dir: std.Io.Dir, io: std.Io, recorder: ?*Recorder) DirSyncE
         return;
     } else {
         const posix = std.posix;
+        var owned_dir: ?std.Io.Dir = null;
+        defer if (owned_dir) |sync_dir| sync_dir.close(io);
+        const sync_handle = if (comptime builtin.os.tag == .linux) blk: {
+            owned_dir = dir.openDir(io, ".", .{ .iterate = true }) catch return error.Unexpected;
+            break :blk owned_dir.?.handle;
+        } else dir.handle;
         while (true) {
-            const errno = posix.errno(posix.system.fsync(dir.handle));
+            const errno = posix.errno(posix.system.fsync(sync_handle));
             if (errno == .SUCCESS) return;
             if (errno == .INTR) continue;
             if (errno == .INVAL) return;
