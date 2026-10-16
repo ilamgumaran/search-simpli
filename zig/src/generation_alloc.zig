@@ -18,28 +18,62 @@ const publication = @import("publication.zig");
 const lifecycle = @import("lifecycle.zig");
 const incremental_state = @import("incremental_state.zig");
 
-/// What `error.NoFreeGeneration` was about: the file (name only, never the
-/// directory) that supplied the highest generation, and that generation. Set
-/// by `nextFreeGeneration` just before it returns the error; read by the CLI
-/// and the ABI to say which file to delete (S1-T18).
-threadlocal var cause_name_buffer: [128]u8 = undefined;
-threadlocal var cause_name_len: usize = 0;
+/// Canonical trace kinds at the highest generation. Kept thread-local because
+/// the CLI and ABI read the diagnostic immediately after allocation fails.
+const Cause = enum(u4) {
+    manifest = 1,
+    index_state = 2,
+    documents = 4,
+    lexical = 8,
+};
+
+threadlocal var cause_mask: u4 = 0;
 threadlocal var cause_generation: u64 = 0;
 
-fn recordCause(name: []const u8, generation: u64) void {
-    const n = @min(name.len, cause_name_buffer.len);
-    @memcpy(cause_name_buffer[0..n], name[0..n]);
-    cause_name_len = n;
-    cause_generation = generation;
+fn resetCause() void {
+    cause_mask = 0;
+    cause_generation = 0;
+}
+
+fn recordCause(cause: Cause, generation: u64) void {
+    if (generation > cause_generation) {
+        cause_generation = generation;
+        cause_mask = 0;
+    }
+    if (generation == cause_generation) cause_mask |= @intFromEnum(cause);
+}
+
+fn appendGeneratedCauseName(buffer: []u8, used: *usize, comptime pattern: []const u8) void {
+    if (used.* != 0) {
+        @memcpy(buffer[used.* .. used.* + 2], ", ");
+        used.* += 2;
+    }
+    const name = std.fmt.bufPrint(buffer[used.*..], pattern, .{cause_generation}) catch return;
+    used.* += name.len;
 }
 
 /// One line for `error.NoFreeGeneration`, formatted into `buffer`.
 pub fn describeNoFreeGeneration(buffer: []u8) []const u8 {
+    var names_buffer: [160]u8 = undefined;
+    var names_len: usize = 0;
+    if (cause_mask & 1 != 0) appendLiteralCauseName(&names_buffer, &names_len, "MANIFEST");
+    if (cause_mask & 2 != 0) appendLiteralCauseName(&names_buffer, &names_len, "INDEX-STATE.json");
+    if (cause_mask & 4 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "documents-{d}.hybseg");
+    if (cause_mask & 8 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "lexical-{d}.hyblex");
     return std.fmt.bufPrint(
         buffer,
-        "NoFreeGeneration: no generation number above {d} (read from {s}); delete or rename that file to publish here",
-        .{ cause_generation, cause_name_buffer[0..cause_name_len] },
+        "NoFreeGeneration: no generation number above {d} (traces: {s}); use a fresh output directory; inspect listed traces before repair",
+        .{ cause_generation, names_buffer[0..names_len] },
     ) catch "NoFreeGeneration";
+}
+
+fn appendLiteralCauseName(buffer: []u8, used: *usize, name: []const u8) void {
+    if (used.* != 0) {
+        @memcpy(buffer[used.* .. used.* + 2], ", ");
+        used.* += 2;
+    }
+    @memcpy(buffer[used.* .. used.* + name.len], name);
+    used.* += name.len;
 }
 
 /// The current generation recorded by `MANIFEST` in `dir`, or `0` if `dir`
@@ -72,10 +106,11 @@ fn pathExists(dir: std.Io.Dir, io: std.Io, name: []const u8) !bool {
 /// a fresh directory. A lost `MANIFEST` therefore cannot make the counter
 /// start over (S2-T14).
 pub fn highestGenerationOnDisk(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !u64 {
+    resetCause();
     var highest = try currentGeneration(allocator, io, dir);
-    recordCause(publication.current_manifest_file, highest);
+    if (highest != 0) recordCause(.manifest, highest);
     if (incremental_state.load(allocator, io, dir) catch null) |state| {
-        if (state.generation > highest) recordCause("INDEX-STATE.json", state.generation);
+        recordCause(.index_state, state.generation);
         highest = @max(highest, state.generation);
     }
     var iterable = try dir.openDir(io, ".", .{ .iterate = true });
@@ -84,7 +119,11 @@ pub fn highestGenerationOnDisk(allocator: std.mem.Allocator, io: std.Io, dir: st
     while (try iterator.next(io)) |entry| {
         if (entry.kind != .file) continue;
         if (lifecycle.sectionGeneration(entry.name)) |number| {
-            if (number > highest) recordCause(entry.name, number);
+            if (std.mem.startsWith(u8, entry.name, "documents-")) {
+                recordCause(.documents, number);
+            } else {
+                recordCause(.lexical, number);
+            }
             highest = @max(highest, number);
         }
     }
@@ -111,7 +150,12 @@ pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.
         if (std.math.add(u64, candidate, 1)) |next| {
             candidate = next;
         } else |_| {
-            recordCause(if (lexical_taken) lexical_name else documents_name, candidate);
+            // The exhausted candidate itself is blocked by these taken
+            // sections, even when the previous highest generation was lower.
+            cause_generation = candidate;
+            cause_mask = 0;
+            if (documents_taken) cause_mask |= @intFromEnum(Cause.documents);
+            if (lexical_taken) cause_mask |= @intFromEnum(Cause.lexical);
             return error.NoFreeGeneration;
         }
     }
@@ -174,4 +218,83 @@ test "NoFreeGeneration names the file and the generation read from it" {
     try std.testing.expect(std.mem.indexOf(u8, line, "18446744073709551615") != null);
     try std.testing.expect(std.mem.indexOfScalar(u8, line, '\n') == null);
     try std.testing.expect(std.mem.indexOfScalar(u8, line, '/') == null);
+}
+
+fn writeManifestGeneration(io: std.Io, dir: std.Io.Dir, generation: u64) !void {
+    const value = manifest.Manifest{
+        .generation = generation,
+        .document_count = 0,
+        .vector_dimensions = 0,
+        .term_count = 0,
+        .posting_count = 0,
+        .documents_bytes = 0,
+        .documents_checksum = 0,
+        .lexical_bytes = 0,
+        .lexical_checksum = 0,
+        .analyzer_id = "analyzer-v2",
+        .embedding_model_id = "test-model",
+        .documents_file = "documents-test.hybseg",
+        .lexical_file = "lexical-test.hyblex",
+    };
+    var encoded: [256]u8 = undefined;
+    try dir.writeFile(io, .{ .sub_path = publication.current_manifest_file, .data = try manifest.encode(value, &encoded) });
+}
+
+test "NoFreeGeneration lists all tied canonical traces in fixed order" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const io = std.testing.io;
+    const max = std.math.maxInt(u64);
+    const documents_name = "documents-18446744073709551615.hybseg";
+    const lexical_name = "lexical-18446744073709551615.hyblex";
+    try writeManifestGeneration(io, tmp.dir, max);
+    try tmp.dir.writeFile(io, .{ .sub_path = "INDEX-STATE.json", .data = "{\"generation\":18446744073709551615,\"analyzer_id\":\"analyzer-v2\",\"files\":[]}" });
+    try tmp.dir.writeFile(io, .{ .sub_path = documents_name, .data = "x" });
+    try tmp.dir.writeFile(io, .{ .sub_path = lexical_name, .data = "x" });
+    // These parse as lower or noncanonical names and must not enter the list.
+    try tmp.dir.writeFile(io, .{ .sub_path = "documents-9.hybseg", .data = "x" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "lexical-018446744073709551615.hyblex", .data = "x" });
+    try tmp.dir.createDir(io, "documents-77.hybseg", .default_dir);
+
+    try std.testing.expectError(error.NoFreeGeneration, nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
+    var buffer: [256]u8 = undefined;
+    const line = describeNoFreeGeneration(&buffer);
+    try std.testing.expectEqualStrings(
+        "NoFreeGeneration: no generation number above 18446744073709551615 (traces: MANIFEST, INDEX-STATE.json, documents-18446744073709551615.hybseg, lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair",
+        line,
+    );
+
+    // A second scan in this thread must replace the previous scan's ties.
+    try tmp.dir.deleteFile(io, "MANIFEST");
+    try tmp.dir.deleteFile(io, "INDEX-STATE.json");
+    try tmp.dir.deleteFile(io, documents_name);
+    try tmp.dir.deleteFile(io, lexical_name);
+    try tmp.dir.deleteDir(io, "documents-77.hybseg");
+    try tmp.dir.writeFile(io, .{ .sub_path = lexical_name, .data = "x" });
+    try std.testing.expectError(error.NoFreeGeneration, nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
+    try std.testing.expectEqualStrings(
+        "NoFreeGeneration: no generation number above 18446744073709551615 (traces: lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair",
+        describeNoFreeGeneration(&buffer),
+    );
+}
+
+test "NoFreeGeneration lists a tied section subset above a lower manifest" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const io = std.testing.io;
+    const max = std.math.maxInt(u64);
+    const max_minus_one = max - 1;
+    try writeManifestGeneration(io, tmp.dir, max_minus_one);
+    try tmp.dir.writeFile(io, .{ .sub_path = "documents-18446744073709551615.hybseg", .data = "x" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "lexical-18446744073709551615.hyblex", .data = "x" });
+    try std.testing.expectError(error.NoFreeGeneration, nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
+    var buffer: [256]u8 = undefined;
+    try std.testing.expectEqualStrings(
+        "NoFreeGeneration: no generation number above 18446744073709551615 (traces: documents-18446744073709551615.hybseg, lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair",
+        describeNoFreeGeneration(&buffer),
+    );
 }

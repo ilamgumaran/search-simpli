@@ -16,6 +16,13 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+MAX_GENERATION = "18446744073709551615"
+MAX_TRACES = (
+    "MANIFEST",
+    "INDEX-STATE.json",
+    f"documents-{MAX_GENERATION}.hybseg",
+    f"lexical-{MAX_GENERATION}.hyblex",
+)
 
 
 class CliProcessTests(unittest.TestCase):
@@ -173,6 +180,107 @@ class CliProcessTests(unittest.TestCase):
         self.assertIn(stray, lines[0])
         self.assertIn("18446744073709551615", lines[0])
         self.assertNotIn(str(out), lines[0])
+
+    def test_no_free_generation_lists_all_four_valid_max_traces_without_changing_snapshot(self) -> None:
+        """A real max-generation publish supplies all four canonical traces."""
+        base = Path(self.scratch.name) / "all-max-traces"
+        folder, out = base / "docs", base / "out"
+        folder.mkdir(parents=True)
+        (folder / "a.md").write_text("alpha beta\n", encoding="utf-8")
+        first = self.run_searchd(
+            "index", str(folder), "--out", str(out), "--analyzer", "v2",
+            "--generation", MAX_GENERATION,
+        )
+        self.assertEqual(first.returncode, 0, first.stderr)
+        for name in MAX_TRACES:
+            self.assertTrue((out / name).is_file(), name)
+        before = {p.name: p.read_bytes() for p in out.iterdir() if p.is_file()}
+
+        failed = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2", "--update")
+        self.assertEqual(failed.returncode, 1, failed.stderr)
+        self.assertEqual(failed.stdout, "")
+        self.assertEqual(len(failed.stderr.splitlines()), 1, failed.stderr)
+        line = failed.stderr.strip()
+        self.assertTrue(line.startswith("error: NoFreeGeneration"), line)
+        self.assertIn(MAX_GENERATION, line)
+        for name in MAX_TRACES:
+            self.assertIn(name, line)
+        positions = [line.index(name) for name in MAX_TRACES]
+        self.assertEqual(positions, sorted(positions), line)
+        for name in MAX_TRACES:
+            self.assertEqual(line.count(name), 1, line)
+        self.assertNotIn(str(out), line)
+        self.assertIn("fresh", line.lower())
+        self.assertIn("director", line.lower())
+        self.assertIn("inspect", line.lower())
+        self.assertNotIn("delete or rename that file", line.lower())
+        self.assertEqual({p.name: p.read_bytes() for p in out.iterdir() if p.is_file()}, before)
+
+        fresh = base / "fresh"
+        succeeded = self.run_searchd("index", str(folder), "--out", str(fresh), "--analyzer", "v2")
+        self.assertEqual(succeeded.returncode, 0, succeeded.stderr)
+        self.assertTrue((fresh / "MANIFEST").is_file())
+        self.assertEqual({p.name: p.read_bytes() for p in out.iterdir() if p.is_file()}, before)
+
+    def test_no_free_generation_tied_sections_exclude_lower_aliases_and_directories(self) -> None:
+        import json
+
+        base = Path(self.scratch.name) / "section-ties"
+        folder, out = base / "docs", base / "out"
+        folder.mkdir(parents=True)
+        (folder / "a.md").write_text("alpha beta\n", encoding="utf-8")
+        first = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        both = MAX_TRACES[2:]
+        for name in both:
+            (out / name).write_bytes(b"orphan")
+        excluded = (
+            f"documents-0.hybseg",
+            f"lexical-{int(MAX_GENERATION) - 1}.hyblex",
+            f"documents-0{MAX_GENERATION}.hybseg",
+            f"lexical-0{MAX_GENERATION}.hyblex",
+            "documents-abc.hy bseg",
+        )
+        for name in excluded:
+            (out / name).write_bytes(name.encode())
+        directory = out / f"documents-0{MAX_GENERATION}.hybseg-dir"
+        directory.mkdir()
+        before = {p.name: p.read_bytes() for p in out.iterdir() if p.is_file()}
+        failed = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2", "--update")
+        self.assertEqual(failed.returncode, 1, failed.stderr)
+        self.assertEqual(failed.stdout, "")
+        self.assertEqual(len(failed.stderr.splitlines()), 1, failed.stderr)
+        line = failed.stderr.strip()
+        for name in both:
+            self.assertIn(name, line)
+        self.assertLess(line.index(both[0]), line.index(both[1]))
+        for name in both:
+            self.assertEqual(line.count(name), 1, line)
+        for name in (*excluded, "MANIFEST", "INDEX-STATE.json", directory.name, str(out)):
+            self.assertNotIn(name, line)
+        self.assertEqual({p.name: p.read_bytes() for p in out.iterdir() if p.is_file()}, before)
+
+        # A separate tie between persisted state and one section still uses
+        # the fixed order and forgets the section removed above.
+        (out / both[1]).unlink()
+        (out / both[1]).mkdir()  # An exact canonical name must be ignored when it is a directory.
+        state_path = out / "INDEX-STATE.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["generation"] = int(MAX_GENERATION)
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+        before = {p.name: p.read_bytes() for p in out.iterdir() if p.is_file()}
+        failed = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2", "--update")
+        self.assertEqual(failed.returncode, 1, failed.stderr)
+        self.assertEqual(failed.stdout, "")
+        line = failed.stderr.strip()
+        self.assertEqual(len(failed.stderr.splitlines()), 1, failed.stderr)
+        self.assertLess(line.index("INDEX-STATE.json"), line.index(both[0]))
+        self.assertEqual(line.count("INDEX-STATE.json"), 1)
+        self.assertEqual(line.count(both[0]), 1)
+        self.assertNotIn(both[1], line)
+        self.assertNotIn("MANIFEST", line)
+        self.assertTrue((out / both[1]).is_dir())
+        self.assertEqual({p.name: p.read_bytes() for p in out.iterdir() if p.is_file()}, before)
 
     def test_lost_manifest_numbers_above_what_is_on_disk(self) -> None:
         """S2-T14: only generation 2 on disk and no MANIFEST -> the update
