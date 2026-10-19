@@ -45,7 +45,7 @@ pub fn build(b: *std.Build) void {
     // Additive only; owned by S1-T0 (docs/tasks/S1-T0.md). Keep this section
     // small and self-contained so it merges cleanly alongside S1-T1's own
     // `build.zig` additions.
-    const lib_step = b.step("lib", "Build the C ABI static+shared libraries (aarch64-macos, aarch64-linux-android, x86_64-linux)");
+    const lib_step = b.step("lib", "Build the C ABI static+shared libraries (aarch64-macos, aarch64-ios, aarch64-linux-android, x86_64-linux)");
     addAbiLibraries(b, lib_step, optimize, contracts_version_options);
 
     const test_abi_step = b.step("test-abi", "Build and run the C ABI conformance harness (zig/tests/abi_test.c) against a native build of the library");
@@ -74,6 +74,9 @@ const AbiTargetSpec = struct {
     /// aarch64-linux-android has no libc of its own to cross-compile
     /// against; it needs the Android NDK's sysroot (SS_ANDROID_NDK below).
     needs_android_libc: bool = false,
+    /// aarch64-ios has no libc in Zig's bundled set (Zig ships libc headers
+    /// for macOS only); it needs the iPhoneOS SDK from Xcode (appleIosSdk).
+    needs_apple_sdk: bool = false,
 };
 
 const abi_targets = [_]AbiTargetSpec{
@@ -82,6 +85,12 @@ const abi_targets = [_]AbiTargetSpec{
         .dir_name = "aarch64-linux-android",
         .query = .{ .cpu_arch = .aarch64, .os_tag = .linux, .abi = .android },
         .needs_android_libc = true,
+    },
+    .{
+        .dir_name = "aarch64-ios",
+        // MinimumOSVersion 17.0 (ADR 0002; docs/tasks/S1-T21.md).
+        .query = .{ .cpu_arch = .aarch64, .os_tag = .ios, .os_version_min = .{ .semver = .{ .major = 17, .minor = 0, .patch = 0 } } },
+        .needs_apple_sdk = true,
     },
     .{ .dir_name = "x86_64-linux", .query = .{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .gnu } },
 };
@@ -109,8 +118,17 @@ fn addAbiLibraries(
         );
     }
 
+    const ios_libc_file = appleIosLibcFile(b);
+    if (ios_libc_file == null) {
+        std.debug.print(
+            "zig build lib: the iOS SDK was not found (needs macOS with Xcode and `xcrun --sdk iphoneos`); skipping the aarch64-ios libraries.\n",
+            .{},
+        );
+    }
+
     for (abi_targets) |spec| {
         if (spec.needs_android_libc and android_libc_file == null) continue;
+        if (spec.needs_apple_sdk and ios_libc_file == null) continue;
         const resolved_target = b.resolveTargetQuery(spec.query);
 
         inline for (.{ std.builtin.LinkMode.static, std.builtin.LinkMode.dynamic }) |linkage| {
@@ -127,6 +145,7 @@ fn addAbiLibraries(
                 .root_module = module,
             });
             if (spec.needs_android_libc) library.setLibCFile(android_libc_file.?);
+            if (spec.needs_apple_sdk) library.setLibCFile(ios_libc_file.?);
             const install = b.addInstallArtifact(library, .{
                 .dest_dir = .{ .override = .{ .custom = b.fmt("lib/{s}", .{spec.dir_name}) } },
             });
@@ -160,6 +179,31 @@ fn androidLibcFile(b: *std.Build) ?std.Build.LazyPath {
     , .{ sysroot, sysroot, crt_dir });
     const write_files = b.addWriteFiles();
     return write_files.add("android-libc.txt", contents);
+}
+
+/// Writes a Zig `--libc` paths file pointing at the iPhoneOS SDK reported by
+/// `xcrun --sdk iphoneos --show-sdk-path`, or null when this host is not
+/// macOS or the SDK is absent. Same mechanism as androidLibcFile: the
+/// `include_dir`/`sys_include_dir`/`crt_dir` keys are the libc paths-file
+/// format printed by `zig libc`. The SDK's `usr/lib` holds libSystem.tbd, which
+/// Zig's Mach-O linker reads as a text stub.
+fn appleIosLibcFile(b: *std.Build) ?std.Build.LazyPath {
+    if (@import("builtin").os.tag != .macos) return null;
+    var code: u8 = undefined;
+    const raw = b.runAllowFail(&.{ "xcrun", "--sdk", "iphoneos", "--show-sdk-path" }, &code, .ignore) catch return null;
+    const sdk = std.mem.trim(u8, raw, " \t\r\n");
+    if (sdk.len == 0) return null;
+    const contents = b.fmt(
+        \\include_dir={s}/usr/include
+        \\sys_include_dir={s}/usr/include
+        \\crt_dir={s}/usr/lib
+        \\msvc_lib_dir=
+        \\kernel32_lib_dir=
+        \\gcc_dir=
+        \\
+    , .{ sdk, sdk, sdk });
+    const write_files = b.addWriteFiles();
+    return write_files.add("ios-libc.txt", contents);
 }
 
 /// `zig build test-abi`: compile `tests/abi_test.c` against `include/` and
