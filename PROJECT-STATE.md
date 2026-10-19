@@ -14,7 +14,7 @@ ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Un
 
 ## The search core for the iPhone (S1-T21, 2026-10-18)
 
-**S1-T21 is `built` on `task/S1-T21`, awaiting the verifier.** `zig build lib` now builds `aarch64-ios` (iPhoneOS SDK through a libc paths file; one skip line without Xcode); `tool/build_native.sh` wraps it as `native/ios-arm64/search_simpli.framework` (arm64, iOS 17.0, unsigned, install name `@rpath/search_simpli.framework/search_simpli`); `tool/check_native.sh` checks the three shipped binaries and the plist; the Dart loader opens `search_simpli.framework/search_simpli` on iOS. Zig 176/176, ABI 16/16, Python 100, Dart 61/61. The app embeds and signs the framework in its task M8-T5. [Task and Report](docs/tasks/S1-T21.md).
+**S1-T21 is `verified` and merged to `main` (2026-10-18, Xcode Mac verifier Opus 5.5).** The iOS library is built on the Xcode Mac by hand (`tool/build_native.sh`); CI (Ubuntu only) never builds it. `zig build lib` now builds `aarch64-ios` (iPhoneOS SDK through a libc paths file; one skip line without Xcode); `tool/build_native.sh` wraps it as `native/ios-arm64/search_simpli.framework` (arm64, iOS 17.0, unsigned, install name `@rpath/search_simpli.framework/search_simpli`); `tool/check_native.sh` checks the three shipped binaries and the plist; the Dart loader opens `search_simpli.framework/search_simpli` on iOS. Zig 176/176, ABI 16/16, Python 100, Dart 61/61. The app embeds and signs the framework in its task M8-T5. [Task and Report](docs/tasks/S1-T21.md).
 
 ## NoFreeGeneration names every trace (S1-T20, 2026-10-15)
 
