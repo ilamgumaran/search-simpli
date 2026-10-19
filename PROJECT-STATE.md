@@ -14,11 +14,20 @@ ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Un
 
 ## Proposed search quality work (2026-10-19, documentation only)
 
+SQ-01 now has a [concrete E-02 design candidate](docs/requirements/cap-11-e02-negative-evaluation.md)
+under [claim #13](https://github.com/ilamgumaran/search-simpli/issues/13): strict
+v3 labels, exact metric arithmetic, trusted visibility and versioned profiles.
+This is documentation only; SQ-02 remains pending named maintainer approval over
+the final spec. [Recovery integration handoff](docs/tasks/recovery-pr11-integration.md)
+records why PR #11 still needs the equipped Mac before merge. Planning PR #12
+is merged as `89fadce`; that merge did not land the recovery fix.
+
 The [quality review and design](docs/search-quality-plan-2026-10.md) and
 [SQ-01–SQ-10 task breakdown](docs/tasks/search-quality-follow-ups.md) extend the
 existing backlog: negative evaluation first, per-query/segment gates, an approved
 real-folder baseline, then measured fusion and Unicode parity/migration. The
-persisted 384-d benchmark remains the scale gate. No task is claimed or built;
+persisted 384-d benchmark remains the scale gate. SQ-01's design is claimed as
+noted above; no implementation task is claimed or built.
 E-01A/CAP-14 approvals and the recorded S1-T9 owner sequencing remain pending.
 The review used main `7c40937` and a separate Sol audit; no new benchmark was run.
 Recovery [PR #11](https://github.com/ilamgumaran/search-simpli/pull/11) remains open

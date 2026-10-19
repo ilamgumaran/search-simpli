@@ -1,6 +1,6 @@
 # Search quality follow-ups: bounded task contracts
 
-Date: 2026-10-19 · Status: all tasks proposed / unclaimed · Base: `7c40937`
+Date: 2026-10-19 · Status: SQ-01 design reviewed; implementation tasks proposed / unclaimed · Original plan base: `7c40937`
 
 Design: [reviewed search improvement plan](../search-quality-plan-2026-10.md).
 These IDs are local to this plan, not claimed S1/S2 queue entries. Claim centrally
@@ -22,6 +22,12 @@ builder if a task cannot be safely bounded, particularly analyzer migration.
 | SQ-08 | F-03 / M | SQ-07 ruling and capability approval; implement selected analyzer and all affected publication paths. | Sol, bounded patches |
 | SQ-09 | F-02 / S | Current owner sequencing and methodology review; persisted 384-d baseline and bottleneck decision. | Sol 6 measurement |
 | SQ-10 | CAP-14 / M | SQ-02, SQ-05, formula/floor fixed on tuning and recorded step-6b approval; implement optional support metadata. | Luna after design |
+
+SQ-01 is claimed in [issue #13](https://github.com/ilamgumaran/search-simpli/issues/13).
+Its [concrete design](../requirements/cap-11-e02-negative-evaluation.md) defines
+formats, formulas, compatibility, visibility identity and the next acceptance
+gate. Independent Sol review found no material outstanding issue; SQ-02 is not
+approved or implemented and still requires §12's named maintainer approval.
 
 ## SQ-01 — Make negative evaluation decidable
 

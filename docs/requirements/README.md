@@ -119,6 +119,7 @@ linked from the catalog above.
 | Record | Extends | Status |
 |---|---|---|
 | [CAP-11 / E-01A — real-folder judgment packs](cap-11-e01a-judgment-packs.md) | CAP-11 / FR-12 | Proposed · pending step-6b approval, not build-ready |
+| [CAP-11 / E-02 — negative-query evaluation](cap-11-e02-negative-evaluation.md) | CAP-11 / FR-12 | Proposed · SQ-01 design, pending step-6b approval before SQ-02 |
 
 ## Functional requirements (FR)
 
@@ -142,7 +143,7 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-09 | Incremental preparation (reuse/relabel/delete/embed-changed, fail-closed) | CAP-08 | Implemented |
 | FR-10 | Python/Zig interchange (versioned neutral JSON, validated bounds) | CAP-09 | Implemented |
 | FR-11 | Durable snapshot (checksummed sections, manifest, atomic publish, writer lock) | CAP-10 | Implemented |
-| FR-12 | Evaluation & benchmarks (binary/graded judgments, nDCG + retrieval diagnostics, reproducible profiles, regression gates, machine-readable limits/evidence; E-01A real-folder pack workflow proposed) | CAP-11 | Implemented (diagnostic); E-01A proposed |
+| FR-12 | Evaluation & benchmarks (binary/graded judgments, nDCG + retrieval diagnostics, reproducible profiles, regression gates, machine-readable limits/evidence; E-01A real-folder packs and E-02 negative evaluation proposed) | CAP-11 | Implemented (diagnostic); E-01A/E-02 proposed |
 | FR-13 | MCP adapter binds FR-07 operations, injects trusted principal, forbids caller vectors, parity with direct surface | CAP-13 | Proposed |
 | FR-14 | First-class retrieval-derived support/confidence signal in the evidence response; low-support flagging; never generative | CAP-14 (changes FR-06) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages, deterministic identity, deterministic line-window fallback | CAP-15 (changes FR-02) | Proposed |
@@ -215,8 +216,11 @@ section is the point of the whole register.
 | CFT-11 | CAP-11 E-01A ↔ INV-03 / FR-08 | A generic “user folder” may mix authorization domains; catalog paths and reports could flatten or expose them. | Scope v1 to one local data owner and one visibility boundary. Mixed-label/team evaluation remains outside the workflow until an authorization-aware profile is designed; pack/default-report artifacts omit content and absolute roots and stay local without publication authority. | Resolved (scope) |
 | CFT-12 | CAP-11 E-01A ↔ INV-11 | A workflow handling tuning and holdout could contaminate the frozen gate or silently change it after review. | Separate suites, cross-split uniqueness validation, explicit human confirmation over exact hashes, fail-closed mutation checks, separate reports, and no automatic tuning/model selection from holdout results. | Resolved (design) |
 | CFT-13 | CAP-11 E-01A ↔ INV-09 | A pack schema, validator, and runner add tooling before representative evidence exists. | E-01 is already the recorded blocker; bound v1 to content-free intake/validation and orchestration over the existing evaluator, with removal as the rollback if it fails to produce a confirmed pack. | Resolved (bounded experiment) |
+| CFT-14 | CAP-11 E-02 / FR-12 ↔ INV-10 | Positive-only metrics cannot describe negatives; unknown judgments could falsely become unsupported queries. | Explicit v3 labels, positive-only denominators, separate negative diagnostics, null reasons and fixed arithmetic acceptance cases. See [E-02](cap-11-e02-negative-evaluation.md); implementation evidence pending. | Resolved (design) |
+| CFT-15 | CAP-11 E-02 ↔ FR-08 / INV-03 | A suite-controlled principal or report identity could leak hidden data. | Trusted context into real prefilter, keyed restricted-context binding, visible corpus identity, redacted v3 default reports and hidden/absent acceptance tests; no implementation/approval claim. | Resolved (design) |
+| CFT-16 | CAP-11 E-02 ↔ INV-07 / E-01A | New suite/report/profile formats could silently change legacy runs or expand sealed real-folder packs. | Preserve default v1/v2 semantics; version new formats; keep E-01A unchanged and v3 unsupported until its own final-amendment approval. | Resolved (scope/design) |
 
-New conflicts append as `CFT-14`, … Record the conflict even if you resolve it
+New conflicts append as `CFT-17`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability

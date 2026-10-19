@@ -1,5 +1,14 @@
 # Next
 
+**19 Oct (Codex cloud): SQ-01 design candidate is specified.**
+[E-02 / suite-v3 design](../requirements/cap-11-e02-negative-evaluation.md),
+[claim #13](https://github.com/ilamgumaran/search-simpli/issues/13), defines the
+metric and authorization gates before SQ-02. No runtime implementation is
+claimed. SQ-02 requires the final spec's named maintainer approval. PR #12 is
+merged (`89fadce`); [PR #11 integration](../tasks/recovery-pr11-integration.md)
+requires documentation-conflict resolution and a fresh native rebuild including
+iOS on the equipped Mac. It remains open; do not treat both PRs as finished.
+
 **19 Oct (Codex cloud): proposed search quality plan, documentation only.**
 Read the [design](../search-quality-plan-2026-10.md) and
 [SQ task breakdown](../tasks/search-quality-follow-ups.md). Suggested first slice:
