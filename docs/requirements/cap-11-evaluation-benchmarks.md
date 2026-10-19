@@ -9,6 +9,11 @@ Status: Diagnostic · Evidence: implemented smoke gate and WANDS experiments
 Proposed follow-on: [E-01A real-folder judgment packs](cap-11-e01a-judgment-packs.md),
 currently pending its independent step-6b approval before implementation.
 
+Proposed E-02 follow-on: [negative-query evaluation](cap-11-e02-negative-evaluation.md)
+defines suite v3, trusted-context profiles and diagnostic metrics. It is a
+separate proposed extension, not implemented or approved by this historical
+record. Its own step-6b approval is required before SQ-02.
+
 ## 1. Proposal
 
 - **Problem / what should be possible:** A ranking, chunking, tokenizer,

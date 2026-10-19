@@ -24,6 +24,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 | Continue current implementation work | [Project state](../PROJECT-STATE.md) |
 | Pick up the next improvement (human or agent) | [Improvement board](../IMPROVEMENT-BOARD.md) |
 | Review the next quality improvements and bounded tasks | [October quality plan](search-quality-plan-2026-10.md) · [Task breakdown](tasks/search-quality-follow-ups.md) |
+| Review the next evaluator design before implementation | [SQ-01 / E-02 negative-query evaluation](requirements/cap-11-e02-negative-evaluation.md) |
 | Understand how search should learn from use | [The learning loop](learning-loop.md) |
 
 ## Theory and decisions

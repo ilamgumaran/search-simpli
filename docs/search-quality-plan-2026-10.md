@@ -12,6 +12,12 @@ the quality gaps and dependencies. The recommendations extend existing board
 items, with one newly shaped analyzer item (F-03). The bounded work is in the
 [task breakdown](tasks/search-quality-follow-ups.md).
 
+Follow-on SQ-01 now has a separately reviewed
+[E-02 design](requirements/cap-11-e02-negative-evaluation.md), claimed in
+[issue #13](https://github.com/ilamgumaran/search-simpli/issues/13). Its explicit
+formats and gates refine this roadmap; SQ-02 still requires named approval of
+that final design before implementation. No runtime task has started.
+
 ## Evidence and priorities
 
 | Priority / board item | Evidence on the reviewed base | Proposed improvement |

@@ -52,6 +52,12 @@ The fifth question is recorded but not scored by the current gate. Explicit
 no-answer behavior depends on calibrated support under CAP-14/E-02; FR-12 judges
 ranked retrieval only.
 
+The proposed [E-02 design](../requirements/cap-11-e02-negative-evaluation.md)
+specifies five concrete question families and an offline suite-v3 metric gate.
+It would score reviewed unanswerability separately from positive retrieval,
+exclude unknown judgments, and use trusted visibility configuration. It remains
+unimplemented and does not supply calibrated production support/refusal.
+
 ## Expected tool flow
 
 1. Inspect `index_status` or the smoke report's index metadata to confirm corpus,

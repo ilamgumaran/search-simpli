@@ -209,3 +209,11 @@ exists only in the register.
 | FR-14 | First-class, retrieval-derived (non-generative) support/confidence signal in the evidence response; low-support flagging; changes FR-06. | [CAP-14](../requirements/cap-14-trust-calibration.md) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages with deterministic line-window fallback; changes FR-02. | [CAP-15](../requirements/cap-15-structure-aware-chunking.md) | Proposed |
 | NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Proposed |
+
+Proposed extensions to existing requirements (implemented behavior above remains
+unchanged): [CAP-11 / E-02](../requirements/cap-11-e02-negative-evaluation.md)
+extends FR-12 with explicit suite-v3 answerability labels, separate negative
+diagnostics, optional diagnostic policy metrics, trusted visibility contexts and
+versioned profiles. SQ-01 specifies the design; SQ-02 requires its own named
+maintainer approval. It does not implement FR-14, change the public evidence
+contract, or expand the separately proposed E-01A pack workflow.

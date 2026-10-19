@@ -15,8 +15,9 @@ task, do it, and record the outcome.
 
 The [2026-10 quality review](docs/search-quality-plan-2026-10.md) gives the
 evidence, designs and [SQ task split](docs/tasks/search-quality-follow-ups.md)
-for E-02, L-04, E-01/E-01A, F-01, F-02, S-01 and F-03. Those tasks are proposed
-and unclaimed; the plan grants no pending capability or scheduling approval.
+for E-02, L-04, E-01/E-01A, F-01, F-02, S-01 and F-03. SQ-01's design is now
+claimed/reviewed under E-02 below; implementation tasks remain unclaimed. The
+plan grants no pending capability or scheduling approval.
 
 ## How to use this board
 
@@ -264,15 +265,17 @@ each earns the next with evidence.
 - **Why:** Current judged sets test "did it find the right thing," not "did it
   correctly refuse when nothing supports an answer." Refusal is the empirical
   guardrail for the source-of-truth invariant.
-- **What:** Add unanswerable/negative queries with expected "insufficient
-  support" outcomes; measure unanswerable precision as a first-class metric.
+- **What:** SQ-01 specifies explicit negative/unjudged labels, separate retrieval
+  and diagnostic decision metrics, and trusted visibility contexts. SQ-02 would
+  implement approved mechanics; calibrated production support remains CAP-14.
 - **Exit check:** The system's refusal behavior is measured, not assumed, and
   tracked over time.
 - **HIO tie:** Use-side. Keeps the AI honest about its limits.
 - **Owner-type:** either
-- **Status:** proposed
-- **Owner:**
-- **Links:** docs/architecture.md (relevance evaluation), item S-01
+- **Status:** blocked (SQ-01 design reviewed; SQ-02 unclaimed, pending step-6b approval)
+- **Owner:** `ilamgumaran` + Codex orchestrator (design)
+- **Links:** [claim #13](https://github.com/ilamgumaran/search-simpli/issues/13),
+  [SQ-01 / E-02 design](docs/requirements/cap-11-e02-negative-evaluation.md), item S-01
 
 ## E. Organization scale — from one mind to many
 

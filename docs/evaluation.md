@@ -4,6 +4,11 @@ Status: binary v1 and graded v2 evaluation are implemented in
 `src/search_platform/evaluation.py`. The dependency-free regression gate and
 product fixture live at `relevance_smoke.py` and `fixtures/relevance-smoke/`.
 
+Proposed next change: [SQ-01 / E-02](requirements/cap-11-e02-negative-evaluation.md)
+specifies explicit negative-query labels, formulas and trusted visibility for a
+future v3 suite. The current evaluator still supports v1/v2 only. SQ-02 cannot
+begin until the final design receives its named maintainer approval.
+
 ## Why this exists
 
 Hybrid search adds machinery but does not guarantee better answers. Lexical, vector, fusion, chunking, and reranking changes must run against the same explicit relevance judgments. Otherwise a compelling individual query can hide broad regressions.
