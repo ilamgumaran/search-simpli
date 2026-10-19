@@ -13,6 +13,11 @@ task, do it, and record the outcome.
 > vision that most of the top items serve. This board is the full *what next*
 > with a why and an exit check per item.
 
+The [2026-10 quality review](docs/search-quality-plan-2026-10.md) gives the
+evidence, designs and [SQ task split](docs/tasks/search-quality-follow-ups.md)
+for E-02, L-04, E-01/E-01A, F-01, F-02, S-01 and F-03. Those tasks are proposed
+and unclaimed; the plan grants no pending capability or scheduling approval.
+
 ## How to use this board
 
 This board is meant to be **edited by whoever advances it** — a maintainer, a
@@ -238,8 +243,9 @@ each earns the next with evidence.
 ## D. Evaluation integrity — the ground truth everything rests on
 
 ### E-01 — Representative user-derived judged corpus (E005B)
-- **Why:** Every relevance number today comes from ~20 authored queries. No
-  production relevance claim is honest until a real, held-out corpus exists. This
+- **Why:** Current relevance evidence comes from authored fixtures and sampled
+  public WANDS profiles, not a representative user folder. No production
+  relevance claim is honest until a real, held-out corpus exists. This
   is the project's own stated best next step and gates L-03, S-01, and routing.
 - **What:** A representative user folder, 50–100 real queries with expected
   supporting passages, split into tuning and held-out; compare BM25 / PPMI / BGE
@@ -331,6 +337,28 @@ each earns the next with evidence.
 - **Owner:**
 - **Links:** docs/scale-benchmark.md, docs/roadmap.md (Phase 2/4)
 
+### F-03 — Full Unicode casefold parity and explicit analyzer migration
+- **Why:** Python uses full casefold while the native analyzer uses simple
+  one-codepoint mappings. German sharp-s, ligatures and dotted-I variants can
+  retrieve differently across paths; the limitation is already documented.
+- **What:** Pin a Unicode contract and measure whole-token parity first; obtain
+  an analyzer-identity/migration ruling, then implement only the approved change
+  through indexing, import, query and incremental reuse. Do not silently change
+  old snapshots under the same identity.
+- **Exit check:** Pinned parity cases and affected language judgments pass,
+  predecessor fails the new regression, legacy snapshots follow the explicit
+  compatibility ruling, and matching native artifacts are verified. State the
+  judged-language limits; parity alone is not a general relevance claim.
+- **HIO tie:** Use-side + build-side. Consistent multilingual retrieval with an
+  inspectable, reversible publication contract.
+- **Owner-type:** either (maintainer owns the identity/migration decision)
+- **Status:** proposed
+- **Owner:**
+- **Links:** [design](docs/search-quality-plan-2026-10.md),
+  [SQ-07 / SQ-08](docs/tasks/search-quality-follow-ups.md),
+  [native analyzer limitation](zig/src/analyzer_v2.zig),
+  [Python/Zig bridge](docs/python-zig-bridge.md)
+
 ---
 
 ## Ideas needing shaping
@@ -348,6 +376,11 @@ a lettered section when shaped; delete if rejected (and say why in a commit).
 ## Change log for this board
 
 Keep this short; it is a pointer to where the real record lives.
+
+- 2026-10-19 — Read-only quality audit and staged designs for existing work;
+  shaped F-03 Unicode parity/migration, corrected E-01's evidence summary, and
+  linked the [SQ tasks](docs/tasks/search-quality-follow-ups.md). No task built
+  or marked done, no new measured result, existing approval gates preserved.
 
 - 2026-07-12 — Board created. Seeded from the HIO review: learning loop (A), the
   human–AI seam (B), interfaces (C), evaluation integrity (D), organization

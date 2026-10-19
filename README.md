@@ -285,6 +285,7 @@ The Python vector benchmark uses a synthetic provider, so it measures indexing, 
 - [Requirements register (all requirements in one place)](docs/requirements/README.md)
 - [Capability process (how to add a new capability)](docs/capability-process.md)
 - [Improvement board (shared human + agent backlog)](IMPROVEMENT-BOARD.md)
+- [Reviewed search improvements: design and staged tasks (2026-10)](docs/search-quality-plan-2026-10.md)
 - [The learning loop: search that improves from use](docs/learning-loop.md)
 - [Objective, specification, and prompts for recreating Search Simpli](docs/recreation/README.md)
 - [Use-case library and contribution template](docs/use-cases/README.md)
