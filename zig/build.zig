@@ -145,7 +145,12 @@ fn addAbiLibraries(
                 .root_module = module,
             });
             if (spec.needs_android_libc) library.setLibCFile(android_libc_file.?);
-            if (spec.needs_apple_sdk) library.setLibCFile(ios_libc_file.?);
+            if (spec.needs_apple_sdk) {
+                library.setLibCFile(ios_libc_file.?);
+                // The dylib ships only inside search_simpli.framework (S1-T21
+                // ruling 2); the linker leaves no header room to rewrite it later.
+                if (linkage == .dynamic) library.install_name = "@rpath/search_simpli.framework/search_simpli";
+            }
             const install = b.addInstallArtifact(library, .{
                 .dest_dir = .{ .override = .{ .custom = b.fmt("lib/{s}", .{spec.dir_name}) } },
             });
