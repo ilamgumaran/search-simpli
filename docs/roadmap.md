@@ -2,6 +2,11 @@
 
 Each phase ends with evidence that justifies the next complexity increase.
 
+The [2026-10 search quality review](search-quality-plan-2026-10.md) and its
+[bounded tasks](tasks/search-quality-follow-ups.md) detail the next proposed
+evaluation, regression-gate, fusion and analyzer work. They preserve existing
+approval/owner gates and record no new implementation or benchmark results.
+
 ## Phase 0 — contract and corpus (present)
 
 - Index UTF-8 files and source code from a directory.

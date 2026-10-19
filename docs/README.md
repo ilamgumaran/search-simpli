@@ -23,6 +23,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 | See completed and failed experiments | [Experiment ledger](../EXPERIMENTS.md) |
 | Continue current implementation work | [Project state](../PROJECT-STATE.md) |
 | Pick up the next improvement (human or agent) | [Improvement board](../IMPROVEMENT-BOARD.md) |
+| Review the next quality improvements and bounded tasks | [October quality plan](search-quality-plan-2026-10.md) · [Task breakdown](tasks/search-quality-follow-ups.md) |
 | Understand how search should learn from use | [The learning loop](learning-loop.md) |
 
 ## Theory and decisions
