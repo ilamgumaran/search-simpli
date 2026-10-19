@@ -333,6 +333,18 @@ each earns the next with evidence.
 
 ---
 
+## G. Publication reliability — preserve local work
+
+### R-01 — Recover around occupied generation symlinks (S1-T21)
+- **Why:** A dangling generation filename is occupied even though its target is absent. Automatic local indexing can pick that unusable slot and fail instead of publishing to the next free generation.
+- **What:** Probe candidate entries without following symlinks; preserve existing links/snapshots and current numbering/publication contracts.
+- **Exit check:** Predecessor fails the new recovery regressions; fixed engine/CLI/ABI paths choose a free generation without modifying links/data; native/Python/Dart and relevance/privacy/requirements checks pass with matching rebuilt libraries and recorded limits.
+- **HIO tie:** Reliable local indexing keeps human and agent evidence stores recoverable without destructive repair.
+- **Owner-type:** agent
+- **Status:** in-progress
+- **Owner:** Codex cloud session; Sol implemented, parent reviewed; candidate complete locally and awaiting PR review/merge.
+- **Links:** [Claim issue #10](https://github.com/ilamgumaran/search-simpli/issues/10), [S1-T21 scope/evidence](docs/tasks/S1-T21.md), [PR #11](https://github.com/ilamgumaran/search-simpli/pull/11).
+
 ## Ideas needing shaping
 
 Half-formed ideas live here until they have a why and an exit check. Promote to
