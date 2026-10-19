@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-10-15
+Last updated: 2026-10-18
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -11,6 +11,10 @@ Project: **Search Simpli** (`search-simpli`)
 
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.
+
+## The search core for the iPhone (S1-T21, 2026-10-18)
+
+**S1-T21 is `built` on `task/S1-T21`, awaiting the verifier.** `zig build lib` now builds `aarch64-ios` (iPhoneOS SDK through a libc paths file; one skip line without Xcode); `tool/build_native.sh` wraps it as `native/ios-arm64/search_simpli.framework` (arm64, iOS 17.0, unsigned, install name `@rpath/search_simpli.framework/search_simpli`); `tool/check_native.sh` checks the three shipped binaries and the plist; the Dart loader opens `search_simpli.framework/search_simpli` on iOS. Zig 176/176, ABI 16/16, Python 100, Dart 61/61. The app embeds and signs the framework in its task M8-T5. [Task and Report](docs/tasks/S1-T21.md).
 
 ## NoFreeGeneration names every trace (S1-T20, 2026-10-15)
 
