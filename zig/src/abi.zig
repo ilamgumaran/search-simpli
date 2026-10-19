@@ -924,6 +924,41 @@ test "ss_index_folder publishes and re-publishes, full and incremental" {
     defer ss_free(query_json);
     try std.testing.expect(std.mem.indexOf(u8, std.mem.span(query_json), "a.md") != null);
 }
+
+test "ss_index_folder update skips occupied symlink section names and preserves its snapshot" {
+    const test_io = io();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDir(test_io, "notes", .default_dir);
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "notes/a.md", .data = "alpha beta\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+
+    ss_free(ss_index_folder(out_z, notes_z, null) orelse return error.IndexFailed);
+    var manifest_buffer: [4096]u8 = undefined;
+    const old_manifest = try std.testing.allocator.dupe(u8, try tmp.dir.readFile(test_io, "out/MANIFEST", &manifest_buffer));
+    defer std.testing.allocator.free(old_manifest);
+    try tmp.dir.symLink(test_io, "absent-target", "out/lexical-2.hyblex", .{});
+    try tmp.dir.symLink(test_io, "documents-3.hybseg", "out/documents-3.hybseg", .{});
+
+    const result = ss_index_folder(out_z, notes_z, "{\"update\":true}") orelse return error.IndexFailed;
+    defer ss_free(result);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(result), "\"generation\":4") != null);
+    try std.testing.expectEqualStrings("", std.mem.span(ss_last_error()));
+    var target_buffer: [64]u8 = undefined;
+    const dangling_len = try tmp.dir.readLink(test_io, "out/lexical-2.hyblex", &target_buffer);
+    try std.testing.expectEqualStrings("absent-target", target_buffer[0..dangling_len]);
+    const looping_len = try tmp.dir.readLink(test_io, "out/documents-3.hybseg", &target_buffer);
+    try std.testing.expectEqualStrings("documents-3.hybseg", target_buffer[0..looping_len]);
+    try std.testing.expect(!std.mem.eql(u8, old_manifest, try tmp.dir.readFile(test_io, "out/MANIFEST", &manifest_buffer)));
+    const handle = ss_open(out_z) orelse return error.OpenFailed;
+    defer ss_close(handle);
+    const query = ss_query(handle, "alpha", null, 0, 1, "{\"retrieval_mode\":\"lexical\"}") orelse return error.QueryFailed;
+    defer ss_free(query);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(query), "a.md") != null);
+}
 // === S2-T5: keep_generations through the C ABI ===============================
 test "keep_generations prunes through ss_index_folder and ss_import_json; zero is rejected" {
     const io_impl = io();

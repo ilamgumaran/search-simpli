@@ -93,7 +93,9 @@ pub fn currentGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.D
 }
 
 fn pathExists(dir: std.Io.Dir, io: std.Io, name: []const u8) !bool {
-    _ = dir.statFile(io, name, .{}) catch |err| switch (err) {
+    // Publication reserves the filename itself, including a symlink whose
+    // target is missing or loops back to the link.
+    _ = dir.statFile(io, name, .{ .follow_symlinks = false }) catch |err| switch (err) {
         error.FileNotFound => return false,
         else => return err,
     };
@@ -180,6 +182,39 @@ test "nextFreeGeneration skips a crash orphan past the current generation" {
     try tmp.dir.writeFile(io, .{ .sub_path = "documents-1.hybseg", .data = "orphan" });
     const generation = try nextFreeGeneration(std.testing.allocator, io, tmp.dir);
     try std.testing.expectEqual(@as(u64, 2), generation);
+}
+
+test "nextFreeGeneration skips dangling and looping section links without changing them" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const documents = "documents-1.hybseg";
+    const lexical = "lexical-2.hyblex";
+    try tmp.dir.symLink(io, "missing-target", documents, .{});
+    try tmp.dir.symLink(io, lexical, lexical, .{});
+    try std.testing.expectEqual(@as(u64, 3), try nextFreeGeneration(std.testing.allocator, io, tmp.dir));
+    var target: [64]u8 = undefined;
+    const documents_len = try tmp.dir.readLink(io, documents, &target);
+    try std.testing.expectEqualStrings("missing-target", target[0..documents_len]);
+    const lexical_len = try tmp.dir.readLink(io, lexical, &target);
+    try std.testing.expectEqualStrings(lexical, target[0..lexical_len]);
+}
+
+test "nextFreeGeneration reports exhaustion when max candidate is a dangling link" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const io = std.testing.io;
+    const name = "documents-18446744073709551615.hybseg";
+    try writeManifestGeneration(io, tmp.dir, std.math.maxInt(u64) - 1);
+    try tmp.dir.symLink(io, "missing-target", name, .{});
+    try std.testing.expectError(error.NoFreeGeneration, nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
+    var buffer: [256]u8 = undefined;
+    try std.testing.expect(std.mem.indexOf(u8, describeNoFreeGeneration(&buffer), name) != null);
+    var target: [64]u8 = undefined;
+    const len = try tmp.dir.readLink(io, name, &target);
+    try std.testing.expectEqualStrings("missing-target", target[0..len]);
 }
 
 test "nextFreeGeneration numbers above a lone higher section file and above INDEX-STATE" {
