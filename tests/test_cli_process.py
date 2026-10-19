@@ -181,6 +181,88 @@ class CliProcessTests(unittest.TestCase):
         self.assertIn("18446744073709551615", lines[0])
         self.assertNotIn(str(out), lines[0])
 
+    def test_auto_generation_routes_around_dangling_and_looping_section_links(self) -> None:
+        import json
+
+        base = Path(self.scratch.name) / "linked-generation-names"
+        folder = base / "docs"
+        folder.mkdir(parents=True)
+        (folder / "a.md").write_text("alpha beta\n", encoding="utf-8")
+        probe = base / "symlink-probe"
+        try:
+            probe.symlink_to("absent")
+        except (OSError, NotImplementedError) as exc:
+            self.skipTest(f"symlinks unavailable: {exc}")
+        probe.unlink()
+
+        fresh = base / "fresh"
+        fresh.mkdir()
+        fresh_links = {
+            "documents-1.hybseg": "absent",
+            "lexical-2.hyblex": "lexical-2.hyblex",
+        }
+        for name, target in fresh_links.items():
+            (fresh / name).symlink_to(target)
+        result = self.run_searchd("index", str(folder), "--out", str(fresh), "--analyzer", "v2")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("generation=3", result.stdout)
+        for name, target in fresh_links.items():
+            self.assertEqual(os.readlink(fresh / name), target)
+        self.assertFalse((fresh / "absent").exists())
+
+        existing = base / "existing"
+        first = self.run_searchd("index", str(folder), "--out", str(existing), "--analyzer", "v2")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        saved = {p.name: p.read_bytes() for p in existing.iterdir() if p.is_file()}
+        links = {
+            "lexical-2.hyblex": "absent",
+            "documents-3.hybseg": "documents-3.hybseg",
+        }
+        for name, target in links.items():
+            (existing / name).symlink_to(target)
+        updated = self.run_searchd("index", str(folder), "--out", str(existing), "--analyzer", "v2", "--update")
+        self.assertEqual(updated.returncode, 0, updated.stderr)
+        self.assertEqual(json.loads(updated.stdout)["generation"], 4)
+        for name, target in links.items():
+            self.assertEqual(os.readlink(existing / name), target)
+        self.assertFalse((existing / "absent").exists())
+        for name, content in saved.items():
+            if name != "MANIFEST" and name != "INDEX-STATE.json":
+                self.assertEqual((existing / name).read_bytes(), content)
+        queried = self.run_searchd("query", str(existing), "alpha")
+        self.assertEqual(queried.returncode, 0, queried.stderr)
+        self.assertIn("a.md", queried.stdout)
+
+    def test_max_candidate_symlink_fails_without_changing_snapshot(self) -> None:
+        import json
+
+        base = Path(self.scratch.name) / "linked-max-generation"
+        folder = base / "docs"
+        out = base / "out"
+        folder.mkdir(parents=True)
+        (folder / "a.md").write_text("alpha beta\n", encoding="utf-8")
+        first = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        link = out / f"lexical-{MAX_GENERATION}.hyblex"
+        try:
+            link.symlink_to("absent-target")
+        except (OSError, NotImplementedError) as exc:
+            self.skipTest(f"symlinks unavailable: {exc}")
+        state = out / "INDEX-STATE.json"
+        state_data = json.loads(state.read_text(encoding="utf-8"))
+        state_data["generation"] = int(MAX_GENERATION) - 1
+        state.write_text(json.dumps(state_data), encoding="utf-8")
+        saved = {p.name: p.read_bytes() for p in out.iterdir() if p.is_file()}
+
+        failed = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2", "--update")
+        self.assertEqual(failed.returncode, 1, failed.stderr)
+        self.assertEqual(failed.stdout, "")
+        self.assertEqual(len(failed.stderr.splitlines()), 1, failed.stderr)
+        self.assertIn("NoFreeGeneration", failed.stderr)
+        self.assertIn(link.name, failed.stderr)
+        self.assertEqual(os.readlink(link), "absent-target")
+        self.assertEqual({p.name: p.read_bytes() for p in out.iterdir() if p.is_file()}, saved)
+
     def test_no_free_generation_lists_all_four_valid_max_traces_without_changing_snapshot(self) -> None:
         """A real max-generation publish supplies all four canonical traces."""
         base = Path(self.scratch.name) / "all-max-traces"
