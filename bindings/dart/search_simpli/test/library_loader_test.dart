@@ -168,4 +168,72 @@ void main() {
     // Missing files are not opened; the bare name is the only blind attempt.
     expect(attempts, ['libsearch_simpli.dylib']);
   });
+
+  // docs/tasks/S1-T21.md ruling 3. The iOS library itself cannot be loaded on
+  // the Mac; these tests only check what the loader hands to the opener.
+  group('iOS', () {
+    DynamicLibrary open({
+      Map<String, String> env = const {},
+      DynamicLibrary Function(String)? opener,
+    }) =>
+        openSearchSimpliLibraryWith(
+          environment: env,
+          opener: opener ?? failing(),
+          exists: (_) => true,
+          packageRootOverride: '/pkg',
+          executablePath: '/Runner.app/Runner',
+          scriptDir: '/script',
+          cwd: '/cwd',
+          isMacOS: false,
+          isLinux: false,
+          isAndroid: false,
+          isIOS: true,
+        );
+
+    test('opens the framework binary by its relative path, and nothing else', () {
+      final lib = _self();
+      final result = open(opener: (p) {
+        attempts.add(p);
+        return lib;
+      });
+      expect(result, same(lib));
+      expect(attempts, ['search_simpli.framework/search_simpli']);
+    });
+
+    test('a failed open propagates; no checkout or bare-name fallback is tried', () {
+      expect(() => open(), throwsArgumentError);
+      expect(attempts, ['search_simpli.framework/search_simpli']);
+    });
+
+    test('SEARCH_SIMPLI_LIBRARY_PATH still wins over the framework', () {
+      final lib = _self();
+      open(env: {'SEARCH_SIMPLI_LIBRARY_PATH': '/forced/lib'}, opener: (p) {
+        attempts.add(p);
+        return lib;
+      });
+      expect(attempts, ['/forced/lib']);
+    });
+
+    test('the unsupported-platform message lists iOS among the built platforms', () {
+      Object? error;
+      try {
+        openSearchSimpliLibraryWith(
+          environment: const {},
+          opener: failing(),
+          isMacOS: false,
+          isLinux: false,
+          isAndroid: false,
+          isIOS: false,
+        );
+      } on UnsupportedError catch (e) {
+        error = e;
+      }
+      expect(error, isA<UnsupportedError>());
+      final message = (error as UnsupportedError).message!;
+      expect(message, contains('iOS arm64'));
+      expect(message, contains('macOS arm64'));
+      expect(message, contains('Android arm64'));
+      expect(attempts, isEmpty);
+    });
+  });
 }

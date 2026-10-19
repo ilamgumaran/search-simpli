@@ -23,6 +23,7 @@ bindings/dart/search_simpli/
   native/
     macos-arm64/libsearch_simpli.dylib
     android-arm64/libsearch_simpli.so
+    ios-arm64/search_simpli.framework/   # unsigned; the app signs it
   tool/build_native.sh          # rebuilds native/ from the pinned Zig toolchain
   ffigen.yaml                   # regenerate bindings_generated.dart from the header
   test/                         # dart test — conformance + unit tests
@@ -131,9 +132,10 @@ human-readable `ss_last_error()` message.
 
 ## Native library packaging
 
-This package ships prebuilt libraries for exactly two targets (ADR 0002):
-**macOS arm64** (`native/macos-arm64/libsearch_simpli.dylib`) and **Android
-arm64** (`native/android-arm64/libsearch_simpli.so`). `lib/src/
+This package ships prebuilt libraries for exactly three targets (ADR 0002):
+**macOS arm64** (`native/macos-arm64/libsearch_simpli.dylib`), **Android
+arm64** (`native/android-arm64/libsearch_simpli.so`) and **iOS arm64**
+(`native/ios-arm64/search_simpli.framework`, unsigned, minimum iOS 17.0). `lib/src/
 library_loader.dart` resolves which one to load:
 
 1. `SEARCH_SIMPLI_LIBRARY_PATH` environment variable, if set — an absolute
@@ -145,6 +147,12 @@ library_loader.dart` resolves which one to load:
    abiFilters += listOf("arm64-v8a") }` block in `example/android/app/
    build.gradle.kts` for a worked Flutter example). Once packaged, Android's
    own dynamic linker finds it by name.
+2b. **iOS:** `DynamicLibrary.open('search_simpli.framework/search_simpli')`.
+   The framework's install name is `@rpath/search_simpli.framework/
+   search_simpli`; the app embeds the framework in its `Frameworks/` folder and
+   signs it (how is the app's task, simpli-helper M8-T5; docs/tasks/S1-T21.md).
+   The iOS library cannot be loaded on a Mac, so the Dart suite checks only the
+   path handed to the opener.
 3. **macOS, inside a built app (`Platform.resolvedExecutable` sits directly in
    `*.app/Contents/MacOS/`; docs/tasks/S1-T12.md):** only the override and the
    exact path `<executable dir>/../Frameworks/libsearch_simpli.dylib`. No bare
@@ -198,7 +206,10 @@ tool/build_native.sh
 
 Requires the pinned Zig 0.16.0 toolchain on `PATH` (or `ZIG=/path/to/zig`).
 This runs `zig build lib -Doptimize=ReleaseSmall` in `../../../zig/` and
-copies the two artifacts into `native/`, plus (if `example/` exists) into
+copies the artifacts into `native/` (the iOS dylib is wrapped as
+`native/ios-arm64/search_simpli.framework`; the iOS build needs macOS with
+Xcode, and `tool/check_native.sh` verifies the three shipped binaries'
+architectures and the framework's `Info.plist` keys), plus (if `example/` exists) into
 `example/android/app/src/main/jniLibs/arm64-v8a/` so the example app's
 copy stays in sync. Without `SS_ANDROID_NDK` set, the macOS library still
 rebuilds but the script exits 1 rather than silently leaving a stale
@@ -285,8 +296,8 @@ header comment.
 
 ## Known limitations
 
-- Only macOS arm64 and Android arm64 have prebuilt libraries (ADR 0002's
-  current target set). Other platforms need `SEARCH_SIMPLI_LIBRARY_PATH`
+- Only macOS arm64, Android arm64 and iOS arm64 have prebuilt libraries (ADR
+  0002's current target set). Other platforms need `SEARCH_SIMPLI_LIBRARY_PATH`
   pointed at a library you build yourself.
 - `ss_import_json` (`importSnapshotJson`)'s original `O_TMPFILE`/`AccessDenied`
   failure on Android private storage (see "Why the example publishes nothing

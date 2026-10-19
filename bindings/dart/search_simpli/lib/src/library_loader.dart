@@ -1,6 +1,7 @@
 /// Locates and opens the prebuilt `libsearch_simpli` native library
 /// (docs/tasks/S1-T2.md criterion 1: "prebuilt libsearch_simpli for macOS
-/// arm64 and Android arm64 under native/").
+/// arm64 and Android arm64 under native/"; docs/tasks/S1-T21.md adds iOS arm64
+/// as `native/ios-arm64/search_simpli.framework`).
 library;
 
 import 'dart:convert';
@@ -94,6 +95,12 @@ bool isInsideMacApp(String executable) {
 ///    as a jniLib for `arm64-v8a` (see this package's README and
 ///    `example/android/app/build.gradle.kts` for a worked Flutter example);
 ///    once packaged, the OS's own dynamic linker finds it by soname.
+/// 2b. **iOS:** `DynamicLibrary.open('search_simpli.framework/search_simpli')`
+///    (docs/tasks/S1-T21.md). The app embeds
+///    `native/ios-arm64/search_simpli.framework` in its `Frameworks/`
+///    folder and signs it; the framework's install name is
+///    `@rpath/search_simpli.framework/search_simpli`, so the relative form
+///    resolves through the app's rpath.
 /// 3. **macOS, inside an app** ([isInsideMacApp], docs/tasks/S1-T12.md):
 ///    only the override and the exact path
 ///    `<executable dir>/../Frameworks/libsearch_simpli.dylib`. No bare name:
@@ -131,6 +138,7 @@ DynamicLibrary openSearchSimpliLibraryWith({
   bool? isMacOS,
   bool? isLinux,
   bool? isAndroid,
+  bool? isIOS,
 }) {
   final override = environment['SEARCH_SIMPLI_LIBRARY_PATH'];
   if (override != null && override.isNotEmpty) {
@@ -139,6 +147,10 @@ DynamicLibrary openSearchSimpliLibraryWith({
 
   if (isAndroid ?? Platform.isAndroid) {
     return opener('libsearch_simpli.so');
+  }
+
+  if (isIOS ?? Platform.isIOS) {
+    return opener('search_simpli.framework/search_simpli');
   }
 
   final mac = isMacOS ?? Platform.isMacOS;
@@ -220,8 +232,8 @@ DynamicLibrary openSearchSimpliLibraryWith({
 
   throw UnsupportedError(
     'search_simpli: no prebuilt libsearch_simpli for platform '
-    '${Platform.operatingSystem} (only macOS arm64 and Android arm64 are '
-    'built by tool/build_native.sh — see docs/decisions/'
+    '${Platform.operatingSystem} (only macOS arm64, Android arm64 and iOS arm64 '
+    'are built by tool/build_native.sh — see docs/decisions/'
     '0002-standalone-portable-platform.md). Set SEARCH_SIMPLI_LIBRARY_PATH '
     'to use a library you built yourself for another target.',
   );

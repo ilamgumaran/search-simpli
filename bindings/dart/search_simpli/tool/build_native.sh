@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # tool/build_native.sh — rebuild native/{macos-arm64,android-arm64}/libsearch_simpli.*
+# and native/ios-arm64/search_simpli.framework (docs/tasks/S1-T21.md)
 # from the pinned Zig 0.16.0 toolchain (docs/tasks/S1-T2.md criterion 1).
 #
 # Usage:
@@ -12,9 +13,12 @@
 # 1 (visibly, rather than silently leaving a stale native/android-arm64/
 # library in place) — set SS_ANDROID_NDK and re-run to get both.
 #
+# The iOS framework needs macOS with Xcode (`xcrun --sdk iphoneos`); without
+# it `zig build lib` prints its skip line and this script exits 1 the same way.
+#
 # What this does NOT do: build x86_64-linux (`zig build lib` also builds
-# it, for the Zig engine's own S1-T0 targets, but this package only ships
-# macOS arm64 and Android arm64 per docs/tasks/S1-T2.md criterion 1) or run
+# it, for the Zig engine's own S1-T0 targets, but this package ships only
+# macOS arm64, Android arm64 and iOS arm64) or run
 # any Dart/ffigen step (`dart run ffigen --config ffigen.yaml`, run
 # separately, only when zig/include/search_simpli.h changes shape).
 set -euo pipefail
@@ -65,6 +69,53 @@ else
   echo "tool/build_native.sh: SS_ANDROID_NDK was not set (or the NDK build failed)," >&2
   echo "  so native/android-arm64/libsearch_simpli.so was NOT rebuilt. Set" >&2
   echo "  SS_ANDROID_NDK to the NDK root and re-run to update it." >&2
+  exit 1
+fi
+
+# iOS: wrap the dylib as a flat (iOS-layout) framework, unsigned; the app signs
+# it when it embeds it (docs/tasks/S1-T21.md ruling 2).
+IOS_LIB="$ZIG_DIR/zig-out/lib/aarch64-ios/libsearch_simpli.dylib"
+if [ -f "$IOS_LIB" ]; then
+  FRAMEWORK="$PACKAGE_DIR/native/ios-arm64/search_simpli.framework"
+  rm -rf "$PACKAGE_DIR/native/ios-arm64"
+  mkdir -p "$FRAMEWORK"
+  cp "$IOS_LIB" "$FRAMEWORK/search_simpli"
+  chmod u+w "$FRAMEWORK/search_simpli"
+  # The install name (@rpath/search_simpli.framework/search_simpli) is set by
+  # zig/build.zig at link time; install_name_tool cannot grow the header.
+  codesign --remove-signature "$FRAMEWORK/search_simpli" 2>/dev/null || true
+  cat > "$FRAMEWORK/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>family.vizhi.searchsimpli</string>
+	<key>CFBundleExecutable</key>
+	<string>search_simpli</string>
+	<key>CFBundleName</key>
+	<string>search_simpli</string>
+	<key>CFBundlePackageType</key>
+	<string>FMWK</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>MinimumOSVersion</key>
+	<string>17.0</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>iPhoneOS</string>
+	</array>
+</dict>
+</plist>
+PLIST
+  echo "tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework ($(wc -c < "$FRAMEWORK/search_simpli") bytes binary)"
+else
+  echo "tool/build_native.sh: ERROR — $IOS_LIB was not produced (needs macOS with Xcode;" >&2
+  echo "  see the 'iOS SDK was not found' line from zig build lib)." >&2
   exit 1
 fi
 

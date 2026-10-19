@@ -15,7 +15,10 @@ Make Search Simpli a standalone product and a portable library, in this order:
 1. **A C ABI over the engine** (`ss_*` functions, one header, no hidden
    allocator, no I/O of its own beyond the snapshot directory it is given),
    built as a static and a shared library for macOS arm64, Android arm64,
-   Linux x86_64 now; iOS, Windows, Linux arm64 when the app needs them.
+   Linux x86_64 now; iOS arm64 since S1-T21 (18 Oct 2026, shipped as
+   `search_simpli.framework`, minimum iOS 17.0, opened by the Dart loader as
+   `search_simpli.framework/search_simpli`; embedding and signing it is the
+   app's task); Windows, Linux arm64 when the app needs them.
 2. **Native indexing in Zig**: the `line-window-v1` chunker and a
    Unicode-aware analyzer (`analyzer-v2`; the current analyzer is ASCII-only)
    ported with golden conformance to the Python reference; Tamil is the
@@ -38,6 +41,7 @@ Make Search Simpli a standalone product and a portable library, in this order:
   project-ennam, the school-helper documents, and a home server.
 - Zig cross-compilation: static libraries need no sysroot; the Android shared
   library links against the NDK's libc (the NDK already lives under the app's
-  `tools/android/`).
+  `tools/android/`). The iOS library links against the iPhoneOS SDK from
+  Xcode and is skipped, with a warning, on a host without it.
 - Process: tasks under `docs/tasks/` follow simpli-helper's builder/verifier
   loop (`docs/process/ROLES.md` here points to it).
