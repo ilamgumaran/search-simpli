@@ -149,6 +149,7 @@ fn addAbiLibraries(
                 library.setLibCFile(ios_libc_file.?);
                 // The dylib ships only inside search_simpli.framework (S1-T21
                 // ruling 2); the linker leaves no header room to rewrite it later.
+                // Not shipped: the shipped framework binary is linked by Apple's ld in tool/build_native.sh (S1-T22).
                 if (linkage == .dynamic) library.install_name = "@rpath/search_simpli.framework/search_simpli";
                 // tool/build_native.sh links the shipped framework binary with
                 // Apple's linker from this static library (S1-T22 ruling 1,
