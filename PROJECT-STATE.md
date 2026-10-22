@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-10-19
+Last updated: 2026-10-22
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -33,6 +33,17 @@ The review used main `7c40937` and a separate Sol audit; no new benchmark was ru
 Recovery [PR #11](https://github.com/ilamgumaran/search-simpli/pull/11) remains open
 as checked on this date. Its separate use of S1-T21 must be reconciled before
 landing; main's S1-T21 below is the iPhone task, not the recovery fix.
+
+## The iOS framework page-aligned as built (S1-T22, 2026-10-22)
+
+**S1-T22 is `verified` and merged to `main` (2026-10-22, Xcode Mac verifier Opus 5.5).** The app (M8-T5) found the Zig-linked iOS dylib's `__TEXT`, `__DATA_CONST` and `__DATA` sizes not multiples of the 16 KiB page, which iOS code signing refuses on the phone; the app rounded them itself. Now `tool/build_native.sh` links `native/ios-arm64/search_simpli.framework/search_simpli` with Apple's linker from the iPhoneOS SDK over the Zig-built static library (way (b); Zig 0.16's Mach-O linker has no option for it, measured), and `tool/check_native.sh` checks every segment. [Task and Report](docs/tasks/S1-T22.md).
+
+- **Build** (Xcode Mac, by hand; CI is Ubuntu only and never builds iOS): `source ~/development/env.sh`, then in `bindings/dart/search_simpli`: `tool/build_native.sh` (runs `zig build lib -Doptimize=ReleaseSmall --summary all` in `zig/`, then for iOS: `ar x zig-out/lib/aarch64-ios/libsearch_simpli.a` into a temporary directory, `xcrun --sdk iphoneos clang -target arm64-apple-ios17.0 -dynamiclib <objects> -install_name @rpath/search_simpli.framework/search_simpli -compatibility_version 1.0.0 -current_version 1.0.0 -Wl,-dead_strip -Wl,-no_adhoc_codesign`, exports checked equal to the macOS dylib's `_ss_*` set). `zig/build.zig` bundles compiler_rt into the iOS static library only.
+- **Check:** `tool/check_native.sh` → `check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned)`. Every segment's `fileoff`, `vmsize`, `filesize` a multiple of `0x4000`; `__LINKEDIT`'s filesize exempt (it ends the file, unrounded, in Apple-linked iOS dylibs too).
+- **Binary:** 430688 B, sha256 `8364159c89f5e100393a1de0d3d136804425c20fcf97894264ba34214a1cdfff`; `__TEXT` 0/0x58000/360448, `__DATA_CONST` 360448/0x4000/16384, `__DATA` 376832/0x44000/16384, `__LINKEDIT` 393216/0xc000/37472 (fileoff/vmsize/filesize). Platform IOS, minos 17.0, arm64, unsigned, install name unchanged. macOS dylib and Android `.so` byte-identical. `native/SOURCE-SHA256` `c4e153af932dec77ef8282f0ee788395d9b67a5b9292de999a4422ecf943cbc9` (moved: `zig/build.zig` changed, and since the verifier's edit `tool/source_digest.py` also digests `tool/build_native.sh`, whose link flags shape the iOS binary).
+- **Verify** (exact commands): `cd ~/workspace/repos/search-simpli && git fetch origin && git worktree add -b verify/S1-T22 ~/workspace/repos/search-simpli-wt/verify-S1-T22 origin/main`, `git merge --no-ff origin/task/S1-T22`; `source ~/development/env.sh`; in `bindings/dart/search_simpli`: `tool/build_native.sh` (exit 0, tree unchanged), `tool/check_native.sh` (ok); plant: `cp ../../../zig/zig-out/lib/aarch64-ios/libsearch_simpli.dylib native/ios-arm64/search_simpli.framework/search_simpli && tool/check_native.sh` (FAIL lines for `__TEXT`, `__DATA_CONST`, `__DATA`, exit 1), `git checkout` it back; in `zig/`: `zig build test -j2 --summary all`, `zig build test-abi -j2 --summary all`; at the root: `python3 -m unittest discover -s tests`, `python3 scripts/check_requirements.py`, `python3 scripts/check_no_home_paths.py`; in the package: `dart test`, `dart analyze lib test`. [Verdict](docs/tasks/S1-T22.md).
+- **Suites (on the merge):** Zig 176/176, ABI 16/16, Python 101 (one new digest test), Dart 61/61.
+- **App follow-up (its own task):** re-pin `packages/vizhi_core/pubspec.yaml` to this task's merge sha and `searchSimpliCoreIdentity` (`packages/vizhi_core/lib/src/search/engine/core_identity.dart`) to `c4e153af932dec77ef8282f0ee788395d9b67a5b9292de999a4422ecf943cbc9`; delete the rounding step in `tools/ios/bundle_native_libs.sh` (the alignment test in `ios_bundle_test.dart` stays as the guard); republish once.
 
 ## The search core for the iPhone (S1-T21, 2026-10-18)
 

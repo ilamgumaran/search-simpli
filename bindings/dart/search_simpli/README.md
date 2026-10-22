@@ -152,7 +152,11 @@ library_loader.dart` resolves which one to load:
    search_simpli`; the app embeds the framework in its `Frameworks/` folder and
    signs it (how is the app's task, simpli-helper M8-T5; docs/tasks/S1-T21.md).
    The iOS library cannot be loaded on a Mac, so the Dart suite checks only the
-   path handed to the opener.
+   path handed to the opener. Since S1-T22 the framework binary is 16 KiB
+   page-aligned as built (Apple's linker from the iPhoneOS SDK links it over the
+   Zig static library; `tool/check_native.sh` checks every segment), so the
+   app's rounding step (`tools/ios/bundle_native_libs.sh`) is retired by its
+   own task.
 3. **macOS, inside a built app (`Platform.resolvedExecutable` sits directly in
    `*.app/Contents/MacOS/`; docs/tasks/S1-T12.md):** only the override and the
    exact path `<executable dir>/../Frameworks/libsearch_simpli.dylib`. No bare
@@ -206,14 +210,16 @@ tool/build_native.sh
 
 Requires the pinned Zig 0.16.0 toolchain on `PATH` (or `ZIG=/path/to/zig`).
 This runs `zig build lib -Doptimize=ReleaseSmall` in `../../../zig/` and
-copies the artifacts into `native/` (the iOS dylib is wrapped as
+copies the artifacts into `native/` (the iOS binary is linked by
+`xcrun --sdk iphoneos clang` from the Zig static library and wrapped as
 `native/ios-arm64/search_simpli.framework`; the iOS build needs macOS with
 Xcode, and `tool/check_native.sh` verifies the three shipped binaries'
-architectures and the framework's `Info.plist` keys), plus (if `example/` exists) into
+architectures, the framework's 16 KiB segment alignment and its `Info.plist`
+keys), plus (if `example/` exists) into
 `example/android/app/src/main/jniLibs/arm64-v8a/` so the example app's
 copy stays in sync. Without `SS_ANDROID_NDK` set, the macOS library still
 rebuilds but the script exits 1 rather than silently leaving a stale
-Android library in place. The script also writes `native/SOURCE-SHA256`, a digest of the Zig sources, C header and `contracts/CONTRACTS_VERSION` the libraries were built from (computed by `tool/source_digest.py`); the Python test `tests/test_native_freshness.py` recomputes it and fails when the libraries are older than the source.
+Android library in place. The script also writes `native/SOURCE-SHA256`, a digest of the Zig sources, C header, `contracts/CONTRACTS_VERSION` and `tool/build_native.sh` itself (its link flags shape the iOS binary, since S1-T22) the libraries were built from (computed by `tool/source_digest.py`); the Python test `tests/test_native_freshness.py` recomputes it and fails when the libraries are older than the source.
 
 ## Regenerating the FFI bindings
 

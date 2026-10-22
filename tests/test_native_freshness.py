@@ -35,6 +35,7 @@ class NativeFreshnessTest(unittest.TestCase):
             shutil.copytree(ROOT / "zig", copy / "zig", ignore=shutil.ignore_patterns(".zig-cache", "zig-out"))
             (copy / "contracts").mkdir()
             shutil.copy(ROOT / "contracts" / "CONTRACTS_VERSION", copy / "contracts" / "CONTRACTS_VERSION")
+            _copy_build_script(copy)
             before = digest(copy)
             self.assertEqual(before, digest(ROOT))
             version_file = copy / "contracts" / "CONTRACTS_VERSION"
@@ -42,6 +43,32 @@ class NativeFreshnessTest(unittest.TestCase):
             # current content by coincidence (S1-T8 criterion 4).
             version_file.write_bytes(version_file.read_bytes() + b"x")
             self.assertNotEqual(before, digest(copy))
+
+    def test_changing_build_native_changes_the_digest(self):
+        """S1-T22 post-build ruling 1: build_native.sh's link flags shape the iOS binary."""
+        import shutil
+        import tempfile
+
+        digest = _load_digest()
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp)
+            shutil.copytree(ROOT / "zig", copy / "zig", ignore=shutil.ignore_patterns(".zig-cache", "zig-out"))
+            (copy / "contracts").mkdir()
+            shutil.copy(ROOT / "contracts" / "CONTRACTS_VERSION", copy / "contracts" / "CONTRACTS_VERSION")
+            script = _copy_build_script(copy)
+            before = digest(copy)
+            self.assertEqual(before, digest(ROOT))
+            script.write_bytes(script.read_bytes() + b"x")
+            self.assertNotEqual(before, digest(copy))
+
+
+def _copy_build_script(copy):
+    import shutil
+
+    script = copy / "bindings" / "dart" / "search_simpli" / "tool" / "build_native.sh"
+    script.parent.mkdir(parents=True)
+    shutil.copy(PACKAGE / "tool" / "build_native.sh", script)
+    return script
 
 
 if __name__ == "__main__":
