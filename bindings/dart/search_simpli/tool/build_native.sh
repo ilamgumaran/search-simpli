@@ -72,17 +72,45 @@ else
   exit 1
 fi
 
-# iOS: wrap the dylib as a flat (iOS-layout) framework, unsigned; the app signs
-# it when it embeds it (docs/tasks/S1-T21.md ruling 2).
-IOS_LIB="$ZIG_DIR/zig-out/lib/aarch64-ios/libsearch_simpli.dylib"
-if [ -f "$IOS_LIB" ]; then
+# iOS: link the framework binary with Apple's linker from the iPhoneOS SDK over
+# the Zig-built static library, then wrap it as a flat (iOS-layout) framework,
+# unsigned; the app signs it when it embeds it (docs/tasks/S1-T21.md ruling 2).
+# Why not the Zig-linked dylib (zig-out/lib/aarch64-ios/libsearch_simpli.dylib):
+# Zig 0.16's Mach-O linker leaves __TEXT, __DATA_CONST and __DATA vmsize and
+# filesize unrounded (e.g. __TEXT 0x511f0), and iOS code signing refuses such a
+# binary on the phone; Apple's ld rounds every segment to the 16 KiB page
+# (docs/tasks/S1-T22.md ruling 1, way (b)). Zig 0.16 has no option for it.
+IOS_A="$ZIG_DIR/zig-out/lib/aarch64-ios/libsearch_simpli.a"
+if [ -f "$IOS_A" ]; then
   FRAMEWORK="$PACKAGE_DIR/native/ios-arm64/search_simpli.framework"
   rm -rf "$PACKAGE_DIR/native/ios-arm64"
   mkdir -p "$FRAMEWORK"
-  cp "$IOS_LIB" "$FRAMEWORK/search_simpli"
-  chmod u+w "$FRAMEWORK/search_simpli"
-  # The install name (@rpath/search_simpli.framework/search_simpli) is set by
-  # zig/build.zig at link time; install_name_tool cannot grow the header.
+  IOS_OBJS="$(mktemp -d)"
+  trap 'rm -rf "$IOS_OBJS"' EXIT
+  # ld64 rejects Zig's archive ("64-bit mach-o not 8-byte aligned" members), so
+  # the members (the engine and the bundled compiler_rt) are linked as objects;
+  # Zig writes them with mode 000.
+  (cd "$IOS_OBJS" && ar x "$IOS_A" && rm -f __.SYMDEF* && chmod 644 ./*.o)
+  # -dead_strip keeps what the exported ss_* functions reach (Zig's own linker
+  # also drops unreferenced code); the versions are the 1.0.0 Zig's linker
+  # wrote before S1-T22; iOS output from ld is not ad-hoc signed.
+  xcrun --sdk iphoneos clang -target arm64-apple-ios17.0 -dynamiclib \
+    "$IOS_OBJS"/*.o \
+    -install_name @rpath/search_simpli.framework/search_simpli \
+    -compatibility_version 1.0.0 -current_version 1.0.0 \
+    -Wl,-dead_strip -Wl,-no_adhoc_codesign \
+    -o "$FRAMEWORK/search_simpli"
+  # The C ABI exported by the framework is the macOS dylib's, less the two
+  # symbols Zig's linker exports and Apple's does not (__mh_dylib_header,
+  # ___dso_handle: linker-synthesized, not part of the C ABI).
+  ios_exports="$(nm -gU "$FRAMEWORK/search_simpli" | awk '{print $3}' | sort)"
+  macos_exports="$(nm -gU "$PACKAGE_DIR/native/macos-arm64/libsearch_simpli.dylib" | awk '{print $3}' \
+    | grep -vx -e __mh_dylib_header -e ___dso_handle | sort)"
+  if [ "$ios_exports" != "$macos_exports" ]; then
+    echo "tool/build_native.sh: ERROR — the iOS framework's exported symbols differ from the macOS dylib's:" >&2
+    diff <(echo "$macos_exports") <(echo "$ios_exports") >&2 || true
+    exit 1
+  fi
   codesign --remove-signature "$FRAMEWORK/search_simpli" 2>/dev/null || true
   cat > "$FRAMEWORK/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -114,7 +142,7 @@ if [ -f "$IOS_LIB" ]; then
 PLIST
   echo "tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework ($(wc -c < "$FRAMEWORK/search_simpli") bytes binary)"
 else
-  echo "tool/build_native.sh: ERROR — $IOS_LIB was not produced (needs macOS with Xcode;" >&2
+  echo "tool/build_native.sh: ERROR — $IOS_A was not produced (needs macOS with Xcode;" >&2
   echo "  see the 'iOS SDK was not found' line from zig build lib)." >&2
   exit 1
 fi

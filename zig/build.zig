@@ -150,6 +150,13 @@ fn addAbiLibraries(
                 // The dylib ships only inside search_simpli.framework (S1-T21
                 // ruling 2); the linker leaves no header room to rewrite it later.
                 if (linkage == .dynamic) library.install_name = "@rpath/search_simpli.framework/search_simpli";
+                // tool/build_native.sh links the shipped framework binary with
+                // Apple's linker from this static library (S1-T22 ruling 1,
+                // way (b): Zig 0.16's Mach-O linker leaves segment sizes
+                // unrounded, which iOS code signing refuses). The Zig object
+                // calls compiler_rt (f128 helpers, roundq), so the archive
+                // carries it; its symbols are private externs, not exported.
+                if (linkage == .static) library.bundle_compiler_rt = true;
             }
             const install = b.addInstallArtifact(library, .{
                 .dest_dir = .{ .override = .{ .custom = b.fmt("lib/{s}", .{spec.dir_name}) } },
@@ -190,8 +197,9 @@ fn androidLibcFile(b: *std.Build) ?std.Build.LazyPath {
 /// `xcrun --sdk iphoneos --show-sdk-path`, or null when this host is not
 /// macOS or the SDK is absent. Same mechanism as androidLibcFile: the
 /// `include_dir`/`sys_include_dir`/`crt_dir` keys are the libc paths-file
-/// format printed by `zig libc`. The SDK's `usr/lib` holds libSystem.tbd, which
-/// Zig's Mach-O linker reads as a text stub.
+/// format printed by `zig libc`. For a Darwin target Zig derives the SDK root
+/// (sysroot, hence libSystem.tbd and the frameworks) from `sys_include_dir`
+/// (lib/std/zig/LibCDirs.zig, detectFromInstallation); `crt_dir` is optional.
 fn appleIosLibcFile(b: *std.Build) ?std.Build.LazyPath {
     if (@import("builtin").os.tag != .macos) return null;
     var code: u8 = undefined;

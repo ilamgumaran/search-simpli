@@ -1,5 +1,13 @@
 # Next
 
+**22 Oct (builder, Xcode Mac): S1-T22 built, awaiting its verifier.** The iOS
+framework binary is 16 KiB page-aligned as built (Apple's linker over the Zig
+static library; `tool/check_native.sh` checks every segment). Next: the
+verifier merges; then the app re-pins to the merge sha, updates
+`searchSimpliCoreIdentity`, deletes its rounding step in
+`tools/ios/bundle_native_libs.sh` and republishes once.
+[Task](../tasks/S1-T22.md).
+
 **19 Oct (Codex cloud): SQ-01 design candidate is specified.**
 [E-02 / suite-v3 design](../requirements/cap-11-e02-negative-evaluation.md),
 [claim #13](https://github.com/ilamgumaran/search-simpli/issues/13), defines the
