@@ -1,6 +1,6 @@
 # CAP-16 — Directory filename retrieval alongside cited content search
 
-Status: Proposed · Evidence: future option · Not build-ready (step 6b pending)
+Status: Diagnostic implementation in progress · Owner-authorized 2026-10-25
 
 ## 1. Proposal
 
@@ -205,11 +205,9 @@ deferring combined ranking; it cannot silently enable fuzzy/semantic expansion.
 
 ## 12. Maintainer approval
 
-Required by [step 6b](../capability-process.md#6b-maintainer-approval-gate).
-Approve invariants (§6), CFT-17–19 (§8) and gates/pending scope (§9), plus final
-DS-01 format freeze, against the reviewed commits before implementation.
-
-- Approver: Pending named maintainer; the author cannot self-approve.
-- Date: Pending.
-- Commit: Pending final reviewed specification / DS-01 revision.
-- Status: Pending approval; no runtime capability is authorized by this record.
+- Approver: repository owner `ilamgumaran`, direct chat instruction “Pls implement and push to remote”.
+- Date: 2026-10-25.
+- Reviewed design: `4693a21463f98b2d6c4138630db14b522449d290`, merged as `4b12ce7`.
+- Scope: implement CAP-16 invariants, CFT-17–19 resolutions and acceptance gates, including routine format details. No invariant exception or permission to fabricate platform results.
+- Frozen implementation boundary: [filename-field-v1](../filename-field-format-v1.md), with synthetic fixtures and default-content golden outputs under `fixtures/filename-search/`.
+- Status: owner authorization received; independent technical format review precedes runtime work. Remaining platform rebuild/verification gates still apply.

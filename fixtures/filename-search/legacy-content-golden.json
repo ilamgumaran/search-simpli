@@ -1,0 +1,84 @@
+{
+  "baseline": "4b12ce7",
+  "binary_sha256": "73738e85bb191d62da377b517e4b14f7a415cd0d8037299b456265ec55dea774",
+  "queries": {
+    "numbered observation": {
+      "query": "numbered observation",
+      "analyzer_id": "analyzer-v2",
+      "results": [
+        {
+          "chunk_id": "9fc3cd268ccb3f677508",
+          "path": "Annual_Budget_2026.md",
+          "start_line": 1,
+          "end_line": 1,
+          "score": 0.016393441706895828
+        },
+        {
+          "chunk_id": "623e516d1fcf5f4b84b7",
+          "path": "Café_Record.md",
+          "start_line": 1,
+          "end_line": 1,
+          "score": 0.016129031777381897
+        },
+        {
+          "chunk_id": "101e5cc2eaaa2ca2950e",
+          "path": "Lunar Launch.md",
+          "start_line": 1,
+          "end_line": 1,
+          "score": 0.01587301678955555
+        },
+        {
+          "chunk_id": "08ee995efffdb60ce22d",
+          "path": "River-Transit.md",
+          "start_line": 1,
+          "end_line": 1,
+          "score": 0.015625
+        },
+        {
+          "chunk_id": "92fcd2fb352f873bf840",
+          "path": "StArChArT.md",
+          "start_line": 1,
+          "end_line": 1,
+          "score": 0.015384615398943424
+        },
+        {
+          "chunk_id": "f18b5f12c046b9ffb988",
+          "path": "நீர்வடிகட்டி_திட்டம்.md",
+          "start_line": 1,
+          "end_line": 1,
+          "score": 0.01515151560306549
+        }
+      ]
+    },
+    "annual budget 2026": {
+      "query": "annual budget 2026",
+      "analyzer_id": "analyzer-v2",
+      "results": []
+    },
+    "river transit": {
+      "query": "river transit",
+      "analyzer_id": "analyzer-v2",
+      "results": []
+    },
+    "starchart": {
+      "query": "starchart",
+      "analyzer_id": "analyzer-v2",
+      "results": []
+    },
+    "lunar launch": {
+      "query": "lunar launch",
+      "analyzer_id": "analyzer-v2",
+      "results": []
+    },
+    "Café record": {
+      "query": "Café record",
+      "analyzer_id": "analyzer-v2",
+      "results": []
+    },
+    "நீர்வடிகட்டி திட்டம்": {
+      "query": "நீர்வடிகட்டி திட்டம்",
+      "analyzer_id": "analyzer-v2",
+      "results": []
+    }
+  }
+}
