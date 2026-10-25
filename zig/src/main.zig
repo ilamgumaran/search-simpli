@@ -17,6 +17,20 @@ const service_module = @import("service.zig");
 const std = @import("std");
 
 pub fn main(init: std.process.Init) !void {
+    return run(init) catch |err| switch (err) {
+        error.FilenameIndexUnavailable => {
+            std.debug.print("error: FilenameIndexUnavailable: rebuild with index --filename-index in a separate output directory\n", .{});
+            std.process.exit(1);
+        },
+        error.FilenameMigrationRequiresNewDirectory, error.FilenameSettingMismatch => {
+            std.debug.print("error: {s}: filename-index setting or analyzer changed; use a separate output directory for a full rebuild\n", .{@errorName(err)});
+            std.process.exit(1);
+        },
+        else => return err,
+    };
+}
+
+fn run(init: std.process.Init) !void {
     // Every argument is judged by `cli.parseArgs` (S1-T8 criterion 1); this
     // function only prints what it returns and exits.
     var collected: std.ArrayList([]const u8) = .empty;
@@ -157,39 +171,13 @@ fn openServeContext(io: std.Io, allocator: std.mem.Allocator, path: []const u8) 
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
 
-    var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
-    const manifest_stat = try manifest_file.stat(io);
-    manifest_file.close(io);
-    const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
-    const manifest_buffer = try allocator.alloc(u8, manifest_size);
-    const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
-    const metadata = try manifest.decode(manifest_encoded);
-
-    const documents_buffer = try allocator.alloc(u8, metadata.documents_bytes);
-    const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
-    const snapshot = try publication.loadCurrent(dir, io, manifest_buffer, documents_buffer, lexical_buffer);
-
-    const documents = try allocator.alloc(hybrid.Document, metadata.document_count);
-    const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch
-        return error.IndexTooLarge;
-    const vectors = try allocator.alloc(f32, vector_count);
-    const terms = try allocator.alloc(postings.TermEntry, metadata.term_count);
-    const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
-    const document_lengths = try allocator.alloc(u32, metadata.document_count);
-    const opened = try engine_module.Engine.open(
-        snapshot,
-        documents,
-        vectors,
-        terms,
-        posting_storage,
-        document_lengths,
-    );
+    const opened = try @import("snapshot_open.zig").open(allocator, io, dir);
     const service = service_module.Service{ .engine = opened };
 
-    const query_vector = try allocator.alloc(f32, metadata.vector_dimensions);
-    const results = try allocator.alloc(hybrid.Result, metadata.document_count);
-    const evidence = try allocator.alloc(engine_module.Evidence, metadata.document_count);
-    const sources = try allocator.alloc(service_module.Source, metadata.document_count);
+    const query_vector = try allocator.alloc(f32, opened.vector_dimensions);
+    const results = try allocator.alloc(hybrid.Result, opened.documents.len);
+    const evidence = try allocator.alloc(engine_module.Evidence, opened.documents.len);
+    const sources = try allocator.alloc(service_module.Source, opened.documents.len);
     const workspaces = rpc.Workspaces{
         .query_vector = query_vector,
         .results = results,

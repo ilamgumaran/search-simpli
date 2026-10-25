@@ -28,6 +28,7 @@ def _parser() -> argparse.ArgumentParser:
     index_command.add_argument("--model", default=DEFAULT_FASTEMBED_MODEL)
     index_command.add_argument("--model-cache", type=Path, default=Path(".search/models"))
     index_command.add_argument("--access-rules", type=Path)
+    index_command.add_argument("--filename-index", action="store_true")
     index_command.add_argument(
         "--incremental-from",
         type=Path,
@@ -45,6 +46,7 @@ def _parser() -> argparse.ArgumentParser:
         command.add_argument("--candidate-k", type=int, default=100)
         command.add_argument("--path-prefix")
         command.add_argument("--mode", choices=("lexical", "vector", "hybrid"), default="hybrid")
+        command.add_argument("--search-field", choices=("content", "filename", "both"), default="content")
         command.add_argument("--model-cache", type=Path, default=Path(".search/models"))
         command.add_argument("--principal-label", action="append", default=[])
     return parser
@@ -53,6 +55,11 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.command == "index":
+        if args.out.exists():
+            existing = load_index(args.out)
+            if bool(existing.get("filename_index")) != args.filename_index:
+                print("filename-index setting changed; use a separate output path for a full rebuild", file=sys.stderr)
+                return 2
         try:
             provider = (
                 FastEmbedProvider(model_name=args.model, cache_dir=args.model_cache)
@@ -68,6 +75,7 @@ def main(argv: list[str] | None = None) -> int:
             embedding_provider=provider,
             access_rules=load_access_rules(args.access_rules) if args.access_rules else None,
             previous_index=load_index(args.incremental_from) if args.incremental_from else None,
+            filename_index=args.filename_index,
         )
         save_index(index, args.out)
         print(json.dumps({"index": str(args.out), **index["stats"]}, indent=2))
@@ -75,6 +83,9 @@ def main(argv: list[str] | None = None) -> int:
 
     index = load_index(args.index)
     principal_labels = normalize_labels(args.principal_label)
+    if args.search_field != "content" and args.mode != "lexical":
+        print("filename and both search fields require --mode lexical", file=sys.stderr)
+        return 2
     try:
         provider = (
             None
@@ -94,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
             retrieval_mode=args.mode,
             embedding_provider=provider,
             principal_labels=principal_labels,
+            search_field=args.search_field,
         )
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         return 0
@@ -107,6 +119,7 @@ def main(argv: list[str] | None = None) -> int:
         retrieval_mode=args.mode,
         embedding_provider=provider,
         principal_labels=principal_labels,
+        search_field=args.search_field,
     )
     if not results:
         print("No evidence found.")

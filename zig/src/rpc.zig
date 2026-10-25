@@ -1,4 +1,6 @@
 const engine_module = @import("engine.zig");
+const filename_field = @import("filename_field.zig");
+const filename_response = @import("filename_response.zig");
 const hybrid = @import("hybrid.zig");
 const postings = @import("postings.zig");
 const report = @import("report.zig");
@@ -69,7 +71,7 @@ pub fn handleLine(
             try writeError(output, id, -32602, "Invalid params");
             return;
         }
-        try writeStatus(output, id, service.indexStatus());
+        try writeStatus(output, id, service.indexStatus(), service.engine.filename_index_enabled);
     } else {
         try writeError(output, id, -32601, "Method not found");
     }
@@ -83,7 +85,7 @@ fn handleSearch(
     workspaces: Workspaces,
     output: *std.Io.Writer,
 ) !void {
-    if (!onlyFields(params, &.{ "query", "query_vector", "top_k", "candidate_k", "path_prefix", "retrieval_mode", "principal_labels" })) {
+    if (!onlyFields(params, &.{ "query", "query_vector", "top_k", "candidate_k", "path_prefix", "retrieval_mode", "principal_labels", "search_field" })) {
         try writeError(output, id, -32602, "Invalid params");
         return;
     }
@@ -128,6 +130,18 @@ fn handleSearch(
         try writeError(output, id, -32602, "Invalid params");
         return;
     };
+    const search_field_text = optionalString(params.get("search_field")) catch {
+        try writeError(output, id, -32602, "Invalid params");
+        return;
+    };
+    const search_field = parseSearchField(search_field_text orelse "content") orelse {
+        try writeError(output, id, -32602, "Invalid params");
+        return;
+    };
+    if (search_field != .content and (mode_text == null or mode != .lexical)) {
+        try writeError(output, id, -32602, "Invalid params: filename search requires explicit lexical retrieval_mode");
+        return;
+    }
     var principal_label_storage: [64][]const u8 = undefined;
     const principal_labels = parsePrincipalLabels(params.get("principal_labels"), &principal_label_storage) catch {
         try writeError(output, id, -32602, "Invalid params");
@@ -142,6 +156,39 @@ fn handleSearch(
         try writeError(output, id, -32602, "Invalid params");
         return;
     };
+    if (search_field != .content) {
+        var query_arena = std.heap.ArenaAllocator.init(allocator);
+        defer query_arena.deinit();
+        const options = hybrid.SearchOptions{
+            .top_k = top_k,
+            .candidate_k = candidate_k,
+            .retrieval_mode = .lexical,
+            .path_prefix = path_prefix,
+            .principal_labels = principal_labels,
+        };
+        const hits = service.engine.queryFields(query_arena.allocator(), query, search_field, options) catch |err| {
+            const unavailable = err == error.FilenameIndexUnavailable;
+            try writeError(
+                output,
+                id,
+                if (unavailable) -32004 else -32603,
+                if (unavailable) "FilenameIndexUnavailable: rebuild the index with --filename-index" else "Internal error",
+            );
+            return;
+        };
+        var json = std.json.Stringify{ .writer = output };
+        try responseStart(&json, id);
+        try json.objectField("result");
+        // objectField leaves the JSON writer waiting to emit `:` on its next
+        // stringify call. The result serializer owns a separate state object,
+        // so complete the delimiter before handing over the shared stream.
+        try output.writeAll(":");
+        try filename_response.writeEvidence(output, service.engine, query, search_field, options, hits);
+        // Close the envelope directly after the nested serializer writes its
+        // complete result object.
+        try output.writeAll("}");
+        return;
+    }
     const evidence = service.searchKnowledge(
         allocator,
         query,
@@ -366,11 +413,24 @@ pub fn writeSearchResultValueWith(
     try json.endObject();
 }
 
-fn writeStatus(output: *std.Io.Writer, id: ?std.json.Value, status: service_module.Status) !void {
+fn writeStatus(output: *std.Io.Writer, id: ?std.json.Value, status: service_module.Status, filename_index_enabled: bool) !void {
     var json = std.json.Stringify{ .writer = output };
     try responseStart(&json, id);
     try json.objectField("result");
-    try json.write(status);
+    try json.beginObject();
+    try json.objectField("ready"); try json.write(status.ready);
+    try json.objectField("generation"); try json.write(status.generation);
+    try json.objectField("analyzer_id"); try json.write(status.analyzer_id);
+    try json.objectField("embedding_model_id"); try json.write(status.embedding_model_id);
+    try json.objectField("vector_dimensions"); try json.write(status.vector_dimensions);
+    try json.objectField("documents"); try json.write(status.documents);
+    try json.objectField("terms"); try json.write(status.terms);
+    try json.objectField("postings"); try json.write(status.postings);
+    if (filename_index_enabled) {
+        try json.objectField("filename_policy_id");
+        try json.write(filename_field.policy_id);
+    }
+    try json.endObject();
     try json.endObject();
 }
 
@@ -473,6 +533,13 @@ pub fn parseMode(value: []const u8) ?hybrid.RetrievalMode {
     return null;
 }
 
+pub fn parseSearchField(value: []const u8) ?filename_field.Field {
+    if (std.mem.eql(u8, value, "content")) return .content;
+    if (std.mem.eql(u8, value, "filename")) return .filename;
+    if (std.mem.eql(u8, value, "both")) return .both;
+    return null;
+}
+
 fn parseQueryVector(
     value: ?std.json.Value,
     dimensions: usize,
@@ -561,6 +628,65 @@ test "JSON RPC search returns scoped cited evidence" {
     const first = result.get("results").?.array.items[0].object;
     try std.testing.expectEqualStrings("public-vector", first.get("chunk_id").?.string);
     try std.testing.expectEqualStrings("public/b.md", first.get("citation").?.object.get("path").?.string);
+}
+
+test "filename RPC returns file evidence and requires explicit lexical mode" {
+    const documents = [_]hybrid.Document{
+        .{ .id = "anchor-a", .text = "methods and evidence", .path = "guides/retrieval-system.md", .start_line = 4, .end_line = 8 },
+        .{ .id = "anchor-b", .text = "other content", .path = "guides/other.md", .start_line = 1, .end_line = 3 },
+    };
+    var terms: [16]postings.TermEntry = undefined;
+    var body_posts: [24]postings.Posting = undefined;
+    var lengths: [documents.len]u32 = undefined;
+    var fills: [16]usize = undefined;
+    const body_index = try postings.build(&documents, &terms, &body_posts, &lengths, &fills);
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const built = try filename_field.build(arena_state.allocator(), &documents, "ascii-v1");
+    const engine = engine_module.Engine{
+        .generation = 3,
+        .analyzer_id = "ascii-v1",
+        .embedding_model_id = "none",
+        .vector_dimensions = 0,
+        .documents = &documents,
+        .lexical_index = body_index,
+        .catalog_encoded = built.catalog,
+        .filename_lexical_encoded = built.lexical,
+        .filename_index_enabled = true,
+    };
+    const service = service_module.Service{ .engine = engine };
+    var empty_vector: [0]f32 = .{};
+    var results: [documents.len]hybrid.Result = undefined;
+    var evidence: [documents.len]engine_module.Evidence = undefined;
+    var sources: [documents.len]service_module.Source = undefined;
+    const workspaces = Workspaces{ .query_vector = &empty_vector, .results = &results, .evidence = &evidence, .sources = &sources };
+    var output: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer output.deinit();
+    try handleLine(service, "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"search_knowledge\",\"params\":{\"query\":\"retrieval\",\"retrieval_mode\":\"lexical\",\"search_field\":\"filename\"}}", std.testing.allocator, workspaces, &output.writer);
+    var parsed_filename = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, output.written(), .{});
+    defer parsed_filename.deinit();
+    const parsed_result = parsed_filename.value.object.get("result").?.object;
+    try std.testing.expectEqualStrings("filename", parsed_result.get("retrieval").?.object.get("search_field").?.string);
+    try std.testing.expectEqualStrings("retrieval-system.md", parsed_result.get("results").?.array.items[0].object.get("basename").?.string);
+    try std.testing.expect(std.mem.indexOf(u8, output.written(), "\"filename_policy_id\":\"filename-field-v1\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output.written(), "\"matched_in\":[\"filename\"]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output.written(), "\"basename\":\"retrieval-system.md\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output.written(), "\"filename_matches_are_navigation\":true") != null);
+
+    var both_output: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer both_output.deinit();
+    try handleLine(service, "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"search_knowledge\",\"params\":{\"query\":\"retrieval methods\",\"retrieval_mode\":\"lexical\",\"search_field\":\"both\"}}", std.testing.allocator, workspaces, &both_output.writer);
+    try std.testing.expect(std.mem.indexOf(u8, both_output.written(), "\"matched_in\":[\"content\",\"filename\"]") != null);
+
+    var status_output: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer status_output.deinit();
+    try handleLine(service, "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"index_status\",\"params\":{}}", std.testing.allocator, workspaces, &status_output.writer);
+    try std.testing.expect(std.mem.indexOf(u8, status_output.written(), "\"filename_policy_id\":\"filename-field-v1\"") != null);
+
+    var invalid_mode: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer invalid_mode.deinit();
+    try handleLine(service, "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"search_knowledge\",\"params\":{\"query\":\"retrieval\",\"search_field\":\"filename\"}}", std.testing.allocator, workspaces, &invalid_mode.writer);
+    try std.testing.expect(std.mem.indexOf(u8, invalid_mode.written(), "requires explicit lexical") != null);
 }
 
 test "JSON RPC validates vectors methods scoped reads and principal labels" {

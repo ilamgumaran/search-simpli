@@ -3,38 +3,101 @@
   "$id": "https://example.local/contracts/search-tool.schema.json",
   "title": "SearchKnowledgeResult",
   "type": "object",
-  "required": ["tool", "query", "index", "retrieval", "results", "answer_policy"],
+  "required": [
+    "tool",
+    "query",
+    "index",
+    "retrieval",
+    "results",
+    "answer_policy"
+  ],
   "properties": {
-    "tool": { "const": "search_knowledge" },
-    "query": { "type": "string" },
+    "tool": {
+      "const": "search_knowledge"
+    },
+    "query": {
+      "type": "string"
+    },
     "index": {
       "type": "object",
-      "required": ["version"],
+      "required": [
+        "version"
+      ],
       "properties": {
-        "root": { "type": "string" },
-        "version": { "type": "integer" },
-        "generation": { "type": "integer", "minimum": 1 },
-        "analyzer_id": { "type": "string" },
-        "embedding_model_id": { "type": "string" }
+        "root": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "analyzer_id": {
+          "type": "string"
+        },
+        "embedding_model_id": {
+          "type": "string"
+        }
       }
     },
     "retrieval": {
       "type": "object",
-      "required": ["mode"],
+      "required": [
+        "mode"
+      ],
       "properties": {
-        "mode": { "enum": ["lexical", "vector", "hybrid"] },
-        "vector_mode": { "type": "string" },
-        "vector_dimensions": { "type": "integer", "minimum": 0 },
-        "candidate_k": { "type": "integer", "minimum": 1 },
-        "embedding": { "type": ["object", "null"] },
+        "mode": {
+          "enum": [
+            "lexical",
+            "vector",
+            "hybrid"
+          ]
+        },
+        "vector_mode": {
+          "type": "string"
+        },
+        "vector_dimensions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidate_k": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "embedding": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
         "authorization": {
           "type": "object",
-          "required": ["semantics", "principal_label_count"],
+          "required": [
+            "semantics",
+            "principal_label_count"
+          ],
           "properties": {
-            "semantics": { "const": "all-required-labels-v1" },
-            "principal_label_count": { "type": "integer", "minimum": 0 }
+            "semantics": {
+              "const": "all-required-labels-v1"
+            },
+            "principal_label_count": {
+              "type": "integer",
+              "minimum": 0
+            }
           },
           "additionalProperties": false
+        },
+        "search_field": {
+          "enum": [
+            "content",
+            "filename",
+            "both"
+          ]
+        },
+        "filename_policy_id": {
+          "const": "filename-field-v1"
         }
       }
     },
@@ -42,31 +105,85 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["chunk_id", "citation", "content", "score", "ranking"],
+        "required": [
+          "chunk_id",
+          "citation",
+          "content",
+          "score",
+          "ranking"
+        ],
         "properties": {
-          "chunk_id": { "type": "string" },
+          "chunk_id": {
+            "type": "string"
+          },
           "citation": {
             "type": "object",
-            "required": ["path", "start_line", "end_line"],
+            "required": [
+              "path",
+              "start_line",
+              "end_line"
+            ],
             "properties": {
-              "path": { "type": "string" },
-              "start_line": { "type": "integer", "minimum": 1 },
-              "end_line": { "type": "integer", "minimum": 1 }
+              "path": {
+                "type": "string"
+              },
+              "start_line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "end_line": {
+                "type": "integer",
+                "minimum": 1
+              }
             }
           },
-          "content": { "type": "string" },
-          "score": { "type": "number" },
-          "ranking": { "type": "object" }
+          "content": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "ranking": {
+            "type": "object"
+          },
+          "matched_in": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "content",
+                "filename"
+              ]
+            },
+            "uniqueItems": true,
+            "minItems": 1
+          },
+          "basename": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
     "answer_policy": {
       "type": "object",
-      "required": ["ground_in_results", "cite_path_and_lines", "say_when_evidence_is_insufficient"],
+      "required": [
+        "ground_in_results",
+        "cite_path_and_lines",
+        "say_when_evidence_is_insufficient"
+      ],
       "properties": {
-        "ground_in_results": { "const": true },
-        "cite_path_and_lines": { "const": true },
-        "say_when_evidence_is_insufficient": { "const": true }
+        "ground_in_results": {
+          "const": true
+        },
+        "cite_path_and_lines": {
+          "const": true
+        },
+        "say_when_evidence_is_insufficient": {
+          "const": true
+        },
+        "filename_matches_are_navigation": {
+          "const": true
+        }
       }
     },
     "warnings": {
@@ -74,7 +191,10 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["code", "message"],
+        "required": [
+          "code",
+          "message"
+        ],
         "properties": {
           "code": {
             "enum": [
@@ -84,7 +204,9 @@
               "candidate_depth_cut"
             ]
           },
-          "message": { "type": "string" },
+          "message": {
+            "type": "string"
+          },
           "term": {
             "description": "The analysed query term (query_term_unmatched only), never the index's spelling. One warning per distinct term, in query order.",
             "type": "string"
@@ -96,26 +218,74 @@
     "request": {
       "description": "Contract 1.2.0, ss_query only: the request as the engine used it (defaults filled in).",
       "type": "object",
-      "required": ["analyzer_id", "retrieval_mode", "top_k", "candidate_k", "path_prefix"],
+      "required": [
+        "analyzer_id",
+        "retrieval_mode",
+        "top_k",
+        "candidate_k",
+        "path_prefix"
+      ],
       "properties": {
-        "analyzer_id": { "type": "string" },
-        "retrieval_mode": { "enum": ["lexical", "vector", "hybrid"] },
-        "top_k": { "type": "integer", "minimum": 1, "maximum": 100 },
-        "candidate_k": { "type": "integer", "minimum": 1, "maximum": 10000 },
-        "path_prefix": { "type": ["string", "null"] }
+        "analyzer_id": {
+          "type": "string"
+        },
+        "retrieval_mode": {
+          "enum": [
+            "lexical",
+            "vector",
+            "hybrid"
+          ]
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "candidate_k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "path_prefix": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       },
       "additionalProperties": false
     },
     "profile": {
       "description": "Contract 1.2.0, ss_query only, present only when options_json has \"profile\": true. Microseconds on a monotonic clock. serialize_us covers the report up to this field.",
       "type": "object",
-      "required": ["tokenize_us", "score_us", "rank_us", "serialize_us", "matched_chunks"],
+      "required": [
+        "tokenize_us",
+        "score_us",
+        "rank_us",
+        "serialize_us",
+        "matched_chunks"
+      ],
       "properties": {
-        "tokenize_us": { "type": "integer", "minimum": 0 },
-        "score_us": { "type": "integer", "minimum": 0 },
-        "rank_us": { "type": "integer", "minimum": 0 },
-        "serialize_us": { "type": "integer", "minimum": 0 },
-        "matched_chunks": { "type": "integer", "minimum": 0 }
+        "tokenize_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "score_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rank_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "serialize_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matched_chunks": {
+          "type": "integer",
+          "minimum": 0
+        }
       },
       "additionalProperties": false
     }

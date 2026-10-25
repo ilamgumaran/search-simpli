@@ -20,14 +20,16 @@ const incremental_state = @import("incremental_state.zig");
 
 /// Canonical trace kinds at the highest generation. Kept thread-local because
 /// the CLI and ABI read the diagnostic immediately after allocation fails.
-const Cause = enum(u4) {
+const Cause = enum(u6) {
     manifest = 1,
     index_state = 2,
     documents = 4,
     lexical = 8,
+    catalog = 16,
+    filename_lexical = 32,
 };
 
-threadlocal var cause_mask: u4 = 0;
+threadlocal var cause_mask: u6 = 0;
 threadlocal var cause_generation: u64 = 0;
 
 fn resetCause() void {
@@ -54,12 +56,14 @@ fn appendGeneratedCauseName(buffer: []u8, used: *usize, comptime pattern: []cons
 
 /// One line for `error.NoFreeGeneration`, formatted into `buffer`.
 pub fn describeNoFreeGeneration(buffer: []u8) []const u8 {
-    var names_buffer: [160]u8 = undefined;
+    var names_buffer: [320]u8 = undefined;
     var names_len: usize = 0;
     if (cause_mask & 1 != 0) appendLiteralCauseName(&names_buffer, &names_len, "MANIFEST");
     if (cause_mask & 2 != 0) appendLiteralCauseName(&names_buffer, &names_len, "INDEX-STATE.json");
     if (cause_mask & 4 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "documents-{d}.hybseg");
     if (cause_mask & 8 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "lexical-{d}.hyblex");
+    if (cause_mask & 16 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "filenames-{d}.hybseg");
+    if (cause_mask & 32 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "filename-lexical-{d}.hyblex");
     return std.fmt.bufPrint(
         buffer,
         "NoFreeGeneration: no generation number above {d} (traces: {s}); use a fresh output directory; inspect listed traces before repair",
@@ -119,11 +123,13 @@ pub fn highestGenerationOnDisk(allocator: std.mem.Allocator, io: std.Io, dir: st
     while (try iterator.next(io)) |entry| {
         if (entry.kind != .file) continue;
         if (lifecycle.sectionGeneration(entry.name)) |number| {
-            if (std.mem.startsWith(u8, entry.name, "documents-")) {
-                recordCause(.documents, number);
-            } else {
-                recordCause(.lexical, number);
-            }
+            const kind = lifecycle.sectionKindForGeneration(entry.name).?;
+            recordCause(switch (kind) {
+                .documents => .documents,
+                .lexical => .lexical,
+                .catalog => .catalog,
+                .filename_lexical => .filename_lexical,
+            }, number);
             highest = @max(highest, number);
         }
     }
@@ -146,7 +152,13 @@ pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.
         var lexical_buffer: [64]u8 = undefined;
         const lexical_name = try std.fmt.bufPrint(&lexical_buffer, "lexical-{d}.hyblex", .{candidate});
         const lexical_taken = try pathExists(dir, io, lexical_name);
-        if (!documents_taken and !lexical_taken) return candidate;
+        var catalog_buffer: [64]u8 = undefined;
+        const catalog_name = try std.fmt.bufPrint(&catalog_buffer, "filenames-{d}.hybseg", .{candidate});
+        const catalog_taken = try pathExists(dir, io, catalog_name);
+        var filename_lexical_buffer: [72]u8 = undefined;
+        const filename_lexical_name = try std.fmt.bufPrint(&filename_lexical_buffer, "filename-lexical-{d}.hyblex", .{candidate});
+        const filename_lexical_taken = try pathExists(dir, io, filename_lexical_name);
+        if (!documents_taken and !lexical_taken and !catalog_taken and !filename_lexical_taken) return candidate;
         if (std.math.add(u64, candidate, 1)) |next| {
             candidate = next;
         } else |_| {
@@ -156,6 +168,8 @@ pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.
             cause_mask = 0;
             if (documents_taken) cause_mask |= @intFromEnum(Cause.documents);
             if (lexical_taken) cause_mask |= @intFromEnum(Cause.lexical);
+            if (catalog_taken) cause_mask |= @intFromEnum(Cause.catalog);
+            if (filename_lexical_taken) cause_mask |= @intFromEnum(Cause.filename_lexical);
             return error.NoFreeGeneration;
         }
     }
@@ -180,6 +194,22 @@ test "nextFreeGeneration skips a crash orphan past the current generation" {
     try tmp.dir.writeFile(io, .{ .sub_path = "documents-1.hybseg", .data = "orphan" });
     const generation = try nextFreeGeneration(std.testing.allocator, io, tmp.dir);
     try std.testing.expectEqual(@as(u64, 2), generation);
+}
+
+test "filename sections block collisions and appear in max-generation diagnostics" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "filenames-1.hybseg", .data = "orphan" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "filename-lexical-9.hyblex", .data = "orphan" });
+    try std.testing.expectEqual(@as(u64, 10), try nextFreeGeneration(std.testing.allocator, io, tmp.dir));
+    try tmp.dir.deleteFile(io, "filenames-1.hybseg");
+    try tmp.dir.deleteFile(io, "filename-lexical-9.hyblex");
+    try tmp.dir.writeFile(io, .{ .sub_path = "filename-lexical-18446744073709551615.hyblex", .data = "orphan" });
+    try std.testing.expectError(error.NoFreeGeneration, nextFreeGeneration(std.testing.allocator, io, tmp.dir));
+    var buffer: [512]u8 = undefined;
+    const line = describeNoFreeGeneration(&buffer);
+    try std.testing.expect(std.mem.indexOf(u8, line, "filename-lexical-18446744073709551615.hyblex") != null);
 }
 
 test "nextFreeGeneration numbers above a lone higher section file and above INDEX-STATE" {

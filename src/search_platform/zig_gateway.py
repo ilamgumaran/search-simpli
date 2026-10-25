@@ -133,6 +133,15 @@ class EmbeddingGateway:
         forwarded["params"] = forwarded_params
         if method != "search_knowledge":
             return self.backend.call(forwarded)
+        search_field = params.get("search_field", "content")
+        if not isinstance(search_field, str) or search_field not in {"content", "filename", "both"}:
+            return self._error(request.get("id"), -32602, "Invalid params", "search_field must be content, filename, or both")
+        if search_field != "content":
+            if params.get("retrieval_mode") != "lexical":
+                return self._error(request.get("id"), -32602, "Invalid params", "filename and both search fields require explicit retrieval_mode='lexical'")
+            # Filename fields are lexical-only. Do not invoke an embedding
+            # provider or attach a vector for these requests.
+            return self.backend.call(forwarded)
         if "query_vector" in params:
             return self._error(
                 request.get("id"),
@@ -141,7 +150,7 @@ class EmbeddingGateway:
                 "query_vector is managed by the embedding gateway",
             )
         mode = params.get("retrieval_mode", "hybrid")
-        if mode not in {"vector", "hybrid"} or self.dimensions == 0:
+        if not isinstance(mode, str) or mode not in {"vector", "hybrid"} or self.dimensions == 0:
             return self.backend.call(forwarded)
         query = params.get("query")
         if not isinstance(query, str) or not query.strip():

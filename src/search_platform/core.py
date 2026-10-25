@@ -17,6 +17,9 @@ from .providers import EmbeddingProvider, ProviderMismatch
 
 
 INDEX_VERSION = 1
+FILENAME_INDEX_VERSION = 2
+FILENAME_POLICY_ID = "filename-field-v1"
+FILENAME_ANALYZER_ID = "analyzer-v2"
 MAX_COOCCURRENCE_TERMS = 512
 CHUNKER_ID = "line-window-v1"
 CHUNK_MAX_CHARS = 1_600
@@ -87,6 +90,27 @@ VARIATION_SELECTORS = re.compile("[\ufe00-\ufe0f\U000e0100-\U000e01ef]")
 def tokenize(text: str) -> list[str]:
     normalized = VARIATION_SELECTORS.sub("", unicodedata.normalize("NFC", text))
     return [token.casefold() for token in TOKEN_PATTERN.findall(normalized)]
+
+
+def _filename_tokenize(text: str) -> list[str]:
+    """Tokenize filename text with Unicode simple folding (analyzer-v2).
+
+    Python exposes full case folding, so use it when it stays one code point;
+    when it expands, accept a one-code-point lowercase mapping or preserve the
+    original character. This keeps sharp-s, ligatures, and dotted capital I
+    from expanding into multiple search terms.
+    """
+    normalized = VARIATION_SELECTORS.sub("", unicodedata.normalize("NFC", text))
+
+    def simple_fold(character: str) -> str:
+        folded = character.casefold()
+        if len(folded) == 1:
+            return folded
+        lowered = character.lower()
+        return lowered if len(lowered) == 1 else character
+
+    return ["".join(simple_fold(character) for character in token)
+            for token in TOKEN_PATTERN.findall(normalized)]
 
 
 def _hash_vector(tokens: Iterable[str], dimensions: int = 128) -> list[float]:
@@ -263,6 +287,7 @@ def build_index(
     embedding_provider: EmbeddingProvider | None = None,
     access_rules: list[dict] | None = None,
     previous_index: dict | None = None,
+    filename_index: bool = False,
 ) -> dict:
     root = root.expanduser().resolve()
     if not root.is_dir():
@@ -271,6 +296,8 @@ def build_index(
         raise ValueError("vector_mode must be 'none', 'hash', 'cooccurrence', or 'neural'")
     if (vector_mode == "neural") != (embedding_provider is not None):
         raise ValueError("neural vector mode requires exactly one embedding provider")
+    if not isinstance(filename_index, bool):
+        raise ValueError("filename_index must be a boolean")
 
     chunking = {
         "id": CHUNKER_ID,
@@ -284,6 +311,8 @@ def build_index(
             raise ValueError("incremental index vector mode does not match")
         if previous_index.get("chunking") != chunking:
             raise ValueError("incremental index chunker contract does not match")
+        if bool(previous_index.get("filename_index")) != filename_index:
+            raise ValueError("incremental index filename-index setting does not match; clean rebuild required")
         if not isinstance(previous_index.get("source_files"), list):
             raise ValueError("incremental index has no source-file hash metadata")
         if vector_mode == "neural":
@@ -449,7 +478,7 @@ def build_index(
         embedding_metadata = embedding_provider.metadata
 
     index = {
-        "version": INDEX_VERSION,
+        "version": FILENAME_INDEX_VERSION if filename_index else INDEX_VERSION,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "root": str(root),
         "vector_mode": vector_mode,
@@ -482,6 +511,32 @@ def build_index(
         },
         "chunks": [asdict(chunk) for chunk in chunks],
     }
+    if filename_index:
+        grouped: dict[str, list[dict]] = defaultdict(list)
+        for chunk in index["chunks"]:
+            grouped[chunk["path"]].append(chunk)
+        records = []
+        for path, path_chunks in sorted(grouped.items(), key=lambda item: item[0].encode("utf-8")):
+            ordered = sorted(path_chunks, key=lambda c: (c["start_line"], c["end_line"], c["id"]))
+            labels = sorted(set(ordered[0].get("required_labels", [])))
+            if any(sorted(set(chunk.get("required_labels", []))) != labels for chunk in ordered):
+                raise ValueError(f"filename index requires consistent labels across body chunks: {path}")
+            anchor = ordered[0]
+            basename = Path(path).name
+            suffix = Path(basename).suffix
+            name = basename[:-len(suffix)] if suffix else basename
+            tokens = _filename_tokenize(name)
+            records.append({
+                "id": path, "path": path, "name": name, "basename": basename,
+                "anchor_id": anchor["id"], "start_line": anchor["start_line"],
+                "end_line": anchor["end_line"], "required_labels": labels,
+                "terms": dict(Counter(tokens)), "length": len(tokens),
+            })
+        index["filename_index"] = {
+            "policy_id": FILENAME_POLICY_ID,
+            "analyzer_id": FILENAME_ANALYZER_ID,
+            "records": records,
+        }
     if vector_model is not None:
         index["vector_model"] = vector_model
     return index
@@ -497,8 +552,41 @@ def save_index(index: dict, output: Path) -> None:
 
 def load_index(path: Path) -> dict:
     index = json.loads(path.expanduser().read_text(encoding="utf-8"))
-    if index.get("version") != INDEX_VERSION:
+    if index.get("version") not in {INDEX_VERSION, FILENAME_INDEX_VERSION}:
         raise ValueError(f"unsupported index version: {index.get('version')!r}")
+    if index.get("version") == FILENAME_INDEX_VERSION:
+        filename = index.get("filename_index")
+        if (not isinstance(filename, dict) or filename.get("policy_id") != FILENAME_POLICY_ID
+                or filename.get("analyzer_id") != FILENAME_ANALYZER_ID
+                or not isinstance(filename.get("records"), list)):
+            raise ValueError("version 2 index is missing valid filename-index metadata")
+        grouped: dict[str, list[dict]] = defaultdict(list)
+        for chunk in index.get("chunks", []):
+            grouped[chunk["path"]].append(chunk)
+        seen_paths: set[str] = set()
+        for record in filename["records"]:
+            path = record.get("path") if isinstance(record, dict) else None
+            if not isinstance(path, str) or path in seen_paths or path not in grouped:
+                raise ValueError("filename index contains a duplicate or unanchored path")
+            seen_paths.add(path)
+            body_chunks = grouped[path]
+            anchor = min(body_chunks, key=lambda c: (c["start_line"], c["end_line"], c["id"]))
+            labels = sorted(set(anchor.get("required_labels", [])))
+            if any(sorted(set(chunk.get("required_labels", []))) != labels for chunk in body_chunks):
+                raise ValueError(f"filename index body chunks have inconsistent labels: {path}")
+            basename = Path(path).name
+            suffix = Path(basename).suffix
+            name = basename[:-len(suffix)] if suffix else basename
+            if (record.get("id") != path or record.get("basename") != basename or record.get("name") != name
+                    or record.get("anchor_id") != anchor["id"]
+                    or record.get("start_line") != anchor["start_line"]
+                    or record.get("end_line") != anchor["end_line"]
+                    or record.get("required_labels") != labels
+                    or record.get("terms") != dict(Counter(_filename_tokenize(name)))
+                    or record.get("length") != len(_filename_tokenize(name))):
+                raise ValueError(f"filename index record does not match its body anchor: {path}")
+        if seen_paths != set(grouped):
+            raise ValueError("filename index catalog is missing body-backed paths")
     if index.get("vector_mode") == "cooccurrence":
         model = index.get("vector_model")
         embedding = index.get("embedding")
@@ -593,6 +681,107 @@ def _ranks(scores: dict[str, float], *, positive_only: bool = False) -> dict[str
     return {identifier: rank for rank, (identifier, _) in enumerate(ordered, start=1)}
 
 
+def _search_filename_fields(
+    index: dict,
+    query: str,
+    *,
+    top_k: int,
+    candidate_k: int,
+    path_prefix: str | None,
+    principal_labels: tuple[str, ...],
+    search_field: str,
+) -> list[dict]:
+    terms = _filename_tokenize(query)
+    if not terms:
+        return []
+    chunks = [
+        chunk for chunk in index["chunks"]
+        if (path_prefix is None or chunk["path"].startswith(path_prefix))
+        and is_authorized(chunk.get("required_labels", []), principal_labels)
+    ]
+    by_path: dict[str, list[dict]] = defaultdict(list)
+    for chunk in chunks:
+        by_path[chunk["path"]].append(chunk)
+    anchors = {
+        path: min(items, key=lambda c: (c["start_line"], c["end_line"], c["id"].encode("utf-8")))
+        for path, items in by_path.items()
+    }
+    body_scores: dict[str, float] = {}
+    best_by_path: dict[str, dict] = {}
+    if search_field == "both":
+        raw = _bm25_scores(chunks, terms)
+        chunk_by_id = {chunk["id"]: chunk for chunk in chunks}
+        for identifier, score in raw.items():
+            candidate = chunk_by_id[identifier]
+            path = candidate["path"]
+            previous = body_scores.get(path)
+            best = best_by_path.get(path)
+            if (previous is None or score > previous
+                    or (score == previous and identifier.encode("utf-8") < best["id"].encode("utf-8"))):
+                body_scores[path] = score
+                best_by_path[path] = candidate
+    body_ranks = _file_ranks(body_scores, best_by_path)
+
+    filename_records = [
+        record for record in index["filename_index"]["records"]
+        if record["path"] in anchors
+        and (path_prefix is None or record["path"].startswith(path_prefix))
+        and is_authorized(record.get("required_labels", []), principal_labels)
+    ]
+    filename_scores = _bm25_scores(filename_records, terms) if search_field in {"filename", "both"} else {}
+    filename_ranks = _file_ranks(filename_scores, {r["path"]: anchors[r["path"]] for r in filename_records})
+    if search_field == "filename":
+        body_ranks = {}
+        body_scores = {}
+    elif search_field == "content":
+        filename_ranks = {}
+        filename_scores = {}
+
+    body_ranks = {path: rank for path, rank in body_ranks.items() if rank <= candidate_k}
+    filename_ranks = {path: rank for path, rank in filename_ranks.items() if rank <= candidate_k}
+    fused: dict[str, float] = defaultdict(float)
+    for path, rank in body_ranks.items():
+        fused[path] += 1.0 / (60.0 + rank)
+    for path, rank in filename_ranks.items():
+        fused[path] += 1.0 / (60.0 + rank)
+    records_by_path = {record["path"]: record for record in filename_records}
+    results = []
+    if search_field == "filename":
+        final_scores = {path: filename_scores[path] for path in filename_ranks}
+    else:
+        final_scores = dict(fused)
+    for path, final_score in sorted(final_scores.items(), key=lambda item: (-item[1], item[0].encode("utf-8")))[:top_k]:
+        chunk = best_by_path.get(path, anchors[path])
+        record = records_by_path.get(path)
+        matched_in = []
+        if path in body_ranks:
+            matched_in.append("content")
+        if path in filename_ranks:
+            matched_in.append("filename")
+        results.append({
+            "chunk_id": chunk["id"],
+            "citation": {"path": path, "start_line": chunk["start_line"], "end_line": chunk["end_line"]},
+            "content": chunk["text"],
+            "score": final_score,
+            "matched_in": matched_in,
+            "basename": record["basename"] if record else Path(path).name,
+            "ranking": {
+                "lexical": {"rank": body_ranks.get(path), "score": body_scores.get(path)},
+                "filename": {"rank": filename_ranks.get(path), "score": filename_scores.get(path)},
+                "vector": {"rank": None, "score": None, "mode": index.get("vector_mode", "none")},
+            },
+        })
+    return results
+
+
+def _file_ranks(scores: dict[str, float], anchors: dict[str, dict]) -> dict[str, int]:
+    ordered = sorted(
+        ((path, score) for path, score in scores.items() if score > 0.0),
+        key=lambda item: (-item[1], item[0].encode("utf-8"), anchors[item[0]]["id"].encode("utf-8")),
+    )
+    return {path: rank for rank, (path, _) in enumerate(ordered, start=1)}
+
+
 def search(
     index: dict,
     query: str,
@@ -603,6 +792,7 @@ def search(
     retrieval_mode: str = "hybrid",
     embedding_provider: EmbeddingProvider | None = None,
     principal_labels: Iterable[str] = (),
+    search_field: str = "content",
 ) -> list[dict]:
     if top_k < 1:
         raise ValueError("top_k must be at least 1")
@@ -610,6 +800,17 @@ def search(
         raise ValueError("candidate_k must be at least top_k")
     if not isinstance(retrieval_mode, str) or retrieval_mode not in {"lexical", "vector", "hybrid"}:
         raise ValueError("retrieval_mode must be 'lexical', 'vector', or 'hybrid'")
+    if not isinstance(search_field, str) or search_field not in {"content", "filename", "both"}:
+        raise ValueError("search_field must be 'content', 'filename', or 'both'")
+    if search_field != "content":
+        if retrieval_mode != "lexical":
+            raise ValueError("filename and both search fields require retrieval_mode='lexical'")
+        if not isinstance(index.get("filename_index"), dict):
+            raise ValueError("FilenameIndexUnavailable: rebuild the index with --filename-index")
+        return _search_filename_fields(
+            index, query, top_k=top_k, candidate_k=candidate_k, path_prefix=path_prefix,
+            principal_labels=tuple(principal_labels), search_field=search_field,
+        )
     query_terms = tokenize(query)
     if not query_terms:
         return []
@@ -678,6 +879,7 @@ def context_envelope(
     retrieval_mode: str = "hybrid",
     embedding_provider: EmbeddingProvider | None = None,
     principal_labels: Iterable[str] = (),
+    search_field: str = "content",
 ) -> dict:
     principal_labels = tuple(principal_labels)
     results = search(
@@ -689,25 +891,32 @@ def context_envelope(
         retrieval_mode=retrieval_mode,
         embedding_provider=embedding_provider,
         principal_labels=principal_labels,
+        search_field=search_field,
     )
+    retrieval = {
+        "mode": retrieval_mode,
+        "candidate_k": candidate_k,
+        "vector_mode": index.get("vector_mode", "none"),
+        "embedding": index.get("embedding"),
+        "authorization": {
+            "semantics": index.get("access", {}).get("semantics", ACCESS_SEMANTICS),
+            "principal_label_count": len(set(principal_labels)),
+        },
+    }
+    answer_policy = {
+        "ground_in_results": True,
+        "cite_path_and_lines": True,
+        "say_when_evidence_is_insufficient": True,
+    }
+    if search_field != "content":
+        retrieval["search_field"] = search_field
+        retrieval["filename_policy_id"] = FILENAME_POLICY_ID
+        answer_policy["filename_matches_are_navigation"] = True
     return {
         "tool": "search_knowledge",
         "query": query,
         "index": {"root": index["root"], "version": index["version"]},
-        "retrieval": {
-            "mode": retrieval_mode,
-            "candidate_k": candidate_k,
-            "vector_mode": index.get("vector_mode", "none"),
-            "embedding": index.get("embedding"),
-            "authorization": {
-                "semantics": index.get("access", {}).get("semantics", ACCESS_SEMANTICS),
-                "principal_label_count": len(set(principal_labels)),
-            },
-        },
+        "retrieval": retrieval,
         "results": results,
-        "answer_policy": {
-            "ground_in_results": True,
-            "cite_path_and_lines": True,
-            "say_when_evidence_is_insufficient": True,
-        },
+        "answer_policy": answer_policy,
     }

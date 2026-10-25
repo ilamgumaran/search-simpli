@@ -1,6 +1,7 @@
 const engine_module = @import("engine.zig");
 const hybrid = @import("hybrid.zig");
 const indexer = @import("indexer.zig");
+const filename_field = @import("filename_field.zig");
 const lexical_build = @import("lexical_build.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const lifecycle = @import("lifecycle.zig");
@@ -49,6 +50,7 @@ const ImportDocument = struct {
 
 const ImportPayload = struct {
     format_version: u16,
+    filename_policy_id: ?[]const u8 = null,
     generation: u64,
     analyzer_id: []const u8,
     embedding_model_id: []const u8,
@@ -90,7 +92,11 @@ pub fn importJsonKeeping(
     var parsed = try std.json.parseFromSlice(ImportPayload, allocator, json_bytes, .{});
     defer parsed.deinit();
     const payload = parsed.value;
-    if (payload.format_version != format_version) return error.UnsupportedInterchangeVersion;
+    if (payload.format_version != format_version and payload.format_version != 2) return error.UnsupportedInterchangeVersion;
+    const filename_enabled = payload.format_version == 2;
+    if (filename_enabled) {
+        if (payload.filename_policy_id == null or !std.mem.eql(u8, payload.filename_policy_id.?, filename_field.policy_id)) return error.UnsupportedFilenamePolicy;
+    } else if (payload.filename_policy_id != null) return error.UnsupportedInterchangeVersion;
     const analyzer = try ImportAnalyzer.parse(payload.analyzer_id);
     if (payload.generation == 0) return error.GenerationZero;
     const keep: ?usize = if (keep_override) |k| k else if (payload.keep_generations) |k|
@@ -156,7 +162,7 @@ pub fn importJsonKeeping(
     defer allocator.free(documents_file);
     const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{payload.generation});
     defer allocator.free(lexical_file);
-    const metadata = try manifest.create(
+    var metadata = try manifest.create(
         payload.generation,
         payload.analyzer_id,
         payload.embedding_model_id,
@@ -165,11 +171,19 @@ pub fn importJsonKeeping(
         documents_encoded,
         lexical_encoded,
     );
+    const filename_data = if (filename_enabled) try filename_field.build(lexical_arena.allocator(), documents, payload.analyzer_id) else filename_field.Built{ .catalog = &.{}, .lexical = &.{} };
+    const catalog_file = try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{payload.generation});
+    defer allocator.free(catalog_file);
+    const filename_lexical_file = try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{payload.generation});
+    defer allocator.free(filename_lexical_file);
+    if (filename_enabled) metadata = try manifest.withFilename(metadata, catalog_file, filename_lexical_file, filename_data.catalog, filename_data.lexical);
     const manifest_encoded_length = try manifest.encodedLength(metadata);
     const manifest_encoded_storage = try allocator.alloc(u8, manifest_encoded_length);
     defer allocator.free(manifest_encoded_storage);
     const manifest_encoded = try manifest.encode(metadata, manifest_encoded_storage);
-    const prune = try lifecycle.publishSerializedKeeping(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, keep);
+    const prune = if (filename_enabled)
+        try lifecycle.publishSerializedWithFilenameKeeping(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, filename_data.catalog, filename_data.lexical, keep)
+    else try lifecycle.publishSerializedKeeping(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, keep);
 
     return .{
         .generation = payload.generation,

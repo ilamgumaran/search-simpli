@@ -33,6 +33,8 @@
 const std = @import("std");
 const chunker = @import("chunker.zig");
 const engine_module = @import("engine.zig");
+const filename_field = @import("filename_field.zig");
+const filename_response = @import("filename_response.zig");
 const generation_alloc = @import("generation_alloc.zig");
 const hybrid = @import("hybrid.zig");
 const importer = @import("importer.zig");
@@ -88,7 +90,7 @@ pub export fn ss_last_error() callconv(.c) [*:0]const u8 {
 }
 
 /// The engine contract/build version (`contracts/CONTRACTS_VERSION`), e.g.
-/// `"1.2.0"`. Static storage: never pass this pointer to `ss_free`.
+/// `"1.3.0"`. Static storage: never pass this pointer to `ss_free`.
 pub export fn ss_version() callconv(.c) [*:0]const u8 {
     return contracts_version.ptr;
 }
@@ -99,6 +101,8 @@ pub const Handle = struct {
     manifest_buffer: []u8,
     documents_buffer: []u8,
     lexical_buffer: []u8,
+    catalog_buffer: []u8,
+    filename_lexical_buffer: []u8,
     documents_output: []hybrid.Document,
     vectors_output: []f32,
     terms_output: []postings.TermEntry,
@@ -137,7 +141,11 @@ fn openImpl(path: []const u8) !*Handle {
     errdefer allocator.free(documents_buffer);
     const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
     errdefer allocator.free(lexical_buffer);
-    const snapshot = try publication.loadCurrent(dir, gio, manifest_buffer, documents_buffer, lexical_buffer);
+    const catalog_buffer = try allocator.alloc(u8, if (metadata.filename) |filename| filename.catalog_bytes else 0);
+    errdefer allocator.free(catalog_buffer);
+    const filename_lexical_buffer = try allocator.alloc(u8, if (metadata.filename) |filename| filename.lexical_bytes else 0);
+    errdefer allocator.free(filename_lexical_buffer);
+    const snapshot = try publication.loadCurrentWithFilename(dir, gio, manifest_buffer, documents_buffer, lexical_buffer, catalog_buffer, filename_lexical_buffer);
 
     const documents_output = try allocator.alloc(hybrid.Document, metadata.document_count);
     errdefer allocator.free(documents_output);
@@ -160,12 +168,19 @@ fn openImpl(path: []const u8) !*Handle {
         postings_output,
         document_lengths_output,
     );
+    if (metadata.filename != null) {
+        var validation_arena = std.heap.ArenaAllocator.init(allocator);
+        defer validation_arena.deinit();
+        try filename_field.validate(validation_arena.allocator(), engine.documents, snapshot.catalog_encoded, snapshot.filename_lexical_encoded, engine.analyzer_id);
+    }
 
     const handle = try allocator.create(Handle);
     handle.* = .{
         .manifest_buffer = manifest_buffer,
         .documents_buffer = documents_buffer,
         .lexical_buffer = lexical_buffer,
+        .catalog_buffer = catalog_buffer,
+        .filename_lexical_buffer = filename_lexical_buffer,
         .documents_output = documents_output,
         .vectors_output = vectors_output,
         .terms_output = terms_output,
@@ -182,6 +197,8 @@ pub export fn ss_close(handle: ?*Handle) callconv(.c) void {
     allocator.free(h.manifest_buffer);
     allocator.free(h.documents_buffer);
     allocator.free(h.lexical_buffer);
+    allocator.free(h.catalog_buffer);
+    allocator.free(h.filename_lexical_buffer);
     allocator.free(h.documents_output);
     allocator.free(h.vectors_output);
     allocator.free(h.terms_output);
@@ -211,13 +228,28 @@ fn statusImpl(h: *Handle) ![*:0]u8 {
     var out: std.Io.Writer.Allocating = .init(allocator);
     errdefer out.deinit();
     var json = std.json.Stringify{ .writer = &out.writer };
-    try json.write(service.indexStatus());
+    const status = service.indexStatus();
+    try json.beginObject();
+    try json.objectField("ready"); try json.write(status.ready);
+    try json.objectField("generation"); try json.write(status.generation);
+    try json.objectField("analyzer_id"); try json.write(status.analyzer_id);
+    try json.objectField("embedding_model_id"); try json.write(status.embedding_model_id);
+    try json.objectField("vector_dimensions"); try json.write(status.vector_dimensions);
+    try json.objectField("documents"); try json.write(status.documents);
+    try json.objectField("terms"); try json.write(status.terms);
+    try json.objectField("postings"); try json.write(status.postings);
+    if (h.engine.filename_index_enabled) {
+        try json.objectField("filename_policy_id");
+        try json.write(@import("filename_field.zig").policy_id);
+    }
+    try json.endObject();
     const owned = try out.toOwnedSliceSentinel(0);
     return owned.ptr;
 }
 
 const QueryOptions = struct {
     retrieval_mode: ?[]const u8 = null,
+    search_field: ?[]const u8 = null,
     candidate_k: ?usize = null,
     path_prefix: ?[]const u8 = null,
     principal_labels: []const []const u8 = &.{},
@@ -266,6 +298,22 @@ pub export fn ss_query(
     const vector: []const f32 = if (query_vector) |ptr| ptr[0..dims] else &.{};
     const options_text = if (options_json) |ptr| std.mem.span(ptr) else "";
     return queryImpl(h, text, vector, top_k, options_text) catch |err| {
+        if (err == error.FilenameIndexUnavailable) {
+            setLastError("ss_query: FilenameIndexUnavailable: rebuild the index with --filename-index", .{});
+            return null;
+        }
+        if (err == error.FilenameRequiresExplicitLexical) {
+            setLastError("ss_query: search_field filename/both requires explicit retrieval_mode=lexical", .{});
+            return null;
+        }
+        if (err == error.InvalidSearchField) {
+            setLastError("ss_query: search_field must be content, filename, or both", .{});
+            return null;
+        }
+        if (err == error.FilenameProfileUnavailable) {
+            setLastError("ss_query: profile is not supported for filename/both searches", .{});
+            return null;
+        }
         if (err == error.VectorNormNotFinite) {
             setLastError("ss_query: invalid query vector: a component is not finite or the L2 norm overflows float32 (VectorNormNotFinite)", .{});
             return null;
@@ -297,8 +345,28 @@ fn queryImpl(
         rpc.parseMode(name) orelse return error.InvalidRetrievalMode
     else
         .hybrid;
+    const field_name = options.search_field orelse "content";
+    const search_field = rpc.parseSearchField(field_name) orelse return error.InvalidSearchField;
+    if (search_field != .content and (options.retrieval_mode == null or mode != .lexical)) return error.FilenameRequiresExplicitLexical;
+    if (search_field != .content and options.profile) return error.FilenameProfileUnavailable;
     const candidate_k = options.candidate_k orelse 100;
     if (candidate_k < top_k or candidate_k > 10_000) return error.InvalidCandidateDepth;
+
+    if (search_field != .content) {
+        const search_options = hybrid.SearchOptions{
+            .top_k = top_k,
+            .candidate_k = candidate_k,
+            .retrieval_mode = .lexical,
+            .path_prefix = options.path_prefix,
+            .principal_labels = options.principal_labels,
+        };
+        const hits = try h.engine.queryFields(arena.allocator(), query_text, search_field, search_options);
+        var out: std.Io.Writer.Allocating = .init(allocator);
+        errdefer out.deinit();
+        try filename_response.writeAbiEvidence(&out.writer, h.engine, query_text, search_field, search_options, hits);
+        const owned = try out.toOwnedSliceSentinel(0);
+        return owned.ptr;
+    }
 
     const effective_vector: []const f32 = if (mode == .lexical or h.engine.vector_dimensions == 0)
         &.{}
@@ -540,6 +608,8 @@ const IndexFolderOptions = struct {
     /// `true`: incremental update (`indexer.indexFolderIncremental`) --
     /// content hashes, unchanged files skipped, deleted files tombstoned.
     update: bool = false,
+    /// Build the derived filename field (default false).
+    filename_index: bool = false,
     max_file_bytes: ?u64 = null,
     max_total_bytes: ?u64 = null,
     /// S2-T5, opt-in: keep only the newest N generations (N >= 1) after a
@@ -622,6 +692,7 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
         .max_file_bytes = options.max_file_bytes orelse default_caps.max_file_bytes,
         .max_total_bytes = options.max_total_bytes orelse default_caps.max_total_bytes,
         .keep_generations = options.keep_generations,
+        .filename_index = options.filename_index,
     };
     if (caps.keep_generations != null and caps.keep_generations.? == 0) return error.InvalidKeepGenerations;
 
@@ -1103,7 +1174,68 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     try std.testing.expectEqualStrings("guides/hybrid.md", evidence_items[0].object.get("citation").?.object.get("path").?.string);
     try std.testing.expectEqual(false, evidence_items[1].object.get("found").?.bool);
 
-    try std.testing.expectEqualStrings("1.2.0", std.mem.span(ss_version()));
+    try std.testing.expectEqualStrings("1.3.0", std.mem.span(ss_version()));
+}
+
+test "ss_index_folder filename_index option opens and searches filename field" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDir(std.testing.io, "notes", .default_dir);
+    try tmp.dir.createDir(std.testing.io, "notes/guides", .default_dir);
+    try tmp.dir.writeFile(std.testing.io, .{ .sub_path = "notes/guides/retrieval-notes.md", .data = "Evidence from this file.\n" });
+    const root_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(root_z);
+    const output_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/index", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(output_z);
+    const body_only_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/body-only", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(body_only_z);
+    const body_only_report = ss_index_folder(body_only_z, root_z, null) orelse return error.IndexFailed;
+    ss_free(body_only_report);
+    const body_only = ss_open(body_only_z) orelse return error.OpenFailed;
+    defer ss_close(body_only);
+    const body_only_status = ss_status(body_only) orelse return error.StatusFailed;
+    defer ss_free(body_only_status);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(body_only_status), "filename_policy_id") == null);
+    try std.testing.expect(ss_query(body_only, "retrieval", null, 0, 5, "{\"retrieval_mode\":\"lexical\",\"search_field\":\"filename\"}") == null);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(ss_last_error()), "FilenameIndexUnavailable") != null);
+
+    const indexed = ss_index_folder(output_z, root_z, "{\"filename_index\":true}") orelse {
+        std.debug.print("ss_index_folder failed: {s}\n", .{ss_last_error()});
+        return error.IndexFailed;
+    };
+    ss_free(indexed);
+    const handle = ss_open(output_z) orelse {
+        std.debug.print("ss_open failed: {s}\n", .{ss_last_error()});
+        return error.OpenFailed;
+    };
+    defer ss_close(handle);
+    const status = ss_status(handle) orelse return error.StatusFailed;
+    defer ss_free(status);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(status), "\"filename_policy_id\":\"filename-field-v1\"") != null);
+
+    const query = ss_query(handle, "retrieval", null, 0, 5, "{\"retrieval_mode\":\"lexical\",\"search_field\":\"filename\"}") orelse {
+        std.debug.print("ss_query failed: {s}\n", .{ss_last_error()});
+        return error.QueryFailed;
+    };
+    defer ss_free(query);
+    var parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, std.mem.span(query), .{});
+    defer parsed.deinit();
+    const result = parsed.value.object;
+    try std.testing.expectEqualStrings("filename", result.get("retrieval").?.object.get("search_field").?.string);
+    try std.testing.expectEqual(@as(i64, 100), result.get("retrieval").?.object.get("candidate_k").?.integer);
+    try std.testing.expectEqual(@as(usize, 0), result.get("warnings").?.array.items.len);
+    const request = result.get("request").?.object;
+    try std.testing.expectEqualStrings("filename", request.get("search_field").?.string);
+    try std.testing.expectEqualStrings("lexical", request.get("retrieval_mode").?.string);
+    const first = result.get("results").?.array.items[0].object;
+    try std.testing.expectEqualStrings("guides/retrieval-notes.md", first.get("citation").?.object.get("path").?.string);
+    try std.testing.expectEqualStrings("retrieval-notes.md", first.get("basename").?.string);
+
+    const legacy = ss_query(handle, "Evidence", null, 0, 1, "{\"retrieval_mode\":\"lexical\"}") orelse return error.QueryFailed;
+    defer ss_free(legacy);
+    const explicit_content = ss_query(handle, "Evidence", null, 0, 1, "{\"retrieval_mode\":\"lexical\",\"search_field\":\"content\"}") orelse return error.QueryFailed;
+    defer ss_free(explicit_content);
+    try std.testing.expectEqualStrings(std.mem.span(legacy), std.mem.span(explicit_content));
 }
 
 test "ss_import_json publishes a queryable snapshot and reports negative codes on failure" {

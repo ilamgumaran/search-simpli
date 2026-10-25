@@ -40,40 +40,55 @@ void main() {
       dir.deleteSync(recursive: true);
     });
 
-    test('a vector with an overflowing norm or a non-finite component is rejected', () {
-      for (final bad in <List<double>>[
-        [2e19, 0],
-        [1e30, 1],
-        [double.nan, 0],
-        [double.infinity, 0],
-        [1e300, 0], // too large for a 32-bit float
-      ]) {
-        for (final mode in [RetrievalMode.vector, RetrievalMode.hybrid]) {
-          expect(
-            () => engine.query('search', queryVector: bad, topK: 2, mode: mode),
-            throwsA(isA<SearchSimpliException>()),
-            reason: '$bad in $mode',
-          );
+    test(
+      'a vector with an overflowing norm or a non-finite component is rejected',
+      () {
+        for (final bad in <List<double>>[
+          [2e19, 0],
+          [1e30, 1],
+          [double.nan, 0],
+          [double.infinity, 0],
+          [1e300, 0], // too large for a 32-bit float
+        ]) {
+          for (final mode in [RetrievalMode.vector, RetrievalMode.hybrid]) {
+            expect(
+              () =>
+                  engine.query('search', queryVector: bad, topK: 2, mode: mode),
+              throwsA(isA<SearchSimpliException>()),
+              reason: '$bad in $mode',
+            );
+          }
         }
-      }
-    });
+      },
+    );
 
     test('lexical mode does not read the vector; a large valid one ranks', () {
-      final lexical = engine.query('search',
-          queryVector: [2e19, 0], topK: 2, mode: RetrievalMode.lexical);
+      final lexical = engine.query(
+        'search',
+        queryVector: [2e19, 0],
+        topK: 2,
+        mode: RetrievalMode.lexical,
+      );
       expect(lexical.results, hasLength(2));
-      final vector = engine.query('search',
-          queryVector: [1.8e19, 0], topK: 2, mode: RetrievalMode.vector);
+      final vector = engine.query(
+        'search',
+        queryVector: [1.8e19, 0],
+        topK: 2,
+        mode: RetrievalMode.vector,
+      );
       expect(vector.results.first.citation.path, 'a.md');
     });
   });
 
-  test('SearchSimpli.open on a missing directory throws SearchSimpliException', () {
-    expect(
-      () => SearchSimpli.open('/nonexistent/search-simpli-dart-test-dir'),
-      throwsA(isA<SearchSimpliException>()),
-    );
-  });
+  test(
+    'SearchSimpli.open on a missing directory throws SearchSimpliException',
+    () {
+      expect(
+        () => SearchSimpli.open('/nonexistent/search-simpli-dart-test-dir'),
+        throwsA(isA<SearchSimpliException>()),
+      );
+    },
+  );
 
   group('with a published snapshot', () {
     late Directory dir;
@@ -161,7 +176,11 @@ void main() {
 
       final engine = SearchSimpli.open(outDir.path);
       try {
-        final result = engine.query('hybrid', topK: 5, mode: RetrievalMode.lexical);
+        final result = engine.query(
+          'hybrid',
+          topK: 5,
+          mode: RetrievalMode.lexical,
+        );
         expect(result.results, isNotEmpty);
         expect(result.results.first.citation.path, 'one.md');
       } finally {
@@ -169,22 +188,60 @@ void main() {
       }
     });
 
-    test('an empty folder publishes an empty generation instead of throwing', () {
-      final emptyDir = Directory.systemTemp.createTempSync('ss-dart-index-empty-');
-      addTearDown(() => emptyDir.deleteSync(recursive: true));
-
-      final report = SearchSimpli.indexFolder(outDir.path, emptyDir.path);
-      expect(report.documents, 0);
-      expect(report.terms, 0);
-      expect(report.postings, 0);
+    test('filename index queries round-trip through the native ABI', () {
+      File('${folderDir.path}/Lighthouse-Guide.md')
+          .writeAsStringSync('ordinary body words with no navigation term');
+      final report = SearchSimpli.indexFolder(
+        outDir.path,
+        folderDir.path,
+        options: const IndexFolderOptions(filenameIndex: true),
+      );
+      expect(report.documents, greaterThan(0));
 
       final engine = SearchSimpli.open(outDir.path);
       try {
-        expect(engine.status().documents, 0);
+        final status = engine.status();
+        expect(status.filenamePolicyId, 'filename-field-v1');
+        final result = engine.query(
+          'lighthouse',
+          topK: 5,
+          mode: RetrievalMode.lexical,
+          searchField: SearchField.filename,
+        );
+        expect(result.results, hasLength(1));
+        expect(result.results.single.citation.path, 'Lighthouse-Guide.md');
+        expect(result.results.single.matchedIn, ['filename']);
+        expect(result.results.single.basename, 'Lighthouse-Guide');
+        expect(result.retrieval.searchField, SearchField.filename);
+        expect(result.retrieval.filenamePolicyId, 'filename-field-v1');
+        expect(result.request!.searchField, SearchField.filename);
+        expect(result.answerPolicy.filenameMatchesAreNavigation, isTrue);
       } finally {
         engine.close();
       }
     });
+
+    test(
+      'an empty folder publishes an empty generation instead of throwing',
+      () {
+        final emptyDir = Directory.systemTemp.createTempSync(
+          'ss-dart-index-empty-',
+        );
+        addTearDown(() => emptyDir.deleteSync(recursive: true));
+
+        final report = SearchSimpli.indexFolder(outDir.path, emptyDir.path);
+        expect(report.documents, 0);
+        expect(report.terms, 0);
+        expect(report.postings, 0);
+
+        final engine = SearchSimpli.open(outDir.path);
+        try {
+          expect(engine.status().documents, 0);
+        } finally {
+          engine.close();
+        }
+      },
+    );
 
     test('an update run reports unreadable files by relative path', () {
       SearchSimpli.indexFolder(outDir.path, folderDir.path);
@@ -210,67 +267,80 @@ void main() {
     });
   });
 
-  group('SearchSimpli.indexFolder caps on a non-update run (S1-T5 criterion 1)', () {
-    test('maxFileBytes caps a file on a full rebuild', () {
-      // Own plant: a folder containing only one oversized file, not shared
-      // with any other test's fixture.
-      final folder = Directory.systemTemp.createTempSync('ss-dart-cap-file-');
-      final out = Directory.systemTemp.createTempSync('ss-dart-cap-file-out-');
-      out.deleteSync(); // ss_index_folder must create it.
-      addTearDown(() => folder.deleteSync(recursive: true));
-      addTearDown(() {
-        if (out.existsSync()) out.deleteSync(recursive: true);
-      });
-      File('${folder.path}/oversized.md').writeAsStringSync(
-        '123456789\n123456789\n123456789\n123456789\na', // 41 bytes
-      );
-
-      final report = SearchSimpli.indexFolder(
-        out.path,
-        folder.path,
-        options: const IndexFolderOptions(update: false, maxFileBytes: 10),
-      );
-
-      expect(report.added, 0);
-      expect(report.tooLarge, 1);
-      expect(report.tooLargePaths, ['oversized.md']);
-      expect(report.documents, 0);
-
-      final engine = SearchSimpli.open(out.path);
-      try {
-        final result = engine.query('123456789', topK: 5, mode: RetrievalMode.lexical);
-        expect(result.results, isEmpty);
-      } finally {
-        engine.close();
-      }
-    });
-
-    test('maxTotalBytes caps files on a full rebuild', () {
-      // Own plant: three ~41-byte files and a 50-byte budget, so only the
-      // first (sorted by path) is read and the other two are left over.
-      final folder = Directory.systemTemp.createTempSync('ss-dart-cap-total-');
-      final out = Directory.systemTemp.createTempSync('ss-dart-cap-total-out-');
-      out.deleteSync();
-      addTearDown(() => folder.deleteSync(recursive: true));
-      addTearDown(() {
-        if (out.existsSync()) out.deleteSync(recursive: true);
-      });
-      for (final name in ['a.md', 'b.md', 'c.md']) {
-        File('${folder.path}/$name').writeAsStringSync(
-          '123456789\n123456789\n123456789\n123456789\na', // 41 bytes each
+  group(
+    'SearchSimpli.indexFolder caps on a non-update run (S1-T5 criterion 1)',
+    () {
+      test('maxFileBytes caps a file on a full rebuild', () {
+        // Own plant: a folder containing only one oversized file, not shared
+        // with any other test's fixture.
+        final folder = Directory.systemTemp.createTempSync('ss-dart-cap-file-');
+        final out = Directory.systemTemp.createTempSync(
+          'ss-dart-cap-file-out-',
         );
-      }
+        out.deleteSync(); // ss_index_folder must create it.
+        addTearDown(() => folder.deleteSync(recursive: true));
+        addTearDown(() {
+          if (out.existsSync()) out.deleteSync(recursive: true);
+        });
+        File('${folder.path}/oversized.md').writeAsStringSync(
+          '123456789\n123456789\n123456789\n123456789\na', // 41 bytes
+        );
 
-      final report = SearchSimpli.indexFolder(
-        out.path,
-        folder.path,
-        options: const IndexFolderOptions(update: false, maxTotalBytes: 50),
-      );
+        final report = SearchSimpli.indexFolder(
+          out.path,
+          folder.path,
+          options: const IndexFolderOptions(update: false, maxFileBytes: 10),
+        );
 
-      expect(report.added, 1);
-      expect(report.budgetExhausted, 2);
-      expect(report.tooLarge, 0);
-      expect(report.documents, greaterThanOrEqualTo(1));
-    });
-  });
+        expect(report.added, 0);
+        expect(report.tooLarge, 1);
+        expect(report.tooLargePaths, ['oversized.md']);
+        expect(report.documents, 0);
+
+        final engine = SearchSimpli.open(out.path);
+        try {
+          final result = engine.query(
+            '123456789',
+            topK: 5,
+            mode: RetrievalMode.lexical,
+          );
+          expect(result.results, isEmpty);
+        } finally {
+          engine.close();
+        }
+      });
+
+      test('maxTotalBytes caps files on a full rebuild', () {
+        // Own plant: three ~41-byte files and a 50-byte budget, so only the
+        // first (sorted by path) is read and the other two are left over.
+        final folder = Directory.systemTemp.createTempSync(
+          'ss-dart-cap-total-',
+        );
+        final out = Directory.systemTemp.createTempSync(
+          'ss-dart-cap-total-out-',
+        );
+        out.deleteSync();
+        addTearDown(() => folder.deleteSync(recursive: true));
+        addTearDown(() {
+          if (out.existsSync()) out.deleteSync(recursive: true);
+        });
+        for (final name in ['a.md', 'b.md', 'c.md']) {
+          File('${folder.path}/$name').writeAsStringSync(
+            '123456789\n123456789\n123456789\n123456789\na', // 41 bytes each
+          );
+        }
+
+        final report = SearchSimpli.indexFolder(
+          out.path,
+          folder.path,
+          options: const IndexFolderOptions(update: false, maxTotalBytes: 50),
+        );
+
+        expect(report.added, 1);
+        expect(report.budgetExhausted, 2);
+        expect(report.tooLarge, 0);
+        expect(report.documents, greaterThanOrEqualTo(1));
+      });
+    },
+  );
 }
