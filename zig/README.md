@@ -2,7 +2,7 @@
 
 This directory begins the production engine path without pretending the durable engine already exists. The current allocation-free, in-memory core includes:
 
-- ASCII analysis and case-insensitive term counting;
+- versioned ASCII and Unicode-aware analysis (native folder indexing defaults to analyzer-v2);
 - corpus-level BM25 scoring;
 - exact cosine scoring for supplied vectors;
 - independent lexical and semantic ranks;
@@ -35,15 +35,15 @@ zig build run -- import-json /tmp/search-snapshot /tmp/zig-snapshot.json
 zig build run -- serve /tmp/search-snapshot
 ```
 
-Zig is not installed globally in the current development environment. The seed is validated with the official Zig 0.16.0 macOS ARM64 distribution unpacked under `/tmp`; see the experiment log for the exact command and result. The Python behavioral tests remain the cross-language baseline.
+Use the pinned Zig 0.16.0 toolchain. Native Linux CI runs the engine, ABI and Python CLI suites; macOS/iOS shipped-library verification remains a separate platform step. The Python behavioral tests remain the cross-language baseline.
 
 The search core uses caller-owned slices rather than allocating. Channel ranks and final RRF ordering use deterministic in-place `O(n log n)` sorts; the persistent postings path avoids scanning non-matching lexical documents while exhaustive vectors remain the correctness baseline. `benchmark` measures the real postings + vector + fusion path and reports total plus lexical/ranking stage percentiles.
 
-Current limitation: analysis is ASCII-only, and the raw Zig service expects query embeddings from its caller. `zig_gateway.py` provides the intended text-only tool surface with exact model-fingerprint validation. Both dependency-free PPMI and local FastEmbed/BGE 384-dimensional snapshots have been imported and queried, but the neural evidence is still diagnostic rather than production-ready.
+Current limitations: filenames are citation metadata rather than searchable terms, quoted queries do not enforce phrase order, and the raw Zig service expects query embeddings from its caller. `zig_gateway.py` provides the intended text-only tool surface with exact model-fingerprint validation. Both dependency-free PPMI and local FastEmbed/BGE 384-dimensional snapshots have been imported and queried, but the neural evidence is still diagnostic rather than production-ready.
 
 Next modules should be introduced in this order:
 
-1. evolve `analysis.zig` with a decided Unicode strategy and versioned tokenizer contract;
+1. preserve versioned analyzer compatibility; evaluate full-casefold parity separately from the already implemented analyzer-v2 NFC/simple-fold path;
 2. add platform-specific directory sync, reader leases/epochs, rollback policy, and generation-safe garbage collection;
 3. connect gateway labels to authenticated identities and decide label-aware BM25 versus separate tenant indexes;
 4. evolve `postings.zig` into a sorted dictionary, compressed posting blocks, and BM25 top-k pruning.

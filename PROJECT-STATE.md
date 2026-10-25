@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-10-22
+Last updated: 2026-10-25
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,31 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## Directory search audit and filename design (2026-10-25)
+
+The current Python/native Zig engines search supported UTF-8 document **body
+content** and return stored paths/line citations. Filenames are metadata, not
+indexed search terms. PDF/Office/OCR require external extraction; HTML is read as
+source text. Quoted queries do not enforce phrase order or adjacency.
+
+[CAP-16 / FR-16](docs/requirements/cap-16-directory-filename-search.md),
+[UC-006](docs/use-cases/uc-006-directory-filename-search.md) and the
+[DS-00–DS-05 task split](docs/tasks/directory-search.md) propose an independent
+file-level lexical field over the existing engine. Current defaults, body
+postings, formats, contracts and shipped libraries are unchanged. The initial
+SQLite suggestion is superseded by the actual native-index audit. The design
+claim is [#15](https://github.com/ilamgumaran/search-simpli/issues/15).
+
+Baseline main `9c3265a` passes 176 Zig tests, 16 ABI checks, 97 Python tests
+with 4 skips, native CLI build and the 4-query relevance mechanics gate. The
+repeatable invented-directory diagnostic verifies content/citations and explicit
+refresh, while recording filename misses and phrase limitations. No real-folder
+relevance, device performance or filename implementation is claimed.
+DS-01 exact format/fixture freeze and final named maintainer step-6b approval
+are required before the new runtime capability is built. Existing SQ-02,
+E-01A/CAP-14, S1-T9 owner review and PR #11 equipped-Mac integration retain their
+separate gates; none is completed by this design/probe.
 
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.

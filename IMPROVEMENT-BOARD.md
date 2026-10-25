@@ -19,6 +19,23 @@ for E-02, L-04, E-01/E-01A, F-01, F-02, S-01 and F-03. SQ-01's design is now
 claimed/reviewed under E-02 below; implementation tasks remain unclaimed. The
 plan grants no pending capability or scheduling approval.
 
+## Directory search — owner-requested audit and design
+
+### DS-00 — Verify content search and specify filename retrieval
+
+- **Why:** Humans remember filenames and agents need cited body passages; current retrieval indexes only body text.
+- **What:** Reproducible native/Python directory diagnostic, accurate format/phrase documentation and proposed CAP-16/FR-16 with staged DS tasks.
+- **Exit check:** Current body/citation/refresh probe and baseline suites pass; filename misses retained, design independently reviewed and published without a runtime capability claim.
+- **HIO tie:** Use-side human recall connected to agent evidence retrieval.
+- **Owner-type:** either.
+- **Status:** done (audit/design only): 27-process directory probe, full baseline suites and independent review recorded; filename implementation unclaimed.
+- **Owner:** cloud Codex orchestrator; central [claim #15](https://github.com/ilamgumaran/search-simpli/issues/15).
+- **Links:** [Audit/tasks](docs/tasks/directory-search.md), [CAP-16](docs/requirements/cap-16-directory-filename-search.md), [UC-006](docs/use-cases/uc-006-directory-filename-search.md).
+
+DS-01 freezes formats/fixtures and obtains final named maintainer approval;
+DS-02–DS-05 implement and verify only afterward. Existing approval, owner-review
+and native-platform requirements remain separate.
+
 ## How to use this board
 
 This board is meant to be **edited by whoever advances it** — a maintainer, a

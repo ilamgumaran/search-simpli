@@ -50,7 +50,7 @@ IDF(t) * tf(t,d) * (k1 + 1)
 tf(t,d) + k1 * (1 - b + b * |d| / avgdl)
 ```
 
-Lexical retrieval is especially strong for exact names, error strings, identifiers, versions, commands, and rare phrases. Its main weakness is vocabulary mismatch: “automobile” does not naturally match “car” without expansion or learned representations.
+Lexical retrieval is especially strong for names, error-string tokens, identifiers, versions, commands, and rare terms. The current engine stores no term positions: quoted queries match constituent tokens without enforcing order or adjacency. Filename terms are not currently included in body postings. Its main weakness is vocabulary mismatch: “automobile” does not naturally match “car” without expansion or learned representations.
 
 Tokenization and normalization are part of the relevance model, not clerical preprocessing. Case folding, Unicode normalization, stemming, code symbol splitting, and stop-word choices all change what can match.
 

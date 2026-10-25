@@ -103,8 +103,9 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-13 | [MCP tool adapter](cap-13-mcp-adapter.md) | UC-004, UC-002, UC-003 | FR-13, NFR-09 | Proposed / future — board I-01 |
 | CAP-14 | [Trust-calibration signal](cap-14-trust-calibration.md) | UC-001, UC-002, UC-003 | FR-14 | Proposed / future — board S-01, E-02 |
 | CAP-15 | [Structure-aware code chunking](cap-15-structure-aware-chunking.md) | UC-002 | FR-15 | Proposed / future |
+| CAP-16 | [Directory filename retrieval](cap-16-directory-filename-search.md) | UC-006, UC-001, UC-002, UC-003 | FR-16 | Proposed · future |
 
-New capabilities append here as `CAP-16`, `CAP-17`, … via the process, each with
+New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
 
 ### Sub-records
@@ -147,6 +148,7 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-13 | MCP adapter binds FR-07 operations, injects trusted principal, forbids caller vectors, parity with direct surface | CAP-13 | Proposed |
 | FR-14 | First-class retrieval-derived support/confidence signal in the evidence response; low-support flagging; never generative | CAP-14 (changes FR-06) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages, deterministic identity, deterministic line-window fallback | CAP-15 (changes FR-02) | Proposed |
+| FR-16 | Opt-in filename/combined lexical search, real passage anchors, explicit origin, isolation, deterministic ranking and versioned refresh/migration | CAP-16 | Proposed |
 
 ## Non-functional requirements (NFR)
 
@@ -219,8 +221,11 @@ section is the point of the whole register.
 | CFT-14 | CAP-11 E-02 / FR-12 ↔ INV-10 | Positive-only metrics cannot describe negatives; unknown judgments could falsely become unsupported queries. | Explicit v3 labels, positive-only denominators, separate negative diagnostics, null reasons and fixed arithmetic acceptance cases. See [E-02](cap-11-e02-negative-evaluation.md); implementation evidence pending. | Resolved (design) |
 | CFT-15 | CAP-11 E-02 ↔ FR-08 / INV-03 | A suite-controlled principal or report identity could leak hidden data. | Trusted context into real prefilter, keyed restricted-context binding, visible corpus identity, redacted v3 default reports and hidden/absent acceptance tests; no implementation/approval claim. | Resolved (design) |
 | CFT-16 | CAP-11 E-02 ↔ INV-07 / E-01A | New suite/report/profile formats could silently change legacy runs or expand sealed real-folder packs. | Preserve default v1/v2 semantics; version new formats; keep E-01A unchanged and v3 unsupported until its own final-amendment approval. | Resolved (scope/design) |
+| CFT-17 | CAP-16 ↔ FR-03/06 / INV-01/02 | Copying filename terms into body chunks distorts scores and may imply answer support. | Separate file-level field, explicit navigation origin and real chunk anchors; opt-in modes preserve default content behavior. See CAP-16; implementation/approval pending. | Resolved (design) |
+| CFT-18 | CAP-16 ↔ INV-03 / FR-08/09 | Filename paths/statistics or stale labels could reveal forbidden sources. | Same trusted prefilter, consistent-label validation, hidden/absent parity and atomic refresh. See CAP-16; implementation/approval pending. | Resolved (design) |
+| CFT-19 | CAP-16 ↔ INV-04/07 | Added filename persistence/contracts could silently change old snapshots. | Versioned channel/manifest/import capability, full separate-directory rebuild, legacy content parity and explicit unavailable errors. Exact format freeze precedes build. | Resolved (design) |
 
-New conflicts append as `CFT-17`, … Record the conflict even if you resolve it
+New conflicts append as `CFT-20`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability

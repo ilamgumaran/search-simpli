@@ -9,6 +9,33 @@ Search Simpli (`search-simpli`) explores one search product with two deliberatel
 
 The important boundary is retrieval versus generation. Search finds and cites evidence. An LLM may synthesize an answer from that evidence, but it must not silently become the source of truth.
 
+## Directory contents and filenames: current support
+
+**Document contents: yes, for supported UTF-8 text/source files. Filename search:
+not yet.** Relative paths are retained in citations and `list_sources`, but terms
+present only in a basename are not indexed. PDF/Office/OCR need external
+extraction; HTML is read as source text. BM25 matches tokens, not exact quoted
+phrases or arbitrary substrings. Semantic modes are separate, explicit options.
+
+The native Zig index already provides dependency-free inverted postings, BM25,
+Unicode analysis, cited passages and incremental refresh. After building in
+`zig/`, run from the repository root:
+
+```sh
+./zig/zig-out/bin/searchd index ./my-notes --out .search/native-index
+./zig/zig-out/bin/searchd evidence .search/native-index "water filter" --top-k 3
+./zig/zig-out/bin/searchd index ./my-notes --out .search/native-index --update
+```
+
+The quotes group the shell argument; they do not request an exact phrase. An LLM
+can inspect the returned stored passages and path/line citations. Indexing is a
+snapshot: run the update command after changing the folder.
+
+[Directory audit and tasks](docs/tasks/directory-search.md) records the tested
+current behavior. [CAP-16](docs/requirements/cap-16-directory-filename-search.md)
+proposes a separate filename field and opt-in combined search; it requires final
+format review and named maintainer approval before runtime implementation.
+
 ## Run the local vertical slice
 
 The prototype has no third-party dependencies and works with Python 3.11+.
