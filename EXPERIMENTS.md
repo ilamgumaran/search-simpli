@@ -575,3 +575,44 @@ relevance claim.
 **Change and result, runtime/artifact `90f5767`:** Publication reopens the same directory as a readable descriptor for each barrier and closes it on exit; the C harness requests POSIX declarations. Zig 173/173, C ABI 16/16, Python 94 pass/4 skip, Dart 57/57 plus clean analysis, and relevance smoke all passed. Restoring the old sync call in a scratch copy with fresh Zig caches failed the real-directory regression (132 pass/41 fail overall). Real-process EIO injected at the final directory barrier produced exit 1 and closed the descriptor while keeping a complete, queryable generation. A deliberately wrong toolchain checksum prevented extraction. Packaged libraries were rebuilt and stamped; macOS stayed byte-identical, Android changed, contract 1.2.0 stayed unchanged.
 
 **Limits and decision:** Local Linux tests and syscall probes establish this compatibility fix. A traced full-suite diagnostic was terminated after sufficient syscall evidence (143); the separate untraced full suite passed (0). Three macOS ctypes tests and the Unicode-table check skipped on this Python host. Linux Dart checks used a fresh default-loader library outside Git. macOS/Android device execution and Flutter integration remain separate. Add the pinned native Linux CI gate alongside dependency-free CI; record actual GitHub execution in [S1-T19](docs/tasks/S1-T19.md), and keep delivery as a reviewable branch/PR. These relevance fixtures remain mechanics evidence.
+
+
+## 2026-10-25 — Directory content search audit and filename gap
+
+**Hypothesis:** The current native Zig/Python index already supplies directory
+content search and LLM citations; filename-only recall may be a separate gap.
+
+**Setup:** Main `9c3265a`, pinned Zig 0.16.0, Linux, Python 3.12.14; disposable
+invented English/Tamil text files, including an ignored hidden file. No private
+folder, network extraction, runtime source change or native-library rebuild.
+
+**Commands (from the repository root, pinned `zig` on PATH):**
+
+```sh
+(cd zig && zig build test -j2 --summary all)
+(cd zig && zig build test-abi -j2 --summary all)
+(cd zig && zig build -j2 --summary all)
+python3 -m unittest discover -s tests -v
+python3 relevance_smoke.py fixtures/relevance-smoke/corpus fixtures/relevance-smoke/judgments.json --mode lexical --top-k 10 --min-ndcg 1 --min-mrr 1 --min-recall 1 --min-success 1
+python3 scripts/diagnose_directory_search.py --searchd zig/zig-out/bin/searchd
+```
+
+**Observed:** 176/176 Zig tests, 16/16 C ABI checks, CLI build and 97 Python
+passes / 4 skips. Three skipped checks require macOS-arm64 shipped libraries;
+one checks a different Python Unicode-table version. The four-query mechanics
+smoke passes all four aggregate metrics at 1.0. Both directory paths return
+actual English/Tamil body passages, hide ignored content and remove/update/rename
+sources on explicit refresh. English and Tamil filename-only queries return zero.
+The reversed quoted query matches a body where that exact phrase is absent.
+
+**Limits and decision:** This is current-behavior evidence, not filename-search
+implementation, exact-phrase support, representative relevance or a scale/device
+benchmark. Correct the documentation. Extend the existing inverted index with
+CAP-16's proposed separate filename field rather than introducing another base
+search engine. Publish diagnostic evidence and DS tasks; require exact format
+review and named maintainer approval before runtime build. Existing recovery
+PR #11 still requires its equipped-Mac integration and is not merged here.
+
+**Artifacts:** [Directory task/evidence record](docs/tasks/directory-search.md),
+[CAP-16](docs/requirements/cap-16-directory-filename-search.md), and
+`scripts/diagnose_directory_search.py`, and the [compact recorded observations](benchmarks/directory-search-current-2026-10-25.json).

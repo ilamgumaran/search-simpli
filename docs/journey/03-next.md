@@ -1,5 +1,14 @@
 # Next
 
+**25 Oct (Codex cloud): directory content search verified; filename design proposed.**
+The owner asked for filename and document contents search for LLM retrieval.
+[Directory audit/tasks](../tasks/directory-search.md) records the native/Python
+probe and baseline suites. [CAP-16](../requirements/cap-16-directory-filename-search.md)
+proposes one file-level lexical field and opt-in combined retrieval; filenames
+remain unsearchable today. Next design slice is DS-01: exact format/fixture
+freeze, independent review and named maintainer approval before DS-02 build.
+No new retrieval runtime or library change; prior approval/platform gates remain.
+
 **22 Oct (verifier, Xcode Mac): S1-T22 verified and merged.** The iOS
 framework binary is 16 KiB page-aligned as built (Apple's linker over the Zig
 static library; `tool/check_native.sh` checks every segment), and

@@ -208,6 +208,7 @@ exists only in the register.
 | FR-13 | MCP adapter binds the FR-07 operations with injected trusted principal, no caller vectors, and semantic (not byte) parity with the direct surface. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Proposed |
 | FR-14 | First-class, retrieval-derived (non-generative) support/confidence signal in the evidence response; low-support flagging; changes FR-06. | [CAP-14](../requirements/cap-14-trust-calibration.md) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages with deterministic line-window fallback; changes FR-02. | [CAP-15](../requirements/cap-15-structure-aware-chunking.md) | Proposed |
+| FR-16 | Opt-in filename/combined lexical search with real passage anchors, explicit origin, pre-rank isolation, deterministic ranking and versioned channel refresh/migration; default content behavior unchanged. | [CAP-16](../requirements/cap-16-directory-filename-search.md) | Proposed |
 | NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Proposed |
 
 Proposed extensions to existing requirements (implemented behavior above remains

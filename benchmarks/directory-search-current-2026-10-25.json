@@ -1,0 +1,426 @@
+{
+  "kind": "current-directory-search-observations-v1",
+  "date": "2026-10-25",
+  "scope": "Invented corpus only; body-only baseline, no production runtime changes. Dirty worktree contains documentation and this diagnostic; binary SHA identifies the independently built baseline CLI.",
+  "status": "passed",
+  "environment": {
+    "git_sha": "9c3265a1ed6db6fc9f3771860b91623954c039c2",
+    "git_dirty": true,
+    "python_version": "Python 3.12.14",
+    "zig_version": "0.16.0",
+    "zig_version_note": "PATH toolchain version only; the searchd binary does not report its build Zig version.",
+    "searchd_path_recorded": "searchd",
+    "searchd_sha256": "73738e85bb191d62da377b517e4b14f7a415cd0d8037299b456265ec55dea774",
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "corpus_root": "$TEMPORARY_DIRECTORY",
+    "searchd_first_line": "searchd — standalone Zig hybrid search engine and indexer"
+  },
+  "command": "python3 scripts/diagnose_directory_search.py --searchd zig/zig-out/bin/searchd",
+  "processes": [
+    {
+      "label": "python-index-initial",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-index-initial",
+      "exit_code": 0
+    },
+    {
+      "label": "python-content-hit",
+      "exit_code": 0
+    },
+    {
+      "label": "python-absent-query",
+      "exit_code": 0
+    },
+    {
+      "label": "python-ignored-hidden-file",
+      "exit_code": 0
+    },
+    {
+      "label": "python-reversed-quoted-terms",
+      "exit_code": 0
+    },
+    {
+      "label": "python-filename-only-budget-name",
+      "exit_code": 0
+    },
+    {
+      "label": "python-tamil-body-content",
+      "exit_code": 0
+    },
+    {
+      "label": "python-tamil-filename-only",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-content-hit",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-absent-query",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-ignored-hidden-file",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-reversed-quoted-terms",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-filename-only-budget-name",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-tamil-body-content",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-tamil-filename-only",
+      "exit_code": 0
+    },
+    {
+      "label": "python-index-incremental-update",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-index-incremental-update",
+      "exit_code": 0
+    },
+    {
+      "label": "python-updated-content",
+      "exit_code": 0
+    },
+    {
+      "label": "python-removed-old-content",
+      "exit_code": 0
+    },
+    {
+      "label": "python-deleted-file-content",
+      "exit_code": 0
+    },
+    {
+      "label": "python-renamed-file-content",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-updated-content",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-removed-old-content",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-deleted-file-content",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-renamed-file-content",
+      "exit_code": 0
+    },
+    {
+      "label": "zig-cli-help",
+      "exit_code": 0
+    }
+  ],
+  "assertions": [
+    "Python and Zig return body content with relative path and line citation.",
+    "Absent terms and content in ignored hidden files return no results.",
+    "Tamil body content returns a cited passage in both engines.",
+    "Incremental updates replace changed content, remove deleted content, and cite a renamed path."
+  ],
+  "searches": {
+    "python_baseline": {
+      "content_hit": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "36a3b15770ad14b2a659",
+            "citation": {
+              "path": "camp-notes.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "Asterion water filter uses a ceramic membrane.\nA second line records the pressure limit.",
+            "score": 0.01639344262295082,
+            "ranking": {
+              "lexical": {
+                "rank": 1,
+                "score": 2.810560308490771
+              },
+              "vector": {
+                "rank": null,
+                "score": null,
+                "mode": "none"
+              }
+            }
+          }
+        ]
+      },
+      "absent_query": {
+        "count": 0,
+        "results": []
+      },
+      "ignored_hidden": {
+        "count": 0,
+        "results": []
+      },
+      "reversed_quoted_terms": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "36a3b15770ad14b2a659",
+            "citation": {
+              "path": "camp-notes.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "Asterion water filter uses a ceramic membrane.\nA second line records the pressure limit.",
+            "score": 0.01639344262295082,
+            "ranking": {
+              "lexical": {
+                "rank": 1,
+                "score": 1.8737068723271806
+              },
+              "vector": {
+                "rank": null,
+                "score": null,
+                "mode": "none"
+              }
+            }
+          }
+        ]
+      },
+      "filename_only_budget_name": {
+        "count": 0,
+        "results": []
+      },
+      "tamil_body_content": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "481ac1bb880086f772d2",
+            "citation": {
+              "path": "தமிழ்_பெயர்மட்டும்.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "இது ஒரு பொதுவான ஆவணம்.\nநீர்வடிகட்டி சுத்தமான நீரை வழங்குகிறது.",
+            "score": 0.01639344262295082,
+            "ranking": {
+              "lexical": {
+                "rank": 1,
+                "score": 1.2190854336689396
+              },
+              "vector": {
+                "rank": null,
+                "score": null,
+                "mode": "none"
+              }
+            }
+          }
+        ]
+      },
+      "tamil_filename_only": {
+        "count": 0,
+        "results": []
+      }
+    },
+    "zig_baseline": {
+      "content_hit": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "36a3b15770ad14b2a659",
+            "citation": {
+              "path": "camp-notes.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "Asterion water filter uses a ceramic membrane.\nA second line records the pressure limit.",
+            "score": 0.016393441706895828
+          }
+        ]
+      },
+      "absent_query": {
+        "count": 0,
+        "results": []
+      },
+      "ignored_hidden": {
+        "count": 0,
+        "results": []
+      },
+      "reversed_quoted_terms": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "36a3b15770ad14b2a659",
+            "citation": {
+              "path": "camp-notes.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "Asterion water filter uses a ceramic membrane.\nA second line records the pressure limit.",
+            "score": 0.016393441706895828
+          }
+        ]
+      },
+      "filename_only_budget_name": {
+        "count": 0,
+        "results": []
+      },
+      "tamil_body_content": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "481ac1bb880086f772d2",
+            "citation": {
+              "path": "தமிழ்_பெயர்மட்டும்.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "இது ஒரு பொதுவான ஆவணம்.\nநீர்வடிகட்டி சுத்தமான நீரை வழங்குகிறது.",
+            "score": 0.016393441706895828
+          }
+        ]
+      },
+      "tamil_filename_only": {
+        "count": 0,
+        "results": []
+      }
+    },
+    "python_after_update": {
+      "changed_content": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "6651d7c49ec9980ff1b5",
+            "citation": {
+              "path": "camp-notes.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "Asterion water filter now uses a graphene membrane.\nA second line records the pressure limit.",
+            "score": 0.01639344262295082,
+            "ranking": {
+              "lexical": {
+                "rank": 1,
+                "score": 2.265279943698684
+              },
+              "vector": {
+                "rank": null,
+                "score": null,
+                "mode": "none"
+              }
+            }
+          }
+        ]
+      },
+      "superseded_content": {
+        "count": 0,
+        "results": []
+      },
+      "deleted_file_content": {
+        "count": 0,
+        "results": []
+      },
+      "renamed_file_content": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "1cf2e8102271d379bb28",
+            "citation": {
+              "path": "தமிழ்_renamed.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "இது ஒரு பொதுவான ஆவணம்.\nநீர்வடிகட்டி சுத்தமான நீரை வழங்குகிறது.",
+            "score": 0.01639344262295082,
+            "ranking": {
+              "lexical": {
+                "rank": 1,
+                "score": 1.0126973514850315
+              },
+              "vector": {
+                "rank": null,
+                "score": null,
+                "mode": "none"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "zig_after_update": {
+      "changed_content": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "6651d7c49ec9980ff1b5",
+            "citation": {
+              "path": "camp-notes.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "Asterion water filter now uses a graphene membrane.\nA second line records the pressure limit.",
+            "score": 0.016393441706895828
+          }
+        ]
+      },
+      "superseded_content": {
+        "count": 0,
+        "results": []
+      },
+      "deleted_file_content": {
+        "count": 0,
+        "results": []
+      },
+      "renamed_file_content": {
+        "count": 1,
+        "results": [
+          {
+            "chunk_id": "1cf2e8102271d379bb28",
+            "citation": {
+              "path": "தமிழ்_renamed.md",
+              "start_line": 1,
+              "end_line": 2
+            },
+            "content": "இது ஒரு பொதுவான ஆவணம்.\nநீர்வடிகட்டி சுத்தமான நீரை வழங்குகிறது.",
+            "score": 0.016393441706895828
+          }
+        ]
+      }
+    }
+  },
+  "initial_fixtures": {
+    ".hidden/secrets.md": {
+      "sha256": "64b18e954b655de45323ac9576d3b62a25e6c800830a5d60e9f99eed2ec7acb6",
+      "utf8": "Xylophonic hiddenneedle should never be indexed.\n"
+    },
+    "Annual_Budget_2026.md": {
+      "sha256": "0f54952b38688208734be97c876e7dd6cc08982f6bb36ad0abf4ff4547b2edd0",
+      "utf8": "The cobalt engine stores energy in a flywheel.\n"
+    },
+    "camp-notes.md": {
+      "sha256": "eb8499383b3e0fc6155e0c9818173ca7643057ec34709594444e567df6f6833c",
+      "utf8": "Asterion water filter uses a ceramic membrane.\nA second line records the pressure limit.\n"
+    },
+    "தமிழ்_உள்ளடக்கம்.md": {
+      "sha256": "4aef25dc22a726bf3516caa0117d9f7f901f795f553df8a62075e40fe659d7fe",
+      "utf8": "மழைநீர் சேகரிப்பு நல்லது.\n"
+    },
+    "தமிழ்_பெயர்மட்டும்.md": {
+      "sha256": "c8ca33a36192a86a9ae8ec0c3b29bb8c2928fad7bc886d987bb683cad94e1e20",
+      "utf8": "இது ஒரு பொதுவான ஆவணம்.\nநீர்வடிகட்டி சுத்தமான நீரை வழங்குகிறது.\n"
+    }
+  },
+  "limitations": [
+    "Filename/quoted-term counts are observations, not assertions freezing missing capabilities.",
+    "Not a representative relevance, performance, phrase, PDF/Office or device benchmark.",
+    "No runtime code, contracts or shipped libraries changed."
+  ]
+}
