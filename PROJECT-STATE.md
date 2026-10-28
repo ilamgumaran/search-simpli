@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-10-25
+Last updated: 2026-10-28
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -9,30 +9,34 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
-## Directory search audit and filename design (2026-10-25)
+## Filename/content search — source implemented, package rollout pending
 
-The current Python/native Zig engines search supported UTF-8 document **body
-content** and return stored paths/line citations. Filenames are metadata, not
-indexed search terms. PDF/Office/OCR require external extraction; HTML is read as
-source text. Quoted queries do not enforce phrase order or adjacency.
+The owner authorized CAP-16 implementation after PR #16, then requested separate
+File name and Content match sections. On `feature/directory-filename-search` / [draft PR #18](https://github.com/ilamgumaran/search-simpli/pull/18),
+source checkpoint `39cd19c` implements opt-in filename indexing, filename/both
+lexical retrieval, real body anchors, per-source matching terms/citations and
+human CLI cards. Native CLI/RPC/ABI, Python tool/gateway and Dart contracts are
+wired. Existing content-only JSON remains compatible. See the
+[implementation handoff](docs/tasks/directory-filename-implementation.md),
+[CAP-16](docs/requirements/cap-16-directory-filename-search.md) and
+[frozen format](docs/filename-field-format-v1.md).
 
-[CAP-16 / FR-16](docs/requirements/cap-16-directory-filename-search.md),
-[UC-006](docs/use-cases/uc-006-directory-filename-search.md) and the
-[DS-00–DS-05 task split](docs/tasks/directory-search.md) propose an independent
-file-level lexical field over the existing engine. Current defaults, body
-postings, formats, contracts and shipped libraries are unchanged. The initial
-SQLite suggestion is superseded by the actual native-index audit. The design
-claim is [#15](https://github.com/ilamgumaran/search-simpli/issues/15).
+Native/source gates: Zig 192/192, ABI 16/16, full Dart 68/68 against a fresh
+Linux 1.3.0 library. Python runs 126 tests: 121 pass, 4 platform/version skips,
+**1 failure** at the unchanged packaged-library freshness test (exit 1).
+The bundled libraries/source stamp predate the changed source. Static Dart
+analysis is also blocked by its read-only UUID cache; full compilation/tests ran.
+[Exact validation](benchmarks/filename-field-validation-2026-10-28.json) and
+[1,000-file synthetic cost measurements](benchmarks/filename-field-cost-2026-10-28.json)
+are saved. No real-folder relevance or device-performance acceptance is claimed.
 
-Baseline main `9c3265a` passes 176 Zig tests, 16 ABI checks, 97 Python tests
-with 4 skips, native CLI build and the 4-query relevance mechanics gate. The
-repeatable invented-directory diagnostic verifies content/citations and explicit
-refresh, while recording filename misses and phrase limitations. No real-folder
-relevance, device performance or filename implementation is claimed.
-DS-01 exact format/fixture freeze and final named maintainer step-6b approval
-are required before the new runtime capability is built. Existing SQ-02,
-E-01A/CAP-14, S1-T9 owner review and PR #11 equipped-Mac integration retain their
-separate gates; none is completed by this design/probe.
+Source/Dart contract is 1.3.0; packaged macOS/Android/iOS artifacts are still the
+previous build. Keep the PR draft and unmerged until an equipped Mac rebuilds
+all artifacts including the page-aligned iOS framework, regenerates the source
+stamp through the actual build, and passes full verification. Do not edit the
+stamp to hide this failure. The handoff gives exact continuation steps.
+Existing SQ-02, E-01A/CAP-14, S1-T9 owner review and recovery PR #11 retain their
+separate gates and are not completed by this implementation.
 
 ## Standalone platform plan (2026-09-13)
 ADR 0002 and `docs/tasks/S1-T*.md`: C ABI + libraries, native indexing with a Unicode analyzer, standalone CLI, Dart FFI binding, incremental folder indexing. The family app (`simpli-helper`, M12-T0) then replaces its Dart port with the core.

@@ -59,11 +59,30 @@ and/or filename), `basename`, `ranking.filename` (rank/score) beside body lexica
 rank/score. Always return real body chunk id/citation/content. Add an answer-policy
 boolean `filename_matches_are_navigation: true`. Do not emit new keys in legacy
 responses. New-mode counts/stats/warnings may not expose hidden corpus data.
+`path_prefix` retains the existing literal string-prefix semantics in every
+surface, including read/list; use `public/` to scope a directory rather than
+`public` (which also matches `public-secret/`). Labels remain the authorization
+boundary and are applied before candidate statistics.
 
 Use CAP-16's exact file BM25, scoped body BM25 for `both`, per-file collapse,
 candidate truncation and equal RRF k=60; bytewise path/chunk ties. No implicit
 embedding, substring, phrase, fuzzy or parent-directory search. Unsupported
 empty/binary/hidden files remain outside passage retrieval.
+
+## Match sections (2026-10-28 owner presentation request)
+
+New-mode results additionally carry `match_sections.filename` and `.content`.
+Each has `label`, `matched`, `matched_terms`, `text`, and `citation`. Terms are
+unique in query order, normalized with the relevant analyzer and intersected with
+the displayed source. Filename terms use the indexed stem, not the suffix;
+its citation is `{path, field: "filename"}`. Content citation is
+`{path, field: "content", start_line, end_line}` for the actual stored passage.
+Both sections are present even if one has no matches. `matched_in` remains the
+ranked-channel explanation and can differ after candidate truncation or a
+filename-only request; section flags describe actual text matches. Do not infer
+answer support from a filename. Human `query` uses these sections; `--json`,
+`evidence` and tool responses retain machine-readable fields. This adds no new
+on-disk format or reindex requirement for already enabled filename snapshots.
 
 ## Ownership APIs and tests
 

@@ -1,0 +1,42 @@
+{
+  "source_commit": "39cd19c",
+  "date": "2026-10-28",
+  "scope": "Synthetic Linux source/API diagnostic; packaged native rollout incomplete",
+  "zig": {
+    "tests_passed": 192,
+    "exit_code": 0
+  },
+  "abi": {
+    "checks_passed": 16,
+    "exit_code": 0
+  },
+  "python": {
+    "tests_run": 126,
+    "passed": 121,
+    "failed": 1,
+    "skipped": 4,
+    "exit_code": 1,
+    "failure": "test_prebuilt_libraries_match_zig_source: bundled native SOURCE-SHA256 predates implementation; freshness gate unchanged",
+    "skips": "Three macOS-arm64 shipped-library checks and one Python Unicode-table-version check"
+  },
+  "dart": {
+    "tests_passed": 68,
+    "exit_code": 0,
+    "native_library_sha256": "01ed3641bfb6c84c5530850ba172b1dd2e43804d7b194938c6186447c37f5c91",
+    "library_contract_version": "1.3.0",
+    "analysis": "Blocked: analysis_server requires <user-home>/.dartServer on read-only filesystem even with explicit writable --cache; test compilation and full native suite succeeded"
+  },
+  "packaging": {
+    "source_digest": "dbe57004c93c6916255bc031f165c1335bd5c5eee046dfcbce8cf56009c4d7a0",
+    "bundled_source_digest": "c4e153af932dec77ef8282f0ee788395d9b67a5b9292de999a4422ecf943cbc9",
+    "source_contract_version": "1.3.0",
+    "bundled_rebuild_complete": false,
+    "blocker": "Equipped Xcode Mac must rebuild all packaged artifacts including page-aligned iOS framework and regenerate source stamp; no fake digest or skipped gate"
+  },
+  "review": "Independent Sol 6 review and real CLI/JSON-RPC acceptance tests; no unresolved source finding. User requested two match sections; actual-source matched terms and field-specific citations verified.",
+  "limits": [
+    "No representative real-folder relevance claim",
+    "No iOS/Android/macOS device execution",
+    "Full Python/CI gate remains failed until real bundled native rebuild"
+  ]
+}

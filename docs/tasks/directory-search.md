@@ -1,14 +1,17 @@
 # Directory search audit and filename retrieval stages
 
 Date: 2026-10-25 · [claim #15](https://github.com/ilamgumaran/search-simpli/issues/15)
-Branch: `improve/local-directory-search` · Baseline: main `9c3265a`.
+Audit branch: `improve/local-directory-search` · Baseline: main `9c3265a`.
+Current source branch: `feature/directory-filename-search`.
 
 The owner asked for content and filename search to help an LLM inspect local
-documents. Existing content indexing is implemented; filename retrieval is
-[CAP-16 / FR-16](../requirements/cap-16-directory-filename-search.md), proposed.
+documents. Filename/content retrieval is now a diagnostic source implementation
+of [CAP-16 / FR-16](../requirements/cap-16-directory-filename-search.md). The
+[current implementation handoff](directory-filename-implementation.md) supersedes
+the audit-era status below and records the outstanding bundled-native gate.
 This task does not finish unrelated recovery PR #11, SQ-02 or iOS app deployment.
 
-## Current behavior, confirmed in source
+## Historical audit behavior at `9c3265a`
 
 | Area | Current behavior |
 | --- | --- |
@@ -24,7 +27,7 @@ Code anchors: `zig/src/indexer.zig` tokenizes `document.text` / `span.text`;
 separate. The existing engine already supplies an inverted index and BM25:
 extend that design rather than adding a second mandatory database.
 
-## Delivery split
+## Original delivery split and current outcome
 
 | Stage | Owner/model | Concrete output and exit gate |
 | --- | --- | --- |
@@ -35,6 +38,12 @@ extend that design rather than adding a second mandatory database.
 | DS-04 clients/builds | Execution + equipped Mac verifier | Update tool/gateway/Dart contracts and examples, rebuild all shipped libraries from integrated source including iOS, verify source stamp and platform checks. Preserve explicit unsupported combinations. |
 | DS-05 acceptance | Sol 6 verification; Sol 6.1 review | Run full gates, measured 1,000-file cost comparison, independent source review, platform limitations and rollback. Only merge when ready; advance to Diagnostic, not real-folder Validated. |
 
+Current outcome: DS-00/DS-01 audit, authorization, format and fixture freeze are
+complete. DS-02/DS-03 are implemented in source; DS-04 client source and fresh
+Linux ABI/Dart tests pass, while packaged-native rebuild remains pending.
+DS-05 has recorded source verification and cost evidence, but the full Python
+freshness gate remains failed and platform release acceptance is incomplete.
+
 Dependencies are sequential at the persistence/contract seam; do not have agents
 edit indexer/query contracts concurrently before DS-01. No speculative "best"
 algorithm claim: retain BM25 and current inverted postings; RRF is a proposed
@@ -43,11 +52,13 @@ embeddings, phrase positions and background watching require their own evidence.
 
 ## Resume and rollback
 
-Fetch this branch, read CAP-16 and the requirements register, then review actual
-evidence below. Content search is usable today. Do not advertise filename search
-as shipped. DS-01 is the next design task; it can proceed before requesting final
-maintainer approval. Later builds use a separate snapshot directory so the prior
-binary and body-only snapshot remain recoverable together.
+Fetch `feature/directory-filename-search` and read the
+[implementation handoff](directory-filename-implementation.md). Filename and
+combined queries work on opt-in source-built snapshots. New-mode responses have
+File name/Content sections; legacy content JSON stays unchanged. Full settings
+migration uses a separate output directory, preserving the prior binary/snapshot.
+The next release step is the actual packaged-library rebuild and verification on
+an equipped Mac; do not call that complete from Linux source tests.
 
 ## DS-00 evidence
 
@@ -89,4 +100,5 @@ that existing Zig body BM25 uses global statistics; CAP-16 now explicitly
 requires scoped statistics for its new combined mode, leaving legacy content
 unchanged. This is a design correction, not a runtime fix or a claim that current
 content scores are hidden/absent invariant. Independent review supplies no
-maintainer approval; DS-01 and step 6b are still pending.
+maintainer approval. That audit-time approval was pending; the later owner
+implementation request and DS-01 freeze are recorded in the current handoff.

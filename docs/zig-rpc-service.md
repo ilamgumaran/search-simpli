@@ -72,3 +72,14 @@ The process allocates section bytes and engine workspaces once from manifest-dec
 - structured logs, metrics, and tracing;
 - concurrent read workers with snapshot-safe workspaces;
 - MCP or HTTP framing if stdin/stdout is not the chosen deployment surface.
+
+
+## Opt-in filename field (source contract 1.3.0)
+
+`search_knowledge.params.search_field` accepts `content` (default), `filename`
+or `both`. Filename modes require explicit lexical retrieval and a snapshot
+built with `--filename-index`; body-only snapshots return rebuild guidance.
+New results include the two `match_sections` with actual terms and separate
+filename/content citations. Default content responses retain their original
+shape. Source/native package status and examples are in the
+[implementation handoff](tasks/directory-filename-implementation.md).

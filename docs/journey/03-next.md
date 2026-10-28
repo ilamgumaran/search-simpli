@@ -1,5 +1,15 @@
 # Next
 
+**28 Oct (Codex cloud): filename/content source and sectioned results implemented.**
+The owner explicitly authorized implementation after the CAP-16 design and asked
+for separate File name/Content match citations. [Implementation handoff](../tasks/directory-filename-implementation.md)
+records commands, two-section responses, 192 Zig / 16 ABI / 68 Dart passes,
+Python's preserved bundled-native freshness failure and synthetic cost data.
+The branch is `feature/directory-filename-search`, source contract 1.3.0. Next:
+an equipped Mac rebuilds all committed native artifacts including iOS, regenerates
+the genuine source stamp and passes the full gate. Keep the PR draft until then.
+Earlier entries below describe their historical boundaries.
+
 **25 Oct (Codex cloud): directory content search verified; filename design proposed.**
 The owner asked for filename and document contents search for LLM retrieval.
 [Directory audit/tasks](../tasks/directory-search.md) records the native/Python

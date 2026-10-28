@@ -81,3 +81,19 @@ The method semantics are transport-independent and now have both Python and Zig 
 For the raw Zig service, vector/hybrid calls contain the internal `query_vector`. The LLM-facing `zig_gateway.py` deliberately removes that concern from callers: it accepts the same text parameters as the Python tool, verifies the exact snapshot model at startup, constructs the vector, and forwards the internal request. Caller-supplied vectors are rejected at this trust boundary. See [Query-embedding gateway](query-embedding-gateway.md).
 
 The same boundary owns authorization. Raw Zig search/read/list requests accept bounded internal `principal_labels`; the LLM-facing gateway rejects that field and injects labels derived from trusted configuration. Required document labels filter both ranking channels before component ranks and are rechecked by list/read. Denied and unknown chunk reads share one not-found response. See [Pre-retrieval authorization](authorization.md).
+
+
+## Filename/content views (source contract 1.3.0)
+
+With an opt-in filename snapshot, `search_knowledge` accepts
+`search_field: "filename"` or `"both"` alongside explicit
+`retrieval_mode: "lexical"`. Omission retains legacy content behavior. Results
+add `match_sections.filename` and `.content`, each containing label, matched
+boolean, actual analyzed matched terms, displayed text and a field-specific
+citation. Filename citations have path/field only; body citations carry actual
+line bounds. Both sections remain present for unmatched context. `matched_in`
+remains the ranking-channel explanation, so it need not equal the set of
+sections containing matching terms after candidate truncation. A filename match
+is navigation, not answer support. Check `filename_policy_id` in status for
+availability. The existing trusted principal and caller-vector boundaries apply.
+See the [handoff and package status](tasks/directory-filename-implementation.md).

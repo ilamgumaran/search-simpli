@@ -32,9 +32,14 @@ plan grants no pending capability or scheduling approval.
 - **Owner:** cloud Codex orchestrator; central [claim #15](https://github.com/ilamgumaran/search-simpli/issues/15).
 - **Links:** [Audit/tasks](docs/tasks/directory-search.md), [CAP-16](docs/requirements/cap-16-directory-filename-search.md), [UC-006](docs/use-cases/uc-006-directory-filename-search.md).
 
-DS-01 freezes formats/fixtures and obtains final named maintainer approval;
-DS-02–DS-05 implement and verify only afterward. Existing approval, owner-review
-and native-platform requirements remain separate.
+DS-01 format/fixture freeze and explicit owner implementation authorization are
+recorded. DS-02/DS-03 and client source are implemented on
+`feature/directory-filename-search`; source verification and cost data are in the
+[implementation handoff](docs/tasks/directory-filename-implementation.md).
+DS-04/DS-05 remain incomplete for packaged release: an equipped Mac must rebuild
+all committed native artifacts and pass the unchanged freshness/full gate.
+Implementation owner: cloud Codex orchestrator, [claim #17](https://github.com/ilamgumaran/search-simpli/issues/17).
+Existing unrelated approval and owner-review requirements remain separate.
 
 ## How to use this board
 

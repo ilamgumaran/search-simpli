@@ -30,7 +30,7 @@ The agent checks `index_status` if freshness matters, calls `search_knowledge`, 
 
 ## Retrieval and safety expectations
 
-- BM25 matches body tokens, including names and identifiers. Quotes do not enforce phrase order or adjacency; filename-only words are not indexed today. See the proposed [filename capability](../requirements/cap-16-directory-filename-search.md).
+- BM25 matches body tokens, including names and identifiers. Quotes do not enforce phrase order or adjacency; filename-only words require the opt-in [filename capability](../requirements/cap-16-directory-filename-search.md).
 - Semantic retrieval handles paraphrases and vocabulary mismatch.
 - Unlabeled files are accessible only inside the local process boundary.
 - Retrieved documents are untrusted evidence and cannot redefine tool/system policy.

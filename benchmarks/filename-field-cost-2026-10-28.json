@@ -1,0 +1,103 @@
+{
+  "kind": "filename-field-cost-v1",
+  "files": 1000,
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+  "binaries": {
+    "baseline": "faa563c21d6635e74cf16a600e572e5493ba601c345b0945e2e63b93dbbf6b16",
+    "candidate": "9d5cadce6873868ce060656747782c654a3a1f0682d618872bc7d031e5fc85f7"
+  },
+  "builds": [
+    {
+      "binary": "baseline",
+      "repetition": 0,
+      "wall_ms": 66.58778200289817,
+      "snapshot_bytes": 334494,
+      "exit_code": 0
+    },
+    {
+      "binary": "baseline",
+      "repetition": 1,
+      "wall_ms": 69.3282909996924,
+      "snapshot_bytes": 334494,
+      "exit_code": 0
+    },
+    {
+      "binary": "baseline",
+      "repetition": 2,
+      "wall_ms": 67.93489199844771,
+      "snapshot_bytes": 334494,
+      "exit_code": 0
+    },
+    {
+      "binary": "candidate",
+      "repetition": 0,
+      "wall_ms": 84.45073300026706,
+      "snapshot_bytes": 467744,
+      "exit_code": 0
+    },
+    {
+      "binary": "candidate",
+      "repetition": 1,
+      "wall_ms": 83.04661800139002,
+      "snapshot_bytes": 467744,
+      "exit_code": 0
+    },
+    {
+      "binary": "candidate",
+      "repetition": 2,
+      "wall_ms": 83.43162500023027,
+      "snapshot_bytes": 467744,
+      "exit_code": 0
+    }
+  ],
+  "queries": [
+    {
+      "binary": "baseline",
+      "field": "content",
+      "startup_to_status_ms": 11.896936997800367,
+      "queries": 30,
+      "p50_ms": 0.0929890011320822,
+      "p95_ms": 0.20871299784630537,
+      "process_peak_rss_kib": 8832,
+      "errors": 0
+    },
+    {
+      "binary": "candidate",
+      "field": "content",
+      "startup_to_status_ms": 31.78038599799038,
+      "queries": 30,
+      "p50_ms": 0.10476699753780849,
+      "p95_ms": 0.27178800155525096,
+      "process_peak_rss_kib": 10892,
+      "errors": 0
+    },
+    {
+      "binary": "candidate",
+      "field": "filename",
+      "startup_to_status_ms": 28.250784998817835,
+      "queries": 30,
+      "p50_ms": 71.7607879996649,
+      "p95_ms": 76.21548599854577,
+      "process_peak_rss_kib": 11020,
+      "errors": 0
+    },
+    {
+      "binary": "candidate",
+      "field": "both",
+      "startup_to_status_ms": 29.304659998160787,
+      "queries": 30,
+      "p50_ms": 74.80571199994301,
+      "p95_ms": 92.22908999799984,
+      "process_peak_rss_kib": 11052,
+      "errors": 0
+    }
+  ],
+  "method": "Three fresh-output builds per mode; existing OS page cache is not cleared. Startup is process launch to first status reply; steady timings are 30 sequential real RPC round trips including serialization. Linux VmHWM is KiB, otherwise null. No device latency target or representative relevance claim.",
+  "corpus_sha256": "8170eb85b385ba784532e0df94bbf167916028797334980f97c5772f89b80274",
+  "status": "passed",
+  "source_commit": "39cd19c",
+  "baseline_source_commit": "4b12ce7",
+  "zig_version": "0.16.0",
+  "optimization": "Debug (both binaries)",
+  "date": "2026-10-28"
+}
