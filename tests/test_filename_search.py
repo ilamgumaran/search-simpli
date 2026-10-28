@@ -164,6 +164,74 @@ class FilenameSearchTests(unittest.TestCase):
         self.assertGreater(hit["citation"]["start_line"], 1)
         self.assertEqual(hit["content"], chunks[hit["chunk_id"]]["text"])
 
+    def test_match_sections_report_filename_and_passage_evidence_with_field_citations(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "CAFÉ-guide.md").write_text("A quiet body passage.", encoding="utf-8")
+            (root / "passage.md").write_text("The needle is in this passage.", encoding="utf-8")
+            index = build_index(root, filename_index=True)
+            filename_hit = search(
+                index, "café", retrieval_mode="lexical", search_field="filename"
+            )[0]
+            content_hit = search(
+                index, "needle", retrieval_mode="lexical", search_field="both"
+            )[0]
+
+        filename = filename_hit["match_sections"]["filename"]
+        content = filename_hit["match_sections"]["content"]
+        self.assertEqual(filename, {
+            "label": "File name", "matched": True, "matched_terms": ["café"],
+            "text": "CAFÉ-guide.md", "citation": {"path": "CAFÉ-guide.md", "field": "filename"},
+        })
+        self.assertFalse(content["matched"])
+        self.assertEqual(content["matched_terms"], [])
+        self.assertEqual(content["citation"], {
+            "path": "CAFÉ-guide.md", "field": "content", "start_line": 1, "end_line": 1,
+        })
+        passage = content_hit["match_sections"]["content"]
+        self.assertTrue(passage["matched"])
+        self.assertEqual(passage["matched_terms"], ["needle"])
+        self.assertEqual(passage["text"], "The needle is in this passage.")
+        self.assertEqual(passage["citation"]["field"], "content")
+        self.assertEqual(passage["citation"]["path"], "passage.md")
+
+    def test_match_sections_report_real_terms_even_when_a_ranking_channel_is_cut(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "target.md").write_text("common", encoding="utf-8")
+            (root / "z-other.md").write_text("common common common common", encoding="utf-8")
+            index = build_index(root, filename_index=True)
+            hit = search(
+                index, "target common", retrieval_mode="lexical", search_field="both", top_k=1, candidate_k=1
+            )[0]
+
+        self.assertEqual(hit["citation"]["path"], "target.md")
+        self.assertEqual(hit["matched_in"], ["filename"])
+        self.assertTrue(hit["match_sections"]["content"]["matched"])
+        self.assertEqual(hit["match_sections"]["content"]["matched_terms"], ["common"])
+        self.assertTrue(hit["match_sections"]["filename"]["matched"])
+        self.assertEqual(hit["match_sections"]["filename"]["matched_terms"], ["target"])
+
+    def test_filename_cli_renders_sections_as_matching_or_context(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "corpus"
+            root.mkdir()
+            (root / "manual.md").write_text("A calm body passage.", encoding="utf-8")
+            output = Path(temporary) / "index.json"
+            save_index(build_index(root, filename_index=True), output)
+            rendered = io.StringIO()
+            with contextlib.redirect_stdout(rendered):
+                status = cli_main([
+                    "query", str(output), "manual", "--mode", "lexical", "--search-field", "filename",
+                ])
+
+        self.assertEqual(status, 0)
+        self.assertIn("File name (matching)", rendered.getvalue())
+        self.assertIn("Content (context)", rendered.getvalue())
+        self.assertIn("manual", rendered.getvalue())
+        self.assertIn("A calm body passage.", rendered.getvalue())
+        self.assertNotIn("score=", rendered.getvalue())
+
     def test_filename_only_score_is_file_bm25(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

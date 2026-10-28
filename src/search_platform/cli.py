@@ -125,6 +125,20 @@ def main(argv: list[str] | None = None) -> int:
         print("No evidence found.")
         return 0
     for position, result in enumerate(results, start=1):
+        if args.search_field in {"filename", "both"}:
+            print(f"{position}. {result['basename']}")
+            for key in ("filename", "content"):
+                section = result["match_sections"][key]
+                citation = section["citation"]
+                location = citation["path"]
+                if citation["field"] == "content":
+                    location += f":{citation['start_line']}-{citation['end_line']}"
+                status = "matching" if section["matched"] else "context"
+                print(f"  {section['label']} ({status}) — {location}")
+                print(f"    matched terms: {', '.join(section['matched_terms']) or 'none'}")
+                print(f"    {section['text']}")
+            print()
+            continue
         citation = result["citation"]
         print(f"{position}. {citation['path']}:{citation['start_line']}-{citation['end_line']} score={result['score']:.6f}")
         print(result["content"])

@@ -363,7 +363,7 @@ fn queryImpl(
         const hits = try h.engine.queryFields(arena.allocator(), query_text, search_field, search_options);
         var out: std.Io.Writer.Allocating = .init(allocator);
         errdefer out.deinit();
-        try filename_response.writeAbiEvidence(&out.writer, h.engine, query_text, search_field, search_options, hits);
+        try filename_response.writeAbiEvidence(&out.writer, arena.allocator(), h.engine, query_text, search_field, search_options, hits);
         const owned = try out.toOwnedSliceSentinel(0);
         return owned.ptr;
     }

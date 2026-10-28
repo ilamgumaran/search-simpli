@@ -160,6 +160,115 @@
           "basename": {
             "type": "string",
             "minLength": 1
+          },
+          "match_sections": {
+            "type": "object",
+            "required": [
+              "filename",
+              "content"
+            ],
+            "properties": {
+              "filename": {
+                "type": "object",
+                "required": [
+                  "label",
+                  "matched",
+                  "matched_terms",
+                  "text",
+                  "citation"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "File name"
+                  },
+                  "matched": {
+                    "type": "boolean"
+                  },
+                  "matched_terms": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "uniqueItems": true
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "citation": {
+                    "type": "object",
+                    "required": [
+                      "path",
+                      "field"
+                    ],
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "field": {
+                        "const": "filename"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "content": {
+                "type": "object",
+                "required": [
+                  "label",
+                  "matched",
+                  "matched_terms",
+                  "text",
+                  "citation"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "Content"
+                  },
+                  "matched": {
+                    "type": "boolean"
+                  },
+                  "matched_terms": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "uniqueItems": true
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "citation": {
+                    "type": "object",
+                    "required": [
+                      "path",
+                      "field",
+                      "start_line",
+                      "end_line"
+                    ],
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "field": {
+                        "const": "content"
+                      },
+                      "start_line": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "end_line": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              }
+            },
+            "additionalProperties": false,
+            "description": "Two source-specific views in filename/both results. matched and matched_terms describe analyzed terms actually in each displayed source, independently of which candidate channel contributed to ranking."
           }
         }
       }

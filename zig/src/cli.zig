@@ -560,7 +560,7 @@ pub fn runQuery(
     if (options.search_field != .content) {
         const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
         const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);
-        try filename_response.writeEvidence(output, engine, query_text, options.search_field, query_options, hits);
+        try filename_response.writeEvidence(output, arena, engine, query_text, options.search_field, query_options, hits, !options.json);
         try output.writeByte('\n');
         return;
     }
@@ -620,7 +620,7 @@ pub fn runEvidence(
     if (options.search_field != .content) {
         const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
         const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);
-        try filename_response.writeEvidence(output, engine, query_text, options.search_field, query_options, hits);
+        try filename_response.writeEvidence(output, arena, engine, query_text, options.search_field, query_options, hits, false);
         try output.writeByte('\n');
         return;
     }

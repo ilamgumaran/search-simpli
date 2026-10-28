@@ -156,6 +156,48 @@ class FilenameCliTests(unittest.TestCase):
                     self.good_cli("evidence", enabled, query),
                 )
 
+    def test_match_sections_are_actual_source_matches_in_cli_and_rpc(self):
+        docs = self.tmp / "docs"
+        docs.mkdir()
+        (docs / "CAFÉ_Report.md").write_text("Budget forecast.\n", encoding="utf-8")
+        snapshot = self.tmp / "snapshot"
+        self.good_cli("index", docs, "--out", snapshot, "--filename-index")
+        query = "REPORT BUDGET cafe\u0301 budget report md absent"
+        cli = json.loads(self.good_cli("evidence", snapshot, query, "--search-field", "both"))
+        rpc_request = {"jsonrpc": "2.0", "id": 7, "method": "search_knowledge", "params": {
+            "query": query, "retrieval_mode": "lexical", "search_field": "both",
+        }}
+        rpc = self.rpc(snapshot, [rpc_request])[0]["result"]
+        for response in (cli, rpc):
+            self.assertEqual(len(response["results"]), 1)
+            hit = response["results"][0]
+            self.assertEqual(hit["matched_in"], ["content", "filename"])
+            self.assertEqual(hit["citation"], {
+                "path": "CAFÉ_Report.md", "start_line": 1, "end_line": 1,
+            })
+            self.assertEqual(hit["match_sections"], {
+                "filename": {
+                    "label": "File name", "matched": True, "matched_terms": ["report", "café"],
+                    "text": "CAFÉ_Report.md",
+                    "citation": {"path": "CAFÉ_Report.md", "field": "filename"},
+                },
+                "content": {
+                    "label": "Content", "matched": True, "matched_terms": ["budget"],
+                    "text": "Budget forecast.",
+                    "citation": {"path": "CAFÉ_Report.md", "field": "content", "start_line": 1, "end_line": 1},
+                },
+            })
+        filename_only = json.loads(self.good_cli(
+            "evidence", snapshot, "café", "--search-field", "filename"
+        ))["results"][0]
+        self.assertEqual(filename_only["match_sections"]["content"]["matched_terms"], [])
+        self.assertFalse(filename_only["match_sections"]["content"]["matched"])
+        content_only = json.loads(self.good_cli(
+            "evidence", snapshot, "budget", "--search-field", "both"
+        ))["results"][0]
+        self.assertEqual(content_only["match_sections"]["filename"]["matched_terms"], [])
+        self.assertFalse(content_only["match_sections"]["filename"]["matched"])
+
     def test_unavailable_field_and_rpc_mode_validation(self):
         body_only = self.index_fixtures(filename_index=False)
         enabled = self.index_fixtures(filename_index=True)
@@ -182,6 +224,32 @@ class FilenameCliTests(unittest.TestCase):
         self.assertEqual(old[3]["error"]["code"], -32004)
         self.assertIn("--filename-index", old[3]["error"]["message"])
         self.assertEqual(new[3]["result"]["results"][0]["matched_in"], ["filename"])
+
+    def test_scoped_filename_prefix_matches_across_python_and_native(self):
+        docs = self.tmp / "docs"
+        (docs / "public").mkdir(parents=True)
+        (docs / "public-secret").mkdir()
+        (docs / "public" / "Needle_A.md").write_text("visible passage\n", encoding="utf-8")
+        (docs / "public-secret" / "Needle_B.md").write_text("other passage\n", encoding="utf-8")
+        native = self.tmp / "native"
+        python_index = self.tmp / "python.json"
+        self.good_cli("index", docs, "--out", native, "--filename-index")
+        self.good_python("search.py", "index", docs, "--filename-index", "--out", python_index)
+        for prefix, expected in (
+            ("public", ["public-secret/Needle_B.md", "public/Needle_A.md"]),
+            ("public/", ["public/Needle_A.md"]),
+        ):
+            with self.subTest(prefix=prefix):
+                request = {"jsonrpc": "2.0", "id": 1, "method": "search_knowledge", "params": {
+                    "query": "needle", "retrieval_mode": "lexical", "search_field": "filename", "path_prefix": prefix,
+                }}
+                native_result = self.rpc(native, [request])[0]["result"]
+                python_result = json.loads(self.good_python(
+                    "search.py", "context", python_index, "needle", "--mode", "lexical",
+                    "--search-field", "filename", "--path-prefix", prefix,
+                ))
+                self.assertEqual([hit["citation"]["path"] for hit in native_result["results"]], expected)
+                self.assertEqual([hit["citation"]["path"] for hit in python_result["results"]], expected)
 
     def test_python_v2_export_import_answers_filename_query(self):
         py_index = self.tmp / "python-index.json"

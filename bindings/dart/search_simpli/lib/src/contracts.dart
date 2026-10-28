@@ -253,6 +253,92 @@ class SearchCitation {
   String toString() => 'SearchCitation($path:$startLine-$endLine)';
 }
 
+/// Citation for one actual query match within a result, as distinct from the
+/// result's retrieval citation. Filename citations have no line numbers;
+/// content citations carry the matched passage's line range.
+class MatchSectionCitation {
+  final String path;
+  final String field;
+  final int? startLine;
+  final int? endLine;
+
+  const MatchSectionCitation({
+    required this.path,
+    required this.field,
+    this.startLine,
+    this.endLine,
+  });
+
+  factory MatchSectionCitation.fromJson(Map<String, Object?> json) =>
+      MatchSectionCitation(
+        path: json['path']! as String,
+        field: json['field']! as String,
+        startLine: json['start_line'] as int?,
+        endLine: json['end_line'] as int?,
+      );
+
+  Map<String, Object?> toJson() => {
+    'path': path,
+    'field': field,
+    if (startLine != null) 'start_line': startLine,
+    if (endLine != null) 'end_line': endLine,
+  };
+}
+
+/// One field's actual query-match explanation for a ranked result.
+class MatchSection {
+  final String label;
+  final bool matched;
+  final List<String> matchedTerms;
+  final String text;
+  final MatchSectionCitation citation;
+
+  const MatchSection({
+    required this.label,
+    required this.matched,
+    required this.matchedTerms,
+    required this.text,
+    required this.citation,
+  });
+
+  factory MatchSection.fromJson(Map<String, Object?> json) => MatchSection(
+    label: json['label']! as String,
+    matched: json['matched']! as bool,
+    matchedTerms: (json['matched_terms']! as List<Object?>).cast<String>(),
+    text: json['text']! as String,
+    citation: MatchSectionCitation.fromJson(
+      json['citation']! as Map<String, Object?>,
+    ),
+  );
+
+  Map<String, Object?> toJson() => {
+    'label': label,
+    'matched': matched,
+    'matched_terms': matchedTerms,
+    'text': text,
+    'citation': citation.toJson(),
+  };
+}
+
+/// Actual query matches by source field. The map keys are `filename` and
+/// `content`; each section is present in the response when requested.
+class MatchSections {
+  final MatchSection filename;
+  final MatchSection content;
+
+  const MatchSections({required this.filename, required this.content});
+
+  factory MatchSections.fromJson(Map<String, Object?> json) => MatchSections(
+    filename: MatchSection.fromJson(json['filename']! as Map<String, Object?>),
+    content: MatchSection.fromJson(json['content']! as Map<String, Object?>),
+  );
+
+  Map<String, Object?> toJson() => {
+    'filename': filename.toJson(),
+    'content': content.toJson(),
+  };
+}
+
 /// One ranked result in `ss_query`'s `results` array.
 class SearchResultItem {
   final String chunkId;
@@ -265,6 +351,7 @@ class SearchResultItem {
   final Map<String, Object?> ranking;
   final List<String>? matchedIn;
   final String? basename;
+  final MatchSections? matchSections;
 
   const SearchResultItem({
     required this.chunkId,
@@ -274,6 +361,7 @@ class SearchResultItem {
     required this.ranking,
     this.matchedIn,
     this.basename,
+    this.matchSections,
   });
 
   factory SearchResultItem.fromJson(Map<String, Object?> json) =>
@@ -287,6 +375,11 @@ class SearchResultItem {
         ranking: json['ranking']! as Map<String, Object?>,
         matchedIn: (json['matched_in'] as List<Object?>?)?.cast<String>(),
         basename: json['basename'] as String?,
+        matchSections: json['match_sections'] == null
+            ? null
+            : MatchSections.fromJson(
+                json['match_sections']! as Map<String, Object?>,
+              ),
       );
 
   Map<String, Object?> toJson() => {
@@ -297,6 +390,7 @@ class SearchResultItem {
     'ranking': ranking,
     if (matchedIn != null) 'matched_in': matchedIn,
     if (basename != null) 'basename': basename,
+    if (matchSections != null) 'match_sections': matchSections!.toJson(),
   };
 
   @override

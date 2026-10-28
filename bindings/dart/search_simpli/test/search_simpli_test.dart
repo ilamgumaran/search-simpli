@@ -211,7 +211,46 @@ void main() {
         expect(result.results, hasLength(1));
         expect(result.results.single.citation.path, 'Lighthouse-Guide.md');
         expect(result.results.single.matchedIn, ['filename']);
-        expect(result.results.single.basename, 'Lighthouse-Guide');
+        expect(result.results.single.basename, 'Lighthouse-Guide.md');
+        final filenameSections = result.results.single.matchSections!;
+        expect(filenameSections.filename.label, 'File name');
+        expect(filenameSections.filename.matched, isTrue);
+        expect(filenameSections.filename.matchedTerms, ['lighthouse']);
+        expect(filenameSections.filename.text, 'Lighthouse-Guide.md');
+        expect(filenameSections.filename.citation.path, 'Lighthouse-Guide.md');
+        expect(filenameSections.filename.citation.field, 'filename');
+        expect(filenameSections.filename.citation.startLine, isNull);
+        expect(filenameSections.filename.citation.endLine, isNull);
+        expect(filenameSections.content.label, 'Content');
+        expect(filenameSections.content.matched, isFalse);
+        expect(filenameSections.content.matchedTerms, isEmpty);
+        expect(
+          filenameSections.content.text,
+          'ordinary body words with no navigation term',
+        );
+        expect(filenameSections.content.citation.path, 'Lighthouse-Guide.md');
+        expect(filenameSections.content.citation.field, 'content');
+        expect(filenameSections.content.citation.startLine, 1);
+        expect(filenameSections.content.citation.endLine, 1);
+
+        final both = engine.query(
+          'lighthouse ordinary',
+          topK: 5,
+          mode: RetrievalMode.lexical,
+          searchField: SearchField.both,
+        );
+        final bothSections = both.results.single.matchSections!;
+        expect(bothSections.filename.matched, isTrue);
+        expect(bothSections.filename.matchedTerms, ['lighthouse']);
+        expect(bothSections.content.matched, isTrue);
+        expect(bothSections.content.matchedTerms, ['ordinary']);
+        expect(
+          bothSections.content.text,
+          'ordinary body words with no navigation term',
+        );
+        expect(bothSections.content.citation.field, 'content');
+        expect(bothSections.content.citation.startLine, 1);
+        expect(bothSections.content.citation.endLine, 1);
         expect(result.retrieval.searchField, SearchField.filename);
         expect(result.retrieval.filenamePolicyId, 'filename-field-v1');
         expect(result.request!.searchField, SearchField.filename);

@@ -59,11 +59,10 @@ fn labelsAllowed(labels: []const u8, required: []const []const u8) bool {
 fn inScope(document: hybrid.Document, options: hybrid.SearchOptions) bool {
     if (options.path_prefix) |prefix| {
         if (!std.mem.startsWith(u8, document.path, prefix)) return false;
-        if (prefix.len > 0 and prefix[prefix.len - 1] != '/' and document.path.len > prefix.len and document.path[prefix.len] != '/') return false;
     }
     return labelsAllowed(document.required_labels, options.principal_labels);
 }
-fn tokenize(allocator: std.mem.Allocator, analyzer_id: []const u8, text: []const u8) ![][]const u8 {
+pub fn tokenize(allocator: std.mem.Allocator, analyzer_id: []const u8, text: []const u8) ![][]const u8 {
     if (std.mem.eql(u8, analyzer_id, analyzer_v2.analyzer_id)) return analyzer_v2.tokenize(allocator, text);
     var list = std.ArrayList([]const u8).empty;
     var it = @import("analysis.zig").TokenIterator.init(text);

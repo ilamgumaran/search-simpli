@@ -183,7 +183,7 @@ fn handleSearch(
         // stringify call. The result serializer owns a separate state object,
         // so complete the delimiter before handing over the shared stream.
         try output.writeAll(":");
-        try filename_response.writeEvidence(output, service.engine, query, search_field, options, hits);
+        try filename_response.writeEvidence(output, query_arena.allocator(), service.engine, query, search_field, options, hits, false);
         // Close the envelope directly after the nested serializer writes its
         // complete result object.
         try output.writeAll("}");

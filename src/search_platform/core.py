@@ -758,7 +758,7 @@ def _search_filename_fields(
             matched_in.append("content")
         if path in filename_ranks:
             matched_in.append("filename")
-        results.append({
+        result = {
             "chunk_id": chunk["id"],
             "citation": {"path": path, "start_line": chunk["start_line"], "end_line": chunk["end_line"]},
             "content": chunk["text"],
@@ -770,7 +770,35 @@ def _search_filename_fields(
                 "filename": {"rank": filename_ranks.get(path), "score": filename_scores.get(path)},
                 "vector": {"rank": None, "score": None, "mode": index.get("vector_mode", "none")},
             },
-        })
+        }
+        filename_query_terms = list(dict.fromkeys(_filename_tokenize(query)))
+        body_query_terms = list(dict.fromkeys(tokenize(query)))
+        filename_available_terms = set(record["terms"]) if record else set()
+        body_available_terms = set(tokenize(chunk["text"]))
+        filename_matched_terms = [term for term in filename_query_terms if term in filename_available_terms]
+        body_matched_terms = [term for term in body_query_terms if term in body_available_terms]
+        result["match_sections"] = {
+            "filename": {
+                "label": "File name",
+                "matched": bool(filename_matched_terms),
+                "matched_terms": filename_matched_terms,
+                "text": record["basename"] if record else Path(path).name,
+                "citation": {"path": path, "field": "filename"},
+            },
+            "content": {
+                "label": "Content",
+                "matched": bool(body_matched_terms),
+                "matched_terms": body_matched_terms,
+                "text": chunk["text"],
+                "citation": {
+                    "path": path,
+                    "field": "content",
+                    "start_line": chunk["start_line"],
+                    "end_line": chunk["end_line"],
+                },
+            },
+        }
+        results.append(result)
     return results
 
 
