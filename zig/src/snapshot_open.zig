@@ -9,6 +9,7 @@ const hybrid = @import("hybrid.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
+const filename_field = @import("filename_field.zig");
 
 /// Open the current published generation in `dir`. All returned buffers
 /// (and the decoded `Engine`) are allocated from `allocator`; the intended
@@ -24,7 +25,9 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
 
     const documents_buffer = try allocator.alloc(u8, metadata.documents_bytes);
     const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
-    const snapshot = try publication.loadCurrent(dir, io, manifest_buffer, documents_buffer, lexical_buffer);
+    const catalog_buffer = try allocator.alloc(u8, if (metadata.filename) |f| f.catalog_bytes else 0);
+    const filename_lexical_buffer = try allocator.alloc(u8, if (metadata.filename) |f| f.lexical_bytes else 0);
+    const snapshot = try publication.loadCurrentWithFilename(dir, io, manifest_buffer, documents_buffer, lexical_buffer, catalog_buffer, filename_lexical_buffer);
 
     const documents = try allocator.alloc(hybrid.Document, metadata.document_count);
     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch
@@ -34,7 +37,11 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
     const document_lengths = try allocator.alloc(u32, metadata.document_count);
 
-    return engine.Engine.open(snapshot, documents, vectors, terms, posting_storage, document_lengths);
+    const opened = try engine.Engine.open(snapshot, documents, vectors, terms, posting_storage, document_lengths);
+    if (metadata.filename != null) {
+        try filename_field.validate(allocator, opened.documents, snapshot.catalog_encoded, snapshot.filename_lexical_encoded, opened.analyzer_id);
+    }
+    return opened;
 }
 
 test "open reproduces a published demo generation" {

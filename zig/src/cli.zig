@@ -20,6 +20,8 @@ const generation_alloc = @import("generation_alloc.zig");
 const hybrid = @import("hybrid.zig");
 const indexer = @import("indexer.zig");
 const snapshot_open = @import("snapshot_open.zig");
+const filename_field = @import("filename_field.zig");
+const filename_response = @import("filename_response.zig");
 
 pub const IndexOptions = struct {
     analyzer: indexer.AnalyzerId = .v2,
@@ -82,11 +84,11 @@ pub const usage_text =
         \\                       too_large/unreadable/budget_exhausted; only
         \\                       --update also prints the full JSON report
         \\                       above.
-        \\  query <dir> "<text>" [--json] [--top-k N]
+        \\  query <dir> "<text>" [--json] [--top-k N] [--search-field content|filename|both]
         \\                       BM25 lexical query against a published
         \\                       snapshot; human-readable by default, or a
         \\                       JSON result list with --json.
-        \\  evidence <dir> "<text>" [--top-k N]
+        \\  evidence <dir> "<text>" [--top-k N] [--search-field content|filename|both]
         \\                       same query, always emitted as a JSON
         \\                       evidence envelope (citation + content +
         \\                       scores) intended for an LLM tool call.
@@ -105,6 +107,10 @@ pub const usage_text =
         \\  import-json <dir> <file> [--keep-generations N]
         \\                       import neutral JSON and publish a snapshot
         \\  help, --help, -h     show this message on stdout (exit 0)
+        \\
+        \\Use index --filename-index to enable --search-field filename or both.
+        \\New-field queries return a cited JSON tool envelope; defaults are unchanged.
+        \\Include --filename-index again on --update; changing it requires a full rebuild.
         \\
         \\Vector/hybrid RPC requests must provide a query_vector matching the
         \\embedding dimensions recorded by the snapshot. Lexical mode does not.
@@ -253,6 +259,10 @@ fn parseQueryFlags(p: *Parser, command: []const u8) error{Usage}!QueryOptions {
     while (p.next()) |flag| {
         if (std.mem.eql(u8, flag, "--json")) {
             options.json = true;
+        } else if (std.mem.eql(u8, flag, "--search-field")) {
+            const value = try p.valueOf("--search-field");
+            options.search_field = std.meta.stringToEnum(filename_field.Field, value) orelse
+                return p.usage("invalid value for", "--search-field", value, " (expected content, filename or both)");
         } else if (std.mem.eql(u8, flag, "--top-k")) {
             options.top_k = try p.positive("--top-k");
         } else {
@@ -352,6 +362,8 @@ fn parseInner(p: *Parser) error{Usage}!Command {
                     return p.usage("invalid value for", "--generation", value, " (expected a positive whole number)");
                 if (options.generation.? == 0)
                     return p.usage("invalid value for", "--generation", value, " (expected a positive whole number)");
+            } else if (std.mem.eql(u8, flag, "--filename-index")) {
+                options.caps.filename_index = true;
             } else if (std.mem.eql(u8, flag, "--update")) {
                 options.update = true;
             } else if (std.mem.eql(u8, flag, "--max-file-bytes")) {
@@ -514,6 +526,7 @@ pub fn runIndex(
 }
 
 pub const QueryOptions = struct {
+    search_field: filename_field.Field = .content,
     top_k: usize = 10,
     json: bool = false,
 };
@@ -544,6 +557,13 @@ pub fn runQuery(
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
     const engine = try snapshot_open.open(arena, io, dir);
+    if (options.search_field != .content) {
+        const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
+        const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);
+        try filename_response.writeEvidence(output, arena, engine, query_text, options.search_field, query_options, hits, !options.json);
+        try output.writeByte('\n');
+        return;
+    }
     const results = try runSearch(arena, engine, query_text, options.top_k);
 
     if (options.json) {
@@ -597,6 +617,13 @@ pub fn runEvidence(
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
     const engine = try snapshot_open.open(arena, io, dir);
+    if (options.search_field != .content) {
+        const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
+        const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);
+        try filename_response.writeEvidence(output, arena, engine, query_text, options.search_field, query_options, hits, false);
+        try output.writeByte('\n');
+        return;
+    }
     const results = try runSearch(arena, engine, query_text, options.top_k);
 
     var json = std.json.Stringify{ .writer = output };

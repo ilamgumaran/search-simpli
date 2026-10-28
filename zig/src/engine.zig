@@ -1,5 +1,6 @@
 const analyzer_v2 = @import("analyzer_v2.zig");
 const hybrid = @import("hybrid.zig");
+const filename_field = @import("filename_field.zig");
 const lexical_build = @import("lexical_build.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const manifest = @import("manifest.zig");
@@ -28,6 +29,9 @@ pub const Engine = struct {
     vector_dimensions: usize,
     documents: []const hybrid.Document,
     lexical_index: postings.Index,
+    catalog_encoded: []const u8 = &.{},
+    filename_lexical_encoded: []const u8 = &.{},
+    filename_index_enabled: bool = false,
 
     pub fn open(
         snapshot: publication.LoadedSnapshot,
@@ -37,7 +41,11 @@ pub const Engine = struct {
         posting_output: []postings.Posting,
         document_length_output: []u32,
     ) !Engine {
-        try manifest.validateSnapshot(snapshot.metadata, snapshot.documents_encoded, snapshot.lexical_encoded);
+        if (snapshot.metadata.filename != null) {
+            try manifest.validateSnapshotWithFilename(snapshot.metadata, snapshot.documents_encoded, snapshot.lexical_encoded, snapshot.catalog_encoded, snapshot.filename_lexical_encoded);
+        } else {
+            try manifest.validateSnapshot(snapshot.metadata, snapshot.documents_encoded, snapshot.lexical_encoded);
+        }
         const documents = try segment.decode(snapshot.documents_encoded, document_output, vector_output);
         const lexical_index = try lexical_segment.decode(
             snapshot.lexical_encoded,
@@ -53,7 +61,21 @@ pub const Engine = struct {
             .vector_dimensions = snapshot.metadata.vector_dimensions,
             .documents = documents,
             .lexical_index = lexical_index,
+            .catalog_encoded = snapshot.catalog_encoded,
+            .filename_lexical_encoded = snapshot.filename_lexical_encoded,
+            .filename_index_enabled = snapshot.metadata.filename != null,
         };
+    }
+
+    pub fn queryFields(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, field: filename_field.Field, options: hybrid.SearchOptions) ![]filename_field.Hit {
+        if (field == .content) {
+            const results = try engine.queryTokenized(allocator, query_text, &.{}, try allocator.alloc(hybrid.Result, @min(options.top_k, engine.documents.len)), options);
+            const hits = try allocator.alloc(filename_field.Hit, results.len);
+            for (results, hits) |r, *h| h.* = .{ .document_index = r.document_index, .body_score = r.lexical_score, .body_rank = r.lexical_rank, .fused_score = r.fused_score };
+            return hits;
+        }
+        if (engine.catalog_encoded.len == 0 or engine.filename_lexical_encoded.len == 0) return error.FilenameIndexUnavailable;
+        return filename_field.query(allocator, engine.documents, engine.lexical_index, engine.catalog_encoded, engine.filename_lexical_encoded, engine.analyzer_id, query_text, field, options);
     }
 
     pub fn query(

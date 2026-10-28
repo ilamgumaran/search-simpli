@@ -13,6 +13,8 @@ pub const LoadedSnapshot = struct {
     manifest_encoded: []u8,
     documents_encoded: []u8,
     lexical_encoded: []u8,
+    catalog_encoded: []u8 = &.{},
+    filename_lexical_encoded: []u8 = &.{},
 };
 
 /// Ordered record of the durability-relevant steps of one publish, for the
@@ -106,6 +108,48 @@ pub fn publishRecorded(
     try syncDirectory(dir, io, recorder);
 }
 
+/// Publish a body plus the two filename sections as one immutable generation.
+/// Every section is durable before MANIFEST can select the generation.
+pub fn publishWithFilename(
+    dir: std.Io.Dir,
+    io: std.Io,
+    manifest_encoded: []const u8,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+    catalog_encoded: []const u8,
+    filename_lexical_encoded: []const u8,
+) !void {
+    try publishRecordedWithFilename(dir, io, manifest_encoded, documents_encoded, lexical_encoded, catalog_encoded, filename_lexical_encoded, null);
+}
+
+pub fn publishRecordedWithFilename(
+    dir: std.Io.Dir,
+    io: std.Io,
+    manifest_encoded: []const u8,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+    catalog_encoded: []const u8,
+    filename_lexical_encoded: []const u8,
+    recorder: ?*Recorder,
+) !void {
+    const metadata = try manifest.decode(manifest_encoded);
+    try manifest.validateSnapshotWithFilename(metadata, documents_encoded, lexical_encoded, catalog_encoded, filename_lexical_encoded);
+    const filename = metadata.filename.?;
+    var manifest_visible = false;
+    try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
+    errdefer if (!manifest_visible) dir.deleteFile(io, metadata.documents_file) catch {};
+    try writeAtomicFileRecorded(dir, io, metadata.lexical_file, lexical_encoded, false, recorder);
+    errdefer if (!manifest_visible) dir.deleteFile(io, metadata.lexical_file) catch {};
+    try writeAtomicFileRecorded(dir, io, filename.catalog_file, catalog_encoded, false, recorder);
+    errdefer if (!manifest_visible) dir.deleteFile(io, filename.catalog_file) catch {};
+    try writeAtomicFileRecorded(dir, io, filename.lexical_file, filename_lexical_encoded, false, recorder);
+    errdefer if (!manifest_visible) dir.deleteFile(io, filename.lexical_file) catch {};
+    try syncDirectory(dir, io, recorder);
+    try writeAtomicFileRecorded(dir, io, current_manifest_file, manifest_encoded, true, recorder);
+    manifest_visible = true;
+    try syncDirectory(dir, io, recorder);
+}
+
 pub const DirSyncError = error{ InputOutput, NoSpaceLeft, DiskQuota, Unexpected };
 
 /// fsync a directory so renames/links inside it reach stable storage.
@@ -176,6 +220,7 @@ pub fn loadCurrent(
 ) !LoadedSnapshot {
     const manifest_encoded = try dir.readFile(io, current_manifest_file, manifest_buffer);
     const metadata = try manifest.decode(manifest_encoded);
+    if (metadata.filename != null) return error.FilenameSectionsRequired;
     const documents_encoded = try dir.readFile(io, metadata.documents_file, documents_buffer);
     const lexical_encoded = try dir.readFile(io, metadata.lexical_file, lexical_buffer);
     try manifest.validateSnapshot(metadata, documents_encoded, lexical_encoded);
@@ -185,6 +230,31 @@ pub fn loadCurrent(
         .documents_encoded = documents_encoded,
         .lexical_encoded = lexical_encoded,
     };
+}
+
+/// Load a v1 or v2 generation. v1 snapshots return empty filename section
+/// slices; v2 snapshots validate and return all four immutable sections.
+pub fn loadCurrentWithFilename(
+    dir: std.Io.Dir,
+    io: std.Io,
+    manifest_buffer: []u8,
+    documents_buffer: []u8,
+    lexical_buffer: []u8,
+    catalog_buffer: []u8,
+    filename_lexical_buffer: []u8,
+) !LoadedSnapshot {
+    const manifest_encoded = try dir.readFile(io, current_manifest_file, manifest_buffer);
+    const metadata = try manifest.decode(manifest_encoded);
+    const documents_encoded = try dir.readFile(io, metadata.documents_file, documents_buffer);
+    const lexical_encoded = try dir.readFile(io, metadata.lexical_file, lexical_buffer);
+    if (metadata.filename) |filename| {
+        const catalog_encoded = try dir.readFile(io, filename.catalog_file, catalog_buffer);
+        const filename_lexical_encoded = try dir.readFile(io, filename.lexical_file, filename_lexical_buffer);
+        try manifest.validateSnapshotWithFilename(metadata, documents_encoded, lexical_encoded, catalog_encoded, filename_lexical_encoded);
+        return .{ .metadata = metadata, .manifest_encoded = manifest_encoded, .documents_encoded = documents_encoded, .lexical_encoded = lexical_encoded, .catalog_encoded = catalog_encoded, .filename_lexical_encoded = filename_lexical_encoded };
+    }
+    try manifest.validateSnapshot(metadata, documents_encoded, lexical_encoded);
+    return .{ .metadata = metadata, .manifest_encoded = manifest_encoded, .documents_encoded = documents_encoded, .lexical_encoded = lexical_encoded };
 }
 
 /// Portable atomic file write: create a uniquely-named temporary file in
@@ -332,6 +402,11 @@ test "publication atomically selects a complete generation" {
     var lexical_read_buffer: [2048]u8 = undefined;
     const first = try loadCurrent(tmp.dir, io, &manifest_read_buffer, &documents_read_buffer, &lexical_read_buffer);
     try std.testing.expectEqual(@as(u64, 1), first.metadata.generation);
+    var catalog_read_buffer: [1]u8 = undefined;
+    var filename_lexical_read_buffer: [1]u8 = undefined;
+    const first_new_reader = try loadCurrentWithFilename(tmp.dir, io, &manifest_read_buffer, &documents_read_buffer, &lexical_read_buffer, &catalog_read_buffer, &filename_lexical_read_buffer);
+    try std.testing.expectEqual(@as(usize, 0), first_new_reader.catalog_encoded.len);
+    try std.testing.expectEqual(@as(usize, 0), first_new_reader.filename_lexical_encoded.len);
 
     var decoded_documents: [3]hybrid.Document = undefined;
     var vector_storage: [6]f32 = undefined;
@@ -385,6 +460,82 @@ test "invalid snapshot is rejected before MANIFEST visibility" {
     documents_encoded[documents_encoded.len - 1] ^= 0xff;
     try std.testing.expectError(error.InvalidDocumentSection, publish(tmp.dir, io, manifest_encoded, documents_encoded, fixture.lexicalEncoded()));
     try std.testing.expectError(error.FileNotFound, tmp.dir.openFile(io, current_manifest_file, .{}));
+}
+
+test "filename publication syncs four sections and preserves them after visibility" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    var fixture = try Fixture.init();
+    const base = try manifest.create(3, "ascii-alnum-v1", "manual-test-vectors-v1", "documents-3.hybseg", "lexical-3.hyblex", fixture.documentsEncoded(), fixture.lexicalEncoded());
+    const catalog_docs = [_]hybrid.Document{.{ .id = "anchor", .path = "dir/alpha.md", .text = "alpha", .vector = &.{}, .start_line = 1, .end_line = 2 }};
+    var catalog_storage: [256]u8 = undefined;
+    const catalog = try segment.encode(&catalog_docs, &catalog_storage);
+    var f_terms: [8]postings.TermEntry = undefined;
+    var f_postings: [8]postings.Posting = undefined;
+    var f_lengths: [1]u32 = undefined;
+    var f_fills: [8]usize = undefined;
+    const f_index = try postings.build(&catalog_docs, &f_terms, &f_postings, &f_lengths, &f_fills);
+    var f_lex_storage: [256]u8 = undefined;
+    const filename_lexical = try lexical_segment.encode(f_index, &f_lex_storage);
+    const metadata = try manifest.withFilename(base, "filenames-3.hybseg", "filename-lexical-3.hyblex", catalog, filename_lexical);
+    var manifest_storage: [768]u8 = undefined;
+    const encoded = try manifest.encode(metadata, &manifest_storage);
+    var recorder = Recorder{};
+    try publishRecordedWithFilename(tmp.dir, io, encoded, fixture.documentsEncoded(), fixture.lexicalEncoded(), catalog, filename_lexical, &recorder);
+
+    const want = [_]struct { kind: Recorder.Kind, name: []const u8 }{
+        .{ .kind = .file_sync, .name = "" },      .{ .kind = .rename, .name = "documents-3.hybseg" },
+        .{ .kind = .file_sync, .name = "" },      .{ .kind = .rename, .name = "lexical-3.hyblex" },
+        .{ .kind = .file_sync, .name = "" },      .{ .kind = .rename, .name = "filenames-3.hybseg" },
+        .{ .kind = .file_sync, .name = "" },      .{ .kind = .rename, .name = "filename-lexical-3.hyblex" },
+        .{ .kind = .dir_sync, .name = "" },       .{ .kind = .file_sync, .name = "" },
+        .{ .kind = .rename, .name = "MANIFEST" }, .{ .kind = .dir_sync, .name = "" },
+    };
+    try std.testing.expectEqual(want.len, recorder.slice().len);
+    for (want, recorder.slice()) |expected, got| {
+        try std.testing.expectEqual(expected.kind, got.kind);
+        try std.testing.expectEqualStrings(expected.name, got.nameSlice());
+    }
+
+    var mb: [768]u8 = undefined;
+    var db: [512]u8 = undefined;
+    var lb: [2048]u8 = undefined;
+    var cb: [256]u8 = undefined;
+    var flb: [256]u8 = undefined;
+    const loaded = try loadCurrentWithFilename(tmp.dir, io, &mb, &db, &lb, &cb, &flb);
+    try std.testing.expectEqual(@as(u64, 3), loaded.metadata.generation);
+    try std.testing.expectEqualSlices(u8, catalog, loaded.catalog_encoded);
+    try std.testing.expectEqualSlices(u8, filename_lexical, loaded.filename_lexical_encoded);
+    try std.testing.expectError(error.FilenameSectionsRequired, loadCurrent(tmp.dir, io, &mb, &db, &lb));
+}
+
+test "filename publication failure before MANIFEST cleans all four sections" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    var fixture = try Fixture.init();
+    const base = try manifest.create(1, "ascii-alnum-v1", "manual-test-vectors-v1", "documents-1.hybseg", "lexical-1.hyblex", fixture.documentsEncoded(), fixture.lexicalEncoded());
+    const catalog_docs = [_]hybrid.Document{.{ .id = "anchor", .path = "a.md", .text = "a", .vector = &.{}, .start_line = 1, .end_line = 1 }};
+    var catalog_storage: [128]u8 = undefined;
+    const catalog = try segment.encode(&catalog_docs, &catalog_storage);
+    var terms: [4]postings.TermEntry = undefined;
+    var post: [4]postings.Posting = undefined;
+    var lengths: [1]u32 = undefined;
+    var fills: [4]usize = undefined;
+    const index = try postings.build(&catalog_docs, &terms, &post, &lengths, &fills);
+    var f_lex_storage: [128]u8 = undefined;
+    const f_lex = try lexical_segment.encode(index, &f_lex_storage);
+    const value = try manifest.withFilename(base, "filenames-1.hybseg", "filename-lexical-1.hyblex", catalog, f_lex);
+    var manifest_storage: [768]u8 = undefined;
+    const encoded = try manifest.encode(value, &manifest_storage);
+    var recorder = Recorder{ .fail_dir_sync = 1 };
+    try std.testing.expectError(error.InputOutput, publishRecordedWithFilename(tmp.dir, io, encoded, fixture.documentsEncoded(), fixture.lexicalEncoded(), catalog, f_lex, &recorder));
+    inline for (.{ "documents-1.hybseg", "lexical-1.hyblex", "filenames-1.hybseg", "filename-lexical-1.hyblex", "MANIFEST" }) |name| {
+        try std.testing.expectError(error.FileNotFound, tmp.dir.statFile(io, name, .{}));
+    }
+    var iterator = tmp.dir.iterate();
+    try std.testing.expect((try iterator.next(io)) == null);
 }
 
 // S1-T3 (docs/tasks/S1-T3.md criterion 6, added by the orchestrator after

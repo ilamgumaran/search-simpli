@@ -58,8 +58,9 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 - [Postings design](postings-design.md)
 - [Zig engine API](zig-engine-api.md)
 
+- [Filename/content implementation, sectioned results and platform handoff](tasks/directory-filename-implementation.md)
 - [Directory search audit, measured boundaries and filename implementation stages](tasks/directory-search.md)
-- [Proposed CAP-16 filename retrieval specification](requirements/cap-16-directory-filename-search.md)
+- [CAP-16 filename retrieval specification](requirements/cap-16-directory-filename-search.md)
 
 ## Evidence rule
 

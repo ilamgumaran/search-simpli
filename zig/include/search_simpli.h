@@ -167,6 +167,9 @@ char *ss_status(ss_handle *handle);
  *                                       returned if the caller holds every
  *                                       one of its required labels (see
  *                                       docs/authorization.md)
+ *                   "search_field"      "content" (default), "filename",
+ *                                       or "both". Filename/both require an
+ *                                       explicit "retrieval_mode":"lexical".
  *                   "profile"           boolean, default false (since
  *                                       contract 1.2.0); true adds the
  *                                       `profile` field described below
@@ -177,6 +180,11 @@ char *ss_status(ss_handle *handle);
  * and `answer_policy`. These are exactly the fields of the `result` value a
  * `search_knowledge` JSON-RPC response carries for the same request
  * (docs/zig-rpc-service.md), in the same order and byte for byte.
+ * Filename/both searches add `matched_in`, `basename`, and
+ * `ranking.filename`; retrieval adds `search_field` and
+ * `filename_policy_id`, and answer_policy adds
+ * `filename_matches_are_navigation:true`. A filename request against a
+ * body-only snapshot fails with FilenameIndexUnavailable and rebuild guidance.
  *
  * Since contract 1.2.0 the object ends with three more fields (additive;
  * removing them gives the 1.1.0 output exactly):
@@ -328,6 +336,9 @@ void ss_free(char *ptr);
  *                    "max_chars"         chunker max characters per chunk
  *                                        (default 1600)
  *                    "overlap_lines"     chunker overlap lines (default 3)
+ *                    "filename_index"    bool, default false. When true,
+ *                                        also index each admitted file's
+ *                                        basename for filename search.
  *                    "update"            bool, default false. false: full
  *                                        rebuild, always publishing the
  *                                        next free generation in

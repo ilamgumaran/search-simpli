@@ -1,0 +1,46 @@
+{
+  "fixture_version": 1,
+  "policy_id": "filename-field-v1",
+  "cases": [
+    {
+      "path": "Annual_Budget_2026.md",
+      "query": "annual budget 2026",
+      "sha256": "6a78bcef968899b44c6a9493368e0ef2454e83e787aac46fb68b53ee323f2be5",
+      "expected_top1": "Annual_Budget_2026.md"
+    },
+    {
+      "path": "River-Transit.md",
+      "query": "river transit",
+      "sha256": "59002f6ffcdb275c9b416295652b73757b2a839bd57546798e587e942b479569",
+      "expected_top1": "River-Transit.md"
+    },
+    {
+      "path": "StArChArT.md",
+      "query": "starchart",
+      "sha256": "f614e9f49cd737962239e811f495a9cb69460dd088f5c91877bffeb88783e770",
+      "expected_top1": "StArChArT.md"
+    },
+    {
+      "path": "Lunar Launch.md",
+      "query": "lunar launch",
+      "sha256": "9e8c0e9022f3f79654801e36c65a8ab1cf5b6ccac74ad9028f6c10b0c3428a18",
+      "expected_top1": "Lunar Launch.md"
+    },
+    {
+      "path": "Café_Record.md",
+      "query": "Café record",
+      "sha256": "d4c96bd8164d100d9c748645ac7c96d3445d110fbb558c8c1c4b39c4d7805cbe",
+      "expected_top1": "Café_Record.md"
+    },
+    {
+      "path": "நீர்வடிகட்டி_திட்டம்.md",
+      "query": "நீர்வடிகட்டி திட்டம்",
+      "sha256": "8f0e4dffe57c3a72c58159898c4b6d6adf20b92bae2f18adc447fab7f75263e6",
+      "expected_top1": "நீர்வடிகட்டி_திட்டம்.md"
+    }
+  ],
+  "negative_queries": [
+    "absentquasar987",
+    "md"
+  ]
+}

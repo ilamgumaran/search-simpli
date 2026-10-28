@@ -1,6 +1,6 @@
 # UC-006 — Find a local document by its contents or filename
 
-Status: Proposed · filename retrieval not implemented
+Status: Diagnostic · source implementation; bundled native rollout pending
 
 ## Outcome and actors
 
@@ -29,7 +29,7 @@ images and OCR remain outside filename-result coverage in this version.
 ## Tool flow and expectations
 
 Check `index_status` for generation and filename-index capability, select the
-proposed `content`, `filename` or `both` search field, then inspect `read_chunk`
+`content`, `filename` or `both` search field, then inspect `read_chunk`
 for returned anchors. Existing default content search stays unchanged. Filename
 matches identify documents; the LLM must read their passages before making
 claims. Matching a filename is not evidence that its body answers a question.
@@ -59,3 +59,5 @@ explicit match origin. Hidden/absent comparisons, default-content parity and
 change/rename/delete cases must pass. A 1,000-file synthetic run measures cost;
 real-folder relevance and device budgets remain pending owner data. A synthetic
 current-behavior diagnostic is recorded separately, not a production benchmark.
+
+Current results and limitations: [implementation handoff](../tasks/directory-filename-implementation.md). File name and Content sections report actual analyzed terms in each displayed source; `matched_in` separately records which ranked channels contributed.

@@ -616,3 +616,51 @@ PR #11 still requires its equipped-Mac integration and is not merged here.
 **Artifacts:** [Directory task/evidence record](docs/tasks/directory-search.md),
 [CAP-16](docs/requirements/cap-16-directory-filename-search.md), and
 `scripts/diagnose_directory_search.py`, and the [compact recorded observations](benchmarks/directory-search-current-2026-10-25.json).
+
+
+## 2026-10-28 — CAP-16 source implementation and separate match sections
+
+**Hypothesis:** A separate filename lexical field can recover filename-only
+queries while preserving body-only outputs and real passage citations. The
+owner also requested intuitive File name and Content sections with citations.
+
+**Setup:** Reviewed/frozen format at `ec9ca16`, source at `39cd19c`, Zig 0.16.0,
+Linux, authored English/Tamil and Unicode fixtures. Filename catalog/postings
+share a checksummed atomic generation with the original body data. Source and
+Dart pin advance to 1.3.0; bundled native files are deliberately not stamped fresh.
+
+**Observed:** All six frozen filename fixtures retrieve their intended file.
+Default content bytes/goldens remain unchanged. Section flags/terms describe
+actual displayed sources, independently of ranked-channel contribution; filename
+citations have no fabricated lines. CLI, RPC, ABI, Python and Dart paths are
+exercised. Review caught and fixed compacted catalog ordinals, best-passage
+selection, invalid RPC JSON, migration races, and a prefix mismatch; regression
+tests preserve those corrections.
+
+**Gates:** Zig 192/192, C ABI 16/16, full Dart 68/68 on a fresh Linux 1.3.0 library.
+Full Python exits 1: 121 passes, one packaged-native freshness failure, four
+platform/version skips. Dart analysis cannot initialize its UUID cache under
+read-only `<user-home>/.dartServer`; test compilation/execution succeeds.
+
+**Cost:** Three fresh-output 1,000-file Debug builds per binary: baseline
+66.6–69.3 ms / 334,494 bytes, candidate 83.0–84.5 ms / 467,744 bytes. Thirty RPC
+queries per field return the designated top file with zero errors; p95 is
+76.2 ms filename and 92.2 ms combined. These are synthetic Debug measurements,
+not representative relevance or device budgets. Catalog/anchor caching is the
+next measured optimization candidate, rather than new ANN/fuzzy machinery.
+
+**Limit and next action:** Source implementation is Diagnostic; release remains
+blocked on an equipped-Mac rebuild of all packaged artifacts including iOS and
+its real source stamp. Keep the PR draft. No gate was weakened, no freshness
+value forged, and no physical-device acceptance claimed. See the
+[handoff](docs/tasks/directory-filename-implementation.md),
+[validation](benchmarks/filename-field-validation-2026-10-28.json),
+[cost report](benchmarks/filename-field-cost-2026-10-28.json) and
+[cost script](scripts/benchmark_filename_field.py).
+
+
+**Final documentation check:** The first final Python rerun also caught a literal
+home-cache path in newly written diagnostics documentation (2 failures total).
+That path was redacted to `<user-home>` in published notes/reports; the privacy
+gate itself was retained. The remaining package-freshness failure is recorded
+separately and is not resolved by that documentation correction.

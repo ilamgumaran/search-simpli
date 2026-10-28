@@ -112,6 +112,21 @@ suite hashes, rejects drift or split leakage, and evaluates both splits over one
 compatible index. See the pending
 [CAP-11 E-01A record](../requirements/cap-11-e01a-judgment-packs.md).
 
+### FR-16 — Filename and combined directory retrieval
+
+Opt-in filename indexing adds a separate file-level lexical field and a versioned,
+checksummed manifest/catalog/postings channel. Queries select `content` (legacy
+default), `filename` or `both`; the new modes require lexical retrieval and return
+real body anchors. Both uses file-level candidate collapse and equal RRF, with
+visible-only statistics and deterministic path/chunk ties. Explicit refresh keeps
+both fields in one atomic generation; channel/analyzer changes use a new output
+location. New responses include filename/content match sections with actual
+analyzed matching terms and source-specific citations. Filename citations carry
+no invented line numbers; content citations preserve exact stored spans. A
+filename match is navigation, not proof of answer support. See
+[CAP-16](../requirements/cap-16-directory-filename-search.md) for the full contract.
+Source implementation is diagnostic; shipped-library rollout remains pending.
+
 ## 3. Non-functional requirements
 
 | ID | Requirement |
@@ -208,7 +223,6 @@ exists only in the register.
 | FR-13 | MCP adapter binds the FR-07 operations with injected trusted principal, no caller vectors, and semantic (not byte) parity with the direct surface. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Proposed |
 | FR-14 | First-class, retrieval-derived (non-generative) support/confidence signal in the evidence response; low-support flagging; changes FR-06. | [CAP-14](../requirements/cap-14-trust-calibration.md) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages with deterministic line-window fallback; changes FR-02. | [CAP-15](../requirements/cap-15-structure-aware-chunking.md) | Proposed |
-| FR-16 | Opt-in filename/combined lexical search with real passage anchors, explicit origin, pre-rank isolation, deterministic ranking and versioned channel refresh/migration; default content behavior unchanged. | [CAP-16](../requirements/cap-16-directory-filename-search.md) | Proposed |
 | NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Proposed |
 
 Proposed extensions to existing requirements (implemented behavior above remains

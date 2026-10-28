@@ -39,7 +39,9 @@ Use the pinned Zig 0.16.0 toolchain. Native Linux CI runs the engine, ABI and Py
 
 The search core uses caller-owned slices rather than allocating. Channel ranks and final RRF ordering use deterministic in-place `O(n log n)` sorts; the persistent postings path avoids scanning non-matching lexical documents while exhaustive vectors remain the correctness baseline. `benchmark` measures the real postings + vector + fusion path and reports total plus lexical/ranking stage percentiles.
 
-Current limitations: filenames are citation metadata rather than searchable terms, quoted queries do not enforce phrase order, and the raw Zig service expects query embeddings from its caller. `zig_gateway.py` provides the intended text-only tool surface with exact model-fingerprint validation. Both dependency-free PPMI and local FastEmbed/BGE 384-dimensional snapshots have been imported and queried, but the neural evidence is still diagnostic rather than production-ready.
+Opt-in `--filename-index` and `--search-field filename|both` add separate filename and content match sections with actual terms and source citations. See the [implementation handoff](../docs/tasks/directory-filename-implementation.md). Body-only defaults remain unchanged. Source contract is 1.3.0; bundled libraries await the genuine Mac/iOS rebuild.
+
+Current limitations: quoted queries do not enforce phrase order, and the raw Zig service expects query embeddings from its caller. `zig_gateway.py` provides the intended text-only tool surface with exact model-fingerprint validation. Both dependency-free PPMI and local FastEmbed/BGE 384-dimensional snapshots have been imported and queried, but the neural evidence is still diagnostic rather than production-ready.
 
 Next modules should be introduced in this order:
 

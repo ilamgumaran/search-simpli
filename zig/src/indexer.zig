@@ -12,6 +12,7 @@ const analysis = @import("analysis.zig");
 const analyzer_v2 = @import("analyzer_v2.zig");
 const chunker = @import("chunker.zig");
 const engine_module = @import("engine.zig");
+const filename_field = @import("filename_field.zig");
 const generation_alloc = @import("generation_alloc.zig");
 const hybrid = @import("hybrid.zig");
 const incremental_state = @import("incremental_state.zig");
@@ -44,8 +45,9 @@ pub const AnalyzerId = enum {
 
 /// `search_platform.core.DEFAULT_EXTENSIONS`.
 pub const default_extensions = [_][]const u8{
-    ".c", ".cpp", ".css", ".go", ".h", ".html", ".java", ".js", ".json",
-    ".md", ".py", ".rs", ".rst", ".toml", ".ts", ".txt", ".yaml", ".yml", ".zig",
+    ".c",   ".cpp", ".css", ".go",  ".h",    ".html", ".java", ".js",   ".json",
+    ".md",  ".py",  ".rs",  ".rst", ".toml", ".ts",   ".txt",  ".yaml", ".yml",
+    ".zig",
 };
 
 /// `search_platform.core.IGNORED_DIRECTORIES`.
@@ -177,6 +179,30 @@ pub fn indexFolder(
     overlap_lines: usize,
     caps: Caps,
 ) !IncrementalReport {
+    const existing_manifest_stat = out_dir.statFile(io, publication.current_manifest_file, .{}) catch |err| switch (err) {
+        error.FileNotFound => null,
+        else => return err,
+    };
+    if (existing_manifest_stat) |manifest_stat| {
+        const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
+        const manifest_buffer = try allocator.alloc(u8, manifest_size);
+        const encoded_manifest = try out_dir.readFile(io, publication.current_manifest_file, manifest_buffer);
+        const maybe_existing = manifest.decode(encoded_manifest) catch |err| blk: {
+            // Preserve the legacy full rebuild's ability to repair a damaged
+            // body-only v1 generation. Unknown/new manifest formats remain
+            // protected from accidental in-place replacement.
+            if (!caps.filename_index and encoded_manifest.len >= manifest.magic.len and std.mem.eql(u8, encoded_manifest[0..manifest.magic.len], manifest.magic)) break :blk null;
+            return err;
+        };
+        if (maybe_existing) |existing| {
+            const existing_filename = existing.filename != null;
+            if ((existing_filename or caps.filename_index) and
+                (existing_filename != caps.filename_index or !std.mem.eql(u8, existing.analyzer_id, analyzer.label())))
+            {
+                return error.FilenameMigrationRequiresNewDirectory;
+            }
+        }
+    }
     const paths = try collectCandidatePaths(allocator, io, root);
 
     var documents = std.ArrayList(hybrid.Document).empty;
@@ -283,7 +309,7 @@ pub fn indexFolder(
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
     const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
 
-    const metadata = try manifest.create(
+    const base_metadata = try manifest.create(
         generation,
         analyzer.label(),
         "none",
@@ -292,11 +318,21 @@ pub fn indexFolder(
         documents_encoded,
         lexical_encoded,
     );
+    const filename_data = if (caps.filename_index) try encodeFilename(allocator, documents.items, analyzer.label()) else null;
+    const filename_catalog_file = if (caps.filename_index) try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{generation}) else "";
+    const filename_lexical_file = if (caps.filename_index) try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{generation}) else "";
+    const metadata = if (filename_data) |data|
+        try manifest.withFilename(base_metadata, filename_catalog_file, filename_lexical_file, data.catalog, data.lexical)
+    else
+        base_metadata;
     const manifest_len = try manifest.encodedLength(metadata);
     const manifest_buffer = try allocator.alloc(u8, manifest_len);
     const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
 
-    const prune = try lifecycle.publishSerializedKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, caps.keep_generations);
+    const prune = if (filename_data) |data|
+        try lifecycle.publishSerializedWithFilenameKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, data.catalog, data.lexical, caps.keep_generations)
+    else
+        try lifecycle.publishSerializedKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, caps.keep_generations);
 
     // After a full rebuild, write INDEX-STATE.json so the first `--update`
     // after it will report unchanged files instead of re-indexing everything
@@ -333,6 +369,8 @@ pub fn indexFolder(
 /// `opts` (CLI flags or `ss_index_folder`'s `opts` JSON object) -- see
 /// `docs/tasks/S1-T3.md` criterion 2.
 pub const Caps = struct {
+    /// Opt in to the versioned basename catalog and lexical channel.
+    filename_index: bool = false,
     /// S2-T5, opt-in (`null`, the default, deletes nothing): after a
     /// successful publish, delete the section files of generations older
     /// than the newest `keep_generations` (>= 1). Carried here because
@@ -353,6 +391,12 @@ pub const Caps = struct {
     /// folder; a later `--update` run picks up where this one left off.
     max_total_bytes: u64 = 512 * 1024 * 1024,
 };
+
+const EncodedFilename = struct { catalog: []const u8, lexical: []const u8 };
+fn encodeFilename(allocator: std.mem.Allocator, documents: []const hybrid.Document, analyzer_id: []const u8) !EncodedFilename {
+    const built = try filename_field.build(allocator, documents, analyzer_id);
+    return .{ .catalog = built.catalog, .lexical = built.lexical };
+}
 
 pub const IncrementalReport = struct {
     generation: u64,
@@ -512,6 +556,7 @@ pub fn indexFolderIncremental(
     };
     if (previous_engine) |prev| {
         if (!std.mem.eql(u8, prev.analyzer_id, analyzer.label())) return error.AnalyzerMismatch;
+        if (prev.filename_index_enabled != caps.filename_index) return error.FilenameSettingMismatch;
     }
 
     var old_document_tokens: [][][]const u8 = &.{};
@@ -684,7 +729,7 @@ pub fn indexFolderIncremental(
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
     const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
 
-    const metadata = try manifest.create(
+    const base_metadata = try manifest.create(
         generation,
         analyzer.label(),
         "none",
@@ -693,11 +738,21 @@ pub fn indexFolderIncremental(
         documents_encoded,
         lexical_encoded,
     );
+    const filename_data = if (caps.filename_index) try encodeFilename(allocator, documents.items, analyzer.label()) else null;
+    const filename_catalog_file = if (caps.filename_index) try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{generation}) else "";
+    const filename_lexical_file = if (caps.filename_index) try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{generation}) else "";
+    const metadata = if (filename_data) |data|
+        try manifest.withFilename(base_metadata, filename_catalog_file, filename_lexical_file, data.catalog, data.lexical)
+    else
+        base_metadata;
     const manifest_len = try manifest.encodedLength(metadata);
     const manifest_buffer = try allocator.alloc(u8, manifest_len);
     const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
 
-    const prune = try lifecycle.publishSerializedKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, caps.keep_generations);
+    const prune = if (filename_data) |data|
+        try lifecycle.publishSerializedWithFilenameKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, data.catalog, data.lexical, caps.keep_generations)
+    else
+        try lifecycle.publishSerializedKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, caps.keep_generations);
 
     // Only after the generation is durably published: persist the state
     // that lets the *next* incremental run skip unchanged files again. A

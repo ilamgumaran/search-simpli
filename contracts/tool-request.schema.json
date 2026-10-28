@@ -3,14 +3,43 @@
   "$id": "https://example.local/contracts/tool-request.schema.json",
   "title": "KnowledgeToolRequest",
   "type": "object",
-  "required": ["jsonrpc", "id", "method"],
+  "required": [
+    "jsonrpc",
+    "id",
+    "method"
+  ],
   "properties": {
-    "jsonrpc": { "const": "2.0" },
-    "id": { "type": ["string", "number", "null"] },
-    "method": {
-      "enum": ["search_knowledge", "read_chunk", "list_sources", "index_status"]
+    "jsonrpc": {
+      "const": "2.0"
     },
-    "params": { "type": "object" }
+    "id": {
+      "type": [
+        "string",
+        "number",
+        "null"
+      ]
+    },
+    "method": {
+      "enum": [
+        "search_knowledge",
+        "read_chunk",
+        "list_sources",
+        "index_status"
+      ]
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "search_field": {
+          "enum": [
+            "content",
+            "filename",
+            "both"
+          ],
+          "description": "Optional search_knowledge field, default content. filename/both require retrieval_mode lexical and an indexed filename channel."
+        }
+      }
+    }
   },
   "additionalProperties": false
 }

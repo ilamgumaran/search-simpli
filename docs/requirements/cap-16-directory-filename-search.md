@@ -1,6 +1,6 @@
 # CAP-16 — Directory filename retrieval alongside cited content search
 
-Status: Proposed · Evidence: future option · Not build-ready (step 6b pending)
+Status: Diagnostic · source implemented; bundled native rollout pending
 
 ## 1. Proposal
 
@@ -28,9 +28,9 @@ knowledge. Existing content evidence remains authoritative for answer claims.
 | --- | --- | --- | --- |
 | FR-16 | Opt-in filename and combined lexical retrieval over supported files with real indexed body spans; explicit match origin, pre-rank path/label isolation, deterministic file ranking, versioned channel availability and refresh/migration behavior; default content results unchanged. | New | UC-006 |
 
-### Retrieval policy: proposed `filename-field-v1`
+### Retrieval policy: `filename-field-v1`
 
-- Proposed request field `search_field` is `content` (default), `filename` or
+- Request field `search_field` is `content` (default), `filename` or
   `both`. New fields/modes require `retrieval_mode=lexical`; vector/hybrid with
   filename/both returns a clear input error. Existing content/hybrid is unchanged.
 - One filename record per root-relative POSIX path that has at least one indexed
@@ -76,11 +76,11 @@ Retain the dependency-free Zig inverted index and persisted BM25 engine. The
 initial SQLite suggestion made before repository access is superseded by this
 audit: another engine is unnecessary for the measured gap.
 
-Propose an opt-in `--filename-index` build setting, recorded as channel/policy
+The opt-in `--filename-index` build setting is recorded as channel/policy
 identity. A versioned manifest revision binds a checksummed filename catalog and
 lexical section to the same body generation. The catalog binds each path, labels
 and anchor chunk id; loaders validate references, bounds and checksums. Exact
-wire constants and schema revision are frozen in DS-01 before runtime work.
+wire constants and schema revision are frozen in [DS-01](../filename-field-format-v1.md).
 No unchecked mutable sidecar or scan of source files is allowed at query time.
 
 New readers continue to open old body-only snapshots for content queries.
@@ -105,7 +105,7 @@ CON-01 gains match-origin/policy information only in new-mode responses;
 CON-02 specifies the opt-in request parameter; CON-03 gains optional versioned
 filename-channel import data. Document the manifest revision and status capability
 alongside these schemas. C ABI/Dart JSON options and contract version must evolve
-together. No existing schemas or `CONTRACTS_VERSION` change in this design PR.
+together. Source schemas and `CONTRACTS_VERSION` now use 1.3.0; bundled native artifacts remain pending a real platform rebuild.
 
 ## 6. Invariant compliance
 
@@ -125,8 +125,7 @@ together. No existing schemas or `CONTRACTS_VERSION` change in this design PR.
 
 ## 7. Register updates
 
-CAP-16/FR-16 added as proposed, traced through UC-006 and the specification's
-proposed appendix. No NFR/CON ids added. CFT-17–19 record the new tensions.
+CAP-16/FR-16 are diagnostic source implementations, traced through UC-006 and the specification. No NFR/CON ids added. CFT-17–19 record the new tensions.
 
 ## 8. Conflict check
 
@@ -138,14 +137,14 @@ Checked against all current register entries at the baseline above.
 | CFT-18 | Filename catalog/stats could reveal hidden paths or stale labels (INV-03, FR-08/09). | Shared trusted prefilter, reject conflicting labels, hidden/absent parity, atomic refresh. | Resolved (design) |
 | CFT-19 | Additional channel could silently change snapshots/contracts (INV-04/07). | Versioned manifest/import capability, explicit unavailable error, separate-directory full rebuild, legacy content parity and rollback. | Resolved (design) |
 
-These are proposed design resolutions for maintainer review, not implemented
-compliance evidence or approval. Existing CFT-03/CFT-09 and E-01A/CAP-14 gates
+These design resolutions are exercised by the recorded Linux diagnostic gates;
+platform release acceptance remains incomplete. Existing CFT-03/CFT-09 and E-01A/CAP-14 gates
 remain unchanged; this work does not depend on those proposed capabilities.
 
 ## 8b. Dependencies
 
-Implemented CAP-01/02/05/06/07/08/09/10. DS-01 must freeze exact schemas and
-format compatibility before build. Named step-6b approval is pending. Native
+Implemented CAP-01/02/05/06/07/08/09/10. DS-01 froze schemas and format compatibility
+before build, and the owner authorized implementation as recorded below. Native
 library rollout needs an equipped Xcode Mac, pinned Zig/NDK and matching Dart
 tests. PR #11 recovery integration and its S1-T21 numbering conflict remain
 separate; do not merge it or substitute stale binaries to finish this task.
@@ -194,22 +193,33 @@ not a deferrable implementation detail.
 
 [Directory task split](../tasks/directory-search.md) assigns DS-01–DS-05, baseline,
 tests, platform evidence and rollback. Append experiments, update PROJECT-STATE
-and register status only as actual evidence warrants. This draft remains Proposed;
-an independent technical review does not supply maintainer approval.
+and register status only as actual evidence warrants. Current source evidence is Diagnostic;
+platform rollout, real-folder relevance and device suitability remain separate.
 
 ## 11. Open decisions
 
-Maintainer: approve scope/policy and exact DS-01 schema revision before build.
+Owner authorization and independently reviewed DS-01 are recorded below.
 Owner: supply real-folder and device budgets later. Performance data may justify
 deferring combined ranking; it cannot silently enable fuzzy/semantic expansion.
 
 ## 12. Maintainer approval
 
-Required by [step 6b](../capability-process.md#6b-maintainer-approval-gate).
-Approve invariants (§6), CFT-17–19 (§8) and gates/pending scope (§9), plus final
-DS-01 format freeze, against the reviewed commits before implementation.
+- Approver: repository owner `ilamgumaran`, direct chat instruction “Pls implement and push to remote”.
+- Date: 2026-10-25.
+- Reviewed design: `4693a21463f98b2d6c4138630db14b522449d290`, merged as `4b12ce7`.
+- Scope: implement CAP-16 invariants, CFT-17–19 resolutions and acceptance gates, including routine format details. No invariant exception or permission to fabricate platform results.
+- Frozen implementation boundary: [filename-field-v1](../filename-field-format-v1.md), with synthetic fixtures and default-content golden outputs under `fixtures/filename-search/`.
+- Status: owner authorization received; independent technical format review precedes runtime work. Remaining platform rebuild/verification gates still apply.
 
-- Approver: Pending named maintainer; the author cannot self-approve.
-- Date: Pending.
-- Commit: Pending final reviewed specification / DS-01 revision.
-- Status: Pending approval; no runtime capability is authorized by this record.
+## 13. Sectioned match presentation (owner request, 2026-10-28)
+
+New-mode results retain flat citation/content/ranking fields and add
+`match_sections.filename` / `match_sections.content`. Each section contains label,
+matched boolean, unique query-ordered analyzed `matched_terms`, displayed text and
+its own citation. Filename evidence uses the indexed stem (suffix excluded), with
+path/field only. Content evidence uses the selected stored span and real lines.
+Both sections always appear, including unmatched context. These booleans describe
+actual terms in displayed text regardless of channel truncation; `matched_in`
+continues to describe ranking contributions. Human CLI output uses the same two
+sections. Legacy content-only JSON remains byte-compatible. See the
+[implementation handoff](../tasks/directory-filename-implementation.md).
