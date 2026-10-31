@@ -9,6 +9,7 @@ const hybrid = @import("hybrid.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
+const scope = @import("scope.zig");
 const source_section = @import("source.zig");
 
 /// Open the current published generation in `dir`. All returned buffers
@@ -72,6 +73,26 @@ pub fn openSource(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Op
     const buffer = try allocator.alloc(u8, metadata.source_bytes);
     const bytes = (try publication.loadSource(dir, io, metadata, buffer)).?;
     return .{ .metadata = metadata, .source = try source_section.openIndexed(allocator, bytes) };
+}
+
+/// S3-T3: the current generation with its roots, pending files, source
+/// section and visible-scope statistics (`scope.Folder`), the engine's
+/// `statistics` pointing at the folder's. For the scoped operations of
+/// `service.ScopedService`. Everything from `allocator`.
+pub const Scoped = struct {
+    engine: engine.Engine,
+    folder: *scope.Folder,
+};
+
+pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Scoped {
+    var opened_engine = try open(allocator, io, dir);
+    const opened = try openSource(allocator, io, dir);
+    const meta: ?manifest.Meta = if (opened.metadata.meta.len != 0) try manifest.parseMeta(allocator, opened.metadata.meta) else null;
+    const folder = try allocator.create(scope.Folder);
+    folder.* = try scope.Folder.build(allocator, opened_engine.documents, opened_engine.lexical_index, meta, opened.source);
+    folder.has_positions = opened.metadata.has_positions;
+    opened_engine.statistics = &folder.statistics;
+    return .{ .engine = opened_engine, .folder = folder };
 }
 
 test "open reproduces a published demo generation" {

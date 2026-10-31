@@ -5,6 +5,15 @@ pub const Bm25Parameters = struct {
     b: f32 = 0.75,
 };
 
+/// The collection statistics BM25 divides by (S3-T3): the document count and
+/// average length of the documents a request may see. `scope.zig` computes
+/// them over the visible scope (roots and labels, implementation section 7);
+/// the whole index's values are the default when nothing is hidden.
+pub const CollectionStatistics = struct {
+    document_count: u32,
+    average_document_length: f32,
+};
+
 pub const VectorError = error{DimensionMismatch};
 
 pub fn bm25Contribution(

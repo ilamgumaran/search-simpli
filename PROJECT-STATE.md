@@ -9,6 +9,30 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
+## S3-T3: roots, apply_changes, visible-scope statistics (2026-10-31)
+
+A generation now holds several roots (`meta.roots`: `root_id`, `label`, `kind`,
+`required_labels`, `retain_source`, `origin`); records are `root_id/relative`,
+except `r-legacy` (the `index_folder` root), which keeps bare paths so existing
+chunk ids and citations do not change. `apply.applyChanges` (core only; ABI,
+CLI, Dart and RPC in S3-T4) applies host-fed `add | change | remove | move |
+pending | remove_root` batches: strict `content_base64` or a `file` under a
+declared local root (no symlinks, file reads opt-in), sha256 verified, caps of
+10,000 changes and `max_total_bytes`, `expect_generation` first ("stale:
+generation is M"), `conflicts`, rename detection with sorted pairing and
+`ambiguous_moves`, `pending` dropping chunks, one atomic publication with
+`INDEX-STATE.json` v2 written after it. `index_folder` is a walk over the same
+path and its report is unchanged. BM25 statistics, prefix expansion and every
+scoped core operation (`service.ScopedService`) see only the visible scope
+(roots named and labels); a hidden label domain is indistinguishable from an
+absent one in every payload (timing is not equal; disclosed in
+`docs/authorization.md`). The unscoped C ABI/RPC `index_status` still report
+whole-index counts until S3-T4. Measured on the 10k corpus: full index through
+`apply_changes` 0.31-0.34 s, 145 MB (ReleaseFast); one changed file 168 ms
+ReleaseFast, 220 ms ReleaseSmall (NFR-12 amended to ReleaseFast). Native
+libraries rebuilt (SOURCE-SHA256 `6b7ae4fe...`). Verified and merged
+2026-10-31. [Task](docs/tasks/S3-T3.md).
+
 ## S3-T2: positions, phrase, prefix, conjunctive words, snippets (2026-10-31)
 
 `searchd index` (full and `--update`) now writes the lexical section as `HYBLEX02`

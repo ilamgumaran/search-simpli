@@ -76,6 +76,12 @@ pub const Request = struct {
     root_ids: []const []const u8 = &.{legacy_root_id},
     /// BM25 statistics (S3-T3 hook); null is the whole generation.
     statistics: ?scoring.CorpusStatistics = null,
+    /// S3-T3: the roots the trusted caller named (`scope.zig`); null = all.
+    visible_roots: ?hybrid.RootMask = null,
+    /// S3-T3: filled by the scoped caller (`service.ScopedService.find`) from
+    /// the generation's pending and skipped files in the scope.
+    pending_files: usize = 0,
+    truncated: bool = false,
     bm25: scoring.Bm25Parameters = .{},
     /// Recompute highlight offsets by re-tokenizing each hit's text instead
     /// of reading section 5: the rollback NFR-11 names, kept so its cost can
@@ -257,9 +263,9 @@ pub fn find(allocator: std.mem.Allocator, engine: engine_module.Engine, request:
         .exact_match = if (parsed.mode == .phrase) total > 0 else null,
         .empty = hits.len == 0,
         .coverage = try coverageOf(allocator, hits),
-        .truncated = false,
+        .truncated = request.truncated,
         .next_cursor = if (page_end < total) try std.fmt.allocPrint(allocator, "{d}:{d}", .{ engine.generation, page_end }) else null,
-        .pending_files = 0,
+        .pending_files = request.pending_files,
     } };
 }
 
@@ -354,6 +360,7 @@ const Context = struct {
     }
 
     fn visible(context: *const Context, document_index: usize) bool {
+        if (context.request.visible_roots) |mask| if (!mask.allows(document_index)) return false;
         const document = context.engine.documents[document_index];
         return hybrid.matchesPath(document.path, context.request.path_prefix) and
             hybrid.isAuthorized(document.required_labels, context.request.principal_labels);

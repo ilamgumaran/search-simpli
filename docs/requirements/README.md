@@ -182,7 +182,7 @@ until promoted.
 
 | NFR-10 | Phrase/words latency and generation-bound paging | CAP-19 | Proposed |
 | NFR-11 | Positional segment size budget | CAP-19 | Proposed |
-| NFR-12 | Full/incremental indexing time and memory budgets | CAP-19 | Proposed |
+| NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseFast, ReleaseSmall reported) | CAP-19 | Proposed |
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Proposed |
 | NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Proposed |
 

@@ -21,6 +21,7 @@ from src.search_platform.core import (
     search,
 )
 from src.search_platform.evaluation import RETRIEVAL_MODES, evaluate_modes, load_suite
+from src.search_platform.folders import FolderIndex, add_change, folder_changes
 from src.search_platform.find import find, find_all
 from src.search_platform.providers import (
     DEFAULT_FASTEMBED_MODEL,
@@ -184,6 +185,62 @@ def _overlaps(hit: dict, expected: dict) -> bool:
     )
 
 
+def _hit_overlaps(hit: dict, expected: dict) -> bool:
+    return (hit["root_id"] == expected["root_id"] and hit["path"] == expected["path"]
+            and hit["start_line"] <= expected["end_line"] and expected["start_line"] <= hit["end_line"])
+
+
+def run_lifecycle(pack_dir: Path, roots: list[str], scenario: dict) -> bool:
+    """A lifecycle scenario (UC-007 q11-q13) through the Python reference's
+    `apply_changes` (S3-T3): the three roots are fed as `add` changes, then
+    every step runs and is checked. `find` steps use `words` as conjunctive
+    BM25 over the visible scope (S3-T2 owns the real `find` modes)."""
+    index = FolderIndex()
+    changes = [change for root in roots for change in folder_changes(root, pack_dir / root)]
+    index.apply_changes({"roots": [{"root_id": r, "label": r, "kind": "host"} for r in roots], "changes": changes})
+    for step in scenario["steps"]:
+        if step["op"] == "apply_changes":
+            batch = [add_change(c["root_id"], c["path"], c["text"]) if "text" in c else dict(c) for c in step["changes"]]
+            report = index.apply_changes({"changes": batch})
+            if any(report.get(key) != value for key, value in step["expect_report"].items()):
+                return False
+        elif step["op"] == "find":
+            if step.get("mode", "words") != "words":
+                return False
+            hits = index.search(step["query"], roots=step.get("roots"), top_k=100, conjunctive=True)
+            if "expect_hits" in step:
+                expected = step["expect_hits"]
+                if not all(any(_hit_overlaps(h, e) for h in hits) for e in expected):
+                    return False
+                if not all(any(_hit_overlaps(h, e) for e in expected) for h in hits):
+                    return False
+            for expected in step.get("expect_hits_include", []):
+                if not any(_hit_overlaps(h, expected) for h in hits):
+                    return False
+            paths = {h["path"] for h in hits}
+            if not set(step.get("expect_paths_include", [])) <= paths:
+                return False
+            if paths & set(step.get("expect_paths_exclude", [])):
+                return False
+            if step.get("expect_empty") and hits:
+                return False
+        elif step["op"] == "index_status":
+            status = index.index_status()
+            expect = step["expect"]
+            if "pending_paths" in expect and status["pending_paths"] != expect["pending_paths"]:
+                return False
+            if "roots" in expect and [r["root_id"] for r in status["roots"]] != expect["roots"]:
+                return False
+            for gone in expect.get("no_trace_of_roots", []):
+                if gone in index.roots or any(f["root_id"] == gone for f in index.list_files()):
+                    return False
+                if any(c["path"].startswith(gone + "/") for c in index.visible_chunks()):
+                    return False
+        else:
+            return False
+    return True
+
+
 def run_pack(name: str, *, top_k: int = 5) -> dict:
     """Run a frozen judgment pack through the Python reference (lexical, one union index).
 
@@ -225,7 +282,7 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
             return (got["sha256"] == case["sha256"]
                     and len(got["text"].encode("utf-8")) == case["byte_length"])
 
-        exact: dict[str, list[dict]] = {kind: [] for kind in EXACT_KINDS}
+        exact: dict[str, list[dict]] = {kind: [] for kind in (*EXACT_KINDS, "lifecycle")}
         for case in judgments["outline"]:
             exact["outline"].append({"id": case["id"], "exact": run_outline(case)})
         for case in judgments["read_span"]:
@@ -310,7 +367,7 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
             elif kind == "summary":
                 exact["outline"].append({"id": sc["id"], "exact": run_summary(sc)})
             elif kind == "lifecycle":
-                skip("scenario lifecycle (S3-T3/T4)")
+                exact["lifecycle"].append({"id": sc["id"], "exact": run_lifecycle(pack_dir, judgments["roots"], sc)})
             else:
                 skip(f"scenario {kind}")
     recalls = [c["recall"] for c in cases]

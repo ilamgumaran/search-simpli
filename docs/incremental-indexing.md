@@ -220,6 +220,56 @@ contract, so an index saved before S3-T1 no longer matches it and an
 incremental build from it is refused with "chunker contract does not match"
 (a full build is needed once).
 
+### Roots, host-fed changes and INDEX-STATE v2 (S3-T3)
+
+Since S3-T3 every generation is written by one core function,
+`apply.applyChanges` / `apply.applyBatch` (`zig/src/apply.zig`;
+[implementation §5–§6](folder-knowledge-implementation.md)). A request names
+roots (`root_id`, `label`, `kind` local/icloud/host, `required_labels`,
+`retain_source`, and for a `local` root the absolute `path` its `file`
+changes must lie under) and up to 10,000 changes: `add`/`change` with exactly
+one of strict `content_base64` or a confined `file` (with its `sha256`),
+`remove`, `move` (`moved_from`), `pending` (a file named before its bytes
+arrive: no chunks, listed by name) and `remove_root`. The engine checks
+`expect_generation` first (`"stale: generation is M"`), refuses a malformed
+or over-cap request whole, applies the changes in array order per path
+(`conflicts`), pairs equal-content removes and adds into moves (sorted by
+path, `ambiguous_moves`), publishes one generation through the same atomic
+path as before (documents, lexical and source sections bound by the
+manifest, with the roots, pending, unchunked and skipped files in its
+`meta`), then writes `INDEX-STATE.json`.
+
+`index_folder` is now a walk that builds such a batch: one `local` root
+`r-legacy` (whose records keep their bare relative paths, so ids and
+citations are unchanged), one `change` per candidate file read through the
+walked folder, every root file the walk no longer sees removed, a byte budget
+that leaves files `budget_exhausted` instead of refusing, and no rename
+detection (its report has no `moved`; a rename stays `removed` + `added`).
+Every report field above is unchanged, and so is each outcome in the table:
+an unchanged hash keeps the chunks, a too-large file is tombstoned, an
+unreadable or left-over file keeps its previous chunks. A `--update` over an
+index that also holds host roots leaves them untouched and reports on its own
+root only; a full rebuild (`--update` absent) starts a fresh index.
+
+`INDEX-STATE.json` is version 2: `state_version`, `generation`,
+`analyzer_id`, the roots, and per file `root_id`, `path`, `size`, `mtime_ms`,
+`sha256` (null when unknown), `status` (`indexed` or `pending`), `chunker`,
+`chunks`, `moved_from` and the file's own `required_labels`. Version 1
+(entries `{path, hash, size}`) still loads, as root `r-legacy`. The state is
+trusted only when its generation equals `MANIFEST`'s; after a crash between
+the publication and the state write the writer rebuilds the file table from
+the generation (hashes from the retained source), so a retried batch still
+reports unchanged files as `unchanged`.
+
+What an update costs now: the previous generation is read once (each
+section's checksum computed once), carried documents keep their postings,
+ordinals and offsets without being re-tokenized (`buildPositionalMerged`
+yields the same bytes as a fresh positional build), and only changed files
+are chunked and analysed; the lexical and source sections are still
+rewritten whole (NFR-12 allows it). Measured on the 10k corpus (S3-T3
+Report): one changed file 163 ms (ReleaseFast) and 215 ms (ReleaseSmall);
+a full index through `apply_changes` 0.33 s / 144 MB peak.
+
 ## The Python path: `search.py index --incremental-from`
 
 Separate, older system for the Python vector/embedding pipeline — still

@@ -265,6 +265,24 @@ pub fn publishSerializedKeepingWithSource(
     if (keep_generations) |keep| if (keep == 0) return error.InvalidKeepGenerations;
     var lease = (try tryAcquireWriter(dir, io)) orelse return error.WriterBusy;
     defer lease.release(io);
+    return publishLeasedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, keep_generations);
+}
+
+/// `publishSerializedKeepingWithSource` for a caller that already holds the
+/// writer lease (S3-T3: `apply.zig` takes `WRITER.LOCK` before it reads the
+/// current generation, so the `expect_generation` check, the reading of the
+/// previous generation and the publication are one critical section).
+pub fn publishLeasedKeepingWithSource(
+    allocator: std.mem.Allocator,
+    dir: std.Io.Dir,
+    io: std.Io,
+    manifest_encoded: []const u8,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+    source_encoded: ?[]const u8,
+    keep_generations: ?usize,
+) !PruneReport {
+    if (keep_generations) |keep| if (keep == 0) return error.InvalidKeepGenerations;
     try publication.publishWithSource(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded);
     const keep = keep_generations orelse return .{};
     const metadata = manifest.decode(manifest_encoded) catch return .{ .failed = 1 };

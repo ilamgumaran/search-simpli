@@ -298,8 +298,9 @@ class GeneratorAndRunnerTests(unittest.TestCase):
         # S3-T2: phrase and prefix run through the Python reference's `find`:
         # 5 + 5 cases plus scenarios 2 and 3, precision and recall 1.00 across
         # all pages, the listed engine misses missed; scenario 10's phrase
-        # step runs too. Only the three lifecycle scenarios still skip.
-        self.assertEqual(report["skipped"], {"scenario lifecycle (S3-T3/T4)": 3})
+        # step runs too. S3-T3: the three lifecycle scenarios run as well, so
+        # nothing is skipped.
+        self.assertEqual(report["skipped"], {})
         self.assertEqual({k: len(v) for k, v in report["find_cases"].items()}, {"phrase": 6, "prefix": 6})
         for metrics in report["find_metrics"].values():
             self.assertEqual(metrics, {"precision": 1.0, "recall": 1.0, "expected_misses_found": 0})
@@ -308,7 +309,10 @@ class GeneratorAndRunnerTests(unittest.TestCase):
         # S3-T1: outline and read_span run through the Python reference, exactly.
         self.assertNotIn("outline", report["skipped"])
         self.assertNotIn("read_span", report["skipped"])
-        self.assertEqual(report["exactness"], {"outline": 1.0, "read_span": 1.0, "phrase_neighbour": 1.0})
+        # S3-T3: the three lifecycle scenarios run through the reference's apply_changes.
+        self.assertEqual(report["exactness"], {"outline": 1.0, "read_span": 1.0, "phrase_neighbour": 1.0, "lifecycle": 1.0})
+        self.assertEqual(len(report["exact_cases"]["lifecycle"]), 3)
+        self.assertNotIn("scenario lifecycle (S3-T3/T4)", report["skipped"])
         self.assertEqual(len(report["exact_cases"]["read_span"]), 9)  # 8 cases + scenario 5
         self.assertEqual(len(report["exact_cases"]["outline"]), 7)  # 5 cases + scenarios 4 and 9
 

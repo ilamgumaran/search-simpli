@@ -54,6 +54,18 @@ class TokenizerTests(unittest.TestCase):
 
 
 class FindTests(unittest.TestCase):
+    def test_words_is_conjunctive(self):
+        # S3-T2 Verdict finding 1: a file holding only some of the words is
+        # not a words hit (a disjunctive `words` would return all three).
+        index = index_of({
+            "both.txt": "the canal boat came at noon\n",
+            "canal.txt": "a canal with no other word\n",
+            "boat.txt": "a boat on its own\n",
+        })
+        answer = find(index, "canal boat", page_size=100)
+        self.assertEqual([hit["path"] for hit in answer["hits"]], ["both.txt"])
+        self.assertEqual(answer["files"], [{"root_id": "r-legacy", "path": "both.txt", "hits": 1}])
+
     def test_phrase_repeated_tokens_punctuation_tamil_and_quotes(self):
         index = index_of({
             "a.txt": "the the the\n",
