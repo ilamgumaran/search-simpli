@@ -1,6 +1,6 @@
 # CAP-19 — Folder knowledge: exact finding, document structure, several roots, host-fed changes, one tool surface for models, apps and MCP
 
-Status: Proposed · Evidence: design only (2026-10-31)
+Status: Approved for build (2026-10-31, the owner; evidence still pending until the S3 tasks report)
 
 > Run through the [capability process](../capability-process.md), steps 1–6.
 > Review amendments recorded; acceptance evidence and approval pending; implementation is a later step
@@ -176,7 +176,7 @@ Implementation details: [`docs/folder-knowledge-implementation.md`](../folder-kn
 
 Pending review of this capability, UC-007, the plan and the [review](../reviews/2026-10-31-folder-knowledge-review.md). No implementation approval is recorded.
 
-- Approver:
-- Date:
-- Commit:
-- Status: Pending approval
+- Approver: the owner (by message to the orchestrator, 2026-10-31 14:10 ET: "Go with your recommendation")
+- Date: 2026-10-31
+- Commit: the design branch at `59152a5` plus this amendment
+- Status: Approved; open decisions 1–7 taken as proposed (positions per chunk, source retention per root, stdio MCP first, the skill generated at the consumer's pin bump)
