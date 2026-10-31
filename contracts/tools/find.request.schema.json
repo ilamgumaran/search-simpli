@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/find.request.schema.json",
+  "title": "find request",
+  "description": "The params object of the `find` tool. Exact finding: words, a phrase (quoted) or a prefix (trailing *). Principal labels are never a caller field: the host supplies the scope (docs/tool-schemas.md).",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "A query in double quotes is a phrase; a trailing * makes the last word a prefix.",
+      "minLength": 1
+    },
+    "mode": {
+      "enum": [
+        "words",
+        "phrase",
+        "prefix"
+      ],
+      "default": "words",
+      "description": "Matching mode; a quoted query forces phrase and a trailing * forces prefix."
+    },
+    "roots": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+    },
+    "path_prefix": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Root-relative path prefix."
+    },
+    "page_size": {
+      "type": "integer",
+      "description": "Hits per page.",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 20
+    },
+    "cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]+:[0-9]+$",
+      "description": "The previous page's next_cursor (\"<generation>:<offset>\"). A cursor from another generation is refused as a stale cursor."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "query"
+  ]
+}

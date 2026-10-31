@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/outline.request.schema.json",
+  "title": "outline request",
+  "description": "The params object of the `outline` tool. Headings and front matter of one file. Principal labels are never a caller field: the host supplies the scope (docs/tool-schemas.md).",
+  "type": "object",
+  "properties": {
+    "root_id": {
+      "type": "string",
+      "description": "Root id.",
+      "minLength": 1
+    },
+    "path": {
+      "type": "string",
+      "description": "Root-relative path.",
+      "minLength": 1
+    },
+    "roots": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "root_id",
+    "path"
+  ]
+}

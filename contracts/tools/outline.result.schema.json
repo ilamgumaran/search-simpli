@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/outline.result.schema.json",
+  "title": "outline result",
+  "description": "The structure of one file.",
+  "type": "object",
+  "properties": {
+    "request": {
+      "type": "object",
+      "description": "The request echoed with defaults filled in (roots is null when not given).",
+      "properties": {
+        "root_id": {
+          "type": "string",
+          "description": "Root id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Root-relative path."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root_id",
+        "path",
+        "roots"
+      ]
+    },
+    "generation": {
+      "type": "integer",
+      "description": "The index generation this answer came from.",
+      "minimum": 0
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Warnings about this answer.",
+      "items": {
+        "$ref": "#/$defs/warning"
+      }
+    },
+    "front_matter": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The front-matter block, null when the file has none.",
+      "properties": {
+        "start_line": {
+          "type": "integer",
+          "description": "First line.",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "description": "Last line.",
+          "minimum": 1
+        },
+        "fields": {
+          "type": "object",
+          "description": "key: value pairs; {} when the inner lines are not all key: value.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "raw": {
+          "type": "string",
+          "description": "The inner lines joined by LF, present only when fields is {}."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "start_line",
+        "end_line",
+        "fields"
+      ]
+    },
+    "headings": {
+      "type": "array",
+      "description": "Headings in file order.",
+      "items": {
+        "type": "object",
+        "description": "One heading.",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "description": "Heading level.",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "text": {
+            "type": "string",
+            "description": "Heading text."
+          },
+          "line": {
+            "type": "integer",
+            "description": "Heading line.",
+            "minimum": 1
+          },
+          "end_line": {
+            "type": "integer",
+            "description": "Last line of the section.",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "level",
+          "text",
+          "line",
+          "end_line"
+        ]
+      }
+    },
+    "lines": {
+      "type": "integer",
+      "description": "Lines in the file.",
+      "minimum": 0
+    },
+    "chunker": {
+      "type": "string",
+      "description": "Chunker id of the file."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "request",
+    "generation",
+    "scope",
+    "warnings",
+    "front_matter",
+    "headings",
+    "lines",
+    "chunker"
+  ],
+  "$defs": {
+    "scope": {
+      "type": "object",
+      "description": "The scope the request ran in.",
+      "properties": {
+        "roots": {
+          "type": "array",
+          "description": "The root ids the request could see, in the generation's order.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "labels_applied": {
+          "const": true,
+          "description": "Always true: the scope's labels (possibly none) filtered before any candidate. It does not say whether labels hid anything."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "roots",
+        "labels_applied"
+      ]
+    },
+    "warning": {
+      "type": "object",
+      "description": "One warning.",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Machine-readable code. So far `end_line_clamped` (read_span)."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable detail."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    }
+  }
+}
