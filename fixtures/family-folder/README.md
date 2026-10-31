@@ -10,7 +10,10 @@ Do not edit the files by hand. `python3 fixtures/family-folder/generate.py`
 rewrites every file and `judgments.json` (and this README) deterministically from
 `content.py` and `generate.py`; `tests/test_family_folder_fixture.py` regenerates
 into a temporary folder and compares byte for byte. Every line range, section
-path and sha256 below is computed from the files, never typed.
+path and sha256 below is computed from the files, never typed. The generator imports
+the repository's analyzer (`tokenize`) and chunker (`_line_chunks`): a later change to
+either moves the phrase and prefix sets or the chant placement and fails the
+determinism test, which is intended for a frozen pack.
 
 ## Roots and special files
 
@@ -44,7 +47,7 @@ Front matter is the YAML subset `key: value` (strings only). Headings nest to de
 - Lines are 1-based. A line ends at `\n` or `\r\n`; a final line without a terminator counts; an empty file has 0 lines; a BOM is not part of any line.
 - A returned hit matches an expected entry when `root_id` and `path` are equal and the line ranges overlap.
 - Phrase and prefix expected sets are complete across all pages. Tokens come from the repository analyzer (`tokenize`), so case is folded and punctuation separates words.
-- `read_span`: the sha256 of the original bytes from the first byte of `start_line` to the last byte of `end_line`, inner terminators kept (so CRLF stays CRLF), the last line's terminator excluded. Cases avoid line 1 of the BOM file because a BOM is not a line.
+- `read_span`: the sha256 of the original bytes from the start of `start_line` to the start of the line after `end_line` (CAP-19 FR-22, section 4), so every terminator in the range is kept, the last line's own included, and CRLF stays CRLF; a final line without a terminator has none (case s4). Cases avoid line 1 of the BOM file because a BOM is not a line.
 - Outline `end_line` is the line before the next heading of the same or higher level, else the last line. `#` lines inside a fence are not headings. Setext headings report the text line.
 
 ## Gates (UC-007)
@@ -98,7 +101,7 @@ found.
 
 | id | Query | Expected lines | Note |
 | --- | --- | --- | --- |
-| x1 | `photosyn*` | `home/garden.md` 17-17<br>`laptop/photosynthesis-draft.md` 2-2<br>`laptop/photosynthesis-draft.md` 6-6<br>`laptop/photosynthesis-draft.md` 12-12<br>`laptop/photosynthesis-draft.md` 17-17<br>`school/science-notes.md` 15-15<br>`school/science-notes.md` 18-18 | words that begin the same way across three files |
+| x1 | `photosyn*` | `home/garden.md` 17-17<br>`laptop/photosynthesis-draft.md` 6-6<br>`laptop/photosynthesis-draft.md` 12-12<br>`laptop/photosynthesis-draft.md` 17-17<br>`school/science-notes.md` 15-15<br>`school/science-notes.md` 18-18 | words that begin the same way across three files **expected engine miss (front matter, not body):** `laptop/photosynthesis-draft.md` 2-2 |
 | x2 | `spell*` | `laptop/reports/term-summary.md` 5-5<br>`laptop/todo.txt` 3-3<br>`school/homework-routine.txt` 4-4<br>`school/homework-routine.txt` 9-9<br>`school/notes.md` 25-25<br>`school/notes.md` 27-27<br>`school/spelling-lists.md` 1-1<br>`school/spelling-lists.md` 16-16<br>`school/timetable.md` 29-29 | one prefix covers the words spell and spelling (names, notes and lists) |
 | x3 | `harbo*` | `home/trips/seaside-weekend.md` 11-11<br>`laptop/big-log.txt` 4711-4711<br>`laptop/big-log.txt` 12003-12003<br>`school/geography-coast.md` 11-11<br>`school/geography-coast.md` 18-18 | includes one hit deep inside the file larger than 1 MB |
 | x4 | `lighthou*` | `laptop/big-log.txt` 4711-4711<br>`laptop/big-log.txt` 12003-12003<br>`laptop/reading-notes.md` 3-3<br>`laptop/reading-notes.md` 5-5<br>`school/notes.md` 15-15<br>`school/reading-log.md` 5-5 | a prefix that is also a whole word; a planted line in the large file |
@@ -118,8 +121,11 @@ found.
 
 | id | File | Lines | Bytes | Note |
 | --- | --- | --- | --- | --- |
-| s1 | `school/science-notes.md` | 40-60 | 574 | the UC-007 example: lines 40 to 60 with one line of context |
-| s2 | `home/crlf-shopping.md` | 3-8 | 63 | CRLF: the returned bytes keep the inner \r\n |
-| s3 | `home/bom-checklist.md` | 3-6 | 28 | a BOM file: line numbers ignore the BOM; the span starts after line 1 |
+| s1 | `school/science-notes.md` | 40-60 | 575 | the UC-007 example: lines 40 to 60 with one line of context |
+| s2 | `home/crlf-shopping.md` | 3-8 | 65 | CRLF: the returned bytes keep the inner \r\n |
+| s3 | `home/bom-checklist.md` | 3-6 | 29 | a BOM file: line numbers ignore the BOM; the span starts after line 1 |
 | s4 | `home/no-final-newline.txt` | 3-4 | 39 | ends at the last line, which has no terminator |
-| s5 | `laptop/big-log.txt` | 9000-9010 | 818 | deep inside the file larger than 1 MB |
+| s5 | `laptop/big-log.txt` | 9000-9010 | 819 | deep inside the file larger than 1 MB |
+| s6 | `school/notes.md` | 1-5 | 58 | a front-matter range, from line 1 through the closing --- line |
+| s7 | `school/notes.md` | 33-34 | 124 | an indented continuation line inside a list item |
+| s8 | `home/tamil-notes.md` | 3-6 | 246 | Tamil text: multi-byte UTF-8, byte length differs from codepoint count |

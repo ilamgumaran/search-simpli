@@ -82,7 +82,7 @@ class InventoryTests(unittest.TestCase):
     def test_markdown_structure(self):
         text = {p: d.decode("utf-8-sig").replace("\r\n", "\n") for p, d in self.files.items() if p.endswith(".md")}
         front = [p for p, t in text.items() if t.startswith("---\n")]
-        self.assertGreaterEqual(len(front), 8)
+        self.assertEqual(len(front), 12)
         for p in front:
             body = t = text[p]
             head = body.split("\n---\n", 1)[0].split("\n")[1:]
@@ -138,8 +138,9 @@ class JudgmentTests(unittest.TestCase):
         self.assertEqual(j["version"], 2)
         self.assertEqual(len(j["scenarios"]), 13)
         self.assertEqual([s["scenario"] for s in j["scenarios"]], list(range(1, 14)))
-        for kind in ("phrase", "prefix", "outline", "read_span"):
+        for kind in ("phrase", "prefix", "outline"):
             self.assertEqual(len(j[kind]), 5, kind)
+        self.assertEqual(len(j["read_span"]), 8)
         self.assertEqual(sum(1 for c in j["phrase"] if c["expected_engine_miss"]), 1)
         self.assertEqual(self.j["scenarios"][7]["expected_empty"], True)
         self.assertEqual(self.j["scenarios"][7]["expected"], [])
@@ -167,7 +168,7 @@ class JudgmentTests(unittest.TestCase):
                         self.assertIn(f"{p['root_id']}/{p.get('moved_from', p['path'])}", self.files.keys())
         for kind in ("phrase", "prefix"):
             for c in j[kind]:
-                for e in c["expected"] + c.get("expected_engine_miss", []):
+                for e in c["expected"] + c["expected_engine_miss"]:
                     self.check_range(e, c["id"])
         for c in j["read_span"]:
             self.check_range(c, c["id"])
@@ -176,19 +177,31 @@ class JudgmentTests(unittest.TestCase):
         for c in self.j["read_span"]:
             data = self.files[self.key(c)]
             body = data[len(BOM):] if data.startswith(BOM) else data
-            lines = body.split(b"\n")
-            # absolute byte offsets of the requested lines, terminators of inner lines kept
-            offsets, pos = [], 0
-            for raw in lines:
-                offsets.append((pos, pos + len(raw)))
+            # absolute byte offsets of line starts; the span ends at the start of the line
+            # after end_line (or end of file), so the last line's own terminator is included
+            starts, pos = [], 0
+            for raw in body.split(b"\n"):
+                starts.append(pos)
                 pos += len(raw) + 1
-            start = offsets[c["start_line"] - 1][0]
-            end = offsets[c["end_line"] - 1][1]
-            if body[end - 1:end] == b"\r":
-                end -= 1
+            start = starts[c["start_line"] - 1]
+            end = starts[c["end_line"]] if c["end_line"] < len(starts) and starts[c["end_line"]] <= len(body) else len(body)
             chunk = body[start:end]
             self.assertEqual(hashlib.sha256(chunk).hexdigest(), c["sha256"], c["id"])
             self.assertEqual(len(chunk), c["byte_length"], c["id"])
+            if not body.endswith(b"\n"):
+                continue
+            self.assertTrue(chunk.endswith(b"\n"), c["id"])
+        no_nl = next(c for c in self.j["read_span"] if c["path"] == "no-final-newline.txt")
+        self.assertFalse(self.files["home/no-final-newline.txt"].endswith(b"\n"))
+        self.assertEqual(no_nl["end_line"], len(self.lines["home/no-final-newline.txt"]))
+        tamil = next(c for c in self.j["read_span"] if c["path"] == "tamil-notes.md")
+        text = self.files["home/tamil-notes.md"].decode("utf-8").split("\n")
+        self.assertGreater(tamil["byte_length"], len("\n".join(text[tamil["start_line"] - 1:tamil["end_line"]])) + 1)
+        fm = next(c for c in self.j["read_span"] if c["id"] == "s6")
+        self.assertEqual((fm["start_line"], fm["end_line"]), (1, 5))
+        self.assertEqual(self.lines["school/notes.md"][4], b"---")
+        indented = next(c for c in self.j["read_span"] if c["id"] == "s7")
+        self.assertTrue(self.lines["school/notes.md"][indented["end_line"] - 1].startswith(b"  "))
         crlf = next(c for c in self.j["read_span"] if c["path"] == "crlf-shopping.md")
         data = self.files["home/crlf-shopping.md"]
         self.assertIn(b"\r\n", data.split(b"\n", 2)[2][: crlf["byte_length"] + 4])
@@ -208,9 +221,15 @@ class JudgmentTests(unittest.TestCase):
             self.assertEqual(found, expected, c["id"])
         for c in self.j["prefix"]:
             found = {(p, n) for p, ts in toks.items() for t, n in ts if t.startswith(c["prefix"])}
-            expected = {(self.key(e), e["start_line"]) for e in c["expected"]}
+            expected = {(self.key(e), e["start_line"]) for e in c["expected"] + c["expected_engine_miss"]}
             self.assertEqual(found, expected, c["id"])
             self.assertTrue(all(e["start_line"] == e["end_line"] for e in c["expected"]))
+            for e in c["expected_engine_miss"]:  # only front-matter lines (line 1 is ---, so lines 2+ up to the closing ---)
+                lines = self.lines[self.key(e)]
+                closing = lines.index(b"---", 1) + 1
+                self.assertTrue(lines[0] == b"---" and 1 < e["start_line"] < closing, c["id"])
+            if c["expected_engine_miss"]:
+                self.assertIn("front matter", c["expected_engine_miss_reason"])
 
     def test_known_chunk_local_miss_is_a_real_miss(self):
         miss = next(c for c in self.j["phrase"] if c["expected_engine_miss"])
@@ -279,7 +298,7 @@ class GeneratorAndRunnerTests(unittest.TestCase):
         self.assertEqual(report["skipped"]["phrase"], 5)
         self.assertEqual(report["skipped"]["prefix"], 5)
         self.assertEqual(report["skipped"]["outline"], 5)
-        self.assertEqual(report["skipped"]["read_span"], 5)
+        self.assertEqual(report["skipped"]["read_span"], 8)
 
 
 if __name__ == "__main__":

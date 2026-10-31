@@ -155,13 +155,15 @@ class Corpus:
         return hits[0]
 
     def span_sha(self, path: str, start: int, end: int) -> tuple[str, int]:
-        """sha256 and length of the original bytes from line `start` to line `end`,
-        terminators between lines kept, the last line's terminator excluded.
+        """sha256 and length of the original bytes from the start of line `start` to the
+        start of line `end + 1` (CAP-19 FR-22, section 4): the last line's own
+        terminator (\\n or \\r\\n) is included; a final line without one has none.
         A BOM is a prefix of line 1's bytes only when start is 1; fixtures avoid that."""
         data = self.files[path]
         offset = len(BOM) if data.startswith(BOM) else 0
         spans = line_spans(data[offset:])
-        chunk = data[offset + spans[start - 1][0]: offset + spans[end - 1][1]]
+        stop = spans[end][0] if end < len(spans) else len(data) - offset
+        chunk = data[offset + spans[start - 1][0]: offset + stop]
         return hashlib.sha256(chunk).hexdigest(), len(chunk)
 
     def outline(self, path: str) -> dict:
@@ -250,7 +252,9 @@ class Corpus:
             for token, line in self.tokens(path):
                 if token.startswith(prefix) and line not in seen:
                     seen.add(line)
-                    hits.append(entry(path, line, line))
+                    fm = path.endswith(".md") and self.outline(path)["front_matter"]
+                    in_front = bool(fm) and line <= fm["end_line"]
+                    hits.append(entry(path, line, line, front_matter=in_front))
         return sorted_entries(hits)
 
     def both(self, a: str, b: str) -> list[dict]:
@@ -410,8 +414,16 @@ def build_judgments(corpus: Corpus) -> dict:
     ]
     prefix = []
     for pid, text, why in prefix_specs:
-        prefix.append({"id": pid, "query": text + "*", "mode": "prefix", "prefix": text,
-                       "why": why, "expected": corpus.prefix(text)})
+        hits = corpus.prefix(text)
+        strip = lambda h: {k: v for k, v in h.items() if k != "front_matter"}  # noqa: E731
+        item = {"id": pid, "query": text + "*", "mode": "prefix", "prefix": text, "why": why,
+                "expected": [strip(h) for h in hits if not h.get("front_matter")],
+                "expected_engine_miss": [strip(h) for h in hits if h.get("front_matter")]}
+        if item["expected_engine_miss"]:
+            item["expected_engine_miss_reason"] = (
+                "front matter is metadata, not body (CAP-19 FR-18): md-section-v1 drops it from chunk "
+                "bodies, so a body index does not return these lines")
+        prefix.append(item)
 
     outline_specs = [
         ("o1", "school/science-notes.md", "Setext and ATX headings mixed, depth 3, front matter"),
@@ -437,6 +449,9 @@ def build_judgments(corpus: Corpus) -> dict:
         rs("s3", "home/bom-checklist.md", 3, 6, "a BOM file: line numbers ignore the BOM; the span starts after line 1"),
         rs("s4", "home/no-final-newline.txt", 3, 4, "ends at the last line, which has no terminator"),
         rs("s5", BIG_PATH, 9000, 9010, "deep inside the file larger than 1 MB"),
+        rs("s6", "school/notes.md", 1, 5, "a front-matter range, from line 1 through the closing --- line"),
+        rs("s7", "school/notes.md", 33, 34, "an indented continuation line inside a list item"),
+        rs("s8", "home/tamil-notes.md", 3, 6, "Tamil text: multi-byte UTF-8, byte length differs from codepoint count"),
     ]
     return {
         "version": 2,
@@ -446,7 +461,7 @@ def build_judgments(corpus: Corpus) -> dict:
             "lines": "1-based; a line ends at \\n or \\r\\n; a final line without a terminator counts; an empty file has 0 lines; a BOM is not part of any line",
             "hit_match": "a returned hit matches an expected entry when root_id and path are equal and the line ranges overlap",
             "phrase_prefix": "the expected sets are complete across all pages; tokens come from the analyzer",
-            "read_span": "sha256 of the original bytes from the first byte of start_line to the last byte of end_line, inner line terminators kept, the last line's terminator excluded",
+            "read_span": "sha256 of the original bytes from the start of start_line to the start of the line after end_line (CAP-19 FR-22): every line terminator in the range is kept, including the last line's own; a final line without a terminator has none",
             "outline_end_line": "the line before the next heading of the same or higher level, else the last line",
         },
         "gates": {"words_recall_at_5": 0.9, "phrase_recall": 1.0, "outline_exactness": 1.0,
@@ -474,7 +489,10 @@ Do not edit the files by hand. `python3 fixtures/family-folder/generate.py`
 rewrites every file and `judgments.json` (and this README) deterministically from
 `content.py` and `generate.py`; `tests/test_family_folder_fixture.py` regenerates
 into a temporary folder and compares byte for byte. Every line range, section
-path and sha256 below is computed from the files, never typed.
+path and sha256 below is computed from the files, never typed. The generator imports
+the repository's analyzer (`tokenize`) and chunker (`_line_chunks`): a later change to
+either moves the phrase and prefix sets or the chant placement and fails the
+determinism test, which is intended for a frozen pack.
 
 ## Roots and special files
 
@@ -506,7 +524,7 @@ Front matter is the YAML subset `key: value` (strings only). Headings nest to de
 - Lines are 1-based. A line ends at `\\n` or `\\r\\n`; a final line without a terminator counts; an empty file has 0 lines; a BOM is not part of any line.
 - A returned hit matches an expected entry when `root_id` and `path` are equal and the line ranges overlap.
 - Phrase and prefix expected sets are complete across all pages. Tokens come from the repository analyzer (`tokenize`), so case is folded and punctuation separates words.
-- `read_span`: the sha256 of the original bytes from the first byte of `start_line` to the last byte of `end_line`, inner terminators kept (so CRLF stays CRLF), the last line's terminator excluded. Cases avoid line 1 of the BOM file because a BOM is not a line.
+- `read_span`: the sha256 of the original bytes from the start of `start_line` to the start of the line after `end_line` (CAP-19 FR-22, section 4), so every terminator in the range is kept, the last line's own included, and CRLF stays CRLF; a final line without a terminator has none (case s4). Cases avoid line 1 of the BOM file because a BOM is not a line.
 - Outline `end_line` is the line before the next heading of the same or higher level, else the last line. `#` lines inside a fence are not headings. Setext headings report the text line.
 
 ## Gates (UC-007)
@@ -580,7 +598,10 @@ def build_readme(files: dict[str, bytes], judgments: dict) -> str:
         phrase.append(f"| {c['id']} | `{c['query']}` | {cell(c['expected'])} | {c['why']}{extra} |")
     prefix = ["| id | Query | Expected lines | Note |", "| --- | --- | --- | --- |"]
     for c in judgments["prefix"]:
-        prefix.append(f"| {c['id']} | `{c['query']}` | {cell(c['expected'])} | {c['why']} |")
+        extra = ""
+        if c["expected_engine_miss"]:
+            extra = f" **expected engine miss (front matter, not body):** {cell(c['expected_engine_miss'])}"
+        prefix.append(f"| {c['id']} | `{c['query']}` | {cell(c['expected'])} | {c['why']}{extra} |")
     outline = ["| id | File | Headings | Note |", "| --- | --- | --- | --- |"]
     for c in judgments["outline"]:
         outline.append(f"| {c['id']} | `{c['root_id']}/{c['path']}` | {len(c['headings'])} over {c['lines']} lines | {c['why']} |")

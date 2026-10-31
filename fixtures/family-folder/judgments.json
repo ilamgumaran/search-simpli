@@ -10,7 +10,7 @@
     "lines": "1-based; a line ends at \\n or \\r\\n; a final line without a terminator counts; an empty file has 0 lines; a BOM is not part of any line",
     "hit_match": "a returned hit matches an expected entry when root_id and path are equal and the line ranges overlap",
     "phrase_prefix": "the expected sets are complete across all pages; tokens come from the analyzer",
-    "read_span": "sha256 of the original bytes from the first byte of start_line to the last byte of end_line, inner line terminators kept, the last line's terminator excluded",
+    "read_span": "sha256 of the original bytes from the start of start_line to the start of the line after end_line (CAP-19 FR-22): every line terminator in the range is kept, including the last line's own; a final line without a terminator has none",
     "outline_end_line": "the line before the next heading of the same or higher level, else the last line"
   },
   "gates": {
@@ -610,12 +610,6 @@
         {
           "root_id": "laptop",
           "path": "photosynthesis-draft.md",
-          "start_line": 2,
-          "end_line": 2
-        },
-        {
-          "root_id": "laptop",
-          "path": "photosynthesis-draft.md",
           "start_line": 6,
           "end_line": 6
         },
@@ -643,7 +637,16 @@
           "start_line": 18,
           "end_line": 18
         }
-      ]
+      ],
+      "expected_engine_miss": [
+        {
+          "root_id": "laptop",
+          "path": "photosynthesis-draft.md",
+          "start_line": 2,
+          "end_line": 2
+        }
+      ],
+      "expected_engine_miss_reason": "front matter is metadata, not body (CAP-19 FR-18): md-section-v1 drops it from chunk bodies, so a body index does not return these lines"
     },
     {
       "id": "x2",
@@ -706,7 +709,8 @@
           "start_line": 29,
           "end_line": 29
         }
-      ]
+      ],
+      "expected_engine_miss": []
     },
     {
       "id": "x3",
@@ -745,7 +749,8 @@
           "start_line": 18,
           "end_line": 18
         }
-      ]
+      ],
+      "expected_engine_miss": []
     },
     {
       "id": "x4",
@@ -790,7 +795,8 @@
           "start_line": 5,
           "end_line": 5
         }
-      ]
+      ],
+      "expected_engine_miss": []
     },
     {
       "id": "x5",
@@ -805,7 +811,8 @@
           "start_line": 6,
           "end_line": 6
         }
-      ]
+      ],
+      "expected_engine_miss": []
     }
   ],
   "outline": [
@@ -1093,8 +1100,8 @@
       "start_line": 40,
       "end_line": 60,
       "context_lines": 1,
-      "byte_length": 574,
-      "sha256": "6892686a4dd3272647858b1f5799c4b087ab0d9994c81216951975c146d7dfbc",
+      "byte_length": 575,
+      "sha256": "7813c9fac9e2ca4e513c8f122bc0d7798767595b84537914b169bb6867ead5c4",
       "why": "the UC-007 example: lines 40 to 60 with one line of context"
     },
     {
@@ -1104,8 +1111,8 @@
       "start_line": 3,
       "end_line": 8,
       "context_lines": 1,
-      "byte_length": 63,
-      "sha256": "56a41ea5470e80cff2d25f60c1d7e3953ea0c0c982cbd713132da8375c0447ec",
+      "byte_length": 65,
+      "sha256": "290fd8e9a18f38f5abe08e022543951f51c576c3dc5b87199303745ed639cd8d",
       "why": "CRLF: the returned bytes keep the inner \\r\\n"
     },
     {
@@ -1115,8 +1122,8 @@
       "start_line": 3,
       "end_line": 6,
       "context_lines": 1,
-      "byte_length": 28,
-      "sha256": "63fcd8d539add4b9745098f6bcf1588402092401cb96b0d2743ba2ba3dcd9bc0",
+      "byte_length": 29,
+      "sha256": "2f7f13fd0ab5dcbf46b025e9193f051117521428142cac14eecee5508ba73afd",
       "why": "a BOM file: line numbers ignore the BOM; the span starts after line 1"
     },
     {
@@ -1137,9 +1144,42 @@
       "start_line": 9000,
       "end_line": 9010,
       "context_lines": 1,
-      "byte_length": 818,
-      "sha256": "b835e5f844ed7f947e502e1bb5c7ac5fc33a4aa42d84f18daa0093b17aac97b2",
+      "byte_length": 819,
+      "sha256": "af31d1c35b14a2bd06da273348f7401a8459f66c81514ffb78cb7d091ff3801f",
       "why": "deep inside the file larger than 1 MB"
+    },
+    {
+      "id": "s6",
+      "root_id": "school",
+      "path": "notes.md",
+      "start_line": 1,
+      "end_line": 5,
+      "context_lines": 1,
+      "byte_length": 58,
+      "sha256": "58a585749c7d6955e5ad39f76349524d906b4e6b49735400d5a99da5a752d15d",
+      "why": "a front-matter range, from line 1 through the closing --- line"
+    },
+    {
+      "id": "s7",
+      "root_id": "school",
+      "path": "notes.md",
+      "start_line": 33,
+      "end_line": 34,
+      "context_lines": 1,
+      "byte_length": 124,
+      "sha256": "9714b6c98d28f6c35d256b54c790236435c4a5700c2a98a1fea4577f392a8d41",
+      "why": "an indented continuation line inside a list item"
+    },
+    {
+      "id": "s8",
+      "root_id": "home",
+      "path": "tamil-notes.md",
+      "start_line": 3,
+      "end_line": 6,
+      "context_lines": 1,
+      "byte_length": 246,
+      "sha256": "0dd6bdc253f69f0e64d6fc362dcc485f98b8127120886d69ec02320461aa753d",
+      "why": "Tamil text: multi-byte UTF-8, byte length differs from codepoint count"
     }
   ]
 }
