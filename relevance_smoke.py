@@ -6,11 +6,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 import sys
+import tempfile
 import time
 from pathlib import Path
 
-from src.search_platform.core import build_index, load_index, save_index
+from src.search_platform.core import build_index, load_index, save_index, search
 from src.search_platform.evaluation import RETRIEVAL_MODES, evaluate_modes, load_suite
 from src.search_platform.providers import (
     DEFAULT_FASTEMBED_MODEL,
@@ -155,12 +157,115 @@ def run_smoke(
     return report
 
 
+PACKS = {"family-folder": Path(__file__).resolve().parent / "fixtures" / "family-folder"}
+PACK_WORDS_GATE = 0.9
+# Case kinds the Python reference cannot answer yet: skipped with a count, never silently.
+NOT_YET = {
+    "phrase": "phrase search: S3-T1/T2",
+    "prefix": "prefix search: S3-T2",
+    "outline": "outline: S3-T1",
+    "read_span": "read_span: S3-T1",
+}
+
+
+def _overlaps(hit: dict, expected: dict) -> bool:
+    return (
+        hit["path"] == f"{expected['root_id']}/{expected['path']}"
+        and hit["start_line"] <= expected["end_line"]
+        and expected["start_line"] <= hit["end_line"]
+    )
+
+
+def run_pack(name: str, *, top_k: int = 5) -> dict:
+    """Run a frozen judgment pack through the Python reference (lexical, one union index).
+
+    Roots are copied side by side so a hit path reads `root/path`, the shape of a
+    root_id plus a path. Cases the reference cannot answer yet are counted as skipped.
+    """
+    pack_dir = PACKS[name]
+    judgments = json.loads((pack_dir / "judgments.json").read_text(encoding="utf-8"))
+    cases: list[dict] = []
+    skipped: dict[str, int] = {}
+
+    def skip(kind: str, count: int = 1) -> None:
+        skipped[kind] = skipped.get(kind, 0) + count
+
+    with tempfile.TemporaryDirectory() as scratch:
+        union = Path(scratch) / "union"
+        for root in judgments["roots"]:
+            shutil.copytree(pack_dir / root, union / root)
+        index = build_index(union)
+
+        def retrieve(case_id: str, query: str, expected: list[dict]) -> None:
+            hits = [
+                {"path": r["citation"]["path"], "start_line": r["citation"]["start_line"],
+                 "end_line": r["citation"]["end_line"]}
+                for r in search(index, query, top_k=top_k, retrieval_mode="lexical")
+            ]
+            covered = sum(1 for e in expected if any(_overlaps(h, e) for h in hits))
+            cases.append({"id": case_id, "query": query, "expected": len(expected),
+                          "covered": covered, "recall": covered / len(expected)})
+
+        newt = None
+        by_ref = {c["id"]: c for kind in ("phrase", "prefix") for c in judgments[kind]}
+        for sc in judgments["scenarios"]:
+            kind = sc["kind"]
+            if kind in ("words", "answer"):
+                retrieve(sc["id"], sc["query"], sc["expected"])
+            elif kind == "empty":
+                newt = not search(index, sc["query"], top_k=top_k, retrieval_mode="lexical")
+            elif kind == "phrase_neighbour":
+                expected = list(by_ref[sc["ref"].split(":")[1]]["expected"]) + [sc["expected_neighbour"]]
+                retrieve(sc["id"], sc["words_query"], expected)
+                skip("scenario phrase/neighbour step")
+            elif kind == "lifecycle":
+                skip("scenario lifecycle (S3-T3/T4)")
+            else:
+                skip(f"scenario {kind}")
+    for kind in NOT_YET:
+        skip(kind, len(judgments[kind]))
+    recalls = [c["recall"] for c in cases]
+    words_recall = sum(recalls) / len(recalls) if recalls else 0.0
+    passed = words_recall >= PACK_WORDS_GATE and newt is True
+    return {
+        "pack": name,
+        "version": judgments["version"],
+        "counts": {"scenarios": len(judgments["scenarios"]),
+                   **{k: len(judgments[k]) for k in NOT_YET}},
+        "words_recall_at_k": words_recall,
+        "top_k": top_k,
+        "words_cases": cases,
+        "newt_empty": newt,
+        "skipped": skipped,
+        "gate": {"words_recall_at_k_min": PACK_WORDS_GATE, "passed": passed},
+    }
+
+
+def print_pack_report(report: dict) -> None:
+    counts = report["counts"]
+    print(f"pack {report['pack']} (judgments version {report['version']}): "
+          f"{counts['scenarios']} scenarios, {counts['phrase']} phrase, {counts['prefix']} prefix, "
+          f"{counts['outline']} outline, {counts['read_span']} read_span")
+    print(f"words recall@{report['top_k']}: {report['words_recall_at_k']:.3f} "
+          f"over {len(report['words_cases'])} cases (gate >= {report['gate']['words_recall_at_k_min']})")
+    for case in report["words_cases"]:
+        print(f"  {case['id']} {case['covered']}/{case['expected']} expected spans in top "
+              f"{report['top_k']}: {case['query']!r}")
+    print(f"empty result for the newt question: {'pass' if report['newt_empty'] else 'FAIL'}")
+    total = sum(report["skipped"].values())
+    print(f"not yet implemented: {total} skipped")
+    for kind, count in sorted(report["skipped"].items()):
+        print(f"  {kind}: {count}")
+    print(f"gate: {'pass' if report['gate']['passed'] else 'FAIL'}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Run a dependency-free, graded relevance smoke test over a file corpus."
     )
-    parser.add_argument("corpus", type=Path)
-    parser.add_argument("suite", type=Path)
+    parser.add_argument("corpus", type=Path, nargs="?")
+    parser.add_argument("suite", type=Path, nargs="?")
+    parser.add_argument("--pack", choices=sorted(PACKS), help="run a frozen judgment pack instead of corpus + suite")
     parser.add_argument("--mode", action="append", choices=RETRIEVAL_MODES, dest="modes")
     parser.add_argument(
         "--vector-mode", choices=("none", "hash", "cooccurrence", "neural"), default="none"
@@ -178,6 +283,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-regression", type=float, default=0.0)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
+    if args.pack:
+        if args.corpus or args.suite:
+            parser.error("--pack takes no corpus or suite")
+        report = run_pack(args.pack)
+        print_pack_report(report)
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        return 0 if report["gate"]["passed"] else 1
+    if not args.corpus or not args.suite:
+        parser.error("corpus and suite are required unless --pack is given")
     if args.top_k < 1:
         parser.error("--top-k must be at least 1")
     if args.max_regression < 0.0:

@@ -9,6 +9,16 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
+## S3-T7: family-folder fixture and frozen judgments (2026-10-31)
+
+`fixtures/family-folder/` (three roots, 42 files, 34 Markdown, one 1.1 MB file, all
+invented) and `judgments.json` version 2 (the 13 UC-007 scenarios plus five phrase,
+five prefix, five outline and five `read_span` cases) are frozen as the oracle for
+S3-T1..T6. `fixtures/family-folder/generate.py` writes the files, the judgments and
+the README deterministically. `python3 scripts/relevance_smoke.py --pack family-folder`
+runs what the Python reference can answer today and counts the rest as skipped; CI runs
+it. No engine behaviour changed.
+
 ## Directory search audit and filename design (2026-10-25)
 
 The current Python/native Zig engines search supported UTF-8 document **body

@@ -34,6 +34,11 @@ jobs:
           --mode lexical --top-k 10
           --min-ndcg 1 --min-mrr 1 --min-recall 1 --min-success 1
 
+      # S3-T7: the frozen family-folder judgments through the Python reference; cases
+      # it cannot answer yet are skipped with a count.
+      - name: Family-folder judgment pack
+        run: python3 scripts/relevance_smoke.py --pack family-folder
+
       - name: No trailing whitespace in docs/scripts
         run: |
           if git grep -nP ' +$' -- '*.md' '*.py' ; then

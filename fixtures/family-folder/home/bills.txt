@@ -1,0 +1,3 @@
+Electricity: pay on the first.
+Water: pay on the fifteenth.
+Internet: automatic.
