@@ -9,6 +9,25 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
+## S3-T5: tool schemas and the folder-knowledge skill (2026-10-31)
+
+`contracts/tools/` holds a JSON Schema 2020-12 request and result file for each
+of the nine tools (`search_knowledge`, `read_chunk`, `list_sources`,
+`index_status`, `find`, `outline`, `read_span`, `list_files`,
+`apply_changes`), closed (`additionalProperties: false`) and described; the
+request schemas omit `principal_labels` and `query_vector` (the host's, CAP-13).
+`src/search_platform/schema_check.py` validates the subset the schemas use and
+raises on any other keyword; the tests validate real `searchd serve`, CLI
+`--json` and apply responses on the fixture. `skills/folder-knowledge/SKILL.md`
+teaches a model the loop (status, `find` or `search_knowledge`, confirm with
+`read_span`/`read_chunk`, answer with `[n]`, cite `root/path › section ·
+lines`), the exact negative sentence "I found no matching indexed passages in
+the selected folders." and never to call `apply_changes`;
+`skills/folder-knowledge/example_loop.py` runs it against `searchd serve` on
+the fixture. `docs/tool-schemas.md` shows the `input_schema`, `parameters` and
+MCP `inputSchema` wrappings. No engine change. Verified and merged
+2026-10-31. [Task](docs/tasks/S3-T5.md).
+
 ## S3-T4: folder knowledge on every surface, contract 2.0.0 (2026-10-31)
 
 The C ABI gains `ss_find`, `ss_outline`, `ss_read_span`, `ss_list_files`,
