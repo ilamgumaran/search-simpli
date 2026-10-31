@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/search_knowledge.result.schema.json",
+  "title": "search_knowledge result",
+  "description": "The shared evidence envelope: ranked chunks with citations. No `empty` or `truncated` flag: use find or index_status for those.",
+  "type": "object",
+  "properties": {
+    "tool": {
+      "const": "search_knowledge",
+      "description": "Always search_knowledge."
+    },
+    "query": {
+      "type": "string",
+      "description": "The query as received."
+    },
+    "index": {
+      "type": "object",
+      "description": "The index that answered.",
+      "properties": {
+        "version": {
+          "type": "integer",
+          "description": "Index format version."
+        },
+        "generation": {
+          "type": "integer",
+          "description": "Index generation.",
+          "minimum": 1
+        },
+        "analyzer_id": {
+          "type": "string",
+          "description": "Analyzer identifier."
+        },
+        "embedding_model_id": {
+          "type": "string",
+          "description": "Embedding model id, or none."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "version"
+      ]
+    },
+    "retrieval": {
+      "type": "object",
+      "description": "How the retrieval ran.",
+      "properties": {
+        "mode": {
+          "enum": [
+            "lexical",
+            "vector",
+            "hybrid"
+          ],
+          "description": "Retrieval mode used."
+        },
+        "vector_mode": {
+          "type": "string",
+          "description": "Vector mode, when the index has vectors."
+        },
+        "vector_dimensions": {
+          "type": "integer",
+          "description": "Vector dimensions, 0 without vectors.",
+          "minimum": 0
+        },
+        "candidate_k": {
+          "type": "integer",
+          "description": "Candidate depth used.",
+          "minimum": 1
+        },
+        "embedding": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Embedding provider details, when used."
+        },
+        "authorization": {
+          "type": "object",
+          "description": "Authorization applied.",
+          "properties": {
+            "semantics": {
+              "const": "all-required-labels-v1",
+              "description": "Label rule."
+            },
+            "principal_label_count": {
+              "type": "integer",
+              "description": "Number of principal labels applied.",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "semantics",
+            "principal_label_count"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ]
+    },
+    "results": {
+      "type": "array",
+      "description": "Ranked chunks, best first. Empty is not proof of absence.",
+      "items": {
+        "type": "object",
+        "description": "One ranked chunk.",
+        "properties": {
+          "chunk_id": {
+            "type": "string",
+            "description": "Stable chunk id; pass it to read_chunk."
+          },
+          "citation": {
+            "type": "object",
+            "description": "Where the chunk lives.",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Record path: `root_id/path` for a host root."
+              },
+              "start_line": {
+                "type": "integer",
+                "description": "First line, 1-based.",
+                "minimum": 1
+              },
+              "end_line": {
+                "type": "integer",
+                "description": "Last line, inclusive.",
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "start_line",
+              "end_line"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "The chunk text."
+          },
+          "score": {
+            "type": "number",
+            "description": "Fused score."
+          },
+          "ranking": {
+            "type": "object",
+            "description": "Per-channel ranks and scores.",
+            "properties": {
+              "lexical": {
+                "type": "object",
+                "description": "Lexical channel.",
+                "properties": {
+                  "rank": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Rank, null if not ranked.",
+                    "minimum": 1
+                  },
+                  "score": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "description": "Score."
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "rank",
+                  "score"
+                ]
+              },
+              "vector": {
+                "type": "object",
+                "description": "Vector channel.",
+                "properties": {
+                  "rank": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Rank, null if not ranked.",
+                    "minimum": 1
+                  },
+                  "score": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "description": "Score."
+                  },
+                  "mode": {
+                    "type": "string",
+                    "description": "Vector mode."
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "rank",
+                  "score"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "lexical",
+              "vector"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "chunk_id",
+          "citation",
+          "content",
+          "score",
+          "ranking"
+        ]
+      }
+    },
+    "answer_policy": {
+      "type": "object",
+      "description": "The policy the answer must follow.",
+      "properties": {
+        "ground_in_results": {
+          "const": true,
+          "description": "Ground every claim in results."
+        },
+        "cite_path_and_lines": {
+          "const": true,
+          "description": "Cite path and lines."
+        },
+        "say_when_evidence_is_insufficient": {
+          "const": true,
+          "description": "Say when evidence is insufficient."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "ground_in_results",
+        "cite_path_and_lines",
+        "say_when_evidence_is_insufficient"
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Why a result list is empty or poor (when present).",
+      "items": {
+        "type": "object",
+        "description": "One warning.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Warning code."
+          },
+          "message": {
+            "type": "string",
+            "description": "Detail."
+          },
+          "term": {
+            "type": "string",
+            "description": "The analysed query term, when relevant."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "tool",
+    "query",
+    "index",
+    "retrieval",
+    "results",
+    "answer_policy"
+  ]
+}

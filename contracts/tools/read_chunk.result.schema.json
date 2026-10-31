@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/read_chunk.result.schema.json",
+  "title": "read_chunk result",
+  "description": "One chunk.",
+  "type": "object",
+  "properties": {
+    "chunk_id": {
+      "type": "string",
+      "description": "The chunk id."
+    },
+    "citation": {
+      "type": "object",
+      "description": "Where the chunk lives.",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Record path."
+        },
+        "start_line": {
+          "type": "integer",
+          "description": "First line.",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "description": "Last line.",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "start_line",
+        "end_line"
+      ]
+    },
+    "content": {
+      "type": "string",
+      "description": "The chunk text."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "chunk_id",
+    "citation",
+    "content"
+  ]
+}

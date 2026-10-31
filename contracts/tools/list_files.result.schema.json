@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/list_files.result.schema.json",
+  "title": "list_files result",
+  "description": "A page of files.",
+  "type": "object",
+  "properties": {
+    "request": {
+      "type": "object",
+      "description": "The request echoed with defaults filled in (roots is null when not given).",
+      "properties": {
+        "root_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Root filter."
+        },
+        "path_prefix": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Prefix filter."
+        },
+        "status": {
+          "enum": [
+            "indexed",
+            "pending",
+            null
+          ],
+          "description": "Status filter."
+        },
+        "page_size": {
+          "type": "integer",
+          "description": "Page size.",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]+:[0-9]+$",
+          "description": "The previous page's next_cursor (\"<generation>:<offset>\"). A cursor from another generation is refused as a stale cursor."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root_id",
+        "path_prefix",
+        "status",
+        "page_size",
+        "cursor",
+        "roots"
+      ]
+    },
+    "generation": {
+      "type": "integer",
+      "description": "The index generation this answer came from.",
+      "minimum": 0
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Warnings about this answer.",
+      "items": {
+        "$ref": "#/$defs/warning"
+      }
+    },
+    "files": {
+      "type": "array",
+      "description": "This page's files.",
+      "items": {
+        "type": "object",
+        "description": "One file.",
+        "properties": {
+          "root_id": {
+            "type": "string",
+            "description": "Root id."
+          },
+          "path": {
+            "type": "string",
+            "description": "Root-relative path."
+          },
+          "size": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Retained length, or a pending file's announced size.",
+            "minimum": 0
+          },
+          "mtime_ms": {
+            "type": "null",
+            "description": "Always null in contract 2.0.0."
+          },
+          "status": {
+            "enum": [
+              "indexed",
+              "pending"
+            ],
+            "description": "indexed or pending."
+          },
+          "chunks": {
+            "type": "integer",
+            "description": "Chunks.",
+            "minimum": 0
+          },
+          "chunker": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Chunker id; null for a pending file."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "root_id",
+          "path",
+          "size",
+          "mtime_ms",
+          "status",
+          "chunks",
+          "chunker"
+        ]
+      }
+    },
+    "total": {
+      "type": "integer",
+      "description": "Files matching, over every page.",
+      "minimum": 0
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Cursor for the next page, null on the last."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "request",
+    "generation",
+    "scope",
+    "warnings",
+    "files",
+    "total",
+    "next_cursor"
+  ],
+  "$defs": {
+    "scope": {
+      "type": "object",
+      "description": "The scope the request ran in.",
+      "properties": {
+        "roots": {
+          "type": "array",
+          "description": "The root ids the request could see, in the generation's order.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "labels_applied": {
+          "const": true,
+          "description": "Always true: the scope's labels (possibly none) filtered before any candidate. It does not say whether labels hid anything."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "roots",
+        "labels_applied"
+      ]
+    },
+    "warning": {
+      "type": "object",
+      "description": "One warning.",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Machine-readable code. So far `end_line_clamped` (read_span)."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable detail."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    }
+  }
+}

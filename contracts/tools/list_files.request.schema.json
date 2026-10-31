@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/list_files.request.schema.json",
+  "title": "list_files request",
+  "description": "The params object of the `list_files` tool. A listing of indexed or pending files, not a ranked search. Principal labels are never a caller field: the host supplies the scope (docs/tool-schemas.md).",
+  "type": "object",
+  "properties": {
+    "root_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Only this root."
+    },
+    "path_prefix": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Root-relative path prefix."
+    },
+    "status": {
+      "enum": [
+        "indexed",
+        "pending",
+        null
+      ],
+      "description": "Only files with this status."
+    },
+    "page_size": {
+      "type": "integer",
+      "description": "Files per page.",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 100
+    },
+    "cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]+:[0-9]+$",
+      "description": "The previous page's next_cursor (\"<generation>:<offset>\"). A cursor from another generation is refused as a stale cursor."
+    },
+    "roots": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+    }
+  },
+  "additionalProperties": false,
+  "required": []
+}

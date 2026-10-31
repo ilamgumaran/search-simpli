@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/search_knowledge.request.schema.json",
+  "title": "search_knowledge request",
+  "description": "The params object of the `search_knowledge` tool. Ranked, cited chunks for an open question. Principal labels are never a caller field: the host supplies the scope (docs/tool-schemas.md).",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "The question or words to search for.",
+      "minLength": 1
+    },
+    "top_k": {
+      "type": "integer",
+      "description": "How many chunks to return.",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 5
+    },
+    "candidate_k": {
+      "type": "integer",
+      "description": "How many candidates each channel gathers before fusion.",
+      "minimum": 1,
+      "maximum": 10000,
+      "default": 100
+    },
+    "path_prefix": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Only record paths starting with this prefix (`root_id/path` form)."
+    },
+    "retrieval_mode": {
+      "enum": [
+        "lexical",
+        "vector",
+        "hybrid"
+      ],
+      "default": "hybrid",
+      "description": "lexical uses words only; vector and hybrid need an index with vectors, else vectors are ignored."
+    },
+    "roots": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "query"
+  ]
+}
