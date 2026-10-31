@@ -200,6 +200,7 @@ pub fn hasInScopePosting(index: Index, entry: TermEntry, trace: *const hybrid.Tr
     const list = index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
     for (list) |posting| {
         const document = trace.scope_documents[posting.document_index];
+        if (trace.scope_roots) |mask| if (!mask.allows(posting.document_index)) continue; // S3-T3
         if (hybrid.matchesPath(document.path, trace.scope_prefix) and
             hybrid.isAuthorized(document.required_labels, trace.scope_labels)) return true;
     }
@@ -218,6 +219,12 @@ pub const SparseScorer = struct {
     terms: []const TermEntry,
     cursors: []usize,
     parameters: scoring.Bm25Parameters,
+    /// S3-T3: BM25 collection statistics over the caller's visible scope
+    /// (`scope.zig`); null = the whole index's.
+    collection: ?scoring.CollectionStatistics = null,
+    /// S3-T3: each resolved term's document frequency in the visible scope,
+    /// in `terms` order; null = the dictionary's.
+    document_frequencies: ?[]const u32 = null,
 
     /// `cursors` must hold `terms.len` entries.
     pub fn init(index: Index, terms: []const TermEntry, cursors: []usize, parameters: scoring.Bm25Parameters) SparseScorer {
@@ -226,14 +233,19 @@ pub const SparseScorer = struct {
         return .{ .index = index, .terms = terms, .cursors = cursors[0..terms.len], .parameters = parameters };
     }
 
-    fn contribution(scorer: *const SparseScorer, entry: TermEntry, posting: Posting) f32 {
+    fn contribution(scorer: *const SparseScorer, term_index: usize, entry: TermEntry, posting: Posting) f32 {
         const document_index: usize = posting.document_index;
+        const collection = scorer.collection orelse scoring.CollectionStatistics{
+            .document_count = @intCast(scorer.index.document_lengths.len),
+            .average_document_length = scorer.index.average_document_length,
+        };
+        const document_frequency = if (scorer.document_frequencies) |frequencies| frequencies[term_index] else entry.document_frequency;
         return scoring.bm25Contribution(
             @floatFromInt(posting.term_frequency),
             @floatFromInt(scorer.index.document_lengths[document_index]),
-            scorer.index.average_document_length,
-            entry.document_frequency,
-            @intCast(scorer.index.document_lengths.len),
+            collection.average_document_length,
+            document_frequency,
+            collection.document_count,
             scorer.parameters,
         );
     }
@@ -252,10 +264,10 @@ pub const SparseScorer = struct {
         }
         const document_index = smallest orelse return null;
         var score: f32 = 0;
-        for (scorer.terms, scorer.cursors) |entry, *cursor| {
+        for (scorer.terms, scorer.cursors, 0..) |entry, *cursor, term_index| {
             const list = scorer.postingsOf(entry);
             if (cursor.* >= list.len or list[cursor.*].document_index != document_index) continue;
-            score += scorer.contribution(entry, list[cursor.*]);
+            score += scorer.contribution(term_index, entry, list[cursor.*]);
             cursor.* += 1;
         }
         return .{ .document_index = document_index, .score = score };
@@ -265,7 +277,7 @@ pub const SparseScorer = struct {
     /// occurs in it), found by binary search; same summation order.
     pub fn scoreOf(scorer: *const SparseScorer, document_index: usize) f32 {
         var score: f32 = 0;
-        for (scorer.terms) |entry| {
+        for (scorer.terms, 0..) |entry, term_index| {
             const list = scorer.postingsOf(entry);
             var low: usize = 0;
             var high: usize = list.len;
@@ -274,7 +286,7 @@ pub const SparseScorer = struct {
                 if (list[middle].document_index < document_index) low = middle + 1 else high = middle;
             }
             if (low < list.len and list[low].document_index == document_index) {
-                score += scorer.contribution(entry, list[low]);
+                score += scorer.contribution(term_index, entry, list[low]);
             }
         }
         return score;

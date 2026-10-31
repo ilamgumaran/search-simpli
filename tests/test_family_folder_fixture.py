@@ -300,7 +300,10 @@ class GeneratorAndRunnerTests(unittest.TestCase):
         # S3-T1: outline and read_span run through the Python reference, exactly.
         self.assertNotIn("outline", report["skipped"])
         self.assertNotIn("read_span", report["skipped"])
-        self.assertEqual(report["exactness"], {"outline": 1.0, "read_span": 1.0})
+        # S3-T3: the three lifecycle scenarios run through the reference's apply_changes.
+        self.assertEqual(report["exactness"], {"outline": 1.0, "read_span": 1.0, "lifecycle": 1.0})
+        self.assertEqual(len(report["exact_cases"]["lifecycle"]), 3)
+        self.assertNotIn("scenario lifecycle (S3-T3/T4)", report["skipped"])
         self.assertEqual(len(report["exact_cases"]["read_span"]), 9)  # 8 cases + scenario 5
         self.assertEqual(len(report["exact_cases"]["outline"]), 7)  # 5 cases + scenarios 4 and 9
 

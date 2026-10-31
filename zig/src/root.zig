@@ -25,12 +25,15 @@ pub const incremental_state = @import("incremental_state.zig");
 pub const generation_alloc = @import("generation_alloc.zig");
 pub const indexer = @import("indexer.zig");
 pub const snapshot_open = @import("snapshot_open.zig");
+pub const scope = @import("scope.zig");
+pub const apply = @import("apply.zig");
 pub const cli_test = @import("cli_test.zig");
 pub const chunker_golden_test = @import("chunker_test.zig");
 pub const chunker_md_golden_test = @import("chunker_md_test.zig");
 pub const source_fixture_test = @import("source_fixture_test.zig");
 pub const bm25_conformance_test = @import("bm25_conformance_test.zig");
 pub const incremental_indexing_test = @import("incremental_indexing_test.zig");
+pub const apply_test = @import("apply_test.zig");
 pub const import_analyzer_test = @import("import_analyzer_test.zig");
 pub const query_report_test = @import("query_report_test.zig");
 pub const import_build_timing_test = @import("import_build_timing_test.zig");
@@ -65,6 +68,7 @@ comptime {
     _ = indexer.indexFolderIncremental;
     _ = incremental_state.save;
     _ = generation_alloc.nextFreeGeneration;
+    _ = apply.applyChanges;
 }
 
 test "load every engine module test suite" {
@@ -95,11 +99,14 @@ test "load every engine module test suite" {
     _ = generation_alloc;
     _ = indexer;
     _ = snapshot_open;
+    _ = scope;
+    _ = apply;
     _ = chunker_golden_test;
     _ = chunker_md_golden_test;
     _ = source_fixture_test;
     _ = bm25_conformance_test;
     _ = incremental_indexing_test;
+    _ = apply_test;
     _ = import_analyzer_test;
     _ = query_report_test;
     _ = import_build_timing_test;

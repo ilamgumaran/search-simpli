@@ -2,7 +2,10 @@
 
 Status: design (2026-10-31); §1, §2 and §4 implemented by S3-T1 with the
 amendments marked **S3-T1** below (formats: [`manifest-format-v2.md`](manifest-format-v2.md),
-[`segment-format-v4.md`](segment-format-v4.md), [`source-section-v1.md`](source-section-v1.md)).
+[`segment-format-v4.md`](segment-format-v4.md), [`source-section-v1.md`](source-section-v1.md));
+§5, §6 and §7 implemented in the core by S3-T3 (`zig/src/apply.zig`,
+`zig/src/scope.zig`, `zig/src/incremental_state.zig`; Python reference
+`src/search_platform/folders.py`) with the amendments marked **S3-T3**.
 Every other format, field and number here is **proposed**; a task's Report
 turns it into an observed fact or amends it.
 Companion to [`CAP-19`](requirements/cap-19-folder-knowledge.md),
@@ -63,6 +66,14 @@ Which chunker made a given chunk is stored per document record (§2). A v1
 manifest opens; `has_source`/`has_positions` read as false; operations that
 need them answer `SS_ERR_CAPACITY` with the message
 `"re-index required: <source|positions> absent"` (CAP-19 FR-22/FR-17).
+**S3-T3:** each root also carries `origin` (`folder` for `index_folder`'s
+root, `host` for a root declared through `apply_changes`; read as `folder`
+when absent) and its `required_labels`; `meta` gains two lists written only
+when non-empty, after `roots`: `pending` (`{root_id, path, size,
+required_labels}` of every pending file, so a reader counts and lists them
+without `INDEX-STATE.json`) and `unchunked` (the same fields for indexed
+files that produced no chunk, an empty or blank file, so they can be listed
+and their labels are known). Duplicate root ids are refused.
 
 Section files: `documents-N.hybseg` (v4, §2), `lexical-N.hyblex` (v2, §3),
 `source-N.hybsrc` (v1, §4), `MANIFEST`, `INDEX-STATE.json` (v2, §5),
@@ -94,7 +105,15 @@ decode the new fields as zero/empty/none. The chunk id stays
 `sha256(path\0start\0end\0text)[:20 hex]` over the chunk's **normalized** text
 (unchanged), where `path` is now the root-qualified path `root_id/relative`
 (§5); a `move` therefore changes ids (CAP-19 FR-21 says re-keyed, not
-re-chunked: the text and section fields are copied).
+re-chunked: the text and section fields are copied). **S3-T3:** the legacy
+folder root `r-legacy` keeps the bare relative path (no `r-legacy/` prefix),
+so every index `index_folder` writes, its chunk ids and every citation a
+consumer stored stay byte-for-byte as before; a record belongs to the root
+whose `root_id/` prefixes its path, else to `r-legacy`, and `apply_changes`
+refuses a root id equal to the first component of a legacy path (and a
+legacy path whose first component is another root's id), so the rule is
+never ambiguous. Records carry the union of the root's and the file's
+`required_labels` (at most 64 together).
 
 ## 3. Lexical section v2 (`HYBLEX02`)
 
@@ -169,7 +188,12 @@ check every offset and `find` can binary-search); `read_span` clamps an
 `end_line` past the last line to it. In S3-T1 `index_folder` writes the one
 root `r-legacy` with `kind: local` and `retain_source: true` (ruling 4), not
 the `local` default of false proposed below; S3-T3 applies the per-kind
-defaults.
+defaults. **S3-T3:** the per-kind defaults apply to roots declared through
+`apply_changes` without `retain_source` (`host`/`icloud` true, `local`
+false); `index_folder` keeps its `retain_source` option and its default true,
+because `read_span` over a `local` root without retained bytes (re-reading
+and hash-checking the file) is not built yet and would turn every existing
+folder index's `read_span` into `CAPACITY`.
 
 `read_span(path, a, b, context)` slices lines `a-context … b+context`
 (clamped), total ≤ 400 lines and ≤ 256 KiB, else `SS_ERR_CAPACITY` with the
@@ -196,6 +220,23 @@ v1 state (no `state_version`, entries `{path, hash, size}`) loads as one root
 `r-legacy` with `kind: local`, `origin: folder`. Paths are root-relative POSIX
 with no `..`, no leading `/`, no NUL and no newline; the root-qualified path
 used in records is `root_id + "/" + path`.
+
+**S3-T3 amendments.** The state stores `status` `indexed` or `pending` only:
+it names exactly the files the generation names. `too_large`, `unreadable`
+and `budget_exhausted` are report outcomes (a too-large file is tombstoned,
+an unreadable or left-over file keeps its previous entry, as S1-T4 decided
+for `index_folder`, whose tests pin it). Each file also stores its own
+`required_labels` (the root's are added in the records); `sha256` is `null`
+when unknown (a pending file, or a file whose bytes were not retained when
+the table had to be rebuilt). `moved_from` is the path the file was last
+moved from. The state is trusted only when its `generation` and
+`analyzer_id` equal the current `MANIFEST`'s; otherwise (a crash between the
+manifest and the state write, `docs/publication-recovery.md`) the writer
+rebuilds the file table from the generation itself: records grouped by path,
+hashes and sizes from the source section where the root retains bytes,
+`pending` and `unchunked` from `meta`, labels from the records minus the
+root's. Version 1 still loads. Parsing is typed (no JSON object maps): a 10k
+file state is read on every call.
 
 ## 6. `apply_changes` (host-fed changes)
 
@@ -238,6 +279,80 @@ Report:
 changes, one root, `retain_source` per opts) so one code path writes
 generations.
 
+**S3-T3 amendments** (each one is tested in `zig/src/apply_test.zig` and
+`tests/test_folders.py`; the C ABI, Dart, CLI and RPC surfaces above are
+S3-T4's, the core entry point is `apply.applyChanges(dir, request_json,
+options)`):
+
+- *Roots.* A request may declare a root with `path` (an absolute folder, no
+  `.`/`..` component, only for `kind: local`); a `file` change needs its own
+  root declared in the same request with `kind: local` and a `path`, and the
+  file must lie under it. A new root needs `kind`; `label` defaults to the
+  id. Root ids are 1–64 bytes of `[A-Za-z0-9._-]`; `r-legacy` is reserved for
+  `index_folder` and cannot be declared by a host. Re-declaring a root
+  updates its label, kind, labels and retention (records are relabelled).
+- *Per-file labels.* `add`/`change`/`pending` take an optional
+  `required_labels` (the file's own; absent means none); the review's "two
+  label domains inside one root" needs them, §6's example had none.
+- *Whole-request refusals* (nothing is published, nothing is read):
+  `invalid_argument` for invalid JSON, an unknown field anywhere (a
+  `principal_labels` field anywhere gets its own message: the scope comes from
+  the trusted caller), an unknown op, an unsafe path (`..`, `.`, an empty
+  component, a leading `/`, NUL, a line break, over 4,096 bytes), an
+  undeclared root, not exactly one of `content_base64`/`file`,
+  `content_base64` that is not strict base64 (standard alphabet, padded,
+  canonical: it must equal the encoding of what it decodes to), `sha256` not
+  64 hex digits, `file` without `sha256`, `file` with file reads disabled,
+  `file` not absolute or outside its root, a symlink below the root's
+  folder (every component under it is checked with `lstat`, and the file is
+  opened without following a link), a root id colliding with a legacy path, more
+  than 64 labels on a file once its root's are added, and a stale
+  `expect_generation`; `capacity` for more than 10,000 changes or more than
+  `max_total_bytes` of decoded content (counted from the base64 and the
+  files' sizes before anything is decoded or read). The generation check
+  comes before every other refusal, under `WRITER.LOCK`, which is held from
+  the check through the publication.
+- *Per-change outcomes* (the rest of the batch is published): `rejected`
+  entries `{root_id, path, reason}` with `hash_mismatch`, `size_mismatch` (a
+  supplied `size` that differs from the bytes), `invalid_utf8` (decoded
+  content), `move_source_unknown`, `root_removed` (a change after
+  `remove_root` of a root this request does not declare) and
+  `path_collides_with_root`; `too_large` (content or a file over
+  `max_file_bytes`: its chunks are dropped, as S1-T4 tombstones a file);
+  `unreadable` (a `file` that cannot be read, or is not UTF-8: its previous
+  chunks are kept). `too_large_paths`, `unreadable_paths` and
+  `budget_exhausted_paths` hold `{root_id, path}` objects.
+- *Semantics made exact.* `change` of an unknown path adds it; `remove` of
+  an unknown path and `remove_root` of an unknown root are no-ops; an `add`
+  or `change` whose bytes hash to the file's recorded hash with the same
+  chunker keeps its chunks (counted `unchanged`, the bytes retained again).
+  `conflicts` lists one `{root_id, path, replaced, by}` per later op on a
+  path an earlier op of the batch touched (a `move` touches both its paths).
+  Rename detection pairs only within one root, only `remove`s of files that
+  were indexed with a known hash and `add`/`change`s of paths that were not
+  indexed before the batch; per `(root, hash)` both sides are sorted by path
+  and paired in order; `ambiguous_moves` has one `{root_id, sha256, from,
+  to, pairs}` entry for every hash with more than one candidate on either
+  side. A detected move copies the chunks (re-keyed) when the chunker is the
+  same and re-chunks the bytes it has otherwise. An explicit `move` takes no
+  content and keeps the file's chunks, labels and status (a pending file
+  moves pending). `index_folder`'s walk does not detect renames: its report
+  has no `moved`, so a renamed file stays `removed` + `added` as S1 tests pin.
+- *Counts.* `added`: indexed after, not indexed before (a pending file that
+  arrives is `added`); `changed`: indexed before and after, re-chunked;
+  `unchanged`: indexed before and after, not re-chunked (untouched files
+  included; `index_folder` counts its own root only); `moved`: moved in this
+  batch; `pending`: set pending in this batch; `removed`: indexed or pending
+  before and gone by a `remove`.
+- *Report.* §6's fields plus `analyzer_id`, `budget_exhausted_paths`,
+  `documents`, `terms`, `postings` and `recovered` (when the previous
+  generation lost its `MANIFEST` or a section the writer starts from an
+  empty table, like `index_folder --update`, and says so: a host must then
+  send its files again).
+- *Recovery.* A failure after the manifest is published and before the state
+  is written leaves the new generation readable; the next call rebuilds the
+  table from it (§5) and reports retried, identical content as `unchanged`.
+
 ## 7. Scope, labels and statistics
 
 A request's **scope** = the roots named (default all) ∩ the caller's trusted
@@ -257,6 +372,23 @@ expansion counts only terms that occur in at least one visible document.
 `index_status` and `list_files` count only visible files; a hidden file is
 indistinguishable from an absent one in every payload. Timing is measured in
 S3-T3 (hidden vs absent) and disclosed, not promised equal.
+
+**S3-T3 amendments.** A path prefix narrows candidates, not statistics (it
+is a search constraint, not authorization; the Python reference's older
+`search` still computes over the prefix-filtered set). A group is one root
+and one distinct label field; groups hold the document count, total length
+and per-term document frequency, built once per opened generation
+(`snapshot_open.openScoped`). When nothing is hidden (no label in any record
+and no root named, or every document visible) BM25 uses the index's own
+values, bit for bit. Without precomputed groups (the RPC server and the C
+ABI until S3-T4 wires a scope) a query whose principal cannot see every
+labelled record counts its visible scope exactly at query time, one pass
+over the documents. `index_status` reports `documents`, `terms`, `postings`,
+`files`, `pending` and `pending_paths`, `roots` (with per-root counts),
+`chunkers` (those visible documents use) and `has_source` (visible files
+have retained bytes) over the scope; `read_span`/`outline` of a hidden file
+answer the absent file's `not_found` message. The prefix-expansion hook for
+S3-T2 is `scope.termVisible`. Measured timing: `docs/authorization.md`.
 
 ## 8. Read operations (JSON shapes)
 

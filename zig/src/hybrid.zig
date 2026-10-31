@@ -35,7 +35,34 @@ pub const SearchOptions = struct {
     retrieval_mode: RetrievalMode = .hybrid,
     path_prefix: ?[]const u8 = null,
     principal_labels: []const []const u8 = &.{},
+    /// S3-T3: the roots the caller named (`scope.zig`), applied with the
+    /// labels before any chunk becomes a candidate; null = every root.
+    visible_roots: ?RootMask = null,
 };
+
+/// S3-T3: which roots a request may see. `document_roots[i]` is the root
+/// ordinal of document `i` (`scope.zig`, from the manifest's `meta.roots`)
+/// and `allowed[r]` says whether root `r` is in the request's scope. A
+/// document whose ordinal is out of range (no root) is never visible.
+pub const RootMask = struct {
+    document_roots: []const u16,
+    allowed: []const bool,
+
+    pub fn allows(mask: RootMask, document_index: usize) bool {
+        if (document_index >= mask.document_roots.len) return false;
+        const root = mask.document_roots[document_index];
+        return root < mask.allowed.len and mask.allowed[root];
+    }
+};
+
+/// Whether document `document_index` is inside the request's scope: its root
+/// is named (S3-T3), its path matches the prefix, and the caller holds every
+/// label it requires.
+pub fn inScope(document: Document, document_index: usize, options: SearchOptions) bool {
+    if (options.visible_roots) |mask| if (!mask.allows(document_index)) return false;
+    return matchesPath(document.path, options.path_prefix) and
+        isAuthorized(document.required_labels, options.principal_labels);
+}
 
 pub const RetrievalMode = enum { lexical, vector, hybrid };
 
@@ -139,10 +166,8 @@ fn finishSearch(
     results: []Result,
     options: SearchOptions,
 ) SearchError![]Result {
-    for (documents, results) |document, *result| {
-        if (!matchesPath(document.path, options.path_prefix) or
-            !isAuthorized(document.required_labels, options.principal_labels))
-        {
+    for (documents, results, 0..) |document, *result, document_index| {
+        if (!inScope(document, document_index, options)) {
             result.lexical_score = 0;
             result.semantic_score = 0;
             continue;
@@ -314,6 +339,8 @@ pub const Trace = struct {
     scope_documents: []const Document = &.{},
     scope_prefix: ?[]const u8 = null,
     scope_labels: []const []const u8 = &.{},
+    /// S3-T3: the roots the query may see (null = every root).
+    scope_roots: ?RootMask = null,
     /// Chunks in scope holding at least one query term. Chunks the path
     /// prefix or the caller's labels exclude are not counted, so a hidden word
     /// gives the same count as an absent one (0).
@@ -394,10 +421,7 @@ pub fn searchSparseTraced(
     if (want_lexical) {
         while (lexical.next()) |match| {
             if (!(match.score <= 0)) {
-                const document = documents[match.document_index];
-                if (matchesPath(document.path, options.path_prefix) and
-                    isAuthorized(document.required_labels, options.principal_labels))
-                {
+                if (inScope(documents[match.document_index], match.document_index, options)) {
                     lexical_top.offer(.{ .document_index = match.document_index, .score = match.score });
                 }
             }
@@ -405,8 +429,7 @@ pub fn searchSparseTraced(
     }
     if (want_semantic) {
         for (documents, 0..) |document, document_index| {
-            if (!matchesPath(document.path, options.path_prefix) or
-                !isAuthorized(document.required_labels, options.principal_labels)) continue;
+            if (!inScope(document, document_index, options)) continue;
             const score = semanticScore(query_vector, document.vector) catch return error.VectorDimensionMismatch;
             if (!(score <= 0)) semantic_top.offer(.{ .document_index = @intCast(document_index), .score = score });
         }

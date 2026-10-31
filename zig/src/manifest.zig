@@ -431,13 +431,33 @@ pub const RootEntry = struct {
     root_id: []const u8,
     label: []const u8,
     kind: []const u8,
+    /// S3-T3: labels every document of the root also requires (they add to
+    /// each document's own labels, `docs/authorization.md`).
+    required_labels: []const []const u8 = &.{},
     retain_source: bool,
+    /// S3-T3: where the root came from: `folder` (`index_folder`'s walk) or
+    /// `host` (`apply_changes`). Absent in S3-T1 metas: read as `folder`.
+    origin: []const u8 = "folder",
+};
+
+/// S3-T3: a file the host named but whose bytes have not arrived
+/// (`apply_changes` op `pending`): listed by name in the generation so a
+/// reader can count it without `INDEX-STATE.json`.
+pub const PendingEntry = struct {
+    root_id: []const u8,
+    path: []const u8,
+    size: ?u64 = null,
+    required_labels: []const []const u8 = &.{},
 };
 
 pub const Meta = struct {
     chunkers: []ChunkerEntry,
     roots: []RootEntry,
     source_section_version: u32,
+    pending: []PendingEntry = &.{},
+    /// S3-T3: indexed files that produced no chunk (an empty or blank file),
+    /// listed so a reader can list them and knows their labels.
+    unchunked: []PendingEntry = &.{},
 
     /// The chunker id a record's `chunker_index` names, or null.
     pub fn chunkerId(meta: Meta, index: u16) ?[]const u8 {
@@ -454,14 +474,52 @@ pub fn writeMeta(
     roots: []const RootEntry,
     source_section_version: u32,
 ) error{OutOfMemory}![]u8 {
+    return writeMetaPending(allocator, chunkers, roots, &.{}, &.{}, source_section_version);
+}
+
+/// `writeMeta` plus the generation's pending files (S3-T3), written as
+/// `pending` after `roots` only when there is at least one.
+pub fn writeMetaPending(
+    allocator: std.mem.Allocator,
+    chunkers: []const ChunkerEntry,
+    roots: []const RootEntry,
+    pending: []const PendingEntry,
+    unchunked: []const PendingEntry,
+    source_section_version: u32,
+) error{OutOfMemory}![]u8 {
     var out: std.Io.Writer.Allocating = .init(allocator);
     errdefer out.deinit();
     var json = std.json.Stringify{ .writer = &out.writer };
-    writeMetaJson(&json, chunkers, roots, source_section_version) catch return error.OutOfMemory;
+    writeMetaJson(&json, chunkers, roots, pending, unchunked, source_section_version) catch return error.OutOfMemory;
     return out.toOwnedSlice() catch error.OutOfMemory;
 }
 
-fn writeMetaJson(json: *std.json.Stringify, chunkers: []const ChunkerEntry, roots: []const RootEntry, source_section_version: u32) !void {
+fn writeLabels(json: *std.json.Stringify, labels: []const []const u8) !void {
+    try json.beginArray();
+    for (labels) |label| try json.write(label);
+    try json.endArray();
+}
+
+fn writeFileList(json: *std.json.Stringify, name: []const u8, entries: []const PendingEntry) !void {
+    if (entries.len == 0) return;
+    try json.objectField(name);
+    try json.beginArray();
+    for (entries) |entry| {
+        try json.beginObject();
+        try json.objectField("root_id");
+        try json.write(entry.root_id);
+        try json.objectField("path");
+        try json.write(entry.path);
+        try json.objectField("size");
+        try json.write(entry.size);
+        try json.objectField("required_labels");
+        try writeLabels(json, entry.required_labels);
+        try json.endObject();
+    }
+    try json.endArray();
+}
+
+fn writeMetaJson(json: *std.json.Stringify, chunkers: []const ChunkerEntry, roots: []const RootEntry, pending: []const PendingEntry, unchunked: []const PendingEntry, source_section_version: u32) !void {
     try json.beginObject();
     try json.objectField("manifest_meta");
     try json.write(@as(u32, 2));
@@ -496,13 +554,16 @@ fn writeMetaJson(json: *std.json.Stringify, chunkers: []const ChunkerEntry, root
         try json.objectField("kind");
         try json.write(root.kind);
         try json.objectField("required_labels");
-        try json.beginArray();
-        try json.endArray();
+        try writeLabels(json, root.required_labels);
         try json.objectField("retain_source");
         try json.write(root.retain_source);
+        try json.objectField("origin");
+        try json.write(root.origin);
         try json.endObject();
     }
     try json.endArray();
+    try writeFileList(json, "pending", pending);
+    try writeFileList(json, "unchunked", unchunked);
     try json.objectField("source_section_version");
     try json.write(source_section_version);
     try json.endObject();
@@ -543,11 +604,69 @@ pub fn parseMeta(allocator: std.mem.Allocator, meta: []const u8) error{ OutOfMem
         if (root_id != .string or root_id.string.len == 0 or label != .string or kind != .string) return error.InvalidMeta;
         const retain = item.object.get("retain_source") orelse std.json.Value{ .bool = false };
         if (retain != .bool) return error.InvalidMeta;
-        entry.* = .{ .root_id = root_id.string, .label = label.string, .kind = kind.string, .retain_source = retain.bool };
+        const origin = item.object.get("origin") orelse std.json.Value{ .string = "folder" };
+        if (origin != .string or origin.string.len == 0) return error.InvalidMeta;
+        entry.* = .{
+            .root_id = root_id.string,
+            .label = label.string,
+            .kind = kind.string,
+            .required_labels = try parseLabels(allocator, item.object.get("required_labels")),
+            .retain_source = retain.bool,
+            .origin = origin.string,
+        };
     }
+    for (roots, 0..) |root, index| {
+        for (roots[0..index]) |earlier| if (std.mem.eql(u8, earlier.root_id, root.root_id)) return error.InvalidMeta;
+    }
+    const pending = try parseFileList(allocator, object.get("pending"));
+    const unchunked = try parseFileList(allocator, object.get("unchunked"));
     const source_version = object.get("source_section_version") orelse std.json.Value{ .integer = 0 };
     if (source_version != .integer or source_version.integer < 0 or source_version.integer > 1) return error.InvalidMeta;
-    return .{ .chunkers = chunkers, .roots = roots, .source_section_version = @intCast(source_version.integer) };
+    return .{
+        .chunkers = chunkers,
+        .roots = roots,
+        .source_section_version = @intCast(source_version.integer),
+        .pending = pending,
+        .unchunked = unchunked,
+    };
+}
+
+fn parseFileList(allocator: std.mem.Allocator, value: ?std.json.Value) error{ OutOfMemory, InvalidMeta }![]PendingEntry {
+    var entries: []PendingEntry = &.{};
+    if (value) |list| {
+        if (list != .array) return error.InvalidMeta;
+        entries = try allocator.alloc(PendingEntry, list.array.items.len);
+        for (list.array.items, entries) |item, *entry| {
+            if (item != .object) return error.InvalidMeta;
+            const root_id = item.object.get("root_id") orelse return error.InvalidMeta;
+            const path = item.object.get("path") orelse return error.InvalidMeta;
+            if (root_id != .string or path != .string or path.string.len == 0) return error.InvalidMeta;
+            const size_value = item.object.get("size") orelse std.json.Value.null;
+            const size: ?u64 = switch (size_value) {
+                .null => null,
+                .integer => |n| std.math.cast(u64, n) orelse return error.InvalidMeta,
+                else => return error.InvalidMeta,
+            };
+            entry.* = .{
+                .root_id = root_id.string,
+                .path = path.string,
+                .size = size,
+                .required_labels = try parseLabels(allocator, item.object.get("required_labels")),
+            };
+        }
+    }
+    return entries;
+}
+
+fn parseLabels(allocator: std.mem.Allocator, value: ?std.json.Value) error{ OutOfMemory, InvalidMeta }![]const []const u8 {
+    const present = value orelse return &.{};
+    if (present != .array) return error.InvalidMeta;
+    const labels = try allocator.alloc([]const u8, present.array.items.len);
+    for (present.array.items, labels) |item, *label| {
+        if (item != .string or item.string.len == 0) return error.InvalidMeta;
+        label.* = item.string;
+    }
+    return labels;
 }
 
 fn positiveField(object: std.json.ObjectMap, name: []const u8) error{InvalidMeta}!usize {
@@ -770,6 +889,39 @@ fn v2Meta(allocator: std.mem.Allocator) ![]u8 {
         .{ .id = "line-window-v1", .max_chars = 1600, .overlap_lines = 3 },
         .{ .id = "md-section-v1", .max_chars = 1600, .overlap_lines = 3 },
     }, &.{.{ .root_id = "r-legacy", .label = "folder", .kind = "local", .retain_source = true }}, 1);
+}
+
+test "S3-T3: meta keeps root labels and origin, pending and unchunked files" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const meta = try writeMetaPending(
+        arena,
+        &.{.{ .id = "line-window-v1", .max_chars = 1600, .overlap_lines = 3 }},
+        &.{
+            .{ .root_id = "r-6f1a", .label = "School", .kind = "icloud", .required_labels = &.{"cloud-ok"}, .retain_source = true, .origin = "host" },
+            .{ .root_id = "r-legacy", .label = "folder", .kind = "local", .retain_source = false },
+        },
+        &.{.{ .root_id = "r-6f1a", .path = "week-08.md", .size = 3900, .required_labels = &.{"family"} }},
+        &.{.{ .root_id = "r-legacy", .path = "empty.txt", .size = 0 }},
+        0,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, meta, "\"required_labels\":[\"cloud-ok\"],\"retain_source\":true,\"origin\":\"host\"") != null);
+    const parsed = try parseMeta(arena, meta);
+    try std.testing.expectEqual(@as(usize, 2), parsed.roots.len);
+    try std.testing.expectEqualStrings("cloud-ok", parsed.roots[0].required_labels[0]);
+    try std.testing.expectEqualStrings("host", parsed.roots[0].origin);
+    try std.testing.expectEqualStrings("folder", parsed.roots[1].origin);
+    try std.testing.expectEqualStrings("week-08.md", parsed.pending[0].path);
+    try std.testing.expectEqual(@as(?u64, 3900), parsed.pending[0].size);
+    try std.testing.expectEqualStrings("family", parsed.pending[0].required_labels[0]);
+    try std.testing.expectEqualStrings("empty.txt", parsed.unchunked[0].path);
+    // An S3-T1 meta (no origin, no labels, no lists) still parses.
+    const old = try parseMeta(arena, "{\"manifest_meta\":2,\"chunkers\":[],\"roots\":[{\"root_id\":\"r-legacy\",\"label\":\"folder\",\"kind\":\"local\",\"required_labels\":[],\"retain_source\":true}],\"source_section_version\":0}");
+    try std.testing.expectEqualStrings("folder", old.roots[0].origin);
+    try std.testing.expectEqual(@as(usize, 0), old.pending.len);
+    try std.testing.expectError(error.InvalidMeta, parseMeta(arena, "{\"manifest_meta\":2,\"chunkers\":[],\"roots\":[{\"root_id\":\"a\",\"label\":\"A\",\"kind\":\"host\"},{\"root_id\":\"a\",\"label\":\"A\",\"kind\":\"host\"}]}"));
+    try std.testing.expectError(error.InvalidMeta, parseMeta(arena, "{\"manifest_meta\":2,\"chunkers\":[],\"roots\":[],\"pending\":[{\"root_id\":\"a\",\"path\":\"\"}]}"));
 }
 
 test "manifest v2 round trip binds the source section and the meta" {

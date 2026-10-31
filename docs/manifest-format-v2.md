@@ -61,7 +61,7 @@ Identifiers and filenames follow v1's rules; the three filenames must differ.
 {"manifest_meta":2,
  "chunkers":[{"id":"line-window-v1","params":{"max_chars":1600,"overlap_lines":3}},
              {"id":"md-section-v1","params":{"max_chars":1600,"overlap_lines":3,"front_matter":"yaml-v1"}}],
- "roots":[{"root_id":"r-legacy","label":"folder","kind":"local","required_labels":[],"retain_source":true}],
+ "roots":[{"root_id":"r-legacy","label":"folder","kind":"local","required_labels":[],"retain_source":true,"origin":"folder"}],
  "source_section_version":1}
 ```
 
@@ -69,13 +69,25 @@ Identifiers and filenames follow v1's rules; the three filenames must differ.
   when any chunk of the generation was made by it. A document record's
   `chunker_index` ([segment v4](segment-format-v4.md)) indexes this array.
 - `roots`: S3-T1 writes the one root `r-legacy` for a folder index; S3-T3 adds
-  host and iCloud roots.
+  host, iCloud and local roots through `apply_changes`. Each root:
+  `root_id`, `label`, `kind`, `required_labels` (they add to every document's
+  own), `retain_source` and, since S3-T3, `origin` (`folder` or `host`; read
+  as `folder` when absent). Root ids are unique. Records of `r-legacy` keep
+  bare relative paths; every other root's records are `root_id/relative`
+  (`scope.zig`, implementation §2).
+- `pending` (S3-T3, only when non-empty): `[{root_id, path, size,
+  required_labels}]`, the files named by the host whose bytes have not
+  arrived (no chunks).
+- `unchunked` (S3-T3, only when non-empty): the same fields for indexed files
+  that produced no chunk (an empty or blank file).
 - `source_section_version`: `1` when a source section is bound, else `0`.
 
 `decode` checks that `meta` is a UTF-8 object literal (first byte `{`, last
 `}`); `parseMeta` parses it fully (`manifest_meta` must be 2, every chunker has
 an id, a positive `max_chars` and an `overlap_lines`, every root an id, a
-label and a kind).
+label and a kind, root ids are unique, `required_labels` are non-empty
+strings, every pending or unchunked entry has a root id and a non-empty
+path).
 
 ## Cross-section validation
 
