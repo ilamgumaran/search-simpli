@@ -9,6 +9,25 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
+## S3-T1: manifest v2, md-section-v1, records v4, retained source (2026-10-31)
+
+`searchd index` / `ss_index_folder` now publish manifest v2 (`HYBMAN02`, 104-byte
+header binding a third section and a `meta` JSON with `chunkers[]` and one
+`r-legacy` root), document records v4 (`chunker_index`, `section_path`,
+`heading_line`, `source_doc_index`) and a source section `source-N.hybsrc`
+(`HYBSRC01`: every indexed file's original bytes with delta-coded line maps).
+`.md`/`.markdown` files are chunked by `md-section-v1` (front matter out of the
+body, ATX/Setext headings, fences kept whole when they fit); everything else
+keeps `line-window-v1`, whose golden is unchanged. `read_span` (byte-exact, 400
+lines / 256 KiB) and `outline` exist in the Zig core and the Python reference
+only (CLI/ABI/Dart/RPC in S3-T4); without a source section both answer
+`CAPACITY` "re-index required: source absent". `import-json` still writes v1/v3.
+v1 generations open; `--update` over one re-chunks Markdown and publishes v2.
+Measured on the 10k corpus: generation 16,127,845 to 26,553,935 bytes (source
+1.14x the text), index 0.37 to 0.42 s. Native libraries rebuilt (SOURCE-SHA256
+`9ba263a2...`). Formats: `docs/manifest-format-v2.md`, `docs/segment-format-v4.md`,
+`docs/source-section-v1.md`. Verified and merged 2026-10-31. [Task](docs/tasks/S3-T1.md).
+
 ## S3-T7: family-folder fixture and frozen judgments (2026-10-31)
 
 `fixtures/family-folder/` (three roots, 42 files, 34 Markdown, one 1.1 MB file, all
