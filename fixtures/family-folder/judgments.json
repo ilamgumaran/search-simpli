@@ -1,0 +1,1185 @@
+{
+  "version": 2,
+  "pack": "family-folder",
+  "roots": [
+    "school",
+    "home",
+    "laptop"
+  ],
+  "conventions": {
+    "lines": "1-based; a line ends at \\n or \\r\\n; a final line without a terminator counts; an empty file has 0 lines; a BOM is not part of any line",
+    "hit_match": "a returned hit matches an expected entry when root_id and path are equal and the line ranges overlap",
+    "phrase_prefix": "the expected sets are complete across all pages; tokens come from the analyzer",
+    "read_span": "sha256 of the original bytes from the start of start_line to the start of the line after end_line (CAP-19 FR-22): every line terminator in the range is kept, including the last line's own; a final line without a terminator has none",
+    "outline_end_line": "the line before the next heading of the same or higher level, else the last line"
+  },
+  "gates": {
+    "words_recall_at_5": 0.9,
+    "phrase_recall": 1.0,
+    "outline_exactness": 1.0,
+    "read_span_byte_exact": 1.0,
+    "prefix_recall": 1.0
+  },
+  "scenarios": [
+    {
+      "id": "uc007-01",
+      "scenario": 1,
+      "title": "Find tide table",
+      "question": "Find tide table.",
+      "kind": "words",
+      "query": "tide table",
+      "mode": "words",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "trips/seaside-weekend.md",
+          "start_line": 11,
+          "end_line": 11
+        },
+        {
+          "root_id": "laptop",
+          "path": "meeting-notes.md",
+          "start_line": 10,
+          "end_line": 10
+        },
+        {
+          "root_id": "school",
+          "path": "geography-coast.md",
+          "start_line": 10,
+          "end_line": 10
+        },
+        {
+          "root_id": "school",
+          "path": "geography-coast.md",
+          "start_line": 13,
+          "end_line": 13
+        }
+      ],
+      "rule": "every line holding both words; a hit counts when its line range overlaps"
+    },
+    {
+      "id": "uc007-02",
+      "scenario": 2,
+      "title": "Exact phrase count me in",
+      "question": "Find the exact phrase count me in.",
+      "kind": "phrase",
+      "query": "count me in",
+      "mode": "phrase",
+      "ref": "phrase:p1"
+    },
+    {
+      "id": "uc007-03",
+      "scenario": 3,
+      "title": "Prefix photosyn",
+      "question": "Which notes mention anything starting with photosyn?",
+      "kind": "prefix",
+      "query": "photosyn*",
+      "mode": "prefix",
+      "ref": "prefix:x1"
+    },
+    {
+      "id": "uc007-04",
+      "scenario": 4,
+      "title": "Outline of science-notes.md",
+      "question": "Show me the outline of science-notes.md.",
+      "kind": "outline",
+      "root_id": "school",
+      "path": "science-notes.md",
+      "ref": "outline:o1"
+    },
+    {
+      "id": "uc007-05",
+      "scenario": 5,
+      "title": "Open lines 40 to 60",
+      "question": "Open lines 40 to 60 of that file.",
+      "kind": "read_span",
+      "root_id": "school",
+      "path": "science-notes.md",
+      "ref": "read_span:s1",
+      "context_lines": 1
+    },
+    {
+      "id": "uc007-06",
+      "scenario": 6,
+      "title": "Spelling test next week",
+      "question": "What did the teacher say about the spelling test next week?",
+      "kind": "answer",
+      "query": "teacher said spelling test next week",
+      "mode": "words",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "notes.md",
+          "start_line": 27,
+          "end_line": 29,
+          "section_path": [
+            "Class notes",
+            "Week 7",
+            "Spelling"
+          ]
+        }
+      ],
+      "citation": "school/notes.md > Class notes > Week 7 > Spelling"
+    },
+    {
+      "id": "uc007-07",
+      "scenario": 7,
+      "title": "Band concert date",
+      "question": "When is the band concert?",
+      "kind": "answer",
+      "query": "when is the band concert",
+      "mode": "words",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "notes.md",
+          "start_line": 33,
+          "end_line": 33,
+          "section_path": [
+            "Class notes",
+            "Week 7",
+            "Dates"
+          ]
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-oct.md",
+          "start_line": 10,
+          "end_line": 10,
+          "section_path": [
+            "Larkfield Primary newsletter",
+            "Coming up"
+          ]
+        }
+      ],
+      "note": "the date sits inside a list item; the citation names the heading the item sits under"
+    },
+    {
+      "id": "uc007-08",
+      "scenario": 8,
+      "title": "Newts",
+      "question": "Is there anything in my folders about newts?",
+      "kind": "empty",
+      "query": "newts",
+      "mode": "words",
+      "expected": [],
+      "expected_empty": true,
+      "note": "the corpus holds no such word; the answer must say the folders hold nothing about it"
+    },
+    {
+      "id": "uc007-09",
+      "scenario": 9,
+      "title": "Summarise the project-ideas note",
+      "question": "Summarise the project-ideas note.",
+      "kind": "summary",
+      "root_id": "laptop",
+      "path": "project-ideas.md",
+      "outline_ref": "outline:o2",
+      "expected_sections": [
+        {
+          "section_path": [
+            "Project ideas"
+          ],
+          "heading_line": 6,
+          "first_span": {
+            "start_line": 8,
+            "end_line": 8
+          }
+        },
+        {
+          "section_path": [
+            "Project ideas",
+            "Robot club"
+          ],
+          "heading_line": 10,
+          "first_span": {
+            "start_line": 12,
+            "end_line": 12
+          }
+        },
+        {
+          "section_path": [
+            "Project ideas",
+            "Robot club",
+            "Software"
+          ],
+          "heading_line": 17,
+          "first_span": {
+            "start_line": 19,
+            "end_line": 19
+          }
+        },
+        {
+          "section_path": [
+            "Project ideas",
+            "Garden camera"
+          ],
+          "heading_line": 21,
+          "first_span": {
+            "start_line": 23,
+            "end_line": 23
+          }
+        },
+        {
+          "section_path": [
+            "Project ideas",
+            "Garden camera",
+            "Parts"
+          ],
+          "heading_line": 25,
+          "first_span": {
+            "start_line": 27,
+            "end_line": 28
+          }
+        },
+        {
+          "section_path": [
+            "Project ideas",
+            "Weather station"
+          ],
+          "heading_line": 30,
+          "first_span": {
+            "start_line": 32,
+            "end_line": 32
+          }
+        },
+        {
+          "section_path": [
+            "Project ideas",
+            "Reading app"
+          ],
+          "heading_line": 34,
+          "first_span": {
+            "start_line": 36,
+            "end_line": 36
+          }
+        }
+      ],
+      "note": "outline plus the first span of each section (first paragraph or list under the heading)"
+    },
+    {
+      "id": "uc007-10",
+      "scenario": 10,
+      "title": "After the dough rests",
+      "question": "What does the recipe say to do after the dough rests?",
+      "kind": "phrase_neighbour",
+      "query": "the dough rests",
+      "mode": "phrase",
+      "ref": "phrase:p2",
+      "words_query": "what to do after the dough rests",
+      "expected_neighbour": {
+        "root_id": "home",
+        "path": "recipes/bread.md",
+        "start_line": 20,
+        "end_line": 20,
+        "section_path": [
+          "Weekend bread",
+          "Method"
+        ]
+      },
+      "note": "the phrase hit is step 3; the step after it is step 4 (the next span)"
+    },
+    {
+      "id": "uc007-11",
+      "scenario": 11,
+      "title": "A new file lands; a pending file shows by name",
+      "question": "A new file lands in the iCloud folder on another device; a file not yet downloaded shows as pending.",
+      "kind": "lifecycle",
+      "status": "not implemented until S3-T3/T4",
+      "steps": [
+        {
+          "op": "apply_changes",
+          "changes": [
+            {
+              "op": "add",
+              "root_id": "home",
+              "path": "inbox/firefly-note.md",
+              "text": "# Firefly note\n\nWe saw one firefly by the pond.\n"
+            }
+          ],
+          "expect_report": {
+            "added": 1,
+            "changed": 0,
+            "removed": 0,
+            "pending": 0
+          }
+        },
+        {
+          "op": "find",
+          "query": "firefly",
+          "mode": "words",
+          "expect_hits": [
+            {
+              "root_id": "home",
+              "path": "inbox/firefly-note.md",
+              "start_line": 1,
+              "end_line": 3
+            }
+          ]
+        },
+        {
+          "op": "apply_changes",
+          "changes": [
+            {
+              "op": "pending",
+              "root_id": "home",
+              "path": "inbox/late-arrival.md",
+              "size": 5000
+            }
+          ],
+          "expect_report": {
+            "pending": 1
+          }
+        },
+        {
+          "op": "index_status",
+          "expect": {
+            "pending_paths": [
+              {
+                "root_id": "home",
+                "path": "inbox/late-arrival.md"
+              }
+            ]
+          }
+        },
+        {
+          "op": "apply_changes",
+          "changes": [
+            {
+              "op": "add",
+              "root_id": "home",
+              "path": "inbox/late-arrival.md",
+              "text": "# Late arrival\n\nThe parcel came by canal boat.\n"
+            }
+          ],
+          "expect_report": {
+            "added": 1,
+            "pending": 0
+          }
+        },
+        {
+          "op": "find",
+          "query": "canal",
+          "mode": "words",
+          "expect_hits": [
+            {
+              "root_id": "home",
+              "path": "inbox/late-arrival.md",
+              "start_line": 1,
+              "end_line": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uc007-12",
+      "scenario": 12,
+      "title": "A note is renamed",
+      "question": "A note is renamed; old citations stop and the new name works.",
+      "kind": "lifecycle",
+      "status": "not implemented until S3-T3/T4",
+      "steps": [
+        {
+          "op": "find",
+          "query": "lentils",
+          "mode": "words",
+          "roots": [
+            "home"
+          ],
+          "expect_hits_include": [
+            {
+              "root_id": "home",
+              "path": "recipes/soup.md",
+              "start_line": 1,
+              "end_line": 13
+            }
+          ]
+        },
+        {
+          "op": "apply_changes",
+          "changes": [
+            {
+              "op": "move",
+              "root_id": "home",
+              "path": "recipes/soup-v2.md",
+              "moved_from": "recipes/soup.md"
+            }
+          ],
+          "expect_report": {
+            "moved": 1,
+            "added": 0,
+            "removed": 0
+          }
+        },
+        {
+          "op": "find",
+          "query": "lentils",
+          "mode": "words",
+          "roots": [
+            "home"
+          ],
+          "expect_paths_include": [
+            "recipes/soup-v2.md"
+          ],
+          "expect_paths_exclude": [
+            "recipes/soup.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uc007-13",
+      "scenario": 13,
+      "title": "A folder is removed",
+      "question": "A folder is removed from the app; nothing from it is returned again.",
+      "kind": "lifecycle",
+      "status": "not implemented until S3-T3/T4",
+      "steps": [
+        {
+          "op": "find",
+          "query": "robot rover motors",
+          "mode": "words",
+          "roots": [
+            "laptop"
+          ],
+          "expect_hits_include": [
+            {
+              "root_id": "laptop",
+              "path": "project-ideas.md",
+              "start_line": 12,
+              "end_line": 12
+            }
+          ]
+        },
+        {
+          "op": "apply_changes",
+          "changes": [
+            {
+              "op": "remove_root",
+              "root_id": "laptop"
+            }
+          ],
+          "expect_report": {
+            "roots_removed": 1
+          }
+        },
+        {
+          "op": "find",
+          "query": "robot rover motors",
+          "mode": "words",
+          "expect_empty": true
+        },
+        {
+          "op": "index_status",
+          "expect": {
+            "roots": [
+              "school",
+              "home"
+            ],
+            "no_trace_of_roots": [
+              "laptop"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "phrase": [
+    {
+      "id": "p1",
+      "query": "count me in",
+      "mode": "phrase",
+      "why": "a phrase wrapped over two lines in one section, plus two plain occurrences",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-plans.md",
+          "start_line": 12,
+          "end_line": 12
+        },
+        {
+          "root_id": "laptop",
+          "path": "meeting-notes.md",
+          "start_line": 10,
+          "end_line": 10
+        },
+        {
+          "root_id": "school",
+          "path": "notes.md",
+          "start_line": 33,
+          "end_line": 34
+        }
+      ],
+      "expected_engine_miss": []
+    },
+    {
+      "id": "p2",
+      "query": "the dough rests",
+      "mode": "phrase",
+      "why": "a phrase inside a numbered step",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/bread.md",
+          "start_line": 19,
+          "end_line": 19
+        }
+      ],
+      "expected_engine_miss": []
+    },
+    {
+      "id": "p3",
+      "query": "round the old mill pond",
+      "mode": "phrase",
+      "why": "the known chunk-local miss: five one-word lines straddle a 1,600-character window edge, so no single chunk holds the phrase",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "clapping-chant.txt",
+          "start_line": 296,
+          "end_line": 300
+        }
+      ],
+      "expected_engine_miss": [
+        {
+          "root_id": "school",
+          "path": "clapping-chant.txt",
+          "start_line": 296,
+          "end_line": 300
+        }
+      ]
+    },
+    {
+      "id": "p4",
+      "query": "the the",
+      "mode": "phrase",
+      "why": "the repeated-tokens file: adjacent identical words are a legal phrase",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "repeated-tokens.md",
+          "start_line": 7,
+          "end_line": 7
+        },
+        {
+          "root_id": "home",
+          "path": "repeated-tokens.md",
+          "start_line": 9,
+          "end_line": 9
+        }
+      ],
+      "expected_engine_miss": []
+    },
+    {
+      "id": "p5",
+      "query": "பள்ளி விடுமுறை",
+      "mode": "phrase",
+      "why": "Tamil phrase in a Tamil file, two occurrences",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil-notes.md",
+          "start_line": 5,
+          "end_line": 5
+        },
+        {
+          "root_id": "home",
+          "path": "tamil-notes.md",
+          "start_line": 16,
+          "end_line": 16
+        }
+      ],
+      "expected_engine_miss": []
+    }
+  ],
+  "prefix": [
+    {
+      "id": "x1",
+      "query": "photosyn*",
+      "mode": "prefix",
+      "prefix": "photosyn",
+      "why": "words that begin the same way across three files",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "garden.md",
+          "start_line": 17,
+          "end_line": 17
+        },
+        {
+          "root_id": "laptop",
+          "path": "photosynthesis-draft.md",
+          "start_line": 6,
+          "end_line": 6
+        },
+        {
+          "root_id": "laptop",
+          "path": "photosynthesis-draft.md",
+          "start_line": 12,
+          "end_line": 12
+        },
+        {
+          "root_id": "laptop",
+          "path": "photosynthesis-draft.md",
+          "start_line": 17,
+          "end_line": 17
+        },
+        {
+          "root_id": "school",
+          "path": "science-notes.md",
+          "start_line": 15,
+          "end_line": 15
+        },
+        {
+          "root_id": "school",
+          "path": "science-notes.md",
+          "start_line": 18,
+          "end_line": 18
+        }
+      ],
+      "expected_engine_miss": [
+        {
+          "root_id": "laptop",
+          "path": "photosynthesis-draft.md",
+          "start_line": 2,
+          "end_line": 2
+        }
+      ],
+      "expected_engine_miss_reason": "front matter is metadata, not body (CAP-19 FR-18): md-section-v1 drops it from chunk bodies, so a body index does not return these lines"
+    },
+    {
+      "id": "x2",
+      "query": "spell*",
+      "mode": "prefix",
+      "prefix": "spell",
+      "why": "one prefix covers the words spell and spelling (names, notes and lists)",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "reports/term-summary.md",
+          "start_line": 5,
+          "end_line": 5
+        },
+        {
+          "root_id": "laptop",
+          "path": "todo.txt",
+          "start_line": 3,
+          "end_line": 3
+        },
+        {
+          "root_id": "school",
+          "path": "homework-routine.txt",
+          "start_line": 4,
+          "end_line": 4
+        },
+        {
+          "root_id": "school",
+          "path": "homework-routine.txt",
+          "start_line": 9,
+          "end_line": 9
+        },
+        {
+          "root_id": "school",
+          "path": "notes.md",
+          "start_line": 25,
+          "end_line": 25
+        },
+        {
+          "root_id": "school",
+          "path": "notes.md",
+          "start_line": 27,
+          "end_line": 27
+        },
+        {
+          "root_id": "school",
+          "path": "spelling-lists.md",
+          "start_line": 1,
+          "end_line": 1
+        },
+        {
+          "root_id": "school",
+          "path": "spelling-lists.md",
+          "start_line": 16,
+          "end_line": 16
+        },
+        {
+          "root_id": "school",
+          "path": "timetable.md",
+          "start_line": 29,
+          "end_line": 29
+        }
+      ],
+      "expected_engine_miss": []
+    },
+    {
+      "id": "x3",
+      "query": "harbo*",
+      "mode": "prefix",
+      "prefix": "harbo",
+      "why": "includes one hit deep inside the file larger than 1 MB",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "trips/seaside-weekend.md",
+          "start_line": 11,
+          "end_line": 11
+        },
+        {
+          "root_id": "laptop",
+          "path": "big-log.txt",
+          "start_line": 4711,
+          "end_line": 4711
+        },
+        {
+          "root_id": "laptop",
+          "path": "big-log.txt",
+          "start_line": 12003,
+          "end_line": 12003
+        },
+        {
+          "root_id": "school",
+          "path": "geography-coast.md",
+          "start_line": 11,
+          "end_line": 11
+        },
+        {
+          "root_id": "school",
+          "path": "geography-coast.md",
+          "start_line": 18,
+          "end_line": 18
+        }
+      ],
+      "expected_engine_miss": []
+    },
+    {
+      "id": "x4",
+      "query": "lighthou*",
+      "mode": "prefix",
+      "prefix": "lighthou",
+      "why": "a prefix that is also a whole word; a planted line in the large file",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "big-log.txt",
+          "start_line": 4711,
+          "end_line": 4711
+        },
+        {
+          "root_id": "laptop",
+          "path": "big-log.txt",
+          "start_line": 12003,
+          "end_line": 12003
+        },
+        {
+          "root_id": "laptop",
+          "path": "reading-notes.md",
+          "start_line": 3,
+          "end_line": 3
+        },
+        {
+          "root_id": "laptop",
+          "path": "reading-notes.md",
+          "start_line": 5,
+          "end_line": 5
+        },
+        {
+          "root_id": "school",
+          "path": "notes.md",
+          "start_line": 15,
+          "end_line": 15
+        },
+        {
+          "root_id": "school",
+          "path": "reading-log.md",
+          "start_line": 5,
+          "end_line": 5
+        }
+      ],
+      "expected_engine_miss": []
+    },
+    {
+      "id": "x5",
+      "query": "கணி*",
+      "mode": "prefix",
+      "prefix": "கணி",
+      "why": "Tamil prefix of a whole token",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil-notes.md",
+          "start_line": 6,
+          "end_line": 6
+        }
+      ],
+      "expected_engine_miss": []
+    }
+  ],
+  "outline": [
+    {
+      "id": "o1",
+      "root_id": "school",
+      "path": "science-notes.md",
+      "why": "Setext and ATX headings mixed, depth 3, front matter",
+      "front_matter": {
+        "start_line": 1,
+        "end_line": 5,
+        "fields": {
+          "title": "Science notes",
+          "class": "year four",
+          "topic": "plants and light"
+        }
+      },
+      "headings": [
+        {
+          "level": 1,
+          "text": "Science notes",
+          "line": 7,
+          "end_line": 74
+        },
+        {
+          "level": 2,
+          "text": "How plants make food",
+          "line": 12,
+          "end_line": 33
+        },
+        {
+          "level": 3,
+          "text": "Photosynthesis in one line",
+          "line": 15,
+          "end_line": 19
+        },
+        {
+          "level": 3,
+          "text": "What the leaf does",
+          "line": 20,
+          "end_line": 26
+        },
+        {
+          "level": 3,
+          "text": "Words to remember",
+          "line": 27,
+          "end_line": 33
+        },
+        {
+          "level": 2,
+          "text": "The parts of a flower",
+          "line": 34,
+          "end_line": 52
+        },
+        {
+          "level": 3,
+          "text": "Petals and sepals",
+          "line": 37,
+          "end_line": 41
+        },
+        {
+          "level": 3,
+          "text": "Stamen and carpel",
+          "line": 42,
+          "end_line": 46
+        },
+        {
+          "level": 3,
+          "text": "Questions for Friday",
+          "line": 47,
+          "end_line": 52
+        },
+        {
+          "level": 2,
+          "text": "Experiments",
+          "line": 53,
+          "end_line": 66
+        },
+        {
+          "level": 3,
+          "text": "The cress test",
+          "line": 55,
+          "end_line": 60
+        },
+        {
+          "level": 3,
+          "text": "The celery test",
+          "line": 61,
+          "end_line": 66
+        },
+        {
+          "level": 2,
+          "text": "Vocabulary list",
+          "line": 67,
+          "end_line": 74
+        }
+      ],
+      "lines": 74,
+      "chunker": "md-section-v1"
+    },
+    {
+      "id": "o2",
+      "root_id": "laptop",
+      "path": "project-ideas.md",
+      "why": "ATX headings to depth 3 with front matter",
+      "front_matter": {
+        "start_line": 1,
+        "end_line": 4,
+        "fields": {
+          "title": "Project ideas",
+          "owner": "Dev"
+        }
+      },
+      "headings": [
+        {
+          "level": 1,
+          "text": "Project ideas",
+          "line": 6,
+          "end_line": 36
+        },
+        {
+          "level": 2,
+          "text": "Robot club",
+          "line": 10,
+          "end_line": 20
+        },
+        {
+          "level": 3,
+          "text": "Software",
+          "line": 17,
+          "end_line": 20
+        },
+        {
+          "level": 2,
+          "text": "Garden camera",
+          "line": 21,
+          "end_line": 29
+        },
+        {
+          "level": 3,
+          "text": "Parts",
+          "line": 25,
+          "end_line": 29
+        },
+        {
+          "level": 2,
+          "text": "Weather station",
+          "line": 30,
+          "end_line": 33
+        },
+        {
+          "level": 2,
+          "text": "Reading app",
+          "line": 34,
+          "end_line": 36
+        }
+      ],
+      "lines": 36,
+      "chunker": "md-section-v1"
+    },
+    {
+      "id": "o3",
+      "root_id": "school",
+      "path": "spelling-lists.md",
+      "why": "Setext only, no front matter",
+      "front_matter": null,
+      "headings": [
+        {
+          "level": 1,
+          "text": "Spelling lists",
+          "line": 1,
+          "end_line": 32
+        },
+        {
+          "level": 2,
+          "text": "Week 6",
+          "line": 4,
+          "end_line": 12
+        },
+        {
+          "level": 2,
+          "text": "Week 7",
+          "line": 13,
+          "end_line": 28
+        },
+        {
+          "level": 2,
+          "text": "Week 8",
+          "line": 29,
+          "end_line": 32
+        }
+      ],
+      "lines": 32,
+      "chunker": "md-section-v1"
+    },
+    {
+      "id": "o4",
+      "root_id": "laptop",
+      "path": "maths-script.md",
+      "why": "hash-sign lines inside a fenced block are not headings",
+      "front_matter": null,
+      "headings": [
+        {
+          "level": 1,
+          "text": "Maths script",
+          "line": 1,
+          "end_line": 87
+        },
+        {
+          "level": 2,
+          "text": "Headings inside code are not headings",
+          "line": 5,
+          "end_line": 9
+        },
+        {
+          "level": 2,
+          "text": "The program",
+          "line": 10,
+          "end_line": 80
+        },
+        {
+          "level": 2,
+          "text": "Notes",
+          "line": 81,
+          "end_line": 87
+        },
+        {
+          "level": 3,
+          "text": "Next step",
+          "line": 85,
+          "end_line": 87
+        }
+      ],
+      "lines": 87,
+      "chunker": "md-section-v1"
+    },
+    {
+      "id": "o5",
+      "root_id": "home",
+      "path": "crlf-shopping.md",
+      "why": "CRLF line endings: same line numbers as LF",
+      "front_matter": {
+        "start_line": 1,
+        "end_line": 4,
+        "fields": {
+          "title": "Shopping list",
+          "list": "weekly"
+        }
+      },
+      "headings": [
+        {
+          "level": 1,
+          "text": "Shopping list",
+          "line": 6,
+          "end_line": 22
+        },
+        {
+          "level": 2,
+          "text": "Fruit and vegetables",
+          "line": 8,
+          "end_line": 13
+        },
+        {
+          "level": 2,
+          "text": "Baking",
+          "line": 14,
+          "end_line": 19
+        },
+        {
+          "level": 2,
+          "text": "Treats",
+          "line": 20,
+          "end_line": 22
+        }
+      ],
+      "lines": 22,
+      "chunker": "md-section-v1"
+    }
+  ],
+  "read_span": [
+    {
+      "id": "s1",
+      "root_id": "school",
+      "path": "science-notes.md",
+      "start_line": 40,
+      "end_line": 60,
+      "context_lines": 1,
+      "byte_length": 575,
+      "sha256": "7813c9fac9e2ca4e513c8f122bc0d7798767595b84537914b169bb6867ead5c4",
+      "why": "the UC-007 example: lines 40 to 60 with one line of context"
+    },
+    {
+      "id": "s2",
+      "root_id": "home",
+      "path": "crlf-shopping.md",
+      "start_line": 3,
+      "end_line": 8,
+      "context_lines": 1,
+      "byte_length": 65,
+      "sha256": "290fd8e9a18f38f5abe08e022543951f51c576c3dc5b87199303745ed639cd8d",
+      "why": "CRLF: the returned bytes keep the inner \\r\\n"
+    },
+    {
+      "id": "s3",
+      "root_id": "home",
+      "path": "bom-checklist.md",
+      "start_line": 3,
+      "end_line": 6,
+      "context_lines": 1,
+      "byte_length": 29,
+      "sha256": "2f7f13fd0ab5dcbf46b025e9193f051117521428142cac14eecee5508ba73afd",
+      "why": "a BOM file: line numbers ignore the BOM; the span starts after line 1"
+    },
+    {
+      "id": "s4",
+      "root_id": "home",
+      "path": "no-final-newline.txt",
+      "start_line": 3,
+      "end_line": 4,
+      "context_lines": 1,
+      "byte_length": 39,
+      "sha256": "70209e0b59968c6f62f630d7a0ffa2113d3f6691ed25d007a0521798178752ac",
+      "why": "ends at the last line, which has no terminator"
+    },
+    {
+      "id": "s5",
+      "root_id": "laptop",
+      "path": "big-log.txt",
+      "start_line": 9000,
+      "end_line": 9010,
+      "context_lines": 1,
+      "byte_length": 819,
+      "sha256": "af31d1c35b14a2bd06da273348f7401a8459f66c81514ffb78cb7d091ff3801f",
+      "why": "deep inside the file larger than 1 MB"
+    },
+    {
+      "id": "s6",
+      "root_id": "school",
+      "path": "notes.md",
+      "start_line": 1,
+      "end_line": 5,
+      "context_lines": 1,
+      "byte_length": 58,
+      "sha256": "58a585749c7d6955e5ad39f76349524d906b4e6b49735400d5a99da5a752d15d",
+      "why": "a front-matter range, from line 1 through the closing --- line"
+    },
+    {
+      "id": "s7",
+      "root_id": "school",
+      "path": "notes.md",
+      "start_line": 33,
+      "end_line": 34,
+      "context_lines": 1,
+      "byte_length": 124,
+      "sha256": "9714b6c98d28f6c35d256b54c790236435c4a5700c2a98a1fea4577f392a8d41",
+      "why": "an indented continuation line inside a list item"
+    },
+    {
+      "id": "s8",
+      "root_id": "home",
+      "path": "tamil-notes.md",
+      "start_line": 3,
+      "end_line": 6,
+      "context_lines": 1,
+      "byte_length": 246,
+      "sha256": "0dd6bdc253f69f0e64d6fc362dcc485f98b8127120886d69ec02320461aa753d",
+      "why": "Tamil text: multi-byte UTF-8, byte length differs from codepoint count"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-10-25
+Last updated: 2026-10-31
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,17 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## S3-T7: family-folder fixture and frozen judgments (2026-10-31)
+
+`fixtures/family-folder/` (three roots, 42 files, 34 Markdown, one 1.1 MB file, all
+invented) and `judgments.json` version 2 (the 13 UC-007 scenarios plus five phrase,
+five prefix, five outline and eight `read_span` cases) are frozen as the oracle for
+S3-T1..T6. `fixtures/family-folder/generate.py` writes the files, the judgments and
+the README deterministically. `python3 scripts/relevance_smoke.py --pack family-folder`
+runs what the Python reference can answer today and counts the rest as skipped; CI runs
+it. No engine behaviour changed.
+Verified and merged 2026-10-31 (round 2; round 1 rejected on the `read_span` sha256 convention, now from the start of `start_line` to the start of the line after `end_line`); front-matter-only matches are expected engine misses (Post-build ruling 2). [Task](docs/tasks/S3-T7.md).
 
 ## Directory search audit and filename design (2026-10-25)
 
