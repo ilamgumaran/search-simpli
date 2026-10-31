@@ -11,6 +11,8 @@ amendments marked **S3-T2** (format: [`lexical-segment-format-v2.md`](lexical-se
 §8 and §9 on every surface (C ABI, Dart, CLI, RPC; contract 2.0.0)
 implemented by S3-T4 (`zig/src/ops.zig`, `abi.zig`, `cli.zig`, `rpc.zig`,
 the Dart package) with the amendments marked **S3-T4**.
+§11 implemented by S3-T6 (`zig/src/mcp.zig`, [MCP server](mcp-server.md))
+with the amendments marked **S3-T6**.
 Every other format, field and number here is **proposed**; a task's Report
 turns it into an observed fact or amends it.
 Companion to [`CAP-19`](requirements/cap-19-folder-knowledge.md),
@@ -685,6 +687,28 @@ four-tool baseline is the server's `--baseline` mode, which lists only those
 four). The scope (§7) comes from the command line, never from the client
 (CAP-13's "no caller-supplied principals"). Adapter overhead p95 ≤ 5 ms over
 the direct call (CAP-13's gate), measured in S3-T6.
+
+**S3-T6 amendments** (accepted in the task's post-build rulings; the full
+contract is [`docs/mcp-server.md`](mcp-server.md)):
+- The command line also takes `--baseline` (CAP-13's four tools, no
+  resources; not with `--allow-write`) and `--allow-file-reads` (only with
+  `--allow-write`). The pinned revision is `2025-11-25`.
+- Every tool descriptor declares `outputSchema` (its S3-T5 result schema)
+  besides `inputSchema`; both are the `contracts/tools/` files, built in at
+  compile time.
+- A refusal by the operation is a tool result with `isError: true` whose one
+  text block is the RPC server's error object for the same request; an
+  unknown or unlisted tool is the JSON-RPC error `-32602`.
+- `apply_changes` (with `--allow-write`) is refused when a root it declares
+  or changes is outside `--roots` (when given).
+- `resources/read` drops a leading UTF-8 BOM, as `read_span` does;
+  `resources/list`'s `size` is the retained bytes.
+- A call carrying `query_vector` is refused, so on an index with vectors
+  `search_knowledge` over MCP is lexical only.
+- §8: `search_knowledge` items add `root_id` and `section_path` (after
+  `ranking`) and the result adds `truncated` and `pending_files` (after
+  `answer_policy`) on the RPC and MCP surfaces; the C ABI's `ss_query` keeps
+  its contract-2.0.0 output without them.
 
 ## 12. Fixture and judgments (`fixtures/family-folder/`)
 

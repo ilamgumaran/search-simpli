@@ -158,7 +158,7 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-21 | Deterministic rename detection without content deduplication | CAP-19 | Proposed |
 | FR-22 | Find, outline, byte-exact source spans and paged files | CAP-19 | Proposed |
 | FR-23 | Versioned shared tool schemas and model skill instructions | CAP-19 | Proposed |
-| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | CAP-19 | Proposed |
+| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | CAP-19 | Diagnostic (S3-T6: `searchd mcp`; realizes CAP-13) |
 | FR-25 | Scoped retrieval metadata; empty is not proof of absence | CAP-19 | Proposed |
 
 ## Non-functional requirements (NFR)
@@ -184,7 +184,7 @@ until promoted.
 | NFR-11 | Positional segment size budget | CAP-19 | Proposed |
 | NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseFast, ReleaseSmall reported) | CAP-19 | Proposed |
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Proposed |
-| NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Proposed |
+| NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic (S3-T6: `zig/src/mcp.zig` Zig only; `tests/mcp_client.py` standard library) |
 
 ## Contracts (CON)
 
