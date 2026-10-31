@@ -483,8 +483,9 @@ reference `search_platform/find.py`; no ABI, CLI or RPC surface until S3-T4):
   an earlier **kept** hit. It applies to all three modes. `words` and
   `prefix` are chunk-local like `phrase`.
 - `files` counts all hits (every page) in the order each file first appears
-  in the ranking; `coverage` counts this page's hits; `truncated` is `false`
-  and `pending_files` `0` until S3-T3 gives them a source.
+  in the ranking; `coverage` counts this page's hits; `truncated` was `false`
+  and `pending_files` `0` until S3-T3 gave them a source (since S3-T3: §7,
+  over the visible scope).
 - Refusals: `INVALID_ARGUMENT` for an empty query (nothing analyzable,
   `""` and `*` included), a `*` that ends any token but the last, `page_size`
   outside 1..100, invalid UTF-8, a malformed cursor, and `"stale cursor"`

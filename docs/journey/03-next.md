@@ -170,6 +170,7 @@ at the same time. E-01A is the safe intake half of exactly that.
 | Item | Why it is ready | Note |
 |---|---|---|
 | **E-02 — negative / unanswerable evaluation** | Small, self-contained, and it is the empirical guard on the source-of-truth invariant | Feeds CAP-14 |
+| **NFR-12 in ReleaseSmall — delta sections or a cheaper checksum** | S3-T3 measured one changed file in a 10k index at 215–221 ms in `ReleaseSmall` against the 200 ms bound (met in `ReleaseFast`, 163–168 ms); rewriting and re-checksumming whole sections each generation is most of it | Required before NFR-12's bound tightens to `ReleaseSmall` (S3-T3 Post-build ruling 2) |
 
 ## Blocked, with the named unblocker
 
@@ -209,3 +210,5 @@ CAP-19 (`docs/requirements/cap-19-folder-knowledge.md`) was approved for build b
 **31 Oct (verifier, Xcode Mac): S3-T1 verified and merged.** Manifest v2, `md-section-v1`, records v4 and the retained source section are on `main`; `read_span` and `outline` answer the frozen pack exactly in the Zig core and the Python reference (outline 7/7, read_span 9/9); native libraries rebuilt (`9ba263a2…`). Next: S3-T2 and S3-T3. [Task](../tasks/S3-T1.md).
 
 **31 Oct (verifier, Xcode Mac): S3-T2 verified and merged.** `HYBLEX02` positions and offsets and `find` (words, phrase, prefix, snippets, cursors) are on `main` in the Zig core and the Python reference; the frozen pack's phrase and prefix judgments reach precision and recall 1.00 with both expected misses missed; `HYBLEX02` is 1.39× `HYBLEX01` on the 10k corpus. S3-T3 merges next and takes the shared `indexer.zig`/`manifest.zig`/`scoring.zig` lines named in the Verdict. [Task](../tasks/S3-T2.md).
+
+**31 Oct (verifier, Xcode Mac): S3-T3 verified and merged.** Roots, `apply_changes` (host-fed batches with strict content or confined files, deterministic rename pairing, pending, `remove_root`), INDEX-STATE v2 and visible-scope statistics are on `main` in the Zig core and the Python reference; the pack's lifecycle scenarios run (0 skipped). NFR-12's one-changed-file bound is amended to ReleaseFast (168 ms; ReleaseSmall 220 ms reported) with a NEXT row for delta sections. Next: S3-T4 (ABI, CLI, Dart and RPC surfaces, scoped `index_status`). [Task](../tasks/S3-T3.md).
