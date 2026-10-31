@@ -245,3 +245,90 @@ test "query and evidence reject invalid UTF-8 text with one line and status 2 (S
         try std.testing.expect(good != .usage_error);
     }
 }
+
+test "S3-T4: the folder commands parse, and every bad argument is one usage line" {
+    var buffer: [512]u8 = undefined;
+    const find = cli.parseArgs(&.{ "find", "d", "count me", "--mode", "phrase", "--roots", "a,b", "--page-size", "100", "--cursor", "3:20", "--json" }, &buffer).find;
+    try std.testing.expectEqualStrings("count me", find.query);
+    try std.testing.expectEqual(@as(?@import("find.zig").Mode, .phrase), find.mode);
+    try std.testing.expectEqualStrings("a,b", find.roots.?);
+    try std.testing.expectEqual(@as(?usize, 100), find.page_size);
+    try std.testing.expect(find.json);
+    const span = cli.parseArgs(&.{ "read-span", "d", "school", "notes.md", "3", "7", "--context", "20" }, &buffer).read_span;
+    try std.testing.expectEqual(@as(u32, 3), span.start);
+    try std.testing.expectEqual(@as(u32, 20), span.context);
+    const list = cli.parseArgs(&.{ "list-files", "d", "--root", "home", "--prefix", "recipes/", "--status", "pending", "--page-size", "1000" }, &buffer).list_files;
+    try std.testing.expectEqualStrings("pending", list.status.?);
+    const apply_args = cli.parseArgs(&.{ "apply", "d", "--changes", "c.json", "--expect-generation", "0", "--allow-file-reads" }, &buffer).apply;
+    try std.testing.expectEqual(@as(?u64, 0), apply_args.expect_generation);
+    try std.testing.expect(apply_args.allow_file_reads);
+    const serve = cli.parseArgs(&.{ "serve", "d", "--roots", "school", "--labels", "adults,kids", "--allow-write", "--allow-file-reads" }, &buffer).serve;
+    try std.testing.expectEqualStrings("adults,kids", serve.labels.?);
+    try std.testing.expect(serve.allow_write and serve.allow_file_reads);
+    try std.testing.expect(cli.parseArgs(&.{ "roots", "d", "--json" }, &buffer).roots.json);
+    try std.testing.expect(cli.parseArgs(&.{ "outline", "d", "r", "p" }, &buffer) == .outline);
+
+    try expectUsage(&.{ "find", "d" }, &.{"missing argument"});
+    try expectUsage(&.{ "find", "d", "q", "--mode", "fuzzy" }, &.{ "--mode", "'fuzzy'" });
+    try expectUsage(&.{ "find", "d", "q", "--page-size", "101" }, &.{ "--page-size", "1-100" });
+    try expectUsage(&.{ "find", "d", "q", "--roots", "a,,b" }, &.{"--roots"});
+    try expectUsage(&.{ "find", "d", "caf\xff" }, &.{"not valid UTF-8"});
+    try expectUsage(&.{ "find", "d", "q", "--bogus" }, &.{ "unknown flag for find", "'--bogus'" });
+    try expectUsage(&.{ "outline", "d", "r" }, &.{"<path>"});
+    try expectUsage(&.{ "read-span", "d", "r", "p", "0", "1" }, &.{"read-span <start>"});
+    try expectUsage(&.{ "read-span", "d", "r", "p", "5", "4" }, &.{"must be at least <start>"});
+    try expectUsage(&.{ "read-span", "d", "r", "p", "1", "2", "--context", "21" }, &.{ "--context", "0-20" });
+    try expectUsage(&.{ "list-files", "d", "--status", "done" }, &.{"--status"});
+    try expectUsage(&.{ "list-files", "d", "--page-size", "0" }, &.{"--page-size"});
+    try expectUsage(&.{ "roots", "d", "extra" }, &.{"unknown flag for roots"});
+    try expectUsage(&.{ "apply", "d" }, &.{"--changes <file>"});
+    try expectUsage(&.{ "apply", "d", "--changes", "c", "--expect-generation", "-1" }, &.{"--expect-generation"});
+    try expectUsage(&.{ "serve", "d", "--labels", "" }, &.{"--labels"});
+}
+
+test "S3-T4: --json prints exactly the operation's JSON; text output and refusals" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const request = "{\"roots\":[{\"root_id\":\"school\",\"kind\":\"host\"}],\"changes\":[{\"op\":\"add\",\"root_id\":\"school\",\"path\":\"week.md\",\"content_base64\":\"IyBXZWVrCgp0aWRlIHRhYmxlCg==\"}]}";
+    try tmp.dir.writeFile(io, .{ .sub_path = "changes.json", .data = request });
+    const index = try std.fmt.allocPrint(a, ".zig-cache/tmp/{s}/index", .{tmp.sub_path});
+    const changes = try std.fmt.allocPrint(a, ".zig-cache/tmp/{s}/changes.json", .{tmp.sub_path});
+    var out: std.Io.Writer.Allocating = .init(a);
+    var err: std.Io.Writer.Allocating = .init(a);
+    try std.testing.expectEqual(@as(u8, 0), try cli.runApply(io, a, .{ .path = index, .changes = changes }, &out.writer, &err.writer));
+    try std.testing.expect(std.mem.startsWith(u8, out.written(), "applied: generation=1 added=1 "));
+
+    out.clearRetainingCapacity();
+    try std.testing.expectEqual(@as(u8, 0), try cli.runFind(io, a, .{ .path = index, .query = "tide", .json = true }, &out.writer, &err.writer));
+    const service = try cli.openService(a, io, index);
+    var params = std.json.ObjectMap.empty;
+    try params.put(a, "query", .{ .string = "tide" });
+    const direct = (try @import("ops.zig").find(a, service, params, cli.cli_caller)).ok;
+    try std.testing.expectEqualStrings(direct, out.written()[0 .. out.written().len - 1]);
+
+    out.clearRetainingCapacity();
+    try std.testing.expectEqual(@as(u8, 0), try cli.runReadSpan(io, a, .{ .path = index, .root_id = "school", .file = "week.md", .start = 3, .end = 3, .context = 1 }, &out.writer, &err.writer));
+    try std.testing.expectEqualStrings("\ntide table\n", out.written());
+
+    out.clearRetainingCapacity();
+    try std.testing.expectEqual(@as(u8, 1), try cli.runOutline(io, a, .{ .path = index, .root_id = "school", .file = "nope.md" }, &out.writer, &err.writer));
+    try std.testing.expectEqualStrings("", out.written());
+    try std.testing.expectEqualStrings("searchd: SS_ERR_NOT_FOUND: not indexed or not retained: school/nope.md\n", err.written());
+
+    out.clearRetainingCapacity();
+    try std.testing.expectEqual(@as(u8, 0), try cli.runRoots(io, a, .{ .path = index }, &out.writer, &err.writer));
+    try std.testing.expectEqualStrings("school  school  host  files=1 documents=1 pending=0\n", out.written());
+
+    // --expect-generation: stale, and a request that states another one.
+    err.clearRetainingCapacity();
+    try std.testing.expectEqual(@as(u8, 1), try cli.runApply(io, a, .{ .path = index, .changes = changes, .expect_generation = 5 }, &out.writer, &err.writer));
+    try std.testing.expectEqualStrings("searchd: SS_ERR_INVALID_ARGUMENT: stale: generation is 1\n", err.written());
+    try tmp.dir.writeFile(io, .{ .sub_path = "changes.json", .data = "{\"expect_generation\":1,\"changes\":[]}" });
+    err.clearRetainingCapacity();
+    try std.testing.expectEqual(@as(u8, 1), try cli.runApply(io, a, .{ .path = index, .changes = changes, .expect_generation = 2 }, &out.writer, &err.writer));
+    try std.testing.expect(std.mem.indexOf(u8, err.written(), "differs from the request's expect_generation") != null);
+}

@@ -66,6 +66,24 @@ pub const FileEntry = struct {
     line_map: []const u8,
     sha256: [32]u8,
     encoding: Encoding,
+    /// S3-T4: this file's sparse line index (one checkpoint per
+    /// `checkpoint_interval` lines), when the section was opened with
+    /// `openIndexed`; empty otherwise (the map is then decoded from line 1).
+    checkpoints: []const Checkpoint = &.{},
+};
+
+/// S3-T4 (sparse line index, built at open, no format change): every
+/// `checkpoint_interval`-th varint of a file's delta-coded line map, so a
+/// line's offset is found by decoding at most `checkpoint_interval` varints
+/// instead of every one from line 1.
+pub const checkpoint_interval: u32 = 256;
+
+pub const Checkpoint = struct {
+    /// Byte offset in the file's line map of varint `k * checkpoint_interval`
+    /// (the start of line `k * checkpoint_interval + 1`).
+    map_offset: usize,
+    /// The absolute value accumulated before that varint is read.
+    value: u64,
 };
 
 pub const Section = struct {
@@ -78,12 +96,24 @@ pub const Section = struct {
     /// Byte offset of each file record in `files_table`, when the section
     /// was opened with `openIndexed`; `find` then binary-searches.
     record_offsets: []const usize = &.{},
+    /// S3-T4: every file's checkpoints, in table order, and where each
+    /// file's run starts (`file_count + 1` entries), when opened with
+    /// `openIndexed`.
+    checkpoints: []const Checkpoint = &.{},
+    checkpoint_starts: []const usize = &.{},
+
+    fn withCheckpoints(section: Section, index: usize, entry: FileEntry) FileEntry {
+        if (section.checkpoint_starts.len != section.file_count + 1) return entry;
+        var copy = entry;
+        copy.checkpoints = section.checkpoints[section.checkpoint_starts[index]..section.checkpoint_starts[index + 1]];
+        return copy;
+    }
 
     /// The `index`-th file (0-based, path order).
     pub fn file(section: Section, index: usize) FileEntry {
         if (section.record_offsets.len == section.file_count) {
             var direct = Cursor{ .bytes = section.files_table, .offset = section.record_offsets[index] };
-            return readRecord(&direct, section) catch unreachable;
+            return section.withCheckpoints(index, readRecord(&direct, section) catch unreachable);
         }
         var cursor = Cursor{ .bytes = section.files_table };
         var position: usize = 0;
@@ -105,7 +135,7 @@ pub const Section = struct {
                 var probe = Cursor{ .bytes = section.files_table, .offset = section.record_offsets[middle] };
                 const entry = readRecord(&probe, section) catch unreachable;
                 switch (std.mem.order(u8, entry.path, path)) {
-                    .eq => return entry,
+                    .eq => return section.withCheckpoints(middle, entry),
                     .lt => low = middle + 1,
                     .gt => high = middle,
                 }
@@ -292,6 +322,43 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
 /// Validate a whole section (header, checksum, file table, paths, every line
 /// map) and return a borrowing view of it.
 pub fn open(encoded: []const u8) DecodeError!Section {
+    return openWith(encoded, null);
+}
+
+/// `open`, plus a record-offset table so `find` is O(log n), and (S3-T4) a
+/// sparse line index collected while the line maps are validated, so
+/// `readSpan` decodes at most `checkpoint_interval` varints per line it
+/// looks up. Two allocations from `allocator`: `file_count` words, and the
+/// checkpoints (at most `file_count + line maps bytes / checkpoint_interval`
+/// of them) with their per-file starts.
+pub fn openIndexed(allocator: std.mem.Allocator, encoded: []const u8) (DecodeError || error{OutOfMemory})!Section {
+    const header = try inspect(encoded);
+    var index = Index{
+        .offsets = try allocator.alloc(usize, header.file_count),
+        .starts = try allocator.alloc(usize, header.file_count + 1),
+        // A line costs at least one varint byte, so a file of n lines holds
+        // n / interval + 1 checkpoints and the maps hold at least n bytes.
+        .checkpoints = try allocator.alloc(Checkpoint, header.file_count + header.maps_bytes / checkpoint_interval + 1),
+    };
+    var section = try openWith(encoded, &index);
+    section.record_offsets = index.offsets;
+    section.checkpoint_starts = index.starts;
+    section.checkpoints = index.checkpoints[0..index.used];
+    return section;
+}
+
+const Index = struct {
+    offsets: []usize,
+    starts: []usize,
+    checkpoints: []Checkpoint,
+    used: usize = 0,
+
+    fn add(index: *Index, reader: MapReader) DecodeError!void {
+        return addCheckpoint(index, reader);
+    }
+};
+
+fn openWith(encoded: []const u8, index: ?*Index) DecodeError!Section {
     const header = try inspect(encoded);
     const files_start = header_length;
     const maps_start = files_start + header.files_bytes;
@@ -308,8 +375,8 @@ pub fn open(encoded: []const u8) DecodeError!Section {
     var previous_path: ?[]const u8 = null;
     var expected_text_offset: usize = 0;
     var expected_map_offset: usize = 0;
-    var remaining = header.file_count;
-    while (remaining > 0) : (remaining -= 1) {
+    var position: usize = 0;
+    while (position < header.file_count) : (position += 1) {
         const record_start = cursor.offset;
         const entry = try readRecord(&cursor, section);
         if (!validPath(entry.path)) return error.InvalidPath;
@@ -324,26 +391,17 @@ pub fn open(encoded: []const u8) DecodeError!Section {
         _ = try fields.readU32();
         if (try fields.readU64() != expected_map_offset) return error.InvalidFileTable;
         expected_text_offset += entry.bytes.len;
-        const map_length = try validateLineMap(entry);
+        if (index) |built| {
+            built.offsets[position] = record_start;
+            built.starts[position] = built.used;
+        }
+        const map_length = try validateLineMap(entry, index);
         expected_map_offset += map_length;
     }
+    if (index) |built| built.starts[header.file_count] = built.used;
     if (cursor.offset != section.files_table.len) return error.TrailingData;
     if (expected_text_offset != section.text.len) return error.InvalidFileTable;
     if (expected_map_offset != section.line_maps.len) return error.InvalidLineMap;
-    return section;
-}
-
-/// `open`, plus a record-offset table from `allocator` so `find` is
-/// O(log n) (one allocation of `file_count` words).
-pub fn openIndexed(allocator: std.mem.Allocator, encoded: []const u8) (DecodeError || error{OutOfMemory})!Section {
-    var section = try open(encoded);
-    const offsets = try allocator.alloc(usize, section.file_count);
-    var cursor = Cursor{ .bytes = section.files_table };
-    for (offsets) |*offset| {
-        offset.* = cursor.offset;
-        _ = readRecord(&cursor, section) catch unreachable;
-    }
-    section.record_offsets = offsets;
     return section;
 }
 
@@ -377,8 +435,10 @@ fn readRecord(cursor: *Cursor, section: Section) DecodeError!FileEntry {
 
 /// Check that a file's line map is exactly the line starts of its own bytes
 /// (`lineStarts`, recomputed without allocating) and that the encoding byte
-/// matches the BOM. Returns the map's byte length.
-fn validateLineMap(entry: FileEntry) DecodeError!usize {
+/// matches the BOM. Returns the map's byte length. With `sparse`, records a
+/// checkpoint before every `checkpoint_interval`-th varint (the end offset's
+/// included when it falls on one).
+fn validateLineMap(entry: FileEntry, sparse: ?*Index) DecodeError!usize {
     if ((entry.encoding == .utf8_bom) != std.mem.startsWith(u8, entry.bytes, "\xef\xbb\xbf")) return error.InvalidLineMap;
     var reader = MapReader{ .bytes = entry.line_map };
     var count: u64 = 0;
@@ -386,6 +446,7 @@ fn validateLineMap(entry: FileEntry) DecodeError!usize {
     var line_open = false;
     while (index < entry.bytes.len) {
         if (!line_open) {
+            if (sparse) |built| if (count % checkpoint_interval == 0) try built.add(reader);
             if (try reader.next() != index) return error.InvalidLineMap;
             count += 1;
             line_open = true;
@@ -396,9 +457,18 @@ fn validateLineMap(entry: FileEntry) DecodeError!usize {
             line_open = false;
         } else index += 1;
     }
+    if (sparse) |built| if (count % checkpoint_interval == 0) try built.add(reader);
     if (try reader.next() != entry.bytes.len) return error.InvalidLineMap;
     if (count != entry.line_count) return error.InvalidLineMap;
     return reader.offset;
+}
+
+fn addCheckpoint(index: *Index, reader: MapReader) DecodeError!void {
+    // The bound in `openIndexed` holds for any map `validateLineMap`
+    // accepts; a map that would overflow it is not one.
+    if (index.used == index.checkpoints.len) return error.InvalidLineMap;
+    index.checkpoints[index.used] = .{ .map_offset = reader.offset, .value = reader.value };
+    index.used += 1;
 }
 
 /// Absolute offsets from a delta-coded LEB128 line map.
@@ -406,8 +476,11 @@ const MapReader = struct {
     bytes: []const u8,
     offset: usize = 0,
     value: u64 = 0,
+    /// Varints decoded so far (the sparse index's test counts them).
+    decoded: usize = 0,
 
     fn next(reader: *MapReader) DecodeError!u64 {
+        reader.decoded += 1;
         var delta: u64 = 0;
         var shift: u7 = 0;
         while (true) {
@@ -424,17 +497,38 @@ const MapReader = struct {
     }
 };
 
-/// Byte offsets of the starts of lines `first` and `stop` (1-based; `stop`
-/// may be `line_count + 1`, the end of the file).
-fn lineOffsets(entry: FileEntry, first: u32, stop: u32) struct { first: usize, stop: usize } {
-    var reader = MapReader{ .bytes = entry.line_map };
-    var first_offset: u64 = 0;
-    var line: u32 = 1;
-    while (true) : (line += 1) {
-        const value = reader.next() catch unreachable; // validated by `open`
-        if (line == first) first_offset = value;
-        if (line == stop) return .{ .first = @intCast(first_offset), .stop = @intCast(value) };
+/// A reader positioned so that its next `next()` returns the start of
+/// `line` (1-based; `line_count + 1` is the end offset): from the nearest
+/// checkpoint at or before it when the file has a sparse index, else from
+/// line 1. Returns the line the reader will produce next.
+fn seek(entry: FileEntry, line: u32, reader: *MapReader) u32 {
+    const varint = line - 1;
+    if (entry.checkpoints.len == 0) {
+        reader.* = .{ .bytes = entry.line_map, .decoded = reader.decoded };
+        return 1;
     }
+    const block = varint / checkpoint_interval;
+    const checkpoint = entry.checkpoints[block];
+    reader.* = .{ .bytes = entry.line_map, .offset = checkpoint.map_offset, .value = checkpoint.value, .decoded = reader.decoded };
+    return block * checkpoint_interval + 1;
+}
+
+const LineOffsets = struct { first: usize, stop: usize, decoded: usize };
+
+/// Byte offsets of the starts of lines `first` and `stop` (1-based; `stop`
+/// may be `line_count + 1`, the end of the file; `first <= stop`).
+fn lineOffsets(entry: FileEntry, first: u32, stop: u32) LineOffsets {
+    var reader = MapReader{ .bytes = entry.line_map };
+    var line = seek(entry, first, &reader);
+    while (line < first) : (line += 1) _ = reader.next() catch unreachable; // validated by `open`
+    const first_offset = reader.next() catch unreachable;
+    line += 1;
+    if (stop == first) return .{ .first = @intCast(first_offset), .stop = @intCast(first_offset), .decoded = reader.decoded };
+    // Jump again when `stop` lies in a later block than the reader.
+    if (entry.checkpoints.len != 0 and (stop - 1) / checkpoint_interval > (line - 1) / checkpoint_interval) line = seek(entry, stop, &reader);
+    while (line < stop) : (line += 1) _ = reader.next() catch unreachable;
+    const stop_offset = reader.next() catch unreachable;
+    return .{ .first = @intCast(first_offset), .stop = @intCast(stop_offset), .decoded = reader.decoded };
 }
 
 pub const Span = struct {
@@ -457,6 +551,15 @@ pub const Code = enum {
             .invalid_argument => -1,
             .capacity => -4,
             .not_found => -6,
+        };
+    }
+
+    /// The `SS_ERR_*` name, as the C ABI's `ss_last_error()` spells it (S3-T4).
+    pub fn ssName(code: Code) []const u8 {
+        return switch (code) {
+            .invalid_argument => "SS_ERR_INVALID_ARGUMENT",
+            .capacity => "SS_ERR_CAPACITY",
+            .not_found => "SS_ERR_NOT_FOUND",
         };
     }
 };
@@ -517,6 +620,12 @@ fn fail(allocator: std.mem.Allocator, code: Code, comptime format: []const u8, a
 /// The §8 `read_span` result object for a successful span.
 pub fn writeSpanJson(json: *std.json.Stringify, span: Span) !void {
     try json.beginObject();
+    try writeSpanFields(json, span);
+    try json.endObject();
+}
+
+/// `writeSpanJson`'s fields without the braces (S3-T4, `ops.zig`).
+pub fn writeSpanFields(json: *std.json.Stringify, span: Span) !void {
     try json.objectField("start_line");
     try json.write(span.start_line);
     try json.objectField("end_line");
@@ -532,7 +641,6 @@ pub fn writeSpanJson(json: *std.json.Stringify, span: Span) !void {
     try json.objectField("sha256");
     const hex = std.fmt.bytesToHex(span.sha256, .lower);
     try json.write(&hex);
-    try json.endObject();
 }
 
 pub const OutlineData = struct {
@@ -566,6 +674,12 @@ pub fn outline(allocator: std.mem.Allocator, section: ?Section, path: []const u8
 /// The §8 `outline` result object.
 pub fn writeOutlineJson(json: *std.json.Stringify, data: OutlineData) !void {
     try json.beginObject();
+    try writeOutlineFields(json, data);
+    try json.endObject();
+}
+
+/// `writeOutlineJson`'s fields without the braces (S3-T4, `ops.zig`).
+pub fn writeOutlineFields(json: *std.json.Stringify, data: OutlineData) !void {
     try json.objectField("front_matter");
     const front = if (data.markdown) |markdown| markdown.front_matter else null;
     if (front) |value| {
@@ -608,7 +722,6 @@ pub fn writeOutlineJson(json: *std.json.Stringify, data: OutlineData) !void {
     try json.write(data.lines);
     try json.objectField("chunker");
     try json.write(data.chunker.id());
-    try json.endObject();
 }
 
 fn checksumOf(header_without_checksum: []const u8, payload: []const u8) u64 {
@@ -848,4 +961,55 @@ test "indexed and linear lookups agree" {
     try std.testing.expect(indexed.find("d/0505.txt") == null);
     try std.testing.expect(indexed.find("a") == null);
     try std.testing.expect(indexed.find("z") == null);
+}
+
+test "S3-T4: the sparse line index finds any line by decoding at most one block" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // 15,500 lines of varying width (the S3-T1 deep-file case), one CRLF
+    // stretch, no final newline; plus a file of exactly 512 lines.
+    var long = std.ArrayList(u8).empty;
+    for (0..15_500) |n| {
+        try long.appendNTimes(arena, 'a' + @as(u8, @intCast(n % 26)), n % 37);
+        if (n + 1 == 15_500) break;
+        try long.appendSlice(arena, if (n >= 7000 and n < 7100) "\r\n" else "\n");
+    }
+    var exact = std.ArrayList(u8).empty;
+    for (0..512) |_| try exact.appendSlice(arena, "x\n");
+    const files = [_]InputFile{ .{ .path = "deep.txt", .bytes = long.items }, .{ .path = "exact.txt", .bytes = exact.items } };
+    const encoded = try encode(arena, &files);
+    const indexed = try openIndexed(arena, encoded);
+    const linear = try open(encoded);
+    for (files) |input| {
+        var starts = std.ArrayList(u64).empty;
+        try lineStarts(arena, input.bytes, &starts);
+        const fast = indexed.find(input.path).?;
+        const slow = linear.find(input.path).?;
+        try std.testing.expectEqual(@as(usize, fast.line_count / checkpoint_interval + 1), fast.checkpoints.len);
+        try std.testing.expectEqual(@as(usize, 0), slow.checkpoints.len);
+        var line: u32 = 1;
+        while (line <= fast.line_count) : (line += 1) {
+            for ([_]u32{ line, @min(line + 1, fast.line_count + 1), @min(line + 300, fast.line_count + 1), fast.line_count + 1 }) |stop| {
+                const got = lineOffsets(fast, line, stop);
+                try std.testing.expectEqual(starts.items[line - 1], got.first);
+                try std.testing.expectEqual(starts.items[stop - 1], got.stop);
+                // At most one partial block per looked-up line.
+                try std.testing.expect(got.decoded <= 2 * checkpoint_interval);
+                const old = lineOffsets(slow, line, stop);
+                try std.testing.expectEqual(old.first, got.first);
+                try std.testing.expectEqual(old.stop, got.stop);
+            }
+        }
+    }
+    // Without the index, a line deep in the file decodes every varint before it.
+    try std.testing.expectEqual(@as(usize, 15_401), lineOffsets(linear.find("deep.txt").?, 15_400, 15_401).decoded);
+    try std.testing.expect(lineOffsets(indexed.find("deep.txt").?, 15_400, 15_401).decoded <= checkpoint_interval + 1);
+    // The spans themselves are unchanged.
+    try std.testing.expectEqualStrings(
+        (try spanOk(try readSpan(arena, linear, "deep.txt", 15_390, 15_500, 5))).text,
+        (try spanOk(try readSpan(arena, indexed, "deep.txt", 15_390, 15_500, 5))).text,
+    );
+    try std.testing.expectEqualStrings(indexed.file(0).path, "deep.txt");
+    try std.testing.expectEqual(@as(usize, 3), indexed.file(1).checkpoints.len);
 }

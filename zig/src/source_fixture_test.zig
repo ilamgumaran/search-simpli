@@ -295,7 +295,7 @@ test "S3-T1: --update carries retained bytes and re-chunks Markdown written by l
     try std.testing.expectEqualStrings(note, third.find("week.md").?.bytes);
 }
 
-test "S3-T1: a lost source section is a missing section, healed by --update" {
+test "S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPACITY); --update heals it" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
@@ -307,7 +307,33 @@ test "S3-T1: a lost source section is a missing section, healed by --update" {
     defer out_tmp.cleanup();
     _ = try indexer.indexFolderIncremental(arena, io, root_tmp.dir, out_tmp.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
     try out_tmp.dir.deleteFile(io, "source-1.hybsrc");
-    try std.testing.expectError(error.FileNotFound, snapshot_open.open(arena, io, out_tmp.dir));
+    // S3-T4 (S3-T1 finding 2): `query` never reads the source section, so it
+    // works without it; only the source-reading operations answer CAPACITY.
+    const engine = try snapshot_open.open(arena, io, out_tmp.dir);
+    var results: [4]@import("hybrid.zig").Result = undefined;
+    const found = try engine.queryTokenized(arena, "alpha", &.{}, &results, .{ .retrieval_mode = .lexical, .top_k = 4 });
+    try std.testing.expectEqual(@as(usize, 1), found.len);
+    const scoped_open = try snapshot_open.openScoped(arena, io, out_tmp.dir);
+    try std.testing.expectEqualStrings("FileNotFound", scoped_open.folder.source_error.?);
+    const service_module = @import("service.zig");
+    const scoped = service_module.ScopedService{ .service = .{ .engine = scoped_open.engine, .folder = scoped_open.folder } };
+    const span = (try scoped.readSpan(arena, .{}, "r-legacy", "a.md", 1, 1, 0)).failed;
+    try std.testing.expectEqual(source.Code.capacity, span.code);
+    try std.testing.expectEqualStrings("re-index required: source section unavailable (FileNotFound)", span.message);
+    try std.testing.expectEqual(source.Code.capacity, (try scoped.outline(arena, .{}, "r-legacy", "a.md")).failed.code);
+    try std.testing.expectEqual(source.Code.capacity, (try scoped.readSpan(arena, .{}, "r-legacy", "unknown.md", 1, 1, 0)).failed.code);
+    switch (try scoped.find(arena, .{ .query = "alpha" }, .{})) {
+        .ok => |answer| try std.testing.expectEqual(@as(usize, 1), answer.hits.len),
+        .failed => return error.TestUnexpectedResult,
+    }
+    const status = try scoped.indexStatus(arena, .{});
+    try std.testing.expect(!status.has_source);
+    // A damaged (not lost) section reads the same way.
+    try out_tmp.dir.writeFile(io, .{ .sub_path = "source-1.hybsrc", .data = "HYBSRC01 damaged" });
+    const damaged = try snapshot_open.openScoped(arena, io, out_tmp.dir);
+    try std.testing.expect(damaged.folder.source == null);
+    try std.testing.expect(damaged.folder.source_error != null);
+    try out_tmp.dir.deleteFile(io, "source-1.hybsrc");
     const healed = try indexer.indexFolderIncremental(arena, io, root_tmp.dir, out_tmp.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
     try std.testing.expectEqualStrings("missing_section", healed.recovered.?);
     try std.testing.expectEqual(@as(usize, 1), healed.added);

@@ -200,17 +200,14 @@ fn payloads(
     try json.endArray();
     try json.objectField("visible_terms");
     try json.beginArray();
+    // S3-T4: the hook `find`'s prefix expansion runs (`find.termInScope`).
     const resolved = try service_module.resolve(svc, allocator, request);
-    const groups: []bool = try allocator.alloc(bool, svc.engine.statistics.?.groups.len);
-    for (groups, 0..) |*flag, group| {
-        const g = svc.engine.statistics.?.groups[group];
-        flag.* = resolved.allowed[g.root] and hybrid.isAuthorized(g.labels, request.principal_labels);
-    }
+    const find_request = find_module.Request{ .query = "", .principal_labels = request.principal_labels, .visible_roots = resolved.mask() };
     for (probes) |probe| {
         var visible = false;
         for (svc.engine.lexical_index.terms, 0..) |entry, term_index| {
             if (!std.mem.eql(u8, entry.term, probe)) continue;
-            visible = scope.termVisible(svc.engine.lexical_index, svc.engine.documents, svc.engine.statistics, groups, resolved.mask(), request.principal_labels, term_index);
+            visible = find_module.termInScope(svc.engine, find_request, term_index);
         }
         try json.write(visible);
     }

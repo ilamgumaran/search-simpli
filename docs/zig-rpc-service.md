@@ -20,12 +20,30 @@ printf '%s\n' \
 
 ## Methods
 
-The method set matches the Python reference:
+The first four match the Python reference:
 
 - `search_knowledge`
 - `read_chunk`
 - `list_sources`
 - `index_status`
+
+Contract 2.0.0 (S3-T4) adds the folder-knowledge methods `find`, `outline`, `read_span`, `list_files`, `roots`, and `apply_changes` only under `serve --allow-write` (`docs/tool-protocol.md` has every parameter; `contracts/tool-request.schema.json` version 2 every request shape). Their results are produced by `zig/src/ops.zig`, the same code the C ABI and `searchd <command> --json` use, so the three are byte-identical (the parity tests: `tests/test_folder_surfaces.py` for the CLI and the server, `bindings/dart/search_simpli/test/parity_test.dart` for all three with the Dart binding).
+
+```sh
+searchd apply /tmp/folders --changes changes.json
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"roots","params":{}}' \
+  '{"jsonrpc":"2.0","id":2,"method":"find","params":{"query":"tide table","page_size":3}}' \
+  | searchd serve /tmp/folders --roots school,home
+```
+
+### Scope from the command line
+
+`serve <dir> [--roots a,b] [--labels l1,l2] [--allow-write] [--allow-file-reads]`. `--roots` bounds every request's roots (a request's `roots` narrows them, never widens them); `--labels` are the trusted principal labels, and once given a request may not state `principal_labels` (`-32602`). Without `--labels` the raw service keeps accepting a request's `principal_labels`, bounded as before (at most 64, 1–256 bytes each, no NUL or line break, no repeats). `index_status` counts over that scope only (S3-T3's whole-index counts are gone); `read_chunk` and `list_sources` go through it too, and `search_knowledge` takes the scoped path when roots are named.
+
+### Writes
+
+`apply_changes` publishes one new generation into the served directory under `WRITER.LOCK` and, when it succeeds, the server reopens the index before the next request, so reads see the new generation. Another writer holding the lock answers `-32006`; a stale `expect_generation` `-32602` "Invalid params: stale: generation is M"; `file` changes need `--allow-file-reads`.
 
 Responses preserve the common evidence contract: chunk id, path/line citation, content, fused score, component ranks/scores, index generation/analyzer/model metadata, and the grounding policy.
 
@@ -55,8 +73,8 @@ This keeps model inference replaceable and prevents the Zig index format from de
 - Path scope is applied before component rank assignment.
 - `read_chunk` accepts the same optional path prefix; out-of-scope ids are indistinguishable from unknown ids.
 - Unknown methods and parameters are rejected.
-- There is no arbitrary file read, shell, write, or reindex RPC.
-- Requests are limited to the configured one-megabyte line buffer.
+- There is no arbitrary file read, shell, or reindex RPC; the one write (`apply_changes`) exists only with `--allow-write`.
+- Requests are limited to the configured one-megabyte line buffer (an `apply_changes` batch larger than that goes through `searchd apply` or the C ABI instead). Over `--http`, the response buffer grows as needed (a `read_span` answer can hold 256 KiB).
 
 Path prefix remains a caller-selected scope rather than authorization. Persisted document labels now filter both vector and lexical candidates, and raw search/read/list methods accept bounded internal principal labels. The LLM-facing gateway injects configured labels and rejects caller forgery. Authentication, identity-derived labels, label-aware lexical statistics or tenant isolation, and audit logs still remain.
 

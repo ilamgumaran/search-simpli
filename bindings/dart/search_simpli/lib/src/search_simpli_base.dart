@@ -11,6 +11,7 @@ import 'package:ffi/ffi.dart';
 import 'bindings_generated.dart';
 import 'contracts.dart';
 import 'contracts_version.dart';
+import 'folder_contracts.dart';
 import 'library_loader.dart';
 
 /// Thrown when an `ss_*` call fails. [message] is `ss_last_error()` at the
@@ -19,8 +20,40 @@ class SearchSimpliException implements Exception {
   final String message;
   const SearchSimpliException(this.message);
 
+  /// The `SS_ERR_*` name the message carries (contract 2.0.0 spells every
+  /// new function's failure `"<function>: SS_ERR_<CODE>: <reason>"`), e.g.
+  /// `"SS_ERR_CAPACITY"`; null when the message names none.
+  String? get code => RegExp(r'SS_ERR_[A-Z_]+').firstMatch(message)?.group(0);
+
   @override
   String toString() => 'SearchSimpliException: $message';
+}
+
+/// The contract 2.0.0 symbols a library must export for this package.
+const List<String> requiredNewSymbols = [
+  'ss_find',
+  'ss_outline',
+  'ss_read_span',
+  'ss_list_files',
+  'ss_roots',
+  'ss_apply_changes',
+];
+
+/// Asserts the library's `ss_version()` is [expectedContractsVersion] and
+/// that it exports every contract 2.0.0 symbol; throws
+/// [ContractsVersionMismatchException] otherwise, before any other call.
+void checkContracts(DynamicLibrary dylib, SearchSimpliBindings bindings) {
+  if (!dylib.providesSymbol('ss_version')) {
+    throw const ContractsVersionMismatchException(expectedContractsVersion, '(no ss_version)');
+  }
+  final actualVersion = bindings.ss_version().cast<Utf8>().toDartString();
+  if (actualVersion != expectedContractsVersion) {
+    throw ContractsVersionMismatchException(expectedContractsVersion, actualVersion);
+  }
+  final missing = requiredNewSymbols.where((name) => !dylib.providesSymbol(name)).toList();
+  if (missing.isNotEmpty) {
+    throw ContractsVersionMismatchException(expectedContractsVersion, '$actualVersion without ${missing.join(', ')}');
+  }
 }
 
 /// Thrown by [SearchSimpli.open] when the native library's
@@ -73,11 +106,9 @@ class SearchSimpli {
   factory SearchSimpli.open(String snapshotDir, {DynamicLibrary? library}) {
     final dylib = library ?? openSearchSimpliLibrary();
     final bindings = SearchSimpliBindings(dylib);
-
-    final actualVersion = bindings.ss_version().cast<Utf8>().toDartString();
-    if (actualVersion != expectedContractsVersion) {
-      throw ContractsVersionMismatchException(expectedContractsVersion, actualVersion);
-    }
+    // Contract 2.0.0: a library without the new symbols (an older build) is
+    // refused here, with the same exception as a version mismatch.
+    checkContracts(dylib, bindings);
 
     final pathPtr = snapshotDir.toNativeUtf8();
     try {
@@ -141,6 +172,9 @@ class SearchSimpli {
   ///                       with this prefix.
   ///   [principalLabels]   A chunk is only returned if the caller holds
   ///                       every one of its required labels.
+  ///   [roots]             Contract 2.0.0: only chunks of these roots are
+  ///                       candidates (BM25 counts over the visible scope);
+  ///                       null = every root, the 1.x behaviour.
   ///   [profile]           Contract 1.2.0: `true` adds per-phase timings
   ///                       ([SearchKnowledgeResult.profile]); `false` (the
   ///                       default) sends no option and reads no clock.
@@ -155,6 +189,7 @@ class SearchSimpli {
     String? pathPrefix,
     List<String>? principalLabels,
     bool profile = false,
+    List<String>? roots,
   }) {
     _checkOpen();
 
@@ -164,6 +199,7 @@ class SearchSimpli {
       if (pathPrefix != null) 'path_prefix': pathPrefix,
       if (principalLabels != null) 'principal_labels': principalLabels,
       if (profile) 'profile': true,
+      if (roots != null) 'roots': roots,
     };
     final optionsJson = options.isEmpty ? null : jsonEncode(options);
 
@@ -204,11 +240,14 @@ class SearchSimpli {
 
   /// `ss_evidence()`: looks up stored chunks by id, in the same order as
   /// [ids]. An unknown or unauthorized id comes back with `found: false`
-  /// rather than failing the whole call.
+  /// rather than failing the whole call. Since contract 2.0.0 the lookup
+  /// goes through the scope ([roots], [principalLabels]) and a found chunk
+  /// carries `rootId`, `sectionPath` and `neighbours`.
   List<EvidenceChunk> evidence(
     List<String> ids, {
     String? pathPrefix,
     List<String>? principalLabels,
+    List<String>? roots,
   }) {
     _checkOpen();
 
@@ -216,6 +255,7 @@ class SearchSimpli {
       'ids': ids,
       if (pathPrefix != null) 'path_prefix': pathPrefix,
       if (principalLabels != null) 'principal_labels': principalLabels,
+      if (roots != null) 'roots': roots,
     });
 
     final idsPtr = idsJson.toNativeUtf8();
@@ -234,6 +274,162 @@ class SearchSimpli {
       }
     } finally {
       malloc.free(idsPtr);
+    }
+  }
+
+  // ------------------------------------------------ contract 2.0.0 reads --
+
+  /// Runs one `request -> JSON object` call (the 2.0.0 functions all share
+  /// this shape) and decodes the result.
+  Map<String, Object?> _call(
+    Pointer<Char> Function(Pointer<ss_handle>, Pointer<Char>) function,
+    Map<String, Object?> request,
+  ) {
+    _checkOpen();
+    final requestPtr = jsonEncode(request).toNativeUtf8();
+    try {
+      final resultPtr = function(_handle, requestPtr.cast());
+      if (resultPtr == nullptr) {
+        throw SearchSimpliException(_lastError(_bindings));
+      }
+      try {
+        return jsonDecode(resultPtr.cast<Utf8>().toDartString()) as Map<String, Object?>;
+      } finally {
+        _bindings.ss_free(resultPtr);
+      }
+    } finally {
+      malloc.free(requestPtr);
+    }
+  }
+
+  /// `ss_find()`: the search box over the visible scope. A [query] in double
+  /// quotes is a phrase and a trailing `*` makes a prefix query, whatever
+  /// [mode] says. [pageSize] is 1-100 (default 20); pass the previous
+  /// result's `nextCursor` as [cursor] for the next page (a cursor from
+  /// another generation fails with `SS_ERR_INVALID_ARGUMENT` "stale
+  /// cursor"). [pathPrefix] is root-relative. Throws
+  /// [SearchSimpliException] (with its `code`) on a refusal: an empty
+  /// query, a misplaced `*`, a page size out of range, a bad cursor
+  /// (`SS_ERR_INVALID_ARGUMENT`), or a phrase over a generation without
+  /// positions / a prefix over 1,000 terms (`SS_ERR_CAPACITY`).
+  FindResult find(
+    String query, {
+    FindMode? mode,
+    List<String>? roots,
+    List<String>? principalLabels,
+    String? pathPrefix,
+    int? pageSize,
+    String? cursor,
+  }) =>
+      FindResult.fromJson(_call(_bindings.ss_find, {
+        'query': query,
+        if (mode != null) 'mode': mode.wire,
+        if (roots != null) 'roots': roots,
+        if (principalLabels != null) 'principal_labels': principalLabels,
+        if (pathPrefix != null) 'path_prefix': pathPrefix,
+        if (pageSize != null) 'page_size': pageSize,
+        if (cursor != null) 'cursor': cursor,
+      }));
+
+  /// `ss_outline()`: a file's headings and front matter. Throws
+  /// [SearchSimpliException] with `SS_ERR_NOT_FOUND` for an unknown, hidden
+  /// or not retained file and `SS_ERR_CAPACITY` when the generation keeps no
+  /// source bytes.
+  OutlineResult outline(String rootId, String path, {List<String>? roots, List<String>? principalLabels}) =>
+      OutlineResult.fromJson(_call(_bindings.ss_outline, {
+        'root_id': rootId,
+        'path': path,
+        if (roots != null) 'roots': roots,
+        if (principalLabels != null) 'principal_labels': principalLabels,
+      }));
+
+  /// `ss_read_span()`: lines [startLine]..[endLine] (1-based, inclusive) of
+  /// one file, byte for byte, with up to 20 [contextLines] on each side; at
+  /// most 400 lines and 256 KiB in all (else `SS_ERR_CAPACITY`).
+  SpanResult readSpan(
+    String rootId,
+    String path,
+    int startLine,
+    int endLine, {
+    int contextLines = 0,
+    List<String>? roots,
+    List<String>? principalLabels,
+  }) =>
+      SpanResult.fromJson(_call(_bindings.ss_read_span, {
+        'root_id': rootId,
+        'path': path,
+        'start_line': startLine,
+        'end_line': endLine,
+        'context_lines': contextLines,
+        if (roots != null) 'roots': roots,
+        if (principalLabels != null) 'principal_labels': principalLabels,
+      }));
+
+  /// `ss_list_files()`: the visible indexed and pending files, by root then
+  /// path, [pageSize] 1-1000 (default 100) per call.
+  FileListResult listFiles({
+    String? rootId,
+    String? pathPrefix,
+    FileStatus? status,
+    int? pageSize,
+    String? cursor,
+    List<String>? roots,
+    List<String>? principalLabels,
+  }) =>
+      FileListResult.fromJson(_call(_bindings.ss_list_files, {
+        if (rootId != null) 'root_id': rootId,
+        if (pathPrefix != null) 'path_prefix': pathPrefix,
+        if (status != null) 'status': status.wire,
+        if (pageSize != null) 'page_size': pageSize,
+        if (cursor != null) 'cursor': cursor,
+        if (roots != null) 'roots': roots,
+        if (principalLabels != null) 'principal_labels': principalLabels,
+      }));
+
+  /// `ss_roots()`: the visible roots and their file, document and pending
+  /// counts; [roots] narrows them as in every other call.
+  RootsResult roots({List<String>? roots, List<String>? principalLabels}) => RootsResult.fromJson(_call(_bindings.ss_roots, {
+        if (roots != null) 'roots': roots,
+        if (principalLabels != null) 'principal_labels': principalLabels,
+      }));
+
+  /// `ss_apply_changes()`: publishes one new generation in [dirPath]
+  /// (created if missing) from host-fed [changes] (implementation section
+  /// 6: `{"expect_generation"?, "roots"?, "changes": [...]}`). Static, like
+  /// [indexFolder]: it writes a directory, not an open handle; close and
+  /// reopen a [SearchSimpli] on [dirPath] to read the new generation.
+  ///
+  /// Throws [ContractsVersionMismatchException] for a library without the
+  /// 2.0.0 symbols, and [SearchSimpliException] for a refused request
+  /// (`SS_ERR_INVALID_ARGUMENT`, nothing published: e.g. "stale: generation
+  /// is M"), a batch over its caps (`SS_ERR_CAPACITY`) or another writer
+  /// holding the lock (`SS_ERR_IO`).
+  static ApplyChangesReport applyChanges(
+    String dirPath,
+    Map<String, Object?> changes, {
+    ApplyChangesOptions options = const ApplyChangesOptions(),
+    DynamicLibrary? library,
+  }) {
+    final dylib = library ?? openSearchSimpliLibrary();
+    final bindings = SearchSimpliBindings(dylib);
+    checkContracts(dylib, bindings);
+    final dirPtr = dirPath.toNativeUtf8();
+    final changesPtr = jsonEncode(changes).toNativeUtf8();
+    final optsPtr = jsonEncode(options.toJson()).toNativeUtf8();
+    try {
+      final resultPtr = bindings.ss_apply_changes(dirPtr.cast(), changesPtr.cast(), optsPtr.cast());
+      if (resultPtr == nullptr) {
+        throw SearchSimpliException(_lastError(bindings));
+      }
+      try {
+        return ApplyChangesReport.fromJson(jsonDecode(resultPtr.cast<Utf8>().toDartString()) as Map<String, Object?>);
+      } finally {
+        bindings.ss_free(resultPtr);
+      }
+    } finally {
+      malloc.free(dirPtr);
+      malloc.free(changesPtr);
+      malloc.free(optsPtr);
     }
   }
 

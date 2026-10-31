@@ -20,6 +20,10 @@ const generation_alloc = @import("generation_alloc.zig");
 const hybrid = @import("hybrid.zig");
 const indexer = @import("indexer.zig");
 const snapshot_open = @import("snapshot_open.zig");
+const find_module = @import("find.zig");
+const ops = @import("ops.zig");
+const service_module = @import("service.zig");
+const source = @import("source.zig");
 
 pub const IndexOptions = struct {
     analyzer: indexer.AnalyzerId = .v2,
@@ -48,10 +52,14 @@ pub const usage_text =
         \\                       [--overlap-lines N] [--generation N]
         \\                       [--update] [--max-file-bytes N]
         \\                       [--max-total-bytes N] [--keep-generations N]
-        \\                       chunk (line-window-v1) and index UTF-8
-        \\                       text/markdown/source files under <folder>,
-        \\                       natively (no Python), and publish a
-        \\                       lexical-only snapshot to <dir>. --analyzer
+        \\                       chunk and index UTF-8 text/markdown/source
+        \\                       files under <folder> (Markdown with
+        \\                       md-section-v1, one chunk per heading
+        \\                       section; every other file with
+        \\                       line-window-v1), natively (no Python), and
+        \\                       publish a lexical-only snapshot to <dir>
+        \\                       that also keeps each file's original bytes
+        \\                       (for read-span and outline). --analyzer
         \\                       selects the tokenizer/analyzer id recorded in
         \\                       the manifest: v1 is ASCII-only (analyzer-v1),
         \\                       v2 is Unicode-aware (analyzer-v2, NFC +
@@ -90,7 +98,40 @@ pub const usage_text =
         \\                       same query, always emitted as a JSON
         \\                       evidence envelope (citation + content +
         \\                       scores) intended for an LLM tool call.
-        \\  serve <dir> [--http 127.0.0.1:<port>]
+        \\  find <dir> "<query>" [--mode words|phrase|prefix] [--roots a,b]
+        \\                       [--page-size N] [--cursor C] [--json]
+        \\                       the search box: every word (words), the
+        \\                       exact phrase ("quoted" forces it), or a
+        \\                       word start (a trailing * forces prefix);
+        \\                       hits with root, path, lines, section and a
+        \\                       snippet, per-file counts, a cursor for the
+        \\                       next page (page size 1-100, default 20).
+        \\  outline <dir> <root_id> <path> [--json]
+        \\                       a file's headings and front matter.
+        \\  read-span <dir> <root_id> <path> <start> <end> [--context N]
+        \\                       [--json]
+        \\                       lines start..end (1-based, inclusive) byte
+        \\                       for byte, with up to 20 lines of context;
+        \\                       at most 400 lines and 256 KiB.
+        \\  list-files <dir> [--root R] [--prefix P] [--status indexed|pending]
+        \\                       [--page-size N] [--cursor C] [--json]
+        \\                       the indexed and pending files, by root and
+        \\                       path (page size 1-1000, default 100).
+        \\  roots <dir> [--json] the roots and their file counts.
+        \\  apply <dir> --changes <file> [--expect-generation N]
+        \\                       [--allow-file-reads] [--json]
+        \\                       publish one new generation from host-fed
+        \\                       changes (docs/folder-knowledge-
+        \\                       implementation.md section 6); prints a
+        \\                       summary, or the full report with --json.
+        \\                       `file` changes are read only with
+        \\                       --allow-file-reads.
+        \\                       find, outline, read-span, list-files and
+        \\                       roots print text, or with --json the same
+        \\                       JSON the C ABI and `serve` return.
+        \\  serve <dir> [--http 127.0.0.1:<port>] [--roots a,b]
+        \\                       [--labels l1,l2] [--allow-write]
+        \\                       [--allow-file-reads]
         \\                       serve JSON-RPC 2.0 requests. With no
         \\                       --http, reads requests as newline-delimited
         \\                       JSON on stdin and writes responses to
@@ -98,6 +139,11 @@ pub const usage_text =
         \\                       accepts one JSON-RPC request per HTTP POST
         \\                       body on the given loopback address/port
         \\                       (127.0.0.1 only; refuses any other host).
+        \\                       --roots and --labels set the scope of every
+        \\                       request (a request may narrow the roots;
+        \\                       with --labels it may not state labels).
+        \\                       apply_changes exists only with
+        \\                       --allow-write.
         \\  demo                 run an in-memory cited hybrid query
         \\  benchmark <docs> <dimensions> <queries> <mode>
         \\                       benchmark the real in-memory engine query path
@@ -137,7 +183,38 @@ pub const BenchmarkArgs = struct {
     mode: hybrid.RetrievalMode,
 };
 pub const ImportArgs = struct { snapshot: []const u8, file: []const u8, keep_generations: ?usize = null };
-pub const ServeArgs = struct { path: []const u8, http: ?[]const u8 = null };
+pub const ServeArgs = struct {
+    path: []const u8,
+    http: ?[]const u8 = null,
+    /// S3-T4: comma-separated root ids and labels (split by `splitList`).
+    roots: ?[]const u8 = null,
+    labels: ?[]const u8 = null,
+    allow_write: bool = false,
+    allow_file_reads: bool = false,
+};
+/// S3-T4: the folder-knowledge commands.
+pub const FindArgs = struct {
+    path: []const u8,
+    query: []const u8,
+    mode: ?find_module.Mode = null,
+    roots: ?[]const u8 = null,
+    page_size: ?usize = null,
+    cursor: ?[]const u8 = null,
+    json: bool = false,
+};
+pub const OutlineArgs = struct { path: []const u8, root_id: []const u8, file: []const u8, json: bool = false };
+pub const ReadSpanArgs = struct { path: []const u8, root_id: []const u8, file: []const u8, start: u32, end: u32, context: u32 = 0, json: bool = false };
+pub const ListFilesArgs = struct {
+    path: []const u8,
+    root: ?[]const u8 = null,
+    prefix: ?[]const u8 = null,
+    status: ?[]const u8 = null,
+    page_size: ?usize = null,
+    cursor: ?[]const u8 = null,
+    json: bool = false,
+};
+pub const RootsArgs = struct { path: []const u8, json: bool = false };
+pub const ApplyArgs = struct { path: []const u8, changes: []const u8, expect_generation: ?u64 = null, allow_file_reads: bool = false, json: bool = false };
 pub const IndexArgs = struct { folder: []const u8, out: []const u8, options: IndexOptions };
 pub const QueryArgs = struct { path: []const u8, text: []const u8, options: QueryOptions };
 
@@ -151,6 +228,12 @@ pub const Command = union(enum) {
     index: IndexArgs,
     query: QueryArgs,
     evidence: QueryArgs,
+    find: FindArgs,
+    outline: OutlineArgs,
+    read_span: ReadSpanArgs,
+    list_files: ListFilesArgs,
+    roots: RootsArgs,
+    apply: ApplyArgs,
     usage_error: UsageError,
 };
 
@@ -243,6 +326,26 @@ const Parser = struct {
             self.usage("invalid value for", option, value, " (expected a non-negative whole number of bytes)");
     }
 
+    /// A comma-separated list of non-empty items (`--roots`, `--labels`).
+    fn list(self: *Parser, option: []const u8) error{Usage}![]const u8 {
+        const value = try self.valueOf(option);
+        var items = std.mem.splitScalar(u8, value, ',');
+        while (items.next()) |item| {
+            if (item.len == 0) return self.usage("invalid value for", option, value, " (expected a comma-separated list without empty items)");
+        }
+        return value;
+    }
+
+    /// A whole number in `min..max`.
+    fn ranged(self: *Parser, option: []const u8, comptime min: usize, comptime max: usize) error{Usage}!usize {
+        const value = try self.valueOf(option);
+        const parsed = parseDigits(usize, value) orelse
+            return self.usage("invalid value for", option, value, std.fmt.comptimePrint(" (expected a whole number {d}-{d})", .{ min, max }));
+        if (parsed < min or parsed > max)
+            return self.usage("invalid value for", option, value, std.fmt.comptimePrint(" (expected a whole number {d}-{d})", .{ min, max }));
+        return parsed;
+    }
+
     fn noMoreArguments(self: *Parser, command: []const u8) error{Usage}!void {
         if (self.next()) |extra| return self.usage("unexpected argument for", command, extra, " (see searchd --help)");
     }
@@ -315,6 +418,10 @@ fn parseInner(p: *Parser) error{Usage}!Command {
     if (std.mem.eql(u8, command, "serve")) {
         const path = p.next() orelse return p.missingArgument("serve", "<dir>");
         var http: ?[]const u8 = null;
+        var roots: ?[]const u8 = null;
+        var labels: ?[]const u8 = null;
+        var allow_write = false;
+        var allow_file_reads = false;
         while (p.next()) |flag| {
             if (std.mem.eql(u8, flag, "--http")) {
                 const address = try p.valueOf("--http");
@@ -325,11 +432,19 @@ fn parseInner(p: *Parser) error{Usage}!Command {
                 if (!std.mem.eql(u8, host, "127.0.0.1") and !std.mem.eql(u8, host, "localhost"))
                     return p.usage("invalid value for", "--http", address, " (only 127.0.0.1 or localhost are allowed)");
                 http = address;
+            } else if (std.mem.eql(u8, flag, "--roots")) {
+                roots = try p.list("--roots");
+            } else if (std.mem.eql(u8, flag, "--labels")) {
+                labels = try p.list("--labels");
+            } else if (std.mem.eql(u8, flag, "--allow-write")) {
+                allow_write = true;
+            } else if (std.mem.eql(u8, flag, "--allow-file-reads")) {
+                allow_file_reads = true;
             } else {
                 return p.usage("unknown flag for", "serve", flag, " (see searchd --help)");
             }
         }
-        return .{ .serve = .{ .path = path, .http = http } };
+        return .{ .serve = .{ .path = path, .http = http, .roots = roots, .labels = labels, .allow_write = allow_write, .allow_file_reads = allow_file_reads } };
     }
     if (std.mem.eql(u8, command, "index")) {
         const folder = p.next() orelse return p.missingArgument("index", "<folder>");
@@ -381,7 +496,119 @@ fn parseInner(p: *Parser) error{Usage}!Command {
         const args = QueryArgs{ .path = path, .text = text, .options = try parseQueryFlags(p, name) };
         return if (is_query) .{ .query = args } else .{ .evidence = args };
     }
+    if (std.mem.eql(u8, command, "find")) return parseFind(p);
+    if (std.mem.eql(u8, command, "outline")) {
+        var args = OutlineArgs{
+            .path = p.next() orelse return p.missingArgument("outline", "<dir>"),
+            .root_id = p.next() orelse return p.missingArgument("outline", "<root_id>"),
+            .file = p.next() orelse return p.missingArgument("outline", "<path>"),
+        };
+        while (p.next()) |flag| {
+            if (std.mem.eql(u8, flag, "--json")) args.json = true else return p.usage("unknown flag for", "outline", flag, " (see searchd --help)");
+        }
+        return .{ .outline = args };
+    }
+    if (std.mem.eql(u8, command, "read-span")) return parseReadSpan(p);
+    if (std.mem.eql(u8, command, "list-files")) {
+        var args = ListFilesArgs{ .path = p.next() orelse return p.missingArgument("list-files", "<dir>") };
+        while (p.next()) |flag| {
+            if (std.mem.eql(u8, flag, "--json")) {
+                args.json = true;
+            } else if (std.mem.eql(u8, flag, "--root")) {
+                args.root = try p.valueOf("--root");
+            } else if (std.mem.eql(u8, flag, "--prefix")) {
+                args.prefix = try p.valueOf("--prefix");
+            } else if (std.mem.eql(u8, flag, "--status")) {
+                const value = try p.valueOf("--status");
+                if (!std.mem.eql(u8, value, "indexed") and !std.mem.eql(u8, value, "pending"))
+                    return p.usage("invalid value for", "--status", value, " (expected indexed or pending)");
+                args.status = value;
+            } else if (std.mem.eql(u8, flag, "--page-size")) {
+                args.page_size = try p.ranged("--page-size", 1, ops.max_list_page_size);
+            } else if (std.mem.eql(u8, flag, "--cursor")) {
+                args.cursor = try p.valueOf("--cursor");
+            } else return p.usage("unknown flag for", "list-files", flag, " (see searchd --help)");
+        }
+        return .{ .list_files = args };
+    }
+    if (std.mem.eql(u8, command, "roots")) {
+        var args = RootsArgs{ .path = p.next() orelse return p.missingArgument("roots", "<dir>") };
+        while (p.next()) |flag| {
+            if (std.mem.eql(u8, flag, "--json")) args.json = true else return p.usage("unknown flag for", "roots", flag, " (see searchd --help)");
+        }
+        return .{ .roots = args };
+    }
+    if (std.mem.eql(u8, command, "apply")) {
+        const path = p.next() orelse return p.missingArgument("apply", "<dir>");
+        var changes: ?[]const u8 = null;
+        var args = ApplyArgs{ .path = path, .changes = "" };
+        while (p.next()) |flag| {
+            if (std.mem.eql(u8, flag, "--changes")) {
+                changes = try p.valueOf("--changes");
+            } else if (std.mem.eql(u8, flag, "--expect-generation")) {
+                const value = try p.valueOf("--expect-generation");
+                args.expect_generation = parseDigits(u64, value) orelse
+                    return p.usage("invalid value for", "--expect-generation", value, " (expected a non-negative whole number)");
+            } else if (std.mem.eql(u8, flag, "--allow-file-reads")) {
+                args.allow_file_reads = true;
+            } else if (std.mem.eql(u8, flag, "--json")) {
+                args.json = true;
+            } else return p.usage("unknown flag for", "apply", flag, " (see searchd --help)");
+        }
+        args.changes = changes orelse return p.missingArgument("apply", "--changes <file>");
+        return .{ .apply = args };
+    }
     return p.usage("unknown command", "", command, "; try searchd --help");
+}
+
+fn parseFind(p: *Parser) error{Usage}!Command {
+    const path = p.next() orelse return p.missingArgument("find", "<dir>");
+    const query = p.next() orelse return p.missingArgument("find", "\"<query>\"");
+    if (!std.unicode.utf8ValidateSlice(query))
+        return p.usage("invalid value for", "query text", null, " (not valid UTF-8)");
+    var args = FindArgs{ .path = path, .query = query };
+    while (p.next()) |flag| {
+        if (std.mem.eql(u8, flag, "--json")) {
+            args.json = true;
+        } else if (std.mem.eql(u8, flag, "--mode")) {
+            const value = try p.valueOf("--mode");
+            args.mode = find_module.Mode.parse(value) orelse
+                return p.usage("invalid value for", "--mode", value, " (expected words, phrase or prefix)");
+        } else if (std.mem.eql(u8, flag, "--roots")) {
+            args.roots = try p.list("--roots");
+        } else if (std.mem.eql(u8, flag, "--page-size")) {
+            args.page_size = try p.ranged("--page-size", 1, find_module.max_page_size);
+        } else if (std.mem.eql(u8, flag, "--cursor")) {
+            args.cursor = try p.valueOf("--cursor");
+        } else return p.usage("unknown flag for", "find", flag, " (see searchd --help)");
+    }
+    return .{ .find = args };
+}
+
+fn parseReadSpan(p: *Parser) error{Usage}!Command {
+    const path = p.next() orelse return p.missingArgument("read-span", "<dir>");
+    const root_id = p.next() orelse return p.missingArgument("read-span", "<root_id>");
+    const file = p.next() orelse return p.missingArgument("read-span", "<path>");
+    const start = try lineArgument(p, "<start>");
+    const end = try lineArgument(p, "<end>");
+    if (end < start) return p.usage("invalid value for", "read-span <end>", null, " (must be at least <start>)");
+    var args = ReadSpanArgs{ .path = path, .root_id = root_id, .file = file, .start = start, .end = end };
+    while (p.next()) |flag| {
+        if (std.mem.eql(u8, flag, "--json")) {
+            args.json = true;
+        } else if (std.mem.eql(u8, flag, "--context")) {
+            args.context = @intCast(try p.ranged("--context", 0, source.max_context_lines));
+        } else return p.usage("unknown flag for", "read-span", flag, " (see searchd --help)");
+    }
+    return .{ .read_span = args };
+}
+
+fn lineArgument(p: *Parser, comptime what: []const u8) error{Usage}!u32 {
+    const value = p.next() orelse return p.missingArgument("read-span", what);
+    const parsed = parseDigits(u32, value) orelse
+        return p.usage("invalid value for", "read-span " ++ what, value, " (expected a line number, 1 or more)");
+    if (parsed == 0) return p.usage("invalid value for", "read-span " ++ what, value, " (expected a line number, 1 or more)");
+    return parsed;
 }
 
 fn benchmarkNumber(p: *Parser, comptime what: []const u8, comptime positive: bool) error{Usage}!usize {
@@ -628,5 +855,288 @@ pub fn runEvidence(
     }
     try json.endArray();
     try json.endObject();
+    try output.writeByte('\n');
+}
+
+// === S3-T4: find, outline, read-span, list-files, roots, apply ==============
+//
+// Each command opens the index with its scope data (`snapshot_open.openScoped`),
+// builds the same request object the C ABI and the RPC server take, and runs
+// the same `ops.zig` function, so `--json` prints exactly their JSON. The CLI
+// runs as the index's owner: every root, no principal labels (the default
+// scope of `ss_query`); `find --roots` narrows it. A refusal from the core
+// (`INVALID_ARGUMENT`, `NOT_FOUND`, `CAPACITY`) prints one line on stderr and
+// exits 1, like any other failure of the work; usage errors stay exit 2.
+
+/// The CLI's scope: every root, no labels.
+pub const cli_caller = ops.Caller{};
+
+const Params = struct {
+    arena: std.mem.Allocator,
+    map: std.json.ObjectMap = .empty,
+
+    fn string(params: *Params, name: []const u8, value: ?[]const u8) !void {
+        if (value) |text| try params.map.put(params.arena, name, .{ .string = text });
+    }
+
+    fn integer(params: *Params, name: []const u8, value: anytype) !void {
+        const present: ?u64 = value;
+        if (present) |number| try params.map.put(params.arena, name, .{ .integer = @intCast(number) });
+    }
+
+    fn list(params: *Params, name: []const u8, comma_separated: ?[]const u8) !void {
+        const text = comma_separated orelse return;
+        var array = std.json.Array.init(params.arena);
+        var items = std.mem.splitScalar(u8, text, ',');
+        while (items.next()) |item| try array.append(.{ .string = item });
+        try params.map.put(params.arena, name, .{ .array = array });
+    }
+};
+
+/// The index at `path`, opened for the scoped operations (owned by `arena`).
+pub fn openService(arena: std.mem.Allocator, io: std.Io, path: []const u8) !service_module.Service {
+    var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
+    defer dir.close(io);
+    const opened = try snapshot_open.openScoped(arena, io, dir);
+    return .{ .engine = opened.engine, .folder = opened.folder };
+}
+
+/// Print `result`: its JSON (with `json`) or `human`'s text; a refusal is one
+/// stderr line and status 1.
+fn finish(arena: std.mem.Allocator, result: ops.Result, json: bool, output: *std.Io.Writer, errors: *std.Io.Writer, comptime human: anytype) !u8 {
+    switch (result) {
+        .failed => |failure| {
+            try errors.print("searchd: {s}: {s}\n", .{ failure.code.ssName(), oneLine(failure.message) });
+            return 1;
+        },
+        .ok => |text| {
+            if (json) {
+                try output.writeAll(text);
+                try output.writeByte('\n');
+                return 0;
+            }
+            const value = try std.json.parseFromSliceLeaky(std.json.Value, arena, text, .{});
+            try human(output, value);
+            return 0;
+        },
+    }
+}
+
+fn oneLine(text: []const u8) []const u8 {
+    return text[0 .. std.mem.indexOfAny(u8, text, "\r\n") orelse text.len];
+}
+
+fn field(value: std.json.Value, name: []const u8) std.json.Value {
+    return value.object.get(name) orelse .null;
+}
+
+fn jsonText(value: std.json.Value) []const u8 {
+    return switch (value) {
+        .string => |s| s,
+        else => "",
+    };
+}
+
+fn jsonInt(value: std.json.Value) i64 {
+    return switch (value) {
+        .integer => |n| n,
+        else => 0,
+    };
+}
+
+fn jsonFloat(value: std.json.Value) f64 {
+    return switch (value) {
+        .float => |f| f,
+        .integer => |n| @floatFromInt(n),
+        else => 0,
+    };
+}
+
+pub fn runFind(io: std.Io, allocator: std.mem.Allocator, args: FindArgs, output: *std.Io.Writer, errors: *std.Io.Writer) !u8 {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const service = try openService(arena, io, args.path);
+    var params = Params{ .arena = arena };
+    try params.string("query", args.query);
+    if (args.mode) |mode| try params.string("mode", mode.label());
+    try params.list("roots", args.roots);
+    try params.integer("page_size", args.page_size);
+    try params.string("cursor", args.cursor);
+    return finish(arena, try ops.find(arena, service, params.map, cli_caller), args.json, output, errors, printFind);
+}
+
+fn printFind(output: *std.Io.Writer, value: std.json.Value) !void {
+    const request = field(value, "request");
+    const hits = field(value, "hits").array.items;
+    var total: i64 = 0;
+    for (field(value, "files").array.items) |file| total += jsonInt(field(file, "hits"));
+    try output.print("find: {s} (mode {s}, generation {d}): {d} hits in {d} files", .{
+        jsonText(field(request, "query")), jsonText(field(request, "mode")), jsonInt(field(value, "generation")), total, field(value, "files").array.items.len,
+    });
+    if (field(value, "exact_match") == .bool) try output.print(", exact match {s}", .{if (field(value, "exact_match").bool) "yes" else "no"});
+    try output.writeByte('\n');
+    const offset: i64 = if (field(request, "cursor") == .string) blk: {
+        const cursor = jsonText(field(request, "cursor"));
+        const colon = std.mem.indexOfScalar(u8, cursor, ':') orelse break :blk 0;
+        break :blk std.fmt.parseInt(i64, cursor[colon + 1 ..], 10) catch 0;
+    } else 0;
+    for (hits, 0..) |hit, index| {
+        try output.print("{d}. {s}/{s}:{d}-{d} score={d:.3}", .{
+            offset + @as(i64, @intCast(index)) + 1, jsonText(field(hit, "root_id")), jsonText(field(hit, "path")), jsonInt(field(hit, "start_line")), jsonInt(field(hit, "end_line")), jsonFloat(field(hit, "score")),
+        });
+        const sections = field(hit, "section_path").array.items;
+        if (sections.len > 0) {
+            try output.writeAll(" [");
+            for (sections, 0..) |part, at| {
+                if (at > 0) try output.writeAll(" > ");
+                try output.writeAll(jsonText(part));
+            }
+            try output.writeAll("]");
+        }
+        try output.writeAll("\n   ");
+        for (jsonText(field(hit, "snippet"))) |byte| try output.writeByte(if (byte == '\n' or byte == '\r') ' ' else byte);
+        try output.writeByte('\n');
+    }
+    if (field(value, "next_cursor") == .string) try output.print("next page: --cursor {s}\n", .{jsonText(field(value, "next_cursor"))});
+    const pending = jsonInt(field(value, "pending_files"));
+    if (pending > 0) try output.print("pending files: {d} (not indexed yet; the answer may be incomplete)\n", .{pending});
+    if (field(value, "truncated") == .bool and field(value, "truncated").bool) try output.writeAll("truncated: a file in scope was not indexed in full\n");
+}
+
+pub fn runOutline(io: std.Io, allocator: std.mem.Allocator, args: OutlineArgs, output: *std.Io.Writer, errors: *std.Io.Writer) !u8 {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const service = try openService(arena, io, args.path);
+    var params = Params{ .arena = arena };
+    try params.string("root_id", args.root_id);
+    try params.string("path", args.file);
+    return finish(arena, try ops.outline(arena, service, params.map, cli_caller), args.json, output, errors, printOutline);
+}
+
+fn printOutline(output: *std.Io.Writer, value: std.json.Value) !void {
+    const request = field(value, "request");
+    try output.print("{s}/{s}: {d} lines, {s}\n", .{ jsonText(field(request, "root_id")), jsonText(field(request, "path")), jsonInt(field(value, "lines")), jsonText(field(value, "chunker")) });
+    const front = field(value, "front_matter");
+    if (front == .object) {
+        try output.print("front matter: lines {d}-{d}", .{ jsonInt(field(front, "start_line")), jsonInt(field(front, "end_line")) });
+        var fields = field(front, "fields").object.iterator();
+        var first = true;
+        while (fields.next()) |entry| {
+            try output.print("{s}{s}: {s}", .{ if (first) " (" else ", ", entry.key_ptr.*, jsonText(entry.value_ptr.*) });
+            first = false;
+        }
+        try output.writeAll(if (first) "\n" else ")\n");
+    }
+    for (field(value, "headings").array.items) |heading| {
+        const level: usize = @intCast(@max(1, jsonInt(field(heading, "level"))));
+        try output.splatByteAll(' ', 2 * (level - 1));
+        try output.splatByteAll('#', level);
+        try output.print(" {s} (lines {d}-{d})\n", .{ jsonText(field(heading, "text")), jsonInt(field(heading, "line")), jsonInt(field(heading, "end_line")) });
+    }
+}
+
+pub fn runReadSpan(io: std.Io, allocator: std.mem.Allocator, args: ReadSpanArgs, output: *std.Io.Writer, errors: *std.Io.Writer) !u8 {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const service = try openService(arena, io, args.path);
+    var params = Params{ .arena = arena };
+    try params.string("root_id", args.root_id);
+    try params.string("path", args.file);
+    try params.integer("start_line", args.start);
+    try params.integer("end_line", args.end);
+    try params.integer("context_lines", args.context);
+    return finish(arena, try ops.readSpan(arena, service, params.map, cli_caller), args.json, output, errors, printReadSpan);
+}
+
+/// The lines exactly as stored (context included when asked for).
+fn printReadSpan(output: *std.Io.Writer, value: std.json.Value) !void {
+    try output.writeAll(jsonText(field(value, "context_before")));
+    try output.writeAll(jsonText(field(value, "text")));
+    try output.writeAll(jsonText(field(value, "context_after")));
+}
+
+pub fn runListFiles(io: std.Io, allocator: std.mem.Allocator, args: ListFilesArgs, output: *std.Io.Writer, errors: *std.Io.Writer) !u8 {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const service = try openService(arena, io, args.path);
+    var params = Params{ .arena = arena };
+    try params.string("root_id", args.root);
+    try params.string("path_prefix", args.prefix);
+    try params.string("status", args.status);
+    try params.integer("page_size", args.page_size);
+    try params.string("cursor", args.cursor);
+    return finish(arena, try ops.listFiles(arena, service, params.map, cli_caller), args.json, output, errors, printListFiles);
+}
+
+fn printListFiles(output: *std.Io.Writer, value: std.json.Value) !void {
+    for (field(value, "files").array.items) |file| {
+        try output.print("{s}/{s}  {s}  chunks={d}", .{ jsonText(field(file, "root_id")), jsonText(field(file, "path")), jsonText(field(file, "status")), jsonInt(field(file, "chunks")) });
+        if (field(file, "chunker") == .string) try output.print("  {s}", .{jsonText(field(file, "chunker"))});
+        if (field(file, "size") == .integer) try output.print("  {d} bytes", .{jsonInt(field(file, "size"))});
+        try output.writeByte('\n');
+    }
+    try output.print("{d} files\n", .{jsonInt(field(value, "total"))});
+    if (field(value, "next_cursor") == .string) try output.print("next page: --cursor {s}\n", .{jsonText(field(value, "next_cursor"))});
+}
+
+pub fn runRoots(io: std.Io, allocator: std.mem.Allocator, args: RootsArgs, output: *std.Io.Writer, errors: *std.Io.Writer) !u8 {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const service = try openService(arena, io, args.path);
+    return finish(arena, try ops.visibleRoots(arena, service, .empty, cli_caller), args.json, output, errors, printRoots);
+}
+
+fn printRoots(output: *std.Io.Writer, value: std.json.Value) !void {
+    for (field(value, "roots").array.items) |root| {
+        try output.print("{s}  {s}  {s}  files={d} documents={d} pending={d}\n", .{
+            jsonText(field(root, "root_id")), jsonText(field(root, "label")), jsonText(field(root, "kind")), jsonInt(field(root, "files")), jsonInt(field(root, "documents")), jsonInt(field(root, "pending")),
+        });
+    }
+}
+
+pub fn runApply(io: std.Io, allocator: std.mem.Allocator, args: ApplyArgs, output: *std.Io.Writer, errors: *std.Io.Writer) !u8 {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const cwd = std.Io.Dir.cwd();
+    const stat = try cwd.statFile(io, args.changes, .{});
+    const size = std.math.cast(usize, stat.size) orelse return error.FileTooBig;
+    var request_json = try cwd.readFile(io, args.changes, try arena.alloc(u8, size));
+    if (args.expect_generation) |wanted| {
+        // The flag sets the request's `expect_generation`; a request that
+        // already states another one is refused rather than overridden.
+        switch (try ops.parseObject(arena, request_json)) {
+            .failed => |failure| return finish(arena, .{ .failed = failure }, args.json, output, errors, printApply),
+            .ok => |object| {
+                var copy = object;
+                if (copy.get("expect_generation")) |stated| {
+                    if (stated != .integer or stated.integer != @as(i64, @intCast(wanted))) {
+                        try errors.print("searchd: SS_ERR_INVALID_ARGUMENT: --expect-generation {d} differs from the request's expect_generation\n", .{wanted});
+                        return 1;
+                    }
+                }
+                try copy.put(arena, "expect_generation", .{ .integer = @intCast(wanted) });
+                request_json = try std.json.Stringify.valueAlloc(arena, std.json.Value{ .object = copy }, .{});
+            },
+        }
+    }
+    var dir = try cwd.createDirPathOpen(io, args.path, .{ .open_options = .{ .iterate = true } });
+    defer dir.close(io);
+    const result = try ops.applyChanges(arena, io, dir, request_json, .{ .allow_file_reads = args.allow_file_reads });
+    return finish(arena, result, args.json, output, errors, printApply);
+}
+
+fn printApply(output: *std.Io.Writer, value: std.json.Value) !void {
+    try output.print("applied: generation={d}", .{jsonInt(field(value, "generation"))});
+    for ([_][]const u8{ "added", "changed", "removed", "moved", "pending", "unchanged", "too_large", "unreadable", "budget_exhausted", "roots_removed" }) |name| {
+        try output.print(" {s}={d}", .{ name, jsonInt(field(value, name)) });
+    }
+    try output.print(" rejected={d} conflicts={d}", .{ field(value, "rejected").array.items.len, field(value, "conflicts").array.items.len });
+    if (field(value, "recovered") == .string) try output.print(" recovered={s}", .{jsonText(field(value, "recovered"))});
     try output.writeByte('\n');
 }

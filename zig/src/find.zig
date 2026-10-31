@@ -269,6 +269,35 @@ pub fn find(allocator: std.mem.Allocator, engine: engine_module.Engine, request:
     } };
 }
 
+/// Whether chunk `document_index` is in `request`'s scope: its root is in
+/// `visible_roots`, its root-relative path (the `path` a hit reports; S3-T4,
+/// the same as `list_files`') under `path_prefix`, and the caller holds its
+/// labels. Candidates are filtered by it before they are scored. With only
+/// the legacy root the relative path is the record path, as before.
+pub fn documentInScope(engine: engine_module.Engine, request: Request, document_index: usize) bool {
+    if (request.visible_roots) |mask| if (!mask.allows(document_index)) return false;
+    const document = engine.documents[document_index];
+    if (request.path_prefix) |prefix| {
+        if (!std.mem.startsWith(u8, splitRoot(document.path, request.root_ids).path, prefix)) return false;
+    }
+    return hybrid.isAuthorized(document.required_labels, request.principal_labels);
+}
+
+/// The prefix-expansion hook (CAP-19 section 7; S3-T4 replaced the unused
+/// `scope.termVisible` with this, the check `find` runs): dictionary term
+/// `term_index` expands only when one of its postings is in `request`'s
+/// scope (`documentInScope`), so a term held only by hidden chunks, or only
+/// outside `path_prefix`, never expands and never counts toward the
+/// 1,000-term cap.
+pub fn termInScope(engine: engine_module.Engine, request: Request, term_index: usize) bool {
+    const index = engine.lexical_index;
+    const entry = index.terms[term_index];
+    for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
+        if (documentInScope(engine, request, posting.document_index)) return true;
+    }
+    return false;
+}
+
 fn fail(allocator: std.mem.Allocator, code: source.Code, comptime format: []const u8, arguments: anytype) Error!Outcome {
     return .{ .failed = .{ .code = code, .message = try std.fmt.allocPrint(allocator, format, arguments) } };
 }
@@ -360,10 +389,7 @@ const Context = struct {
     }
 
     fn visible(context: *const Context, document_index: usize) bool {
-        if (context.request.visible_roots) |mask| if (!mask.allows(document_index)) return false;
-        const document = context.engine.documents[document_index];
-        return hybrid.matchesPath(document.path, context.request.path_prefix) and
-            hybrid.isAuthorized(document.required_labels, context.request.principal_labels);
+        return documentInScope(context.engine, context.request, document_index);
     }
 
     fn contribution(context: *const Context, term_index: usize, posting: postings.Posting) f32 {
@@ -400,10 +426,7 @@ const Context = struct {
     }
 
     fn hasVisiblePosting(context: *const Context, term_index: usize) bool {
-        for (context.postingsOf(term_index)) |posting| {
-            if (context.visible(posting.document_index)) return true;
-        }
-        return false;
+        return termInScope(context.engine, context.request, term_index);
     }
 
     /// Visible chunks holding every term of `required` and, when
@@ -993,6 +1016,14 @@ pub fn writeJson(json: *std.json.Stringify, answer: Answer) !void {
     try json.endObject();
     try json.objectField("generation");
     try json.write(answer.generation);
+    try writeFields(json, answer);
+    try json.endObject();
+}
+
+/// The answer's fields after the request echo and the generation (`hits`
+/// through `pending_files`), for a caller that writes its own envelope
+/// (S3-T4, `ops.zig`).
+pub fn writeFields(json: *std.json.Stringify, answer: Answer) !void {
     try json.objectField("hits");
     try json.beginArray();
     for (answer.hits) |hit| {
@@ -1052,7 +1083,6 @@ pub fn writeJson(json: *std.json.Stringify, answer: Answer) !void {
     try json.write(answer.next_cursor);
     try json.objectField("pending_files");
     try json.write(answer.pending_files);
-    try json.endObject();
 }
 
 fn writeRanges(json: *std.json.Stringify, ranges: []const Range) !void {

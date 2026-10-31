@@ -37,9 +37,9 @@ pub fn main(init: std.process.Init) !void {
         .init_demo => |path| try initDemoSnapshot(init.io, path),
         .import_json => |i| try importSnapshot(init.io, init.gpa, i.snapshot, i.file, i.keep_generations),
         .serve => |s| if (s.http) |address|
-            try serveHttp(init.io, init.gpa, s.path, address)
+            try serveHttp(init.io, init.gpa, s, address)
         else
-            try serveSnapshot(init.io, init.gpa, s.path),
+            try serveSnapshot(init.io, init.gpa, s),
         .index => |i| {
             var stdout_buffer: [4096]u8 = undefined;
             var stdout_writer = std.Io.File.stdout().writerStreaming(init.io, &stdout_buffer);
@@ -65,7 +65,25 @@ pub fn main(init: std.process.Init) !void {
             try cli.runEvidence(init.io, init.gpa, q.path, q.text, q.options, &stdout_writer.interface);
             try stdout_writer.flush();
         },
+        // S3-T4: the folder-knowledge commands; 1 after a refusal's stderr line.
+        .find => |a| try runFolderCommand(init, a, cli.runFind),
+        .outline => |a| try runFolderCommand(init, a, cli.runOutline),
+        .read_span => |a| try runFolderCommand(init, a, cli.runReadSpan),
+        .list_files => |a| try runFolderCommand(init, a, cli.runListFiles),
+        .roots => |a| try runFolderCommand(init, a, cli.runRoots),
+        .apply => |a| try runFolderCommand(init, a, cli.runApply),
     }
+}
+
+fn runFolderCommand(init: std.process.Init, args: anytype, comptime run: anytype) !void {
+    var stdout_buffer: [8192]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writerStreaming(init.io, &stdout_buffer);
+    var stderr_buffer: [1024]u8 = undefined;
+    var stderr_writer = std.Io.File.stderr().writerStreaming(init.io, &stderr_buffer);
+    const status = try run(init.io, init.gpa, args, &stdout_writer.interface, &stderr_writer.interface);
+    try stdout_writer.flush();
+    try stderr_writer.flush();
+    if (status != 0) std.process.exit(status);
 }
 
 /// `--help` goes to stdout and exits 0 (S1-T8 criterion 3).
@@ -153,56 +171,97 @@ const ServeContext = struct {
     workspaces: rpc.Workspaces,
 };
 
+/// S3-T4: the served generation with its scope data (roots, statistics,
+/// source section; a lost source section does not fail it), from `allocator`.
 fn openServeContext(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !ServeContext {
-    var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
-    defer dir.close(io);
-
-    var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
-    const manifest_stat = try manifest_file.stat(io);
-    manifest_file.close(io);
-    const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
-    const manifest_buffer = try allocator.alloc(u8, manifest_size);
-    const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
-    const metadata = try manifest.decode(manifest_encoded);
-
-    const documents_buffer = try allocator.alloc(u8, metadata.documents_bytes);
-    const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
-    const snapshot = try publication.loadCurrent(dir, io, manifest_buffer, documents_buffer, lexical_buffer);
-
-    const documents = try allocator.alloc(hybrid.Document, metadata.document_count);
-    const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch
-        return error.IndexTooLarge;
-    const vectors = try allocator.alloc(f32, vector_count);
-    const terms = try allocator.alloc(postings.TermEntry, metadata.term_count);
-    const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
-    const document_lengths = try allocator.alloc(u32, metadata.document_count);
-    const opened = try engine_module.Engine.open(
-        snapshot,
-        documents,
-        vectors,
-        terms,
-        posting_storage,
-        document_lengths,
-    );
-    const service = service_module.Service{ .engine = opened };
-
-    const query_vector = try allocator.alloc(f32, metadata.vector_dimensions);
-    const results = try allocator.alloc(hybrid.Result, metadata.document_count);
-    const evidence = try allocator.alloc(engine_module.Evidence, metadata.document_count);
-    const sources = try allocator.alloc(service_module.Source, metadata.document_count);
+    const service = try cli.openService(allocator, io, path);
+    const document_count = service.engine.documents.len;
     const workspaces = rpc.Workspaces{
-        .query_vector = query_vector,
-        .results = results,
-        .evidence = evidence,
-        .sources = sources,
+        .query_vector = try allocator.alloc(f32, service.engine.vector_dimensions),
+        .results = try allocator.alloc(hybrid.Result, document_count),
+        .evidence = try allocator.alloc(engine_module.Evidence, document_count),
+        .sources = try allocator.alloc(service_module.Source, document_count),
     };
     return .{ .service = service, .workspaces = workspaces };
 }
 
-fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !void {
-    var arena_state = std.heap.ArenaAllocator.init(allocator);
-    defer arena_state.deinit();
-    const context = try openServeContext(io, arena_state.allocator(), path);
+/// The server's scope and permissions from the command line (S3-T4).
+fn serverOf(io: std.Io, allocator: std.mem.Allocator, args: cli.ServeArgs) !rpc.Server {
+    var server = rpc.Server{
+        .allow_write = args.allow_write,
+        .allow_file_reads = args.allow_file_reads,
+        .dir_path = args.path,
+        .io = io,
+    };
+    if (args.roots) |text| server.caller.roots = try splitList(allocator, text);
+    if (args.labels) |text| {
+        server.caller.labels = try splitList(allocator, text);
+        server.caller.request_labels = false;
+    }
+    return server;
+}
+
+fn splitList(allocator: std.mem.Allocator, text: []const u8) ![]const []const u8 {
+    var items = std.ArrayList([]const u8).empty;
+    var parts = std.mem.splitScalar(u8, text, ',');
+    while (parts.next()) |part| try items.append(allocator, part);
+    return items.items;
+}
+
+/// Answers one request, then reopens the index after a successful
+/// `apply_changes` so the next request reads the new generation.
+const Served = struct {
+    io: std.Io,
+    allocator: std.mem.Allocator,
+    path: []const u8,
+    server: rpc.Server,
+    arena: std.heap.ArenaAllocator,
+    context: ServeContext,
+
+    /// In place: the context is allocated from `served.arena`, which must
+    /// not move afterwards.
+    fn init(served: *Served, io: std.Io, allocator: std.mem.Allocator, args: cli.ServeArgs, scope_arena: std.mem.Allocator) !void {
+        served.io = io;
+        served.allocator = allocator;
+        served.path = args.path;
+        served.server = try serverOf(io, scope_arena, args);
+        served.arena = std.heap.ArenaAllocator.init(allocator);
+        errdefer served.arena.deinit();
+        served.context = try openServeContext(io, served.arena.allocator(), args.path);
+    }
+
+    fn handle(served: *Served, line: []const u8, output: *std.Io.Writer) !void {
+        var request_arena = std.heap.ArenaAllocator.init(served.allocator);
+        defer request_arena.deinit();
+        served.server.reopen = false;
+        try rpc.handleLineWith(served.context.service, &served.server, line, request_arena.allocator(), served.context.workspaces, output);
+        if (served.server.reopen) {
+            // The old generation stays served until the new one is open.
+            const next = try served.allocator.create(std.heap.ArenaAllocator);
+            defer served.allocator.destroy(next);
+            next.* = std.heap.ArenaAllocator.init(served.allocator);
+            const context = openServeContext(served.io, next.allocator(), served.path) catch |err| {
+                next.deinit();
+                return err;
+            };
+            served.arena.deinit();
+            // Every allocation of `next` is done: moving its state is safe.
+            served.arena = next.*;
+            served.context = context;
+        }
+    }
+
+    fn deinit(served: *Served) void {
+        served.arena.deinit();
+    }
+};
+
+fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, args: cli.ServeArgs) !void {
+    var scope_arena = std.heap.ArenaAllocator.init(allocator);
+    defer scope_arena.deinit();
+    var served: Served = undefined;
+    try served.init(io, allocator, args, scope_arena.allocator());
+    defer served.deinit();
 
     const request_buffer = try allocator.alloc(u8, 1024 * 1024);
     defer allocator.free(request_buffer);
@@ -213,9 +272,7 @@ fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !vo
 
     while (try stdin_reader.interface.takeDelimiter('\n')) |line| {
         if (std.mem.trim(u8, line, " \t\r").len == 0) continue;
-        var arena = std.heap.ArenaAllocator.init(allocator);
-        defer arena.deinit();
-        try rpc.handleLine(context.service, line, arena.allocator(), context.workspaces, &stdout_writer.interface);
+        try served.handle(line, &stdout_writer.interface);
         try stdout_writer.interface.writeByte('\n');
         try stdout_writer.flush();
     }
@@ -229,14 +286,16 @@ fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !vo
 /// server's complexity for a task about indexing, not serving. Only
 /// 127.0.0.1 is accepted (an explicit host check, not just bind-address
 /// discipline), matching the task's "local only" requirement.
-fn serveHttp(io: std.Io, allocator: std.mem.Allocator, path: []const u8, address_text: []const u8) !void {
+fn serveHttp(io: std.Io, allocator: std.mem.Allocator, args: cli.ServeArgs, address_text: []const u8) !void {
     // `cli.parseArgs` already judged the address (loopback host, numeric port).
     const colon = std.mem.lastIndexOfScalar(u8, address_text, ':').?;
     const port = cli.parseDigits(u16, address_text[colon + 1 ..]).?;
 
-    var arena_state = std.heap.ArenaAllocator.init(allocator);
-    defer arena_state.deinit();
-    const context = try openServeContext(io, arena_state.allocator(), path);
+    var scope_arena = std.heap.ArenaAllocator.init(allocator);
+    defer scope_arena.deinit();
+    var served: Served = undefined;
+    try served.init(io, allocator, args, scope_arena.allocator());
+    defer served.deinit();
 
     var loopback = std.Io.net.IpAddress.fromIp6(std.Io.net.Ip6Address.fromIp4(std.Io.net.Ip4Address.loopback(port)));
     var server = try loopback.listen(io, .{});
@@ -249,7 +308,7 @@ fn serveHttp(io: std.Io, allocator: std.mem.Allocator, path: []const u8, address
             continue;
         };
         defer stream.close(io);
-        handleHttpConnection(io, allocator, context, stream) catch |err| {
+        handleHttpConnection(io, allocator, &served, stream) catch |err| {
             std.debug.print("http connection error: {t}\n", .{err});
         };
     }
@@ -258,7 +317,7 @@ fn serveHttp(io: std.Io, allocator: std.mem.Allocator, path: []const u8, address
 fn handleHttpConnection(
     io: std.Io,
     allocator: std.mem.Allocator,
-    context: ServeContext,
+    served: *Served,
     stream: std.Io.net.Stream,
 ) !void {
     var read_buffer: [64 * 1024]u8 = undefined;
@@ -283,19 +342,20 @@ fn handleHttpConnection(
         }
     }
 
-    var response_storage: [64 * 1024]u8 = undefined;
-    var response_writer = std.Io.Writer.fixed(&response_storage);
+    // S3-T4: a read_span answer can hold 256 KiB of text, so the response
+    // grows as needed instead of a fixed 64 KiB buffer.
+    var response: std.Io.Writer.Allocating = .init(allocator);
+    defer response.deinit();
+    const response_writer = &response.writer;
     if (content_length == 0 or content_length > read_buffer.len) {
         try response_writer.writeAll("{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"Parse error\"}}");
     } else {
         const body = try allocator.alloc(u8, content_length);
         defer allocator.free(body);
         try stream_reader.interface.readSliceAll(body);
-        var arena = std.heap.ArenaAllocator.init(allocator);
-        defer arena.deinit();
-        try rpc.handleLine(context.service, body, arena.allocator(), context.workspaces, &response_writer);
+        try served.handle(body, response_writer);
     }
-    const body_written = response_writer.buffered();
+    const body_written = response.written();
 
     try stream_writer.interface.print(
         "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {d}\r\nConnection: close\r\n\r\n",

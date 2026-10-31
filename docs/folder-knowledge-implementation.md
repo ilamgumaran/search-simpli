@@ -8,6 +8,9 @@ amendments marked **S3-T1** below (formats: [`manifest-format-v2.md`](manifest-f
 `src/search_platform/folders.py`) with the amendments marked **S3-T3**.
 §3, the `find` part of §8 and the §13 profile implemented by S3-T2 with the
 amendments marked **S3-T2** (format: [`lexical-segment-format-v2.md`](lexical-segment-format-v2.md)).
+§8 and §9 on every surface (C ABI, Dart, CLI, RPC; contract 2.0.0)
+implemented by S3-T4 (`zig/src/ops.zig`, `abi.zig`, `cli.zig`, `rpc.zig`,
+the Dart package) with the amendments marked **S3-T4**.
 Every other format, field and number here is **proposed**; a task's Report
 turns it into an observed fact or amends it.
 Companion to [`CAP-19`](requirements/cap-19-folder-knowledge.md),
@@ -223,6 +226,27 @@ because `read_span` over a `local` root without retained bytes (re-reading
 and hash-checking the file) is not built yet and would turn every existing
 folder index's `read_span` into `CAPACITY`.
 
+**S3-T4 (no format change):** a reader builds a *sparse line index* when it
+opens the section (`source.openIndexed`): for every file, the map offset and
+the running value before every 256th varint, collected while the maps are
+validated (no second decode). A line's offset is then found from the
+nearest checkpoint, decoding at most 256 varints instead of every one from
+line 1 (S3-T1 finding 3). It costs `(lines / 256 + 1) × 16` bytes per file
+(103 checkpoints, 1,648 bytes on the family-folder fixture). `read_span`
+over `big-log.txt` (15,500 lines; start lines uniform, spans up to 20 lines,
+context 1) went from p50 28.9–32.6 µs / p95 60.6–67.5 µs to p50 1.0–1.1 µs /
+p95 1.7 µs in ReleaseSmall (ReleaseFast: p95 12.9–13.9 µs to 0.9 µs). The
+file layout above is unchanged, so no version note: an index written by
+S3-T1..T3 gets the index when it is opened. **S3-T4 (S3-T1 finding 2):** a
+source section that is missing or fails validation no longer fails the open:
+`snapshot_open.open` does not look at it, `openSource` reports it as
+`source_error` (the error's name), and every operation that never reads it
+(`search_knowledge`, `find`, the listings and status) keeps working; only
+`read_span` and `outline` answer `SS_ERR_CAPACITY` "re-index required:
+source section unavailable (<error>)" (an unknown or hidden file in such a
+generation gets the same answer), and `index_status` says `has_source:
+false`. A writer still treats it as a missing section and heals it.
+
 `read_span(path, a, b, context)` slices lines `a-context … b+context`
 (clamped), total ≤ 400 lines and ≤ 256 KiB, else `SS_ERR_CAPACITY` with the
 counts. Over a root with `retain_source: false` and a `file` the engine may
@@ -381,6 +405,24 @@ options)`):
   is written leaves the new generation readable; the next call rebuilds the
   table from it (§5) and reports retried, identical content as `unchanged`.
 
+**S3-T4 amendments (the surfaces).** `ss_apply_changes(dir, changes_json,
+opts_json)`: `opts_json` takes `allow_file_reads` (default false),
+`max_file_bytes`, `max_total_bytes`, `analyzer`, `max_chars`,
+`overlap_lines`, `keep_generations`, and refuses an unknown field; the
+request is the core's (an unknown field anywhere refused). CLI:
+`searchd apply <dir> --changes <file> [--expect-generation N]
+[--allow-file-reads] [--json]` prints a one-line summary (or the report
+with `--json`); `--expect-generation` sets the request's
+`expect_generation`, and a request that already states a different one is
+refused rather than overridden. RPC: `apply_changes` exists only under
+`serve --allow-write` (otherwise `-32601`, as for any unknown method); its
+`params` is the change request; `file` changes are read only with
+`--allow-file-reads`; a stale generation is `-32602` "Invalid params:
+stale: generation is M", another writer holding `WRITER.LOCK` is `-32006`;
+after a successful call the server reopens the index, so the next request
+reads the new generation. Dart: `SearchSimpli.applyChanges(dir, changes,
+options:)`, static.
+
 ## 7. Scope, labels and statistics
 
 A request's **scope** = the roots named (default all) ∩ the caller's trusted
@@ -415,8 +457,23 @@ over the documents. `index_status` reports `documents`, `terms`, `postings`,
 `files`, `pending` and `pending_paths`, `roots` (with per-root counts),
 `chunkers` (those visible documents use) and `has_source` (visible files
 have retained bytes) over the scope; `read_span`/`outline` of a hidden file
-answer the absent file's `not_found` message. The prefix-expansion hook for
-S3-T2 is `scope.termVisible`. Measured timing: `docs/authorization.md`.
+answer the absent file's `not_found` message. The prefix-expansion hook is
+`find.termInScope` (**S3-T4**, S3-T3 finding 3: the unused
+`scope.termVisible` is removed; the hook is the check `find` runs, a posting
+whose chunk is in the root mask, under `path_prefix` and authorized by the
+labels, because a prefix query must also not expand terms that only occur
+outside its own path prefix, which a group-level hook cannot see). Measured
+timing: `docs/authorization.md`.
+**S3-T4:** the C ABI, the CLI and the RPC server now answer every
+operation through the scope: `ss_status` and RPC `index_status` count over
+the default scope (every root, no principal labels) or the server's
+command-line scope, never the whole index (S3-T3 Post-build ruling 3 is
+closed), and the by-id `evidence`/`read_chunk` go through
+`ScopedService`'s scope (S3-T3 finding 2). The ABI's caller (the host app)
+may state `roots` and `principal_labels` per request; the RPC server takes
+them from `--roots`/`--labels` (a request may narrow the roots; without
+`--labels` the raw service keeps accepting a request's bounded
+`principal_labels`, with it a request that states them is refused).
 `find` over a scope is `service.ScopedService.find`: the roots mask joins
 `find`'s label and prefix filter (candidates and prefix expansion), its BM25
 goes through `scoring.CorpusStatistics` with the visible scope's count,
@@ -515,6 +572,46 @@ reports `fields: {}` plus `raw` (the inner lines joined by LF).
 `index_status` adds `generation`, `roots[]` (visible), `pending`, `has_source`,
 `has_positions`, `chunkers[]`.
 
+**S3-T4 amendments** (implemented in `zig/src/ops.zig`; the C ABI, the CLI's
+`--json` and the RPC `result` are the same bytes, the Dart binding decodes
+them; `docs/tool-protocol.md`, `zig/include/search_simpli.h`):
+- *Envelope.* Every read result starts with `request` (the request echoed
+  with defaults filled in: `roots` is `null` when not given), `generation`,
+  `scope` `{roots: [the roots the request could see, in the generation's
+  order], labels_applied: true}` and `warnings` (`[{code, message}]`).
+  `labels_applied` is always true: the scope's labels (possibly none) filter
+  before any candidate; it does not say whether labels hid anything, which
+  would reveal that hidden files exist. The one warning so far is
+  `read_span`'s `end_line_clamped`. `index_status` and `evidence` keep their
+  v1 shapes and only add fields (no envelope), so a v1 consumer reads them
+  unchanged.
+- *find.* `path_prefix` is root-relative (the `path` a hit reports, like
+  `list_files`'), not the record path; with only the legacy root the two
+  are the same, so every S3-T2 test reads the same. The echo carries the
+  effective `mode`.
+- *read_span.* The request's `start_line`, `end_line` are required,
+  `context_lines` defaults to 0.
+- *list_files.* `size` is the retained bytes' length, or a pending file's
+  announced size, else null; `mtime_ms` is always null in contract 2.0.0 (a
+  generation does not record it, and `INDEX-STATE.json` is the writer's
+  file, which may already describe a newer generation than the one a reader
+  holds). The result adds `total` (files matching, every page). `page_size`
+  1–1,000, default 100; `status` `indexed | pending`; a stale cursor is
+  `INVALID_ARGUMENT` "stale cursor", as `find`'s. FR-22's `kind` filter is
+  not offered (§8 has none; `roots` gives the per-root listing).
+- *roots* (`ss_roots`, RPC `roots`, CLI `roots`): `{roots?}` → the envelope
+  plus `roots: [{root_id, label, kind, files, documents, pending}]`.
+- *evidence.* At most 1,000 ids; `path_prefix` still applies to the citation
+  path (v1); `neighbours.prev`/`next` are the same file's chunks just before
+  and after by start line, each `{chunk_id, start_line, end_line}` or null;
+  `section_path` is `[]` for a file without headings.
+- *Refusals.* A request field that is unknown, of the wrong type or out of
+  range is `INVALID_ARGUMENT` before anything runs. The ABI spells a
+  failure `"<function>: SS_ERR_<CODE>: <reason>"`; the RPC maps
+  `INVALID_ARGUMENT` to `-32602` ("Invalid params: <reason>"), `NOT_FOUND`
+  to `-32004` and `CAPACITY` to `-32005`; the CLI prints
+  `searchd: SS_ERR_<CODE>: <reason>` on stderr and exits 1.
+
 Relation to CAP-16 (directory filename retrieval): `list_files` is a listing
 with a prefix, not a ranked filename search; CAP-16's `search_field` channel
 stays the way to find a file by name, and it inherits roots and scope from §7
@@ -534,6 +631,23 @@ char *ss_apply_changes(const char *dir_path, const char *changes_json, const cha
 All return a JSON string to `ss_free`, or NULL with `ss_last_error` set; error
 codes unchanged (−1 … −7). `ss_query`/`ss_evidence` gain `roots` in
 `options_json`. The ten v1 functions keep their signatures and behaviour.
+
+**S3-T4 amendments.** `ss_status` (no options) counts over the default
+scope, every root and no principal labels, the scope `ss_query` uses
+without options: identical to 1.x on an index without labels (every
+existing golden), and a labelled file is no longer counted (S3-T3 finding);
+`ss_roots(options_json)` counts over a scope the caller names. `ss_status`
+appends §8's `index_status` fields after the v1 ones, and `ss_evidence`'s
+found items append `root_id`, `section_path`, `neighbours` after the v1
+fields, so the v1 output is a byte prefix of each. `ss_evidence` refuses an
+unknown request field (as `parseFromSlice` already did) and now names the
+code in `ss_last_error`. `ss_query` without `roots` runs the 1.x path
+unchanged; with it, the scoped one. `ss_open` also opens the scope data
+(roots, statistics groups, the source section with its path and line
+indexes, position tables): on the fixture (998 chunks, 1.15 MB retained)
+it went from 13.0 ms to 18.4 ms (p50 of 30, ReleaseSmall library), and the
+macOS library from 569,064 to 697,544 bytes (the ABI now links `find`,
+`apply_changes`, the Markdown outline and the operations layer).
 
 ## 10. Tool schemas and the skill document
 

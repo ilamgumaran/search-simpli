@@ -343,36 +343,6 @@ pub fn documentFrequency(view: View, index: postings.Index, documents: []const h
     return frequency;
 }
 
-/// Whether dictionary term `term_index` occurs in at least one document of
-/// the scope: the hook prefix expansion (S3-T2) uses so that a term found
-/// only in hidden documents never expands.
-pub fn termVisible(
-    index: postings.Index,
-    documents: []const hybrid.Document,
-    statistics: ?*const Statistics,
-    visible_groups: []const bool,
-    mask: ?hybrid.RootMask,
-    labels: []const []const u8,
-    term_index: usize,
-) bool {
-    const entry = index.terms[term_index];
-    if (statistics) |stats| {
-        for (visible_groups, 0..) |visible, group| {
-            if (visible and stats.frequencies[group * stats.term_count + term_index] != 0) return true;
-        }
-        if (stats.exact_documents.len == 0) return false;
-        for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
-            if (stats.document_groups[posting.document_index] == Statistics.exact and
-                documentVisible(documents, posting.document_index, mask, labels)) return true;
-        }
-        return false;
-    }
-    for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
-        if (documentVisible(documents, posting.document_index, mask, labels)) return true;
-    }
-    return false;
-}
-
 /// A generation's roots, pending and unchunked files, chunkers, source
 /// section and statistics: everything a scoped operation needs beside the
 /// engine. Built once per opened generation (`snapshot_open.openScoped`).
@@ -385,6 +355,10 @@ pub const Folder = struct {
     document_roots: []const u16,
     statistics: Statistics,
     source: ?source.Section = null,
+    /// S3-T4: the generation binds a source section that could not be
+    /// opened (its error's name); the source-reading operations then answer
+    /// `CAPACITY` naming it, every other operation is unaffected.
+    source_error: ?[]const u8 = null,
     has_positions: bool = false,
 
     /// `meta == null`: a generation without meta (one legacy root).

@@ -28,6 +28,7 @@ pub const indexer = @import("indexer.zig");
 pub const snapshot_open = @import("snapshot_open.zig");
 pub const scope = @import("scope.zig");
 pub const apply = @import("apply.zig");
+pub const ops = @import("ops.zig");
 pub const cli_test = @import("cli_test.zig");
 pub const chunker_golden_test = @import("chunker_test.zig");
 pub const chunker_md_golden_test = @import("chunker_md_test.zig");
@@ -104,6 +105,7 @@ test "load every engine module test suite" {
     _ = snapshot_open;
     _ = scope;
     _ = apply;
+    _ = ops;
     _ = chunker_golden_test;
     _ = chunker_md_golden_test;
     _ = source_fixture_test;

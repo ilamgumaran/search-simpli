@@ -27,14 +27,12 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     const documents_buffer = try allocator.alloc(u8, metadata.documents_bytes);
     const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
     const snapshot = try publication.loadCurrent(dir, io, manifest_buffer, documents_buffer, lexical_buffer);
-    // S3-T1: a generation that binds a source section is incomplete without
-    // it. Only its presence and length are checked here (reading it is
-    // `openSource`'s job), so a lost source file reads as a missing section
-    // (`error.FileNotFound`), the same as a lost document or lexical file.
-    if (metadata.hasSource()) {
-        const stat = try dir.statFile(io, metadata.source_file, .{});
-        if (stat.size != metadata.source_bytes) return error.SourceSectionSizeMismatch;
-    }
+    // S3-T4 (S3-T1 finding 2): the source section is not read here, and a
+    // lost or damaged one does not fail the open: `query`, `find` and every
+    // other operation that never reads it keep working, and only the
+    // source-reading operations (`read_span`, `outline`) answer `CAPACITY`
+    // (`openSource` reports why). A writer still treats it as a missing
+    // section and heals it (`index --update`, `apply_changes`).
 
     const documents = try allocator.alloc(hybrid.Document, metadata.document_count);
     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch
@@ -59,6 +57,10 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
 pub const OpenedSource = struct {
     metadata: manifest.Manifest,
     source: ?source_section.Section,
+    /// S3-T4: the manifest binds a source section that could not be read
+    /// or did not validate (a lost file, a wrong size, a bad checksum): the
+    /// error's name. `source` is then null.
+    source_error: ?[]const u8 = null,
 };
 
 pub fn openSource(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !OpenedSource {
@@ -71,8 +73,13 @@ pub fn openSource(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Op
     const metadata = try manifest.decode(manifest_encoded);
     if (!metadata.hasSource()) return .{ .metadata = metadata, .source = null };
     const buffer = try allocator.alloc(u8, metadata.source_bytes);
-    const bytes = (try publication.loadSource(dir, io, metadata, buffer)).?;
-    return .{ .metadata = metadata, .source = try source_section.openIndexed(allocator, bytes) };
+    const bytes = (publication.loadSource(dir, io, metadata, buffer) catch |err|
+        return .{ .metadata = metadata, .source = null, .source_error = @errorName(err) }).?;
+    const section = source_section.openIndexed(allocator, bytes) catch |err| switch (err) {
+        error.OutOfMemory => return err,
+        else => return .{ .metadata = metadata, .source = null, .source_error = @errorName(err) },
+    };
+    return .{ .metadata = metadata, .source = section };
 }
 
 /// S3-T3: the current generation with its roots, pending files, source
@@ -91,6 +98,7 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
     const folder = try allocator.create(scope.Folder);
     folder.* = try scope.Folder.build(allocator, opened_engine.documents, opened_engine.lexical_index, meta, opened.source);
     folder.has_positions = opened.metadata.has_positions;
+    folder.source_error = opened.source_error;
     opened_engine.statistics = &folder.statistics;
     return .{ .engine = opened_engine, .folder = folder };
 }

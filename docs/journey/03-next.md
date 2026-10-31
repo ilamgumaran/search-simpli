@@ -170,6 +170,7 @@ at the same time. E-01A is the safe intake half of exactly that.
 | Item | Why it is ready | Note |
 |---|---|---|
 | **E-02 — negative / unanswerable evaluation** | Small, self-contained, and it is the empirical guard on the source-of-truth invariant | Feeds CAP-14 |
+| **`search_knowledge` in ReleaseSmall on the small fixture (+6 µs since S3-T2)** | S3-T4 re-measured it after the ABI landed, as S3-T2 Post-build ruling 2 asked: on the family-folder union fixture (998 chunks) `find_bench knowledge`, ReleaseSmall, p50 of three repetitions, interleaved, rounds 2–4: before S3-T2 (`73fc226`) 30.3–30.8, 29.5–30.1, 30.0–30.5 µs; S3-T4 36.3–36.8, 36.1–36.5, 35.5–35.8 µs. It persists (about +19 %); ReleaseFast and the 10k corpus are faster than before (S3-T2 Verdict) | Profile the ReleaseSmall query path on a small corpus (scorer statistics plumbing, `HYBLEX02` term lookup); a few microseconds, inside every budget, so not urgent |
 | **NFR-12 in ReleaseSmall — delta sections or a cheaper checksum** | S3-T3 measured one changed file in a 10k index at 215–221 ms in `ReleaseSmall` against the 200 ms bound (met in `ReleaseFast`, 163–168 ms); rewriting and re-checksumming whole sections each generation is most of it | Required before NFR-12's bound tightens to `ReleaseSmall` (S3-T3 Post-build ruling 2) |
 
 ## Blocked, with the named unblocker
