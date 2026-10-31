@@ -14,6 +14,9 @@ pub fn build(b: *std.Build) void {
         .root_module = executable_module,
     });
     b.installArtifact(executable);
+    // S3-T6: the MCP server's tool descriptors carry contracts/tools/ verbatim.
+    const tool_schema_options = toolSchemaOptions(b);
+    executable_module.addOptions("tool_schemas", tool_schema_options);
 
     const run_command = b.addRunArtifact(executable);
     if (b.args) |args| run_command.addArgs(args);
@@ -36,6 +39,7 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
     test_module.addOptions("build_options", contracts_version_options);
+    test_module.addOptions("tool_schemas", tool_schema_options);
     const unit_tests = b.addTest(.{ .root_module = test_module });
     const test_command = b.addRunArtifact(unit_tests);
     const test_step = b.step("test", "Run engine unit tests");
@@ -64,6 +68,40 @@ fn contractsVersionOptions(b: *std.Build) *std.Build.Step.Options {
     const trimmed = std.mem.trim(u8, raw, " \t\r\n");
     const options = b.addOptions();
     options.addOption([:0]const u8, "contracts_version", b.allocator.dupeZ(u8, trimmed) catch @panic("OOM"));
+    return options;
+}
+
+/// The tools whose schemas `contracts/tools/` holds (S3-T5), in the MCP
+/// server's listing order: CAP-13's four, the four folder reads, the write.
+const tool_names = [_][]const u8{ "search_knowledge", "read_chunk", "list_sources", "index_status", "find", "outline", "read_span", "list_files", "apply_changes" };
+
+/// S3-T6: `@import("tool_schemas")` for `src/mcp.zig`: for every tool,
+/// `<tool>_request` and `<tool>_result`, the file
+/// `../contracts/tools/<tool>.<kind>.schema.json` read at configure time
+/// (`@embedFile` cannot reach outside `zig/`, as for CONTRACTS_VERSION) and
+/// re-serialized on one line with its keys in file order: the same JSON
+/// value, fit for a newline-delimited stdio message. Also `contracts_version`.
+fn toolSchemaOptions(b: *std.Build) *std.Build.Step.Options {
+    const options = b.addOptions();
+    const buffer = b.allocator.alloc(u8, 1024 * 1024) catch @panic("OOM");
+    for (tool_names) |name| {
+        for ([_][]const u8{ "request", "result" }) |kind| {
+            const path = b.fmt("../contracts/tools/{s}.{s}.schema.json", .{ name, kind });
+            const raw = b.build_root.handle.readFile(b.graph.io, path, buffer) catch |err| {
+                std.debug.print("build.zig: could not read {s}: {s}\n", .{ path, @errorName(err) });
+                @panic("missing tool schema");
+            };
+            const value = std.json.parseFromSliceLeaky(std.json.Value, b.allocator, raw, .{}) catch |err| {
+                std.debug.print("build.zig: {s} is not JSON: {s}\n", .{ path, @errorName(err) });
+                @panic("invalid tool schema");
+            };
+            const line = std.json.Stringify.valueAlloc(b.allocator, value, .{}) catch @panic("OOM");
+            options.addOption([]const u8, b.fmt("{s}_{s}", .{ name, kind }), line);
+        }
+    }
+    var version_buffer: [256]u8 = undefined;
+    const version = b.build_root.handle.readFile(b.graph.io, "../contracts/CONTRACTS_VERSION", &version_buffer) catch @panic("missing contracts/CONTRACTS_VERSION");
+    options.addOption([]const u8, "contracts_version", b.dupe(std.mem.trim(u8, version, " \t\r\n")));
     return options;
 }
 

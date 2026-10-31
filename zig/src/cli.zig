@@ -144,6 +144,16 @@ pub const usage_text =
         \\                       with --labels it may not state labels).
         \\                       apply_changes exists only with
         \\                       --allow-write.
+        \\  mcp <dir> [--roots a,b] [--labels l1,l2] [--baseline]
+        \\                       [--allow-write] [--allow-file-reads]
+        \\                       serve the index as a Model Context Protocol
+        \\                       server on stdin/stdout (docs/mcp-server.md):
+        \\                       the eight read tools and the indexed files as
+        \\                       resources; --baseline lists only CAP-13's
+        \\                       four tools and no resources; apply_changes
+        \\                       only with --allow-write (inside --roots).
+        \\                       The scope comes from --roots and --labels
+        \\                       only, never from a request.
         \\  demo                 run an in-memory cited hybrid query
         \\  benchmark <docs> <dimensions> <queries> <mode>
         \\                       benchmark the real in-memory engine query path
@@ -192,6 +202,15 @@ pub const ServeArgs = struct {
     allow_write: bool = false,
     allow_file_reads: bool = false,
 };
+/// S3-T6: `searchd mcp` (`mcp.zig`).
+pub const McpArgs = struct {
+    path: []const u8,
+    roots: ?[]const u8 = null,
+    labels: ?[]const u8 = null,
+    baseline: bool = false,
+    allow_write: bool = false,
+    allow_file_reads: bool = false,
+};
 /// S3-T4: the folder-knowledge commands.
 pub const FindArgs = struct {
     path: []const u8,
@@ -225,6 +244,7 @@ pub const Command = union(enum) {
     init_demo: []const u8,
     import_json: ImportArgs,
     serve: ServeArgs,
+    mcp: McpArgs,
     index: IndexArgs,
     query: QueryArgs,
     evidence: QueryArgs,
@@ -445,6 +465,29 @@ fn parseInner(p: *Parser) error{Usage}!Command {
             }
         }
         return .{ .serve = .{ .path = path, .http = http, .roots = roots, .labels = labels, .allow_write = allow_write, .allow_file_reads = allow_file_reads } };
+    }
+    if (std.mem.eql(u8, command, "mcp")) {
+        const path = p.next() orelse return p.missingArgument("mcp", "<dir>");
+        var args = McpArgs{ .path = path };
+        while (p.next()) |flag| {
+            if (std.mem.eql(u8, flag, "--roots")) {
+                args.roots = try p.list("--roots");
+            } else if (std.mem.eql(u8, flag, "--labels")) {
+                args.labels = try p.list("--labels");
+            } else if (std.mem.eql(u8, flag, "--baseline")) {
+                args.baseline = true;
+            } else if (std.mem.eql(u8, flag, "--allow-write")) {
+                args.allow_write = true;
+            } else if (std.mem.eql(u8, flag, "--allow-file-reads")) {
+                args.allow_file_reads = true;
+            } else {
+                return p.usage("unknown flag for", "mcp", flag, " (see searchd --help)");
+            }
+        }
+        // CAP-13's baseline is read-only; file reads only serve a write.
+        if (args.baseline and args.allow_write) return p.usage("invalid value for", "mcp --baseline", null, " (the baseline is read-only: no --allow-write)");
+        if (args.allow_file_reads and !args.allow_write) return p.usage("invalid value for", "mcp --allow-file-reads", null, " (needs --allow-write)");
+        return .{ .mcp = args };
     }
     if (std.mem.eql(u8, command, "index")) {
         const folder = p.next() orelse return p.missingArgument("index", "<folder>");

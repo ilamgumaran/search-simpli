@@ -412,6 +412,30 @@ class FolderSurfaceTests(unittest.TestCase):
         finally:
             rpc.close()
 
+    def test_cli_json_and_rpc_agree_with_no_optional_fields(self) -> None:
+        """S3-T4 Verdict finding 1: one request per method that states no
+        optional field, so a surface that injects a different default (a
+        page size, a mode, a context) is caught; the judgments above always
+        state theirs."""
+        rpc = Rpc(self.binary, self.index)
+        try:
+            pairs = [
+                (("find", str(self.index), "tide table"), "find", {"query": "tide table"}),
+                (("find", str(self.index), "\"count me in\""), "find", {"query": "\"count me in\""}),
+                (("outline", str(self.index), "school", "science-notes.md"), "outline", {"root_id": "school", "path": "science-notes.md"}),
+                (("read-span", str(self.index), "school", "science-notes.md", "40", "42"), "read_span",
+                 {"root_id": "school", "path": "science-notes.md", "start_line": 40, "end_line": 42}),
+                (("list-files", str(self.index)), "list_files", {}),
+                (("roots", str(self.index)), "roots", {}),
+            ]
+            for cli_args, method, params in pairs:
+                cli = self.run_searchd(*cli_args, "--json")
+                self.assertEqual(cli.returncode, 0, cli.stderr)
+                self.assertEqual(cli.stdout.rstrip("\n"), rpc.result_text(method, params), method)
+            self.assertEqual({method for _, method, _ in pairs}, {"find", "outline", "read_span", "list_files", "roots"})
+        finally:
+            rpc.close()
+
 
 if __name__ == "__main__":
     unittest.main()

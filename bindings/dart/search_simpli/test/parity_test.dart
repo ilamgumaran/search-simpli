@@ -5,6 +5,7 @@
 /// JSON (keys sorted). All three run over one index the binding publishes
 /// with `applyChanges`; the CLI and the server are the real `searchd`
 /// (`zig build`, Zig 0.16.0 on PATH, as the conformance test needs).
+/// S3-T6 adds one request per method with no optional field.
 library;
 
 import 'dart:async';
@@ -120,5 +121,22 @@ void main() {
     expect(compared, 25);
     // ignore: avoid_print
     print('S3-T4 parity: $compared requests, CLI --json = RPC = Dart (canonical JSON)');
+  });
+
+  // S3-T4 Verdict finding 1 (closed in S3-T6): one request per method that
+  // states no optional field, so a surface that injects a different default
+  // (a page size, a mode, a context) is caught.
+  test('CLI --json, RPC and Dart agree with no optional fields', () async {
+    final rootId = 'school';
+    final path = 'science-notes.md';
+    await same('find (defaults)', await cli(['find', dir.path, 'tide table']), await rpc.result('find', {'query': 'tide table'}),
+        engine.find('tide table').json);
+    await same('outline', await cli(['outline', dir.path, rootId, path]), await rpc.result('outline', {'root_id': rootId, 'path': path}),
+        engine.outline(rootId, path).json);
+    await same('read_span (defaults)', await cli(['read-span', dir.path, rootId, path, '40', '42']),
+        await rpc.result('read_span', {'root_id': rootId, 'path': path, 'start_line': 40, 'end_line': 42}),
+        engine.readSpan(rootId, path, 40, 42).json);
+    await same('list_files (defaults)', await cli(['list-files', dir.path]), await rpc.result('list_files', {}), engine.listFiles().json);
+    await same('roots (defaults)', await cli(['roots', dir.path]), await rpc.result('roots', {}), engine.roots().json);
   });
 }

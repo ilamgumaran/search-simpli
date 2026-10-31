@@ -1,6 +1,6 @@
 # CAP-13 — MCP tool adapter
 
-Status: Proposed · Evidence: future option
+Status: Diagnostic — realized by S3-T6 (`searchd mcp`, CAP-19 FR-24; [MCP server](../mcp-server.md)) · Evidence: conformance, forgery-rejection and parity tests (`tests/test_mcp.py`), overhead measured in [S3-T6](../tasks/S3-T6.md)'s Report
 
 > Run through the [capability process](../capability-process.md), steps 1–6.
 > Requirements defined and conflicts checked; implementation is a later step.
@@ -92,9 +92,26 @@ Decidable criteria (metric · baseline · fixture/split · threshold · rule):
 - `PROJECT-STATE.md`: note MCP adapter status.
 - Status advances Proposed → Diagnostic (parity tests) → Validated (real agent over a judged snapshot) → Operational.
 
+## 10b. Realization (S3-T6, 2026-10-31)
+
+Realized by CAP-19 FR-24 as the review amended it (CFT-22): `searchd mcp
+--baseline` is this capability exactly (the four FR-07 tools, read-only, no
+resources); the default mode adds CAP-19's read tools and resources as an
+opt-in extension, and `apply_changes` exists only with `--allow-write`. The
+trusted principal comes from the command line (`--labels`, `--roots`); a
+call carrying `principal_labels` or `query_vector` is refused. Semantic
+parity: the canonical result in `structuredContent` equals the JSON-RPC
+`result` for every fixture judgment, and a refusal carries the JSON-RPC
+error object (`tests/test_mcp.py`). The MCP protocol revision is pinned
+(`2025-11-25`). The acceptance gate's performance line (p95 overhead
+≤ 5 ms) is measured in S3-T6's Report. Status advances to **Diagnostic**
+(parity tests); *Validated* still needs a real agent over a judged snapshot
+(§10). Approval: CAP-19's (2026-10-31), which includes FR-24 "Realizes
+CAP-13".
+
 ## 11. Open decisions
 
-- Decision: stdio-only first vs. also a network transport (and its auth).
+- Decision: stdio-only first vs. also a network transport (and its auth). **Taken** (CAP-19 open decision 3): stdio first; loopback HTTP later if a host needs it.
 - Owner: operator.
 - Evidence needed: whether networked deployment is required before building transport auth.
 

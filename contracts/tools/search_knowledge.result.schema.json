@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.local/contracts/tools/search_knowledge.result.schema.json",
   "title": "search_knowledge result",
-  "description": "The shared evidence envelope: ranked chunks with citations. No `empty` or `truncated` flag: use find or index_status for those.",
+  "description": "The shared evidence envelope: ranked chunks with citations. Since S3-T6 each item names its root_id and section_path, and the result carries truncated and pending_files over the same scope (the v1 fields are unchanged). No `empty` flag: an empty results list is not proof of absence.",
   "type": "object",
   "properties": {
     "tool": {
@@ -210,6 +210,17 @@
               "lexical",
               "vector"
             ]
+          },
+          "root_id": {
+            "type": "string",
+            "description": "Root id of the chunk's file (S3-T6); the citation path is `root_id/path` for a host root."
+          },
+          "section_path": {
+            "type": "array",
+            "description": "Heading path of the chunk's section, [] for a file without headings (S3-T6).",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false,
@@ -218,7 +229,9 @@
           "citation",
           "content",
           "score",
-          "ranking"
+          "ranking",
+          "root_id",
+          "section_path"
         ]
       }
     },
@@ -272,6 +285,15 @@
           "message"
         ]
       }
+    },
+    "truncated": {
+      "type": "boolean",
+      "description": "True when a file in scope was given to the engine but not indexed in full (too large, unreadable or over a run's byte budget): the corpus may be incomplete (S3-T6)."
+    },
+    "pending_files": {
+      "type": "integer",
+      "description": "Files in scope still waiting for their bytes; the corpus may be incomplete when above 0 (S3-T6).",
+      "minimum": 0
     }
   },
   "additionalProperties": false,
@@ -281,6 +303,8 @@
     "index",
     "retrieval",
     "results",
-    "answer_policy"
+    "answer_policy",
+    "truncated",
+    "pending_files"
   ]
 }

@@ -27,12 +27,8 @@ pub const Server = struct {
     reopen: bool = false,
 };
 
-pub const Workspaces = struct {
-    query_vector: []f32,
-    results: []hybrid.Result,
-    evidence: []engine_module.Evidence,
-    sources: []service_module.Source,
-};
+/// S3-T6: the scratch now lives with the operations (`ops.Workspaces`).
+pub const Workspaces = ops.Workspaces;
 
 pub fn handleLine(
     service: service_module.Service,
@@ -50,10 +46,14 @@ pub fn handleLineWith(
     service: service_module.Service,
     server: *Server,
     line: []const u8,
-    allocator: std.mem.Allocator,
+    caller_allocator: std.mem.Allocator,
     workspaces: Workspaces,
     output: *std.Io.Writer,
 ) !void {
+    // The operations (`ops.zig`) allocate from an arena released here.
+    var arena_state = std.heap.ArenaAllocator.init(caller_allocator);
+    defer arena_state.deinit();
+    const allocator = arena_state.allocator();
     var parsed = std.json.parseFromSlice(std.json.Value, allocator, line, .{}) catch |err| switch (err) {
         error.OutOfMemory => return err,
         else => {
@@ -92,12 +92,14 @@ pub fn handleLineWith(
         return;
     };
 
+    // S3-T6: CAP-13's operations answer through `ops.zig`, as the folder
+    // methods do, so the MCP server shares every byte of their results.
     if (std.mem.eql(u8, method, "search_knowledge")) {
-        try handleSearch(service, server.*, allocator, id, params, workspaces, output);
+        try writeFallible(output, id, ops.searchKnowledge(allocator, service, params, server.caller, workspaces));
     } else if (std.mem.eql(u8, method, "read_chunk")) {
-        try handleRead(service, server.*, allocator, id, params, output);
+        try writeOperation(output, id, try ops.readChunk(allocator, service, params, server.caller));
     } else if (std.mem.eql(u8, method, "list_sources")) {
-        try handleList(service, server.*, allocator, id, params, workspaces.sources, output);
+        try writeFallible(output, id, ops.listSources(allocator, service, params, server.caller, workspaces));
     } else if (std.mem.eql(u8, method, "index_status")) {
         if (service.folder == null) {
             if (!onlyFields(params, &.{})) {
@@ -152,6 +154,15 @@ pub fn errorCodeOf(code: ops.Code) i32 {
     };
 }
 
+/// An operation that can fail inside the engine: "Internal error" (-32603).
+fn writeFallible(output: *std.Io.Writer, id: ?std.json.Value, outcome: ops.OperationError!ops.Result) !void {
+    const result = outcome catch |err| switch (err) {
+        error.OutOfMemory => return err,
+        error.OperationFailed => return writeError(output, id, -32603, "Internal error"),
+    };
+    try writeOperation(output, id, result);
+}
+
 fn writeOperation(output: *std.Io.Writer, id: ?std.json.Value, result: ops.Result) !void {
     switch (result) {
         .failed => |failure| {
@@ -201,272 +212,9 @@ fn handleApply(server: *Server, allocator: std.mem.Allocator, id: ?std.json.Valu
     try writeOperation(output, id, result);
 }
 
-/// The request's scope over the server's: `roots` narrows; labels from the
-/// request only when the raw service allows it. Null roots = every root.
-const RequestScope = struct { request: scope.Request, scoped: bool };
-
-fn requestScope(server: Server, params: std.json.ObjectMap, labels: []const []const u8, allocator: std.mem.Allocator) error{ InvalidRoots, OutOfMemory }!RequestScope {
-    var named: ?[]const []const u8 = null;
-    if (params.get("roots")) |value| switch (value) {
-        .null => {},
-        .array => |array| {
-            if (array.items.len > ops.max_named_roots) return error.InvalidRoots;
-            const list = try allocator.alloc([]const u8, array.items.len);
-            for (array.items, list) |item, *slot| slot.* = switch (item) {
-                .string => |text| if (text.len == 0) return error.InvalidRoots else text,
-                else => return error.InvalidRoots,
-            };
-            named = list;
-        },
-        else => return error.InvalidRoots,
-    };
-    var roots: ?[]const []const u8 = null;
-    if (server.caller.roots != null or named != null) {
-        const want = named orelse server.caller.roots.?;
-        var kept = std.ArrayList([]const u8).empty;
-        for (want) |root_id| {
-            const allowed = if (server.caller.roots) |bound| for (bound) |b| {
-                if (std.mem.eql(u8, b, root_id)) break true;
-            } else false else true;
-            if (allowed) try kept.append(allocator, root_id);
-        }
-        roots = kept.items;
-    }
-    return .{ .request = .{ .roots = roots, .principal_labels = labels }, .scoped = roots != null };
-}
-
-/// The labels a request runs with: its own `principal_labels` (bounded as
-/// before) when the server allows it, else the server's `--labels`.
-fn requestLabels(server: Server, params: std.json.ObjectMap, storage: [][]const u8) error{InvalidLabels}![]const []const u8 {
-    if (params.get("principal_labels")) |value| {
-        if (!server.caller.request_labels) return error.InvalidLabels;
-        return parsePrincipalLabels(value, storage);
-    }
-    return server.caller.labels;
-}
-
-fn handleSearch(
-    service: service_module.Service,
-    server: Server,
-    allocator: std.mem.Allocator,
-    id: ?std.json.Value,
-    params: std.json.ObjectMap,
-    workspaces: Workspaces,
-    output: *std.Io.Writer,
-) !void {
-    if (!onlyFields(params, &.{ "query", "query_vector", "top_k", "candidate_k", "path_prefix", "retrieval_mode", "principal_labels", "roots" })) {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    }
-    const query = valueString(params.get("query")) orelse {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    if (query.len == 0) {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    }
-    // S2-T11: same rejection as `ss_query` and the CLI; never reaches analysis.
-    engine_module.Engine.validateQueryText(query) catch {
-        try writeError(output, id, -32602, "Invalid params: query is not valid UTF-8");
-        return;
-    };
-    const top_k = optionalPositiveInteger(params.get("top_k"), 5) orelse {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    if (top_k > 100) {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    }
-    const candidate_k = optionalPositiveInteger(params.get("candidate_k"), 100) orelse {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    if (candidate_k > 10_000 or candidate_k < top_k) {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    }
-    const path_prefix = optionalString(params.get("path_prefix")) catch {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    const mode_text = optionalString(params.get("retrieval_mode")) catch {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    const mode = parseMode(mode_text orelse "hybrid") orelse {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    var principal_label_storage: [64][]const u8 = undefined;
-    const principal_labels = requestLabels(server, params, &principal_label_storage) catch {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    const request_scope = requestScope(server, params, principal_labels, allocator) catch |err| switch (err) {
-        error.OutOfMemory => return err,
-        else => {
-            try writeError(output, id, -32602, "Invalid params");
-            return;
-        },
-    };
-    const query_vector = parseQueryVector(
-        params.get("query_vector"),
-        service.engine.vector_dimensions,
-        mode,
-        workspaces.query_vector,
-    ) catch {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    const search_options = hybrid.SearchOptions{
-        .top_k = top_k,
-        .candidate_k = candidate_k,
-        .retrieval_mode = mode,
-        .path_prefix = path_prefix,
-        .principal_labels = principal_labels,
-    };
-    // S3-T4: a request (or server) that names roots goes through the scope;
-    // otherwise the v1 path, unchanged (labels already filter it there).
-    const found = if (request_scope.scoped and service.folder != null)
-        (service_module.ScopedService{ .service = service }).searchKnowledge(allocator, query, query_vector, search_options, request_scope.request, workspaces.results, workspaces.evidence, null)
-    else
-        service.searchKnowledge(allocator, query, query_vector, search_options, workspaces.results, workspaces.evidence);
-    const evidence = found catch {
-        try writeError(output, id, -32603, "Internal error");
-        return;
-    };
-    try writeSearchResult(output, id, service, query, mode, principal_labels.len, evidence);
-}
-
-fn handleRead(
-    service: service_module.Service,
-    server: Server,
-    allocator: std.mem.Allocator,
-    id: ?std.json.Value,
-    params: std.json.ObjectMap,
-    output: *std.Io.Writer,
-) !void {
-    if (!onlyFields(params, &.{ "chunk_id", "path_prefix", "principal_labels", "roots" })) {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    }
-    const chunk_id = valueString(params.get("chunk_id")) orelse {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    const path_prefix = optionalString(params.get("path_prefix")) catch {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    var principal_label_storage: [64][]const u8 = undefined;
-    const principal_labels = requestLabels(server, params, &principal_label_storage) catch {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    const request_scope = requestScope(server, params, principal_labels, allocator) catch |err| switch (err) {
-        error.OutOfMemory => return err,
-        else => {
-            try writeError(output, id, -32602, "Invalid params");
-            return;
-        },
-    };
-    // S3-T4 (S3-T3 finding 2): the read by chunk id goes through the scope.
-    const read = if (service.folder != null)
-        try (service_module.ScopedService{ .service = service }).readChunk(allocator, chunk_id, path_prefix, request_scope.request)
-    else
-        service.readChunk(chunk_id, path_prefix, principal_labels);
-    const chunk = read orelse {
-        try writeError(output, id, -32004, "Chunk not found");
-        return;
-    };
-    var json = std.json.Stringify{ .writer = output };
-    try responseStart(&json, id);
-    try json.objectField("result");
-    try json.beginObject();
-    try writeChunkFields(&json, chunk);
-    try json.endObject();
-    try json.endObject();
-}
-
-fn handleList(
-    service: service_module.Service,
-    server: Server,
-    allocator: std.mem.Allocator,
-    id: ?std.json.Value,
-    params: std.json.ObjectMap,
-    source_output: []service_module.Source,
-    output: *std.Io.Writer,
-) !void {
-    if (!onlyFields(params, &.{ "path_prefix", "principal_labels", "roots" })) {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    }
-    const path_prefix = optionalString(params.get("path_prefix")) catch {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    var principal_label_storage: [64][]const u8 = undefined;
-    const principal_labels = requestLabels(server, params, &principal_label_storage) catch {
-        try writeError(output, id, -32602, "Invalid params");
-        return;
-    };
-    const request_scope = requestScope(server, params, principal_labels, allocator) catch |err| switch (err) {
-        error.OutOfMemory => return err,
-        else => {
-            try writeError(output, id, -32602, "Invalid params");
-            return;
-        },
-    };
-    const listed = if (service.folder != null)
-        (service_module.ScopedService{ .service = service }).listSources(allocator, path_prefix, request_scope.request)
-    else
-        service.listSources(path_prefix, principal_labels, source_output);
-    const sources = listed catch {
-        try writeError(output, id, -32603, "Internal error");
-        return;
-    };
-    var json = std.json.Stringify{ .writer = output };
-    try responseStart(&json, id);
-    try json.objectField("result");
-    try json.beginObject();
-    try json.objectField("sources");
-    try json.beginArray();
-    for (sources) |source| {
-        try json.beginObject();
-        try json.objectField("path");
-        try json.write(source.path);
-        try json.objectField("chunks");
-        try json.write(source.chunks);
-        try json.endObject();
-    }
-    try json.endArray();
-    try json.objectField("count");
-    try json.write(sources.len);
-    try json.endObject();
-    try json.endObject();
-}
-
-fn writeSearchResult(
-    output: *std.Io.Writer,
-    id: ?std.json.Value,
-    service: service_module.Service,
-    query: []const u8,
-    mode: hybrid.RetrievalMode,
-    principal_label_count: usize,
-    evidence: []const engine_module.Evidence,
-) !void {
-    var json = std.json.Stringify{ .writer = output };
-    try responseStart(&json, id);
-    try json.objectField("result");
-    try writeSearchResultValue(&json, service, query, mode, principal_label_count, evidence);
-    try json.endObject();
-}
-
-/// The `result` value of a `search_knowledge` JSON-RPC response, factored out
-/// so the C ABI (`abi.zig`'s `ss_query`) emits byte-identical JSON for the
-/// same query without duplicating the field layout.
+/// The `result` value of a `search_knowledge` JSON-RPC response on a service
+/// without scope data, shared with the C ABI (`abi.zig`'s `ss_query`) so it
+/// emits byte-identical JSON for the same query (`ops.writeSearchResult`).
 pub fn writeSearchResultValue(
     json: *std.json.Stringify,
     service: service_module.Service,
@@ -475,12 +223,13 @@ pub fn writeSearchResultValue(
     principal_label_count: usize,
     evidence: []const engine_module.Evidence,
 ) !void {
-    return writeSearchResultValueWith(json, service, query, mode, principal_label_count, evidence, null);
+    return ops.writeSearchResult(json, service, query, mode, principal_label_count, evidence, null, null);
 }
 
 /// `writeSearchResultValue` plus, when `extras` is set (the C ABI, S2-T4), the
-/// `warnings`, `request` and optional `profile` fields appended last. JSON-RPC
-/// passes `null`, so its output is unchanged.
+/// `warnings`, `request` and optional `profile` fields appended last. The C
+/// ABI does not add S3-T6's folder fields (`ops.FolderFields`): its
+/// contract-2.0.0 output is unchanged.
 pub fn writeSearchResultValueWith(
     json: *std.json.Stringify,
     service: service_module.Service,
@@ -490,85 +239,7 @@ pub fn writeSearchResultValueWith(
     evidence: []const engine_module.Evidence,
     extras: ?report.Extras,
 ) !void {
-    var tail = extras;
-    if (tail) |*e| e.serialize_start = hybrid.Trace.stamp(e.trace);
-    try json.beginObject();
-    try json.objectField("tool");
-    try json.write("search_knowledge");
-    try json.objectField("query");
-    try json.write(query);
-    try json.objectField("index");
-    try json.beginObject();
-    try json.objectField("version");
-    try json.write(@as(u16, 2));
-    try json.objectField("generation");
-    try json.write(service.engine.generation);
-    try json.objectField("analyzer_id");
-    try json.write(service.engine.analyzer_id);
-    try json.objectField("embedding_model_id");
-    try json.write(service.engine.embedding_model_id);
-    try json.endObject();
-    try json.objectField("retrieval");
-    try json.beginObject();
-    try json.objectField("mode");
-    try json.write(@tagName(mode));
-    try json.objectField("vector_dimensions");
-    try json.write(service.engine.vector_dimensions);
-    try json.objectField("authorization");
-    try json.beginObject();
-    try json.objectField("semantics");
-    try json.write("all-required-labels-v1");
-    try json.objectField("principal_label_count");
-    try json.write(principal_label_count);
-    try json.endObject();
-    try json.endObject();
-    try json.objectField("results");
-    try json.beginArray();
-    for (evidence) |item| {
-        try json.beginObject();
-        try json.objectField("chunk_id");
-        try json.write(item.chunk_id);
-        try json.objectField("citation");
-        try json.beginObject();
-        try json.objectField("path");
-        try json.write(item.path);
-        try json.objectField("start_line");
-        try json.write(item.start_line);
-        try json.objectField("end_line");
-        try json.write(item.end_line);
-        try json.endObject();
-        try json.objectField("content");
-        try json.write(item.content);
-        try json.objectField("score");
-        try json.write(item.fused_score);
-        try json.objectField("ranking");
-        try json.beginObject();
-        try json.objectField("lexical");
-        try json.beginObject();
-        try json.objectField("rank");
-        try json.write(item.lexical_rank);
-        try json.objectField("score");
-        try json.write(item.lexical_score);
-        try json.endObject();
-        try json.objectField("vector");
-        try json.beginObject();
-        try json.objectField("rank");
-        try json.write(item.semantic_rank);
-        try json.objectField("score");
-        try json.write(item.semantic_score);
-        try json.endObject();
-        try json.endObject();
-        try json.endObject();
-    }
-    try json.endArray();
-    try json.objectField("answer_policy");
-    try json.write(.{
-        .ground_in_results = true,
-        .cite_path_and_lines = true,
-        .say_when_evidence_is_insufficient = true,
-    });
-    if (tail) |e| try report.write(json, e);
-    try json.endObject();
+    return ops.writeSearchResult(json, service, query, mode, principal_label_count, evidence, extras, null);
 }
 
 fn writeStatus(output: *std.Io.Writer, id: ?std.json.Value, status: service_module.Status) !void {
@@ -579,22 +250,10 @@ fn writeStatus(output: *std.Io.Writer, id: ?std.json.Value, status: service_modu
     try json.endObject();
 }
 
-/// The fields of one chunk (chunk_id, citation, content), factored out so the
-/// C ABI's `ss_evidence` shares this exact field layout with `read_chunk`.
+/// The fields of one chunk (chunk_id, citation, content), shared by
+/// `read_chunk` and the C ABI's `ss_evidence` (`ops.writeChunkFields`).
 pub fn writeChunkFields(json: *std.json.Stringify, chunk: service_module.Chunk) !void {
-    try json.objectField("chunk_id");
-    try json.write(chunk.chunk_id);
-    try json.objectField("citation");
-    try json.beginObject();
-    try json.objectField("path");
-    try json.write(chunk.path);
-    try json.objectField("start_line");
-    try json.write(chunk.start_line);
-    try json.objectField("end_line");
-    try json.write(chunk.end_line);
-    try json.endObject();
-    try json.objectField("content");
-    try json.write(chunk.content);
+    return ops.writeChunkFields(json, chunk);
 }
 
 fn responseStart(json: *std.json.Stringify, id: ?std.json.Value) !void {
@@ -629,81 +288,10 @@ fn valueString(value: ?std.json.Value) ?[]const u8 {
     };
 }
 
-fn optionalString(value: ?std.json.Value) error{InvalidType}!?[]const u8 {
-    if (value == null or value.? == .null) return null;
-    return valueString(value) orelse error.InvalidType;
-}
-
-fn optionalPositiveInteger(value: ?std.json.Value, default: usize) ?usize {
-    if (value == null) return default;
-    return switch (value.?) {
-        .integer => |integer| if (integer > 0) @intCast(integer) else null,
-        else => null,
-    };
-}
-
-fn parsePrincipalLabels(
-    value: ?std.json.Value,
-    output: [][]const u8,
-) error{InvalidLabels}![]const []const u8 {
-    if (value == null or value.? == .null) return &.{};
-    const items = switch (value.?) {
-        .array => |array| array.items,
-        else => return error.InvalidLabels,
-    };
-    if (items.len > output.len) return error.InvalidLabels;
-    const labels = output[0..items.len];
-    for (items, labels, 0..) |item, *target, index| {
-        const label = switch (item) {
-            .string => |string| string,
-            else => return error.InvalidLabels,
-        };
-        if (label.len == 0 or label.len > 256 or std.mem.indexOfAny(u8, label, "\x00\r\n") != null) {
-            return error.InvalidLabels;
-        }
-        for (labels[0..index]) |existing| {
-            if (std.mem.eql(u8, existing, label)) return error.InvalidLabels;
-        }
-        target.* = label;
-    }
-    return labels;
-}
-
 /// Shared with the C ABI (`abi.zig`) so `ss_query`'s `retrieval_mode` option
 /// accepts exactly the same three strings as `search_knowledge`.
 pub fn parseMode(value: []const u8) ?hybrid.RetrievalMode {
-    if (std.mem.eql(u8, value, "lexical")) return .lexical;
-    if (std.mem.eql(u8, value, "vector")) return .vector;
-    if (std.mem.eql(u8, value, "hybrid")) return .hybrid;
-    return null;
-}
-
-fn parseQueryVector(
-    value: ?std.json.Value,
-    dimensions: usize,
-    mode: hybrid.RetrievalMode,
-    output: []f32,
-) error{InvalidVector}![]const f32 {
-    if (mode == .lexical) return &.{};
-    if (dimensions == 0) return &.{};
-    if (output.len < dimensions) return error.InvalidVector;
-    const array = if (value) |present| switch (present) {
-        .array => |array| array.items,
-        else => return error.InvalidVector,
-    } else return error.InvalidVector;
-    if (array.len != dimensions) return error.InvalidVector;
-    for (array, output[0..dimensions]) |item, *target| {
-        const number: f64 = switch (item) {
-            .integer => |integer| @floatFromInt(integer),
-            .float => |float| float,
-            else => return error.InvalidVector,
-        };
-        target.* = @floatCast(number);
-        if (!std.math.isFinite(target.*)) return error.InvalidVector;
-    }
-    // S2-T13: same rule as `ss_query`: the L2 norm must be a finite f32.
-    if (!scoring.isValidVector(output[0..dimensions])) return error.InvalidVector;
-    return output[0..dimensions];
+    return ops.parseRetrievalMode(value);
 }
 
 fn validId(value: std.json.Value) bool {
