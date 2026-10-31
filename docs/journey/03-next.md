@@ -199,3 +199,7 @@ observed equal-RRF regression · **O-01** collaborative knowledge model ·
 2. Prefer the item whose **acceptance gate is already decidable**.
 3. Do not start anything whose gate depends on an unbuilt capability — rescope it
    or mark the criterion `pending` first.
+
+## 2026-10-31 — S3 folder knowledge approved
+
+CAP-19 (`docs/requirements/cap-19-folder-knowledge.md`) was approved for build by the owner on 2026-10-31. Tasks `docs/tasks/S3-T1.md` … `S3-T8.md`; order T7 → T1 → T2 ∥ T3 → T4 → T5 → T6 → T8; details in `docs/folder-knowledge-implementation.md`. S3-T7 (the frozen family-folder fixture) started 2026-10-31 on `task/S3-T7`.
