@@ -1,6 +1,6 @@
 # Generation manifest format v1
 
-Status: implemented in `zig/src/manifest.zig`. Magic: `HYBMAN01`.
+Status: implemented in `zig/src/manifest.zig`. Magic: `HYBMAN01`. Still written by `import-json`; `searchd index` writes [v2](manifest-format-v2.md) since S3-T1, and every reader opens both.
 
 The manifest is the single atomic visibility point for one coherent search snapshot. It binds a `HYBSEG01` document/vector section to a `HYBLEX01` lexical section and pins the analyzer and embedding identities used to interpret them.
 

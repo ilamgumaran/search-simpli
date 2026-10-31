@@ -23,6 +23,7 @@ const postings = @import("postings.zig");
 const publication = @import("publication.zig");
 const segment = @import("segment.zig");
 const snapshot_open = @import("snapshot_open.zig");
+const source_section = @import("source.zig");
 
 pub const AnalyzerId = enum {
     v1,
@@ -139,6 +140,108 @@ pub fn tokenize(allocator: std.mem.Allocator, analyzer: AnalyzerId, text: []cons
     };
 }
 
+/// S3-T1: the one root `index_folder` writes until S3-T3 adds roots.
+pub const legacy_root_id = "r-legacy";
+
+/// The record's `chunker_index` for a chunker kind. The writer lists
+/// `line-window-v1` first in `meta.chunkers` always and `md-section-v1`
+/// second when any chunk used it, so the index is the kind's ordinal.
+fn chunkerIndex(kind: chunker.Kind) u16 {
+    return switch (kind) {
+        .line_window => 0,
+        .md_section => 1,
+    };
+}
+
+fn appendSpans(
+    allocator: std.mem.Allocator,
+    documents: *std.ArrayList(hybrid.Document),
+    relative_path: []const u8,
+    spans: []const chunker.FileSpan,
+    kind: chunker.Kind,
+    source_doc_index: u32,
+) !void {
+    for (spans) |span| {
+        var id_hex: [20]u8 = undefined;
+        chunker.chunkId(&id_hex, relative_path, span.start_line, span.end_line, span.text);
+        try documents.append(allocator, .{
+            .id = try allocator.dupe(u8, &id_hex),
+            .text = span.text,
+            .vector = &.{},
+            .path = relative_path,
+            .start_line = span.start_line,
+            .end_line = span.end_line,
+            .chunker_index = chunkerIndex(kind),
+            .section_depth = span.section_depth,
+            .heading_line = span.heading_line,
+            .source_doc_index = source_doc_index,
+            .section_path = span.section_path,
+        });
+    }
+}
+
+/// Encode the document (record v4), lexical and (when any bytes are
+/// retained) source sections plus a v2 manifest naming the chunkers and the
+/// one legacy root, and publish them as one generation.
+fn publishGeneration(
+    allocator: std.mem.Allocator,
+    io: std.Io,
+    out_dir: std.Io.Dir,
+    analyzer: AnalyzerId,
+    generation: u64,
+    documents: []const hybrid.Document,
+    lexical_index: postings.Index,
+    retained: []const source_section.InputFile,
+    max_chars: usize,
+    overlap_lines: usize,
+    caps: Caps,
+) !lifecycle.PruneReport {
+    const documents_buffer = try allocator.alloc(u8, try segment.encodedLengthV4(documents));
+    const documents_encoded = try segment.encodeV4(documents, documents_buffer);
+
+    const lexical_encoded_len = try lexical_segment.encodedLength(lexical_index);
+    const lexical_buffer = try allocator.alloc(u8, lexical_encoded_len);
+    const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_buffer);
+
+    const source_encoded: ?[]const u8 = if (caps.retain_source) try source_section.encode(allocator, retained) else null;
+
+    var uses_markdown = false;
+    for (documents) |document| {
+        if (document.chunker_index == chunkerIndex(.md_section)) uses_markdown = true;
+    }
+    const all_chunkers = [_]manifest.ChunkerEntry{
+        .{ .id = chunker.chunker_id, .max_chars = max_chars, .overlap_lines = overlap_lines },
+        .{ .id = chunker.Kind.md_section.id(), .max_chars = max_chars, .overlap_lines = overlap_lines },
+    };
+    const meta = try manifest.writeMeta(
+        allocator,
+        all_chunkers[0..if (uses_markdown) 2 else 1],
+        &.{.{ .root_id = legacy_root_id, .label = "folder", .kind = "local", .retain_source = caps.retain_source }},
+        if (source_encoded != null) source_section.version else 0,
+    );
+
+    const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
+    const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
+    const source_file = if (source_encoded != null) try std.fmt.allocPrint(allocator, "source-{d}.hybsrc", .{generation}) else "";
+
+    const metadata = try manifest.createV2(
+        generation,
+        analyzer.label(),
+        "none",
+        documents_file,
+        lexical_file,
+        source_file,
+        meta,
+        documents_encoded,
+        lexical_encoded,
+        source_encoded,
+    );
+    const manifest_buffer = try allocator.alloc(u8, try manifest.encodedLength(metadata));
+    const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
+
+    return lifecycle.publishSerializedKeepingWithSource(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, caps.keep_generations);
+}
+
 /// Walk `root`, chunk and tokenize every matching file, and publish a fresh
 /// generation into `out_dir`. `allocator` is expected to be an arena: every
 /// document, token list, and encoded buffer this function produces is freed
@@ -187,6 +290,7 @@ pub fn indexFolder(
     var too_large_paths = std.ArrayList([]const u8).empty;
     var state_entries = std.ArrayList(incremental_state.Entry).empty;
     var indexed_files = std.StringHashMap(void).init(allocator);
+    var retained = std.ArrayList(source_section.InputFile).empty;
     var total_bytes_processed: u64 = 0;
     var over_budget = false;
 
@@ -234,24 +338,15 @@ pub fn indexFolder(
         }
         total_bytes_processed += size;
 
-        const spans = chunker.chunk(allocator, content, max_chars, overlap_lines) catch {
+        const kind = chunker.kindForPath(relative_path);
+        const spans = chunker.chunkForPath(allocator, relative_path, content, max_chars, overlap_lines) catch {
             unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
             continue;
         };
-        for (spans) |span| {
-            var id_hex: [20]u8 = undefined;
-            chunker.chunkId(&id_hex, relative_path, span.start_line, span.end_line, span.text);
-            const owned_id = try allocator.dupe(u8, &id_hex);
-            try documents.append(allocator, .{
-                .id = owned_id,
-                .text = span.text,
-                .vector = &.{},
-                .path = relative_path,
-                .start_line = span.start_line,
-                .end_line = span.end_line,
-            });
-        }
+        const source_doc_index: u32 = if (caps.retain_source) @intCast(retained.items.len) else hybrid.no_source_doc;
+        if (caps.retain_source) try retained.append(allocator, .{ .path = relative_path, .bytes = content });
+        try appendSpans(allocator, &documents, relative_path, spans, kind, source_doc_index);
 
         // Track this file as successfully indexed for INDEX-STATE.json.
         if (!indexed_files.contains(relative_path)) {
@@ -272,31 +367,7 @@ pub fn indexFolder(
 
     const lexical_index = try lexical_build.build(allocator, documents.items, token_lists);
 
-    const documents_encoded_len = try segment.encodedLength(documents.items);
-    const documents_buffer = try allocator.alloc(u8, documents_encoded_len);
-    const documents_encoded = try segment.encode(documents.items, documents_buffer);
-
-    const lexical_encoded_len = try lexical_segment.encodedLength(lexical_index);
-    const lexical_buffer = try allocator.alloc(u8, lexical_encoded_len);
-    const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_buffer);
-
-    const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
-    const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
-
-    const metadata = try manifest.create(
-        generation,
-        analyzer.label(),
-        "none",
-        documents_file,
-        lexical_file,
-        documents_encoded,
-        lexical_encoded,
-    );
-    const manifest_len = try manifest.encodedLength(metadata);
-    const manifest_buffer = try allocator.alloc(u8, manifest_len);
-    const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
-
-    const prune = try lifecycle.publishSerializedKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, caps.keep_generations);
+    const prune = try publishGeneration(allocator, io, out_dir, analyzer, generation, documents.items, lexical_index, retained.items, max_chars, overlap_lines, caps);
 
     // After a full rebuild, write INDEX-STATE.json so the first `--update`
     // after it will report unchanged files instead of re-indexing everything
@@ -352,6 +423,12 @@ pub const Caps = struct {
     /// file over `max_file_bytes`. Guards worst-case run time on an enormous
     /// folder; a later `--update` run picks up where this one left off.
     max_total_bytes: u64 = 512 * 1024 * 1024,
+    /// S3-T1 (CAP-19 FR-22, implementation section 4): keep every indexed
+    /// file's original bytes in the generation's source section so
+    /// `read_span` is byte-exact. Default true for `index_folder` in this
+    /// task (ruling 4); false writes no source section and `read_span`
+    /// answers `CAPACITY` "re-index required: source absent".
+    retain_source: bool = true,
 };
 
 pub const IncrementalReport = struct {
@@ -397,6 +474,24 @@ pub const IncrementalReport = struct {
     /// `"missing_manifest"` (S2-T12: no `MANIFEST`, but a state file exists).
     recovered: ?[]const u8 = null,
 };
+
+/// Whether an unchanged file's previous chunks were made by the chunker this
+/// run selects for it (a v1 manifest has no meta: every chunk was
+/// `line-window-v1`). A file with no previous chunks always matches.
+fn previousChunkerMatches(
+    previous_engine: ?engine_module.Engine,
+    previous_meta: ?manifest.Meta,
+    indices: []const usize,
+    kind: chunker.Kind,
+) bool {
+    const prev = previous_engine orelse return true;
+    for (indices) |old_index| {
+        const index = prev.documents[old_index].chunker_index;
+        const id = if (previous_meta) |meta| (meta.chunkerId(index) orelse return false) else chunker.chunker_id;
+        if (!std.mem.eql(u8, id, kind.id())) return false;
+    }
+    return true;
+}
 
 fn hashHex(content: []const u8) [64]u8 {
     var digest: [32]u8 = undefined;
@@ -514,6 +609,18 @@ pub fn indexFolderIncremental(
         if (!std.mem.eql(u8, prev.analyzer_id, analyzer.label())) return error.AnalyzerMismatch;
     }
 
+    // S3-T1: the previous generation's source section, to carry bytes for
+    // files this run does not read, and its chunkers, to re-chunk an
+    // unchanged file whose chunker selection changed (a generation written
+    // before md-section-v1 existed chunked Markdown by line windows).
+    var previous_source: ?source_section.Section = null;
+    var previous_meta: ?manifest.Meta = null;
+    if (previous_engine != null) {
+        const opened = try snapshot_open.openSource(allocator, io, out_dir);
+        previous_source = opened.source;
+        if (opened.metadata.meta.len != 0) previous_meta = try manifest.parseMeta(allocator, opened.metadata.meta);
+    }
+
     var old_document_tokens: [][][]const u8 = &.{};
     var previous_indices_by_path = std.StringHashMap(std.ArrayList(usize)).init(allocator);
     if (previous_engine) |prev| {
@@ -537,6 +644,7 @@ pub fn indexFolderIncremental(
     var documents = std.ArrayList(hybrid.Document).empty;
     var token_lists = std.ArrayList([][]const u8).empty;
     var new_state_entries = std.ArrayList(incremental_state.Entry).empty;
+    var retained = std.ArrayList(source_section.InputFile).empty;
 
     var added: usize = 0;
     var changed: usize = 0;
@@ -557,42 +665,75 @@ pub fn indexFolderIncremental(
         // re-tokenized) that belonged to this path, then optionally record
         // its still-valid state entry. Used whenever this path is not
         // (re)chunked this run: unreadable, over budget, or unchanged.
-        const carryForward = struct {
-            fn run(
-                a: std.mem.Allocator,
-                docs: *std.ArrayList(hybrid.Document),
-                toks: *std.ArrayList([][]const u8),
-                state_entries: *std.ArrayList(incremental_state.Entry),
-                prev_engine: ?engine_module.Engine,
-                old_tokens: [][][]const u8,
-                indices: []const usize,
-                entry_for_path: ?incremental_state.Entry,
-            ) !void {
-                if (prev_engine) |prev| {
+        //
+        // S3-T1: carried documents point at this generation's source
+        // section: `bytes` (the file as read this run, or its bytes from the
+        // previous source section when this run did not read it) is retained
+        // and every carried record re-pointed; with no bytes the records say
+        // `no_source_doc`.
+        const Carry = struct {
+            a: std.mem.Allocator,
+            docs: *std.ArrayList(hybrid.Document),
+            toks: *std.ArrayList([][]const u8),
+            state_entries: *std.ArrayList(incremental_state.Entry),
+            kept: *std.ArrayList(source_section.InputFile),
+            retain: bool,
+            prev_engine: ?engine_module.Engine,
+            prev_source: ?source_section.Section,
+            old_tokens: [][][]const u8,
+
+            fn retainBytes(self: @This(), path: []const u8, bytes: ?[]const u8) !u32 {
+                if (!self.retain) return hybrid.no_source_doc;
+                const value = bytes orelse blk: {
+                    const previous = self.prev_source orelse return hybrid.no_source_doc;
+                    const entry = previous.find(path) orelse return hybrid.no_source_doc;
+                    break :blk entry.bytes;
+                };
+                const index: u32 = @intCast(self.kept.items.len);
+                try self.kept.append(self.a, .{ .path = path, .bytes = value });
+                return index;
+            }
+
+            fn run(self: @This(), path: []const u8, bytes: ?[]const u8, indices: []const usize, entry_for_path: ?incremental_state.Entry) !void {
+                const source_doc_index = try self.retainBytes(path, bytes);
+                if (self.prev_engine) |prev| {
                     for (indices) |old_index| {
-                        try docs.append(a, prev.documents[old_index]);
-                        try toks.append(a, old_tokens[old_index]);
+                        var document = prev.documents[old_index];
+                        document.source_doc_index = source_doc_index;
+                        try self.docs.append(self.a, document);
+                        try self.toks.append(self.a, self.old_tokens[old_index]);
                     }
                 }
-                if (entry_for_path) |entry| try state_entries.append(a, entry);
+                if (entry_for_path) |entry| try self.state_entries.append(self.a, entry);
             }
-        }.run;
+        };
+        const carry = Carry{
+            .a = allocator,
+            .docs = &documents,
+            .toks = &token_lists,
+            .state_entries = &new_state_entries,
+            .kept = &retained,
+            .retain = caps.retain_source,
+            .prev_engine = previous_engine,
+            .prev_source = previous_source,
+            .old_tokens = old_document_tokens,
+        };
 
         const stat = root.statFile(io, relative_path, .{}) catch {
             unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
-            try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
+            try carry.run(relative_path, null, previous_indices, previous_entry);
             continue;
         };
         const size = std.math.cast(usize, stat.size) orelse {
             unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
-            try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
+            try carry.run(relative_path, null, previous_indices, previous_entry);
             continue;
         };
 
         // A file over `max_file_bytes` is tombstoned, not carried forward:
-        // no `carryForward` call, and its `INDEX-STATE.json` entry (if any)
+        // no `carry.run` call, and its `INDEX-STATE.json` entry (if any)
         // is dropped by simply never being re-appended to
         // `new_state_entries` -- S1-T4 criterion 3 makes this an explicit,
         // reported removal (`too_large` plus `too_large_paths`) rather than
@@ -606,7 +747,7 @@ pub fn indexFolderIncremental(
         if (budget_exhausted or total_bytes_processed + size > caps.max_total_bytes) {
             budget_exhausted = true;
             budget_exhausted_count += 1;
-            try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
+            try carry.run(relative_path, null, previous_indices, previous_entry);
             continue;
         }
 
@@ -614,46 +755,41 @@ pub fn indexFolderIncremental(
         const content = root.readFile(io, relative_path, buffer) catch {
             unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
-            try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
+            try carry.run(relative_path, null, previous_indices, previous_entry);
             continue;
         };
         if (!std.unicode.utf8ValidateSlice(content)) {
             unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
-            try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
+            try carry.run(relative_path, null, previous_indices, previous_entry);
             continue;
         }
         total_bytes_processed += size;
 
         const digest_hex = hashHex(content);
+        const kind = chunker.kindForPath(relative_path);
         if (previous_entry) |entry| {
-            if (std.mem.eql(u8, entry.hash, &digest_hex)) {
+            if (std.mem.eql(u8, entry.hash, &digest_hex) and
+                previousChunkerMatches(previous_engine, previous_meta, previous_indices, kind))
+            {
                 unchanged += 1;
-                try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, null);
+                try carry.run(relative_path, content, previous_indices, null);
                 try new_state_entries.append(allocator, entry);
                 continue;
             }
         }
 
-        const spans = chunker.chunk(allocator, content, max_chars, overlap_lines) catch {
+        const spans = chunker.chunkForPath(allocator, relative_path, content, max_chars, overlap_lines) catch {
             unreadable += 1;
             try unreadable_paths.append(allocator, relative_path);
-            try carryForward(allocator, &documents, &token_lists, &new_state_entries, previous_engine, old_document_tokens, previous_indices, previous_entry);
+            try carry.run(relative_path, null, previous_indices, previous_entry);
             continue;
         };
-        for (spans) |span| {
-            var id_hex: [20]u8 = undefined;
-            chunker.chunkId(&id_hex, relative_path, span.start_line, span.end_line, span.text);
-            const owned_id = try allocator.dupe(u8, &id_hex);
-            try documents.append(allocator, .{
-                .id = owned_id,
-                .text = span.text,
-                .vector = &.{},
-                .path = relative_path,
-                .start_line = span.start_line,
-                .end_line = span.end_line,
-            });
-            try token_lists.append(allocator, try tokenize(allocator, analyzer, span.text));
+        const first_new = documents.items.len;
+        const source_doc_index = try carry.retainBytes(relative_path, content);
+        try appendSpans(allocator, &documents, relative_path, spans, kind, source_doc_index);
+        for (documents.items[first_new..]) |document| {
+            try token_lists.append(allocator, try tokenize(allocator, analyzer, document.text));
         }
         if (previous_entry != null) changed += 1 else added += 1;
         try new_state_entries.append(allocator, .{
@@ -672,32 +808,8 @@ pub fn indexFolderIncremental(
 
     const lexical_index = try lexical_build.build(allocator, documents.items, token_lists.items);
 
-    const documents_encoded_len = try segment.encodedLength(documents.items);
-    const documents_buffer = try allocator.alloc(u8, documents_encoded_len);
-    const documents_encoded = try segment.encode(documents.items, documents_buffer);
-
-    const lexical_encoded_len = try lexical_segment.encodedLength(lexical_index);
-    const lexical_buffer = try allocator.alloc(u8, lexical_encoded_len);
-    const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_buffer);
-
     const generation = try generation_alloc.nextFreeGeneration(allocator, io, out_dir);
-    const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
-    const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
-
-    const metadata = try manifest.create(
-        generation,
-        analyzer.label(),
-        "none",
-        documents_file,
-        lexical_file,
-        documents_encoded,
-        lexical_encoded,
-    );
-    const manifest_len = try manifest.encodedLength(metadata);
-    const manifest_buffer = try allocator.alloc(u8, manifest_len);
-    const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
-
-    const prune = try lifecycle.publishSerializedKeeping(allocator, out_dir, io, manifest_encoded, documents_encoded, lexical_encoded, caps.keep_generations);
+    const prune = try publishGeneration(allocator, io, out_dir, analyzer, generation, documents.items, lexical_index, retained.items, max_chars, overlap_lines, caps);
 
     // Only after the generation is durably published: persist the state
     // that lets the *next* incremental run skip unchanged files again. A

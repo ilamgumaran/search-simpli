@@ -1,0 +1,4498 @@
+{
+ "chunker_id": "md-section-v1",
+ "max_chars": 1600,
+ "overlap_lines": 3,
+ "files": [
+  {
+   "root": "fixtures/markdown",
+   "path": "atx-setext.md",
+   "chunks": [
+    {
+     "id": "8457b7a6582966490c1d",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "Opening words before any heading belong to no section.",
+     "section_path": [],
+     "heading_line": 0
+    },
+    {
+     "id": "22fe974aec58631e178e",
+     "start_line": 3,
+     "end_line": 6,
+     "text": "# Garden club\n\nThe garden club meets on Tuesdays.",
+     "section_path": [
+      "Garden club"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "35d291cd0aa8e2de0875",
+     "start_line": 7,
+     "end_line": 10,
+     "text": "## Beds and borders ##\n\nRaised beds near the shed.",
+     "section_path": [
+      "Garden club",
+      "Beds and borders"
+     ],
+     "heading_line": 7
+    },
+    {
+     "id": "8e6e5a4b30edabb1c25e",
+     "start_line": 11,
+     "end_line": 20,
+     "text": "### Watering rota\n\nPip waters on Monday, Ada on Thursday.\n\n#hashtag is not a heading because no space follows the hash.\n\n####### Seven hashes are not a heading either.\n\n#",
+     "section_path": [
+      "Garden club",
+      "Beds and borders",
+      "Watering rota"
+     ],
+     "heading_line": 11
+    },
+    {
+     "id": "e6f2809b572d3fbd23fa",
+     "start_line": 21,
+     "end_line": 25,
+     "text": "Compost corner\n--------------\n\nTurn the compost every second week.",
+     "section_path": [
+      "Garden club",
+      "Compost corner"
+     ],
+     "heading_line": 21
+    },
+    {
+     "id": "557290683f2393430c32",
+     "start_line": 26,
+     "end_line": 33,
+     "text": "Seed swap\n=========\n\nBring seeds in paper envelopes.\n\n- a list item\n---",
+     "section_path": [
+      "Seed swap"
+     ],
+     "heading_line": 26
+    },
+    {
+     "id": "d923b20cdabd11ac681b",
+     "start_line": 34,
+     "end_line": 36,
+     "text": "## Closing  #\n\nLast words of the club notes.",
+     "section_path": [
+      "Seed swap",
+      "Closing"
+     ],
+     "heading_line": 34
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Garden club",
+      "line": 3,
+      "end_line": 25
+     },
+     {
+      "level": 2,
+      "text": "Beds and borders",
+      "line": 7,
+      "end_line": 20
+     },
+     {
+      "level": 3,
+      "text": "Watering rota",
+      "line": 11,
+      "end_line": 20
+     },
+     {
+      "level": 2,
+      "text": "Compost corner",
+      "line": 21,
+      "end_line": 25
+     },
+     {
+      "level": 1,
+      "text": "Seed swap",
+      "line": 26,
+      "end_line": 36
+     },
+     {
+      "level": 2,
+      "text": "Closing",
+      "line": 34,
+      "end_line": 36
+     }
+    ],
+    "lines": 36,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "bom.md",
+   "chunks": [
+    {
+     "id": "6380b1326e0b2f4f477f",
+     "start_line": 1,
+     "end_line": 5,
+     "text": "# Checklist with a BOM\n\n- passports\n- tickets",
+     "section_path": [
+      "Checklist with a BOM"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "bdd2bd44a3d52b5e5ad0",
+     "start_line": 6,
+     "end_line": 8,
+     "text": "## Later\n\nPack the night before.",
+     "section_path": [
+      "Checklist with a BOM",
+      "Later"
+     ],
+     "heading_line": 6
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Checklist with a BOM",
+      "line": 1,
+      "end_line": 8
+     },
+     {
+      "level": 2,
+      "text": "Later",
+      "line": 6,
+      "end_line": 8
+     }
+    ],
+    "lines": 8,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "cr-only.md",
+   "chunks": [
+    {
+     "id": "2196dbcc53f0d30c31b9",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# Shopping\n\nApples and pears.",
+     "section_path": [
+      "Shopping"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "e7b0e64de1124d0dfca9",
+     "start_line": 5,
+     "end_line": 7,
+     "text": "## Bakery\n\nBread rolls.",
+     "section_path": [
+      "Shopping",
+      "Bakery"
+     ],
+     "heading_line": 5
+    },
+    {
+     "id": "d7b23dfd10593a7f25f9",
+     "start_line": 8,
+     "end_line": 10,
+     "text": "Setext under CRLF\n=================\nMilk.",
+     "section_path": [
+      "Setext under CRLF"
+     ],
+     "heading_line": 8
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Shopping",
+      "line": 1,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Bakery",
+      "line": 5,
+      "end_line": 7
+     },
+     {
+      "level": 1,
+      "text": "Setext under CRLF",
+      "line": 8,
+      "end_line": 10
+     }
+    ],
+    "lines": 10,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "crlf.md",
+   "chunks": [
+    {
+     "id": "466cca7cdc8a5accbd3f",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# Shopping\n\nApples and pears.",
+     "section_path": [
+      "Shopping"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "750e5ea18ed8c27e62d8",
+     "start_line": 5,
+     "end_line": 7,
+     "text": "## Bakery\n\nBread rolls.",
+     "section_path": [
+      "Shopping",
+      "Bakery"
+     ],
+     "heading_line": 5
+    },
+    {
+     "id": "f4167547b7500f4e52ca",
+     "start_line": 8,
+     "end_line": 10,
+     "text": "Setext under CRLF\n=================\nMilk.",
+     "section_path": [
+      "Setext under CRLF"
+     ],
+     "heading_line": 8
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Shopping",
+      "line": 1,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Bakery",
+      "line": 5,
+      "end_line": 7
+     },
+     {
+      "level": 1,
+      "text": "Setext under CRLF",
+      "line": 8,
+      "end_line": 10
+     }
+    ],
+    "lines": 10,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "empty.md",
+   "chunks": [],
+   "outline": {
+    "front_matter": null,
+    "headings": [],
+    "lines": 0,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "fences.md",
+   "chunks": [
+    {
+     "id": "7f885095e22398386ac7",
+     "start_line": 1,
+     "end_line": 16,
+     "text": "# Fences\n\nShort fence:\n\n```text\n# not a heading inside a fence\nSetext text inside a fence\n---\n```\n\nTilde fence:\n\n~~~\n## still not a heading\n~~~~",
+     "section_path": [
+      "Fences"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "57a6163644ff389f0024",
+     "start_line": 17,
+     "end_line": 38,
+     "text": "## Straddling fence\n\nLine 001 of the pond notes keeps the window counting steadily onward.\nLine 002 of the pond notes keeps the window counting steadily onward.\nLine 003 of the pond notes keeps the window counting steadily onward.\nLine 004 of the pond notes keeps the window counting steadily onward.\nLine 005 of the pond notes keeps the window counting steadily onward.\nLine 006 of the pond notes keeps the window counting steadily onward.\nLine 007 of the pond notes keeps the window counting steadily onward.\nLine 008 of the pond notes keeps the window counting steadily onward.\nLine 009 of the pond notes keeps the window counting steadily onward.\nLine 010 of the pond notes keeps the window counting steadily onward.\nLine 011 of the pond notes keeps the window counting steadily onward.\nLine 012 of the pond notes keeps the window counting steadily onward.\nLine 013 of the pond notes keeps the window counting steadily onward.\nLine 014 of the pond notes keeps the window counting steadily onward.\nLine 015 of the pond notes keeps the window counting steadily onward.\nLine 016 of the pond notes keeps the window counting steadily onward.\nLine 017 of the pond notes keeps the window counting steadily onward.\nLine 018 of the pond notes keeps the window counting steadily onward.\nLine 019 of the pond notes keeps the window counting steadily onward.\nLine 020 of the pond notes keeps the window counting steadily onward.",
+     "section_path": [
+      "Fences",
+      "Straddling fence"
+     ],
+     "heading_line": 17
+    },
+    {
+     "id": "2cf05415f530236344cb",
+     "start_line": 36,
+     "end_line": 49,
+     "text": "Line 018 of the pond notes keeps the window counting steadily onward.\nLine 019 of the pond notes keeps the window counting steadily onward.\nLine 020 of the pond notes keeps the window counting steadily onward.\n```\nstep 1: count the newts again\nstep 2: count the newts again\nstep 3: count the newts again\nstep 4: count the newts again\nstep 5: count the newts again\nstep 6: count the newts again\nstep 7: count the newts again\n```\nWords after the straddling fence.",
+     "section_path": [
+      "Fences",
+      "Straddling fence"
+     ],
+     "heading_line": 17
+    },
+    {
+     "id": "eac6b418befe158f0256",
+     "start_line": 50,
+     "end_line": 79,
+     "text": "## Overlap into fence\n\nLine 001 of the heron notes keeps the window counting steadily onward.\nLine 002 of the heron notes keeps the window counting steadily onward.\nLine 003 of the heron notes keeps the window counting steadily onward.\nLine 004 of the heron notes keeps the window counting steadily onward.\nLine 005 of the heron notes keeps the window counting steadily onward.\nLine 006 of the heron notes keeps the window counting steadily onward.\nLine 007 of the heron notes keeps the window counting steadily onward.\nLine 008 of the heron notes keeps the window counting steadily onward.\nLine 009 of the heron notes keeps the window counting steadily onward.\nLine 010 of the heron notes keeps the window counting steadily onward.\nLine 011 of the heron notes keeps the window counting steadily onward.\nLine 012 of the heron notes keeps the window counting steadily onward.\nLine 013 of the heron notes keeps the window counting steadily onward.\nLine 014 of the heron notes keeps the window counting steadily onward.\nLine 015 of the heron notes keeps the window counting steadily onward.\nLine 016 of the heron notes keeps the window counting steadily onward.\nLine 017 of the heron notes keeps the window counting steadily onward.\nLine 018 of the heron notes keeps the window counting steadily onward.\nLine 019 of the heron notes keeps the window counting steadily onward.\n```\ntally 1: herons seen at dawn\ntally 2: herons seen at dawn\ntally 3: herons seen at dawn\ntally 4: herons seen at dawn\ntally 5: herons seen at dawn\ntally 6: herons seen at dawn\n```\nOne line after the heron fence.",
+     "section_path": [
+      "Fences",
+      "Overlap into fence"
+     ],
+     "heading_line": 50
+    },
+    {
+     "id": "adbcaf9eb78faed05daa",
+     "start_line": 71,
+     "end_line": 92,
+     "text": "```\ntally 1: herons seen at dawn\ntally 2: herons seen at dawn\ntally 3: herons seen at dawn\ntally 4: herons seen at dawn\ntally 5: herons seen at dawn\ntally 6: herons seen at dawn\n```\nOne line after the heron fence.\nLine 020 of the heron notes keeps the window counting steadily onward.\nLine 021 of the heron notes keeps the window counting steadily onward.\nLine 022 of the heron notes keeps the window counting steadily onward.\nLine 023 of the heron notes keeps the window counting steadily onward.\nLine 024 of the heron notes keeps the window counting steadily onward.\nLine 025 of the heron notes keeps the window counting steadily onward.\nLine 026 of the heron notes keeps the window counting steadily onward.\nLine 027 of the heron notes keeps the window counting steadily onward.\nLine 028 of the heron notes keeps the window counting steadily onward.\nLine 029 of the heron notes keeps the window counting steadily onward.\nLine 030 of the heron notes keeps the window counting steadily onward.\nLine 031 of the heron notes keeps the window counting steadily onward.",
+     "section_path": [
+      "Fences",
+      "Overlap into fence"
+     ],
+     "heading_line": 50
+    },
+    {
+     "id": "57e3f0616efe609c03bd",
+     "start_line": 93,
+     "end_line": 133,
+     "text": "## Long fence\n\n```python\nvalue_001 = 1 * 7  # times table row 1\nvalue_002 = 2 * 7  # times table row 2\nvalue_003 = 3 * 7  # times table row 3\nvalue_004 = 4 * 7  # times table row 4\nvalue_005 = 5 * 7  # times table row 5\nvalue_006 = 6 * 7  # times table row 6\nvalue_007 = 7 * 7  # times table row 7\nvalue_008 = 8 * 7  # times table row 8\nvalue_009 = 9 * 7  # times table row 9\nvalue_010 = 10 * 7  # times table row 10\nvalue_011 = 11 * 7  # times table row 11\nvalue_012 = 12 * 7  # times table row 12\nvalue_013 = 13 * 7  # times table row 13\nvalue_014 = 14 * 7  # times table row 14\nvalue_015 = 15 * 7  # times table row 15\nvalue_016 = 16 * 7  # times table row 16\nvalue_017 = 17 * 7  # times table row 17\nvalue_018 = 18 * 7  # times table row 18\nvalue_019 = 19 * 7  # times table row 19\nvalue_020 = 20 * 7  # times table row 20\nvalue_021 = 21 * 7  # times table row 21\nvalue_022 = 22 * 7  # times table row 22\nvalue_023 = 23 * 7  # times table row 23\nvalue_024 = 24 * 7  # times table row 24\nvalue_025 = 25 * 7  # times table row 25\nvalue_026 = 26 * 7  # times table row 26\nvalue_027 = 27 * 7  # times table row 27\nvalue_028 = 28 * 7  # times table row 28\nvalue_029 = 29 * 7  # times table row 29\nvalue_030 = 30 * 7  # times table row 30\nvalue_031 = 31 * 7  # times table row 31\nvalue_032 = 32 * 7  # times table row 32\nvalue_033 = 33 * 7  # times table row 33\nvalue_034 = 34 * 7  # times table row 34\nvalue_035 = 35 * 7  # times table row 35\nvalue_036 = 36 * 7  # times table row 36\nvalue_037 = 37 * 7  # times table row 37\nvalue_038 = 38 * 7  # times table row 38",
+     "section_path": [
+      "Fences",
+      "Long fence"
+     ],
+     "heading_line": 93
+    },
+    {
+     "id": "b0cd526272a8c527b918",
+     "start_line": 131,
+     "end_line": 156,
+     "text": "value_036 = 36 * 7  # times table row 36\nvalue_037 = 37 * 7  # times table row 37\nvalue_038 = 38 * 7  # times table row 38\nvalue_039 = 39 * 7  # times table row 39\nvalue_040 = 40 * 7  # times table row 40\nvalue_041 = 41 * 7  # times table row 41\nvalue_042 = 42 * 7  # times table row 42\nvalue_043 = 43 * 7  # times table row 43\nvalue_044 = 44 * 7  # times table row 44\nvalue_045 = 45 * 7  # times table row 45\nvalue_046 = 46 * 7  # times table row 46\nvalue_047 = 47 * 7  # times table row 47\nvalue_048 = 48 * 7  # times table row 48\nvalue_049 = 49 * 7  # times table row 49\nvalue_050 = 50 * 7  # times table row 50\nvalue_051 = 51 * 7  # times table row 51\nvalue_052 = 52 * 7  # times table row 52\nvalue_053 = 53 * 7  # times table row 53\nvalue_054 = 54 * 7  # times table row 54\nvalue_055 = 55 * 7  # times table row 55\nvalue_056 = 56 * 7  # times table row 56\nvalue_057 = 57 * 7  # times table row 57\nvalue_058 = 58 * 7  # times table row 58\nvalue_059 = 59 * 7  # times table row 59\n```",
+     "section_path": [
+      "Fences",
+      "Long fence"
+     ],
+     "heading_line": 93
+    },
+    {
+     "id": "a83c3b6bf92a9b0bb964",
+     "start_line": 157,
+     "end_line": 161,
+     "text": "## Unclosed fence\n\n```\n# an unclosed fence runs to the end of the file\n## so this is not a heading",
+     "section_path": [
+      "Fences",
+      "Unclosed fence"
+     ],
+     "heading_line": 157
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Fences",
+      "line": 1,
+      "end_line": 161
+     },
+     {
+      "level": 2,
+      "text": "Straddling fence",
+      "line": 17,
+      "end_line": 49
+     },
+     {
+      "level": 2,
+      "text": "Overlap into fence",
+      "line": 50,
+      "end_line": 92
+     },
+     {
+      "level": 2,
+      "text": "Long fence",
+      "line": 93,
+      "end_line": 156
+     },
+     {
+      "level": 2,
+      "text": "Unclosed fence",
+      "line": 157,
+      "end_line": 161
+     }
+    ],
+    "lines": 161,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "front-matter-invalid.md",
+   "chunks": [
+    {
+     "id": "cc133e2391dd0335ce48",
+     "start_line": 5,
+     "end_line": 7,
+     "text": "# Still chunks\n\nThe file still chunks when its front matter is not key: value.",
+     "section_path": [
+      "Still chunks"
+     ],
+     "heading_line": 5
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {},
+     "raw": "title: Half valid\nthis line has no colon"
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Still chunks",
+      "line": 5,
+      "end_line": 7
+     }
+    ],
+    "lines": 7,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "front-matter-only.md",
+   "chunks": [],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 3,
+     "fields": {
+      "title": "Only metadata"
+     }
+    },
+    "headings": [],
+    "lines": 3,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "front-matter-unclosed.md",
+   "chunks": [
+    {
+     "id": "4997f3ec89d6ba4fb35e",
+     "start_line": 1,
+     "end_line": 105,
+     "text": "---\ntitle: never closed\nfiller line 1\nfiller line 2\nfiller line 3\nfiller line 4\nfiller line 5\nfiller line 6\nfiller line 7\nfiller line 8\nfiller line 9\nfiller line 10\nfiller line 11\nfiller line 12\nfiller line 13\nfiller line 14\nfiller line 15\nfiller line 16\nfiller line 17\nfiller line 18\nfiller line 19\nfiller line 20\nfiller line 21\nfiller line 22\nfiller line 23\nfiller line 24\nfiller line 25\nfiller line 26\nfiller line 27\nfiller line 28\nfiller line 29\nfiller line 30\nfiller line 31\nfiller line 32\nfiller line 33\nfiller line 34\nfiller line 35\nfiller line 36\nfiller line 37\nfiller line 38\nfiller line 39\nfiller line 40\nfiller line 41\nfiller line 42\nfiller line 43\nfiller line 44\nfiller line 45\nfiller line 46\nfiller line 47\nfiller line 48\nfiller line 49\nfiller line 50\nfiller line 51\nfiller line 52\nfiller line 53\nfiller line 54\nfiller line 55\nfiller line 56\nfiller line 57\nfiller line 58\nfiller line 59\nfiller line 60\nfiller line 61\nfiller line 62\nfiller line 63\nfiller line 64\nfiller line 65\nfiller line 66\nfiller line 67\nfiller line 68\nfiller line 69\nfiller line 70\nfiller line 71\nfiller line 72\nfiller line 73\nfiller line 74\nfiller line 75\nfiller line 76\nfiller line 77\nfiller line 78\nfiller line 79\nfiller line 80\nfiller line 81\nfiller line 82\nfiller line 83\nfiller line 84\nfiller line 85\nfiller line 86\nfiller line 87\nfiller line 88\nfiller line 89\nfiller line 90\nfiller line 91\nfiller line 92\nfiller line 93\nfiller line 94\nfiller line 95\nfiller line 96\nfiller line 97\nfiller line 98\nfiller line 99\nfiller line 100\nfiller line 101\nfiller line 102\nfiller line 103",
+     "section_path": [],
+     "heading_line": 0
+    },
+    {
+     "id": "7cb4af2b83055fbce967",
+     "start_line": 106,
+     "end_line": 107,
+     "text": "filler line 104\n---",
+     "section_path": [
+      "filler line 104"
+     ],
+     "heading_line": 106
+    },
+    {
+     "id": "9d33ca02fe3b9a4255c0",
+     "start_line": 108,
+     "end_line": 110,
+     "text": "# Late heading\n\nAfter the late heading.",
+     "section_path": [
+      "Late heading"
+     ],
+     "heading_line": 108
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 2,
+      "text": "filler line 104",
+      "line": 106,
+      "end_line": 107
+     },
+     {
+      "level": 1,
+      "text": "Late heading",
+      "line": 108,
+      "end_line": 110
+     }
+    ],
+    "lines": 110,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "front-matter.md",
+   "chunks": [
+    {
+     "id": "e8f173a8d0fbfcb383e0",
+     "start_line": 7,
+     "end_line": 9,
+     "text": "# Body heading\n\nThe body starts after the closing line.",
+     "section_path": [
+      "Body heading"
+     ],
+     "heading_line": 7
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 6,
+     "fields": {
+      "title": "Front matter notes",
+      "owner": "Ada",
+      "empty": "",
+      "url": "https://example.invalid/a:b"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Body heading",
+      "line": 7,
+      "end_line": 9
+     }
+    ],
+    "lines": 9,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "long-section.md",
+   "chunks": [
+    {
+     "id": "0c8f7b954e04f46d26c1",
+     "start_line": 1,
+     "end_line": 23,
+     "text": "# Long section\n\nLine 001 of the orchard notes keeps the window counting steadily onward.\nLine 002 of the orchard notes keeps the window counting steadily onward.\nLine 003 of the orchard notes keeps the window counting steadily onward.\nLine 004 of the orchard notes keeps the window counting steadily onward.\nLine 005 of the orchard notes keeps the window counting steadily onward.\nLine 006 of the orchard notes keeps the window counting steadily onward.\nLine 007 of the orchard notes keeps the window counting steadily onward.\nLine 008 of the orchard notes keeps the window counting steadily onward.\nLine 009 of the orchard notes keeps the window counting steadily onward.\nLine 010 of the orchard notes keeps the window counting steadily onward.\nLine 011 of the orchard notes keeps the window counting steadily onward.\nLine 012 of the orchard notes keeps the window counting steadily onward.\nLine 013 of the orchard notes keeps the window counting steadily onward.\nLine 014 of the orchard notes keeps the window counting steadily onward.\nLine 015 of the orchard notes keeps the window counting steadily onward.\nLine 016 of the orchard notes keeps the window counting steadily onward.\nLine 017 of the orchard notes keeps the window counting steadily onward.\nLine 018 of the orchard notes keeps the window counting steadily onward.\nLine 019 of the orchard notes keeps the window counting steadily onward.\nLine 020 of the orchard notes keeps the window counting steadily onward.\nLine 021 of the orchard notes keeps the window counting steadily onward.",
+     "section_path": [
+      "Long section"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "30f2d99f79e1c75f30be",
+     "start_line": 21,
+     "end_line": 41,
+     "text": "Line 019 of the orchard notes keeps the window counting steadily onward.\nLine 020 of the orchard notes keeps the window counting steadily onward.\nLine 021 of the orchard notes keeps the window counting steadily onward.\nLine 022 of the orchard notes keeps the window counting steadily onward.\nLine 023 of the orchard notes keeps the window counting steadily onward.\nLine 024 of the orchard notes keeps the window counting steadily onward.\nLine 025 of the orchard notes keeps the window counting steadily onward.\nLine 026 of the orchard notes keeps the window counting steadily onward.\nLine 027 of the orchard notes keeps the window counting steadily onward.\nLine 028 of the orchard notes keeps the window counting steadily onward.\nLine 029 of the orchard notes keeps the window counting steadily onward.\nLine 030 of the orchard notes keeps the window counting steadily onward.\nLine 031 of the orchard notes keeps the window counting steadily onward.\nLine 032 of the orchard notes keeps the window counting steadily onward.\nLine 033 of the orchard notes keeps the window counting steadily onward.\nLine 034 of the orchard notes keeps the window counting steadily onward.\nLine 035 of the orchard notes keeps the window counting steadily onward.\nLine 036 of the orchard notes keeps the window counting steadily onward.\nLine 037 of the orchard notes keeps the window counting steadily onward.\nLine 038 of the orchard notes keeps the window counting steadily onward.\nLine 039 of the orchard notes keeps the window counting steadily onward.",
+     "section_path": [
+      "Long section"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "6ae1ad883321bc296a49",
+     "start_line": 39,
+     "end_line": 59,
+     "text": "Line 037 of the orchard notes keeps the window counting steadily onward.\nLine 038 of the orchard notes keeps the window counting steadily onward.\nLine 039 of the orchard notes keeps the window counting steadily onward.\nLine 040 of the orchard notes keeps the window counting steadily onward.\nLine 041 of the orchard notes keeps the window counting steadily onward.\nLine 042 of the orchard notes keeps the window counting steadily onward.\nLine 043 of the orchard notes keeps the window counting steadily onward.\nLine 044 of the orchard notes keeps the window counting steadily onward.\nLine 045 of the orchard notes keeps the window counting steadily onward.\nLine 046 of the orchard notes keeps the window counting steadily onward.\nLine 047 of the orchard notes keeps the window counting steadily onward.\nLine 048 of the orchard notes keeps the window counting steadily onward.\nLine 049 of the orchard notes keeps the window counting steadily onward.\nLine 050 of the orchard notes keeps the window counting steadily onward.\nLine 051 of the orchard notes keeps the window counting steadily onward.\nLine 052 of the orchard notes keeps the window counting steadily onward.\nLine 053 of the orchard notes keeps the window counting steadily onward.\nLine 054 of the orchard notes keeps the window counting steadily onward.\nLine 055 of the orchard notes keeps the window counting steadily onward.\nLine 056 of the orchard notes keeps the window counting steadily onward.\nLine 057 of the orchard notes keeps the window counting steadily onward.",
+     "section_path": [
+      "Long section"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "b82f854a5885b6fd0fbb",
+     "start_line": 57,
+     "end_line": 63,
+     "text": "Line 055 of the orchard notes keeps the window counting steadily onward.\nLine 056 of the orchard notes keeps the window counting steadily onward.\nLine 057 of the orchard notes keeps the window counting steadily onward.\nLine 058 of the orchard notes keeps the window counting steadily onward.\nLine 059 of the orchard notes keeps the window counting steadily onward.\nLine 060 of the orchard notes keeps the window counting steadily onward.",
+     "section_path": [
+      "Long section"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "3934d665e288fac44e9b",
+     "start_line": 64,
+     "end_line": 66,
+     "text": "## Short tail\n\nThe end.",
+     "section_path": [
+      "Long section",
+      "Short tail"
+     ],
+     "heading_line": 64
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Long section",
+      "line": 1,
+      "end_line": 66
+     },
+     {
+      "level": 2,
+      "text": "Short tail",
+      "line": 64,
+      "end_line": 66
+     }
+    ],
+    "lines": 66,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "no-final-newline.md",
+   "chunks": [
+    {
+     "id": "a44a8250b66c6a0ab7af",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "# Last line\n\nThis file ends without a terminator.",
+     "section_path": [
+      "Last line"
+     ],
+     "heading_line": 1
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Last line",
+      "line": 1,
+      "end_line": 3
+     }
+    ],
+    "lines": 3,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "preamble-only.md",
+   "chunks": [
+    {
+     "id": "3f9f2f0e0ace26d6c2cd",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "No headings here at all.\nJust two lines of text.",
+     "section_path": [],
+     "heading_line": 0
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [],
+    "lines": 2,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/markdown",
+   "path": "tamil.md",
+   "chunks": [
+    {
+     "id": "85854cf59afa68c53083",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# பள்ளி குறிப்புகள்\n\nஇன்று கணிதம் மற்றும் அறிவியல் வகுப்புகள் நடந்தன.",
+     "section_path": [
+      "பள்ளி குறிப்புகள்"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "3ac62e28f71b3834e93c",
+     "start_line": 5,
+     "end_line": 7,
+     "text": "## வீட்டுப் பாடம்\n\nநாளை காலை புத்தகம் கொண்டு வர வேண்டும்.",
+     "section_path": [
+      "பள்ளி குறிப்புகள்",
+      "வீட்டுப் பாடம்"
+     ],
+     "heading_line": 5
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "பள்ளி குறிப்புகள்",
+      "line": 1,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "வீட்டுப் பாடம்",
+      "line": 5,
+      "end_line": 7
+     }
+    ],
+    "lines": 7,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "art-club.md",
+   "chunks": [
+    {
+     "id": "ba3c095f054ce6428aeb",
+     "start_line": 1,
+     "end_line": 5,
+     "text": "# Art club\n\nArt club meets on Mondays after school in room six. This term the group\nmakes clay lanterns.",
+     "section_path": [
+      "Art club"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "4ecb834e569ecccfd576",
+     "start_line": 6,
+     "end_line": 8,
+     "text": "## Sign-up\n\nAsk Mr Pell for a form. The club is full, but the waiting list is open.",
+     "section_path": [
+      "Art club",
+      "Sign-up"
+     ],
+     "heading_line": 6
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Art club",
+      "line": 1,
+      "end_line": 8
+     },
+     {
+      "level": 2,
+      "text": "Sign-up",
+      "line": 6,
+      "end_line": 8
+     }
+    ],
+    "lines": 8,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "geography-coast.md",
+   "chunks": [
+    {
+     "id": "5c85dca2c66be85fdda1",
+     "start_line": 6,
+     "end_line": 7,
+     "text": "# The coast project",
+     "section_path": [
+      "The coast project"
+     ],
+     "heading_line": 6
+    },
+    {
+     "id": "47afa5e7576a8e47d099",
+     "start_line": 8,
+     "end_line": 12,
+     "text": "## Tides\n\nThe sea comes in and goes out twice a day. The tide table in the\nharbour office lists high and low water for every day of the month.",
+     "section_path": [
+      "The coast project",
+      "Tides"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "903decb16f443086dd64",
+     "start_line": 13,
+     "end_line": 17,
+     "text": "### Reading a tide table\n\nEach row has a day, a time for high water and a time for low water. The\nheights are in metres. A spring tide is the biggest of the month.",
+     "section_path": [
+      "The coast project",
+      "Tides",
+      "Reading a tide table"
+     ],
+     "heading_line": 13
+    },
+    {
+     "id": "58fa8dc1ed169b9ee884",
+     "start_line": 18,
+     "end_line": 23,
+     "text": "## Harbour words\n\n- quay: where boats tie up\n- breakwater: a wall that stops waves\n- buoy: a floating marker",
+     "section_path": [
+      "The coast project",
+      "Harbour words"
+     ],
+     "heading_line": 18
+    },
+    {
+     "id": "e7a09d4a5ba212d8702b",
+     "start_line": 24,
+     "end_line": 27,
+     "text": "## Rockpools\n\nLook for limpets, barnacles and anemones. Put every animal back where you\nfound it.",
+     "section_path": [
+      "The coast project",
+      "Rockpools"
+     ],
+     "heading_line": 24
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {
+      "title": "The coast project",
+      "class": "year four"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "The coast project",
+      "line": 6,
+      "end_line": 27
+     },
+     {
+      "level": 2,
+      "text": "Tides",
+      "line": 8,
+      "end_line": 17
+     },
+     {
+      "level": 3,
+      "text": "Reading a tide table",
+      "line": 13,
+      "end_line": 17
+     },
+     {
+      "level": 2,
+      "text": "Harbour words",
+      "line": 18,
+      "end_line": 23
+     },
+     {
+      "level": 2,
+      "text": "Rockpools",
+      "line": 24,
+      "end_line": 27
+     }
+    ],
+    "lines": 27,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "lunch-menu.md",
+   "chunks": [
+    {
+     "id": "47b6711487cb350b0f67",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Lunch menu",
+     "section_path": [
+      "Lunch menu"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "f407d78a6764fb4556f9",
+     "start_line": 3,
+     "end_line": 10,
+     "text": "## Week one\n\n- Monday: pasta bake\n- Tuesday: fish fingers\n- Wednesday: roast chicken\n- Thursday: vegetable curry\n- Friday: pizza",
+     "section_path": [
+      "Lunch menu",
+      "Week one"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "33c74ece09e114a9420a",
+     "start_line": 11,
+     "end_line": 14,
+     "text": "## Week two\n\n- Monday: shepherd's pie\n- Tuesday: jacket potato",
+     "section_path": [
+      "Lunch menu",
+      "Week two"
+     ],
+     "heading_line": 11
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Lunch menu",
+      "line": 1,
+      "end_line": 14
+     },
+     {
+      "level": 2,
+      "text": "Week one",
+      "line": 3,
+      "end_line": 10
+     },
+     {
+      "level": 2,
+      "text": "Week two",
+      "line": 11,
+      "end_line": 14
+     }
+    ],
+    "lines": 14,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "maths-facts.md",
+   "chunks": [
+    {
+     "id": "f8e67c414955367ff728",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Maths facts",
+     "section_path": [
+      "Maths facts"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "63ca504e5ee5e1080ced",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## Times table practice\n\nLearn the nines with fingers: put down the finger for the number you are\nmultiplying, and read the tens on the left and the ones on the right.",
+     "section_path": [
+      "Maths facts",
+      "Times table practice"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "7c73ad8a44630bbe1fbd",
+     "start_line": 8,
+     "end_line": 13,
+     "text": "## Sevens\n\n- 7 x 6 = 42\n- 7 x 7 = 49\n- 7 x 8 = 56",
+     "section_path": [
+      "Maths facts",
+      "Sevens"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "4938315e128349791e42",
+     "start_line": 14,
+     "end_line": 16,
+     "text": "## Fractions\n\nA half is two quarters. A quarter is two eighths.",
+     "section_path": [
+      "Maths facts",
+      "Fractions"
+     ],
+     "heading_line": 14
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Maths facts",
+      "line": 1,
+      "end_line": 16
+     },
+     {
+      "level": 2,
+      "text": "Times table practice",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Sevens",
+      "line": 8,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Fractions",
+      "line": 14,
+      "end_line": 16
+     }
+    ],
+    "lines": 16,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "newsletter-oct.md",
+   "chunks": [
+    {
+     "id": "58f8583e503215cd90a1",
+     "start_line": 6,
+     "end_line": 7,
+     "text": "# Larkfield Primary newsletter",
+     "section_path": [
+      "Larkfield Primary newsletter"
+     ],
+     "heading_line": 6
+    },
+    {
+     "id": "92d59d3d709c56cd37be",
+     "start_line": 8,
+     "end_line": 13,
+     "text": "## Coming up\n\n- Band concert: Friday 6 in the school hall, doors at five.\n- Book fair in the library all week.\n- Harvest assembly for year four on Thursday.",
+     "section_path": [
+      "Larkfield Primary newsletter",
+      "Coming up"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "e5b221412af42d306d49",
+     "start_line": 14,
+     "end_line": 18,
+     "text": "## Reminders\n\nPlease label coats and water bottles. Lost property is emptied at the end\nof each half term.",
+     "section_path": [
+      "Larkfield Primary newsletter",
+      "Reminders"
+     ],
+     "heading_line": 14
+    },
+    {
+     "id": "0c2c08165b05f6576b5d",
+     "start_line": 19,
+     "end_line": 22,
+     "text": "## Clubs\n\nChess club moves to Wednesday lunchtime. Art club is full; ask Mr Pell\nabout the waiting list.",
+     "section_path": [
+      "Larkfield Primary newsletter",
+      "Clubs"
+     ],
+     "heading_line": 19
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {
+      "title": "October newsletter",
+      "sender": "Larkfield Primary office"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Larkfield Primary newsletter",
+      "line": 6,
+      "end_line": 22
+     },
+     {
+      "level": 2,
+      "text": "Coming up",
+      "line": 8,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Reminders",
+      "line": 14,
+      "end_line": 18
+     },
+     {
+      "level": 2,
+      "text": "Clubs",
+      "line": 19,
+      "end_line": 22
+     }
+    ],
+    "lines": 22,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "notes.md",
+   "chunks": [
+    {
+     "id": "3aa71d827e2829339875",
+     "start_line": 7,
+     "end_line": 10,
+     "text": "# Class notes\n\nNotes from the weekly letters, kept by Noor for Tavi and Mira.",
+     "section_path": [
+      "Class notes"
+     ],
+     "heading_line": 7
+    },
+    {
+     "id": "e345d1c0ae5af6ae5dfd",
+     "start_line": 11,
+     "end_line": 12,
+     "text": "## Week 6",
+     "section_path": [
+      "Class notes",
+      "Week 6"
+     ],
+     "heading_line": 11
+    },
+    {
+     "id": "aec43dd6e43d3ee0abcd",
+     "start_line": 13,
+     "end_line": 17,
+     "text": "### Reading\n\n- Finish the chapter about the lighthouse by Thursday.\n- Return the library book on Monday.",
+     "section_path": [
+      "Class notes",
+      "Week 6",
+      "Reading"
+     ],
+     "heading_line": 13
+    },
+    {
+     "id": "cf9a9e93aa3dca9339ec",
+     "start_line": 18,
+     "end_line": 22,
+     "text": "### Dates\n\n- Swimming kit on Tuesday.\n- Photo day is moved to the following week.",
+     "section_path": [
+      "Class notes",
+      "Week 6",
+      "Dates"
+     ],
+     "heading_line": 18
+    },
+    {
+     "id": "22f50720a16d44413b6d",
+     "start_line": 23,
+     "end_line": 24,
+     "text": "## Week 7",
+     "section_path": [
+      "Class notes",
+      "Week 7"
+     ],
+     "heading_line": 23
+    },
+    {
+     "id": "51918fb900c8160611d2",
+     "start_line": 25,
+     "end_line": 30,
+     "text": "### Spelling\n\nMs Orrin said the spelling test next week will cover the twenty words on\nthe green sheet. She will read each word twice and give a sentence.\nPractise the tricky ones: necessary, separate, island.",
+     "section_path": [
+      "Class notes",
+      "Week 7",
+      "Spelling"
+     ],
+     "heading_line": 25
+    },
+    {
+     "id": "21d8ed751213c954ab6a",
+     "start_line": 31,
+     "end_line": 37,
+     "text": "### Dates\n\n- Band concert: Friday 6 in the school hall, doors at five. Tell Ms Orrin to count\n  me in if you can help with the chairs.\n- Parents' tea after the concert in the dining room.\n- Maths quiz on Wednesday, times tables up to twelve.",
+     "section_path": [
+      "Class notes",
+      "Week 7",
+      "Dates"
+     ],
+     "heading_line": 31
+    },
+    {
+     "id": "d624ac4f7ff8f36d4cbd",
+     "start_line": 38,
+     "end_line": 41,
+     "text": "### Homework\n\n- Read for twenty minutes each night.\n- Draw the water cycle in the science book.",
+     "section_path": [
+      "Class notes",
+      "Week 7",
+      "Homework"
+     ],
+     "heading_line": 38
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 5,
+     "fields": {
+      "title": "Class notes",
+      "teacher": "Ms Orrin",
+      "term": "autumn"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Class notes",
+      "line": 7,
+      "end_line": 41
+     },
+     {
+      "level": 2,
+      "text": "Week 6",
+      "line": 11,
+      "end_line": 22
+     },
+     {
+      "level": 3,
+      "text": "Reading",
+      "line": 13,
+      "end_line": 17
+     },
+     {
+      "level": 3,
+      "text": "Dates",
+      "line": 18,
+      "end_line": 22
+     },
+     {
+      "level": 2,
+      "text": "Week 7",
+      "line": 23,
+      "end_line": 41
+     },
+     {
+      "level": 3,
+      "text": "Spelling",
+      "line": 25,
+      "end_line": 30
+     },
+     {
+      "level": 3,
+      "text": "Dates",
+      "line": 31,
+      "end_line": 37
+     },
+     {
+      "level": 3,
+      "text": "Homework",
+      "line": 38,
+      "end_line": 41
+     }
+    ],
+    "lines": 41,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "pickup-rules.md",
+   "chunks": [
+    {
+     "id": "d2ff85e13ac8d62c20f0",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Pick-up and drop-off",
+     "section_path": [
+      "Pick-up and drop-off"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "bbb00456b3a3de5a3ad6",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## Morning\n\nGates open at ten to nine. Drop-off is at the side gate. Children walk in\nby themselves from the red line.",
+     "section_path": [
+      "Pick-up and drop-off",
+      "Morning"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "014eb4248edba36a2695",
+     "start_line": 8,
+     "end_line": 12,
+     "text": "## Afternoon pick-up\n\nYear four is collected from the playground. Please wait by the oak tree\nuntil the bell.",
+     "section_path": [
+      "Pick-up and drop-off",
+      "Afternoon pick-up"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "d6c6e422c955625d9c5f",
+     "start_line": 13,
+     "end_line": 15,
+     "text": "## Lost property\n\nLost property is kept in the blue box by the office.",
+     "section_path": [
+      "Pick-up and drop-off",
+      "Lost property"
+     ],
+     "heading_line": 13
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Pick-up and drop-off",
+      "line": 1,
+      "end_line": 15
+     },
+     {
+      "level": 2,
+      "text": "Morning",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Afternoon pick-up",
+      "line": 8,
+      "end_line": 12
+     },
+     {
+      "level": 2,
+      "text": "Lost property",
+      "line": 13,
+      "end_line": 15
+     }
+    ],
+    "lines": 15,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "reading-log.md",
+   "chunks": [
+    {
+     "id": "607c840ed089bbd3c256",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Reading log",
+     "section_path": [
+      "Reading log"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "bdae7e17ec05de2e03d6",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## Tavi\n\n- The Lighthouse Cat: finished, liked the storm chapter\n- Tales from Mossbank: started",
+     "section_path": [
+      "Reading log",
+      "Tavi"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "1f893f4a75fe8c97c52e",
+     "start_line": 8,
+     "end_line": 11,
+     "text": "## Mira\n\n- Moon Garden: nearly finished\n- A Field Guide to Puddles: read it twice",
+     "section_path": [
+      "Reading log",
+      "Mira"
+     ],
+     "heading_line": 8
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Reading log",
+      "line": 1,
+      "end_line": 11
+     },
+     {
+      "level": 2,
+      "text": "Tavi",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Mira",
+      "line": 8,
+      "end_line": 11
+     }
+    ],
+    "lines": 11,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "science-notes.md",
+   "chunks": [
+    {
+     "id": "b71f64c151fb2bc81c3e",
+     "start_line": 7,
+     "end_line": 11,
+     "text": "Science notes\n=============\n\nNotes from the plants unit, copied from the board and tidied at home.",
+     "section_path": [
+      "Science notes"
+     ],
+     "heading_line": 7
+    },
+    {
+     "id": "6bbd07863481426e39be",
+     "start_line": 12,
+     "end_line": 14,
+     "text": "How plants make food\n--------------------",
+     "section_path": [
+      "Science notes",
+      "How plants make food"
+     ],
+     "heading_line": 12
+    },
+    {
+     "id": "fcfbba455aad679f83c3",
+     "start_line": 15,
+     "end_line": 19,
+     "text": "### Photosynthesis in one line\n\nPlants use light, water and air to make their own food. The big word for\nthis is photosynthesis. It happens mostly in the leaves.",
+     "section_path": [
+      "Science notes",
+      "How plants make food",
+      "Photosynthesis in one line"
+     ],
+     "heading_line": 15
+    },
+    {
+     "id": "9569b8dcbb7d6c230b55",
+     "start_line": 20,
+     "end_line": 26,
+     "text": "### What the leaf does\n\n1. Water travels up from the roots through thin tubes in the stem.\n2. Air enters through tiny holes underneath the leaf.\n3. Sunlight is caught by the green stuff inside the leaf.\n4. The plant makes sugar and lets out fresh air.",
+     "section_path": [
+      "Science notes",
+      "How plants make food",
+      "What the leaf does"
+     ],
+     "heading_line": 20
+    },
+    {
+     "id": "dc448ec95ecdfaa66f02",
+     "start_line": 27,
+     "end_line": 33,
+     "text": "### Words to remember\n\n- chlorophyll: the green stuff that catches light\n- stem: carries water upward\n- root: holds the plant and drinks\n- stoma: a tiny hole in a leaf",
+     "section_path": [
+      "Science notes",
+      "How plants make food",
+      "Words to remember"
+     ],
+     "heading_line": 27
+    },
+    {
+     "id": "b51dc7a17a25c51b0ca7",
+     "start_line": 34,
+     "end_line": 36,
+     "text": "The parts of a flower\n---------------------",
+     "section_path": [
+      "Science notes",
+      "The parts of a flower"
+     ],
+     "heading_line": 34
+    },
+    {
+     "id": "0836cef734704c459ac0",
+     "start_line": 37,
+     "end_line": 41,
+     "text": "### Petals and sepals\n\nPetals are bright to attract bees. Sepals are the small green leaves that\nprotect the bud before it opens.",
+     "section_path": [
+      "Science notes",
+      "The parts of a flower",
+      "Petals and sepals"
+     ],
+     "heading_line": 37
+    },
+    {
+     "id": "f6308fa7a78117889c52",
+     "start_line": 42,
+     "end_line": 46,
+     "text": "### Stamen and carpel\n\nThe stamen makes pollen. The carpel holds the seeds-to-be. Bees carry\npollen from one flower to the next.",
+     "section_path": [
+      "Science notes",
+      "The parts of a flower",
+      "Stamen and carpel"
+     ],
+     "heading_line": 42
+    },
+    {
+     "id": "fd44edefd41b04a55feb",
+     "start_line": 47,
+     "end_line": 52,
+     "text": "### Questions for Friday\n\n- Why are leaves flat?\n- What would happen to a plant kept in a dark cupboard?\n- Which part of the flower becomes the fruit?",
+     "section_path": [
+      "Science notes",
+      "The parts of a flower",
+      "Questions for Friday"
+     ],
+     "heading_line": 47
+    },
+    {
+     "id": "23cf70e21f9963da35c6",
+     "start_line": 53,
+     "end_line": 54,
+     "text": "## Experiments",
+     "section_path": [
+      "Science notes",
+      "Experiments"
+     ],
+     "heading_line": 53
+    },
+    {
+     "id": "49e505e61bd3018e0ca9",
+     "start_line": 55,
+     "end_line": 60,
+     "text": "### The cress test\n\nWe grew cress on wet paper in three places: the windowsill, the shelf and\nthe dark cupboard. After five days the windowsill cress was tall and green.\nThe cupboard cress was pale and floppy. The shelf cress was in between.",
+     "section_path": [
+      "Science notes",
+      "Experiments",
+      "The cress test"
+     ],
+     "heading_line": 55
+    },
+    {
+     "id": "51e65043f66116049302",
+     "start_line": 61,
+     "end_line": 66,
+     "text": "### The celery test\n\nWe stood white celery in water with blue colouring. By the next morning\nthe blue had climbed the stem and reached the leaves. This shows how\nwater moves upward.",
+     "section_path": [
+      "Science notes",
+      "Experiments",
+      "The celery test"
+     ],
+     "heading_line": 61
+    },
+    {
+     "id": "a8e004ac52f583bfeff5",
+     "start_line": 67,
+     "end_line": 74,
+     "text": "## Vocabulary list\n\n- absorb\n- nutrient\n- germinate\n- seedling\n- pollinate\n- transparent",
+     "section_path": [
+      "Science notes",
+      "Vocabulary list"
+     ],
+     "heading_line": 67
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 5,
+     "fields": {
+      "title": "Science notes",
+      "class": "year four",
+      "topic": "plants and light"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Science notes",
+      "line": 7,
+      "end_line": 74
+     },
+     {
+      "level": 2,
+      "text": "How plants make food",
+      "line": 12,
+      "end_line": 33
+     },
+     {
+      "level": 3,
+      "text": "Photosynthesis in one line",
+      "line": 15,
+      "end_line": 19
+     },
+     {
+      "level": 3,
+      "text": "What the leaf does",
+      "line": 20,
+      "end_line": 26
+     },
+     {
+      "level": 3,
+      "text": "Words to remember",
+      "line": 27,
+      "end_line": 33
+     },
+     {
+      "level": 2,
+      "text": "The parts of a flower",
+      "line": 34,
+      "end_line": 52
+     },
+     {
+      "level": 3,
+      "text": "Petals and sepals",
+      "line": 37,
+      "end_line": 41
+     },
+     {
+      "level": 3,
+      "text": "Stamen and carpel",
+      "line": 42,
+      "end_line": 46
+     },
+     {
+      "level": 3,
+      "text": "Questions for Friday",
+      "line": 47,
+      "end_line": 52
+     },
+     {
+      "level": 2,
+      "text": "Experiments",
+      "line": 53,
+      "end_line": 66
+     },
+     {
+      "level": 3,
+      "text": "The cress test",
+      "line": 55,
+      "end_line": 60
+     },
+     {
+      "level": 3,
+      "text": "The celery test",
+      "line": 61,
+      "end_line": 66
+     },
+     {
+      "level": 2,
+      "text": "Vocabulary list",
+      "line": 67,
+      "end_line": 74
+     }
+    ],
+    "lines": 74,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "spelling-lists.md",
+   "chunks": [
+    {
+     "id": "fe14e1c1a9e7a8c569e3",
+     "start_line": 1,
+     "end_line": 3,
+     "text": "Spelling lists\n==============",
+     "section_path": [
+      "Spelling lists"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "84f27906847bb343fb80",
+     "start_line": 4,
+     "end_line": 12,
+     "text": "Week 6\n------\n\n1. believe\n2. receive\n3. friend\n4. weight\n5. height",
+     "section_path": [
+      "Spelling lists",
+      "Week 6"
+     ],
+     "heading_line": 4
+    },
+    {
+     "id": "60e256018ab38288763d",
+     "start_line": 13,
+     "end_line": 28,
+     "text": "Week 7\n------\n\nThe test covers these twenty words. Spelling counts for the star chart.\n\n1. necessary\n2. separate\n3. island\n4. peculiar\n5. calendar\n6. library\n7. february\n8. definite\n9. rhythm\n10. guarantee",
+     "section_path": [
+      "Spelling lists",
+      "Week 7"
+     ],
+     "heading_line": 13
+    },
+    {
+     "id": "f88674f308add097601c",
+     "start_line": 29,
+     "end_line": 32,
+     "text": "Week 8\n------\n\nTo be sent home on Monday.",
+     "section_path": [
+      "Spelling lists",
+      "Week 8"
+     ],
+     "heading_line": 29
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Spelling lists",
+      "line": 1,
+      "end_line": 32
+     },
+     {
+      "level": 2,
+      "text": "Week 6",
+      "line": 4,
+      "end_line": 12
+     },
+     {
+      "level": 2,
+      "text": "Week 7",
+      "line": 13,
+      "end_line": 28
+     },
+     {
+      "level": 2,
+      "text": "Week 8",
+      "line": 29,
+      "end_line": 32
+     }
+    ],
+    "lines": 32,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "supplies.md",
+   "chunks": [
+    {
+     "id": "1bd48cab78001c5915c2",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Supplies",
+     "section_path": [
+      "Supplies"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "08b54a872f4f30965cb9",
+     "start_line": 3,
+     "end_line": 8,
+     "text": "## Every day\n\n- water bottle\n- reading book\n- pencil case with two pencils",
+     "section_path": [
+      "Supplies",
+      "Every day"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "41c051e91ef48fe4a9c6",
+     "start_line": 9,
+     "end_line": 14,
+     "text": "## Art\n\n- old shirt\n- a clean jar for brushes\n- one cardboard box, any size",
+     "section_path": [
+      "Supplies",
+      "Art"
+     ],
+     "heading_line": 9
+    },
+    {
+     "id": "2f4eb05fe10c705b1190",
+     "start_line": 15,
+     "end_line": 17,
+     "text": "## Rooms\n\nThe art table is the long one by the window. Do not move it.",
+     "section_path": [
+      "Supplies",
+      "Rooms"
+     ],
+     "heading_line": 15
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Supplies",
+      "line": 1,
+      "end_line": 17
+     },
+     {
+      "level": 2,
+      "text": "Every day",
+      "line": 3,
+      "end_line": 8
+     },
+     {
+      "level": 2,
+      "text": "Art",
+      "line": 9,
+      "end_line": 14
+     },
+     {
+      "level": 2,
+      "text": "Rooms",
+      "line": 15,
+      "end_line": 17
+     }
+    ],
+    "lines": 17,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "timetable.md",
+   "chunks": [
+    {
+     "id": "2c8a89597531adcb37ed",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Year four timetable",
+     "section_path": [
+      "Year four timetable"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "c5212ac859aa2c05c2d5",
+     "start_line": 3,
+     "end_line": 8,
+     "text": "## Monday\n\n- Maths\n- Reading\n- Games",
+     "section_path": [
+      "Year four timetable",
+      "Monday"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "b3ace8fb096793283179",
+     "start_line": 9,
+     "end_line": 14,
+     "text": "## Tuesday\n\n- Swimming\n- Science\n- Art",
+     "section_path": [
+      "Year four timetable",
+      "Tuesday"
+     ],
+     "heading_line": 9
+    },
+    {
+     "id": "4cf224ccf480401c5f8d",
+     "start_line": 15,
+     "end_line": 20,
+     "text": "## Wednesday\n\n- Maths quiz\n- Chess club at lunch\n- Music",
+     "section_path": [
+      "Year four timetable",
+      "Wednesday"
+     ],
+     "heading_line": 15
+    },
+    {
+     "id": "b6bab49ffc3979ea84e2",
+     "start_line": 21,
+     "end_line": 26,
+     "text": "## Thursday\n\n- Harvest assembly\n- Writing\n- Computing",
+     "section_path": [
+      "Year four timetable",
+      "Thursday"
+     ],
+     "heading_line": 21
+    },
+    {
+     "id": "e43f8a3bca3f03e7ee9f",
+     "start_line": 27,
+     "end_line": 31,
+     "text": "## Friday\n\n- Spelling test\n- Band practice\n- Golden time",
+     "section_path": [
+      "Year four timetable",
+      "Friday"
+     ],
+     "heading_line": 27
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Year four timetable",
+      "line": 1,
+      "end_line": 31
+     },
+     {
+      "level": 2,
+      "text": "Monday",
+      "line": 3,
+      "end_line": 8
+     },
+     {
+      "level": 2,
+      "text": "Tuesday",
+      "line": 9,
+      "end_line": 14
+     },
+     {
+      "level": 2,
+      "text": "Wednesday",
+      "line": 15,
+      "end_line": 20
+     },
+     {
+      "level": 2,
+      "text": "Thursday",
+      "line": 21,
+      "end_line": 26
+     },
+     {
+      "level": 2,
+      "text": "Friday",
+      "line": 27,
+      "end_line": 31
+     }
+    ],
+    "lines": 31,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/school",
+   "path": "trip-permission.md",
+   "chunks": [
+    {
+     "id": "0c22d4b0a0693c4e9697",
+     "start_line": 6,
+     "end_line": 10,
+     "text": "# Trip permission slip\n\nThe class visits Greyrock Farm in the spring. Please return the permission\nslip with five pounds for the bus.",
+     "section_path": [
+      "Trip permission slip"
+     ],
+     "heading_line": 6
+    },
+    {
+     "id": "13d4e3c280d0150e3c80",
+     "start_line": 11,
+     "end_line": 16,
+     "text": "## What to bring\n\n- packed lunch in a bag that can be thrown away\n- wellington boots\n- a raincoat, even if it looks sunny",
+     "section_path": [
+      "Trip permission slip",
+      "What to bring"
+     ],
+     "heading_line": 11
+    },
+    {
+     "id": "57db80d8ef7013132416",
+     "start_line": 17,
+     "end_line": 19,
+     "text": "## Medicines\n\nTell Ms Orrin about any allergies before the trip.",
+     "section_path": [
+      "Trip permission slip",
+      "Medicines"
+     ],
+     "heading_line": 17
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {
+      "title": "Trip permission",
+      "destination": "Greyrock Farm"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Trip permission slip",
+      "line": 6,
+      "end_line": 19
+     },
+     {
+      "level": 2,
+      "text": "What to bring",
+      "line": 11,
+      "end_line": 16
+     },
+     {
+      "level": 2,
+      "text": "Medicines",
+      "line": 17,
+      "end_line": 19
+     }
+    ],
+    "lines": 19,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "birthday-plans.md",
+   "chunks": [
+    {
+     "id": "4235ef3dd3b81a3f1c31",
+     "start_line": 6,
+     "end_line": 7,
+     "text": "# Birthday plans",
+     "section_path": [
+      "Birthday plans"
+     ],
+     "heading_line": 6
+    },
+    {
+     "id": "6d9fe716e708d68090ac",
+     "start_line": 8,
+     "end_line": 13,
+     "text": "## Guest list\n\n- cousins\n- friends from the swimming club\n- Grandpa Anbu, who says count me in for the cake",
+     "section_path": [
+      "Birthday plans",
+      "Guest list"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "5b363947c644be2db3ed",
+     "start_line": 14,
+     "end_line": 17,
+     "text": "## Food\n\nA lemon cake and sandwiches cut into triangles.",
+     "section_path": [
+      "Birthday plans",
+      "Food"
+     ],
+     "heading_line": 14
+    },
+    {
+     "id": "9dd216c1b06257cced53",
+     "start_line": 18,
+     "end_line": 20,
+     "text": "## Games\n\nTreasure hunt around the garden, with clues hidden under flowerpots.",
+     "section_path": [
+      "Birthday plans",
+      "Games"
+     ],
+     "heading_line": 18
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {
+      "title": "Birthday plans",
+      "who": "Mira"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Birthday plans",
+      "line": 6,
+      "end_line": 20
+     },
+     {
+      "level": 2,
+      "text": "Guest list",
+      "line": 8,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Food",
+      "line": 14,
+      "end_line": 17
+     },
+     {
+      "level": 2,
+      "text": "Games",
+      "line": 18,
+      "end_line": 20
+     }
+    ],
+    "lines": 20,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "bom-checklist.md",
+   "chunks": [
+    {
+     "id": "3ef3ad0d66a22b58f2a3",
+     "start_line": 5,
+     "end_line": 6,
+     "text": "# Moving-day checklist",
+     "section_path": [
+      "Moving-day checklist"
+     ],
+     "heading_line": 5
+    },
+    {
+     "id": "6db1395c2966717d000c",
+     "start_line": 7,
+     "end_line": 11,
+     "text": "## Before\n\n- label the boxes\n- tell the school office",
+     "section_path": [
+      "Moving-day checklist",
+      "Before"
+     ],
+     "heading_line": 7
+    },
+    {
+     "id": "414458a20fb3ca251571",
+     "start_line": 12,
+     "end_line": 15,
+     "text": "## After\n\n- find the kettle\n- find the tea",
+     "section_path": [
+      "Moving-day checklist",
+      "After"
+     ],
+     "heading_line": 12
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 3,
+     "fields": {
+      "title": "Moving-day checklist"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Moving-day checklist",
+      "line": 5,
+      "end_line": 15
+     },
+     {
+      "level": 2,
+      "text": "Before",
+      "line": 7,
+      "end_line": 11
+     },
+     {
+      "level": 2,
+      "text": "After",
+      "line": 12,
+      "end_line": 15
+     }
+    ],
+    "lines": 15,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "budget-notes.md",
+   "chunks": [
+    {
+     "id": "208682e0613fa4a14498",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Budget notes",
+     "section_path": [
+      "Budget notes"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "8a777f27609bf167aa11",
+     "start_line": 3,
+     "end_line": 8,
+     "text": "## Monthly\n\n- Rent and bills come first.\n- Groceries: set a weekly limit.\n- Pocket money on Fridays.",
+     "section_path": [
+      "Budget notes",
+      "Monthly"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "cae69906f4cc54d698d9",
+     "start_line": 9,
+     "end_line": 11,
+     "text": "## Savings\n\nAim for one small treat a month and one bigger goal a year.",
+     "section_path": [
+      "Budget notes",
+      "Savings"
+     ],
+     "heading_line": 9
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Budget notes",
+      "line": 1,
+      "end_line": 11
+     },
+     {
+      "level": 2,
+      "text": "Monthly",
+      "line": 3,
+      "end_line": 8
+     },
+     {
+      "level": 2,
+      "text": "Savings",
+      "line": 9,
+      "end_line": 11
+     }
+    ],
+    "lines": 11,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "chores.md",
+   "chunks": [
+    {
+     "id": "8b1005c2517fe4b46f28",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Chores",
+     "section_path": [
+      "Chores"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "b03c6bcd5433569002b3",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## Daily\n\n- feed the cat\n- water the plants",
+     "section_path": [
+      "Chores",
+      "Daily"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "b33a592aa44382350918",
+     "start_line": 8,
+     "end_line": 11,
+     "text": "## Weekly\n\n- bins on Thursday\n- change the bed sheets on Saturday",
+     "section_path": [
+      "Chores",
+      "Weekly"
+     ],
+     "heading_line": 8
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Chores",
+      "line": 1,
+      "end_line": 11
+     },
+     {
+      "level": 2,
+      "text": "Daily",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Weekly",
+      "line": 8,
+      "end_line": 11
+     }
+    ],
+    "lines": 11,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "crlf-shopping.md",
+   "chunks": [
+    {
+     "id": "eedccf05a0838f9aaa7f",
+     "start_line": 6,
+     "end_line": 7,
+     "text": "# Shopping list",
+     "section_path": [
+      "Shopping list"
+     ],
+     "heading_line": 6
+    },
+    {
+     "id": "fd0cc3377bf143ff3a74",
+     "start_line": 8,
+     "end_line": 13,
+     "text": "## Fruit and vegetables\n\n- apples\n- carrots\n- bananas",
+     "section_path": [
+      "Shopping list",
+      "Fruit and vegetables"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "e1285510f056a2f0963c",
+     "start_line": 14,
+     "end_line": 19,
+     "text": "## Baking\n\n1. flour\n2. yeast\n3. seeds",
+     "section_path": [
+      "Shopping list",
+      "Baking"
+     ],
+     "heading_line": 14
+    },
+    {
+     "id": "1731a2e8b0f35e8bd1ec",
+     "start_line": 20,
+     "end_line": 22,
+     "text": "## Treats\n\n- clementines",
+     "section_path": [
+      "Shopping list",
+      "Treats"
+     ],
+     "heading_line": 20
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {
+      "title": "Shopping list",
+      "list": "weekly"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Shopping list",
+      "line": 6,
+      "end_line": 22
+     },
+     {
+      "level": 2,
+      "text": "Fruit and vegetables",
+      "line": 8,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Baking",
+      "line": 14,
+      "end_line": 19
+     },
+     {
+      "level": 2,
+      "text": "Treats",
+      "line": 20,
+      "end_line": 22
+     }
+    ],
+    "lines": 22,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "garden.md",
+   "chunks": [
+    {
+     "id": "7fcb6a967853eb5c9764",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Garden",
+     "section_path": [
+      "Garden"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "02683108086fb2c2269d",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## Pond\n\nThe little pond by the shed has frogs and a family of snails. In spring\nthere is frogspawn. We put a plank in so hedgehogs can climb out.",
+     "section_path": [
+      "Garden",
+      "Pond"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "1c6e0fcd119e66ed6e31",
+     "start_line": 8,
+     "end_line": 13,
+     "text": "## Vegetables\n\n- beans along the fence\n- potatoes in the tall bag\n- lettuce in the shade",
+     "section_path": [
+      "Garden",
+      "Vegetables"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "ec19fbaabc2cd5099e63",
+     "start_line": 14,
+     "end_line": 17,
+     "text": "## Sunshine\n\nEven the shady corner gets enough light for ferns. The beans need the\nsun, since their leaves do photosynthesis all day.",
+     "section_path": [
+      "Garden",
+      "Sunshine"
+     ],
+     "heading_line": 14
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Garden",
+      "line": 1,
+      "end_line": 17
+     },
+     {
+      "level": 2,
+      "text": "Pond",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Vegetables",
+      "line": 8,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Sunshine",
+      "line": 14,
+      "end_line": 17
+     }
+    ],
+    "lines": 17,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "house-rules.md",
+   "chunks": [
+    {
+     "id": "0501ee024918fb8db44d",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# House rules",
+     "section_path": [
+      "House rules"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "e34f4ca2cfe695b61152",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## Mornings\n\n- Beds made before breakfast.\n- Shoes by the door.",
+     "section_path": [
+      "House rules",
+      "Mornings"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "94468a28ec5dfb717f08",
+     "start_line": 8,
+     "end_line": 13,
+     "text": "## Evenings\n\n- Screens off at eight.\n- Everyone helps clear the table.\n- Reading in bed until half past eight.",
+     "section_path": [
+      "House rules",
+      "Evenings"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "16149c4a5267e50a4816",
+     "start_line": 14,
+     "end_line": 16,
+     "text": "## Quiet hours\n\nAfter nine the house is quiet.",
+     "section_path": [
+      "House rules",
+      "Quiet hours"
+     ],
+     "heading_line": 14
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "House rules",
+      "line": 1,
+      "end_line": 16
+     },
+     {
+      "level": 2,
+      "text": "Mornings",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Evenings",
+      "line": 8,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Quiet hours",
+      "line": 14,
+      "end_line": 16
+     }
+    ],
+    "lines": 16,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "recipes/bread.md",
+   "chunks": [
+    {
+     "id": "5204f8ea03e3befc3685",
+     "start_line": 6,
+     "end_line": 7,
+     "text": "# Weekend bread",
+     "section_path": [
+      "Weekend bread"
+     ],
+     "heading_line": 6
+    },
+    {
+     "id": "ecdca4037c2c1e7c8edf",
+     "start_line": 8,
+     "end_line": 14,
+     "text": "## Ingredients\n\n- 500 g strong flour\n- 7 g salt\n- 7 g dried yeast\n- 320 ml warm water",
+     "section_path": [
+      "Weekend bread",
+      "Ingredients"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "0eee2735041a81757d93",
+     "start_line": 15,
+     "end_line": 22,
+     "text": "## Method\n\n1. Mix the flour, salt and yeast in a big bowl.\n2. Pour in the water and stir until it comes together.\n3. Knead for ten minutes, then cover the bowl and wait until the dough rests and doubles in size.\n4. Tip it out, shape it into a round and slash the top with a knife.\n5. Bake for thirty minutes until it sounds hollow when tapped.",
+     "section_path": [
+      "Weekend bread",
+      "Method"
+     ],
+     "heading_line": 15
+    },
+    {
+     "id": "a75c2519f9613d440092",
+     "start_line": 23,
+     "end_line": 25,
+     "text": "## Notes\n\nMira likes to add a handful of seeds at step two.",
+     "section_path": [
+      "Weekend bread",
+      "Notes"
+     ],
+     "heading_line": 23
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {
+      "title": "Weekend bread",
+      "serves": "one loaf"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Weekend bread",
+      "line": 6,
+      "end_line": 25
+     },
+     {
+      "level": 2,
+      "text": "Ingredients",
+      "line": 8,
+      "end_line": 14
+     },
+     {
+      "level": 2,
+      "text": "Method",
+      "line": 15,
+      "end_line": 22
+     },
+     {
+      "level": 2,
+      "text": "Notes",
+      "line": 23,
+      "end_line": 25
+     }
+    ],
+    "lines": 25,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "recipes/pancakes.md",
+   "chunks": [
+    {
+     "id": "8331888215495b7cd8c9",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Pancakes",
+     "section_path": [
+      "Pancakes"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "fca88464316df9490c69",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## Batter\n\nWhisk one egg with a cup of flour and a cup of milk. The batter rests for\nfifteen minutes while the pan heats.",
+     "section_path": [
+      "Pancakes",
+      "Batter"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "e4fa3893faed09cec894",
+     "start_line": 8,
+     "end_line": 10,
+     "text": "## Tossing\n\nPractice with a spare one first.",
+     "section_path": [
+      "Pancakes",
+      "Tossing"
+     ],
+     "heading_line": 8
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Pancakes",
+      "line": 1,
+      "end_line": 10
+     },
+     {
+      "level": 2,
+      "text": "Batter",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Tossing",
+      "line": 8,
+      "end_line": 10
+     }
+    ],
+    "lines": 10,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "recipes/soup.md",
+   "chunks": [
+    {
+     "id": "800f8cb951f15ae799f2",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Lentil soup",
+     "section_path": [
+      "Lentil soup"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "773ed8f90433f6cf9ebf",
+     "start_line": 3,
+     "end_line": 9,
+     "text": "## Ingredients\n\n- 1 cup red lentils\n- 1 onion\n- 2 carrots\n- stock",
+     "section_path": [
+      "Lentil soup",
+      "Ingredients"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "693c2c0ed564f38377bd",
+     "start_line": 10,
+     "end_line": 13,
+     "text": "## Method\n\nSoften the onion, add the carrots and lentils, cover with stock and simmer\nfor twenty minutes. Blend if the children prefer it smooth.",
+     "section_path": [
+      "Lentil soup",
+      "Method"
+     ],
+     "heading_line": 10
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Lentil soup",
+      "line": 1,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Ingredients",
+      "line": 3,
+      "end_line": 9
+     },
+     {
+      "level": 2,
+      "text": "Method",
+      "line": 10,
+      "end_line": 13
+     }
+    ],
+    "lines": 13,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "repeated-tokens.md",
+   "chunks": [
+    {
+     "id": "75f307419937cd43ee6e",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# Repeated words\n\nTyping slips collected by the proofreading club.",
+     "section_path": [
+      "Repeated words"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "7b9eb21de4bbd137abfe",
+     "start_line": 5,
+     "end_line": 10,
+     "text": "## Slips\n\n- Remember to bring the the permission slip.\n- We went to to the park.\n- This is is a test of the the system.",
+     "section_path": [
+      "Repeated words",
+      "Slips"
+     ],
+     "heading_line": 5
+    },
+    {
+     "id": "fc3c0f58034fd66d0293",
+     "start_line": 11,
+     "end_line": 13,
+     "text": "## Fixed\n\nRemember to bring the permission slip.",
+     "section_path": [
+      "Repeated words",
+      "Fixed"
+     ],
+     "heading_line": 11
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Repeated words",
+      "line": 1,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Slips",
+      "line": 5,
+      "end_line": 10
+     },
+     {
+      "level": 2,
+      "text": "Fixed",
+      "line": 11,
+      "end_line": 13
+     }
+    ],
+    "lines": 13,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "tamil-notes.md",
+   "chunks": [
+    {
+     "id": "f04884a430c84791c3a8",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# தமிழ் குறிப்புகள்",
+     "section_path": [
+      "தமிழ் குறிப்புகள்"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "43a871c245218af1e6ce",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## பள்ளி\n\nபள்ளி விடுமுறை வெள்ளிக்கிழமை தொடங்குகிறது.\nகணிதம் வீட்டுப்பாடம் முடிக்க வேண்டும்.",
+     "section_path": [
+      "தமிழ் குறிப்புகள்",
+      "பள்ளி"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "cab32d84a45dbda09059",
+     "start_line": 8,
+     "end_line": 12,
+     "text": "## வீடு\n\nஅம்மா சமையலறையில் ரொட்டி செய்கிறார்.\nநாளை நூலகத்திற்குச் செல்வோம்.",
+     "section_path": [
+      "தமிழ் குறிப்புகள்",
+      "வீடு"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "ae08ad9cf16cbe0f328d",
+     "start_line": 13,
+     "end_line": 16,
+     "text": "## கடற்கரை\n\nகடற்கரைக்கு ஞாயிற்றுக்கிழமை செல்லலாம்; அலை அட்டவணை பார்க்கவும்.\nபள்ளி விடுமுறை முடிந்ததும் மீண்டும் செல்வோம்.",
+     "section_path": [
+      "தமிழ் குறிப்புகள்",
+      "கடற்கரை"
+     ],
+     "heading_line": 13
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "தமிழ் குறிப்புகள்",
+      "line": 1,
+      "end_line": 16
+     },
+     {
+      "level": 2,
+      "text": "பள்ளி",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "வீடு",
+      "line": 8,
+      "end_line": 12
+     },
+     {
+      "level": 2,
+      "text": "கடற்கரை",
+      "line": 13,
+      "end_line": 16
+     }
+    ],
+    "lines": 16,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/home",
+   "path": "trips/seaside-weekend.md",
+   "chunks": [
+    {
+     "id": "bf122f0de51c3dfdcdf1",
+     "start_line": 6,
+     "end_line": 7,
+     "text": "# Seaside weekend",
+     "section_path": [
+      "Seaside weekend"
+     ],
+     "heading_line": 6
+    },
+    {
+     "id": "7d1fcf0da1dfea8fd9ea",
+     "start_line": 8,
+     "end_line": 13,
+     "text": "## Plan\n\n- Leave after breakfast on Saturday.\n- Check the tide table at the harbour before choosing a beach.\n- Fish and chips at the quay.",
+     "section_path": [
+      "Seaside weekend",
+      "Plan"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "22c6b662b89c839a4f91",
+     "start_line": 14,
+     "end_line": 20,
+     "text": "## Packing\n\n- towels\n- a bucket\n- sun cream\n- the good camera",
+     "section_path": [
+      "Seaside weekend",
+      "Packing"
+     ],
+     "heading_line": 14
+    },
+    {
+     "id": "c1866012d1bfcea0ec12",
+     "start_line": 21,
+     "end_line": 24,
+     "text": "## Rockpooling\n\nLow water is the time for rockpools. Take a field guide, a small net and\na tub with a lid. Photograph the animals, then put them back.",
+     "section_path": [
+      "Seaside weekend",
+      "Rockpooling"
+     ],
+     "heading_line": 21
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {
+      "title": "Seaside weekend",
+      "place": "Gullcove"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Seaside weekend",
+      "line": 6,
+      "end_line": 24
+     },
+     {
+      "level": 2,
+      "text": "Plan",
+      "line": 8,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Packing",
+      "line": 14,
+      "end_line": 20
+     },
+     {
+      "level": 2,
+      "text": "Rockpooling",
+      "line": 21,
+      "end_line": 24
+     }
+    ],
+    "lines": 24,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/laptop",
+   "path": "archive/house-rules-old.md",
+   "chunks": [
+    {
+     "id": "fbd1a1a86ee7bd04ce66",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# House rules",
+     "section_path": [
+      "House rules"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "4b96661624b0c18d8ebf",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## Mornings\n\n- Beds made before breakfast.\n- Shoes by the door.",
+     "section_path": [
+      "House rules",
+      "Mornings"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "2b71063b708f83bf60f3",
+     "start_line": 8,
+     "end_line": 13,
+     "text": "## Evenings\n\n- Screens off at eight.\n- Everyone helps clear the table.\n- Reading in bed until half past eight.",
+     "section_path": [
+      "House rules",
+      "Evenings"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "eaf22fa77e70396bee77",
+     "start_line": 14,
+     "end_line": 16,
+     "text": "## Quiet hours\n\nAfter nine the house is quiet.",
+     "section_path": [
+      "House rules",
+      "Quiet hours"
+     ],
+     "heading_line": 14
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "House rules",
+      "line": 1,
+      "end_line": 16
+     },
+     {
+      "level": 2,
+      "text": "Mornings",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Evenings",
+      "line": 8,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Quiet hours",
+      "line": 14,
+      "end_line": 16
+     }
+    ],
+    "lines": 16,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/laptop",
+   "path": "ideas/robot-club.md",
+   "chunks": [
+    {
+     "id": "4ccd448d46f1bb95e942",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Robot club",
+     "section_path": [
+      "Robot club"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "90e19be5bcdfa7de63de",
+     "start_line": 3,
+     "end_line": 6,
+     "text": "## Meeting times\n\nWednesdays at lunch in the computing room.",
+     "section_path": [
+      "Robot club",
+      "Meeting times"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "fda62b8339d4ee1b3f13",
+     "start_line": 7,
+     "end_line": 11,
+     "text": "## Kit list\n\n- laptop\n- screwdriver\n- two AA batteries",
+     "section_path": [
+      "Robot club",
+      "Kit list"
+     ],
+     "heading_line": 7
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Robot club",
+      "line": 1,
+      "end_line": 11
+     },
+     {
+      "level": 2,
+      "text": "Meeting times",
+      "line": 3,
+      "end_line": 6
+     },
+     {
+      "level": 2,
+      "text": "Kit list",
+      "line": 7,
+      "end_line": 11
+     }
+    ],
+    "lines": 11,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/laptop",
+   "path": "maths-script.md",
+   "chunks": [
+    {
+     "id": "9acf366c2d5da17bfedc",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "# Maths script\n\nA small program that prints times tables for the children.",
+     "section_path": [
+      "Maths script"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "d1f5c95f6bab972c4603",
+     "start_line": 5,
+     "end_line": 9,
+     "text": "## Headings inside code are not headings\n\nThe block below contains lines that begin with a hash sign. They are\ncomments, not headings.",
+     "section_path": [
+      "Maths script",
+      "Headings inside code are not headings"
+     ],
+     "heading_line": 5
+    },
+    {
+     "id": "4401b96fa717cc40a85f",
+     "start_line": 10,
+     "end_line": 64,
+     "text": "## The program\n\n```python\n# build the table for 2\ntable_2 = [2 * i for i in range(1, 13)]\n# print the table for 2\nprint(\"2 times table:\", table_2)\nassert len(table_2) == 12, 'table 2 has twelve rows'\n\n# build the table for 3\ntable_3 = [3 * i for i in range(1, 13)]\n# print the table for 3\nprint(\"3 times table:\", table_3)\nassert len(table_3) == 12, 'table 3 has twelve rows'\n\n# build the table for 4\ntable_4 = [4 * i for i in range(1, 13)]\n# print the table for 4\nprint(\"4 times table:\", table_4)\nassert len(table_4) == 12, 'table 4 has twelve rows'\n\n# build the table for 5\ntable_5 = [5 * i for i in range(1, 13)]\n# print the table for 5\nprint(\"5 times table:\", table_5)\nassert len(table_5) == 12, 'table 5 has twelve rows'\n\n# build the table for 6\ntable_6 = [6 * i for i in range(1, 13)]\n# print the table for 6\nprint(\"6 times table:\", table_6)\nassert len(table_6) == 12, 'table 6 has twelve rows'\n\n# build the table for 7\ntable_7 = [7 * i for i in range(1, 13)]\n# print the table for 7\nprint(\"7 times table:\", table_7)\nassert len(table_7) == 12, 'table 7 has twelve rows'\n\n# build the table for 8\ntable_8 = [8 * i for i in range(1, 13)]\n# print the table for 8\nprint(\"8 times table:\", table_8)\nassert len(table_8) == 12, 'table 8 has twelve rows'\n\n# build the table for 9\ntable_9 = [9 * i for i in range(1, 13)]\n# print the table for 9\nprint(\"9 times table:\", table_9)\nassert len(table_9) == 12, 'table 9 has twelve rows'\n\n# build the table for 10\ntable_10 = [10 * i for i in range(1, 13)]\n# print the table for 10\nprint(\"10 times table:\", table_10)",
+     "section_path": [
+      "Maths script",
+      "The program"
+     ],
+     "heading_line": 10
+    },
+    {
+     "id": "3735fefbb778727691b9",
+     "start_line": 62,
+     "end_line": 80,
+     "text": "table_10 = [10 * i for i in range(1, 13)]\n# print the table for 10\nprint(\"10 times table:\", table_10)\nassert len(table_10) == 12, 'table 10 has twelve rows'\n\n# build the table for 11\ntable_11 = [11 * i for i in range(1, 13)]\n# print the table for 11\nprint(\"11 times table:\", table_11)\nassert len(table_11) == 12, 'table 11 has twelve rows'\n\n# build the table for 12\ntable_12 = [12 * i for i in range(1, 13)]\n# print the table for 12\nprint(\"12 times table:\", table_12)\nassert len(table_12) == 12, 'table 12 has twelve rows'\n\n```",
+     "section_path": [
+      "Maths script",
+      "The program"
+     ],
+     "heading_line": 10
+    },
+    {
+     "id": "55bb163eb98a786c0d94",
+     "start_line": 81,
+     "end_line": 84,
+     "text": "## Notes\n\nRun it with a number between two and twelve.",
+     "section_path": [
+      "Maths script",
+      "Notes"
+     ],
+     "heading_line": 81
+    },
+    {
+     "id": "f7fc6a6290d167d52d63",
+     "start_line": 85,
+     "end_line": 87,
+     "text": "### Next step\n\nAdd a quiz mode.",
+     "section_path": [
+      "Maths script",
+      "Notes",
+      "Next step"
+     ],
+     "heading_line": 85
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Maths script",
+      "line": 1,
+      "end_line": 87
+     },
+     {
+      "level": 2,
+      "text": "Headings inside code are not headings",
+      "line": 5,
+      "end_line": 9
+     },
+     {
+      "level": 2,
+      "text": "The program",
+      "line": 10,
+      "end_line": 80
+     },
+     {
+      "level": 2,
+      "text": "Notes",
+      "line": 81,
+      "end_line": 87
+     },
+     {
+      "level": 3,
+      "text": "Next step",
+      "line": 85,
+      "end_line": 87
+     }
+    ],
+    "lines": 87,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/laptop",
+   "path": "meeting-notes.md",
+   "chunks": [
+    {
+     "id": "d4fd3051d3a3fc4fd8e0",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Family meeting",
+     "section_path": [
+      "Family meeting"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "1ced992b30ca64cf740b",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## Agenda\n\n- weekend plans\n- who cooks on Thursday",
+     "section_path": [
+      "Family meeting",
+      "Agenda"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "81c8028317b003c92841",
+     "start_line": 8,
+     "end_line": 12,
+     "text": "## Decisions\n\nDev says count me in for the Saturday trip. Noor will check the tide table\nand book the car.",
+     "section_path": [
+      "Family meeting",
+      "Decisions"
+     ],
+     "heading_line": 8
+    },
+    {
+     "id": "57a8fe2069debeab6367",
+     "start_line": 13,
+     "end_line": 17,
+     "text": "### Snippet kept for later\n\n```sh\necho \"pack the bags\"\n```",
+     "section_path": [
+      "Family meeting",
+      "Decisions",
+      "Snippet kept for later"
+     ],
+     "heading_line": 13
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Family meeting",
+      "line": 1,
+      "end_line": 17
+     },
+     {
+      "level": 2,
+      "text": "Agenda",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Decisions",
+      "line": 8,
+      "end_line": 17
+     },
+     {
+      "level": 3,
+      "text": "Snippet kept for later",
+      "line": 13,
+      "end_line": 17
+     }
+    ],
+    "lines": 17,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/laptop",
+   "path": "photosynthesis-draft.md",
+   "chunks": [
+    {
+     "id": "9ffedb14b4b7157b91ac",
+     "start_line": 6,
+     "end_line": 9,
+     "text": "# Photosynthesis explainer\n\nA short page for the school fair stall.",
+     "section_path": [
+      "Photosynthesis explainer"
+     ],
+     "heading_line": 6
+    },
+    {
+     "id": "ef612013795e8bd4e909",
+     "start_line": 10,
+     "end_line": 13,
+     "text": "## Big idea\n\nPhotosynthesis lets plants turn light into sugar.",
+     "section_path": [
+      "Photosynthesis explainer",
+      "Big idea"
+     ],
+     "heading_line": 10
+    },
+    {
+     "id": "478e0978f8b51a51be51",
+     "start_line": 14,
+     "end_line": 18,
+     "text": "## Demonstration\n\nFloat a leaf disc in water. When it rises, the leaf has made bubbles of\nair. Photosynthetic cells do this when the light is bright.",
+     "section_path": [
+      "Photosynthesis explainer",
+      "Demonstration"
+     ],
+     "heading_line": 14
+    },
+    {
+     "id": "b2797c6c517ae7f7498f",
+     "start_line": 19,
+     "end_line": 22,
+     "text": "## Questions\n\n- What does a plant need?\n- Where does the air come from?",
+     "section_path": [
+      "Photosynthesis explainer",
+      "Questions"
+     ],
+     "heading_line": 19
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {
+      "title": "Photosynthesis explainer draft",
+      "status": "draft"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Photosynthesis explainer",
+      "line": 6,
+      "end_line": 22
+     },
+     {
+      "level": 2,
+      "text": "Big idea",
+      "line": 10,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Demonstration",
+      "line": 14,
+      "end_line": 18
+     },
+     {
+      "level": 2,
+      "text": "Questions",
+      "line": 19,
+      "end_line": 22
+     }
+    ],
+    "lines": 22,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/laptop",
+   "path": "project-ideas.md",
+   "chunks": [
+    {
+     "id": "7c1898afca3e92cc88ab",
+     "start_line": 6,
+     "end_line": 9,
+     "text": "# Project ideas\n\nThings the family might build over the winter.",
+     "section_path": [
+      "Project ideas"
+     ],
+     "heading_line": 6
+    },
+    {
+     "id": "903def11fcaba6ae019d",
+     "start_line": 10,
+     "end_line": 16,
+     "text": "## Robot club\n\nA small rover that follows a line on the floor.\n\n- Parts: two motors, a battery pack, a light sensor\n- First goal: drive in a square",
+     "section_path": [
+      "Project ideas",
+      "Robot club"
+     ],
+     "heading_line": 10
+    },
+    {
+     "id": "6074a70c054020c29e3b",
+     "start_line": 17,
+     "end_line": 20,
+     "text": "### Software\n\nStart with a loop that reads the sensor and turns left or right.",
+     "section_path": [
+      "Project ideas",
+      "Robot club",
+      "Software"
+     ],
+     "heading_line": 17
+    },
+    {
+     "id": "c756647d3046ae58661d",
+     "start_line": 21,
+     "end_line": 24,
+     "text": "## Garden camera\n\nA camera that photographs the vegetable bed each morning.",
+     "section_path": [
+      "Project ideas",
+      "Garden camera"
+     ],
+     "heading_line": 21
+    },
+    {
+     "id": "ac98c03efe5ffebd1639",
+     "start_line": 25,
+     "end_line": 29,
+     "text": "### Parts\n\n- an old phone\n- a weatherproof box",
+     "section_path": [
+      "Project ideas",
+      "Garden camera",
+      "Parts"
+     ],
+     "heading_line": 25
+    },
+    {
+     "id": "bbbc4a1a9f9dcd7f3ce2",
+     "start_line": 30,
+     "end_line": 33,
+     "text": "## Weather station\n\nMeasure rain, wind and temperature, and plot a week at a time.",
+     "section_path": [
+      "Project ideas",
+      "Weather station"
+     ],
+     "heading_line": 30
+    },
+    {
+     "id": "fc6a1d3758aad8d95ae3",
+     "start_line": 34,
+     "end_line": 36,
+     "text": "## Reading app\n\nA page that keeps track of what each child has read.",
+     "section_path": [
+      "Project ideas",
+      "Reading app"
+     ],
+     "heading_line": 34
+    }
+   ],
+   "outline": {
+    "front_matter": {
+     "start_line": 1,
+     "end_line": 4,
+     "fields": {
+      "title": "Project ideas",
+      "owner": "Dev"
+     }
+    },
+    "headings": [
+     {
+      "level": 1,
+      "text": "Project ideas",
+      "line": 6,
+      "end_line": 36
+     },
+     {
+      "level": 2,
+      "text": "Robot club",
+      "line": 10,
+      "end_line": 20
+     },
+     {
+      "level": 3,
+      "text": "Software",
+      "line": 17,
+      "end_line": 20
+     },
+     {
+      "level": 2,
+      "text": "Garden camera",
+      "line": 21,
+      "end_line": 29
+     },
+     {
+      "level": 3,
+      "text": "Parts",
+      "line": 25,
+      "end_line": 29
+     },
+     {
+      "level": 2,
+      "text": "Weather station",
+      "line": 30,
+      "end_line": 33
+     },
+     {
+      "level": 2,
+      "text": "Reading app",
+      "line": 34,
+      "end_line": 36
+     }
+    ],
+    "lines": 36,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/laptop",
+   "path": "reading-notes.md",
+   "chunks": [
+    {
+     "id": "89717b4b2e911b1bb9e9",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Reading notes",
+     "section_path": [
+      "Reading notes"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "23e311ba0c65373997e4",
+     "start_line": 3,
+     "end_line": 7,
+     "text": "## The Lighthouse Cat\n\nA cat guards a lighthouse through a long winter. Tavi's favourite part is\nthe storm chapter.",
+     "section_path": [
+      "Reading notes",
+      "The Lighthouse Cat"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "4418731aba887181c57e",
+     "start_line": 8,
+     "end_line": 10,
+     "text": "## Tales from Mossbank\n\nShort stories about a village by a marsh.",
+     "section_path": [
+      "Reading notes",
+      "Tales from Mossbank"
+     ],
+     "heading_line": 8
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Reading notes",
+      "line": 1,
+      "end_line": 10
+     },
+     {
+      "level": 2,
+      "text": "The Lighthouse Cat",
+      "line": 3,
+      "end_line": 7
+     },
+     {
+      "level": 2,
+      "text": "Tales from Mossbank",
+      "line": 8,
+      "end_line": 10
+     }
+    ],
+    "lines": 10,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/family-folder/laptop",
+   "path": "reports/term-summary.md",
+   "chunks": [
+    {
+     "id": "aba34a63f7ff3c457808",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Term summary",
+     "section_path": [
+      "Term summary"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "53aa82dd9c95096818c6",
+     "start_line": 3,
+     "end_line": 6,
+     "text": "## Tavi\n\nWorking well in maths. Reading is a strength. Spelling needs steady practice.",
+     "section_path": [
+      "Term summary",
+      "Tavi"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "897329c6e88ceba346d5",
+     "start_line": 7,
+     "end_line": 9,
+     "text": "## Mira\n\nConfident in science. Enjoys art club.",
+     "section_path": [
+      "Term summary",
+      "Mira"
+     ],
+     "heading_line": 7
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Term summary",
+      "line": 1,
+      "end_line": 9
+     },
+     {
+      "level": 2,
+      "text": "Tavi",
+      "line": 3,
+      "end_line": 6
+     },
+     {
+      "level": 2,
+      "text": "Mira",
+      "line": 7,
+      "end_line": 9
+     }
+    ],
+    "lines": 9,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/knowledge",
+   "path": "hybrid-search.md",
+   "chunks": [
+    {
+     "id": "c893fe6a24b419aca806",
+     "start_line": 1,
+     "end_line": 7,
+     "text": "# Hybrid search\n\nLexical search is precise when a query contains names, identifiers, quoted phrases, or rare terms. A BM25-style inverted index is a strong default.\n\nSemantic search compares embedding vectors. It can retrieve passages that express a related meaning with different words, but it needs a real embedding model and careful evaluation.\n\nThe first hybrid implementation should retrieve candidates independently and combine their ranks with reciprocal-rank fusion. Fusion avoids pretending that BM25 and cosine scores share the same scale. Later, a reranker can inspect the strongest candidates.",
+     "section_path": [
+      "Hybrid search"
+     ],
+     "heading_line": 1
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Hybrid search",
+      "line": 1,
+      "end_line": 7
+     }
+    ],
+    "lines": 7,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/knowledge",
+   "path": "llm-contract.md",
+   "chunks": [
+    {
+     "id": "b8678dee0a5fff6b7d6f",
+     "start_line": 1,
+     "end_line": 5,
+     "text": "# LLM retrieval contract\n\nThe model receives evidence, not unrestricted filesystem access. Each result contains a stable chunk id, a relative path, a line range, the passage text, and ranking metadata.\n\nThe answer layer must cite its evidence and state when retrieval is insufficient. Tool calls should support a path prefix so an agent can narrow the search to a repository, skill, or permission boundary.",
+     "section_path": [
+      "LLM retrieval contract"
+     ],
+     "heading_line": 1
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "LLM retrieval contract",
+      "line": 1,
+      "end_line": 5
+     }
+    ],
+    "lines": 5,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/chunk-stress",
+   "path": "long.md",
+   "chunks": [
+    {
+     "id": "d088be20664490280a03",
+     "start_line": 1,
+     "end_line": 11,
+     "text": "# Chunker stress fixture (S1-T1)\n\nLine 001: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 002: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 003: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 004: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 005: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 006: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 007: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 008: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 009: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "764d29a369eb28c998a9",
+     "start_line": 9,
+     "end_line": 18,
+     "text": "Line 007: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 008: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 009: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 010: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 011: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 012: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 013: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 014: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 015: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 016: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "17609d8a702981e5e98f",
+     "start_line": 16,
+     "end_line": 25,
+     "text": "Line 014: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 015: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 016: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 017: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 018: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 019: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 020: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 021: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 022: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 023: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "d61145f8390debc863a4",
+     "start_line": 23,
+     "end_line": 32,
+     "text": "Line 021: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 022: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 023: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 024: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 025: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 026: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 027: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 028: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 029: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 030: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "704b542eaee9e6a97e44",
+     "start_line": 30,
+     "end_line": 39,
+     "text": "Line 028: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 029: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 030: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 031: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 032: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 033: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 034: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 035: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 036: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 037: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "e19bf0af771a9434c55f",
+     "start_line": 37,
+     "end_line": 46,
+     "text": "Line 035: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 036: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 037: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 038: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 039: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 040: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 041: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 042: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 043: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 044: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "4142d9982d50ec9f34d1",
+     "start_line": 44,
+     "end_line": 53,
+     "text": "Line 042: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 043: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 044: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 045: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 046: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 047: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 048: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 049: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 050: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 051: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "b6cecc5cc2e5c99e856c",
+     "start_line": 51,
+     "end_line": 60,
+     "text": "Line 049: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 050: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 051: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 052: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 053: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 054: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 055: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 056: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 057: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 058: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "c43ee6e772298316969b",
+     "start_line": 58,
+     "end_line": 67,
+     "text": "Line 056: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 057: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 058: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 059: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 060: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 061: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 062: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 063: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 064: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 065: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "7c0842e439c58160adb7",
+     "start_line": 65,
+     "end_line": 74,
+     "text": "Line 063: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 064: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 065: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 066: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 067: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 068: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 069: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 070: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 071: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 072: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "73513d0f1fa8091678ba",
+     "start_line": 72,
+     "end_line": 81,
+     "text": "Line 070: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 071: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 072: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 073: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 074: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 075: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 076: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 077: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 078: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 079: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "0b796cd43039728aef22",
+     "start_line": 79,
+     "end_line": 88,
+     "text": "Line 077: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 078: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 079: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 080: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 081: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 082: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 083: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 084: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 085: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 086: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "f3d4d2becbb6ed37fcd9",
+     "start_line": 86,
+     "end_line": 95,
+     "text": "Line 084: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 085: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 086: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 087: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 088: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 089: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 090: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 091: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 092: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 093: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "e92cf006b39b62044570",
+     "start_line": 93,
+     "end_line": 102,
+     "text": "Line 091: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 092: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 093: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 094: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 095: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 096: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 097: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 098: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 099: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 100: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "9a8cb6f1bfd9328c8ef2",
+     "start_line": 100,
+     "end_line": 109,
+     "text": "Line 098: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 099: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 100: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 101: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 102: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 103: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 104: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 105: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 106: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 107: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "298bcb53ccb0049f31dc",
+     "start_line": 107,
+     "end_line": 116,
+     "text": "Line 105: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 106: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 107: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 108: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 109: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 110: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 111: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 112: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 113: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 114: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "a8bd5e446589b0fbc56f",
+     "start_line": 114,
+     "end_line": 123,
+     "text": "Line 112: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 113: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 114: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 115: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 116: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 117: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 118: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 119: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 120: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 121: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "187a10a1c69e8e624631",
+     "start_line": 121,
+     "end_line": 130,
+     "text": "Line 119: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 120: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 121: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 122: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 123: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 124: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 125: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 126: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 127: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 128: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "c3e8946f953fa58b5797",
+     "start_line": 128,
+     "end_line": 137,
+     "text": "Line 126: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 127: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 128: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 129: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 130: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 131: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 132: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 133: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 134: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 135: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "85b44324b9b4343189b6",
+     "start_line": 135,
+     "end_line": 144,
+     "text": "Line 133: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 134: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 135: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 136: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 137: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 138: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 139: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 140: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 141: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 142: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "04c4211824da228cd9a7",
+     "start_line": 142,
+     "end_line": 151,
+     "text": "Line 140: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 141: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 142: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 143: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 144: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 145: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 146: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 147: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 148: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 149: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "aa7452c8e1d3931d5517",
+     "start_line": 149,
+     "end_line": 158,
+     "text": "Line 147: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 148: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 149: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 150: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 151: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 152: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 153: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 154: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 155: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 156: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "c643fd7c4768b8cffcb5",
+     "start_line": 156,
+     "end_line": 165,
+     "text": "Line 154: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 155: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 156: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 157: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 158: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 159: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 160: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 161: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 162: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 163: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "c74e495a9f3432d23640",
+     "start_line": 163,
+     "end_line": 172,
+     "text": "Line 161: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 162: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 163: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 164: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 165: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 166: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 167: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 168: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 169: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 170: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "08ad2506b2f1a9fb5422",
+     "start_line": 170,
+     "end_line": 179,
+     "text": "Line 168: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 169: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 170: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 171: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 172: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 173: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 174: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 175: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 176: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 177: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "c4c9369b51a9520e3098",
+     "start_line": 177,
+     "end_line": 186,
+     "text": "Line 175: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 176: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 177: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 178: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 179: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 180: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 181: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 182: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 183: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 184: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "75bb09ed6b3752814f31",
+     "start_line": 184,
+     "end_line": 193,
+     "text": "Line 182: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 183: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 184: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 185: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 186: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 187: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 188: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 189: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 190: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 191: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "45d4e4612a27bc837ad0",
+     "start_line": 191,
+     "end_line": 200,
+     "text": "Line 189: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 190: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 191: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 192: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 193: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 194: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 195: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 196: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 197: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 198: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "610bac7226622a33c90a",
+     "start_line": 198,
+     "end_line": 202,
+     "text": "Line 196: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 197: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 198: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 199: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.\nLine 200: the line-window-v1 chunker slides a fixed character budget across lines with a small overlap so nearby context is preserved across chunk boundaries.",
+     "section_path": [
+      "Chunker stress fixture (S1-T1)"
+     ],
+     "heading_line": 1
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Chunker stress fixture (S1-T1)",
+      "line": 1,
+      "end_line": 202
+     }
+    ],
+    "lines": 202,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "SOURCE.md",
+   "chunks": [
+    {
+     "id": "e2c13cfaf752b63fda3e",
+     "start_line": 1,
+     "end_line": 26,
+     "text": "# Vendored source: simpli-helper app text fixtures (S1-T1)\n\nCopied from `~/workspace/simpli-helper/packages/vizhi_core/test/fixtures/`\n(text/markdown only) for the golden `line-window-v1` chunker conformance run\nagainst non-fixture, non-Search-Simpli text. All content is invented test\nmaterial written for the app's own test suite; nothing here is real family\ndata, a photo, or OCR output.\n\nCopied:\n- `context/corpus.txt` — a short invented reading passage.\n- `context/persona/*.md` — short invented persona-voice instruction snippets.\n- `learn/*.md` — invented grade 4-6 practice-set samples (see `learn/README.md`\n  there for what they mirror).\n- `tutoring/rubric.md` — an invented scoring rubric for a model-comparison\n  fixture.\n\nDeliberately **not** copied, even though they are `.txt`/`.md`: `family/`,\n`memory/` (named for the family/session-memory wall this repo does not touch),\n`ocr/*.txt` and `video/*.txt` (OCR/video-transcript derived, excluded by the\ntask's \"no OCR\" rule even in text form), and `safety/*.txt` (adversarial\nsafety-classifier prompts — invented, but not representative \"app text\" and\nnot appropriate to redistribute in a public search-fixture corpus).\n\nRe-vendor by re-running the same copy if the app's fixtures change; there is\nno automation here, matching how `fixtures/knowledge` etc. are hand-maintained\nin this repo.",
+     "section_path": [
+      "Vendored source: simpli-helper app text fixtures (S1-T1)"
+     ],
+     "heading_line": 1
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Vendored source: simpli-helper app text fixtures (S1-T1)",
+      "line": 1,
+      "end_line": 26
+     }
+    ],
+    "lines": 26,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "context/persona/coco-voice.md",
+   "chunks": [
+    {
+     "id": "61f6626fcf1bf02ce727",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Use short, cheerful sentences.",
+     "section_path": [],
+     "heading_line": 0
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [],
+    "lines": 1,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "context/persona/summarize.md",
+   "chunks": [
+    {
+     "id": "a9d5bf898a33693e8886",
+     "start_line": 1,
+     "end_line": 5,
+     "text": "Summarize the following older turns of a conversation for your own memory. Keep:\nwhat was asked, what was answered, what remains open, any facts the user stated\nabout what they are working on. Do not quote anyone. Do not record feelings as\ncontent; a topic and a date is enough. Do not mention other people by name.\nWrite at most {max_tokens} tokens as a plain list.",
+     "section_path": [],
+     "heading_line": 0
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [],
+    "lines": 5,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "context/persona/vizhi-core.md",
+   "chunks": [
+    {
+     "id": "c385fedbdeb9b2b9be2f",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "You are a calm, careful learning helper. Speak plainly and stay factual.",
+     "section_path": [],
+     "heading_line": 0
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [],
+    "lines": 1,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "context/persona/walls.md",
+   "chunks": [
+    {
+     "id": "1009a17e153cb07f9bd7",
+     "start_line": 1,
+     "end_line": 1,
+     "text": "Be safe. Be kind. Never share personal details.",
+     "section_path": [],
+     "heading_line": 0
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [],
+    "lines": 1,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "learn/README.md",
+   "chunks": [
+    {
+     "id": "f4ff40cf8ad708ee7476",
+     "start_line": 1,
+     "end_line": 4,
+     "text": "Invented practice-set samples mirroring the format the family's Mac sessions\nproduce (headings per subject, numbered items, `Answer:` lines). Names and\ncontent are invented; no real assignment text. Builders of M6-T2 add three\nsamples here (`sample-math.md`, `sample-science.md`, `sample-ela.md`).",
+     "section_path": [],
+     "heading_line": 0
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [],
+    "lines": 4,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "learn/sample-ela.md",
+   "chunks": [
+    {
+     "id": "90e1d04f274ab1126edf",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Week 3 ELA Practice",
+     "section_path": [
+      "Week 3 ELA Practice"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "ab66c2302a6d4495f33d",
+     "start_line": 3,
+     "end_line": 9,
+     "text": "## Vocabulary\n1. What is a synonym for \"happy\"?\nAnswer: joyful\n\n2. What is an antonym for \"brave\"?\nAnswer: cowardly",
+     "section_path": [
+      "Week 3 ELA Practice",
+      "Vocabulary"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "80e56a7b57c62d6fc630",
+     "start_line": 10,
+     "end_line": 13,
+     "text": "## Grammar\n3. Which word in this sentence is the verb: \"The clever fox jumped over the fence.\"?\nAnswer: jumped",
+     "section_path": [
+      "Week 3 ELA Practice",
+      "Grammar"
+     ],
+     "heading_line": 10
+    },
+    {
+     "id": "57c0d29ef6176409c943",
+     "start_line": 14,
+     "end_line": 17,
+     "text": "## Reading Response\n4. Explain why the invented character Mira might have felt nervous on her first day at a new school.\nAnswer: A new school is unfamiliar, so a character might worry about making friends or not knowing the routine.",
+     "section_path": [
+      "Week 3 ELA Practice",
+      "Reading Response"
+     ],
+     "heading_line": 14
+    },
+    {
+     "id": "2a888b5e68a4925bee2a",
+     "start_line": 18,
+     "end_line": 20,
+     "text": "## Spelling\n5. Spell the word that means \"a large group of ships traveling together.\"\nAnswer: fleet",
+     "section_path": [
+      "Week 3 ELA Practice",
+      "Spelling"
+     ],
+     "heading_line": 18
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Week 3 ELA Practice",
+      "line": 1,
+      "end_line": 20
+     },
+     {
+      "level": 2,
+      "text": "Vocabulary",
+      "line": 3,
+      "end_line": 9
+     },
+     {
+      "level": 2,
+      "text": "Grammar",
+      "line": 10,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Reading Response",
+      "line": 14,
+      "end_line": 17
+     },
+     {
+      "level": 2,
+      "text": "Spelling",
+      "line": 18,
+      "end_line": 20
+     }
+    ],
+    "lines": 20,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "learn/sample-math.md",
+   "chunks": [
+    {
+     "id": "8da6cf790f933a55c1dd",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Week 3 Math Practice",
+     "section_path": [
+      "Week 3 Math Practice"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "bb90469aff9eb6626f80",
+     "start_line": 3,
+     "end_line": 9,
+     "text": "## Fractions\n1. What is 1/2 + 1/4?\nAnswer: 3/4\n\n2. Simplify 6/8 to lowest terms.\nAnswer: 3/4",
+     "section_path": [
+      "Week 3 Math Practice",
+      "Fractions"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "abf21ecdea859f7ba0fc",
+     "start_line": 10,
+     "end_line": 13,
+     "text": "## Decimals\n3. Round 3.14159 to two decimal places.\nAnswer: 3.14 (±0.01)",
+     "section_path": [
+      "Week 3 Math Practice",
+      "Decimals"
+     ],
+     "heading_line": 10
+    },
+    {
+     "id": "270cc48589f5819b8e1c",
+     "start_line": 14,
+     "end_line": 20,
+     "text": "## Shapes\n4. Which shape has exactly three sides?\nA) Square\nB) Triangle\nC) Hexagon\nAnswer: B",
+     "section_path": [
+      "Week 3 Math Practice",
+      "Shapes"
+     ],
+     "heading_line": 14
+    },
+    {
+     "id": "83543d2742170bcde0c1",
+     "start_line": 21,
+     "end_line": 23,
+     "text": "## Word Problems\n5. Explain how you would find the perimeter of a rectangle that is 5 cm by 3 cm.\nAnswer: Add all four sides, or use 2×(length+width): 2×(5+3) = 16 cm.",
+     "section_path": [
+      "Week 3 Math Practice",
+      "Word Problems"
+     ],
+     "heading_line": 21
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Week 3 Math Practice",
+      "line": 1,
+      "end_line": 23
+     },
+     {
+      "level": 2,
+      "text": "Fractions",
+      "line": 3,
+      "end_line": 9
+     },
+     {
+      "level": 2,
+      "text": "Decimals",
+      "line": 10,
+      "end_line": 13
+     },
+     {
+      "level": 2,
+      "text": "Shapes",
+      "line": 14,
+      "end_line": 20
+     },
+     {
+      "level": 2,
+      "text": "Word Problems",
+      "line": 21,
+      "end_line": 23
+     }
+    ],
+    "lines": 23,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "learn/sample-science.md",
+   "chunks": [
+    {
+     "id": "13c3ea474bd518d27696",
+     "start_line": 1,
+     "end_line": 2,
+     "text": "# Week 3 Science Practice",
+     "section_path": [
+      "Week 3 Science Practice"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "14a92aa70139d5140709",
+     "start_line": 3,
+     "end_line": 12,
+     "text": "## The Solar System\n1. Which planet is known as the Red Planet?\nA) Venus\nB) Mars\nC) Jupiter\nAnswer: B\n\n2. How many planets are in our solar system?\nAnswer: 8",
+     "section_path": [
+      "Week 3 Science Practice",
+      "The Solar System"
+     ],
+     "heading_line": 3
+    },
+    {
+     "id": "370e13f8360420eb1b02",
+     "start_line": 13,
+     "end_line": 19,
+     "text": "## States of Matter\n3. Name the three common states of matter.\nAnswer: solid, liquid, gas\n\n4. Explain why an ice cube melts when it is left out on a warm day.\nAnswer: Heat energy from the room transfers into the ice, raising its temperature until it changes from solid to liquid.",
+     "section_path": [
+      "Week 3 Science Practice",
+      "States of Matter"
+     ],
+     "heading_line": 13
+    },
+    {
+     "id": "bdc4037f7f9e7e716609",
+     "start_line": 20,
+     "end_line": 22,
+     "text": "## Invented Habitat Study\n5. A made-up desert critter called a \"sandhopper\" only comes out at night. What is this behavior called?\nAnswer: nocturnal",
+     "section_path": [
+      "Week 3 Science Practice",
+      "Invented Habitat Study"
+     ],
+     "heading_line": 20
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Week 3 Science Practice",
+      "line": 1,
+      "end_line": 22
+     },
+     {
+      "level": 2,
+      "text": "The Solar System",
+      "line": 3,
+      "end_line": 12
+     },
+     {
+      "level": 2,
+      "text": "States of Matter",
+      "line": 13,
+      "end_line": 19
+     },
+     {
+      "level": 2,
+      "text": "Invented Habitat Study",
+      "line": 20,
+      "end_line": 22
+     }
+    ],
+    "lines": 22,
+    "chunker": "md-section-v1"
+   }
+  },
+  {
+   "root": "fixtures/app-text",
+   "path": "tutoring/rubric.md",
+   "chunks": [
+    {
+     "id": "ed6507d481e58dde6861",
+     "start_line": 1,
+     "end_line": 30,
+     "text": "# Tutoring fixture rubric (M1-T4)\n\nUsed by `tools/models/measure_candidates.sh` (via\n`packages/vizhi_core/bin/measure_candidates.dart`) to score each candidate\nmodel's replies to `questions.json` (10 invented grade 4-6 maths/science/ELA\nquestions) when run through `LlamaCppProvider` with the kid system prompt\nfrom `PersonaLoader`, for `docs/decisions/ADR-004-initial-models.md`.\n\nEach answer is scored **0, 1, or 2** against three checks:\n\n1. **Correct.** Does the reply's content line up with `referenceAnswer` --\n   for a question that wants a direct answer, does it state (a form of) the\n   right answer; for a `withholdAnswer` question, does it guide toward the\n   right idea without flatly stating the final answer.\n2. **Kid-appropriate.** Plain language a grade 4-6 learner can follow, no\n   jargon dump, tone matching `persona/coco-voice.md` (warm, brief,\n   encouraging) -- not necessarily verbatim, since a small local model\n   won't reproduce persona style perfectly, but not cold, sarcastic, or\n   clearly aimed at an adult either.\n3. **Doesn't hand over the answer when told not to.** Only scored against\n   questions where `withholdAnswer: true`. A question with\n   `withholdAnswer: false` is exempt from this check (never penalized on\n   it).\n\n**Score:**\n- **2** -- meets all applicable checks.\n- **1** -- meets most checks with a minor miss (a small factual slip, a\n  slightly adult tone, or a `withholdAnswer` question that hints strongly\n  but doesn't quite avoid saying the final number/word).\n- **0** -- wrong, inappropriate, incoherent/empty, or a `withholdAnswer`",
+     "section_path": [
+      "Tutoring fixture rubric (M1-T4)"
+     ],
+     "heading_line": 1
+    },
+    {
+     "id": "4b19aaae4fe97c4e3c12",
+     "start_line": 28,
+     "end_line": 43,
+     "text": "slightly adult tone, or a `withholdAnswer` question that hints strongly\n  but doesn't quite avoid saying the final number/word).\n- **0** -- wrong, inappropriate, incoherent/empty, or a `withholdAnswer`\n  question answered flatly anyway.\n\nScoring is done by the builder reading each candidate's actual transcript\n(recorded by the measurement script under\n`tools/models/measurements/<model-name>.json`) against this rubric --\ngrading a small local model's free-text reply for \"kid-appropriate tone\" is\nnot something worth automating with another heuristic, and the transcripts\nare committed so the scores are checkable by anyone re-reading them.\n\nA **pass rate** is reported per model as\n`(count of score >= 1) / 10` (partial credit counts as passing; only a 0 is\na fixture failure) alongside the mean score out of 2, so ADR-004 has both a\nstrict and a lenient number to cite.",
+     "section_path": [
+      "Tutoring fixture rubric (M1-T4)"
+     ],
+     "heading_line": 1
+    }
+   ],
+   "outline": {
+    "front_matter": null,
+    "headings": [
+     {
+      "level": 1,
+      "text": "Tutoring fixture rubric (M1-T4)",
+      "line": 1,
+      "end_line": 43
+     }
+    ],
+    "lines": 43,
+    "chunker": "md-section-v1"
+   }
+  }
+ ]
+}

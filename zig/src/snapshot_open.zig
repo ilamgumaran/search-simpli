@@ -9,6 +9,7 @@ const hybrid = @import("hybrid.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
+const source_section = @import("source.zig");
 
 /// Open the current published generation in `dir`. All returned buffers
 /// (and the decoded `Engine`) are allocated from `allocator`; the intended
@@ -25,6 +26,14 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     const documents_buffer = try allocator.alloc(u8, metadata.documents_bytes);
     const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
     const snapshot = try publication.loadCurrent(dir, io, manifest_buffer, documents_buffer, lexical_buffer);
+    // S3-T1: a generation that binds a source section is incomplete without
+    // it. Only its presence and length are checked here (reading it is
+    // `openSource`'s job), so a lost source file reads as a missing section
+    // (`error.FileNotFound`), the same as a lost document or lexical file.
+    if (metadata.hasSource()) {
+        const stat = try dir.statFile(io, metadata.source_file, .{});
+        if (stat.size != metadata.source_bytes) return error.SourceSectionSizeMismatch;
+    }
 
     const documents = try allocator.alloc(hybrid.Document, metadata.document_count);
     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch
@@ -35,6 +44,30 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     const document_lengths = try allocator.alloc(u32, metadata.document_count);
 
     return engine.Engine.open(snapshot, documents, vectors, terms, posting_storage, document_lengths);
+}
+
+/// The current generation's manifest and source section (S3-T1), validated
+/// against the manifest and opened with a path index, or `source == null`
+/// when the generation retains no source bytes (a v1 manifest or a v2
+/// manifest without the flag): `read_span`/`outline` then answer
+/// `CAPACITY` "re-index required: source absent". Buffers from `allocator`.
+pub const OpenedSource = struct {
+    metadata: manifest.Manifest,
+    source: ?source_section.Section,
+};
+
+pub fn openSource(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !OpenedSource {
+    var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
+    const manifest_stat = try manifest_file.stat(io);
+    manifest_file.close(io);
+    const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
+    const manifest_buffer = try allocator.alloc(u8, manifest_size);
+    const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
+    const metadata = try manifest.decode(manifest_encoded);
+    if (!metadata.hasSource()) return .{ .metadata = metadata, .source = null };
+    const buffer = try allocator.alloc(u8, metadata.source_bytes);
+    const bytes = (try publication.loadSource(dir, io, metadata, buffer)).?;
+    return .{ .metadata = metadata, .source = try source_section.openIndexed(allocator, bytes) };
 }
 
 test "open reproduces a published demo generation" {

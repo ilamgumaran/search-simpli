@@ -2,8 +2,14 @@ const hybrid = @import("hybrid.zig");
 const std = @import("std");
 
 pub const magic = "HYBSEG01";
-pub const version: u16 = 3;
+/// Newest record version this module reads and writes (S3-T1: v4,
+/// `docs/segment-format-v4.md`). `encode` keeps writing v3 byte for byte
+/// (the importer and every pre-S3 writer); `encodeV4` writes v4.
+pub const version: u16 = 4;
+pub const legacy_version: u16 = 3;
 pub const minimum_supported_version: u16 = 1;
+const v3_fixed_length: usize = 28;
+const v4_fixed_length: usize = 44;
 pub const header_length: usize = 36;
 
 pub const EncodeError = error{
@@ -14,6 +20,8 @@ pub const EncodeError = error{
     VectorDimensionsInconsistent,
     InvalidCitation,
     InvalidRequiredLabels,
+    InvalidSection,
+    RequiresVersion4,
 };
 
 pub const DecodeError = error{
@@ -27,6 +35,7 @@ pub const DecodeError = error{
     InvalidVectorDimensions,
     InvalidCitation,
     InvalidRequiredLabels,
+    InvalidSection,
     SizeOverflow,
 };
 
@@ -38,8 +47,22 @@ pub const Header = struct {
     checksum: u64,
 };
 
-/// Return the exact number of bytes required by encode.
+/// Return the exact number of bytes required by encode (record v3).
 pub fn encodedLength(documents: []const hybrid.Document) EncodeError!usize {
+    return encodedLengthVersion(documents, legacy_version);
+}
+
+/// Return the exact number of bytes required by encodeV4.
+pub fn encodedLengthV4(documents: []const hybrid.Document) EncodeError!usize {
+    return encodedLengthVersion(documents, version);
+}
+
+fn hasV4Fields(document: hybrid.Document) bool {
+    return document.chunker_index != 0 or document.section_depth != 0 or document.heading_line != 0 or
+        document.source_doc_index != hybrid.no_source_doc or document.section_path.len != 0;
+}
+
+fn encodedLengthVersion(documents: []const hybrid.Document, record_version: u16) EncodeError!usize {
     _ = try vectorDimensions(documents);
     if (documents.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
 
@@ -52,7 +75,16 @@ pub fn encodedLength(documents: []const hybrid.Document) EncodeError!usize {
         try validateFieldLength(document.vector.len);
         try validateFieldLength(document.required_labels.len);
         try validateRequiredLabels(document.required_labels);
-        length = try checkedAdd(length, 28);
+        if (record_version >= 4) {
+            try validateFieldLength(document.section_path.len);
+            validateSection(document.section_depth, document.heading_line, document.start_line, document.section_path) catch
+                return error.InvalidSection;
+            length = try checkedAdd(length, v4_fixed_length);
+            length = try checkedAdd(length, document.section_path.len);
+        } else {
+            if (hasV4Fields(document)) return error.RequiresVersion4;
+            length = try checkedAdd(length, v3_fixed_length);
+        }
         length = try checkedAdd(length, document.id.len);
         length = try checkedAdd(length, document.path.len);
         length = try checkedAdd(length, document.text.len);
@@ -62,15 +94,25 @@ pub fn encodedLength(documents: []const hybrid.Document) EncodeError!usize {
     return length;
 }
 
-/// Encode one immutable segment into caller-owned memory.
+/// Encode one immutable segment (record v3) into caller-owned memory.
 pub fn encode(documents: []const hybrid.Document, output: []u8) EncodeError![]u8 {
-    const required = try encodedLength(documents);
+    return encodeVersion(documents, output, legacy_version);
+}
+
+/// Encode one immutable segment with record v4 (chunker index, section
+/// path, heading line, source document index).
+pub fn encodeV4(documents: []const hybrid.Document, output: []u8) EncodeError![]u8 {
+    return encodeVersion(documents, output, version);
+}
+
+fn encodeVersion(documents: []const hybrid.Document, output: []u8, record_version: u16) EncodeError![]u8 {
+    const required = try encodedLengthVersion(documents, record_version);
     if (output.len < required) return error.BufferTooSmall;
     const dimensions = try vectorDimensions(documents);
 
     @memcpy(output[0..magic.len], magic);
     var header_offset: usize = magic.len;
-    writeU16(output, &header_offset, version);
+    writeU16(output, &header_offset, record_version);
     writeU16(output, &header_offset, 0); // Reserved flags.
     writeU32(output, &header_offset, @intCast(documents.len));
     writeU32(output, &header_offset, @intCast(dimensions));
@@ -88,6 +130,13 @@ pub fn encode(documents: []const hybrid.Document, output: []u8) EncodeError![]u8
         writeU32(output, &payload_offset, document.start_line);
         writeU32(output, &payload_offset, document.end_line);
         writeU32(output, &payload_offset, @intCast(document.required_labels.len));
+        if (record_version >= 4) {
+            writeU16(output, &payload_offset, document.chunker_index);
+            writeU16(output, &payload_offset, document.section_depth);
+            writeU32(output, &payload_offset, document.heading_line);
+            writeU32(output, &payload_offset, document.source_doc_index);
+            writeU32(output, &payload_offset, @intCast(document.section_path.len));
+        }
         @memcpy(output[payload_offset .. payload_offset + document.id.len], document.id);
         payload_offset += document.id.len;
         @memcpy(output[payload_offset .. payload_offset + document.path.len], document.path);
@@ -97,6 +146,10 @@ pub fn encode(documents: []const hybrid.Document, output: []u8) EncodeError![]u8
         @memcpy(output[payload_offset .. payload_offset + document.required_labels.len], document.required_labels);
         payload_offset += document.required_labels.len;
         for (document.vector) |value| writeU32(output, &payload_offset, @bitCast(value));
+        if (record_version >= 4) {
+            @memcpy(output[payload_offset .. payload_offset + document.section_path.len], document.section_path);
+            payload_offset += document.section_path.len;
+        }
     }
     std.debug.assert(payload_offset == required);
 
@@ -159,6 +212,18 @@ pub fn decode(
             try castU64ToUsize(try cursor.readU32())
         else
             0;
+        var chunker_index: u16 = 0;
+        var section_depth: u16 = 0;
+        var heading_line: u32 = 0;
+        var source_doc_index: u32 = hybrid.no_source_doc;
+        var section_path_length: usize = 0;
+        if (header.format_version >= 4) {
+            chunker_index = try cursor.readU16();
+            section_depth = try cursor.readU16();
+            heading_line = try cursor.readU32();
+            source_doc_index = try cursor.readU32();
+            section_path_length = try castU64ToUsize(try cursor.readU32());
+        }
         if (vector_length != 0 and vector_length != header.vector_dimensions) return error.InvalidVectorDimensions;
 
         const id = try cursor.take(id_length);
@@ -170,6 +235,8 @@ pub fn decode(
         const vector_end = try decodeCheckedAdd(vector_offset, vector_length);
         if (vector_end > vector_output.len) return error.VectorCapacityTooSmall;
         for (vector_output[vector_offset..vector_end]) |*value| value.* = @bitCast(try cursor.readU32());
+        const section_path = try cursor.take(section_path_length);
+        validateSection(section_depth, heading_line, start_line, section_path) catch return error.InvalidSection;
         document.* = .{
             .id = id,
             .text = text,
@@ -178,6 +245,11 @@ pub fn decode(
             .start_line = start_line,
             .end_line = end_line,
             .required_labels = required_labels,
+            .chunker_index = chunker_index,
+            .section_depth = section_depth,
+            .heading_line = heading_line,
+            .source_doc_index = source_doc_index,
+            .section_path = section_path,
         };
         vector_offset = vector_end;
     }
@@ -214,6 +286,16 @@ fn validateDecodedCitation(path: []const u8, start_line: u32, end_line: u32) Dec
         return;
     }
     if (start_line == 0 or end_line < start_line) return error.InvalidCitation;
+}
+
+/// A section path has exactly `depth` U+001F-separated entries (none for
+/// depth 0), and a heading line, when present, is at or above the chunk.
+fn validateSection(depth: u16, heading_line: u32, start_line: u32, section_path: []const u8) error{InvalidSection}!void {
+    if (depth == 0) {
+        if (section_path.len != 0) return error.InvalidSection;
+    } else if (std.mem.count(u8, section_path, "\x1f") + 1 != depth) return error.InvalidSection;
+    if (heading_line != 0 and heading_line > start_line) return error.InvalidSection;
+    if (depth != 0 and heading_line == 0) return error.InvalidSection;
 }
 
 fn validateRequiredLabels(encoded_labels: []const u8) EncodeError!void {
@@ -476,4 +558,64 @@ fn encodeV1ForTest(document: hybrid.Document, output: []u8) EncodeError![]u8 {
     var checksum_write_offset = checksum_offset;
     writeU64(output, &checksum_write_offset, segmentChecksum(output[0..checksum_offset], output[header_length..required]));
     return output[0..required];
+}
+
+test "segment v4 round trip keeps section, chunker and source fields" {
+    const documents = [_]hybrid.Document{
+        .{ .id = "md", .text = "beta", .path = "week.md", .start_line = 8, .end_line = 9, .chunker_index = 1, .section_depth = 2, .heading_line = 7, .source_doc_index = 0, .section_path = "Week 7\x1fDates" },
+        .{ .id = "txt", .text = "plain", .path = "a.txt", .start_line = 1, .end_line = 1, .source_doc_index = 1, .required_labels = "group:a" },
+        .{ .id = "none", .text = "no source", .path = "b.txt", .start_line = 2, .end_line = 3 },
+    };
+    var encoded_storage: [1024]u8 = undefined;
+    const encoded = try encodeV4(&documents, &encoded_storage);
+    try std.testing.expectEqual(try encodedLengthV4(&documents), encoded.len);
+    try std.testing.expectEqual(@as(u16, 4), (try inspect(encoded)).format_version);
+    var decoded_storage: [3]hybrid.Document = undefined;
+    var vectors: [0]f32 = .{};
+    const decoded = try decode(encoded, &decoded_storage, &vectors);
+    try std.testing.expectEqual(@as(u16, 1), decoded[0].chunker_index);
+    try std.testing.expectEqual(@as(u16, 2), decoded[0].section_depth);
+    try std.testing.expectEqual(@as(u32, 7), decoded[0].heading_line);
+    try std.testing.expectEqual(@as(u32, 0), decoded[0].source_doc_index);
+    try std.testing.expectEqualStrings("Week 7\x1fDates", decoded[0].section_path);
+    try std.testing.expectEqualStrings("beta", decoded[0].text);
+    try std.testing.expectEqual(@as(u32, 1), decoded[1].source_doc_index);
+    try std.testing.expectEqualStrings("group:a", decoded[1].required_labels);
+    try std.testing.expectEqual(hybrid.no_source_doc, decoded[2].source_doc_index);
+    try std.testing.expectEqual(@as(usize, 0), decoded[2].section_path.len);
+}
+
+test "segment v3 writer is unchanged and refuses v4 fields" {
+    const plain = [_]hybrid.Document{.{ .id = "one", .text = "lexical text", .path = "a.md", .start_line = 1, .end_line = 2 }};
+    var storage: [256]u8 = undefined;
+    const encoded = try encode(&plain, &storage);
+    try std.testing.expectEqual(@as(u16, 3), (try inspect(encoded)).format_version);
+    try std.testing.expectEqual(header_length + 28 + 3 + 4 + 12, encoded.len);
+    var decoded_storage: [1]hybrid.Document = undefined;
+    var vectors: [0]f32 = .{};
+    const decoded = try decode(encoded, &decoded_storage, &vectors);
+    try std.testing.expectEqual(hybrid.no_source_doc, decoded[0].source_doc_index);
+    try std.testing.expectEqual(@as(u16, 0), decoded[0].section_depth);
+
+    const sectioned = [_]hybrid.Document{.{ .id = "one", .text = "t", .path = "a.md", .start_line = 2, .end_line = 2, .section_depth = 1, .heading_line = 1, .section_path = "A" }};
+    try std.testing.expectError(error.RequiresVersion4, encode(&sectioned, &storage));
+}
+
+test "segment v4 rejects inconsistent section metadata" {
+    var storage: [256]u8 = undefined;
+    const wrong_depth = [_]hybrid.Document{.{ .id = "x", .text = "t", .path = "a.md", .start_line = 3, .end_line = 3, .section_depth = 1, .heading_line = 1, .section_path = "A\x1fB" }};
+    try std.testing.expectError(error.InvalidSection, encodeV4(&wrong_depth, &storage));
+    const heading_below = [_]hybrid.Document{.{ .id = "x", .text = "t", .path = "a.md", .start_line = 3, .end_line = 3, .section_depth = 1, .heading_line = 4, .section_path = "A" }};
+    try std.testing.expectError(error.InvalidSection, encodeV4(&heading_below, &storage));
+    const path_without_depth = [_]hybrid.Document{.{ .id = "x", .text = "t", .path = "a.md", .start_line = 3, .end_line = 3, .section_path = "A" }};
+    try std.testing.expectError(error.InvalidSection, encodeV4(&path_without_depth, &storage));
+}
+
+test "segment v4 checksum covers the new fields" {
+    const documents = [_]hybrid.Document{.{ .id = "md", .text = "beta", .path = "w.md", .start_line = 2, .end_line = 2, .chunker_index = 1, .section_depth = 1, .heading_line = 1, .source_doc_index = 0, .section_path = "W" }};
+    var storage: [256]u8 = undefined;
+    const encoded = try encodeV4(&documents, &storage);
+    // Byte 28 of the record is the low byte of chunker_index.
+    encoded[header_length + 28] ^= 0x01;
+    try std.testing.expectError(error.ChecksumMismatch, inspect(encoded));
 }

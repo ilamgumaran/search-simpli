@@ -205,3 +205,5 @@ observed equal-RRF regression · **O-01** collaborative knowledge model ·
 CAP-19 (`docs/requirements/cap-19-folder-knowledge.md`) was approved for build by the owner on 2026-10-31. Tasks `docs/tasks/S3-T1.md` … `S3-T8.md`; order T7 → T1 → T2 ∥ T3 → T4 → T5 → T6 → T8; details in `docs/folder-knowledge-implementation.md`. S3-T7 (the frozen family-folder fixture) started 2026-10-31 on `task/S3-T7`.
 
 **31 Oct (verifier, Xcode Mac): S3-T7 verified and merged (round 2).** The family-folder fixture and `judgments.json` version 2 (13 scenarios, 5 phrase, 5 prefix, 5 outline, 8 `read_span`) are frozen on `main`; `read_span` hashes include the last line's terminator; x1's front-matter line is an expected engine miss. Next: S3-T1. [Task](../tasks/S3-T7.md).
+
+**31 Oct (verifier, Xcode Mac): S3-T1 verified and merged.** Manifest v2, `md-section-v1`, records v4 and the retained source section are on `main`; `read_span` and `outline` answer the frozen pack exactly in the Zig core and the Python reference (outline 7/7, read_span 9/9); native libraries rebuilt (`9ba263a2…`). Next: S3-T2 and S3-T3. [Task](../tasks/S3-T1.md).

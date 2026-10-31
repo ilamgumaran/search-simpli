@@ -79,13 +79,24 @@ fn checkCorpus(
         });
         compared_out.* += 1;
         try std.testing.expect(results.len > 0);
-        std.testing.expectEqualStrings(expected_path, results[0].path) catch |err| {
+        // S3-T1: md-section-v1 makes exact BM25 ties (three files whose
+        // first section is the same title line). The engines break ties
+        // differently and both on purpose (Zig by document index,
+        // `hybrid.zig`; Python by chunk id), so the top path may be any
+        // path the reference scored equal to its top.
+        var top_matches = std.mem.eql(u8, expected_path, results[0].path);
+        for (ranking.items) |tied_value| {
+            const tied = tied_value.object;
+            if (@abs(tied.get("lexical_score").?.float - expected_score) >= score_tolerance) break;
+            if (std.mem.eql(u8, tied.get("path").?.string, results[0].path)) top_matches = true;
+        }
+        if (!top_matches) {
             std.debug.print(
                 "analyzer={s} query={s}: expected top path {s}, got {s}\n",
                 .{ analyzer.label(), query_text, expected_path, results[0].path },
             );
-            return err;
-        };
+            return error.TestExpectedEqual;
+        }
         const score_diff = @abs(@as(f64, results[0].lexical_score) - expected_score);
         if (score_diff >= score_tolerance) {
             std.debug.print(

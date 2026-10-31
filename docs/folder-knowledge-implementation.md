@@ -1,7 +1,10 @@
 # Folder knowledge — implementation details (CAP-19, S3)
 
-Status: design, not implemented (2026-10-31). Every format, field and number here
-is **proposed**; a task's Report turns it into an observed fact or amends it.
+Status: design (2026-10-31); §1, §2 and §4 implemented by S3-T1 with the
+amendments marked **S3-T1** below (formats: [`manifest-format-v2.md`](manifest-format-v2.md),
+[`segment-format-v4.md`](segment-format-v4.md), [`source-section-v1.md`](source-section-v1.md)).
+Every other format, field and number here is **proposed**; a task's Report
+turns it into an observed fact or amends it.
 Companion to [`CAP-19`](requirements/cap-19-folder-knowledge.md),
 [`UC-007`](use-cases/uc-007-family-folders-on-a-phone.md), the
 [plan](plans/folder-knowledge-plan.md) and the
@@ -12,6 +15,10 @@ Conventions: all integers little-endian; "codepoint" means a Unicode scalar;
 "line" means a `splitlines`-style line of the **original** bytes (CRLF, CR and
 LF all end a line; the terminator belongs to the line); line numbers are
 1-based inclusive. Nothing here changes `line-window-v1`'s golden output.
+**S3-T1:** "splitlines-style" is exact: the boundary set is Python's
+`str.splitlines` (also VT, FF, FS, GS, RS, NEL, LS, PS), the set
+`line-window-v1` already numbers lines by, so a chunk's citation and a
+`read_span` always count the same lines; a leading BOM is not part of line 1.
 
 ## 1. Generation layout (manifest v2)
 
@@ -25,6 +32,12 @@ fields in the reserved/flags space:
 | 10 | 2 | flags | bit 0 `has_source` (a source section is bound); bit 1 `has_positions` (`HYBLEX02`); other bits zero |
 | 32 | 4 | reserved → source section count | `0` or `1` |
 | … | | (v1 fields unchanged) | |
+
+**S3-T1 amendment:** binding the source section needs its byte length and
+checksum, and the 88-byte header has no room for two u64s, so the v2 header is
+104 bytes: offsets 0–75 as v1, source section length at 76, source section
+checksum at 84, payload length at 92, manifest checksum at 96 (FNV-1a over
+bytes 0–95 and the payload). Full table: [`manifest-format-v2.md`](manifest-format-v2.md).
 
 Payload strings (u32 length + bytes), in order: 1 analyzer id, 2 embedding
 model id or `none`, 3 document section filename, 4 lexical section filename,
@@ -40,6 +53,12 @@ model id or `none`, 3 document section filename, 4 lexical section filename,
 
 `chunkers` lists every chunker that produced a chunk in this generation with
 its parameters (the review's "identity includes algorithm and parameters").
+**S3-T1:** `line-window-v1` is always entry 0 (so `chunker_index` 0 means it,
+as §2 says, even in a generation of Markdown only) and `md-section-v1` is entry
+1 when used; each root also carries `required_labels` and `retain_source`;
+`source_section_version` is 0 when no source section is bound. The `meta` of
+the example above with `roots` written by `index_folder` is
+`[{"root_id":"r-legacy","label":"folder","kind":"local","required_labels":[],"retain_source":true}]`.
 Which chunker made a given chunk is stored per document record (§2). A v1
 manifest opens; `has_source`/`has_positions` read as false; operations that
 need them answer `SS_ERR_CAPACITY` with the message
@@ -67,7 +86,10 @@ section_path bytes       // UTF-8, entries separated by U+001F (unit separator);
 ```
 
 Order inside the record: the v3 fixed fields, the new fixed fields, then the
-variable byte runs in the v3 order followed by `section_path`. Readers of v1–v3
+variable byte runs in the v3 order followed by `section_path`. **S3-T1:** "the
+v3 order" includes the vector bytes, so `section_path` follows the vector; the
+writer of `index_folder` emits record v4, `import-json` still emits v3 (its
+interchange JSON carries no section, chunker or source fields). Readers of v1–v3
 decode the new fields as zero/empty/none. The chunk id stays
 `sha256(path\0start\0end\0text)[:20 hex]` over the chunk's **normalized** text
 (unchanged), where `path` is now the root-qualified path `root_id/relative`
@@ -137,6 +159,17 @@ u64    checksum           // FNV-1a over header bytes 0–39 + all payload bytes
 -- line maps: per file, line_count + 1 LEB128 varints: byte offset of each line start, then the end offset
 -- text: the original bytes of every retained file, concatenated
 ```
+
+**S3-T1 amendments** (full layout: [`source-section-v1.md`](source-section-v1.md)):
+the line-map varints are delta coded (the first value absolute, then gaps), so
+a typical line costs one byte instead of up to three; `encoding` 1 marks a
+file with a BOM (line 1 starts at byte 3); records are strictly sorted by path
+and text and maps are laid out in table order without gaps (so `open` can
+check every offset and `find` can binary-search); `read_span` clamps an
+`end_line` past the last line to it. In S3-T1 `index_folder` writes the one
+root `r-legacy` with `kind: local` and `retain_source: true` (ruling 4), not
+the `local` default of false proposed below; S3-T3 applies the per-kind
+defaults.
 
 `read_span(path, a, b, context)` slices lines `a-context … b+context`
 (clamped), total ≤ 400 lines and ≤ 256 KiB, else `SS_ERR_CAPACITY` with the
@@ -261,6 +294,9 @@ CFT-23).
    "headings":[{"level":1,"text":"Week 7","line":6,"end_line":40},{"level":2,"text":"Spelling","line":8,"end_line":22}],
    "lines":40,"chunker":"md-section-v1"}
 ```
+
+**S3-T1:** a front-matter block whose inner lines are not all `key: value`
+reports `fields: {}` plus `raw` (the inner lines joined by LF).
 
 `read_span`: `{"root_id","path","start_line","end_line","context_lines"}` →
 `{"start_line","end_line","text","context_before","context_after","byte_exact":true,"sha256":"…"}` (§4 limits).

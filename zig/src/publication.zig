@@ -84,8 +84,36 @@ pub fn publishRecorded(
     lexical_encoded: []const u8,
     recorder: ?*Recorder,
 ) !void {
+    try publishWithSourceRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, null, recorder);
+}
+
+/// `publish` for a v2 manifest that may bind a source section (S3-T1):
+/// the source file is linked with the other two sections, before the
+/// directory sync that precedes the MANIFEST rename, so a reader that sees
+/// the new MANIFEST always finds all three files.
+pub fn publishWithSource(
+    dir: std.Io.Dir,
+    io: std.Io,
+    manifest_encoded: []const u8,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+    source_encoded: ?[]const u8,
+) !void {
+    try publishWithSourceRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, null);
+}
+
+pub fn publishWithSourceRecorded(
+    dir: std.Io.Dir,
+    io: std.Io,
+    manifest_encoded: []const u8,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+    source_encoded: ?[]const u8,
+    recorder: ?*Recorder,
+) !void {
     const metadata = try manifest.decode(manifest_encoded);
     try manifest.validateSnapshot(metadata, documents_encoded, lexical_encoded);
+    try manifest.validateSource(metadata, source_encoded);
 
     // Cleanup of the two section files is right only while MANIFEST has not
     // moved. Once the MANIFEST rename succeeds, the new generation is
@@ -96,6 +124,10 @@ pub fn publishRecorded(
     errdefer if (!manifest_visible) dir.deleteFile(io, metadata.documents_file) catch {};
     try writeAtomicFileRecorded(dir, io, metadata.lexical_file, lexical_encoded, false, recorder);
     errdefer if (!manifest_visible) dir.deleteFile(io, metadata.lexical_file) catch {};
+    if (source_encoded) |bytes| {
+        try writeAtomicFileRecorded(dir, io, metadata.source_file, bytes, false, recorder);
+    }
+    errdefer if (!manifest_visible and source_encoded != null) dir.deleteFile(io, metadata.source_file) catch {};
     // Make both section renames durable before MANIFEST can name them.
     try syncDirectory(dir, io, recorder);
     try writeAtomicFileRecorded(dir, io, current_manifest_file, manifest_encoded, true, recorder);
@@ -185,6 +217,17 @@ pub fn loadCurrent(
         .documents_encoded = documents_encoded,
         .lexical_encoded = lexical_encoded,
     };
+}
+
+/// Read and validate the source section the current manifest names (S3-T1)
+/// into `buffer` (at least `metadata.source_bytes` long). Null when the
+/// generation binds none.
+pub fn loadSource(dir: std.Io.Dir, io: std.Io, metadata: manifest.Manifest, buffer: []u8) !?[]u8 {
+    if (!metadata.hasSource()) return null;
+    if (buffer.len < metadata.source_bytes) return error.BufferTooSmall;
+    const bytes = try dir.readFile(io, metadata.source_file, buffer[0..metadata.source_bytes]);
+    try manifest.validateSource(metadata, bytes);
+    return bytes;
 }
 
 /// Portable atomic file write: create a uniquely-named temporary file in

@@ -194,6 +194,32 @@ than a clean error.
   existing scanner and `generation_alloc.nextFreeGeneration`; there is no
   automated crash-injection *test* for it, only that one manual run.
 
+### Chunkers and retained source (S3-T1)
+
+Since S3-T1 a generation records which chunker made every chunk
+(`md-section-v1` for `.md`/`.markdown`, `line-window-v1` for the rest;
+[`manifest-format-v2.md`](manifest-format-v2.md),
+[`segment-format-v4.md`](segment-format-v4.md)) and keeps every indexed file's
+original bytes in a source section ([`source-section-v1.md`](source-section-v1.md)).
+An update therefore:
+
+- re-chunks a file whose bytes are unchanged when the chunker its extension
+  selects differs from the one that made its previous chunks (a generation
+  written before S3-T1 chunked Markdown by line windows), and reports it under
+  `changed`;
+- retains the bytes it read for every file it keeps; a file it carries without
+  reading (unreadable this run, or over the run's byte budget) keeps its bytes
+  from the previous source section when they were there, and its records are
+  re-pointed at the new section;
+- treats a lost `source-N.hybsrc` like a lost document or lexical section:
+  `recovered: "missing_section"` and a full re-index.
+
+The Python reference records the same per-chunk fields (`section_path`,
+`heading_line`, `chunker`) and adds the Markdown chunker to its `chunking`
+contract, so an index saved before S3-T1 no longer matches it and an
+incremental build from it is refused with "chunker contract does not match"
+(a full build is needed once).
+
 ## The Python path: `search.py index --incremental-from`
 
 Separate, older system for the Python vector/embedding pipeline — still
