@@ -80,6 +80,10 @@ Identifiers and filenames follow v1's rules; the three filenames must differ.
   arrived (no chunks).
 - `unchunked` (S3-T3, only when non-empty): the same fields for indexed files
   that produced no chunk (an empty or blank file).
+- `skipped` (S3-T3, only when non-empty): the same fields plus `reason`
+  (`too_large`, `unreadable`, `budget_exhausted`) for files a writer was given
+  but could not index in full, kept until a later change of the path; a
+  `find` or `index_status` over a scope holding one says `truncated`.
 - `source_section_version`: `1` when a source section is bound, else `0`.
 
 `decode` checks that `meta` is a UTF-8 object literal (first byte `{`, last

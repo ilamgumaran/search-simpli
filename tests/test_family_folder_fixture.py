@@ -295,13 +295,22 @@ class GeneratorAndRunnerTests(unittest.TestCase):
         self.assertTrue(report["gate"]["passed"])
         self.assertGreaterEqual(report["words_recall_at_k"], 0.9)
         self.assertTrue(report["newt_empty"])
-        self.assertEqual(report["skipped"]["phrase"], 5)
-        self.assertEqual(report["skipped"]["prefix"], 5)
+        # S3-T2: phrase and prefix run through the Python reference's `find`:
+        # 5 + 5 cases plus scenarios 2 and 3, precision and recall 1.00 across
+        # all pages, the listed engine misses missed; scenario 10's phrase
+        # step runs too. S3-T3: the three lifecycle scenarios run as well, so
+        # nothing is skipped.
+        self.assertEqual(report["skipped"], {})
+        self.assertEqual({k: len(v) for k, v in report["find_cases"].items()}, {"phrase": 6, "prefix": 6})
+        for metrics in report["find_metrics"].values():
+            self.assertEqual(metrics, {"precision": 1.0, "recall": 1.0, "expected_misses_found": 0})
+        self.assertEqual([c["hits"] for c in report["find_cases"]["phrase"]], [3, 1, 0, 1, 2, 3])
+        self.assertEqual([c["hits"] for c in report["find_cases"]["prefix"]], [5, 7, 5, 5, 1, 5])
         # S3-T1: outline and read_span run through the Python reference, exactly.
         self.assertNotIn("outline", report["skipped"])
         self.assertNotIn("read_span", report["skipped"])
         # S3-T3: the three lifecycle scenarios run through the reference's apply_changes.
-        self.assertEqual(report["exactness"], {"outline": 1.0, "read_span": 1.0, "lifecycle": 1.0})
+        self.assertEqual(report["exactness"], {"outline": 1.0, "read_span": 1.0, "phrase_neighbour": 1.0, "lifecycle": 1.0})
         self.assertEqual(len(report["exact_cases"]["lifecycle"]), 3)
         self.assertNotIn("scenario lifecycle (S3-T3/T4)", report["skipped"])
         self.assertEqual(len(report["exact_cases"]["read_span"]), 9)  # 8 cases + scenario 5

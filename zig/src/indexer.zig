@@ -132,6 +132,15 @@ pub fn tokenize(allocator: std.mem.Allocator, analyzer: AnalyzerId, text: []cons
     };
 }
 
+/// `tokenize` with each token's codepoint span in `text` (S3-T2): what the
+/// positional lexical build (`HYBLEX02`) records as ordinals and offsets.
+pub fn tokenizePositioned(allocator: std.mem.Allocator, analyzer: AnalyzerId, text: []const u8) ![]const analysis.PositionedToken {
+    return switch (analyzer) {
+        .v1 => analysis.tokenizePositioned(allocator, text, true),
+        .v2 => analyzer_v2.tokenizePositioned(allocator, text),
+    };
+}
+
 /// The one root `index_folder` writes (S3-T1): its records keep bare
 /// relative paths (`scope.zig`).
 pub const legacy_root_id = scope.legacy_root_id;

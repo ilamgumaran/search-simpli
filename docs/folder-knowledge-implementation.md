@@ -6,6 +6,8 @@ amendments marked **S3-T1** below (formats: [`manifest-format-v2.md`](manifest-f
 §5, §6 and §7 implemented in the core by S3-T3 (`zig/src/apply.zig`,
 `zig/src/scope.zig`, `zig/src/incremental_state.zig`; Python reference
 `src/search_platform/folders.py`) with the amendments marked **S3-T3**.
+§3, the `find` part of §8 and the §13 profile implemented by S3-T2 with the
+amendments marked **S3-T2** (format: [`lexical-segment-format-v2.md`](lexical-segment-format-v2.md)).
 Every other format, field and number here is **proposed**; a task's Report
 turns it into an observed fact or amends it.
 Companion to [`CAP-19`](requirements/cap-19-folder-knowledge.md),
@@ -154,6 +156,32 @@ terms; only the final query token may carry a trailing `*`; expansion counts
 only terms visible to the caller's scope (§7). `words` mode is conjunctive
 (every analyzed term present) then BM25 order; `search_knowledge` keeps its
 current disjunctive BM25.
+
+**S3-T2 amendments** (full format: [`lexical-segment-format-v2.md`](lexical-segment-format-v2.md)):
+- Section 5's start is a delta from the **previous token's start** (the first
+  from 0); a token's length is ≥ 1. "The chunk's normalized text" is the
+  record's stored `text` (what a hit's `content` is), in codepoints of the
+  original, not the NFC form: the writer maps NFC output back through
+  `nfc.MappedIterator` (a region NFC changes maps to the whole region).
+- Two v2 rules the reader checks: the dictionary is strictly sorted by bytes
+  (no hash set needed), and term ranges are contiguous in dictionary order
+  (so a term's ordinals are one run of section 4). Sections 4 and 5 are
+  validated completely at open; `postings.buildPositionTables` then records
+  one start offset per term and per document.
+- The manifest's `has_positions` is set exactly when the lexical section is
+  `HYBLEX02`; a mismatch is refused, and a v1 manifest cannot bind
+  `HYBLEX02`. `import-json` (v1 manifest) therefore keeps writing `HYBLEX01`,
+  now with the sorted dictionary, so its sections 1–3 equal the folder door's
+  byte for byte (the S2-T1 parity test compares those bytes).
+- On a `HYBLEX01` generation `phrase` answers `CAPACITY` "re-index required:
+  positions absent"; `words` and `prefix` still answer (a prefix scans the
+  unsorted dictionary, highlights are recomputed by re-tokenizing the hit).
+- `--update` carries unchanged chunks' exact token sequence and spans out of
+  the previous `HYBLEX02` section instead of re-analyzing them; a `HYBLEX01`
+  generation is re-tokenized once.
+- Measured on the 10k corpus (19,959 chunks): section 4 is one byte per token
+  (1.11 per posting), section 5 two bytes per token plus four per chunk; the
+  section is 1.39× `HYBLEX01`. Neither rollback is needed.
 
 ## 4. Source section v1 (`HYBSRC01`)
 
@@ -389,6 +417,22 @@ over the documents. `index_status` reports `documents`, `terms`, `postings`,
 have retained bytes) over the scope; `read_span`/`outline` of a hidden file
 answer the absent file's `not_found` message. The prefix-expansion hook for
 S3-T2 is `scope.termVisible`. Measured timing: `docs/authorization.md`.
+`find` over a scope is `service.ScopedService.find`: the roots mask joins
+`find`'s label and prefix filter (candidates and prefix expansion), its BM25
+goes through `scoring.CorpusStatistics` with the visible scope's count,
+average length and a document-frequency provider, and the answer's
+`pending_files` counts the scope's visible pending files. `truncated` is true
+when a visible file was given to a writer but not indexed in full (too large,
+unreadable, or over the run's byte budget): the manifest's `meta.skipped`
+lists such files (`{root_id, path, size, required_labels, reason}`) until a
+later change of the path; `index_status` carries the same `truncated`.
+**S3-T2:** `find` takes its scope from the request's `path_prefix` and trusted
+`principal_labels` (the existing filter), applied before candidates are
+scored; prefix expansion counts a term only when one of its postings is in
+that scope. BM25 in `find` is computed through `scoring.CorpusStatistics`
+(document count, average length, and a per-term document-frequency provider);
+the default is the whole generation, and S3-T3 plugs the visible-scope
+statistics in there. `search_knowledge` is unchanged.
 
 ## 8. Read operations (JSON shapes)
 
@@ -417,6 +461,35 @@ deduplicated to the earlier chunk (the review's "overlap deduplication").
 is `phrase`. `empty: true` means this page has no hits; `pending_files` and
 `truncated` tell the caller the corpus may be incomplete (review finding 5,
 CFT-23).
+
+**S3-T2 amendments to `find`** (implemented in `zig/src/find.zig`, the Python
+reference `search_platform/find.py`; no ABI, CLI or RPC surface until S3-T4):
+- Each hit also carries `snippet_start` (CAP-19 FR-17: the snippet's start
+  offset in `content`). The snippet is a plain substring of `content` (no
+  `…` added), so `snippet_offsets` are `match_offsets` minus `snippet_start`.
+  The example's snippet would read `"band concert: count me in, Friday 6"`.
+  The window: of the windows of at most 240 codepoints that start at a
+  match, the one covering the most distinct matched terms, then the most
+  matches, earliest first; widened evenly; cut so it starts at a token start
+  (or the text start) and ends at a token end (or the text end).
+- `match_offsets`: one range per phrase occurrence (occurrences are
+  non-overlapping, left to right: "the the" in "the the the" is one) or per
+  matched token (words, prefix).
+- Overlap deduplication, made exact: for two hits of one file whose line
+  ranges overlap, the lines they share are the largest `j` (at most the
+  overlap of the ranges) with the last `j` lines of the earlier chunk's text
+  equal to the first `j` of the later one's (each stripped); the later hit is
+  dropped when every one of its matches ends inside the lines it shares with
+  an earlier **kept** hit. It applies to all three modes. `words` and
+  `prefix` are chunk-local like `phrase`.
+- `files` counts all hits (every page) in the order each file first appears
+  in the ranking; `coverage` counts this page's hits; `truncated` is `false`
+  and `pending_files` `0` until S3-T3 gives them a source.
+- Refusals: `INVALID_ARGUMENT` for an empty query (nothing analyzable,
+  `""` and `*` included), a `*` that ends any token but the last, `page_size`
+  outside 1..100, invalid UTF-8, a malformed cursor, and `"stale cursor"`
+  for another generation's; `CAPACITY` for `"re-index required: positions
+  absent"` and `prefix "<p>" expands to more than 1000 terms`.
 
 `outline`:
 
@@ -525,3 +598,13 @@ generator's output with its sha256 plus the family-folder fixture, 5 warm-up
 queries then 200 timed queries per mode, p50 and p95, three repetitions, peak
 RSS from `/usr/bin/time -l`, segment sizes per section, retained-source bytes
 separately. Before/after tables live in `docs/scale-benchmark.md`.
+
+**S3-T2 (recorded):** MacBook Pro, Apple M5 Pro (18 cores), 48 GB, macOS
+26.6.2 (25G83); Zig 0.16.0 `ReleaseFast` and `ReleaseSmall`; corpus
+`scripts/gen_timing_corpus.py <dir> 10000` (10,000 Markdown files,
+7,269,199 bytes, sha256 of the files concatenated in sorted path order
+`3a520dd588fa34cb2bec9a15b12f7ad8a0fc3c0d5feebd4baba4ce49fed96e38`,
+19,959 chunks) plus the family-folder fixture (three roots side by side,
+998 chunks); the timer is `zig/src/find_bench.zig` (queries drawn from the
+indexed chunks, 5 warm-up then 200 timed per mode, three repetitions); index
+runs are three per build. NFR-10's "10k chunks" is measured at 19,959.

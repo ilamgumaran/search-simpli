@@ -1,4 +1,6 @@
 const engine_module = @import("engine.zig");
+const find_module = @import("find.zig");
+const scoring = @import("scoring.zig");
 const hybrid = @import("hybrid.zig");
 const postings = @import("postings.zig");
 const scope = @import("scope.zig");
@@ -50,6 +52,8 @@ pub const ScopedStatus = struct {
     postings: usize,
     files: usize,
     pending: usize,
+    /// A visible file was given but not indexed in full (`meta.skipped`).
+    truncated: bool,
     roots: []const RootStatus,
     pending_paths: []const FileRef,
     has_source: bool,
@@ -426,6 +430,7 @@ pub const ScopedService = struct {
             .postings = posting_count,
             .files = files,
             .pending = pending_paths.items.len,
+            .truncated = try anySkippedVisible(resolved),
             .roots = roots[0..root_count],
             .pending_paths = try pending_paths.toOwnedSlice(allocator),
             .has_source = has_source,
@@ -468,6 +473,45 @@ pub const ScopedService = struct {
         return source_section.readSpan(allocator, section, record, start_line, end_line, context_lines);
     }
 
+    /// `find` (S3-T2) over the request's scope: roots and labels filter
+    /// before candidates and bound prefix expansion, BM25 uses the visible
+    /// scope's statistics, and the answer's `pending_files` and `truncated`
+    /// count the scope's pending files and say whether a visible file was
+    /// given but not indexed in full (too large, unreadable, over budget).
+    pub fn find(scoped: ScopedService, allocator: std.mem.Allocator, request: find_module.Request, scope_request: scope.Request) !find_module.Outcome {
+        const resolved = try resolve(scoped.service, allocator, scope_request);
+        defer resolved.deinit(allocator);
+        const engine = scoped.service.engine;
+        const folder = resolved.folder;
+        var scoped_request = request;
+        scoped_request.principal_labels = scope_request.principal_labels;
+        scoped_request.visible_roots = resolved.mask();
+        // `find.splitRoot` gives unprefixed paths to the first id: the legacy root.
+        var ids = std.ArrayList([]const u8).empty;
+        for (folder.roots) |root| if (scope.isLegacy(root.root_id)) try ids.append(allocator, root.root_id);
+        for (folder.roots) |root| if (!scope.isLegacy(root.root_id)) try ids.append(allocator, root.root_id);
+        if (ids.items.len != 0) scoped_request.root_ids = ids.items;
+        var view = try scope.visibleCollection(allocator, engine.lexical_index, engine.documents, engine.statistics, engine.labeled_documents, resolved.mask(), resolved.labels);
+        defer if (view) |*v| v.deinit(allocator);
+        const provider = try allocator.create(FrequencyProvider);
+        if (view) |v| {
+            provider.* = .{ .view = v, .engine = engine };
+            scoped_request.statistics = .{
+                .document_count = v.collection.document_count,
+                .average_document_length = v.collection.average_document_length,
+                .context = provider,
+                .document_frequency_fn = FrequencyProvider.frequency,
+            };
+        }
+        var pending: usize = 0;
+        for (folder.pending) |entry| if (resolved.listedVisible(entry)) {
+            pending += 1;
+        };
+        scoped_request.pending_files = pending;
+        scoped_request.truncated = try anySkippedVisible(resolved);
+        return find_module.find(allocator, engine, scoped_request);
+    }
+
     /// `outline` gated by the scope, like `readSpan`.
     pub fn outline(scoped: ScopedService, allocator: std.mem.Allocator, request: scope.Request, root_id: []const u8, path: []const u8) !source_section.OutlineResult {
         const resolved = try resolve(scoped.service, allocator, request);
@@ -482,10 +526,27 @@ pub const ScopedService = struct {
     }
 };
 
+const FrequencyProvider = struct {
+    view: scope.View,
+    engine: engine_module.Engine,
+
+    fn frequency(context: ?*const anyopaque, term_index: usize, global: u32) u32 {
+        _ = global;
+        const self: *const FrequencyProvider = @ptrCast(@alignCast(context.?));
+        const index = self.engine.lexical_index;
+        return scope.documentFrequency(self.view, index, self.engine.documents, index.terms[term_index]);
+    }
+};
+
+fn anySkippedVisible(resolved: Resolved) !bool {
+    for (resolved.folder.skipped) |entry| if (resolved.listedVisible(entry)) return true;
+    return false;
+}
+
 /// The section 8 `index_status` additions as JSON.
 pub fn writeScopedStatusJson(json: *std.json.Stringify, status: ScopedStatus) !void {
     try json.beginObject();
-    inline for (.{ "ready", "generation", "analyzer_id", "embedding_model_id", "vector_dimensions", "documents", "terms", "postings", "files", "pending" }) |name| {
+    inline for (.{ "ready", "generation", "analyzer_id", "embedding_model_id", "vector_dimensions", "documents", "terms", "postings", "files", "pending", "truncated" }) |name| {
         try json.objectField(name);
         try json.write(@field(status, name));
     }

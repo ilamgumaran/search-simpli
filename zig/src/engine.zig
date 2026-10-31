@@ -38,6 +38,10 @@ pub const Engine = struct {
     /// when the caller built them for this generation; without them a scoped
     /// query counts its visible documents exactly.
     statistics: ?*const scope.Statistics = null,
+    /// S3-T2: where each term's ordinals and each document's offsets begin in
+    /// a `HYBLEX02` section (`postings.buildPositionTables`), attached by
+    /// `snapshot_open.open`; `find` builds them per call when null.
+    position_tables: ?postings.PositionTables = null,
 
     pub fn open(
         snapshot: publication.LoadedSnapshot,

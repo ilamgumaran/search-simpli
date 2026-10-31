@@ -308,6 +308,9 @@ class FolderIndex:
         self.generation = 0
         self.roots: dict[str, dict] = {}
         self.files: dict[str, dict] = {}  # record path -> file
+        # Files given but not indexed in full (too large, unreadable), until
+        # a later change of the path: `truncated` (`meta.skipped` in the engine).
+        self.skipped: dict[str, dict] = {}
         self._chunking = {k: v for k, v in (("max_chars", max_chars), ("overlap_lines", overlap_lines)) if v is not None}
 
     # ------------------------------------------------------------ writing ---
@@ -324,6 +327,7 @@ class FolderIndex:
         if deferred is not None:
             raise deferred
         roots = {k: dict(v) for k, v in self.roots.items()}
+        skipped = {k: dict(v) for k, v in self.skipped.items()}
         files = {k: dict(v) for k, v in self.files.items()}
         initial = {k: (v["status"], v["sha256"], v["root_id"], v["path"]) for k, v in files.items()}
         local_paths: dict[str, str] = {}
@@ -385,7 +389,12 @@ class FolderIndex:
         touched: dict[str, str] = {}
         carried_after_failure: set[str] = set()
 
+        def skip(change: dict, record: str, reason: str) -> None:
+            skipped[record] = {"root_id": change["root_id"], "path": change["path"],
+                               "labels": change["required_labels"], "reason": reason}
+
         def touch(root_id: str, path: str, record: str, op: str) -> None:
+            skipped.pop(record, None)
             if record in touched:
                 report["conflicts"].append({"root_id": root_id, "path": path, "replaced": touched[record], "by": op})
             touched[record] = op
@@ -397,6 +406,8 @@ class FolderIndex:
             op, root_id, path = change["op"], change["root_id"], change["path"]
             if op == "remove_root":
                 if root_id in roots:
+                    for record in [r for r, f in skipped.items() if f["root_id"] == root_id]:
+                        del skipped[record]
                     for record in [r for r, f in files.items() if f["root_id"] == root_id]:
                         del files[record]
                         gone[record] = "root"
@@ -440,9 +451,11 @@ class FolderIndex:
                     if size is None:
                         report["unreadable_paths"].append({"root_id": root_id, "path": path})
                         carried_after_failure.add(record)
+                        skip(change, record, "unreadable")
                         continue
                     if size > max_file_bytes:
                         report["too_large_paths"].append({"root_id": root_id, "path": path})
+                        skip(change, record, "too_large")
                         if files.pop(record, None) is not None:
                             gone[record] = "too_large"
                         continue
@@ -453,9 +466,11 @@ class FolderIndex:
                     except (OSError, UnicodeDecodeError):
                         report["unreadable_paths"].append({"root_id": root_id, "path": path})
                         carried_after_failure.add(record)
+                        skip(change, record, "unreadable")
                         continue
                 elif len(data) > max_file_bytes:
                     report["too_large_paths"].append({"root_id": root_id, "path": path})
+                    skip(change, record, "too_large")
                     if files.pop(record, None) is not None:
                         gone[record] = "too_large"
                     continue
@@ -522,7 +537,7 @@ class FolderIndex:
         for entry in files.values():
             entry["recorded_moved_from"] = entry.pop("moved_from", None) or entry.get("recorded_moved_from")
             entry["moved_from"] = None
-        self.roots, self.files = roots, files
+        self.roots, self.files, self.skipped = roots, files, skipped
         self.generation += 1
         report["generation"] = self.generation
         return report
@@ -665,6 +680,7 @@ class FolderIndex:
             "files": sum(1 for f in visible if f["status"] == "indexed"),
             "pending": len(pending),
             "pending_paths": pending,
+            "truncated": any(self._file_visible(f, allowed, held) for f in self.skipped.values()),
             "roots": [{"root_id": rid, "label": self.roots[rid]["label"], "kind": self.roots[rid]["kind"]}
                       for rid in self.roots if rid in allowed],
             "chunkers": sorted({c["chunker"] for c in chunks}, key=lambda c: (c != "line-window-v1", c)),

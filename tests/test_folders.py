@@ -186,6 +186,22 @@ class FolderIndexTests(unittest.TestCase):
         self.assertEqual(report["ambiguous_moves"][0]["pairs"], [{"from": "x.md", "to": "z.md"}])
         self.assertEqual(report["ambiguous_moves"][0]["from"], ["x.md", "y.md"])
 
+    def test_pending_and_truncated_over_the_visible_scope(self) -> None:
+        index = FolderIndex()
+        index.apply_changes({"roots": ROOTS, "changes": [
+            add_change("home", "notes.md", "canal walk\n"),
+            {"op": "pending", "root_id": "home", "path": "later.md", "size": 10},
+            {"op": "pending", "root_id": "home", "path": "secret.md", "required_labels": ["adults"]},
+        ]})
+        self.assertEqual(index.index_status()["pending"], 1)
+        self.assertEqual(index.index_status(principal_labels=["adults"])["pending"], 2)
+        index.apply_changes({"changes": [add_change("home", "big.md", "0123456789" * 3, required_labels=["adults"])]},
+                            max_file_bytes=10)
+        self.assertFalse(index.index_status()["truncated"])
+        self.assertTrue(index.index_status(principal_labels=["adults"])["truncated"])
+        index.apply_changes({"changes": [add_change("home", "big.md", "small", required_labels=["adults"])]})
+        self.assertFalse(index.index_status(principal_labels=["adults"])["truncated"])
+
     def test_strict_base64(self) -> None:
         self.assertEqual(strict_base64(base64.b64encode(b"x").decode()), b"x")
         for text in ("eA=", "eB==", "e A=", "eA==\n", "@@@@"):

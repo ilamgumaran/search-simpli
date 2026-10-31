@@ -44,7 +44,11 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
     const document_lengths = try allocator.alloc(u32, metadata.document_count);
 
-    return engine.Engine.open(snapshot, documents, vectors, terms, posting_storage, document_lengths);
+    var opened = try engine.Engine.open(snapshot, documents, vectors, terms, posting_storage, document_lengths);
+    // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
+    // terms' ordinals and its hits' offsets.
+    if (opened.lexical_index.positions != null) opened.position_tables = try postings.buildPositionTables(allocator, opened.lexical_index);
+    return opened;
 }
 
 /// The current generation's manifest and source section (S3-T1), validated
@@ -86,6 +90,7 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
     const meta: ?manifest.Meta = if (opened.metadata.meta.len != 0) try manifest.parseMeta(allocator, opened.metadata.meta) else null;
     const folder = try allocator.create(scope.Folder);
     folder.* = try scope.Folder.build(allocator, opened_engine.documents, opened_engine.lexical_index, meta, opened.source);
+    folder.has_positions = opened.metadata.has_positions;
     opened_engine.statistics = &folder.statistics;
     return .{ .engine = opened_engine, .folder = folder };
 }

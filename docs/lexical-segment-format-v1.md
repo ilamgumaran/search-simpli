@@ -1,6 +1,6 @@
 # Immutable lexical segment format v1
 
-Status: implemented and fully round-trip tested in `zig/src/lexical_segment.zig`.
+Status: implemented and fully round-trip tested in `zig/src/lexical_segment.zig`. Still read, and still written by `import-json`; `searchd index` writes [`HYBLEX02`](lexical-segment-format-v2.md) since S3-T2.
 
 Magic: `HYBLEX01`. All integers and `f32` bit patterns are little-endian. The section persists the exact information required for BM25 without re-tokenizing stored document text after restart.
 

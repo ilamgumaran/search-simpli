@@ -15,6 +15,7 @@ const scope = @import("scope.zig");
 const service_module = @import("service.zig");
 const snapshot_open = @import("snapshot_open.zig");
 const source = @import("source.zig");
+const find_module = @import("find.zig");
 
 const io = std.testing.io;
 
@@ -162,6 +163,17 @@ fn payloads(
         });
         try json.objectField("matched_chunks");
         try json.write(trace.matched_chunks);
+    }
+    // `find` (S3-T2) in each mode over the same scope.
+    for (queries) |query| {
+        for ([_]find_module.Mode{ .words, .prefix, .phrase }) |mode| {
+            const text = if (mode == .prefix) try std.fmt.allocPrint(allocator, "{s}*", .{query[0..@min(query.len, 3)]}) else query;
+            try json.objectField(try std.fmt.allocPrint(allocator, "find {s} {s}", .{ @tagName(mode), text }));
+            switch (try scoped.find(allocator, .{ .query = text, .mode = mode }, request)) {
+                .ok => |answer| try find_module.writeJson(&json, answer),
+                .failed => |failure| try json.write(failure),
+            }
+        }
     }
     try json.objectField("read_chunk");
     try json.beginArray();
@@ -928,4 +940,68 @@ test "S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through appl
     }
     try std.testing.expectEqual(@as(usize, 3), passed);
     std.debug.print("S3-T3 family-folder lifecycle through apply_changes: {d}/3 scenarios\n", .{passed});
+}
+
+test "S3-T3: find and index_status say pending_files and truncated, over the visible scope only" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, domain_roots, &.{
+        try add(a, "home", "notes.md", "# Notes\n\nthe canal walk\n", ""),
+        try std.fmt.allocPrint(a, "{{\"op\":\"pending\",\"root_id\":\"home\",\"path\":\"later.md\",\"size\":10}}", .{}),
+        try std.fmt.allocPrint(a, "{{\"op\":\"pending\",\"root_id\":\"home\",\"path\":\"secret.md\",\"size\":10,\"required_labels\":[\"adults\"]}}", .{}),
+    }), .{});
+    {
+        const scoped = try f.opened();
+        const answer = (try scoped.find(a, .{ .query = "canal" }, .{})).ok;
+        try std.testing.expectEqual(@as(usize, 1), answer.hits.len);
+        try std.testing.expectEqualStrings("home", answer.hits[0].root_id);
+        try std.testing.expectEqualStrings("notes.md", answer.hits[0].path);
+        try std.testing.expectEqual(@as(usize, 1), answer.pending_files); // the labelled one is hidden
+        try std.testing.expect(!answer.truncated);
+        try std.testing.expectEqual(@as(usize, 2), (try scoped.find(a, .{ .query = "canal" }, .{ .principal_labels = &.{"adults"} })).ok.pending_files);
+        try std.testing.expectEqual(@as(usize, 0), (try scoped.find(a, .{ .query = "canal" }, .{ .roots = &.{"school"} })).ok.pending_files);
+    }
+    // A file over max_file_bytes is skipped: results over its root are truncated
+    // until the path changes again; a hidden skipped file does not show.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+        try add(a, "home", "big.md", "0123456789 0123456789 0123456789\n", "[\"adults\"]"),
+    }), .{ .max_file_bytes = 10 });
+    {
+        const scoped = try f.opened();
+        try std.testing.expect(!(try scoped.find(a, .{ .query = "canal" }, .{})).ok.truncated);
+        try std.testing.expect((try scoped.find(a, .{ .query = "canal" }, .{ .principal_labels = &.{"adults"} })).ok.truncated);
+        try std.testing.expect((try scoped.indexStatus(a, .{ .principal_labels = &.{"adults"} })).truncated);
+    }
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "plain.md", "plain\n", "")}), .{ .max_file_bytes = 10 });
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "huge.md", "0123456789 0123456789 0123456789\n", "")}), .{ .max_file_bytes = 10 });
+    try std.testing.expect((try (try f.opened()).find(a, .{ .query = "canal" }, .{})).ok.truncated);
+    try std.testing.expect(!(try (try f.opened()).find(a, .{ .query = "canal" }, .{ .roots = &.{"school"} })).ok.truncated);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "huge.md", "small now\n", "")}), .{});
+    try std.testing.expect(!(try (try f.opened()).find(a, .{ .query = "canal" }, .{})).ok.truncated);
+}
+
+test "S3-T3: a generation carrying unchanged documents has the lexical section a fresh positional build gives" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, domain_roots, &.{
+        try add(a, "home", "a.md", "# A\n\nThe canal boat, the canal lock and Café rocks.\n", ""),
+        try add(a, "home", "b.txt", "the the the boat\nboat lock\n", ""),
+        try add(a, "school", "c.md", "# C\n\nபள்ளி விடுமுறை and a lock\n", ""),
+    }), .{});
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+        try add(a, "home", "b.txt", "a new boat with ducks\n", ""),
+        "{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"z/a.md\",\"moved_from\":\"a.md\"}",
+    }), .{});
+    const scoped = try f.opened();
+    const engine = scoped.service.engine;
+    const lists = try a.alloc([]const @import("analysis.zig").PositionedToken, engine.documents.len);
+    for (engine.documents, lists) |document, *list| list.* = try indexer.tokenizePositioned(a, .v2, document.text);
+    const fresh = try lexical_build.buildPositional(a, engine.documents, lists);
+    const expected = try a.alloc(u8, try @import("lexical_segment.zig").encodedLength(fresh));
+    _ = try @import("lexical_segment.zig").encode(fresh, expected);
+    const metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    try std.testing.expectEqualSlices(u8, expected, try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited));
+    try std.testing.expect(metadata.has_positions);
 }

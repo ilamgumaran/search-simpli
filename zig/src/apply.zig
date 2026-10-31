@@ -25,6 +25,7 @@
 //! `path_collides_with_root`), `too_large` (the file's chunks are dropped,
 //! S1-T4), `unreadable` and `budget_exhausted` (its previous chunks are kept).
 const std = @import("std");
+const analysis = @import("analysis.zig");
 const chunker = @import("chunker.zig");
 const engine_module = @import("engine.zig");
 const generation_alloc = @import("generation_alloc.zig");
@@ -32,6 +33,7 @@ const hybrid = @import("hybrid.zig");
 const incremental_state = @import("incremental_state.zig");
 const indexer = @import("indexer.zig");
 const lexical_segment = @import("lexical_segment.zig");
+const lexical_build = @import("lexical_build.zig");
 const lifecycle = @import("lifecycle.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
@@ -530,6 +532,13 @@ const Work = struct {
     gone: std.StringHashMapUnmanaged(Cause) = .empty,
     touched: std.StringHashMapUnmanaged(Op) = .empty,
     removed_roots: std.StringHashMapUnmanaged(void) = .empty,
+    /// Files given but not indexed in full (`manifest.Meta.skipped`), by
+    /// record path; a later change of the path clears its entry.
+    skipped: std.StringHashMapUnmanaged(manifest.PendingEntry) = .empty,
+
+    fn skip(work: *Work, change: Change, record: []const u8, reason: []const u8) !void {
+        try work.skipped.put(work.allocator, record, .{ .root_id = change.root_id, .path = change.path, .size = change.size, .required_labels = change.required_labels, .reason = reason });
+    }
 
     fn rootIndex(work: *const Work, root_id: []const u8) ?usize {
         for (work.roots.items, 0..) |root, index| if (std.mem.eql(u8, root.entry.root_id, root_id)) return index;
@@ -740,6 +749,10 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
                 }
                 _ = work.roots.orderedRemove(root_index);
                 try work.removed_roots.put(allocator, change.root_id, {});
+                var gone_skips = std.ArrayList([]const u8).empty;
+                var skips = work.skipped.iterator();
+                while (skips.next()) |entry| if (std.mem.eql(u8, entry.value_ptr.root_id, change.root_id)) try gone_skips.append(allocator, entry.key_ptr.*);
+                for (gone_skips.items) |record| _ = work.skipped.remove(record);
                 roots_removed += 1;
             }
             continue;
@@ -774,6 +787,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             continue;
         }
         try noteTouch(allocator, &work, &conflicts, change.root_id, change.path, record, change.op);
+        _ = work.skipped.remove(record);
 
         switch (change.op) {
             .remove => {
@@ -800,6 +814,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             .move => {
                 const from_record = try scope.recordPath(allocator, change.root_id, change.moved_from.?);
                 try noteTouch(allocator, &work, &conflicts, change.root_id, change.moved_from.?, from_record, change.op);
+                _ = work.skipped.remove(from_record);
                 const moving = work.files.fetchRemove(from_record) orelse {
                     try rejected.append(allocator, .{ .root_id = change.root_id, .path = change.path, .reason = "move_source_unknown" });
                     continue;
@@ -836,6 +851,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
                         };
                         const known_size = size orelse {
                             try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
+                            try work.skip(change, record, "unreadable");
                             markCarried(&work, record);
                             continue;
                         };
@@ -846,22 +862,26 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
                         if (options.budget == .exhaust and (over_budget or budget_spent + known_size > options.max_total_bytes)) {
                             over_budget = true;
                             try exhausted.append(allocator, .{ .root_id = change.root_id, .path = change.path });
+                            try work.skip(change, record, "budget_exhausted");
                             markCarried(&work, record);
                             continue;
                         }
                         const length = std.math.cast(usize, known_size) orelse {
                             try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
+                            try work.skip(change, record, "unreadable");
                             markCarried(&work, record);
                             continue;
                         };
                         const read = readContent(allocator, io, change.content, work, change.root_id, length) catch null;
                         const got = read orelse {
                             try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
+                            try work.skip(change, record, "unreadable");
                             markCarried(&work, record);
                             continue;
                         };
                         if (!std.unicode.utf8ValidateSlice(got)) {
                             try unreadable.append(allocator, .{ .root_id = change.root_id, .path = change.path });
+                            try work.skip(change, record, "unreadable");
                             markCarried(&work, record);
                             continue;
                         }
@@ -933,6 +953,12 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             _ = work.files.remove(record);
             try work.gone.put(allocator, record, .removed);
         }
+        var stale_skips = std.ArrayList([]const u8).empty;
+        var skips = work.skipped.iterator();
+        while (skips.next()) |entry| {
+            if (std.mem.eql(u8, entry.value_ptr.root_id, complete) and !work.touched.contains(entry.key_ptr.*)) try stale_skips.append(allocator, entry.key_ptr.*);
+        }
+        for (stale_skips.items) |record| _ = work.skipped.remove(record);
     }
 
     // --- rename detection (section 6, FR-21) ---------------------------
@@ -1043,14 +1069,14 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
     if (documents_encoded.len != metadata.documents_bytes) return error.DocumentSectionSizeMismatch;
     if (lexical_encoded.len != metadata.lexical_bytes) return error.LexicalSectionSizeMismatch;
     if (storedChecksum(documents_encoded, segment.header_length) != metadata.documents_checksum) return error.DocumentSectionChecksumMismatch;
-    const lexical_header = try lexical_segment.inspect(lexical_encoded);
-    if (lexical_header.checksum != metadata.lexical_checksum) return error.LexicalSectionChecksumMismatch;
-    if (lexical_header.term_count != metadata.term_count) return error.TermCountMismatch;
-    if (lexical_header.posting_count != metadata.posting_count) return error.PostingCountMismatch;
+    if (lexicalStoredChecksum(lexical_encoded) != metadata.lexical_checksum) return error.LexicalSectionChecksumMismatch;
     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch return error.IndexTooLarge;
     const documents = try segment.decode(documents_encoded, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count));
     const lexical_index = try lexical_segment.decode(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count));
     if (documents.len != metadata.document_count or lexical_index.document_lengths.len != documents.len) return error.DocumentCountMismatch;
+    if (lexical_index.terms.len != metadata.term_count) return error.TermCountMismatch;
+    if (lexical_index.postings.len != metadata.posting_count) return error.PostingCountMismatch;
+    if ((lexical_index.positions != null) != metadata.has_positions) return error.InvalidLexicalSection;
     var labeled = false;
     for (documents) |document| if (document.required_labels.len != 0) {
         labeled = true;
@@ -1069,6 +1095,12 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
 /// The checksum a section stores as the last eight bytes of its header
 /// (`segment-format-v4.md`, `source-section-v1.md`); the decoder that reads
 /// the section verifies it against the bytes.
+fn lexicalStoredChecksum(encoded: []const u8) u64 {
+    if (encoded.len < 8) return 0;
+    const v2 = std.mem.eql(u8, encoded[0..8], lexical_segment.magic_v2);
+    return storedChecksum(encoded, if (v2) lexical_segment.header_length_v2 else lexical_segment.header_length);
+}
+
 fn storedChecksum(encoded: []const u8, header_length: usize) u64 {
     if (encoded.len < header_length) return 0;
     return std.mem.readInt(u64, encoded[header_length - 8 ..][0..8], .little);
@@ -1091,6 +1123,7 @@ fn noteTouch(allocator: std.mem.Allocator, work: *Work, conflicts: *std.ArrayLis
 
 fn tombstone(allocator: std.mem.Allocator, work: *Work, too_large: *std.ArrayList(PathRef), change: Change, record: []const u8) !void {
     try too_large.append(allocator, .{ .root_id = change.root_id, .path = change.path });
+    try work.skip(change, record, "too_large");
     if (work.files.fetchRemove(record)) |_| try work.gone.put(allocator, record, .too_large);
 }
 
@@ -1158,6 +1191,10 @@ fn loadPrevious(
 ) !void {
     const roots: []const manifest.RootEntry = if (meta) |m| m.roots else &scope.legacy_roots;
     for (roots) |root| try work.roots.append(allocator, .{ .entry = root });
+    if (meta) |m| for (m.skipped) |entry| {
+        if (work.rootIndex(entry.root_id) == null) continue;
+        try work.skipped.put(allocator, try scope.recordPath(allocator, entry.root_id, entry.path), entry);
+    };
     for (prev.documents, 0..) |document, index| {
         const gop = try previous_docs.getOrPut(allocator, document.path);
         if (!gop.found_existing) gop.value_ptr.* = .empty;
@@ -1253,126 +1290,194 @@ fn chunkerOf(prev: engine_module.Engine, meta: ?manifest.Meta, indices: []const 
     return found;
 }
 
-/// Where a document of the new generation gets its terms: a fresh chunk's
-/// tokens, or a carried document's index in the previous generation.
+/// Where a document of the new generation gets its positioned tokens: a
+/// fresh chunk's, or a carried document of the previous (positional)
+/// generation.
 const DocSource = union(enum) {
-    fresh: []const []const u8,
+    fresh: []const analysis.PositionedToken,
     carried: u32,
 };
 
-const TermCount = struct { term: u32, frequency: u32 };
-
-/// The lexical index of the new generation (S1-T3: rebuilt whole every
-/// generation). A fresh document is counted exactly as `lexical_build.build`
-/// counts it (a per-document hash map, terms numbered on first sight, so a
-/// generation of fresh documents only is byte-identical to that builder's);
-/// a carried document's (term, frequency) pairs are read straight from the
-/// previous generation's postings, so an unchanged file costs no hashing of
-/// its tokens and no token list (NFR-12's one-changed-file cost). Postings
-/// are filled in document order, so each term's list is strictly increasing.
-fn buildLexical(allocator: std.mem.Allocator, previous: ?postings.Index, sources: []const DocSource) !postings.Index {
+/// `lexical_build.buildPositional` over `sources`, byte for byte, without
+/// reading a carried document's tokens back: its (term, ordinal) pairs come
+/// from the previous section 4 (one transposition, terms mapped once per
+/// dictionary entry instead of hashed once per token) and its section 5
+/// table is copied as it is. The dictionary is ranked by bytes and
+/// occurrences laid out term-major, document then ordinal, exactly as the
+/// builder does (NFR-12's one-changed-file cost).
+fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index, sources: []const DocSource) !postings.Index {
     if (sources.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
-    // The previous postings transposed to per-document (term, frequency) lists.
+    const scratch = std.heap.smp_allocator;
+    const Pair = struct { term: u32, ordinal: u32 };
+    const Occurrence = struct { term: u32, document: u32, ordinal: u32 };
+
+    // The previous section 4 transposed to per-document (term, ordinal) pairs.
     var old_offsets: []usize = &.{};
-    var old_pairs: []TermCount = &.{};
+    var old_pairs: []Pair = &.{};
     var previous_to_new: []u32 = &.{};
-    if (previous) |index| {
-        const document_count = index.document_lengths.len;
-        old_offsets = try allocator.alloc(usize, document_count + 1);
-        @memset(old_offsets, 0);
-        for (index.postings) |posting| old_offsets[posting.document_index + 1] += 1;
-        for (1..old_offsets.len) |i| old_offsets[i] += old_offsets[i - 1];
-        old_pairs = try allocator.alloc(TermCount, index.postings.len);
-        const fill = try allocator.alloc(usize, document_count);
-        defer allocator.free(fill);
-        @memcpy(fill, old_offsets[0..document_count]);
+    var tables: ?postings.PositionTables = null;
+    defer if (old_offsets.len != 0) scratch.free(old_offsets);
+    defer if (old_pairs.len != 0) scratch.free(old_pairs);
+    defer if (previous_to_new.len != 0) scratch.free(previous_to_new);
+    var carried_any = false;
+    for (sources) |item| if (item == .carried) {
+        carried_any = true;
+    };
+    if (carried_any) {
+        const index = previous.?;
+        const sections = index.positions.?;
+        tables = try postings.buildPositionTables(allocator, index);
+        const count = index.document_lengths.len;
+        old_offsets = try scratch.alloc(usize, count + 1);
+        old_offsets[0] = 0;
+        for (index.document_lengths, 0..) |length, d| old_offsets[d + 1] = old_offsets[d] + length;
+        old_pairs = try scratch.alloc(Pair, old_offsets[count]);
+        const fill = try scratch.dupe(usize, old_offsets[0..count]);
+        defer scratch.free(fill);
+        var at: usize = 0;
         for (index.terms, 0..) |entry, term_index| {
             for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
-                old_pairs[fill[posting.document_index]] = .{ .term = @intCast(term_index), .frequency = posting.term_frequency };
-                fill[posting.document_index] += 1;
+                var ordinal: u32 = 0;
+                for (0..posting.term_frequency) |k| {
+                    const value = postings.readVarint(sections.positions, &at).?;
+                    ordinal = if (k == 0) value else ordinal + value;
+                    old_pairs[fill[posting.document_index]] = .{ .term = @intCast(term_index), .ordinal = ordinal };
+                    fill[posting.document_index] += 1;
+                }
             }
         }
-        previous_to_new = try allocator.alloc(u32, index.terms.len);
+        previous_to_new = try scratch.alloc(u32, index.terms.len);
         @memset(previous_to_new, std.math.maxInt(u32));
     }
 
-    var terms = std.ArrayList(postings.TermEntry).empty;
-    var term_ids = std.StringHashMap(usize).init(allocator);
-    defer term_ids.deinit();
-    var pairs = std.ArrayList(TermCount).empty;
-    const pair_start = try allocator.alloc(usize, sources.len + 1);
+    var names = std.ArrayList([]const u8).empty;
+    defer names.deinit(scratch);
+    var occurrences = std.ArrayList(Occurrence).empty;
+    defer occurrences.deinit(scratch);
+    var offsets = std.ArrayList(u8).empty;
+    defer offsets.deinit(scratch);
+    var id_by_name = std.StringHashMap(u32).init(scratch);
+    defer id_by_name.deinit();
     const document_lengths = try allocator.alloc(u32, sources.len);
     var total_length: usize = 0;
 
     for (sources, 0..) |item, document_index| {
-        pair_start[document_index] = pairs.items.len;
         switch (item) {
             .carried => |old| {
                 const index = previous.?;
-                document_lengths[document_index] = index.document_lengths[old];
+                const length = index.document_lengths[old];
+                document_lengths[document_index] = length;
                 for (old_pairs[old_offsets[old]..old_offsets[old + 1]]) |pair| {
                     var id = previous_to_new[pair.term];
                     if (id == std.math.maxInt(u32)) {
-                        const gop = try term_ids.getOrPut(index.terms[pair.term].term);
+                        const gop = try id_by_name.getOrPut(index.terms[pair.term].term);
                         if (!gop.found_existing) {
-                            try terms.append(allocator, .{ .term = index.terms[pair.term].term, .document_frequency = 0, .postings_start = 0, .postings_length = 0 });
-                            gop.value_ptr.* = terms.items.len - 1;
+                            gop.value_ptr.* = @intCast(names.items.len);
+                            try names.append(scratch, index.terms[pair.term].term);
                         }
-                        id = @intCast(gop.value_ptr.*);
+                        id = gop.value_ptr.*;
                         previous_to_new[pair.term] = id;
                     }
-                    terms.items[id].document_frequency += 1;
-                    try pairs.append(allocator, .{ .term = id, .frequency = pair.frequency });
+                    try occurrences.append(scratch, .{ .term = id, .document = @intCast(document_index), .ordinal = pair.ordinal });
                 }
+                // Section 5: the document's table as it was (u32 count, then
+                // two varints per token).
+                const bytes = index.positions.?.offsets;
+                const start = tables.?.document_starts[old];
+                var end = start + 4;
+                postings.skipVarints(bytes, &end, @as(usize, length) * 2);
+                try offsets.appendSlice(scratch, bytes[start..end]);
             },
             .fresh => |tokens| {
+                if (tokens.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
                 document_lengths[document_index] = @intCast(tokens.len);
-                var counts = std.StringHashMap(u32).init(allocator);
-                defer counts.deinit();
-                for (tokens) |token| {
-                    const gop = try counts.getOrPut(token);
-                    if (gop.found_existing) gop.value_ptr.* += 1 else gop.value_ptr.* = 1;
-                }
-                var it = counts.iterator();
-                while (it.next()) |entry| {
-                    const gop = try term_ids.getOrPut(entry.key_ptr.*);
+                var count_bytes: [4]u8 = undefined;
+                std.mem.writeInt(u32, &count_bytes, @intCast(tokens.len), .little);
+                try offsets.appendSlice(scratch, &count_bytes);
+                var previous_start: u32 = 0;
+                for (tokens, 0..) |token, ordinal| {
+                    const gop = try id_by_name.getOrPut(token.bytes);
                     if (!gop.found_existing) {
-                        try terms.append(allocator, .{ .term = entry.key_ptr.*, .document_frequency = 0, .postings_start = 0, .postings_length = 0 });
-                        gop.value_ptr.* = terms.items.len - 1;
+                        if (names.items.len >= std.math.maxInt(u32)) return error.TermCountOverflow;
+                        gop.value_ptr.* = @intCast(names.items.len);
+                        try names.append(scratch, token.bytes);
                     }
-                    const id: u32 = @intCast(gop.value_ptr.*);
-                    terms.items[id].document_frequency += 1;
-                    try pairs.append(allocator, .{ .term = id, .frequency = entry.value_ptr.* });
+                    try occurrences.append(scratch, .{ .term = gop.value_ptr.*, .document = @intCast(document_index), .ordinal = @intCast(ordinal) });
+                    const start = @max(token.start, previous_start);
+                    try postings.appendVarint(&offsets, scratch, start - previous_start);
+                    try postings.appendVarint(&offsets, scratch, @max(token.length, 1));
+                    previous_start = start;
                 }
             },
         }
         total_length += document_lengths[document_index];
     }
-    pair_start[sources.len] = pairs.items.len;
-    if (terms.items.len > std.math.maxInt(u32)) return error.TermCountOverflow;
 
-    var start: usize = 0;
-    for (terms.items) |*entry| {
-        entry.postings_start = start;
-        entry.postings_length = entry.document_frequency;
-        start += entry.document_frequency;
-    }
-    const all_postings = try allocator.alloc(postings.Posting, start);
-    const cursor = try allocator.alloc(usize, terms.items.len);
-    defer allocator.free(cursor);
-    for (terms.items, cursor) |entry, *slot| slot.* = entry.postings_start;
-    for (0..sources.len) |document_index| {
-        for (pairs.items[pair_start[document_index]..pair_start[document_index + 1]]) |pair| {
-            all_postings[cursor[pair.term]] = .{ .document_index = @intCast(document_index), .term_frequency = pair.frequency };
-            cursor[pair.term] += 1;
+    // As `buildPositional`: rank terms by bytes, lay occurrences out
+    // term-major with a stable counting sort (document, then ordinal order
+    // within a document is already ascending per term).
+    const order = try scratch.alloc(u32, names.items.len);
+    defer scratch.free(order);
+    for (order, 0..) |*slot, i| slot.* = @intCast(i);
+    std.sort.pdq(u32, order, names.items, struct {
+        fn lessThan(all: [][]const u8, a: u32, b: u32) bool {
+            return std.mem.order(u8, all[a], all[b]) == .lt;
         }
+    }.lessThan);
+    const rank = try scratch.alloc(u32, names.items.len);
+    defer scratch.free(rank);
+    for (order, 0..) |term, r| rank[term] = @intCast(r);
+    const bucket_start = try scratch.alloc(usize, names.items.len + 1);
+    defer scratch.free(bucket_start);
+    @memset(bucket_start, 0);
+    for (occurrences.items) |occurrence| bucket_start[rank[occurrence.term] + 1] += 1;
+    for (1..bucket_start.len) |i| bucket_start[i] += bucket_start[i - 1];
+    const fill = try scratch.dupe(usize, bucket_start[0..names.items.len]);
+    defer scratch.free(fill);
+    const sorted = try scratch.alloc(Occurrence, occurrences.items.len);
+    defer scratch.free(sorted);
+    for (occurrences.items) |occurrence| {
+        const r = rank[occurrence.term];
+        sorted[fill[r]] = occurrence;
+        fill[r] += 1;
+    }
+    var posting_total: usize = 0;
+    for (sorted, 0..) |occurrence, i| {
+        if (i == 0 or sorted[i - 1].term != occurrence.term or sorted[i - 1].document != occurrence.document) posting_total += 1;
+    }
+    const terms = try allocator.alloc(postings.TermEntry, names.items.len);
+    const all_postings = try allocator.alloc(postings.Posting, posting_total);
+    var posting_count: usize = 0;
+    var positions = std.ArrayList(u8).empty;
+    defer positions.deinit(scratch);
+    try positions.ensureTotalCapacity(scratch, sorted.len + sorted.len / 4);
+    for (order, 0..) |term, r| {
+        const group = sorted[bucket_start[r]..bucket_start[r + 1]];
+        const postings_start = posting_count;
+        var i: usize = 0;
+        while (i < group.len) {
+            var j = i + 1;
+            while (j < group.len and group[j].document == group[i].document) : (j += 1) {}
+            all_postings[posting_count] = .{ .document_index = group[i].document, .term_frequency = @intCast(j - i) };
+            posting_count += 1;
+            var last: u32 = 0;
+            for (group[i..j], 0..) |occurrence, k| {
+                try postings.appendVarint(&positions, scratch, if (k == 0) occurrence.ordinal else occurrence.ordinal - last);
+                last = occurrence.ordinal;
+            }
+            i = j;
+        }
+        const postings_length = posting_count - postings_start;
+        terms[r] = .{ .term = names.items[term], .document_frequency = @intCast(postings_length), .postings_start = postings_start, .postings_length = postings_length };
     }
     const average: f32 = if (sources.len == 0) 0 else @as(f32, @floatFromInt(total_length)) / @as(f32, @floatFromInt(sources.len));
     return .{
-        .terms = try terms.toOwnedSlice(allocator),
+        .terms = terms,
         .postings = all_postings,
         .document_lengths = document_lengths,
         .average_document_length = average,
+        .positions = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items) },
+        .sorted_terms = true,
     };
 }
 
@@ -1506,7 +1611,11 @@ fn buildGeneration(
     std.mem.sort(*const File, files.items, {}, lessThanFileRecord);
 
     var documents = std.ArrayList(hybrid.Document).empty;
+    // S3-T2: positioned tokens, so the lexical section is HYBLEX02. A
+    // carried document's tokens are read back from the previous section's
+    // positions (a HYBLEX01 generation is re-tokenized once, which upgrades it).
     var sources = std.ArrayList(DocSource).empty;
+    const previous_positional = if (prev) |engine| engine.lexical_index.positions != null else false;
     var retained = std.ArrayList(source.InputFile).empty;
     var pending = std.ArrayList(manifest.PendingEntry).empty;
     var unchunked = std.ArrayList(manifest.PendingEntry).empty;
@@ -1582,12 +1691,12 @@ fn buildGeneration(
                     .section_path = span.section_path,
                 });
                 _ = scratch.reset(.retain_capacity);
-                const raw = try indexer.tokenize(scratch.allocator(), options.analyzer, span.text);
-                const tokens = try allocator.alloc([]const u8, raw.len);
+                const raw = try indexer.tokenizePositioned(scratch.allocator(), options.analyzer, span.text);
+                const tokens = try allocator.alloc(analysis.PositionedToken, raw.len);
                 for (raw, tokens) |token, *slot| {
-                    const gop = try interned.getOrPut(allocator, token);
-                    if (!gop.found_existing) gop.key_ptr.* = try allocator.dupe(u8, token);
-                    slot.* = gop.key_ptr.*;
+                    const gop = try interned.getOrPut(allocator, token.bytes);
+                    if (!gop.found_existing) gop.key_ptr.* = try allocator.dupe(u8, token.bytes);
+                    slot.* = .{ .bytes = gop.key_ptr.*, .start = token.start, .length = token.length };
                 }
                 try sources.append(allocator, .{ .fresh = tokens });
             }
@@ -1609,7 +1718,7 @@ fn buildGeneration(
                     document.required_labels = labels;
                     document.source_doc_index = source_doc_index;
                     try documents.append(allocator, document);
-                    try sources.append(allocator, .{ .carried = @intCast(old_index) });
+                    try sources.append(allocator, if (previous_positional) .{ .carried = @intCast(old_index) } else .{ .fresh = try indexer.tokenizePositioned(allocator, options.analyzer, document.text) });
                 }
             };
         }
@@ -1629,7 +1738,7 @@ fn buildGeneration(
         });
     }
 
-    const lexical_index = try buildLexical(allocator, if (prev) |engine| engine.lexical_index else null, sources.items);
+    const lexical_index = try buildPositionalMerged(allocator, if (prev) |engine| engine.lexical_index else null, sources.items);
     const documents_buffer = try allocator.alloc(u8, try segment.encodedLengthV4(documents.items));
     const documents_encoded = try segment.encodeV4(documents.items, documents_buffer);
     const lexical_buffer = try allocator.alloc(u8, try lexical_segment.encodedLength(lexical_index));
@@ -1657,12 +1766,19 @@ fn buildGeneration(
             .origin = root.entry.origin,
         };
     }
+    var skipped_records = std.ArrayList([]const u8).empty;
+    var skipped_it = work.skipped.iterator();
+    while (skipped_it.next()) |entry| try skipped_records.append(allocator, entry.key_ptr.*);
+    std.mem.sort([]const u8, skipped_records.items, {}, lessThanString);
+    const skipped_list = try allocator.alloc(manifest.PendingEntry, skipped_records.items.len);
+    for (skipped_records.items, skipped_list) |record, *entry| entry.* = work.skipped.get(record).?;
     const meta = try manifest.writeMetaPending(
         allocator,
         all_chunkers[0..if (uses_markdown) 2 else 1],
         meta_roots,
         pending.items,
         unchunked.items,
+        skipped_list,
         if (source_encoded != null) source.version else 0,
     );
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
@@ -1681,7 +1797,8 @@ fn buildGeneration(
         .documents_bytes = documents_encoded.len,
         .documents_checksum = storedChecksum(documents_encoded, segment.header_length),
         .lexical_bytes = lexical_encoded.len,
-        .lexical_checksum = (try lexical_segment.inspect(lexical_encoded)).checksum,
+        .lexical_checksum = lexicalStoredChecksum(lexical_encoded),
+        .has_positions = lexical_index.positions != null,
         .analyzer_id = options.analyzer.label(),
         .embedding_model_id = "none",
         .documents_file = documents_file,

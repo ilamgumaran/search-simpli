@@ -104,12 +104,12 @@ This implementation prevents document content and identifiers from entering unau
 
   | Query | Fast p50 A / B | Fast p95 A / B | Small p50 A / B | Small p95 A / B |
   | --- | --- | --- | --- | --- |
-  | `babi` (only in hidden files, 344 times) | 14.8 / 8.3 | 18.6 / 11.3 | 24.7 / 8.8 | 29.6 / 10.8 |
-  | `the` (in visible and hidden files) | 16.0 / 14.3 | 20.8 / 19.7 | 28.3 / 24.8 | 35.8 / 28.5 |
-  | `newts` (in neither) | 26.9 / 8.2 | 32.7 / 10.2 | 48.7 / 8.8 | 54.9 / 11.9 |
-  | `tide table` (visible files only) | 22.1 / 14.8 | 28.3 / 19.4 | 27.1 / 14.3 | 30.8 / 18.3 |
+  | `babi` (only in hidden files, 344 times) | 13.1 / 7.4 | 16.2 / 10.1 | 23.7 / 7.7 | 28.0 / 9.6 |
+  | `the` (in visible and hidden files) | 17.2 / 15.7 | 22.9 / 18.5 | 27.2 / 24.2 | 30.5 / 28.4 |
+  | `newts` (in neither) | 8.1 / 7.4 | 10.6 / 9.5 | 8.4 / 8.3 | 11.0 / 10.8 |
+  | `tide table` (visible files only) | 15.1 / 14.1 | 19.2 / 16.8 | 16.8 / 14.2 | 20.5 / 18.5 |
 
-  Two channels show. The query-term lookup scans the whole dictionary (`lexical_build.findExact`, linear), so every query is slower in an index whose vocabulary, hidden terms included, is larger: `newts`, absent from both, costs 18 µs more in ReleaseFast. And a word found only in hidden files still has its postings walked (S2-T4's finding). Neither reveals which files hold a word; together they reveal roughly how large the hidden vocabulary is and how common a hidden word is. S3-T2's sorted dictionary (binary search) should shrink the first; the second needs per-scope posting bounds. Deployments that must not leak these use separate indexes (option 3 below).
+  The remaining channel is S2-T4's: a word found only in hidden files still has its postings walked to find none in scope, so `babi` costs 6 µs more (ReleaseFast) and 16 µs more (ReleaseSmall) on A than on B, where it does not exist. A word in neither index costs the same on both (S3-T2's sorted dictionary is binary-searched; before it, the linear dictionary scan made every query slower on the index with the larger vocabulary, hidden terms included: `newts` measured 26.9 µs against 8.2 µs on this branch before the S3-T2 merge). The channel does not reveal which files hold a word; it reveals roughly how common a hidden word is. Per-scope posting bounds would close it; deployments that must not leak it use separate indexes (option 3 below).
 - **Measured (S2-T4, second verdict, 2026-10-08):** a query word that exists only in label-hidden chunks is reported exactly like an absent word (same code, message, `term`, `request`, `matched_chunks`), but the engine still walks that word's postings to find none in scope, so wall time grows with how common the word is in hidden files: about 110 µs against 3 µs for a word hidden in 3,000 chunks at 6k chunks, and with `"profile": true` the report's `tokenize_us`/`score_us` show it. A word hidden in one or two chunks is not distinguishable. The channel reveals roughly how common a word is behind the wall, not which files hold it, and it predates S2-T4 (the old scorer walked every hidden posting too). Options when this matters: coarser `profile` for callers with a label scope, or per-label posting bounds.
 - Principal labels are injected from CLI configuration, not an authenticated OIDC/session/token verifier.
 - Rule changes still publish a new complete snapshot, but compatible incremental preparation can relabel unchanged chunks without repeating neural embeddings.
