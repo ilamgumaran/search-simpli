@@ -104,6 +104,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-14 | [Trust-calibration signal](cap-14-trust-calibration.md) | UC-001, UC-002, UC-003 | FR-14 | Proposed / future — board S-01, E-02 |
 | CAP-15 | [Structure-aware code chunking](cap-15-structure-aware-chunking.md) | UC-002 | FR-15 | Proposed / future |
 | CAP-16 | [Directory filename retrieval](cap-16-directory-filename-search.md) | UC-006, UC-001, UC-002, UC-003 | FR-16 | Proposed · future |
+| CAP-19 | [Folder knowledge: exact finding, structure, roots, host-fed changes, tools, MCP](cap-19-folder-knowledge.md) | UC-007, UC-001, UC-004 | FR-17..FR-25 (proposed), NFR-10..NFR-14 (proposed) | Proposed (2026-10-31) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
