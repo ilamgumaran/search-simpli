@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/list_sources.request.schema.json",
+  "title": "list_sources request",
+  "description": "The params object of the `list_sources` tool. Sorted source paths with chunk counts. Principal labels are never a caller field: the host supplies the scope (docs/tool-schemas.md).",
+  "type": "object",
+  "properties": {
+    "path_prefix": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Only record paths starting with this prefix."
+    },
+    "roots": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+    }
+  },
+  "additionalProperties": false,
+  "required": []
+}

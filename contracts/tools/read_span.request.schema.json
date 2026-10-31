@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/read_span.request.schema.json",
+  "title": "read_span request",
+  "description": "The params object of the `read_span` tool. The exact text of a line range, with optional context. Principal labels are never a caller field: the host supplies the scope (docs/tool-schemas.md).",
+  "type": "object",
+  "properties": {
+    "root_id": {
+      "type": "string",
+      "description": "Root id.",
+      "minLength": 1
+    },
+    "path": {
+      "type": "string",
+      "description": "Root-relative path.",
+      "minLength": 1
+    },
+    "start_line": {
+      "type": "integer",
+      "description": "First line, 1-based.",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "end_line": {
+      "type": "integer",
+      "description": "Last line, inclusive; past the end is clamped with a warning.",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "context_lines": {
+      "type": "integer",
+      "description": "Lines of context before and after, 0 to 20.",
+      "minimum": 0,
+      "maximum": 20,
+      "default": 0
+    },
+    "roots": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "root_id",
+    "path",
+    "start_line",
+    "end_line"
+  ]
+}

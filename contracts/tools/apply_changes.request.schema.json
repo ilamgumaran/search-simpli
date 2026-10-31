@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/apply_changes.request.schema.json",
+  "title": "apply_changes request",
+  "description": "Host-fed changes. Exists only when the server runs with --allow-write; a model-facing adapter never exposes it (docs/folder-knowledge-implementation.md section 6).",
+  "type": "object",
+  "properties": {
+    "expect_generation": {
+      "type": "integer",
+      "description": "Refuse unless the index is at this generation.",
+      "minimum": 0
+    },
+    "roots": {
+      "type": "array",
+      "description": "Roots declared or updated by this request.",
+      "items": {
+        "type": "object",
+        "description": "A root.",
+        "properties": {
+          "root_id": {
+            "type": "string",
+            "description": "Root id, 1 to 64 of A-Za-z0-9._-.",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "label": {
+            "type": "string",
+            "description": "Display label."
+          },
+          "kind": {
+            "enum": [
+              "host",
+              "icloud",
+              "local"
+            ],
+            "description": "Root kind."
+          },
+          "required_labels": {
+            "type": "array",
+            "description": "Labels required to see the root.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "retain_source": {
+            "type": "boolean",
+            "description": "Keep the original bytes."
+          },
+          "path": {
+            "type": "string",
+            "description": "Absolute folder of a local root."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "root_id"
+        ]
+      }
+    },
+    "changes": {
+      "type": "array",
+      "description": "The changes, in order.",
+      "items": {
+        "$ref": "#/$defs/change"
+      },
+      "maxItems": 10000
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "changes"
+  ],
+  "$defs": {
+    "change": {
+      "type": "object",
+      "description": "One change.",
+      "properties": {
+        "op": {
+          "enum": [
+            "add",
+            "change",
+            "remove",
+            "move",
+            "pending",
+            "remove_root"
+          ],
+          "description": "The operation."
+        },
+        "root_id": {
+          "type": "string",
+          "description": "Root id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Root-relative path."
+        },
+        "moved_from": {
+          "type": "string",
+          "description": "Source path of a move."
+        },
+        "size": {
+          "type": "integer",
+          "description": "Announced size in bytes.",
+          "minimum": 0
+        },
+        "mtime_ms": {
+          "type": "integer",
+          "description": "Modification time, ms."
+        },
+        "sha256": {
+          "type": "string",
+          "description": "SHA-256 hex of the bytes.",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        },
+        "content_base64": {
+          "type": "string",
+          "description": "Strict base64 of the file bytes."
+        },
+        "file": {
+          "type": "string",
+          "description": "Absolute path; read only when file reads are allowed."
+        },
+        "required_labels": {
+          "type": "array",
+          "description": "Labels the file requires.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "root_id"
+      ]
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/list_sources.result.schema.json",
+  "title": "list_sources result",
+  "description": "Sources.",
+  "type": "object",
+  "properties": {
+    "sources": {
+      "type": "array",
+      "description": "Sorted sources.",
+      "items": {
+        "type": "object",
+        "description": "One source.",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Record path."
+          },
+          "chunks": {
+            "type": "integer",
+            "description": "Chunks in the file.",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "chunks"
+        ]
+      }
+    },
+    "count": {
+      "type": "integer",
+      "description": "Number of sources.",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "sources",
+    "count"
+  ]
+}
