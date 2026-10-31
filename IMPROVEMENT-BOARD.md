@@ -254,9 +254,9 @@ each earns the next with evidence.
   published snapshot with authorization enforced.
 - **HIO tie:** Use-side. Lets inorganic agents actually use the system.
 - **Owner-type:** either
-- **Status:** proposed
-- **Owner:**
-- **Links:** docs/tool-protocol.md, docs/zig-rpc-service.md, contracts/search-tool.schema.json
+- **Status:** done (2026-10-31, S3-T6): `searchd mcp` serves the four tools (`--baseline`) and CAP-19's read tools over MCP stdio, revision `2025-11-25`; a standard-library MCP client runs search/read/list/status against a published snapshot with the principal from the command line and forged labels/vectors refused; results equal the JSON-RPC ones for every fixture judgment; overhead measured in the task's Report. A real agent over a judged snapshot (CAP-13 *Validated*) is still open.
+- **Owner:** Xcode Mac orchestrator (S3 series)
+- **Links:** [MCP server](docs/mcp-server.md), [S3-T6](docs/tasks/S3-T6.md), [CAP-13](docs/requirements/cap-13-mcp-adapter.md), docs/tool-protocol.md, contracts/tools/
 
 ## D. Evaluation integrity — the ground truth everything rests on
 
@@ -396,6 +396,9 @@ a lettered section when shaped; delete if rejected (and say why in a commit).
 ## Change log for this board
 
 Keep this short; it is a pointer to where the real record lives.
+
+- 2026-10-31 — I-01 done by S3-T6 (the MCP server, `searchd mcp`); evidence in
+  [S3-T6](docs/tasks/S3-T6.md) and [EXPERIMENTS.md](EXPERIMENTS.md).
 
 - 2026-10-19 — Read-only quality audit and staged designs for existing work;
   shaped F-03 Unicode parity/migration, corrected E-01's evidence summary, and

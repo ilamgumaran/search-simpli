@@ -9,6 +9,29 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
+## S3-T6: the MCP server, `searchd mcp` (2026-10-31)
+
+`searchd mcp <index-dir> [--roots a,b] [--labels l1,l2] [--baseline]
+[--allow-write] [--allow-file-reads]` serves one published index to an MCP
+host over stdio (newline-delimited JSON-RPC 2.0, pinned revision
+`2025-11-25`): `initialize`, `ping`, `tools/list`, `tools/call`,
+`resources/list`, `resources/read`, `resources/templates/list`
+(`search://{root_id}/{path}`). `--baseline` lists exactly CAP-13's four
+tools and no resources; the default lists the eight read tools; only
+`--allow-write` adds `apply_changes`, confined to `--roots`. Each tool's
+`inputSchema`/`outputSchema` is its `contracts/tools/` file; a result
+carries the canonical JSON as `structuredContent` and as one text block,
+equal to `searchd serve`'s `result` for all 66 fixture-judgment requests; a
+refusal is an `isError` result holding the RPC error object. The scope comes
+from the command line only (a call carrying `principal_labels` or
+`query_vector` is refused). `resources/read` reads a whole file through
+`read_span`'s limits. `search_knowledge` (RPC and MCP; not `ss_query`) adds
+`root_id`, `section_path`, `truncated` and `pending_files`. Adapter overhead
+p95 26–46 µs (ReleaseSmall) against CAP-13's 5 ms gate; start-up 21 ms.
+`tests/mcp_client.py` is a standard-library conformance client (27 checks).
+CAP-13 is Diagnostic, realized by S3-T6; board I-01 done. Verified and
+merged 2026-10-31. [Task](docs/tasks/S3-T6.md), [MCP server](docs/mcp-server.md).
+
 ## S3-T5: tool schemas and the folder-knowledge skill (2026-10-31)
 
 `contracts/tools/` holds a JSON Schema 2020-12 request and result file for each

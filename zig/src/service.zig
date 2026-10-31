@@ -503,13 +503,18 @@ pub const ScopedService = struct {
                 .document_frequency_fn = FrequencyProvider.frequency,
             };
         }
-        var pending: usize = 0;
-        for (folder.pending) |entry| if (resolved.listedVisible(entry)) {
-            pending += 1;
-        };
-        scoped_request.pending_files = pending;
-        scoped_request.truncated = try anySkippedVisible(resolved);
+        const complete = try completenessOf(resolved);
+        scoped_request.pending_files = complete.pending_files;
+        scoped_request.truncated = complete.truncated;
         return find_module.find(allocator, engine, scoped_request);
+    }
+
+    /// S3-T6: `find`'s `pending_files` and `truncated` for any operation over
+    /// the request's scope (`search_knowledge` carries them since S3-T6).
+    pub fn completeness(scoped: ScopedService, allocator: std.mem.Allocator, request: scope.Request) !Completeness {
+        const resolved = try resolve(scoped.service, allocator, request);
+        defer resolved.deinit(allocator);
+        return completenessOf(resolved);
     }
 
     /// `outline` gated by the scope, like `readSpan`.
@@ -546,6 +551,18 @@ const FrequencyProvider = struct {
 pub fn sourceUnavailable(allocator: std.mem.Allocator, folder: scope.Folder) !source_section.Failure {
     if (folder.source_error) |name| return .{ .code = .capacity, .message = try std.fmt.allocPrint(allocator, "re-index required: source section unavailable ({s})", .{name}) };
     return .{ .code = .capacity, .message = source_section.source_absent_message };
+}
+
+/// How complete the visible scope is: its pending files, and whether a
+/// visible file was given but not indexed in full (section 7).
+pub const Completeness = struct { pending_files: usize, truncated: bool };
+
+fn completenessOf(resolved: Resolved) !Completeness {
+    var pending: usize = 0;
+    for (resolved.folder.pending) |entry| if (resolved.listedVisible(entry)) {
+        pending += 1;
+    };
+    return .{ .pending_files = pending, .truncated = try anySkippedVisible(resolved) };
 }
 
 fn anySkippedVisible(resolved: Resolved) !bool {

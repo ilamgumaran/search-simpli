@@ -29,6 +29,7 @@ pub const snapshot_open = @import("snapshot_open.zig");
 pub const scope = @import("scope.zig");
 pub const apply = @import("apply.zig");
 pub const ops = @import("ops.zig");
+pub const mcp = @import("mcp.zig");
 pub const cli_test = @import("cli_test.zig");
 pub const chunker_golden_test = @import("chunker_test.zig");
 pub const chunker_md_golden_test = @import("chunker_md_test.zig");
@@ -91,6 +92,7 @@ test "load every engine module test suite" {
     _ = importer;
     _ = benchmark;
     _ = abi;
+    _ = mcp;
     _ = unicode_tables;
     _ = nfc;
     _ = chunker;

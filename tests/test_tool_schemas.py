@@ -24,7 +24,7 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "tests"))
 
 from src.search_platform.schema_check import (  # noqa: E402
-    SchemaError, UnsupportedKeyword, check, load_tool_schema, validate,
+    SchemaError, UnsupportedKeyword, check, check_schema, load_tool_schema, validate,
 )
 from test_folder_surfaces import ROOT_IDS, Rpc, build_searchd, fixture_request  # noqa: E402
 
@@ -177,6 +177,26 @@ class ValidatorTests(unittest.TestCase):
             validate(1, {"oneOf": []})
         with self.assertRaises(SchemaError):
             check({"a": 1}, {"type": "object", "additionalProperties": False})
+
+    def test_unknown_keyword_off_the_instance_path_is_loud(self) -> None:
+        # S3-T5 Verdict finding 2: `oneOf` under a property the instance does
+        # not carry, in `$defs`, under `items` and `additionalProperties`.
+        request = load_tool_schema("find", "request")
+        planted = json.loads(json.dumps(request))
+        planted["properties"]["page_size"]["oneOf"] = [{"type": "integer"}]
+        self.assertEqual(validate({"query": "tide"}, request), [])
+        with self.assertRaises(UnsupportedKeyword):
+            validate({"query": "tide"}, planted)
+        for schema in ({"$defs": {"x": {"format": "date"}}},
+                       {"type": "array", "items": {"anyOf": []}},
+                       {"type": "object", "additionalProperties": {"if": {}}},
+                       {"type": "object", "properties": {"a": {"type": "decimal"}}},
+                       {"$ref": "https://example.invalid/x.json"}):
+            with self.assertRaises(UnsupportedKeyword, msg=json.dumps(schema)):
+                check_schema(schema)
+        for name in TOOLS:
+            for kind in ("request", "result"):
+                check_schema(load_tool_schema(name, kind))
 
 
 @unittest.skipIf(NO_ZIG, "SEARCH_SIMPLI_NO_ZIG=1: this environment deliberately has no Zig (CI)")

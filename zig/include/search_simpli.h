@@ -62,9 +62,10 @@
  *
  * JSON shapes: ss_status()'s object has the same fields as JSON-RPC
  *          `index_status`'s `result` (docs/zig-rpc-service.md). ss_query()'s
- *          object is exactly `search_knowledge`'s `result`, produced by the
- *          same code the JSON-RPC service uses, so it is byte-for-byte what
- *          the service would return for the same request. ss_evidence()'s
+ *          object is `search_knowledge`'s `result`, produced by the same code
+ *          the JSON-RPC service uses, without the folder fields the service
+ *          adds since S3-T6 (each item's `root_id`, `section_path`; the
+ *          result's `truncated`, `pending_files`). ss_evidence()'s
  *          per-chunk object is exactly `read_chunk`'s `result` shape (plus,
  *          since 2.0.0, three fields after it). The 2.0.0 read functions
  *          return exactly what `searchd serve` returns as `result` for the
@@ -228,7 +229,10 @@ char *ss_status(ss_handle *handle);
  * `retrieval`, `results` (array of chunk_id/citation/content/score/ranking),
  * and `answer_policy`. These are exactly the fields of the `result` value a
  * `search_knowledge` JSON-RPC response carries for the same request
- * (docs/zig-rpc-service.md), in the same order and byte for byte.
+ * (docs/zig-rpc-service.md), in the same order and byte for byte, except
+ * that the service (and `searchd mcp`) add, since S3-T6, `root_id` and
+ * `section_path` to each item and `truncated` and `pending_files` after
+ * `answer_policy`; ss_query()'s output is unchanged.
  *
  * Since contract 1.2.0 the object ends with three more fields (additive;
  * removing them gives the 1.1.0 output exactly):

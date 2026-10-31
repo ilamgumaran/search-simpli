@@ -22,12 +22,23 @@
 //! labels, possibly none, filtered before any candidate). `index_status`
 //! and `evidence` keep their v1 shapes and only add fields.
 //!
+//! **S3-T6:** CAP-13's three other operations, `search_knowledge`,
+//! `read_chunk` and `list_sources`, moved here from `rpc.zig` (unchanged
+//! JSON), so the RPC server and the MCP server (`mcp.zig`) answer every tool
+//! through this file; `search_knowledge` items gain `root_id` and
+//! `section_path`, and its result `truncated` and `pending_files`, when the
+//! service has its scope data (every opened index). A refusal names its
+//! reason ("Invalid params: <reason>" on the RPC server).
+//!
 //! Memory: everything comes from the caller's `allocator`, an arena released
 //! after the result is written out.
 const std = @import("std");
 const apply = @import("apply.zig");
+const engine_module = @import("engine.zig");
 const find_module = @import("find.zig");
 const hybrid = @import("hybrid.zig");
+const query_report = @import("report.zig");
+const scoring = @import("scoring.zig");
 const scope = @import("scope.zig");
 const service_module = @import("service.zig");
 const source = @import("source.zig");
@@ -109,6 +120,15 @@ const Reader = struct {
             .null => null,
             .integer => |number| if (number >= 0) @intCast(number) else reader.fail("{s} must be a non-negative integer", .{name}),
             else => reader.fail("{s} must be a non-negative integer", .{name}),
+        };
+    }
+
+    /// An integer >= 1, `default` when absent (`null` is not absent).
+    fn positiveInteger(reader: *Reader, name: []const u8, default: usize) Error!usize {
+        const value = reader.object.get(name) orelse return default;
+        return switch (value) {
+            .integer => |number| if (number > 0) std.math.cast(usize, number) orelse reader.fail("{s} is too large", .{name}) else reader.fail("{s} must be a positive integer", .{name}),
+            else => reader.fail("{s} must be a positive integer", .{name}),
         };
     }
 
@@ -736,6 +756,367 @@ fn writeNeighbour(json: *std.json.Stringify, documents: []const hybrid.Document,
     const at = index orelse return json.write(null);
     const document = documents[at];
     try json.write(.{ .chunk_id = document.id, .start_line = document.start_line, .end_line = document.end_line });
+}
+
+// ------------------------------------------------- CAP-13's operations ---
+
+/// Per-request scratch the RPC and MCP servers keep for the life of an
+/// opened generation (sized by its document count).
+pub const Workspaces = struct {
+    query_vector: []f32,
+    results: []hybrid.Result,
+    evidence: []engine_module.Evidence,
+    sources: []service_module.Source,
+};
+
+/// `search_knowledge` and `list_sources` on a legacy service failed inside
+/// the engine (a workspace too small); the servers answer "Internal error".
+pub const OperationError = error{ OperationFailed, OutOfMemory };
+
+/// `search_knowledge`: `{query, top_k? (1-100, 5), candidate_k? (top_k..10000,
+/// 100), path_prefix?, retrieval_mode? (lexical|vector|hybrid, hybrid),
+/// query_vector? (required for vector and hybrid when the index has
+/// vectors), roots?, principal_labels? (trusted callers only)}`. A request
+/// (or caller) that names roots runs through the scope; otherwise the v1
+/// path, whose labels already filter it (S3-T4).
+pub fn searchKnowledge(allocator: std.mem.Allocator, service: service_module.Service, params: std.json.ObjectMap, caller: Caller, workspaces: Workspaces) OperationError!Result {
+    var reader = newReader(allocator, params);
+    const parsed = parseSearch(&reader, service, caller, workspaces) catch |err| switch (err) {
+        error.Invalid => return reader.failure(),
+        error.OutOfMemory => return error.OutOfMemory,
+    };
+    const search_options = hybrid.SearchOptions{
+        .top_k = parsed.top_k,
+        .candidate_k = parsed.candidate_k,
+        .retrieval_mode = parsed.mode,
+        .path_prefix = parsed.path_prefix,
+        .principal_labels = parsed.scope.principal_labels,
+    };
+    const scoped = parsed.scope.roots != null and service.folder != null;
+    const found = if (scoped)
+        scopedOf(service).searchKnowledge(allocator, parsed.query, parsed.query_vector, search_options, parsed.scope, workspaces.results, workspaces.evidence, null)
+    else
+        service.searchKnowledge(allocator, parsed.query, parsed.query_vector, search_options, workspaces.results, workspaces.evidence);
+    const evidence_items = found catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.OperationFailed,
+    };
+    var folder_fields: ?FolderFields = null;
+    if (service.folder) |folder| {
+        const complete = scopedOf(service).completeness(allocator, parsed.scope) catch |err| switch (err) {
+            error.OutOfMemory => return error.OutOfMemory,
+            else => return error.OperationFailed,
+        };
+        folder_fields = .{ .folder = folder, .results = workspaces.results, .pending_files = complete.pending_files, .truncated = complete.truncated };
+    }
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    var json = std.json.Stringify{ .writer = &out.writer };
+    writeSearchResult(&json, service, parsed.query, parsed.mode, parsed.scope.principal_labels.len, evidence_items, null, folder_fields) catch return error.OutOfMemory;
+    return .{ .ok = out.written() };
+}
+
+const ParsedSearch = struct {
+    query: []const u8,
+    top_k: usize,
+    candidate_k: usize,
+    path_prefix: ?[]const u8,
+    mode: hybrid.RetrievalMode,
+    query_vector: []const f32,
+    scope: scope.Request,
+};
+
+fn parseSearch(reader: *Reader, service: service_module.Service, caller: Caller, workspaces: Workspaces) Error!ParsedSearch {
+    try reader.only(&.{ "query", "query_vector", "top_k", "candidate_k", "path_prefix", "retrieval_mode", "principal_labels", "roots" });
+    const query = try reader.requiredString("query");
+    if (query.len == 0) return reader.fail("query must not be empty", .{});
+    // S2-T11: same rejection as `ss_query` and the CLI; never reaches analysis.
+    engine_module.Engine.validateQueryText(query) catch return reader.fail("query is not valid UTF-8", .{});
+    const top_k = try reader.positiveInteger("top_k", 5);
+    if (top_k > 100) return reader.fail("top_k must be 1..100", .{});
+    const candidate_k = try reader.positiveInteger("candidate_k", 100);
+    if (candidate_k > 10_000 or candidate_k < top_k) return reader.fail("candidate_k must be top_k..10000", .{});
+    const path_prefix = try reader.optionalString("path_prefix");
+    const mode_text = try reader.optionalString("retrieval_mode");
+    const mode = parseRetrievalMode(mode_text orelse "hybrid") orelse return reader.fail("retrieval_mode must be lexical, vector or hybrid", .{});
+    const request_scope = try reader.scopeOf(caller);
+    const query_vector = queryVector(reader.object.get("query_vector"), service.engine.vector_dimensions, mode, workspaces.query_vector) orelse
+        return reader.fail("query_vector must hold {d} finite numbers for {s} retrieval", .{ service.engine.vector_dimensions, @tagName(mode) });
+    return .{ .query = query, .top_k = top_k, .candidate_k = candidate_k, .path_prefix = path_prefix, .mode = mode, .query_vector = query_vector, .scope = request_scope };
+}
+
+/// The three `retrieval_mode` strings (shared with `ss_query` through `rpc.parseMode`).
+pub fn parseRetrievalMode(value: []const u8) ?hybrid.RetrievalMode {
+    if (std.mem.eql(u8, value, "lexical")) return .lexical;
+    if (std.mem.eql(u8, value, "vector")) return .vector;
+    if (std.mem.eql(u8, value, "hybrid")) return .hybrid;
+    return null;
+}
+
+/// The request's vector: empty for lexical mode or an index without vectors;
+/// otherwise exactly `dimensions` finite numbers with a finite L2 norm
+/// (S2-T13), else null.
+fn queryVector(value: ?std.json.Value, dimensions: usize, mode: hybrid.RetrievalMode, output: []f32) ?[]const f32 {
+    if (mode == .lexical or dimensions == 0) return &.{};
+    if (output.len < dimensions) return null;
+    const array = switch (value orelse return null) {
+        .array => |array| array.items,
+        else => return null,
+    };
+    if (array.len != dimensions) return null;
+    for (array, output[0..dimensions]) |item, *target| {
+        const number: f64 = switch (item) {
+            .integer => |integer| @floatFromInt(integer),
+            .float => |float| float,
+            else => return null,
+        };
+        target.* = @floatCast(number);
+        if (!std.math.isFinite(target.*)) return null;
+    }
+    if (!scoring.isValidVector(output[0..dimensions])) return null;
+    return output[0..dimensions];
+}
+
+/// What `search_knowledge` adds per item and at the end on a scoped service.
+pub const FolderFields = struct {
+    folder: *const scope.Folder,
+    /// The ranking behind the evidence, in the same order (document indexes).
+    results: []const hybrid.Result,
+    pending_files: usize,
+    truncated: bool,
+};
+
+/// The `search_knowledge` result object (`tool`, `query`, `index`,
+/// `retrieval`, `results`, `answer_policy`; then, with `folder_fields`,
+/// `truncated` and `pending_files`, and each item's `root_id` and
+/// `section_path` after its `ranking`; then, with `extras` (the C ABI's
+/// `ss_query`, S2-T4), `warnings`, `request` and `profile`).
+pub fn writeSearchResult(
+    json: *std.json.Stringify,
+    service: service_module.Service,
+    query: []const u8,
+    mode: hybrid.RetrievalMode,
+    principal_label_count: usize,
+    evidence_items: []const engine_module.Evidence,
+    extras: ?query_report.Extras,
+    folder_fields: ?FolderFields,
+) !void {
+    var tail = extras;
+    if (tail) |*e| e.serialize_start = hybrid.Trace.stamp(e.trace);
+    try json.beginObject();
+    try json.objectField("tool");
+    try json.write("search_knowledge");
+    try json.objectField("query");
+    try json.write(query);
+    try json.objectField("index");
+    try json.beginObject();
+    try json.objectField("version");
+    try json.write(@as(u16, 2));
+    try json.objectField("generation");
+    try json.write(service.engine.generation);
+    try json.objectField("analyzer_id");
+    try json.write(service.engine.analyzer_id);
+    try json.objectField("embedding_model_id");
+    try json.write(service.engine.embedding_model_id);
+    try json.endObject();
+    try json.objectField("retrieval");
+    try json.beginObject();
+    try json.objectField("mode");
+    try json.write(@tagName(mode));
+    try json.objectField("vector_dimensions");
+    try json.write(service.engine.vector_dimensions);
+    try json.objectField("authorization");
+    try json.beginObject();
+    try json.objectField("semantics");
+    try json.write("all-required-labels-v1");
+    try json.objectField("principal_label_count");
+    try json.write(principal_label_count);
+    try json.endObject();
+    try json.endObject();
+    try json.objectField("results");
+    try json.beginArray();
+    for (evidence_items, 0..) |item, position| {
+        try json.beginObject();
+        try json.objectField("chunk_id");
+        try json.write(item.chunk_id);
+        try json.objectField("citation");
+        try json.beginObject();
+        try json.objectField("path");
+        try json.write(item.path);
+        try json.objectField("start_line");
+        try json.write(item.start_line);
+        try json.objectField("end_line");
+        try json.write(item.end_line);
+        try json.endObject();
+        try json.objectField("content");
+        try json.write(item.content);
+        try json.objectField("score");
+        try json.write(item.fused_score);
+        try json.objectField("ranking");
+        try json.beginObject();
+        try json.objectField("lexical");
+        try json.beginObject();
+        try json.objectField("rank");
+        try json.write(item.lexical_rank);
+        try json.objectField("score");
+        try json.write(item.lexical_score);
+        try json.endObject();
+        try json.objectField("vector");
+        try json.beginObject();
+        try json.objectField("rank");
+        try json.write(item.semantic_rank);
+        try json.objectField("score");
+        try json.write(item.semantic_score);
+        try json.endObject();
+        try json.endObject();
+        if (folder_fields) |fields| {
+            const documents = service.engine.documents;
+            const index = documentIndex(documents, fields.results, position, item.chunk_id);
+            try json.objectField("root_id");
+            try json.write(rootIdOf(fields.folder.*, index));
+            try json.objectField("section_path");
+            try writeSectionPath(json, documents[index].section_path);
+        }
+        try json.endObject();
+    }
+    try json.endArray();
+    try json.objectField("answer_policy");
+    try json.write(.{
+        .ground_in_results = true,
+        .cite_path_and_lines = true,
+        .say_when_evidence_is_insufficient = true,
+    });
+    if (folder_fields) |fields| {
+        try json.objectField("truncated");
+        try json.write(fields.truncated);
+        try json.objectField("pending_files");
+        try json.write(fields.pending_files);
+    }
+    if (tail) |e| try query_report.write(json, e);
+    try json.endObject();
+}
+
+/// The document behind evidence item `position`: the ranking's index when it
+/// names the same chunk (always, as `Service.searchKnowledge` fills the
+/// evidence from the ranking in order), else found by id.
+fn documentIndex(documents: []const hybrid.Document, results: []const hybrid.Result, position: usize, chunk_id: []const u8) usize {
+    if (position < results.len) {
+        const index = results[position].document_index;
+        if (index < documents.len and std.mem.eql(u8, documents[index].id, chunk_id)) return index;
+    }
+    for (documents, 0..) |document, index| if (std.mem.eql(u8, document.id, chunk_id)) return index;
+    unreachable;
+}
+
+fn rootIdOf(folder: scope.Folder, index: usize) []const u8 {
+    const root = folder.document_roots[index];
+    return if (root < folder.roots.len) folder.roots[root].root_id else scope.legacy_root_id;
+}
+
+fn writeSectionPath(json: *std.json.Stringify, section_path: []const u8) !void {
+    try json.beginArray();
+    if (section_path.len != 0) {
+        var parts = std.mem.splitScalar(u8, section_path, 0x1F);
+        while (parts.next()) |part| try json.write(part);
+    }
+    try json.endArray();
+}
+
+/// `read_chunk`: `{chunk_id, path_prefix?, roots?, principal_labels?}` →
+/// `{chunk_id, citation {path, start_line, end_line}, content}`; a hidden and
+/// an unknown chunk are both `not_found` "Chunk not found".
+pub fn readChunk(allocator: std.mem.Allocator, service: service_module.Service, params: std.json.ObjectMap, caller: Caller) !Result {
+    var reader = newReader(allocator, params);
+    const Parsed = struct { chunk_id: []const u8, path_prefix: ?[]const u8, scope: scope.Request };
+    const parsed: Parsed = blk: {
+        reader.only(&.{ "chunk_id", "path_prefix", "principal_labels", "roots" }) catch |err| switch (err) {
+            error.Invalid => return reader.failure(),
+            error.OutOfMemory => return error.OutOfMemory,
+        };
+        const chunk_id = reader.requiredString("chunk_id") catch |err| switch (err) {
+            error.Invalid => return reader.failure(),
+            error.OutOfMemory => return error.OutOfMemory,
+        };
+        const path_prefix = reader.optionalString("path_prefix") catch |err| switch (err) {
+            error.Invalid => return reader.failure(),
+            error.OutOfMemory => return error.OutOfMemory,
+        };
+        const request_scope = reader.scopeOf(caller) catch |err| switch (err) {
+            error.Invalid => return reader.failure(),
+            error.OutOfMemory => return error.OutOfMemory,
+        };
+        break :blk .{ .chunk_id = chunk_id, .path_prefix = path_prefix, .scope = request_scope };
+    };
+    // S3-T4 (S3-T3 finding 2): the read by chunk id goes through the scope.
+    const read = if (service.folder != null)
+        try scopedOf(service).readChunk(allocator, parsed.chunk_id, parsed.path_prefix, parsed.scope)
+    else
+        service.readChunk(parsed.chunk_id, parsed.path_prefix, parsed.scope.principal_labels);
+    const chunk = read orelse return .{ .failed = .{ .code = .not_found, .message = "Chunk not found" } };
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    var json = std.json.Stringify{ .writer = &out.writer };
+    try json.beginObject();
+    try writeChunkFields(&json, chunk);
+    try json.endObject();
+    return .{ .ok = out.written() };
+}
+
+/// The fields of one chunk (chunk_id, citation, content), shared with the C
+/// ABI's `ss_evidence` through `rpc.writeChunkFields`.
+pub fn writeChunkFields(json: *std.json.Stringify, chunk: service_module.Chunk) !void {
+    try json.objectField("chunk_id");
+    try json.write(chunk.chunk_id);
+    try json.objectField("citation");
+    try json.beginObject();
+    try json.objectField("path");
+    try json.write(chunk.path);
+    try json.objectField("start_line");
+    try json.write(chunk.start_line);
+    try json.objectField("end_line");
+    try json.write(chunk.end_line);
+    try json.endObject();
+    try json.objectField("content");
+    try json.write(chunk.content);
+}
+
+/// `list_sources`: `{path_prefix?, roots?, principal_labels?}` →
+/// `{sources: [{path, chunks}], count}`, sorted by path.
+pub fn listSources(allocator: std.mem.Allocator, service: service_module.Service, params: std.json.ObjectMap, caller: Caller, workspaces: Workspaces) OperationError!Result {
+    var reader = newReader(allocator, params);
+    const Parsed = struct { path_prefix: ?[]const u8, scope: scope.Request };
+    const parsed: Parsed = blk: {
+        reader.only(&.{ "path_prefix", "principal_labels", "roots" }) catch |err| switch (err) {
+            error.Invalid => return reader.failure(),
+            error.OutOfMemory => return error.OutOfMemory,
+        };
+        const path_prefix = reader.optionalString("path_prefix") catch |err| switch (err) {
+            error.Invalid => return reader.failure(),
+            error.OutOfMemory => return error.OutOfMemory,
+        };
+        const request_scope = reader.scopeOf(caller) catch |err| switch (err) {
+            error.Invalid => return reader.failure(),
+            error.OutOfMemory => return error.OutOfMemory,
+        };
+        break :blk .{ .path_prefix = path_prefix, .scope = request_scope };
+    };
+    const listed = if (service.folder != null)
+        scopedOf(service).listSources(allocator, parsed.path_prefix, parsed.scope)
+    else
+        service.listSources(parsed.path_prefix, parsed.scope.principal_labels, workspaces.sources);
+    const sources = listed catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.OperationFailed,
+    };
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    var json = std.json.Stringify{ .writer = &out.writer };
+    json.beginObject() catch return error.OutOfMemory;
+    json.objectField("sources") catch return error.OutOfMemory;
+    json.beginArray() catch return error.OutOfMemory;
+    for (sources) |source_entry| json.write(.{ .path = source_entry.path, .chunks = source_entry.chunks }) catch return error.OutOfMemory;
+    json.endArray() catch return error.OutOfMemory;
+    json.objectField("count") catch return error.OutOfMemory;
+    json.write(sources.len) catch return error.OutOfMemory;
+    json.endObject() catch return error.OutOfMemory;
+    return .{ .ok = out.written() };
 }
 
 // ------------------------------------------------------- apply_changes ---

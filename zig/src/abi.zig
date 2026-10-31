@@ -181,8 +181,10 @@ const QueryOptions = struct {
 /// Run one query and return the same `result` JSON object a `search_knowledge`
 /// JSON-RPC response would carry (`tool`, `query`, `index`, `retrieval`,
 /// `results`, `answer_policy`) — produced by the identical code
-/// (`rpc.writeSearchResultValue`), so it is byte-for-byte what the JSON-RPC
-/// service would return for the same request.
+/// (`rpc.writeSearchResultValue`, `ops.writeSearchResult`), so it is
+/// byte-for-byte what the JSON-RPC service would return for the same request
+/// minus the folder fields the service adds since S3-T6 (item `root_id` and
+/// `section_path`, result `truncated` and `pending_files`).
 ///
 /// `query_vector`/`dims` are ignored for lexical mode and for snapshots with
 /// zero vector dimensions; otherwise `dims` must equal the snapshot's vector

@@ -25,8 +25,9 @@ host's call, and its `roots` member has the shape of `index_status`'s
   them is invalid. (The engine's own `contracts/tool-request.schema.json`
   describes the raw service and keeps them.)
 - A **result schema** describes the `result` member of the JSON-RPC response
-  (equally the CLI's `--json` output and the C ABI's string), closed the same
-  way. Nullable fields are type arrays (`["string", "null"]`). `find`'s
+  (equally the CLI's `--json` output, the MCP `structuredContent` and the C
+  ABI's string, except that `ss_query` lacks the four `search_knowledge`
+  fields added in S3-T6), closed the same way. Nullable fields are type arrays (`["string", "null"]`). `find`'s
   `exact_match` is `true | false | null`; `null` means the phrase check did
   not run.
 - Schemas are provider-neutral. They use only the keywords that

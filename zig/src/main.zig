@@ -8,6 +8,7 @@ const importer = @import("importer.zig");
 const indexer = @import("indexer.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const lifecycle = @import("lifecycle.zig");
+const mcp = @import("mcp.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
@@ -40,6 +41,11 @@ pub fn main(init: std.process.Init) !void {
             try serveHttp(init.io, init.gpa, s, address)
         else
             try serveSnapshot(init.io, init.gpa, s),
+        // S3-T6: the MCP server; 1 when the index cannot be opened.
+        .mcp => |m| {
+            const status = try mcp.run(init.io, init.gpa, m);
+            if (status != 0) std.process.exit(status);
+        },
         .index => |i| {
             var stdout_buffer: [4096]u8 = undefined;
             var stdout_writer = std.Io.File.stdout().writerStreaming(init.io, &stdout_buffer);

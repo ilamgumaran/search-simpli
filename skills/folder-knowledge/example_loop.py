@@ -32,7 +32,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 PACK = REPO / "fixtures" / "family-folder"
 NEGATIVE = "I found no matching indexed passages in the selected folders."
-CAVEAT = "Some files are still pending or the listing was truncated, so this may not cover everything."
+CAVEAT = "Some files are still pending or could not be indexed in full, so this may not cover everything."
 # The eight read tools. apply_changes and roots are deliberately not here.
 READ_TOOLS = ("search_knowledge", "read_chunk", "list_sources", "index_status",
               "find", "outline", "read_span", "list_files")
@@ -251,7 +251,9 @@ class Loop:
                 self.negative(answer, retry["pending_files"], retry["truncated"])
                 return answer
         for item in found["results"][:2]:
+            # Since S3-T6 each item names its root; the record path agrees.
             root_id, path = self.split_record_path(item["citation"]["path"])
+            assert item["root_id"] == root_id
             chunk = self.tools.call("read_chunk", chunk_id=item["chunk_id"])
             assert chunk["content"] == item["content"]
             start, end = item["citation"]["start_line"], item["citation"]["end_line"]

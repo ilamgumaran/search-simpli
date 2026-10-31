@@ -8,7 +8,9 @@ pattern, and a local `$ref` of the form `#/$defs/<name>` (or any JSON pointer
 into the same document). Annotation keywords (`description`, `default`,
 `title`, `$id`, `$schema`, `$defs`) are ignored. A keyword outside both lists
 raises `UnsupportedKeyword`, so a schema can never silently pass because the
-validator did not understand it.
+validator did not understand it: `check_schema` walks every subschema at load
+(`load_tool_schema`) and before every `validate`, so an unknown keyword under a
+property the instance does not carry is refused too (S3-T5 Verdict finding 2).
 
 `validate(instance, schema)` returns a list of error strings (empty = valid);
 `check(instance, schema)` raises `SchemaError` with all of them.
@@ -38,7 +40,36 @@ class UnsupportedKeyword(SchemaError):
 
 def load_tool_schema(name: str, kind: str) -> dict:
     """`contracts/tools/<name>.<kind>.schema.json`; kind is request or result."""
-    return json.loads((TOOLS_DIR / f"{name}.{kind}.schema.json").read_text(encoding="utf-8"))
+    schema = json.loads((TOOLS_DIR / f"{name}.{kind}.schema.json").read_text(encoding="utf-8"))
+    check_schema(schema)
+    return schema
+
+
+def check_schema(schema: Any, path: str = "$") -> None:
+    """Raise `UnsupportedKeyword` for any keyword, anywhere in `schema`, that
+    is neither handled nor an annotation (the whole tree, not only the path an
+    instance reaches)."""
+    if isinstance(schema, bool):
+        return
+    if not isinstance(schema, dict):
+        raise SchemaError(f"{path}: a schema must be an object or a boolean")
+    for key in schema:
+        if key not in HANDLED and key not in ANNOTATIONS:
+            raise UnsupportedKeyword(f"{path}: unsupported keyword {key!r}")
+    if "type" in schema:
+        for name in schema["type"] if isinstance(schema["type"], list) else [schema["type"]]:
+            if name not in {"null", "boolean", "integer", "number", "string", "array", "object"}:
+                raise UnsupportedKeyword(f"{path}: unknown type {name!r}")
+    if "$ref" in schema and not str(schema["$ref"]).startswith("#"):
+        raise UnsupportedKeyword(f"{path}: only local $ref is supported: {schema['$ref']!r}")
+    for name, member in schema.get("properties", {}).items():
+        check_schema(member, f"{path}.properties.{name}")
+    for name, member in schema.get("$defs", {}).items():
+        check_schema(member, f"{path}.$defs.{name}")
+    if isinstance(schema.get("additionalProperties"), dict):
+        check_schema(schema["additionalProperties"], f"{path}.additionalProperties")
+    if "items" in schema:
+        check_schema(schema["items"], f"{path}.items")
 
 
 def _is_type(value: Any, name: str) -> bool:
@@ -137,6 +168,7 @@ def _same(a: Any, b: Any) -> bool:
 
 
 def validate(instance: Any, schema: dict) -> list[str]:
+    check_schema(schema)
     errors: list[str] = []
     _walk(instance, schema, schema, "", errors)
     return errors

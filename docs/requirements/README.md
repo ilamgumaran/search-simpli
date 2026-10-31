@@ -100,7 +100,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-10 | Durable Zig snapshot engine | UC-002, UC-003 | FR-11 | Implemented |
 | CAP-11 | [Evaluation & benchmarks](cap-11-evaluation-benchmarks.md) | all, UC-005 | FR-12 | Diagnostic / graded smoke gate implemented; E-01A judgment packs proposed |
 | CAP-12 | Adaptive learning loop | UC-001, UC-003 | (new FRs on intake) | Proposed / future — board L-01…L-05 |
-| CAP-13 | [MCP tool adapter](cap-13-mcp-adapter.md) | UC-004, UC-002, UC-003 | FR-13, NFR-09 | Proposed / future — board I-01 |
+| CAP-13 | [MCP tool adapter](cap-13-mcp-adapter.md) | UC-004, UC-002, UC-003 | FR-13, NFR-09 | Diagnostic — realized by S3-T6 (`searchd mcp`, CAP-19 FR-24); board I-01 done |
 | CAP-14 | [Trust-calibration signal](cap-14-trust-calibration.md) | UC-001, UC-002, UC-003 | FR-14 | Proposed / future — board S-01, E-02 |
 | CAP-15 | [Structure-aware code chunking](cap-15-structure-aware-chunking.md) | UC-002 | FR-15 | Proposed / future |
 | CAP-16 | [Directory filename retrieval](cap-16-directory-filename-search.md) | UC-006, UC-001, UC-002, UC-003 | FR-16 | Proposed · future |
@@ -146,7 +146,7 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-10 | Python/Zig interchange (versioned neutral JSON, validated bounds) | CAP-09 | Implemented |
 | FR-11 | Durable snapshot (checksummed sections, manifest, atomic publish, writer lock) | CAP-10 | Implemented |
 | FR-12 | Evaluation & benchmarks (binary/graded judgments, nDCG + retrieval diagnostics, reproducible profiles, regression gates, machine-readable limits/evidence; E-01A real-folder packs and E-02 negative evaluation proposed) | CAP-11 | Implemented (diagnostic); E-01A/E-02 proposed |
-| FR-13 | MCP adapter binds FR-07 operations, injects trusted principal, forbids caller vectors, parity with direct surface | CAP-13 | Proposed |
+| FR-13 | MCP adapter binds FR-07 operations, injects trusted principal, forbids caller vectors, parity with direct surface | CAP-13 | Diagnostic (S3-T6) |
 | FR-14 | First-class retrieval-derived support/confidence signal in the evidence response; low-support flagging; never generative | CAP-14 (changes FR-06) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages, deterministic identity, deterministic line-window fallback | CAP-15 (changes FR-02) | Proposed |
 | FR-16 | Opt-in filename/combined lexical search, real passage anchors, explicit origin, isolation, deterministic ranking and versioned refresh/migration | CAP-16 | Proposed |
@@ -158,7 +158,7 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-21 | Deterministic rename detection without content deduplication | CAP-19 | Proposed |
 | FR-22 | Find, outline, byte-exact source spans and paged files | CAP-19 | Proposed |
 | FR-23 | Versioned shared tool schemas and model skill instructions | CAP-19 | Proposed |
-| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | CAP-19 | Proposed |
+| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | CAP-19 | Diagnostic (S3-T6: `searchd mcp`; realizes CAP-13) |
 | FR-25 | Scoped retrieval metadata; empty is not proof of absence | CAP-19 | Proposed |
 
 ## Non-functional requirements (NFR)
@@ -178,13 +178,13 @@ until promoted.
 | NFR-06 | Optional neural imports are lazy and fail with concise errors | CAP-03 | Implemented |
 | NFR-07 | Every material change backed by tests or a recorded experiment | all | Standing |
 | NFR-08 | Docs distinguish implementation, observation, hypothesis, future option | all | Standing |
-| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free | CAP-13 | Proposed |
+| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free | CAP-13 | Diagnostic (S3-T6: `zig/src/mcp.zig`, Zig only) |
 
 | NFR-10 | Phrase/words latency and generation-bound paging | CAP-19 | Proposed |
 | NFR-11 | Positional segment size budget | CAP-19 | Proposed |
 | NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseFast, ReleaseSmall reported) | CAP-19 | Proposed |
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Proposed |
-| NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Proposed |
+| NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic (S3-T6: `zig/src/mcp.zig` Zig only; `tests/mcp_client.py` standard library) |
 
 ## Contracts (CON)
 
