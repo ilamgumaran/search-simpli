@@ -297,8 +297,12 @@ class GeneratorAndRunnerTests(unittest.TestCase):
         self.assertTrue(report["newt_empty"])
         self.assertEqual(report["skipped"]["phrase"], 5)
         self.assertEqual(report["skipped"]["prefix"], 5)
-        self.assertEqual(report["skipped"]["outline"], 5)
-        self.assertEqual(report["skipped"]["read_span"], 8)
+        # S3-T1: outline and read_span run through the Python reference, exactly.
+        self.assertNotIn("outline", report["skipped"])
+        self.assertNotIn("read_span", report["skipped"])
+        self.assertEqual(report["exactness"], {"outline": 1.0, "read_span": 1.0})
+        self.assertEqual(len(report["exact_cases"]["read_span"]), 9)  # 8 cases + scenario 5
+        self.assertEqual(len(report["exact_cases"]["outline"]), 7)  # 5 cases + scenarios 4 and 9
 
 
 if __name__ == "__main__":

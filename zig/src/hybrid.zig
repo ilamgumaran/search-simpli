@@ -11,7 +11,21 @@ pub const Document = struct {
     end_line: u32 = 0,
     /// Canonical newline-separated labels; every label is required.
     required_labels: []const u8 = "",
+    /// Record v4 (S3-T1, `docs/segment-format-v4.md`): which chunker made the
+    /// chunk (an index into the manifest's `meta.chunkers`; 0 is
+    /// `line-window-v1`), the Markdown heading path (entries joined by
+    /// U+001F, `section_depth` of them), the line of the section's heading
+    /// (0 when none) and the file's index in the generation's source section
+    /// (`no_source_doc` when its bytes are not retained). Older records
+    /// decode with these defaults.
+    chunker_index: u16 = 0,
+    section_depth: u16 = 0,
+    heading_line: u32 = 0,
+    source_doc_index: u32 = no_source_doc,
+    section_path: []const u8 = "",
 };
+
+pub const no_source_doc: u32 = std.math.maxInt(u32);
 
 pub const SearchOptions = struct {
     top_k: usize = 10,

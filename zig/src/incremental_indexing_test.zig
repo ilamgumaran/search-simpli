@@ -449,7 +449,7 @@ test "a file grown past max_file_bytes is reported too_large and its old chunks 
 
 // === S2-T5: keep_generations ================================================
 
-const CountedFiles = struct { documents: usize = 0, lexical: usize = 0, control: usize = 0, other: usize = 0 };
+const CountedFiles = struct { documents: usize = 0, lexical: usize = 0, source: usize = 0, control: usize = 0, other: usize = 0 };
 
 fn countFiles(io: std.Io, dir: std.Io.Dir) !CountedFiles {
     var counted = CountedFiles{};
@@ -460,6 +460,8 @@ fn countFiles(io: std.Io, dir: std.Io.Dir) !CountedFiles {
             counted.documents += 1;
         } else if (std.mem.endsWith(u8, entry.name, ".hyblex")) {
             counted.lexical += 1;
+        } else if (std.mem.endsWith(u8, entry.name, ".hybsrc")) {
+            counted.source += 1;
         } else if (std.mem.eql(u8, entry.name, "MANIFEST") or std.mem.eql(u8, entry.name, "WRITER.LOCK") or
             std.mem.eql(u8, entry.name, "INDEX-STATE.json"))
         {
@@ -504,6 +506,8 @@ fn publishTwenty(arena: std.mem.Allocator, io: std.Io, keep: ?usize) !CountedFil
     try std.testing.expectEqual(@as(usize, 0), scan.orphan_document_files);
     try std.testing.expectEqual(@as(usize, 0), scan.orphan_lexical_files);
     try std.testing.expectEqual(@as(usize, 0), scan.unknown_files);
+    try std.testing.expectEqual(@as(usize, 1), scan.current_source_files);
+    try std.testing.expectEqual(@as(usize, 0), scan.orphan_source_files);
     // The current generation is still openable and queryable.
     const opened = try snapshot_open.open(arena, io, out);
     try std.testing.expectEqual(@as(u64, 20), opened.generation);
@@ -519,12 +523,16 @@ test "keep_generations=2 leaves exactly two generations over 20 publishes; absen
     const kept = try publishTwenty(arena, io, 2);
     try std.testing.expectEqual(@as(usize, 2), kept.documents);
     try std.testing.expectEqual(@as(usize, 2), kept.lexical);
+    // S3-T1: each generation also binds a source section; pruning removes
+    // it with its generation.
+    try std.testing.expectEqual(@as(usize, 2), kept.source);
     try std.testing.expectEqual(@as(usize, 3), kept.control); // MANIFEST, WRITER.LOCK, INDEX-STATE.json
     try std.testing.expectEqual(@as(usize, 0), kept.other);
 
     const all = try publishTwenty(arena, io, null);
     try std.testing.expectEqual(@as(usize, 20), all.documents);
     try std.testing.expectEqual(@as(usize, 20), all.lexical);
+    try std.testing.expectEqual(@as(usize, 20), all.source);
     try std.testing.expectEqual(@as(usize, 3), all.control);
 }
 

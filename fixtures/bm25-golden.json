@@ -9,11 +9,11 @@
    "ranking": [
     {
      "path": "learn/sample-math.md",
-     "start_line": 1,
-     "end_line": 23,
+     "start_line": 3,
+     "end_line": 9,
      "fused_score": 0.01639344262295082,
      "lexical_rank": 1,
-     "lexical_score": 2.2031592116998455
+     "lexical_score": 3.6243084700202775
     }
    ]
   },
@@ -21,44 +21,108 @@
    "query": "ANSWER",
    "ranking": [
     {
-     "path": "learn/sample-math.md",
-     "start_line": 1,
-     "end_line": 23,
+     "path": "learn/sample-ela.md",
+     "start_line": 3,
+     "end_line": 9,
      "fused_score": 0.01639344262295082,
      "lexical_rank": 1,
-     "lexical_score": 1.5369749976830833
+     "lexical_score": 0.9565778479420692
     },
     {
-     "path": "learn/sample-ela.md",
-     "start_line": 1,
-     "end_line": 20,
+     "path": "learn/sample-math.md",
+     "start_line": 3,
+     "end_line": 9,
      "fused_score": 0.016129032258064516,
      "lexical_rank": 2,
-     "lexical_score": 1.5182025185980217
+     "lexical_score": 0.943573013151316
     },
     {
      "path": "learn/sample-science.md",
-     "start_line": 1,
-     "end_line": 22,
+     "start_line": 3,
+     "end_line": 12,
      "fused_score": 0.015873015873015872,
      "lexical_rank": 3,
-     "lexical_score": 1.4908881510808003
+     "lexical_score": 0.8835153249026468
+    },
+    {
+     "path": "learn/sample-math.md",
+     "start_line": 10,
+     "end_line": 13,
+     "fused_score": 0.015625,
+     "lexical_rank": 4,
+     "lexical_score": 0.813847091046391
+    },
+    {
+     "path": "learn/sample-math.md",
+     "start_line": 14,
+     "end_line": 20,
+     "fused_score": 0.015384615384615385,
+     "lexical_rank": 5,
+     "lexical_score": 0.7951980239243892
+    },
+    {
+     "path": "learn/sample-ela.md",
+     "start_line": 18,
+     "end_line": 20,
+     "fused_score": 0.015151515151515152,
+     "lexical_rank": 6,
+     "lexical_score": 0.7951980239243892
+    },
+    {
+     "path": "learn/sample-science.md",
+     "start_line": 13,
+     "end_line": 19,
+     "fused_score": 0.014925373134328358,
+     "lexical_rank": 7,
+     "lexical_score": 0.7837457148132639
+    },
+    {
+     "path": "learn/sample-ela.md",
+     "start_line": 10,
+     "end_line": 13,
+     "fused_score": 0.014705882352941176,
+     "lexical_rank": 8,
+     "lexical_score": 0.7687736889042133
+    },
+    {
+     "path": "learn/sample-science.md",
+     "start_line": 20,
+     "end_line": 22,
+     "fused_score": 0.014492753623188406,
+     "lexical_rank": 9,
+     "lexical_score": 0.7284309029175043
+    },
+    {
+     "path": "learn/sample-math.md",
+     "start_line": 21,
+     "end_line": 23,
+     "fused_score": 0.014285714285714285,
+     "lexical_rank": 10,
+     "lexical_score": 0.6530383044655427
     },
     {
      "path": "tutoring/rubric.md",
      "start_line": 1,
      "end_line": 30,
-     "fused_score": 0.015625,
-     "lexical_rank": 4,
-     "lexical_score": 1.2445808712740083
+     "fused_score": 0.014084507042253521,
+     "lexical_rank": 11,
+     "lexical_score": 0.651563401855887
+    },
+    {
+     "path": "learn/sample-ela.md",
+     "start_line": 14,
+     "end_line": 17,
+     "fused_score": 0.013888888888888888,
+     "lexical_rank": 12,
+     "lexical_score": 0.6236962317448205
     },
     {
      "path": "learn/README.md",
      "start_line": 1,
      "end_line": 4,
-     "fused_score": 0.015384615384615385,
-     "lexical_rank": 5,
-     "lexical_score": 1.089044546601485
+     "fused_score": 0.0136986301369863,
+     "lexical_rank": 13,
+     "lexical_score": 0.5917882233489286
     }
    ]
   },
@@ -67,11 +131,11 @@
    "ranking": [
     {
      "path": "learn/sample-math.md",
-     "start_line": 1,
-     "end_line": 23,
+     "start_line": 14,
+     "end_line": 20,
      "fused_score": 0.01639344262295082,
      "lexical_rank": 1,
-     "lexical_score": 2.2031592116998455
+     "lexical_score": 3.831933380988949
     }
    ]
   },
@@ -80,11 +144,11 @@
    "ranking": [
     {
      "path": "learn/sample-math.md",
-     "start_line": 1,
-     "end_line": 23,
+     "start_line": 10,
+     "end_line": 13,
      "fused_score": 0.01639344262295082,
      "lexical_rank": 1,
-     "lexical_score": 2.2031592116998455
+     "lexical_score": 3.921800282916634
     }
    ]
   },
@@ -92,36 +156,36 @@
    "query": "practice",
    "ranking": [
     {
-     "path": "learn/README.md",
+     "path": "learn/sample-science.md",
      "start_line": 1,
-     "end_line": 4,
+     "end_line": 2,
      "fused_score": 0.01639344262295082,
      "lexical_rank": 1,
-     "lexical_score": 1.089044546601485
+     "lexical_score": 2.360806281242041
     },
     {
      "path": "learn/sample-math.md",
      "start_line": 1,
-     "end_line": 23,
+     "end_line": 2,
      "fused_score": 0.016129032258064516,
      "lexical_rank": 2,
-     "lexical_score": 0.87759859418268
+     "lexical_score": 2.360806281242041
     },
     {
      "path": "learn/sample-ela.md",
      "start_line": 1,
-     "end_line": 20,
+     "end_line": 2,
      "fused_score": 0.015873015873015872,
      "lexical_rank": 3,
-     "lexical_score": 0.8476745567157776
+     "lexical_score": 2.360806281242041
     },
     {
-     "path": "learn/sample-science.md",
+     "path": "learn/README.md",
      "start_line": 1,
-     "end_line": 22,
+     "end_line": 4,
      "fused_score": 0.015625,
      "lexical_rank": 4,
-     "lexical_score": 0.806428593678284
+     "lexical_score": 1.5153620414628959
     },
     {
      "path": "SOURCE.md",
@@ -129,7 +193,7 @@
      "end_line": 26,
      "fused_score": 0.015384615384615385,
      "lexical_rank": 5,
-     "lexical_score": 0.5754340180732738
+     "lexical_score": 0.6340867365402931
     }
    ]
   },
@@ -142,7 +206,7 @@
      "end_line": 26,
      "fused_score": 0.01639344262295082,
      "lexical_rank": 1,
-     "lexical_score": 1.6914356217892195
+     "lexical_score": 1.6283077087097957
     },
     {
      "path": "tutoring/rubric.md",
@@ -150,7 +214,7 @@
      "end_line": 30,
      "fused_score": 0.016129032258064516,
      "lexical_rank": 2,
-     "lexical_score": 1.5760420313897867
+     "lexical_score": 1.4823350586986852
     }
    ]
   },
@@ -163,7 +227,7 @@
      "end_line": 30,
      "fused_score": 0.01639344262295082,
      "lexical_rank": 1,
-     "lexical_score": 1.3186843487895556
+     "lexical_score": 1.0675806935238377
     }
    ]
   },
@@ -176,7 +240,7 @@
      "end_line": 26,
      "fused_score": 0.01639344262295082,
      "lexical_rank": 1,
-     "lexical_score": 1.3462330929385635
+     "lexical_score": 1.3860717570193422
     },
     {
      "path": "tutoring/rubric.md",
@@ -184,7 +248,7 @@
      "end_line": 43,
      "fused_score": 0.016129032258064516,
      "lexical_rank": 2,
-     "lexical_score": 1.0967462471124765
+     "lexical_score": 1.099222883742057
     },
     {
      "path": "tutoring/rubric.md",
@@ -192,7 +256,7 @@
      "end_line": 30,
      "fused_score": 0.015873015873015872,
      "lexical_rank": 3,
-     "lexical_score": 0.8012837576113384
+     "lexical_score": 0.7413300562916756
     }
    ]
   }

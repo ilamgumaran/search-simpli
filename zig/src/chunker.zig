@@ -77,7 +77,7 @@ fn isLineBreak(cp: u21) bool {
     return false;
 }
 
-fn isWhitespace(cp: u21) bool {
+pub fn isWhitespace(cp: u21) bool {
     for (whitespace_codepoints) |candidate| {
         if (candidate == cp) return true;
     }
@@ -87,12 +87,12 @@ fn isWhitespace(cp: u21) bool {
 /// One decoded line: its codepoint length (Python `len()` semantics) and its
 /// exact byte span within the original text (so joining/stripping can slice
 /// the original buffer without re-encoding).
-const Line = struct {
+pub const Line = struct {
     codepoint_length: usize,
     bytes: []const u8,
 };
 
-fn splitLines(allocator: std.mem.Allocator, text: []const u8) Error![]Line {
+pub fn splitLines(allocator: std.mem.Allocator, text: []const u8) Error![]Line {
     var lines = std.ArrayList(Line).empty;
     defer lines.deinit(allocator);
 
@@ -126,7 +126,7 @@ fn splitLines(allocator: std.mem.Allocator, text: []const u8) Error![]Line {
 
 /// Trim leading/trailing Unicode whitespace (Python `str.strip()` semantics)
 /// from a byte span, returning a sub-slice of the same buffer.
-fn stripWhitespace(text: []const u8) Error![]const u8 {
+pub fn stripWhitespace(text: []const u8) Error![]const u8 {
     var view = std.unicode.Utf8View.init(text) catch return error.InvalidUtf8;
 
     var start: usize = 0;
@@ -161,7 +161,7 @@ fn stripWhitespace(text: []const u8) Error![]const u8 {
 /// single-codepoint breaks (`\n`) is a plain slice; for other/mixed break
 /// styles or `\r\n`, this allocates and rewrites explicit `\n` separators to
 /// match Python's normalized-on-splitlines-then-rejoined behavior exactly.
-fn joinLines(allocator: std.mem.Allocator, lines: []const Line) Error![]u8 {
+pub fn joinLines(allocator: std.mem.Allocator, lines: []const Line) Error![]u8 {
     var total: usize = 0;
     for (lines, 0..) |line, index| {
         total += line.bytes.len;
@@ -238,6 +238,78 @@ fn chunkLines(
         start = if (next > start + 1) next else start + 1;
     }
     return spans.toOwnedSlice(allocator);
+}
+
+// ------------------------------------------------------------- dispatch ---
+// S3-T1 ruling 2: the chunker is selected by extension. `.md` and
+// `.markdown` (ASCII case-insensitive) use `md-section-v1`
+// (`chunker_md.zig`); every other file keeps `line-window-v1` above, whose
+// output is unchanged.
+
+const chunker_md = @import("chunker_md.zig");
+
+pub const Kind = enum(u8) {
+    line_window,
+    md_section,
+
+    pub fn id(kind: Kind) []const u8 {
+        return switch (kind) {
+            .line_window => chunker_id,
+            .md_section => chunker_md.chunker_id,
+        };
+    }
+};
+
+pub fn kindForPath(path: []const u8) Kind {
+    const slash = if (std.mem.lastIndexOfScalar(u8, path, '/')) |index| index + 1 else 0;
+    const name = path[slash..];
+    const dot = std.mem.lastIndexOfScalar(u8, name, '.') orelse return .line_window;
+    if (dot == 0) return .line_window;
+    const suffix = name[dot..];
+    if (std.ascii.eqlIgnoreCase(suffix, ".md") or std.ascii.eqlIgnoreCase(suffix, ".markdown")) return .md_section;
+    return .line_window;
+}
+
+/// One chunk from either chunker. `section_path` is the heading texts from
+/// the top level down, joined by U+001F (empty for line windows and for the
+/// part of a Markdown file before its first heading).
+pub const FileSpan = struct {
+    start_line: u32,
+    end_line: u32,
+    text: []const u8,
+    section_path: []const u8 = "",
+    section_depth: u16 = 0,
+    heading_line: u32 = 0,
+};
+
+/// Chunk one file with the chunker its path selects. Allocations as `chunk`.
+pub fn chunkForPath(
+    allocator: std.mem.Allocator,
+    path: []const u8,
+    text: []const u8,
+    max_chars: usize,
+    overlap_lines: usize,
+) Error![]FileSpan {
+    switch (kindForPath(path)) {
+        .md_section => return chunker_md.chunk(allocator, text, max_chars, overlap_lines),
+        .line_window => {
+            const spans = try chunk(allocator, text, max_chars, overlap_lines);
+            defer allocator.free(spans);
+            const out = try allocator.alloc(FileSpan, spans.len);
+            for (spans, out) |span, *item| item.* = .{ .start_line = span.start_line, .end_line = span.end_line, .text = span.text };
+            return out;
+        },
+    }
+}
+
+test "kindForPath selects md-section-v1 for .md and .markdown only" {
+    try std.testing.expectEqual(Kind.md_section, kindForPath("notes/week.md"));
+    try std.testing.expectEqual(Kind.md_section, kindForPath("README.MD"));
+    try std.testing.expectEqual(Kind.md_section, kindForPath("a/b.Markdown"));
+    try std.testing.expectEqual(Kind.line_window, kindForPath("a.txt"));
+    try std.testing.expectEqual(Kind.line_window, kindForPath("md"));
+    try std.testing.expectEqual(Kind.line_window, kindForPath("dir.md/file"));
+    try std.testing.expectEqual(Kind.line_window, kindForPath(".md"));
 }
 
 /// `_chunk_id`: sha256("{path}\0{start_line}\0{end_line}\0{text}")[:20 hex chars].

@@ -16,6 +16,7 @@ const chunker = @import("chunker.zig");
 const hybrid = @import("hybrid.zig");
 const importer = @import("importer.zig");
 const indexer = @import("indexer.zig");
+const manifest = @import("manifest.zig");
 const publication = @import("publication.zig");
 const snapshot_open = @import("snapshot_open.zig");
 
@@ -81,14 +82,46 @@ fn readWhole(arena: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []cons
     return dir.readFile(io, name, buffer);
 }
 
+/// S3-T1 amendment: `searchd index` now publishes a v2 manifest, record-v4
+/// documents and a source section, none of which interchange JSON v1 can
+/// carry, while `import-json` keeps writing the v1 manifest and v3 records.
+/// The two doors must still agree on everything interchange carries: the
+/// lexical section byte for byte, every document's id, path, lines, text,
+/// labels and vector, and the manifest's identities, counts, section names
+/// and lexical checksum.
 fn expectSameSnapshotBytes(arena: std.mem.Allocator, io: std.Io, folder_dir: std.Io.Dir, import_dir: std.Io.Dir) !void {
-    inline for (.{ publication.current_manifest_file, "documents-1.hybseg", "lexical-1.hyblex" }) |name| {
-        const folder_bytes = try readWhole(arena, io, folder_dir, name);
-        const import_bytes = try readWhole(arena, io, import_dir, name);
-        std.testing.expectEqualSlices(u8, folder_bytes, import_bytes) catch |err| {
-            std.debug.print("S2-T1: {s} differs between searchd index and import-json\n", .{name});
-            return err;
-        };
+    const folder_lexical = try readWhole(arena, io, folder_dir, "lexical-1.hyblex");
+    const import_lexical = try readWhole(arena, io, import_dir, "lexical-1.hyblex");
+    std.testing.expectEqualSlices(u8, folder_lexical, import_lexical) catch |err| {
+        std.debug.print("S2-T1: lexical-1.hyblex differs between searchd index and import-json\n", .{});
+        return err;
+    };
+
+    const folder_manifest = try manifest.decode(try readWhole(arena, io, folder_dir, publication.current_manifest_file));
+    const import_manifest = try manifest.decode(try readWhole(arena, io, import_dir, publication.current_manifest_file));
+    try std.testing.expectEqual(@as(u16, 2), folder_manifest.format_version);
+    try std.testing.expectEqual(@as(u16, 1), import_manifest.format_version);
+    try std.testing.expectEqual(folder_manifest.generation, import_manifest.generation);
+    try std.testing.expectEqualStrings(folder_manifest.analyzer_id, import_manifest.analyzer_id);
+    try std.testing.expectEqualStrings(folder_manifest.embedding_model_id, import_manifest.embedding_model_id);
+    try std.testing.expectEqualStrings(folder_manifest.documents_file, import_manifest.documents_file);
+    try std.testing.expectEqualStrings(folder_manifest.lexical_file, import_manifest.lexical_file);
+    try std.testing.expectEqual(folder_manifest.document_count, import_manifest.document_count);
+    try std.testing.expectEqual(folder_manifest.term_count, import_manifest.term_count);
+    try std.testing.expectEqual(folder_manifest.posting_count, import_manifest.posting_count);
+    try std.testing.expectEqual(folder_manifest.lexical_checksum, import_manifest.lexical_checksum);
+
+    const folder_engine = try snapshot_open.open(arena, io, folder_dir);
+    const import_engine = try snapshot_open.open(arena, io, import_dir);
+    try std.testing.expectEqual(folder_engine.documents.len, import_engine.documents.len);
+    for (folder_engine.documents, import_engine.documents) |left, right| {
+        try std.testing.expectEqualStrings(left.id, right.id);
+        try std.testing.expectEqualStrings(left.path, right.path);
+        try std.testing.expectEqual(left.start_line, right.start_line);
+        try std.testing.expectEqual(left.end_line, right.end_line);
+        try std.testing.expectEqualStrings(left.text, right.text);
+        try std.testing.expectEqualStrings(left.required_labels, right.required_labels);
+        try std.testing.expectEqualSlices(f32, left.vector, right.vector);
     }
 }
 

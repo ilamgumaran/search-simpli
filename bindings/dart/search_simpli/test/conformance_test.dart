@@ -179,10 +179,20 @@ void main() {
             ffiResult.results, isNotEmpty,
             reason: 'no FFI results for "$queryText" in $corpusName',
           );
+          // S3-T1: md-section-v1 makes exact BM25 ties (files whose first
+          // section is the same title line). The engines break ties
+          // differently on purpose (Zig by document index, Python by chunk
+          // id), so the FFI top-1 may be any path the reference scored equal
+          // to its top (same rule as zig/src/bm25_conformance_test.zig).
+          final expectedScore = (expectedTop['lexical_score']! as num).toDouble();
+          final tiedTopPaths = ranking
+              .takeWhile((item) => ((item['lexical_score']! as num).toDouble() - expectedScore).abs() < 1e-4)
+              .map((item) => item['path']! as String)
+              .toSet();
           expect(
-            ffiResult.results.first.citation.path,
-            expectedPath,
-            reason: 'FFI top-1 path mismatch vs Python reference for "$queryText" in $corpusName',
+            tiedTopPaths,
+            contains(ffiResult.results.first.citation.path),
+            reason: 'FFI top-1 path mismatch vs Python reference for "$queryText" in $corpusName (expected $expectedPath)',
           );
 
           // (b) The searchd CLI, over the same published snapshot.

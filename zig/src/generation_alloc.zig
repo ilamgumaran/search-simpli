@@ -146,7 +146,12 @@ pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.
         var lexical_buffer: [64]u8 = undefined;
         const lexical_name = try std.fmt.bufPrint(&lexical_buffer, "lexical-{d}.hyblex", .{candidate});
         const lexical_taken = try pathExists(dir, io, lexical_name);
-        if (!documents_taken and !lexical_taken) return candidate;
+        // S3-T1: a leftover `source-N.hybsrc` (a crash between section
+        // links) blocks the number too, since sections are never replaced.
+        var source_buffer: [64]u8 = undefined;
+        const source_name = try std.fmt.bufPrint(&source_buffer, "source-{d}.hybsrc", .{candidate});
+        const source_taken = try pathExists(dir, io, source_name);
+        if (!documents_taken and !lexical_taken and !source_taken) return candidate;
         if (std.math.add(u64, candidate, 1)) |next| {
             candidate = next;
         } else |_| {
@@ -180,6 +185,14 @@ test "nextFreeGeneration skips a crash orphan past the current generation" {
     try tmp.dir.writeFile(io, .{ .sub_path = "documents-1.hybseg", .data = "orphan" });
     const generation = try nextFreeGeneration(std.testing.allocator, io, tmp.dir);
     try std.testing.expectEqual(@as(u64, 2), generation);
+}
+
+test "nextFreeGeneration skips a leftover source section (S3-T1)" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "source-1.hybsrc", .data = "orphan" });
+    try std.testing.expectEqual(@as(u64, 2), try nextFreeGeneration(std.testing.allocator, io, tmp.dir));
 }
 
 test "nextFreeGeneration numbers above a lone higher section file and above INDEX-STATE" {

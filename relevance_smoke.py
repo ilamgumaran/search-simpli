@@ -12,7 +12,14 @@ import tempfile
 import time
 from pathlib import Path
 
-from src.search_platform.core import build_index, load_index, save_index, search
+from src.search_platform.core import (
+    build_index,
+    load_index,
+    outline,
+    read_span,
+    save_index,
+    search,
+)
 from src.search_platform.evaluation import RETRIEVAL_MODES, evaluate_modes, load_suite
 from src.search_platform.providers import (
     DEFAULT_FASTEMBED_MODEL,
@@ -161,11 +168,12 @@ PACKS = {"family-folder": Path(__file__).resolve().parent / "fixtures" / "family
 PACK_WORDS_GATE = 0.9
 # Case kinds the Python reference cannot answer yet: skipped with a count, never silently.
 NOT_YET = {
-    "phrase": "phrase search: S3-T1/T2",
+    "phrase": "phrase search: S3-T2",
     "prefix": "prefix search: S3-T2",
-    "outline": "outline: S3-T1",
-    "read_span": "read_span: S3-T1",
 }
+# Case kinds the Python reference answers since S3-T1 (outline from md-section-v1,
+# read_span from the original bytes); judged for exactness, not recall.
+EXACT_KINDS = ("outline", "read_span")
 
 
 def _overlaps(hit: dict, expected: dict) -> bool:
@@ -206,6 +214,39 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
             cases.append({"id": case_id, "query": query, "expected": len(expected),
                           "covered": covered, "recall": covered / len(expected)})
 
+        def run_outline(case: dict) -> bool:
+            got = outline(index, f"{case['root_id']}/{case['path']}")
+            want = {key: case[key] for key in ("front_matter", "headings", "lines", "chunker")}
+            return got == want
+
+        def run_read_span(case: dict) -> bool:
+            got = read_span(index, f"{case['root_id']}/{case['path']}", case["start_line"],
+                            case["end_line"], case["context_lines"])
+            return (got["sha256"] == case["sha256"]
+                    and len(got["text"].encode("utf-8")) == case["byte_length"])
+
+        exact: dict[str, list[dict]] = {kind: [] for kind in EXACT_KINDS}
+        for case in judgments["outline"]:
+            exact["outline"].append({"id": case["id"], "exact": run_outline(case)})
+        for case in judgments["read_span"]:
+            exact["read_span"].append({"id": case["id"], "exact": run_read_span(case)})
+        by_case = {f"{kind}:{c['id']}": c for kind in EXACT_KINDS for c in judgments[kind]}
+
+        def run_summary(sc: dict) -> bool:
+            full = f"{sc['root_id']}/{sc['path']}"
+            if not run_outline(by_case[sc["outline_ref"]]):
+                return False
+            chunks = [c for c in index["chunks"] if c["path"] == full]
+            for want in sc["expected_sections"]:
+                mine = sorted((c for c in chunks if c["section_path"] == want["section_path"]
+                               and c["heading_line"] == want["heading_line"]),
+                              key=lambda c: c["start_line"])
+                span = want["first_span"]
+                if not mine or not (mine[0]["start_line"] <= span["end_line"]
+                                    and span["start_line"] <= mine[0]["end_line"]):
+                    return False
+            return True
+
         newt = None
         by_ref = {c["id"]: c for kind in ("phrase", "prefix") for c in judgments[kind]}
         for sc in judgments["scenarios"]:
@@ -218,6 +259,12 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
                 expected = list(by_ref[sc["ref"].split(":")[1]]["expected"]) + [sc["expected_neighbour"]]
                 retrieve(sc["id"], sc["words_query"], expected)
                 skip("scenario phrase/neighbour step")
+            elif kind == "outline":
+                exact["outline"].append({"id": sc["id"], "exact": run_outline(by_case[sc["ref"]])})
+            elif kind == "read_span":
+                exact["read_span"].append({"id": sc["id"], "exact": run_read_span(by_case[sc["ref"]])})
+            elif kind == "summary":
+                exact["outline"].append({"id": sc["id"], "exact": run_summary(sc)})
             elif kind == "lifecycle":
                 skip("scenario lifecycle (S3-T3/T4)")
             else:
@@ -226,18 +273,23 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
         skip(kind, len(judgments[kind]))
     recalls = [c["recall"] for c in cases]
     words_recall = sum(recalls) / len(recalls) if recalls else 0.0
-    passed = words_recall >= PACK_WORDS_GATE and newt is True
+    exactness = {kind: (sum(1 for c in items if c["exact"]) / len(items) if items else 0.0)
+                 for kind, items in exact.items()}
+    passed = (words_recall >= PACK_WORDS_GATE and newt is True
+              and all(value == 1.0 for value in exactness.values()))
     return {
         "pack": name,
         "version": judgments["version"],
         "counts": {"scenarios": len(judgments["scenarios"]),
-                   **{k: len(judgments[k]) for k in NOT_YET}},
+                   **{k: len(judgments[k]) for k in (*NOT_YET, *EXACT_KINDS)}},
         "words_recall_at_k": words_recall,
         "top_k": top_k,
         "words_cases": cases,
         "newt_empty": newt,
+        "exact_cases": exact,
+        "exactness": exactness,
         "skipped": skipped,
-        "gate": {"words_recall_at_k_min": PACK_WORDS_GATE, "passed": passed},
+        "gate": {"words_recall_at_k_min": PACK_WORDS_GATE, "exactness_min": 1.0, "passed": passed},
     }
 
 
@@ -252,6 +304,10 @@ def print_pack_report(report: dict) -> None:
         print(f"  {case['id']} {case['covered']}/{case['expected']} expected spans in top "
               f"{report['top_k']}: {case['query']!r}")
     print(f"empty result for the newt question: {'pass' if report['newt_empty'] else 'FAIL'}")
+    for kind, items in report["exact_cases"].items():
+        exact = sum(1 for c in items if c["exact"])
+        misses = [c["id"] for c in items if not c["exact"]]
+        print(f"{kind} exactness: {exact}/{len(items)} (gate 1.00)" + (f" misses {misses}" if misses else ""))
     total = sum(report["skipped"].values())
     print(f"not yet implemented: {total} skipped")
     for kind, count in sorted(report["skipped"].items()):

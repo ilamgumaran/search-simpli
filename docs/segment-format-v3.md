@@ -1,6 +1,6 @@
 # Immutable document/vector segment format v3
 
-Status: current writer format. The reader remains compatible with v1 and v2.
+Status: written by `import-json` (`segment.encode`). `searchd index` writes record [v4](segment-format-v4.md) since S3-T1. The reader decodes v1 through v4.
 
 V3 extends `HYBSEG01` document records with persisted authorization requirements while preserving the 36-byte checksummed segment header.
 
