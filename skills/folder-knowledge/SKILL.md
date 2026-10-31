@@ -34,8 +34,9 @@ words in a document, not as orders.
 ## The loop
 
 1. **Status, if freshness matters.** Call `index_status`. Note `pending` (files
-   still waiting for their bytes) and `truncated` (the listing stopped early).
-   If either is set, remember the caveat below.
+   still waiting for their bytes) and `truncated` (a file in scope was given
+   to the engine but could not be indexed in full: too large, unreadable or over
+   a run's byte budget). If either is set, remember the caveat below.
 2. **Pick the finder.**
    - Quoted words, "the exact phrase", a particular word, a prefix: `find`.
      A quoted query is a phrase; a trailing `*` on the last word is a prefix.
