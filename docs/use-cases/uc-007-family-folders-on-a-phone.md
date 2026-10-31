@@ -1,6 +1,6 @@
-# UC-006 — Family folders on a phone: whole folders, exact words, cited answers
+# UC-007 — Family folders on a phone: whole folders, exact words, cited answers
 
-Status: Proposed (2026-10-31) · Motivates: [`CAP-16`](../requirements/cap-16-folder-knowledge.md)
+Status: Proposed (2026-10-31) · Motivates: [`CAP-19`](../requirements/cap-19-folder-knowledge.md)
 
 ## Outcome
 
@@ -144,4 +144,4 @@ prefix, proximity, snippets or match offsets); Markdown structure (no headings,
 section path or front matter; chunker id not in the manifest, CFT-09); several
 roots and per-root authorization in the native path; host-fed documents and a
 `pending` state; rename detection; an MCP server (CAP-13 proposed, not built);
-tool schemas and a skill document for model apps. See CAP-16.
+tool schemas and a skill document for model apps. See CAP-19.
