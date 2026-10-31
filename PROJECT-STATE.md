@@ -9,6 +9,26 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
+## S3-T2: positions, phrase, prefix, conjunctive words, snippets (2026-10-31)
+
+`searchd index` (full and `--update`) now writes the lexical section as `HYBLEX02`
+(80-byte header, a sorted dictionary, section 4 token ordinals delta-LEB128 per
+posting, section 5 per-token codepoint offsets into the chunk text); the v2
+manifest sets `has_positions`. `import-json` keeps `HYBLEX01` under its v1
+manifest; both open. `find` (Zig core `zig/src/find.zig`, Python reference
+`src/search_platform/find.py`) answers `words` (conjunctive, BM25), `phrase`
+(adjacent ordinals within one chunk; a quoted query forces it) and `prefix`
+(last token only, at most 1,000 visible expansions, else `CAPACITY`) with
+`match_offsets`, snippets (at most 240 codepoints, `snippet_offsets`,
+`snippet_start`), `exact_match`, `coverage`, per-file counts and a
+generation-bound cursor ("stale cursor"); a `HYBLEX01` generation answers
+`phrase` with `CAPACITY` "re-index required: positions absent".
+`search_knowledge` is unchanged. Not yet on the ABI, CLI, Dart or RPC (S3-T4).
+Measured on the 10k corpus: `HYBLEX02` 1.39x `HYBLEX01`, phrase p50 about 18 us,
+words about 5 us (ReleaseFast), index peak RSS 266 to 118 MB. Native libraries
+rebuilt (SOURCE-SHA256 `eea716c6...`). Format: `docs/lexical-segment-format-v2.md`;
+tables: `docs/scale-benchmark.md`. Verified and merged 2026-10-31. [Task](docs/tasks/S3-T2.md).
+
 ## S3-T1: manifest v2, md-section-v1, records v4, retained source (2026-10-31)
 
 `searchd index` / `ss_index_folder` now publish manifest v2 (`HYBMAN02`, 104-byte
