@@ -43,7 +43,11 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
     const document_lengths = try allocator.alloc(u32, metadata.document_count);
 
-    return engine.Engine.open(snapshot, documents, vectors, terms, posting_storage, document_lengths);
+    var opened = try engine.Engine.open(snapshot, documents, vectors, terms, posting_storage, document_lengths);
+    // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
+    // terms' ordinals and its hits' offsets.
+    if (opened.lexical_index.positions != null) opened.position_tables = try postings.buildPositionTables(allocator, opened.lexical_index);
+    return opened;
 }
 
 /// The current generation's manifest and source section (S3-T1), validated

@@ -140,6 +140,15 @@ pub fn tokenize(allocator: std.mem.Allocator, analyzer: AnalyzerId, text: []cons
     };
 }
 
+/// `tokenize` with each token's codepoint span in `text` (S3-T2): what the
+/// positional lexical build (`HYBLEX02`) records as ordinals and offsets.
+pub fn tokenizePositioned(allocator: std.mem.Allocator, analyzer: AnalyzerId, text: []const u8) ![]const analysis.PositionedToken {
+    return switch (analyzer) {
+        .v1 => analysis.tokenizePositioned(allocator, text, true),
+        .v2 => analyzer_v2.tokenizePositioned(allocator, text),
+    };
+}
+
 /// S3-T1: the one root `index_folder` writes until S3-T3 adds roots.
 pub const legacy_root_id = "r-legacy";
 
@@ -360,12 +369,13 @@ pub fn indexFolder(
         }
     }
 
-    var token_lists = try allocator.alloc([][]const u8, documents.items.len);
+    // S3-T2: positioned tokens, so the lexical section is HYBLEX02.
+    var token_lists = try allocator.alloc([]const analysis.PositionedToken, documents.items.len);
     for (documents.items, 0..) |document, i| {
-        token_lists[i] = try tokenize(allocator, analyzer, document.text);
+        token_lists[i] = try tokenizePositioned(allocator, analyzer, document.text);
     }
 
-    const lexical_index = try lexical_build.build(allocator, documents.items, token_lists);
+    const lexical_index = try lexical_build.buildPositional(allocator, documents.items, token_lists);
 
     const prune = try publishGeneration(allocator, io, out_dir, analyzer, generation, documents.items, lexical_index, retained.items, max_chars, overlap_lines, caps);
 
@@ -501,42 +511,6 @@ fn hashHex(content: []const u8) [64]u8 {
     return std.fmt.bytesToHex(digest, .lower);
 }
 
-/// Reconstruct each old document's token multiset directly from the
-/// previous generation's already-built postings (`term`, per-document
-/// `term_frequency`), instead of re-running the analyzer over its text.
-/// This is what makes "unchanged files are skipped" a real, measured saving
-/// rather than only skipping `chunker.chunk`: the lexical index still has
-/// to be rebuilt in full every generation (no delta segments -- see
-/// `docs/incremental-indexing.md`'s "Option C", explicitly out of scope
-/// here), so every retained document's tokens are needed again, but pulling
-/// them back out of postings is one linear pass over integers, not
-/// NFC-normalizing and Unicode-category-classifying raw text again.
-/// Token order within a document does not matter to `lexical_build.build`
-/// (it only counts), so the reconstructed order (term-major) need not match
-/// the original tokenization order.
-fn reconstructTokensFromPostings(
-    allocator: std.mem.Allocator,
-    index: postings.Index,
-    document_count: usize,
-) ![][][]const u8 {
-    if (document_count == 0) return &.{};
-    const lists = try allocator.alloc(std.ArrayList([]const u8), document_count);
-    for (lists) |*list| list.* = .empty;
-    for (index.terms) |term_entry| {
-        const term_postings = index.postings[term_entry.postings_start .. term_entry.postings_start + term_entry.postings_length];
-        for (term_postings) |posting| {
-            const document_index: usize = posting.document_index;
-            var remaining = posting.term_frequency;
-            while (remaining > 0) : (remaining -= 1) {
-                try lists[document_index].append(allocator, term_entry.term);
-            }
-        }
-    }
-    const result = try allocator.alloc([][]const u8, document_count);
-    for (lists, 0..) |*list, i| result[i] = try list.toOwnedSlice(allocator);
-    return result;
-}
-
 /// Incremental folder indexing (S1-T3, `docs/tasks/S1-T3.md`; see also
 /// `docs/incremental-indexing.md`, whose reuse contract this mirrors in the
 /// native engine): re-walks `root`, hashes every candidate file's content,
@@ -621,10 +595,17 @@ pub fn indexFolderIncremental(
         if (opened.metadata.meta.len != 0) previous_meta = try manifest.parseMeta(allocator, opened.metadata.meta);
     }
 
-    var old_document_tokens: [][][]const u8 = &.{};
+    var old_document_tokens: []const []const analysis.PositionedToken = &.{};
     var previous_indices_by_path = std.StringHashMap(std.ArrayList(usize)).init(allocator);
     if (previous_engine) |prev| {
-        old_document_tokens = try reconstructTokensFromPostings(allocator, prev.lexical_index, prev.documents.len);
+        // S3-T2: carried documents keep their exact token order and spans,
+        // read back from the previous HYBLEX02 section; a generation without
+        // positions (HYBLEX01) is re-tokenized once, which upgrades it.
+        old_document_tokens = if (try lexical_build.reconstructPositioned(allocator, prev.lexical_index)) |lists| lists else blk: {
+            const lists = try allocator.alloc([]const analysis.PositionedToken, prev.documents.len);
+            for (prev.documents, lists) |document, *list| list.* = try tokenizePositioned(allocator, analyzer, document.text);
+            break :blk lists;
+        };
         for (prev.documents, 0..) |document, index| {
             const gop = try previous_indices_by_path.getOrPut(document.path);
             if (!gop.found_existing) gop.value_ptr.* = .empty;
@@ -642,7 +623,7 @@ pub fn indexFolderIncremental(
     for (paths) |path| try current_path_set.put(path, {});
 
     var documents = std.ArrayList(hybrid.Document).empty;
-    var token_lists = std.ArrayList([][]const u8).empty;
+    var token_lists = std.ArrayList([]const analysis.PositionedToken).empty;
     var new_state_entries = std.ArrayList(incremental_state.Entry).empty;
     var retained = std.ArrayList(source_section.InputFile).empty;
 
@@ -674,13 +655,13 @@ pub fn indexFolderIncremental(
         const Carry = struct {
             a: std.mem.Allocator,
             docs: *std.ArrayList(hybrid.Document),
-            toks: *std.ArrayList([][]const u8),
+            toks: *std.ArrayList([]const analysis.PositionedToken),
             state_entries: *std.ArrayList(incremental_state.Entry),
             kept: *std.ArrayList(source_section.InputFile),
             retain: bool,
             prev_engine: ?engine_module.Engine,
             prev_source: ?source_section.Section,
-            old_tokens: [][][]const u8,
+            old_tokens: []const []const analysis.PositionedToken,
 
             fn retainBytes(self: @This(), path: []const u8, bytes: ?[]const u8) !u32 {
                 if (!self.retain) return hybrid.no_source_doc;
@@ -789,7 +770,7 @@ pub fn indexFolderIncremental(
         const source_doc_index = try carry.retainBytes(relative_path, content);
         try appendSpans(allocator, &documents, relative_path, spans, kind, source_doc_index);
         for (documents.items[first_new..]) |document| {
-            try token_lists.append(allocator, try tokenize(allocator, analyzer, document.text));
+            try token_lists.append(allocator, try tokenizePositioned(allocator, analyzer, document.text));
         }
         if (previous_entry != null) changed += 1 else added += 1;
         try new_state_entries.append(allocator, .{
@@ -806,7 +787,7 @@ pub fn indexFolderIncremental(
         }
     }
 
-    const lexical_index = try lexical_build.build(allocator, documents.items, token_lists.items);
+    const lexical_index = try lexical_build.buildPositional(allocator, documents.items, token_lists.items);
 
     const generation = try generation_alloc.nextFreeGeneration(allocator, io, out_dir);
     const prune = try publishGeneration(allocator, io, out_dir, analyzer, generation, documents.items, lexical_index, retained.items, max_chars, overlap_lines, caps);

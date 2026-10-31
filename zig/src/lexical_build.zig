@@ -214,6 +214,179 @@ pub fn buildAscii(
     };
 }
 
+/// The positional build (S3-T2, `HYBLEX02`): the same postings, document
+/// frequencies, document lengths and average length as `build` over the
+/// same token lists (so every BM25 score is unchanged), with the dictionary
+/// sorted by term bytes, term ranges laid out in that order, and sections 4
+/// (ordinals) and 5 (offsets) encoded from each token's ordinal and
+/// codepoint span. `token_lists[i]` are the positioned tokens of
+/// `documents[i].text` in text order. All memory from `allocator` (an arena).
+pub fn buildPositional(
+    allocator: std.mem.Allocator,
+    documents: []const hybrid.Document,
+    token_lists: []const []const analysis.PositionedToken,
+) BuildError!postings.Index {
+    std.debug.assert(documents.len == token_lists.len);
+    if (documents.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
+    // Working memory from a general-purpose allocator, freed before
+    // returning; the index itself is allocated from `allocator` at its
+    // exact size (an indexing arena keeps no growth garbage).
+    const scratch = std.heap.smp_allocator;
+
+    const Occurrence = struct { term: u32, document: u32, ordinal: u32 };
+    var names = std.ArrayList([]const u8).empty;
+    defer names.deinit(scratch);
+    var occurrences = std.ArrayList(Occurrence).empty;
+    defer occurrences.deinit(scratch);
+    var offsets = std.ArrayList(u8).empty;
+    defer offsets.deinit(scratch);
+    const document_lengths = try allocator.alloc(u32, documents.len);
+    var total_length: usize = 0;
+    var id_by_name = std.StringHashMap(u32).init(scratch);
+    defer id_by_name.deinit();
+
+    var token_total: usize = 0;
+    for (token_lists) |tokens| token_total += tokens.len;
+    try occurrences.ensureTotalCapacity(scratch, token_total);
+    try offsets.ensureTotalCapacity(scratch, documents.len * 4 + token_total * 2);
+
+    for (token_lists, 0..) |tokens, document_index| {
+        if (tokens.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
+        document_lengths[document_index] = @intCast(tokens.len);
+        total_length += tokens.len;
+        var count_bytes: [4]u8 = undefined;
+        std.mem.writeInt(u32, &count_bytes, @intCast(tokens.len), .little);
+        try offsets.appendSlice(scratch, &count_bytes);
+        var previous_start: u32 = 0;
+        for (tokens, 0..) |token, ordinal| {
+            const gop = try id_by_name.getOrPut(token.bytes);
+            if (!gop.found_existing) {
+                if (names.items.len >= std.math.maxInt(u32)) return error.TermCountOverflow;
+                gop.value_ptr.* = @intCast(names.items.len);
+                try names.append(scratch, token.bytes);
+            }
+            occurrences.appendAssumeCapacity(.{ .term = gop.value_ptr.*, .document = @intCast(document_index), .ordinal = @intCast(ordinal) });
+            // Offsets come from the tokenizer in text order; a mapped token
+            // (NFC changed its text) may share its start with the previous one.
+            const start = @max(token.start, previous_start);
+            try postings.appendVarint(&offsets, scratch, start - previous_start);
+            try postings.appendVarint(&offsets, scratch, @max(token.length, 1));
+            previous_start = start;
+        }
+    }
+
+    // Rank every term by bytes; lay occurrences out term-major in that order
+    // (a stable counting sort keeps document, then ordinal, order).
+    const order = try scratch.alloc(u32, names.items.len);
+    defer scratch.free(order);
+    for (order, 0..) |*slot, i| slot.* = @intCast(i);
+    std.sort.pdq(u32, order, names.items, struct {
+        fn lessThan(all: [][]const u8, a: u32, b: u32) bool {
+            return std.mem.order(u8, all[a], all[b]) == .lt;
+        }
+    }.lessThan);
+    const rank = try scratch.alloc(u32, names.items.len);
+    defer scratch.free(rank);
+    for (order, 0..) |term, r| rank[term] = @intCast(r);
+    const bucket_start = try scratch.alloc(usize, names.items.len + 1);
+    defer scratch.free(bucket_start);
+    @memset(bucket_start, 0);
+    for (occurrences.items) |occurrence| bucket_start[rank[occurrence.term] + 1] += 1;
+    for (1..bucket_start.len) |i| bucket_start[i] += bucket_start[i - 1];
+    const fill = try scratch.dupe(usize, bucket_start[0..names.items.len]);
+    defer scratch.free(fill);
+    const sorted = try scratch.alloc(Occurrence, occurrences.items.len);
+    defer scratch.free(sorted);
+    for (occurrences.items) |occurrence| {
+        const r = rank[occurrence.term];
+        sorted[fill[r]] = occurrence;
+        fill[r] += 1;
+    }
+
+    // Postings count = distinct (term, document) pairs.
+    var posting_total: usize = 0;
+    for (sorted, 0..) |occurrence, i| {
+        if (i == 0 or sorted[i - 1].term != occurrence.term or sorted[i - 1].document != occurrence.document) posting_total += 1;
+    }
+    var terms = try allocator.alloc(postings.TermEntry, names.items.len);
+    const all_postings = try allocator.alloc(postings.Posting, posting_total);
+    var posting_count: usize = 0;
+    var positions = std.ArrayList(u8).empty;
+    defer positions.deinit(scratch);
+    try positions.ensureTotalCapacity(scratch, sorted.len + sorted.len / 4);
+    for (order, 0..) |term, r| {
+        const group = sorted[bucket_start[r]..bucket_start[r + 1]];
+        const postings_start = posting_count;
+        var i: usize = 0;
+        while (i < group.len) {
+            var j = i + 1;
+            while (j < group.len and group[j].document == group[i].document) : (j += 1) {}
+            all_postings[posting_count] = .{ .document_index = group[i].document, .term_frequency = @intCast(j - i) };
+            posting_count += 1;
+            var previous: u32 = 0;
+            for (group[i..j], 0..) |occurrence, k| {
+                try postings.appendVarint(&positions, scratch, if (k == 0) occurrence.ordinal else occurrence.ordinal - previous);
+                previous = occurrence.ordinal;
+            }
+            i = j;
+        }
+        const postings_length = posting_count - postings_start;
+        terms[r] = .{
+            .term = names.items[term],
+            .document_frequency = @intCast(postings_length),
+            .postings_start = postings_start,
+            .postings_length = postings_length,
+        };
+    }
+    std.debug.assert(posting_count == posting_total);
+
+    const average_document_length = if (documents.len == 0)
+        0
+    else
+        @as(f32, @floatFromInt(total_length)) / @as(f32, @floatFromInt(documents.len));
+    return .{
+        .terms = terms,
+        .postings = all_postings,
+        .document_lengths = document_lengths,
+        .average_document_length = average_document_length,
+        .positions = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items) },
+        .sorted_terms = true,
+    };
+}
+
+/// Every document's positioned tokens, in text order, read back from a
+/// positional index (S3-T2): the term at each ordinal (section 4) and each
+/// token's span (section 5). `null` when the index has no positions. Used
+/// by `--update` to carry unchanged documents into the next generation
+/// without re-running the analyzer. Token bytes borrow the dictionary.
+pub fn reconstructPositioned(allocator: std.mem.Allocator, index: postings.Index) std.mem.Allocator.Error!?[][]analysis.PositionedToken {
+    const sections = index.positions orelse return null;
+    const lists = try allocator.alloc([]analysis.PositionedToken, index.document_lengths.len);
+    for (lists, index.document_lengths) |*list, length| list.* = try allocator.alloc(analysis.PositionedToken, length);
+    var at: usize = 0;
+    for (index.terms) |entry| {
+        for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
+            var ordinal: u32 = 0;
+            for (0..posting.term_frequency) |k| {
+                const value = postings.readVarint(sections.positions, &at).?;
+                ordinal = if (k == 0) value else ordinal + value;
+                lists[posting.document_index][ordinal].bytes = entry.term;
+            }
+        }
+    }
+    at = 0;
+    for (lists) |list| {
+        at += 4;
+        var start: u32 = 0;
+        for (list) |*token| {
+            start += postings.readVarint(sections.offsets, &at).?;
+            token.start = start;
+            token.length = postings.readVarint(sections.offsets, &at).?;
+        }
+    }
+    return lists;
+}
+
 /// Score a query against an analyzer-v2-built index: `query_tokens` must
 /// come from the same tokenizer used to build `index`.
 pub fn scoreQuery(
@@ -236,7 +409,7 @@ pub fn scoreQuery(
         }
         if (already_scored) continue;
 
-        const term_index = findExact(index.terms, query_token) orelse continue;
+        const term_index = postings.lookupExact(index, query_token) orelse continue;
         const entry = index.terms[term_index];
         for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
             const document_index: usize = posting.document_index;
@@ -286,7 +459,7 @@ pub fn resolveTokensTraced(
         if (already_scored) continue;
         if (trace) |t| t.unique_terms += 1;
         if (!lookup) continue;
-        const term_index = findExact(index.terms, query_token) orelse {
+        const term_index = postings.lookupExact(index, query_token) orelse {
             if (trace) |t| try postings.noteUnmatched(t, query_token, false);
             continue;
         };
@@ -298,12 +471,6 @@ pub fn resolveTokensTraced(
     return resolved.toOwnedSlice(allocator);
 }
 
-fn findExact(terms: []const postings.TermEntry, term: []const u8) ?usize {
-    for (terms, 0..) |entry, index| {
-        if (std.mem.eql(u8, entry.term, term)) return index;
-    }
-    return null;
-}
 
 test "build and scoreQuery reproduce BM25 ranking from pre-tokenized documents" {
     const allocator = std.testing.allocator;
@@ -329,4 +496,61 @@ test "build and scoreQuery reproduce BM25 ranking from pre-tokenized documents" 
 
 fn dupTokens(allocator: std.mem.Allocator, tokens: []const []const u8) ![][]const u8 {
     return allocator.dupe([]const u8, tokens);
+}
+
+test "buildPositional keeps build's statistics, sorts terms and round-trips positions (S3-T2)" {
+    const analyzer_v2 = @import("analyzer_v2.zig");
+    const lexical_segment = @import("lexical_segment.zig");
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const documents = [_]hybrid.Document{
+        .{ .id = "a", .text = "Zebra apple the the apple" },
+        .{ .id = "b", .text = "" },
+        .{ .id = "c", .text = "apple pie, cafe\u{0301} zebra" },
+    };
+    var plain: [documents.len][][]const u8 = undefined;
+    var positioned: [documents.len][]const analysis.PositionedToken = undefined;
+    for (documents, 0..) |document, i| {
+        plain[i] = try analyzer_v2.tokenize(arena, document.text);
+        positioned[i] = try analyzer_v2.tokenizePositioned(arena, document.text);
+    }
+    const reference = try build(arena, &documents, &plain);
+    const index = try buildPositional(arena, &documents, &positioned);
+    try std.testing.expect(index.sorted_terms);
+    try std.testing.expectEqual(reference.average_document_length, index.average_document_length);
+    try std.testing.expectEqualSlices(u32, reference.document_lengths, index.document_lengths);
+    try std.testing.expectEqual(reference.terms.len, index.terms.len);
+    for (index.terms[1..], 1..) |entry, i| try std.testing.expect(std.mem.order(u8, index.terms[i - 1].term, entry.term) == .lt);
+    for (reference.terms) |want| {
+        const got = index.terms[postings.lookupExact(index, want.term).?];
+        try std.testing.expectEqual(want.document_frequency, got.document_frequency);
+        const want_list = reference.postings[want.postings_start .. want.postings_start + want.postings_length];
+        const got_list = index.postings[got.postings_start .. got.postings_start + got.postings_length];
+        try std.testing.expectEqualSlices(postings.Posting, want_list, got_list);
+    }
+    var scores_a: [documents.len]f32 = undefined;
+    var scores_b: [documents.len]f32 = undefined;
+    const query = [_][]const u8{ "apple", "zebra", "the" };
+    try std.testing.expectEqualSlices(f32, try scoreQuery(reference, &query, &scores_a, .{}), try scoreQuery(index, &query, &scores_b, .{}));
+
+    var buffer: [4096]u8 = undefined;
+    const encoded = try lexical_segment.encode(index, &buffer);
+    try std.testing.expectEqualStrings(lexical_segment.magic_v2, encoded[0..8]);
+    var terms_out: [16]postings.TermEntry = undefined;
+    var postings_out: [16]postings.Posting = undefined;
+    var lengths_out: [documents.len]u32 = undefined;
+    const decoded = try lexical_segment.decode(encoded, &terms_out, &postings_out, &lengths_out);
+    try std.testing.expect(decoded.positions != null);
+    const tokens = (try reconstructPositioned(arena, decoded)).?;
+    for (positioned, tokens) |want_list, got_list| {
+        try std.testing.expectEqual(want_list.len, got_list.len);
+        for (want_list, got_list) |want, got| {
+            try std.testing.expectEqualStrings(want.bytes, got.bytes);
+            try std.testing.expectEqual(want.start, got.start);
+            try std.testing.expectEqual(want.length, got.length);
+        }
+    }
+    try std.testing.expectEqual(@as(u32, 11), tokens[2][2].start);
+    try std.testing.expectEqual(@as(u32, 5), tokens[2][2].length);
 }

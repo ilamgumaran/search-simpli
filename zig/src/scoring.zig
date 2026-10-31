@@ -24,6 +24,49 @@ pub fn bm25Contribution(
         (term_frequency + parameters.k1 * length_normalization);
 }
 
+/// The corpus statistics a BM25 score is computed with (S3-T2 hook for
+/// S3-T3's visible-scope statistics, `docs/folder-knowledge-implementation.md`
+/// §7). `find` (S3-T2) scores through this; the default (`global`) is the
+/// whole generation, which is what every score was before. A provider that
+/// knows the caller's scope supplies its own document count, average length
+/// and, through `document_frequency_fn`, each term's document frequency
+/// within the scope (given the dictionary index and the global frequency).
+pub const CorpusStatistics = struct {
+    document_count: u32,
+    average_document_length: f32,
+    context: ?*const anyopaque = null,
+    document_frequency_fn: ?*const fn (context: ?*const anyopaque, term_index: usize, global: u32) u32 = null,
+
+    pub fn global(document_count: usize, average_document_length: f32) CorpusStatistics {
+        return .{ .document_count = @intCast(document_count), .average_document_length = average_document_length };
+    }
+
+    pub fn documentFrequency(statistics: CorpusStatistics, term_index: usize, global_frequency: u32) u32 {
+        const provider = statistics.document_frequency_fn orelse return global_frequency;
+        return provider(statistics.context, term_index, global_frequency);
+    }
+
+    /// `bm25Contribution` under these statistics: with `global` statistics
+    /// it is the same arithmetic as the dense and sparse BM25 paths.
+    pub fn contribution(
+        statistics: CorpusStatistics,
+        term_frequency: u32,
+        document_length: u32,
+        term_index: usize,
+        global_frequency: u32,
+        parameters: Bm25Parameters,
+    ) f32 {
+        return bm25Contribution(
+            @floatFromInt(term_frequency),
+            @floatFromInt(document_length),
+            statistics.average_document_length,
+            statistics.documentFrequency(term_index, global_frequency),
+            statistics.document_count,
+            parameters,
+        );
+    }
+};
+
 /// A valid vector, for a query or a stored document (S2-T13): every component
 /// is finite and the L2 norm is a finite `f32`, that is, the sum of squares
 /// accumulated in `f32` (the way `cosineSimilarity` accumulates it) does not
@@ -152,4 +195,17 @@ test "reciprocal rank prefers earlier results and ignores absence" {
     const tenth = reciprocalRankContribution(10, 60);
     try std.testing.expect(first > tenth);
     try std.testing.expectEqual(@as(f32, 0), reciprocalRankContribution(null, 60));
+}
+
+test "global corpus statistics reproduce bm25Contribution; a provider overrides frequency (S3-T2)" {
+    const statistics = CorpusStatistics.global(100, 10);
+    try std.testing.expectEqual(bm25Contribution(2, 12, 10, 7, 100, .{}), statistics.contribution(2, 12, 3, 7, .{}));
+    const Provider = struct {
+        fn halve(_: ?*const anyopaque, _: usize, global_frequency: u32) u32 {
+            return global_frequency / 2;
+        }
+    };
+    var scoped = statistics;
+    scoped.document_frequency_fn = Provider.halve;
+    try std.testing.expectEqual(bm25Contribution(2, 12, 10, 3, 100, .{}), scoped.contribution(2, 12, 3, 7, .{}));
 }

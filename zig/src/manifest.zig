@@ -91,10 +91,29 @@ pub fn create(
     documents_encoded: []const u8,
     lexical_encoded: []const u8,
 ) ManifestError!Manifest {
+    const value = try sectionFields(generation, analyzer_id, embedding_model_id, documents_file, lexical_file, documents_encoded, lexical_encoded);
+    // S3-T2: a v1 manifest cannot say `has_positions`, so it cannot bind a
+    // `HYBLEX02` section (`createV2` can).
+    if (value.has_positions) return error.UnsupportedVersion;
+    try validateFields(value);
+    return value;
+}
+
+/// The fields every manifest version takes from its two sections.
+/// `has_positions` is set exactly when the lexical section is `HYBLEX02`.
+fn sectionFields(
+    generation: u64,
+    analyzer_id: []const u8,
+    embedding_model_id: []const u8,
+    documents_file: []const u8,
+    lexical_file: []const u8,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+) ManifestError!Manifest {
     const document_header = segment.inspect(documents_encoded) catch return error.InvalidDocumentSection;
     const lexical_header = lexical_segment.inspect(lexical_encoded) catch return error.InvalidLexicalSection;
     if (document_header.document_count != lexical_header.document_count) return error.DocumentCountMismatch;
-    const value = Manifest{
+    return .{
         .generation = generation,
         .document_count = document_header.document_count,
         .vector_dimensions = document_header.vector_dimensions,
@@ -108,9 +127,8 @@ pub fn create(
         .embedding_model_id = embedding_model_id,
         .documents_file = documents_file,
         .lexical_file = lexical_file,
+        .has_positions = lexical_header.hasPositions(),
     };
-    try validateFields(value);
-    return value;
 }
 
 /// A v2 manifest over the three sections (`source_encoded` null and
@@ -127,7 +145,7 @@ pub fn createV2(
     lexical_encoded: []const u8,
     source_encoded: ?[]const u8,
 ) ManifestError!Manifest {
-    var value = try create(generation, analyzer_id, embedding_model_id, documents_file, lexical_file, documents_encoded, lexical_encoded);
+    var value = try sectionFields(generation, analyzer_id, embedding_model_id, documents_file, lexical_file, documents_encoded, lexical_encoded);
     value.format_version = version_v2;
     value.meta = meta;
     if (source_encoded) |bytes| {
@@ -378,6 +396,8 @@ pub fn validateSnapshot(
     if (document_header.vector_dimensions != value.vector_dimensions) return error.VectorDimensionMismatch;
     if (lexical_header.term_count != value.term_count) return error.TermCountMismatch;
     if (lexical_header.posting_count != value.posting_count) return error.PostingCountMismatch;
+    // S3-T2: the flag and the section agree (`HYBLEX02` exactly when set).
+    if (lexical_header.hasPositions() != value.has_positions) return error.InvalidLexicalSection;
 }
 
 /// Check the source section bytes a generation names (null when the

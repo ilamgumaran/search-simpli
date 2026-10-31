@@ -21,6 +21,7 @@ from src.search_platform.core import (
     search,
 )
 from src.search_platform.evaluation import RETRIEVAL_MODES, evaluate_modes, load_suite
+from src.search_platform.find import find, find_all
 from src.search_platform.providers import (
     DEFAULT_FASTEMBED_MODEL,
     FastEmbedProvider,
@@ -166,11 +167,10 @@ def run_smoke(
 
 PACKS = {"family-folder": Path(__file__).resolve().parent / "fixtures" / "family-folder"}
 PACK_WORDS_GATE = 0.9
-# Case kinds the Python reference cannot answer yet: skipped with a count, never silently.
-NOT_YET = {
-    "phrase": "phrase search: S3-T2",
-    "prefix": "prefix search: S3-T2",
-}
+# Case kinds the Python reference answers since S3-T2 (`find`): judged for precision
+# and recall across all pages after overlap deduplication; listed engine misses
+# must be missed.
+FIND_KINDS = ("phrase", "prefix")
 # Case kinds the Python reference answers since S3-T1 (outline from md-section-v1,
 # read_span from the original bytes); judged for exactness, not recall.
 EXACT_KINDS = ("outline", "read_span")
@@ -247,6 +247,36 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
                     return False
             return True
 
+        roots = judgments["roots"]
+
+        def key(entry: dict) -> tuple:
+            return entry["root_id"], entry["path"], entry["start_line"]
+
+        def judge_find(case_id: str, kind: str, case: dict) -> None:
+            """Every page of `find`; precision and recall over `expected` less the listed misses."""
+            hits = find_all(index, case["query"], mode=case["mode"], page_size=2, root_ids=roots)
+            misses = {key(e) for e in case.get("expected_engine_miss", [])}
+            wanted = [e for e in case["expected"] if key(e) not in misses]
+
+            def hit_overlaps(hit: dict, entry: dict) -> bool:
+                return (hit["root_id"] == entry["root_id"] and hit["path"] == entry["path"]
+                        and hit["start_line"] <= entry["end_line"] and entry["start_line"] <= hit["end_line"])
+
+            relevant = sum(1 for h in hits if any(hit_overlaps(h, e) for e in case["expected"]))
+            covered = sum(1 for e in wanted if any(hit_overlaps(h, e) for h in hits))
+            miss_found = [e for e in case.get("expected_engine_miss", []) if any(hit_overlaps(h, e) for h in hits)]
+            found_cases[kind].append({
+                "id": case_id, "query": case["query"], "hits": len(hits),
+                "precision": relevant / len(hits) if hits else 1.0,
+                "recall": covered / len(wanted) if wanted else 1.0,
+                "expected_misses": len(misses), "expected_misses_found": len(miss_found),
+            })
+
+        found_cases: dict[str, list[dict]] = {kind: [] for kind in FIND_KINDS}
+        for kind in FIND_KINDS:
+            for case in judgments[kind]:
+                judge_find(case["id"], kind, case)
+
         newt = None
         by_ref = {c["id"]: c for kind in ("phrase", "prefix") for c in judgments[kind]}
         for sc in judgments["scenarios"]:
@@ -254,11 +284,25 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
             if kind in ("words", "answer"):
                 retrieve(sc["id"], sc["query"], sc["expected"])
             elif kind == "empty":
-                newt = not search(index, sc["query"], top_k=top_k, retrieval_mode="lexical")
+                newt = (not search(index, sc["query"], top_k=top_k, retrieval_mode="lexical")
+                        and find(index, sc["query"], mode=sc["mode"], root_ids=roots)["empty"])
+            elif kind in ("phrase", "prefix"):
+                judge_find(sc["id"], kind, {**by_ref[sc["ref"].split(":")[1]], "query": sc["query"], "mode": sc["mode"]})
             elif kind == "phrase_neighbour":
                 expected = list(by_ref[sc["ref"].split(":")[1]]["expected"]) + [sc["expected_neighbour"]]
                 retrieve(sc["id"], sc["words_query"], expected)
-                skip("scenario phrase/neighbour step")
+                # The phrase step: the phrase hit, then the next span of the same file.
+                phrase_hits = find_all(index, sc["query"], mode=sc["mode"], root_ids=roots)
+                want = sc["expected_neighbour"]
+                chunks = sorted((c for c in index["chunks"] if c["path"] == f"{want['root_id']}/{want['path']}"),
+                                key=lambda c: c["start_line"])
+                neighbour_ok = False
+                for hit in phrase_hits:
+                    at = next(i for i, c in enumerate(chunks) if c["id"] == hit["chunk_id"])
+                    for c in chunks[at:at + 2]:
+                        if c["start_line"] <= want["end_line"] and want["start_line"] <= c["end_line"]:
+                            neighbour_ok = neighbour_ok or c["section_path"] == want["section_path"]
+                exact.setdefault("phrase_neighbour", []).append({"id": sc["id"], "exact": bool(phrase_hits) and neighbour_ok})
             elif kind == "outline":
                 exact["outline"].append({"id": sc["id"], "exact": run_outline(by_case[sc["ref"]])})
             elif kind == "read_span":
@@ -269,25 +313,35 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
                 skip("scenario lifecycle (S3-T3/T4)")
             else:
                 skip(f"scenario {kind}")
-    for kind in NOT_YET:
-        skip(kind, len(judgments[kind]))
     recalls = [c["recall"] for c in cases]
     words_recall = sum(recalls) / len(recalls) if recalls else 0.0
     exactness = {kind: (sum(1 for c in items if c["exact"]) / len(items) if items else 0.0)
                  for kind, items in exact.items()}
+    find_metrics = {
+        kind: {
+            "precision": min((c["precision"] for c in items), default=1.0),
+            "recall": min((c["recall"] for c in items), default=1.0),
+            "expected_misses_found": sum(c["expected_misses_found"] for c in items),
+        }
+        for kind, items in found_cases.items()
+    }
     passed = (words_recall >= PACK_WORDS_GATE and newt is True
-              and all(value == 1.0 for value in exactness.values()))
+              and all(value == 1.0 for value in exactness.values())
+              and all(m["precision"] == 1.0 and m["recall"] == 1.0 and m["expected_misses_found"] == 0
+                      for m in find_metrics.values()))
     return {
         "pack": name,
         "version": judgments["version"],
         "counts": {"scenarios": len(judgments["scenarios"]),
-                   **{k: len(judgments[k]) for k in (*NOT_YET, *EXACT_KINDS)}},
+                   **{k: len(judgments[k]) for k in (*FIND_KINDS, *EXACT_KINDS)}},
         "words_recall_at_k": words_recall,
         "top_k": top_k,
         "words_cases": cases,
         "newt_empty": newt,
         "exact_cases": exact,
         "exactness": exactness,
+        "find_cases": found_cases,
+        "find_metrics": find_metrics,
         "skipped": skipped,
         "gate": {"words_recall_at_k_min": PACK_WORDS_GATE, "exactness_min": 1.0, "passed": passed},
     }
@@ -308,6 +362,13 @@ def print_pack_report(report: dict) -> None:
         exact = sum(1 for c in items if c["exact"])
         misses = [c["id"] for c in items if not c["exact"]]
         print(f"{kind} exactness: {exact}/{len(items)} (gate 1.00)" + (f" misses {misses}" if misses else ""))
+    for kind, items in report["find_cases"].items():
+        metrics = report["find_metrics"][kind]
+        print(f"{kind}: precision {metrics['precision']:.2f}, recall {metrics['recall']:.2f} across all pages "
+              f"over {len(items)} cases (gate 1.00); expected engine misses found: {metrics['expected_misses_found']}")
+        for case in items:
+            print(f"  {case['id']} {case['hits']} hits, precision {case['precision']:.2f}, recall {case['recall']:.2f}"
+                  f"{', expected misses ' + str(case['expected_misses']) if case['expected_misses'] else ''}: {case['query']!r}")
     total = sum(report["skipped"].values())
     print(f"not yet implemented: {total} skipped")
     for kind, count in sorted(report["skipped"].items()):
