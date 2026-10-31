@@ -81,8 +81,19 @@ returns it.
 
 Both read one file and never load another (CAP-19 NFR-13). The refusal codes
 map to the C ABI's `SS_ERR_INVALID_ARGUMENT` (-1), `SS_ERR_CAPACITY` (-4) and
-`SS_ERR_NOT_FOUND` (-6) (`source.Code.ssError`); the ABI functions themselves
-arrive with S3-T4.
+`SS_ERR_NOT_FOUND` (-6) (`source.Code.ssError`); the ABI functions are
+`ss_read_span` and `ss_outline` (S3-T4, contract 2.0.0).
+
+**Sparse line index (S3-T4, no format change).** `source.openIndexed`
+records, while it validates each line map, a checkpoint before every 256th
+varint (the map offset and the running value), so `read_span` finds a line
+by decoding at most 256 varints from the nearest checkpoint instead of every
+varint from line 1. `(line_count / 256 + 1)` checkpoints of 16 bytes per
+file; a section opened with plain `source.open` has none and decodes from
+line 1, as before. A lost or damaged source section does not fail opening a
+generation (`snapshot_open.openSource` reports `source_error`); only
+`read_span` and `outline` answer `capacity` "re-index required: source
+section unavailable (<error>)".
 
 ## Retention
 

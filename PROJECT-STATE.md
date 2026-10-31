@@ -9,6 +9,29 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
+## S3-T4: folder knowledge on every surface, contract 2.0.0 (2026-10-31)
+
+The C ABI gains `ss_find`, `ss_outline`, `ss_read_span`, `ss_list_files`,
+`ss_roots` and `ss_apply_changes` (the ten v1 functions keep their signatures;
+`ss_query`/`ss_evidence` take `roots`; `ss_status` and `ss_evidence` append the
+2.0.0 fields after the v1 ones). `searchd` gains `find`, `outline`,
+`read-span`, `list-files`, `roots` and `apply` (text or `--json`), and
+`searchd serve` the methods `find`, `outline`, `read_span`, `list_files`,
+`roots` and, with `--allow-write`, `apply_changes`; the scope comes from
+`--roots`/`--labels` (the raw service still accepts bounded request labels
+when `--labels` is absent). One module, `zig/src/ops.zig`, writes the JSON for
+all three, and the Dart binding (`find`, `outline`, `readSpan`, `listFiles`,
+`roots`, static `applyChanges`, typed results) refuses a pre-2.0.0 library with
+`ContractsVersionMismatchException`. `ss_status`, `ss_evidence` and RPC
+`index_status`/`read_chunk` are scoped (a hidden file or chunk reads as
+absent); a lost or damaged source section no longer fails the open (only
+`read_span`/`outline` answer `CAPACITY`); the source section gets a sparse
+line index at open (deep `read_span` p95 about 60-100 us to 2-3 us,
+ReleaseSmall). `contracts/CONTRACTS_VERSION` 2.0.0. Native libraries rebuilt
+(SOURCE-SHA256 `e30b9e9a...`; macOS 697,544 B); `ss_open` on the fixture 13.1
+to 18.4 ms. The consumer app regenerates its contract types at its pin bump.
+Verified and merged 2026-10-31. [Task](docs/tasks/S3-T4.md).
+
 ## S3-T3: roots, apply_changes, visible-scope statistics (2026-10-31)
 
 A generation now holds several roots (`meta.roots`: `root_id`, `label`, `kind`,

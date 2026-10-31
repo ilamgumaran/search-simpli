@@ -2,15 +2,809 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.local/contracts/tool-request.schema.json",
   "title": "KnowledgeToolRequest",
+  "description": "Version 2 (contract 2.0.0, docs/tasks/S3-T4.md): one JSON-RPC 2.0 request to `searchd serve` (docs/tool-protocol.md). Every method's params object rejects unknown fields. The scope (roots and labels) comes from the server's command line (--roots, --labels); a request may narrow the roots. The five folder-knowledge methods (find, outline, read_span, list_files, roots) and the scoped index_status answer with the canonical results the C ABI and the CLI's --json give (zig/include/search_simpli.h).",
+  "version": 2,
   "type": "object",
-  "required": ["jsonrpc", "id", "method"],
+  "required": [
+    "jsonrpc",
+    "id",
+    "method"
+  ],
   "properties": {
-    "jsonrpc": { "const": "2.0" },
-    "id": { "type": ["string", "number", "null"] },
-    "method": {
-      "enum": ["search_knowledge", "read_chunk", "list_sources", "index_status"]
+    "jsonrpc": {
+      "const": "2.0"
     },
-    "params": { "type": "object" }
+    "id": {
+      "type": [
+        "string",
+        "number",
+        "null"
+      ]
+    },
+    "method": {
+      "enum": [
+        "search_knowledge",
+        "read_chunk",
+        "list_sources",
+        "index_status",
+        "find",
+        "outline",
+        "read_span",
+        "list_files",
+        "roots",
+        "apply_changes"
+      ]
+    },
+    "params": {
+      "type": "object"
+    }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "search_knowledge"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/search_knowledge"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "read_chunk"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/read_chunk"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "list_sources"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/list_sources"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "index_status"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/index_status"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "find"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/find"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "outline"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/outline"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "read_span"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/read_span"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "list_files"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/list_files"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "roots"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/roots"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "apply_changes"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "params": {
+            "$ref": "#/$defs/apply_changes"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "search_knowledge": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "query_vector": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Required for vector and hybrid modes when the snapshot stores vectors."
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 5
+        },
+        "candidate_k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "default": 100
+        },
+        "path_prefix": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retrieval_mode": {
+          "enum": [
+            "lexical",
+            "vector",
+            "hybrid"
+          ],
+          "default": "hybrid"
+        },
+        "principal_labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "description": "Raw service only: the caller's principal labels. Refused when the server was started with --labels (the scope then comes from the command line), and always refused inside an apply_changes request."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query"
+      ]
+    },
+    "read_chunk": {
+      "type": "object",
+      "properties": {
+        "chunk_id": {
+          "type": "string"
+        },
+        "path_prefix": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "principal_labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "description": "Raw service only: the caller's principal labels. Refused when the server was started with --labels (the scope then comes from the command line), and always refused inside an apply_changes request."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "chunk_id"
+      ]
+    },
+    "list_sources": {
+      "type": "object",
+      "properties": {
+        "path_prefix": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "principal_labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "description": "Raw service only: the caller's principal labels. Refused when the server was started with --labels (the scope then comes from the command line), and always refused inside an apply_changes request."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        }
+      },
+      "additionalProperties": false
+    },
+    "index_status": {
+      "type": "object",
+      "properties": {
+        "principal_labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "description": "Raw service only: the caller's principal labels. Refused when the server was started with --labels (the scope then comes from the command line), and always refused inside an apply_changes request."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        }
+      },
+      "additionalProperties": false
+    },
+    "find": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "A query in double quotes is a phrase; a trailing * makes the last word a prefix."
+        },
+        "mode": {
+          "enum": [
+            "words",
+            "phrase",
+            "prefix"
+          ],
+          "default": "words"
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        },
+        "principal_labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "description": "Raw service only: the caller's principal labels. Refused when the server was started with --labels (the scope then comes from the command line), and always refused inside an apply_changes request."
+        },
+        "path_prefix": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Root-relative path prefix."
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        },
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]+:[0-9]+$",
+          "description": "The previous page's next_cursor (\"<generation>:<offset>\"); a cursor from another generation is refused (-32602 \"stale cursor\")."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query"
+      ]
+    },
+    "outline": {
+      "type": "object",
+      "properties": {
+        "root_id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "description": "Root-relative."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        },
+        "principal_labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "description": "Raw service only: the caller's principal labels. Refused when the server was started with --labels (the scope then comes from the command line), and always refused inside an apply_changes request."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root_id",
+        "path"
+      ]
+    },
+    "read_span": {
+      "type": "object",
+      "properties": {
+        "root_id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "start_line": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "context_lines": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20,
+          "default": 0
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        },
+        "principal_labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "description": "Raw service only: the caller's principal labels. Refused when the server was started with --labels (the scope then comes from the command line), and always refused inside an apply_changes request."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root_id",
+        "path",
+        "start_line",
+        "end_line"
+      ]
+    },
+    "list_files": {
+      "type": "object",
+      "properties": {
+        "root_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path_prefix": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "indexed",
+            "pending",
+            null
+          ]
+        },
+        "page_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 100
+        },
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]+:[0-9]+$",
+          "description": "The previous page's next_cursor (\"<generation>:<offset>\"); a cursor from another generation is refused (-32602 \"stale cursor\")."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        },
+        "principal_labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "description": "Raw service only: the caller's principal labels. Refused when the server was started with --labels (the scope then comes from the command line), and always refused inside an apply_changes request."
+        }
+      },
+      "additionalProperties": false
+    },
+    "roots": {
+      "type": "object",
+      "properties": {
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        },
+        "principal_labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "description": "Raw service only: the caller's principal labels. Refused when the server was started with --labels (the scope then comes from the command line), and always refused inside an apply_changes request."
+        }
+      },
+      "additionalProperties": false
+    },
+    "apply_changes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Only when the server was started with --allow-write; otherwise the method does not exist (-32601). The full rules are in docs/folder-knowledge-implementation.md section 6.",
+      "required": [
+        "changes"
+      ],
+      "properties": {
+        "expect_generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "roots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "root_id"
+            ],
+            "properties": {
+              "root_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9._-]{1,64}$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "host",
+                  "icloud",
+                  "local"
+                ]
+              },
+              "required_labels": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "retain_source": {
+                "type": "boolean"
+              },
+              "path": {
+                "type": "string",
+                "description": "Absolute folder of a local root (file changes)."
+              }
+            }
+          }
+        },
+        "changes": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "root_id"
+            ],
+            "properties": {
+              "op": {
+                "enum": [
+                  "add",
+                  "change",
+                  "remove",
+                  "move",
+                  "pending",
+                  "remove_root"
+                ]
+              },
+              "root_id": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "moved_from": {
+                "type": "string"
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "mtime_ms": {
+                "type": "integer"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{64}$"
+              },
+              "content_base64": {
+                "type": "string"
+              },
+              "file": {
+                "type": "string",
+                "description": "Read only when the server was started with --allow-file-reads."
+              },
+              "required_labels": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

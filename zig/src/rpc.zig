@@ -4,7 +4,28 @@ const postings = @import("postings.zig");
 const report = @import("report.zig");
 const scoring = @import("scoring.zig");
 const service_module = @import("service.zig");
+const ops = @import("ops.zig");
+const apply = @import("apply.zig");
+const scope = @import("scope.zig");
 const std = @import("std");
+
+/// S3-T4: what `searchd serve` was started with. The scope comes from the
+/// command line (`--roots`, `--labels`): a request may narrow the roots but
+/// never widen them. Without `--labels` the raw service keeps accepting a
+/// request's `principal_labels` (bounded as before); with it, a request that
+/// states them is refused. `apply_changes` exists only with `--allow-write`
+/// (`--allow-file-reads` lets its `file` changes be read).
+pub const Server = struct {
+    caller: ops.Caller = .{ .request_labels = true },
+    allow_write: bool = false,
+    allow_file_reads: bool = false,
+    /// The served index directory (`apply_changes` publishes into it).
+    dir_path: ?[]const u8 = null,
+    io: ?std.Io = null,
+    /// Set by a successful `apply_changes`: the caller reopens the index so
+    /// the next request reads the new generation.
+    reopen: bool = false,
+};
 
 pub const Workspaces = struct {
     query_vector: []f32,
@@ -15,6 +36,19 @@ pub const Workspaces = struct {
 
 pub fn handleLine(
     service: service_module.Service,
+    line: []const u8,
+    allocator: std.mem.Allocator,
+    workspaces: Workspaces,
+    output: *std.Io.Writer,
+) !void {
+    var server = Server{};
+    return handleLineWith(service, &server, line, allocator, workspaces, output);
+}
+
+/// `handleLine` for a server started with a scope and write permissions.
+pub fn handleLineWith(
+    service: service_module.Service,
+    server: *Server,
     line: []const u8,
     allocator: std.mem.Allocator,
     workspaces: Workspaces,
@@ -59,31 +93,168 @@ pub fn handleLine(
     };
 
     if (std.mem.eql(u8, method, "search_knowledge")) {
-        try handleSearch(service, allocator, id, params, workspaces, output);
+        try handleSearch(service, server.*, allocator, id, params, workspaces, output);
     } else if (std.mem.eql(u8, method, "read_chunk")) {
-        try handleRead(service, id, params, output);
+        try handleRead(service, server.*, allocator, id, params, output);
     } else if (std.mem.eql(u8, method, "list_sources")) {
-        try handleList(service, id, params, workspaces.sources, output);
+        try handleList(service, server.*, allocator, id, params, workspaces.sources, output);
     } else if (std.mem.eql(u8, method, "index_status")) {
-        if (!onlyFields(params, &.{})) {
-            try writeError(output, id, -32602, "Invalid params");
+        if (service.folder == null) {
+            if (!onlyFields(params, &.{})) {
+                try writeError(output, id, -32602, "Invalid params");
+                return;
+            }
+            try writeStatus(output, id, service.indexStatus());
             return;
         }
-        try writeStatus(output, id, service.indexStatus());
+        try writeOperation(output, id, try ops.indexStatus(allocator, service, params, server.caller));
+    } else if (std.mem.eql(u8, method, "find")) {
+        try runOperation(service, server.*, allocator, id, params, output, ops.find);
+    } else if (std.mem.eql(u8, method, "outline")) {
+        try runOperation(service, server.*, allocator, id, params, output, ops.outline);
+    } else if (std.mem.eql(u8, method, "read_span")) {
+        try runOperation(service, server.*, allocator, id, params, output, ops.readSpan);
+    } else if (std.mem.eql(u8, method, "list_files")) {
+        try runOperation(service, server.*, allocator, id, params, output, ops.listFiles);
+    } else if (std.mem.eql(u8, method, "roots")) {
+        try runOperation(service, server.*, allocator, id, params, output, ops.visibleRoots);
+    } else if (std.mem.eql(u8, method, "apply_changes") and server.allow_write) {
+        try handleApply(server, allocator, id, parsed.value.object.get("params"), output);
     } else {
+        // `apply_changes` without `--allow-write` does not exist.
         try writeError(output, id, -32601, "Method not found");
     }
 }
 
+/// S3-T4: the folder-knowledge read methods (`ops.zig`).
+fn runOperation(
+    service: service_module.Service,
+    server: Server,
+    allocator: std.mem.Allocator,
+    id: ?std.json.Value,
+    params: std.json.ObjectMap,
+    output: *std.Io.Writer,
+    comptime operation: anytype,
+) !void {
+    if (service.folder == null) {
+        try writeError(output, id, -32603, "Internal error");
+        return;
+    }
+    try writeOperation(output, id, try operation(allocator, service, params, server.caller));
+}
+
+/// The JSON-RPC error code of a core refusal (`docs/tool-protocol.md`).
+pub fn errorCodeOf(code: ops.Code) i32 {
+    return switch (code) {
+        .invalid_argument => -32602,
+        .not_found => -32004,
+        .capacity => -32005,
+    };
+}
+
+fn writeOperation(output: *std.Io.Writer, id: ?std.json.Value, result: ops.Result) !void {
+    switch (result) {
+        .failed => |failure| {
+            var buffer: [1024]u8 = undefined;
+            const message = if (failure.code == .invalid_argument)
+                std.fmt.bufPrint(&buffer, "Invalid params: {s}", .{failure.message}) catch failure.message
+            else
+                failure.message;
+            try writeError(output, id, errorCodeOf(failure.code), message);
+        },
+        .ok => |json_text| {
+            var json = std.json.Stringify{ .writer = output };
+            try responseStart(&json, id);
+            try json.objectField("result");
+            try json.beginWriteRaw();
+            try output.writeAll(json_text);
+            json.endWriteRaw();
+            try json.endObject();
+        },
+    }
+}
+
+/// `apply_changes` (only with `serve --allow-write`): the params object is
+/// the change request itself (implementation section 6).
+fn handleApply(server: *Server, allocator: std.mem.Allocator, id: ?std.json.Value, params: ?std.json.Value, output: *std.Io.Writer) !void {
+    const value = params orelse {
+        try writeError(output, id, -32602, "Invalid params: apply_changes needs the change request as params");
+        return;
+    };
+    const request_json = try std.json.Stringify.valueAlloc(allocator, value, .{});
+    const gio = server.io orelse {
+        try writeError(output, id, -32603, "Internal error");
+        return;
+    };
+    var dir = std.Io.Dir.cwd().openDir(gio, server.dir_path orelse ".", .{ .iterate = true }) catch {
+        try writeError(output, id, -32603, "Internal error");
+        return;
+    };
+    defer dir.close(gio);
+    const result = ops.applyChanges(allocator, gio, dir, request_json, .{ .allow_file_reads = server.allow_file_reads }) catch |err| {
+        var buffer: [256]u8 = undefined;
+        const message = std.fmt.bufPrint(&buffer, "Internal error: {s}", .{@errorName(err)}) catch "Internal error";
+        try writeError(output, id, if (err == error.WriterBusy) -32006 else -32603, if (err == error.WriterBusy) "Writer busy: another writer holds WRITER.LOCK" else message);
+        return;
+    };
+    if (result == .ok) server.reopen = true;
+    try writeOperation(output, id, result);
+}
+
+/// The request's scope over the server's: `roots` narrows; labels from the
+/// request only when the raw service allows it. Null roots = every root.
+const RequestScope = struct { request: scope.Request, scoped: bool };
+
+fn requestScope(server: Server, params: std.json.ObjectMap, labels: []const []const u8, allocator: std.mem.Allocator) error{ InvalidRoots, OutOfMemory }!RequestScope {
+    var named: ?[]const []const u8 = null;
+    if (params.get("roots")) |value| switch (value) {
+        .null => {},
+        .array => |array| {
+            if (array.items.len > ops.max_named_roots) return error.InvalidRoots;
+            const list = try allocator.alloc([]const u8, array.items.len);
+            for (array.items, list) |item, *slot| slot.* = switch (item) {
+                .string => |text| if (text.len == 0) return error.InvalidRoots else text,
+                else => return error.InvalidRoots,
+            };
+            named = list;
+        },
+        else => return error.InvalidRoots,
+    };
+    var roots: ?[]const []const u8 = null;
+    if (server.caller.roots != null or named != null) {
+        const want = named orelse server.caller.roots.?;
+        var kept = std.ArrayList([]const u8).empty;
+        for (want) |root_id| {
+            const allowed = if (server.caller.roots) |bound| for (bound) |b| {
+                if (std.mem.eql(u8, b, root_id)) break true;
+            } else false else true;
+            if (allowed) try kept.append(allocator, root_id);
+        }
+        roots = kept.items;
+    }
+    return .{ .request = .{ .roots = roots, .principal_labels = labels }, .scoped = roots != null };
+}
+
+/// The labels a request runs with: its own `principal_labels` (bounded as
+/// before) when the server allows it, else the server's `--labels`.
+fn requestLabels(server: Server, params: std.json.ObjectMap, storage: [][]const u8) error{InvalidLabels}![]const []const u8 {
+    if (params.get("principal_labels")) |value| {
+        if (!server.caller.request_labels) return error.InvalidLabels;
+        return parsePrincipalLabels(value, storage);
+    }
+    return server.caller.labels;
+}
+
 fn handleSearch(
     service: service_module.Service,
+    server: Server,
     allocator: std.mem.Allocator,
     id: ?std.json.Value,
     params: std.json.ObjectMap,
     workspaces: Workspaces,
     output: *std.Io.Writer,
 ) !void {
-    if (!onlyFields(params, &.{ "query", "query_vector", "top_k", "candidate_k", "path_prefix", "retrieval_mode", "principal_labels" })) {
+    if (!onlyFields(params, &.{ "query", "query_vector", "top_k", "candidate_k", "path_prefix", "retrieval_mode", "principal_labels", "roots" })) {
         try writeError(output, id, -32602, "Invalid params");
         return;
     }
@@ -129,9 +300,16 @@ fn handleSearch(
         return;
     };
     var principal_label_storage: [64][]const u8 = undefined;
-    const principal_labels = parsePrincipalLabels(params.get("principal_labels"), &principal_label_storage) catch {
+    const principal_labels = requestLabels(server, params, &principal_label_storage) catch {
         try writeError(output, id, -32602, "Invalid params");
         return;
+    };
+    const request_scope = requestScope(server, params, principal_labels, allocator) catch |err| switch (err) {
+        error.OutOfMemory => return err,
+        else => {
+            try writeError(output, id, -32602, "Invalid params");
+            return;
+        },
     };
     const query_vector = parseQueryVector(
         params.get("query_vector"),
@@ -142,20 +320,20 @@ fn handleSearch(
         try writeError(output, id, -32602, "Invalid params");
         return;
     };
-    const evidence = service.searchKnowledge(
-        allocator,
-        query,
-        query_vector,
-        .{
-            .top_k = top_k,
-            .candidate_k = candidate_k,
-            .retrieval_mode = mode,
-            .path_prefix = path_prefix,
-            .principal_labels = principal_labels,
-        },
-        workspaces.results,
-        workspaces.evidence,
-    ) catch {
+    const search_options = hybrid.SearchOptions{
+        .top_k = top_k,
+        .candidate_k = candidate_k,
+        .retrieval_mode = mode,
+        .path_prefix = path_prefix,
+        .principal_labels = principal_labels,
+    };
+    // S3-T4: a request (or server) that names roots goes through the scope;
+    // otherwise the v1 path, unchanged (labels already filter it there).
+    const found = if (request_scope.scoped and service.folder != null)
+        (service_module.ScopedService{ .service = service }).searchKnowledge(allocator, query, query_vector, search_options, request_scope.request, workspaces.results, workspaces.evidence, null)
+    else
+        service.searchKnowledge(allocator, query, query_vector, search_options, workspaces.results, workspaces.evidence);
+    const evidence = found catch {
         try writeError(output, id, -32603, "Internal error");
         return;
     };
@@ -164,11 +342,13 @@ fn handleSearch(
 
 fn handleRead(
     service: service_module.Service,
+    server: Server,
+    allocator: std.mem.Allocator,
     id: ?std.json.Value,
     params: std.json.ObjectMap,
     output: *std.Io.Writer,
 ) !void {
-    if (!onlyFields(params, &.{ "chunk_id", "path_prefix", "principal_labels" })) {
+    if (!onlyFields(params, &.{ "chunk_id", "path_prefix", "principal_labels", "roots" })) {
         try writeError(output, id, -32602, "Invalid params");
         return;
     }
@@ -181,11 +361,23 @@ fn handleRead(
         return;
     };
     var principal_label_storage: [64][]const u8 = undefined;
-    const principal_labels = parsePrincipalLabels(params.get("principal_labels"), &principal_label_storage) catch {
+    const principal_labels = requestLabels(server, params, &principal_label_storage) catch {
         try writeError(output, id, -32602, "Invalid params");
         return;
     };
-    const chunk = service.readChunk(chunk_id, path_prefix, principal_labels) orelse {
+    const request_scope = requestScope(server, params, principal_labels, allocator) catch |err| switch (err) {
+        error.OutOfMemory => return err,
+        else => {
+            try writeError(output, id, -32602, "Invalid params");
+            return;
+        },
+    };
+    // S3-T4 (S3-T3 finding 2): the read by chunk id goes through the scope.
+    const read = if (service.folder != null)
+        try (service_module.ScopedService{ .service = service }).readChunk(allocator, chunk_id, path_prefix, request_scope.request)
+    else
+        service.readChunk(chunk_id, path_prefix, principal_labels);
+    const chunk = read orelse {
         try writeError(output, id, -32004, "Chunk not found");
         return;
     };
@@ -200,12 +392,14 @@ fn handleRead(
 
 fn handleList(
     service: service_module.Service,
+    server: Server,
+    allocator: std.mem.Allocator,
     id: ?std.json.Value,
     params: std.json.ObjectMap,
     source_output: []service_module.Source,
     output: *std.Io.Writer,
 ) !void {
-    if (!onlyFields(params, &.{ "path_prefix", "principal_labels" })) {
+    if (!onlyFields(params, &.{ "path_prefix", "principal_labels", "roots" })) {
         try writeError(output, id, -32602, "Invalid params");
         return;
     }
@@ -214,11 +408,22 @@ fn handleList(
         return;
     };
     var principal_label_storage: [64][]const u8 = undefined;
-    const principal_labels = parsePrincipalLabels(params.get("principal_labels"), &principal_label_storage) catch {
+    const principal_labels = requestLabels(server, params, &principal_label_storage) catch {
         try writeError(output, id, -32602, "Invalid params");
         return;
     };
-    const sources = service.listSources(path_prefix, principal_labels, source_output) catch {
+    const request_scope = requestScope(server, params, principal_labels, allocator) catch |err| switch (err) {
+        error.OutOfMemory => return err,
+        else => {
+            try writeError(output, id, -32602, "Invalid params");
+            return;
+        },
+    };
+    const listed = if (service.folder != null)
+        (service_module.ScopedService{ .service = service }).listSources(allocator, path_prefix, request_scope.request)
+    else
+        service.listSources(path_prefix, principal_labels, source_output);
+    const sources = listed catch {
         try writeError(output, id, -32603, "Internal error");
         return;
     };
@@ -653,4 +858,71 @@ test "JSON RPC returns parse errors and status" {
     defer status_output.deinit();
     try handleLine(service, "{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"index_status\",\"params\":{}}", std.testing.allocator, workspaces, &status_output.writer);
     try std.testing.expect(std.mem.indexOf(u8, status_output.written(), "\"generation\":4") != null);
+}
+
+test "S3-T4: the RPC folder methods, the command-line scope and apply_changes gating" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const request =
+        \\{"roots":[{"root_id":"school","kind":"host"},{"root_id":"vault","kind":"host","required_labels":["adults"]}],
+        \\"changes":[{"op":"add","root_id":"school","path":"week.md","content_base64":"IyBXZWVrCgp0aWRlIHRhYmxlCg=="},
+        \\{"op":"add","root_id":"vault","path":"plan.md","content_base64":"IyBQbGFuCgp0aWRlIHNlY3JldAo="}]}
+    ;
+    _ = (try apply.applyChanges(a, io, tmp.dir, request, .{})).ok;
+    const opened = try @import("snapshot_open.zig").openScoped(a, io, tmp.dir);
+    const service = service_module.Service{ .engine = opened.engine, .folder = opened.folder };
+    const count = service.engine.documents.len;
+    const workspaces = Workspaces{
+        .query_vector = &.{},
+        .results = try a.alloc(hybrid.Result, count),
+        .evidence = try a.alloc(engine_module.Evidence, count),
+        .sources = try a.alloc(service_module.Source, count),
+    };
+    const Call = struct {
+        fn run(svc: service_module.Service, server: *Server, ws: Workspaces, allocator: std.mem.Allocator, line: []const u8) ![]const u8 {
+            var out: std.Io.Writer.Allocating = .init(allocator);
+            try handleLineWith(svc, server, line, allocator, ws, &out.writer);
+            return out.written();
+        }
+    };
+    var raw = Server{};
+    // Each new method answers with the canonical result.
+    for ([_][]const u8{ "find", "roots", "list_files" }) |method| {
+        const line = try std.fmt.allocPrint(a, "{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"{s}\",\"params\":{s}}}", .{ method, if (std.mem.eql(u8, method, "find")) "{\"query\":\"tide\"}" else "{}" });
+        const answer = try Call.run(service, &raw, workspaces, a, line);
+        try std.testing.expect(std.mem.startsWith(u8, answer, "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"request\":"));
+        try std.testing.expect(std.mem.indexOf(u8, answer, "vault") == null);
+    }
+    const span = try Call.run(service, &raw, workspaces, a, "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"read_span\",\"params\":{\"root_id\":\"school\",\"path\":\"week.md\",\"start_line\":3,\"end_line\":3}}");
+    try std.testing.expect(std.mem.indexOf(u8, span, "\"text\":\"tide table\\n\"") != null);
+    const missing = try Call.run(service, &raw, workspaces, a, "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"outline\",\"params\":{\"root_id\":\"vault\",\"path\":\"plan.md\"}}");
+    try std.testing.expectEqualStrings("{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32004,\"message\":\"not indexed or not retained: vault/plan.md\"}}", missing);
+    // The raw service keeps request labels; the scoped status counts them.
+    const labelled = try Call.run(service, &raw, workspaces, a, "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"index_status\",\"params\":{\"principal_labels\":[\"adults\"]}}");
+    try std.testing.expect(std.mem.indexOf(u8, labelled, "\"files\":2,") != null);
+    const plain = try Call.run(service, &raw, workspaces, a, "{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"index_status\",\"params\":{}}");
+    try std.testing.expect(std.mem.indexOf(u8, plain, "\"documents\":1,") != null);
+    // apply_changes does not exist without --allow-write.
+    const refused = try Call.run(service, &raw, workspaces, a, "{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"apply_changes\",\"params\":{\"changes\":[]}}");
+    try std.testing.expect(std.mem.indexOf(u8, refused, "-32601") != null);
+    try std.testing.expect(!raw.reopen);
+    // --labels: the server's; a request stating labels is refused.
+    var scoped = Server{ .caller = .{ .labels = &.{"adults"}, .roots = &.{"vault"} } };
+    const vault = try Call.run(service, &scoped, workspaces, a, "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"find\",\"params\":{\"query\":\"tide\",\"roots\":[\"school\",\"vault\"]}}");
+    try std.testing.expect(std.mem.indexOf(u8, vault, "\"scope\":{\"roots\":[\"vault\"]") != null);
+    const forged = try Call.run(service, &scoped, workspaces, a, "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"read_chunk\",\"params\":{\"chunk_id\":\"x\",\"principal_labels\":[]}}");
+    try std.testing.expect(std.mem.indexOf(u8, forged, "-32602") != null);
+    const hidden_search = try Call.run(service, &scoped, workspaces, a, "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"search_knowledge\",\"params\":{\"query\":\"tide\",\"retrieval_mode\":\"lexical\"}}");
+    try std.testing.expect(std.mem.indexOf(u8, hidden_search, "vault/plan.md") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hidden_search, "school/week.md") == null);
+    // With --allow-write: published, and the caller is told to reopen.
+    const path = try std.fmt.allocPrint(a, ".zig-cache/tmp/{s}", .{tmp.sub_path});
+    var writer = Server{ .allow_write = true, .dir_path = path, .io = io };
+    const applied = try Call.run(service, &writer, workspaces, a, "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"apply_changes\",\"params\":{\"expect_generation\":1,\"changes\":[{\"op\":\"remove\",\"root_id\":\"school\",\"path\":\"week.md\"}]}}");
+    try std.testing.expect(std.mem.indexOf(u8, applied, "\"result\":{\"generation\":2,") != null);
+    try std.testing.expect(writer.reopen);
 }

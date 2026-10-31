@@ -375,7 +375,7 @@ pub const ScopedService = struct {
             documents += 1;
             const slot = root_slot[folder.document_roots[i]].?;
             roots[slot].documents += 1;
-            if (document.source_doc_index != hybrid.no_source_doc) has_source = true;
+            if (document.source_doc_index != hybrid.no_source_doc and folder.source != null) has_source = true;
             const chunker_id = if (document.chunker_index < folder.chunkers.len) folder.chunkers[document.chunker_index].id else "line-window-v1";
             if (std.mem.eql(u8, chunker_id, "md-section-v1")) uses_chunker[1] = true else uses_chunker[0] = true;
             const gop = try seen.getOrPut(allocator, document.path);
@@ -465,8 +465,8 @@ pub const ScopedService = struct {
         const resolved = try resolve(scoped.service, allocator, request);
         defer resolved.deinit(allocator);
         const section = resolved.folder.source;
+        if (section == null) return .{ .failed = try sourceUnavailable(allocator, resolved.folder.*) };
         const record = (try scoped.visibleFile(allocator, resolved, root_id, path)) orelse {
-            if (section == null) return .{ .failed = .{ .code = .capacity, .message = source_section.source_absent_message } };
             const shown = try scope.recordPath(allocator, root_id, path);
             return .{ .failed = .{ .code = .not_found, .message = try std.fmt.allocPrint(allocator, "not indexed or not retained: {s}", .{shown}) } };
         };
@@ -517,8 +517,8 @@ pub const ScopedService = struct {
         const resolved = try resolve(scoped.service, allocator, request);
         defer resolved.deinit(allocator);
         const section = resolved.folder.source;
+        if (section == null) return .{ .failed = try sourceUnavailable(allocator, resolved.folder.*) };
         const record = (try scoped.visibleFile(allocator, resolved, root_id, path)) orelse {
-            if (section == null) return .{ .failed = .{ .code = .capacity, .message = source_section.source_absent_message } };
             const shown = try scope.recordPath(allocator, root_id, path);
             return .{ .failed = .{ .code = .not_found, .message = try std.fmt.allocPrint(allocator, "not indexed or not retained: {s}", .{shown}) } };
         };
@@ -537,6 +537,16 @@ const FrequencyProvider = struct {
         return scope.documentFrequency(self.view, index, self.engine.documents, index.terms[term_index]);
     }
 };
+
+/// S3-T4: why `read_span`/`outline` cannot answer from this generation:
+/// it retains no source bytes, or (S3-T1 finding 2) it binds a source
+/// section that could not be opened. Both are `CAPACITY`; a hidden or
+/// unknown file in such a generation gets the same answer, so it reveals
+/// nothing.
+pub fn sourceUnavailable(allocator: std.mem.Allocator, folder: scope.Folder) !source_section.Failure {
+    if (folder.source_error) |name| return .{ .code = .capacity, .message = try std.fmt.allocPrint(allocator, "re-index required: source section unavailable ({s})", .{name}) };
+    return .{ .code = .capacity, .message = source_section.source_absent_message };
+}
 
 fn anySkippedVisible(resolved: Resolved) !bool {
     for (resolved.folder.skipped) |entry| if (resolved.listedVisible(entry)) return true;

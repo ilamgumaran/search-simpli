@@ -82,6 +82,13 @@ const String goldenEvidenceFoundJson =
 
 const String goldenEvidenceMissingJson = '[{"chunk_id":"missing-id","found":false}]';
 
+/// Contract 2.0.0 tails, copied from `zig/tests/abi_test.c`.
+const String goldenStatusTail =
+    ',"files":3,"pending":0,"truncated":false,"roots":[{"root_id":"r-legacy",'
+    '"label":"folder","kind":"local","files":3,"documents":3,"pending":0}],'
+    '"pending_paths":[],"has_source":false,"has_positions":false,"chunkers":["line-window-v1"]}';
+const String goldenEvidenceTail = ',"root_id":"r-legacy","section_path":[],"neighbours":{"prev":null,"next":null}}]';
+
 void main() {
   final packageRoot = Directory.current.path;
   final repoRoot = p.normalize(p.join(packageRoot, '..', '..', '..'));
@@ -110,7 +117,10 @@ void main() {
       final engine = SearchSimpli.open(dir.path);
       addTearDown(engine.close);
 
-      expect(jsonEncode(engine.status().toJson()), goldenStatusJson);
+      // Contract 2.0.0 appends the section 8 status fields after the v1
+      // ones (the same tail zig/tests/abi_test.c checks).
+      expect(jsonEncode(engine.status().toJson()),
+          goldenStatusJson.substring(0, goldenStatusJson.length - 1) + goldenStatusTail);
 
       final result = engine.query(
         'hybrid ranking',
@@ -128,7 +138,8 @@ void main() {
       ).toJson()), goldenQueryResultJson);
 
       final found = engine.evidence(['hybrid-guide']);
-      expect(jsonEncode(found.map((e) => e.toJson()).toList()), goldenEvidenceFoundJson);
+      expect(jsonEncode(found.map((e) => e.toJson()).toList()),
+          goldenEvidenceFoundJson.substring(0, goldenEvidenceFoundJson.length - 2) + goldenEvidenceTail);
 
       final missing = engine.evidence(['missing-id']);
       expect(jsonEncode(missing.map((e) => e.toJson()).toList()), goldenEvidenceMissingJson);

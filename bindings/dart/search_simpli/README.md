@@ -77,8 +77,10 @@ wrote — see the [root README](../../../README.md) and
 
 - `SearchSimpli.open(String snapshotDir, {DynamicLibrary? library})` — opens
   a snapshot. Asserts the native library's `ss_version()` equals this
-  package's `CONTRACTS_VERSION` (`1.2.0`) before touching `snapshotDir` at
-  all; throws `ContractsVersionMismatchException` on a mismatch and
+  package's `CONTRACTS_VERSION` (`2.0.0`) and that it exports every 2.0.0
+  function before touching `snapshotDir` at
+  all; throws `ContractsVersionMismatchException` on a mismatch (an older
+  library) and
   `SearchSimpliException` if `ss_open` itself fails (missing/corrupt
   snapshot, I/O error — see the thrown exception's `message`, which is
   `ss_last_error()`).
@@ -98,10 +100,24 @@ wrote — see the [root README](../../../README.md) and
   `profile` (`tokenizeUs`, `scoreUs`, `rankUs`, `serializeUs`,
   `matchedChunks`). Query-term warnings are produced in lexical and hybrid
   mode only.
-- `engine.evidence(List<String> ids, {pathPrefix, principalLabels})` →
+- `engine.evidence(List<String> ids, {pathPrefix, principalLabels, roots})` →
   `List<EvidenceChunk>`, one entry per id, in order; an unknown or
   unauthorized id comes back as `EvidenceChunk(found: false)` rather than
-  failing the whole call.
+  failing the whole call. Since 2.0.0 a found chunk carries `rootId`,
+  `sectionPath` and `neighbours` (`prev`/`next` chunk of the same file).
+- Contract 2.0.0, folder knowledge (`docs/folder-knowledge-implementation.md`
+  §8): `engine.find(query, {mode, roots, principalLabels, pathPrefix,
+  pageSize, cursor})` → `FindResult` (hits with root, path, section, lines,
+  snippet and offsets; per-file counts; `exactMatch`, `pendingFiles`,
+  `truncated`, `nextCursor`); `engine.outline(rootId, path)` →
+  `OutlineResult`; `engine.readSpan(rootId, path, startLine, endLine,
+  {contextLines})` → `SpanResult` (byte exact, `sha256`); `engine.listFiles({rootId,
+  pathPrefix, status, pageSize, cursor})` → `FileListResult`;
+  `engine.roots()` → `RootsResult`; and the static
+  `SearchSimpli.applyChanges(dirPath, changes, {options})` →
+  `ApplyChangesReport` (host-fed changes, §6). Every result keeps the
+  engine's JSON as `json`: the same bytes `searchd serve` and
+  `searchd <command> --json` return. `query` also takes `roots`.
 - `engine.close()` — frees the native handle. Safe to call once; a second
   call throws `StateError`. Not safe to race with any other call on the
   same `SearchSimpli` instance (matches `ss_close`'s contract).
@@ -128,7 +144,9 @@ wrote — see the [root README](../../../README.md) and
   publishes an empty generation instead of throwing.
 
 Every `ss_*` failure surfaces as `SearchSimpliException` with the
-human-readable `ss_last_error()` message.
+human-readable `ss_last_error()` message; since 2.0.0 its `code` getter gives
+the `SS_ERR_*` name the message carries (`SS_ERR_INVALID_ARGUMENT`,
+`SS_ERR_NOT_FOUND`, `SS_ERR_CAPACITY`, …).
 
 ## Native library packaging
 
