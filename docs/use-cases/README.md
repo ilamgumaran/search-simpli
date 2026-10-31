@@ -12,6 +12,7 @@ This directory records the situations Search Simpli is intended to serve. A use 
 | UC-004 | [External agent via MCP](uc-004-mcp-external-agent.md) | MCP client / agent host | Any bound snapshot | Proposed (CAP-13) |
 | UC-005 | [Relevance regression gate on new sample data](uc-005-relevance-regression-gate.md) | Maintainer, contributor, or coding agent | Graded product/user search collections | Diagnostic (CAP-11 / FR-12) |
 | UC-006 | [Directory content and filename search](uc-006-directory-filename-search.md) | Folder owner or LLM tool | Existing supported nonempty text/source files | Proposed filename capability (CAP-16); content search already implemented |
+| UC-007 | [Family folders on a phone: whole folders, exact words, cited answers](uc-007-family-folders-on-a-phone.md) | Family member, model app, plain app, MCP host | Text and Markdown folders on iCloud Drive, a phone, a laptop (several roots) | Proposed (CAP-19 / FR-17..FR-25) |
 
 ## Adding a use case
 

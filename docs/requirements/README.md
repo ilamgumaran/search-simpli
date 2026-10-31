@@ -104,6 +104,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-14 | [Trust-calibration signal](cap-14-trust-calibration.md) | UC-001, UC-002, UC-003 | FR-14 | Proposed / future — board S-01, E-02 |
 | CAP-15 | [Structure-aware code chunking](cap-15-structure-aware-chunking.md) | UC-002 | FR-15 | Proposed / future |
 | CAP-16 | [Directory filename retrieval](cap-16-directory-filename-search.md) | UC-006, UC-001, UC-002, UC-003 | FR-16 | Proposed · future |
+| CAP-19 | [Folder knowledge: exact finding, structure, roots, host-fed changes, tools, MCP](cap-19-folder-knowledge.md) | UC-007, UC-001, UC-004 | FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, NFR-10, NFR-11, NFR-12, NFR-13, NFR-14 | Proposed (2026-10-31) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
@@ -150,6 +151,16 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-15 | Structure-aware chunking on syntactic units for supported languages, deterministic identity, deterministic line-window fallback | CAP-15 (changes FR-02) | Proposed |
 | FR-16 | Opt-in filename/combined lexical search, real passage anchors, explicit origin, isolation, deterministic ranking and versioned refresh/migration | CAP-16 | Proposed |
 
+| FR-17 | Positional phrase/prefix/words finding with original-text offsets | CAP-19 | Proposed |
+| FR-18 | Markdown structure and recorded chunker identity | CAP-19 | Proposed |
+| FR-19 | Multiple roots with trusted visible-scope authorization/statistics | CAP-19 | Proposed |
+| FR-20 | Bounded host-fed changes and atomic generation publication | CAP-19 | Proposed |
+| FR-21 | Deterministic rename detection without content deduplication | CAP-19 | Proposed |
+| FR-22 | Find, outline, byte-exact source spans and paged files | CAP-19 | Proposed |
+| FR-23 | Versioned shared tool schemas and model skill instructions | CAP-19 | Proposed |
+| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | CAP-19 | Proposed |
+| FR-25 | Scoped retrieval metadata; empty is not proof of absence | CAP-19 | Proposed |
+
 ## Non-functional requirements (NFR)
 
 Canonical text for accepted requirements lives in
@@ -169,6 +180,12 @@ until promoted.
 | NFR-08 | Docs distinguish implementation, observation, hypothesis, future option | all | Standing |
 | NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free | CAP-13 | Proposed |
 
+| NFR-10 | Phrase/words latency and generation-bound paging | CAP-19 | Proposed |
+| NFR-11 | Positional segment size budget | CAP-19 | Proposed |
+| NFR-12 | Full/incremental indexing time and memory budgets | CAP-19 | Proposed |
+| NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Proposed |
+| NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Proposed |
+
 ## Contracts (CON)
 
 | ID | Schema | Purpose |
@@ -185,6 +202,8 @@ Pending additive, versioned changes (backward compatible, INV-07):
 - CON-03 gains an optional structural-kind field for CAP-15 (FR-15).
 - CON-03 **and** the Zig manifest/`index_status` gain a chunker id/version so the
   durable path can validate chunker identity — required to unblock CFT-09.
+
+CAP-19 proposes versioned changes to CON-01/CON-02 (tool payloads) and CON-03 (chunker/root/source metadata), plus new per-tool schemas. Exact schemas and source-section format freeze before S3-T1/T4; no new schema is claimed implemented. CFT-09 remains blocked until the full identity migration is tested.
 
 ## Conflict register (CFT)
 
@@ -225,7 +244,12 @@ section is the point of the whole register.
 | CFT-18 | CAP-16 ↔ INV-03 / FR-08/09 | Filename paths/statistics or stale labels could reveal forbidden sources. | Same trusted prefilter, consistent-label validation, hidden/absent parity and atomic refresh. See CAP-16; implementation/approval pending. | Resolved (design) |
 | CFT-19 | CAP-16 ↔ INV-04/07 | Added filename persistence/contracts could silently change old snapshots. | Versioned channel/manifest/import capability, full separate-directory rebuild, legacy content parity and explicit unavailable errors. Exact format freeze precedes build. | Resolved (design) |
 
-New conflicts append as `CFT-20`, … Record the conflict even if you resolve it
+| CFT-20 | CAP-19 ↔ INV-03 / FR-08 | Root scope and per-root statistics do not isolate labels inside a root. | Extend trusted prefilter to all surfaces; require visible-scope statistics/vocabulary/counts and hidden/absent tests; disclose timing limits. See CAP-19 review. | Resolved (design) |
+| CFT-21 | CAP-19 ↔ INV-02/07 / FR-02 | Normalized chunk text cannot supply byte-exact source reads. | Retain versioned checksummed source bytes and line mappings atomically; legacy missing-source indexes return explicit capacity errors. | Resolved (design) |
+| CFT-22 | CAP-19 ↔ CAP-13 / FR-13 | Nine tools and byte parity contradict four read tools and semantic parity. | Preserve CAP-13 baseline; CAP-19 opt-in extension uses semantic payload parity, trusted context and separately authorized writes. | Resolved (design) |
+| CFT-23 | CAP-19 ↔ INV-01 / CAP-14 | Empty retrieval was presented as proof that no answer exists. | Scope empty to returned hits/page; report corpus completeness; use retrieval-limited language without answerability guarantees. | Resolved (design) |
+
+New conflicts append as `CFT-24`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability

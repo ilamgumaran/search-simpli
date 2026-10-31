@@ -218,3 +218,25 @@ diagnostics, optional diagnostic policy metrics, trusted visibility contexts and
 versioned profiles. SQ-01 specifies the design; SQ-02 requires its own named
 maintainer approval. It does not implement FR-14, change the public evidence
 contract, or expand the separately proposed E-01A pack workflow.
+
+
+### CAP-19 — proposed folder knowledge extension
+
+| ID | Short text | Capability spec | Status |
+|---|---|---|---|
+| FR-17 | Positional phrase/prefix/words finding with original-text offsets | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| FR-18 | Markdown structure and recorded chunker identity | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| FR-19 | Multiple roots with trusted visible-scope authorization/statistics | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| FR-20 | Bounded host-fed changes and atomic generation publication | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| FR-21 | Deterministic rename detection without content deduplication | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| FR-22 | Find, outline, byte-exact source spans and paged files | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| FR-23 | Versioned shared tool schemas and model skill instructions | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| FR-25 | Scoped retrieval metadata; empty is not proof of absence | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| NFR-10 | Phrase/words latency and generation-bound paging | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| NFR-11 | Positional segment size budget | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| NFR-12 | Full/incremental indexing time and memory budgets | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| NFR-13 | Bounded caller-owned workspaces and bounded reads | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| NFR-14 | Dependency-free MCP server and conformance client | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+
+Detailed behavior and pending acceptance evidence remain in CAP-19. Existing behavior is unchanged.
