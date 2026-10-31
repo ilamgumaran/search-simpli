@@ -166,6 +166,12 @@ runs in CI on Linux.
    repository, kept equal by a test, or a Dart string generated from this
    repository's file at the pin bump. Proposed: generated at the pin bump.
 
+5. **Source retention per root** (orchestrator, after the review): `retain_source` defaults true for host-fed and iCloud roots, false for local desktop roots the engine may re-open (hash-checked at read time, `stale` on mismatch); cost measured in S3-T1. See `../folder-knowledge-implementation.md` §4.
+6. **CAP-16 relation:** `list_files` is a listing, not filename search; CAP-16's channel inherits roots and scope. See §8 there.
+7. **MCP revision** pinned in code and recorded in S3-T6's Report; `--baseline` lists CAP-13's four tools.
+
+Implementation details: [`docs/folder-knowledge-implementation.md`](../folder-knowledge-implementation.md); task files `docs/tasks/S3-T1.md` … `S3-T8.md`.
+
 ## 12. Maintainer approval (step 6b — required before build)
 
 Pending review of this capability, UC-007, the plan and the [review](../reviews/2026-10-31-folder-knowledge-review.md). No implementation approval is recorded.

@@ -27,6 +27,8 @@ query core: words | phrase | prefix  →  hits {root/path, lines, section_path, 
 
 ## Tasks
 
+Task files: [`S3-T1`](../tasks/S3-T1.md), [`S3-T2`](../tasks/S3-T2.md), [`S3-T3`](../tasks/S3-T3.md), [`S3-T4`](../tasks/S3-T4.md), [`S3-T5`](../tasks/S3-T5.md), [`S3-T6`](../tasks/S3-T6.md), [`S3-T7`](../tasks/S3-T7.md), [`S3-T8`](../tasks/S3-T8.md). Formats, JSON shapes, ABI, MCP mapping, fixture inventory and benchmark profile: [`docs/folder-knowledge-implementation.md`](../folder-knowledge-implementation.md).
+
 | Task | Title | Size | Depends on | Delivers |
 |---|---|---|---|---|
 | S3-T1 | Manifest v2 and the Markdown chunker | M | — | `chunker_id` in the manifest; `md-section-v1` (front matter, ATX/Setext headings, fenced blocks, `section_path`, `heading_line`); versioned retained source bytes and line maps for exact reads; `outline` in the core; golden fixtures for both chunkers; v1 manifests still open. |
