@@ -28,6 +28,10 @@ pub const Engine = struct {
     vector_dimensions: usize,
     documents: []const hybrid.Document,
     lexical_index: postings.Index,
+    /// S3-T2: where each term's ordinals and each document's offsets begin in
+    /// a `HYBLEX02` section (`postings.buildPositionTables`), attached by
+    /// `snapshot_open.open`; `find` builds them per call when null.
+    position_tables: ?postings.PositionTables = null,
 
     pub fn open(
         snapshot: publication.LoadedSnapshot,

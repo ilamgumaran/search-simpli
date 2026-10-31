@@ -12,6 +12,7 @@
 //! byte-identical, and the Tamil judged queries must hit their passage at
 //! rank 1 through the import door.
 const std = @import("std");
+const lexical_segment = @import("lexical_segment.zig");
 const chunker = @import("chunker.zig");
 const hybrid = @import("hybrid.zig");
 const importer = @import("importer.zig");
@@ -92,8 +93,26 @@ fn readWhole(arena: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []cons
 fn expectSameSnapshotBytes(arena: std.mem.Allocator, io: std.Io, folder_dir: std.Io.Dir, import_dir: std.Io.Dir) !void {
     const folder_lexical = try readWhole(arena, io, folder_dir, "lexical-1.hyblex");
     const import_lexical = try readWhole(arena, io, import_dir, "lexical-1.hyblex");
-    std.testing.expectEqualSlices(u8, folder_lexical, import_lexical) catch |err| {
-        std.debug.print("S2-T1: lexical-1.hyblex differs between searchd index and import-json\n", .{});
+    // S3-T2: the folder door writes HYBLEX02 (positions), import-json
+    // HYBLEX01 under its v1 manifest. Sections 1-3 (document lengths, the
+    // sorted dictionary, postings) must still be equal byte for byte, as must
+    // every header count and the average length.
+    const folder_header = try lexical_segment.inspect(folder_lexical);
+    const import_header = try lexical_segment.inspect(import_lexical);
+    try std.testing.expect(folder_header.hasPositions());
+    try std.testing.expect(!import_header.hasPositions());
+    try std.testing.expectEqual(folder_header.document_count, import_header.document_count);
+    try std.testing.expectEqual(folder_header.term_count, import_header.term_count);
+    try std.testing.expectEqual(folder_header.posting_count, import_header.posting_count);
+    try std.testing.expectEqual(folder_header.average_document_length, import_header.average_document_length);
+    try std.testing.expectEqual(folder_header.dictionary_bytes, import_header.dictionary_bytes);
+    const sections_bytes = folder_header.document_lengths_bytes + folder_header.dictionary_bytes + folder_header.postings_bytes;
+    std.testing.expectEqualSlices(
+        u8,
+        folder_lexical[lexical_segment.header_length_v2..][0..sections_bytes],
+        import_lexical[lexical_segment.header_length..][0..sections_bytes],
+    ) catch |err| {
+        std.debug.print("S2-T1: lexical sections 1-3 differ between searchd index and import-json\n", .{});
         return err;
     };
 
@@ -109,7 +128,8 @@ fn expectSameSnapshotBytes(arena: std.mem.Allocator, io: std.Io, folder_dir: std
     try std.testing.expectEqual(folder_manifest.document_count, import_manifest.document_count);
     try std.testing.expectEqual(folder_manifest.term_count, import_manifest.term_count);
     try std.testing.expectEqual(folder_manifest.posting_count, import_manifest.posting_count);
-    try std.testing.expectEqual(folder_manifest.lexical_checksum, import_manifest.lexical_checksum);
+    try std.testing.expect(folder_manifest.has_positions);
+    try std.testing.expect(!import_manifest.has_positions);
 
     const folder_engine = try snapshot_open.open(arena, io, folder_dir);
     const import_engine = try snapshot_open.open(arena, io, import_dir);

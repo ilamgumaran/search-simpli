@@ -21,7 +21,146 @@ pub const Index = struct {
     postings: []const Posting,
     document_lengths: []const u32,
     average_document_length: f32,
+    /// HYBLEX02 (S3-T2, `docs/lexical-segment-format-v2.md`): sections 4
+    /// (token ordinals) and 5 (token offsets), in memory exactly as on disk.
+    /// Null for a `HYBLEX01` section or an index built without positions.
+    positions: ?PositionSections = null,
+    /// True when `terms` is sorted by bytes (every `HYBLEX02` dictionary):
+    /// lookups binary-search and a prefix is one contiguous range.
+    sorted_terms: bool = false,
 };
+
+/// Section 4: for each posting in posting order, `term_frequency` unsigned
+/// LEB128 varints, the term's token ordinals in the document, the first
+/// absolute and every later one a gap >= 1. Section 5: for each document in
+/// document order, a u32 token count (equal to its document length) and per
+/// token two varints, the start codepoint as a delta from the previous
+/// token's start (the first from 0) and the length in codepoints, into the
+/// chunk's text.
+pub const PositionSections = struct {
+    positions: []const u8,
+    offsets: []const u8,
+};
+
+/// One token's codepoint range in a chunk's text (section 5).
+pub const TokenSpan = struct {
+    start: u32,
+    length: u32,
+};
+
+/// Where each term's ordinals and each document's offset table begin in
+/// sections 4 and 5. Built once per opened generation
+/// (`buildPositionTables`), so a query reads only the bytes of its own
+/// terms and hits.
+pub const PositionTables = struct {
+    term_starts: []const usize,
+    document_starts: []const usize,
+};
+
+/// Append `value` as an unsigned LEB128 varint.
+pub fn appendVarint(list: *std.ArrayList(u8), allocator: std.mem.Allocator, value: u32) std.mem.Allocator.Error!void {
+    var remaining = value;
+    while (remaining >= 0x80) {
+        try list.append(allocator, @as(u8, @truncate(remaining)) | 0x80);
+        remaining >>= 7;
+    }
+    try list.append(allocator, @truncate(remaining));
+}
+
+/// Read one unsigned LEB128 varint of at most five bytes whose value fits a
+/// u32, or null (truncated, too long, or overflowing).
+pub fn readVarint(bytes: []const u8, offset: *usize) ?u32 {
+    var value: u64 = 0;
+    var shift: u6 = 0;
+    var at = offset.*;
+    while (true) {
+        if (at >= bytes.len or shift > 28) return null;
+        const byte = bytes[at];
+        at += 1;
+        value |= @as(u64, byte & 0x7F) << shift;
+        if (byte & 0x80 == 0) break;
+        shift += 7;
+    }
+    if (value > std.math.maxInt(u32)) return null;
+    offset.* = at;
+    return @intCast(value);
+}
+
+/// Skip `count` varints already validated by the segment decoder.
+pub fn skipVarints(bytes: []const u8, offset: *usize, count: usize) void {
+    var remaining = count;
+    var at = offset.*;
+    while (remaining > 0) : (at += 1) {
+        if (bytes[at] & 0x80 == 0) remaining -= 1;
+    }
+    offset.* = at;
+}
+
+/// The position tables of a validated positional index (see
+/// `lexical_segment.decode`, which checks every rule this walk relies on:
+/// term ranges contiguous in dictionary order, well-formed varints, token
+/// counts equal to document lengths). Owned by `allocator`.
+pub fn buildPositionTables(allocator: std.mem.Allocator, index: Index) std.mem.Allocator.Error!PositionTables {
+    const sections = index.positions.?;
+    const term_starts = try allocator.alloc(usize, index.terms.len);
+    errdefer allocator.free(term_starts);
+    var at: usize = 0;
+    for (index.terms, 0..) |entry, term_index| {
+        term_starts[term_index] = at;
+        var ordinals: usize = 0;
+        for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| ordinals += posting.term_frequency;
+        skipVarints(sections.positions, &at, ordinals);
+    }
+    const document_starts = try allocator.alloc(usize, index.document_lengths.len);
+    at = 0;
+    for (index.document_lengths, 0..) |length, document_index| {
+        document_starts[document_index] = at;
+        at += 4;
+        skipVarints(sections.offsets, &at, @as(usize, length) * 2);
+    }
+    return .{ .term_starts = term_starts, .document_starts = document_starts };
+}
+
+/// The token spans of `document_index` (section 5) into `output`, which must
+/// hold its document length. Returns the filled prefix.
+pub fn readTokenSpans(index: Index, tables: PositionTables, document_index: usize, output: []TokenSpan) []TokenSpan {
+    const bytes = index.positions.?.offsets;
+    var at = tables.document_starts[document_index];
+    const count: usize = std.mem.readInt(u32, bytes[at..][0..4], .little);
+    at += 4;
+    var start: u32 = 0;
+    for (output[0..count]) |*span| {
+        start += readVarint(bytes, &at).?;
+        span.* = .{ .start = start, .length = readVarint(bytes, &at).? };
+    }
+    return output[0..count];
+}
+
+/// The dictionary index of exactly `term` (bytes): a binary search in a
+/// sorted dictionary, else a scan.
+pub fn lookupExact(index: Index, term: []const u8) ?usize {
+    if (!index.sorted_terms) {
+        for (index.terms, 0..) |entry, i| {
+            if (std.mem.eql(u8, entry.term, term)) return i;
+        }
+        return null;
+    }
+    const position = lowerBound(index.terms, term);
+    if (position < index.terms.len and std.mem.eql(u8, index.terms[position].term, term)) return position;
+    return null;
+}
+
+/// The first dictionary index whose term is not less than `term` (bytes);
+/// the dictionary must be sorted.
+pub fn lowerBound(terms: []const TermEntry, term: []const u8) usize {
+    var low: usize = 0;
+    var high: usize = terms.len;
+    while (low < high) {
+        const middle = low + (high - low) / 2;
+        if (std.mem.order(u8, terms[middle].term, term) == .lt) low = middle + 1 else high = middle;
+    }
+    return low;
+}
 
 pub const BuildError = error{
     DocumentCountOverflow,
