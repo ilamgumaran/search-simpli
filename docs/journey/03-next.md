@@ -203,3 +203,5 @@ observed equal-RRF regression · **O-01** collaborative knowledge model ·
 ## 2026-10-31 — S3 folder knowledge approved
 
 CAP-19 (`docs/requirements/cap-19-folder-knowledge.md`) was approved for build by the owner on 2026-10-31. Tasks `docs/tasks/S3-T1.md` … `S3-T8.md`; order T7 → T1 → T2 ∥ T3 → T4 → T5 → T6 → T8; details in `docs/folder-knowledge-implementation.md`. S3-T7 (the frozen family-folder fixture) started 2026-10-31 on `task/S3-T7`.
+
+**31 Oct (verifier, Xcode Mac): S3-T7 verified and merged (round 2).** The family-folder fixture and `judgments.json` version 2 (13 scenarios, 5 phrase, 5 prefix, 5 outline, 8 `read_span`) are frozen on `main`; `read_span` hashes include the last line's terminator; x1's front-matter line is an expected engine miss. Next: S3-T1. [Task](../tasks/S3-T7.md).
