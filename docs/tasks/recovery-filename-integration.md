@@ -1,6 +1,6 @@
 # Recovery hardening and CAP-16/S3 integration
 
-State: implementation in verification; owner-authorized 2026-11-01.
+State: implemented and verified; owner-authorized 2026-11-01; PR #21.
 Claim: [issue #20](https://github.com/ilamgumaran/search-simpli/issues/20).
 Branch: `improve/recovery-and-filename`, based on main `e9d97b0` and CAP-16
 source at `daddbee`. Supersedes the pre-S3 integration base of draft PR #18.
@@ -67,6 +67,47 @@ Neither failure was hidden by weakening freshness or writing a source stamp.
 The local environment cannot execute Xcode; a read-only macOS CI packaging
 job builds all native targets and runs Dart against its outputs. Final output
 artifacts must cite the exact source commit and be verified before adoption.
+
+Final Linux source verification at `5822041`: Zig 263/263; C ABI 22/22;
+Python 238 tests with four platform skips and only the expected stale-native
+failure before package adoption. Requirements, home-path and whitespace checks
+pass. Family-folder gates pass: words recall@5 1.000, outline 7/7,
+read-span 9/9, lifecycle 3/3, phrase-neighbour 1/1, phrase/prefix precision
+and recall 1.00 across their full paged sets. The dependency-free relevance
+mechanics invariant also passes all four metrics at 1.0. These are authored
+fixture checks, not evidence of real-folder relevance.
+
+The macOS run at `5822041` built and checked all three native targets and
+passed Dart analysis, then exposed missing Zig on PATH in subprocess-based
+Dart conformance suites (73 tests passed; four setup/teardown failures).
+The workflow now exposes the pinned Zig executable to subprocesses. The
+missing-symbol compatibility assertion now derives its version from the pin;
+the host-fed Dart regression also covers filename enablement, retained S3
+source/phrase operations, pending files and recovery after cache removal.
+
+### Authentic native build
+
+[macOS workflow run 41309041051](https://github.com/ilamgumaran/search-simpli/actions/runs/41309041051)
+at source `bf2c9b79032cf70475c7663fd9db95ac21ea15d9` passed all build,
+platform and Dart steps: 20/20 build steps, clean Dart analysis, 82/82 Dart
+tests (including CLI/RPC parity, ABI goldens and host-fed recovery). Pinned
+Zig 0.16.0 and Android NDK 28.2.13676358 built macOS arm64 (773240 bytes),
+Android arm64 (746568 bytes), and the iOS arm64 framework (1016352-byte
+binary). Platform checks verify the iOS 17 deployment target, framework
+metadata/install name and all four segments' 16 KiB alignment.
+
+Adopted artifact `13084576932`, SHA-256
+`8dc7dcf004dd90cad20f463833138c55cbee1cb73c80326fd3d7dc00c8455ddd`.
+Verified the archive checksum, its exact source commit, expected paths and
+file types before copying native packages plus the identical example JNI
+library. The build-generated source stamp is
+`4293d53ef3f1dcaa86dc6173f20481b7f6f5ee3388668709a6d727ebe0bf4b95`,
+which matches the local source digest. No source stamp was fabricated.
+
+After package adoption, the complete Python suite passes: 238 tests in
+54.485 seconds, four platform-dependent skips, no failures. This includes
+the three native-freshness tests and MCP/RPC canonical parity across 66
+requests. Requirements, home-path and diff whitespace checks pass again.
 
 ## Limits
 
