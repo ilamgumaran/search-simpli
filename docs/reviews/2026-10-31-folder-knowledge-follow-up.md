@@ -24,10 +24,11 @@ missing-field finding. Preserve that work; no engine format is changed here.
   CAP-16's unmerged 136-byte draft using the same identifier cannot merge as
   another v2 decoder. Integration must use a documented combined v3 and test
   v1/main-v2/v3 migration; rebuild old CAP-16 draft snapshots separately.
-- S3-T3 must publish immutable state before MANIFEST, bind its filename,
-  length and hash, and use that state after restart. Mutable INDEX-STATE is
-  only a compatibility cache. Crash cases include pending/empty/moved/removed
-  host files without replayable original payloads and failures after commit.
+- S3-T3's implemented reconstruction must meet an exact mutation-state
+  recovery oracle, including pending/empty/moved/removed host files without
+  replayable original payloads and failures after commit. Immutable state
+  published before MANIFEST, bound by filename/length/hash, is a fallback
+  only if reconstruction cannot meet that oracle (see the integration update).
 - Root provisioning, label policy and filesystem grants come from trusted
   host configuration. Add adversarial tests for forged roots, policy
   downgrades, cross-root operations and symlink replacement during reads.
@@ -74,4 +75,18 @@ are preserved, and format coordination remains a future CAP-16 integration.
 The execution environment became unavailable before an integrated rerun.
 The 53 passing tests above were run over 73fc226, not this newer base. The CLI
 fix is reapplied to the newer runner with its phrase/prefix/lifecycle logic
-unchanged; hosted CI and a fresh native-equipped check must validate the merge.
+unchanged. Hosted CI subsequently validated the integrated head c4be0cf:
+[run 41277660959](https://github.com/ilamgumaran/search-simpli/actions/runs/41277660959)
+passed both `checks` and `native-linux`, including requirements, Python,
+family-pack, Zig engine, C ABI and folder-knowledge/MCP with no skips in the
+explicit surface gate. Physical-device execution and Dart-specific checks
+are not newly claimed.
+
+## Pre-merge recheck (2026-11-01)
+
+Main remained at 292cb56826a4aa1bc824c79c50af600667cd72f3; PR #18 remained
+at daddbee and PR #11 at bf71ab5. No newer published work required additional
+integration. Re-reviewed the seven-file diff and exact-head green checks;
+reconciled the early state recommendation with the final fallback decision
+above. The runtime/test changes remain the already-validated CLI fix and
+supplemental indexed-read boundaries.
