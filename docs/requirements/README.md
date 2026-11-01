@@ -100,11 +100,11 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-10 | Durable Zig snapshot engine | UC-002, UC-003 | FR-11 | Implemented |
 | CAP-11 | [Evaluation & benchmarks](cap-11-evaluation-benchmarks.md) | all, UC-005 | FR-12 | Diagnostic / graded smoke gate implemented; E-01A judgment packs proposed |
 | CAP-12 | Adaptive learning loop | UC-001, UC-003 | (new FRs on intake) | Proposed / future — board L-01…L-05 |
-| CAP-13 | [MCP tool adapter](cap-13-mcp-adapter.md) | UC-004, UC-002, UC-003 | FR-13, NFR-09 | Diagnostic — realized by S3-T6 (`searchd mcp`, CAP-19 FR-24); board I-01 done |
+| CAP-13 | [MCP tool adapter](cap-13-mcp-adapter.md) | UC-004, UC-002, UC-003 | FR-13, NFR-09 | Diagnostic · implemented — realized by S3-T6 (`searchd mcp`, CAP-19 FR-24); board I-01 done |
 | CAP-14 | [Trust-calibration signal](cap-14-trust-calibration.md) | UC-001, UC-002, UC-003 | FR-14 | Proposed / future — board S-01, E-02 |
 | CAP-15 | [Structure-aware code chunking](cap-15-structure-aware-chunking.md) | UC-002 | FR-15 | Proposed / future |
 | CAP-16 | [Directory filename retrieval](cap-16-directory-filename-search.md) | UC-006, UC-001, UC-002, UC-003 | FR-16 | Proposed · future |
-| CAP-19 | [Folder knowledge: exact finding, structure, roots, host-fed changes, tools, MCP](cap-19-folder-knowledge.md) | UC-007, UC-001, UC-004 | FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, NFR-10, NFR-11, NFR-12, NFR-13, NFR-14 | Proposed (2026-10-31) |
+| CAP-19 | [Folder knowledge: exact finding, structure, roots, host-fed changes, tools, MCP](cap-19-folder-knowledge.md) | UC-007, UC-001, UC-004 | FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, NFR-10, NFR-11, NFR-12, NFR-13, NFR-14 | Diagnostic · implemented (S3-T1 to S3-T7, 2026-10-31; [plan](../plans/folder-knowledge-plan.md); NFR-13 still Proposed: no 64 MiB arena-cap test recorded) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
@@ -146,20 +146,20 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-10 | Python/Zig interchange (versioned neutral JSON, validated bounds) | CAP-09 | Implemented |
 | FR-11 | Durable snapshot (checksummed sections, manifest, atomic publish, writer lock) | CAP-10 | Implemented |
 | FR-12 | Evaluation & benchmarks (binary/graded judgments, nDCG + retrieval diagnostics, reproducible profiles, regression gates, machine-readable limits/evidence; E-01A real-folder packs and E-02 negative evaluation proposed) | CAP-11 | Implemented (diagnostic); E-01A/E-02 proposed |
-| FR-13 | MCP adapter binds FR-07 operations, injects trusted principal, forbids caller vectors, parity with direct surface | CAP-13 | Diagnostic (S3-T6) |
+| FR-13 | MCP adapter binds FR-07 operations, injects trusted principal, forbids caller vectors, parity with direct surface | CAP-13 | Diagnostic · implemented (S3-T6: [task](../tasks/S3-T6.md)) |
 | FR-14 | First-class retrieval-derived support/confidence signal in the evidence response; low-support flagging; never generative | CAP-14 (changes FR-06) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages, deterministic identity, deterministic line-window fallback | CAP-15 (changes FR-02) | Proposed |
 | FR-16 | Opt-in filename/combined lexical search, real passage anchors, explicit origin, isolation, deterministic ranking and versioned refresh/migration | CAP-16 | Proposed |
 
-| FR-17 | Positional phrase/prefix/words finding with original-text offsets | CAP-19 | Proposed |
-| FR-18 | Markdown structure and recorded chunker identity | CAP-19 | Proposed |
-| FR-19 | Multiple roots with trusted visible-scope authorization/statistics | CAP-19 | Proposed |
-| FR-20 | Bounded host-fed changes and atomic generation publication | CAP-19 | Proposed |
-| FR-21 | Deterministic rename detection without content deduplication | CAP-19 | Proposed |
-| FR-22 | Find, outline, byte-exact source spans and paged files | CAP-19 | Proposed |
-| FR-23 | Versioned shared tool schemas and model skill instructions | CAP-19 | Proposed |
-| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | CAP-19 | Diagnostic (S3-T6: `searchd mcp`; realizes CAP-13) |
-| FR-25 | Scoped retrieval metadata; empty is not proof of absence | CAP-19 | Proposed |
+| FR-17 | Positional phrase/prefix/words finding with original-text offsets | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
+| FR-18 | Markdown structure and recorded chunker identity | CAP-19 | Diagnostic · implemented (S3-T1: [task](../tasks/S3-T1.md)) |
+| FR-19 | Multiple roots with trusted visible-scope authorization/statistics | CAP-19 | Diagnostic · implemented (S3-T3: [task](../tasks/S3-T3.md)) |
+| FR-20 | Bounded host-fed changes and atomic generation publication | CAP-19 | Diagnostic · implemented (S3-T3: [task](../tasks/S3-T3.md)) |
+| FR-21 | Deterministic rename detection without content deduplication | CAP-19 | Diagnostic · implemented (S3-T3: [task](../tasks/S3-T3.md)) |
+| FR-22 | Find, outline, byte-exact source spans and paged files | CAP-19 | Diagnostic · implemented (S3-T1 core, S3-T4 surfaces: [T1](../tasks/S3-T1.md), [T4](../tasks/S3-T4.md)) |
+| FR-23 | Versioned shared tool schemas and model skill instructions | CAP-19 | Diagnostic · implemented (S3-T4, S3-T5: [T4](../tasks/S3-T4.md), [T5](../tasks/S3-T5.md)) |
+| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | CAP-19 | Diagnostic · implemented (S3-T6: `searchd mcp`; realizes CAP-13; [task](../tasks/S3-T6.md)) |
+| FR-25 | Scoped retrieval metadata; empty is not proof of absence | CAP-19 | Diagnostic · implemented (S3-T2, S3-T3, S3-T6: [T2](../tasks/S3-T2.md), [T3](../tasks/S3-T3.md), [T6](../tasks/S3-T6.md)) |
 
 ## Non-functional requirements (NFR)
 
@@ -178,13 +178,13 @@ until promoted.
 | NFR-06 | Optional neural imports are lazy and fail with concise errors | CAP-03 | Implemented |
 | NFR-07 | Every material change backed by tests or a recorded experiment | all | Standing |
 | NFR-08 | Docs distinguish implementation, observation, hypothesis, future option | all | Standing |
-| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free | CAP-13 | Diagnostic (S3-T6: `zig/src/mcp.zig`, Zig only) |
+| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free | CAP-13 | Diagnostic · implemented (S3-T6: `zig/src/mcp.zig`, Zig only; [task](../tasks/S3-T6.md)) |
 
-| NFR-10 | Phrase/words latency and generation-bound paging | CAP-19 | Proposed |
-| NFR-11 | Positional segment size budget | CAP-19 | Proposed |
-| NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseFast, ReleaseSmall reported) | CAP-19 | Proposed |
+| NFR-10 | Phrase/words latency and generation-bound paging | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
+| NFR-11 | Positional segment size budget | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
+| NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseFast, ReleaseSmall reported) | CAP-19 | Diagnostic · implemented (S3-T3: [task](../tasks/S3-T3.md)) |
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Proposed |
-| NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic (S3-T6: `zig/src/mcp.zig` Zig only; `tests/mcp_client.py` standard library) |
+| NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic · implemented (S3-T6: `zig/src/mcp.zig` Zig only, `tests/mcp_client.py` standard library; [task](../tasks/S3-T6.md)) |
 
 ## Contracts (CON)
 
@@ -203,7 +203,7 @@ Pending additive, versioned changes (backward compatible, INV-07):
 - CON-03 **and** the Zig manifest/`index_status` gain a chunker id/version so the
   durable path can validate chunker identity — required to unblock CFT-09.
 
-CAP-19 proposes versioned changes to CON-01/CON-02 (tool payloads) and CON-03 (chunker/root/source metadata), plus new per-tool schemas. Exact schemas and source-section format freeze before S3-T1/T4; no new schema is claimed implemented. CFT-09 remains blocked until the full identity migration is tested.
+CAP-19's tool payload changes (CON-01/CON-02: `contracts/tools/*.schema.json`, contracts 2.0.0) and its manifest v2 / source-section / `HYBLEX02` / INDEX-STATE v2 formats are implemented (S3-T1 to S3-T6). Its CON-03 (interchange) is **not** extended: `import-json` still writes a v1 manifest with no chunker id. CFT-09 stays blocked for that reason (S3-T8 Report): the chunker id travels manifest v2 → `index_status` (`chunkers`), but nothing migrates it through interchange.
 
 ## Conflict register (CFT)
 
@@ -232,7 +232,7 @@ section is the point of the whole register.
 | CFT-06 | CAP-15 (structure-aware chunking) ↔ FR-09 (incremental reuse), Python path | New chunk boundaries change chunk ids, which could silently invalidate reused chunks/vectors. | Scoped to the **Python** reference path, which records chunker id (FR-02) and whose FR-09 reuse already fails closed on chunker change, forcing a clean re-embed. Identity stays deterministic. | Resolved |
 | CFT-07 | CAP-15 (structure-aware chunking) ↔ INV-06 / NFR-01 (dependency-free base) | Syntactic parsing may need a language-parser dependency. | Opt-in per language; base mode stays dependency-free line-window; parse failure falls back deterministically. | Resolved |
 | CFT-08 | CAP-13 (MCP adapter) ↔ INV-03 (pre-rank authorization) | An external agent could try to supply its own principal or query vectors to widen access. | Adapter injects the trusted principal from config/host context and rejects caller-supplied principal/vectors — the boundary already proven for the JSON-RPC gateway. | Resolved |
-| CFT-09 | CAP-15 (structure-aware chunking) ↔ INV-04 (chunker identity as index data), durable Zig path | The interchange schema (CON-03) and the Zig manifest/status do **not** carry a chunker id/version today, so the durable path cannot validate that a snapshot's chunker matches, and cannot fail closed on a mismatch. | **Blocked** until a versioned chunker-identity field is added through CON-03 → Zig manifest/`index_status`, with a migration/backcompat plan (INV-07). Until then CAP-15 is scoped to the Python path only. | Blocked |
+| CFT-09 | CAP-15 (structure-aware chunking) ↔ INV-04 (chunker identity as index data), durable Zig path | The interchange schema (CON-03) and the Zig manifest/status do **not** carry a chunker id/version today, so the durable path cannot validate that a snapshot's chunker matches, and cannot fail closed on a mismatch. | **Blocked** until a versioned chunker-identity field is added through CON-03 → Zig manifest/`index_status`, with a migration/backcompat plan (INV-07). Until then CAP-15 is scoped to the Python path only. *S3-T8 (2026-10-31): manifest v2 (S3-T1) and `index_status` `chunkers` (S3-T4) now carry the id and per-file chunker, but interchange (CON-03) does not, and no migration test covers interchange → manifest → status, so this stays Blocked.* | Blocked |
 | CFT-10 | CAP-11 / FR-12 graded relevance gate ↔ INV-09 (complexity earned by measurement) | A new evaluator, WANDS adapter, CI gate, and evidence artifacts could become complexity in anticipation. | Resolved by recorded evidence: an existing hash/fusion regression, the failed 41,377-chunk WANDS representation, the corrected 10k lexical run, and the BGE comparison all exercise the mechanism; CI remains tiny and dependency-free. | Resolved |
 | CFT-11 | CAP-11 E-01A ↔ INV-03 / FR-08 | A generic “user folder” may mix authorization domains; catalog paths and reports could flatten or expose them. | Scope v1 to one local data owner and one visibility boundary. Mixed-label/team evaluation remains outside the workflow until an authorization-aware profile is designed; pack/default-report artifacts omit content and absolute roots and stay local without publication authority. | Resolved (scope) |
 | CFT-12 | CAP-11 E-01A ↔ INV-11 | A workflow handling tuning and holdout could contaminate the frozen gate or silently change it after review. | Separate suites, cross-split uniqueness validation, explicit human confirmation over exact hashes, fail-closed mutation checks, separate reports, and no automatic tuning/model selection from holdout results. | Resolved (design) |

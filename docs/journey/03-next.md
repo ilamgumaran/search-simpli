@@ -1,5 +1,19 @@
 # Next
 
+**31 Oct (S3-T8 builder, Xcode Mac): series S3 (folder knowledge, CAP-19) is complete on this branch.**
+S3-T1 to S3-T7 are on `main`; S3-T8 rebuilt the three native libraries (byte-identical to
+S3-T6's, 16 KiB aligned), bumped the Dart package to 0.2.0 (contracts 2.0.0; an old library is
+refused), moved CAP-19's register rows to `Diagnostic · implemented` and put the benchmark
+table in `PROJECT-STATE.md` ("Folder knowledge (S3)"). **What is next is the consumer app's
+M16-T1** (its repository): pin the S3-T8 merge commit, regenerate its contract types from
+`contracts/tools`, generate its skill file from `skills/folder-knowledge/SKILL.md`, and run
+`fixtures/family-folder` as a shared folder on both phones. NEXT rows filed during S3 (all in
+"Ready to build now" below): delta sections or a cheaper checksum (NFR-12's `ReleaseSmall`
+bound), the `ReleaseSmall` `search_knowledge` regression on a small corpus, and a CI row (the
+Linux native job now runs the MCP and surface tests by name and fails on a skip; the judgment
+pack and `tests/mcp_client.py` run there too). Still open: NFR-13's 64 MiB arena-cap test is not
+recorded (a NEXT row), and CFT-09 stays blocked (interchange carries no chunker id; see the Blocked table). [S3-T8](../tasks/S3-T8.md).
+
 **25 Oct (Codex cloud): directory content search verified; filename design proposed.**
 The owner asked for filename and document contents search for LLM retrieval.
 [Directory audit/tasks](../tasks/directory-search.md) records the native/Python
@@ -172,12 +186,15 @@ at the same time. E-01A is the safe intake half of exactly that.
 | **E-02 — negative / unanswerable evaluation** | Small, self-contained, and it is the empirical guard on the source-of-truth invariant | Feeds CAP-14 |
 | **`search_knowledge` in ReleaseSmall on the small fixture (+6 µs since S3-T2)** | S3-T4 re-measured it after the ABI landed, as S3-T2 Post-build ruling 2 asked: on the family-folder union fixture (998 chunks) `find_bench knowledge`, ReleaseSmall, p50 of three repetitions, interleaved, rounds 2–4: before S3-T2 (`73fc226`) 30.3–30.8, 29.5–30.1, 30.0–30.5 µs; S3-T4 36.3–36.8, 36.1–36.5, 35.5–35.8 µs. It persists (about +19 %); ReleaseFast and the 10k corpus are faster than before (S3-T2 Verdict) | Profile the ReleaseSmall query path on a small corpus (scorer statistics plumbing, `HYBLEX02` term lookup); a few microseconds, inside every budget, so not urgent |
 | **NFR-12 in ReleaseSmall — delta sections or a cheaper checksum** | S3-T3 measured one changed file in a 10k index at 215–221 ms in `ReleaseSmall` against the 200 ms bound (met in `ReleaseFast`, 163–168 ms); rewriting and re-checksumming whole sections each generation is most of it | Required before NFR-12's bound tightens to `ReleaseSmall` (S3-T3 Post-build ruling 2) |
+| **NFR-13 — the 64 MiB arena-cap test** | S3-T8 found no Report recording it; reads and pages are bounded and tested (S3-T1, S3-T2, S3-T4), the workspace cap is not | Add a Zig test that runs `find`, `read_span`, `outline` and `list_files` inside a 64 MiB arena and move NFR-13 to Diagnostic · implemented |
+| **CI: keep the surface and MCP tests from skipping** | S3-T8 added a named, no-skip step to the Linux native job; the first GitHub run decides whether it is green | Check the run after the merge |
+| **`ss_open` on the 10k index: load the source section and statistics lazily** | S3-T8 measured `ss_open` on the 10k index (ReleaseSmall, p50 of 30 opens) at 47.5 ms before S3 and 102.0 to 102.8 ms after (verifier 102.1 to 102.2 ms): the open now validates the 8.3 MB source section and builds the per-root statistics, path, sparse line and position tables. Accepted for the pin (S3-T8 Post-build ruling 2) | Load the source section and the per-root statistics lazily at first use (first `read_span`/`outline`, first scored query), then re-measure the 10k open; the consumer app measures open time on both phones in its M16-T1 |
 
 ## Blocked, with the named unblocker
 
 | Blocked | Blocked by | Unblocker |
 |---|---|---|
-| **CAP-13 / I-01 — MCP adapter** | Step-6b maintainer approval is still pending | A named maintainer other than the author approves the recorded requirements, conflicts (CFT-02, CFT-08), and acceptance gate |
+| **CAP-13 / I-01 — MCP adapter** | No longer blocked on approval: approved with CAP-19 (owner, 2026-10-31; CAP-19 FR-24 realizes CAP-13), built by S3-T6 (`searchd mcp`, `Diagnostic · implemented`, I-01 done). Updated by the S3-T8 verifier | *Validated* still needs a real agent over a judged snapshot (CAP-13 §10, I-01) |
 | **CFT-03** — CAP-12 interaction ledger vs INV-09 | The "capture is cheap and reversible" claim is unmeasured | Measure Stage-1 capture overhead, then a maintainer confirms INV-09 compliance |
 | **CFT-09** — CAP-15 durable path vs INV-04 | `CON-03` and the Zig manifest/`index_status` do not carry a chunker id/version | Add a versioned chunker-identity field through interchange → manifest/status, with a migration plan. Until then CAP-15 is **Python-only** |
 | **CAP-14 threshold** | No negative-bearing judged corpus | E-01 + E-02 |
@@ -219,3 +236,5 @@ CAP-19 (`docs/requirements/cap-19-folder-knowledge.md`) was approved for build b
 **31 Oct (verifier, Xcode Mac): S3-T5 verified and merged.** Request and result JSON Schemas for the nine tools (`contracts/tools/`), a standard-library validator, the folder-knowledge skill with its exact negative sentence and an example loop whose every `[n]` maps to a returned hit; the five search_knowledge/list_files shape findings go to S3-T6 with the MCP server, and `docs/README.md` links the schemas in S3-T8. [Task](../tasks/S3-T5.md).
 
 **31 Oct (verifier, Xcode Mac): S3-T6 verified and merged.** `searchd mcp` serves the index over MCP stdio (revision `2025-11-25`): CAP-13's four tools with `--baseline`, the eight read tools by default, `apply_changes` only with `--allow-write` inside `--roots`; results equal the RPC ones for every fixture judgment; the scope comes from the command line only; overhead p95 under 50 µs against the 5 ms gate. CAP-13 is Diagnostic and I-01 done. Next: S3-T8. [Task](../tasks/S3-T6.md).
+
+**31 Oct (verifier, Xcode Mac): S3-T8 verified and merged; series S3 is complete on `main`.** The rebuilt native libraries are byte-identical and 16 KiB aligned (`SOURCE-SHA256` `9f9a58d6…`), the Dart package is 0.2.0 at contracts 2.0.0, CAP-19 is `Diagnostic · implemented` (NFR-13 Proposed, CFT-09 Blocked, both accepted), and the benchmark table is in `PROJECT-STATE.md`. Re-measured: 10k index 0.55 → 0.69 s and 249 → 130 MB (ReleaseSmall), `ss_open` 47.5 → 102 ms (a NEXT row asks for lazy loading). The CAP-13 / I-01 Blocked row is updated. Next: the consumer app's M16-T1 pins this merge. [Task](../tasks/S3-T8.md).

@@ -197,7 +197,8 @@ After each phase:
 ## Proposed requirements (pending promotion)
 
 These requirements have been drafted through the
-[capability process](../capability-process.md) but are **not yet built**. Their
+[capability process](../capability-process.md); most are **not yet built**
+(CAP-13 and CAP-19's rows are built and marked `Diagnostic · implemented`). Their
 canonical text lives in their capability spec until step 8 promotes it into §2/§3
 above. They are listed here so the authoritative specification acknowledges every
 requirement the [register](../requirements/README.md) tracks — no requirement
@@ -205,11 +206,11 @@ exists only in the register.
 
 | ID | Short text | Capability spec | Status |
 |---|---|---|---|
-| FR-13 | MCP adapter binds the FR-07 operations with injected trusted principal, no caller vectors, and semantic (not byte) parity with the direct surface. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Proposed |
+| FR-13 | MCP adapter binds the FR-07 operations with injected trusted principal, no caller vectors, and semantic (not byte) parity with the direct surface. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Diagnostic · implemented |
 | FR-14 | First-class, retrieval-derived (non-generative) support/confidence signal in the evidence response; low-support flagging; changes FR-06. | [CAP-14](../requirements/cap-14-trust-calibration.md) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages with deterministic line-window fallback; changes FR-02. | [CAP-15](../requirements/cap-15-structure-aware-chunking.md) | Proposed |
 | FR-16 | Opt-in filename/combined lexical search with real passage anchors, explicit origin, pre-rank isolation, deterministic ranking and versioned channel refresh/migration; default content behavior unchanged. | [CAP-16](../requirements/cap-16-directory-filename-search.md) | Proposed |
-| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Proposed |
+| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Diagnostic · implemented |
 
 Proposed extensions to existing requirements (implemented behavior above remains
 unchanged): [CAP-11 / E-02](../requirements/cap-11-e02-negative-evaluation.md)
@@ -220,23 +221,23 @@ maintainer approval. It does not implement FR-14, change the public evidence
 contract, or expand the separately proposed E-01A pack workflow.
 
 
-### CAP-19 — proposed folder knowledge extension
+### CAP-19 — folder knowledge extension (S3, built and verified on fixtures)
 
 | ID | Short text | Capability spec | Status |
 |---|---|---|---|
-| FR-17 | Positional phrase/prefix/words finding with original-text offsets | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| FR-18 | Markdown structure and recorded chunker identity | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| FR-19 | Multiple roots with trusted visible-scope authorization/statistics | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| FR-20 | Bounded host-fed changes and atomic generation publication | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| FR-21 | Deterministic rename detection without content deduplication | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| FR-22 | Find, outline, byte-exact source spans and paged files | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| FR-23 | Versioned shared tool schemas and model skill instructions | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| FR-25 | Scoped retrieval metadata; empty is not proof of absence | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| NFR-10 | Phrase/words latency and generation-bound paging | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| NFR-11 | Positional segment size budget | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseFast, ReleaseSmall reported) | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| FR-17 | Positional phrase/prefix/words finding with original-text offsets | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| FR-18 | Markdown structure and recorded chunker identity | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| FR-19 | Multiple roots with trusted visible-scope authorization/statistics | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| FR-20 | Bounded host-fed changes and atomic generation publication | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| FR-21 | Deterministic rename detection without content deduplication | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| FR-22 | Find, outline, byte-exact source spans and paged files | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| FR-23 | Versioned shared tool schemas and model skill instructions | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| FR-24 | Opt-in MCP extension with semantic parity and authorized writes | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| FR-25 | Scoped retrieval metadata; empty is not proof of absence | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| NFR-10 | Phrase/words latency and generation-bound paging | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| NFR-11 | Positional segment size budget | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseFast, ReleaseSmall reported) | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
-| NFR-14 | Dependency-free MCP server and conformance client | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
+| NFR-14 | Dependency-free MCP server and conformance client | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
 
-Detailed behavior and pending acceptance evidence remain in CAP-19. Existing behavior is unchanged.
+Status `Diagnostic · implemented` means built and verified on the invented family-folder fixture and the generated 10k corpus (S3-T1 to S3-T7, evidence in the task files), not on a user-derived corpus. NFR-13 stays Proposed (its 64 MiB arena-cap test is not recorded). Detailed behavior remains in CAP-19. Existing behavior is unchanged.
