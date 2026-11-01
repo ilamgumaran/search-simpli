@@ -423,7 +423,7 @@ fn applyChanges(session: *Session, arguments: std.json.ObjectMap, allocator: std
     const request_json = try std.json.Stringify.valueAlloc(allocator, std.json.Value{ .object = arguments }, .{});
     var dir = std.Io.Dir.cwd().openDir(io, session.options.dir_path orelse ".", .{ .iterate = true }) catch return refusal(-32603, "Internal error");
     defer dir.close(io);
-    const result = ops.applyChanges(allocator, io, dir, request_json, .{ .allow_file_reads = session.options.allow_file_reads }) catch |err| {
+    const result = ops.applyChanges(allocator, io, dir, request_json, .{ .allow_file_reads = session.options.allow_file_reads, .write_roots = session.options.caller.roots, .write_labels = if (session.options.caller.roots != null or session.options.caller.labels.len != 0) session.options.caller.labels else null }) catch |err| {
         if (err == error.OutOfMemory) return err;
         if (err == error.WriterBusy) return refusal(-32006, "Writer busy: another writer holds WRITER.LOCK");
         return refusal(-32603, try std.fmt.allocPrint(allocator, "Internal error: {s}", .{@errorName(err)}));

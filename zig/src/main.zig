@@ -62,13 +62,19 @@ pub fn main(init: std.process.Init) !void {
         .query => |q| {
             var stdout_buffer: [8192]u8 = undefined;
             var stdout_writer = std.Io.File.stdout().writerStreaming(init.io, &stdout_buffer);
-            try cli.runQuery(init.io, init.gpa, q.path, q.text, q.options, &stdout_writer.interface);
+            cli.runQuery(init.io, init.gpa, q.path, q.text, q.options, &stdout_writer.interface) catch |err| {
+                if (err == error.FilenameIndexUnavailable) { std.debug.print("error: FilenameIndexUnavailable: rebuild in a separate directory with --filename-index\n", .{}); std.process.exit(1); }
+                return err;
+            };
             try stdout_writer.flush();
         },
         .evidence => |q| {
             var stdout_buffer: [8192]u8 = undefined;
             var stdout_writer = std.Io.File.stdout().writerStreaming(init.io, &stdout_buffer);
-            try cli.runEvidence(init.io, init.gpa, q.path, q.text, q.options, &stdout_writer.interface);
+            cli.runEvidence(init.io, init.gpa, q.path, q.text, q.options, &stdout_writer.interface) catch |err| {
+                if (err == error.FilenameIndexUnavailable) { std.debug.print("error: FilenameIndexUnavailable: rebuild in a separate directory with --filename-index\n", .{}); std.process.exit(1); }
+                return err;
+            };
             try stdout_writer.flush();
         },
         // S3-T4: the folder-knowledge commands; 1 after a refusal's stderr line.

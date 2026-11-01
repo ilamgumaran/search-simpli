@@ -197,6 +197,7 @@ fn walkAndApply(
         .analyzer = analyzer,
         .max_chars = max_chars,
         .overlap_lines = overlap_lines,
+        .filename_index = caps.filename_index,
         .max_file_bytes = caps.max_file_bytes,
         .max_total_bytes = caps.max_total_bytes,
         .keep_generations = caps.keep_generations,
@@ -246,6 +247,7 @@ fn relativePaths(allocator: std.mem.Allocator, refs: []const apply.PathRef) ![][
 /// `opts` (CLI flags or `ss_index_folder`'s `opts` JSON object) -- see
 /// `docs/tasks/S1-T3.md` criterion 2.
 pub const Caps = struct {
+    filename_index: bool = false,
     /// S2-T5, opt-in (`null`, the default, deletes nothing): after a
     /// successful publish, delete the section files of generations older
     /// than the newest `keep_generations` (>= 1). Carried here because

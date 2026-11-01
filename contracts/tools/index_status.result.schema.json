@@ -84,6 +84,11 @@
       "items": {
         "type": "string"
       }
+    },
+    "filename_policy_id": {
+      "type": "string",
+      "const": "filename-field-v1",
+      "description": "Present only when a filename field is bound to this generation."
     }
   },
   "additionalProperties": false,

@@ -20,6 +20,23 @@ pub const header_length_v2: usize = 104;
 pub const flag_has_source: u16 = 1;
 pub const flag_has_positions: u16 = 2;
 
+pub const FilenameMetadata = struct {
+    file_count: usize,
+    term_count: usize,
+    posting_count: usize,
+    catalog_bytes: usize,
+    catalog_checksum: u64,
+    lexical_bytes: usize,
+    lexical_checksum: u64,
+    catalog_file: []const u8,
+    lexical_file: []const u8,
+    policy_id: []const u8,
+};
+
+pub const magic_v3 = "HYBMAN03";
+pub const version_v3: u16 = 3;
+pub const header_length_v3: usize = 152;
+
 pub const Manifest = struct {
     generation: u64,
     document_count: usize,
@@ -36,6 +53,7 @@ pub const Manifest = struct {
     lexical_file: []const u8,
     /// 1 or 2. Version 1 has none of the fields below.
     format_version: u16 = version,
+    filename: ?FilenameMetadata = null,
     has_positions: bool = false,
     /// Empty when the generation binds no source section.
     source_file: []const u8 = "",
@@ -74,6 +92,17 @@ pub const ManifestError = error{
     LexicalSectionSizeMismatch,
     DocumentSectionChecksumMismatch,
     LexicalSectionChecksumMismatch,
+    FilenameSectionsRequired,
+    InvalidFilenameCatalog,
+    InvalidFilenameLexicalSection,
+    FilenameCountMismatch,
+    FilenameTermCountMismatch,
+    FilenamePostingCountMismatch,
+    FilenameCatalogSizeMismatch,
+    FilenameLexicalSizeMismatch,
+    FilenameCatalogChecksumMismatch,
+    FilenameLexicalChecksumMismatch,
+    InvalidFilenamePolicy,
     InvalidMeta,
     InvalidSourceSection,
     SourceSectionMissing,
@@ -158,16 +187,69 @@ pub fn createV2(
     return value;
 }
 
-fn payloadStrings(value: Manifest) [6][]const u8 {
-    return .{ value.analyzer_id, value.embedding_model_id, value.documents_file, value.lexical_file, value.source_file, value.meta };
+pub fn withFilename(
+    base: Manifest,
+    catalog_file: []const u8,
+    filename_lexical_file: []const u8,
+    catalog_encoded: []const u8,
+    filename_lexical_encoded: []const u8,
+) ManifestError!Manifest {
+    const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
+    const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
+    if (catalog.vector_dimensions != 0 or catalog.document_count != lexical.document_count) return error.FilenameCountMismatch;
+    var value = base;
+    value.format_version = version_v3;
+    if (value.meta.len == 0) value.meta = "{\"manifest_meta\":2,\"chunkers\":[{\"id\":\"line-window-v1\",\"params\":{\"max_chars\":1600,\"overlap_lines\":3}}],\"roots\":[{\"root_id\":\"r-legacy\",\"label\":\"folder\",\"kind\":\"local\",\"required_labels\":[]}],\"source_section_version\":0}";
+    value.filename = .{
+        .file_count = catalog.document_count,
+        .term_count = lexical.term_count,
+        .posting_count = lexical.posting_count,
+        .catalog_bytes = catalog_encoded.len,
+        .catalog_checksum = catalog.checksum,
+        .lexical_bytes = filename_lexical_encoded.len,
+        .lexical_checksum = lexical.checksum,
+        .catalog_file = catalog_file,
+        .lexical_file = filename_lexical_file,
+        .policy_id = "filename-field-v1",
+    };
+    try validateFields(value);
+    return value;
+}
+
+
+pub fn validateSnapshotWithFilename(
+    value: Manifest,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+    catalog_encoded: []const u8,
+    filename_lexical_encoded: []const u8,
+) ManifestError!void {
+    try validateSnapshot(value, documents_encoded, lexical_encoded);
+    const filename = value.filename orelse return error.InvalidFilenamePolicy;
+    if (catalog_encoded.len != filename.catalog_bytes) return error.FilenameCatalogSizeMismatch;
+    if (filename_lexical_encoded.len != filename.lexical_bytes) return error.FilenameLexicalSizeMismatch;
+    const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
+    const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
+    if (catalog.checksum != filename.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
+    if (lexical.checksum != filename.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
+    if (catalog.document_count != filename.file_count or lexical.document_count != filename.file_count) return error.FilenameCountMismatch;
+    if (catalog.vector_dimensions != 0) return error.InvalidFilenameCatalog;
+    if (lexical.term_count != filename.term_count) return error.FilenameTermCountMismatch;
+    if (lexical.posting_count != filename.posting_count) return error.FilenamePostingCountMismatch;
+}
+
+
+fn payloadStrings(value: Manifest) [9][]const u8 {
+    const f = value.filename;
+    return .{ value.analyzer_id, value.embedding_model_id, value.documents_file, value.lexical_file, value.source_file, value.meta, if (f) |v| v.catalog_file else "", if (f) |v| v.lexical_file else "", if (f) |v| v.policy_id else "" };
 }
 
 fn stringCount(value: Manifest) usize {
-    return if (value.format_version >= version_v2) 6 else 4;
+    return if (value.format_version == version_v3) 9 else if (value.format_version >= version_v2) 6 else 4;
 }
 
 fn headerLengthOf(value: Manifest) usize {
-    return if (value.format_version >= version_v2) header_length_v2 else header_length;
+    return if (value.format_version == version_v3) header_length_v3 else if (value.format_version >= version_v2) header_length_v2 else header_length;
 }
 
 pub fn encodedLength(value: Manifest) ManifestError!usize {
@@ -220,16 +302,17 @@ pub fn encode(value: Manifest, output: []u8) ManifestError![]u8 {
 }
 
 fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
+    const header_len = headerLengthOf(value);
     const required = try encodedLength(value);
     if (output.len < required) return error.BufferTooSmall;
-    const payload_length = required - header_length_v2;
+    const payload_length = required - header_len;
     var flags: u16 = 0;
     if (value.hasSource()) flags |= flag_has_source;
     if (value.has_positions) flags |= flag_has_positions;
 
-    @memcpy(output[0..magic_v2.len], magic_v2);
+    @memcpy(output[0..magic_v2.len], if (value.format_version == version_v3) magic_v3 else magic_v2);
     var header_offset: usize = magic_v2.len;
-    writeU16(output, &header_offset, version_v2);
+    writeU16(output, &header_offset, value.format_version);
     writeU16(output, &header_offset, flags);
     writeU64(output, &header_offset, value.generation);
     writeU32(output, &header_offset, @intCast(value.document_count));
@@ -243,13 +326,23 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
     writeU64(output, &header_offset, value.lexical_checksum);
     writeU64(output, &header_offset, @intCast(value.source_bytes));
     writeU64(output, &header_offset, value.source_checksum);
+    if (value.filename) |f| {
+        writeU32(output, &header_offset, @intCast(f.file_count));
+        writeU32(output, &header_offset, @intCast(f.term_count));
+        writeU64(output, &header_offset, @intCast(f.posting_count));
+        writeU64(output, &header_offset, @intCast(f.catalog_bytes));
+        writeU64(output, &header_offset, f.catalog_checksum);
+        writeU64(output, &header_offset, @intCast(f.lexical_bytes));
+        writeU64(output, &header_offset, f.lexical_checksum);
+    }
     writeU32(output, &header_offset, @intCast(payload_length));
     const checksum_offset = header_offset;
     writeU64(output, &header_offset, 0);
-    std.debug.assert(header_offset == header_length_v2);
+    std.debug.assert(header_offset == header_len);
 
-    var payload_offset = header_length_v2;
-    for (payloadStrings(value)) |field| {
+    var payload_offset = header_len;
+    const strings = payloadStrings(value);
+    for (strings[0..stringCount(value)]) |field| {
         writeU32(output, &payload_offset, @intCast(field.len));
         @memcpy(output[payload_offset .. payload_offset + field.len], field);
         payload_offset += field.len;
@@ -257,13 +350,16 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
     std.debug.assert(payload_offset == required);
 
     var checksum_write_offset = checksum_offset;
-    writeU64(output, &checksum_write_offset, manifestChecksum(output[0..checksum_offset], output[header_length_v2..required]));
+    writeU64(output, &checksum_write_offset, manifestChecksum(output[0..checksum_offset], output[header_len..required]));
     return output[0..required];
 }
 
 fn decodeV2(encoded: []const u8) ManifestError!Manifest {
     var cursor = Cursor{ .bytes = encoded, .offset = magic_v2.len };
-    if (try cursor.readU16() != version_v2) return error.UnsupportedVersion;
+    const format = try cursor.readU16();
+    const is_v3 = std.mem.eql(u8, encoded[0..8], magic_v3);
+    if (format != (if (is_v3) version_v3 else version_v2)) return error.UnsupportedVersion;
+    const header_len: usize = if (is_v3) header_length_v3 else header_length_v2;
     const flags = try cursor.readU16();
     if (flags & ~(flag_has_source | flag_has_positions) != 0) return error.UnsupportedFlags;
     const generation = try cursor.readU64();
@@ -278,24 +374,40 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
     const lexical_checksum = try cursor.readU64();
     const source_bytes = try castToUsize(try cursor.readU64());
     const source_checksum = try cursor.readU64();
+    var filename: ?FilenameMetadata = null;
+    if (is_v3) filename = .{
+        .file_count = try castToUsize(try cursor.readU32()),
+        .term_count = try castToUsize(try cursor.readU32()),
+        .posting_count = try castToUsize(try cursor.readU64()),
+        .catalog_bytes = try castToUsize(try cursor.readU64()),
+        .catalog_checksum = try cursor.readU64(),
+        .lexical_bytes = try castToUsize(try cursor.readU64()),
+        .lexical_checksum = try cursor.readU64(),
+        .catalog_file = "", .lexical_file = "", .policy_id = "",
+    };
     const payload_length = try castToUsize(try cursor.readU32());
     const expected_checksum = try cursor.readU64();
-    std.debug.assert(cursor.offset == header_length_v2);
+    std.debug.assert(cursor.offset == header_len);
 
-    const expected_total = try checkedAdd(header_length_v2, payload_length);
+    const expected_total = try checkedAdd(header_len, payload_length);
     if (encoded.len < expected_total) return error.Truncated;
     if (encoded.len > expected_total) return error.TrailingData;
-    if (manifestChecksum(encoded[0 .. header_length_v2 - @sizeOf(u64)], encoded[header_length_v2..]) != expected_checksum) {
+    if (manifestChecksum(encoded[0 .. header_len - @sizeOf(u64)], encoded[header_len..]) != expected_checksum) {
         return error.ChecksumMismatch;
     }
 
-    var payload = Cursor{ .bytes = encoded[header_length_v2..] };
+    var payload = Cursor{ .bytes = encoded[header_len..] };
     const analyzer_id = try readString(&payload);
     const embedding_model_id = try readString(&payload);
     const documents_file = try readString(&payload);
     const lexical_file = try readString(&payload);
     const source_file = try readString(&payload);
     const meta = try readString(&payload);
+    if (filename) |*f| {
+        f.catalog_file = try readString(&payload);
+        f.lexical_file = try readString(&payload);
+        f.policy_id = try readString(&payload);
+    }
     if (payload.offset != payload.bytes.len) return error.TrailingData;
     const has_source = flags & flag_has_source != 0;
     if (has_source != (source_count == 1) or source_count > 1 or has_source != (source_file.len != 0)) return error.InvalidSourceSection;
@@ -314,7 +426,8 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .embedding_model_id = embedding_model_id,
         .documents_file = documents_file,
         .lexical_file = lexical_file,
-        .format_version = version_v2,
+        .format_version = format,
+        .filename = filename,
         .has_positions = flags & flag_has_positions != 0,
         .source_file = source_file,
         .source_bytes = source_bytes,
@@ -328,7 +441,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
 pub fn decode(encoded: []const u8) ManifestError!Manifest {
     var cursor = Cursor{ .bytes = encoded };
     const actual_magic = try cursor.take(magic.len);
-    if (std.mem.eql(u8, actual_magic, magic_v2)) return decodeV2(encoded);
+    if (std.mem.eql(u8, actual_magic, magic_v2) or std.mem.eql(u8, actual_magic, magic_v3)) return decodeV2(encoded);
     if (!std.mem.eql(u8, actual_magic, magic)) return error.BadMagic;
     if (try cursor.readU16() != version) return error.UnsupportedVersion;
     if (try cursor.readU16() != 0) return error.UnsupportedFlags;
@@ -423,12 +536,27 @@ fn validateFields(value: Manifest) ManifestError!void {
     try validateFilename(value.documents_file);
     try validateFilename(value.lexical_file);
     if (std.mem.eql(u8, value.documents_file, value.lexical_file)) return error.SameFilename;
+    if (value.filename) |filename| {
+        if (filename.file_count > std.math.maxInt(u32) or filename.term_count > std.math.maxInt(u32) or
+            filename.posting_count > std.math.maxInt(u64) or filename.catalog_bytes > std.math.maxInt(u64) or
+            filename.lexical_bytes > std.math.maxInt(u64)) return error.CountOverflow;
+        try validateFilename(filename.catalog_file);
+        try validateFilename(filename.lexical_file);
+        try validateIdentifier(filename.policy_id);
+        if (!std.mem.eql(u8, filename.policy_id, "filename-field-v1")) return error.InvalidFilenamePolicy;
+        const names = .{ value.documents_file, value.lexical_file, filename.catalog_file, filename.lexical_file };
+        if (value.hasSource() and (std.mem.eql(u8, value.source_file, filename.catalog_file) or std.mem.eql(u8, value.source_file, filename.lexical_file))) return error.SameFilename;
+        inline for (0..4) |i| inline for (i + 1..4) |j| {
+            if (std.mem.eql(u8, names[i], names[j])) return error.SameFilename;
+        };
+    }
     if (value.format_version < version_v2) {
         if (value.format_version != version or value.hasSource() or value.meta.len != 0 or value.has_positions)
             return error.UnsupportedVersion;
         return;
     }
-    if (value.format_version != version_v2) return error.UnsupportedVersion;
+    if (value.format_version != version_v2 and value.format_version != version_v3) return error.UnsupportedVersion;
+    if ((value.format_version == version_v3) != (value.filename != null)) return error.InvalidFilenamePolicy;
     if (value.hasSource()) {
         try validateFilename(value.source_file);
         if (std.mem.eql(u8, value.source_file, value.documents_file) or std.mem.eql(u8, value.source_file, value.lexical_file))

@@ -9,32 +9,43 @@ Search Simpli (`search-simpli`) explores one search product with two deliberatel
 
 The important boundary is retrieval versus generation. Search finds and cites evidence. An LLM may synthesize an answer from that evidence, but it must not silently become the source of truth.
 
-## Directory contents and filenames: current support
+## Search filenames and document contents
 
-**Document contents: yes, for supported UTF-8 text/source files. Filename search:
-not yet.** Relative paths are retained in citations and `list_sources`, but terms
-present only in a basename are not indexed. PDF/Office/OCR need external
-extraction; HTML is read as source text. BM25 matches tokens, not exact quoted
-phrases or arbitrary substrings. Semantic modes are separate, explicit options.
+The source now supports **content**, **filename** and **combined** lexical search.
+Enable the separate filename index when indexing a supported UTF-8 text/source
+folder. Existing content-only indexes and response shapes remain compatible.
 
-The native Zig index already provides dependency-free inverted postings, BM25,
-Unicode analysis, cited passages and incremental refresh. After building in
-`zig/`, run from the repository root:
+Build with pinned Zig 0.16.0 in `zig/`, then run from the repository root:
 
 ```sh
-./zig/zig-out/bin/searchd index ./my-notes --out .search/native-index
-./zig/zig-out/bin/searchd evidence .search/native-index "water filter" --top-k 3
-./zig/zig-out/bin/searchd index ./my-notes --out .search/native-index --update
+./zig/zig-out/bin/searchd index ./my-notes --out .search/with-filenames --filename-index
+./zig/zig-out/bin/searchd query .search/with-filenames "annual budget" --search-field both
+./zig/zig-out/bin/searchd evidence .search/with-filenames "annual budget" --search-field both
+./zig/zig-out/bin/searchd index ./my-notes --out .search/with-filenames --update --filename-index
 ```
 
-The quotes group the shell argument; they do not request an exact phrase. An LLM
-can inspect the returned stored passages and path/line citations. Indexing is a
-snapshot: run the update command after changing the folder.
+Human queries show **File name** and **Content** sections with matched terms and
+separate citations. The JSON evidence response provides the same `match_sections`:
+filename citations identify the path; content citations identify actual lines.
+Both sections remain visible when one is context rather than a match. A filename
+match locates a document; its passage still needs inspection before answering.
+`query --json`, `evidence`, JSON-RPC and the C ABI expose structured results.
 
-[Directory audit and tasks](docs/tasks/directory-search.md) records the tested
-current behavior. [CAP-16](docs/requirements/cap-16-directory-filename-search.md)
-proposes a separate filename field and opt-in combined search; it requires final
-format review and named maintainer approval before runtime implementation.
+For Python, use `search.py index ... --filename-index` and
+`search.py context ... --mode lexical --search-field both`. Filename modes require
+lexical retrieval. To add the channel to an old index, build in a separate output
+location; repeat `--filename-index` on updates. Use `public/` as a directory prefix;
+`public` is a literal prefix and also matches `public-secret/`.
+
+PDF/Office/OCR need external extraction; HTML is read as source text. Queries
+match analyzed tokens, not exact phrases, arbitrary substrings or fuzzy spelling.
+Semantic modes remain separate explicit options.
+
+The [implementation handoff](docs/tasks/directory-filename-implementation.md)
+records tests and platform limits. Source contract is 1.3.0; the bundled 1.2.0
+Dart libraries still require an equipped-Mac rebuild, including iOS, before release.
+[CAP-16](docs/requirements/cap-16-directory-filename-search.md) and its
+[format contract](docs/filename-field-format-v1.md) describe the design.
 
 ## Run the local vertical slice
 

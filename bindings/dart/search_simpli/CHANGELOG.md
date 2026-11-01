@@ -1,3 +1,9 @@
+# 0.3.0
+
+- Contracts 2.1.0: filename and combined lexical search integrated with S3 sources, positions and root scopes.
+- Manifest v3 binds filename catalog and postings without changing v1/v2 readers.
+- Exact committed mutation state and restricted write policies; confined file opens pin every directory component.
+
 # Changelog
 
 ## 0.2.0 (S3-T8; contract 2.0.0; breaking: an old library is refused)

@@ -654,3 +654,14 @@ agent over a judged snapshot (CAP-13 *Validated*) is not done here.
 
 **Conclusion:** CAP-13 is Diagnostic; I-01 done. Details: [S3-T6](docs/tasks/S3-T6.md),
 [MCP server](docs/mcp-server.md).
+
+## 2026-11-01 — Recovery and filename/S3 integration
+
+Hypothesis: integrating the filename field with S3 requires a distinct manifest
+version and body-ordinal authorization, while exact committed mutation state
+removes crash-reconstruction ambiguity. Implemented v3 and embedded state,
+restricted writes and handle-relative no-follow reads. Added real-process
+integration and directory-replacement regressions. Intermediate failures,
+verification, native packaging and limits are recorded in
+[the task report](docs/tasks/recovery-filename-integration.md). No production
+relevance or device-execution claim is made.

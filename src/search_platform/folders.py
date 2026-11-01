@@ -166,6 +166,31 @@ def _confine(root_path: str, file: str) -> str | int:
     return "missing"
 
 
+def _read_confined(root_path: str, absolute: str, max_bytes: int = DEFAULT_MAX_FILE_BYTES) -> bytes:
+    base = root_path.rstrip("/")
+    if not absolute.startswith(base + "/"):
+        raise PermissionError("outside trusted root")
+    parts = absolute[1:].split("/")
+    if any(p in ("", ".", "..") for p in parts):
+        raise PermissionError("unsafe path")
+    current = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    try:
+        for part in parts[:-1]:
+            following = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=current)
+            os.close(current)
+            current = following
+        descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=current)
+        with os.fdopen(descriptor, "rb") as handle:
+            if os.fstat(handle.fileno()).st_size > max_bytes:
+                raise OSError("file grew beyond the read cap")
+            data = handle.read(max_bytes + 1)
+            if len(data) > max_bytes:
+                raise OSError("file grew beyond the read cap")
+            return data
+    finally:
+        os.close(current)
+
+
 def parse_request(request: dict | str, *, allow_file_reads: bool = False,
                   max_file_bytes: int = DEFAULT_MAX_FILE_BYTES,
                   max_total_bytes: int = DEFAULT_MAX_TOTAL_BYTES) -> tuple[int | None, dict | None, ApplyError | None]:
@@ -460,8 +485,7 @@ class FolderIndex:
                             gone[record] = "too_large"
                         continue
                     try:
-                        with open(change["file"], "rb", opener=lambda p, f: os.open(p, f | os.O_NOFOLLOW)) as handle:
-                            data = handle.read()
+                        data = _read_confined(local_paths[root_id], change["file"], max_file_bytes)
                         data.decode("utf-8")
                     except (OSError, UnicodeDecodeError):
                         report["unreadable_paths"].append({"root_id": root_id, "path": path})

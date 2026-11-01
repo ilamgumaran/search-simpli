@@ -34,7 +34,11 @@ void main() {
   });
 
   test('an unmatched word is a typed warning with its term', () {
-    final result = engine.query('hybrid dinosaurus', topK: 5, mode: RetrievalMode.lexical);
+    final result = engine.query(
+      'hybrid dinosaurus',
+      topK: 5,
+      mode: RetrievalMode.lexical,
+    );
     final warnings = result.warnings!;
     expect(warnings, hasLength(1));
     expect(warnings.single.code, SearchWarningCode.queryTermUnmatched);
@@ -45,47 +49,96 @@ void main() {
   test('a punctuation-only query is empty after analysis', () {
     final result = engine.query('?!', topK: 5, mode: RetrievalMode.lexical);
     expect(result.results, isEmpty);
-    expect(result.warnings!.map((w) => w.code), [SearchWarningCode.queryEmptyAfterAnalysis]);
+    expect(result.warnings!.map((w) => w.code), [
+      SearchWarningCode.queryEmptyAfterAnalysis,
+    ]);
   });
 
   test('a vector passed in lexical mode is reported as ignored', () {
-    final result = engine.query('hybrid', queryVector: [1.0, 0.0], topK: 5, mode: RetrievalMode.lexical);
-    expect(result.warnings!.map((w) => w.code), [SearchWarningCode.vectorIgnored]);
+    final result = engine.query(
+      'hybrid',
+      queryVector: [1.0, 0.0],
+      topK: 5,
+      mode: RetrievalMode.lexical,
+    );
+    expect(result.warnings!.map((w) => w.code), [
+      SearchWarningCode.vectorIgnored,
+    ]);
   });
 
   test('a shallow candidate_k on one channel does not warn', () {
     // No vectors in this snapshot: hybrid is one channel, and the cut cannot
     // change the list (the two-channel case is the conformance golden).
-    final hybrid = engine.query('hybrid', topK: 1, candidateK: 2, mode: RetrievalMode.hybrid);
+    final hybrid = engine.query(
+      'hybrid',
+      topK: 1,
+      candidateK: 2,
+      mode: RetrievalMode.hybrid,
+    );
     expect(hybrid.warnings, isEmpty);
-    final lexical = engine.query('hybrid', topK: 1, candidateK: 2, mode: RetrievalMode.lexical);
+    final lexical = engine.query(
+      'hybrid',
+      topK: 1,
+      candidateK: 2,
+      mode: RetrievalMode.lexical,
+    );
     expect(lexical.warnings, isEmpty);
   });
 
   test('a word hidden by the path prefix is reported like an absent word', () {
-    final result = engine.query('Zebra zzmiss', topK: 5, mode: RetrievalMode.lexical, pathPrefix: 'public/', profile: true);
+    final result = engine.query(
+      'Zebra zzmiss',
+      topK: 5,
+      mode: RetrievalMode.lexical,
+      pathPrefix: 'public/',
+      profile: true,
+    );
     expect(result.warnings!.map((w) => (w.code, w.message, w.term)), [
-      (SearchWarningCode.queryTermUnmatched, 'the term was not found in the searched files', 'zebra'),
-      (SearchWarningCode.queryTermUnmatched, 'the term was not found in the searched files', 'zzmiss'),
+      (
+        SearchWarningCode.queryTermUnmatched,
+        'the term was not found in the searched files',
+        'zebra',
+      ),
+      (
+        SearchWarningCode.queryTermUnmatched,
+        'the term was not found in the searched files',
+        'zzmiss',
+      ),
     ]);
     expect(result.profile!.matchedChunks, 0);
   });
 
   test('request echoes the defaults and the options used', () {
-    final result = engine.query('hybrid', topK: 3, mode: RetrievalMode.lexical, pathPrefix: 'public/');
+    final result = engine.query(
+      'hybrid',
+      topK: 3,
+      mode: RetrievalMode.lexical,
+      pathPrefix: 'public/',
+    );
     final request = result.request!;
     expect(request.analyzerId, 'ascii-alnum-v1');
     expect(request.retrievalMode, RetrievalMode.lexical);
     expect(request.topK, 3);
     expect(request.candidateK, 100);
     expect(request.pathPrefix, 'public/');
-    expect(engine.query('hybrid', topK: 3, mode: RetrievalMode.lexical).request!.pathPrefix, isNull);
+    expect(
+      engine
+          .query('hybrid', topK: 3, mode: RetrievalMode.lexical)
+          .request!
+          .pathPrefix,
+      isNull,
+    );
   });
 
   test('profile appears only for profile: true', () {
     final off = engine.query('hybrid', topK: 3, mode: RetrievalMode.lexical);
     expect(off.profile, isNull);
-    final on = engine.query('hybrid', topK: 3, mode: RetrievalMode.lexical, profile: true);
+    final on = engine.query(
+      'hybrid',
+      topK: 3,
+      mode: RetrievalMode.lexical,
+      profile: true,
+    );
     expect(on.profile, isNotNull);
     expect(on.profile!.matchedChunks, 3);
     expect(on.profile!.tokenizeUs, greaterThanOrEqualTo(0));
@@ -95,10 +148,86 @@ void main() {
   });
 
   test('toJson round-trips the new fields', () {
-    final result = engine.query('hybrid dinosaurus', topK: 3, mode: RetrievalMode.lexical, profile: true);
+    final result = engine.query(
+      'hybrid dinosaurus',
+      topK: 3,
+      mode: RetrievalMode.lexical,
+      profile: true,
+    );
     final again = SearchKnowledgeResult.fromJson(result.toJson());
     expect(again.toJson(), result.toJson());
   });
+
+  test('filename query fields round-trip, while legacy JSON omits them', () {
+    final legacy = engine.query('hybrid', topK: 2, mode: RetrievalMode.lexical);
+    expect(legacy.retrieval.toJson().containsKey('search_field'), isFalse);
+    expect(
+      legacy.results.every((r) => r.matchedIn == null && r.basename == null),
+      isTrue,
+    );
+    expect(
+      legacy.answerPolicy.toJson().containsKey(
+        'filename_matches_are_navigation',
+      ),
+      isFalse,
+    );
+
+    final result = SearchKnowledgeResult.fromJson({
+      ...legacy.toJson(),
+      'retrieval': {
+        ...legacy.retrieval.toJson(),
+        'search_field': 'both',
+        'filename_policy_id': 'filename-field-v1',
+      },
+      'results': [
+        {
+          ...legacy.results.first.toJson(),
+          'matched_in': ['filename'],
+          'basename': 'README',
+        },
+      ],
+      'answer_policy': {
+        ...legacy.answerPolicy.toJson(),
+        'filename_matches_are_navigation': true,
+      },
+    });
+    expect(result.retrieval.searchField, SearchField.both);
+    expect(result.retrieval.filenamePolicyId, 'filename-field-v1');
+    expect(result.results.single.matchedIn, ['filename']);
+    expect(result.results.single.basename, 'README');
+    expect(result.answerPolicy.filenameMatchesAreNavigation, isTrue);
+    expect(
+      SearchKnowledgeResult.fromJson(result.toJson()).toJson(),
+      result.toJson(),
+    );
+  });
+
+  test(
+    'filename search requires explicit lexical mode and forbids profile',
+    () {
+      expect(
+        () => engine.query('hybrid', searchField: SearchField.filename),
+        throwsArgumentError,
+      );
+      expect(
+        () => engine.query(
+          'hybrid',
+          mode: RetrievalMode.hybrid,
+          searchField: SearchField.both,
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => engine.query(
+          'hybrid',
+          mode: RetrievalMode.lexical,
+          searchField: SearchField.filename,
+          profile: true,
+        ),
+        throwsArgumentError,
+      );
+    },
+  );
 
   test('a result without the new keys (JSON-RPC shape) still parses', () {
     final result = engine.query('hybrid', topK: 3, mode: RetrievalMode.lexical);

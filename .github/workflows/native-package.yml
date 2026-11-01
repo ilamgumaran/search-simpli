@@ -1,0 +1,66 @@
+name: native-package
+on:
+  pull_request:
+    paths:
+      - 'zig/**'
+      - 'contracts/**'
+      - 'bindings/dart/search_simpli/tool/**'
+      - '.github/workflows/native-package.yml'
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: macos-14
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Zig
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --target "$RUNNER_TEMP/zig-pip" ziglang==0.16.0
+          test "$("$RUNNER_TEMP/zig-pip/ziglang/zig" version)" = '0.16.0'
+          echo "ZIG=$RUNNER_TEMP/zig-pip/ziglang/zig" >> "$GITHUB_ENV"
+      - name: Install pinned Android NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$sdkmanager"
+          "$sdkmanager" 'ndk;28.2.13676358'
+          echo "SS_ANDROID_NDK=${ANDROID_HOME}/ndk/28.2.13676358" >> "$GITHUB_ENV"
+      - name: Build genuine platform artifacts and stamp
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset SEARCH_SIMPLI_LIBRARY_PATH
+          bindings/dart/search_simpli/tool/build_native.sh
+          bindings/dart/search_simpli/tool/check_native.sh
+          python3 -m unittest tests.test_native_freshness
+          git rev-parse HEAD > native-source-commit.txt
+          tar -czf "$RUNNER_TEMP/native-packages.tar.gz" \
+            bindings/dart/search_simpli/native \
+            bindings/dart/search_simpli/example/android/app/src/main/jniLibs \
+            native-source-commit.txt
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Dart binding against the rebuilt native library
+        working-directory: bindings/dart/search_simpli
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset SEARCH_SIMPLI_LIBRARY_PATH
+          dart pub get
+          dart analyze lib test
+          dart test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-packages-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/native-packages.tar.gz
+          retention-days: 7

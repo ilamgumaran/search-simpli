@@ -79,9 +79,22 @@ pub fn sectionGeneration(name: []const u8) ?u64 {
     return std.fmt.parseInt(u64, digits, 10) catch null;
 }
 
+pub fn filenameGeneration(name: []const u8) ?u64 {
+    inline for (.{ .{ "filenames-", ".hybseg" }, .{ "filename-lexical-", ".hyblex" } }) |parts| {
+        if (std.mem.startsWith(u8, name, parts[0]) and std.mem.endsWith(u8, name, parts[1]) and name.len > parts[0].len + parts[1].len) {
+            const digits = name[parts[0].len .. name.len - parts[1].len];
+            if (digits.len > 1 and digits[0] == '0') return null;
+            for (digits) |c| if (c < '0' or c > '9') return null;
+            return std.fmt.parseInt(u64, digits, 10) catch null;
+        }
+    }
+    return null;
+}
+
 pub const PruneReport = struct {
     /// Superseded document and lexical section files unlinked.
     deleted: usize = 0,
+    deleted_filename: usize = 0,
     /// S3-T1: superseded `source-N.hybsrc` files unlinked with them (kept
     /// apart so `deleted`, reported as `pruned_files`, keeps its meaning).
     deleted_source: usize = 0,
@@ -166,7 +179,7 @@ pub fn pruneSupersededWithSource(
             return report;
         }) orelse break;
         if (entry.kind != .file) continue;
-        if (sourceGeneration(entry.name)) |source_number| {
+        if (sourceGeneration(entry.name) orelse filenameGeneration(entry.name)) |source_number| {
             if (source_number >= current_generation or std.mem.eql(u8, entry.name, current_source_file)) continue;
             const owned_source = allocator.dupe(u8, entry.name) catch {
                 report.failed += 1;
@@ -220,16 +233,17 @@ pub fn pruneSupersededWithSource(
     const survivors = @min(keep - 1, complete.items.len);
     for (names.items) |name| {
         const is_source = sourceGeneration(name) != null;
-        const number = if (is_source) sourceGeneration(name).? else sectionGeneration(name).?;
+        const is_filename = filenameGeneration(name) != null;
+        const number = if (is_source) sourceGeneration(name).? else if (is_filename) filenameGeneration(name).? else sectionGeneration(name).?;
         if (std.mem.indexOfScalar(u64, complete.items[0..survivors], number) != null) continue;
         dir.deleteFile(io, name) catch {
             report.failed += 1;
             continue;
         };
-        if (is_source) report.deleted_source += 1 else report.deleted += 1;
+        if (is_source) report.deleted_source += 1 else if (is_filename) report.deleted_filename += 1 else report.deleted += 1;
     }
     // Make the unlinks durable; best effort, the publish already succeeded.
-    if (report.deleted + report.deleted_source > 0) publication.syncDirectory(dir, io, null) catch {
+    if (report.deleted + report.deleted_source + report.deleted_filename > 0) publication.syncDirectory(dir, io, null) catch {
         report.failed += 1;
     };
     return report;
@@ -282,8 +296,12 @@ pub fn publishLeasedKeepingWithSource(
     source_encoded: ?[]const u8,
     keep_generations: ?usize,
 ) !PruneReport {
+    return publishLeasedKeepingWithExtras(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, null, null, keep_generations);
+}
+
+pub fn publishLeasedKeepingWithExtras(allocator: std.mem.Allocator, dir: std.Io.Dir, io: std.Io, manifest_encoded: []const u8, documents_encoded: []const u8, lexical_encoded: []const u8, source_encoded: ?[]const u8, catalog: ?[]const u8, filename_lexical: ?[]const u8, keep_generations: ?usize) !PruneReport {
     if (keep_generations) |keep| if (keep == 0) return error.InvalidKeepGenerations;
-    try publication.publishWithSource(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded);
+    try publication.publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, catalog, filename_lexical, null);
     const keep = keep_generations orelse return .{};
     const metadata = manifest.decode(manifest_encoded) catch return .{ .failed = 1 };
     return pruneSupersededWithSource(allocator, dir, io, keep, metadata.generation, metadata.documents_file, metadata.lexical_file, metadata.source_file);
@@ -508,4 +526,10 @@ test "pruning removes superseded source sections and scan counts them apart (S3-
     try std.testing.expectEqual(@as(?u64, 12), sourceGeneration("source-12.hybsrc"));
     try std.testing.expectEqual(@as(?u64, null), sourceGeneration("source-012.hybsrc"));
     try std.testing.expectEqual(@as(?u64, null), sourceGeneration("documents-1.hybseg"));
+}
+
+pub fn publishSerializedWithFilenameKeeping(allocator: std.mem.Allocator, dir: std.Io.Dir, io: std.Io, manifest_encoded: []const u8, documents_encoded: []const u8, lexical_encoded: []const u8, catalog: []const u8, filename_lexical: []const u8, keep: ?usize) !PruneReport {
+    var lease = (try tryAcquireWriter(dir, io)) orelse return error.WriterBusy;
+    defer lease.release(io);
+    return publishLeasedKeepingWithExtras(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, null, catalog, filename_lexical, keep);
 }

@@ -165,7 +165,7 @@ int main(void) {
         return 1;
     }
 
-    expect_streq("ss_version", "2.0.0", ss_version());
+    expect_streq("ss_version", "2.1.0", ss_version());
 
     long long generation = ss_import_json(dir, demo_interchange_json, strlen(demo_interchange_json));
     expect_true("ss_import_json publishes generation 1", generation == 1, "unexpected generation/error code");

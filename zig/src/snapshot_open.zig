@@ -46,6 +46,16 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
     // terms' ordinals and its hits' offsets.
     if (opened.lexical_index.positions != null) opened.position_tables = try postings.buildPositionTables(allocator, opened.lexical_index);
+    if (metadata.meta.len != 0) opened.roots = (try manifest.parseMeta(allocator, metadata.meta)).roots;
+    if (metadata.filename) |f| {
+        const catalog_buffer = try allocator.alloc(u8, f.catalog_bytes);
+        const lexical_extra_buffer = try allocator.alloc(u8, f.lexical_bytes);
+        opened.catalog_encoded = try dir.readFile(io, f.catalog_file, catalog_buffer);
+        opened.filename_lexical_encoded = try dir.readFile(io, f.lexical_file, lexical_extra_buffer);
+        try manifest.validateSnapshotWithFilename(metadata, snapshot.documents_encoded, snapshot.lexical_encoded, opened.catalog_encoded, opened.filename_lexical_encoded);
+        try @import("filename_field.zig").validate(allocator, opened.documents, opened.catalog_encoded, opened.filename_lexical_encoded, opened.analyzer_id);
+        opened.filename_index_enabled = true;
+    }
     return opened;
 }
 

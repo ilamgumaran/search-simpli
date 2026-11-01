@@ -4,7 +4,7 @@
 /// `SearchSimpli.applyChanges`. The two libraries here are stand-ins built
 /// from a few lines of C with the pinned Zig: one that reports the previous
 /// contract ("1.2.0", what every build before this one reports), and one
-/// that reports "2.0.0" but exports none of the new functions.
+/// that reports "2.1.0" but exports none of the new functions.
 library;
 
 import 'dart:ffi';
@@ -42,7 +42,7 @@ void main() {
     expect(
       () => SearchSimpli.open(index, library: previous),
       throwsA(isA<ContractsVersionMismatchException>()
-          .having((e) => e.expected, 'expected', '2.0.0')
+          .having((e) => e.expected, 'expected', '2.1.0')
           .having((e) => e.actual, 'actual', '1.2.0')),
     );
     expect(() => SearchSimpli.applyChanges(index, {'changes': []}, library: previous),

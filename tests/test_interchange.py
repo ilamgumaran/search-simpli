@@ -1,5 +1,6 @@
 import json
 import subprocess
+import json
 import sys
 import tempfile
 import unittest
@@ -24,11 +25,19 @@ def schema_errors(value, schema: dict, where: str = "$") -> list[str]:
     """
     known = {"$schema", "$id", "title", "type", "const", "enum", "required", "properties",
              "additionalProperties", "items", "minimum", "minLength", "uniqueItems",
-             "description"}
+             "description", "allOf", "if", "then", "else", "not"}
     unknown = set(schema) - known
     if unknown:
         return [f"{where}: validator does not implement {sorted(unknown)}"]
     errors: list[str] = []
+    for index, child in enumerate(schema.get("allOf", [])):
+        errors.extend(schema_errors(value, child, f"{where}.allOf[{index}]"))
+    if "if" in schema:
+        branch = "then" if not schema_errors(value, schema["if"], where) else "else"
+        if branch in schema:
+            errors.extend(schema_errors(value, schema[branch], where))
+    if "not" in schema and not schema_errors(value, schema["not"], where):
+        errors.append(f"{where}: matches forbidden schema")
     kind = schema.get("type")
     checks = {
         "object": lambda v: isinstance(v, dict),
@@ -67,6 +76,24 @@ def schema_errors(value, schema: dict, where: str = "$") -> list[str]:
 
 
 class InterchangeTests(unittest.TestCase):
+    def test_filename_interchange_version_policy_is_required_and_scoped(self) -> None:
+        schema = json.loads(SCHEMA_PATH.read_text())
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "Annual_Budget.md").write_text("The stored body is unrelated.", encoding="utf-8")
+            payload = build_interchange(build_index(root, filename_index=True))
+        self.assertEqual(payload["format_version"], 2)
+        self.assertEqual(schema_errors(payload, schema), [])
+        missing = dict(payload)
+        missing.pop("filename_policy_id")
+        self.assertTrue(schema_errors(missing, schema))
+        wrong = dict(payload, filename_policy_id="unknown")
+        self.assertTrue(schema_errors(wrong, schema))
+        legacy = dict(payload, format_version=1)
+        self.assertTrue(schema_errors(legacy, schema))
+        legacy.pop("filename_policy_id")
+        self.assertEqual(schema_errors(legacy, schema), [])
+
     def test_exports_citations_vectors_and_model_identity(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

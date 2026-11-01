@@ -93,6 +93,9 @@ pub const Batch = struct {
 };
 
 pub const Options = struct {
+    filename_index: ?bool = null,
+    write_roots: ?[]const []const u8 = null,
+    write_labels: ?[]const []const u8 = null,
     analyzer: indexer.AnalyzerId = .v2,
     max_chars: usize = chunker.default_max_chars,
     overlap_lines: usize = chunker.default_overlap_lines,
@@ -592,7 +595,8 @@ pub fn applyBatch(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, bat
     return applyParsed(allocator, io, dir, .{ .batch = batch }, options);
 }
 
-fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed: Parsed, options: Options) !Outcome {
+fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed: Parsed, initial_options: Options) !Outcome {
+    var options = initial_options;
     const started = nowNs(io);
     if (options.keep_generations) |count| if (count == 0) return error.InvalidKeepGenerations;
     // One writer: the lease is held from the generation check through the
@@ -606,6 +610,15 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     }
     if (parsed.deferred) |f| return .{ .failed = f };
     const batch = parsed.batch;
+    if (current != 0 and options.filename_index != null) {
+        const bytes = try readWhole(allocator, io, dir, publication.current_manifest_file);
+        const current_meta = try manifest.decode(bytes);
+        if ((current_meta.filename != null) != options.filename_index.?) {
+            if (!options.fresh) return error.FilenameSettingMismatch;
+            return error.FilenameMigrationRequiresNewDirectory;
+        }
+        if (current_meta.filename != null and !std.mem.eql(u8, current_meta.analyzer_id, options.analyzer.label())) return error.FilenameMigrationRequiresNewDirectory;
+    }
 
     // --- the previous generation --------------------------------------
     var recovered: ?[]const u8 = null;
@@ -613,6 +626,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var previous_meta: ?manifest.Meta = null;
     var previous_source: ?source.Section = null;
     var previous_state: ?incremental_state.State = null;
+    var previous_meta_bytes: []const u8 = "";
     if (!options.fresh) {
         const opened_previous: ?Previous = openPrevious(allocator, io, dir) catch |err| switch (err) {
             error.FileNotFound, error.AccessDenied, error.InputOutput => blk: {
@@ -626,7 +640,9 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             else => return err,
         };
         if (opened_previous) |opened| {
+            previous_meta_bytes = opened.metadata.meta;
             previous_engine = opened.engine;
+            if (options.filename_index == null) options.filename_index = opened.engine.filename_index_enabled;
             previous_source = opened.source;
             if (opened.metadata.meta.len != 0) previous_meta = try manifest.parseMeta(allocator, opened.metadata.meta);
         }
@@ -639,6 +655,15 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             if (incremental_state.load(allocator, io, dir) catch null) |state| {
                 if (state.generation == prev.generation and std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) previous_state = state;
             }
+            if (previous_meta_bytes.len != 0) {
+                const committed = try std.json.parseFromSlice(std.json.Value, allocator, previous_meta_bytes, .{});
+                if (committed.value.object.get("recovery_state")) |value| {
+                    const bytes = try std.json.Stringify.valueAlloc(allocator, value, .{});
+                    const state = try incremental_state.parse(allocator, bytes);
+                    if (state.generation != prev.generation or !std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) return error.InvalidState;
+                    previous_state = state;
+                }
+            }
         }
     }
 
@@ -646,6 +671,35 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var previous_docs = std.StringHashMapUnmanaged(std.ArrayList(usize)).empty;
     if (previous_engine) |prev| {
         try loadPrevious(allocator, &work, prev, previous_meta, previous_source, previous_state, &previous_docs);
+    }
+
+    if (options.write_roots != null or options.write_labels != null) {
+        // Scoped tools can mutate bytes, not provision roots or filesystem grants.
+        if (batch.roots.len != 0) return .{ .failed = try failure(allocator, .invalid_argument, "restricted writers cannot declare or change root policy", .{}) };
+        const labels = options.write_labels orelse &.{};
+        for (batch.changes) |change| {
+            if (options.write_roots) |bound| {
+                for (bound) |id| { if (std.mem.eql(u8, id, change.root_id)) break; }
+                else return .{ .failed = try failure(allocator, .invalid_argument, "root outside trusted write scope", .{}) };
+            }
+            const root_index = work.rootIndex(change.root_id) orelse return .{ .failed = try failure(allocator, .invalid_argument, "unknown or unauthorized write root", .{}) };
+            if (!scope.holdsAll(work.roots.items[root_index].entry.required_labels, labels)) return .{ .failed = try failure(allocator, .invalid_argument, "unknown or unauthorized write root", .{}) };
+            if (change.content == .file) return .{ .failed = try failure(allocator, .invalid_argument, "restricted writers cannot grant filesystem reads; feed bytes through the trusted host", .{}) };
+            if (!scope.holdsAll(change.required_labels, labels)) return .{ .failed = try failure(allocator, .invalid_argument, "file labels outside trusted write scope", .{}) };
+            // Both a move's endpoints and every file affected by root removal
+            // must be visible before any change in the batch can be applied.
+            var files = work.files.iterator();
+            while (files.next()) |entry| {
+                const file = entry.value_ptr.*;
+                if (!std.mem.eql(u8, file.root_id, change.root_id)) continue;
+                const affected = change.op == .remove_root or std.mem.eql(u8, file.rel, change.path) or (change.moved_from != null and std.mem.eql(u8, file.rel, change.moved_from.?));
+                if (!affected) continue;
+                if (!scope.holdsAll(file.labels, labels)) return .{ .failed = try failure(allocator, .invalid_argument, "unknown or unauthorized write path", .{}) };
+                if (change.op == .add or change.op == .change or change.op == .pending) {
+                    if (!labelSetsEqual(file.labels, change.required_labels)) return .{ .failed = try failure(allocator, .invalid_argument, "restricted writers cannot change file label policy", .{}) };
+                }
+            }
+        }
     }
 
     // --- roots this request declares ----------------------------------
@@ -1000,7 +1054,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
         error.TooManyLabels => return .{ .failed = try failure(allocator, .invalid_argument, "a file would require more than {d} labels (its root's and its own)", .{max_labels}) },
         else => return err,
     };
-    const prune = try lifecycle.publishLeasedKeepingWithSource(allocator, dir, io, built.manifest, built.documents, built.lexical, built.source, options.keep_generations);
+    const prune = try lifecycle.publishLeasedKeepingWithExtras(allocator, dir, io, built.manifest, built.documents, built.lexical, built.source, built.catalog, built.filename_lexical, options.keep_generations);
     if (options.fail_after_publish) return error.SimulatedCrash;
     // Only after the generation is published (`docs/publication-recovery.md`).
     try incremental_state.save(io, dir, allocator, .{
@@ -1088,6 +1142,7 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
         .vector_dimensions = metadata.vector_dimensions,
         .documents = documents,
         .lexical_index = lexical_index,
+        .filename_index_enabled = metadata.filename != null,
         .labeled_documents = labeled,
     }, .metadata = metadata, .source = section };
 }
@@ -1132,13 +1187,12 @@ fn markCarried(work: *Work, record: []const u8) void {
 }
 
 fn readContent(allocator: std.mem.Allocator, io: std.Io, content: Content, work: Work, root_id: []const u8, length: usize) !?[]const u8 {
-    _ = work;
-    _ = root_id;
+
     const buffer = try allocator.alloc(u8, length);
     switch (content) {
         .walk => |w| return try w.dir.readFile(io, w.sub_path, buffer),
         .file => |abs| {
-            var file = try std.Io.Dir.openFileAbsolute(io, abs, .{ .follow_symlinks = false });
+            var file = try openConfined(io, work.roots.items[work.rootIndex(root_id).?].local_path.?, abs);
             defer file.close(io);
             const stat = try file.stat(io);
             if (stat.size != length) return null;
@@ -1148,6 +1202,24 @@ fn readContent(allocator: std.mem.Allocator, io: std.Io, content: Content, work:
         },
         else => unreachable,
     }
+}
+
+// Each component is opened relative to the previous pinned directory.
+// A concurrent replacement can no longer redirect a multi-component open.
+fn openConfined(io: std.Io, root_path: []const u8, absolute: []const u8) !std.Io.File {
+    const base = std.mem.trimEnd(u8, root_path, "/");
+    if (absolute.len <= base.len + 1 or !std.mem.startsWith(u8, absolute, base) or absolute[base.len] != '/') return error.AccessDenied;
+    var current = try std.Io.Dir.openDirAbsolute(io, "/", .{});
+    defer current.close(io);
+    var parts = std.mem.splitScalar(u8, absolute[1..], '/');
+    while (parts.next()) |part| {
+        if (part.len == 0 or std.mem.eql(u8, part, ".") or std.mem.eql(u8, part, "..")) return error.AccessDenied;
+        if (parts.peek() == null) return current.openFile(io, part, .{ .follow_symlinks = false });
+        const next = try current.openDir(io, part, .{ .follow_symlinks = false });
+        current.close(io);
+        current = next;
+    }
+    return error.AccessDenied;
 }
 
 const Confinement = union(enum) { outside, symlink, missing, size: u64 };
@@ -1264,7 +1336,7 @@ fn loadPrevious(
             .hash = if (retained) |r| try allocator.dupe(u8, &std.fmt.bytesToHex(r.sha256, .lower)) else "",
             .size = if (retained) |r| r.bytes.len else null,
             .mtime_ms = null,
-            .labels = try scope.fileLabels(allocator, first.required_labels, root.required_labels),
+            .labels = try scope.fileLabels(allocator, first.required_labels, &.{}),
             .chunker = chunkerOf(prev, meta_chunkers, entry.value_ptr.items),
             .prev_record = record,
         });
@@ -1572,6 +1644,8 @@ fn detectRenames(
 // --------------------------------------------------------- the generation ---
 
 const Built = struct {
+    catalog: ?[]const u8 = null,
+    filename_lexical: ?[]const u8 = null,
     manifest: []const u8,
     documents: []const u8,
     lexical: []const u8,
@@ -1772,7 +1846,7 @@ fn buildGeneration(
     std.mem.sort([]const u8, skipped_records.items, {}, lessThanString);
     const skipped_list = try allocator.alloc(manifest.PendingEntry, skipped_records.items.len);
     for (skipped_records.items, skipped_list) |record, *entry| entry.* = work.skipped.get(record).?;
-    const meta = try manifest.writeMetaPending(
+    var meta = try manifest.writeMetaPending(
         allocator,
         all_chunkers[0..if (uses_markdown) 2 else 1],
         meta_roots,
@@ -1781,13 +1855,18 @@ fn buildGeneration(
         skipped_list,
         if (source_encoded != null) source.version else 0,
     );
+    // The exact mutation state is immutable generation data, not a mutable
+    // post-publication cache. This preserves own labels, mtimes and hashes
+    // even for files whose source bytes are not retained.
+    const recovery_state = try incremental_state.encode(allocator, .{ .generation = generation, .analyzer_id = options.analyzer.label(), .roots = state_roots, .files = state_files.items });
+    meta = try std.fmt.allocPrint(allocator, "{s},\"recovery_state\":{s}}}", .{ meta[0..meta.len - 1], recovery_state });
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
     const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
     const source_file = if (source_encoded != null) try std.fmt.allocPrint(allocator, "source-{d}.hybsrc", .{generation}) else "";
     // `manifest.createV2` without re-reading the sections: the encoders just
     // wrote each checksum into its header, and `publication.publishWithSource`
     // validates every one against the bytes before anything is linked.
-    const metadata = manifest.Manifest{
+    var metadata = manifest.Manifest{
         .format_version = manifest.version_v2,
         .generation = generation,
         .document_count = documents.items.len,
@@ -1808,9 +1887,13 @@ fn buildGeneration(
         .source_checksum = if (source_encoded) |bytes| storedChecksum(bytes, source.header_length) else 0,
         .meta = meta,
     };
+    const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try @import("filename_field.zig").build(allocator, documents.items, options.analyzer.label()) else null;
+    if (filename_data) |f| metadata = try manifest.withFilename(metadata, try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{generation}), try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{generation}), f.catalog, f.lexical);
     const manifest_buffer = try allocator.alloc(u8, try manifest.encodedLength(metadata));
     const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
     return .{
+        .catalog = if (filename_data) |f| f.catalog else null,
+        .filename_lexical = if (filename_data) |f| f.lexical else null,
         .manifest = manifest_encoded,
         .documents = documents_encoded,
         .lexical = lexical_encoded,
@@ -1871,4 +1954,8 @@ pub fn writeReportJson(json: *std.json.Stringify, report: Report) !void {
         try json.write(value);
     }
     try json.endObject();
+}
+
+fn labelSetsEqual(a: []const []const u8, b: []const []const u8) bool {
+    return a.len == b.len and scope.holdsAll(a, b);
 }

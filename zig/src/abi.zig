@@ -167,6 +167,7 @@ pub export fn ss_status(handle: ?*Handle) callconv(.c) ?[*:0]u8 {
 }
 
 const QueryOptions = struct {
+    search_field: []const u8 = "content",
     retrieval_mode: ?[]const u8 = null,
     candidate_k: ?usize = null,
     path_prefix: ?[]const u8 = null,
@@ -255,6 +256,17 @@ fn queryImpl(
     const candidate_k = options.candidate_k orelse 100;
     if (candidate_k < top_k or candidate_k > 10_000) return error.InvalidCandidateDepth;
 
+    const field = std.meta.stringToEnum(@import("filename_field.zig").Field, options.search_field) orelse return error.InvalidSearchField;
+    if (field != .content) {
+        if (mode != .lexical or options.retrieval_mode == null) return error.FilenameSearchRequiresLexical;
+        var query_options = hybrid.SearchOptions{ .top_k = top_k, .candidate_k = candidate_k, .retrieval_mode = .lexical, .path_prefix = options.path_prefix, .principal_labels = options.principal_labels };
+        if (h.service().folder) |folder| query_options.visible_roots = folder.mask(try folder.allowedRoots(arena.allocator(), .{ .roots = options.roots, .principal_labels = options.principal_labels }));
+        const hits = try h.engine.queryFields(arena.allocator(), query_text, field, query_options);
+        var output: std.Io.Writer.Allocating = .init(allocator);
+        defer output.deinit();
+        try @import("filename_response.zig").writeAbiEvidence(&output.writer, arena.allocator(), h.engine, query_text, field, query_options, hits);
+        return (try output.toOwnedSliceSentinel(0)).ptr;
+    }
     const effective_vector: []const f32 = if (mode == .lexical or h.engine.vector_dimensions == 0)
         &.{}
     else vec: {
@@ -596,6 +608,7 @@ pub export fn ss_free(ptr: ?[*:0]u8) callconv(.c) void {
 // this function.
 
 const IndexFolderOptions = struct {
+    filename_index: ?bool = null,
     /// `"analyzer-v1"`/`"v1"` or `"analyzer-v2"`/`"v2"` (default), same
     /// spelling `indexer.AnalyzerId.parse` and `searchd index --analyzer`
     /// accept.
@@ -687,6 +700,7 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
     const overlap_lines = options.overlap_lines orelse chunker.default_overlap_lines;
     const default_caps = indexer.Caps{};
     const caps = indexer.Caps{
+        .filename_index = options.filename_index orelse false,
         .max_file_bytes = options.max_file_bytes orelse default_caps.max_file_bytes,
         .max_total_bytes = options.max_total_bytes orelse default_caps.max_total_bytes,
         .keep_generations = options.keep_generations,

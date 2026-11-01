@@ -51,6 +51,15 @@
         "minLength": 1
       },
       "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+    },
+    "search_field": {
+      "type": "string",
+      "enum": [
+        "content",
+        "filename",
+        "both"
+      ],
+      "description": "Opt-in filename navigation or combined lexical retrieval; requires explicit lexical retrieval_mode."
     }
   },
   "additionalProperties": false,
