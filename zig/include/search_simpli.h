@@ -111,7 +111,7 @@ typedef struct ss_handle ss_handle;
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "2.0.0". The returned pointer is static storage owned by the library:
+ * "2.1.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);
@@ -142,6 +142,17 @@ const char *ss_last_error(void);
  * ss_query, ss_find and the listings work, and only ss_read_span and
  * ss_outline answer SS_ERR_CAPACITY "re-index required: source section
  * unavailable (<reason>)".
+ *
+ * Since 2.1.0 (S4-T1) ss_open is lazy: it validates the manifest and the
+ * document and lexical sections and decodes what ss_status needs. The
+ * source section (opened, not read, by ss_open), the per-root statistics
+ * and the phrase position tables load at their first use (the first
+ * ss_read_span, ss_outline or ss_list_files that reads the source; the
+ * first scored query; the first ss_find), once per handle: a second thread
+ * calling during a load waits for it. A damaged source section therefore
+ * fails that first read, not ss_open (ss_status says "source":
+ * "unverified" until then); damaged positions fail the first ss_find with
+ * SS_ERR_CORRUPT_SNAPSHOT.
  */
 ss_handle *ss_open(const char *dir_path);
 
@@ -163,9 +174,14 @@ void ss_close(ss_handle *handle);
  *   "truncated"      a visible file was given but not indexed in full
  *   "roots"          [{"root_id","label","kind","files","documents","pending"}]
  *   "pending_paths"  [{"root_id","path"}]
- *   "has_source"     visible files have retained, readable source bytes
+ *   "has_source"     visible files have retained source bytes (false once
+ *                    the section is known to be lost or damaged)
  *   "has_positions"  the lexical section holds positions (phrase works)
  *   "chunkers"       the chunker ids visible documents use
+ * and since contract 2.1.0 by:
+ *   "source"         "absent" | "unverified" (retained, not read yet) |
+ *                    "verified" | "unavailable" (lost or damaged); reading
+ *                    the status never loads the source section
  * All counts, the v1 ones included, are over the default scope: every
  * root, no principal labels (the scope ss_query uses without options), so
  * a labelled file is not counted; ss_roots() counts over a scope you name.

@@ -220,7 +220,30 @@ pub fn decode(
     posting_output: []postings.Posting,
     document_length_output: []u32,
 ) DecodeError!postings.Index {
-    const header = try inspect(encoded);
+    return decodeWith(encoded, term_output, posting_output, document_length_output, .{});
+}
+
+pub const DecodeOptions = struct {
+    /// S4-T1: walk every varint of sections 4 and 5 now. A lazy reader
+    /// (`snapshot_open.openScoped`) passes false and calls
+    /// `validatePositionSections` before the first use of positions or
+    /// offsets (`scope.Folder.positionTables`); until then nothing may read
+    /// them. The term-contiguity rule (cheap, needed by every reader) is
+    /// always checked here.
+    validate_positions: bool = true,
+    /// S4-T1: the header `inspect` already returned for these bytes (its
+    /// checksum computed then), so it is not computed a second time.
+    inspected: ?Header = null,
+};
+
+pub fn decodeWith(
+    encoded: []const u8,
+    term_output: []postings.TermEntry,
+    posting_output: []postings.Posting,
+    document_length_output: []u32,
+    options: DecodeOptions,
+) DecodeError!postings.Index {
+    const header = options.inspected orelse try inspect(encoded);
     if (term_output.len < header.term_count) return error.TermCapacityTooSmall;
     if (posting_output.len < header.posting_count) return error.PostingCapacityTooSmall;
     if (document_length_output.len < header.document_count) return error.DocumentLengthCapacityTooSmall;
@@ -284,12 +307,15 @@ pub fn decode(
     try validatePostingOrder(term_output[0..header.term_count], posting_output[0..header.posting_count]);
 
     const sections: ?postings.PositionSections = if (v2) .{ .positions = positions_bytes, .offsets = offsets_bytes } else null;
-    if (sections) |present| try validatePositions(
-        term_output[0..header.term_count],
-        posting_output[0..header.posting_count],
-        document_length_output[0..header.document_count],
-        present,
-    );
+    if (sections) |present| {
+        try validateTermRanges(term_output[0..header.term_count], posting_output[0..header.posting_count]);
+        if (options.validate_positions) try validatePositions(
+            term_output[0..header.term_count],
+            posting_output[0..header.posting_count],
+            document_length_output[0..header.document_count],
+            present,
+        );
+    }
     return .{
         .terms = term_output[0..header.term_count],
         .postings = posting_output[0..header.posting_count],
@@ -298,6 +324,25 @@ pub fn decode(
         .positions = sections,
         .sorted_terms = v2,
     };
+}
+
+/// Term ranges contiguous in dictionary order (posting order is term-major,
+/// so a term's ordinals are one run of section 4).
+fn validateTermRanges(terms: []const postings.TermEntry, values: []const postings.Posting) DecodeError!void {
+    var expected_start: usize = 0;
+    for (terms) |entry| {
+        if (entry.postings_start != expected_start) return error.UnsortedTerms;
+        expected_start += entry.postings_length;
+    }
+    if (expected_start != values.len) return error.UnsortedTerms;
+}
+
+/// S4-T1: the deferred half of `decode` for an index decoded with
+/// `validate_positions = false`: sections 4 and 5 against the decoded
+/// postings and document lengths. A no-op without positions.
+pub fn validatePositionSections(index: postings.Index) DecodeError!void {
+    const sections = index.positions orelse return;
+    return validatePositions(index.terms, index.postings, index.document_lengths, sections);
 }
 
 /// The v2 rules of sections 4 and 5 (`docs/lexical-segment-format-v2.md`):
@@ -313,13 +358,7 @@ fn validatePositions(
     document_lengths: []const u32,
     sections: postings.PositionSections,
 ) DecodeError!void {
-    var expected_start: usize = 0;
-    for (terms) |entry| {
-        if (entry.postings_start != expected_start) return error.UnsortedTerms;
-        expected_start += entry.postings_length;
-    }
-    if (expected_start != values.len) return error.UnsortedTerms;
-
+    try validateTermRanges(terms, values);
     var at: usize = 0;
     for (values) |posting| {
         const length = document_lengths[posting.document_index];

@@ -383,6 +383,24 @@ pub fn validateSnapshot(
     documents_encoded: []const u8,
     lexical_encoded: []const u8,
 ) ManifestError!void {
+    _ = try validateSnapshotHeaders(value, documents_encoded, lexical_encoded);
+}
+
+/// The two section headers `validateSnapshotHeaders` checked (each
+/// section's checksum computed once, against its bytes).
+pub const SnapshotHeaders = struct {
+    documents: segment.Header,
+    lexical: lexical_segment.Header,
+};
+
+/// `validateSnapshot`, returning the headers it inspected so a decoder can
+/// skip a second checksum pass (S4-T1: `snapshot_open` computes each
+/// section's checksum once; it used to compute it three times).
+pub fn validateSnapshotHeaders(
+    value: Manifest,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+) ManifestError!SnapshotHeaders {
     try validateFields(value);
     if (documents_encoded.len != value.documents_bytes) return error.DocumentSectionSizeMismatch;
     if (lexical_encoded.len != value.lexical_bytes) return error.LexicalSectionSizeMismatch;
@@ -398,6 +416,7 @@ pub fn validateSnapshot(
     if (lexical_header.posting_count != value.posting_count) return error.PostingCountMismatch;
     // S3-T2: the flag and the section agree (`HYBLEX02` exactly when set).
     if (lexical_header.hasPositions() != value.has_positions) return error.InvalidLexicalSection;
+    return .{ .documents = document_header, .lexical = lexical_header };
 }
 
 /// Check the source section bytes a generation names (null when the

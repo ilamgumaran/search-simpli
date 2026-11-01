@@ -193,7 +193,17 @@ pub fn decode(
     document_output: []hybrid.Document,
     vector_output: []f32,
 ) DecodeError![]hybrid.Document {
-    const header = try inspect(encoded);
+    return decodeInspected(encoded, try inspect(encoded), document_output, vector_output);
+}
+
+/// `decode` for bytes whose header `inspect` already validated (checksum
+/// included), so the checksum is not computed a second time (S4-T1).
+pub fn decodeInspected(
+    encoded: []const u8,
+    header: Header,
+    document_output: []hybrid.Document,
+    vector_output: []f32,
+) DecodeError![]hybrid.Document {
     if (document_output.len < header.document_count) return error.DocumentCapacityTooSmall;
 
     var cursor = Cursor{ .bytes = encoded, .offset = header_length };

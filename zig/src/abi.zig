@@ -91,7 +91,7 @@ pub export fn ss_last_error() callconv(.c) [*:0]const u8 {
 }
 
 /// The engine contract/build version (`contracts/CONTRACTS_VERSION`), e.g.
-/// `"2.0.0"`. Static storage: never pass this pointer to `ss_free`.
+/// `"2.1.0"`. Static storage: never pass this pointer to `ss_free`.
 pub export fn ss_version() callconv(.c) [*:0]const u8 {
     return contracts_version.ptr;
 }
@@ -134,7 +134,9 @@ fn openImpl(path: []const u8) !*Handle {
     errdefer handle.arena.deinit();
     // S3-T4: the scoped open (roots, statistics, source section, position
     // tables) so every operation answers over a scope; a lost source section
-    // does not fail it (S3-T1 finding 2).
+    // does not fail it (S3-T1 finding 2). S4-T1: a lazy open: the source
+    // section, the statistics groups and the position tables load at first
+    // use, once per handle (`scope.Loads`).
     const opened = try snapshot_open.openScoped(handle.arena.allocator(), gio, dir);
     handle.engine = opened.engine;
     handle.folder = opened.folder;
@@ -144,6 +146,7 @@ fn openImpl(path: []const u8) !*Handle {
 /// Free everything opened by `ss_open`. `NULL` is a safe no-op.
 pub export fn ss_close(handle: ?*Handle) callconv(.c) void {
     const h = handle orelse return;
+    h.folder.close();
     h.arena.deinit();
     allocator.destroy(h);
 }
@@ -152,7 +155,8 @@ pub export fn ss_close(handle: ?*Handle) callconv(.c) void {
 /// `result`): the v1 fields `ready`, `generation`, `analyzer_id`,
 /// `embedding_model_id`, `vector_dimensions`, `documents`, `terms`,
 /// `postings`, then (contract 2.0.0) `files`, `pending`, `truncated`,
-/// `roots`, `pending_paths`, `has_source`, `has_positions`, `chunkers`. The
+/// `roots`, `pending_paths`, `has_source`, `has_positions`, `chunkers`, and
+/// (contract 2.1.0) `source`, read without loading the source section. The
 /// counts are over the default scope: every root, no principal labels (the
 /// scope `ss_query` uses without options), so a labelled file is not
 /// counted (S3-T3 finding: no whole-index counts); `ss_roots` takes a scope.
@@ -546,6 +550,10 @@ fn errorCode(err: anyerror) i64 {
         error.LexicalSectionChecksumMismatch,
         error.InvalidCitation,
         error.InvalidRequiredLabels,
+        // S4-T1: a lexical section's positions are validated at the first
+        // `find` (a lazy open), not by `ss_open`.
+        error.InvalidPositions,
+        error.UnsortedTerms,
         => SS_ERR_CORRUPT_SNAPSHOT,
 
         error.DocumentCapacityTooSmall,

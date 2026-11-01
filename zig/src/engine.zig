@@ -51,13 +51,35 @@ pub const Engine = struct {
         posting_output: []postings.Posting,
         document_length_output: []u32,
     ) !Engine {
-        try manifest.validateSnapshot(snapshot.metadata, snapshot.documents_encoded, snapshot.lexical_encoded);
-        const documents = try segment.decode(snapshot.documents_encoded, document_output, vector_output);
-        const lexical_index = try lexical_segment.decode(
+        return openWith(snapshot, document_output, vector_output, term_output, posting_output, document_length_output, .{});
+    }
+
+    pub const OpenOptions = struct {
+        /// S4-T1: false defers the walk over the lexical section's positions
+        /// and offsets (`lexical_segment.DecodeOptions`); the caller then
+        /// validates them before their first use (`scope.Folder`).
+        validate_positions: bool = true,
+    };
+
+    /// `open`, computing each section's checksum once (S4-T1): the manifest
+    /// checks inspect both headers, and the decoders reuse them.
+    pub fn openWith(
+        snapshot: publication.LoadedSnapshot,
+        document_output: []hybrid.Document,
+        vector_output: []f32,
+        term_output: []postings.TermEntry,
+        posting_output: []postings.Posting,
+        document_length_output: []u32,
+        options: OpenOptions,
+    ) !Engine {
+        const headers = try manifest.validateSnapshotHeaders(snapshot.metadata, snapshot.documents_encoded, snapshot.lexical_encoded);
+        const documents = try segment.decodeInspected(snapshot.documents_encoded, headers.documents, document_output, vector_output);
+        const lexical_index = try lexical_segment.decodeWith(
             snapshot.lexical_encoded,
             term_output,
             posting_output,
             document_length_output,
+            .{ .validate_positions = options.validate_positions, .inspected = headers.lexical },
         );
         if (documents.len != lexical_index.document_lengths.len) return error.DocumentCountMismatch;
         var labeled = false;

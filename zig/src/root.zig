@@ -43,6 +43,7 @@ pub const import_build_timing_test = @import("import_build_timing_test.zig");
 pub const query_utf8_test = @import("query_utf8_test.zig");
 pub const nfc_timing_test = @import("nfc_timing_test.zig");
 pub const find_fixture_test = @import("find_fixture_test.zig");
+pub const lazy_open_test = @import("lazy_open_test.zig");
 
 pub const Bm25Parameters = scoring.Bm25Parameters;
 pub const bm25Contribution = scoring.bm25Contribution;
@@ -119,6 +120,7 @@ test "load every engine module test suite" {
     _ = import_build_timing_test;
     _ = nfc_timing_test;
     _ = find_fixture_test;
+    _ = lazy_open_test;
     _ = query_utf8_test;
     _ = cli_test;
 }

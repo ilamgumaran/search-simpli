@@ -184,18 +184,21 @@ int main(void) {
     expect_true("ss_open on a missing directory returns NULL", ss_open("/nonexistent/search-simpli-abi-test") == NULL, "expected NULL");
 
     /* Contract 2.0.0 appends the section 8 status fields after the v1 ones
-     * (over the default scope: every root, no labels). */
+     * (over the default scope: every root, no labels); contract 2.1.0
+     * (S4-T1) appends "source", the source section's state ("absent": an
+     * import-json snapshot binds none). */
     {
         static const char *tail =
             ",\"files\":3,\"pending\":0,\"truncated\":false,\"roots\":[{\"root_id\":\"r-legacy\","
             "\"label\":\"folder\",\"kind\":\"local\",\"files\":3,\"documents\":3,\"pending\":0}],"
-            "\"pending_paths\":[],\"has_source\":false,\"has_positions\":false,\"chunkers\":[\"line-window-v1\"]}";
+            "\"pending_paths\":[],\"has_source\":false,\"has_positions\":false,\"chunkers\":[\"line-window-v1\"],"
+            "\"source\":\"absent\"}";
         size_t golden_len = strlen(golden_status_json);
         char *expected = malloc(golden_len + strlen(tail) + 1);
         memcpy(expected, golden_status_json, golden_len - 1);
         strcpy(expected + golden_len - 1, tail);
         char *status_json = ss_status(handle);
-        expect_streq("ss_status matches the captured index_status result, plus the 2.0.0 fields", expected, status_json);
+        expect_streq("ss_status matches the captured index_status result, plus the 2.0.0 and 2.1.0 fields", expected, status_json);
         ss_free(status_json);
         free(expected);
     }

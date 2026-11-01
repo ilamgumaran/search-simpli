@@ -34,6 +34,7 @@ const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const scoring = @import("scoring.zig");
 const source = @import("source.zig");
+const lexical_segment = @import("lexical_segment.zig");
 
 pub const legacy_root_id = "r-legacy";
 /// The root ordinal of a document whose path matches no root.
@@ -343,9 +344,107 @@ pub fn documentFrequency(view: View, index: postings.Index, documents: []const h
     return frequency;
 }
 
+/// S4-T1: what a scoped open defers to first use, once per opened
+/// generation (`docs/tasks/S4-T1.md` ruling 1, `ss_open` in
+/// `zig/include/search_simpli.h`): the
+/// source section (read, checked against the manifest and indexed at the
+/// first operation that reads it), the per-root statistics groups (at the
+/// first scored query) and the position tables (with the walk over the
+/// lexical section's positions and offsets that validates them, at the
+/// first `find`). Each load runs under `mutex`: a second caller during a
+/// load waits for it and never loads twice; afterwards a load is one atomic
+/// read. Everything a load allocates comes from `allocator` (the opened
+/// generation's; touched only under `mutex` after the open).
+pub const Loads = struct {
+    io: std.Io,
+    allocator: std.mem.Allocator,
+    mutex: std.Io.Mutex = .init,
+    documents: []const hybrid.Document,
+    index: postings.Index,
+    document_roots: []const u16 = &.{},
+    root_count: usize = 0,
+
+    /// The bound source section's file, opened (not read) at open time so
+    /// a later load reads the generation's own bytes even after a writer
+    /// pruned the file; null when none is bound or it could not be opened.
+    source_file: ?std.Io.File = null,
+    /// The manifest's length and checksum of the source section.
+    source_bytes: usize = 0,
+    source_checksum: u64 = 0,
+    source_done: std.atomic.Value(bool) = .init(false),
+    source: ?source.Section = null,
+    /// The bound source section could not be read or did not validate (a
+    /// lost file, a wrong size, a bad checksum): the error's name.
+    source_error: ?[]const u8 = null,
+
+    statistics_done: std.atomic.Value(bool) = .init(false),
+    statistics: Statistics = undefined,
+
+    positions_done: std.atomic.Value(bool) = .init(false),
+    position_tables: ?postings.PositionTables = null,
+    positions_error: ?anyerror = null,
+
+    /// How many times each load ran (each at most once; tests read them).
+    source_loads: u32 = 0,
+    statistics_loads: u32 = 0,
+    positions_loads: u32 = 0,
+
+    fn lock(loads: *Loads) void {
+        loads.mutex.lockUncancelable(loads.io);
+    }
+
+    fn unlock(loads: *Loads) void {
+        loads.mutex.unlock(loads.io);
+    }
+
+    /// Out of memory leaves the section unloaded (a later call retries);
+    /// every other outcome is final for this opened generation.
+    fn loadSource(loads: *Loads) error{OutOfMemory}!void {
+        loads.source_loads += 1;
+        loads.source_error = try loads.readSource();
+        loads.source_done.store(true, .release);
+    }
+
+    fn readSource(loads: *Loads) error{OutOfMemory}!?[]const u8 {
+        if (loads.source_error) |name| return name; // the open could not open the file
+        const file = loads.source_file orelse return null;
+        const buffer = try loads.allocator.alloc(u8, loads.source_bytes);
+        const read = file.readPositionalAll(loads.io, buffer, 0) catch |err| return @errorName(err);
+        if (read != loads.source_bytes) return "SourceSectionSizeMismatch";
+        // The checksum is computed once, by `openIndexed`'s header check,
+        // and must equal the manifest's (`manifest.validateSource`'s rule).
+        const section = source.openIndexed(loads.allocator, buffer) catch |err| switch (err) {
+            error.OutOfMemory => return error.OutOfMemory,
+            else => return @errorName(err),
+        };
+        if (section.checksum != loads.source_checksum) return "SourceSectionChecksumMismatch";
+        loads.source = section;
+        return null;
+    }
+};
+
+/// What `index_status` says about the source section (contract 2.1.0,
+/// field `source`), without loading it.
+pub const SourceState = enum {
+    /// The generation binds no source section.
+    absent,
+    /// Bound, not yet read: nothing has checked its bytes.
+    unverified,
+    /// Read and validated.
+    verified,
+    /// Bound but lost or damaged: `read_span`/`outline` answer `CAPACITY`.
+    unavailable,
+
+    pub fn label(state: SourceState) []const u8 {
+        return @tagName(state);
+    }
+};
+
 /// A generation's roots, pending and unchunked files, chunkers, source
 /// section and statistics: everything a scoped operation needs beside the
-/// engine. Built once per opened generation (`snapshot_open.openScoped`).
+/// engine. Built once per opened generation (`snapshot_open.openScoped`);
+/// the source section, the statistics and the position tables load at
+/// first use (`Loads`, S4-T1).
 pub const Folder = struct {
     roots: []const manifest.RootEntry,
     pending: []const manifest.PendingEntry = &.{},
@@ -353,25 +452,25 @@ pub const Folder = struct {
     skipped: []const manifest.PendingEntry = &.{},
     chunkers: []const manifest.ChunkerEntry = &.{},
     document_roots: []const u16,
-    statistics: Statistics,
-    source: ?source.Section = null,
-    /// S3-T4: the generation binds a source section that could not be
-    /// opened (its error's name); the source-reading operations then answer
-    /// `CAPACITY` naming it, every other operation is unaffected.
-    source_error: ?[]const u8 = null,
     has_positions: bool = false,
+    /// The manifest binds a source section.
+    source_bound: bool = false,
+    loads: *Loads,
 
     /// `meta == null`: a generation without meta (one legacy root).
+    /// `loads` holds the engine's documents and index and, when the
+    /// manifest binds one, the source section's file, length and checksum.
     pub fn build(
         allocator: std.mem.Allocator,
-        documents: []const hybrid.Document,
-        index: postings.Index,
         meta: ?manifest.Meta,
-        section: ?source.Section,
+        loads: *Loads,
     ) !Folder {
         const roots: []const manifest.RootEntry = if (meta) |m| m.roots else &legacy_roots;
+        const documents = loads.documents;
         const document_roots = try allocator.alloc(u16, documents.len);
         for (documents, document_roots) |document, *root| root.* = rootOfPath(roots, document.path) orelse no_root;
+        loads.document_roots = document_roots;
+        loads.root_count = roots.len;
         return .{
             .roots = roots,
             .pending = if (meta) |m| m.pending else &.{},
@@ -379,9 +478,90 @@ pub const Folder = struct {
             .skipped = if (meta) |m| m.skipped else &.{},
             .chunkers = if (meta) |m| m.chunkers else &.{},
             .document_roots = document_roots,
-            .statistics = try Statistics.build(allocator, documents, document_roots, roots.len, index),
-            .source = section,
+            .loads = loads,
         };
+    }
+
+    /// Release what the open kept (the source section's file handle).
+    pub fn close(folder: Folder) void {
+        const loads = folder.loads;
+        loads.lock();
+        defer loads.unlock();
+        if (loads.source_file) |file| file.close(loads.io);
+        loads.source_file = null;
+    }
+
+    /// The source section's state, without loading it.
+    pub fn sourceState(folder: Folder) SourceState {
+        if (!folder.source_bound) return .absent;
+        const loads = folder.loads;
+        if (!loads.source_done.load(.acquire)) return .unverified;
+        return if (loads.source != null) .verified else .unavailable;
+    }
+
+    /// The source section, loaded and validated at the first call; null
+    /// when none is bound or it is lost or damaged (`sourceError` names why).
+    pub fn sourceSection(folder: Folder) error{OutOfMemory}!?source.Section {
+        const loads = folder.loads;
+        if (!loads.source_done.load(.acquire)) {
+            loads.lock();
+            defer loads.unlock();
+            if (!loads.source_done.load(.monotonic)) try loads.loadSource();
+        }
+        return loads.source;
+    }
+
+    /// Why a bound source section is unavailable, once a load has tried.
+    pub fn sourceError(folder: Folder) ?[]const u8 {
+        const loads = folder.loads;
+        if (!loads.source_done.load(.acquire)) return null;
+        return loads.source_error;
+    }
+
+    /// The statistics groups when a scored query has built them, else null
+    /// (a caller that does not score counts exactly, with equal results).
+    pub fn loadedStatistics(folder: Folder) ?*const Statistics {
+        const loads = folder.loads;
+        return if (loads.statistics_done.load(.acquire)) &loads.statistics else null;
+    }
+
+    /// The statistics groups, built at the first call.
+    pub fn statistics(folder: Folder) error{OutOfMemory}!*const Statistics {
+        const loads = folder.loads;
+        if (!loads.statistics_done.load(.acquire)) {
+            loads.lock();
+            defer loads.unlock();
+            if (!loads.statistics_done.load(.monotonic)) {
+                loads.statistics_loads += 1;
+                loads.statistics = try Statistics.build(loads.allocator, loads.documents, loads.document_roots, loads.root_count, loads.index);
+                loads.statistics_done.store(true, .release);
+            }
+        }
+        return &loads.statistics;
+    }
+
+    /// The position tables of a `HYBLEX02` generation (null without
+    /// positions), built at the first call after validating the lexical
+    /// section's positions and offsets; a damaged section fails this and
+    /// every later call with the same error.
+    pub fn positionTables(folder: Folder) !?postings.PositionTables {
+        const loads = folder.loads;
+        if (loads.index.positions == null) return null;
+        if (!loads.positions_done.load(.acquire)) {
+            loads.lock();
+            defer loads.unlock();
+            if (!loads.positions_done.load(.monotonic)) {
+                loads.positions_loads += 1;
+                if (lexical_segment.validatePositionSections(loads.index)) {
+                    loads.position_tables = try postings.buildPositionTables(loads.allocator, loads.index);
+                } else |err| {
+                    loads.positions_error = err;
+                }
+                loads.positions_done.store(true, .release);
+            }
+        }
+        if (loads.positions_error) |err| return err;
+        return loads.position_tables;
     }
 
     pub fn rootIndex(folder: Folder, root_id: []const u8) ?u16 {

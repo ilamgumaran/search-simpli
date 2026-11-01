@@ -20,6 +20,7 @@ const incremental_state = @import("incremental_state.zig");
 const indexer = @import("indexer.zig");
 const manifest = @import("manifest.zig");
 const snapshot_open = @import("snapshot_open.zig");
+const scope = @import("scope.zig");
 const source = @import("source.zig");
 
 const pack = "../fixtures/family-folder";
@@ -314,7 +315,9 @@ test "S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPAC
     const found = try engine.queryTokenized(arena, "alpha", &.{}, &results, .{ .retrieval_mode = .lexical, .top_k = 4 });
     try std.testing.expectEqual(@as(usize, 1), found.len);
     const scoped_open = try snapshot_open.openScoped(arena, io, out_tmp.dir);
-    try std.testing.expectEqualStrings("FileNotFound", scoped_open.folder.source_error.?);
+    // S4-T1: a lost file is known at open (the open opens, not reads, it).
+    try std.testing.expectEqual(scope.SourceState.unavailable, scoped_open.folder.sourceState());
+    try std.testing.expectEqualStrings("FileNotFound", scoped_open.folder.sourceError().?);
     const service_module = @import("service.zig");
     const scoped = service_module.ScopedService{ .service = .{ .engine = scoped_open.engine, .folder = scoped_open.folder } };
     const span = (try scoped.readSpan(arena, .{}, "r-legacy", "a.md", 1, 1, 0)).failed;
@@ -328,11 +331,27 @@ test "S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPAC
     }
     const status = try scoped.indexStatus(arena, .{});
     try std.testing.expect(!status.has_source);
-    // A damaged (not lost) section reads the same way.
+    try std.testing.expectEqualStrings("unavailable", status.source);
+    // A damaged (not lost) section reads the same way, but only from the
+    // first operation that reads it (S4-T1, a lazy open): the open and
+    // `index_status` succeed and say `unverified`.
     try out_tmp.dir.writeFile(io, .{ .sub_path = "source-1.hybsrc", .data = "HYBSRC01 damaged" });
     const damaged = try snapshot_open.openScoped(arena, io, out_tmp.dir);
-    try std.testing.expect(damaged.folder.source == null);
-    try std.testing.expect(damaged.folder.source_error != null);
+    defer damaged.folder.close();
+    try std.testing.expectEqual(scope.SourceState.unverified, damaged.folder.sourceState());
+    const damaged_service = service_module.ScopedService{ .service = .{ .engine = damaged.engine, .folder = damaged.folder } };
+    const before_read = try damaged_service.indexStatus(arena, .{});
+    try std.testing.expectEqualStrings("unverified", before_read.source);
+    try std.testing.expect(before_read.has_source);
+    const damaged_span = (try damaged_service.readSpan(arena, .{}, "r-legacy", "a.md", 1, 1, 0)).failed;
+    try std.testing.expectEqual(source.Code.capacity, damaged_span.code);
+    try std.testing.expectEqualStrings("re-index required: source section unavailable (SourceSectionSizeMismatch)", damaged_span.message);
+    try std.testing.expectEqual(scope.SourceState.unavailable, damaged.folder.sourceState());
+    const after_read = try damaged_service.indexStatus(arena, .{});
+    try std.testing.expectEqualStrings("unavailable", after_read.source);
+    try std.testing.expect(!after_read.has_source);
+    try std.testing.expect((try damaged.folder.sourceSection()) == null);
+    try std.testing.expect(damaged.folder.sourceError() != null);
     try out_tmp.dir.deleteFile(io, "source-1.hybsrc");
     const healed = try indexer.indexFolderIncremental(arena, io, root_tmp.dir, out_tmp.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
     try std.testing.expectEqualStrings("missing_section", healed.recovered.?);
