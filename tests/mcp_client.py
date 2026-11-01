@@ -36,6 +36,21 @@ from dataclasses import dataclass
 from typing import Any
 
 PROTOCOL_VERSION = "2025-11-25"
+UTF8_BOM = b"\xef\xbb\xbf"
+
+
+def resource_text_matches_size(text: str, size: int) -> bool:
+    """`resources/read` text against `resources/list` `size`, BOM-aware.
+
+    `size` is the retained file's byte count, a leading UTF-8 BOM included; the
+    text the server returns drops that BOM (a BOM is not part of line 1, as in
+    `read_span`). So the text's UTF-8 length equals `size`, or `size - 3` when
+    the file began with a BOM (S3-T6 Verdict finding 2).
+    """
+    length = len(text.encode("utf-8"))
+    return length == size or length + len(UTF8_BOM) == size
+
+
 READ_TOOLS = ("search_knowledge", "read_chunk", "list_sources", "index_status",
               "find", "outline", "read_span", "list_files")
 BASELINE_TOOLS = READ_TOOLS[:4]
@@ -278,7 +293,7 @@ def run_conformance(argv: list[str]) -> list[Check]:
             read = client.result("resources/read", {"uri": small["uri"]})
             contents = read["contents"]
             check("resources/read returns the whole file", len(contents) == 1 and contents[0]["uri"] == small["uri"]
-                  and len(contents[0]["text"].encode("utf-8")) == small["size"], small)
+                  and resource_text_matches_size(contents[0]["text"], small["size"]), small)
         else:
             check("resources/read returns the whole file", False, "no small Markdown resource")
         missing = client.request("resources/read", {"uri": "search://no-such-root/none.md"})

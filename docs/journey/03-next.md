@@ -1,5 +1,19 @@
 # Next
 
+**31 Oct (S3-T8 builder, Xcode Mac): series S3 (folder knowledge, CAP-19) is complete on this branch.**
+S3-T1 to S3-T7 are on `main`; S3-T8 rebuilt the three native libraries (byte-identical to
+S3-T6's, 16 KiB aligned), bumped the Dart package to 0.2.0 (contracts 2.0.0; an old library is
+refused), moved CAP-19's register rows to `Diagnostic · implemented` and put the benchmark
+table in `PROJECT-STATE.md` ("Folder knowledge (S3)"). **What is next is the consumer app's
+M16-T1** (its repository): pin the S3-T8 merge commit, regenerate its contract types from
+`contracts/tools`, generate its skill file from `skills/folder-knowledge/SKILL.md`, and run
+`fixtures/family-folder` as a shared folder on both phones. NEXT rows filed during S3 (all in
+"Ready to build now" below): delta sections or a cheaper checksum (NFR-12's `ReleaseSmall`
+bound), the `ReleaseSmall` `search_knowledge` regression on a small corpus, and a CI row (the
+Linux native job now runs the MCP and surface tests by name and fails on a skip; the judgment
+pack and `tests/mcp_client.py` run there too). Still open: NFR-13's 64 MiB arena-cap test is not
+recorded (a NEXT row), and CFT-09 stays blocked (interchange carries no chunker id; see the Blocked table). [S3-T8](../tasks/S3-T8.md).
+
 **25 Oct (Codex cloud): directory content search verified; filename design proposed.**
 The owner asked for filename and document contents search for LLM retrieval.
 [Directory audit/tasks](../tasks/directory-search.md) records the native/Python
@@ -172,6 +186,8 @@ at the same time. E-01A is the safe intake half of exactly that.
 | **E-02 — negative / unanswerable evaluation** | Small, self-contained, and it is the empirical guard on the source-of-truth invariant | Feeds CAP-14 |
 | **`search_knowledge` in ReleaseSmall on the small fixture (+6 µs since S3-T2)** | S3-T4 re-measured it after the ABI landed, as S3-T2 Post-build ruling 2 asked: on the family-folder union fixture (998 chunks) `find_bench knowledge`, ReleaseSmall, p50 of three repetitions, interleaved, rounds 2–4: before S3-T2 (`73fc226`) 30.3–30.8, 29.5–30.1, 30.0–30.5 µs; S3-T4 36.3–36.8, 36.1–36.5, 35.5–35.8 µs. It persists (about +19 %); ReleaseFast and the 10k corpus are faster than before (S3-T2 Verdict) | Profile the ReleaseSmall query path on a small corpus (scorer statistics plumbing, `HYBLEX02` term lookup); a few microseconds, inside every budget, so not urgent |
 | **NFR-12 in ReleaseSmall — delta sections or a cheaper checksum** | S3-T3 measured one changed file in a 10k index at 215–221 ms in `ReleaseSmall` against the 200 ms bound (met in `ReleaseFast`, 163–168 ms); rewriting and re-checksumming whole sections each generation is most of it | Required before NFR-12's bound tightens to `ReleaseSmall` (S3-T3 Post-build ruling 2) |
+| **NFR-13 — the 64 MiB arena-cap test** | S3-T8 found no Report recording it; reads and pages are bounded and tested (S3-T1, S3-T2, S3-T4), the workspace cap is not | Add a Zig test that runs `find`, `read_span`, `outline` and `list_files` inside a 64 MiB arena and move NFR-13 to Diagnostic · implemented |
+| **CI: keep the surface and MCP tests from skipping** | S3-T8 added a named, no-skip step to the Linux native job; the first GitHub run decides whether it is green | Check the run after the merge |
 
 ## Blocked, with the named unblocker
 

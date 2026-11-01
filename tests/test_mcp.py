@@ -34,7 +34,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from mcp_client import (  # noqa: E402
-    BASELINE_TOOLS, PROTOCOL_VERSION, READ_TOOLS, McpClient, run_conformance, structured, tool_error,
+    BASELINE_TOOLS, PROTOCOL_VERSION, READ_TOOLS, UTF8_BOM, McpClient, resource_text_matches_size, run_conformance,
+    structured, tool_error,
 )
 from src.search_platform.schema_check import load_tool_schema, validate  # noqa: E402
 from test_folder_surfaces import PACK, Rpc, build_searchd, fixture_request  # noqa: E402
@@ -45,6 +46,27 @@ TOOLS_DIR = Path(__file__).resolve().parents[1] / "contracts" / "tools"
 
 def schema_file(name: str, kind: str) -> dict:
     return json.loads((TOOLS_DIR / f"{name}.{kind}.schema.json").read_text(encoding="utf-8"))
+
+
+class ResourceSizeComparisonTests(unittest.TestCase):
+    """S3-T8: the conformance client's length check is BOM-aware (needs no Zig)."""
+
+    def test_bom_file_of_the_fixture(self) -> None:
+        data = (PACK / "home" / "bom-checklist.md").read_bytes()
+        self.assertTrue(data.startswith(UTF8_BOM))
+        text = data.removeprefix(UTF8_BOM).decode("utf-8")
+        # The server's `size` counts the BOM; its text does not: the strict comparison fails here.
+        self.assertNotEqual(len(text.encode("utf-8")), len(data))
+        self.assertTrue(resource_text_matches_size(text, len(data)))
+
+    def test_a_file_without_a_bom_and_wrong_sizes(self) -> None:
+        data = (PACK / "home" / "birthday-plans.md").read_bytes()
+        self.assertFalse(data.startswith(UTF8_BOM))
+        text = data.decode("utf-8")
+        self.assertTrue(resource_text_matches_size(text, len(data)))
+        self.assertFalse(resource_text_matches_size(text, len(data) + 1))
+        self.assertFalse(resource_text_matches_size(text, len(data) - 1))
+        self.assertFalse(resource_text_matches_size(text, len(data) + 4))
 
 
 @unittest.skipIf(NO_ZIG, "SEARCH_SIMPLI_NO_ZIG=1: this environment deliberately has no Zig (CI)")
@@ -314,6 +336,20 @@ class McpServerTests(unittest.TestCase):
                 self.finish(client)
 
     # -------------------------------------------------------- resources ---
+
+    def test_resources_read_of_the_bom_file_matches_the_listed_size(self) -> None:
+        client = self.ready()
+        try:
+            listed = client.result("resources/list")
+            uri = "search://home/bom-checklist.md"
+            entry = next(r for r in listed["resources"] if r["uri"] == uri)
+            data = (PACK / "home" / "bom-checklist.md").read_bytes()
+            self.assertEqual(entry["size"], len(data))
+            text = client.result("resources/read", {"uri": uri})["contents"][0]["text"]
+            self.assertFalse(text.startswith("\ufeff"))
+            self.assertTrue(resource_text_matches_size(text, entry["size"]))
+        finally:
+            self.finish(client)
 
     def test_resources_read_through_read_span_limits(self) -> None:
         client = self.ready()

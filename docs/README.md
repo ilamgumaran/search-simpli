@@ -17,6 +17,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 | Add or review a product scenario | [Use-case library](use-cases/README.md) |
 | See every requirement in one place / resolve conflicts | [Requirements register](requirements/README.md) |
 | Add a new capability or use case (the process) | [Capability process](capability-process.md) |
+| Folder knowledge (CAP-19): formats, ABI, benchmark profile, plan | [Implementation](folder-knowledge-implementation.md) · [Plan](plans/folder-knowledge-plan.md) · [Tool schemas](tool-schemas.md) · [MCP server](mcp-server.md) |
 | Understand retrieval and grounding | [Search and answer theory](theory.md) |
 | Measure relevance and run the product-search smoke gate | [Relevance benchmark](relevance-benchmark.md) |
 | Compare simple, single-node, and distributed options | [Architecture](architecture.md) |
@@ -42,6 +43,8 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 ## Interfaces and safety
 
 - [Local LLM/agent tool protocol](tool-protocol.md)
+- [Tool schemas for the nine folder-knowledge tools](tool-schemas.md)
+- [MCP server (`searchd mcp`)](mcp-server.md)
 - [Zig JSON-RPC service](zig-rpc-service.md)
 - [Python-to-Zig bridge](python-zig-bridge.md)
 - [Query embedding gateway](query-embedding-gateway.md)

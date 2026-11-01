@@ -94,3 +94,16 @@ jobs:
           -u SEARCH_SIMPLI_NO_ZIG
           -u SEARCHD_BINARY
           python3 -m unittest discover -s tests -v
+
+      # S3-T8: the tests that skip in the Zig-less job above run here by name, so
+      # a skip would fail the job: CLI/RPC surface parity, the MCP conformance
+      # client and its plants, the folder-knowledge CLI process tests.
+      - name: Folder-knowledge surfaces and MCP (no skips allowed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          env -u SEARCH_SIMPLI_LIBRARY_PATH -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY \
+            python3 -m unittest -v tests.test_mcp tests.test_folder_surfaces tests.test_cli_process 2>&1 | tee "$RUNNER_TEMP/surfaces.log"
+          if grep -Eq '(skipped|OK \(skipped)' "$RUNNER_TEMP/surfaces.log"; then
+            echo "A surface or MCP test was skipped in the Zig job."; exit 1
+          fi
