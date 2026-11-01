@@ -110,6 +110,7 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
     folder.has_positions = opened.metadata.has_positions;
     folder.source_error = opened.source_error;
     opened_engine.statistics = &folder.statistics;
+    opened_engine.folder = folder;
     return .{ .engine = opened_engine, .folder = folder };
 }
 

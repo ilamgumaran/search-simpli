@@ -97,7 +97,7 @@ pub fn currentGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.D
 }
 
 fn pathExists(dir: std.Io.Dir, io: std.Io, name: []const u8) !bool {
-    _ = dir.statFile(io, name, .{}) catch |err| switch (err) {
+    _ = dir.statFile(io, name, .{ .follow_symlinks = false }) catch |err| switch (err) {
         error.FileNotFound => return false,
         else => return err,
     };
@@ -326,4 +326,14 @@ test "NoFreeGeneration lists a tied section subset above a lower manifest" {
         "NoFreeGeneration: no generation number above 18446744073709551615 (traces: documents-18446744073709551615.hybseg, lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair",
         describeNoFreeGeneration(&buffer),
     );
+}
+
+test "filename generation slots respect dangling symlink directory entries" {
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{}); defer tmp.cleanup();
+    try tmp.dir.symLink(io, "missing", "filenames-1.hybseg", .{});
+    try tmp.dir.symLink(io, "missing", "filename-lexical-2.hyblex", .{});
+    try std.testing.expectEqual(@as(u64, 3), try nextFreeGeneration(std.testing.allocator, io, tmp.dir));
+    // Nothing repairs or replaces the reserved entries.
+    try std.testing.expectEqual(std.Io.File.Kind.sym_link, (try tmp.dir.statFile(io, "filenames-1.hybseg", .{ .follow_symlinks = false })).kind);
 }

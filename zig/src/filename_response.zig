@@ -1,5 +1,6 @@
 const engine_module = @import("engine.zig");
 const filename_field = @import("filename_field.zig");
+const scope = @import("scope.zig");
 const hybrid = @import("hybrid.zig");
 const std = @import("std");
 
@@ -152,10 +153,16 @@ fn writeEvidenceInternal(
         try json.endObject();
     }
     try json.endArray();
+    var pending_files: usize = 0;
+    var truncated = false;
+    if (engine.folder) |folder| {
+        for (folder.pending) |entry| if (entryVisible(folder.*, entry, options)) { pending_files += 1; };
+        for (folder.skipped) |entry| if (entryVisible(folder.*, entry, options)) { truncated = true; };
+    }
     try json.objectField("truncated");
-    try json.write(false);
+    try json.write(truncated);
     try json.objectField("pending_files");
-    try json.write(@as(usize, 0));
+    try json.write(pending_files);
     try json.objectField("answer_policy");
     try json.write(.{
         .ground_in_results = true,
@@ -369,4 +376,13 @@ test "filename results expose source-based match sections and readable citations
     try std.testing.expect(std.mem.indexOf(u8, human.written(), "Content: MATCH") != null);
     try std.testing.expect(std.mem.indexOf(u8, human.written(), "docs/Annual_Report.md:8-10") != null);
     try std.testing.expect(std.mem.indexOf(u8, human.written(), "text: The budget grew.") != null);
+}
+
+fn entryVisible(folder: scope.Folder, entry: @import("manifest.zig").PendingEntry, options: hybrid.SearchOptions) bool {
+    for (folder.roots, 0..) |root, index| {
+        if (!std.mem.eql(u8, root.root_id, entry.root_id)) continue;
+        if (options.visible_roots) |mask| if (index >= mask.allowed.len or !mask.allowed[index]) return false;
+        return scope.holdsAll(root.required_labels, options.principal_labels) and scope.holdsAll(entry.required_labels, options.principal_labels);
+    }
+    return false;
 }

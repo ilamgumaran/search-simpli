@@ -807,14 +807,6 @@ pub fn searchKnowledge(allocator: std.mem.Allocator, service: service_module.Ser
         };
         var output: std.Io.Writer.Allocating = .init(allocator);
         filename_response.writeEvidence(&output.writer, allocator, service.engine, parsed.query, parsed.field, search_options, hits, false) catch return error.OutOfMemory;
-        if (service.folder != null) {
-            const complete = scopedOf(service).completeness(allocator, parsed.scope) catch return error.OperationFailed;
-            const object = std.json.parseFromSlice(std.json.Value, allocator, output.written(), .{}) catch |err| switch (err) { error.OutOfMemory => return error.OutOfMemory, else => return error.OperationFailed };
-            var value = object.value;
-            try value.object.put(allocator, "pending_files", .{ .integer = @intCast(complete.pending_files) });
-            try value.object.put(allocator, "truncated", .{ .bool = complete.truncated });
-            return .{ .ok = try std.json.Stringify.valueAlloc(allocator, value, .{}) };
-        }
         return .{ .ok = output.written() };
     }
     const scoped = parsed.scope.roots != null and service.folder != null;

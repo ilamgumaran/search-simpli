@@ -821,7 +821,7 @@ pub fn runQuery(
 
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
-    const engine = try snapshot_open.open(arena, io, dir);
+    const engine = if (options.search_field != .content) (try snapshot_open.openScoped(arena, io, dir)).engine else try snapshot_open.open(arena, io, dir);
     if (options.search_field != .content) {
         const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
         const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);
@@ -881,7 +881,7 @@ pub fn runEvidence(
 
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
-    const engine = try snapshot_open.open(arena, io, dir);
+    const engine = if (options.search_field != .content) (try snapshot_open.openScoped(arena, io, dir)).engine else try snapshot_open.open(arena, io, dir);
     if (options.search_field != .content) {
         const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
         const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);

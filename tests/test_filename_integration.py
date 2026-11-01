@@ -66,15 +66,21 @@ class FilenameIntegrationTests(unittest.TestCase):
     def test_refresh_keeps_channel_and_root_scope_precedes_filename_statistics(self):
         text = base64.b64encode(b'# Private\nCopper secret evidence.\n').decode()
         batch = {'roots':[{'root_id':'vault','kind':'host','required_labels':['secret']}],
-                 'changes':[{'op':'add','root_id':'vault','path':'annual-hidden.md','content_base64':text}]}
+                 'changes':[{'op':'add','root_id':'vault','path':'annual-hidden.md','content_base64':text},
+                            {'op':'pending','root_id':'vault','path':'private-wait.md'},
+                            {'op':'pending','root_id':'r-legacy','path':'public-wait.md'}]}
         changes = self.root/'changes.json'
         changes.write_text(json.dumps(batch))
         self.call('apply', self.index, '--changes',changes,'--json')
         request = {'query':'annual','retrieval_mode':'lexical','search_field':'both'}
         public = self.rpc(request)
         self.assertEqual([r['citation']['path'] for r in public['results']],['annual-ledger.md'])
+        self.assertEqual(public['pending_files'],1)
+        cli = json.loads(self.call('evidence',self.index,'annual','--search-field','filename'))
+        self.assertEqual(cli['pending_files'],1)
         private = self.rpc(request,'--roots','vault','--labels','secret')
         self.assertEqual([r['citation']['path'] for r in private['results']],['vault/annual-hidden.md'])
+        self.assertEqual(private['pending_files'],1)
         self.assertEqual((self.index/'MANIFEST').read_bytes()[:8],b'HYBMAN03')
         self.assertEqual(validate(private,load_tool_schema('search_knowledge','result')), [])
 

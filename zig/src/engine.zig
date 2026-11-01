@@ -25,6 +25,7 @@ pub const Evidence = struct {
 
 pub const Engine = struct {
     roots: []const manifest.RootEntry = &.{},
+    folder: ?*const scope.Folder = null,
     catalog_encoded: []const u8 = &.{},
     filename_lexical_encoded: []const u8 = &.{},
     filename_index_enabled: bool = false,
