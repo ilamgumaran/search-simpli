@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-10-31
+Last updated: 2026-10-31 (S3-T8 hand-off)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,206 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## Folder knowledge (S3) (S3-T8, 2026-10-31)
+
+Series S3 (CAP-19, [plan](docs/plans/folder-knowledge-plan.md)) is complete on `main`
+through S3-T7; S3-T8 rebuilt the three native libraries, bumped the Dart package to
+0.2.0 (contracts 2.0.0; an older library is refused) and filed the consumer hand-off
+([Report](docs/tasks/S3-T8.md)). What exists: `md-section-v1` and the retained source
+(S3-T1), `HYBLEX02` positions with `find` words/phrase/prefix (S3-T2), roots and
+`apply_changes` (S3-T3), six more ABI functions on every surface (S3-T4), nine tool
+schemas and the skill document (S3-T5), `searchd mcp` pinned to MCP revision
+**2025-11-25** (S3-T6), the family-folder fixture (S3-T7). Register: CAP-19 and
+FR-17 to FR-25, NFR-10 to NFR-12, NFR-14 are `Diagnostic · implemented`; NFR-13 stays
+Proposed (its 64 MiB arena-cap test is not recorded); CFT-09 stays Blocked (interchange
+carries no chunker id).
+
+**Benchmark profile** (docs/folder-knowledge-implementation.md section 13): MacBook Pro,
+Apple M5 Pro (18 cores), 48 GB, macOS 26.6.2 (25G83); Zig 0.16.0. "10k" = the
+`scripts/gen_timing_corpus.py <dir> 10000` corpus (10,000 Markdown files, 7,269,199
+bytes, sha256 of the files in sorted path order `3a520dd5...ed96e38`; 19,959 chunks
+after S3-T1, 10,003 before). "Before" is the tree before the named task; the shipped
+mode is `ReleaseSmall`. Other sessions were running (load average 1.2 to 2.6). Every
+cell is a measured number; the last column names the task whose Report or Verdict
+holds it (S3-T8 = measured by this task's builder).
+
+| Measure (10k corpus unless named) | Before | After | Mode | Measured by |
+|---|---|---|---|---|
+| `searchd index` wall time, 3 runs | 0.55 s (0.72 first) | 0.69 s (0.85 first) | ReleaseSmall | S3-T8 |
+| `searchd index` wall time (ReleaseFast) | 0.46 / 0.45 / 0.45 s | 0.61 / 0.43 / 0.43 s (after S3-T2); 0.42 to 0.43 s (after S3-T3) | ReleaseFast | S3-T2, S3-T3 |
+| `searchd index` peak RSS | 249,413,632 B | 130,416,640 B | ReleaseSmall | S3-T8 (S3-T2: 266,076,160 to 118,390,784 B in ReleaseFast) |
+| Documents section | 7,949,951 B | 9,273,775 B (+16.7 %) | any | S3-T1 |
+| Lexical section | 8,177,741 B (`HYBLEX01`, 10,003 chunks) | 12,487,753 B (`HYBLEX02`, 19,959 chunks) | any | S3-T1, S3-T2, S3-T8 |
+| `HYBLEX02` / `HYBLEX01` on the same chunks | | 12,487,753 / 9,000,597 = 1.39x (target at most 2.5x) | any | S3-T2 |
+| Retained source section | none | 8,279,041 B (1.14x the 7,269,199 B of text) | any | S3-T1 |
+| INDEX-STATE.json | 1,182,387 B | 2,522,530 B | any | S3-T8 |
+| MANIFEST | 153 B | 540 B | any | S3-T8 |
+| Whole generation (documents + lexical + source + manifest) | 16,127,845 B | 30,041,109 B (1.86x) | any | S3-T1, S3-T8 |
+| `find` words p50 / p95 | | 6.5 / 245.8 us (ReleaseFast 5.6 / 223.7) | ReleaseSmall | S3-T2 |
+| `find` phrase p50 / p95 | | 23.1 / 888.5 us (ReleaseFast 17.6 / 750.3) | ReleaseSmall | S3-T2 |
+| `find` prefix p50 / p95 | | 744.7 / 2,953.3 us (ReleaseFast 663.9 / 2,599.9) | ReleaseSmall | S3-T2 |
+| `search_knowledge` p50 / p95 | 86.6 / 126.0 us (ReleaseFast 65.4 / 105.2) | 48.2 / 132.3 us (ReleaseFast 31.5 / 102.1) | ReleaseSmall | S3-T2 |
+| `search_knowledge`, union fixture (998 chunks) p50 | 30.3 to 30.8 us | 35.5 to 36.8 us (+6 us, a NEXT row) | ReleaseSmall | S3-T4 |
+| `read_span` p50 / p95, 10k corpus | | 708 / 1,208 ns | ReleaseSmall | S3-T1 |
+| `read_span` p50 / p95, line 9,000 deep in the 15,500-line file | 32.6 / 67.5 us | 1.08 / 1.71 us (sparse line index) | ReleaseSmall | S3-T4 |
+| `apply_changes`, full 10k index (10,000 `content_base64` adds) | | 326 ms, 144 MB (ReleaseFast); 573 ms, 144 MB (ReleaseSmall) | both | S3-T3 (NFR-12 at most 3 s and 300 MB: met) |
+| `apply_changes`, one changed file in the 10k index | | 163 ms (ReleaseFast, bound 200 ms: met); 215 ms ReleaseSmall (missed by about 15 ms, bound amended) | both | S3-T3 |
+| MCP adapter overhead p95 over the direct call (`find` / `search_knowledge`) | | 25.0 to 28.9 / 42.4 to 44.9 us (gate 5 ms) | ReleaseSmall | S3-T6 |
+| MCP start-up, spawn to `initialize` | | p50 21.0 ms, p95 21.2 ms | ReleaseSmall | S3-T6 |
+| `ss_open`, 10k index (p50 of 30 opens, 3 rounds) | 47.5 ms (pre-S3 library and index) | 102.0 to 102.8 ms | ReleaseSmall | S3-T8 |
+| `ss_open`, family-folder fixture | 13.0 ms | 18.4 ms | ReleaseSmall | S3-T4 |
+| Native library, macOS dylib | 435,048 B | 697,544 B | ReleaseSmall | S3-T8 |
+| Native library, Android `.so` | 427,760 B | 676,752 B | ReleaseSmall | S3-T8 |
+| Native library, iOS framework binary | 430,688 B | 677,448 B | ReleaseSmall | S3-T8 |
+
+Notes. The pre-S3 index (S3-T8, built from `86096e9`) has about one chunk per file of the 10k corpus
+where `md-section-v1` makes about two, so the lexical and document rows compare
+different chunk counts; the `HYBLEX02`/`HYBLEX01` row holds the chunks equal. The 10k
+`ss_open` doubles because the open now also validates the 8.3 MB source section and
+builds the statistics, path, sparse line and position tables; the consumer app measures
+it on the phones. The costs S3 added are the `ReleaseSmall` `search_knowledge` regression
+on a small corpus, the `ReleaseSmall` one-file bound and `ss_open`; of these only the
+one-file bound has a stated target, which it misses by about 15 ms in `ReleaseSmall`
+(amended to `ReleaseFast`, a NEXT row).
+
+**Pinned MCP revision:** `2025-11-25` (`zig/src/mcp.zig`, `protocol_version`;
+[docs/mcp-server.md](docs/mcp-server.md)).
+
+**Fixture metrics** (`fixtures/family-folder/`, S3-T7 with S3-T1 to S3-T6):
+42 invented files in three roots (`school` 16, `home` 16, `laptop` 10; 34 Markdown, 8 text),
+one 1,133,158 B file, 1,150,039 B of text in all, 12 files with front matter, two files with
+equal content; 998 chunks (143 `md-section-v1`, 855 `line-window-v1`). `judgments.json`
+version 2: 13 scenarios, 5 phrase, 5 prefix, 5 outline, 8 `read_span`. Results through the
+Python reference and the Zig core: words recall@5 1.000; phrase and prefix precision 1.00
+and recall 1.00 (expected engine misses p3 and x1's front-matter line found);
+outline 7/7; `read_span` 9/9 (sha256 and byte length); lifecycle 3/3; 0 skipped.
+MCP: 66 parity requests 100 % equal to RPC, conformance client 27/27 checks.
+
+## S3-T8: native rebuild, digests and the consumer pin (2026-10-31)
+
+The three native libraries rebuilt from the merged source are byte-identical to
+S3-T6's (macOS dylib 697,544 B, Android `.so` 676,752 B, iOS framework binary
+677,448 B; four iOS segments 16 KiB aligned; `native/SOURCE-SHA256`
+`9f9a58d6…ae871`). The Dart package is 0.2.0 (contracts 2.0.0; an older library
+is refused with `ContractsVersionMismatchException`). The "Folder knowledge (S3)"
+section above holds the benchmark table, the pinned MCP revision and the fixture
+metrics; CAP-19's rows are `Diagnostic · implemented`, NFR-13 stays Proposed and
+CFT-09 Blocked (both accepted). The Linux CI job runs the MCP, surface and CLI
+process tests by name and fails on a skip; the conformance client's
+`resources/read` size check is BOM-aware. `ss_open` on the 10k index rose from
+47.5 to about 102 ms (accepted for the pin; a NEXT row asks for lazy loading).
+The consumer app pins the merge commit of `verify/S3-T8` in its M16-T1.
+Verified and merged 2026-10-31. [Task](docs/tasks/S3-T8.md).
+
+## S3-T6: the MCP server, `searchd mcp` (2026-10-31)
+
+`searchd mcp <index-dir> [--roots a,b] [--labels l1,l2] [--baseline]
+[--allow-write] [--allow-file-reads]` serves one published index to an MCP
+host over stdio (newline-delimited JSON-RPC 2.0, pinned revision
+`2025-11-25`): `initialize`, `ping`, `tools/list`, `tools/call`,
+`resources/list`, `resources/read`, `resources/templates/list`
+(`search://{root_id}/{path}`). `--baseline` lists exactly CAP-13's four
+tools and no resources; the default lists the eight read tools; only
+`--allow-write` adds `apply_changes`, confined to `--roots`. Each tool's
+`inputSchema`/`outputSchema` is its `contracts/tools/` file; a result
+carries the canonical JSON as `structuredContent` and as one text block,
+equal to `searchd serve`'s `result` for all 66 fixture-judgment requests; a
+refusal is an `isError` result holding the RPC error object. The scope comes
+from the command line only (a call carrying `principal_labels` or
+`query_vector` is refused). `resources/read` reads a whole file through
+`read_span`'s limits. `search_knowledge` (RPC and MCP; not `ss_query`) adds
+`root_id`, `section_path`, `truncated` and `pending_files`. Adapter overhead
+p95 26–46 µs (ReleaseSmall) against CAP-13's 5 ms gate; start-up 21 ms.
+`tests/mcp_client.py` is a standard-library conformance client (27 checks).
+CAP-13 is Diagnostic, realized by S3-T6; board I-01 done. Verified and
+merged 2026-10-31. [Task](docs/tasks/S3-T6.md), [MCP server](docs/mcp-server.md).
+
+## S3-T5: tool schemas and the folder-knowledge skill (2026-10-31)
+
+`contracts/tools/` holds a JSON Schema 2020-12 request and result file for each
+of the nine tools (`search_knowledge`, `read_chunk`, `list_sources`,
+`index_status`, `find`, `outline`, `read_span`, `list_files`,
+`apply_changes`), closed (`additionalProperties: false`) and described; the
+request schemas omit `principal_labels` and `query_vector` (the host's, CAP-13).
+`src/search_platform/schema_check.py` validates the subset the schemas use and
+raises on any other keyword; the tests validate real `searchd serve`, CLI
+`--json` and apply responses on the fixture. `skills/folder-knowledge/SKILL.md`
+teaches a model the loop (status, `find` or `search_knowledge`, confirm with
+`read_span`/`read_chunk`, answer with `[n]`, cite `root/path › section ·
+lines`), the exact negative sentence "I found no matching indexed passages in
+the selected folders." and never to call `apply_changes`;
+`skills/folder-knowledge/example_loop.py` runs it against `searchd serve` on
+the fixture. `docs/tool-schemas.md` shows the `input_schema`, `parameters` and
+MCP `inputSchema` wrappings. No engine change. Verified and merged
+2026-10-31. [Task](docs/tasks/S3-T5.md).
+
+## S3-T4: folder knowledge on every surface, contract 2.0.0 (2026-10-31)
+
+The C ABI gains `ss_find`, `ss_outline`, `ss_read_span`, `ss_list_files`,
+`ss_roots` and `ss_apply_changes` (the ten v1 functions keep their signatures;
+`ss_query`/`ss_evidence` take `roots`; `ss_status` and `ss_evidence` append the
+2.0.0 fields after the v1 ones). `searchd` gains `find`, `outline`,
+`read-span`, `list-files`, `roots` and `apply` (text or `--json`), and
+`searchd serve` the methods `find`, `outline`, `read_span`, `list_files`,
+`roots` and, with `--allow-write`, `apply_changes`; the scope comes from
+`--roots`/`--labels` (the raw service still accepts bounded request labels
+when `--labels` is absent). One module, `zig/src/ops.zig`, writes the JSON for
+all three, and the Dart binding (`find`, `outline`, `readSpan`, `listFiles`,
+`roots`, static `applyChanges`, typed results) refuses a pre-2.0.0 library with
+`ContractsVersionMismatchException`. `ss_status`, `ss_evidence` and RPC
+`index_status`/`read_chunk` are scoped (a hidden file or chunk reads as
+absent); a lost or damaged source section no longer fails the open (only
+`read_span`/`outline` answer `CAPACITY`); the source section gets a sparse
+line index at open (deep `read_span` p95 about 60-100 us to 2-3 us,
+ReleaseSmall). `contracts/CONTRACTS_VERSION` 2.0.0. Native libraries rebuilt
+(SOURCE-SHA256 `e30b9e9a...`; macOS 697,544 B); `ss_open` on the fixture 13.1
+to 18.4 ms. The consumer app regenerates its contract types at its pin bump.
+Verified and merged 2026-10-31. [Task](docs/tasks/S3-T4.md).
+
+## S3-T3: roots, apply_changes, visible-scope statistics (2026-10-31)
+
+A generation now holds several roots (`meta.roots`: `root_id`, `label`, `kind`,
+`required_labels`, `retain_source`, `origin`); records are `root_id/relative`,
+except `r-legacy` (the `index_folder` root), which keeps bare paths so existing
+chunk ids and citations do not change. `apply.applyChanges` (core only; ABI,
+CLI, Dart and RPC in S3-T4) applies host-fed `add | change | remove | move |
+pending | remove_root` batches: strict `content_base64` or a `file` under a
+declared local root (no symlinks, file reads opt-in), sha256 verified, caps of
+10,000 changes and `max_total_bytes`, `expect_generation` first ("stale:
+generation is M"), `conflicts`, rename detection with sorted pairing and
+`ambiguous_moves`, `pending` dropping chunks, one atomic publication with
+`INDEX-STATE.json` v2 written after it. `index_folder` is a walk over the same
+path and its report is unchanged. BM25 statistics, prefix expansion and every
+scoped core operation (`service.ScopedService`) see only the visible scope
+(roots named and labels); a hidden label domain is indistinguishable from an
+absent one in every payload (timing is not equal; disclosed in
+`docs/authorization.md`). The unscoped C ABI/RPC `index_status` still report
+whole-index counts until S3-T4. Measured on the 10k corpus: full index through
+`apply_changes` 0.31-0.34 s, 145 MB (ReleaseFast); one changed file 168 ms
+ReleaseFast, 220 ms ReleaseSmall (NFR-12 amended to ReleaseFast). Native
+libraries rebuilt (SOURCE-SHA256 `6b7ae4fe...`). Verified and merged
+2026-10-31. [Task](docs/tasks/S3-T3.md).
+
+## S3-T2: positions, phrase, prefix, conjunctive words, snippets (2026-10-31)
+
+`searchd index` (full and `--update`) now writes the lexical section as `HYBLEX02`
+(80-byte header, a sorted dictionary, section 4 token ordinals delta-LEB128 per
+posting, section 5 per-token codepoint offsets into the chunk text); the v2
+manifest sets `has_positions`. `import-json` keeps `HYBLEX01` under its v1
+manifest; both open. `find` (Zig core `zig/src/find.zig`, Python reference
+`src/search_platform/find.py`) answers `words` (conjunctive, BM25), `phrase`
+(adjacent ordinals within one chunk; a quoted query forces it) and `prefix`
+(last token only, at most 1,000 visible expansions, else `CAPACITY`) with
+`match_offsets`, snippets (at most 240 codepoints, `snippet_offsets`,
+`snippet_start`), `exact_match`, `coverage`, per-file counts and a
+generation-bound cursor ("stale cursor"); a `HYBLEX01` generation answers
+`phrase` with `CAPACITY` "re-index required: positions absent".
+`search_knowledge` is unchanged. Not yet on the ABI, CLI, Dart or RPC (S3-T4).
+Measured on the 10k corpus: `HYBLEX02` 1.39x `HYBLEX01`, phrase p50 about 18 us,
+words about 5 us (ReleaseFast), index peak RSS 266 to 118 MB. Native libraries
+rebuilt (SOURCE-SHA256 `eea716c6...`). Format: `docs/lexical-segment-format-v2.md`;
+tables: `docs/scale-benchmark.md`. Verified and merged 2026-10-31. [Task](docs/tasks/S3-T2.md).
 
 ## S3-T1: manifest v2, md-section-v1, records v4, retained source (2026-10-31)
 

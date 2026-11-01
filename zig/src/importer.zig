@@ -184,15 +184,21 @@ pub fn importJsonKeeping(
 
 /// The `analyzer-v2` lexical build, step for step what `indexer.indexFolder`
 /// does for a folder (`indexer.zig`, "token_lists" through
-/// `lexical_build.build`): the same tokenizer over each document's text, in
-/// document order, into the same hash-map build. Same chunks in, same
-/// dictionary, postings, document lengths and average length out.
+/// `lexical_build.buildPositional`): the same tokenizer over each document's
+/// text, in document order, into the same build. Same chunks in, same sorted
+/// dictionary, postings, document lengths and average length out. S3-T2:
+/// the positions are dropped, because a v1 manifest (what `import-json`
+/// writes) cannot bind a `HYBLEX02` section; the result is a `HYBLEX01`
+/// section whose sections 1-3 equal the folder door's byte for byte, and
+/// `find` answers `phrase` on it with `CAPACITY` "positions absent".
 fn buildAnalyzerV2(arena: std.mem.Allocator, documents: []const hybrid.Document) !postings.Index {
-    const token_lists = try arena.alloc([][]const u8, documents.len);
+    const token_lists = try arena.alloc([]const @import("analysis.zig").PositionedToken, documents.len);
     for (documents, token_lists) |document, *tokens| {
-        tokens.* = try indexer.tokenize(arena, .v2, document.text);
+        tokens.* = try indexer.tokenizePositioned(arena, .v2, document.text);
     }
-    return lexical_build.build(arena, documents, token_lists);
+    var index = try lexical_build.buildPositional(arena, documents, token_lists);
+    index.positions = null;
+    return index;
 }
 
 fn packRequiredLabels(allocator: std.mem.Allocator, source: []const []const u8) ![]u8 {

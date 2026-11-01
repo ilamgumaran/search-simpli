@@ -34,6 +34,7 @@
 //! - NFC (see `nfc.zig`) is complete since S1-T15 (singletons, Hangul) and is
 //!   checked against Python over every codepoint by `scripts/nfc_compare.py`.
 const std = @import("std");
+const analysis = @import("analysis.zig");
 const nfc = @import("nfc.zig");
 const tables = @import("unicode_tables.zig");
 
@@ -135,6 +136,83 @@ pub fn tokenize(allocator: std.mem.Allocator, text: []const u8) Error![][]const 
     return tokens.toOwnedSlice(allocator);
 }
 
+/// `tokenize` with each token's codepoint range in the original `text`
+/// (S3-T2): the same tokens in the same order (a test checks it), built on
+/// `nfc.normalizeMapped` so a token whose NFC differs from its input still
+/// covers the input it came from. Token bytes and the slice are owned by
+/// `allocator`.
+pub fn tokenizePositioned(allocator: std.mem.Allocator, text: []const u8) Error![]analysis.PositionedToken {
+    // Working buffers come from a general-purpose allocator and are freed
+    // here; only the result (one token array, one byte buffer) is
+    // allocated from `allocator`, at its exact size, so an indexing arena
+    // keeps no per-codepoint garbage.
+    const scratch = std.heap.smp_allocator;
+    var stream = try nfc.MappedIterator.init(scratch, text);
+    defer stream.deinit();
+    const Pending = struct { offset: usize, len: usize, start: u32, end: u32 };
+    var pending = std.ArrayList(Pending).empty;
+    defer pending.deinit(scratch);
+    var folded = std.ArrayList(u8).empty;
+    defer folded.deinit(scratch);
+
+    var current = try nextKept(&stream);
+    var in_token = false;
+    var token_start: u32 = 0;
+    var token_end: u32 = 0;
+    var byte_start: usize = 0;
+    while (current) |mapped| {
+        const following = try nextKept(&stream);
+        const cp = mapped.cp;
+        const continues = isLetterOrDigit(cp) or (in_token and (isMark(cp) or (isJoiner(cp) and
+            following != null and (isLetterOrDigit(following.?.cp) or isMark(following.?.cp)))));
+        if (continues) {
+            if (!in_token) {
+                token_start = mapped.start;
+                token_end = mapped.end;
+                byte_start = folded.items.len;
+            }
+            in_token = true;
+            token_start = @min(token_start, mapped.start);
+            token_end = @max(token_end, mapped.end);
+            var buffer: [4]u8 = undefined;
+            const len = std.unicode.utf8Encode(casefoldCodepoint(cp), &buffer) catch return error.InvalidUtf8;
+            try folded.appendSlice(scratch, buffer[0..len]);
+        } else if (in_token) {
+            try pending.append(scratch, .{ .offset = byte_start, .len = folded.items.len - byte_start, .start = token_start, .end = token_end });
+            in_token = false;
+        }
+        current = following;
+    }
+    if (in_token) try pending.append(scratch, .{ .offset = byte_start, .len = folded.items.len - byte_start, .start = token_start, .end = token_end });
+
+    const bytes = try allocator.dupe(u8, folded.items);
+    errdefer allocator.free(bytes);
+    const tokens = try allocator.alloc(analysis.PositionedToken, pending.items.len);
+    for (pending.items, tokens) |item, *token| token.* = .{
+        .bytes = bytes[item.offset .. item.offset + item.len],
+        .start = item.start,
+        .length = item.end - item.start,
+    };
+    return tokens;
+}
+
+/// The next mapped codepoint that is not a variation selector.
+fn nextKept(stream: *nfc.MappedIterator) Error!?nfc.MappedCodepoint {
+    while (try stream.next()) |mapped| {
+        if (!isVariationSelector(mapped.cp)) return mapped;
+    }
+    return null;
+}
+
+/// Frees what `tokenizePositioned` returned: the token bytes are one
+/// buffer, starting at the first token.
+pub fn freePositioned(allocator: std.mem.Allocator, tokens: []analysis.PositionedToken) void {
+    var total: usize = 0;
+    for (tokens) |token| total += token.bytes.len;
+    if (tokens.len > 0) allocator.free(@constCast(tokens[0].bytes.ptr)[0..total]);
+    allocator.free(tokens);
+}
+
 pub fn freeTokens(allocator: std.mem.Allocator, tokens: [][]const u8) void {
     for (tokens) |token| allocator.free(token);
     allocator.free(tokens);
@@ -196,4 +274,32 @@ test "tokenize: decomposed Hangul equals precomposed; CJK compatibility folds (S
     try expectTokens("\u{D55C}\u{AE00}", &.{"\u{D55C}\u{AE00}"});
     try expectTokens("\u{F900}", &.{"\u{8C48}"});
     try expectTokens("\u{212B}ngstrom", &.{"\u{E5}ngstrom"});
+}
+
+test "tokenizePositioned yields tokenize's tokens with codepoint offsets (S3-T2)" {
+    const allocator = std.testing.allocator;
+    const inputs = [_][]const u8{
+        "Zig, search-v2! Cafe\u{0301} rocks.", "\u{0BAA}\u{0BB3}\u{0BCD}\u{0BB3}\u{0BBF} \u{0BB5}\u{0BBF}\u{0B9F}\u{0BC1}",
+        "1\u{FE0F}\u{20E3} a\u{FE0F}b", "\u{1112}\u{1161}\u{11AB}\u{1100}\u{1173}\u{11AF} x", "\u{212B}ngstrom", "",
+        "\u{0915}\u{094D}\u{200D}\u{0937} a\u{200D} b", "the the  the",
+    };
+    for (inputs) |text| {
+        const plain = try tokenize(allocator, text);
+        defer freeTokens(allocator, plain);
+        const positioned = try tokenizePositioned(allocator, text);
+        defer freePositioned(allocator, positioned);
+        try std.testing.expectEqual(plain.len, positioned.len);
+        for (plain, positioned) |want, got| try std.testing.expectEqualStrings(want, got.bytes);
+    }
+    const positioned = try tokenizePositioned(allocator, "Caf\u{00E9}, cafe\u{0301}! x\u{FE0F}y");
+    defer freePositioned(allocator, positioned);
+    try std.testing.expectEqual(@as(usize, 3), positioned.len);
+    try std.testing.expectEqual(@as(u32, 0), positioned[0].start);
+    try std.testing.expectEqual(@as(u32, 4), positioned[0].length);
+    try std.testing.expectEqual(@as(u32, 6), positioned[1].start);
+    try std.testing.expectEqual(@as(u32, 5), positioned[1].length);
+    try std.testing.expectEqualStrings("caf\u{00e9}", positioned[1].bytes);
+    try std.testing.expectEqual(@as(u32, 13), positioned[2].start);
+    try std.testing.expectEqual(@as(u32, 3), positioned[2].length);
+    try std.testing.expectEqualStrings("xy", positioned[2].bytes);
 }

@@ -13,7 +13,12 @@
 /// `vizhi_core` itself.
 library;
 
-/// `ss_status()`'s JSON object.
+import 'folder_contracts.dart';
+
+/// `ss_status()`'s JSON object. Since contract 2.0.0 every count is over
+/// the default scope (every root, no principal labels) and the object also
+/// carries [files] through [chunkers]; they are null only when parsing a
+/// 1.x object.
 class SnapshotStatus {
   final bool ready;
   final int generation;
@@ -23,6 +28,14 @@ class SnapshotStatus {
   final int documents;
   final int terms;
   final int postings;
+  final int? files;
+  final int? pending;
+  final bool? truncated;
+  final List<RootInfo>? roots;
+  final List<FileRef>? pendingPaths;
+  final bool? hasSource;
+  final bool? hasPositions;
+  final List<String>? chunkers;
 
   const SnapshotStatus({
     required this.ready,
@@ -33,6 +46,14 @@ class SnapshotStatus {
     required this.documents,
     required this.terms,
     required this.postings,
+    this.files,
+    this.pending,
+    this.truncated,
+    this.roots,
+    this.pendingPaths,
+    this.hasSource,
+    this.hasPositions,
+    this.chunkers,
   });
 
   factory SnapshotStatus.fromJson(Map<String, Object?> json) => SnapshotStatus(
@@ -44,6 +65,14 @@ class SnapshotStatus {
         documents: json['documents']! as int,
         terms: json['terms']! as int,
         postings: json['postings']! as int,
+        files: json['files'] as int?,
+        pending: json['pending'] as int?,
+        truncated: json['truncated'] as bool?,
+        roots: (json['roots'] as List<Object?>?)?.map((e) => RootInfo.fromJson(e! as Map<String, Object?>)).toList(growable: false),
+        pendingPaths: (json['pending_paths'] as List<Object?>?)?.map((e) => FileRef.fromJson(e! as Map<String, Object?>)).toList(growable: false),
+        hasSource: json['has_source'] as bool?,
+        hasPositions: json['has_positions'] as bool?,
+        chunkers: (json['chunkers'] as List<Object?>?)?.map((e) => e! as String).toList(growable: false),
       );
 
   Map<String, Object?> toJson() => {
@@ -55,6 +84,14 @@ class SnapshotStatus {
         'documents': documents,
         'terms': terms,
         'postings': postings,
+        if (files != null) 'files': files,
+        if (pending != null) 'pending': pending,
+        if (truncated != null) 'truncated': truncated,
+        if (roots != null) 'roots': roots!.map((r) => r.toJson()).toList(),
+        if (pendingPaths != null) 'pending_paths': pendingPaths!.map((r) => r.toJson()).toList(),
+        if (hasSource != null) 'has_source': hasSource,
+        if (hasPositions != null) 'has_positions': hasPositions,
+        if (chunkers != null) 'chunkers': chunkers,
       };
 
   @override
@@ -507,11 +544,21 @@ class EvidenceChunk {
   final SearchCitation? citation;
   final String? content;
 
+  /// Contract 2.0.0 (null when parsing a 1.x object): the chunk's root, its
+  /// Markdown heading path ([] for other files) and the adjacent chunks of
+  /// the same file.
+  final String? rootId;
+  final List<String>? sectionPath;
+  final EvidenceNeighbours? neighbours;
+
   const EvidenceChunk({
     required this.chunkId,
     required this.found,
     this.citation,
     this.content,
+    this.rootId,
+    this.sectionPath,
+    this.neighbours,
   });
 
   factory EvidenceChunk.fromJson(Map<String, Object?> json) {
@@ -524,6 +571,9 @@ class EvidenceChunk {
       found: true,
       citation: SearchCitation.fromJson(json['citation']! as Map<String, Object?>),
       content: json['content']! as String,
+      rootId: json['root_id'] as String?,
+      sectionPath: (json['section_path'] as List<Object?>?)?.map((e) => e! as String).toList(growable: false),
+      neighbours: json['neighbours'] == null ? null : EvidenceNeighbours.fromJson(json['neighbours']! as Map<String, Object?>),
     );
   }
 
@@ -532,6 +582,9 @@ class EvidenceChunk {
           'chunk_id': chunkId,
           'citation': citation!.toJson(),
           'content': content,
+          if (rootId != null) 'root_id': rootId,
+          if (sectionPath != null) 'section_path': sectionPath,
+          if (neighbours != null) 'neighbours': neighbours!.toJson(),
         }
       : {'chunk_id': chunkId, 'found': false};
 
@@ -754,4 +807,32 @@ class IndexFolderReport {
   String toString() =>
       'IndexFolderReport(generation: $generation, documents: $documents, '
       'added: $added, changed: $changed, removed: $removed)';
+}
+
+/// A neighbouring chunk named by [EvidenceNeighbours].
+class ChunkRef {
+  final String chunkId;
+  final int startLine;
+  final int endLine;
+  const ChunkRef({required this.chunkId, required this.startLine, required this.endLine});
+
+  factory ChunkRef.fromJson(Map<String, Object?> json) =>
+      ChunkRef(chunkId: json['chunk_id']! as String, startLine: json['start_line']! as int, endLine: json['end_line']! as int);
+
+  Map<String, Object?> toJson() => {'chunk_id': chunkId, 'start_line': startLine, 'end_line': endLine};
+}
+
+/// `neighbours` of an evidence item (contract 2.0.0): the chunks of the same
+/// file just before and after it, by start line.
+class EvidenceNeighbours {
+  final ChunkRef? prev;
+  final ChunkRef? next;
+  const EvidenceNeighbours({this.prev, this.next});
+
+  factory EvidenceNeighbours.fromJson(Map<String, Object?> json) => EvidenceNeighbours(
+        prev: json['prev'] == null ? null : ChunkRef.fromJson(json['prev']! as Map<String, Object?>),
+        next: json['next'] == null ? null : ChunkRef.fromJson(json['next']! as Map<String, Object?>),
+      );
+
+  Map<String, Object?> toJson() => {'prev': prev?.toJson(), 'next': next?.toJson()};
 }

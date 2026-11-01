@@ -61,3 +61,17 @@ execution or merges are included. Format/state amendments are requirements
 for subsequent implementation, not claims that v3 or atomic host state exists.
 PR #18 remains a packaging/integration follow-up; PR #11's conflicting branch
 needs its own rebase and verification, outside these S3 corrections.
+
+## Integration update (2026-11-01)
+
+While publication was in progress, main advanced to 292cb56826a4aa1bc824c79c50af600667cd72f3
+through S3-T8. Merge that main without reverting any S3 work. S3-T3 already
+implements state reconstruction; the current amendment therefore requires an
+extended exact-state recovery oracle and names immutable manifest-bound state
+as a fallback only if that oracle cannot pass. Existing task Reports/Verdicts
+are preserved, and format coordination remains a future CAP-16 integration.
+
+The execution environment became unavailable before an integrated rerun.
+The 53 passing tests above were run over 73fc226, not this newer base. The CLI
+fix is reapplied to the newer runner with its phrase/prefix/lifecycle logic
+unchanged; hosted CI and a fresh native-equipped check must validate the merge.

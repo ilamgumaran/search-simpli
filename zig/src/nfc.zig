@@ -95,6 +95,162 @@ pub fn normalize(allocator: std.mem.Allocator, text: []const u8) Error![]u8 {
     return out.toOwnedSlice(allocator);
 }
 
+/// NFC with a map back to the input (S3-T2, `docs/lexical-segment-format-v2.md`):
+/// `codepoints[i]` came from input codepoints `starts[i] .. ends[i]`. The
+/// regions are `normalize`'s (an inert codepoint before a run of non-inert
+/// ones, up to the next inert codepoint), so `codepoints` is exactly
+/// `normalize(text)` decoded. A region whose NFC equals its input maps one to
+/// one; a region NFC changes maps every output codepoint to the whole region
+/// (a composed `e` + U+0301 is one codepoint covering both). Token offsets
+/// built from the map therefore always cover the original text of the token.
+pub const Mapped = struct {
+    codepoints: []u21,
+    starts: []u32,
+    ends: []u32,
+
+    pub fn deinit(mapped: Mapped, allocator: std.mem.Allocator) void {
+        allocator.free(mapped.codepoints);
+        allocator.free(mapped.starts);
+        allocator.free(mapped.ends);
+    }
+};
+
+/// One codepoint of NFC output and the input codepoints `start .. end` it came from.
+pub const MappedCodepoint = struct { cp: u21, start: u32, end: u32 };
+
+/// `normalizeMapped` as a stream (S3-T2): one output codepoint at a time,
+/// holding only the current region, so tokenizing a large text costs no
+/// per-codepoint arrays. `allocator` backs the region buffers (`deinit`).
+/// `text` must be valid UTF-8 (checked by `init`).
+pub const MappedIterator = struct {
+    allocator: std.mem.Allocator,
+    text: []const u8,
+    at: usize = 0,
+    index: u32 = 0,
+    simple: bool,
+    queue: std.ArrayList(MappedCodepoint) = .empty,
+    queue_head: usize = 0,
+    region: std.ArrayList(u21) = .empty,
+    scratch: std.ArrayList(u21) = .empty,
+
+    pub fn init(allocator: std.mem.Allocator, text: []const u8) Error!MappedIterator {
+        if (!std.unicode.utf8ValidateSlice(text)) return error.InvalidUtf8;
+        return .{ .allocator = allocator, .text = text, .simple = !hasAnyCombiningOrDecomposable(text) };
+    }
+
+    pub fn deinit(iterator: *MappedIterator) void {
+        iterator.queue.deinit(iterator.allocator);
+        iterator.region.deinit(iterator.allocator);
+        iterator.scratch.deinit(iterator.allocator);
+    }
+
+    const Decoded = struct { cp: u21, len: u3 };
+
+    fn decodeAt(text: []const u8, at: usize) Decoded {
+        const len = std.unicode.utf8ByteSequenceLength(text[at]) catch unreachable;
+        return .{ .cp = std.unicode.utf8Decode(text[at .. at + len]) catch unreachable, .len = len };
+    }
+
+    pub fn next(iterator: *MappedIterator) Error!?MappedCodepoint {
+        if (iterator.queue_head < iterator.queue.items.len) {
+            defer iterator.queue_head += 1;
+            return iterator.queue.items[iterator.queue_head];
+        }
+        if (iterator.at >= iterator.text.len) return null;
+        const current = decodeAt(iterator.text, iterator.at);
+        const after = iterator.at + current.len;
+        const next_inert = after >= iterator.text.len or isInert(decodeAt(iterator.text, after).cp);
+        if (iterator.simple or (isInert(current.cp) and next_inert)) {
+            defer {
+                iterator.at = after;
+                iterator.index += 1;
+            }
+            return .{ .cp = current.cp, .start = iterator.index, .end = iterator.index + 1 };
+        }
+        // A region: this codepoint up to the next inert one.
+        const start = iterator.index;
+        iterator.region.clearRetainingCapacity();
+        try iterator.region.append(iterator.allocator, current.cp);
+        iterator.at = after;
+        iterator.index += 1;
+        while (iterator.at < iterator.text.len) {
+            const following = decodeAt(iterator.text, iterator.at);
+            if (isInert(following.cp)) break;
+            try iterator.region.append(iterator.allocator, following.cp);
+            iterator.at += following.len;
+            iterator.index += 1;
+        }
+        iterator.scratch.clearRetainingCapacity();
+        for (iterator.region.items) |cp| try decomposeOne(iterator.allocator, cp, &iterator.scratch);
+        canonicalOrder(iterator.scratch.items);
+        const composed = compose(iterator.scratch.items);
+        const same = std.mem.eql(u21, composed, iterator.region.items);
+        iterator.queue.clearRetainingCapacity();
+        iterator.queue_head = 0;
+        for (composed, 0..) |cp, k| {
+            const offset: u32 = @intCast(k);
+            try iterator.queue.append(iterator.allocator, .{
+                .cp = cp,
+                .start = if (same) start + offset else start,
+                .end = if (same) start + offset + 1 else iterator.index,
+            });
+        }
+        return iterator.next();
+    }
+};
+
+pub fn normalizeMapped(allocator: std.mem.Allocator, text: []const u8) Error!Mapped {
+    var iterator = try MappedIterator.init(allocator, text);
+    defer iterator.deinit();
+    var codepoints = std.ArrayList(u21).empty;
+    errdefer codepoints.deinit(allocator);
+    var starts = std.ArrayList(u32).empty;
+    errdefer starts.deinit(allocator);
+    var ends = std.ArrayList(u32).empty;
+    errdefer ends.deinit(allocator);
+    while (try iterator.next()) |mapped| {
+        try codepoints.append(allocator, mapped.cp);
+        try starts.append(allocator, mapped.start);
+        try ends.append(allocator, mapped.end);
+    }
+    return .{
+        .codepoints = try codepoints.toOwnedSlice(allocator),
+        .starts = try starts.toOwnedSlice(allocator),
+        .ends = try ends.toOwnedSlice(allocator),
+    };
+}
+
+test "normalizeMapped equals normalize and maps back to the input" {
+    const allocator = std.testing.allocator;
+    const inputs = [_][]const u8{
+        "plain ascii", "Cafe\u{0301} au lait", "a\u{0323}\u{0301}b", "\u{0BA4}\u{0BAE}\u{0BBF}\u{0BB4}\u{0BCD}",
+        "\u{1112}\u{1161}\u{11AB}x", "\u{212B}ngstrom \u{F900}", "1\u{FE0F}\u{20E3}", "",
+        "\u{0BC6}\u{0BBE} e\u{0301}e\u{0301}",
+    };
+    for (inputs) |text| {
+        const expected = try normalize(allocator, text);
+        defer allocator.free(expected);
+        const mapped = try normalizeMapped(allocator, text);
+        defer mapped.deinit(allocator);
+        var encoded = std.ArrayList(u8).empty;
+        defer encoded.deinit(allocator);
+        for (mapped.codepoints, mapped.starts, mapped.ends) |cp, start, end| {
+            var buffer: [4]u8 = undefined;
+            const n = try std.unicode.utf8Encode(cp, &buffer);
+            try encoded.appendSlice(allocator, buffer[0..n]);
+            try std.testing.expect(start < end);
+        }
+        try std.testing.expectEqualStrings(expected, encoded.items);
+    }
+    // e + U+0301 composes: the one output codepoint covers both inputs.
+    const mapped = try normalizeMapped(allocator, "xe\u{0301}y");
+    defer mapped.deinit(allocator);
+    try std.testing.expectEqual(@as(usize, 3), mapped.codepoints.len);
+    try std.testing.expectEqual(@as(u32, 1), mapped.starts[1]);
+    try std.testing.expectEqual(@as(u32, 3), mapped.ends[1]);
+    try std.testing.expectEqual(@as(u32, 3), mapped.starts[2]);
+}
+
 /// ASCII, or a precomposed Hangul syllable: see `normalize`.
 fn isInert(cp: u21) bool {
     return cp < 0x80 or (cp >= s_base and cp < s_base + s_count);

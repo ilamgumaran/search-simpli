@@ -616,3 +616,41 @@ PR #11 still requires its equipped-Mac integration and is not merged here.
 **Artifacts:** [Directory task/evidence record](docs/tasks/directory-search.md),
 [CAP-16](docs/requirements/cap-16-directory-filename-search.md), and
 `scripts/diagnose_directory_search.py`, and the [compact recorded observations](benchmarks/directory-search-current-2026-10-25.json).
+
+## 2026-10-31 — S3-T6: the MCP server (CAP-13 realized by CAP-19 FR-24)
+
+**Hypothesis:** The read tools can be served over MCP (stdio) with results
+semantically equal to the JSON-RPC server's, no new powers (the principal
+from the command line, no caller vectors, writes behind a flag), and an
+adapter overhead far under CAP-13's 5 ms p95 gate.
+
+**Setup:** `searchd mcp` (`zig/src/mcp.zig`), MCP revision `2025-11-25`,
+every result from `zig/src/ops.zig` (the RPC server's producer). The
+family-folder fixture as three host roots plus a labelled root. MacBook Pro,
+Apple M5 Pro (18 cores), 48 GB, macOS 26.6.2 (25G83), Zig 0.16.0, Python
+3 standard library only.
+
+**Commands:**
+
+```sh
+python3 -m unittest tests.test_mcp -v
+python3 tests/mcp_client.py <searchd> <index-dir>
+python3 scripts/mcp_overhead.py --optimize ReleaseSmall
+python3 scripts/mcp_overhead.py --optimize ReleaseFast
+```
+
+**Observed:** the conformance sequence passes (27 checks); `structuredContent`
+equals the RPC `result` for 66 judgment-derived requests and for one request
+per tool with no optional field (100%), and refusals carry the RPC error
+object; forged `principal_labels`/`query_vector` are refused; hidden and
+absent files answer alike for tools and resources. Overhead over the direct
+`ops` call, paired per request, p95 per repetition (ReleaseSmall): `find`
+25.0 / 28.9 / 25.2 µs, `search_knowledge` 42.4 / 44.9 / 43.5 µs; start-up to
+the `initialize` response p50 21.0 ms (most of it opening the index).
+
+**Limits:** the overhead is measured from a Python client (an upper bound:
+its own JSON and pipe work is included); one client per process; a real
+agent over a judged snapshot (CAP-13 *Validated*) is not done here.
+
+**Conclusion:** CAP-13 is Diagnostic; I-01 done. Details: [S3-T6](docs/tasks/S3-T6.md),
+[MCP server](docs/mcp-server.md).

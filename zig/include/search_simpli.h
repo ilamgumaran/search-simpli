@@ -27,17 +27,30 @@
  *          library did not return.
  *
  * Errors:  functions that return a pointer (ss_open, ss_status, ss_query,
- *          ss_evidence) return NULL on failure. ss_import_json, the one
+ *          ss_evidence, ss_index_folder and, since contract 2.0.0, ss_find,
+ *          ss_outline, ss_read_span, ss_list_files, ss_roots,
+ *          ss_apply_changes) return NULL on failure. ss_import_json, the one
  *          function that returns an integer result, returns a negative
  *          ss_error_code on failure (0 is never returned; success is the
  *          published generation number, always >= 1). Either way,
  *          ss_last_error() returns a thread-local, human-readable
  *          description of the most recent failure on the calling thread —
  *          a per-thread diagnostic, analogous to strerror()/dlerror(), not
- *          part of any handle's state.
+ *          part of any handle's state. The 2.0.0 functions (and ss_status,
+ *          ss_evidence since 2.0.0) spell their failure
+ *          "<function>: SS_ERR_<CODE>: <reason>", so a caller can branch on
+ *          the code name without parsing the reason: SS_ERR_INVALID_ARGUMENT
+ *          (a malformed or unknown request field, a stale cursor, a stale
+ *          expect_generation), SS_ERR_NOT_FOUND (an unknown, hidden or not
+ *          retained file: the same message for all three), SS_ERR_CAPACITY
+ *          (a span over its limits, a generation without retained source
+ *          bytes or without positions, a prefix over 1,000 terms, a batch
+ *          over its caps), SS_ERR_IO (WRITER.LOCK held by another writer).
  *
  * Threads: a single ss_handle may be read concurrently from multiple
- *          threads: ss_status/ss_query/ss_evidence only read the handle's
+ *          threads: ss_status/ss_query/ss_evidence and the 2.0.0 read
+ *          functions (ss_find, ss_outline, ss_read_span, ss_list_files,
+ *          ss_roots) only read the handle's
  *          immutable decoded snapshot and allocate fresh scratch memory per
  *          call. ss_close() must not race with any other call on the same
  *          handle. ss_last_error() is thread-local. ss_open()/
@@ -49,10 +62,25 @@
  *
  * JSON shapes: ss_status()'s object has the same fields as JSON-RPC
  *          `index_status`'s `result` (docs/zig-rpc-service.md). ss_query()'s
- *          object is exactly `search_knowledge`'s `result`, produced by the
- *          same code the JSON-RPC service uses, so it is byte-for-byte what
- *          the service would return for the same request. ss_evidence()'s
- *          per-chunk object is exactly `read_chunk`'s `result` shape.
+ *          object is `search_knowledge`'s `result`, produced by the same code
+ *          the JSON-RPC service uses, without the folder fields the service
+ *          adds since S3-T6 (each item's `root_id`, `section_path`; the
+ *          result's `truncated`, `pending_files`). ss_evidence()'s
+ *          per-chunk object is exactly `read_chunk`'s `result` shape (plus,
+ *          since 2.0.0, three fields after it). The 2.0.0 read functions
+ *          return exactly what `searchd serve` returns as `result` for the
+ *          method of the same name and what the CLI prints with --json
+ *          (one implementation, zig/src/ops.zig): the same bytes.
+ *
+ * Scope (contract 2.0.0): every read takes an optional "roots" (root ids;
+ *          null or absent = every root, an unknown id names nothing) and
+ *          "principal_labels" (a chunk or file is visible only when the
+ *          caller holds every label it and its root require). The caller of
+ *          this ABI is the host app and is trusted with both: a model or a
+ *          remote client must never choose them (docs/authorization.md).
+ *          A hidden file, chunk, term or root is indistinguishable from an
+ *          absent one in every payload; BM25 statistics are computed over
+ *          the visible scope.
  */
 
 #ifndef SEARCH_SIMPLI_H
@@ -76,14 +104,14 @@ typedef struct ss_handle ss_handle;
 #define SS_ERR_INVALID_ARGUMENT   (-1) /* malformed interchange JSON or metadata */
 #define SS_ERR_IO                 (-2) /* filesystem access, or lock contention */
 #define SS_ERR_CORRUPT_SNAPSHOT   (-3) /* on-disk section/manifest failed validation */
-#define SS_ERR_CAPACITY           (-4) /* an internal fixed-size workspace was too small */
+#define SS_ERR_CAPACITY           (-4) /* a workspace or limit was too small (2.0.0: span/batch caps, source or positions absent) */
 #define SS_ERR_OUT_OF_MEMORY      (-5) /* malloc failure */
-#define SS_ERR_NOT_FOUND          (-6) /* reserved for future lookup-style calls */
+#define SS_ERR_NOT_FOUND          (-6) /* 2.0.0: an unknown, hidden or not retained file (ss_outline, ss_read_span) */
 #define SS_ERR_INTERNAL           (-7) /* anything not covered above */
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "1.2.0". The returned pointer is static storage owned by the library:
+ * "2.0.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);
@@ -106,6 +134,14 @@ const char *ss_last_error(void);
  * Returns an opaque handle on success, or NULL on any I/O or validation
  * failure (missing/corrupt MANIFEST, checksum mismatch, cross-section count
  * mismatch, out of memory, ...) — see ss_last_error().
+ *
+ * Since 2.0.0 the handle also holds the generation's roots, pending files,
+ * per-root statistics and, when the generation retains source bytes, the
+ * source section (with a path index and a sparse line index). A source
+ * section that is missing or does not validate does not fail ss_open:
+ * ss_query, ss_find and the listings work, and only ss_read_span and
+ * ss_outline answer SS_ERR_CAPACITY "re-index required: source section
+ * unavailable (<reason>)".
  */
 ss_handle *ss_open(const char *dir_path);
 
@@ -120,7 +156,19 @@ void ss_close(ss_handle *handle);
  * Snapshot status as a JSON object: `ready` (bool, always true for a
  * successfully opened handle), `generation`, `analyzer_id`,
  * `embedding_model_id`, `vector_dimensions`, `documents`, `terms`,
- * `postings`.
+ * `postings`. Since contract 2.0.0 these are followed (additive; removing
+ * them gives the 1.x output) by:
+ *   "files"          visible files (indexed, including those without a chunk)
+ *   "pending"        visible pending files (announced, bytes not yet given)
+ *   "truncated"      a visible file was given but not indexed in full
+ *   "roots"          [{"root_id","label","kind","files","documents","pending"}]
+ *   "pending_paths"  [{"root_id","path"}]
+ *   "has_source"     visible files have retained, readable source bytes
+ *   "has_positions"  the lexical section holds positions (phrase works)
+ *   "chunkers"       the chunker ids visible documents use
+ * All counts, the v1 ones included, are over the default scope: every
+ * root, no principal labels (the scope ss_query uses without options), so
+ * a labelled file is not counted; ss_roots() counts over a scope you name.
  *
  * Returns a heap-allocated, null-terminated JSON string on success — the
  * caller must free it with ss_free() — or NULL on failure (out of memory;
@@ -170,13 +218,21 @@ char *ss_status(ss_handle *handle);
  *                   "profile"           boolean, default false (since
  *                                       contract 1.2.0); true adds the
  *                                       `profile` field described below
+ *                   "roots"             array of root ids (since 2.0.0):
+ *                                       only chunks of these roots are
+ *                                       candidates, and BM25 counts over
+ *                                       the visible scope; absent = every
+ *                                       root, the 1.x behaviour exactly
  *
  * Returns a heap-allocated, null-terminated JSON object on success — the
  * caller must free it with ss_free() — with fields `tool`, `query`, `index`,
  * `retrieval`, `results` (array of chunk_id/citation/content/score/ranking),
  * and `answer_policy`. These are exactly the fields of the `result` value a
  * `search_knowledge` JSON-RPC response carries for the same request
- * (docs/zig-rpc-service.md), in the same order and byte for byte.
+ * (docs/zig-rpc-service.md), in the same order and byte for byte, except
+ * that the service (and `searchd mcp`) add, since S3-T6, `root_id` and
+ * `section_path` to each item and `truncated` and `pending_files` after
+ * `answer_policy`; ss_query()'s output is unchanged.
  *
  * Since contract 1.2.0 the object ends with three more fields (additive;
  * removing them gives the 1.1.0 output exactly):
@@ -242,16 +298,21 @@ char *ss_query(
  * Look up stored chunks by id. `ids_json` is a null-terminated JSON object:
  *
  *   {"ids": ["chunk-1", "chunk-2"], "path_prefix": "guides/",
- *    "principal_labels": []}
+ *    "principal_labels": [], "roots": ["school"]}
  *
- * `path_prefix` and `principal_labels` are optional and have the same
- * meaning as `read_chunk`'s parameters of the same name.
+ * `path_prefix` (on the citation path), `principal_labels` and, since
+ * 2.0.0, `roots` are optional and have the same meaning as `read_chunk`'s
+ * parameters of the same name; an unknown field fails the call. At most
+ * 1,000 ids.
  *
  * Returns a heap-allocated, null-terminated JSON array on success — the
  * caller must free it with ss_free() — with one entry per id, in the same
  * order as `ids`: a chunk object (`chunk_id`, `citation` {path, start_line,
- * end_line}, `content`) when found and authorized, or
- * `{"chunk_id": "...", "found": false}` otherwise. Ids are never rejected
+ * end_line}, `content`, then since 2.0.0 `root_id`, `section_path` (the
+ * Markdown heading path, [] for other files) and `neighbours` {"prev",
+ * "next"}, each {"chunk_id","start_line","end_line"} of the adjacent chunk
+ * of the same file or null) when found and inside the scope, or
+ * `{"chunk_id": "...", "found": false}` otherwise (unknown and hidden alike). Ids are never rejected
  * individually; the whole call only fails (returns NULL) if `ids_json`
  * itself is malformed, `ids` is missing, or of out of memory — see
  * ss_last_error(). `handle` must not be NULL.
@@ -292,8 +353,9 @@ char *ss_evidence(ss_handle *handle, const char *ids_json);
 int64_t ss_import_json(const char *dir_path, const char *bytes, size_t bytes_len);
 
 /*
- * Free a pointer previously returned by ss_status(), ss_query(), or
- * ss_evidence(). `ptr` may be NULL (no-op). Never call this on the result
+ * Free a pointer previously returned by ss_status(), ss_query(),
+ * ss_evidence(), ss_index_folder() or a 2.0.0 function (ss_find,
+ * ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes). `ptr` may be NULL (no-op). Never call this on the result
  * of ss_version() or ss_last_error() (both static storage, not caller-owned).
  */
 void ss_free(char *ptr);
@@ -407,6 +469,135 @@ void ss_free(char *ptr);
  * ss_last_error().
  */
 char *ss_index_folder(const char *dir_path, const char *folder_path, const char *opts_json);
+
+/* -------------------------------------------------------------------------
+ * Contract 2.0.0: folder knowledge (docs/tasks/S3-T4.md, CAP-19 FR-22,
+ * docs/folder-knowledge-implementation.md sections 4 to 9). Additive: the
+ * ten functions above keep their signatures.
+ *
+ * Every read below takes a handle and a null-terminated JSON request object
+ * (NULL or "" is {} where every field is optional) and returns a
+ * heap-allocated JSON object to ss_free(), or NULL with ss_last_error() =
+ * "<function>: SS_ERR_<CODE>: <reason>". An unknown request field is
+ * SS_ERR_INVALID_ARGUMENT. Every result starts with the same envelope:
+ *
+ *   "request"   the request echoed with defaults filled in
+ *   "generation" the handle's generation
+ *   "scope"     {"roots": [visible root ids, in the generation's order],
+ *                "labels_applied": true}
+ *   "warnings"  [{"code","message"}] (ss_read_span: "end_line_clamped")
+ *
+ * Paths in requests and results are root-relative ("week.md" in root
+ * "school"); a cursor is "<generation>:<offset>" and a cursor from another
+ * generation is SS_ERR_INVALID_ARGUMENT "stale cursor".
+ * ---------------------------------------------------------------------- */
+
+/*
+ * The search box. Request:
+ *   "query"        string, required; a query in double quotes is a phrase,
+ *                  a trailing * makes the last word a prefix
+ *   "mode"         "words" (every word, default) | "phrase" | "prefix"
+ *   "roots"        array of root ids (default every root)
+ *   "principal_labels" array of strings (default none)
+ *   "path_prefix"  root-relative path prefix (default none)
+ *   "page_size"    1-100 (default 20); every match is scored regardless
+ *   "cursor"       the previous page's next_cursor
+ * Result, after the envelope: "hits" [{"chunk_id","root_id","path",
+ * "section_path","start_line","end_line","score","snippet" (at most 240
+ * codepoints of the chunk),"snippet_start","snippet_offsets","match_offsets"
+ * (half-open codepoint ranges into the chunk's content)}], ordered by score
+ * then root_id, path, start_line; "files" [{"root_id","path","hits"}] over
+ * every page; "exact_match" (phrase mode: whether a hit exists; else
+ * null); "empty"; "coverage" {"files","sections"} of this page;
+ * "truncated" (a file in scope was not indexed in full); "next_cursor";
+ * "pending_files" (files in scope announced but not indexed yet).
+ * Refusals: SS_ERR_INVALID_ARGUMENT for an empty query, a * inside the
+ * query, page_size out of range, a malformed or stale cursor;
+ * SS_ERR_CAPACITY "re-index required: positions absent" (phrase over a
+ * generation without positions) and "prefix ... expands to more than 1000
+ * terms".
+ */
+char *ss_find(ss_handle *handle, const char *request_json);
+
+/*
+ * One file's structure. Request: "root_id", "path" (both required),
+ * "roots", "principal_labels". Result, after the envelope: "front_matter"
+ * ({"start_line","end_line","fields"{...}, "raw" when not key: value} or
+ * null), "headings" [{"level","text","line","end_line"}] (Markdown only),
+ * "lines", "chunker". Refusals: SS_ERR_NOT_FOUND "not indexed or not
+ * retained: <root>/<path>" for an unknown, hidden or not retained file;
+ * SS_ERR_CAPACITY when the generation retains no source bytes ("re-index
+ * required: source absent") or its source section cannot be read.
+ */
+char *ss_outline(ss_handle *handle, const char *request_json);
+
+/*
+ * Lines of one file, byte for byte. Request: "root_id", "path",
+ * "start_line", "end_line" (1-based, inclusive; all required),
+ * "context_lines" (0-20, default 0), "roots", "principal_labels". An
+ * end_line past the last line is clamped (warning "end_line_clamped").
+ * Result, after the envelope: "start_line", "end_line", "text",
+ * "context_before", "context_after" (original bytes, terminators included),
+ * "byte_exact": true, "sha256" (hex of "text"). Refusals:
+ * SS_ERR_CAPACITY when the lines including context exceed 400 or their
+ * bytes 256 KiB (the message gives both counts), or the source is absent or
+ * unreadable; SS_ERR_NOT_FOUND as ss_outline; SS_ERR_INVALID_ARGUMENT for a
+ * start_line of 0 or past the last line, end_line < start_line,
+ * context_lines over 20.
+ */
+char *ss_read_span(ss_handle *handle, const char *request_json);
+
+/*
+ * The visible files. Request (all optional): "root_id", "path_prefix"
+ * (root-relative), "status" ("indexed" | "pending"), "page_size" (1-1000,
+ * default 100), "cursor", "roots", "principal_labels". Result, after the
+ * envelope: "files" [{"root_id","path","size" (retained bytes, a pending
+ * file's announced size, or null),"mtime_ms" (null: a generation does not
+ * record it),"status","chunks","chunker" (null when the file has no
+ * chunk)}] ordered by root then path, "total" (files matching, every page),
+ * "next_cursor". Refusals: SS_ERR_INVALID_ARGUMENT for a bad status,
+ * page_size or cursor.
+ */
+char *ss_list_files(ss_handle *handle, const char *request_json);
+
+/*
+ * The visible roots and their counts. `options_json` (NULL = {}): "roots",
+ * "principal_labels". Result, after the envelope: "roots"
+ * [{"root_id","label","kind","files","documents","pending"}].
+ */
+char *ss_roots(ss_handle *handle, const char *options_json);
+
+/*
+ * Publish one new generation in `dir_path` (created if missing) from
+ * host-fed changes, exactly as `searchd apply` does
+ * (docs/folder-knowledge-implementation.md section 6). Close and reopen
+ * any handle on `dir_path` afterwards to see it.
+ *
+ *   changes_json  {"expect_generation"?: N, "roots"?: [{"root_id","label"?,
+ *                  "kind"?,"required_labels"?,"retain_source"?,"path"?}],
+ *                  "changes": [{"op": "add"|"change"|"remove"|"move"|
+ *                  "pending"|"remove_root", "root_id", "path", "moved_from"?,
+ *                  "size"?, "mtime_ms"?, "sha256"?, "content_base64"? |
+ *                  "file"?, "required_labels"?}]}. A field
+ *                  "principal_labels" anywhere is refused: the scope comes
+ *                  from the trusted caller.
+ *   opts_json     NULL or {"allow_file_reads"?: bool (default false; a
+ *                  "file" change is refused without it), "max_file_bytes"?,
+ *                  "max_total_bytes"?, "analyzer"?, "max_chars"?,
+ *                  "overlap_lines"?, "keep_generations"?}
+ *
+ * Returns the report ({"generation","analyzer_id","added","changed",
+ * "removed","moved","pending","unchanged","too_large","too_large_paths",
+ * "unreadable","unreadable_paths","rejected","conflicts","ambiguous_moves",
+ * "roots_removed","budget_exhausted","budget_exhausted_paths","bytes_read",
+ * "ms","documents","terms","postings", and "recovered" when the previous
+ * generation could not be read) to ss_free(), or NULL: SS_ERR_INVALID_ARGUMENT
+ * for a malformed or refused request (nothing is published; "stale:
+ * generation is M" when expect_generation differs), SS_ERR_CAPACITY for
+ * more than 10,000 changes or content over max_total_bytes, SS_ERR_IO when
+ * another writer holds WRITER.LOCK.
+ */
+char *ss_apply_changes(const char *dir_path, const char *changes_json, const char *opts_json);
 
 #ifdef __cplusplus
 }

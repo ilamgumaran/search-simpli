@@ -2,7 +2,17 @@
 
 Status: design (2026-10-31); §1, §2 and §4 implemented by S3-T1 with the
 amendments marked **S3-T1** below (formats: [`manifest-format-v2.md`](manifest-format-v2.md),
-[`segment-format-v4.md`](segment-format-v4.md), [`source-section-v1.md`](source-section-v1.md)).
+[`segment-format-v4.md`](segment-format-v4.md), [`source-section-v1.md`](source-section-v1.md));
+§5, §6 and §7 implemented in the core by S3-T3 (`zig/src/apply.zig`,
+`zig/src/scope.zig`, `zig/src/incremental_state.zig`; Python reference
+`src/search_platform/folders.py`) with the amendments marked **S3-T3**.
+§3, the `find` part of §8 and the §13 profile implemented by S3-T2 with the
+amendments marked **S3-T2** (format: [`lexical-segment-format-v2.md`](lexical-segment-format-v2.md)).
+§8 and §9 on every surface (C ABI, Dart, CLI, RPC; contract 2.0.0)
+implemented by S3-T4 (`zig/src/ops.zig`, `abi.zig`, `cli.zig`, `rpc.zig`,
+the Dart package) with the amendments marked **S3-T4**.
+§11 implemented by S3-T6 (`zig/src/mcp.zig`, [MCP server](mcp-server.md))
+with the amendments marked **S3-T6**.
 Every other format, field and number here is **proposed**; a task's Report
 turns it into an observed fact or amends it.
 Companion to [`CAP-19`](requirements/cap-19-folder-knowledge.md),
@@ -63,39 +73,22 @@ Which chunker made a given chunk is stored per document record (§2). A v1
 manifest opens; `has_source`/`has_positions` read as false; operations that
 need them answer `SS_ERR_CAPACITY` with the message
 `"re-index required: <source|positions> absent"` (CAP-19 FR-22/FR-17).
+**S3-T3:** each root also carries `origin` (`folder` for `index_folder`'s
+root, `host` for a root declared through `apply_changes`; read as `folder`
+when absent) and its `required_labels`; `meta` gains two lists written only
+when non-empty, after `roots`: `pending` (`{root_id, path, size,
+required_labels}` of every pending file, so a reader counts and lists them
+without `INDEX-STATE.json`) and `unchunked` (the same fields for indexed
+files that produced no chunk, an empty or blank file, so they can be listed
+and their labels are known). Duplicate root ids are refused.
 
 Section files: `documents-N.hybseg` (v4, §2), `lexical-N.hyblex` (v2, §3),
 `source-N.hybsrc` (v1, §4), `MANIFEST`, `INDEX-STATE.json` (v2, §5),
 `WRITER.LOCK`. Publication keeps `lifecycle.publishSerialized` →
 `publication.writeAtomicFile` and writes `INDEX-STATE.json` **after** the
-manifest, as today. This is the implemented S3-T1 desktop behavior only:
-segments are coherent, but mutable INDEX-STATE is not an atomic state commit.
-Before S3-T3 ships host-fed changes, publish immutable `state-N.json` before
-MANIFEST, bind its filename, byte length and SHA-256 in the manifest metadata,
-and fsync all sections and state before replacing MANIFEST. Readers/writers
-load only that generation's bound state; `INDEX-STATE.json` becomes a
-best-effort compatibility cache, never authority for host-fed mutations.
-An absent or corrupt bound state fails closed for writes; never reconstruct
-pending/empty/unreadable files or labels by scanning chunks. Desktop v1/v2
-indexes without bound state may migrate by a full authorized folder walk;
-host-only indexes require explicit host replay before mutation. A failure
-after MANIFEST publication may have committed: status exposes the committed
-generation, stale retries publish nothing, and callers inspect/reconcile it.
-Retention/pruning includes immutable state and preserves held generations.
-
-**Cross-branch format ruling:** S3-T1's implemented HYBMAN02 is the 104-byte
-layout in `manifest-format-v2.md`. The unmerged CAP-16 branch independently
-uses HYBMAN02 for a 136-byte filename-channel layout. Those formats are
-incompatible despite sharing magic/version. Preserve main's v2 unchanged;
-the combined filename/source format must use a new HYBMAN03/version 3 with
-an explicit header length, section descriptors and checksums. Before CAP-16
-integration, freeze the full v3 table and test v1, main-v2, filename-v3 and
-combined-v3. Existing CAP-16 draft-v2 artifacts require a separate-directory
-rebuild; do not guess layout from file length, silently decode them as main
-v2, or merge the conflicting decoder. S3-T3's bound state can use validated,
-checksummed v2 meta fields; if a fixed header extension is needed it uses v3.
-The filename-search branch must rebase onto this main-v2 baseline before
-its packaged-native rebuild.
+manifest, as today; the review's "atomic generation consistency" is met by the
+manifest binding all three sections' lengths and checksums, so a reader never
+sees a documents section without its matching source section.
 
 ## 2. Document section v4 (`HYBSEG01`, record version 4)
 
@@ -119,7 +112,15 @@ decode the new fields as zero/empty/none. The chunk id stays
 `sha256(path\0start\0end\0text)[:20 hex]` over the chunk's **normalized** text
 (unchanged), where `path` is now the root-qualified path `root_id/relative`
 (§5); a `move` therefore changes ids (CAP-19 FR-21 says re-keyed, not
-re-chunked: the text and section fields are copied).
+re-chunked: the text and section fields are copied). **S3-T3:** the legacy
+folder root `r-legacy` keeps the bare relative path (no `r-legacy/` prefix),
+so every index `index_folder` writes, its chunk ids and every citation a
+consumer stored stay byte-for-byte as before; a record belongs to the root
+whose `root_id/` prefixes its path, else to `r-legacy`, and `apply_changes`
+refuses a root id equal to the first component of a legacy path (and a
+legacy path whose first component is another root's id), so the rule is
+never ambiguous. Records carry the union of the root's and the file's
+`required_labels` (at most 64 together).
 
 ## 3. Lexical section v2 (`HYBLEX02`)
 
@@ -161,6 +162,32 @@ only terms visible to the caller's scope (§7). `words` mode is conjunctive
 (every analyzed term present) then BM25 order; `search_knowledge` keeps its
 current disjunctive BM25.
 
+**S3-T2 amendments** (full format: [`lexical-segment-format-v2.md`](lexical-segment-format-v2.md)):
+- Section 5's start is a delta from the **previous token's start** (the first
+  from 0); a token's length is ≥ 1. "The chunk's normalized text" is the
+  record's stored `text` (what a hit's `content` is), in codepoints of the
+  original, not the NFC form: the writer maps NFC output back through
+  `nfc.MappedIterator` (a region NFC changes maps to the whole region).
+- Two v2 rules the reader checks: the dictionary is strictly sorted by bytes
+  (no hash set needed), and term ranges are contiguous in dictionary order
+  (so a term's ordinals are one run of section 4). Sections 4 and 5 are
+  validated completely at open; `postings.buildPositionTables` then records
+  one start offset per term and per document.
+- The manifest's `has_positions` is set exactly when the lexical section is
+  `HYBLEX02`; a mismatch is refused, and a v1 manifest cannot bind
+  `HYBLEX02`. `import-json` (v1 manifest) therefore keeps writing `HYBLEX01`,
+  now with the sorted dictionary, so its sections 1–3 equal the folder door's
+  byte for byte (the S2-T1 parity test compares those bytes).
+- On a `HYBLEX01` generation `phrase` answers `CAPACITY` "re-index required:
+  positions absent"; `words` and `prefix` still answer (a prefix scans the
+  unsorted dictionary, highlights are recomputed by re-tokenizing the hit).
+- `--update` carries unchanged chunks' exact token sequence and spans out of
+  the previous `HYBLEX02` section instead of re-analyzing them; a `HYBLEX01`
+  generation is re-tokenized once.
+- Measured on the 10k corpus (19,959 chunks): section 4 is one byte per token
+  (1.11 per posting), section 5 two bytes per token plus four per chunk; the
+  section is 1.39× `HYBLEX01`. Neither rollback is needed.
+
 ## 4. Source section v1 (`HYBSRC01`)
 
 Why: chunks are stripped and joined with LF, and `md-section-v1` drops front
@@ -194,7 +221,33 @@ check every offset and `find` can binary-search); `read_span` clamps an
 `end_line` past the last line to it. In S3-T1 `index_folder` writes the one
 root `r-legacy` with `kind: local` and `retain_source: true` (ruling 4), not
 the `local` default of false proposed below; S3-T3 applies the per-kind
-defaults.
+defaults. **S3-T3:** the per-kind defaults apply to roots declared through
+`apply_changes` without `retain_source` (`host`/`icloud` true, `local`
+false); `index_folder` keeps its `retain_source` option and its default true,
+because `read_span` over a `local` root without retained bytes (re-reading
+and hash-checking the file) is not built yet and would turn every existing
+folder index's `read_span` into `CAPACITY`.
+
+**S3-T4 (no format change):** a reader builds a *sparse line index* when it
+opens the section (`source.openIndexed`): for every file, the map offset and
+the running value before every 256th varint, collected while the maps are
+validated (no second decode). A line's offset is then found from the
+nearest checkpoint, decoding at most 256 varints instead of every one from
+line 1 (S3-T1 finding 3). It costs `(lines / 256 + 1) × 16` bytes per file
+(103 checkpoints, 1,648 bytes on the family-folder fixture). `read_span`
+over `big-log.txt` (15,500 lines; start lines uniform, spans up to 20 lines,
+context 1) went from p50 28.9–32.6 µs / p95 60.6–67.5 µs to p50 1.0–1.1 µs /
+p95 1.7 µs in ReleaseSmall (ReleaseFast: p95 12.9–13.9 µs to 0.9 µs). The
+file layout above is unchanged, so no version note: an index written by
+S3-T1..T3 gets the index when it is opened. **S3-T4 (S3-T1 finding 2):** a
+source section that is missing or fails validation no longer fails the open:
+`snapshot_open.open` does not look at it, `openSource` reports it as
+`source_error` (the error's name), and every operation that never reads it
+(`search_knowledge`, `find`, the listings and status) keeps working; only
+`read_span` and `outline` answer `SS_ERR_CAPACITY` "re-index required:
+source section unavailable (<error>)" (an unknown or hidden file in such a
+generation gets the same answer), and `index_status` says `has_source:
+false`. A writer still treats it as a missing section and heals it.
 
 `read_span(path, a, b, context)` slices lines `a-context … b+context`
 (clamped), total ≤ 400 lines and ≤ 256 KiB, else `SS_ERR_CAPACITY` with the
@@ -222,6 +275,23 @@ v1 state (no `state_version`, entries `{path, hash, size}`) loads as one root
 with no `..`, no leading `/`, no NUL and no newline; the root-qualified path
 used in records is `root_id + "/" + path`.
 
+**S3-T3 amendments.** The state stores `status` `indexed` or `pending` only:
+it names exactly the files the generation names. `too_large`, `unreadable`
+and `budget_exhausted` are report outcomes (a too-large file is tombstoned,
+an unreadable or left-over file keeps its previous entry, as S1-T4 decided
+for `index_folder`, whose tests pin it). Each file also stores its own
+`required_labels` (the root's are added in the records); `sha256` is `null`
+when unknown (a pending file, or a file whose bytes were not retained when
+the table had to be rebuilt). `moved_from` is the path the file was last
+moved from. The state is trusted only when its `generation` and
+`analyzer_id` equal the current `MANIFEST`'s; otherwise (a crash between the
+manifest and the state write, `docs/publication-recovery.md`) the writer
+rebuilds the file table from the generation itself: records grouped by path,
+hashes and sizes from the source section where the root retains bytes,
+`pending` and `unchunked` from `meta`, labels from the records minus the
+root's. Version 1 still loads. Parsing is typed (no JSON object maps): a 10k
+file state is read on every call.
+
 ## 6. `apply_changes` (host-fed changes)
 
 C ABI: `char *ss_apply_changes(const char *dir_path, const char *changes_json, const char *opts_json)` (allocates the index writer, publishes one new generation, returns a report; `ss_free` the result). Dart: `SearchSimpli.applyChanges(dir, changes, opts)` static. CLI: `searchd apply <dir> --changes <file.json> [--expect-generation N]`. RPC/MCP: method `apply_changes` only when the server was started with `--allow-write`.
@@ -242,8 +312,7 @@ Request:
 ```
 
 Rules (review finding 6, CAP-19 FR-20/FR-21):
-- Root identities, filesystem handles/base paths, label requirements and write permissions come from trusted host configuration. A request cannot create a local filesystem grant, widen its authorized roots, remove another scope's root or weaken existing required labels. Untrusted tool requests cannot change root policy. Resolve and open file paths relative to a trusted root handle without following symlinks in any component; verify the opened file itself (not a separate pre-check), and hash the same bytes used for indexing. Test forged roots, policy downgrades, cross-root moves and symlink swaps. New root provisioning is a separate trusted host operation.
-- Exactly one of `content_base64` (strict base64, decoded bytes must be valid UTF-8 after an optional BOM, ≤ `max_file_bytes`) or `file` (an absolute path under a trusted host-configured root with `kind: local` and that the engine was opened with `--allow-file-reads`; symlinks refused) for `add`/`change`; `sha256` optional for `content_base64` (the engine computes and, if given, verifies: mismatch → the change is rejected as `hash_mismatch`), required for `file` (verified after reading).
+- Exactly one of `content_base64` (strict base64, decoded bytes must be valid UTF-8 after an optional BOM, ≤ `max_file_bytes`) or `file` (an absolute path under a root the request declares with `kind: local` and that the engine was opened with `--allow-file-reads`; symlinks refused) for `add`/`change`; `sha256` optional for `content_base64` (the engine computes and, if given, verifies: mismatch → the change is rejected as `hash_mismatch`), required for `file` (verified after reading).
 - Batch caps: ≤ 10,000 changes and ≤ `max_total_bytes` (512 MiB default) of decoded content per call; over → `SS_ERR_CAPACITY`, nothing published.
 - `expect_generation` must equal the current generation, else `SS_ERR_INVALID_ARGUMENT` `"stale: generation is M"` and nothing is published (the host re-reads status and retries).
 - Ordering: changes are applied in array order per `(root_id, path)`; a later op on the same path replaces an earlier one in the same batch; the report lists `conflicts` for such pairs.
@@ -264,6 +333,98 @@ Report:
 changes, one root, `retain_source` per opts) so one code path writes
 generations.
 
+**S3-T3 amendments** (each one is tested in `zig/src/apply_test.zig` and
+`tests/test_folders.py`; the C ABI, Dart, CLI and RPC surfaces above are
+S3-T4's, the core entry point is `apply.applyChanges(dir, request_json,
+options)`):
+
+- *Roots.* A request may declare a root with `path` (an absolute folder, no
+  `.`/`..` component, only for `kind: local`); a `file` change needs its own
+  root declared in the same request with `kind: local` and a `path`, and the
+  file must lie under it. A new root needs `kind`; `label` defaults to the
+  id. Root ids are 1–64 bytes of `[A-Za-z0-9._-]`; `r-legacy` is reserved for
+  `index_folder` and cannot be declared by a host. Re-declaring a root
+  updates its label, kind, labels and retention (records are relabelled).
+- *Per-file labels.* `add`/`change`/`pending` take an optional
+  `required_labels` (the file's own; absent means none); the review's "two
+  label domains inside one root" needs them, §6's example had none.
+- *Whole-request refusals* (nothing is published, nothing is read):
+  `invalid_argument` for invalid JSON, an unknown field anywhere (a
+  `principal_labels` field anywhere gets its own message: the scope comes from
+  the trusted caller), an unknown op, an unsafe path (`..`, `.`, an empty
+  component, a leading `/`, NUL, a line break, over 4,096 bytes), an
+  undeclared root, not exactly one of `content_base64`/`file`,
+  `content_base64` that is not strict base64 (standard alphabet, padded,
+  canonical: it must equal the encoding of what it decodes to), `sha256` not
+  64 hex digits, `file` without `sha256`, `file` with file reads disabled,
+  `file` not absolute or outside its root, a symlink below the root's
+  folder (every component under it is checked with `lstat`, and the file is
+  opened without following a link), a root id colliding with a legacy path, more
+  than 64 labels on a file once its root's are added, and a stale
+  `expect_generation`; `capacity` for more than 10,000 changes or more than
+  `max_total_bytes` of decoded content (counted from the base64 and the
+  files' sizes before anything is decoded or read). The generation check
+  comes before every other refusal, under `WRITER.LOCK`, which is held from
+  the check through the publication.
+- *Per-change outcomes* (the rest of the batch is published): `rejected`
+  entries `{root_id, path, reason}` with `hash_mismatch`, `size_mismatch` (a
+  supplied `size` that differs from the bytes), `invalid_utf8` (decoded
+  content), `move_source_unknown`, `root_removed` (a change after
+  `remove_root` of a root this request does not declare) and
+  `path_collides_with_root`; `too_large` (content or a file over
+  `max_file_bytes`: its chunks are dropped, as S1-T4 tombstones a file);
+  `unreadable` (a `file` that cannot be read, or is not UTF-8: its previous
+  chunks are kept). `too_large_paths`, `unreadable_paths` and
+  `budget_exhausted_paths` hold `{root_id, path}` objects.
+- *Semantics made exact.* `change` of an unknown path adds it; `remove` of
+  an unknown path and `remove_root` of an unknown root are no-ops; an `add`
+  or `change` whose bytes hash to the file's recorded hash with the same
+  chunker keeps its chunks (counted `unchanged`, the bytes retained again).
+  `conflicts` lists one `{root_id, path, replaced, by}` per later op on a
+  path an earlier op of the batch touched (a `move` touches both its paths).
+  Rename detection pairs only within one root, only `remove`s of files that
+  were indexed with a known hash and `add`/`change`s of paths that were not
+  indexed before the batch; per `(root, hash)` both sides are sorted by path
+  and paired in order; `ambiguous_moves` has one `{root_id, sha256, from,
+  to, pairs}` entry for every hash with more than one candidate on either
+  side. A detected move copies the chunks (re-keyed) when the chunker is the
+  same and re-chunks the bytes it has otherwise. An explicit `move` takes no
+  content and keeps the file's chunks, labels and status (a pending file
+  moves pending). `index_folder`'s walk does not detect renames: its report
+  has no `moved`, so a renamed file stays `removed` + `added` as S1 tests pin.
+- *Counts.* `added`: indexed after, not indexed before (a pending file that
+  arrives is `added`); `changed`: indexed before and after, re-chunked;
+  `unchanged`: indexed before and after, not re-chunked (untouched files
+  included; `index_folder` counts its own root only); `moved`: moved in this
+  batch; `pending`: set pending in this batch; `removed`: indexed or pending
+  before and gone by a `remove`.
+- *Report.* §6's fields plus `analyzer_id`, `budget_exhausted_paths`,
+  `documents`, `terms`, `postings` and `recovered` (when the previous
+  generation lost its `MANIFEST` or a section the writer starts from an
+  empty table, like `index_folder --update`, and says so: a host must then
+  send its files again).
+- *Recovery.* A failure after the manifest is published and before the state
+  is written leaves the new generation readable; the next call rebuilds the
+  table from it (§5) and reports retried, identical content as `unchanged`.
+
+**S3-T4 amendments (the surfaces).** `ss_apply_changes(dir, changes_json,
+opts_json)`: `opts_json` takes `allow_file_reads` (default false),
+`max_file_bytes`, `max_total_bytes`, `analyzer`, `max_chars`,
+`overlap_lines`, `keep_generations`, and refuses an unknown field; the
+request is the core's (an unknown field anywhere refused). CLI:
+`searchd apply <dir> --changes <file> [--expect-generation N]
+[--allow-file-reads] [--json]` prints a one-line summary (or the report
+with `--json`); `--expect-generation` sets the request's
+`expect_generation`, and a request that already states a different one is
+refused rather than overridden. RPC: `apply_changes` exists only under
+`serve --allow-write` (otherwise `-32601`, as for any unknown method); its
+`params` is the change request; `file` changes are read only with
+`--allow-file-reads`; a stale generation is `-32602` "Invalid params:
+stale: generation is M", another writer holding `WRITER.LOCK` is `-32006`;
+after a successful call the server reopens the index, so the next request
+reads the new generation. Dart: `SearchSimpli.applyChanges(dir, changes,
+options:)`, static.
+
 ## 7. Scope, labels and statistics
 
 A request's **scope** = the roots named (default all) ∩ the caller's trusted
@@ -283,6 +444,54 @@ expansion counts only terms that occur in at least one visible document.
 `index_status` and `list_files` count only visible files; a hidden file is
 indistinguishable from an absent one in every payload. Timing is measured in
 S3-T3 (hidden vs absent) and disclosed, not promised equal.
+
+**S3-T3 amendments.** A path prefix narrows candidates, not statistics (it
+is a search constraint, not authorization; the Python reference's older
+`search` still computes over the prefix-filtered set). A group is one root
+and one distinct label field; groups hold the document count, total length
+and per-term document frequency, built once per opened generation
+(`snapshot_open.openScoped`). When nothing is hidden (no label in any record
+and no root named, or every document visible) BM25 uses the index's own
+values, bit for bit. Without precomputed groups (the RPC server and the C
+ABI until S3-T4 wires a scope) a query whose principal cannot see every
+labelled record counts its visible scope exactly at query time, one pass
+over the documents. `index_status` reports `documents`, `terms`, `postings`,
+`files`, `pending` and `pending_paths`, `roots` (with per-root counts),
+`chunkers` (those visible documents use) and `has_source` (visible files
+have retained bytes) over the scope; `read_span`/`outline` of a hidden file
+answer the absent file's `not_found` message. The prefix-expansion hook is
+`find.termInScope` (**S3-T4**, S3-T3 finding 3: the unused
+`scope.termVisible` is removed; the hook is the check `find` runs, a posting
+whose chunk is in the root mask, under `path_prefix` and authorized by the
+labels, because a prefix query must also not expand terms that only occur
+outside its own path prefix, which a group-level hook cannot see). Measured
+timing: `docs/authorization.md`.
+**S3-T4:** the C ABI, the CLI and the RPC server now answer every
+operation through the scope: `ss_status` and RPC `index_status` count over
+the default scope (every root, no principal labels) or the server's
+command-line scope, never the whole index (S3-T3 Post-build ruling 3 is
+closed), and the by-id `evidence`/`read_chunk` go through
+`ScopedService`'s scope (S3-T3 finding 2). The ABI's caller (the host app)
+may state `roots` and `principal_labels` per request; the RPC server takes
+them from `--roots`/`--labels` (a request may narrow the roots; without
+`--labels` the raw service keeps accepting a request's bounded
+`principal_labels`, with it a request that states them is refused).
+`find` over a scope is `service.ScopedService.find`: the roots mask joins
+`find`'s label and prefix filter (candidates and prefix expansion), its BM25
+goes through `scoring.CorpusStatistics` with the visible scope's count,
+average length and a document-frequency provider, and the answer's
+`pending_files` counts the scope's visible pending files. `truncated` is true
+when a visible file was given to a writer but not indexed in full (too large,
+unreadable, or over the run's byte budget): the manifest's `meta.skipped`
+lists such files (`{root_id, path, size, required_labels, reason}`) until a
+later change of the path; `index_status` carries the same `truncated`.
+**S3-T2:** `find` takes its scope from the request's `path_prefix` and trusted
+`principal_labels` (the existing filter), applied before candidates are
+scored; prefix expansion counts a term only when one of its postings is in
+that scope. BM25 in `find` is computed through `scoring.CorpusStatistics`
+(document count, average length, and a per-term document-frequency provider);
+the default is the whole generation, and S3-T3 plugs the visible-scope
+statistics in there. `search_knowledge` is unchanged.
 
 ## 8. Read operations (JSON shapes)
 
@@ -312,6 +521,36 @@ is `phrase`. `empty: true` means this page has no hits; `pending_files` and
 `truncated` tell the caller the corpus may be incomplete (review finding 5,
 CFT-23).
 
+**S3-T2 amendments to `find`** (implemented in `zig/src/find.zig`, the Python
+reference `search_platform/find.py`; no ABI, CLI or RPC surface until S3-T4):
+- Each hit also carries `snippet_start` (CAP-19 FR-17: the snippet's start
+  offset in `content`). The snippet is a plain substring of `content` (no
+  `…` added), so `snippet_offsets` are `match_offsets` minus `snippet_start`.
+  The example's snippet would read `"band concert: count me in, Friday 6"`.
+  The window: of the windows of at most 240 codepoints that start at a
+  match, the one covering the most distinct matched terms, then the most
+  matches, earliest first; widened evenly; cut so it starts at a token start
+  (or the text start) and ends at a token end (or the text end).
+- `match_offsets`: one range per phrase occurrence (occurrences are
+  non-overlapping, left to right: "the the" in "the the the" is one) or per
+  matched token (words, prefix).
+- Overlap deduplication, made exact: for two hits of one file whose line
+  ranges overlap, the lines they share are the largest `j` (at most the
+  overlap of the ranges) with the last `j` lines of the earlier chunk's text
+  equal to the first `j` of the later one's (each stripped); the later hit is
+  dropped when every one of its matches ends inside the lines it shares with
+  an earlier **kept** hit. It applies to all three modes. `words` and
+  `prefix` are chunk-local like `phrase`.
+- `files` counts all hits (every page) in the order each file first appears
+  in the ranking; `coverage` counts this page's hits; `truncated` was `false`
+  and `pending_files` `0` until S3-T3 gave them a source (since S3-T3: §7,
+  over the visible scope).
+- Refusals: `INVALID_ARGUMENT` for an empty query (nothing analyzable,
+  `""` and `*` included), a `*` that ends any token but the last, `page_size`
+  outside 1..100, invalid UTF-8, a malformed cursor, and `"stale cursor"`
+  for another generation's; `CAPACITY` for `"re-index required: positions
+  absent"` and `prefix "<p>" expands to more than 1000 terms`.
+
 `outline`:
 
 ```json
@@ -335,6 +574,46 @@ reports `fields: {}` plus `raw` (the inner lines joined by LF).
 `index_status` adds `generation`, `roots[]` (visible), `pending`, `has_source`,
 `has_positions`, `chunkers[]`.
 
+**S3-T4 amendments** (implemented in `zig/src/ops.zig`; the C ABI, the CLI's
+`--json` and the RPC `result` are the same bytes, the Dart binding decodes
+them; `docs/tool-protocol.md`, `zig/include/search_simpli.h`):
+- *Envelope.* Every read result starts with `request` (the request echoed
+  with defaults filled in: `roots` is `null` when not given), `generation`,
+  `scope` `{roots: [the roots the request could see, in the generation's
+  order], labels_applied: true}` and `warnings` (`[{code, message}]`).
+  `labels_applied` is always true: the scope's labels (possibly none) filter
+  before any candidate; it does not say whether labels hid anything, which
+  would reveal that hidden files exist. The one warning so far is
+  `read_span`'s `end_line_clamped`. `index_status` and `evidence` keep their
+  v1 shapes and only add fields (no envelope), so a v1 consumer reads them
+  unchanged.
+- *find.* `path_prefix` is root-relative (the `path` a hit reports, like
+  `list_files`'), not the record path; with only the legacy root the two
+  are the same, so every S3-T2 test reads the same. The echo carries the
+  effective `mode`.
+- *read_span.* The request's `start_line`, `end_line` are required,
+  `context_lines` defaults to 0.
+- *list_files.* `size` is the retained bytes' length, or a pending file's
+  announced size, else null; `mtime_ms` is always null in contract 2.0.0 (a
+  generation does not record it, and `INDEX-STATE.json` is the writer's
+  file, which may already describe a newer generation than the one a reader
+  holds). The result adds `total` (files matching, every page). `page_size`
+  1–1,000, default 100; `status` `indexed | pending`; a stale cursor is
+  `INVALID_ARGUMENT` "stale cursor", as `find`'s. FR-22's `kind` filter is
+  not offered (§8 has none; `roots` gives the per-root listing).
+- *roots* (`ss_roots`, RPC `roots`, CLI `roots`): `{roots?}` → the envelope
+  plus `roots: [{root_id, label, kind, files, documents, pending}]`.
+- *evidence.* At most 1,000 ids; `path_prefix` still applies to the citation
+  path (v1); `neighbours.prev`/`next` are the same file's chunks just before
+  and after by start line, each `{chunk_id, start_line, end_line}` or null;
+  `section_path` is `[]` for a file without headings.
+- *Refusals.* A request field that is unknown, of the wrong type or out of
+  range is `INVALID_ARGUMENT` before anything runs. The ABI spells a
+  failure `"<function>: SS_ERR_<CODE>: <reason>"`; the RPC maps
+  `INVALID_ARGUMENT` to `-32602` ("Invalid params: <reason>"), `NOT_FOUND`
+  to `-32004` and `CAPACITY` to `-32005`; the CLI prints
+  `searchd: SS_ERR_<CODE>: <reason>` on stderr and exits 1.
+
 Relation to CAP-16 (directory filename retrieval): `list_files` is a listing
 with a prefix, not a ranked filename search; CAP-16's `search_field` channel
 stays the way to find a file by name, and it inherits roots and scope from §7
@@ -354,6 +633,23 @@ char *ss_apply_changes(const char *dir_path, const char *changes_json, const cha
 All return a JSON string to `ss_free`, or NULL with `ss_last_error` set; error
 codes unchanged (−1 … −7). `ss_query`/`ss_evidence` gain `roots` in
 `options_json`. The ten v1 functions keep their signatures and behaviour.
+
+**S3-T4 amendments.** `ss_status` (no options) counts over the default
+scope, every root and no principal labels, the scope `ss_query` uses
+without options: identical to 1.x on an index without labels (every
+existing golden), and a labelled file is no longer counted (S3-T3 finding);
+`ss_roots(options_json)` counts over a scope the caller names. `ss_status`
+appends §8's `index_status` fields after the v1 ones, and `ss_evidence`'s
+found items append `root_id`, `section_path`, `neighbours` after the v1
+fields, so the v1 output is a byte prefix of each. `ss_evidence` refuses an
+unknown request field (as `parseFromSlice` already did) and now names the
+code in `ss_last_error`. `ss_query` without `roots` runs the 1.x path
+unchanged; with it, the scoped one. `ss_open` also opens the scope data
+(roots, statistics groups, the source section with its path and line
+indexes, position tables): on the fixture (998 chunks, 1.15 MB retained)
+it went from 13.0 ms to 18.4 ms (p50 of 30, ReleaseSmall library), and the
+macOS library from 569,064 to 697,544 bytes (the ABI now links `find`,
+`apply_changes`, the Markdown outline and the operations layer).
 
 ## 10. Tool schemas and the skill document
 
@@ -392,6 +688,28 @@ four). The scope (§7) comes from the command line, never from the client
 (CAP-13's "no caller-supplied principals"). Adapter overhead p95 ≤ 5 ms over
 the direct call (CAP-13's gate), measured in S3-T6.
 
+**S3-T6 amendments** (accepted in the task's post-build rulings; the full
+contract is [`docs/mcp-server.md`](mcp-server.md)):
+- The command line also takes `--baseline` (CAP-13's four tools, no
+  resources; not with `--allow-write`) and `--allow-file-reads` (only with
+  `--allow-write`). The pinned revision is `2025-11-25`.
+- Every tool descriptor declares `outputSchema` (its S3-T5 result schema)
+  besides `inputSchema`; both are the `contracts/tools/` files, built in at
+  compile time.
+- A refusal by the operation is a tool result with `isError: true` whose one
+  text block is the RPC server's error object for the same request; an
+  unknown or unlisted tool is the JSON-RPC error `-32602`.
+- `apply_changes` (with `--allow-write`) is refused when a root it declares
+  or changes is outside `--roots` (when given).
+- `resources/read` drops a leading UTF-8 BOM, as `read_span` does;
+  `resources/list`'s `size` is the retained bytes.
+- A call carrying `query_vector` is refused, so on an index with vectors
+  `search_knowledge` over MCP is lexical only.
+- §8: `search_knowledge` items add `root_id` and `section_path` (after
+  `ranking`) and the result adds `truncated` and `pending_files` (after
+  `answer_policy`) on the RPC and MCP surfaces; the C ABI's `ss_query` keeps
+  its contract-2.0.0 output without them.
+
 ## 12. Fixture and judgments (`fixtures/family-folder/`)
 
 Invented content only. Layout: three roots `school/`, `home/`, `laptop/`
@@ -419,3 +737,63 @@ generator's output with its sha256 plus the family-folder fixture, 5 warm-up
 queries then 200 timed queries per mode, p50 and p95, three repetitions, peak
 RSS from `/usr/bin/time -l`, segment sizes per section, retained-source bytes
 separately. Before/after tables live in `docs/scale-benchmark.md`.
+
+**S3-T2 (recorded):** MacBook Pro, Apple M5 Pro (18 cores), 48 GB, macOS
+26.6.2 (25G83); Zig 0.16.0 `ReleaseFast` and `ReleaseSmall`; corpus
+`scripts/gen_timing_corpus.py <dir> 10000` (10,000 Markdown files,
+7,269,199 bytes, sha256 of the files concatenated in sorted path order
+`3a520dd588fa34cb2bec9a15b12f7ad8a0fc3c0d5feebd4baba4ce49fed96e38`,
+19,959 chunks) plus the family-folder fixture (three roots side by side,
+998 chunks); the timer is `zig/src/find_bench.zig` (queries drawn from the
+indexed chunks, 5 warm-up then 200 timed per mode, three repetitions); index
+runs are three per build. NFR-10's "10k chunks" is measured at 19,959.
+
+## Follow-up review requirements (2026-11-01)
+
+### Cross-branch format integration
+Main's implemented 104-byte HYBMAN02/version 2 remains authoritative. The
+unmerged CAP-16 branch at daddbee independently uses HYBMAN02 for a 136-byte
+filename-channel layout. These are incompatible formats despite sharing an
+identifier. Preserve main-v2; freeze a distinct HYBMAN03/version 3 layout for
+combined filename/source support before CAP-16 integration, including explicit
+section descriptors, lengths and checksums. Test v1, main-v2, filename-v3 and
+combined-v3 compatibility. Rebuild CAP-16 draft-v2 snapshots in a separate
+directory; do not infer a format from length alone. Rebase CAP-16 onto main's
+source/positions/roots implementation before rebuilding packaged libraries.
+
+### Host-fed recovery completeness
+
+S3-T3 now reconstructs stale/missing INDEX-STATE from manifest metadata,
+records and retained source. That supersedes the pre-T3 review's assumption
+that recovery could only re-walk a desktop folder. Preserve the implemented
+recovery path; do not claim it absent. Before relying on it for arbitrary
+host-only workloads, extend the recovery oracle to assert equivalence of all
+mutation-relevant state: pending/empty/blank files, own versus inherited
+labels, retained and non-retained source, hashes and sizes, skipped outcomes,
+move identity, root policy, mtime and unchanged detection. Test without original
+host payloads after a crash following MANIFEST publication but before cache
+writing, and after missing/corrupt cache. Explicitly document any fields that
+cannot be reconstructed and how retries behave; do not silently substitute
+unknown values where they affect authorization or mutation semantics.
+
+If exact reconstruction cannot meet that gate, publish immutable state-N.json
+before MANIFEST and bind its safe filename, byte length and SHA-256 in the
+checksummed metadata. Load only the bound generation's state, keep mutable
+INDEX-STATE as a compatibility cache, and fail writes closed on corrupt bound
+state. This is a proposed fallback, not a new implemented format. Test every
+state/manifest rename and directory-sync boundary, committed-but-error replies,
+expected-generation retries and retention/pruning before adopting it.
+
+### Trusted write authority
+
+Scope-aware deployment must derive filesystem root handles/base paths, write
+permissions and label policy from trusted host configuration. Request roots[]
+is data, not authority to create a filesystem grant or weaken labels. If
+--allow-write intentionally grants full administrative control of the index,
+document that boundary explicitly; do not present it as a restricted-root
+writer. Any restricted writer must reject forged roots, policy downgrades,
+remove_root outside scope and cross-root operations. File opens must enforce
+confinement on the actual opened handles without following symlinks in any
+component; test intermediate symlink replacement between validation and read,
+and hash the same bytes that are indexed. The existing lstat/final-no-follow
+checks alone are not evidence against intermediate-component races.

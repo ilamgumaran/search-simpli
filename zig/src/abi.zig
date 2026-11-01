@@ -44,6 +44,9 @@ const query_report = @import("report.zig");
 const rpc = @import("rpc.zig");
 const scoring = @import("scoring.zig");
 const service_module = @import("service.zig");
+const ops = @import("ops.zig");
+const scope = @import("scope.zig");
+const snapshot_open = @import("snapshot_open.zig");
 
 /// Negative error codes returned by `ss_import_json`. Matches
 /// `docs/zig-engine-api.md`'s ABI section.
@@ -88,23 +91,24 @@ pub export fn ss_last_error() callconv(.c) [*:0]const u8 {
 }
 
 /// The engine contract/build version (`contracts/CONTRACTS_VERSION`), e.g.
-/// `"1.2.0"`. Static storage: never pass this pointer to `ss_free`.
+/// `"2.0.0"`. Static storage: never pass this pointer to `ss_free`.
 pub export fn ss_version() callconv(.c) [*:0]const u8 {
     return contracts_version.ptr;
 }
 
 /// Opaque handle to one opened, immutable, published snapshot generation.
-/// Every field is owned by the handle and freed together by `ss_close`.
+/// Everything it holds (the decoded sections, the S3-T4 scope data: roots,
+/// pending files, statistics groups, the source section with its path and
+/// sparse line indexes, the position tables) lives in one arena over the C
+/// allocator, freed together by `ss_close`.
 pub const Handle = struct {
-    manifest_buffer: []u8,
-    documents_buffer: []u8,
-    lexical_buffer: []u8,
-    documents_output: []hybrid.Document,
-    vectors_output: []f32,
-    terms_output: []postings.TermEntry,
-    postings_output: []postings.Posting,
-    document_lengths_output: []u32,
+    arena: std.heap.ArenaAllocator,
     engine: engine_module.Engine,
+    folder: *scope.Folder,
+
+    fn service(handle: *const Handle) service_module.Service {
+        return .{ .engine = handle.engine, .folder = handle.folder };
+    }
 };
 
 /// Open the published snapshot directory `dir` (as written by `searchd
@@ -124,96 +128,42 @@ fn openImpl(path: []const u8) !*Handle {
     var dir = try std.Io.Dir.cwd().openDir(gio, path, .{});
     defer dir.close(gio);
 
-    var manifest_file = try dir.openFile(gio, publication.current_manifest_file, .{});
-    const manifest_stat = try manifest_file.stat(gio);
-    manifest_file.close(gio);
-    const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
-    const manifest_buffer = try allocator.alloc(u8, manifest_size);
-    errdefer allocator.free(manifest_buffer);
-    const manifest_encoded = try dir.readFile(gio, publication.current_manifest_file, manifest_buffer);
-    const metadata = try manifest.decode(manifest_encoded);
-
-    const documents_buffer = try allocator.alloc(u8, metadata.documents_bytes);
-    errdefer allocator.free(documents_buffer);
-    const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
-    errdefer allocator.free(lexical_buffer);
-    const snapshot = try publication.loadCurrent(dir, gio, manifest_buffer, documents_buffer, lexical_buffer);
-
-    const documents_output = try allocator.alloc(hybrid.Document, metadata.document_count);
-    errdefer allocator.free(documents_output);
-    const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch
-        return error.IndexTooLarge;
-    const vectors_output = try allocator.alloc(f32, vector_count);
-    errdefer allocator.free(vectors_output);
-    const terms_output = try allocator.alloc(postings.TermEntry, metadata.term_count);
-    errdefer allocator.free(terms_output);
-    const postings_output = try allocator.alloc(postings.Posting, metadata.posting_count);
-    errdefer allocator.free(postings_output);
-    const document_lengths_output = try allocator.alloc(u32, metadata.document_count);
-    errdefer allocator.free(document_lengths_output);
-
-    const engine = try engine_module.Engine.open(
-        snapshot,
-        documents_output,
-        vectors_output,
-        terms_output,
-        postings_output,
-        document_lengths_output,
-    );
-
     const handle = try allocator.create(Handle);
-    handle.* = .{
-        .manifest_buffer = manifest_buffer,
-        .documents_buffer = documents_buffer,
-        .lexical_buffer = lexical_buffer,
-        .documents_output = documents_output,
-        .vectors_output = vectors_output,
-        .terms_output = terms_output,
-        .postings_output = postings_output,
-        .document_lengths_output = document_lengths_output,
-        .engine = engine,
-    };
+    errdefer allocator.destroy(handle);
+    handle.arena = std.heap.ArenaAllocator.init(allocator);
+    errdefer handle.arena.deinit();
+    // S3-T4: the scoped open (roots, statistics, source section, position
+    // tables) so every operation answers over a scope; a lost source section
+    // does not fail it (S3-T1 finding 2).
+    const opened = try snapshot_open.openScoped(handle.arena.allocator(), gio, dir);
+    handle.engine = opened.engine;
+    handle.folder = opened.folder;
     return handle;
 }
 
 /// Free everything opened by `ss_open`. `NULL` is a safe no-op.
 pub export fn ss_close(handle: ?*Handle) callconv(.c) void {
     const h = handle orelse return;
-    allocator.free(h.manifest_buffer);
-    allocator.free(h.documents_buffer);
-    allocator.free(h.lexical_buffer);
-    allocator.free(h.documents_output);
-    allocator.free(h.vectors_output);
-    allocator.free(h.terms_output);
-    allocator.free(h.postings_output);
-    allocator.free(h.document_lengths_output);
+    h.arena.deinit();
     allocator.destroy(h);
 }
 
 /// Snapshot status as JSON (the same fields as JSON-RPC `index_status`'s
-/// `result`): `ready`, `generation`, `analyzer_id`, `embedding_model_id`,
-/// `vector_dimensions`, `documents`, `terms`, `postings`. Caller frees the
-/// result with `ss_free`. `NULL` on failure (`ss_last_error()`).
+/// `result`): the v1 fields `ready`, `generation`, `analyzer_id`,
+/// `embedding_model_id`, `vector_dimensions`, `documents`, `terms`,
+/// `postings`, then (contract 2.0.0) `files`, `pending`, `truncated`,
+/// `roots`, `pending_paths`, `has_source`, `has_positions`, `chunkers`. The
+/// counts are over the default scope: every root, no principal labels (the
+/// scope `ss_query` uses without options), so a labelled file is not
+/// counted (S3-T3 finding: no whole-index counts); `ss_roots` takes a scope.
+/// Caller frees the result with `ss_free`. `NULL` on failure (`ss_last_error()`).
 pub export fn ss_status(handle: ?*Handle) callconv(.c) ?[*:0]u8 {
     clearLastError();
     const h = handle orelse {
         setLastError("ss_status: null handle", .{});
         return null;
     };
-    return statusImpl(h) catch |err| {
-        setLastError("ss_status: {s}", .{@errorName(err)});
-        return null;
-    };
-}
-
-fn statusImpl(h: *Handle) ![*:0]u8 {
-    const service = service_module.Service{ .engine = h.engine };
-    var out: std.Io.Writer.Allocating = .init(allocator);
-    errdefer out.deinit();
-    var json = std.json.Stringify{ .writer = &out.writer };
-    try json.write(service.indexStatus());
-    const owned = try out.toOwnedSliceSentinel(0);
-    return owned.ptr;
+    return runOperation("ss_status", h, null, ops.indexStatus);
 }
 
 const QueryOptions = struct {
@@ -221,6 +171,9 @@ const QueryOptions = struct {
     candidate_k: ?usize = null,
     path_prefix: ?[]const u8 = null,
     principal_labels: []const []const u8 = &.{},
+    /// Contract 2.0.0: root ids to search (null = every root); an unknown id
+    /// names nothing.
+    roots: ?[]const []const u8 = null,
     /// S2-T4: add `profile{...}` timings to the report.
     profile: bool = false,
 };
@@ -228,8 +181,10 @@ const QueryOptions = struct {
 /// Run one query and return the same `result` JSON object a `search_knowledge`
 /// JSON-RPC response would carry (`tool`, `query`, `index`, `retrieval`,
 /// `results`, `answer_policy`) — produced by the identical code
-/// (`rpc.writeSearchResultValue`), so it is byte-for-byte what the JSON-RPC
-/// service would return for the same request.
+/// (`rpc.writeSearchResultValue`, `ops.writeSearchResult`), so it is
+/// byte-for-byte what the JSON-RPC service would return for the same request
+/// minus the folder fields the service adds since S3-T6 (item `root_id` and
+/// `section_path`, result `truncated` and `pending_files`).
 ///
 /// `query_vector`/`dims` are ignored for lexical mode and for snapshots with
 /// zero vector dimensions; otherwise `dims` must equal the snapshot's vector
@@ -318,7 +273,7 @@ fn queryImpl(
     else
         .no_vectors_in_snapshot;
 
-    const service = service_module.Service{ .engine = h.engine };
+    const service = h.service();
     const document_count = h.engine.documents.len;
     // S2-T3: nothing here scales with the corpus. The ranking selection
     // allocates from the per-call arena (sized by the matched chunks and
@@ -337,13 +292,20 @@ fn queryImpl(
     // `ss_query` returns, so the ABI keeps its "no hidden allocator, nothing
     // retained between calls" contract.
     var trace = hybrid.Trace{ .allocator = arena.allocator(), .io = io(), .profile = options.profile };
-    const found = try service.searchKnowledgeTraced(arena.allocator(), query_text, effective_vector, .{
+    const search_options = hybrid.SearchOptions{
         .top_k = top_k,
         .candidate_k = candidate_k,
         .retrieval_mode = mode,
         .path_prefix = options.path_prefix,
         .principal_labels = options.principal_labels,
-    }, results, evidence, &trace);
+    };
+    // Contract 2.0.0: `roots` goes through the scope (roots before
+    // candidates, visible-scope statistics); without it the call is the v1
+    // path, unchanged.
+    const found = if (options.roots) |roots|
+        try (service_module.ScopedService{ .service = service }).searchKnowledge(arena.allocator(), query_text, effective_vector, search_options, .{ .roots = roots, .principal_labels = options.principal_labels }, results, evidence, &trace)
+    else
+        try service.searchKnowledgeTraced(arena.allocator(), query_text, effective_vector, search_options, results, evidence, &trace);
 
     var out: std.Io.Writer.Allocating = .init(allocator);
     errdefer out.deinit();
@@ -361,19 +323,15 @@ fn queryImpl(
     return owned.ptr;
 }
 
-const EvidenceRequest = struct {
-    ids: []const []const u8,
-    path_prefix: ?[]const u8 = null,
-    principal_labels: []const []const u8 = &.{},
-};
-
 /// Look up stored chunks by id. `ids_json` is a JSON object:
-/// `{"ids": ["chunk-1", ...], "path_prefix": "guides/", "principal_labels": []}`
-/// (`path_prefix` and `principal_labels` are optional, same meaning as
-/// `read_chunk`). Returns a JSON array with one entry per id, in the same
-/// order: a chunk object (`chunk_id`, `citation`, `content` — the same
-/// fields and layout `read_chunk` returns, via `rpc.writeChunkFields`) when
-/// found and authorized, or `{"chunk_id": "...", "found": false}` otherwise.
+/// `{"ids": ["chunk-1", ...], "path_prefix": "guides/", "principal_labels": [], "roots": ["school"]}`
+/// (`path_prefix`, `principal_labels` and, since contract 2.0.0, `roots` are
+/// optional; same meaning as `read_chunk`). Returns a JSON array with one
+/// entry per id, in the same order: a chunk object (`chunk_id`, `citation`,
+/// `content` — the v1 fields and layout `read_chunk` returns — then, since
+/// 2.0.0, `root_id`, `section_path`, `neighbours`) when found and inside the
+/// scope, or `{"chunk_id": "...", "found": false}` otherwise. The lookup goes
+/// through the scope (`ops.evidence`; S3-T3 finding 2).
 ///
 /// Caller frees the result with `ss_free`. `NULL` on failure
 /// (`ss_last_error()`), which includes a malformed `ids_json`.
@@ -383,40 +341,150 @@ pub export fn ss_evidence(handle: ?*Handle, ids_json: [*:0]const u8) callconv(.c
         setLastError("ss_evidence: null handle", .{});
         return null;
     };
-    return evidenceImpl(h, std.mem.span(ids_json)) catch |err| {
-        setLastError("ss_evidence: {s}", .{@errorName(err)});
+    return runOperation("ss_evidence", h, ids_json, ops.evidence);
+}
+
+// === S3-T4: the folder-knowledge operations (contract 2.0.0) ===============
+
+/// The ABI's caller is the host app, trusted with the scope: a request may
+/// state `roots` and `principal_labels`.
+const abi_caller = ops.Caller{ .request_labels = true };
+
+/// Parse `request_json` (NULL or empty = `{}`), run `operation` in a
+/// per-call arena, and return its JSON (C-allocated) or NULL with
+/// `ss_last_error()` = `"<name>: SS_ERR_<CODE>: <message>"`.
+fn runOperation(comptime name: []const u8, h: *Handle, request_json: ?[*:0]const u8, comptime operation: anytype) ?[*:0]u8 {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const text = if (request_json) |ptr| std.mem.span(ptr) else "";
+    const result = operationResult(arena.allocator(), h, text, operation) catch |err| {
+        setLastError(name ++ ": {s}: {s}", .{ errorName(errorCode(err)), @errorName(err) });
         return null;
+    };
+    switch (result) {
+        .failed => |failure| {
+            setLastError(name ++ ": {s}: {s}", .{ failure.code.ssName(), failure.message });
+            return null;
+        },
+        .ok => |json| {
+            const owned = allocator.dupeZ(u8, json) catch {
+                setLastError(name ++ ": SS_ERR_OUT_OF_MEMORY: OutOfMemory", .{});
+                return null;
+            };
+            return owned.ptr;
+        },
+    }
+}
+
+fn operationResult(arena: std.mem.Allocator, h: *Handle, text: []const u8, comptime operation: anytype) !ops.Result {
+    const params = switch (try ops.parseObject(arena, text)) {
+        .ok => |object| object,
+        .failed => |failure| return .{ .failed = failure },
+    };
+    return operation(arena, h.service(), params, abi_caller);
+}
+
+/// The `SS_ERR_*` name of a code `errorCode` returns.
+fn errorName(code: i64) []const u8 {
+    return switch (code) {
+        SS_ERR_INVALID_ARGUMENT => "SS_ERR_INVALID_ARGUMENT",
+        SS_ERR_IO => "SS_ERR_IO",
+        SS_ERR_CORRUPT_SNAPSHOT => "SS_ERR_CORRUPT_SNAPSHOT",
+        SS_ERR_CAPACITY => "SS_ERR_CAPACITY",
+        SS_ERR_OUT_OF_MEMORY => "SS_ERR_OUT_OF_MEMORY",
+        SS_ERR_NOT_FOUND => "SS_ERR_NOT_FOUND",
+        else => "SS_ERR_INTERNAL",
     };
 }
 
-fn evidenceImpl(h: *Handle, ids_json: []const u8) ![*:0]u8 {
+/// `find` (CAP-19 FR-22, implementation section 8). See `search_simpli.h`.
+pub export fn ss_find(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_find");
+    return runOperation("ss_find", h, request_json, ops.find);
+}
+
+/// `outline` of one file. See `search_simpli.h`.
+pub export fn ss_outline(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_outline");
+    return runOperation("ss_outline", h, request_json, ops.outline);
+}
+
+/// `read_span` of one file, byte exact. See `search_simpli.h`.
+pub export fn ss_read_span(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_read_span");
+    return runOperation("ss_read_span", h, request_json, ops.readSpan);
+}
+
+/// `list_files`, paged. See `search_simpli.h`.
+pub export fn ss_list_files(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_list_files");
+    return runOperation("ss_list_files", h, request_json, ops.listFiles);
+}
+
+/// The visible roots and their counts. See `search_simpli.h`.
+pub export fn ss_roots(handle: ?*Handle, options_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_roots");
+    return runOperation("ss_roots", h, options_json, ops.visibleRoots);
+}
+
+fn nullHandle(comptime name: []const u8) ?[*:0]u8 {
+    setLastError(name ++ ": SS_ERR_INVALID_ARGUMENT: null handle", .{});
+    return null;
+}
+
+/// `apply_changes` (implementation section 6): publish one new generation
+/// in `dir_path` from host-fed changes. See `search_simpli.h`.
+pub export fn ss_apply_changes(dir_path: ?[*:0]const u8, changes_json: ?[*:0]const u8, opts_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const dir_text = if (dir_path) |ptr| std.mem.span(ptr) else {
+        setLastError("ss_apply_changes: SS_ERR_INVALID_ARGUMENT: null dir_path", .{});
+        return null;
+    };
+    const changes_text = if (changes_json) |ptr| std.mem.span(ptr) else {
+        setLastError("ss_apply_changes: SS_ERR_INVALID_ARGUMENT: null changes_json", .{});
+        return null;
+    };
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
-    const parsed = try std.json.parseFromSlice(EvidenceRequest, arena.allocator(), ids_json, .{});
-    const request = parsed.value;
-    const service = service_module.Service{ .engine = h.engine };
-
-    var out: std.Io.Writer.Allocating = .init(allocator);
-    errdefer out.deinit();
-    var json = std.json.Stringify{ .writer = &out.writer };
-    try json.beginArray();
-    for (request.ids) |id| {
-        if (service.readChunk(id, request.path_prefix, request.principal_labels)) |chunk| {
-            try json.beginObject();
-            try rpc.writeChunkFields(&json, chunk);
-            try json.endObject();
-        } else {
-            try json.beginObject();
-            try json.objectField("chunk_id");
-            try json.write(id);
-            try json.objectField("found");
-            try json.write(false);
-            try json.endObject();
-        }
+    const result = applyImpl(arena.allocator(), dir_text, changes_text, if (opts_json) |ptr| std.mem.span(ptr) else "") catch |err| {
+        if (err == error.NoFreeGeneration) {
+            var line_buffer: [384]u8 = undefined;
+            setLastError("ss_apply_changes: SS_ERR_IO: {s}", .{generation_alloc.describeNoFreeGeneration(&line_buffer)});
+        } else setLastError("ss_apply_changes: {s}: {s}", .{ errorName(errorCode(err)), @errorName(err) });
+        return null;
+    };
+    switch (result) {
+        .failed => |failure| {
+            setLastError("ss_apply_changes: {s}: {s}", .{ failure.code.ssName(), failure.message });
+            return null;
+        },
+        .ok => |json| {
+            const owned = allocator.dupeZ(u8, json) catch {
+                setLastError("ss_apply_changes: SS_ERR_OUT_OF_MEMORY: OutOfMemory", .{});
+                return null;
+            };
+            return owned.ptr;
+        },
     }
-    try json.endArray();
-    const owned = try out.toOwnedSliceSentinel(0);
-    return owned.ptr;
+}
+
+fn applyImpl(arena: std.mem.Allocator, dir_path: []const u8, changes_json: []const u8, opts_json: []const u8) !ops.Result {
+    const options = switch (try ops.parseObject(arena, opts_json)) {
+        .failed => |failure| return .{ .failed = failure },
+        .ok => |object| switch (try ops.applyOptions(arena, object)) {
+            .failed => |failure| return .{ .failed = failure },
+            .ok => |options| options,
+        },
+    };
+    const gio = io();
+    var dir = try std.Io.Dir.cwd().createDirPathOpen(gio, dir_path, .{ .open_options = .{ .iterate = true } });
+    defer dir.close(gio);
+    return ops.applyChanges(arena, gio, dir, changes_json, options);
 }
 
 /// Validate the neutral interchange JSON in `bytes[0..bytes_len]`
@@ -1103,7 +1171,7 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     try std.testing.expectEqualStrings("guides/hybrid.md", evidence_items[0].object.get("citation").?.object.get("path").?.string);
     try std.testing.expectEqual(false, evidence_items[1].object.get("found").?.bool);
 
-    try std.testing.expectEqualStrings("1.2.0", std.mem.span(ss_version()));
+    try std.testing.expectEqualStrings("2.0.0", std.mem.span(ss_version()));
 }
 
 test "ss_import_json publishes a queryable snapshot and reports negative codes on failure" {

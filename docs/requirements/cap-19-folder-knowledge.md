@@ -1,6 +1,6 @@
 # CAP-19 — Folder knowledge: exact finding, document structure, several roots, host-fed changes, one tool surface for models, apps and MCP
 
-Status: Approved for build (2026-10-31, the owner; evidence still pending until the S3 tasks report)
+Status: Diagnostic · implemented (S3-T1 to S3-T7 verified 2026-10-31, S3-T8 hand-off; approved for build 2026-10-31 by the owner). Evidence below; NFR-13 stays Proposed.
 
 > Run through the [capability process](../capability-process.md), steps 1–6.
 > Review amendments recorded; acceptance evidence and approval pending; implementation is a later step
@@ -56,7 +56,7 @@ Status: Approved for build (2026-10-31, the owner; evidence still pending until 
 |---|---|---|
 | NFR-10 | Phrase query p50 ≤ 5 ms and words query p50 ≤ 1 ms at 10k chunks on the macOS benchmark machine; `find` paging uses generation-bound cursors; stale cursors fail explicitly. Page size does not bound scoring work. | `searchd benchmark --mode phrase` before and after |
 | NFR-11 | The positional lexical segment is at most 2.5× today's `HYBLEX01` size for the 10k-file benchmark corpus; positions are delta-coded varints. | segment sizes in the benchmark report |
-| NFR-12 | Indexing 10k files (5,000 Markdown) ≤ 3 s wall and ≤ 300 MB peak on the benchmark machine; `apply_changes` of one changed file in a 10k index ≤ 200 ms (the lexical rebuild may stay whole-index until a delta design is measured to be worth it, INV-09). | `searchd benchmark --apply` |
+| NFR-12 | Indexing 10k files (5,000 Markdown) ≤ 3 s wall and ≤ 300 MB peak on the benchmark machine; `apply_changes` of one changed file in a 10k index ≤ 200 ms in a `ReleaseFast` build, with the `ReleaseSmall` number reported beside it (amended 2026-10-31, S3-T3 Post-build ruling 2: measured 163 ms `ReleaseFast`, 215 ms `ReleaseSmall`; the bound tightens to `ReleaseSmall` only after delta sections or a cheaper checksum land) (the lexical rebuild may stay whole-index until a delta design is measured to be worth it, INV-09). | `searchd benchmark --apply` |
 | NFR-13 | All new operations run inside caller-owned bounded workspaces on phones (NFR-04); `read_span` and `outline` never load more than one file; `find` never returns more than `page_size` snippets per call. | Zig tests with a 64 MiB arena cap |
 | NFR-14 | The MCP server and the Zig engine stay free of third-party packages (INV-06); the MCP conformance client used in tests is standard-library Python. | CI job |
 
@@ -152,6 +152,26 @@ Blocking review cases (see [review](../reviews/2026-10-31-folder-knowledge-revie
 Each task in the plan records measured numbers in its Report; `PROJECT-STATE.md`
 gains a "folder knowledge" section with the benchmark table; the judgment pack
 runs in CI on Linux.
+
+## 10b. Evidence (S3-T8, 2026-10-31)
+
+Measured on the invented family-folder fixture and the generated 10k corpus (Apple M5 Pro, 48 GB, macOS 26.6.2, Zig 0.16.0, `ReleaseSmall` and `ReleaseFast`); the table is in `PROJECT-STATE.md` ("Folder knowledge (S3)").
+
+| Requirement | Status | Evidence |
+|---|---|---|
+| FR-17 | Diagnostic · implemented | [S3-T2](../tasks/S3-T2.md): phrase/prefix precision and recall 1.00 on the judgment pack |
+| FR-18 | Diagnostic · implemented | [S3-T1](../tasks/S3-T1.md): 61-file golden, 189 headings identical |
+| FR-19, FR-20, FR-21 | Diagnostic · implemented | [S3-T3](../tasks/S3-T3.md): roots, `apply_changes`, rename pairing, visible-scope statistics |
+| FR-22 | Diagnostic · implemented | [S3-T1](../tasks/S3-T1.md) (core), [S3-T4](../tasks/S3-T4.md) (C ABI, Dart, CLI, RPC) |
+| FR-23 | Diagnostic · implemented | [S3-T4](../tasks/S3-T4.md), [S3-T5](../tasks/S3-T5.md) |
+| FR-24, NFR-14 | Diagnostic · implemented | [S3-T6](../tasks/S3-T6.md): MCP `2025-11-25`, 66 parity requests 100% equal, conformance 27/27 |
+| FR-25 | Diagnostic · implemented | [S3-T2](../tasks/S3-T2.md), [S3-T3](../tasks/S3-T3.md), [S3-T6](../tasks/S3-T6.md) |
+| NFR-10 | Diagnostic · implemented | [S3-T2](../tasks/S3-T2.md): phrase p50 17.6 µs, words p50 5.6 µs at 19,959 chunks (`ReleaseFast`) |
+| NFR-11 | Diagnostic · implemented | [S3-T2](../tasks/S3-T2.md): `HYBLEX02` 1.39× `HYBLEX01` |
+| NFR-12 | Diagnostic · implemented | [S3-T3](../tasks/S3-T3.md): full 10k index 326 ms and 144 MB; one file 163 ms `ReleaseFast`, 215 ms `ReleaseSmall` |
+| NFR-13 | Proposed | bounded reads and page caps are tested (S3-T1, S3-T2, S3-T4), but the "64 MiB arena cap" test named above is not recorded in any S3 Report |
+
+CFT-09 stays Blocked: interchange (CON-03) carries no chunker id. Device acceptance (the consumer app's fixture run on both phones) is recorded in that app's repository.
 
 ## 11. Open decisions
 

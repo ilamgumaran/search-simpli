@@ -25,7 +25,7 @@ class SearchSimpliBindings {
       : _lookup = lookup;
 
   /// The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
-  /// "1.2.0". The returned pointer is static storage owned by the library:
+  /// "2.0.0". The returned pointer is static storage owned by the library:
   /// never pass it to ss_free(). Cannot fail.
   ffi.Pointer<ffi.Char> ss_version() {
     return _ss_version();
@@ -60,6 +60,14 @@ class SearchSimpliBindings {
   /// Returns an opaque handle on success, or NULL on any I/O or validation
   /// failure (missing/corrupt MANIFEST, checksum mismatch, cross-section count
   /// mismatch, out of memory, ...) — see ss_last_error().
+  ///
+  /// Since 2.0.0 the handle also holds the generation's roots, pending files,
+  /// per-root statistics and, when the generation retains source bytes, the
+  /// source section (with a path index and a sparse line index). A source
+  /// section that is missing or does not validate does not fail ss_open:
+  /// ss_query, ss_find and the listings work, and only ss_read_span and
+  /// ss_outline answer SS_ERR_CAPACITY "re-index required: source section
+  /// unavailable (<reason>)".
   ffi.Pointer<ss_handle> ss_open(
     ffi.Pointer<ffi.Char> dir_path,
   ) {
@@ -94,7 +102,19 @@ class SearchSimpliBindings {
   /// Snapshot status as a JSON object: `ready` (bool, always true for a
   /// successfully opened handle), `generation`, `analyzer_id`,
   /// `embedding_model_id`, `vector_dimensions`, `documents`, `terms`,
-  /// `postings`.
+  /// `postings`. Since contract 2.0.0 these are followed (additive; removing
+  /// them gives the 1.x output) by:
+  /// "files"          visible files (indexed, including those without a chunk)
+  /// "pending"        visible pending files (announced, bytes not yet given)
+  /// "truncated"      a visible file was given but not indexed in full
+  /// "roots"          [{"root_id","label","kind","files","documents","pending"}]
+  /// "pending_paths"  [{"root_id","path"}]
+  /// "has_source"     visible files have retained, readable source bytes
+  /// "has_positions"  the lexical section holds positions (phrase works)
+  /// "chunkers"       the chunker ids visible documents use
+  /// All counts, the v1 ones included, are over the default scope: every
+  /// root, no principal labels (the scope ss_query uses without options), so
+  /// a labelled file is not counted; ss_roots() counts over a scope you name.
   ///
   /// Returns a heap-allocated, null-terminated JSON string on success — the
   /// caller must free it with ss_free() — or NULL on failure (out of memory;
@@ -154,13 +174,21 @@ class SearchSimpliBindings {
   /// "profile"           boolean, default false (since
   /// contract 1.2.0); true adds the
   /// `profile` field described below
+  /// "roots"             array of root ids (since 2.0.0):
+  /// only chunks of these roots are
+  /// candidates, and BM25 counts over
+  /// the visible scope; absent = every
+  /// root, the 1.x behaviour exactly
   ///
   /// Returns a heap-allocated, null-terminated JSON object on success — the
   /// caller must free it with ss_free() — with fields `tool`, `query`, `index`,
   /// `retrieval`, `results` (array of chunk_id/citation/content/score/ranking),
   /// and `answer_policy`. These are exactly the fields of the `result` value a
   /// `search_knowledge` JSON-RPC response carries for the same request
-  /// (docs/zig-rpc-service.md), in the same order and byte for byte.
+  /// (docs/zig-rpc-service.md), in the same order and byte for byte, except
+  /// that the service (and `searchd mcp`) add, since S3-T6, `root_id` and
+  /// `section_path` to each item and `truncated` and `pending_files` after
+  /// `answer_policy`; ss_query()'s output is unchanged.
   ///
   /// Since contract 1.2.0 the object ends with three more fields (additive;
   /// removing them gives the 1.1.0 output exactly):
@@ -251,16 +279,21 @@ class SearchSimpliBindings {
   /// Look up stored chunks by id. `ids_json` is a null-terminated JSON object:
   ///
   /// {"ids": ["chunk-1", "chunk-2"], "path_prefix": "guides/",
-  /// "principal_labels": []}
+  /// "principal_labels": [], "roots": ["school"]}
   ///
-  /// `path_prefix` and `principal_labels` are optional and have the same
-  /// meaning as `read_chunk`'s parameters of the same name.
+  /// `path_prefix` (on the citation path), `principal_labels` and, since
+  /// 2.0.0, `roots` are optional and have the same meaning as `read_chunk`'s
+  /// parameters of the same name; an unknown field fails the call. At most
+  /// 1,000 ids.
   ///
   /// Returns a heap-allocated, null-terminated JSON array on success — the
   /// caller must free it with ss_free() — with one entry per id, in the same
   /// order as `ids`: a chunk object (`chunk_id`, `citation` {path, start_line,
-  /// end_line}, `content`) when found and authorized, or
-  /// `{"chunk_id": "...", "found": false}` otherwise. Ids are never rejected
+  /// end_line}, `content`, then since 2.0.0 `root_id`, `section_path` (the
+  /// Markdown heading path, [] for other files) and `neighbours` {"prev",
+  /// "next"}, each {"chunk_id","start_line","end_line"} of the adjacent chunk
+  /// of the same file or null) when found and inside the scope, or
+  /// `{"chunk_id": "...", "found": false}` otherwise (unknown and hidden alike). Ids are never rejected
   /// individually; the whole call only fails (returns NULL) if `ids_json`
   /// itself is malformed, `ids` is missing, or of out of memory — see
   /// ss_last_error(). `handle` must not be NULL.
@@ -330,8 +363,9 @@ class SearchSimpliBindings {
   late final _ss_import_json = _ss_import_jsonPtr.asFunction<
       int Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>, int)>();
 
-  /// Free a pointer previously returned by ss_status(), ss_query(), or
-  /// ss_evidence(). `ptr` may be NULL (no-op). Never call this on the result
+  /// Free a pointer previously returned by ss_status(), ss_query(),
+  /// ss_evidence(), ss_index_folder() or a 2.0.0 function (ss_find,
+  /// ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes). `ptr` may be NULL (no-op). Never call this on the result
   /// of ss_version() or ss_last_error() (both static storage, not caller-owned).
   void ss_free(
     ffi.Pointer<ffi.Char> ptr,
@@ -467,6 +501,201 @@ class SearchSimpliBindings {
               ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.Char>)>>('ss_index_folder');
   late final _ss_index_folder = _ss_index_folderPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>();
+
+  /// The search box. Request:
+  /// "query"        string, required; a query in double quotes is a phrase,
+  /// a trailing * makes the last word a prefix
+  /// "mode"         "words" (every word, default) | "phrase" | "prefix"
+  /// "roots"        array of root ids (default every root)
+  /// "principal_labels" array of strings (default none)
+  /// "path_prefix"  root-relative path prefix (default none)
+  /// "page_size"    1-100 (default 20); every match is scored regardless
+  /// "cursor"       the previous page's next_cursor
+  /// Result, after the envelope: "hits" [{"chunk_id","root_id","path",
+  /// "section_path","start_line","end_line","score","snippet" (at most 240
+  /// codepoints of the chunk),"snippet_start","snippet_offsets","match_offsets"
+  /// (half-open codepoint ranges into the chunk's content)}], ordered by score
+  /// then root_id, path, start_line; "files" [{"root_id","path","hits"}] over
+  /// every page; "exact_match" (phrase mode: whether a hit exists; else
+  /// null); "empty"; "coverage" {"files","sections"} of this page;
+  /// "truncated" (a file in scope was not indexed in full); "next_cursor";
+  /// "pending_files" (files in scope announced but not indexed yet).
+  /// Refusals: SS_ERR_INVALID_ARGUMENT for an empty query, a * inside the
+  /// query, page_size out of range, a malformed or stale cursor;
+  /// SS_ERR_CAPACITY "re-index required: positions absent" (phrase over a
+  /// generation without positions) and "prefix ... expands to more than 1000
+  /// terms".
+  ffi.Pointer<ffi.Char> ss_find(
+    ffi.Pointer<ss_handle> handle,
+    ffi.Pointer<ffi.Char> request_json,
+  ) {
+    return _ss_find(
+      handle,
+      request_json,
+    );
+  }
+
+  late final _ss_findPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>>('ss_find');
+  late final _ss_find = _ss_findPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(
+          ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>();
+
+  /// One file's structure. Request: "root_id", "path" (both required),
+  /// "roots", "principal_labels". Result, after the envelope: "front_matter"
+  /// ({"start_line","end_line","fields"{...}, "raw" when not key: value} or
+  /// null), "headings" [{"level","text","line","end_line"}] (Markdown only),
+  /// "lines", "chunker". Refusals: SS_ERR_NOT_FOUND "not indexed or not
+  /// retained: <root>/<path>" for an unknown, hidden or not retained file;
+  /// SS_ERR_CAPACITY when the generation retains no source bytes ("re-index
+  /// required: source absent") or its source section cannot be read.
+  ffi.Pointer<ffi.Char> ss_outline(
+    ffi.Pointer<ss_handle> handle,
+    ffi.Pointer<ffi.Char> request_json,
+  ) {
+    return _ss_outline(
+      handle,
+      request_json,
+    );
+  }
+
+  late final _ss_outlinePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>>('ss_outline');
+  late final _ss_outline = _ss_outlinePtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(
+          ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>();
+
+  /// Lines of one file, byte for byte. Request: "root_id", "path",
+  /// "start_line", "end_line" (1-based, inclusive; all required),
+  /// "context_lines" (0-20, default 0), "roots", "principal_labels". An
+  /// end_line past the last line is clamped (warning "end_line_clamped").
+  /// Result, after the envelope: "start_line", "end_line", "text",
+  /// "context_before", "context_after" (original bytes, terminators included),
+  /// "byte_exact": true, "sha256" (hex of "text"). Refusals:
+  /// SS_ERR_CAPACITY when the lines including context exceed 400 or their
+  /// bytes 256 KiB (the message gives both counts), or the source is absent or
+  /// unreadable; SS_ERR_NOT_FOUND as ss_outline; SS_ERR_INVALID_ARGUMENT for a
+  /// start_line of 0 or past the last line, end_line < start_line,
+  /// context_lines over 20.
+  ffi.Pointer<ffi.Char> ss_read_span(
+    ffi.Pointer<ss_handle> handle,
+    ffi.Pointer<ffi.Char> request_json,
+  ) {
+    return _ss_read_span(
+      handle,
+      request_json,
+    );
+  }
+
+  late final _ss_read_spanPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>>('ss_read_span');
+  late final _ss_read_span = _ss_read_spanPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(
+          ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>();
+
+  /// The visible files. Request (all optional): "root_id", "path_prefix"
+  /// (root-relative), "status" ("indexed" | "pending"), "page_size" (1-1000,
+  /// default 100), "cursor", "roots", "principal_labels". Result, after the
+  /// envelope: "files" [{"root_id","path","size" (retained bytes, a pending
+  /// file's announced size, or null),"mtime_ms" (null: a generation does not
+  /// record it),"status","chunks","chunker" (null when the file has no
+  /// chunk)}] ordered by root then path, "total" (files matching, every page),
+  /// "next_cursor". Refusals: SS_ERR_INVALID_ARGUMENT for a bad status,
+  /// page_size or cursor.
+  ffi.Pointer<ffi.Char> ss_list_files(
+    ffi.Pointer<ss_handle> handle,
+    ffi.Pointer<ffi.Char> request_json,
+  ) {
+    return _ss_list_files(
+      handle,
+      request_json,
+    );
+  }
+
+  late final _ss_list_filesPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>>('ss_list_files');
+  late final _ss_list_files = _ss_list_filesPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(
+          ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>();
+
+  /// The visible roots and their counts. `options_json` (NULL = {}): "roots",
+  /// "principal_labels". Result, after the envelope: "roots"
+  /// [{"root_id","label","kind","files","documents","pending"}].
+  ffi.Pointer<ffi.Char> ss_roots(
+    ffi.Pointer<ss_handle> handle,
+    ffi.Pointer<ffi.Char> options_json,
+  ) {
+    return _ss_roots(
+      handle,
+      options_json,
+    );
+  }
+
+  late final _ss_rootsPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>>('ss_roots');
+  late final _ss_roots = _ss_rootsPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(
+          ffi.Pointer<ss_handle>, ffi.Pointer<ffi.Char>)>();
+
+  /// Publish one new generation in `dir_path` (created if missing) from
+  /// host-fed changes, exactly as `searchd apply` does
+  /// (docs/folder-knowledge-implementation.md section 6). Close and reopen
+  /// any handle on `dir_path` afterwards to see it.
+  ///
+  /// changes_json  {"expect_generation"?: N, "roots"?: [{"root_id","label"?,
+  /// "kind"?,"required_labels"?,"retain_source"?,"path"?}],
+  /// "changes": [{"op": "add"|"change"|"remove"|"move"|
+  /// "pending"|"remove_root", "root_id", "path", "moved_from"?,
+  /// "size"?, "mtime_ms"?, "sha256"?, "content_base64"? |
+  /// "file"?, "required_labels"?}]}. A field
+  /// "principal_labels" anywhere is refused: the scope comes
+  /// from the trusted caller.
+  /// opts_json     NULL or {"allow_file_reads"?: bool (default false; a
+  /// "file" change is refused without it), "max_file_bytes"?,
+  /// "max_total_bytes"?, "analyzer"?, "max_chars"?,
+  /// "overlap_lines"?, "keep_generations"?}
+  ///
+  /// Returns the report ({"generation","analyzer_id","added","changed",
+  /// "removed","moved","pending","unchanged","too_large","too_large_paths",
+  /// "unreadable","unreadable_paths","rejected","conflicts","ambiguous_moves",
+  /// "roots_removed","budget_exhausted","budget_exhausted_paths","bytes_read",
+  /// "ms","documents","terms","postings", and "recovered" when the previous
+  /// generation could not be read) to ss_free(), or NULL: SS_ERR_INVALID_ARGUMENT
+  /// for a malformed or refused request (nothing is published; "stale:
+  /// generation is M" when expect_generation differs), SS_ERR_CAPACITY for
+  /// more than 10,000 changes or content over max_total_bytes, SS_ERR_IO when
+  /// another writer holds WRITER.LOCK.
+  ffi.Pointer<ffi.Char> ss_apply_changes(
+    ffi.Pointer<ffi.Char> dir_path,
+    ffi.Pointer<ffi.Char> changes_json,
+    ffi.Pointer<ffi.Char> opts_json,
+  ) {
+    return _ss_apply_changes(
+      dir_path,
+      changes_json,
+      opts_json,
+    );
+  }
+
+  late final _ss_apply_changesPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>)>>('ss_apply_changes');
+  late final _ss_apply_changes = _ss_apply_changesPtr.asFunction<
       ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>();
 }

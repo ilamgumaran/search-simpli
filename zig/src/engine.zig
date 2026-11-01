@@ -5,6 +5,7 @@ const lexical_segment = @import("lexical_segment.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
+const scope = @import("scope.zig");
 const segment = @import("segment.zig");
 const std = @import("std");
 
@@ -28,6 +29,19 @@ pub const Engine = struct {
     vector_dimensions: usize,
     documents: []const hybrid.Document,
     lexical_index: postings.Index,
+    /// S3-T3: whether any record carries a required label (set by `open`;
+    /// null = unknown, checked per query). With no label and no root mask a
+    /// query's scope hides nothing, so BM25 uses the index's own statistics
+    /// without looking at a document.
+    labeled_documents: ?bool = null,
+    /// S3-T3: per-root and per-label-set statistics (`scope.Statistics`),
+    /// when the caller built them for this generation; without them a scoped
+    /// query counts its visible documents exactly.
+    statistics: ?*const scope.Statistics = null,
+    /// S3-T2: where each term's ordinals and each document's offsets begin in
+    /// a `HYBLEX02` section (`postings.buildPositionTables`), attached by
+    /// `snapshot_open.open`; `find` builds them per call when null.
+    position_tables: ?postings.PositionTables = null,
 
     pub fn open(
         snapshot: publication.LoadedSnapshot,
@@ -46,7 +60,15 @@ pub const Engine = struct {
             document_length_output,
         );
         if (documents.len != lexical_index.document_lengths.len) return error.DocumentCountMismatch;
+        var labeled = false;
+        for (documents) |document| {
+            if (document.required_labels.len != 0) {
+                labeled = true;
+                break;
+            }
+        }
         return .{
+            .labeled_documents = labeled,
             .generation = snapshot.metadata.generation,
             .analyzer_id = snapshot.metadata.analyzer_id,
             .embedding_model_id = snapshot.metadata.embedding_model_id,
@@ -119,6 +141,7 @@ pub const Engine = struct {
             t.scope_documents = engine.documents;
             t.scope_prefix = options.path_prefix;
             t.scope_labels = options.principal_labels;
+            t.scope_roots = options.visible_roots;
         }
         const tokenize_start = hybrid.Trace.stamp(trace);
         const terms = if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id))
@@ -138,6 +161,23 @@ pub const Engine = struct {
         const cursors = try allocator.alloc(usize, terms.len);
         defer allocator.free(cursors);
         var scorer = postings.SparseScorer.init(engine.lexical_index, terms, cursors, options.bm25);
+        // S3-T3 (implementation section 7): when the scope (roots, labels)
+        // hides a document, BM25's count, average length and document
+        // frequencies are the visible scope's. A path prefix narrows the
+        // candidates but not the statistics: it is a search constraint, not
+        // authorization.
+        var frequencies: []u32 = &.{};
+        defer allocator.free(frequencies);
+        if (lookup) {
+            if (try scope.visibleCollection(allocator, engine.lexical_index, engine.documents, engine.statistics, engine.labeled_documents, options.visible_roots, options.principal_labels)) |found| {
+                var view = found;
+                defer view.deinit(allocator);
+                frequencies = try allocator.alloc(u32, terms.len);
+                for (terms, frequencies) |entry, *frequency| frequency.* = scope.documentFrequency(view, engine.lexical_index, engine.documents, entry);
+                scorer.collection = view.collection;
+                scorer.document_frequencies = frequencies;
+            }
+        }
         return hybrid.searchSparseTraced(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options, trace);
     }
 

@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/find.result.schema.json",
+  "title": "find result",
+  "description": "A page of hits with exact-match support.",
+  "type": "object",
+  "properties": {
+    "request": {
+      "type": "object",
+      "description": "The request echoed with defaults filled in (roots is null when not given).",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The query."
+        },
+        "mode": {
+          "enum": [
+            "words",
+            "phrase",
+            "prefix"
+          ],
+          "description": "Effective mode."
+        },
+        "roots": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Root ids to search. Narrows the server's roots, never widens them; absent or null means every root the server allows."
+        },
+        "path_prefix": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Root-relative path prefix."
+        },
+        "page_size": {
+          "type": "integer",
+          "description": "Page size.",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]+:[0-9]+$",
+          "description": "The previous page's next_cursor (\"<generation>:<offset>\"). A cursor from another generation is refused as a stale cursor."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query",
+        "mode",
+        "roots",
+        "path_prefix",
+        "page_size",
+        "cursor"
+      ]
+    },
+    "generation": {
+      "type": "integer",
+      "description": "The index generation this answer came from.",
+      "minimum": 0
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Warnings about this answer.",
+      "items": {
+        "$ref": "#/$defs/warning"
+      }
+    },
+    "hits": {
+      "type": "array",
+      "description": "This page's hits, best first.",
+      "items": {
+        "$ref": "#/$defs/hit"
+      }
+    },
+    "files": {
+      "type": "array",
+      "description": "Hit counts per file over every page, in ranking order.",
+      "items": {
+        "type": "object",
+        "description": "One file.",
+        "properties": {
+          "root_id": {
+            "type": "string",
+            "description": "Root id."
+          },
+          "path": {
+            "type": "string",
+            "description": "Path."
+          },
+          "hits": {
+            "type": "integer",
+            "description": "Hits in the file.",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "root_id",
+          "path",
+          "hits"
+        ]
+      }
+    },
+    "exact_match": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "true when a phrase hit exists, false when the phrase was evaluated and nothing matched; null when the phrase predicate was not evaluated (mode words or prefix)."
+    },
+    "empty": {
+      "type": "boolean",
+      "description": "True when this page has no hits. Not proof the folders hold nothing."
+    },
+    "coverage": {
+      "type": "object",
+      "description": "Distinct files and sections among this page's hits.",
+      "properties": {
+        "files": {
+          "type": "integer",
+          "description": "Distinct files.",
+          "minimum": 0
+        },
+        "sections": {
+          "type": "integer",
+          "description": "Distinct sections.",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "files",
+        "sections"
+      ]
+    },
+    "truncated": {
+      "type": "boolean",
+      "description": "True when the corpus may be incomplete."
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Pass as cursor for the next page; null on the last page."
+    },
+    "pending_files": {
+      "type": "integer",
+      "description": "Files in scope still waiting for their bytes; the corpus may be incomplete when above 0.",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "request",
+    "generation",
+    "scope",
+    "warnings",
+    "hits",
+    "files",
+    "exact_match",
+    "empty",
+    "coverage",
+    "truncated",
+    "next_cursor",
+    "pending_files"
+  ],
+  "$defs": {
+    "scope": {
+      "type": "object",
+      "description": "The scope the request ran in.",
+      "properties": {
+        "roots": {
+          "type": "array",
+          "description": "The root ids the request could see, in the generation's order.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "labels_applied": {
+          "const": true,
+          "description": "Always true: the scope's labels (possibly none) filtered before any candidate. It does not say whether labels hid anything."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "roots",
+        "labels_applied"
+      ]
+    },
+    "warning": {
+      "type": "object",
+      "description": "One warning.",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Machine-readable code. So far `end_line_clamped` (read_span)."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable detail."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "hit": {
+      "type": "object",
+      "description": "One hit.",
+      "properties": {
+        "chunk_id": {
+          "type": "string",
+          "description": "Chunk id; usable with read_chunk."
+        },
+        "root_id": {
+          "type": "string",
+          "description": "Root id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Root-relative path."
+        },
+        "section_path": {
+          "type": "array",
+          "description": "Heading path of the section, [] for a file without headings.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "start_line": {
+          "type": "integer",
+          "description": "First line of the chunk.",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "description": "Last line of the chunk.",
+          "minimum": 1
+        },
+        "score": {
+          "type": "number",
+          "description": "Relevance score."
+        },
+        "snippet": {
+          "type": "string",
+          "description": "A plain substring of the chunk around the matches."
+        },
+        "snippet_start": {
+          "type": "integer",
+          "description": "Codepoint offset of the snippet in the chunk.",
+          "minimum": 0
+        },
+        "snippet_offsets": {
+          "type": "array",
+          "description": "Match ranges [start, end) inside the snippet.",
+          "items": {
+            "type": "array",
+            "description": "A range.",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "match_offsets": {
+          "type": "array",
+          "description": "Match ranges [start, end) inside the chunk.",
+          "items": {
+            "type": "array",
+            "description": "A range.",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "chunk_id",
+        "root_id",
+        "path",
+        "section_path",
+        "start_line",
+        "end_line",
+        "score",
+        "snippet",
+        "snippet_start",
+        "snippet_offsets",
+        "match_offsets"
+      ]
+    }
+  }
+}

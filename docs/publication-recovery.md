@@ -15,7 +15,7 @@ For generation `G`:
 7. Atomically rename it over the fixed `MANIFEST` filename (replacing).
 8. **fsync the directory again**, so the `MANIFEST` rename is durable before the publish returns.
 
-Every publish path (`searchd index`, `searchd index --update`, `searchd import-json`, `ss_index_folder`, `ss_import_json`, `init-demo`) goes through `publication.publish`, so the order above holds for all of them. `INDEX-STATE.json` is written with the same temp-file-plus-rename helper but is not a publish step: if its rename is lost in a power cut the next `--update` re-indexes instead of skipping, which is slower, not wrong.
+Every publish path (`searchd index`, `searchd index --update`, `searchd import-json`, `ss_index_folder`, `ss_import_json`, `init-demo`) goes through `publication.publish`, so the order above holds for all of them. `INDEX-STATE.json` is written with the same temp-file-plus-rename helper but is not a publish step. Since S3-T3 (`apply.zig`, INDEX-STATE v2) a state whose `generation` differs from `MANIFEST`'s (a crash or power cut after the manifest rename and before the state write) is not trusted: the next `apply_changes` or `--update` rebuilds the file table from the generation itself (records, the source section's hashes, the manifest's roots and pending list), so it reports unchanged files as `unchanged`; only files whose bytes were not retained lose their hash and are re-chunked once. Test: `apply_test.zig`, "a crash between the manifest and the state write leaves a readable generation; the next call reports unchanged".
 
 ### Directory sync: what the code does where
 

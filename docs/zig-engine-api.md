@@ -76,17 +76,28 @@ A query vector or a stored document vector is valid when every component is fini
 
 | Function | Summary |
 |---|---|
-| `ss_version()` | Returns `contracts/CONTRACTS_VERSION` (e.g. `"1.2.0"`), baked in at build time via a `build.zig`-generated `build_options` module (`@embedFile` cannot reach outside `zig/`'s module package). |
+| `ss_version()` | Returns `contracts/CONTRACTS_VERSION` (e.g. `"2.0.0"`), baked in at build time via a `build.zig`-generated `build_options` module (`@embedFile` cannot reach outside `zig/`'s module package). |
 | `ss_open(dir)` | Opens a published snapshot directory into freshly allocated workspaces; returns an opaque handle or `NULL`. |
 | `ss_close(handle)` | Frees a handle's workspaces. |
-| `ss_status(handle)` | JSON with the same fields as JSON-RPC `index_status`'s `result`. |
-| `ss_query(handle, text, vec, dims, k, opts)` | JSON identical to `search_knowledge`'s `result` for an equivalent request, followed since contract 1.2.0 by `warnings`, `request` and (opt-in) `profile`; see below. `opts` is a JSON object: `retrieval_mode`, `candidate_k`, `path_prefix`, `principal_labels`, `profile` (all optional). |
-| `ss_evidence(handle, ids)` | Looks up stored chunks by id (`{"ids": [...], "path_prefix": ..., "principal_labels": [...]}`); returns a JSON array, one entry per id, in `read_chunk`'s shape or `{"chunk_id": "...", "found": false}`. |
+| `ss_status(handle)` | JSON with the same fields as JSON-RPC `index_status`'s `result`: the v1 fields, then (2.0.0) `files`, `pending`, `truncated`, `roots`, `pending_paths`, `has_source`, `has_positions`, `chunkers`, all over the default scope (every root, no principal labels). |
+| `ss_query(handle, text, vec, dims, k, opts)` | JSON identical to `search_knowledge`'s `result` for an equivalent request (without the item `root_id`/`section_path` and result `truncated`/`pending_files` the RPC and MCP servers add since S3-T6), followed since contract 1.2.0 by `warnings`, `request` and (opt-in) `profile`; see below. `opts` is a JSON object: `retrieval_mode`, `candidate_k`, `path_prefix`, `principal_labels`, `profile`, and (2.0.0) `roots` (all optional). |
+| `ss_evidence(handle, ids)` | Looks up stored chunks by id through the scope (`{"ids": [...], "path_prefix": ..., "principal_labels": [...], "roots": [...]}`); returns a JSON array, one entry per id, in `read_chunk`'s shape (plus, since 2.0.0, `root_id`, `section_path`, `neighbours`) or `{"chunk_id": "...", "found": false}`. |
 | `ss_import_json(dir, bytes)` | Validates and publishes neutral interchange JSON, exactly like `searchd import-json`; returns the generation or a negative `ss_error_code`. `analyzer_id` is `"ascii-alnum-v1"` (ASCII) or, since contract 1.1.0, `"analyzer-v2"` (Unicode; the same index `searchd index` builds from the same chunks). |
-| `ss_free(ptr)` | Frees a pointer returned by `ss_status`/`ss_query`/`ss_evidence`. |
+| `ss_index_folder(dir, folder, opts)` | Indexes a folder exactly like `searchd index` (S1-T3); returns the report JSON. |
+| `ss_find(handle, request)` | 2.0.0: the search box (`find`, implementation §8): words, phrase, prefix; hits with root, path, section, lines, snippet and offsets; per-file counts; generation-bound cursors. |
+| `ss_outline(handle, request)` | 2.0.0: one file's headings and front matter. |
+| `ss_read_span(handle, request)` | 2.0.0: lines of one file byte for byte, with context; at most 400 lines and 256 KiB. |
+| `ss_list_files(handle, request)` | 2.0.0: the visible indexed and pending files, paged. |
+| `ss_roots(handle, options)` | 2.0.0: the visible roots and their file, document and pending counts. |
+| `ss_apply_changes(dir, changes, opts)` | 2.0.0: publishes one generation from host-fed changes (implementation §6), exactly like `searchd apply`; returns the report. |
+| `ss_free(ptr)` | Frees a pointer returned by any function above that returns JSON. |
 | `ss_last_error()` | Thread-local diagnostic string for the most recent failure on the calling thread. |
 
 Every function is documented in full in the header, including exact JSON shapes, bounds (`top_k` 1-100, `candidate_k` up to 10,000), and thread-safety (concurrent reads on one handle are safe; `ss_close` is not).
+
+### Contract 2.0.0: folder knowledge (S3-T4)
+
+The six new functions take (or, for `ss_apply_changes`, write) the same request objects the RPC server's methods take, and return the same JSON: one implementation, `zig/src/ops.zig`, serves the C ABI, `searchd <command> --json` and `searchd serve`. Every read result starts with the envelope `request` / `generation` / `scope` / `warnings`. The ABI's caller is the host app, trusted with the scope: each request may name `roots` and `principal_labels`; a hidden file, chunk, term or root reads exactly like an absent one, and BM25 counts over the visible scope. A failure returns `NULL` and `ss_last_error()` reads `"<function>: SS_ERR_<CODE>: <reason>"`, so a caller branches on the code name: `SS_ERR_INVALID_ARGUMENT` (a malformed request, an unknown field, a stale cursor or `expect_generation`), `SS_ERR_NOT_FOUND` (an unknown, hidden or not retained file), `SS_ERR_CAPACITY` (span or batch limits, a generation without retained source bytes or positions, a prefix over 1,000 terms), `SS_ERR_IO` (another writer holds `WRITER.LOCK`). The ten earlier functions keep their signatures; `ss_status` and `ss_evidence` only add fields after their 1.x output (which stays a byte prefix), and `ss_status` counts over the default scope instead of the whole index. The handle now also holds the generation's roots, statistics groups, the source section (path index and a sparse line index, one checkpoint per 256 lines) and position tables; a lost or damaged source section does not fail `ss_open`, only `ss_read_span`/`ss_outline` (`SS_ERR_CAPACITY`). `zig/tests/abi_test.c` checks each new function with its error paths (22 checks). The Dart binding (`find`, `outline`, `readSpan`, `listFiles`, `roots`, static `applyChanges`) refuses a library without these symbols with `ContractsVersionMismatchException`.
 
 ### Allocation and errors
 
@@ -98,7 +109,7 @@ Static and shared `search_simpli` libraries for `aarch64-macos`, `aarch64-linux-
 
 ### C ABI conformance harness (`zig build test-abi`)
 
-`zig/tests/abi_test.c` publishes the same three-document demo as `searchd init-demo` through `ss_import_json`, opens it with `ss_open`, and checks `ss_status`/`ss_query`/`ss_evidence` byte-for-byte against JSON captured from a real `zig build run -- init-demo` + `serve` session (pasted in `docs/tasks/S1-T0.md`'s Report; for `ss_query` that golden is compared after removing the three 1.2.0 keys, and the keys are checked separately), plus several error paths (missing directory, malformed interchange JSON, out-of-range `top_k`, mismatched vector dimensions).
+`zig/tests/abi_test.c` publishes the same three-document demo as `searchd init-demo` through `ss_import_json`, opens it with `ss_open`, and checks `ss_status`/`ss_query`/`ss_evidence` byte-for-byte against JSON captured from a real `zig build run -- init-demo` + `serve` session (pasted in `docs/tasks/S1-T0.md`'s Report; for `ss_query` that golden is compared after removing the three 1.2.0 keys, and the keys are checked separately), plus several error paths (missing directory, malformed interchange JSON, out-of-range `top_k`, mismatched vector dimensions). Since 2.0.0 the `ss_status` and `ss_evidence` goldens are byte prefixes followed by the new fields, and six more checks cover `ss_apply_changes`, `ss_find`, `ss_outline`, `ss_read_span`, `ss_list_files` and `ss_roots` (with `roots` in `ss_query`/`ss_evidence`) on an index published through `ss_apply_changes`, each with its refusals.
 
 ### Dart loader and app bundles (`docs/tasks/S1-T10.md`)
 

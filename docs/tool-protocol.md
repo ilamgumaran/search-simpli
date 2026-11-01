@@ -1,6 +1,6 @@
 # Local knowledge tool protocol
 
-Status: implemented over standard input/output by both the Python reference (`src/search_platform/tool_server.py`) and persisted Zig engine (`zig/src/rpc.zig`, launched with `searchd serve`).
+Status: implemented over standard input/output by both the Python reference (`src/search_platform/tool_server.py`) and persisted Zig engine (`zig/src/rpc.zig`, launched with `searchd serve`), and over MCP by `searchd mcp` (S3-T6, [MCP server](mcp-server.md)). Contract 2.0.0 (S3-T4) adds the folder-knowledge methods `find`, `outline`, `read_span`, `list_files`, `roots` and the write method `apply_changes` to the Zig server only; the Python reference keeps the four methods below. Every request shape is in `contracts/tool-request.schema.json` (version 2).
 
 ## Purpose
 
@@ -27,6 +27,8 @@ Parameters: non-empty `query` (valid UTF-8, so the result's `query` is always a 
 
 Returns the shared evidence envelope: stable chunk ids, paths, line spans, passages, component ranks/scores, and an answer policy requiring citations and an explicit response when evidence is insufficient.
 
+**S3-T6 (Zig, additive; the v1 fields are unchanged and first):** each item adds, after `ranking`, `root_id` (the root of the chunk's file; the citation `path` is `root_id/path` for a host root) and `section_path` (the heading path of its section, `[]` for a file without headings), and the result adds, after `answer_policy`, `truncated` (a file in scope was given to the engine but not indexed in full: too large, unreadable or over a run's byte budget) and `pending_files` (files in scope still waiting for their bytes), over the same scope as the results, as `find` reports them. An empty `results` list with `pending_files > 0` or `truncated: true` may be an incomplete corpus, not an absence. The C ABI's `ss_query` keeps its contract-2.0.0 output (no folder fields; `contracts/search-tool.schema.json` and the `ss_query` golden unchanged); `contracts/tools/search_knowledge.result.schema.json` requires them. The three CAP-13 methods `search_knowledge`, `read_chunk` and `list_sources` now answer through `zig/src/ops.zig` like the folder methods (same JSON), and an invalid request names its reason: `-32602` "Invalid params: <reason>".
+
 ### `read_chunk`
 
 Parameters: `chunk_id` returned by search and optional `path_prefix`. It returns the authoritative indexed content and citation only when the chunk remains inside the requested scope. Out-of-scope ids return the same not-found error as unknown ids, avoiding an existence leak.
@@ -41,7 +43,41 @@ Parameters: optional `path_prefix`. Returns sorted source paths and their chunk 
 
 ### `index_status`
 
-No parameters. Returns readiness, index/vector versions, creation time, root, file/chunk counts, and skipped source details.
+No parameters (Zig, since 2.0.0: optional `roots`, and `principal_labels` on the raw service). Returns readiness, index/vector versions, creation time, root, file/chunk counts, and skipped source details. The Zig result keeps its v1 fields in order (`ready`, `generation`, `analyzer_id`, `embedding_model_id`, `vector_dimensions`, `documents`, `terms`, `postings`) and adds `files`, `pending`, `truncated`, `roots` (`[{root_id, label, kind, files, documents, pending}]`), `pending_paths`, `has_source`, `has_positions`, `chunkers`; every count is over the server's scope (below), never the whole index.
+
+## Folder-knowledge methods (Zig, contract 2.0.0)
+
+The scope of every request comes from the server's command line: `searchd serve <dir> [--roots a,b] [--labels l1,l2] [--allow-write] [--allow-file-reads]`. A request may name `roots` to narrow the server's roots (never to widen them). Without `--labels` the raw service keeps accepting a request's `principal_labels` (at most 64, each 1–256 bytes without NUL or a line break, no repeats), as it always has for the four methods above; with `--labels`, a request that states them is refused (`-32602`). A file, chunk, term or root outside the scope is indistinguishable from an absent one.
+
+Every result below starts with the same envelope: `request` (echoed with defaults filled in), `generation`, `scope` (`{roots: [visible roots], labels_applied: true}`) and `warnings` (`[{code, message}]`). The results are byte-identical to the C ABI's (`ss_find` …) and to `searchd <command> --json`; `zig/include/search_simpli.h` documents every field.
+
+### `find`
+
+Parameters: `query` (required; a quoted query is a phrase, a trailing `*` a prefix), `mode` (`words` default, `phrase`, `prefix`), `roots`, `path_prefix` (root-relative), `page_size` (1–100, default 20), `cursor` (a previous `next_cursor`). Returns `hits` (`chunk_id`, `root_id`, `path`, `section_path`, `start_line`, `end_line`, `score`, `snippet`, `snippet_start`, `snippet_offsets`, `match_offsets`), `files` (`{root_id, path, hits}` over every page), `exact_match`, `empty`, `coverage`, `truncated`, `next_cursor`, `pending_files`.
+
+```json
+{"jsonrpc":"2.0","id":5,"method":"find","params":{"query":"\"count me in\"","roots":["school"],"page_size":5}}
+```
+
+### `outline`
+
+Parameters: `root_id`, `path` (both required), `roots`. Returns `front_matter` (or null), `headings` (`level`, `text`, `line`, `end_line`), `lines`, `chunker`.
+
+### `read_span`
+
+Parameters: `root_id`, `path`, `start_line`, `end_line` (required, 1-based inclusive), `context_lines` (0–20, default 0), `roots`. Returns `start_line`, `end_line` (an `end_line` past the file's end is clamped, with the warning `end_line_clamped`), `text`, `context_before`, `context_after` (the original bytes, line terminators included), `byte_exact: true`, `sha256` of `text`. At most 400 lines including context and 256 KiB, else `-32005`.
+
+### `list_files`
+
+Parameters (all optional): `root_id`, `path_prefix` (root-relative), `status` (`indexed` or `pending`), `page_size` (1–1,000, default 100), `cursor`, `roots`. Returns `files` (`root_id`, `path`, `size`, `mtime_ms` (null), `status`, `chunks`, `chunker`), `total`, `next_cursor`. A `pending` row has `chunks` 0 and `chunker` null, and `size` is the size the host announced, or null when it announced none (an indexed file whose bytes are not retained also has `size` null).
+
+### `roots`
+
+Parameters: `roots`. Returns `roots` (`root_id`, `label`, `kind`, `files`, `documents`, `pending`).
+
+### `apply_changes` (only with `--allow-write`)
+
+Parameters: the change request itself (`expect_generation`, `roots`, `changes`; `docs/folder-knowledge-implementation.md` §6). Publishes one new generation and returns its report; the server then reads the new generation. Without `--allow-write` the method does not exist (`-32601`). A `file` change is read only with `--allow-file-reads`. A model-facing adapter never exposes this method (FR-23).
 
 ## Intended agent loop
 
@@ -59,15 +95,17 @@ Responses use JSON-RPC error objects:
 - `-32700` malformed JSON;
 - `-32600` invalid request envelope;
 - `-32601` unknown method;
-- `-32602` invalid or unknown parameters;
-- `-32004` unknown chunk id.
+- `-32602` invalid or unknown parameters (Zig: "Invalid params: <reason>", including a malformed or stale cursor and a stale `expect_generation`; since S3-T6 the four CAP-13 methods name their reason too);
+- `-32004` unknown chunk id; since 2.0.0 also an unknown, hidden or not retained file (`outline`, `read_span`), with the same message for all three;
+- `-32005` (2.0.0) over a limit: a span over 400 lines or 256 KiB, a generation without retained source bytes or without positions, a prefix over 1,000 terms, a batch over its caps;
+- `-32006` (2.0.0) `apply_changes` while another writer holds `WRITER.LOCK`.
 
 The server continues reading after a malformed line.
 
 ## Security boundary
 
 - Only content already admitted to the index can be returned.
-- No `read_file`, shell, write, delete, or reindex operation is exposed.
+- No `read_file`, shell, delete, or reindex operation is exposed; `read_span` and `outline` read only bytes the index retained, bounded as above. The one write method, `apply_changes`, exists only when the server was started with `--allow-write`.
 - Path-prefix checks happen before ranking and results.
 - Unknown parameters are rejected, preventing silent widening through misspellings.
 - Retrieved content remains untrusted text and must not redefine agent or system policy.
@@ -76,7 +114,7 @@ This is a capability boundary, not a complete authorization system. Multi-user d
 
 ## Adapter path
 
-The method semantics are transport-independent and now have both Python and Zig JSON-lines implementations. A later MCP adapter should publish the same four operations and preserve parameter validation, scope behavior, and response bodies.
+The method semantics are transport-independent and have Python and Zig JSON-lines implementations and an MCP server: `searchd mcp` (S3-T6, [MCP server](mcp-server.md)) publishes the eight read methods as MCP tools (`--baseline`: CAP-13's four; `apply_changes` only with `--allow-write`) with the schemas of `contracts/tools/`, answers each through the same `ops.zig` functions (its `structuredContent` equals this server's `result` for the same params, checked for every fixture judgment), takes the scope from its command line only and refuses a caller's `principal_labels` or `query_vector`.
 
 For the raw Zig service, vector/hybrid calls contain the internal `query_vector`. The LLM-facing `zig_gateway.py` deliberately removes that concern from callers: it accepts the same text parameters as the Python tool, verifies the exact snapshot model at startup, constructs the vector, and forwards the internal request. Caller-supplied vectors are rejected at this trust boundary. See [Query-embedding gateway](query-embedding-gateway.md).
 

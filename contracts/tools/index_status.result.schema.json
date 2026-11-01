@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/index_status.result.schema.json",
+  "title": "index_status result",
+  "description": "Status.",
+  "type": "object",
+  "properties": {
+    "ready": {
+      "type": "boolean",
+      "description": "The index is usable."
+    },
+    "generation": {
+      "type": "integer",
+      "description": "Index generation.",
+      "minimum": 0
+    },
+    "analyzer_id": {
+      "type": "string",
+      "description": "Analyzer id."
+    },
+    "embedding_model_id": {
+      "type": "string",
+      "description": "Embedding model id, or none."
+    },
+    "vector_dimensions": {
+      "type": "integer",
+      "description": "Vector dimensions.",
+      "minimum": 0
+    },
+    "documents": {
+      "type": "integer",
+      "description": "Chunks in scope.",
+      "minimum": 0
+    },
+    "terms": {
+      "type": "integer",
+      "description": "Distinct terms in scope.",
+      "minimum": 0
+    },
+    "postings": {
+      "type": "integer",
+      "description": "Postings in scope.",
+      "minimum": 0
+    },
+    "files": {
+      "type": "integer",
+      "description": "Indexed files in scope.",
+      "minimum": 0
+    },
+    "pending": {
+      "type": "integer",
+      "description": "Pending files in scope.",
+      "minimum": 0
+    },
+    "truncated": {
+      "type": "boolean",
+      "description": "True when the walk stopped early and the corpus may be incomplete."
+    },
+    "roots": {
+      "type": "array",
+      "description": "Visible roots.",
+      "items": {
+        "$ref": "#/$defs/root_info"
+      }
+    },
+    "pending_paths": {
+      "type": "array",
+      "description": "Pending files by name.",
+      "items": {
+        "$ref": "#/$defs/pathref"
+      }
+    },
+    "has_source": {
+      "type": "boolean",
+      "description": "Original bytes are retained, so read_span and outline work."
+    },
+    "has_positions": {
+      "type": "boolean",
+      "description": "Word positions exist, so phrase find works."
+    },
+    "chunkers": {
+      "type": "array",
+      "description": "Chunker ids in use.",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "ready",
+    "generation",
+    "analyzer_id",
+    "embedding_model_id",
+    "vector_dimensions",
+    "documents",
+    "terms",
+    "postings",
+    "files",
+    "pending",
+    "truncated",
+    "roots",
+    "pending_paths",
+    "has_source",
+    "has_positions",
+    "chunkers"
+  ],
+  "$defs": {
+    "root_info": {
+      "type": "object",
+      "description": "One visible root.",
+      "properties": {
+        "root_id": {
+          "type": "string",
+          "description": "Root id."
+        },
+        "label": {
+          "type": "string",
+          "description": "Display label."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Root kind: host, icloud, local or folder."
+        },
+        "files": {
+          "type": "integer",
+          "description": "Indexed files.",
+          "minimum": 0
+        },
+        "documents": {
+          "type": "integer",
+          "description": "Chunks.",
+          "minimum": 0
+        },
+        "pending": {
+          "type": "integer",
+          "description": "Files waiting for their bytes.",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root_id",
+        "label",
+        "kind",
+        "files",
+        "documents",
+        "pending"
+      ]
+    },
+    "pathref": {
+      "type": "object",
+      "description": "A root and a root-relative path.",
+      "properties": {
+        "root_id": {
+          "type": "string",
+          "description": "Root id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Root-relative path."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root_id",
+        "path"
+      ]
+    }
+  }
+}

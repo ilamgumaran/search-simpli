@@ -1,0 +1,289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/tools/apply_changes.result.schema.json",
+  "title": "apply_changes result",
+  "description": "Report.",
+  "type": "object",
+  "properties": {
+    "generation": {
+      "type": "integer",
+      "description": "The new generation.",
+      "minimum": 0
+    },
+    "analyzer_id": {
+      "type": "string",
+      "description": "Analyzer id."
+    },
+    "added": {
+      "type": "integer",
+      "description": "Files indexed now, not before.",
+      "minimum": 0
+    },
+    "changed": {
+      "type": "integer",
+      "description": "Files re-chunked.",
+      "minimum": 0
+    },
+    "removed": {
+      "type": "integer",
+      "description": "Files removed.",
+      "minimum": 0
+    },
+    "moved": {
+      "type": "integer",
+      "description": "Files moved.",
+      "minimum": 0
+    },
+    "pending": {
+      "type": "integer",
+      "description": "Files set pending.",
+      "minimum": 0
+    },
+    "unchanged": {
+      "type": "integer",
+      "description": "Files not re-chunked.",
+      "minimum": 0
+    },
+    "too_large": {
+      "type": "integer",
+      "description": "Count of too_large_paths.",
+      "minimum": 0
+    },
+    "too_large_paths": {
+      "type": "array",
+      "description": "Files over the size cap.",
+      "items": {
+        "$ref": "#/$defs/pathref"
+      }
+    },
+    "unreadable": {
+      "type": "integer",
+      "description": "Count of unreadable_paths.",
+      "minimum": 0
+    },
+    "unreadable_paths": {
+      "type": "array",
+      "description": "Files that could not be read.",
+      "items": {
+        "$ref": "#/$defs/pathref"
+      }
+    },
+    "rejected": {
+      "type": "array",
+      "description": "Changes refused one by one.",
+      "items": {
+        "type": "object",
+        "description": "One refusal.",
+        "properties": {
+          "root_id": {
+            "type": "string",
+            "description": "Root."
+          },
+          "path": {
+            "type": "string",
+            "description": "Path."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason code."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "root_id",
+          "path",
+          "reason"
+        ]
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "description": "Later ops that replaced earlier ones.",
+      "items": {
+        "type": "object",
+        "description": "One conflict.",
+        "properties": {
+          "root_id": {
+            "type": "string",
+            "description": "Root."
+          },
+          "path": {
+            "type": "string",
+            "description": "Path."
+          },
+          "replaced": {
+            "type": "string",
+            "description": "The earlier op."
+          },
+          "by": {
+            "type": "string",
+            "description": "The later op."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "root_id",
+          "path",
+          "replaced",
+          "by"
+        ]
+      }
+    },
+    "ambiguous_moves": {
+      "type": "array",
+      "description": "Rename candidates that could not be paired uniquely.",
+      "items": {
+        "type": "object",
+        "description": "One group.",
+        "properties": {
+          "root_id": {
+            "type": "string",
+            "description": "Root."
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Shared hash."
+          },
+          "from": {
+            "type": "array",
+            "description": "Removed paths.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "to": {
+            "type": "array",
+            "description": "Added paths.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pairs": {
+            "type": "array",
+            "description": "The pairing used.",
+            "items": {
+              "type": "object",
+              "description": "A pair.",
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "description": "From."
+                },
+                "to": {
+                  "type": "string",
+                  "description": "To."
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "from",
+                "to"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "root_id",
+          "sha256",
+          "from",
+          "to",
+          "pairs"
+        ]
+      }
+    },
+    "roots_removed": {
+      "type": "integer",
+      "description": "Roots removed.",
+      "minimum": 0
+    },
+    "budget_exhausted": {
+      "type": "integer",
+      "description": "Count of budget_exhausted_paths.",
+      "minimum": 0
+    },
+    "budget_exhausted_paths": {
+      "type": "array",
+      "description": "Files left for a later run.",
+      "items": {
+        "$ref": "#/$defs/pathref"
+      }
+    },
+    "bytes_read": {
+      "type": "integer",
+      "description": "Bytes read.",
+      "minimum": 0
+    },
+    "ms": {
+      "type": "integer",
+      "description": "Milliseconds.",
+      "minimum": 0
+    },
+    "documents": {
+      "type": "integer",
+      "description": "Chunks after.",
+      "minimum": 0
+    },
+    "terms": {
+      "type": "integer",
+      "description": "Terms after.",
+      "minimum": 0
+    },
+    "postings": {
+      "type": "integer",
+      "description": "Postings after.",
+      "minimum": 0
+    },
+    "recovered": {
+      "type": "string",
+      "description": "Present when the writer rebuilt state: the host must send its files again."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "generation",
+    "analyzer_id",
+    "added",
+    "changed",
+    "removed",
+    "moved",
+    "pending",
+    "unchanged",
+    "too_large",
+    "too_large_paths",
+    "unreadable",
+    "unreadable_paths",
+    "rejected",
+    "conflicts",
+    "ambiguous_moves",
+    "roots_removed",
+    "budget_exhausted",
+    "budget_exhausted_paths",
+    "bytes_read",
+    "ms",
+    "documents",
+    "terms",
+    "postings"
+  ],
+  "$defs": {
+    "pathref": {
+      "type": "object",
+      "description": "A root and path.",
+      "properties": {
+        "root_id": {
+          "type": "string",
+          "description": "Root id."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root_id",
+        "path"
+      ]
+    }
+  }
+}
