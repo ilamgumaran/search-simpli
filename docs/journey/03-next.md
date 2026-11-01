@@ -219,6 +219,10 @@ observed equal-RRF regression · **O-01** collaborative knowledge model ·
 3. Do not start anything whose gate depends on an unbuilt capability — rescope it
    or mark the criterion `pending` first.
 
+## 2026-11-01 — S4 started: the phone-side costs
+
+**1 Nov (orchestrator, Xcode Mac): S4-T1 written and started.** The three measured S3 rows that a phone feels (the 102 ms `ss_open`, the 215 ms one-changed-file in ReleaseSmall, the unrecorded NFR-13 arena test) and the ReleaseSmall `search_knowledge` profile are one task, built by Claude Opus 5.5 from `origin/main`. The consumer app has every S3 surface in use (its M16-T1 to T7, T9 merged 31 Oct–1 Nov; the device pass pending). [Task](../tasks/S4-T1.md).
+
 ## 2026-10-31 — S3 folder knowledge approved
 
 CAP-19 (`docs/requirements/cap-19-folder-knowledge.md`) was approved for build by the owner on 2026-10-31. Tasks `docs/tasks/S3-T1.md` … `S3-T8.md`; order T7 → T1 → T2 ∥ T3 → T4 → T5 → T6 → T8; details in `docs/folder-knowledge-implementation.md`. S3-T7 (the frozen family-folder fixture) started 2026-10-31 on `task/S3-T7`.
