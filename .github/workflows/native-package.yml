@@ -26,6 +26,7 @@ jobs:
           python3 -m pip install --target "$RUNNER_TEMP/zig-pip" ziglang==0.16.0
           test "$("$RUNNER_TEMP/zig-pip/ziglang/zig" version)" = '0.16.0'
           echo "ZIG=$RUNNER_TEMP/zig-pip/ziglang/zig" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/zig-pip/ziglang" >> "$GITHUB_PATH"
       - name: Install pinned Android NDK
         shell: bash
         run: |
