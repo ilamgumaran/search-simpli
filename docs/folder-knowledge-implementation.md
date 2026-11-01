@@ -747,3 +747,53 @@ separately. Before/after tables live in `docs/scale-benchmark.md`.
 998 chunks); the timer is `zig/src/find_bench.zig` (queries drawn from the
 indexed chunks, 5 warm-up then 200 timed per mode, three repetitions); index
 runs are three per build. NFR-10's "10k chunks" is measured at 19,959.
+
+## Follow-up review requirements (2026-11-01)
+
+### Cross-branch format integration
+Main's implemented 104-byte HYBMAN02/version 2 remains authoritative. The
+unmerged CAP-16 branch at daddbee independently uses HYBMAN02 for a 136-byte
+filename-channel layout. These are incompatible formats despite sharing an
+identifier. Preserve main-v2; freeze a distinct HYBMAN03/version 3 layout for
+combined filename/source support before CAP-16 integration, including explicit
+section descriptors, lengths and checksums. Test v1, main-v2, filename-v3 and
+combined-v3 compatibility. Rebuild CAP-16 draft-v2 snapshots in a separate
+directory; do not infer a format from length alone. Rebase CAP-16 onto main's
+source/positions/roots implementation before rebuilding packaged libraries.
+
+### Host-fed recovery completeness
+
+S3-T3 now reconstructs stale/missing INDEX-STATE from manifest metadata,
+records and retained source. That supersedes the pre-T3 review's assumption
+that recovery could only re-walk a desktop folder. Preserve the implemented
+recovery path; do not claim it absent. Before relying on it for arbitrary
+host-only workloads, extend the recovery oracle to assert equivalence of all
+mutation-relevant state: pending/empty/blank files, own versus inherited
+labels, retained and non-retained source, hashes and sizes, skipped outcomes,
+move identity, root policy, mtime and unchanged detection. Test without original
+host payloads after a crash following MANIFEST publication but before cache
+writing, and after missing/corrupt cache. Explicitly document any fields that
+cannot be reconstructed and how retries behave; do not silently substitute
+unknown values where they affect authorization or mutation semantics.
+
+If exact reconstruction cannot meet that gate, publish immutable state-N.json
+before MANIFEST and bind its safe filename, byte length and SHA-256 in the
+checksummed metadata. Load only the bound generation's state, keep mutable
+INDEX-STATE as a compatibility cache, and fail writes closed on corrupt bound
+state. This is a proposed fallback, not a new implemented format. Test every
+state/manifest rename and directory-sync boundary, committed-but-error replies,
+expected-generation retries and retention/pruning before adopting it.
+
+### Trusted write authority
+
+Scope-aware deployment must derive filesystem root handles/base paths, write
+permissions and label policy from trusted host configuration. Request roots[]
+is data, not authority to create a filesystem grant or weaken labels. If
+--allow-write intentionally grants full administrative control of the index,
+document that boundary explicitly; do not present it as a restricted-root
+writer. Any restricted writer must reject forged roots, policy downgrades,
+remove_root outside scope and cross-root operations. File opens must enforce
+confinement on the actual opened handles without following symlinks in any
+component; test intermediate symlink replacement between validation and read,
+and hash the same bytes that are indexed. The existing lstat/final-no-follow
+checks alone are not evidence against intermediate-component races.

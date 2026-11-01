@@ -1,8 +1,14 @@
 import unittest
 import tempfile
+import contextlib
+import io
+import json
+import subprocess
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
-from relevance_smoke import gate_failures, run_smoke
+from relevance_smoke import gate_failures, run_smoke, main
 
 
 def _report(ndcg=0.8, mrr=0.7, recall=0.6, success=0.9):
@@ -23,6 +29,40 @@ def _report(ndcg=0.8, mrr=0.7, recall=0.6, success=0.9):
 
 
 class RelevanceSmokeTests(unittest.TestCase):
+    def test_pack_cli_top_one_changes_report_and_exit_status(self):
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "report.json"
+            result = subprocess.run(
+                [sys.executable, str(root / "scripts/relevance_smoke.py"),
+                 "--pack", "family-folder", "--top-k", "1", "--output", str(output)],
+                cwd=root, text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 1, result.stderr)
+            report = json.loads(output.read_text())
+            self.assertEqual(report["top_k"], 1)
+            self.assertLess(report["words_recall_at_k"], 0.9)
+            self.assertFalse(report["gate"]["passed"])
+            self.assertIn("words recall@1", result.stdout)
+
+    def test_pack_cli_keeps_default_five(self):
+        with patch("relevance_smoke.run_pack", return_value={"gate": {"passed": True}}) as run:
+            with patch("relevance_smoke.print_pack_report"):
+                self.assertEqual(main(["--pack", "family-folder"]), 0)
+        run.assert_called_once_with("family-folder", top_k=5)
+
+    def test_pack_rejects_unsupported_or_invalid_options_before_running(self):
+        for options in (["--mode", "vector"], ["--min-recall=1"],
+                        ["--vector-mode", "none"], ["--index", "missing.json"],
+                        ["--baseline", "missing.json"], ["--max-regression", "0"],
+                        ["--top-k", "0"], ["--top-k", "-1"]):
+            with self.subTest(options=options), patch("relevance_smoke.run_pack") as run:
+                with contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as raised:
+                        main(["--pack", "family-folder", *options])
+                self.assertEqual(raised.exception.code, 2)
+                run.assert_not_called()
+
     def test_minimum_gate_reports_metric_and_mode(self):
         failures = gate_failures(_report(ndcg=0.79), {"ndcg": 0.8})
 

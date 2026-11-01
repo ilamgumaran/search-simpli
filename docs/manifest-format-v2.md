@@ -120,3 +120,15 @@ files only (its v1 meaning), source deletions are counted apart.
 - An incremental update over a v1 generation re-chunks unchanged Markdown
   files (their chunks were line windows), reports them under `changed`, and
   publishes v2.
+
+## Follow-up: cross-branch manifest version reservation
+
+Main's implemented 104-byte HYBMAN02/version 2 remains authoritative. The
+unmerged CAP-16 branch at daddbee independently uses HYBMAN02 for a 136-byte
+filename-channel layout. These are incompatible formats despite sharing an
+identifier. Preserve main-v2; freeze a distinct HYBMAN03/version 3 layout for
+combined filename/source support before CAP-16 integration, including explicit
+section descriptors, lengths and checksums. Test v1, main-v2, filename-v3 and
+combined-v3 compatibility. Rebuild CAP-16 draft-v2 snapshots in a separate
+directory; do not infer a format from length alone. Rebase CAP-16 onto main's
+source/positions/roots implementation before rebuilding packaged libraries.

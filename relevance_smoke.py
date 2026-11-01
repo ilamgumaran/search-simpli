@@ -435,6 +435,7 @@ def print_pack_report(report: dict) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
+        allow_abbrev=False,
         description="Run a dependency-free, graded relevance smoke test over a file corpus."
     )
     parser.add_argument("corpus", type=Path, nargs="?")
@@ -448,7 +449,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model-cache", type=Path, default=Path(".search/models"))
     parser.add_argument("--index", type=Path, help="reuse a prebuilt Search Simpli index")
     parser.add_argument("--save-index", type=Path, help="persist the newly built index for later runs")
-    parser.add_argument("--top-k", type=int, default=10)
+    parser.add_argument("--top-k", type=int, help="result count (default: 5 for packs, 10 otherwise)")
     parser.add_argument("--min-ndcg", type=float)
     parser.add_argument("--min-mrr", type=float)
     parser.add_argument("--min-recall", type=float)
@@ -456,11 +457,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--max-regression", type=float, default=0.0)
     parser.add_argument("--output", type=Path)
-    args = parser.parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    args = parser.parse_args(arguments)
+    if args.top_k is not None and args.top_k < 1:
+        parser.error("--top-k must be at least 1")
     if args.pack:
         if args.corpus or args.suite:
             parser.error("--pack takes no corpus or suite")
-        report = run_pack(args.pack)
+        unsupported = sorted({value.split("=", 1)[0] for value in arguments
+                              if value.startswith("--")
+                              and value.split("=", 1)[0] not in {"--pack", "--top-k", "--output"}})
+        if unsupported:
+            parser.error("--pack does not support " + ", ".join(unsupported))
+        report = run_pack(args.pack, top_k=5 if args.top_k is None else args.top_k)
         print_pack_report(report)
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -468,6 +477,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if report["gate"]["passed"] else 1
     if not args.corpus or not args.suite:
         parser.error("corpus and suite are required unless --pack is given")
+    if args.top_k is None:
+        args.top_k = 10
     if args.top_k < 1:
         parser.error("--top-k must be at least 1")
     if args.max_regression < 0.0:
