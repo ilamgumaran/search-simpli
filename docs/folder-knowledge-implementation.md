@@ -68,9 +68,34 @@ Section files: `documents-N.hybseg` (v4, §2), `lexical-N.hyblex` (v2, §3),
 `source-N.hybsrc` (v1, §4), `MANIFEST`, `INDEX-STATE.json` (v2, §5),
 `WRITER.LOCK`. Publication keeps `lifecycle.publishSerialized` →
 `publication.writeAtomicFile` and writes `INDEX-STATE.json` **after** the
-manifest, as today; the review's "atomic generation consistency" is met by the
-manifest binding all three sections' lengths and checksums, so a reader never
-sees a documents section without its matching source section.
+manifest, as today. This is the implemented S3-T1 desktop behavior only:
+segments are coherent, but mutable INDEX-STATE is not an atomic state commit.
+Before S3-T3 ships host-fed changes, publish immutable `state-N.json` before
+MANIFEST, bind its filename, byte length and SHA-256 in the manifest metadata,
+and fsync all sections and state before replacing MANIFEST. Readers/writers
+load only that generation's bound state; `INDEX-STATE.json` becomes a
+best-effort compatibility cache, never authority for host-fed mutations.
+An absent or corrupt bound state fails closed for writes; never reconstruct
+pending/empty/unreadable files or labels by scanning chunks. Desktop v1/v2
+indexes without bound state may migrate by a full authorized folder walk;
+host-only indexes require explicit host replay before mutation. A failure
+after MANIFEST publication may have committed: status exposes the committed
+generation, stale retries publish nothing, and callers inspect/reconcile it.
+Retention/pruning includes immutable state and preserves held generations.
+
+**Cross-branch format ruling:** S3-T1's implemented HYBMAN02 is the 104-byte
+layout in `manifest-format-v2.md`. The unmerged CAP-16 branch independently
+uses HYBMAN02 for a 136-byte filename-channel layout. Those formats are
+incompatible despite sharing magic/version. Preserve main's v2 unchanged;
+the combined filename/source format must use a new HYBMAN03/version 3 with
+an explicit header length, section descriptors and checksums. Before CAP-16
+integration, freeze the full v3 table and test v1, main-v2, filename-v3 and
+combined-v3. Existing CAP-16 draft-v2 artifacts require a separate-directory
+rebuild; do not guess layout from file length, silently decode them as main
+v2, or merge the conflicting decoder. S3-T3's bound state can use validated,
+checksummed v2 meta fields; if a fixed header extension is needed it uses v3.
+The filename-search branch must rebase onto this main-v2 baseline before
+its packaged-native rebuild.
 
 ## 2. Document section v4 (`HYBSEG01`, record version 4)
 
@@ -217,7 +242,8 @@ Request:
 ```
 
 Rules (review finding 6, CAP-19 FR-20/FR-21):
-- Exactly one of `content_base64` (strict base64, decoded bytes must be valid UTF-8 after an optional BOM, ≤ `max_file_bytes`) or `file` (an absolute path under a root the request declares with `kind: local` and that the engine was opened with `--allow-file-reads`; symlinks refused) for `add`/`change`; `sha256` optional for `content_base64` (the engine computes and, if given, verifies: mismatch → the change is rejected as `hash_mismatch`), required for `file` (verified after reading).
+- Root identities, filesystem handles/base paths, label requirements and write permissions come from trusted host configuration. A request cannot create a local filesystem grant, widen its authorized roots, remove another scope's root or weaken existing required labels. Untrusted tool requests cannot change root policy. Resolve and open file paths relative to a trusted root handle without following symlinks in any component; verify the opened file itself (not a separate pre-check), and hash the same bytes used for indexing. Test forged roots, policy downgrades, cross-root moves and symlink swaps. New root provisioning is a separate trusted host operation.
+- Exactly one of `content_base64` (strict base64, decoded bytes must be valid UTF-8 after an optional BOM, ≤ `max_file_bytes`) or `file` (an absolute path under a trusted host-configured root with `kind: local` and that the engine was opened with `--allow-file-reads`; symlinks refused) for `add`/`change`; `sha256` optional for `content_base64` (the engine computes and, if given, verifies: mismatch → the change is rejected as `hash_mismatch`), required for `file` (verified after reading).
 - Batch caps: ≤ 10,000 changes and ≤ `max_total_bytes` (512 MiB default) of decoded content per call; over → `SS_ERR_CAPACITY`, nothing published.
 - `expect_generation` must equal the current generation, else `SS_ERR_INVALID_ARGUMENT` `"stale: generation is M"` and nothing is published (the host re-reads status and retries).
 - Ordering: changes are applied in array order per `(root_id, path)`; a later op on the same path replaces an earlier one in the same batch; the report lists `conflicts` for such pairs.

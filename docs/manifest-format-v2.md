@@ -96,6 +96,15 @@ Pruning (`keep_generations`) removes a superseded generation's source file with
 its other two; the report's `pruned_files` keeps counting document and lexical
 files only (its v1 meaning), source deletions are counted apart.
 
+## Cross-branch version reservation
+
+This 104-byte layout owns HYBMAN02/version 2 on main. The unmerged CAP-16
+filename-search draft used the same identifier for a 136-byte layout; it is
+not compatible with this format. Preserve this reader/writer. The integrated
+filename/source extension must use HYBMAN03/version 3 with a separately
+documented table and v1/v2/v3 migration tests; rebuild draft CAP-16 snapshots
+in a separate directory. Do not infer a format from length alone.
+
 ## Compatibility
 
 - A v1 manifest opens unchanged: `has_source` and `has_positions` read false,
