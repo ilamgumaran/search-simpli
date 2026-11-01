@@ -426,8 +426,9 @@ class ApplyChangesReport {
 
 /// `opts_json` of `ss_apply_changes`.
 class ApplyChangesOptions {
-  /// A `file` change is refused unless this is true.
+  /// Enable filename indexing on creation; omitted updates preserve the setting.
   final bool? filenameIndex;
+  /// A `file` change is refused unless this is true.
   final bool allowFileReads;
   final int? maxFileBytes;
   final int? maxTotalBytes;

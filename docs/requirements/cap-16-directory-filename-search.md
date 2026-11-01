@@ -1,6 +1,6 @@
 # CAP-16 — Directory filename retrieval alongside cited content search
 
-Status: Diagnostic · source implemented; bundled native rollout pending
+Status: Diagnostic · integrated source and native verification tracked in [the S3 integration report](../tasks/recovery-filename-integration.md)
 
 ## 1. Proposal
 
@@ -105,7 +105,10 @@ CON-01 gains match-origin/policy information only in new-mode responses;
 CON-02 specifies the opt-in request parameter; CON-03 gains optional versioned
 filename-channel import data. Document the manifest revision and status capability
 alongside these schemas. C ABI/Dart JSON options and contract version must evolve
-together. Source schemas and `CONTRACTS_VERSION` now use 1.3.0; bundled native artifacts remain pending a real platform rebuild.
+together. The S3 integration uses contract 2.1.0 and HYBMAN03; see the
+[integration report](../tasks/recovery-filename-integration.md) for native
+build provenance and verification. The earlier draft's 1.3.0 contract and
+filename draft-v2 manifest are superseded.
 
 ## 6. Invariant compliance
 

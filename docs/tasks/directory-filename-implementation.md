@@ -1,5 +1,9 @@
 # Filename/content retrieval implementation and handoff
 
+Historical pre-S3 implementation report. Current integration, recovery
+hardening, contract 2.1.0 and native verification are tracked in
+[the recovery/filename integration report](recovery-filename-integration.md).
+
 Updated 2026-10-28 · Branch `feature/directory-filename-search`
 · [draft PR #18](https://github.com/ilamgumaran/search-simpli/pull/18)
 · [implementation claim #17](https://github.com/ilamgumaran/search-simpli/issues/17)
