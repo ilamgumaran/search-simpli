@@ -258,6 +258,7 @@ fn queryImpl(
 
     const field = std.meta.stringToEnum(@import("filename_field.zig").Field, options.search_field) orelse return error.InvalidSearchField;
     if (field != .content) {
+        if (options.profile) return error.FilenameProfileUnavailable;
         if (mode != .lexical or options.retrieval_mode == null) return error.FilenameSearchRequiresLexical;
         var query_options = hybrid.SearchOptions{ .top_k = top_k, .candidate_k = candidate_k, .retrieval_mode = .lexical, .path_prefix = options.path_prefix, .principal_labels = options.principal_labels };
         if (h.service().folder) |folder| query_options.visible_roots = folder.mask(try folder.allowedRoots(arena.allocator(), .{ .roots = options.roots, .principal_labels = options.principal_labels }));
@@ -1185,7 +1186,7 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     try std.testing.expectEqualStrings("guides/hybrid.md", evidence_items[0].object.get("citation").?.object.get("path").?.string);
     try std.testing.expectEqual(false, evidence_items[1].object.get("found").?.bool);
 
-    try std.testing.expectEqualStrings("2.0.0", std.mem.span(ss_version()));
+    try std.testing.expectEqualStrings("2.1.0", std.mem.span(ss_version()));
 }
 
 test "ss_import_json publishes a queryable snapshot and reports negative codes on failure" {

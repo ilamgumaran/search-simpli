@@ -427,14 +427,16 @@ class ApplyChangesReport {
 /// `opts_json` of `ss_apply_changes`.
 class ApplyChangesOptions {
   /// A `file` change is refused unless this is true.
+  final bool? filenameIndex;
   final bool allowFileReads;
   final int? maxFileBytes;
   final int? maxTotalBytes;
   final int? keepGenerations;
 
-  const ApplyChangesOptions({this.allowFileReads = false, this.maxFileBytes, this.maxTotalBytes, this.keepGenerations});
+  const ApplyChangesOptions({this.filenameIndex, this.allowFileReads = false, this.maxFileBytes, this.maxTotalBytes, this.keepGenerations});
 
   Map<String, Object?> toJson() => {
+        if (filenameIndex != null) 'filename_index': filenameIndex,
         if (allowFileReads) 'allow_file_reads': true,
         if (maxFileBytes != null) 'max_file_bytes': maxFileBytes,
         if (maxTotalBytes != null) 'max_total_bytes': maxTotalBytes,

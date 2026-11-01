@@ -38,6 +38,9 @@ pub const ScanReport = struct {
     /// lexical counters above keep their meaning. `current_files` counts the
     /// current generation's document and lexical files only.
     current_source_files: usize = 0,
+    current_filename_files: usize = 0,
+    orphan_filename_files: usize = 0,
+    superseded_filename_files: usize = 0,
     orphan_source_files: usize = 0,
     superseded_source_files: usize = 0,
 };
@@ -375,10 +378,20 @@ pub fn scan(
                 report.current_files += 1;
                 continue;
             }
+            if (metadata.filename) |f| {
+                if (std.mem.eql(u8, entry.name, f.catalog_file) or std.mem.eql(u8, entry.name, f.lexical_file)) {
+                    report.current_filename_files += 1;
+                    continue;
+                }
+            }
             if (metadata.hasSource() and std.mem.eql(u8, entry.name, metadata.source_file)) {
                 report.current_source_files += 1;
                 continue;
             }
+        }
+        if (filenameGeneration(entry.name)) |number| {
+            if (current_metadata != null and number < current_metadata.?.generation) report.superseded_filename_files += 1 else report.orphan_filename_files += 1;
+            continue;
         }
         if (std.mem.endsWith(u8, entry.name, source_suffix)) {
             const older = if (current_metadata) |metadata|

@@ -8,23 +8,13 @@ invariant exception. Independent review checks this boundary before runtime work
 
 ## Persistence
 
-Body-only builds retain byte-identical manifest v1 and body sections. Opt-in
-`--filename-index` builds use `HYBMAN02`, version 2, flags/reserved zero, fixed
-header 136 bytes. Integers are little-endian. Bytes 12–75 retain manifest-v1's
-generation/body counts, sizes and internal checksums. Offsets 76/80 hold u32
-filename-file/term counts; 84 holds u64 filename-posting count; 92/100 hold u64
-catalog size/internal checksum; 108/116 hold filename lexical size/checksum;
-124 holds u32 payload size; 128 holds u64 manifest checksum. FNV-1a covers bytes
-0–127 then payload; corruption detection, not cryptographic authentication.
-
-Payload: seven u32-length-prefixed strings: analyzer id, embedding model id,
-body documents name, body lexical name, filename catalog name, filename lexical
-name, `filename-field-v1`. Safe distinct basename rules from v1 apply to all
-section names. Catalog name is `filenames-N.hybseg`; lexical name is
-`filename-lexical-N.hyblex`. Generation allocation, lifecycle scanning/pruning
-and orphan recovery recognize all four immutable sections. Publish syncs all
-sections and the directory before replacing MANIFEST, then syncs the directory.
-Never remove selected sections after the manifest becomes visible.
+The filename field's semantics below remain v1. The pre-S3 draft persistence
+layout is superseded by [manifest v3](manifest-format-v3.md): HYBMAN03,
+152-byte header, nine payload strings, binding body, positions, source,
+roots and both filename sections. Main's HYBMAN02 (104 bytes) is unchanged.
+The old 136-byte HYBMAN02 draft must be rebuilt in a separate directory.
+Publication syncs all bound sections before committing MANIFEST; current
+allocation and retention cover filename sections as well.
 
 Catalog reuses the existing document segment codec, no vectors. Records sort by
 bytewise relative path, one per path with a body chunk. Record id/lines/labels
@@ -35,7 +25,7 @@ anchor identity/span/path/labels, basename text and zero vector dimensions.
 Filename postings reuse HYBLEX01, indexed by catalog record ordinal, with the
 same analyzer as body/query. Validate section bounds/counts/checksums as for body.
 
-New readers open both versions. Old readers reject HYBMAN02. A filename request
+Readers open manifest v1, main-v2 and integrated v3; pre-S3 readers reject v3. A filename request
 on body-only data fails `FilenameIndexUnavailable` with rebuild guidance.
 Changing filename-index setting/analyzer during incremental refresh fails;
 full rebuild in a separate directory is required. Filename data is derived from
@@ -43,8 +33,8 @@ the final admitted/carried-forward body set, including budget-exhausted paths.
 
 ## Process contracts
 
-Contract version becomes 1.3.0 on source; old bundled 1.2.0 libraries remain
-explicitly stale until real platform rebuild, never stamp them current by hand.
+Contract version is 2.1.0 and Dart package 0.3.0; consumers must repin.
+Native freshness requires real platform rebuilding; never stamp stale binaries current.
 Index options add boolean `filename_index` (default false); CLI spells it
 `--filename-index`. Python opt-in snapshot version 2 contains filename-index
 metadata; body-only stays version 1. Import payload v2 adds required

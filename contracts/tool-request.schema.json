@@ -299,6 +299,14 @@
             "minLength": 1
           },
           "description": "Root ids to search (narrows the server's --roots, never widens it); null or absent = every root the server allows."
+        },
+        "search_field": {
+          "type": "string",
+          "enum": [
+            "content",
+            "filename",
+            "both"
+          ]
         }
       },
       "additionalProperties": false,

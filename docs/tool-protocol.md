@@ -135,3 +135,15 @@ sections containing matching terms after candidate truncation. A filename match
 is navigation, not answer support. Check `filename_policy_id` in status for
 availability. The existing trusted principal and caller-vector boundaries apply.
 See the [handoff and package status](tasks/directory-filename-implementation.md).
+
+## Contract 2.1.0 filename/S3 integration
+
+Optional `search_field: content|filename|both` is supported by search_knowledge,
+with explicit lexical retrieval for filename/both. Tool schemas and canonical
+responses include S3 root/section and completeness metadata. `ss_index_folder`
+opts accept `filename_index`; host-only `ss_apply_changes` opts also accept the
+optional boolean (null/absent preserves the current channel). See
+[the integrated format](manifest-format-v3.md) and
+[task/evidence](tasks/recovery-filename-integration.md). Scoped RPC/MCP writers
+are byte-fed and cannot change root/label policy or grant filesystem reads;
+unscoped --allow-write is an index-administration grant.

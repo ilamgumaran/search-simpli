@@ -1176,8 +1176,12 @@ pub fn applyOptions(allocator: std.mem.Allocator, params: std.json.ObjectMap) !u
 }
 
 fn parseApplyOptions(reader: *Reader) Error!apply.Options {
-    try reader.only(&.{ "allow_file_reads", "max_file_bytes", "max_total_bytes", "analyzer", "max_chars", "overlap_lines", "keep_generations" });
+    try reader.only(&.{ "allow_file_reads", "max_file_bytes", "max_total_bytes", "analyzer", "max_chars", "overlap_lines", "keep_generations", "filename_index" });
     var options = apply.Options{};
+    if (reader.object.get("filename_index")) |value| options.filename_index = switch (value) {
+        .bool => |flag| flag,
+        else => return reader.fail("filename_index must be a boolean", .{}),
+    };
     if (reader.object.get("allow_file_reads")) |value| options.allow_file_reads = switch (value) {
         .bool => |flag| flag,
         else => return reader.fail("allow_file_reads must be a boolean", .{}),

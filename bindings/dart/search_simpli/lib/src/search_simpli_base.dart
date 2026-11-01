@@ -198,6 +198,13 @@ class SearchSimpli {
   }) {
     _checkOpen();
 
+    if (searchField != null && searchField != SearchField.content && mode != RetrievalMode.lexical) {
+      throw ArgumentError('filename search requires an explicit lexical mode');
+    }
+    if (searchField != null && searchField != SearchField.content && profile) {
+      throw ArgumentError('profile is not supported for filename search');
+    }
+
     final options = <String, Object?>{
       if (mode != null) 'retrieval_mode': mode.toJson(),
       if (candidateK != null) 'candidate_k': candidateK,
