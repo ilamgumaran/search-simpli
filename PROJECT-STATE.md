@@ -84,6 +84,22 @@ and recall 1.00 (expected engine misses p3 and x1's front-matter line found);
 outline 7/7; `read_span` 9/9 (sha256 and byte length); lifecycle 3/3; 0 skipped.
 MCP: 66 parity requests 100 % equal to RPC, conformance client 27/27 checks.
 
+## S3-T8: native rebuild, digests and the consumer pin (2026-10-31)
+
+The three native libraries rebuilt from the merged source are byte-identical to
+S3-T6's (macOS dylib 697,544 B, Android `.so` 676,752 B, iOS framework binary
+677,448 B; four iOS segments 16 KiB aligned; `native/SOURCE-SHA256`
+`9f9a58d6…ae871`). The Dart package is 0.2.0 (contracts 2.0.0; an older library
+is refused with `ContractsVersionMismatchException`). The "Folder knowledge (S3)"
+section above holds the benchmark table, the pinned MCP revision and the fixture
+metrics; CAP-19's rows are `Diagnostic · implemented`, NFR-13 stays Proposed and
+CFT-09 Blocked (both accepted). The Linux CI job runs the MCP, surface and CLI
+process tests by name and fails on a skip; the conformance client's
+`resources/read` size check is BOM-aware. `ss_open` on the 10k index rose from
+47.5 to about 102 ms (accepted for the pin; a NEXT row asks for lazy loading).
+The consumer app pins the merge commit of `verify/S3-T8` in its M16-T1.
+Verified and merged 2026-10-31. [Task](docs/tasks/S3-T8.md).
+
 ## S3-T6: the MCP server, `searchd mcp` (2026-10-31)
 
 `searchd mcp <index-dir> [--roots a,b] [--labels l1,l2] [--baseline]
