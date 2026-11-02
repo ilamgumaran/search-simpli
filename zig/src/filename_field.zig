@@ -186,6 +186,9 @@ fn lessCandidate(a: Candidate, b: Candidate, docs: []const hybrid.Document) bool
     if (a.score != b.score) return a.score > b.score;
     const order = std.mem.order(u8, a.path, b.path);
     if (order != .eq) return order == .lt;
+    // Sorting may compare an entry with itself. Its id cannot break a tie
+    // with itself, and cached filename ranking need not read a body record.
+    if (a.body_index == b.body_index) return false;
     return std.mem.order(u8, docs[a.body_index].id, docs[b.body_index].id) == .lt;
 }
 fn sortCandidates(items: []Candidate, docs: []const hybrid.Document) void {

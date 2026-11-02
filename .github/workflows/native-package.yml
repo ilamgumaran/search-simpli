@@ -27,6 +27,13 @@ jobs:
           test "$("$RUNNER_TEMP/zig-pip/ziglang/zig" version)" = '0.16.0'
           echo "ZIG=$RUNNER_TEMP/zig-pip/ziglang/zig" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/zig-pip/ziglang" >> "$GITHUB_PATH"
+      - name: Filename complexity guard on macOS (no skips)
+        working-directory: zig
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$ZIG" test -lc src/filename_complexity_test.zig --test-filter 'filename query complexity' 2>&1 | tee "$RUNNER_TEMP/filename-complexity.log"
+          grep -Fq 'All 2 tests passed.' "$RUNNER_TEMP/filename-complexity.log"
       - name: Install pinned Android NDK
         shell: bash
         run: |

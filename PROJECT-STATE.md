@@ -760,3 +760,12 @@ platform checks, clean Dart analysis and 83 Dart tests; packages are rebuilt
 at contract 2.2.0. Source tests pass 282/282 and ABI 22/22. The combined
 10k cap regression peaks at 63,859,306 bytes; 15k/20k require further memory
 work. Physical phone validation and E-02/real-folder evaluation are pending.
+
+## Filename complexity guard candidate
+
+Owner-authorized objectives review; claim #22, based on S4-T2 main `b45b1c4`.
+Protected-memory and bounded-scratch tests guard filename query behavior at
+1k/10k files without a timing threshold. A sort self-comparison now avoids
+an unnecessary body-id read. No API/contract/format changes; packages are
+rebuilt from the changed source. Verification is in progress; see
+[task/evidence](docs/tasks/filename-complexity-guard.md). This is unmerged.
