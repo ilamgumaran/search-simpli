@@ -151,5 +151,30 @@
       "files": 20000,
       "manifest_sha256": "a9f989f41ec1f2ff574fbdb13093584a0a6cb4c9990beb9190e24e4b97a24321"
     }
+  },
+  "shared_body_term_probe": {
+    "query": "doc the",
+    "files": 10000,
+    "cap_mib": 64,
+    "measurements": [
+      {
+        "field": "filename",
+        "files": 10000,
+        "open_ns": 171712540,
+        "p50_ns": 1388696,
+        "p95_ns": 2434108,
+        "peak_bytes": 57270508,
+        "cap_bytes": 67108864
+      },
+      {
+        "field": "both",
+        "files": 10000,
+        "open_ns": 171712540,
+        "p50_ns": 6781182,
+        "p95_ns": 10192282,
+        "peak_bytes": 61210640,
+        "cap_bytes": 67108864
+      }
+    ]
   }
 }

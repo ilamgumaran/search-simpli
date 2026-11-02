@@ -95,3 +95,18 @@ observed peak to 57,269,176 without weakening content/label/anchor checks.
 
 15k/20k corpus support under a 64 MiB budget remains a separate paging or
 resident-data representation task. Keep filename enablement opt-in.
+
+The combined 10k regression also queries `doc the`, so both filename and
+body channels have broad matches while all lazy tables stay on the handle.
+It passes the same cap: open 56,587,630; find 62,775,446; read_span
+56,587,694; outline 56,589,086; list_files 63,859,306; search_knowledge
+56,598,740; filename 57,430,112; both 61,371,674 bytes (Linux Debug).
+All eight operation peaks must be nonzero; body-only fixtures check only
+the six enabled operations. The original family fixture's assertion was
+adapted when the optional modes expanded the measurement enum.
+
+A separate ReleaseSmall `doc the` probe at 10k completes under 64 MiB:
+filename p50/p95 1.389/2.434 ms, peak 57,270,508 bytes; both p50/p95
+6.781/10.192 ms, peak 61,210,640 bytes. These broader body matches should
+be used alongside the filename-only `doc` scaling rows, not hidden behind
+the cheaper query's timings. Raw rows are included in the JSON report.

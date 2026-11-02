@@ -294,7 +294,7 @@ test "filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files" {
     defer out.cleanup();
     try generateCorpus(a, corpus.dir);
     _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
-    const peaks = try measure(out.dir, cap_bytes, .{ .find_query = "the", .knowledge_query = "the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
+    const peaks = try measure(out.dir, cap_bytes, .{ .find_query = "the", .knowledge_query = "the", .filename_query = "doc the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
     printPeaks("10k filename and lazy tables", peaks);
     for (peaks.bytes) |value| try std.testing.expect(value > 0);
     try std.testing.expect(peaks.overall <= cap_bytes);
