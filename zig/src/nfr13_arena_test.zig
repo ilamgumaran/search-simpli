@@ -83,11 +83,12 @@ pub const Capped = struct {
     }
 };
 
-pub const Operation = enum { open, find, read_span, outline, list_files, search_knowledge };
+pub const Operation = enum { open, find, read_span, outline, list_files, search_knowledge, filename, both };
 
 pub const Target = struct {
     find_query: []const u8,
     knowledge_query: []const u8,
+    filename_query: []const u8 = "doc",
     /// `read_span`, `outline` and `list_files` (null: not run).
     root_id: ?[]const u8 = null,
     path: []const u8 = "",
@@ -116,7 +117,7 @@ pub fn measure(dir: std.Io.Dir, cap: usize, target: Target) !Peaks {
     const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
 
     inline for (comptime std.enums.values(Operation)[1..]) |operation| {
-        const runs = target.root_id != null or operation == .find or operation == .search_knowledge;
+        const runs = if (operation == .filename or operation == .both) opened.engine.filename_index_enabled else target.root_id != null or operation == .find or operation == .search_knowledge;
         if (runs) {
             var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
             defer op_arena.deinit();
@@ -136,6 +137,10 @@ pub fn measure(dir: std.Io.Dir, cap: usize, target: Target) !Peaks {
                 .search_knowledge => {
                     const evidence = try scoped.searchKnowledge(a, target.knowledge_query, &.{}, .{ .retrieval_mode = .lexical }, .{}, try a.alloc(hybrid.Result, 10), try a.alloc(engine_module.Evidence, 10), null);
                     try std.testing.expect(evidence.len > 0);
+                },
+                .filename, .both => {
+                    const hits = try opened.engine.queryFields(a, target.filename_query, if (operation == .filename) .filename else .both, .{ .retrieval_mode = .lexical });
+                    try std.testing.expect(hits.len > 0);
                 },
                 .open => unreachable,
             }
@@ -275,5 +280,20 @@ test "S4-T1 NFR-13: find and search_knowledge over a 10,000-file index inside 64
     // "the" is in most chunks: the widest postings list and the most hits.
     const peaks = try measure(out.dir, cap_bytes, .{ .find_query = "the", .knowledge_query = try std.fmt.allocPrint(a, "the {s}", .{rare}), .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
     printPeaks("10k generated", peaks);
+    try std.testing.expect(peaks.overall <= cap_bytes);
+}
+
+test "filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var corpus = std.testing.tmpDir(.{ .iterate = true });
+    defer corpus.cleanup();
+    var out = std.testing.tmpDir(.{ .iterate = true });
+    defer out.cleanup();
+    try generateCorpus(a, corpus.dir);
+    _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
+    const peaks = try measure(out.dir, cap_bytes, .{ .find_query = "the", .knowledge_query = "the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
+    printPeaks("10k filename and lazy tables", peaks);
     try std.testing.expect(peaks.overall <= cap_bytes);
 }

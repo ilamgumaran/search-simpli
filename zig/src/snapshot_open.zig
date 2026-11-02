@@ -46,7 +46,9 @@ fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options
     // One allocation avoids arena geometric-growth slack between two large
     // serialized sections, especially with manifest-bound recovery metadata.
     const section_bytes = std.math.add(usize, metadata.documents_bytes, metadata.lexical_bytes) catch return error.IndexTooLarge;
-    const retained_bytes = std.math.add(usize, section_bytes, metadata.source_bytes) catch return error.IndexTooLarge;
+    const filename_bytes = if (metadata.filename) |f| std.math.add(usize, f.catalog_bytes, f.lexical_bytes) catch return error.IndexTooLarge else 0;
+    const with_source = std.math.add(usize, section_bytes, metadata.source_bytes) catch return error.IndexTooLarge;
+    const retained_bytes = std.math.add(usize, with_source, filename_bytes) catch return error.IndexTooLarge;
     const sections = try allocator.alloc(u8, retained_bytes);
     const documents_buffer = sections[0..metadata.documents_bytes];
     const lexical_buffer = sections[metadata.documents_bytes..section_bytes];
@@ -72,18 +74,16 @@ fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options
     const document_lengths = try allocator.alloc(u32, metadata.document_count);
 
     var opened = try engine.Engine.openWith(snapshot, documents, vectors, terms, posting_storage, document_lengths, options);
-    if (metadata.hasSource()) opened.source_buffer = sections[section_bytes..];
+    if (metadata.hasSource()) opened.source_buffer = sections[section_bytes..with_source];
 
     if (metadata.filename) |f| {
-        const catalog_buffer = try allocator.alloc(u8, f.catalog_bytes);
-        const lexical_extra_buffer = try allocator.alloc(u8, f.lexical_bytes);
+        const catalog_buffer = sections[with_source .. with_source + f.catalog_bytes];
+        const lexical_extra_buffer = sections[with_source + f.catalog_bytes ..];
         opened.catalog_encoded = try dir.readFile(io, f.catalog_file, catalog_buffer);
         opened.filename_lexical_encoded = try dir.readFile(io, f.lexical_file, lexical_extra_buffer);
         try manifest.validateFilenameSections(metadata, opened.catalog_encoded, opened.filename_lexical_encoded);
-        var validation = std.heap.ArenaAllocator.init(allocator);
-        defer validation.deinit();
-        try @import("filename_field.zig").validate(validation.allocator(), opened.documents, opened.catalog_encoded, opened.filename_lexical_encoded, opened.analyzer_id);
         opened.filename_decoded = try @import("filename_field.zig").decode(allocator, opened.documents, opened.lexical_index, opened.catalog_encoded, opened.filename_lexical_encoded);
+        try @import("filename_field.zig").validateDecoded(allocator, opened.filename_decoded.?, opened.analyzer_id);
         opened.filename_index_enabled = true;
     }
     return .{ .engine = opened, .metadata = metadata };

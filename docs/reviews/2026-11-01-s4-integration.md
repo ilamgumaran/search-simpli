@@ -17,7 +17,8 @@ PRs #18 and #11 are historical predecessors, not alternative merge targets.
   manifest, including appended and truncated bytes after open. Source reads
   report unavailable; token/position retrieval continues to work.
 - Cache decoded filename tables, hashed term lookups and catalog-to-body
-  anchor ordinals per handle. Compute visible filename averages once per
+  anchor ordinals per handle. Validate canonical filename postings one file at
+  a time instead of rebuilding a second complete reference index. Compute visible filename averages once per
   query and use a path map to group body candidates. Existing ranking and
   authorization fixtures remain the oracle; dictionary order is not assumed.
 - Query metadata parsing skips the writer-only recovery tree. Update parsing
@@ -68,3 +69,29 @@ wall-clock CI threshold is introduced.
 - Delta chains, ANN and reranking remain measurement-driven follow-ups.
 
 No automatic merge or consumer deployment is part of this update.
+
+## Filename scale measurements
+
+Invented `gen_timing_corpus.py` corpora, Linux x86_64, Zig 0.16.0
+ReleaseSmall, common filename query `doc`, 5 warmups and 20 timed samples
+per field. Peak is allocations observed by the capped allocator, not process
+RSS. Codec scratch allocations using their own allocator are outside this
+measure, as in the existing NFR-13 instrumentation. These are diagnostic
+measurements, not a wall-clock regression gate or phone evidence.
+[Raw rows and corpus/binary hashes](2026-11-01-filename-scale.json).
+
+| Files | 64 MiB cap | Open ms | filename p50 ms | both p50 ms | Observed peak bytes |
+|---:|---|---:|---:|---:|---:|
+| 1,000 | pass | 13.83 | 0.077 | 0.096 | 18,930,238 |
+| 10,000 | pass | 103.48 | 1.326 | 1.372 | 57,269,176 |
+| 15,000 | open fails | 137.39* | 2.193* | 2.112* | 84,958,978* |
+| 20,000 | open fails | 198.58* | 2.770* | 2.924* | 112,924,828* |
+
+`*` Measured only with an explicitly larger 256 MiB diagnostic cap, not a
+pass under 64 MiB. Single-open times are load/cache dependent. At 10k, the
+first candidate consumed 147,427,326 bytes under that larger cap and failed
+under 64 MiB. Streaming canonical validation and coallocation reduce the
+observed peak to 57,269,176 without weakening content/label/anchor checks.
+
+15k/20k corpus support under a 64 MiB budget remains a separate paging or
+resident-data representation task. Keep filename enablement opt-in.

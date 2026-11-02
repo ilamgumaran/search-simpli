@@ -56,6 +56,18 @@ test "filename catalog validation rejects inconsistent labels" {
     try std.testing.expectError(error.InconsistentLabels, filename_field.build(allocator, &body, analyzer_v2.analyzer_id));
 }
 
+test "streaming filename validation rejects a semantically wrong posting frequency" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const body = [_]hybrid.Document{.{ .id = "a", .path = "annual_annual.md", .text = "body", .start_line = 1, .end_line = 1 }};
+    const built = try filename_field.build(a, &body, analyzer_v2.analyzer_id);
+    const decoded = try filename_field.decode(a, &body, try makeBodyIndex(a, &body), built.catalog, built.lexical);
+    try filename_field.validateDecoded(a, decoded, analyzer_v2.analyzer_id);
+    @constCast(decoded.lexical.postings)[0].term_frequency += 1;
+    try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateDecoded(a, decoded, analyzer_v2.analyzer_id));
+}
+
 test "opt-in folder index publishes filename channel and refresh setting is pinned" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
