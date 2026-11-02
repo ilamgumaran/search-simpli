@@ -11,6 +11,7 @@ const postings = @import("postings.zig");
 const publication = @import("publication.zig");
 const scope = @import("scope.zig");
 const source_section = @import("source.zig");
+const filename_field = @import("filename_field.zig");
 
 /// Open the current published generation in `dir`. All returned buffers
 /// (and the decoded `Engine`) are allocated from `allocator`; the intended
@@ -19,6 +20,19 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     const loaded = try loadEngine(allocator, io, dir, .{});
     var opened = loaded.engine;
     if (loaded.metadata.meta.len != 0) opened.roots = (try manifest.parseMeta(allocator, loaded.metadata.meta)).roots;
+    // The one-shot open is eager: it also loads the filename sections now
+    // (`openScoped` defers them to the first filename query, S4-T2 R4).
+    if (loaded.metadata.filename) |f| {
+        const catalog_file = try dir.openFile(io, f.catalog_file, .{});
+        defer catalog_file.close(io);
+        const lexical_file = try dir.openFile(io, f.lexical_file, .{});
+        defer lexical_file.close(io);
+        var reserved = std.heap.FixedBufferAllocator.init(loaded.filename_reserved);
+        opened.filename_decoded = filename_field.load(reserved.allocator(), io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index) catch |err| switch (err) {
+            error.OutOfMemory => try filename_field.load(allocator, io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index),
+            else => return err,
+        };
+    }
     // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
     // terms' ordinals and its hits' offsets.
     if (opened.lexical_index.positions != null) opened.position_tables = try postings.buildPositionTables(allocator, opened.lexical_index);
@@ -28,6 +42,8 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
 const Loaded = struct {
     engine: engine.Engine,
     metadata: manifest.Manifest,
+    /// S4-T2 R4: reserved, unread bytes for the filename load.
+    filename_reserved: []u8 = &.{},
 };
 
 /// The manifest and the document and lexical sections, each section's
@@ -43,13 +59,14 @@ fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options
     const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
     const metadata = try manifest.decode(manifest_encoded);
 
-    // One allocation avoids arena geometric-growth slack between two large
-    // serialized sections, especially with manifest-bound recovery metadata.
+    // One allocation avoids arena geometric-growth slack between the large
+    // serialized sections (PR #21's slab; the source section's buffer is
+    // reserved here and filled at its first use). The filename sections are
+    // not read here (S4-T2 R4).
     const section_bytes = std.math.add(usize, metadata.documents_bytes, metadata.lexical_bytes) catch return error.IndexTooLarge;
-    const filename_bytes = if (metadata.filename) |f| std.math.add(usize, f.catalog_bytes, f.lexical_bytes) catch return error.IndexTooLarge else 0;
     const with_source = std.math.add(usize, section_bytes, metadata.source_bytes) catch return error.IndexTooLarge;
-    const retained_bytes = std.math.add(usize, with_source, filename_bytes) catch return error.IndexTooLarge;
-    const sections = try allocator.alloc(u8, retained_bytes);
+    const reserved_bytes = filename_field.loadReservation(metadata);
+    const sections = try allocator.alloc(u8, std.math.add(usize, with_source, reserved_bytes) catch return error.IndexTooLarge);
     const documents_buffer = sections[0..metadata.documents_bytes];
     const lexical_buffer = sections[metadata.documents_bytes..section_bytes];
     const snapshot = publication.LoadedSnapshot{
@@ -76,17 +93,11 @@ fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options
     var opened = try engine.Engine.openWith(snapshot, documents, vectors, terms, posting_storage, document_lengths, options);
     if (metadata.hasSource()) opened.source_buffer = sections[section_bytes..with_source];
 
-    if (metadata.filename) |f| {
-        const catalog_buffer = sections[with_source .. with_source + f.catalog_bytes];
-        const lexical_extra_buffer = sections[with_source + f.catalog_bytes ..];
-        opened.catalog_encoded = try dir.readFile(io, f.catalog_file, catalog_buffer);
-        opened.filename_lexical_encoded = try dir.readFile(io, f.lexical_file, lexical_extra_buffer);
-        try manifest.validateFilenameSections(metadata, opened.catalog_encoded, opened.filename_lexical_encoded);
-        opened.filename_decoded = try @import("filename_field.zig").decode(allocator, opened.documents, opened.lexical_index, opened.catalog_encoded, opened.filename_lexical_encoded);
-        try @import("filename_field.zig").validateDecoded(allocator, opened.filename_decoded.?, opened.analyzer_id);
-        opened.filename_index_enabled = true;
-    }
-    return .{ .engine = opened, .metadata = metadata };
+    // The policy comes from the manifest; `index_status` reports it without
+    // reading the sections.
+    opened.filename_index_enabled = metadata.filename != null;
+    if (metadata.filename) |f| opened.filename_policy_id = f.policy_id;
+    return .{ .engine = opened, .metadata = metadata, .filename_reserved = sections[with_source..] };
 }
 
 /// The current generation's manifest and source section (S3-T1), validated
@@ -170,6 +181,23 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
         loads.source_done.store(true, .release);
     }
     errdefer if (loads.source_file) |file| file.close(io);
+    // S4-T2 R4: the filename sections' files, opened (not read) like the
+    // source section's, so the first filename query reads this generation's
+    // own bytes even after a writer pruned them.
+    if (metadata.filename) |f| {
+        loads.filename_manifest = metadata;
+        loads.filename_reserved = loaded.filename_reserved;
+        loads.filename_catalog_file = dir.openFile(io, f.catalog_file, .{}) catch |err| blk: {
+            loads.filename_error = err;
+            break :blk null;
+        };
+        if (loads.filename_error == null) loads.filename_lexical_file = dir.openFile(io, f.lexical_file, .{}) catch |err| blk: {
+            loads.filename_error = err;
+            break :blk null;
+        };
+    }
+    errdefer if (loads.filename_catalog_file) |file| file.close(io);
+    errdefer if (loads.filename_lexical_file) |file| file.close(io);
     const folder = try allocator.create(scope.Folder);
     folder.* = try scope.Folder.build(allocator, meta, loads);
     folder.has_positions = metadata.has_positions;

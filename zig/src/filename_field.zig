@@ -2,6 +2,7 @@ const analyzer_v2 = @import("analyzer_v2.zig");
 const hybrid = @import("hybrid.zig");
 const lexical_build = @import("lexical_build.zig");
 const lexical_segment = @import("lexical_segment.zig");
+const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const segment = @import("segment.zig");
 const scoring = @import("scoring.zig");
@@ -143,7 +144,7 @@ pub fn validateDecoded(allocator: std.mem.Allocator, decoded: Decoded, analyzer_
         }
         var it = counts.iterator();
         while (it.next()) |entry| {
-            const ti = decoded.filename_terms.get(entry.key_ptr.*) orelse return error.FilenameLexicalMismatch;
+            const ti = decoded.filenameTerm(entry.key_ptr.*) orelse return error.FilenameLexicalMismatch;
             if (!seen[ti]) {
                 if (ti != next_term) return error.FilenameLexicalMismatch;
                 next_term += 1;
@@ -198,18 +199,56 @@ pub const Decoded = struct {
     catalog: []const hybrid.Document,
     lexical: postings.Index,
     anchors: []const usize,
-    filename_terms: std.StringHashMapUnmanaged(usize),
-    body_terms: std.StringHashMapUnmanaged(usize),
+    /// The filename dictionary's indices in byte order of their terms (the
+    /// dictionary itself is in first-seen order, `lexical_build`), for a
+    /// binary-search lookup. The body dictionary is looked up in place
+    /// (`postings.lookupExact`), not copied.
+    term_order: []const u32,
+
+    pub fn filenameTerm(decoded: Decoded, term: []const u8) ?usize {
+        const terms = decoded.lexical.terms;
+        var low: usize = 0;
+        var high = decoded.term_order.len;
+        while (low < high) {
+            const middle = low + (high - low) / 2;
+            switch (std.mem.order(u8, terms[decoded.term_order[middle]].term, term)) {
+                .eq => return decoded.term_order[middle],
+                .lt => low = middle + 1,
+                .gt => high = middle,
+            }
+        }
+        return null;
+    }
 };
+
+/// The bytes `load` needs for `metadata`'s filename sections: both encoded
+/// sections and every decoded table, with alignment slack. The open
+/// reserves them (not reads them) in its one section slab, as PR #21 did
+/// for the source section, so the first filename query never grows the
+/// handle's arena by another geometric step (S4-T2 R4).
+pub fn loadReservation(metadata: manifest.Manifest) usize {
+    const f = metadata.filename orelse return 0;
+    const slack = 64;
+    var total: usize = f.catalog_bytes + f.lexical_bytes + 6 * slack;
+    total += f.file_count * (@sizeOf(hybrid.Document) + @sizeOf(u32) + @sizeOf(usize));
+    total += f.term_count * (@sizeOf(postings.TermEntry) + @sizeOf(u32));
+    total += f.posting_count * @sizeOf(postings.Posting);
+    return total;
+}
 pub fn decode(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, catalog_encoded: []const u8, lexical_encoded: []const u8) !Decoded {
-    const ch = try segment.inspect(catalog_encoded);
+    _ = body_index;
+    return decodeInspected(allocator, body_docs, catalog_encoded, try segment.inspect(catalog_encoded), lexical_encoded, try lexical_segment.inspect(lexical_encoded));
+}
+
+/// `decode` with both headers already inspected (each checksum computed
+/// once, by `load`).
+fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, catalog_encoded: []const u8, ch: segment.Header, lexical_encoded: []const u8, lh: lexical_segment.Header) !Decoded {
     const catalog_storage = try allocator.alloc(hybrid.Document, ch.document_count);
-    const catalog = try segment.decode(catalog_encoded, catalog_storage, &.{});
-    const lh = try lexical_segment.inspect(lexical_encoded);
+    const catalog = try segment.decodeInspected(catalog_encoded, ch, catalog_storage, &.{});
     const lex_terms = try allocator.alloc(postings.TermEntry, lh.term_count);
     const lex_posts = try allocator.alloc(postings.Posting, lh.posting_count);
     const lex_lengths = try allocator.alloc(u32, lh.document_count);
-    const lexical = try lexical_segment.decode(lexical_encoded, lex_terms, lex_posts, lex_lengths);
+    const lexical = try lexical_segment.decodeWith(lexical_encoded, lex_terms, lex_posts, lex_lengths, .{ .inspected = lh });
     if (lexical.document_lengths.len != catalog.len) return error.FilenameCatalogMismatch;
     for (catalog, 0..) |doc, i| {
         if (!validPath(doc.path) or doc.vector.len != 0 or !std.mem.eql(u8, doc.text, stem(doc.path))) return error.FilenameCatalogMismatch;
@@ -227,12 +266,57 @@ pub fn decode(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, 
         const body = body_docs[anchor];
         if (!std.mem.eql(u8, doc.id, body.id) or doc.start_line != body.start_line or doc.end_line != body.end_line) return error.FilenameCatalogMismatch;
     }
-    var filename_terms: std.StringHashMapUnmanaged(usize) = .empty;
-    var body_terms: std.StringHashMapUnmanaged(usize) = .empty;
-    for (lexical.terms, 0..) |term, i| try filename_terms.put(allocator, term.term, i);
-    for (body_index.terms, 0..) |term, i| try body_terms.put(allocator, term.term, i);
-    return .{ .catalog = catalog, .lexical = lexical, .anchors = anchors, .filename_terms = filename_terms, .body_terms = body_terms };
+    const term_order = try allocator.alloc(u32, lexical.terms.len);
+    for (term_order, 0..) |*slot, i| slot.* = @intCast(i);
+    std.mem.sort(u32, term_order, lexical.terms, struct {
+        fn less(terms: []const postings.TermEntry, a: u32, b: u32) bool {
+            return std.mem.order(u8, terms[a].term, terms[b].term) == .lt;
+        }
+    }.less);
+    for (term_order[0..term_order.len -| 1], term_order[@min(1, term_order.len)..]) |a, b| {
+        if (std.mem.eql(u8, lexical.terms[a].term, lexical.terms[b].term)) return error.FilenameLexicalMismatch;
+    }
+    return .{ .catalog = catalog, .lexical = lexical, .anchors = anchors, .term_order = term_order };
 }
+/// S4-T2 R4: read, check and decode the v2.2 filename sections `metadata`
+/// binds, from the two files the open kept (not read) for them. The first
+/// filename or both query of an opened generation calls this once
+/// (`scope.Loads`); `ss_open` reads neither section. Checks, each section's
+/// checksum computed once: the manifest's lengths, checksums and counts
+/// (`manifest.validateFilenameSections`' rules), then the structural walk of
+/// `decode` (paths unique and ordered, every catalog entry anchored to its
+/// file's first body chunk with equal labels). The writer already
+/// re-tokenized every name and checked the postings against them before it
+/// published (`validate`), so a reader does not repeat that.
+pub fn load(allocator: std.mem.Allocator, io: std.Io, catalog_file: std.Io.File, lexical_file: std.Io.File, metadata: manifest.Manifest, body_docs: []const hybrid.Document, body_index: postings.Index) !Decoded {
+    const f = metadata.filename orelse return error.FilenameIndexUnavailable;
+    if ((try catalog_file.stat(io)).size != f.catalog_bytes) return error.FilenameCatalogSizeMismatch;
+    if ((try lexical_file.stat(io)).size != f.lexical_bytes) return error.FilenameLexicalSizeMismatch;
+    const total = std.math.add(usize, f.catalog_bytes, f.lexical_bytes) catch return error.IndexTooLarge;
+    const buffer = try allocator.alloc(u8, total);
+    const catalog_encoded = buffer[0..f.catalog_bytes];
+    const lexical_encoded = buffer[f.catalog_bytes..];
+    if (try catalog_file.readPositionalAll(io, catalog_encoded, 0) != f.catalog_bytes) return error.FilenameCatalogSizeMismatch;
+    if (try lexical_file.readPositionalAll(io, lexical_encoded, 0) != f.lexical_bytes) return error.FilenameLexicalSizeMismatch;
+    const catalog = segment.inspect(catalog_encoded) catch |err| return switch (err) {
+        error.ChecksumMismatch => error.FilenameCatalogChecksumMismatch,
+        else => error.InvalidFilenameCatalog,
+    };
+    const lexical = lexical_segment.inspect(lexical_encoded) catch |err| return switch (err) {
+        error.ChecksumMismatch => error.FilenameLexicalChecksumMismatch,
+        else => error.InvalidFilenameLexicalSection,
+    };
+    if (!metadata.xxh3_sections and (catalog.checksum_kind != .fnv1a64 or lexical.checksum_kind != .fnv1a64)) return error.InvalidFilenameCatalog;
+    if (catalog.checksum != f.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
+    if (lexical.checksum != f.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
+    if (catalog.document_count != f.file_count or lexical.document_count != f.file_count) return error.FilenameCountMismatch;
+    if (catalog.vector_dimensions != 0) return error.InvalidFilenameCatalog;
+    if (lexical.term_count != f.term_count) return error.FilenameTermCountMismatch;
+    if (lexical.posting_count != f.posting_count) return error.FilenamePostingCountMismatch;
+    _ = body_index;
+    return decodeInspected(allocator, body_docs, catalog_encoded, catalog, lexical_encoded, lexical);
+}
+
 pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, catalog_encoded: []const u8, lexical_encoded: []const u8, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) ![]Hit {
     return queryDecoded(allocator, body_docs, body_index, try decode(allocator, body_docs, body_index, catalog_encoded, lexical_encoded), analyzer_id, query_text, field, options);
 }
@@ -277,7 +361,7 @@ pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Docu
             break;
         };
         if (repeated) continue;
-        if (decoded.filename_terms.get(term)) |ti| {
+        if (decoded.filenameTerm(term)) |ti| {
             const ent = lexical.terms[ti];
             var df: u32 = 0;
             for (lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (filename_visible[p.document_index]) {
@@ -287,7 +371,7 @@ pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Docu
                 fname_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(lexical.document_lengths[p.document_index]), filename_avg, df, @intCast(fn_count), options.bm25);
             };
         }
-        if (decoded.body_terms.get(term)) |ti| {
+        if (postings.lookupExact(body_index, term)) |ti| {
             const ent = body_index.terms[ti];
             var df: u32 = 0;
             for (body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (body_visible[p.document_index]) {

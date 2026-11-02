@@ -631,8 +631,11 @@ pub fn indexStatus(allocator: std.mem.Allocator, service: service_module.Service
     var json = std.json.Stringify{ .writer = &out.writer };
     try service_module.writeScopedStatusJson(&json, status);
     if (service.engine.filename_index_enabled) {
+        // S4-T2 R4: the policy id the manifest binds, without reading the
+        // filename sections.
         const bytes = out.written();
-        return .{ .ok = try std.fmt.allocPrint(allocator, "{s},\"filename_policy_id\":\"filename-field-v1\"}}", .{bytes[0..bytes.len - 1]}) };
+        const policy = try std.json.Stringify.valueAlloc(allocator, service.engine.filename_policy_id, .{});
+        return .{ .ok = try std.fmt.allocPrint(allocator, "{s},\"filename_policy_id\":{s}}}", .{ bytes[0 .. bytes.len - 1], policy }) };
     }
     return .{ .ok = out.written() };
 }

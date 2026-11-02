@@ -26,10 +26,16 @@ pub const Evidence = struct {
 pub const Engine = struct {
     roots: []const manifest.RootEntry = &.{},
     folder: ?*const scope.Folder = null,
-    catalog_encoded: []const u8 = &.{},
-    filename_lexical_encoded: []const u8 = &.{},
     source_buffer: ?[]u8 = null,
+    /// The manifest binds the v2.2 filename sections (`index_status`'s
+    /// `filename_policy_id`), whether or not they are loaded yet.
     filename_index_enabled: bool = false,
+    /// The manifest's filename policy id (`filename-field-v1`), empty
+    /// without filename sections.
+    filename_policy_id: []const u8 = "",
+    /// The decoded filename sections of an eager one-shot open
+    /// (`snapshot_open.open`); a scoped open leaves this null and loads them
+    /// at the first filename query through `folder` (S4-T2 R4).
     filename_decoded: ?filename_field.Decoded = null,
     generation: u64,
     analyzer_id: []const u8,
@@ -115,9 +121,9 @@ pub const Engine = struct {
             for (results, hits) |r, *h| h.* = .{ .document_index = r.document_index, .body_score = r.lexical_score, .body_rank = r.lexical_rank, .fused_score = r.fused_score };
             return hits;
         }
-        if (engine.filename_decoded) |decoded| return filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, options);
-        if (engine.catalog_encoded.len == 0 or engine.filename_lexical_encoded.len == 0) return error.FilenameIndexUnavailable;
-        return filename_field.query(allocator, engine.documents, engine.lexical_index, engine.catalog_encoded, engine.filename_lexical_encoded, engine.analyzer_id, query_text, field, options);
+        if (!engine.filename_index_enabled) return error.FilenameIndexUnavailable;
+        const decoded = engine.filename_decoded orelse if (engine.folder) |folder| try folder.filenameDecoded() else return error.FilenameIndexUnavailable;
+        return filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, options);
     }
 
     pub fn query(

@@ -35,6 +35,7 @@ const postings = @import("postings.zig");
 const scoring = @import("scoring.zig");
 const source = @import("source.zig");
 const lexical_segment = @import("lexical_segment.zig");
+const filename_field = @import("filename_field.zig");
 
 pub const legacy_root_id = "r-legacy";
 /// The root ordinal of a document whose path matches no root.
@@ -387,10 +388,28 @@ pub const Loads = struct {
     position_tables: ?postings.PositionTables = null,
     positions_error: ?anyerror = null,
 
+    /// S4-T2 R4: the v2.2 filename sections, opened (not read) at open time
+    /// like the source section's file, and read, checked and decoded by the
+    /// first filename or both query (`filename_field.load`). `filename_manifest`
+    /// is the manifest that binds them (null: none bound).
+    filename_manifest: ?manifest.Manifest = null,
+    /// The bytes the open reserved for the load (`filename_field.loadReservation`).
+    filename_reserved: []u8 = &.{},
+    filename_catalog_file: ?std.Io.File = null,
+    filename_lexical_file: ?std.Io.File = null,
+    filename_done: std.atomic.Value(bool) = .init(false),
+    filename_decoded: ?filename_field.Decoded = null,
+    /// Why the bound filename sections could not be loaded (a lost file, a
+    /// wrong size, a bad checksum or structure): every filename or both
+    /// query of this opened generation fails with it; content queries are
+    /// unaffected.
+    filename_error: ?anyerror = null,
+
     /// How many times each load ran (each at most once; tests read them).
     source_loads: u32 = 0,
     statistics_loads: u32 = 0,
     positions_loads: u32 = 0,
+    filename_loads: u32 = 0,
 
     fn lock(loads: *Loads) void {
         loads.mutex.lockUncancelable(loads.io);
@@ -495,6 +514,52 @@ pub const Folder = struct {
         defer loads.unlock();
         if (loads.source_file) |file| file.close(loads.io);
         loads.source_file = null;
+        if (loads.filename_catalog_file) |file| file.close(loads.io);
+        loads.filename_catalog_file = null;
+        if (loads.filename_lexical_file) |file| file.close(loads.io);
+        loads.filename_lexical_file = null;
+    }
+
+    /// S4-T2 R4: the decoded filename sections, loaded at the first call
+    /// (once per opened generation, under the same lock as the other
+    /// loads). `error.FilenameIndexUnavailable` when the generation binds
+    /// none; a lost or damaged section fails this and every later call with
+    /// the same error. Out of memory leaves them unloaded (a later call
+    /// retries).
+    pub fn filenameDecoded(folder: Folder) !filename_field.Decoded {
+        const loads = folder.loads;
+        if (!loads.filename_done.load(.acquire)) {
+            loads.lock();
+            defer loads.unlock();
+            if (!loads.filename_done.load(.monotonic)) {
+                loads.filename_loads += 1;
+                const metadata = loads.filename_manifest orelse return error.FilenameIndexUnavailable;
+                if (loads.filename_error == null) {
+                    var reserved = std.heap.FixedBufferAllocator.init(loads.filename_reserved);
+                    const from_reserved = filename_field.load(reserved.allocator(), loads.io, loads.filename_catalog_file.?, loads.filename_lexical_file.?, metadata, loads.documents, loads.index);
+                    const result = if (from_reserved) |decoded| decoded else |err| switch (err) {
+                        // Never expected (the reservation is computed from
+                        // the same manifest); the handle's arena then.
+                        error.OutOfMemory => filename_field.load(loads.allocator, loads.io, loads.filename_catalog_file.?, loads.filename_lexical_file.?, metadata, loads.documents, loads.index),
+                        else => from_reserved,
+                    };
+                    if (result) |decoded| {
+                        loads.filename_decoded = decoded;
+                    } else |err| switch (err) {
+                        error.OutOfMemory => return error.OutOfMemory,
+                        else => loads.filename_error = err,
+                    }
+                }
+                loads.filename_done.store(true, .release);
+            }
+        }
+        if (loads.filename_error) |err| return err;
+        return loads.filename_decoded orelse error.FilenameIndexUnavailable;
+    }
+
+    /// Whether the first filename query has loaded the sections (tests).
+    pub fn filenameLoaded(folder: Folder) bool {
+        return folder.loads.filename_done.load(.acquire);
     }
 
     /// The source section's state, without loading it.

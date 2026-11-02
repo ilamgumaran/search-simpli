@@ -24,7 +24,7 @@ pub fn main(init: std.process.Init) !void {
         return err;
     };
     defer opened.folder.close();
-    if (opened.engine.filename_decoded == null) return error.FilenameIndexUnavailable;
+    if (!opened.engine.filename_index_enabled) return error.FilenameIndexUnavailable;
     const open_ns = std.Io.Clock.awake.now(init.io).nanoseconds - start;
     for ([_]field.Field{ .filename, .both }) |mode| {
         var samples: [20]u64 = undefined;
@@ -41,6 +41,6 @@ pub fn main(init: std.process.Init) !void {
             if (i >= 5) samples[i - 5] = @intCast(std.Io.Clock.awake.now(init.io).nanoseconds - before);
         }
         std.mem.sort(u64, &samples, {}, std.sort.asc(u64));
-        std.debug.print("{{\"field\":\"{s}\",\"files\":{d},\"open_ns\":{d},\"p50_ns\":{d},\"p95_ns\":{d},\"peak_bytes\":{d},\"cap_bytes\":{d}}}\n", .{ @tagName(mode), opened.engine.filename_decoded.?.catalog.len, open_ns, samples[9], samples[18], bounded.peak, cap });
+        std.debug.print("{{\"field\":\"{s}\",\"files\":{d},\"open_ns\":{d},\"p50_ns\":{d},\"p95_ns\":{d},\"peak_bytes\":{d},\"cap_bytes\":{d}}}\n", .{ @tagName(mode), (try opened.folder.filenameDecoded()).catalog.len, open_ns, samples[9], samples[18], bounded.peak, cap });
     }
 }

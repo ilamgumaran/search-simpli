@@ -176,6 +176,8 @@ pub fn importJsonKeeping(
     defer allocator.free(catalog_file);
     const filename_lexical_file = try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{payload.generation});
     defer allocator.free(filename_lexical_file);
+    // S4-T2 R4: writers check the filename sections fully before publishing.
+    if (filename_enabled) try filename_field.validate(lexical_arena.allocator(), documents, filename_data.catalog, filename_data.lexical, payload.analyzer_id);
     if (filename_enabled) metadata = try manifest.withFilename(metadata, catalog_file, filename_lexical_file, filename_data.catalog, filename_data.lexical);
     const manifest_encoded_length = try manifest.encodedLength(metadata);
     const manifest_encoded_storage = try allocator.alloc(u8, manifest_encoded_length);

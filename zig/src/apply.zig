@@ -1904,6 +1904,10 @@ fn buildGeneration(
         .meta = meta,
     };
     const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try @import("filename_field.zig").build(allocator, documents.items, options.analyzer.label()) else null;
+    // S4-T2 R4: the full check of the filename sections (every name
+    // re-tokenized, every posting checked) runs here, after the build and
+    // before the publish, not at every reader's open.
+    if (filename_data) |f| try @import("filename_field.zig").validate(allocator, documents.items, f.catalog, f.lexical, options.analyzer.label());
     if (filename_data) |f| metadata = try manifest.withFilename(metadata, try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{generation}), try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{generation}), f.catalog, f.lexical);
     metadata = try manifest.withState(metadata, try std.fmt.allocPrint(allocator, "state-{d}.hybstate", .{generation}), state_encoded);
     const manifest_buffer = try allocator.alloc(u8, try manifest.encodedLength(metadata));
