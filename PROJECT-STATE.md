@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-01 (S4-T2, built; awaiting verification)
+Last updated: 2026-11-01 (S4-T2, verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -11,6 +11,8 @@ Project: **Search Simpli** (`search-simpli`)
 
 ## Filename channel, bound recovery, scoped writers (S4-T2, 2026-11-01)
 
+**Verified and merged** (fast-forward of `main`; the verifier re-measured every gate:
+[Verdict](docs/tasks/S4-T2.md#verdict-verifier-fills-in)).
 [Report](docs/tasks/S4-T2.md), review [REVIEW-PR21](docs/tasks/REVIEW-PR21.md). PR #21
 (another agent's work on `improve/recovery-and-filename`) is merged onto S4-T1's `main`
 with its author's commits kept, and its costs fixed in the integration. Contracts 2.2.0,
