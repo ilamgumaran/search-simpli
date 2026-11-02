@@ -25,12 +25,12 @@ own included, comes back as written.
 ```text
 u8[8]  magic "HYBSRC01"
 u16    version = 1
-u16    flags = 0
+u16    flags              // bit 0 (S4-T1): the checksum is XXH3-64; other bits zero
 u32    file_count
 u64    files table bytes
 u64    line maps bytes
 u64    text bytes
-u64    checksum           // FNV-1a over header bytes 0-39, then every payload byte
+u64    checksum           // FNV-1a 64 (flags 0) or XXH3-64 (flags bit 0) over header bytes 0-39, then every payload byte
 -- files table: file_count records, strictly sorted by path bytes
    u32 path_length
    u64 text_offset        // into the text area; files are laid out in table order without gaps
@@ -55,6 +55,15 @@ declared size, checksum, every record's bounds, path rules and order, the
 gap-free layout, the encoding byte against the bytes, and each line map
 against the file's own bytes (recomputed without allocating). `openIndexed`
 adds a record-offset table so a path lookup is a binary search.
+
+### Flags bit 0: XXH3-64 (S4-T1)
+
+Every writer since S4-T1 sets flags bit 0 and checksums the section with
+XXH3-64 (seed 0) over the same bytes FNV-1a 64 covered; the binding manifest
+sets `xxh3_sections` ([manifest v2.1](manifest-format-v2.md#v21-xxh3-section-checksums-s4-t1)).
+Sections written before (flags zero, FNV-1a) read as before. The version
+stays `1`. On the 10,000-file corpus the section is 8.3 MB, so its checksum
+was about a quarter of the FNV-1a work of one generation.
 
 ## Operations
 

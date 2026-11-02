@@ -129,6 +129,10 @@ pub fn parse(allocator: std.mem.Allocator, bytes: []const u8) LoadError!State {
         error.OutOfMemory => return error.OutOfMemory,
         else => return error.InvalidState,
     };
+    return normalizeWire(allocator, wire);
+}
+
+fn normalizeWire(allocator: std.mem.Allocator, wire: WireState) LoadError!State {
     const files = try allocator.alloc(Entry, wire.files.len);
     if (wire.state_version == null) {
         for (wire.files, files) |item, *entry| {
@@ -169,10 +173,42 @@ pub fn parse(allocator: std.mem.Allocator, bytes: []const u8) LoadError!State {
     return .{ .generation = wire.generation, .analyzer_id = wire.analyzer_id, .roots = roots, .files = files };
 }
 
+/// Read the manifest's committed state directly as typed fields. Routing
+/// metadata is skipped; unknown fields inside the state remain invalid.
+pub fn parseCommitted(allocator: std.mem.Allocator, meta: []const u8) LoadError!?State {
+    const Strict = struct {
+        value: ?WireState = null,
+        pub fn jsonParse(a: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+            var strict = options;
+            strict.ignore_unknown_fields = false;
+            return .{ .value = try std.json.innerParse(WireState, a, source, strict) };
+        }
+    };
+    const Envelope = struct { recovery_state: Strict = .{} };
+    const parsed = std.json.parseFromSliceLeaky(Envelope, allocator, meta, .{ .ignore_unknown_fields = true }) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.InvalidState,
+    };
+    const committed = parsed.recovery_state.value orelse return null;
+    return try normalizeWire(allocator, committed);
+}
+
 fn writeLabels(json: *std.json.Stringify, labels: []const []const u8) !void {
     try json.beginArray();
     for (labels) |label| try json.write(label);
     try json.endArray();
+}
+
+test "committed state uses typed decoding and rejects null or unknown state fields" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    try std.testing.expect(try parseCommitted(a, "{\"manifest_meta\":2}") == null);
+    try std.testing.expectError(error.InvalidState, parseCommitted(a, "{\"recovery_state\":null}"));
+    try std.testing.expectError(error.InvalidState, parseCommitted(a, "{\"recovery_state\":{\"generation\":1,\"analyzer_id\":\"a\",\"files\":[],\"extra\":true}}"));
+    const committed = try encode(a, .{ .generation = 7, .analyzer_id = "analyzer-v2", .files = &.{} });
+    const envelope = try std.fmt.allocPrint(a, "{{\"manifest_meta\":2,\"recovery_state\":{s}}}", .{committed});
+    try std.testing.expectEqual(@as(u64, 7), (try parseCommitted(a, envelope)).?.generation);
 }
 
 /// The version 2 JSON of `state` (keys in the order of section 5). When

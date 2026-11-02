@@ -42,7 +42,7 @@ match analyzed tokens, not exact phrases, arbitrary substrings or fuzzy spelling
 Semantic modes remain separate explicit options.
 
 The [S3 integration report](docs/tasks/recovery-filename-integration.md)
-records tests, native build provenance and platform limits. Contract 2.1.0
+records tests, native build provenance and platform limits. Contract 2.2.0
 integrates filename search with S3, and the bundled macOS/Android/iOS arm64
 libraries are rebuilt from that source. Physical-device validation remains pending.
 [CAP-16](docs/requirements/cap-16-directory-filename-search.md) and its

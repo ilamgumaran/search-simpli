@@ -5,7 +5,9 @@ and main's version 2 (104-byte header) retain their readers and writers.
 The conflicting CAP-16 draft HYBMAN02 is unsupported: rebuild separately.
 
 V3 retains v2 offsets 0–91, including source length/checksum and the source
-and positional flags. It adds:
+and positional flags. Bit 2 (`0x0004`) retains S4-T1's XXH3-section flag:
+it is set if any bound section uses XXH3-64, and an XXH3 section without it
+is refused. The manifest checksum remains FNV-1a 64. It adds:
 
 | Offset | Bytes | Field |
 |---:|---:|---|

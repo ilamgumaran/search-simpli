@@ -553,7 +553,7 @@ fn fileSize(allocator: std.mem.Allocator, folder: scope.Folder, file: service_mo
         }
         return null;
     }
-    const section = folder.source orelse return null;
+    const section = (try folder.sourceSection()) orelse return null;
     const record = try scope.recordPath(allocator, file.root_id, file.path);
     const entry = section.find(record) orelse return null;
     return entry.bytes.len;

@@ -19,6 +19,12 @@ pub const version_v2: u16 = 2;
 pub const header_length_v2: usize = 104;
 pub const flag_has_source: u16 = 1;
 pub const flag_has_positions: u16 = 2;
+/// S4-T1 (`docs/manifest-format-v2.md` v2.1): at least one bound section
+/// carries an XXH3-64 checksum (`checksum.zig`). Readers before v2.1 refuse
+/// the manifest on this bit (`UnsupportedFlags`) instead of failing later on
+/// a section; a reader since v2.1 refuses an XXH3 section under a manifest
+/// that does not set it. The manifest's own checksum stays FNV-1a 64.
+pub const flag_xxh3_sections: u16 = 4;
 
 pub const FilenameMetadata = struct {
     file_count: usize,
@@ -55,6 +61,9 @@ pub const Manifest = struct {
     format_version: u16 = version,
     filename: ?FilenameMetadata = null,
     has_positions: bool = false,
+    /// v2.1 (S4-T1): `flag_xxh3_sections`; set by the writer exactly when
+    /// one of the bound sections' headers selects XXH3-64.
+    xxh3_sections: bool = false,
     /// Empty when the generation binds no source section.
     source_file: []const u8 = "",
     source_bytes: usize = 0,
@@ -157,6 +166,7 @@ fn sectionFields(
         .documents_file = documents_file,
         .lexical_file = lexical_file,
         .has_positions = lexical_header.hasPositions(),
+        .xxh3_sections = document_header.checksum_kind == .xxh3_64 or lexical_header.checksum_kind == .xxh3_64,
     };
 }
 
@@ -182,6 +192,7 @@ pub fn createV2(
         value.source_file = source_file;
         value.source_bytes = bytes.len;
         value.source_checksum = header.checksum;
+        if (header.checksum_kind == .xxh3_64) value.xxh3_sections = true;
     } else if (source_file.len != 0) return error.SourceSectionMissing;
     try validateFields(value);
     return value;
@@ -199,6 +210,7 @@ pub fn withFilename(
     if (catalog.vector_dimensions != 0 or catalog.document_count != lexical.document_count) return error.FilenameCountMismatch;
     var value = base;
     value.format_version = version_v3;
+    if (catalog.checksum_kind == .xxh3_64 or lexical.checksum_kind == .xxh3_64) value.xxh3_sections = true;
     if (value.meta.len == 0) value.meta = "{\"manifest_meta\":2,\"chunkers\":[{\"id\":\"line-window-v1\",\"params\":{\"max_chars\":1600,\"overlap_lines\":3}}],\"roots\":[{\"root_id\":\"r-legacy\",\"label\":\"folder\",\"kind\":\"local\",\"required_labels\":[]}],\"source_section_version\":0}";
     value.filename = .{
         .file_count = catalog.document_count,
@@ -216,7 +228,6 @@ pub fn withFilename(
     return value;
 }
 
-
 pub fn validateSnapshotWithFilename(
     value: Manifest,
     documents_encoded: []const u8,
@@ -225,11 +236,15 @@ pub fn validateSnapshotWithFilename(
     filename_lexical_encoded: []const u8,
 ) ManifestError!void {
     try validateSnapshot(value, documents_encoded, lexical_encoded);
+    try validateFilenameSections(value, catalog_encoded, filename_lexical_encoded);
+}
+pub fn validateFilenameSections(value: Manifest, catalog_encoded: []const u8, filename_lexical_encoded: []const u8) ManifestError!void {
     const filename = value.filename orelse return error.InvalidFilenamePolicy;
     if (catalog_encoded.len != filename.catalog_bytes) return error.FilenameCatalogSizeMismatch;
     if (filename_lexical_encoded.len != filename.lexical_bytes) return error.FilenameLexicalSizeMismatch;
     const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
     const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
+    if (!value.xxh3_sections and (catalog.checksum_kind != .fnv1a64 or lexical.checksum_kind != .fnv1a64)) return error.InvalidFilenameCatalog;
     if (catalog.checksum != filename.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
     if (lexical.checksum != filename.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
     if (catalog.document_count != filename.file_count or lexical.document_count != filename.file_count) return error.FilenameCountMismatch;
@@ -237,7 +252,6 @@ pub fn validateSnapshotWithFilename(
     if (lexical.term_count != filename.term_count) return error.FilenameTermCountMismatch;
     if (lexical.posting_count != filename.posting_count) return error.FilenamePostingCountMismatch;
 }
-
 
 fn payloadStrings(value: Manifest) [9][]const u8 {
     const f = value.filename;
@@ -309,6 +323,7 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
     var flags: u16 = 0;
     if (value.hasSource()) flags |= flag_has_source;
     if (value.has_positions) flags |= flag_has_positions;
+    if (value.xxh3_sections) flags |= flag_xxh3_sections;
 
     @memcpy(output[0..magic_v2.len], if (value.format_version == version_v3) magic_v3 else magic_v2);
     var header_offset: usize = magic_v2.len;
@@ -361,7 +376,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
     if (format != (if (is_v3) version_v3 else version_v2)) return error.UnsupportedVersion;
     const header_len: usize = if (is_v3) header_length_v3 else header_length_v2;
     const flags = try cursor.readU16();
-    if (flags & ~(flag_has_source | flag_has_positions) != 0) return error.UnsupportedFlags;
+    if (flags & ~(flag_has_source | flag_has_positions | flag_xxh3_sections) != 0) return error.UnsupportedFlags;
     const generation = try cursor.readU64();
     const document_count = try castToUsize(try cursor.readU32());
     const vector_dimensions = try castToUsize(try cursor.readU32());
@@ -383,7 +398,9 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .catalog_checksum = try cursor.readU64(),
         .lexical_bytes = try castToUsize(try cursor.readU64()),
         .lexical_checksum = try cursor.readU64(),
-        .catalog_file = "", .lexical_file = "", .policy_id = "",
+        .catalog_file = "",
+        .lexical_file = "",
+        .policy_id = "",
     };
     const payload_length = try castToUsize(try cursor.readU32());
     const expected_checksum = try cursor.readU64();
@@ -429,6 +446,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .format_version = format,
         .filename = filename,
         .has_positions = flags & flag_has_positions != 0,
+        .xxh3_sections = flags & flag_xxh3_sections != 0,
         .source_file = source_file,
         .source_bytes = source_bytes,
         .source_checksum = source_checksum,
@@ -496,6 +514,24 @@ pub fn validateSnapshot(
     documents_encoded: []const u8,
     lexical_encoded: []const u8,
 ) ManifestError!void {
+    _ = try validateSnapshotHeaders(value, documents_encoded, lexical_encoded);
+}
+
+/// The two section headers `validateSnapshotHeaders` checked (each
+/// section's checksum computed once, against its bytes).
+pub const SnapshotHeaders = struct {
+    documents: segment.Header,
+    lexical: lexical_segment.Header,
+};
+
+/// `validateSnapshot`, returning the headers it inspected so a decoder can
+/// skip a second checksum pass (S4-T1: `snapshot_open` computes each
+/// section's checksum once; it used to compute it three times).
+pub fn validateSnapshotHeaders(
+    value: Manifest,
+    documents_encoded: []const u8,
+    lexical_encoded: []const u8,
+) ManifestError!SnapshotHeaders {
     try validateFields(value);
     if (documents_encoded.len != value.documents_bytes) return error.DocumentSectionSizeMismatch;
     if (lexical_encoded.len != value.lexical_bytes) return error.LexicalSectionSizeMismatch;
@@ -511,6 +547,12 @@ pub fn validateSnapshot(
     if (lexical_header.posting_count != value.posting_count) return error.PostingCountMismatch;
     // S3-T2: the flag and the section agree (`HYBLEX02` exactly when set).
     if (lexical_header.hasPositions() != value.has_positions) return error.InvalidLexicalSection;
+    // S4-T1: an XXH3 section only under a manifest that says so.
+    if (!value.xxh3_sections) {
+        if (document_header.checksum_kind != .fnv1a64) return error.InvalidDocumentSection;
+        if (lexical_header.checksum_kind != .fnv1a64) return error.InvalidLexicalSection;
+    }
+    return .{ .documents = document_header, .lexical = lexical_header };
 }
 
 /// Check the source section bytes a generation names (null when the
@@ -524,6 +566,7 @@ pub fn validateSource(value: Manifest, source_encoded: ?[]const u8) ManifestErro
     if (bytes.len != value.source_bytes) return error.SourceSectionSizeMismatch;
     const header = source_section.inspect(bytes) catch return error.InvalidSourceSection;
     if (header.checksum != value.source_checksum) return error.SourceSectionChecksumMismatch;
+    if (!value.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
 }
 
 fn validateFields(value: Manifest) ManifestError!void {
@@ -551,7 +594,7 @@ fn validateFields(value: Manifest) ManifestError!void {
         };
     }
     if (value.format_version < version_v2) {
-        if (value.format_version != version or value.hasSource() or value.meta.len != 0 or value.has_positions)
+        if (value.format_version != version or value.hasSource() or value.meta.len != 0 or value.has_positions or value.xxh3_sections)
             return error.UnsupportedVersion;
         return;
     }
@@ -732,12 +775,29 @@ fn writeMetaJson(json: *std.json.Stringify, chunkers: []const ChunkerEntry, root
 
 /// Parse a v2 manifest's `meta` (strings borrow from the parse arena).
 pub fn parseMeta(allocator: std.mem.Allocator, meta: []const u8) error{ OutOfMemory, InvalidMeta }!Meta {
-    const value = std.json.parseFromSliceLeaky(std.json.Value, allocator, meta, .{}) catch |err| switch (err) {
+    // Query readers need the routing metadata, not the writer's potentially
+    // large recovery state. Skip unknown values without building their trees.
+    const Envelope = struct {
+        manifest_meta: std.json.Value = .null,
+        chunkers: std.json.Value = .null,
+        roots: std.json.Value = .null,
+        pending: ?std.json.Value = null,
+        unchunked: ?std.json.Value = null,
+        skipped: ?std.json.Value = null,
+        source_section_version: std.json.Value = .{ .integer = 0 },
+    };
+    const envelope = std.json.parseFromSliceLeaky(Envelope, allocator, meta, .{ .ignore_unknown_fields = true }) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
         else => return error.InvalidMeta,
     };
-    if (value != .object) return error.InvalidMeta;
-    const object = value.object;
+    var object: std.json.ObjectMap = .empty;
+    try object.put(allocator, "manifest_meta", envelope.manifest_meta);
+    try object.put(allocator, "chunkers", envelope.chunkers);
+    try object.put(allocator, "roots", envelope.roots);
+    if (envelope.pending) |v| try object.put(allocator, "pending", v);
+    if (envelope.unchunked) |v| try object.put(allocator, "unchunked", v);
+    if (envelope.skipped) |v| try object.put(allocator, "skipped", v);
+    try object.put(allocator, "source_section_version", envelope.source_section_version);
     const marker = object.get("manifest_meta") orelse return error.InvalidMeta;
     if (marker != .integer or marker.integer != 2) return error.InvalidMeta;
     const chunker_values = object.get("chunkers") orelse return error.InvalidMeta;
@@ -1190,7 +1250,7 @@ test "manifest v2 rejects bad meta, unsafe source names and stray flags" {
     var storage: [1024]u8 = undefined;
     const encoded = try encode(value, &storage);
     // A stray flag bit with a recomputed checksum is refused as unsupported.
-    encoded[10] = 4;
+    encoded[10] = 8;
     var checksum_offset: usize = header_length_v2 - 8;
     writeU64(encoded, &checksum_offset, manifestChecksum(encoded[0 .. header_length_v2 - 8], encoded[header_length_v2..]));
     try std.testing.expectError(error.UnsupportedFlags, decode(encoded));

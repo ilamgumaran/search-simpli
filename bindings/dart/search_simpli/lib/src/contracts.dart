@@ -18,7 +18,7 @@ import 'folder_contracts.dart';
 /// `ss_status()`'s JSON object. Since contract 2.0.0 every count is over
 /// the default scope (every root, no principal labels) and the object also
 /// carries [files] through [chunkers]; they are null only when parsing a
-/// 1.x object.
+/// 1.x object. Contract 2.1.0 adds [source].
 class SnapshotStatus {
   final bool ready;
   final int generation;
@@ -38,6 +38,14 @@ class SnapshotStatus {
   final bool? hasPositions;
   final List<String>? chunkers;
 
+  /// Contract 2.1.0 (S4-T1, the lazy open): the source section's state,
+  /// read without loading it: `absent` (none bound), `unverified` (bound,
+  /// not read yet: `open` no longer reads it), `verified` (read and
+  /// checked by a `readSpan`, `outline` or `listFiles` that needed it) or
+  /// `unavailable` (lost or damaged: those calls answer `SS_ERR_CAPACITY`).
+  /// Null when parsing an older object.
+  final String? source;
+
   const SnapshotStatus({
     required this.ready,
     required this.generation,
@@ -56,6 +64,7 @@ class SnapshotStatus {
     this.hasSource,
     this.hasPositions,
     this.chunkers,
+    this.source,
   });
 
   factory SnapshotStatus.fromJson(Map<String, Object?> json) => SnapshotStatus(
@@ -76,6 +85,7 @@ class SnapshotStatus {
         hasSource: json['has_source'] as bool?,
         hasPositions: json['has_positions'] as bool?,
         chunkers: (json['chunkers'] as List<Object?>?)?.map((e) => e! as String).toList(growable: false),
+        source: json['source'] as String?,
       );
 
   Map<String, Object?> toJson() => {
@@ -96,6 +106,7 @@ class SnapshotStatus {
         if (hasSource != null) 'has_source': hasSource,
         if (hasPositions != null) 'has_positions': hasPositions,
         if (chunkers != null) 'chunkers': chunkers,
+        if (source != null) 'source': source,
       };
 
   @override

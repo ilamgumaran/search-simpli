@@ -86,7 +86,7 @@ const String goldenEvidenceMissingJson = '[{"chunk_id":"missing-id","found":fals
 const String goldenStatusTail =
     ',"files":3,"pending":0,"truncated":false,"roots":[{"root_id":"r-legacy",'
     '"label":"folder","kind":"local","files":3,"documents":3,"pending":0}],'
-    '"pending_paths":[],"has_source":false,"has_positions":false,"chunkers":["line-window-v1"]}';
+    '"pending_paths":[],"has_source":false,"has_positions":false,"chunkers":["line-window-v1"],"source":"absent"}';
 const String goldenEvidenceTail = ',"root_id":"r-legacy","section_path":[],"neighbours":{"prev":null,"next":null}}]';
 
 void main() {

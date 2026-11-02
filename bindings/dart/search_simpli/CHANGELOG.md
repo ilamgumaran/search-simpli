@@ -2,10 +2,31 @@
 
 ## 0.3.0
 
-- Contracts 2.1.0: filename and combined lexical search integrated with S3 sources, positions and root scopes.
-- Manifest v3 binds filename catalog and postings without changing v1/v2 readers.
+- Contracts 2.2.0: filename and combined lexical search integrated with S3 sources, positions and root scopes.
+- Manifest v3 binds filename catalog and postings, retaining main’s XXH3 v2.1 reader/writer and lazy source status.
+- Cached filename tables and anchor/term maps; validate actual source size on first read.
+- Query metadata skips recovery trees; coallocated section/source capacity keeps the 10k memory gate.
 - Exact committed mutation state and restricted write policies; confined file opens pin every directory component.
 - Genuine macOS, Android and iOS arm64 packages rebuilt together; Dart conformance and host-fed recovery verified on macOS.
+
+## 0.2.1 (S4-T1; contract 2.1.0; additive)
+
+- **`SnapshotStatus.source`** (nullable `String`): the source section's state
+  from `ss_status`, `absent`, `unverified`, `verified` or `unavailable`.
+  `SearchSimpli.open` no longer reads or checks the source section (nor builds
+  the statistics and position tables); the first `readSpan`, `outline` or
+  `listFiles` that needs it does, so a damaged source section surfaces there
+  as `SS_ERR_CAPACITY` ("re-index required: source section unavailable …"),
+  not at `open`. No ABI function changed.
+- **Contracts 2.1.0** (`contracts/CONTRACTS_VERSION`): the status schema
+  gains `source`. As before, the package accepts exactly its own contract
+  version, so a 2.0.0 library is refused with
+  `ContractsVersionMismatchException`; the shipped native libraries are
+  rebuilt at 2.1.0.
+- **Index format** (manifest v2.1, `docs/manifest-format-v2.md`): generations
+  written by this release use XXH3-64 section checksums. Indexes written by
+  0.2.0 still open and update (the first update writes v2.1); a 0.2.0 library
+  refuses a v2.1 index (`UnsupportedFlags`).
 
 ## 0.2.0 (S3-T8; contract 2.0.0; breaking: an old library is refused)
 

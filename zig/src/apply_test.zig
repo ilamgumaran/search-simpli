@@ -290,7 +290,7 @@ test "S3-T3: remove_root leaves no term, count, state, source or meta of the roo
     try std.testing.expectEqualStrings("home", status.roots[0].root_id);
     try std.testing.expectEqual(@as(usize, 1), status.files);
     try std.testing.expectEqual(@as(usize, 1), scoped.service.folder.?.roots.len);
-    const section = scoped.service.folder.?.source.?;
+    const section = (try scoped.service.folder.?.sourceSection()).?;
     try std.testing.expectEqual(@as(usize, 1), section.file_count);
     try std.testing.expect(section.find("school/robots.md") == null);
     const state = (try incremental_state.load(a, io, f.out)).?;
@@ -408,7 +408,7 @@ test "S3-T3: a root with more than 64 label sets counts exactly and scores like 
     _ = try many.applyOk(try joinChanges(a, domain_roots, all.items), .{});
     _ = try few.applyOk(try joinChanges(a, domain_roots, visible.items), .{});
     const scoped_many = try many.opened();
-    try std.testing.expect(scoped_many.service.folder.?.statistics.exact_roots[0]);
+    try std.testing.expect((try scoped_many.service.folder.?.statistics()).exact_roots[0]);
     const request = scope.Request{ .principal_labels = &.{"set-3"} };
     const queries = [_][]const u8{ "apple", "apple w3 w4", "trees" };
     const left = try payloads(a, scoped_many, request, &queries, &.{}, &.{}, &.{ "w3", "w4" });
@@ -461,7 +461,7 @@ test "S3-T3: add, change, move, pending, add, remove and remove_root, one call e
         var id: [20]u8 = undefined;
         chunker.chunkId(&id, "home/recipes/soup-v2.md", document.start_line, document.end_line, document.text);
         try std.testing.expectEqualStrings(&id, document.id); // re-keyed
-        try std.testing.expectEqualStrings("# Soup\n\nLentils, carrots and leeks simmer slowly.\n", scoped.service.folder.?.source.?.find("home/recipes/soup-v2.md").?.bytes);
+        try std.testing.expectEqualStrings("# Soup\n\nLentils, carrots and leeks simmer slowly.\n", (try scoped.service.folder.?.sourceSection()).?.find("home/recipes/soup-v2.md").?.bytes);
         const state = (try incremental_state.load(a, io, f.out)).?;
         try std.testing.expectEqualStrings("recipes/soup.md", state.files[0].moved_from.?);
         try std.testing.expectEqual(@as(?i64, 1761900000000), state.files[0].mtime_ms);

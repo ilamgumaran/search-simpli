@@ -16,6 +16,25 @@ const source_section = @import("source.zig");
 /// (and the decoded `Engine`) are allocated from `allocator`; the intended
 /// use is a one-shot CLI command or test with an arena, discarded wholesale.
 pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.Engine {
+    const loaded = try loadEngine(allocator, io, dir, .{});
+    var opened = loaded.engine;
+    if (loaded.metadata.meta.len != 0) opened.roots = (try manifest.parseMeta(allocator, loaded.metadata.meta)).roots;
+    // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
+    // terms' ordinals and its hits' offsets.
+    if (opened.lexical_index.positions != null) opened.position_tables = try postings.buildPositionTables(allocator, opened.lexical_index);
+    return opened;
+}
+
+const Loaded = struct {
+    engine: engine.Engine,
+    metadata: manifest.Manifest,
+};
+
+/// The manifest and the document and lexical sections, each section's
+/// checksum computed once (S4-T1; `publication.loadCurrent` followed by
+/// `Engine.open` computed it three times), with every check of
+/// `manifest.validateSnapshot` and `Engine.open`.
+fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options: engine.Engine.OpenOptions) !Loaded {
     var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
     const manifest_stat = try manifest_file.stat(io);
     manifest_file.close(io);
@@ -24,9 +43,19 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
     const metadata = try manifest.decode(manifest_encoded);
 
-    const documents_buffer = try allocator.alloc(u8, metadata.documents_bytes);
-    const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
-    const snapshot = try publication.loadCurrent(dir, io, manifest_buffer, documents_buffer, lexical_buffer);
+    // One allocation avoids arena geometric-growth slack between two large
+    // serialized sections, especially with manifest-bound recovery metadata.
+    const section_bytes = std.math.add(usize, metadata.documents_bytes, metadata.lexical_bytes) catch return error.IndexTooLarge;
+    const retained_bytes = std.math.add(usize, section_bytes, metadata.source_bytes) catch return error.IndexTooLarge;
+    const sections = try allocator.alloc(u8, retained_bytes);
+    const documents_buffer = sections[0..metadata.documents_bytes];
+    const lexical_buffer = sections[metadata.documents_bytes..section_bytes];
+    const snapshot = publication.LoadedSnapshot{
+        .metadata = metadata,
+        .manifest_encoded = manifest_encoded,
+        .documents_encoded = try dir.readFile(io, metadata.documents_file, documents_buffer),
+        .lexical_encoded = try dir.readFile(io, metadata.lexical_file, lexical_buffer),
+    };
     // S3-T4 (S3-T1 finding 2): the source section is not read here, and a
     // lost or damaged one does not fail the open: `query`, `find` and every
     // other operation that never reads it keep working, and only the
@@ -42,21 +71,22 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
     const document_lengths = try allocator.alloc(u32, metadata.document_count);
 
-    var opened = try engine.Engine.open(snapshot, documents, vectors, terms, posting_storage, document_lengths);
-    // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
-    // terms' ordinals and its hits' offsets.
-    if (opened.lexical_index.positions != null) opened.position_tables = try postings.buildPositionTables(allocator, opened.lexical_index);
-    if (metadata.meta.len != 0) opened.roots = (try manifest.parseMeta(allocator, metadata.meta)).roots;
+    var opened = try engine.Engine.openWith(snapshot, documents, vectors, terms, posting_storage, document_lengths, options);
+    if (metadata.hasSource()) opened.source_buffer = sections[section_bytes..];
+
     if (metadata.filename) |f| {
         const catalog_buffer = try allocator.alloc(u8, f.catalog_bytes);
         const lexical_extra_buffer = try allocator.alloc(u8, f.lexical_bytes);
         opened.catalog_encoded = try dir.readFile(io, f.catalog_file, catalog_buffer);
         opened.filename_lexical_encoded = try dir.readFile(io, f.lexical_file, lexical_extra_buffer);
-        try manifest.validateSnapshotWithFilename(metadata, snapshot.documents_encoded, snapshot.lexical_encoded, opened.catalog_encoded, opened.filename_lexical_encoded);
-        try @import("filename_field.zig").validate(allocator, opened.documents, opened.catalog_encoded, opened.filename_lexical_encoded, opened.analyzer_id);
+        try manifest.validateFilenameSections(metadata, opened.catalog_encoded, opened.filename_lexical_encoded);
+        var validation = std.heap.ArenaAllocator.init(allocator);
+        defer validation.deinit();
+        try @import("filename_field.zig").validate(validation.allocator(), opened.documents, opened.catalog_encoded, opened.filename_lexical_encoded, opened.analyzer_id);
+        opened.filename_decoded = try @import("filename_field.zig").decode(allocator, opened.documents, opened.lexical_index, opened.catalog_encoded, opened.filename_lexical_encoded);
         opened.filename_index_enabled = true;
     }
-    return opened;
+    return .{ .engine = opened, .metadata = metadata };
 }
 
 /// The current generation's manifest and source section (S3-T1), validated
@@ -93,23 +123,57 @@ pub fn openSource(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Op
 }
 
 /// S3-T3: the current generation with its roots, pending files, source
-/// section and visible-scope statistics (`scope.Folder`), the engine's
-/// `statistics` pointing at the folder's. For the scoped operations of
-/// `service.ScopedService`. Everything from `allocator`.
+/// section and visible-scope statistics (`scope.Folder`). For the scoped
+/// operations of `service.ScopedService`. Everything from `allocator`.
+///
+/// S4-T1: a lazy open. It validates the manifest and the document and
+/// lexical sections (each checksum once) and decodes what `index_status`
+/// needs; the source section (opened here, read at first use), the
+/// statistics groups and the position tables (with the validation of the
+/// lexical section's positions and offsets) load at first use through
+/// `folder.loads` (`scope.Loads`). The engine's `statistics` and
+/// `position_tables` stay null: an operation that needs them asks the
+/// folder (`service.zig`), and until then nothing reads the positions.
+/// `folder.close()` releases the source section's file handle.
 pub const Scoped = struct {
     engine: engine.Engine,
     folder: *scope.Folder,
 };
 
 pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Scoped {
-    var opened_engine = try open(allocator, io, dir);
-    const opened = try openSource(allocator, io, dir);
-    const meta: ?manifest.Meta = if (opened.metadata.meta.len != 0) try manifest.parseMeta(allocator, opened.metadata.meta) else null;
+    const loaded = try loadEngine(allocator, io, dir, .{ .validate_positions = false });
+    var opened_engine = loaded.engine;
+    const metadata = loaded.metadata;
+    const meta: ?manifest.Meta = if (metadata.meta.len != 0) try manifest.parseMeta(allocator, metadata.meta) else null;
+    opened_engine.roots = if (meta) |m| m.roots else &scope.legacy_roots;
+    const loads = try allocator.create(scope.Loads);
+    loads.* = .{
+        .io = io,
+        .allocator = allocator,
+        .documents = opened_engine.documents,
+        .index = opened_engine.lexical_index,
+        .source_bytes = metadata.source_bytes,
+        .source_buffer = opened_engine.source_buffer,
+        .source_checksum = metadata.source_checksum,
+        .xxh3_sections = metadata.xxh3_sections,
+    };
+    if (metadata.hasSource()) {
+        if (dir.openFile(io, metadata.source_file, .{})) |file| {
+            loads.source_file = file;
+        } else |err| {
+            // A lost file is known now: the source is unavailable from the
+            // start, exactly as a failed load would leave it.
+            loads.source_error = @errorName(err);
+            loads.source_done.store(true, .release);
+        }
+    } else {
+        loads.source_done.store(true, .release);
+    }
+    errdefer if (loads.source_file) |file| file.close(io);
     const folder = try allocator.create(scope.Folder);
-    folder.* = try scope.Folder.build(allocator, opened_engine.documents, opened_engine.lexical_index, meta, opened.source);
-    folder.has_positions = opened.metadata.has_positions;
-    folder.source_error = opened.source_error;
-    opened_engine.statistics = &folder.statistics;
+    folder.* = try scope.Folder.build(allocator, meta, loads);
+    folder.has_positions = metadata.has_positions;
+    folder.source_bound = metadata.hasSource();
     opened_engine.folder = folder;
     return .{ .engine = opened_engine, .folder = folder };
 }

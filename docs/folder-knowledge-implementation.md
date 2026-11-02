@@ -205,7 +205,7 @@ u32    file_count
 u64    files table bytes
 u64    line maps bytes
 u64    text bytes
-u64    checksum           // FNV-1a over header bytes 0–39 + all payload bytes
+u64    checksum           // FNV-1a over header bytes 0–39 + all payload bytes (XXH3-64 when flags bit 0 is set, S4-T1: source-section-v1.md)
 -- files table: file_count records
    u32 path_length, u64 text_offset, u64 text_length, u32 line_count, u64 line_map_offset, u8[32] sha256, u8 encoding (0 = UTF-8 exact), u8[3] reserved, path bytes
 -- line maps: per file, line_count + 1 LEB128 varints: byte offset of each line start, then the end offset

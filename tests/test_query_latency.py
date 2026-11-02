@@ -31,7 +31,12 @@ SHIPPED = ROOT / "bindings" / "dart" / "search_simpli" / "native" / "macos-arm64
 QUERIES = qbench.RESEARCH_QUERIES
 RUNS = 5
 CALLS = 40
-MAX_GROWTH = 8.0  # ten times the chunks; the unfixed code measured 11x-32x
+MAX_GROWTH = 9.0  # ten times the chunks; the unfixed code measured 11x-32x
+# S4-T1 (ruling 4) raised this from 8.0: its fuse fix took a fixed ~15 us off
+# every lexical query, so for "the and of to in" (matched postings grow 10x
+# with the corpus) both figures fell (1k 0.159 -> 0.143 ms, 10k 1.196 -> 1.167
+# ms) while their ratio rose from 7.5 to 8.2. The guard still fails the
+# whole-corpus sorts it was written for (11x-32x, 8-12 ms at 10k).
 MAX_P50_MS_AT_10K = 2.0
 
 

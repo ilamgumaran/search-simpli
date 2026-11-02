@@ -110,6 +110,30 @@ void main() {
     expect(() => old.outline('r-legacy', 'a.md'), throwsA(isA<SearchSimpliException>().having((e) => e.code, 'code', 'SS_ERR_CAPACITY')));
   });
 
+  test('a damaged source section surfaces at the first read, not at open (contract 2.1.0, S4-T1)', () {
+    final damaged = publishFixture('ss-dart-damaged-');
+    addTearDown(() => damaged.deleteSync(recursive: true));
+    final section = damaged.listSync().whereType<File>().singleWhere((f) => p.basename(f.path).startsWith('source-'));
+    final bytes = section.readAsBytesSync();
+    bytes[bytes.length - 2] ^= 0x01; // a byte of the last file's text: only the checksum can see it
+    section.writeAsBytesSync(bytes, flush: true);
+
+    final opened = SearchSimpli.open(damaged.path); // the open does not read the section
+    addTearDown(opened.close);
+    expect(opened.status().source, 'unverified');
+    expect(opened.find('tide table').hits, isNotEmpty);
+    expect(() => opened.readSpan('home', 'garden.md', 1, 1),
+        throwsA(isA<SearchSimpliException>()
+            .having((e) => e.code, 'code', 'SS_ERR_CAPACITY')
+            .having((e) => e.message, 'message', contains('source section unavailable'))));
+    expect(opened.status().source, 'unavailable');
+    expect(() => opened.outline('home', 'garden.md'), throwsA(isA<SearchSimpliException>().having((e) => e.code, 'code', 'SS_ERR_CAPACITY')));
+
+    expect(engine.status().source, anyOf('unverified', 'verified'));
+    engine.readSpan('home', 'garden.md', 1, 1);
+    expect(engine.status().source, 'verified');
+  });
+
   test('outline reproduces every outline judgment', () {
     for (final raw in judgments['outline']! as List<Object?>) {
       final judgment = raw! as Map<String, Object?>;

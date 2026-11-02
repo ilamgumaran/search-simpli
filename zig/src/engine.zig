@@ -28,7 +28,9 @@ pub const Engine = struct {
     folder: ?*const scope.Folder = null,
     catalog_encoded: []const u8 = &.{},
     filename_lexical_encoded: []const u8 = &.{},
+    source_buffer: ?[]u8 = null,
     filename_index_enabled: bool = false,
+    filename_decoded: ?filename_field.Decoded = null,
     generation: u64,
     analyzer_id: []const u8,
     embedding_model_id: []const u8,
@@ -57,13 +59,35 @@ pub const Engine = struct {
         posting_output: []postings.Posting,
         document_length_output: []u32,
     ) !Engine {
-        try manifest.validateSnapshot(snapshot.metadata, snapshot.documents_encoded, snapshot.lexical_encoded);
-        const documents = try segment.decode(snapshot.documents_encoded, document_output, vector_output);
-        const lexical_index = try lexical_segment.decode(
+        return openWith(snapshot, document_output, vector_output, term_output, posting_output, document_length_output, .{});
+    }
+
+    pub const OpenOptions = struct {
+        /// S4-T1: false defers the walk over the lexical section's positions
+        /// and offsets (`lexical_segment.DecodeOptions`); the caller then
+        /// validates them before their first use (`scope.Folder`).
+        validate_positions: bool = true,
+    };
+
+    /// `open`, computing each section's checksum once (S4-T1): the manifest
+    /// checks inspect both headers, and the decoders reuse them.
+    pub fn openWith(
+        snapshot: publication.LoadedSnapshot,
+        document_output: []hybrid.Document,
+        vector_output: []f32,
+        term_output: []postings.TermEntry,
+        posting_output: []postings.Posting,
+        document_length_output: []u32,
+        options: OpenOptions,
+    ) !Engine {
+        const headers = try manifest.validateSnapshotHeaders(snapshot.metadata, snapshot.documents_encoded, snapshot.lexical_encoded);
+        const documents = try segment.decodeInspected(snapshot.documents_encoded, headers.documents, document_output, vector_output);
+        const lexical_index = try lexical_segment.decodeWith(
             snapshot.lexical_encoded,
             term_output,
             posting_output,
             document_length_output,
+            .{ .validate_positions = options.validate_positions, .inspected = headers.lexical },
         );
         if (documents.len != lexical_index.document_lengths.len) return error.DocumentCountMismatch;
         var labeled = false;
@@ -91,10 +115,10 @@ pub const Engine = struct {
             for (results, hits) |r, *h| h.* = .{ .document_index = r.document_index, .body_score = r.lexical_score, .body_rank = r.lexical_rank, .fused_score = r.fused_score };
             return hits;
         }
+        if (engine.filename_decoded) |decoded| return filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, options);
         if (engine.catalog_encoded.len == 0 or engine.filename_lexical_encoded.len == 0) return error.FilenameIndexUnavailable;
         return filename_field.query(allocator, engine.documents, engine.lexical_index, engine.catalog_encoded, engine.filename_lexical_encoded, engine.analyzer_id, query_text, field, options);
     }
-
 
     pub fn query(
         engine: Engine,

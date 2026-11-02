@@ -486,7 +486,7 @@ fn listResources(session: Session, service: service_module.Service, params: std.
     const folder = service.folder orelse return writeError(output, id, -32603, "Internal error", null);
     const files = try (service_module.ScopedService{ .service = service }).listFiles(allocator, serverScope(session), null, null);
     var readable = std.ArrayList(Readable).empty;
-    if (folder.source) |section| {
+    if (try folder.sourceSection()) |section| {
         for (files) |file| {
             if (!std.mem.eql(u8, file.status, "indexed")) continue;
             const record = try scope.recordPath(allocator, file.root_id, file.path);

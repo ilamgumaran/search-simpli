@@ -648,21 +648,13 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
         }
         if (previous_engine) |prev| {
             if (!std.mem.eql(u8, prev.analyzer_id, options.analyzer.label())) return error.AnalyzerMismatch;
-            // INDEX-STATE.json is trusted only when it describes this very
-            // generation; after a crash between the manifest and the state
-            // write it names the one before, and the table is rebuilt from
-            // the generation itself.
-            if (incremental_state.load(allocator, io, dir) catch null) |state| {
+            // Prefer the immutable state; the mutable compatibility cache is
+            // read only for generations that predate committed recovery state.
+            if (previous_meta_bytes.len != 0) previous_state = try incremental_state.parseCommitted(allocator, previous_meta_bytes);
+            if (previous_state) |state| {
+                if (state.generation != prev.generation or !std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) return error.InvalidState;
+            } else if (incremental_state.load(allocator, io, dir) catch null) |state| {
                 if (state.generation == prev.generation and std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) previous_state = state;
-            }
-            if (previous_meta_bytes.len != 0) {
-                const committed = try std.json.parseFromSlice(std.json.Value, allocator, previous_meta_bytes, .{});
-                if (committed.value.object.get("recovery_state")) |value| {
-                    const bytes = try std.json.Stringify.valueAlloc(allocator, value, .{});
-                    const state = try incremental_state.parse(allocator, bytes);
-                    if (state.generation != prev.generation or !std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) return error.InvalidState;
-                    previous_state = state;
-                }
             }
         }
     }
@@ -679,8 +671,9 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
         const labels = options.write_labels orelse &.{};
         for (batch.changes) |change| {
             if (options.write_roots) |bound| {
-                for (bound) |id| { if (std.mem.eql(u8, id, change.root_id)) break; }
-                else return .{ .failed = try failure(allocator, .invalid_argument, "root outside trusted write scope", .{}) };
+                for (bound) |id| {
+                    if (std.mem.eql(u8, id, change.root_id)) break;
+                } else return .{ .failed = try failure(allocator, .invalid_argument, "root outside trusted write scope", .{}) };
             }
             const root_index = work.rootIndex(change.root_id) orelse return .{ .failed = try failure(allocator, .invalid_argument, "unknown or unauthorized write root", .{}) };
             if (!scope.holdsAll(work.roots.items[root_index].entry.required_labels, labels)) return .{ .failed = try failure(allocator, .invalid_argument, "unknown or unauthorized write root", .{}) };
@@ -1115,6 +1108,7 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
         if (bytes.len != metadata.source_bytes) return error.SourceSectionSizeMismatch;
         const opened = try source.openIndexed(allocator, bytes);
         if (opened.checksum != metadata.source_checksum) return error.SourceSectionChecksumMismatch;
+        if (!metadata.xxh3_sections and opened.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
         section = opened;
     }
     // The checks of `manifest.validateSnapshot`, with the document section's
@@ -1187,7 +1181,6 @@ fn markCarried(work: *Work, record: []const u8) void {
 }
 
 fn readContent(allocator: std.mem.Allocator, io: std.Io, content: Content, work: Work, root_id: []const u8, length: usize) !?[]const u8 {
-
     const buffer = try allocator.alloc(u8, length);
     switch (content) {
         .walk => |w| return try w.dir.readFile(io, w.sub_path, buffer),
@@ -1859,7 +1852,7 @@ fn buildGeneration(
     // post-publication cache. This preserves own labels, mtimes and hashes
     // even for files whose source bytes are not retained.
     const recovery_state = try incremental_state.encode(allocator, .{ .generation = generation, .analyzer_id = options.analyzer.label(), .roots = state_roots, .files = state_files.items });
-    meta = try std.fmt.allocPrint(allocator, "{s},\"recovery_state\":{s}}}", .{ meta[0..meta.len - 1], recovery_state });
+    meta = try std.fmt.allocPrint(allocator, "{s},\"recovery_state\":{s}}}", .{ meta[0 .. meta.len - 1], recovery_state });
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
     const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
     const source_file = if (source_encoded != null) try std.fmt.allocPrint(allocator, "source-{d}.hybsrc", .{generation}) else "";
@@ -1878,6 +1871,9 @@ fn buildGeneration(
         .lexical_bytes = lexical_encoded.len,
         .lexical_checksum = lexicalStoredChecksum(lexical_encoded),
         .has_positions = lexical_index.positions != null,
+        // S4-T1: record v4 documents (and `HYBLEX02`, `HYBSRC01`) carry
+        // XXH3-64 checksums (`checksum.zig`, manifest v2.1).
+        .xxh3_sections = true,
         .analyzer_id = options.analyzer.label(),
         .embedding_model_id = "none",
         .documents_file = documents_file,

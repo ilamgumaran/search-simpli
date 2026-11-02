@@ -1,7 +1,8 @@
-# Immutable document/vector segment format v4
+# Immutable document/vector segment format v4 (minor version 4.1)
 
-Status: implemented in `zig/src/segment.zig` (S3-T1). Magic `HYBSEG01`,
-header unchanged (36 bytes, checksummed). `searchd index` writes record v4
+Status: implemented in `zig/src/segment.zig` (S3-T1; v4.1 since S4-T1, see
+[v4.1](#v41-section-checksum-s4-t1)). Magic `HYBSEG01`,
+header layout unchanged (36 bytes, checksummed). `searchd index` writes record v4
 (`segment.encodeV4`); `import-json` keeps writing [v3](segment-format-v3.md)
 byte for byte (`segment.encode`). The reader decodes v1–v4. Design:
 [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §2.
@@ -52,6 +53,19 @@ over the chunk's normalized text.
   `heading_line` 0, `source_doc_index` 0xFFFFFFFF and an empty path.
 - `segment.encode` (v3) refuses a document that carries any v4 field
   (`error.RequiresVersion4`) rather than dropping it.
+
+## v4.1: section checksum (S4-T1)
+
+The header's u16 flags field (offset 10), written zero and ignored by readers
+before S4-T1, now has one bit: bit 0 selects XXH3-64 (seed 0, over header
+bytes before the checksum and then the payload, exactly the bytes FNV-1a
+covered) as the section checksum; clear means FNV-1a 64 as before. Any other
+bit is refused (`UnsupportedFlags`). Record v4 (the folder writers) always sets
+bit 0; record v3 (`import-json`) never does. The manifest that binds an XXH3
+section sets its own bit 2 ([manifest v2.1](manifest-format-v2.md#v21-xxh3-section-checksums-s4-t1)).
+A reader before S4-T1 that met such a section would fail its checksum, but it
+never gets that far: it refuses the v2.1 manifest first. Implementation:
+`zig/src/checksum.zig`.
 
 ## What the fields carry
 

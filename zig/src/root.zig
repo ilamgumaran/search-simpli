@@ -18,6 +18,7 @@ pub const unicode_tables = @import("unicode_tables.zig");
 pub const nfc = @import("nfc.zig");
 pub const chunker = @import("chunker.zig");
 pub const chunker_md = @import("chunker_md.zig");
+pub const checksum = @import("checksum.zig");
 pub const source = @import("source.zig");
 pub const find = @import("find.zig");
 pub const analyzer_v2 = @import("analyzer_v2.zig");
@@ -45,6 +46,9 @@ pub const query_utf8_test = @import("query_utf8_test.zig");
 pub const filename_field_test = @import("filename_field_test.zig");
 pub const nfc_timing_test = @import("nfc_timing_test.zig");
 pub const find_fixture_test = @import("find_fixture_test.zig");
+pub const lazy_open_test = @import("lazy_open_test.zig");
+pub const compat_292cb568_test = @import("compat_292cb568_test.zig");
+pub const nfr13_arena_test = @import("nfr13_arena_test.zig");
 
 pub const Bm25Parameters = scoring.Bm25Parameters;
 pub const bm25Contribution = scoring.bm25Contribution;
@@ -123,6 +127,9 @@ test "load every engine module test suite" {
     _ = import_build_timing_test;
     _ = nfc_timing_test;
     _ = find_fixture_test;
+    _ = lazy_open_test;
+    _ = compat_292cb568_test;
+    _ = nfr13_arena_test;
     _ = query_utf8_test;
     _ = filename_field_test;
     _ = cli_test;

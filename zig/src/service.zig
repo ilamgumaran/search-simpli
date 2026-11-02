@@ -59,6 +59,10 @@ pub const ScopedStatus = struct {
     has_source: bool,
     has_positions: bool,
     chunkers: []const []const u8,
+    /// S4-T1 (contract 2.1.0): the source section's state without loading
+    /// it: `absent`, `unverified` (bound, not read yet), `verified` or
+    /// `unavailable` (lost or damaged).
+    source: []const u8 = "absent",
 };
 
 pub const RootStatus = struct {
@@ -113,7 +117,16 @@ pub const Service = struct {
         evidence_output: []engine_module.Evidence,
         trace: ?*hybrid.Trace,
     ) ![]engine_module.Evidence {
-        const results = try service.engine.queryTraced(
+        // S4-T1: the statistics groups load at the first scored query that
+        // can hide a document (a root mask, or labelled records); without
+        // them a scoped query would count its scope exactly, with equal
+        // scores.
+        var engine = service.engine;
+        if (service.folder) |folder| {
+            if (engine.statistics == null and (options.visible_roots != null or (engine.labeled_documents orelse true)))
+                engine.statistics = try folder.statistics();
+        }
+        const results = try engine.queryTraced(
             allocator,
             query_text,
             query_vector,
@@ -366,6 +379,11 @@ pub const ScopedService = struct {
         }
 
         var documents: usize = 0;
+        // S4-T1: whether visible files have retained bytes, from the
+        // records and the roots' retention, without reading the source
+        // section; a section known to be lost or damaged retains nothing.
+        const source_state = folder.sourceState();
+        const source_readable = folder.source_bound and source_state != .unavailable;
         var has_source = false;
         var uses_chunker = [_]bool{ false, false };
         var seen = std.StringHashMapUnmanaged(void).empty;
@@ -375,7 +393,7 @@ pub const ScopedService = struct {
             documents += 1;
             const slot = root_slot[folder.document_roots[i]].?;
             roots[slot].documents += 1;
-            if (document.source_doc_index != hybrid.no_source_doc and folder.source != null) has_source = true;
+            if (document.source_doc_index != hybrid.no_source_doc and source_readable) has_source = true;
             const chunker_id = if (document.chunker_index < folder.chunkers.len) folder.chunkers[document.chunker_index].id else "line-window-v1";
             if (std.mem.eql(u8, chunker_id, "md-section-v1")) uses_chunker[1] = true else uses_chunker[0] = true;
             const gop = try seen.getOrPut(allocator, document.path);
@@ -385,12 +403,9 @@ pub const ScopedService = struct {
         for (folder.unchunked) |entry| {
             if (!resolved.listedVisible(entry)) continue;
             files += 1;
-            roots[root_slot[folder.rootIndex(entry.root_id).?].?].files += 1;
-            if (folder.source) |section| {
-                const record = try scope.recordPath(allocator, entry.root_id, entry.path);
-                defer allocator.free(record);
-                if (section.find(record) != null) has_source = true;
-            }
+            const root_index = folder.rootIndex(entry.root_id).?;
+            roots[root_slot[root_index].?].files += 1;
+            if (source_readable and folder.roots[root_index].retain_source) has_source = true;
         }
         var pending_paths = std.ArrayList(FileRef).empty;
         for (folder.pending) |entry| {
@@ -402,7 +417,7 @@ pub const ScopedService = struct {
         // Terms and postings in the visible scope.
         var terms: usize = 0;
         var posting_count: usize = 0;
-        var view = try scope.visibleCollection(allocator, index, engine.documents, engine.statistics, engine.labeled_documents, mask, resolved.labels);
+        var view = try scope.visibleCollection(allocator, index, engine.documents, engine.statistics orelse folder.loadedStatistics(), engine.labeled_documents, mask, resolved.labels);
         if (view) |*v| {
             defer v.deinit(allocator);
             for (index.terms, 0..) |entry, term_index| {
@@ -436,6 +451,7 @@ pub const ScopedService = struct {
             .has_source = has_source,
             .has_positions = folder.has_positions,
             .chunkers = try chunkers.toOwnedSlice(allocator),
+            .source = source_state.label(),
         };
     }
 
@@ -464,7 +480,7 @@ pub const ScopedService = struct {
     pub fn readSpan(scoped: ScopedService, allocator: std.mem.Allocator, request: scope.Request, root_id: []const u8, path: []const u8, start_line: u32, end_line: u32, context_lines: u32) !source_section.SpanResult {
         const resolved = try resolve(scoped.service, allocator, request);
         defer resolved.deinit(allocator);
-        const section = resolved.folder.source;
+        const section = try resolved.folder.sourceSection();
         if (section == null) return .{ .failed = try sourceUnavailable(allocator, resolved.folder.*) };
         const record = (try scoped.visibleFile(allocator, resolved, root_id, path)) orelse {
             const shown = try scope.recordPath(allocator, root_id, path);
@@ -481,8 +497,12 @@ pub const ScopedService = struct {
     pub fn find(scoped: ScopedService, allocator: std.mem.Allocator, request: find_module.Request, scope_request: scope.Request) !find_module.Outcome {
         const resolved = try resolve(scoped.service, allocator, scope_request);
         defer resolved.deinit(allocator);
-        const engine = scoped.service.engine;
         const folder = resolved.folder;
+        // S4-T1: the statistics groups and the position tables (with the
+        // validation of the positions and offsets) load at the first find.
+        var engine = scoped.service.engine;
+        if (engine.statistics == null) engine.statistics = try folder.statistics();
+        if (engine.position_tables == null) engine.position_tables = try folder.positionTables();
         var scoped_request = request;
         scoped_request.principal_labels = scope_request.principal_labels;
         scoped_request.visible_roots = resolved.mask();
@@ -521,7 +541,7 @@ pub const ScopedService = struct {
     pub fn outline(scoped: ScopedService, allocator: std.mem.Allocator, request: scope.Request, root_id: []const u8, path: []const u8) !source_section.OutlineResult {
         const resolved = try resolve(scoped.service, allocator, request);
         defer resolved.deinit(allocator);
-        const section = resolved.folder.source;
+        const section = try resolved.folder.sourceSection();
         if (section == null) return .{ .failed = try sourceUnavailable(allocator, resolved.folder.*) };
         const record = (try scoped.visibleFile(allocator, resolved, root_id, path)) orelse {
             const shown = try scope.recordPath(allocator, root_id, path);
@@ -549,7 +569,7 @@ const FrequencyProvider = struct {
 /// unknown file in such a generation gets the same answer, so it reveals
 /// nothing.
 pub fn sourceUnavailable(allocator: std.mem.Allocator, folder: scope.Folder) !source_section.Failure {
-    if (folder.source_error) |name| return .{ .code = .capacity, .message = try std.fmt.allocPrint(allocator, "re-index required: source section unavailable ({s})", .{name}) };
+    if (folder.sourceError()) |name| return .{ .code = .capacity, .message = try std.fmt.allocPrint(allocator, "re-index required: source section unavailable ({s})", .{name}) };
     return .{ .code = .capacity, .message = source_section.source_absent_message };
 }
 
@@ -591,6 +611,8 @@ pub fn writeScopedStatusJson(json: *std.json.Stringify, status: ScopedStatus) !v
     try json.write(status.has_positions);
     try json.objectField("chunkers");
     try json.write(status.chunkers);
+    try json.objectField("source");
+    try json.write(status.source);
     try json.endObject();
 }
 
