@@ -86,7 +86,7 @@ test "S4-T1: an index written at 292cb568 opens and answers find, read_span, out
     _ = try snapshot_open.open(a, io, tmp.dir);
 }
 
-test "S4-T1: apply_changes over a 292cb568 index publishes a v2.1 generation (XXH3 sections) that reads the same" {
+test "S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XXH3 sections, no filename sections) that reads the same" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const a = arena_state.allocator();
@@ -105,6 +105,15 @@ test "S4-T1: apply_changes over a 292cb568 index publishes a v2.1 generation (XX
     const metadata = try manifest.decode(try tmp.dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
     try std.testing.expect(metadata.xxh3_sections);
     try std.testing.expectEqual(checksum.Kind.xxh3_64, (try source.inspect(try tmp.dir.readFileAlloc(io, metadata.source_file, a, .unlimited))).checksum_kind);
+    // S4-T2 R7: the upgrade never turns on the filename channel (flag 8):
+    // an omitted setting keeps the directory's, and a 292cb568 index has
+    // none. It does bind its recovery-state section (flag 16, v2.2).
+    try std.testing.expect(metadata.filename == null);
+    try std.testing.expectEqualStrings("state-2.hybstate", metadata.state.?.file);
+    var listing = tmp.dir.iterate();
+    while (try listing.next(io)) |entry| {
+        try std.testing.expect(!std.mem.startsWith(u8, entry.name, "filename"));
+    }
     try checkReads(a, tmp.dir);
     const opened = try snapshot_open.openScoped(a, io, tmp.dir);
     defer opened.folder.close();

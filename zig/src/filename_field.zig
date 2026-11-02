@@ -274,8 +274,17 @@ fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Docum
     const file_of = try allocator.alloc(u32, body_docs.len);
     var body_total_length: usize = 0;
     for (body_index.document_lengths) |length| body_total_length += length; // empty for `validate`
+    // Chunks of one file are adjacent and files usually come in path order,
+    // so the previous entry or the next one is tried before a search.
+    var last: usize = 0;
     for (body_docs, 0..) |doc, i| {
-        const ci = catalogIndex(catalog, doc.path) orelse return error.FilenameCatalogMismatch;
+        const ci = if (catalog.len != 0 and std.mem.eql(u8, catalog[last].path, doc.path))
+            last
+        else if (last + 1 < catalog.len and std.mem.eql(u8, catalog[last + 1].path, doc.path))
+            last + 1
+        else
+            catalogIndex(catalog, doc.path) orelse return error.FilenameCatalogMismatch;
+        last = ci;
         file_of[i] = @intCast(ci);
         if (!std.mem.eql(u8, doc.required_labels, catalog[ci].required_labels)) return error.FilenameCatalogMismatch;
         if (anchors[ci] == std.math.maxInt(usize) or anchorLess(doc, body_docs[anchors[ci]])) anchors[ci] = i;
