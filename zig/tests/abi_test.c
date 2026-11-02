@@ -412,6 +412,48 @@ int main(void) {
         ss_close(folder);
     }
 
+    /* ---- Contract 2.2.0: a filename-enabled directory (PR #21, S4-T2) --- */
+    char filename_dir[4096];
+    snprintf(filename_dir, sizeof filename_dir, "%s-filenames", dir);
+    {
+        char *week64 = base64_of(week_md);
+        size_t request_len = strlen(week64) + 256;
+        char *request = malloc(request_len);
+        snprintf(request, request_len,
+                 "{\"roots\":[{\"root_id\":\"notes\",\"label\":\"Notes\",\"kind\":\"host\"}],"
+                 "\"changes\":[{\"op\":\"add\",\"root_id\":\"notes\",\"path\":\"Harbour_Week.md\",\"content_base64\":\"%s\"}]}",
+                 week64);
+        static const char *const report_needles[] = {"\"generation\":1", "\"added\":1", NULL};
+        int ok = holds(ss_apply_changes(filename_dir, request, "{\"filename_index\":true}"), report_needles, why, sizeof why);
+        ss_handle *named = ok ? ss_open(filename_dir) : NULL;
+        ok = ok && named != NULL;
+        if (named != NULL) {
+            /* The status golden: every 2.0.0 and 2.1.0 field, then
+             * filename_policy_id, read from the manifest alone. */
+            static const char *golden =
+                "{\"ready\":true,\"generation\":1,\"analyzer_id\":\"analyzer-v2\",\"embedding_model_id\":\"none\","
+                "\"vector_dimensions\":0,\"documents\":3,\"terms\":15,\"postings\":16,\"files\":1,\"pending\":0,"
+                "\"truncated\":false,\"roots\":[{\"root_id\":\"notes\",\"label\":\"Notes\",\"kind\":\"host\","
+                "\"files\":1,\"documents\":3,\"pending\":0}],\"pending_paths\":[],\"has_source\":true,"
+                "\"has_positions\":true,\"chunkers\":[\"md-section-v1\"],\"source\":\"unverified\","
+                "\"filename_policy_id\":\"filename-field-v1\"}";
+            char *status_json = ss_status(named);
+            if (status_json == NULL || strcmp(status_json, golden) != 0) {
+                snprintf(why, sizeof why, "ss_status was %s", status_json ? status_json : ss_last_error());
+                ok = 0;
+            }
+            ss_free(status_json);
+            static const char *const by_name[] = {"\"matched_in\"", "\"basename\":\"Harbour_Week.md\"", NULL};
+            ok = ok && holds(ss_query(named, "harbour week", NULL, 0, 3, "{\"retrieval_mode\":\"lexical\",\"search_field\":\"filename\"}"), by_name, why, sizeof why);
+            ok = ok && refused(ss_query(named, "harbour", NULL, 0, 3, "{\"search_field\":\"filename\"}"), "ss_query", "FilenameSearchRequiresLexical", why, sizeof why);
+            ss_close(named);
+        }
+        ok = ok && refused(ss_query(handle, "hybrid", NULL, 0, 3, "{\"retrieval_mode\":\"lexical\",\"search_field\":\"filename\"}"), "ss_query", "FilenameIndexUnavailable", why, sizeof why);
+        expect_true("a filename_index directory: ss_status ends with filename_policy_id; a filename query finds the file by name; filename without lexical, filename on a directory without the channel are refused", ok, why);
+        free(week64);
+        free(request);
+    }
+
     ss_close(handle);
 
     /* Best-effort cleanup of the temporary snapshot directory. */

@@ -1,13 +1,33 @@
 # Changelog
 
-## 0.3.0
+## 0.3.0 (S4-T2, PR #21; contract 2.2.0; minor: new public API)
 
-- Contracts 2.2.0: filename and combined lexical search integrated with S3 sources, positions and root scopes.
-- Manifest v3 binds filename catalog and postings, retaining main’s XXH3 v2.1 reader/writer and lazy source status.
-- Cached filename tables and anchor/term maps; validate actual source size on first read.
-- Query metadata skips recovery trees; coallocated section/source capacity keeps the 10k memory gate.
-- Exact committed mutation state and restricted write policies; confined file opens pin every directory component.
-- Genuine macOS, Android and iOS arm64 packages rebuilt together; Dart conformance and host-fed recovery verified on macOS.
+PR #21 (the filename channel, recovery bound to the commit point, scoped
+writers) integrated onto main after S4-T1. Everything below is additive: code
+written for 0.2.1 compiles and behaves the same against 0.3.0.
+
+- **Contracts 2.2.0** (`contracts/CONTRACTS_VERSION`). As before the package
+  accepts exactly its own contract version, so a 2.1.0 library is refused at
+  `open` with `ContractsVersionMismatchException`; the natives move with the
+  package.
+- **Filename search (CAP-16, `filename-field-v1`), opt-in.** New:
+  `SearchField` (`content`, `filename`, `both`), `query(searchField:)`
+  (filename and both need `mode: RetrievalMode.lexical`; anything else throws
+  `ArgumentError`), `SearchResultItem.matchedIn`, `.basename` and
+  `.matchSections` (`MatchSection*`: separate filename and content
+  citations), `SnapshotStatus.filenamePolicyId` (nullable; set on enabled
+  directories only), `ApplyChangesOptions.filenameIndex` and
+  `IndexFolderOptions.filenameIndex` (nullable: omitted keeps a directory's
+  setting), and `SnapshotInterchangeV2`. The channel is chosen when a
+  directory is created: pass `filenameIndex: true` to the first
+  `applyChanges` (or `indexFolder`) on a new, empty directory; an existing
+  directory needs a fresh one rebuilt from every file's bytes, then a switch.
+  A value that differs from the directory's setting raises
+  `FilenameSettingMismatch`; a filename query on a directory without the
+  channel raises `FilenameIndexUnavailable`.
+- **Scoped writers** (RPC/MCP servers started with `--roots`/`--labels`)
+  cannot declare roots, change label policy or read files; trusted Dart and C
+  callers are unaffected.
 
 ## 0.2.1 (S4-T1; contract 2.1.0; additive)
 

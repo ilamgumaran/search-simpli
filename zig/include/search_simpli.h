@@ -83,11 +83,15 @@
  *          the visible scope.
  */
 
-/* Contract 2.2.0 adds opt-in filename/both lexical queries and filename_index
- * on index/apply creation, alongside 2.1.0's lazy source status. Function
- * signatures are unchanged. Old indexes remain readable; XXH3/v3 writes
- * require a compatible reader. The open reserves source byte capacity but
- * reads, verifies and indexes source bytes only on first use. */
+/* Contract 2.2.0 (PR #21, integrated by S4-T2) adds, opt-in and additive:
+ * "search_field" ("content" default, "filename", "both"; lexical mode only)
+ * in ss_query's options_json, "filename_index" in ss_index_folder's and
+ * ss_apply_changes' options (set at a directory's creation; later updates
+ * keep it), and "filename_policy_id" in ss_status on an enabled generation.
+ * Function signatures are unchanged. Generations written since 2.2.0 are
+ * manifest v2.2 (docs/manifest-format-v2.md); older libraries refuse them
+ * with UnsupportedFlags, so a directory this library has updated must not be
+ * opened by an older one. */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 
@@ -116,7 +120,7 @@ typedef struct ss_handle ss_handle;
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "2.1.0". The returned pointer is static storage owned by the library:
+ * "2.2.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);
@@ -187,6 +191,9 @@ void ss_close(ss_handle *handle);
  *   "source"         "absent" | "unverified" (retained, not read yet) |
  *                    "verified" | "unavailable" (lost or damaged); reading
  *                    the status never loads the source section
+ * and since contract 2.2.0, only on a filename-enabled generation, by:
+ *   "filename_policy_id"  "filename-field-v1", read from the manifest alone
+ *                    (the filename sections are not read)
  * All counts, the v1 ones included, are over the default scope: every
  * root, no principal labels (the scope ss_query uses without options), so
  * a labelled file is not counted; ss_roots() counts over a scope you name.
@@ -244,6 +251,18 @@ char *ss_status(ss_handle *handle);
  *                                       candidates, and BM25 counts over
  *                                       the visible scope; absent = every
  *                                       root, the 1.x behaviour exactly
+ *                   "search_field"      "content" (default) | "filename" |
+ *                                       "both" (since 2.2.0): filename and
+ *                                       both need retrieval_mode "lexical"
+ *                                       given explicitly and no profile, and
+ *                                       a generation built with
+ *                                       filename_index (else NULL,
+ *                                       "FilenameIndexUnavailable"). The
+ *                                       first such query on a handle loads
+ *                                       the filename sections (once; a
+ *                                       damaged one fails it, ss_last_error
+ *                                       naming the check, while content
+ *                                       queries keep working)
  *
  * Returns a heap-allocated, null-terminated JSON object on success — the
  * caller must free it with ss_free() — with fields `tool`, `query`, `index`,
@@ -605,7 +624,10 @@ char *ss_roots(ss_handle *handle, const char *options_json);
  *   opts_json     NULL or {"allow_file_reads"?: bool (default false; a
  *                  "file" change is refused without it), "max_file_bytes"?,
  *                  "max_total_bytes"?, "analyzer"?, "max_chars"?,
- *                  "overlap_lines"?, "keep_generations"?}
+ *                  "overlap_lines"?, "keep_generations"?, "filename_index"?:
+ *                  bool (since 2.2.0; true on a new directory builds the
+ *                  filename channel; omitted, an existing directory keeps
+ *                  its setting; a value that differs from it is refused)}
  *
  * Returns the report ({"generation","analyzer_id","added","changed",
  * "removed","moved","pending","unchanged","too_large","too_large_paths",

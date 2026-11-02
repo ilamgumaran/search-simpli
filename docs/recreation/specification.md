@@ -198,7 +198,7 @@ After each phase:
 
 These requirements have been drafted through the
 [capability process](../capability-process.md); most are **not yet built**
-(CAP-13 and CAP-19's rows are built and marked `Diagnostic · implemented`). Their
+(CAP-13, CAP-16 and CAP-19's rows are built and marked `Diagnostic · implemented`). Their
 canonical text lives in their capability spec until step 8 promotes it into §2/§3
 above. They are listed here so the authoritative specification acknowledges every
 requirement the [register](../requirements/README.md) tracks — no requirement
@@ -209,7 +209,7 @@ exists only in the register.
 | FR-13 | MCP adapter binds the FR-07 operations with injected trusted principal, no caller vectors, and semantic (not byte) parity with the direct surface. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Diagnostic · implemented |
 | FR-14 | First-class, retrieval-derived (non-generative) support/confidence signal in the evidence response; low-support flagging; changes FR-06. | [CAP-14](../requirements/cap-14-trust-calibration.md) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages with deterministic line-window fallback; changes FR-02. | [CAP-15](../requirements/cap-15-structure-aware-chunking.md) | Proposed |
-| FR-16 | Opt-in filename/combined lexical search with real passage anchors, explicit origin, pre-rank isolation, deterministic ranking and versioned channel refresh/migration; default content behavior unchanged. | [CAP-16](../requirements/cap-16-directory-filename-search.md) | Proposed |
+| FR-16 | Opt-in filename/combined lexical search with real passage anchors, explicit origin, pre-rank isolation, deterministic ranking and versioned channel refresh/migration; default content behavior unchanged. | [CAP-16](../requirements/cap-16-directory-filename-search.md) | Diagnostic · implemented (S4-T2) |
 | NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free. | [CAP-13](../requirements/cap-13-mcp-adapter.md) | Diagnostic · implemented |
 
 Proposed extensions to existing requirements (implemented behavior above remains

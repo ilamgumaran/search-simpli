@@ -1,6 +1,6 @@
 # CAP-16 — Directory filename retrieval alongside cited content search
 
-Status: Diagnostic · integrated source and native verification tracked in [the S3 integration report](../tasks/recovery-filename-integration.md)
+Status: Diagnostic · implemented · PR #21, integrated onto main by [S4-T2](../tasks/S4-T2.md) (source and native verification in [the S3 integration report](../tasks/recovery-filename-integration.md) and the S4-T2 Report)
 
 ## 1. Proposal
 
