@@ -32,6 +32,8 @@
 //!
 //! Memory: everything comes from the caller's `allocator`, an arena released
 //! after the result is written out.
+const filename_field = @import("filename_field.zig");
+const filename_response = @import("filename_response.zig");
 const std = @import("std");
 const apply = @import("apply.zig");
 const engine_module = @import("engine.zig");
@@ -628,6 +630,10 @@ pub fn indexStatus(allocator: std.mem.Allocator, service: service_module.Service
     var out: std.Io.Writer.Allocating = .init(allocator);
     var json = std.json.Stringify{ .writer = &out.writer };
     try service_module.writeScopedStatusJson(&json, status);
+    if (service.engine.filename_index_enabled) {
+        const bytes = out.written();
+        return .{ .ok = try std.fmt.allocPrint(allocator, "{s},\"filename_policy_id\":\"filename-field-v1\"}}", .{bytes[0..bytes.len - 1]}) };
+    }
     return .{ .ok = out.written() };
 }
 
@@ -785,13 +791,24 @@ pub fn searchKnowledge(allocator: std.mem.Allocator, service: service_module.Ser
         error.Invalid => return reader.failure(),
         error.OutOfMemory => return error.OutOfMemory,
     };
-    const search_options = hybrid.SearchOptions{
+    var search_options = hybrid.SearchOptions{
         .top_k = parsed.top_k,
         .candidate_k = parsed.candidate_k,
         .retrieval_mode = parsed.mode,
         .path_prefix = parsed.path_prefix,
         .principal_labels = parsed.scope.principal_labels,
     };
+    if (parsed.field != .content) {
+        if (service.folder) |folder| search_options.visible_roots = folder.mask(try folder.allowedRoots(allocator, parsed.scope));
+        const hits = service.engine.queryFields(allocator, parsed.query, parsed.field, search_options) catch |err| switch (err) {
+            error.OutOfMemory => return error.OutOfMemory,
+            error.FilenameIndexUnavailable => return .{ .failed = .{ .code = .capacity, .message = "FilenameIndexUnavailable: rebuild in a separate directory with --filename-index" } },
+            else => return error.OperationFailed,
+        };
+        var output: std.Io.Writer.Allocating = .init(allocator);
+        filename_response.writeEvidence(&output.writer, allocator, service.engine, parsed.query, parsed.field, search_options, hits, false) catch return error.OutOfMemory;
+        return .{ .ok = output.written() };
+    }
     const scoped = parsed.scope.roots != null and service.folder != null;
     const found = if (scoped)
         scopedOf(service).searchKnowledge(allocator, parsed.query, parsed.query_vector, search_options, parsed.scope, workspaces.results, workspaces.evidence, null)
@@ -816,6 +833,7 @@ pub fn searchKnowledge(allocator: std.mem.Allocator, service: service_module.Ser
 }
 
 const ParsedSearch = struct {
+    field: filename_field.Field,
     query: []const u8,
     top_k: usize,
     candidate_k: usize,
@@ -826,7 +844,9 @@ const ParsedSearch = struct {
 };
 
 fn parseSearch(reader: *Reader, service: service_module.Service, caller: Caller, workspaces: Workspaces) Error!ParsedSearch {
-    try reader.only(&.{ "query", "query_vector", "top_k", "candidate_k", "path_prefix", "retrieval_mode", "principal_labels", "roots" });
+    try reader.only(&.{ "query", "query_vector", "top_k", "candidate_k", "path_prefix", "retrieval_mode", "principal_labels", "roots", "search_field" });
+    const field = std.meta.stringToEnum(filename_field.Field, (try reader.optionalString("search_field")) orelse "content") orelse return reader.fail("search_field must be content, filename or both", .{});
+    if (field != .content and !std.mem.eql(u8, (try reader.optionalString("retrieval_mode")) orelse "", "lexical")) return reader.fail("filename search requires explicit lexical retrieval_mode", .{});
     const query = try reader.requiredString("query");
     if (query.len == 0) return reader.fail("query must not be empty", .{});
     // S2-T11: same rejection as `ss_query` and the CLI; never reaches analysis.
@@ -841,7 +861,8 @@ fn parseSearch(reader: *Reader, service: service_module.Service, caller: Caller,
     const request_scope = try reader.scopeOf(caller);
     const query_vector = queryVector(reader.object.get("query_vector"), service.engine.vector_dimensions, mode, workspaces.query_vector) orelse
         return reader.fail("query_vector must hold {d} finite numbers for {s} retrieval", .{ service.engine.vector_dimensions, @tagName(mode) });
-    return .{ .query = query, .top_k = top_k, .candidate_k = candidate_k, .path_prefix = path_prefix, .mode = mode, .query_vector = query_vector, .scope = request_scope };
+    return .{
+        .field = field, .query = query, .top_k = top_k, .candidate_k = candidate_k, .path_prefix = path_prefix, .mode = mode, .query_vector = query_vector, .scope = request_scope };
 }
 
 /// The three `retrieval_mode` strings (shared with `ss_query` through `rpc.parseMode`).
@@ -1147,8 +1168,12 @@ pub fn applyOptions(allocator: std.mem.Allocator, params: std.json.ObjectMap) !u
 }
 
 fn parseApplyOptions(reader: *Reader) Error!apply.Options {
-    try reader.only(&.{ "allow_file_reads", "max_file_bytes", "max_total_bytes", "analyzer", "max_chars", "overlap_lines", "keep_generations" });
+    try reader.only(&.{ "allow_file_reads", "max_file_bytes", "max_total_bytes", "analyzer", "max_chars", "overlap_lines", "keep_generations", "filename_index" });
     var options = apply.Options{};
+    if (reader.object.get("filename_index")) |value| options.filename_index = switch (value) {
+        .bool => |flag| flag,
+        else => return reader.fail("filename_index must be a boolean", .{}),
+    };
     if (reader.object.get("allow_file_reads")) |value| options.allow_file_reads = switch (value) {
         .bool => |flag| flag,
         else => return reader.fail("allow_file_reads must be a boolean", .{}),

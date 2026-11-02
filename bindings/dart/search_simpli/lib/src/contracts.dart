@@ -28,6 +28,7 @@ class SnapshotStatus {
   final int documents;
   final int terms;
   final int postings;
+  final String? filenamePolicyId;
   final int? files;
   final int? pending;
   final bool? truncated;
@@ -54,6 +55,7 @@ class SnapshotStatus {
     required this.documents,
     required this.terms,
     required this.postings,
+    this.filenamePolicyId,
     this.files,
     this.pending,
     this.truncated,
@@ -74,6 +76,7 @@ class SnapshotStatus {
         documents: json['documents']! as int,
         terms: json['terms']! as int,
         postings: json['postings']! as int,
+        filenamePolicyId: json['filename_policy_id'] as String?,
         files: json['files'] as int?,
         pending: json['pending'] as int?,
         truncated: json['truncated'] as bool?,
@@ -94,6 +97,7 @@ class SnapshotStatus {
         'documents': documents,
         'terms': terms,
         'postings': postings,
+        if (filenamePolicyId != null) 'filename_policy_id': filenamePolicyId,
         if (files != null) 'files': files,
         if (pending != null) 'pending': pending,
         if (truncated != null) 'truncated': truncated,
@@ -118,7 +122,20 @@ enum RetrievalMode {
 
   String toJson() => name;
 
-  static RetrievalMode fromJson(String value) => RetrievalMode.values.byName(value);
+  static RetrievalMode fromJson(String value) =>
+      RetrievalMode.values.byName(value);
+}
+
+/// Searchable field selection (contract 1.3.0). `content` preserves the
+/// legacy query behavior and is the default.
+enum SearchField {
+  content,
+  filename,
+  both;
+
+  String toJson() => name;
+
+  static SearchField fromJson(String value) => SearchField.values.byName(value);
 }
 
 /// `search_knowledge`'s `authorization` object.
@@ -138,9 +155,9 @@ class SearchAuthorization {
       );
 
   Map<String, Object?> toJson() => {
-        'semantics': semantics,
-        'principal_label_count': principalLabelCount,
-      };
+    'semantics': semantics,
+    'principal_label_count': principalLabelCount,
+  };
 }
 
 /// `search_knowledge`'s `index` object.
@@ -166,7 +183,8 @@ class SearchIndexInfo {
     this.root,
   });
 
-  factory SearchIndexInfo.fromJson(Map<String, Object?> json) => SearchIndexInfo(
+  factory SearchIndexInfo.fromJson(Map<String, Object?> json) =>
+      SearchIndexInfo(
         version: json['version']! as int,
         generation: json['generation']! as int,
         analyzerId: json['analyzer_id']! as String,
@@ -175,12 +193,12 @@ class SearchIndexInfo {
       );
 
   Map<String, Object?> toJson() => {
-        'version': version,
-        'generation': generation,
-        'analyzer_id': analyzerId,
-        'embedding_model_id': embeddingModelId,
-        if (root != null) 'root': root,
-      };
+    'version': version,
+    'generation': generation,
+    'analyzer_id': analyzerId,
+    'embedding_model_id': embeddingModelId,
+    if (root != null) 'root': root,
+  };
 }
 
 /// `search_knowledge`'s `retrieval` object.
@@ -202,6 +220,8 @@ class SearchRetrieval {
   /// (or explicit JSON `null`). Schema-optional and not emitted by the
   /// engine today; kept as a raw map, like [SearchResultItem.ranking].
   final Map<String, Object?>? embedding;
+  final SearchField? searchField;
+  final String? filenamePolicyId;
 
   const SearchRetrieval({
     required this.mode,
@@ -210,9 +230,12 @@ class SearchRetrieval {
     this.vectorMode,
     this.candidateK,
     this.embedding,
+    this.searchField,
+    this.filenamePolicyId,
   });
 
-  factory SearchRetrieval.fromJson(Map<String, Object?> json) => SearchRetrieval(
+  factory SearchRetrieval.fromJson(Map<String, Object?> json) =>
+      SearchRetrieval(
         mode: RetrievalMode.fromJson(json['mode']! as String),
         vectorDimensions: json['vector_dimensions']! as int,
         authorization: SearchAuthorization.fromJson(
@@ -221,16 +244,22 @@ class SearchRetrieval {
         vectorMode: json['vector_mode'] as String?,
         candidateK: json['candidate_k'] as int?,
         embedding: json['embedding'] as Map<String, Object?>?,
+        searchField: json['search_field'] == null
+            ? null
+            : SearchField.fromJson(json['search_field']! as String),
+        filenamePolicyId: json['filename_policy_id'] as String?,
       );
 
   Map<String, Object?> toJson() => {
-        'mode': mode.toJson(),
-        'vector_dimensions': vectorDimensions,
-        'authorization': authorization.toJson(),
-        if (vectorMode != null) 'vector_mode': vectorMode,
-        if (candidateK != null) 'candidate_k': candidateK,
-        if (embedding != null) 'embedding': embedding,
-      };
+    'mode': mode.toJson(),
+    'vector_dimensions': vectorDimensions,
+    'authorization': authorization.toJson(),
+    if (vectorMode != null) 'vector_mode': vectorMode,
+    if (candidateK != null) 'candidate_k': candidateK,
+    if (embedding != null) 'embedding': embedding,
+    if (searchField != null) 'search_field': searchField!.toJson(),
+    if (filenamePolicyId != null) 'filename_policy_id': filenamePolicyId,
+  };
 }
 
 /// `search_knowledge`/`read_chunk`'s `citation` object.
@@ -246,16 +275,16 @@ class SearchCitation {
   });
 
   factory SearchCitation.fromJson(Map<String, Object?> json) => SearchCitation(
-        path: json['path']! as String,
-        startLine: json['start_line']! as int,
-        endLine: json['end_line']! as int,
-      );
+    path: json['path']! as String,
+    startLine: json['start_line']! as int,
+    endLine: json['end_line']! as int,
+  );
 
   Map<String, Object?> toJson() => {
-        'path': path,
-        'start_line': startLine,
-        'end_line': endLine,
-      };
+    'path': path,
+    'start_line': startLine,
+    'end_line': endLine,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -272,6 +301,92 @@ class SearchCitation {
   String toString() => 'SearchCitation($path:$startLine-$endLine)';
 }
 
+/// Citation for one actual query match within a result, as distinct from the
+/// result's retrieval citation. Filename citations have no line numbers;
+/// content citations carry the matched passage's line range.
+class MatchSectionCitation {
+  final String path;
+  final String field;
+  final int? startLine;
+  final int? endLine;
+
+  const MatchSectionCitation({
+    required this.path,
+    required this.field,
+    this.startLine,
+    this.endLine,
+  });
+
+  factory MatchSectionCitation.fromJson(Map<String, Object?> json) =>
+      MatchSectionCitation(
+        path: json['path']! as String,
+        field: json['field']! as String,
+        startLine: json['start_line'] as int?,
+        endLine: json['end_line'] as int?,
+      );
+
+  Map<String, Object?> toJson() => {
+    'path': path,
+    'field': field,
+    if (startLine != null) 'start_line': startLine,
+    if (endLine != null) 'end_line': endLine,
+  };
+}
+
+/// One field's actual query-match explanation for a ranked result.
+class MatchSection {
+  final String label;
+  final bool matched;
+  final List<String> matchedTerms;
+  final String text;
+  final MatchSectionCitation citation;
+
+  const MatchSection({
+    required this.label,
+    required this.matched,
+    required this.matchedTerms,
+    required this.text,
+    required this.citation,
+  });
+
+  factory MatchSection.fromJson(Map<String, Object?> json) => MatchSection(
+    label: json['label']! as String,
+    matched: json['matched']! as bool,
+    matchedTerms: (json['matched_terms']! as List<Object?>).cast<String>(),
+    text: json['text']! as String,
+    citation: MatchSectionCitation.fromJson(
+      json['citation']! as Map<String, Object?>,
+    ),
+  );
+
+  Map<String, Object?> toJson() => {
+    'label': label,
+    'matched': matched,
+    'matched_terms': matchedTerms,
+    'text': text,
+    'citation': citation.toJson(),
+  };
+}
+
+/// Actual query matches by source field. The map keys are `filename` and
+/// `content`; each section is present in the response when requested.
+class MatchSections {
+  final MatchSection filename;
+  final MatchSection content;
+
+  const MatchSections({required this.filename, required this.content});
+
+  factory MatchSections.fromJson(Map<String, Object?> json) => MatchSections(
+    filename: MatchSection.fromJson(json['filename']! as Map<String, Object?>),
+    content: MatchSection.fromJson(json['content']! as Map<String, Object?>),
+  );
+
+  Map<String, Object?> toJson() => {
+    'filename': filename.toJson(),
+    'content': content.toJson(),
+  };
+}
+
 /// One ranked result in `ss_query`'s `results` array.
 class SearchResultItem {
   final String chunkId;
@@ -282,6 +397,9 @@ class SearchResultItem {
   /// Component ranking details (lexical/vector rank+score); an open object,
   /// kept as-is, same as `vizhi_core`'s `SearchResultItem.ranking`.
   final Map<String, Object?> ranking;
+  final List<String>? matchedIn;
+  final String? basename;
+  final MatchSections? matchSections;
 
   const SearchResultItem({
     required this.chunkId,
@@ -289,23 +407,39 @@ class SearchResultItem {
     required this.content,
     required this.score,
     required this.ranking,
+    this.matchedIn,
+    this.basename,
+    this.matchSections,
   });
 
-  factory SearchResultItem.fromJson(Map<String, Object?> json) => SearchResultItem(
+  factory SearchResultItem.fromJson(Map<String, Object?> json) =>
+      SearchResultItem(
         chunkId: json['chunk_id']! as String,
-        citation: SearchCitation.fromJson(json['citation']! as Map<String, Object?>),
+        citation: SearchCitation.fromJson(
+          json['citation']! as Map<String, Object?>,
+        ),
         content: json['content']! as String,
         score: (json['score']! as num).toDouble(),
         ranking: json['ranking']! as Map<String, Object?>,
+        matchedIn: (json['matched_in'] as List<Object?>?)?.cast<String>(),
+        basename: json['basename'] as String?,
+        matchSections: json['match_sections'] == null
+            ? null
+            : MatchSections.fromJson(
+                json['match_sections']! as Map<String, Object?>,
+              ),
       );
 
   Map<String, Object?> toJson() => {
-        'chunk_id': chunkId,
-        'citation': citation.toJson(),
-        'content': content,
-        'score': score,
-        'ranking': ranking,
-      };
+    'chunk_id': chunkId,
+    'citation': citation.toJson(),
+    'content': content,
+    'score': score,
+    'ranking': ranking,
+    if (matchedIn != null) 'matched_in': matchedIn,
+    if (basename != null) 'basename': basename,
+    if (matchSections != null) 'match_sections': matchSections!.toJson(),
+  };
 
   @override
   String toString() => 'SearchResultItem($chunkId, ${citation.path})';
@@ -316,24 +450,31 @@ class AnswerPolicy {
   final bool groundInResults;
   final bool citePathAndLines;
   final bool sayWhenEvidenceIsInsufficient;
+  final bool? filenameMatchesAreNavigation;
 
   const AnswerPolicy({
     this.groundInResults = true,
     this.citePathAndLines = true,
     this.sayWhenEvidenceIsInsufficient = true,
+    this.filenameMatchesAreNavigation,
   });
 
   factory AnswerPolicy.fromJson(Map<String, Object?> json) => AnswerPolicy(
-        groundInResults: json['ground_in_results']! as bool,
-        citePathAndLines: json['cite_path_and_lines']! as bool,
-        sayWhenEvidenceIsInsufficient: json['say_when_evidence_is_insufficient']! as bool,
-      );
+    groundInResults: json['ground_in_results']! as bool,
+    citePathAndLines: json['cite_path_and_lines']! as bool,
+    sayWhenEvidenceIsInsufficient:
+        json['say_when_evidence_is_insufficient']! as bool,
+    filenameMatchesAreNavigation:
+        json['filename_matches_are_navigation'] as bool?,
+  );
 
   Map<String, Object?> toJson() => {
-        'ground_in_results': groundInResults,
-        'cite_path_and_lines': citePathAndLines,
-        'say_when_evidence_is_insufficient': sayWhenEvidenceIsInsufficient,
-      };
+    'ground_in_results': groundInResults,
+    'cite_path_and_lines': citePathAndLines,
+    'say_when_evidence_is_insufficient': sayWhenEvidenceIsInsufficient,
+    if (filenameMatchesAreNavigation != null)
+      'filename_matches_are_navigation': filenameMatchesAreNavigation,
+  };
 }
 
 /// The codes of [SearchWarning] (contract 1.2.0). A code this mirror does not
@@ -376,16 +517,16 @@ class SearchWarning {
   SearchWarningCode get code => SearchWarningCode.fromWire(codeName);
 
   factory SearchWarning.fromJson(Map<String, Object?> json) => SearchWarning(
-        codeName: json['code']! as String,
-        message: json['message']! as String,
-        term: json['term'] as String?,
-      );
+    codeName: json['code']! as String,
+    message: json['message']! as String,
+    term: json['term'] as String?,
+  );
 
   Map<String, Object?> toJson() => {
-        'code': codeName,
-        'message': message,
-        if (term != null) 'term': term,
-      };
+    'code': codeName,
+    'message': message,
+    if (term != null) 'term': term,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -399,7 +540,8 @@ class SearchWarning {
   int get hashCode => Object.hash(codeName, message, term);
 
   @override
-  String toString() => 'SearchWarning($codeName${term == null ? '' : ': $term'})';
+  String toString() =>
+      'SearchWarning($codeName${term == null ? '' : ': $term'})';
 }
 
 /// `ss_query`'s `request` object (contract 1.2.0): the request as the engine
@@ -410,6 +552,7 @@ class SearchRequestEcho {
   final int topK;
   final int candidateK;
   final String? pathPrefix;
+  final SearchField? searchField;
 
   const SearchRequestEcho({
     required this.analyzerId,
@@ -417,23 +560,31 @@ class SearchRequestEcho {
     required this.topK,
     required this.candidateK,
     this.pathPrefix,
+    this.searchField,
   });
 
-  factory SearchRequestEcho.fromJson(Map<String, Object?> json) => SearchRequestEcho(
+  factory SearchRequestEcho.fromJson(Map<String, Object?> json) =>
+      SearchRequestEcho(
         analyzerId: json['analyzer_id']! as String,
-        retrievalMode: RetrievalMode.fromJson(json['retrieval_mode']! as String),
+        retrievalMode: RetrievalMode.fromJson(
+          json['retrieval_mode']! as String,
+        ),
         topK: json['top_k']! as int,
         candidateK: json['candidate_k']! as int,
         pathPrefix: json['path_prefix'] as String?,
+        searchField: json['search_field'] == null
+            ? null
+            : SearchField.fromJson(json['search_field']! as String),
       );
 
   Map<String, Object?> toJson() => {
-        'analyzer_id': analyzerId,
-        'retrieval_mode': retrievalMode.toJson(),
-        'top_k': topK,
-        'candidate_k': candidateK,
-        'path_prefix': pathPrefix,
-      };
+    'analyzer_id': analyzerId,
+    'retrieval_mode': retrievalMode.toJson(),
+    'top_k': topK,
+    'candidate_k': candidateK,
+    'path_prefix': pathPrefix,
+    if (searchField != null) 'search_field': searchField!.toJson(),
+  };
 }
 
 /// `ss_query`'s `profile` object (contract 1.2.0), present only for a query
@@ -459,20 +610,20 @@ class SearchProfile {
   });
 
   factory SearchProfile.fromJson(Map<String, Object?> json) => SearchProfile(
-        tokenizeUs: json['tokenize_us']! as int,
-        scoreUs: json['score_us']! as int,
-        rankUs: json['rank_us']! as int,
-        serializeUs: json['serialize_us']! as int,
-        matchedChunks: json['matched_chunks']! as int,
-      );
+    tokenizeUs: json['tokenize_us']! as int,
+    scoreUs: json['score_us']! as int,
+    rankUs: json['rank_us']! as int,
+    serializeUs: json['serialize_us']! as int,
+    matchedChunks: json['matched_chunks']! as int,
+  );
 
   Map<String, Object?> toJson() => {
-        'tokenize_us': tokenizeUs,
-        'score_us': scoreUs,
-        'rank_us': rankUs,
-        'serialize_us': serializeUs,
-        'matched_chunks': matchedChunks,
-      };
+    'tokenize_us': tokenizeUs,
+    'score_us': scoreUs,
+    'rank_us': rankUs,
+    'serialize_us': serializeUs,
+    'matched_chunks': matchedChunks,
+  };
 }
 
 /// `ss_query()`'s JSON object — the `search_knowledge` JSON-RPC `result`
@@ -514,37 +665,44 @@ class SearchKnowledgeResult {
         tool: json['tool']! as String,
         query: json['query']! as String,
         index: SearchIndexInfo.fromJson(json['index']! as Map<String, Object?>),
-        retrieval: SearchRetrieval.fromJson(json['retrieval']! as Map<String, Object?>),
+        retrieval: SearchRetrieval.fromJson(
+          json['retrieval']! as Map<String, Object?>,
+        ),
         results: (json['results']! as List<Object?>)
             .map((e) => SearchResultItem.fromJson(e! as Map<String, Object?>))
             .toList(growable: false),
-        answerPolicy:
-            AnswerPolicy.fromJson(json['answer_policy']! as Map<String, Object?>),
+        answerPolicy: AnswerPolicy.fromJson(
+          json['answer_policy']! as Map<String, Object?>,
+        ),
         warnings: (json['warnings'] as List<Object?>?)
             ?.map((e) => SearchWarning.fromJson(e! as Map<String, Object?>))
             .toList(growable: false),
         request: json['request'] == null
             ? null
-            : SearchRequestEcho.fromJson(json['request']! as Map<String, Object?>),
+            : SearchRequestEcho.fromJson(
+                json['request']! as Map<String, Object?>,
+              ),
         profile: json['profile'] == null
             ? null
             : SearchProfile.fromJson(json['profile']! as Map<String, Object?>),
       );
 
   Map<String, Object?> toJson() => {
-        'tool': tool,
-        'query': query,
-        'index': index.toJson(),
-        'retrieval': retrieval.toJson(),
-        'results': results.map((r) => r.toJson()).toList(growable: false),
-        'answer_policy': answerPolicy.toJson(),
-        if (warnings != null) 'warnings': warnings!.map((w) => w.toJson()).toList(growable: false),
-        if (request != null) 'request': request!.toJson(),
-        if (profile != null) 'profile': profile!.toJson(),
-      };
+    'tool': tool,
+    'query': query,
+    'index': index.toJson(),
+    'retrieval': retrieval.toJson(),
+    'results': results.map((r) => r.toJson()).toList(growable: false),
+    'answer_policy': answerPolicy.toJson(),
+    if (warnings != null)
+      'warnings': warnings!.map((w) => w.toJson()).toList(growable: false),
+    if (request != null) 'request': request!.toJson(),
+    if (profile != null) 'profile': profile!.toJson(),
+  };
 
   @override
-  String toString() => 'SearchKnowledgeResult($query, ${results.length} results)';
+  String toString() =>
+      'SearchKnowledgeResult($query, ${results.length} results)';
 }
 
 /// One entry in `ss_evidence()`'s JSON array: a found chunk, or
@@ -638,6 +796,7 @@ class IndexFolderOptions {
   /// (and so [SearchSimpli.indexFolder], before any native call) throws
   /// [ArgumentError] for a value below 1.
   final int? keepGenerations;
+  final bool filenameIndex;
 
   const IndexFolderOptions({
     this.analyzer = 'analyzer-v2',
@@ -647,6 +806,7 @@ class IndexFolderOptions {
     this.maxFileBytes,
     this.maxTotalBytes,
     this.keepGenerations,
+    this.filenameIndex = false,
   });
 
   /// Throws [ArgumentError] when [keepGenerations] is below 1. (Checked
@@ -662,14 +822,15 @@ class IndexFolderOptions {
   }
 
   Map<String, Object?> _toJson() => {
-        'analyzer': analyzer,
-        if (maxChars != null) 'max_chars': maxChars,
-        if (overlapLines != null) 'overlap_lines': overlapLines,
-        'update': update,
-        if (maxFileBytes != null) 'max_file_bytes': maxFileBytes,
-        if (maxTotalBytes != null) 'max_total_bytes': maxTotalBytes,
-        if (keepGenerations != null) 'keep_generations': keepGenerations,
-      };
+    'analyzer': analyzer,
+    if (maxChars != null) 'max_chars': maxChars,
+    if (overlapLines != null) 'overlap_lines': overlapLines,
+    'update': update,
+    if (maxFileBytes != null) 'max_file_bytes': maxFileBytes,
+    if (maxTotalBytes != null) 'max_total_bytes': maxTotalBytes,
+    if (keepGenerations != null) 'keep_generations': keepGenerations,
+    if (filenameIndex) 'filename_index': true,
+  };
 }
 
 /// Why an update discarded `INDEX-STATE.json` and re-indexed every file
@@ -769,7 +930,8 @@ class IndexFolderReport {
     this.pruneFailures,
   });
 
-  factory IndexFolderReport.fromJson(Map<String, Object?> json) => IndexFolderReport(
+  factory IndexFolderReport.fromJson(Map<String, Object?> json) =>
+      IndexFolderReport(
         generation: json['generation']! as int,
         analyzerId: json['analyzer_id']! as String,
         added: json['added']! as int,
@@ -788,31 +950,33 @@ class IndexFolderReport {
         documents: json['documents']! as int,
         terms: json['terms']! as int,
         postings: json['postings']! as int,
-        recovered: json['recovered'] == null ? null : IndexRecovery.parse(json['recovered']! as String),
+        recovered: json['recovered'] == null
+            ? null
+            : IndexRecovery.parse(json['recovered']! as String),
         recoveredRaw: json['recovered'] as String?,
         prunedFiles: json['pruned_files'] as int?,
         pruneFailures: json['prune_failures'] as int?,
       );
 
   Map<String, Object?> toJson() => {
-        'generation': generation,
-        'analyzer_id': analyzerId,
-        'added': added,
-        'changed': changed,
-        'removed': removed,
-        'unchanged': unchanged,
-        'budget_exhausted': budgetExhausted,
-        'too_large': tooLarge,
-        'unreadable': unreadable,
-        'too_large_paths': tooLargePaths,
-        'unreadable_paths': unreadablePaths,
-        'documents': documents,
-        'terms': terms,
-        'postings': postings,
-        if (recoveredRaw != null) 'recovered': recoveredRaw,
-        if (prunedFiles != null) 'pruned_files': prunedFiles,
-        if (pruneFailures != null) 'prune_failures': pruneFailures,
-      };
+    'generation': generation,
+    'analyzer_id': analyzerId,
+    'added': added,
+    'changed': changed,
+    'removed': removed,
+    'unchanged': unchanged,
+    'budget_exhausted': budgetExhausted,
+    'too_large': tooLarge,
+    'unreadable': unreadable,
+    'too_large_paths': tooLargePaths,
+    'unreadable_paths': unreadablePaths,
+    'documents': documents,
+    'terms': terms,
+    'postings': postings,
+    if (recoveredRaw != null) 'recovered': recoveredRaw,
+    if (prunedFiles != null) 'pruned_files': prunedFiles,
+    if (pruneFailures != null) 'prune_failures': pruneFailures,
+  };
 
   @override
   String toString() =>

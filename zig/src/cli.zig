@@ -12,6 +12,8 @@
 //! snapshots; `runQuery`/`runEvidence` below use it, and so does
 //! `Service.searchKnowledge` (`service.zig`) -- which means `searchd serve`,
 //! stdio and `--http` alike, is analyzer-aware too, not just this CLI path.
+const filename_field = @import("filename_field.zig");
+const filename_response = @import("filename_response.zig");
 const std = @import("std");
 const benchmark = @import("benchmark.zig");
 const chunker = @import("chunker.zig");
@@ -374,7 +376,10 @@ const Parser = struct {
 fn parseQueryFlags(p: *Parser, command: []const u8) error{Usage}!QueryOptions {
     var options = QueryOptions{};
     while (p.next()) |flag| {
-        if (std.mem.eql(u8, flag, "--json")) {
+        if (std.mem.eql(u8, flag, "--search-field")) {
+            const value = p.next() orelse return p.missingArgument(command, "--search-field");
+            options.search_field = std.meta.stringToEnum(filename_field.Field, value) orelse return p.usage("invalid value for", "--search-field", value, " (expected content, filename or both)");
+        } else if (std.mem.eql(u8, flag, "--json")) {
             options.json = true;
         } else if (std.mem.eql(u8, flag, "--top-k")) {
             options.top_k = try p.positive("--top-k");
@@ -510,6 +515,8 @@ fn parseInner(p: *Parser) error{Usage}!Command {
                     return p.usage("invalid value for", "--generation", value, " (expected a positive whole number)");
                 if (options.generation.? == 0)
                     return p.usage("invalid value for", "--generation", value, " (expected a positive whole number)");
+            } else if (std.mem.eql(u8, flag, "--filename-index")) {
+                options.caps.filename_index = true;
             } else if (std.mem.eql(u8, flag, "--update")) {
                 options.update = true;
             } else if (std.mem.eql(u8, flag, "--max-file-bytes")) {
@@ -784,6 +791,7 @@ pub fn runIndex(
 }
 
 pub const QueryOptions = struct {
+    search_field: filename_field.Field = .content,
     top_k: usize = 10,
     json: bool = false,
 };
@@ -813,7 +821,14 @@ pub fn runQuery(
 
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
-    const engine = try snapshot_open.open(arena, io, dir);
+    const engine = if (options.search_field != .content) (try snapshot_open.openScoped(arena, io, dir)).engine else try snapshot_open.open(arena, io, dir);
+    if (options.search_field != .content) {
+        const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
+        const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);
+        try filename_response.writeEvidence(output, arena, engine, query_text, options.search_field, query_options, hits, !options.json);
+        try output.writeByte('\n');
+        return;
+    }
     const results = try runSearch(arena, engine, query_text, options.top_k);
 
     if (options.json) {
@@ -866,7 +881,14 @@ pub fn runEvidence(
 
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
-    const engine = try snapshot_open.open(arena, io, dir);
+    const engine = if (options.search_field != .content) (try snapshot_open.openScoped(arena, io, dir)).engine else try snapshot_open.open(arena, io, dir);
+    if (options.search_field != .content) {
+        const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
+        const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);
+        try filename_response.writeEvidence(output, arena, engine, query_text, options.search_field, query_options, hits, false);
+        try output.writeByte('\n');
+        return;
+    }
     const results = try runSearch(arena, engine, query_text, options.top_k);
 
     var json = std.json.Stringify{ .writer = output };

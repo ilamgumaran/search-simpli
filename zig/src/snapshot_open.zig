@@ -21,6 +21,7 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
     // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
     // terms' ordinals and its hits' offsets.
     if (opened.lexical_index.positions != null) opened.position_tables = try postings.buildPositionTables(allocator, opened.lexical_index);
+    if (loaded.metadata.meta.len != 0) opened.roots = (try manifest.parseMeta(allocator, loaded.metadata.meta)).roots;
     return opened;
 }
 
@@ -65,10 +66,19 @@ fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options
     const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
     const document_lengths = try allocator.alloc(u32, metadata.document_count);
 
-    return .{
-        .engine = try engine.Engine.openWith(snapshot, documents, vectors, terms, posting_storage, document_lengths, options),
-        .metadata = metadata,
-    };
+    var opened = try engine.Engine.openWith(snapshot, documents, vectors, terms, posting_storage, document_lengths, options);
+    // PR #21: the filename sections (manifest v3), read and validated here
+    // as the PR did; S4-T2 R4 moves them to the first filename query.
+    if (metadata.filename) |f| {
+        const catalog_buffer = try allocator.alloc(u8, f.catalog_bytes);
+        const lexical_extra_buffer = try allocator.alloc(u8, f.lexical_bytes);
+        opened.catalog_encoded = try dir.readFile(io, f.catalog_file, catalog_buffer);
+        opened.filename_lexical_encoded = try dir.readFile(io, f.lexical_file, lexical_extra_buffer);
+        try manifest.validateSnapshotWithFilename(metadata, snapshot.documents_encoded, snapshot.lexical_encoded, opened.catalog_encoded, opened.filename_lexical_encoded);
+        try @import("filename_field.zig").validate(allocator, opened.documents, opened.catalog_encoded, opened.filename_lexical_encoded, opened.analyzer_id);
+        opened.filename_index_enabled = true;
+    }
+    return .{ .engine = opened, .metadata = metadata };
 }
 
 /// The current generation's manifest and source section (S3-T1), validated
@@ -124,7 +134,7 @@ pub const Scoped = struct {
 
 pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Scoped {
     const loaded = try loadEngine(allocator, io, dir, .{ .validate_positions = false });
-    const opened_engine = loaded.engine;
+    var opened_engine = loaded.engine;
     const metadata = loaded.metadata;
     const meta: ?manifest.Meta = if (metadata.meta.len != 0) try manifest.parseMeta(allocator, metadata.meta) else null;
     const loads = try allocator.create(scope.Loads);
@@ -154,6 +164,8 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
     folder.* = try scope.Folder.build(allocator, meta, loads);
     folder.has_positions = metadata.has_positions;
     folder.source_bound = metadata.hasSource();
+    if (meta) |m| opened_engine.roots = m.roots;
+    opened_engine.folder = folder;
     return .{ .engine = opened_engine, .folder = folder };
 }
 

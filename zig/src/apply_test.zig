@@ -1002,3 +1002,62 @@ test "S3-T3: a generation carrying unchanged documents has the lexical section a
     try std.testing.expectEqualSlices(u8, expected, try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited));
     try std.testing.expect(metadata.has_positions);
 }
+
+test "committed recovery state preserves own labels, hashes, mtimes, pending and moves without cache" {
+    var f = try Fixture.init(); defer f.deinit();
+    const a = f.arena();
+    const initial = try joinChanges(a, "[{\"root_id\":\"home\",\"kind\":\"host\",\"retain_source\":false,\"required_labels\":[\"shared\"]}]", &.{
+        try add(a, "home", "note.md", "copper recovery evidence", "[\"shared\"]"),
+        try add(a, "home", "empty.txt", "", "[\"shared\"]"),
+        "{\"op\":\"pending\",\"root_id\":\"home\",\"path\":\"waiting.txt\",\"size\":123,\"mtime_ms\":77,\"required_labels\":[\"shared\"]}",
+    });
+    _ = try f.applyOk(initial, .{});
+    const moved = "{\"changes\":[{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"moved.md\",\"moved_from\":\"note.md\",\"mtime_ms\":999}]}";
+    try std.testing.expectError(error.SimulatedCrash, apply.applyChanges(a, io, f.out, moved, .{ .fail_after_publish = true }));
+    // Neither the host bytes nor a matching mutable state are available.
+    try f.out.deleteFile(io, incremental_state.state_file);
+    _ = try f.applyOk("{\"changes\":[]}", .{});
+    const recovered = (try incremental_state.load(a, io, f.out)).?;
+    try std.testing.expectEqual(@as(usize, 3), recovered.files.len);
+    for (recovered.files) |file| {
+        try std.testing.expectEqual(@as(usize, 1), file.required_labels.len);
+        try std.testing.expectEqualStrings("shared", file.required_labels[0]);
+        if (std.mem.eql(u8, file.path, "moved.md")) {
+            try std.testing.expectEqualStrings("note.md", file.moved_from.?);
+            try std.testing.expectEqual(@as(i64, 999), file.mtime_ms.?);
+            try std.testing.expect(file.hash.len == 64);
+        } else if (std.mem.eql(u8, file.path, "waiting.txt")) {
+            try std.testing.expectEqual(@as(i64, 77), file.mtime_ms.?);
+            try std.testing.expectEqual(incremental_state.Status.pending, file.status);
+        }
+    }
+    // Removing an inherited requirement must not strip an identical own label.
+    _ = try f.applyOk("{\"roots\":[{\"root_id\":\"home\",\"required_labels\":[]}],\"changes\":[]}", .{});
+    const scoped = try f.opened();
+    const hidden = try searchPaths(scoped, a, "copper", .{});
+    try std.testing.expectEqual(@as(usize, 0), hidden.len);
+    // A corrupt compatibility cache also cannot replace committed authority.
+    try f.out.writeFile(io, .{ .sub_path = incremental_state.state_file, .data = "not json" });
+    const recovered_report = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "moved.md", "copper recovery evidence", "[\"shared\"]")}), .{});
+    try std.testing.expect(recovered_report.unchanged >= 1);
+}
+
+test "restricted writers cannot change root policy, hidden files or labels" {
+    var f = try Fixture.init(); defer f.deinit();
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, two_roots, &.{ try add(a, "home", "public.md", "public copper", "[]"), try add(a, "home", "secret.md", "secret gold", "[\"secret\"]") }), .{});
+    const options = apply.Options{ .write_roots = &.{"home"}, .write_labels = &.{} };
+    const before = try f.listing();
+    for ([_][]const u8{
+        "{\"roots\":[{\"root_id\":\"home\",\"required_labels\":[]}],\"changes\":[]}",
+        "{\"changes\":[{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"secret.md\"}]}",
+        "{\"changes\":[{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"secret.md\",\"moved_from\":\"public.md\"}]}",
+        "{\"changes\":[{\"op\":\"remove_root\",\"root_id\":\"home\"}]}",
+        "{\"changes\":[{\"op\":\"remove_root\",\"root_id\":\"school\"}]}",
+    }) |request| {
+        _ = try f.applyFail(request, options);
+        try std.testing.expectEqualStrings(before, try f.listing());
+    }
+    const changed = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "public.md", "public silver", "[]")}), options);
+    try std.testing.expectEqual(@as(usize, 1), changed.changed);
+}

@@ -119,3 +119,31 @@ The method semantics are transport-independent and have Python and Zig JSON-line
 For the raw Zig service, vector/hybrid calls contain the internal `query_vector`. The LLM-facing `zig_gateway.py` deliberately removes that concern from callers: it accepts the same text parameters as the Python tool, verifies the exact snapshot model at startup, constructs the vector, and forwards the internal request. Caller-supplied vectors are rejected at this trust boundary. See [Query-embedding gateway](query-embedding-gateway.md).
 
 The same boundary owns authorization. Raw Zig search/read/list requests accept bounded internal `principal_labels`; the LLM-facing gateway rejects that field and injects labels derived from trusted configuration. Required document labels filter both ranking channels before component ranks and are rechecked by list/read. Denied and unknown chunk reads share one not-found response. See [Pre-retrieval authorization](authorization.md).
+
+
+## Filename/content views (source contract 1.3.0)
+
+With an opt-in filename snapshot, `search_knowledge` accepts
+`search_field: "filename"` or `"both"` alongside explicit
+`retrieval_mode: "lexical"`. Omission retains legacy content behavior. Results
+add `match_sections.filename` and `.content`, each containing label, matched
+boolean, actual analyzed matched terms, displayed text and a field-specific
+citation. Filename citations have path/field only; body citations carry actual
+line bounds. Both sections remain present for unmatched context. `matched_in`
+remains the ranking-channel explanation, so it need not equal the set of
+sections containing matching terms after candidate truncation. A filename match
+is navigation, not answer support. Check `filename_policy_id` in status for
+availability. The existing trusted principal and caller-vector boundaries apply.
+See the [handoff and package status](tasks/directory-filename-implementation.md).
+
+## Contract 2.1.0 filename/S3 integration
+
+Optional `search_field: content|filename|both` is supported by search_knowledge,
+with explicit lexical retrieval for filename/both. Tool schemas and canonical
+responses include S3 root/section and completeness metadata. `ss_index_folder`
+opts accept `filename_index`; host-only `ss_apply_changes` opts also accept the
+optional boolean (null/absent preserves the current channel). See
+[the integrated format](manifest-format-v3.md) and
+[task/evidence](tasks/recovery-filename-integration.md). Scoped RPC/MCP writers
+are byte-fed and cannot change root/label policy or grant filesystem reads;
+unscoped --allow-write is an index-administration grant.

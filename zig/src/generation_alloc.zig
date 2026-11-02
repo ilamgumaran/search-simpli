@@ -20,14 +20,16 @@ const incremental_state = @import("incremental_state.zig");
 
 /// Canonical trace kinds at the highest generation. Kept thread-local because
 /// the CLI and ABI read the diagnostic immediately after allocation fails.
-const Cause = enum(u4) {
+const Cause = enum(u8) {
     manifest = 1,
     index_state = 2,
     documents = 4,
     lexical = 8,
+    filename_catalog = 16,
+    filename_lexical = 32,
 };
 
-threadlocal var cause_mask: u4 = 0;
+threadlocal var cause_mask: u8 = 0;
 threadlocal var cause_generation: u64 = 0;
 
 fn resetCause() void {
@@ -54,12 +56,14 @@ fn appendGeneratedCauseName(buffer: []u8, used: *usize, comptime pattern: []cons
 
 /// One line for `error.NoFreeGeneration`, formatted into `buffer`.
 pub fn describeNoFreeGeneration(buffer: []u8) []const u8 {
-    var names_buffer: [160]u8 = undefined;
+    var names_buffer: [320]u8 = undefined;
     var names_len: usize = 0;
     if (cause_mask & 1 != 0) appendLiteralCauseName(&names_buffer, &names_len, "MANIFEST");
     if (cause_mask & 2 != 0) appendLiteralCauseName(&names_buffer, &names_len, "INDEX-STATE.json");
     if (cause_mask & 4 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "documents-{d}.hybseg");
     if (cause_mask & 8 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "lexical-{d}.hyblex");
+    if (cause_mask & 16 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "filenames-{d}.hybseg");
+    if (cause_mask & 32 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "filename-lexical-{d}.hyblex");
     return std.fmt.bufPrint(
         buffer,
         "NoFreeGeneration: no generation number above {d} (traces: {s}); use a fresh output directory; inspect listed traces before repair",
@@ -93,7 +97,7 @@ pub fn currentGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.D
 }
 
 fn pathExists(dir: std.Io.Dir, io: std.Io, name: []const u8) !bool {
-    _ = dir.statFile(io, name, .{}) catch |err| switch (err) {
+    _ = dir.statFile(io, name, .{ .follow_symlinks = false }) catch |err| switch (err) {
         error.FileNotFound => return false,
         else => return err,
     };
@@ -118,6 +122,10 @@ pub fn highestGenerationOnDisk(allocator: std.mem.Allocator, io: std.Io, dir: st
     var iterator = iterable.iterate();
     while (try iterator.next(io)) |entry| {
         if (entry.kind != .file) continue;
+        if (lifecycle.filenameGeneration(entry.name)) |number| {
+            recordCause(if (std.mem.startsWith(u8, entry.name, "filenames-")) .filename_catalog else .filename_lexical, number);
+            highest = @max(highest, number);
+        }
         if (lifecycle.sectionGeneration(entry.name)) |number| {
             if (std.mem.startsWith(u8, entry.name, "documents-")) {
                 recordCause(.documents, number);
@@ -151,7 +159,13 @@ pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.
         var source_buffer: [64]u8 = undefined;
         const source_name = try std.fmt.bufPrint(&source_buffer, "source-{d}.hybsrc", .{candidate});
         const source_taken = try pathExists(dir, io, source_name);
-        if (!documents_taken and !lexical_taken and !source_taken) return candidate;
+        var catalog_buffer: [80]u8 = undefined;
+        const catalog_name = try std.fmt.bufPrint(&catalog_buffer, "filenames-{d}.hybseg", .{candidate});
+        const catalog_taken = try pathExists(dir, io, catalog_name);
+        var filename_buffer: [80]u8 = undefined;
+        const filename_name = try std.fmt.bufPrint(&filename_buffer, "filename-lexical-{d}.hyblex", .{candidate});
+        const filename_taken = try pathExists(dir, io, filename_name);
+        if (!documents_taken and !lexical_taken and !source_taken and !catalog_taken and !filename_taken) return candidate;
         if (std.math.add(u64, candidate, 1)) |next| {
             candidate = next;
         } else |_| {
@@ -159,6 +173,8 @@ pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.
             // sections, even when the previous highest generation was lower.
             cause_generation = candidate;
             cause_mask = 0;
+            if (catalog_taken) recordCause(.filename_catalog, candidate);
+            if (filename_taken) recordCause(.filename_lexical, candidate);
             if (documents_taken) cause_mask |= @intFromEnum(Cause.documents);
             if (lexical_taken) cause_mask |= @intFromEnum(Cause.lexical);
             return error.NoFreeGeneration;
@@ -310,4 +326,14 @@ test "NoFreeGeneration lists a tied section subset above a lower manifest" {
         "NoFreeGeneration: no generation number above 18446744073709551615 (traces: documents-18446744073709551615.hybseg, lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair",
         describeNoFreeGeneration(&buffer),
     );
+}
+
+test "filename generation slots respect dangling symlink directory entries" {
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{}); defer tmp.cleanup();
+    try tmp.dir.symLink(io, "missing", "filenames-1.hybseg", .{});
+    try tmp.dir.symLink(io, "missing", "filename-lexical-2.hyblex", .{});
+    try std.testing.expectEqual(@as(u64, 3), try nextFreeGeneration(std.testing.allocator, io, tmp.dir));
+    // Nothing repairs or replaces the reserved entries.
+    try std.testing.expectEqual(std.Io.File.Kind.sym_link, (try tmp.dir.statFile(io, "filenames-1.hybseg", .{ .follow_symlinks = false })).kind);
 }

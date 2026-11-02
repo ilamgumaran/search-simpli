@@ -63,8 +63,8 @@
         },
         "candidate_k": {
           "type": "integer",
-          "description": "Candidate depth used.",
-          "minimum": 1
+          "minimum": 1,
+          "description": "Candidate k."
         },
         "embedding": {
           "type": [
@@ -92,6 +92,18 @@
             "semantics",
             "principal_label_count"
           ]
+        },
+        "search_field": {
+          "enum": [
+            "content",
+            "filename",
+            "both"
+          ],
+          "description": "Search field."
+        },
+        "filename_policy_id": {
+          "const": "filename-field-v1",
+          "description": "Filename policy id."
         }
       },
       "additionalProperties": false,
@@ -203,6 +215,32 @@
                   "rank",
                   "score"
                 ]
+              },
+              "filename": {
+                "type": "object",
+                "description": "Filename-field lexical score and rank, when that field is requested.",
+                "properties": {
+                  "rank": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Rank, null if not ranked.",
+                    "minimum": 1
+                  },
+                  "score": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "description": "Score."
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "rank",
+                  "score"
+                ]
               }
             },
             "additionalProperties": false,
@@ -221,6 +259,152 @@
             "items": {
               "type": "string"
             }
+          },
+          "matched_in": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "content",
+                "filename"
+              ]
+            },
+            "uniqueItems": true,
+            "minItems": 1,
+            "description": "Matched in."
+          },
+          "basename": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Basename."
+          },
+          "match_sections": {
+            "type": "object",
+            "required": [
+              "filename",
+              "content"
+            ],
+            "properties": {
+              "filename": {
+                "type": "object",
+                "required": [
+                  "label",
+                  "matched",
+                  "matched_terms",
+                  "text",
+                  "citation"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "File name",
+                    "description": "Label."
+                  },
+                  "matched": {
+                    "type": "boolean",
+                    "description": "Matched."
+                  },
+                  "matched_terms": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "uniqueItems": true,
+                    "description": "Matched terms."
+                  },
+                  "text": {
+                    "type": "string",
+                    "description": "Text."
+                  },
+                  "citation": {
+                    "type": "object",
+                    "required": [
+                      "path",
+                      "field"
+                    ],
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "description": "Path."
+                      },
+                      "field": {
+                        "const": "filename",
+                        "description": "Field."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "Citation."
+                  }
+                },
+                "description": "Filename.",
+                "additionalProperties": false
+              },
+              "content": {
+                "type": "object",
+                "required": [
+                  "label",
+                  "matched",
+                  "matched_terms",
+                  "text",
+                  "citation"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "Content",
+                    "description": "Label."
+                  },
+                  "matched": {
+                    "type": "boolean",
+                    "description": "Matched."
+                  },
+                  "matched_terms": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "uniqueItems": true,
+                    "description": "Matched terms."
+                  },
+                  "text": {
+                    "type": "string",
+                    "description": "Text."
+                  },
+                  "citation": {
+                    "type": "object",
+                    "required": [
+                      "path",
+                      "field",
+                      "start_line",
+                      "end_line"
+                    ],
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "description": "Path."
+                      },
+                      "field": {
+                        "const": "content",
+                        "description": "Field."
+                      },
+                      "start_line": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Start line."
+                      },
+                      "end_line": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "End line."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "Citation."
+                  }
+                },
+                "description": "Content.",
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false,
+            "description": "Two source-specific views in filename/both results. matched and matched_terms describe analyzed terms actually in each displayed source, independently of which candidate channel contributed to ranking."
           }
         },
         "additionalProperties": false,
@@ -250,6 +434,10 @@
         "say_when_evidence_is_insufficient": {
           "const": true,
           "description": "Say when evidence is insufficient."
+        },
+        "filename_matches_are_navigation": {
+          "const": true,
+          "description": "Filename matches help navigation; the cited body is evidence."
         }
       },
       "additionalProperties": false,

@@ -222,6 +222,49 @@ void main() {
     expect(engine.evidence([hit.chunkId], roots: ['home']).single.found, isFalse);
   });
 
+  test('host-fed filename index retains S3 and recovers without its state cache', () {
+    final host = Directory.systemTemp.createTempSync('ss-dart-host-filename-');
+    addTearDown(() => host.deleteSync(recursive: true));
+    SearchSimpli.applyChanges(host.path, {
+      'roots': [
+        {'root_id': 'phone', 'kind': 'host'}
+      ],
+      'changes': [
+        {'op': 'add', 'root_id': 'phone', 'path': 'Lighthouse.md',
+          'content_base64': base64Encode(utf8.encode('exact coastal words\n'))},
+        {'op': 'pending', 'root_id': 'phone', 'path': 'later.md', 'size': 9},
+      ],
+    }, options: const ApplyChangesOptions(filenameIndex: true));
+    final first = SearchSimpli.open(host.path);
+    try {
+      expect(first.status().pending, 1);
+      final hit = first.query('lighthouse', mode: RetrievalMode.lexical,
+          searchField: SearchField.filename).results.single;
+      expect(hit.citation.path, 'phone/Lighthouse.md');
+      expect(first.find('"exact coastal"').hits, hasLength(1));
+      expect(first.readSpan('phone', 'Lighthouse.md', 1, 1).text,
+          'exact coastal words\n');
+    } finally {
+      first.close();
+    }
+    File(p.join(host.path, 'INDEX-STATE.json')).deleteSync();
+    final report = SearchSimpli.applyChanges(host.path, {
+      'expect_generation': 1,
+      'changes': [
+        {'op': 'change', 'root_id': 'phone', 'path': 'Lighthouse.md',
+          'content_base64': base64Encode(utf8.encode('updated coastal words\n'))},
+      ],
+    });
+    expect(report.generation, 2);
+    final recovered = SearchSimpli.open(host.path);
+    addTearDown(recovered.close);
+    expect(recovered.status().pending, 1);
+    expect(recovered.query('lighthouse', mode: RetrievalMode.lexical,
+        searchField: SearchField.filename).results.single.citation.path,
+        'phone/Lighthouse.md');
+    expect(recovered.find('"updated coastal"').hits, hasLength(1));
+  });
+
   test('applyChanges publishes, refuses a stale generation and file reads by default', () {
     final copy = Directory.systemTemp.createTempSync('ss-dart-apply-');
     addTearDown(() => copy.deleteSync(recursive: true));

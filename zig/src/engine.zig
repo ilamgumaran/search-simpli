@@ -1,3 +1,4 @@
+const filename_field = @import("filename_field.zig");
 const analyzer_v2 = @import("analyzer_v2.zig");
 const hybrid = @import("hybrid.zig");
 const lexical_build = @import("lexical_build.zig");
@@ -23,6 +24,11 @@ pub const Evidence = struct {
 };
 
 pub const Engine = struct {
+    roots: []const manifest.RootEntry = &.{},
+    folder: ?*const scope.Folder = null,
+    catalog_encoded: []const u8 = &.{},
+    filename_lexical_encoded: []const u8 = &.{},
+    filename_index_enabled: bool = false,
     generation: u64,
     analyzer_id: []const u8,
     embedding_model_id: []const u8,
@@ -99,6 +105,18 @@ pub const Engine = struct {
             .lexical_index = lexical_index,
         };
     }
+
+    pub fn queryFields(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, field: filename_field.Field, options: hybrid.SearchOptions) ![]filename_field.Hit {
+        if (field == .content) {
+            const results = try engine.queryTokenized(allocator, query_text, &.{}, try allocator.alloc(hybrid.Result, @min(options.top_k, engine.documents.len)), options);
+            const hits = try allocator.alloc(filename_field.Hit, results.len);
+            for (results, hits) |r, *h| h.* = .{ .document_index = r.document_index, .body_score = r.lexical_score, .body_rank = r.lexical_rank, .fused_score = r.fused_score };
+            return hits;
+        }
+        if (engine.catalog_encoded.len == 0 or engine.filename_lexical_encoded.len == 0) return error.FilenameIndexUnavailable;
+        return filename_field.query(allocator, engine.documents, engine.lexical_index, engine.catalog_encoded, engine.filename_lexical_encoded, engine.analyzer_id, query_text, field, options);
+    }
+
 
     pub fn query(
         engine: Engine,

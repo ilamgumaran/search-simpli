@@ -65,7 +65,8 @@ class ContractsVersionMismatchException implements Exception {
   const ContractsVersionMismatchException(this.expected, this.actual);
 
   @override
-  String toString() => 'ContractsVersionMismatchException: '
+  String toString() =>
+      'ContractsVersionMismatchException: '
       'this search_simpli package expects contracts version "$expected" '
       'but the native library reports "$actual" — rebuild the library '
       '(tool/build_native.sh) or update this package.';
@@ -178,6 +179,9 @@ class SearchSimpli {
   ///   [profile]           Contract 1.2.0: `true` adds per-phase timings
   ///                       ([SearchKnowledgeResult.profile]); `false` (the
   ///                       default) sends no option and reads no clock.
+  ///   [searchField]       Defaults to content. Filename or both requires an
+  ///                       explicit lexical [mode]; profiling those modes is
+  ///                       currently unsupported by the native contract.
   ///
   /// The result's `warnings` and `request` (contract 1.2.0) are always set.
   SearchKnowledgeResult query(
@@ -189,9 +193,17 @@ class SearchSimpli {
     String? pathPrefix,
     List<String>? principalLabels,
     bool profile = false,
+    SearchField? searchField,
     List<String>? roots,
   }) {
     _checkOpen();
+
+    if (searchField != null && searchField != SearchField.content && mode != RetrievalMode.lexical) {
+      throw ArgumentError('filename search requires an explicit lexical mode');
+    }
+    if (searchField != null && searchField != SearchField.content && profile) {
+      throw ArgumentError('profile is not supported for filename search');
+    }
 
     final options = <String, Object?>{
       if (mode != null) 'retrieval_mode': mode.toJson(),
@@ -199,6 +211,7 @@ class SearchSimpli {
       if (pathPrefix != null) 'path_prefix': pathPrefix,
       if (principalLabels != null) 'principal_labels': principalLabels,
       if (profile) 'profile': true,
+      if (searchField != null) 'search_field': searchField.toJson(),
       if (roots != null) 'roots': roots,
     };
     final optionsJson = options.isEmpty ? null : jsonEncode(options);
@@ -468,8 +481,12 @@ class SearchSimpli {
     String folderPath, {
     IndexFolderOptions options = const IndexFolderOptions(),
     DynamicLibrary? library,
-  }) =>
-      indexFolderWithAllocator(dirPath, folderPath, options: options, library: library);
+  }) => indexFolderWithAllocator(
+    dirPath,
+    folderPath,
+    options: options,
+    library: library,
+  );
 }
 
 /// Publishes [bytesJson] (neutral interchange JSON,
@@ -503,7 +520,9 @@ int importSnapshotJson(
       bytesUnit8.length,
     );
     if (generation < 0) {
-      throw SearchSimpliException(bindings.ss_last_error().cast<Utf8>().toDartString());
+      throw SearchSimpliException(
+        bindings.ss_last_error().cast<Utf8>().toDartString(),
+      );
     }
     return generation;
   } finally {
@@ -532,9 +551,15 @@ IndexFolderReport indexFolderWithAllocator(
   final folderPtr = folderPath.toNativeUtf8(allocator: allocator);
   final optsPtr = optionsJson.toNativeUtf8(allocator: allocator);
   try {
-    final resultPtr = bindings.ss_index_folder(dirPtr.cast(), folderPtr.cast(), optsPtr.cast());
+    final resultPtr = bindings.ss_index_folder(
+      dirPtr.cast(),
+      folderPtr.cast(),
+      optsPtr.cast(),
+    );
     if (resultPtr == nullptr) {
-      throw SearchSimpliException(bindings.ss_last_error().cast<Utf8>().toDartString());
+      throw SearchSimpliException(
+        bindings.ss_last_error().cast<Utf8>().toDartString(),
+      );
     }
     try {
       final json = jsonDecode(resultPtr.cast<Utf8>().toDartString());
@@ -546,4 +571,5 @@ IndexFolderReport indexFolderWithAllocator(
     allocator.free(dirPtr);
     allocator.free(folderPtr);
     allocator.free(optsPtr);
-  }}
+  }
+}

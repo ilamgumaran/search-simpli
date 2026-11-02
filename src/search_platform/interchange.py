@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .core import load_index
+from .core import FILENAME_POLICY_ID, load_index
 
 
 INTERCHANGE_VERSION = 1
@@ -44,13 +44,19 @@ def build_interchange(index: dict, *, generation: int = 1, analyzer_id: str = ZI
         )
     if dimensions is None and embedding_model_id != "none":
         raise ValueError("embedding metadata exists but the index has no vectors")
-    return {
-        "format_version": INTERCHANGE_VERSION,
+    filename_indexed = isinstance(index.get("filename_index"), dict)
+    payload = {
+        "format_version": INTERCHANGE_VERSION + (1 if filename_indexed else 0),
         "generation": generation,
         "analyzer_id": analyzer_id,
         "embedding_model_id": embedding_model_id,
         "documents": documents,
     }
+    if filename_indexed:
+        # The importer derives its own root-relative catalog from documents;
+        # Python postings and records are intentionally never exported.
+        payload["filename_policy_id"] = FILENAME_POLICY_ID
+    return payload
 
 
 def save_interchange(payload: dict, output: Path) -> None:

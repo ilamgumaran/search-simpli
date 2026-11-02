@@ -26,6 +26,7 @@ pub const lexical_build = @import("lexical_build.zig");
 pub const incremental_state = @import("incremental_state.zig");
 pub const generation_alloc = @import("generation_alloc.zig");
 pub const indexer = @import("indexer.zig");
+pub const filename_field = @import("filename_field.zig");
 pub const snapshot_open = @import("snapshot_open.zig");
 pub const scope = @import("scope.zig");
 pub const apply = @import("apply.zig");
@@ -42,6 +43,7 @@ pub const import_analyzer_test = @import("import_analyzer_test.zig");
 pub const query_report_test = @import("query_report_test.zig");
 pub const import_build_timing_test = @import("import_build_timing_test.zig");
 pub const query_utf8_test = @import("query_utf8_test.zig");
+pub const filename_field_test = @import("filename_field_test.zig");
 pub const nfc_timing_test = @import("nfc_timing_test.zig");
 pub const find_fixture_test = @import("find_fixture_test.zig");
 pub const lazy_open_test = @import("lazy_open_test.zig");
@@ -74,6 +76,7 @@ comptime {
     _ = lexical_build.build;
     _ = indexer.indexFolder;
     _ = indexer.indexFolderIncremental;
+    _ = filename_field.build;
     _ = incremental_state.save;
     _ = generation_alloc.nextFreeGeneration;
     _ = apply.applyChanges;
@@ -108,6 +111,7 @@ test "load every engine module test suite" {
     _ = incremental_state;
     _ = generation_alloc;
     _ = indexer;
+    _ = filename_field;
     _ = snapshot_open;
     _ = scope;
     _ = apply;
@@ -127,5 +131,6 @@ test "load every engine module test suite" {
     _ = compat_292cb568_test;
     _ = nfr13_arena_test;
     _ = query_utf8_test;
+    _ = filename_field_test;
     _ = cli_test;
 }

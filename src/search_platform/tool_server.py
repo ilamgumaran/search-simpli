@@ -54,7 +54,7 @@ class KnowledgeTools:
 
     def call(self, method: str, params: dict) -> dict:
         if method == "search_knowledge":
-            self._reject_unknown(params, {"query", "top_k", "candidate_k", "path_prefix", "retrieval_mode"})
+            self._reject_unknown(params, {"query", "top_k", "candidate_k", "path_prefix", "retrieval_mode", "search_field"})
             query = self._required_string(params, "query")
             top_k = params.get("top_k", 5)
             if isinstance(top_k, bool) or not isinstance(top_k, int) or not 1 <= top_k <= 100:
@@ -78,6 +78,11 @@ class KnowledgeTools:
                     "Invalid params",
                     "retrieval_mode must be lexical, vector, or hybrid",
                 )
+            search_field = params.get("search_field", "content")
+            if not isinstance(search_field, str) or search_field not in {"content", "filename", "both"}:
+                raise ToolFailure(-32602, "Invalid params", "search_field must be content, filename, or both")
+            if search_field != "content" and params.get("retrieval_mode") != "lexical":
+                raise ToolFailure(-32602, "Invalid params", "filename and both search fields require explicit retrieval_mode='lexical'")
             return context_envelope(
                 self.index,
                 query,
@@ -87,6 +92,7 @@ class KnowledgeTools:
                 retrieval_mode=retrieval_mode,
                 embedding_provider=self.embedding_provider,
                 principal_labels=self.principal_labels,
+                search_field=search_field,
             )
 
         if method == "read_chunk":
@@ -127,7 +133,7 @@ class KnowledgeTools:
         if method == "index_status":
             self._reject_unknown(params, set())
             stats = self.index["stats"]
-            return {
+            response = {
                 "ready": True,
                 "version": self.index["version"],
                 "created_at": self.index["created_at"],
@@ -139,6 +145,10 @@ class KnowledgeTools:
                 "skipped": stats["skipped"],
                 "incremental": stats.get("incremental"),
             }
+            filename = self.index.get("filename_index")
+            if isinstance(filename, dict) and isinstance(filename.get("policy_id"), str):
+                response["filename_policy_id"] = filename["policy_id"]
+            return response
 
         raise ToolFailure(-32601, "Method not found", {"method": method})
 

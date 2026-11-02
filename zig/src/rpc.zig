@@ -202,7 +202,7 @@ fn handleApply(server: *Server, allocator: std.mem.Allocator, id: ?std.json.Valu
         return;
     };
     defer dir.close(gio);
-    const result = ops.applyChanges(allocator, gio, dir, request_json, .{ .allow_file_reads = server.allow_file_reads }) catch |err| {
+    const result = ops.applyChanges(allocator, gio, dir, request_json, .{ .allow_file_reads = server.allow_file_reads, .write_roots = server.caller.roots, .write_labels = if (server.caller.roots != null or server.caller.labels.len != 0) server.caller.labels else null }) catch |err| {
         var buffer: [256]u8 = undefined;
         const message = std.fmt.bufPrint(&buffer, "Internal error: {s}", .{@errorName(err)}) catch "Internal error";
         try writeError(output, id, if (err == error.WriterBusy) -32006 else -32603, if (err == error.WriterBusy) "Writer busy: another writer holds WRITER.LOCK" else message);

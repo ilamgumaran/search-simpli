@@ -94,6 +94,11 @@
         "unavailable"
       ],
       "description": "Contract 2.1.0: the source section's state, read without loading it: absent (no bytes retained), unverified (retained, not read yet; the first read_span, outline or list_files reads and checks it), verified, or unavailable (lost or damaged: read_span and outline answer CAPACITY)."
+    },
+    "filename_policy_id": {
+      "type": "string",
+      "const": "filename-field-v1",
+      "description": "Present only when a filename field is bound to this generation."
     }
   },
   "additionalProperties": false,

@@ -690,3 +690,13 @@ In parallel, the next self-contained scale milestone is a persisted 384-dimensio
 - initial interface: CLI, local HTTP API, or MCP-compatible tool adapter.
 
 These choices do not block the current reference. They materially affect E005B and the service boundary.
+
+## 2026-11-01 — Recovery/filename integration candidate
+
+Owner-authorized follow-up on `improve/recovery-and-filename`, claim #20.
+Contract 2.1.0 integrates filename search with S3 via manifest v3, exact
+manifest-bound recovery state, restricted write policy and no-follow directory
+handles. Native packages were rebuilt and checked on macOS; 82 Dart tests
+pass, alongside 263 Zig and 22 C ABI checks. This is not merged or a phone
+release. See
+[task/evidence](docs/tasks/recovery-filename-integration.md).

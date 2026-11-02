@@ -69,8 +69,8 @@ class SnapshotInterchangeV1 {
     List<SnapshotInterchangeDocument>? documents,
     this.keepGenerations,
   }) : documents = List.unmodifiable(
-          documents ?? const <SnapshotInterchangeDocument>[],
-        ) {
+         documents ?? const <SnapshotInterchangeDocument>[],
+       ) {
     if (generation < 1) {
       throw ArgumentError.value(generation, 'generation', 'must be >= 1');
     }
@@ -100,24 +100,88 @@ class SnapshotInterchangeV1 {
       analyzer: InterchangeAnalyzer.fromId(json['analyzer_id']! as String),
       embeddingModelId: json['embedding_model_id']! as String,
       documents: (json['documents']! as List<Object?>)
-          .map((e) =>
-              SnapshotInterchangeDocument.fromJson(e! as Map<String, Object?>))
+          .map(
+            (e) => SnapshotInterchangeDocument.fromJson(
+              e! as Map<String, Object?>,
+            ),
+          )
           .toList(growable: false),
       keepGenerations: json['keep_generations'] as int?,
     );
   }
 
   Map<String, Object?> toJson() => {
-        'format_version': formatVersion,
-        'generation': generation,
-        'analyzer_id': analyzerId,
-        'embedding_model_id': embeddingModelId,
-        if (keepGenerations != null) 'keep_generations': keepGenerations,
-        'documents': documents.map((d) => d.toJson()).toList(growable: false),
-      };
+    'format_version': formatVersion,
+    'generation': generation,
+    'analyzer_id': analyzerId,
+    'embedding_model_id': embeddingModelId,
+    if (keepGenerations != null) 'keep_generations': keepGenerations,
+    'documents': documents.map((d) => d.toJson()).toList(growable: false),
+  };
 
   @override
-  String toString() => 'SnapshotInterchangeV1(generation: $generation, '
+  String toString() =>
+      'SnapshotInterchangeV1(generation: $generation, '
+      'analyzer: $analyzerId, ${documents.length} documents)';
+}
+
+/// `contracts/snapshot-interchange.schema.json`, `format_version: 2`.
+/// V2 opts into filename indexing during import while keeping the document
+/// representation identical to V1; the native importer derives the filename
+/// records from these documents.
+class SnapshotInterchangeV2 extends SnapshotInterchangeV1 {
+  static const String filenamePolicyId = 'filename-field-v1';
+
+  @override
+  int get formatVersion => 2;
+
+  SnapshotInterchangeV2({
+    required super.generation,
+    required super.analyzer,
+    required super.embeddingModelId,
+    super.documents,
+    super.keepGenerations,
+  });
+
+  factory SnapshotInterchangeV2.fromJson(Map<String, Object?> json) {
+    if (json['format_version'] != 2) {
+      throw ArgumentError.value(
+        json['format_version'],
+        'format_version',
+        'must be 2',
+      );
+    }
+    if (json['filename_policy_id'] != filenamePolicyId) {
+      throw ArgumentError.value(
+        json['filename_policy_id'],
+        'filename_policy_id',
+        'must be "$filenamePolicyId"',
+      );
+    }
+    return SnapshotInterchangeV2(
+      generation: json['generation']! as int,
+      analyzer: InterchangeAnalyzer.fromId(json['analyzer_id']! as String),
+      embeddingModelId: json['embedding_model_id']! as String,
+      documents: (json['documents']! as List<Object?>)
+          .map(
+            (e) => SnapshotInterchangeDocument.fromJson(
+              e! as Map<String, Object?>,
+            ),
+          )
+          .toList(growable: false),
+      keepGenerations: json['keep_generations'] as int?,
+    );
+  }
+
+  @override
+  Map<String, Object?> toJson() => {
+    ...super.toJson(),
+    'filename_policy_id': filenamePolicyId,
+  };
+
+  @override
+  String toString() =>
+      'SnapshotInterchangeV2(generation: $generation, '
       'analyzer: $analyzerId, ${documents.length} documents)';
 }
 
@@ -140,8 +204,8 @@ class SnapshotInterchangeDocument {
     required this.text,
     List<double>? vector,
     List<String>? requiredLabels,
-  })  : vector = List.unmodifiable(vector ?? const <double>[]),
-        requiredLabels = List.unmodifiable(requiredLabels ?? const <String>[]) {
+  }) : vector = List.unmodifiable(vector ?? const <double>[]),
+       requiredLabels = List.unmodifiable(requiredLabels ?? const <String>[]) {
     if (id.isEmpty) throw ArgumentError.value(id, 'id', 'must not be empty');
     if (path.isEmpty) {
       throw ArgumentError.value(path, 'path', 'must not be empty');
@@ -178,12 +242,12 @@ class SnapshotInterchangeDocument {
       );
 
   Map<String, Object?> toJson() => {
-        'id': id,
-        'path': path,
-        'start_line': startLine,
-        'end_line': endLine,
-        'text': text,
-        'vector': vector,
-        'required_labels': requiredLabels,
-      };
+    'id': id,
+    'path': path,
+    'start_line': startLine,
+    'end_line': endLine,
+    'text': text,
+    'vector': vector,
+    'required_labels': requiredLabels,
+  };
 }
