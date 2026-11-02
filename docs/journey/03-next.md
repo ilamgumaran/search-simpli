@@ -1,5 +1,14 @@
 # Next
 
+**1 Nov (S4-T1 builder, Xcode Mac): the phone-side costs are built on `task/S4-T1`, awaiting the verifier.**
+`ss_open` is lazy (10k index 102 -> 7.2 ms, ReleaseSmall p50 of 30); one changed file in the 10k
+index is 154–158 ms in `ReleaseSmall` (was 243–249 ms; XXH3 section checksums, manifest v2.1, so
+NFR-12's bound is `ReleaseSmall` again); NFR-13 has its 64 MiB arena-cap test (peak 60.6 MB on
+the 10k index); the lexical `search_knowledge` is 20.5–21.3 µs on the small fixture (was
+35.5–36.8). Dart 0.2.1, contracts 2.1.0, natives rebuilt. **For the consumer app:** pin bump
+after the merge (the app's task); an index written by the old pin still opens and updates, but
+the old library cannot read an index the new one wrote. [S4-T1](../tasks/S4-T1.md).
+
 **31 Oct (S3-T8 builder, Xcode Mac): series S3 (folder knowledge, CAP-19) is complete on this branch.**
 S3-T1 to S3-T7 are on `main`; S3-T8 rebuilt the three native libraries (byte-identical to
 S3-T6's, 16 KiB aligned), bumped the Dart package to 0.2.0 (contracts 2.0.0; an old library is
@@ -184,11 +193,8 @@ at the same time. E-01A is the safe intake half of exactly that.
 | Item | Why it is ready | Note |
 |---|---|---|
 | **E-02 — negative / unanswerable evaluation** | Small, self-contained, and it is the empirical guard on the source-of-truth invariant | Feeds CAP-14 |
-| **`search_knowledge` in ReleaseSmall on the small fixture (+6 µs since S3-T2)** | S3-T4 re-measured it after the ABI landed, as S3-T2 Post-build ruling 2 asked: on the family-folder union fixture (998 chunks) `find_bench knowledge`, ReleaseSmall, p50 of three repetitions, interleaved, rounds 2–4: before S3-T2 (`73fc226`) 30.3–30.8, 29.5–30.1, 30.0–30.5 µs; S3-T4 36.3–36.8, 36.1–36.5, 35.5–35.8 µs. It persists (about +19 %); ReleaseFast and the 10k corpus are faster than before (S3-T2 Verdict) | Profile the ReleaseSmall query path on a small corpus (scorer statistics plumbing, `HYBLEX02` term lookup); a few microseconds, inside every budget, so not urgent |
 | **Delta sections for `apply_changes` (S4-T1 candidate (b), filed)** | S4-T1 shipped the cheaper checksum (XXH3-64 sections, manifest v2.1), which met NFR-12 in `ReleaseSmall` (one changed file in the 10k index 154–158 ms, was 243–249 ms; five runs). Its scratch prototype of delta sections (a generation whose sections hold only the changed records, through the same publication path, `ReleaseSmall`, five runs) measured 102–130 ms (p50 105.7) with FNV-1a and 68–93 ms (p50 71.4) on top of XXH3; the prototype omits the reader's merge of base and deltas at every query, compaction and the manifest's delta chain, so these are lower bounds for the writer only. What remains after XXH3: reading the previous generation about 41 ms, the positional lexical rebuild 37 ms, encoding 40 ms, gathering 19 ms (S4-T1 Report) | Worth it only if a phone needs one changed file well under 100 ms or the corpus grows past 10k files; a format change (deltas, compaction share, reader merge) with its own task and a `docs/incremental-indexing.md` design |
-| **NFR-13 — the 64 MiB arena-cap test** | S3-T8 found no Report recording it; reads and pages are bounded and tested (S3-T1, S3-T2, S3-T4), the workspace cap is not | Add a Zig test that runs `find`, `read_span`, `outline` and `list_files` inside a 64 MiB arena and move NFR-13 to Diagnostic · implemented |
 | **CI: keep the surface and MCP tests from skipping** | S3-T8 added a named, no-skip step to the Linux native job; the first GitHub run decides whether it is green | Check the run after the merge |
-| **`ss_open` on the 10k index: load the source section and statistics lazily** | S3-T8 measured `ss_open` on the 10k index (ReleaseSmall, p50 of 30 opens) at 47.5 ms before S3 and 102.0 to 102.8 ms after (verifier 102.1 to 102.2 ms): the open now validates the 8.3 MB source section and builds the per-root statistics, path, sparse line and position tables. Accepted for the pin (S3-T8 Post-build ruling 2) | Load the source section and the per-root statistics lazily at first use (first `read_span`/`outline`, first scored query), then re-measure the 10k open; the consumer app measures open time on both phones in its M16-T1 |
 
 ## Blocked, with the named unblocker
 
@@ -220,6 +226,8 @@ observed equal-RRF regression · **O-01** collaborative knowledge model ·
    or mark the criterion `pending` first.
 
 ## 2026-11-01 — S4 started: the phone-side costs
+
+**1 Nov (S4-T1 builder, Xcode Mac): three "Ready to build now" rows done.** (1) *`ss_open` lazily*: the source section loads at the first `read_span`/`outline`, the statistics at the first scored query that names a scope, the position tables at the first `find`; `ss_open` on the 10k index 102.2–103.2 → 7.16–7.44 ms (24.95–25.38 ms on an index written before S4-T1), open + first `read_span` 19.2–19.3 ms, open + first scoped query 8.3 ms (ReleaseSmall, p50 of 30, two rounds). (2) *NFR-13*: `zig/src/nfr13_arena_test.zig`, five operations over the family folder under a 64 MiB capped allocator (peak 9.4 MB) and `find`/`search_knowledge` over a 10k index (peak 60.7 MB generated, 60.6 MB on the benchmark corpus); NFR-13 is `Diagnostic · implemented`. (3) *the ReleaseSmall `search_knowledge` regression*: profiled to the fuse stage (identical source, 11–12 → 17–18 µs, a codegen effect); an 8-line fix skips the two sorts for a single channel: 35.5–36.8 → 20.5–21.3 µs on the union fixture, 48–51 → 32–34 µs on the 10k corpus. The NFR-12 row became the delta-sections row above (candidate (b), filed with its prototype numbers). [Task](../tasks/S4-T1.md).
 
 **1 Nov (orchestrator, Xcode Mac): S4-T1 written and started.** The three measured S3 rows that a phone feels (the 102 ms `ss_open`, the 215 ms one-changed-file in ReleaseSmall, the unrecorded NFR-13 arena test) and the ReleaseSmall `search_knowledge` profile are one task, built by Claude Opus 5.5 from `origin/main`. The consumer app has every S3 surface in use (its M16-T1 to T7, T9 merged 31 Oct–1 Nov; the device pass pending). [Task](../tasks/S4-T1.md).
 

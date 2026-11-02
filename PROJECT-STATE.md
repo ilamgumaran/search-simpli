@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-10-31 (S3-T8 hand-off)
+Last updated: 2026-11-01 (S4-T1)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -9,7 +9,20 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
-## Folder knowledge (S3) (S3-T8, 2026-10-31)
+## Phone-side costs (S4-T1, 2026-11-01)
+
+[Report](docs/tasks/S4-T1.md). `ss_open` is lazy: it validates the manifest and the
+document and lexical sections and decodes what `index_status` needs; the source section
+loads at the first `read_span`/`outline` that needs it and the statistics and position
+tables at first use, once per handle (`index_status` gains `source`, contracts 2.1.0).
+Folder-written sections carry XXH3-64 checksums (manifest v2.1, segment v4.1; indexes
+written before still open, and a 292cb568 reader refuses v2.1 with `UnsupportedFlags`).
+NFR-12's one-changed-file bound now holds in `ReleaseSmall`; NFR-13 has its 64 MiB
+arena-cap test (`zig/src/nfr13_arena_test.zig`); the lexical-only fuse skips two sorts.
+Dart package 0.2.1, natives rebuilt (`native/SOURCE-SHA256` `41ef1574...714e`). Numbers
+in the benchmark table below (rows marked S4-T1); "upgrade" = the new library on an
+index written before S4-T1 (FNV-1a sections), until its first update.
+
 
 Series S3 (CAP-19, [plan](docs/plans/folder-knowledge-plan.md)) is complete on `main`
 through S3-T7; S3-T8 rebuilt the three native libraries, bumped the Dart package to
@@ -19,8 +32,8 @@ through S3-T7; S3-T8 rebuilt the three native libraries, bumped the Dart package
 `apply_changes` (S3-T3), six more ABI functions on every surface (S3-T4), nine tool
 schemas and the skill document (S3-T5), `searchd mcp` pinned to MCP revision
 **2025-11-25** (S3-T6), the family-folder fixture (S3-T7). Register: CAP-19 and
-FR-17 to FR-25, NFR-10 to NFR-12, NFR-14 are `Diagnostic · implemented`; NFR-13 stays
-Proposed (its 64 MiB arena-cap test is not recorded); CFT-09 stays Blocked (interchange
+FR-17 to FR-25, NFR-10 to NFR-12, NFR-14 are `Diagnostic · implemented`; NFR-13 too
+since S4-T1 (its 64 MiB arena-cap test); CFT-09 stays Blocked (interchange
 carries no chunker id).
 
 **Benchmark profile** (docs/folder-knowledge-implementation.md section 13): MacBook Pro,
@@ -48,18 +61,26 @@ holds it (S3-T8 = measured by this task's builder).
 | `find` phrase p50 / p95 | | 23.1 / 888.5 us (ReleaseFast 17.6 / 750.3) | ReleaseSmall | S3-T2 |
 | `find` prefix p50 / p95 | | 744.7 / 2,953.3 us (ReleaseFast 663.9 / 2,599.9) | ReleaseSmall | S3-T2 |
 | `search_knowledge` p50 / p95 | 86.6 / 126.0 us (ReleaseFast 65.4 / 105.2) | 48.2 / 132.3 us (ReleaseFast 31.5 / 102.1) | ReleaseSmall | S3-T2 |
-| `search_knowledge`, union fixture (998 chunks) p50 | 30.3 to 30.8 us | 35.5 to 36.8 us (+6 us, a NEXT row) | ReleaseSmall | S3-T4 |
+| `search_knowledge`, union fixture (998 chunks) p50 | 30.3 to 30.8 us | 35.5 to 36.8 us (+6 us, S3-T4); 20.5 to 21.3 us after S4-T1's fuse fix (pre-S3-T2 tree 29.8 to 31.3 us in the same rounds) | ReleaseSmall | S3-T4, S4-T1 |
+| `search_knowledge` p50, 10k corpus (`find_bench knowledge`) | 48.0 to 50.6 us | 32.2 to 33.6 us (ReleaseFast union fixture 20.0 to 21.3 -> 16.2 to 17.3 us) | ReleaseSmall | S4-T1 |
 | `read_span` p50 / p95, 10k corpus | | 708 / 1,208 ns | ReleaseSmall | S3-T1 |
 | `read_span` p50 / p95, line 9,000 deep in the 15,500-line file | 32.6 / 67.5 us | 1.08 / 1.71 us (sparse line index) | ReleaseSmall | S3-T4 |
 | `apply_changes`, full 10k index (10,000 `content_base64` adds) | | 326 ms, 144 MB (ReleaseFast); 573 ms, 144 MB (ReleaseSmall) | both | S3-T3 (NFR-12 at most 3 s and 300 MB: met) |
 | `apply_changes`, one changed file in the 10k index | | 163 ms (ReleaseFast, bound 200 ms: met); 215 ms ReleaseSmall (missed by about 15 ms, bound amended) | both | S3-T3 |
+| `apply_changes`, one changed file in the 10k index, 5 runs | 243.4 to 249.1 ms (ReleaseFast 172.4 to 179.1) | 154.0 to 158.4 ms, p50 157.3 (ReleaseFast 87.9 to 90.8); upgrade 184.5 to 189.9 ms; bound 200 ms in ReleaseSmall: met | ReleaseSmall | S4-T1 |
+| `apply_changes`, full 10k index, 1 run | 617.8 ms (ReleaseFast 352.7) | 557.4 ms (ReleaseFast 293.7) | ReleaseSmall | S4-T1 |
 | MCP adapter overhead p95 over the direct call (`find` / `search_knowledge`) | | 25.0 to 28.9 / 42.4 to 44.9 us (gate 5 ms) | ReleaseSmall | S3-T6 |
 | MCP start-up, spawn to `initialize` | | p50 21.0 ms, p95 21.2 ms | ReleaseSmall | S3-T6 |
 | `ss_open`, 10k index (p50 of 30 opens, 3 rounds) | 47.5 ms (pre-S3 library and index) | 102.0 to 102.8 ms | ReleaseSmall | S3-T8 |
+| `ss_open`, 10k index (p50 of 30 opens, 2 rounds) | 102.2 to 103.2 ms | 7.16 to 7.44 ms; upgrade 24.95 to 25.38 ms | ReleaseSmall | S4-T1 |
+| `ss_open` + first `read_span` (first op p50) | 102.5 to 102.9 ms (0.07 ms) | 19.2 to 19.3 ms (11.9 ms: the source loads); upgrade 50.5 to 50.6 ms (25.3 ms) | ReleaseSmall | S4-T1 |
+| `ss_open` + first scored query naming a root (first op p50) | 102.2 to 102.7 ms (0.05 ms) | 8.29 to 8.30 ms (1.13 ms: the statistics load); upgrade 26.1 ms | ReleaseSmall | S4-T1 |
+| `ss_open` + first `find` (first op p50) | 103.0 to 103.2 ms (0.02 ms) | 14.4 to 15.3 ms (7.2 to 7.9 ms: the position tables load); upgrade 31.9 to 32.9 ms | ReleaseSmall | S4-T1 |
+| NFR-13 peak live bytes under a 64 MiB cap (open and each operation) | | family folder 9.4 MB; 10k 60.6 MB (`list_files`), 59.7 MB (`find`), 53.5 MB (open) | ReleaseSmall (10k), Debug (fixture) | S4-T1 |
 | `ss_open`, family-folder fixture | 13.0 ms | 18.4 ms | ReleaseSmall | S3-T4 |
-| Native library, macOS dylib | 435,048 B | 697,544 B | ReleaseSmall | S3-T8 |
-| Native library, Android `.so` | 427,760 B | 676,752 B | ReleaseSmall | S3-T8 |
-| Native library, iOS framework binary | 430,688 B | 677,448 B | ReleaseSmall | S3-T8 |
+| Native library, macOS dylib | 435,048 B | 697,544 B (S3-T8); 714,328 B (S4-T1) | ReleaseSmall | S3-T8, S4-T1 |
+| Native library, Android `.so` | 427,760 B | 676,752 B (S3-T8); 684,128 B (S4-T1) | ReleaseSmall | S3-T8, S4-T1 |
+| Native library, iOS framework binary | 430,688 B | 677,448 B (S3-T8); 677,744 B (S4-T1) | ReleaseSmall | S3-T8, S4-T1 |
 
 Notes. The pre-S3 index (S3-T8, built from `86096e9`) has about one chunk per file of the 10k corpus
 where `md-section-v1` makes about two, so the lexical and document rows compare
@@ -68,8 +89,10 @@ different chunk counts; the `HYBLEX02`/`HYBLEX01` row holds the chunks equal. Th
 builds the statistics, path, sparse line and position tables; the consumer app measures
 it on the phones. The costs S3 added are the `ReleaseSmall` `search_knowledge` regression
 on a small corpus, the `ReleaseSmall` one-file bound and `ss_open`; of these only the
-one-file bound has a stated target, which it misses by about 15 ms in `ReleaseSmall`
-(amended to `ReleaseFast`, a NEXT row).
+one-file bound has a stated target, which it missed by about 15 ms in `ReleaseSmall`
+(amended to `ReleaseFast`). S4-T1 removed all three: the open is lazy, the bound holds in
+`ReleaseSmall` again (XXH3 section checksums), and the small-corpus query is faster than
+before S3-T2. The S4-T1 rows ran with load average 1.6 to 2.7.
 
 **Pinned MCP revision:** `2025-11-25` (`zig/src/mcp.zig`, `protocol_version`;
 [docs/mcp-server.md](docs/mcp-server.md)).
