@@ -136,7 +136,7 @@ is navigation, not answer support. Check `filename_policy_id` in status for
 availability. The existing trusted principal and caller-vector boundaries apply.
 See the [handoff and package status](tasks/directory-filename-implementation.md).
 
-## Contract 2.1.0 filename/S3 integration
+## Contract 2.2.0 filename/S3 integration
 
 Optional `search_field: content|filename|both` is supported by search_knowledge,
 with explicit lexical retrieval for filename/both. Tool schemas and canonical

@@ -210,6 +210,7 @@ pub fn withFilename(
     if (catalog.vector_dimensions != 0 or catalog.document_count != lexical.document_count) return error.FilenameCountMismatch;
     var value = base;
     value.format_version = version_v3;
+    if (catalog.checksum_kind == .xxh3_64 or lexical.checksum_kind == .xxh3_64) value.xxh3_sections = true;
     if (value.meta.len == 0) value.meta = "{\"manifest_meta\":2,\"chunkers\":[{\"id\":\"line-window-v1\",\"params\":{\"max_chars\":1600,\"overlap_lines\":3}}],\"roots\":[{\"root_id\":\"r-legacy\",\"label\":\"folder\",\"kind\":\"local\",\"required_labels\":[]}],\"source_section_version\":0}";
     value.filename = .{
         .file_count = catalog.document_count,
@@ -227,7 +228,6 @@ pub fn withFilename(
     return value;
 }
 
-
 pub fn validateSnapshotWithFilename(
     value: Manifest,
     documents_encoded: []const u8,
@@ -236,11 +236,15 @@ pub fn validateSnapshotWithFilename(
     filename_lexical_encoded: []const u8,
 ) ManifestError!void {
     try validateSnapshot(value, documents_encoded, lexical_encoded);
+    try validateFilenameSections(value, catalog_encoded, filename_lexical_encoded);
+}
+pub fn validateFilenameSections(value: Manifest, catalog_encoded: []const u8, filename_lexical_encoded: []const u8) ManifestError!void {
     const filename = value.filename orelse return error.InvalidFilenamePolicy;
     if (catalog_encoded.len != filename.catalog_bytes) return error.FilenameCatalogSizeMismatch;
     if (filename_lexical_encoded.len != filename.lexical_bytes) return error.FilenameLexicalSizeMismatch;
     const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
     const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
+    if (!value.xxh3_sections and (catalog.checksum_kind != .fnv1a64 or lexical.checksum_kind != .fnv1a64)) return error.InvalidFilenameCatalog;
     if (catalog.checksum != filename.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
     if (lexical.checksum != filename.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
     if (catalog.document_count != filename.file_count or lexical.document_count != filename.file_count) return error.FilenameCountMismatch;
@@ -248,7 +252,6 @@ pub fn validateSnapshotWithFilename(
     if (lexical.term_count != filename.term_count) return error.FilenameTermCountMismatch;
     if (lexical.posting_count != filename.posting_count) return error.FilenamePostingCountMismatch;
 }
-
 
 fn payloadStrings(value: Manifest) [9][]const u8 {
     const f = value.filename;
@@ -395,7 +398,9 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .catalog_checksum = try cursor.readU64(),
         .lexical_bytes = try castToUsize(try cursor.readU64()),
         .lexical_checksum = try cursor.readU64(),
-        .catalog_file = "", .lexical_file = "", .policy_id = "",
+        .catalog_file = "",
+        .lexical_file = "",
+        .policy_id = "",
     };
     const payload_length = try castToUsize(try cursor.readU32());
     const expected_checksum = try cursor.readU64();
@@ -770,12 +775,29 @@ fn writeMetaJson(json: *std.json.Stringify, chunkers: []const ChunkerEntry, root
 
 /// Parse a v2 manifest's `meta` (strings borrow from the parse arena).
 pub fn parseMeta(allocator: std.mem.Allocator, meta: []const u8) error{ OutOfMemory, InvalidMeta }!Meta {
-    const value = std.json.parseFromSliceLeaky(std.json.Value, allocator, meta, .{}) catch |err| switch (err) {
+    // Query readers need the routing metadata, not the writer's potentially
+    // large recovery state. Skip unknown values without building their trees.
+    const Envelope = struct {
+        manifest_meta: std.json.Value = .null,
+        chunkers: std.json.Value = .null,
+        roots: std.json.Value = .null,
+        pending: ?std.json.Value = null,
+        unchunked: ?std.json.Value = null,
+        skipped: ?std.json.Value = null,
+        source_section_version: std.json.Value = .{ .integer = 0 },
+    };
+    const envelope = std.json.parseFromSliceLeaky(Envelope, allocator, meta, .{ .ignore_unknown_fields = true }) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
         else => return error.InvalidMeta,
     };
-    if (value != .object) return error.InvalidMeta;
-    const object = value.object;
+    var object: std.json.ObjectMap = .empty;
+    try object.put(allocator, "manifest_meta", envelope.manifest_meta);
+    try object.put(allocator, "chunkers", envelope.chunkers);
+    try object.put(allocator, "roots", envelope.roots);
+    if (envelope.pending) |v| try object.put(allocator, "pending", v);
+    if (envelope.unchunked) |v| try object.put(allocator, "unchunked", v);
+    if (envelope.skipped) |v| try object.put(allocator, "skipped", v);
+    try object.put(allocator, "source_section_version", envelope.source_section_version);
     const marker = object.get("manifest_meta") orelse return error.InvalidMeta;
     if (marker != .integer or marker.integer != 2) return error.InvalidMeta;
     const chunker_values = object.get("chunkers") orelse return error.InvalidMeta;

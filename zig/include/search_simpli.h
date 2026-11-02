@@ -83,6 +83,11 @@
  *          the visible scope.
  */
 
+/* Contract 2.2.0 adds opt-in filename/both lexical queries and filename_index
+ * on index/apply creation, alongside 2.1.0's lazy source status. Function
+ * signatures are unchanged. Old indexes remain readable; XXH3/v3 writes
+ * require a compatible reader. The open reserves source byte capacity but
+ * reads, verifies and indexes source bytes only on first use. */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 

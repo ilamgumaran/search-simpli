@@ -56,6 +56,18 @@ test "filename catalog validation rejects inconsistent labels" {
     try std.testing.expectError(error.InconsistentLabels, filename_field.build(allocator, &body, analyzer_v2.analyzer_id));
 }
 
+test "streaming filename validation rejects a semantically wrong posting frequency" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const body = [_]hybrid.Document{.{ .id = "a", .path = "annual_annual.md", .text = "body", .start_line = 1, .end_line = 1 }};
+    const built = try filename_field.build(a, &body, analyzer_v2.analyzer_id);
+    const decoded = try filename_field.decode(a, &body, try makeBodyIndex(a, &body), built.catalog, built.lexical);
+    try filename_field.validateDecoded(a, decoded, analyzer_v2.analyzer_id);
+    @constCast(decoded.lexical.postings)[0].term_frequency += 1;
+    try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateDecoded(a, decoded, analyzer_v2.analyzer_id));
+}
+
 test "opt-in folder index publishes filename channel and refresh setting is pinned" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
@@ -71,11 +83,34 @@ test "opt-in folder index publishes filename channel and refresh setting is pinn
 
     _ = try indexer.indexFolder(allocator, io, tmp.dir, out_dir, .v2, 1, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
     const opened = try snapshot_open.open(allocator, io, out_dir);
+    try std.testing.expect(opened.filename_decoded != null);
     const hits = try opened.queryFields(allocator, "annual budget", .filename, .{ .retrieval_mode = .lexical, .top_k = 3, .candidate_k = 3 });
     try std.testing.expectEqual(@as(usize, 1), hits.len);
     try std.testing.expectEqualStrings("Annual_Budget_2026.md", opened.documents[hits[0].document_index].path);
     try std.testing.expectError(error.FilenameMigrationRequiresNewDirectory, indexer.indexFolder(allocator, io, tmp.dir, out_dir, .v2, 2, chunker.default_max_chars, chunker.default_overlap_lines, .{}));
     try std.testing.expectError(error.FilenameSettingMismatch, indexer.indexFolderIncremental(allocator, io, tmp.dir, out_dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{}));
+}
+
+test "cached filename anchors apply body ordinals and isolate scoped averages" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    // Body order differs from the sorted catalog; hidden short names must
+    // neither pass the mask nor affect the visible file's BM25 score.
+    const body = [_]hybrid.Document{
+        .{ .id = "visible", .path = "z/annual_budget.md", .text = "budget evidence", .start_line = 1, .end_line = 1 },
+        .{ .id = "hidden", .path = "a/annual.md", .text = "annual", .start_line = 1, .end_line = 1 },
+    };
+    const built = try filename_field.build(a, &body, analyzer_v2.analyzer_id);
+    const decoded = try filename_field.decode(a, &body, try makeBodyIndex(a, &body), built.catalog, built.lexical);
+    try std.testing.expectEqualSlices(usize, &.{ 1, 0 }, decoded.anchors);
+    const opts = hybrid.SearchOptions{ .retrieval_mode = .lexical, .top_k = 2, .candidate_k = 2, .visible_roots = .{ .document_roots = &.{ 0, 1 }, .allowed = &.{ true, false } } };
+    const hits = try filename_field.queryDecoded(a, &body, try makeBodyIndex(a, &body), decoded, analyzer_v2.analyzer_id, "annual", .filename, opts);
+    try std.testing.expectEqual(@as(usize, 1), hits.len);
+    try std.testing.expectEqual(@as(usize, 0), hits[0].document_index);
+    const alone = try filename_field.build(a, body[0..1], analyzer_v2.analyzer_id);
+    const reference = try filename_field.query(a, body[0..1], try makeBodyIndex(a, body[0..1]), alone.catalog, alone.lexical, analyzer_v2.analyzer_id, "annual", .filename, .{ .retrieval_mode = .lexical, .top_k = 2, .candidate_k = 2 });
+    try std.testing.expectEqual(reference[0].filename_score, hits[0].filename_score);
 }
 
 test "filename and both scope scores ignore hidden earlier files and zero-score candidates" {

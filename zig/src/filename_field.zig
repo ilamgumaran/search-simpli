@@ -105,30 +105,82 @@ pub fn build(allocator: std.mem.Allocator, documents: []const hybrid.Document, a
 }
 
 pub fn validate(allocator: std.mem.Allocator, body_documents: []const hybrid.Document, catalog_encoded: []const u8, lexical_encoded: []const u8, analyzer_id: []const u8) !void {
-    const expected = try buildDecoded(allocator, body_documents, analyzer_id);
-    const ch = try segment.inspect(catalog_encoded);
-    const catalog_storage = try allocator.alloc(hybrid.Document, ch.document_count);
-    const catalog = try segment.decode(catalog_encoded, catalog_storage, &.{});
-    const lh = try lexical_segment.inspect(lexical_encoded);
-    const lex_terms = try allocator.alloc(postings.TermEntry, lh.term_count);
-    const lex_posts = try allocator.alloc(postings.Posting, lh.posting_count);
-    const lex_lengths = try allocator.alloc(u32, lh.document_count);
-    const lexical = try lexical_segment.decode(lexical_encoded, lex_terms, lex_posts, lex_lengths);
-    if (expected.catalog.len != catalog.len or lexical.document_lengths.len != catalog.len) return error.FilenameCatalogMismatch;
-    for (catalog, expected.catalog) |actual, want| {
-        if (!validPath(actual.path) or actual.vector.len != 0 or !std.mem.eql(u8, actual.path, want.path) or !std.mem.eql(u8, actual.id, want.id) or !std.mem.eql(u8, actual.text, want.text) or actual.start_line != want.start_line or actual.end_line != want.end_line or !std.mem.eql(u8, actual.required_labels, want.required_labels)) return error.FilenameCatalogMismatch;
-    }
-    if (lexical.postings.len != expected.lexical.postings.len or lexical.terms.len != expected.lexical.terms.len) return error.FilenameLexicalMismatch;
-    if (lexical.average_document_length != expected.lexical.average_document_length) return error.FilenameLexicalMismatch;
-    for (lexical.document_lengths, expected.lexical.document_lengths) |a, b| if (a != b) return error.FilenameLexicalMismatch;
-    for (lexical.terms, expected.lexical.terms) |a, b| if (!std.mem.eql(u8, a.term, b.term) or a.document_frequency != b.document_frequency or a.postings_length != b.postings_length or a.postings_start != b.postings_start) return error.FilenameLexicalMismatch;
-    for (lexical.postings, expected.lexical.postings) |a, b| if (a.document_index != b.document_index or a.term_frequency != b.term_frequency) return error.FilenameLexicalMismatch;
+    const empty = postings.Index{ .terms = &.{}, .postings = &.{}, .document_lengths = &.{}, .average_document_length = 0 };
+    const decoded = try decode(allocator, body_documents, empty, catalog_encoded, lexical_encoded);
+    try validateDecoded(allocator, decoded, analyzer_id);
 }
 
-fn termIndex(index: postings.Index, term: []const u8) ?usize {
-    for (index.terms, 0..) |entry, i| if (std.mem.eql(u8, entry.term, term)) return i;
+/// Verify the canonical postings one file at a time, without rebuilding a
+/// second complete catalog/index. The decoder already checked real anchors.
+pub fn validateDecoded(allocator: std.mem.Allocator, decoded: Decoded, analyzer_id: []const u8) !void {
+    const lexical = decoded.lexical;
+    const seen = try allocator.alloc(bool, lexical.terms.len);
+    @memset(seen, false);
+    const frequencies = try allocator.alloc(u32, lexical.terms.len);
+    @memset(frequencies, 0);
+    var scratch = std.heap.ArenaAllocator.init(allocator);
+    defer scratch.deinit();
+    var next_term: usize = 0;
+    var total_length: usize = 0;
+    var posting_start: usize = 0;
+    for (lexical.terms) |term| {
+        if (term.postings_start != posting_start) return error.FilenameLexicalMismatch;
+        posting_start += term.postings_length;
+    }
+    if (posting_start != lexical.postings.len) return error.FilenameLexicalMismatch;
+    for (decoded.catalog, 0..) |doc, i| {
+        _ = scratch.reset(.retain_capacity);
+        const a = scratch.allocator();
+        const tokens = try tokenize(a, analyzer_id, doc.text);
+        if (tokens.len != lexical.document_lengths[i]) return error.FilenameLexicalMismatch;
+        total_length += tokens.len;
+        // Same canonical first-seen dictionary order as lexical_build.build.
+        var counts = std.StringHashMap(u32).init(a);
+        for (tokens) |token| {
+            const slot = try counts.getOrPut(token);
+            if (!slot.found_existing) slot.value_ptr.* = 0;
+            slot.value_ptr.* += 1;
+        }
+        var it = counts.iterator();
+        while (it.next()) |entry| {
+            const ti = decoded.filename_terms.get(entry.key_ptr.*) orelse return error.FilenameLexicalMismatch;
+            if (!seen[ti]) {
+                if (ti != next_term) return error.FilenameLexicalMismatch;
+                next_term += 1;
+                seen[ti] = true;
+            }
+            frequencies[ti] += 1;
+            const term = lexical.terms[ti];
+            const list = lexical.postings[term.postings_start .. term.postings_start + term.postings_length];
+            var low: usize = 0;
+            var high = list.len;
+            while (low < high) {
+                const mid = low + (high - low) / 2;
+                if (list[mid].document_index < i) low = mid + 1 else high = mid;
+            }
+            if (low == list.len or list[low].document_index != i or list[low].term_frequency != entry.value_ptr.*) return error.FilenameLexicalMismatch;
+        }
+    }
+    if (next_term != lexical.terms.len) return error.FilenameLexicalMismatch;
+    for (lexical.terms, frequencies) |term, expected| if (term.document_frequency != expected) return error.FilenameLexicalMismatch;
+    const avg: f32 = if (decoded.catalog.len == 0) 0 else @as(f32, @floatFromInt(total_length)) / @as(f32, @floatFromInt(decoded.catalog.len));
+    if (avg != lexical.average_document_length) return error.FilenameLexicalMismatch;
+}
+
+fn catalogIndex(catalog: []const hybrid.Document, path: []const u8) ?usize {
+    var low: usize = 0;
+    var high = catalog.len;
+    while (low < high) {
+        const mid = low + (high - low) / 2;
+        switch (std.mem.order(u8, catalog[mid].path, path)) {
+            .eq => return mid,
+            .lt => low = mid + 1,
+            .gt => high = mid,
+        }
+    }
     return null;
 }
+
 fn lessCandidate(a: Candidate, b: Candidate, docs: []const hybrid.Document) bool {
     if (a.score != b.score) return a.score > b.score;
     const order = std.mem.order(u8, a.path, b.path);
@@ -142,10 +194,14 @@ fn sortCandidates(items: []Candidate, docs: []const hybrid.Document) void {
         }
     }.less);
 }
-pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, catalog_encoded: []const u8, lexical_encoded: []const u8, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) ![]Hit {
-    if (field == .content) return error.ContentQueryUseLegacy;
-    if (options.retrieval_mode != .lexical) return error.InvalidRetrievalMode;
-    if (options.candidate_k < options.top_k) return error.CandidateDepthTooSmall;
+pub const Decoded = struct {
+    catalog: []const hybrid.Document,
+    lexical: postings.Index,
+    anchors: []const usize,
+    filename_terms: std.StringHashMapUnmanaged(usize),
+    body_terms: std.StringHashMapUnmanaged(usize),
+};
+pub fn decode(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, catalog_encoded: []const u8, lexical_encoded: []const u8) !Decoded {
     const ch = try segment.inspect(catalog_encoded);
     const catalog_storage = try allocator.alloc(hybrid.Document, ch.document_count);
     const catalog = try segment.decode(catalog_encoded, catalog_storage, &.{});
@@ -154,13 +210,51 @@ pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, b
     const lex_posts = try allocator.alloc(postings.Posting, lh.posting_count);
     const lex_lengths = try allocator.alloc(u32, lh.document_count);
     const lexical = try lexical_segment.decode(lexical_encoded, lex_terms, lex_posts, lex_lengths);
+    if (lexical.document_lengths.len != catalog.len) return error.FilenameCatalogMismatch;
+    for (catalog, 0..) |doc, i| {
+        if (!validPath(doc.path) or doc.vector.len != 0 or !std.mem.eql(u8, doc.text, stem(doc.path))) return error.FilenameCatalogMismatch;
+        if (i > 0 and std.mem.order(u8, catalog[i - 1].path, doc.path) != .lt) return error.FilenameCatalogMismatch;
+    }
+    const anchors = try allocator.alloc(usize, catalog.len);
+    @memset(anchors, std.math.maxInt(usize));
+    for (body_docs, 0..) |doc, i| {
+        const ci = catalogIndex(catalog, doc.path) orelse return error.FilenameCatalogMismatch;
+        if (!std.mem.eql(u8, doc.required_labels, catalog[ci].required_labels)) return error.FilenameCatalogMismatch;
+        if (anchors[ci] == std.math.maxInt(usize) or anchorLess(doc, body_docs[anchors[ci]])) anchors[ci] = i;
+    }
+    for (catalog, anchors) |doc, anchor| {
+        if (anchor == std.math.maxInt(usize)) return error.FilenameAnchorNotFound;
+        const body = body_docs[anchor];
+        if (!std.mem.eql(u8, doc.id, body.id) or doc.start_line != body.start_line or doc.end_line != body.end_line) return error.FilenameCatalogMismatch;
+    }
+    var filename_terms: std.StringHashMapUnmanaged(usize) = .empty;
+    var body_terms: std.StringHashMapUnmanaged(usize) = .empty;
+    for (lexical.terms, 0..) |term, i| try filename_terms.put(allocator, term.term, i);
+    for (body_index.terms, 0..) |term, i| try body_terms.put(allocator, term.term, i);
+    return .{ .catalog = catalog, .lexical = lexical, .anchors = anchors, .filename_terms = filename_terms, .body_terms = body_terms };
+}
+pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, catalog_encoded: []const u8, lexical_encoded: []const u8, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) ![]Hit {
+    return queryDecoded(allocator, body_docs, body_index, try decode(allocator, body_docs, body_index, catalog_encoded, lexical_encoded), analyzer_id, query_text, field, options);
+}
+pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) ![]Hit {
+    if (field == .content) return error.ContentQueryUseLegacy;
+    if (options.retrieval_mode != .lexical) return error.InvalidRetrievalMode;
+    if (options.candidate_k < options.top_k) return error.CandidateDepthTooSmall;
+    const catalog = decoded.catalog;
+    const lexical = decoded.lexical;
     const qt = try tokenize(allocator, analyzer_id, query_text);
     var filename = try allocator.alloc(Candidate, catalog.len);
     var fn_count: usize = 0;
-    for (catalog, 0..) |doc, i| if (inScope(doc, findAnchor(body_docs, doc) orelse return error.FilenameAnchorNotFound, options)) {
-        filename[fn_count] = .{ .path = doc.path, .body_index = findAnchor(body_docs, doc) orelse return error.FilenameAnchorNotFound, .score = 0, .catalog_index = i };
+    const filename_visible = try allocator.alloc(bool, catalog.len);
+    var filename_total_len: usize = 0;
+    for (catalog, 0..) |doc, i| {
+        filename_visible[i] = inScope(doc, decoded.anchors[i], options);
+        if (!filename_visible[i]) continue;
+        filename_total_len += lexical.document_lengths[i];
+        filename[fn_count] = .{ .path = doc.path, .body_index = decoded.anchors[i], .score = 0, .catalog_index = i };
         fn_count += 1;
-    };
+    }
+    const filename_avg = if (fn_count == 0) 0 else @as(f32, @floatFromInt(filename_total_len)) / @as(f32, @floatFromInt(fn_count));
     const body_visible = try allocator.alloc(bool, body_docs.len);
     var visible_count: usize = 0;
     var total_len: usize = 0;
@@ -183,17 +277,17 @@ pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, b
             break;
         };
         if (repeated) continue;
-        if (termIndex(lexical, term)) |ti| {
+        if (decoded.filename_terms.get(term)) |ti| {
             const ent = lexical.terms[ti];
             var df: u32 = 0;
-            for (lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (inScope(catalog[p.document_index], findAnchor(body_docs, catalog[p.document_index]) orelse return error.FilenameAnchorNotFound, options)) {
+            for (lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (filename_visible[p.document_index]) {
                 df += 1;
             };
-            for (lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (inScope(catalog[p.document_index], findAnchor(body_docs, catalog[p.document_index]) orelse return error.FilenameAnchorNotFound, options)) {
-                fname_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(lexical.document_lengths[p.document_index]), scopedAvg(lexical, catalog, body_docs, options), df, @intCast(fn_count), options.bm25);
+            for (lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (filename_visible[p.document_index]) {
+                fname_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(lexical.document_lengths[p.document_index]), filename_avg, df, @intCast(fn_count), options.bm25);
             };
         }
-        if (termIndex(body_index, term)) |ti| {
+        if (decoded.body_terms.get(term)) |ti| {
             const ent = body_index.terms[ti];
             var df: u32 = 0;
             for (body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (body_visible[p.document_index]) {
@@ -216,14 +310,17 @@ pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, b
     sortCandidates(filename[0..fn_count], body_docs);
     var body = std.ArrayList(Candidate).empty;
     if (field == .both) {
+        var by_path: std.StringHashMapUnmanaged(usize) = .empty;
+        defer by_path.deinit(allocator);
         for (body_docs, body_scores, 0..) |doc, score, bi| if (score > 0 and body_visible[bi]) {
-            const found = blk: {
-                for (body.items, 0..) |*x, ix| if (std.mem.eql(u8, x.path, doc.path)) break :blk ix;
-                break :blk null;
-            };
-            if (found) |ix| {
+            const slot = try by_path.getOrPut(allocator, doc.path);
+            if (slot.found_existing) {
+                const ix = slot.value_ptr.*;
                 if (score > body.items[ix].score or (score == body.items[ix].score and std.mem.order(u8, doc.id, body_docs[body.items[ix].body_index].id) == .lt)) body.items[ix] = .{ .path = doc.path, .body_index = bi, .score = score };
-            } else try body.append(allocator, .{ .path = doc.path, .body_index = bi, .score = score });
+            } else {
+                slot.value_ptr.* = body.items.len;
+                try body.append(allocator, .{ .path = doc.path, .body_index = bi, .score = score });
+            }
         };
         sortCandidates(body.items, body_docs);
     }
@@ -240,19 +337,7 @@ pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, b
     }
     return out.toOwnedSlice(allocator);
 }
-fn scopedAvg(index: postings.Index, docs: []const hybrid.Document, body: []const hybrid.Document, options: hybrid.SearchOptions) f32 {
-    var n: usize = 0;
-    var total: usize = 0;
-    for (docs, 0..) |doc, i| if (inScope(doc, findAnchor(body, doc) orelse continue, options)) {
-        n += 1;
-        total += index.document_lengths[i];
-    };
-    return if (n == 0) 0 else @as(f32, @floatFromInt(total)) / @as(f32, @floatFromInt(n));
-}
-fn findAnchor(body: []const hybrid.Document, catalog_doc: hybrid.Document) ?usize {
-    for (body, 0..) |d, i| if (std.mem.eql(u8, d.id, catalog_doc.id) and std.mem.eql(u8, d.path, catalog_doc.path)) return i;
-    return null;
-}
+
 fn mergeHit(a: std.mem.Allocator, out: *std.ArrayList(Hit), docs: []const hybrid.Document, c: Candidate, is_body: bool, rank: usize, k: f32) !void {
     for (out.items) |*h| if (std.mem.eql(u8, docs[h.document_index].path, c.path)) {
         if (is_body) {

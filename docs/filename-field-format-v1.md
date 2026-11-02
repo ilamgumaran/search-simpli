@@ -33,7 +33,7 @@ the final admitted/carried-forward body set, including budget-exhausted paths.
 
 ## Process contracts
 
-Contract version is 2.1.0 and Dart package 0.3.0; consumers must repin.
+Contract version is 2.2.0 and Dart package 0.3.0; consumers must repin.
 Native freshness requires real platform rebuilding; never stamp stale binaries current.
 Index options add boolean `filename_index` (default false); CLI spells it
 `--filename-index`. Python opt-in snapshot version 2 contains filename-index

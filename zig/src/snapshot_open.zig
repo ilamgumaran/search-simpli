@@ -18,10 +18,10 @@ const source_section = @import("source.zig");
 pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.Engine {
     const loaded = try loadEngine(allocator, io, dir, .{});
     var opened = loaded.engine;
+    if (loaded.metadata.meta.len != 0) opened.roots = (try manifest.parseMeta(allocator, loaded.metadata.meta)).roots;
     // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
     // terms' ordinals and its hits' offsets.
     if (opened.lexical_index.positions != null) opened.position_tables = try postings.buildPositionTables(allocator, opened.lexical_index);
-    if (loaded.metadata.meta.len != 0) opened.roots = (try manifest.parseMeta(allocator, loaded.metadata.meta)).roots;
     return opened;
 }
 
@@ -43,8 +43,15 @@ fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options
     const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
     const metadata = try manifest.decode(manifest_encoded);
 
-    const documents_buffer = try allocator.alloc(u8, metadata.documents_bytes);
-    const lexical_buffer = try allocator.alloc(u8, metadata.lexical_bytes);
+    // One allocation avoids arena geometric-growth slack between two large
+    // serialized sections, especially with manifest-bound recovery metadata.
+    const section_bytes = std.math.add(usize, metadata.documents_bytes, metadata.lexical_bytes) catch return error.IndexTooLarge;
+    const filename_bytes = if (metadata.filename) |f| std.math.add(usize, f.catalog_bytes, f.lexical_bytes) catch return error.IndexTooLarge else 0;
+    const with_source = std.math.add(usize, section_bytes, metadata.source_bytes) catch return error.IndexTooLarge;
+    const retained_bytes = std.math.add(usize, with_source, filename_bytes) catch return error.IndexTooLarge;
+    const sections = try allocator.alloc(u8, retained_bytes);
+    const documents_buffer = sections[0..metadata.documents_bytes];
+    const lexical_buffer = sections[metadata.documents_bytes..section_bytes];
     const snapshot = publication.LoadedSnapshot{
         .metadata = metadata,
         .manifest_encoded = manifest_encoded,
@@ -67,15 +74,16 @@ fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options
     const document_lengths = try allocator.alloc(u32, metadata.document_count);
 
     var opened = try engine.Engine.openWith(snapshot, documents, vectors, terms, posting_storage, document_lengths, options);
-    // PR #21: the filename sections (manifest v3), read and validated here
-    // as the PR did; S4-T2 R4 moves them to the first filename query.
+    if (metadata.hasSource()) opened.source_buffer = sections[section_bytes..with_source];
+
     if (metadata.filename) |f| {
-        const catalog_buffer = try allocator.alloc(u8, f.catalog_bytes);
-        const lexical_extra_buffer = try allocator.alloc(u8, f.lexical_bytes);
+        const catalog_buffer = sections[with_source .. with_source + f.catalog_bytes];
+        const lexical_extra_buffer = sections[with_source + f.catalog_bytes ..];
         opened.catalog_encoded = try dir.readFile(io, f.catalog_file, catalog_buffer);
         opened.filename_lexical_encoded = try dir.readFile(io, f.lexical_file, lexical_extra_buffer);
-        try manifest.validateSnapshotWithFilename(metadata, snapshot.documents_encoded, snapshot.lexical_encoded, opened.catalog_encoded, opened.filename_lexical_encoded);
-        try @import("filename_field.zig").validate(allocator, opened.documents, opened.catalog_encoded, opened.filename_lexical_encoded, opened.analyzer_id);
+        try manifest.validateFilenameSections(metadata, opened.catalog_encoded, opened.filename_lexical_encoded);
+        opened.filename_decoded = try @import("filename_field.zig").decode(allocator, opened.documents, opened.lexical_index, opened.catalog_encoded, opened.filename_lexical_encoded);
+        try @import("filename_field.zig").validateDecoded(allocator, opened.filename_decoded.?, opened.analyzer_id);
         opened.filename_index_enabled = true;
     }
     return .{ .engine = opened, .metadata = metadata };
@@ -137,6 +145,7 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
     var opened_engine = loaded.engine;
     const metadata = loaded.metadata;
     const meta: ?manifest.Meta = if (metadata.meta.len != 0) try manifest.parseMeta(allocator, metadata.meta) else null;
+    opened_engine.roots = if (meta) |m| m.roots else &scope.legacy_roots;
     const loads = try allocator.create(scope.Loads);
     loads.* = .{
         .io = io,
@@ -144,6 +153,7 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
         .documents = opened_engine.documents,
         .index = opened_engine.lexical_index,
         .source_bytes = metadata.source_bytes,
+        .source_buffer = opened_engine.source_buffer,
         .source_checksum = metadata.source_checksum,
         .xxh3_sections = metadata.xxh3_sections,
     };
@@ -164,7 +174,6 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
     folder.* = try scope.Folder.build(allocator, meta, loads);
     folder.has_positions = metadata.has_positions;
     folder.source_bound = metadata.hasSource();
-    if (meta) |m| opened_engine.roots = m.roots;
     opened_engine.folder = folder;
     return .{ .engine = opened_engine, .folder = folder };
 }

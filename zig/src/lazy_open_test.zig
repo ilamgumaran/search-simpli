@@ -18,6 +18,29 @@ const source = @import("source.zig");
 
 const io = std.testing.io;
 
+test "lazy source rejects appended and truncated bytes on its pinned handle" {
+    for ([_]bool{ false, true }) |append| {
+        var indexed = try Indexed.init();
+        defer indexed.deinit();
+        const a = indexed.arena();
+        const dir = indexed.out_tmp.dir;
+        const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+        const bytes = try dir.readFileAlloc(io, metadata.source_file, a, .unlimited);
+        const opened = try snapshot_open.openScoped(a, io, dir);
+        defer opened.folder.close();
+        const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+        try std.testing.expectEqualStrings("unverified", (try scoped.indexStatus(a, .{})).source);
+        const damaged = if (append) try std.mem.concat(a, u8, &.{ bytes, "EXTRA-BYTES" }) else bytes[0 .. bytes.len - 1];
+        try dir.writeFile(io, .{ .sub_path = metadata.source_file, .data = damaged });
+        const result = try scoped.readSpan(a, .{}, "r-legacy", "week.md", 1, 1, 0);
+        try std.testing.expect(result == .failed);
+        try std.testing.expectEqualStrings("unavailable", (try scoped.indexStatus(a, .{})).source);
+        try std.testing.expectEqualStrings("SourceSectionSizeMismatch", opened.folder.sourceError().?);
+        // Retained-source damage does not disable token/position retrieval.
+        try std.testing.expect((try scoped.find(a, .{ .query = "tide" }, .{})).ok.hits.len > 0);
+    }
+}
+
 const Indexed = struct {
     arena_state: std.heap.ArenaAllocator,
     folder_tmp: std.testing.TmpDir,

@@ -1,0 +1,180 @@
+{
+  "toolchain": "Zig 0.16.0",
+  "build": "ReleaseSmall",
+  "platform": "Linux x86_64",
+  "query": "doc",
+  "samples_per_field": 20,
+  "warmups": 5,
+  "rows": [
+    {
+      "files": 1000,
+      "cap_mib": 64,
+      "exit": 0,
+      "measurements": [
+        {
+          "field": "filename",
+          "files": 1000,
+          "open_ns": 13827975,
+          "p50_ns": 76980,
+          "p95_ns": 96151,
+          "peak_bytes": 18930238,
+          "cap_bytes": 67108864
+        },
+        {
+          "field": "both",
+          "files": 1000,
+          "open_ns": 13827975,
+          "p50_ns": 96214,
+          "p95_ns": 283060,
+          "peak_bytes": 18930238,
+          "cap_bytes": 67108864
+        }
+      ]
+    },
+    {
+      "files": 10000,
+      "cap_mib": 64,
+      "exit": 0,
+      "measurements": [
+        {
+          "field": "filename",
+          "files": 10000,
+          "open_ns": 103483442,
+          "p50_ns": 1326322,
+          "p95_ns": 1639263,
+          "peak_bytes": 57269176,
+          "cap_bytes": 67108864
+        },
+        {
+          "field": "both",
+          "files": 10000,
+          "open_ns": 103483442,
+          "p50_ns": 1372163,
+          "p95_ns": 2527360,
+          "peak_bytes": 57269176,
+          "cap_bytes": 67108864
+        }
+      ]
+    },
+    {
+      "files": 15000,
+      "cap_mib": 64,
+      "exit": 1,
+      "measurements": [
+        {
+          "stage": "open",
+          "error": "OutOfMemory",
+          "cap_bytes": 67108864,
+          "peak_bytes": 5684004
+        }
+      ]
+    },
+    {
+      "files": 15000,
+      "cap_mib": 256,
+      "exit": 0,
+      "measurements": [
+        {
+          "field": "filename",
+          "files": 15000,
+          "open_ns": 137387424,
+          "p50_ns": 2192908,
+          "p95_ns": 3031847,
+          "peak_bytes": 84958978,
+          "cap_bytes": 268435456
+        },
+        {
+          "field": "both",
+          "files": 15000,
+          "open_ns": 137387424,
+          "p50_ns": 2111812,
+          "p95_ns": 2665143,
+          "peak_bytes": 84958978,
+          "cap_bytes": 268435456
+        }
+      ]
+    },
+    {
+      "files": 20000,
+      "cap_mib": 64,
+      "exit": 1,
+      "measurements": [
+        {
+          "stage": "open",
+          "error": "OutOfMemory",
+          "cap_bytes": 67108864,
+          "peak_bytes": 7583224
+        }
+      ]
+    },
+    {
+      "files": 20000,
+      "cap_mib": 256,
+      "exit": 0,
+      "measurements": [
+        {
+          "field": "filename",
+          "files": 20000,
+          "open_ns": 198576132,
+          "p50_ns": 2769919,
+          "p95_ns": 3293128,
+          "peak_bytes": 112924828,
+          "cap_bytes": 268435456
+        },
+        {
+          "field": "both",
+          "files": 20000,
+          "open_ns": 198576132,
+          "p50_ns": 2923585,
+          "p95_ns": 3560834,
+          "peak_bytes": 112924828,
+          "cap_bytes": 268435456
+        }
+      ]
+    }
+  ],
+  "binary_sha256": "8f3c21eec8e2ad9323b95919673a263b96d0e3e567174815b166622e5f97dd02",
+  "corpora": {
+    "1000": {
+      "files": 1000,
+      "manifest_sha256": "ff18d9decd109d8780a1291570791e0209e73ee0e44874973d2d2ee5b6f80ec5"
+    },
+    "10000": {
+      "files": 10000,
+      "manifest_sha256": "a049e0214dc257bae9d7697efa674627da4f92aa23cfefb6ddcc7666e67cb92e"
+    },
+    "15000": {
+      "files": 15000,
+      "manifest_sha256": "71e9d9e1776148ad92068abd81b958c98f533fe8211b0867289ce5d45bc3879c"
+    },
+    "20000": {
+      "files": 20000,
+      "manifest_sha256": "a9f989f41ec1f2ff574fbdb13093584a0a6cb4c9990beb9190e24e4b97a24321"
+    }
+  },
+  "shared_body_term_probe": {
+    "query": "doc the",
+    "files": 10000,
+    "cap_mib": 64,
+    "measurements": [
+      {
+        "field": "filename",
+        "files": 10000,
+        "open_ns": 171712540,
+        "p50_ns": 1388696,
+        "p95_ns": 2434108,
+        "peak_bytes": 57270508,
+        "cap_bytes": 67108864
+      },
+      {
+        "field": "both",
+        "files": 10000,
+        "open_ns": 171712540,
+        "p50_ns": 6781182,
+        "p95_ns": 10192282,
+        "peak_bytes": 61210640,
+        "cap_bytes": 67108864
+      }
+    ]
+  }
+}

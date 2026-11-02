@@ -370,6 +370,7 @@ pub const Loads = struct {
     source_file: ?std.Io.File = null,
     /// The manifest's length and checksum of the source section.
     source_bytes: usize = 0,
+    source_buffer: ?[]u8 = null,
     source_checksum: u64 = 0,
     /// The manifest's `xxh3_sections` flag (v2.1, S4-T1).
     xxh3_sections: bool = false,
@@ -410,7 +411,9 @@ pub const Loads = struct {
     fn readSource(loads: *Loads) error{OutOfMemory}!?[]const u8 {
         if (loads.source_error) |name| return name; // the open could not open the file
         const file = loads.source_file orelse return null;
-        const buffer = try loads.allocator.alloc(u8, loads.source_bytes);
+        const stat = file.stat(loads.io) catch |err| return @errorName(err);
+        if (stat.size != loads.source_bytes) return "SourceSectionSizeMismatch";
+        const buffer = loads.source_buffer orelse try loads.allocator.alloc(u8, loads.source_bytes);
         const read = file.readPositionalAll(loads.io, buffer, 0) catch |err| return @errorName(err);
         if (read != loads.source_bytes) return "SourceSectionSizeMismatch";
         // The checksum is computed once, by `openIndexed`'s header check,

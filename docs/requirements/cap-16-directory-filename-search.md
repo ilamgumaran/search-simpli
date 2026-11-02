@@ -105,7 +105,7 @@ CON-01 gains match-origin/policy information only in new-mode responses;
 CON-02 specifies the opt-in request parameter; CON-03 gains optional versioned
 filename-channel import data. Document the manifest revision and status capability
 alongside these schemas. C ABI/Dart JSON options and contract version must evolve
-together. The S3 integration uses contract 2.1.0 and HYBMAN03; see the
+together. The S3/S4 integration uses contract 2.2.0 and HYBMAN03; see the
 [integration report](../tasks/recovery-filename-integration.md) for native
 build provenance and verification. The earlier draft's 1.3.0 contract and
 filename draft-v2 manifest are superseded.

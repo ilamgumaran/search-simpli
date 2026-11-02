@@ -26,10 +26,10 @@ source at `daddbee`. Supersedes the pre-S3 integration base of draft PR #18.
 
 ## Implementation
 
-Contract 2.1.0 / Dart 0.3.0 integrates the prior filename field and match
+Contract 2.2.0 / Dart 0.3.0 integrates the prior filename field and match
 sections into current S3 surfaces. Optional filename queries require explicit
 lexical mode. Default content behavior and contract 2.0.0 function signatures
-remain; strict-version consumers must repin to 2.1.0.
+remain; strict-version consumers must repin to 2.2.0.
 
 Main's HYBMAN02 remains 104 bytes; new HYBMAN03 is 152 bytes with the two
 filename section descriptors and nine payload strings. See
@@ -114,3 +114,15 @@ requests. Requirements, home-path and diff whitespace checks pass again.
 The public fixture is authored evidence, not real-folder relevance. No
 physical phone execution is claimed. Independent maintainer review and
 consumer pin/device validation remain separate from this source integration.
+
+## Follow-up integration with S4-T1
+
+Current candidate includes main `f45c06d` and moves the combined contract to
+2.2.0. The earlier build results above describe the previous 2.1.0 candidate,
+not this combined tree. See [S4 integration review](../reviews/2026-11-01-s4-integration.md)
+for the new fixes, allocation tradeoff, verification and remaining acceptance.
+
+The S4 follow-up is verified at source `dc800e3`: 282 Zig / 22 ABI / 83 Dart
+tests, clean Dart analysis and genuine three-platform packages. Native build
+provenance, allocation tradeoffs, raw scaling data and remaining work are in
+the linked S4 review. Contract 2.2.0 supersedes the earlier candidate's 2.1.0.
