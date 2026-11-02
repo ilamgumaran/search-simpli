@@ -694,7 +694,7 @@ These choices do not block the current reference. They materially affect E005B a
 ## 2026-11-01 — Recovery/filename integration candidate
 
 Owner-authorized follow-up on `improve/recovery-and-filename`, claim #20.
-Contract 2.1.0 integrates filename search with S3 via manifest v3, exact
+Contract 2.1.0 integrates filename search with S3 via manifest v3 (superseded by S4-T2: contract 2.2.0, manifest v2.2), exact
 manifest-bound recovery state, restricted write policy and no-follow directory
 handles. Native packages were rebuilt and checked on macOS; 82 Dart tests
 pass, alongside 263 Zig and 22 C ABI checks. This is not merged or a phone

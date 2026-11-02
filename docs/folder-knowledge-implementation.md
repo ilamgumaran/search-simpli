@@ -754,10 +754,10 @@ runs are three per build. NFR-10's "10k chunks" is measured at 19,959.
 Main's implemented 104-byte HYBMAN02/version 2 remains authoritative. The
 unmerged CAP-16 branch at daddbee independently uses HYBMAN02 for a 136-byte
 filename-channel layout. These are incompatible formats despite sharing an
-identifier. Preserve main-v2; freeze a distinct HYBMAN03/version 3 layout for
-combined filename/source support before CAP-16 integration, including explicit
-section descriptors, lengths and checksums. Test v1, main-v2, filename-v3 and
-combined-v3 compatibility. Rebuild CAP-16 draft-v2 snapshots in a separate
+identifier. Preserve main-v2. (Resolved by S4-T2: the filename extension is
+manifest v2 flag bit 3, [v2.2](manifest-format-v2.md#v22-filename-sections-s4-t2-cap-16),
+with explicit section lengths and checksums; PR #21's interim HYBMAN03/version 3
+was never released and is not read.) Rebuild CAP-16 draft-v2 snapshots in a separate
 directory; do not infer a format from length alone. Rebase CAP-16 onto main's
 source/positions/roots implementation before rebuilding packaged libraries.
 

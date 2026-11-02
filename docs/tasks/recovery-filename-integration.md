@@ -9,7 +9,7 @@ source at `daddbee`. Supersedes the pre-S3 integration base of draft PR #18.
 
 - Preserve S3 phrase/prefix/words, headings, exact source reads, roots, labels,
   pending files, MCP and existing default content results.
-- Bind filename sections under HYBMAN03/version 3; keep v1/v2 readers and
+- Bind filename sections under HYBMAN03/version 3 (S4-T2: manifest v2.2, flag bit 3, instead); keep v1/v2 readers and
   reject the old incompatible filename draft-v2. Require a separate directory
   for changing filename enablement or analyzer identity; updates retain it.
 - Validate filename sizes, checksums, counts, safe filenames and anchors;
@@ -32,8 +32,9 @@ lexical mode. Default content behavior and contract 2.0.0 function signatures
 remain; strict-version consumers must repin to 2.2.0.
 
 Main's HYBMAN02 remains 104 bytes; new HYBMAN03 is 152 bytes with the two
-filename section descriptors and nine payload strings. See
-[format v3](../manifest-format-v3.md). Source, positions, roots and section
+filename section descriptors and nine payload strings. (S4-T2 replaced
+HYBMAN03 with the same fields as manifest v2 flag bit 3:
+[v2.2](../manifest-format-v2.md#v22-filename-sections-s4-t2-cap-16).) Source, positions, roots and section
 paths remain intact. CAP-16's unmerged draft-v2 snapshots need a fresh output
 directory; no length-based format guessing is added.
 

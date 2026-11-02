@@ -1,7 +1,8 @@
-# Generation manifest format v2 (minor version 2.1)
+# Generation manifest format v2 (minor version 2.2)
 
 Status: implemented in `zig/src/manifest.zig` (S3-T1; v2.1 flag bit 2 since
-S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1)). Magic: `HYBMAN02`.
+S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1); v2.2 flag bit 3 since
+S4-T2, see [v2.2](#v22-filename-sections-s4-t2-cap-16)). Magic: `HYBMAN02`.
 Written by `searchd index` / `ss_index_folder` (`zig/src/indexer.zig`).
 `import-json` still writes [v1](manifest-format-v1.md), and every reader opens
 both. Design: [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §1.
@@ -11,13 +12,13 @@ a third bound section, the [source section](source-section-v1.md), two flags,
 and a `meta` JSON object that names the chunkers and roots that produced the
 generation (CAP-19 FR-18, CFT-09).
 
-## Header (104 bytes, little-endian)
+## Header (104 bytes, little-endian; 152 with the v2.2 filename extension)
 
 | Offset | Size | Field | Since |
 |---:|---:|---|---|
 | 0 | 8 | magic `HYBMAN02` | v2 (v1: `HYBMAN01`) |
 | 8 | 2 | version `2` | |
-| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1); other bits must be zero | v2 (v1: zero) |
+| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2); other bits must be zero | v2 (v1: zero) |
 | 12 | 8 | generation number (nonzero) | v1 |
 | 20 | 4 | shared document count | v1 |
 | 24 | 4 | vector dimensions | v1 |
@@ -30,8 +31,8 @@ generation (CAP-19 FR-18, CFT-09).
 | 68 | 8 | lexical section internal checksum | v1 |
 | 76 | 8 | source section byte length (`0` without one) | v2 |
 | 84 | 8 | source section internal checksum (`0` without one) | v2 |
-| 92 | 4 | variable payload byte length | v1 at 76 |
-| 96 | 8 | manifest checksum | v1 at 80 |
+| 92 | 4 | variable payload byte length (at 140 with bit 3, below) | v1 at 76 |
+| 96 | 8 | manifest checksum (at 144 with bit 3) | v1 at 80 |
 
 Offsets 0–75 have the v1 meaning. The manifest checksum is FNV-1a over header
 bytes 0–95 followed by the payload: accidental-corruption detection, not
@@ -159,14 +160,64 @@ Compatibility:
 - `import-json` keeps writing a v1 manifest, record v3 and `HYBLEX01` with
   FNV-1a, byte for byte as before.
 
-## Follow-up: cross-branch manifest version reservation
+## v2.2: filename sections (S4-T2, CAP-16)
 
-Main's implemented 104-byte HYBMAN02/version 2 remains authoritative. The
-unmerged CAP-16 branch at daddbee independently uses HYBMAN02 for a 136-byte
-filename-channel layout. These are incompatible formats despite sharing an
-identifier. Preserve main-v2; freeze a distinct HYBMAN03/version 3 layout for
-combined filename/source support before CAP-16 integration, including explicit
-section descriptors, lengths and checksums. Test v1, main-v2, filename-v3 and
-combined-v3 compatibility. Rebuild CAP-16 draft-v2 snapshots in a separate
-directory; do not infer a format from length alone. Rebase CAP-16 onto main's
-source/positions/roots implementation before rebuilding packaged libraries.
+Bit 3 of the flags, `filename_sections` (`0x0008`), says the generation binds
+the two sections of the opt-in filename channel
+([`filename-field-v1`](filename-field-format-v1.md)): a catalog
+`filenames-N.hybseg` and its lexical section `filename-lexical-N.hyblex`. The
+magic `HYBMAN02`, the version `2`, offsets 0–91 and the manifest's FNV-1a
+checksum are unchanged. With bit 3 set the header grows by 48 bytes inserted
+before the payload length, and the payload by three strings:
+
+| Offset | Size | Field |
+|---:|---:|---|
+| 92 | 4 | filename catalog file count |
+| 96 | 4 | filename lexical term count |
+| 100 | 8 | filename lexical posting count |
+| 108 | 8 | catalog byte length |
+| 116 | 8 | catalog internal checksum |
+| 124 | 8 | filename lexical byte length |
+| 132 | 8 | filename lexical internal checksum |
+| 140 | 4 | variable payload byte length |
+| 144 | 8 | manifest checksum (over bytes 0–143 and the payload) |
+
+Payload strings 7–9 follow the six above: the catalog filename, the filename
+lexical filename and the policy id `filename-field-v1`. All section names are
+safe, distinct basenames (the documents, lexical, source and both filename
+sections). Both filename sections have zero vector dimensions and the file
+count, term count and posting count the header records; their lengths and
+checksums are bound like the others, and bit 2 covers them too (an XXH3
+filename section without it is refused).
+
+The filename sections are not read by an open. The first filename or `both`
+query on a handle reads both, checks each length and checksum against the
+manifest and the counts, and walks the catalog (sorted safe paths, each stem
+equal to its text, each record anchored at a real body chunk with the same
+labels); the decoded catalog, its body-anchor ordinals and the filename term
+lookup stay on the handle. `index_status` reports `filename_policy_id` from
+the manifest alone. Writers validate the canonical postings in full before
+publishing (`filename_field.validate`). Visible root masks apply through the
+body anchor's ordinal, never the catalog's own; `df` and the average length
+are computed over the same visible scope.
+
+Publication links both filename files with the other sections before the
+directory sync and the `MANIFEST` replacement; generation allocation skips a
+number any leftover filename file holds, and pruning removes them with their
+generation.
+
+Compatibility:
+- A reader before v2.2 refuses a filename generation on bit 3 with
+  `UnsupportedFlags` before it reads any section: the 0.2.1 library (f45c06d,
+  v2.1) and the 292cb568 library (v2.0) alike. A generation without filename
+  sections does not set bit 3.
+- The channel is chosen when a directory is created: enabling it, disabling it
+  or changing its analyzer needs a fresh directory
+  (`FilenameSettingMismatch`, `FilenameMigrationRequiresNewDirectory`); later
+  updates keep it.
+- PR #21 first wrote this extension as `HYBMAN03` version 3 (152-byte header,
+  nine strings, the same fields in the same order). No released library wrote
+  it and its natives were never pinned by a consumer, so v2.2 replaces it and
+  no reader accepts `HYBMAN03` (`BadMagic`). The CAP-16 draft at `daddbee`,
+  which reused `HYBMAN02` for a 136-byte layout, is not readable either: such
+  a directory is rebuilt.

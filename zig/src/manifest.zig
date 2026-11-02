@@ -25,6 +25,19 @@ pub const flag_has_positions: u16 = 2;
 /// a section; a reader since v2.1 refuses an XXH3 section under a manifest
 /// that does not set it. The manifest's own checksum stays FNV-1a 64.
 pub const flag_xxh3_sections: u16 = 4;
+/// S4-T2 (`docs/manifest-format-v2.md` v2.2, CAP-16): the generation binds
+/// the two filename sections (`docs/filename-field-format-v1.md`). The
+/// header grows by `filename_header_bytes` before its payload length and the
+/// payload by three strings (catalog file, filename lexical file, policy
+/// id). Readers before v2.2 refuse the manifest on this bit
+/// (`UnsupportedFlags`). PR #21 first wrote this extension as `HYBMAN03`
+/// version 3; no released library wrote that, and v2.2 replaces it.
+pub const flag_filename_sections: u16 = 8;
+/// The bytes the filename extension adds to the v2 header: file, term and
+/// posting counts, then each section's length and checksum.
+pub const filename_header_bytes: usize = 48;
+/// Every v2 flag this reader knows; any other bit is `UnsupportedFlags`.
+pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections;
 
 pub const FilenameMetadata = struct {
     file_count: usize,
@@ -38,10 +51,6 @@ pub const FilenameMetadata = struct {
     lexical_file: []const u8,
     policy_id: []const u8,
 };
-
-pub const magic_v3 = "HYBMAN03";
-pub const version_v3: u16 = 3;
-pub const header_length_v3: usize = 152;
 
 pub const Manifest = struct {
     generation: u64,
@@ -209,7 +218,7 @@ pub fn withFilename(
     const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
     if (catalog.vector_dimensions != 0 or catalog.document_count != lexical.document_count) return error.FilenameCountMismatch;
     var value = base;
-    value.format_version = version_v3;
+    value.format_version = version_v2;
     if (catalog.checksum_kind == .xxh3_64 or lexical.checksum_kind == .xxh3_64) value.xxh3_sections = true;
     if (value.meta.len == 0) value.meta = "{\"manifest_meta\":2,\"chunkers\":[{\"id\":\"line-window-v1\",\"params\":{\"max_chars\":1600,\"overlap_lines\":3}}],\"roots\":[{\"root_id\":\"r-legacy\",\"label\":\"folder\",\"kind\":\"local\",\"required_labels\":[]}],\"source_section_version\":0}";
     value.filename = .{
@@ -259,11 +268,13 @@ fn payloadStrings(value: Manifest) [9][]const u8 {
 }
 
 fn stringCount(value: Manifest) usize {
-    return if (value.format_version == version_v3) 9 else if (value.format_version >= version_v2) 6 else 4;
+    if (value.format_version < version_v2) return 4;
+    return if (value.filename != null) 9 else 6;
 }
 
 fn headerLengthOf(value: Manifest) usize {
-    return if (value.format_version == version_v3) header_length_v3 else if (value.format_version >= version_v2) header_length_v2 else header_length;
+    if (value.format_version < version_v2) return header_length;
+    return header_length_v2 + (if (value.filename != null) filename_header_bytes else 0);
 }
 
 pub fn encodedLength(value: Manifest) ManifestError!usize {
@@ -324,8 +335,9 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
     if (value.hasSource()) flags |= flag_has_source;
     if (value.has_positions) flags |= flag_has_positions;
     if (value.xxh3_sections) flags |= flag_xxh3_sections;
+    if (value.filename != null) flags |= flag_filename_sections;
 
-    @memcpy(output[0..magic_v2.len], if (value.format_version == version_v3) magic_v3 else magic_v2);
+    @memcpy(output[0..magic_v2.len], magic_v2);
     var header_offset: usize = magic_v2.len;
     writeU16(output, &header_offset, value.format_version);
     writeU16(output, &header_offset, flags);
@@ -372,11 +384,11 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
 fn decodeV2(encoded: []const u8) ManifestError!Manifest {
     var cursor = Cursor{ .bytes = encoded, .offset = magic_v2.len };
     const format = try cursor.readU16();
-    const is_v3 = std.mem.eql(u8, encoded[0..8], magic_v3);
-    if (format != (if (is_v3) version_v3 else version_v2)) return error.UnsupportedVersion;
-    const header_len: usize = if (is_v3) header_length_v3 else header_length_v2;
+    if (format != version_v2) return error.UnsupportedVersion;
     const flags = try cursor.readU16();
-    if (flags & ~(flag_has_source | flag_has_positions | flag_xxh3_sections) != 0) return error.UnsupportedFlags;
+    if (flags & ~known_flags_v2 != 0) return error.UnsupportedFlags;
+    const has_filename = flags & flag_filename_sections != 0;
+    const header_len: usize = header_length_v2 + (if (has_filename) filename_header_bytes else 0);
     const generation = try cursor.readU64();
     const document_count = try castToUsize(try cursor.readU32());
     const vector_dimensions = try castToUsize(try cursor.readU32());
@@ -390,7 +402,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
     const source_bytes = try castToUsize(try cursor.readU64());
     const source_checksum = try cursor.readU64();
     var filename: ?FilenameMetadata = null;
-    if (is_v3) filename = .{
+    if (has_filename) filename = .{
         .file_count = try castToUsize(try cursor.readU32()),
         .term_count = try castToUsize(try cursor.readU32()),
         .posting_count = try castToUsize(try cursor.readU64()),
@@ -459,7 +471,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
 pub fn decode(encoded: []const u8) ManifestError!Manifest {
     var cursor = Cursor{ .bytes = encoded };
     const actual_magic = try cursor.take(magic.len);
-    if (std.mem.eql(u8, actual_magic, magic_v2) or std.mem.eql(u8, actual_magic, magic_v3)) return decodeV2(encoded);
+    if (std.mem.eql(u8, actual_magic, magic_v2)) return decodeV2(encoded);
     if (!std.mem.eql(u8, actual_magic, magic)) return error.BadMagic;
     if (try cursor.readU16() != version) return error.UnsupportedVersion;
     if (try cursor.readU16() != 0) return error.UnsupportedFlags;
@@ -594,12 +606,11 @@ fn validateFields(value: Manifest) ManifestError!void {
         };
     }
     if (value.format_version < version_v2) {
-        if (value.format_version != version or value.hasSource() or value.meta.len != 0 or value.has_positions or value.xxh3_sections)
+        if (value.format_version != version or value.hasSource() or value.meta.len != 0 or value.has_positions or value.xxh3_sections or value.filename != null)
             return error.UnsupportedVersion;
         return;
     }
-    if (value.format_version != version_v2 and value.format_version != version_v3) return error.UnsupportedVersion;
-    if ((value.format_version == version_v3) != (value.filename != null)) return error.InvalidFilenamePolicy;
+    if (value.format_version != version_v2) return error.UnsupportedVersion;
     if (value.hasSource()) {
         try validateFilename(value.source_file);
         if (std.mem.eql(u8, value.source_file, value.documents_file) or std.mem.eql(u8, value.source_file, value.lexical_file))
@@ -1249,9 +1260,181 @@ test "manifest v2 rejects bad meta, unsafe source names and stray flags" {
     const value = try createV2(1, "a", "none", "d", "l", "", meta, fixture.documentsEncoded(), fixture.lexicalEncoded(), null);
     var storage: [1024]u8 = undefined;
     const encoded = try encode(value, &storage);
-    // A stray flag bit with a recomputed checksum is refused as unsupported.
-    encoded[10] = 8;
+    // A stray flag bit with a recomputed checksum is refused as unsupported
+    // (bit 3 is the v2.2 filename extension; bit 6 is unassigned).
+    encoded[10] = 0x40;
     var checksum_offset: usize = header_length_v2 - 8;
     writeU64(encoded, &checksum_offset, manifestChecksum(encoded[0 .. header_length_v2 - 8], encoded[header_length_v2..]));
     try std.testing.expectError(error.UnsupportedFlags, decode(encoded));
+}
+
+// ------------------------------------------------- v2.2: flag 8 (S4-T2) ---
+
+const filename_test_meta = "{\"manifest_meta\":2,\"chunkers\":[],\"roots\":[]}";
+
+fn filenameTestManifest(fixture: *SnapshotFixture) !Manifest {
+    var value = try createV2(3, "analyzer-v2", "none", "documents-3.hybseg", "lexical-3.hyblex", "", filename_test_meta, fixture.documentsEncoded(), fixture.lexicalEncoded(), null);
+    value.filename = .{
+        .file_count = 3,
+        .term_count = 5,
+        .posting_count = 6,
+        .catalog_bytes = 101,
+        .catalog_checksum = 0x1111_2222_3333_4444,
+        .lexical_bytes = 202,
+        .lexical_checksum = 0x5555_6666_7777_8888,
+        .catalog_file = "filenames-3.hybseg",
+        .lexical_file = "filename-lexical-3.hyblex",
+        .policy_id = "filename-field-v1",
+    };
+    return value;
+}
+
+/// Recompute a v2 manifest's checksum after a test edited it.
+fn resealV2(encoded: []u8) void {
+    const header_len = header_length_v2 + (if (std.mem.readInt(u16, encoded[10..12], .little) & flag_filename_sections != 0) filename_header_bytes else 0);
+    var offset: usize = header_len - 8;
+    writeU64(encoded, &offset, manifestChecksum(encoded[0 .. header_len - 8], encoded[header_len..]));
+}
+
+/// A v2.2 filename manifest written byte by byte, so a test can give it
+/// payload strings `encode` would refuse.
+fn craftFilenameManifest(allocator: std.mem.Allocator, fixture: *SnapshotFixture, catalog_file: []const u8, lexical_file: []const u8) ![]u8 {
+    var base_storage: [1024]u8 = undefined;
+    var value = try filenameTestManifest(fixture);
+    value.filename = null;
+    const base = try encode(value, &base_storage);
+    var out = std.ArrayList(u8).empty;
+    try out.appendSlice(allocator, base[0..92]);
+    var fields: [filename_header_bytes]u8 = undefined;
+    var at: usize = 0;
+    writeU32(&fields, &at, 3);
+    writeU32(&fields, &at, 5);
+    inline for (.{ 6, 101, 0x1111, 202, 0x2222 }) |field| writeU64(&fields, &at, field);
+    try out.appendSlice(allocator, &fields);
+    try out.appendSlice(allocator, base[92..header_length_v2]);
+    try out.appendSlice(allocator, base[header_length_v2..]);
+    for ([_][]const u8{ catalog_file, lexical_file, "filename-field-v1" }) |field| {
+        var length: [4]u8 = undefined;
+        std.mem.writeInt(u32, &length, @intCast(field.len), .little);
+        try out.appendSlice(allocator, &length);
+        try out.appendSlice(allocator, field);
+    }
+    const bytes = try out.toOwnedSlice(allocator);
+    std.mem.writeInt(u16, bytes[10..12], std.mem.readInt(u16, bytes[10..12], .little) | flag_filename_sections, .little);
+    const header_len = header_length_v2 + filename_header_bytes;
+    std.mem.writeInt(u32, bytes[header_len - 12 ..][0..4], @intCast(bytes.len - header_len), .little);
+    resealV2(bytes);
+    return bytes;
+}
+
+test "S4-T2 manifest v2.2: round trip with and without flag 8, same magic and version" {
+    var fixture = try SnapshotFixture.init();
+    const with = try filenameTestManifest(&fixture);
+    var with_storage: [1024]u8 = undefined;
+    const encoded = try encode(with, &with_storage);
+    try std.testing.expectEqualStrings(magic_v2, encoded[0..8]);
+    try std.testing.expectEqual(version_v2, std.mem.readInt(u16, encoded[8..10], .little));
+    try std.testing.expect(std.mem.readInt(u16, encoded[10..12], .little) & flag_filename_sections != 0);
+    try std.testing.expectEqual(header_length_v2 + filename_header_bytes + 9 * 4 + "analyzer-v2".len + "none".len + "documents-3.hybseg".len +
+        "lexical-3.hyblex".len + filename_test_meta.len + "filenames-3.hybseg".len + "filename-lexical-3.hyblex".len + "filename-field-v1".len, encoded.len);
+    const decoded = try decode(encoded);
+    try std.testing.expectEqual(version_v2, decoded.format_version);
+    const f = decoded.filename.?;
+    try std.testing.expectEqual(@as(usize, 3), f.file_count);
+    try std.testing.expectEqual(@as(usize, 5), f.term_count);
+    try std.testing.expectEqual(@as(usize, 6), f.posting_count);
+    try std.testing.expectEqual(@as(usize, 101), f.catalog_bytes);
+    try std.testing.expectEqual(@as(u64, 0x1111_2222_3333_4444), f.catalog_checksum);
+    try std.testing.expectEqual(@as(usize, 202), f.lexical_bytes);
+    try std.testing.expectEqual(@as(u64, 0x5555_6666_7777_8888), f.lexical_checksum);
+    try std.testing.expectEqualStrings("filenames-3.hybseg", f.catalog_file);
+    try std.testing.expectEqualStrings("filename-lexical-3.hyblex", f.lexical_file);
+    try std.testing.expectEqualStrings("filename-field-v1", f.policy_id);
+    try std.testing.expectEqualStrings(filename_test_meta, decoded.meta);
+    try validateSnapshot(decoded, fixture.documentsEncoded(), fixture.lexicalEncoded());
+
+    var without = with;
+    without.filename = null;
+    var without_storage: [1024]u8 = undefined;
+    const plain = try encode(without, &without_storage);
+    try std.testing.expectEqual(@as(u16, 0), std.mem.readInt(u16, plain[10..12], .little) & flag_filename_sections);
+    try std.testing.expectEqual(encoded.len - filename_header_bytes - 3 * 4 - "filenames-3.hybseg".len - "filename-lexical-3.hyblex".len - "filename-field-v1".len, plain.len);
+    try std.testing.expect((try decode(plain)).filename == null);
+    // A "HYBMAN03" manifest (PR #21's unreleased draft) is not a format.
+    var draft = try std.testing.allocator.dupe(u8, encoded);
+    defer std.testing.allocator.free(draft);
+    @memcpy(draft[0..8], "HYBMAN03");
+    try std.testing.expectError(error.BadMagic, decode(draft));
+}
+
+test "S4-T2 manifest v2.2: the checksum covers every filename header field and payload string" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var fixture = try SnapshotFixture.init();
+    var storage: [1024]u8 = undefined;
+    const encoded = try encode(try filenameTestManifest(&fixture), &storage);
+    // file count 92, term count 96, posting count 100, catalog length 108,
+    // catalog checksum 116, lexical length 124, lexical checksum 132, then
+    // the three payload strings.
+    var offsets = std.ArrayList(usize).empty;
+    try offsets.appendSlice(arena, &.{ 92, 96, 100, 108, 116, 124, 132 });
+    for ([_][]const u8{ "filenames-3.hybseg", "filename-lexical-3.hyblex", "filename-field-v1" }) |name| try offsets.append(arena, std.mem.lastIndexOf(u8, encoded, name).?);
+    for (offsets.items) |at| {
+        const copy = try arena.dupe(u8, encoded);
+        copy[at] ^= 0x01;
+        try std.testing.expectError(error.ChecksumMismatch, decode(copy));
+    }
+    try std.testing.expectError(error.Truncated, decode(encoded[0 .. encoded.len - 1]));
+}
+
+test "S4-T2 manifest v2.2: stray flag bits, duplicate names and missing filename names are refused" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var fixture = try SnapshotFixture.init();
+    var storage: [1024]u8 = undefined;
+    const encoded = try encode(try filenameTestManifest(&fixture), &storage);
+    var bit: u4 = 4;
+    while (true) : (bit += 1) {
+        const copy = try arena.dupe(u8, encoded);
+        std.mem.writeInt(u16, copy[10..12], std.mem.readInt(u16, copy[10..12], .little) | (@as(u16, 1) << bit), .little);
+        resealV2(copy);
+        try std.testing.expectError(error.UnsupportedFlags, decode(copy));
+        if (bit == 15) break;
+    }
+    // Duplicate names, written past `encode`'s own check.
+    try std.testing.expectError(error.SameFilename, decode(try craftFilenameManifest(arena, &fixture, "documents-3.hybseg", "filename-lexical-3.hyblex")));
+    try std.testing.expectError(error.SameFilename, decode(try craftFilenameManifest(arena, &fixture, "filenames-3.hybseg", "lexical-3.hyblex")));
+    try std.testing.expectError(error.SameFilename, decode(try craftFilenameManifest(arena, &fixture, "filenames-3.hybseg", "filenames-3.hybseg")));
+    try std.testing.expect((try decode(try craftFilenameManifest(arena, &fixture, "filenames-3.hybseg", "filename-lexical-3.hyblex"))).filename != null);
+    // Flag 8 without both names.
+    try std.testing.expectError(error.UnsafeFilename, decode(try craftFilenameManifest(arena, &fixture, "", "filename-lexical-3.hyblex")));
+    try std.testing.expectError(error.UnsafeFilename, decode(try craftFilenameManifest(arena, &fixture, "filenames-3.hybseg", "")));
+    var bad = try filenameTestManifest(&fixture);
+    bad.filename.?.catalog_file = "lexical-3.hyblex";
+    try std.testing.expectError(error.SameFilename, encode(bad, &storage));
+}
+
+test "S4-T2 manifest v2.2: what older readers do with a generation this one writes" {
+    // The flag check each older reader runs first (`decodeV2`): the 292cb568
+    // library (v2.0) knows bits 0 and 1, the 0.2.1 library (v2.1, f45c06d)
+    // bits 0 to 2. Both refuse a filename generation with `UnsupportedFlags`;
+    // a generation without filename sections still sets bit 2 (XXH3), so
+    // 292cb568 refuses it too. (Measured with both libraries' `searchd` in
+    // the S4-T2 Report.)
+    const v2_0_known: u16 = flag_has_source | flag_has_positions;
+    const v2_1_known: u16 = v2_0_known | flag_xxh3_sections;
+    var fixture = try SnapshotFixture.init();
+    var with = try filenameTestManifest(&fixture);
+    with.xxh3_sections = true;
+    var storage: [1024]u8 = undefined;
+    const flags_with = std.mem.readInt(u16, (try encode(with, &storage))[10..12], .little);
+    try std.testing.expect(flags_with & ~v2_1_known != 0);
+    try std.testing.expect(flags_with & ~v2_0_known != 0);
+    var without = with;
+    without.filename = null;
+    const flags_without = std.mem.readInt(u16, (try encode(without, &storage))[10..12], .little);
+    try std.testing.expect(flags_without & ~v2_0_known != 0);
+    try std.testing.expectEqual(@as(u16, 0), flags_without & ~v2_1_known);
 }

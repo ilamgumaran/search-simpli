@@ -52,8 +52,16 @@ class FilenameIntegrationTests(unittest.TestCase):
         self.assertNotIn('error',value)
         return value['result']
 
-    def test_v3_preserves_structure_positions_source_and_tool_schema(self):
-        self.assertEqual((self.index/'MANIFEST').read_bytes()[:8], b'HYBMAN03')
+    def assert_manifest_v2_2_filename(self):
+        # S4-T2: the filename extension is manifest v2 flag bit 3 (8), same
+        # magic and version (PR #21's HYBMAN03 draft was never released).
+        manifest = (self.index/'MANIFEST').read_bytes()
+        self.assertEqual(manifest[:8], b'HYBMAN02')
+        self.assertEqual(int.from_bytes(manifest[8:10], 'little'), 2)
+        self.assertTrue(int.from_bytes(manifest[10:12], 'little') & 8)
+
+    def test_v2_2_preserves_structure_positions_source_and_tool_schema(self):
+        self.assert_manifest_v2_2_filename()
         found = json.loads(self.call('find', self.index, 'copper silver', '--mode', 'phrase', '--json'))
         self.assertTrue(found['hits'])
         span = json.loads(self.call('read-span', self.index, 'r-legacy', 'annual-ledger.md', '1','2','--json'))
@@ -81,7 +89,7 @@ class FilenameIntegrationTests(unittest.TestCase):
         private = self.rpc(request,'--roots','vault','--labels','secret')
         self.assertEqual([r['citation']['path'] for r in private['results']],['vault/annual-hidden.md'])
         self.assertEqual(private['pending_files'],1)
-        self.assertEqual((self.index/'MANIFEST').read_bytes()[:8],b'HYBMAN03')
+        self.assert_manifest_v2_2_filename()
         self.assertEqual(validate(private,load_tool_schema('search_knowledge','result')), [])
 
     def test_bound_catalog_corruption_is_not_silently_accepted(self):

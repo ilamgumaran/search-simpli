@@ -143,7 +143,7 @@ with explicit lexical retrieval for filename/both. Tool schemas and canonical
 responses include S3 root/section and completeness metadata. `ss_index_folder`
 opts accept `filename_index`; host-only `ss_apply_changes` opts also accept the
 optional boolean (null/absent preserves the current channel). See
-[the integrated format](manifest-format-v3.md) and
+[the integrated format](manifest-format-v2.md#v22-filename-sections-s4-t2-cap-16) (manifest v2.2) and
 [task/evidence](tasks/recovery-filename-integration.md). Scoped RPC/MCP writers
 are byte-fed and cannot change root/label policy or grant filesystem reads;
 unscoped --allow-write is an index-administration grant.

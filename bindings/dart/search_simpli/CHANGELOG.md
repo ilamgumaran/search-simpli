@@ -25,6 +25,14 @@ written for 0.2.1 compiles and behaves the same against 0.3.0.
   A value that differs from the directory's setting raises
   `FilenameSettingMismatch`; a filename query on a directory without the
   channel raises `FilenameIndexUnavailable`.
+- **Index format: manifest v2.2** (`docs/manifest-format-v2.md`). A
+  filename-enabled generation sets manifest v2 flag bit 3 (same magic and
+  version; PR #21's interim `HYBMAN03` is not written or read). Indexes
+  written by 0.2.0 and 0.2.1 open and update. **Rollback rule:** a library
+  older than 0.3.0 refuses a generation 0.3.0 wrote for a filename-enabled
+  directory (`UnsupportedFlags`; 0.2.0 already refused every v2.1
+  generation), so do not roll the library back over a directory 0.3.0 has
+  updated: keep the previous directory to roll back to.
 - **Scoped writers** (RPC/MCP servers started with `--roots`/`--labels`)
   cannot declare roots, change label policy or read files; trusted Dart and C
   callers are unaffected.

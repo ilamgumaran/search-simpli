@@ -9,9 +9,11 @@ invariant exception. Independent review checks this boundary before runtime work
 ## Persistence
 
 The filename field's semantics below remain v1. The pre-S3 draft persistence
-layout is superseded by [manifest v3](manifest-format-v3.md): HYBMAN03,
-152-byte header, nine payload strings, binding body, positions, source,
-roots and both filename sections. Main's HYBMAN02 (104 bytes) is unchanged.
+layout is superseded by [manifest v2.2](manifest-format-v2.md#v22-filename-sections-s4-t2-cap-16)
+(S4-T2): `HYBMAN02` version 2 with flag bit 3, a 152-byte header and nine
+payload strings, binding body, positions, source, roots and both filename
+sections. A generation without filename sections keeps the 104-byte header.
+PR #21's interim `HYBMAN03` was never released and is not read.
 The old 136-byte HYBMAN02 draft must be rebuilt in a separate directory.
 Publication syncs all bound sections before committing MANIFEST; current
 allocation and retention cover filename sections as well.
