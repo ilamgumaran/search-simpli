@@ -665,3 +665,13 @@ integration and directory-replacement regressions. Intermediate failures,
 verification, native packaging and limits are recorded in
 [the task report](docs/tasks/recovery-filename-integration.md). No production
 relevance or device-execution claim is made.
+
+## Filename query access/scratch regression guard
+
+S4-T2's restored quadratic anchor scan could pass 295 tests. New 1k/10k
+protected-body tests reject actual body-record reads during filename scoring;
+a restored scan in a scratch copy fails at its first guarded read. A linear
+fixed-buffer envelope also covers filename/both scratch with label/root/path
+scopes. The test exposed and removed a redundant comparator self-read. This
+is algorithm-regression evidence, not relevance or device evidence. Results,
+limits, negative controls and genuine package provenance: [task report](docs/tasks/filename-complexity-guard.md).

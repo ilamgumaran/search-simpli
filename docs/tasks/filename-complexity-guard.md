@@ -3,7 +3,7 @@
 Claim: [issue #22](https://github.com/ilamgumaran/search-simpli/issues/22).
 Base: main `b45b1c4` (S4-T2). Branch `improve/filename-complexity-guard`.
 Owner requested reviewing overall objectives and implementing useful repo improvements.
-State: implemented; final verification/native package adoption in progress.
+State: implemented and verified; PR #23, unmerged.
 
 ## Objectives and choice
 
@@ -87,3 +87,38 @@ full Python run executes 238 tests with four existing platform/Unicode
 skips and only the expected native-freshness failure before rebuild/adoption.
 Requirements, home-path and diff-whitespace checks pass. The macOS CI guard
 also passes on source `554e2c3`; final platform/package results follow.
+
+## Native build and final verification
+
+[macOS run 41391464219](https://github.com/ilamgumaran/search-simpli/actions/runs/41391464219)
+at source `554e2c352c0275b6245eeeca44fd8afcb421809c` passes the guard,
+three-target build, platform checks, clean Dart analysis and **83/83 Dart
+tests**. The follow-up workflow at `23a9720` runs the no-skip guard in both
+Debug and ReleaseSmall on macOS as well; that guard step passes. Compiled
+source and the build recipe are unchanged between those commits.
+
+Adopted artifact `13117727699`, archive SHA-256
+`a43755e7d0ec0364deda957477f2223bcc4878337bb70187c4e648febcb07a64`.
+Verified archive checksum, safe paths/types, embedded exact source commit
+and the genuine build-generated digest against this working tree before
+copying native paths. Android JNI copy is byte-identical. Source digest:
+`139bd8af4b3293bcb0e4a078a188c40bb3f6da31a1e4f2bd62add5443a672feb`.
+No source stamp was fabricated. The pinned build uses Zig 0.16.0 and NDK
+28.2.13676358; platform checks retain 16 KiB iOS segment alignment.
+
+Packaged sizes: macOS 808,408 bytes, Android 777,672, iOS 1,051,512. The
+main iOS binary was 789,368 bytes: it uses SDK 27.0 while this CI build
+records SDK 17.5; both record IOS/minos 17.0. Header inspection shows
+`__TEXT` remains 671,744 bytes (the code section changes by 16 bytes),
+`__LINKEDIT` remains 84,856 bytes, and `__DATA` file size changes from
+16,384 to 278,528 bytes. The size delta is data layout, not a claim of a
+larger query workspace. Byte-identical reproduction across SDKs is not
+claimed. The rebuilt framework passes platform/export checks; physical
+phone/app signing and load validation remain the consumer gate.
+
+After authentic package adoption: **238 Python tests in 41.038 seconds,
+four existing platform/Unicode skips, no failures**, including freshness
+and 66-request MCP/RPC canonical parity. Zig 297/297, ABI 23/23, both
+complexity tests in Debug/ReleaseSmall, requirements, privacy and whitespace
+checks pass. Final package/evidence commit reruns both GitHub workflows;
+its results are linked from the PR description/comment.

@@ -767,5 +767,6 @@ Owner-authorized objectives review; claim #22, based on S4-T2 main `b45b1c4`.
 Protected-memory and bounded-scratch tests guard filename query behavior at
 1k/10k files without a timing threshold. A sort self-comparison now avoids
 an unnecessary body-id read. No API/contract/format changes; packages are
-rebuilt from the changed source. Verification is in progress; see
-[task/evidence](docs/tasks/filename-complexity-guard.md). This is unmerged.
+rebuilt from the changed source. Verified: 297 Zig, 23 ABI, 238 Python (four skips), 83 Dart; genuine native
+packages adopted. See [task/evidence](docs/tasks/filename-complexity-guard.md)
+for OS guard limits and the iOS SDK/layout difference. PR #23 is unmerged.
