@@ -462,7 +462,11 @@ pub fn searchSparseTraced(
             .semantic_score = candidate.score,
         };
     }
-    std.sort.pdq(Fused, union_storage, {}, fusedByDocument);
+    // S4-T1 (ruling 4): with one channel empty (lexical-only queries, the
+    // phones' mode) no document appears twice, so the union needs no sort to
+    // find duplicates, and it is already in rank order.
+    const single_channel = lexical_ranked.len == 0 or semantic_ranked.len == 0;
+    if (!single_channel) std.sort.pdq(Fused, union_storage, {}, fusedByDocument);
 
     // Merge the (at most two) entries of one document.
     var merged: usize = 0;
@@ -487,7 +491,9 @@ pub fn searchSparseTraced(
         entry.fused_score = scoring.reciprocalRankContribution(if (entry.lexical_rank != 0) entry.lexical_rank else null, options.rrf_k) +
             scoring.reciprocalRankContribution(if (entry.semantic_rank != 0) entry.semantic_rank else null, options.rrf_k);
     }
-    std.sort.pdq(Fused, fused, {}, fusedBefore);
+    // One channel in rank order is already in `fusedBefore` order (the fused
+    // score falls as the rank grows); the check keeps the result identical.
+    if (!single_channel or !std.sort.isSorted(Fused, fused, {}, fusedBefore)) std.sort.pdq(Fused, fused, {}, fusedBefore);
 
     var result_count: usize = 0;
     while (result_count < fused.len and fused[result_count].fused_score > 0) result_count += 1;
