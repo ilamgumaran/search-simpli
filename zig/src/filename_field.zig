@@ -204,6 +204,21 @@ pub const Decoded = struct {
     /// binary-search lookup. The body dictionary is looked up in place
     /// (`postings.lookupExact`), not copied.
     term_order: []const u32,
+    /// S4-T2 R5, the anchor ordinal map: each body chunk's file, as its
+    /// catalog index, so a query groups chunks by file through an array.
+    file_of: []const u32,
+    /// Sums of the stored lengths, for the unscoped query's BM25 averages
+    /// (the same float division a scoped query does over its visible set).
+    filename_total_length: usize,
+    body_total_length: usize,
+    /// Any file carries a required label (then every query checks scope).
+    labeled: bool,
+    /// The highest root ordinal of any chunk when every chunk lies under a
+    /// root (set by `scope.Loads` after the load; null: unknown, or some
+    /// chunk under no root). A root mask that allows every ordinal up to it
+    /// hides nothing, so such a query is unscoped (S4-T2 R5: the servers pass
+    /// a mask on every request).
+    max_document_root: ?u16 = null,
 
     pub fn filenameTerm(decoded: Decoded, term: []const u8) ?usize {
         const terms = decoded.lexical.terms;
@@ -231,18 +246,18 @@ pub fn loadReservation(metadata: manifest.Manifest) usize {
     const slack = 64;
     var total: usize = f.catalog_bytes + f.lexical_bytes + 6 * slack;
     total += f.file_count * (@sizeOf(hybrid.Document) + @sizeOf(u32) + @sizeOf(usize));
+    total += metadata.document_count * @sizeOf(u32);
     total += f.term_count * (@sizeOf(postings.TermEntry) + @sizeOf(u32));
     total += f.posting_count * @sizeOf(postings.Posting);
     return total;
 }
 pub fn decode(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, catalog_encoded: []const u8, lexical_encoded: []const u8) !Decoded {
-    _ = body_index;
-    return decodeInspected(allocator, body_docs, catalog_encoded, try segment.inspect(catalog_encoded), lexical_encoded, try lexical_segment.inspect(lexical_encoded));
+    return decodeInspected(allocator, body_docs, body_index, catalog_encoded, try segment.inspect(catalog_encoded), lexical_encoded, try lexical_segment.inspect(lexical_encoded));
 }
 
 /// `decode` with both headers already inspected (each checksum computed
 /// once, by `load`).
-fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, catalog_encoded: []const u8, ch: segment.Header, lexical_encoded: []const u8, lh: lexical_segment.Header) !Decoded {
+fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, catalog_encoded: []const u8, ch: segment.Header, lexical_encoded: []const u8, lh: lexical_segment.Header) !Decoded {
     const catalog_storage = try allocator.alloc(hybrid.Document, ch.document_count);
     const catalog = try segment.decodeInspected(catalog_encoded, ch, catalog_storage, &.{});
     const lex_terms = try allocator.alloc(postings.TermEntry, lh.term_count);
@@ -256,8 +271,12 @@ fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Docum
     }
     const anchors = try allocator.alloc(usize, catalog.len);
     @memset(anchors, std.math.maxInt(usize));
+    const file_of = try allocator.alloc(u32, body_docs.len);
+    var body_total_length: usize = 0;
+    for (body_index.document_lengths) |length| body_total_length += length; // empty for `validate`
     for (body_docs, 0..) |doc, i| {
         const ci = catalogIndex(catalog, doc.path) orelse return error.FilenameCatalogMismatch;
+        file_of[i] = @intCast(ci);
         if (!std.mem.eql(u8, doc.required_labels, catalog[ci].required_labels)) return error.FilenameCatalogMismatch;
         if (anchors[ci] == std.math.maxInt(usize) or anchorLess(doc, body_docs[anchors[ci]])) anchors[ci] = i;
     }
@@ -276,7 +295,13 @@ fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Docum
     for (term_order[0..term_order.len -| 1], term_order[@min(1, term_order.len)..]) |a, b| {
         if (std.mem.eql(u8, lexical.terms[a].term, lexical.terms[b].term)) return error.FilenameLexicalMismatch;
     }
-    return .{ .catalog = catalog, .lexical = lexical, .anchors = anchors, .term_order = term_order };
+    var filename_total_length: usize = 0;
+    for (lexical.document_lengths) |length| filename_total_length += length;
+    var labeled = false;
+    for (catalog) |doc| if (doc.required_labels.len != 0) {
+        labeled = true;
+    };
+    return .{ .catalog = catalog, .lexical = lexical, .anchors = anchors, .term_order = term_order, .file_of = file_of, .filename_total_length = filename_total_length, .body_total_length = body_total_length, .labeled = labeled };
 }
 /// S4-T2 R4: read, check and decode the v2.2 filename sections `metadata`
 /// binds, from the two files the open kept (not read) for them. The first
@@ -313,13 +338,20 @@ pub fn load(allocator: std.mem.Allocator, io: std.Io, catalog_file: std.Io.File,
     if (catalog.vector_dimensions != 0) return error.InvalidFilenameCatalog;
     if (lexical.term_count != f.term_count) return error.FilenameTermCountMismatch;
     if (lexical.posting_count != f.posting_count) return error.FilenamePostingCountMismatch;
-    _ = body_index;
-    return decodeInspected(allocator, body_docs, catalog_encoded, catalog, lexical_encoded, lexical);
+    return decodeInspected(allocator, body_docs, body_index, catalog_encoded, catalog, lexical_encoded, lexical);
 }
 
 pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, catalog_encoded: []const u8, lexical_encoded: []const u8, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) ![]Hit {
     return queryDecoded(allocator, body_docs, body_index, try decode(allocator, body_docs, body_index, catalog_encoded, lexical_encoded), analyzer_id, query_text, field, options);
 }
+/// A filename or both query over the decoded sections (S4-T2 R5): linear
+/// in the postings of the query's terms plus, for a scoped query, one pass
+/// over the catalog and the chunks to count the visible set. An unscoped
+/// query (no root mask, no path prefix, no labelled file) uses the totals
+/// the load summed, so it touches only the postings it scores; chunks are
+/// grouped by file through the anchor ordinal map (`file_of`), not by path.
+/// Results equal PR #21's query exactly: the same candidates, BM25 inputs,
+/// tie-breaks, candidate depth and RRF fusion.
 pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) ![]Hit {
     if (field == .content) return error.ContentQueryUseLegacy;
     if (options.retrieval_mode != .lexical) return error.InvalidRetrievalMode;
@@ -327,33 +359,58 @@ pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Docu
     const catalog = decoded.catalog;
     const lexical = decoded.lexical;
     const qt = try tokenize(allocator, analyzer_id, query_text);
-    var filename = try allocator.alloc(Candidate, catalog.len);
-    var fn_count: usize = 0;
-    const filename_visible = try allocator.alloc(bool, catalog.len);
-    var filename_total_len: usize = 0;
-    for (catalog, 0..) |doc, i| {
-        filename_visible[i] = inScope(doc, decoded.anchors[i], options);
-        if (!filename_visible[i]) continue;
-        filename_total_len += lexical.document_lengths[i];
-        filename[fn_count] = .{ .path = doc.path, .body_index = decoded.anchors[i], .score = 0, .catalog_index = i };
-        fn_count += 1;
-    }
-    const filename_avg = if (fn_count == 0) 0 else @as(f32, @floatFromInt(filename_total_len)) / @as(f32, @floatFromInt(fn_count));
-    const body_visible = try allocator.alloc(bool, body_docs.len);
-    var visible_count: usize = 0;
-    var total_len: usize = 0;
-    for (body_docs, 0..) |doc, i| {
-        body_visible[i] = inScope(doc, i, options);
-        if (body_visible[i]) {
-            visible_count += 1;
-            total_len += body_index.document_lengths[i];
+    const scoped = maskHides(decoded, options.visible_roots) or options.path_prefix != null or decoded.labeled;
+
+    // The visible set's size and average length, per field.
+    var filename_visible: ?[]bool = null;
+    var filename_n: usize = catalog.len;
+    var filename_total = decoded.filename_total_length;
+    var body_visible: ?[]bool = null;
+    var body_n: usize = body_docs.len;
+    var body_total = decoded.body_total_length;
+    if (scoped) {
+        const visible = try allocator.alloc(bool, catalog.len);
+        filename_n = 0;
+        filename_total = 0;
+        for (catalog, visible, 0..) |doc, *flag, i| {
+            flag.* = inScope(doc, decoded.anchors[i], options);
+            if (!flag.*) continue;
+            filename_n += 1;
+            filename_total += lexical.document_lengths[i];
+        }
+        filename_visible = visible;
+        if (field == .both) {
+            const body_flags = try allocator.alloc(bool, body_docs.len);
+            body_n = 0;
+            body_total = 0;
+            for (body_docs, body_flags, 0..) |doc, *flag, i| {
+                flag.* = inScope(doc, i, options);
+                if (!flag.*) continue;
+                body_n += 1;
+                body_total += body_index.document_lengths[i];
+            }
+            body_visible = body_flags;
         }
     }
-    const avg = if (visible_count == 0) 0 else @as(f32, @floatFromInt(total_len)) / @as(f32, @floatFromInt(visible_count));
-    var body_scores = try allocator.alloc(f32, body_docs.len);
-    @memset(body_scores, 0);
-    var fname_scores = try allocator.alloc(f32, catalog.len);
+    const filename_avg = if (filename_n == 0) 0 else @as(f32, @floatFromInt(filename_total)) / @as(f32, @floatFromInt(filename_n));
+    const body_avg = if (body_n == 0) 0 else @as(f32, @floatFromInt(body_total)) / @as(f32, @floatFromInt(body_n));
+
+    // Scores accumulate per catalog entry and per chunk; `touched` lists
+    // each entry once, in first-scored order.
+    const fname_scores = try allocator.alloc(f32, catalog.len);
     @memset(fname_scores, 0);
+    const fname_seen = try allocator.alloc(bool, catalog.len);
+    @memset(fname_seen, false);
+    var fname_touched = std.ArrayList(u32).empty;
+    var body_scores: []f32 = &.{};
+    var body_seen: []bool = &.{};
+    var body_touched = std.ArrayList(u32).empty;
+    if (field == .both) {
+        body_scores = try allocator.alloc(f32, body_docs.len);
+        @memset(body_scores, 0);
+        body_seen = try allocator.alloc(bool, body_docs.len);
+        @memset(body_seen, false);
+    }
     for (qt, 0..) |term, qi| {
         var repeated = false;
         for (qt[0..qi]) |previous| if (std.mem.eql(u8, previous, term)) {
@@ -363,78 +420,115 @@ pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Docu
         if (repeated) continue;
         if (decoded.filenameTerm(term)) |ti| {
             const ent = lexical.terms[ti];
+            const list = lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length];
             var df: u32 = 0;
-            for (lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (filename_visible[p.document_index]) {
-                df += 1;
-            };
-            for (lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (filename_visible[p.document_index]) {
-                fname_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(lexical.document_lengths[p.document_index]), filename_avg, df, @intCast(fn_count), options.bm25);
-            };
+            if (filename_visible) |visible| {
+                for (list) |p| if (visible[p.document_index]) {
+                    df += 1;
+                };
+            } else df = @intCast(list.len);
+            for (list) |p| {
+                if (filename_visible) |visible| if (!visible[p.document_index]) continue;
+                if (!fname_seen[p.document_index]) {
+                    fname_seen[p.document_index] = true;
+                    try fname_touched.append(allocator, p.document_index);
+                }
+                fname_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(lexical.document_lengths[p.document_index]), filename_avg, df, @intCast(filename_n), options.bm25);
+            }
         }
-        if (postings.lookupExact(body_index, term)) |ti| {
+        if (field == .both) if (postings.lookupExact(body_index, term)) |ti| {
             const ent = body_index.terms[ti];
+            const list = body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length];
             var df: u32 = 0;
-            for (body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (body_visible[p.document_index]) {
-                df += 1;
-            };
-            for (body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (body_visible[p.document_index]) {
-                body_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(body_index.document_lengths[p.document_index]), avg, df, @intCast(visible_count), options.bm25);
-            };
-        }
-    }
-    var positive_count: usize = 0;
-    for (filename[0..fn_count]) |c| {
-        const score = fname_scores[c.catalog_index];
-        if (score <= 0) continue;
-        filename[positive_count] = c;
-        filename[positive_count].score = score;
-        positive_count += 1;
-    }
-    fn_count = positive_count;
-    sortCandidates(filename[0..fn_count], body_docs);
-    var body = std.ArrayList(Candidate).empty;
-    if (field == .both) {
-        var by_path: std.StringHashMapUnmanaged(usize) = .empty;
-        defer by_path.deinit(allocator);
-        for (body_docs, body_scores, 0..) |doc, score, bi| if (score > 0 and body_visible[bi]) {
-            const slot = try by_path.getOrPut(allocator, doc.path);
-            if (slot.found_existing) {
-                const ix = slot.value_ptr.*;
-                if (score > body.items[ix].score or (score == body.items[ix].score and std.mem.order(u8, doc.id, body_docs[body.items[ix].body_index].id) == .lt)) body.items[ix] = .{ .path = doc.path, .body_index = bi, .score = score };
-            } else {
-                slot.value_ptr.* = body.items.len;
-                try body.append(allocator, .{ .path = doc.path, .body_index = bi, .score = score });
+            if (body_visible) |visible| {
+                for (list) |p| if (visible[p.document_index]) {
+                    df += 1;
+                };
+            } else df = @intCast(list.len);
+            for (list) |p| {
+                if (body_visible) |visible| if (!visible[p.document_index]) continue;
+                if (!body_seen[p.document_index]) {
+                    body_seen[p.document_index] = true;
+                    try body_touched.append(allocator, p.document_index);
+                }
+                body_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(body_index.document_lengths[p.document_index]), body_avg, df, @intCast(body_n), options.bm25);
             }
         };
+    }
+
+    // Filename candidates: every visible file with a positive score.
+    var filename = try allocator.alloc(Candidate, fname_touched.items.len);
+    var fn_count: usize = 0;
+    for (fname_touched.items) |i| {
+        const score = fname_scores[i];
+        if (score <= 0) continue;
+        filename[fn_count] = .{ .path = catalog[i].path, .body_index = decoded.anchors[i], .score = score, .catalog_index = i };
+        fn_count += 1;
+    }
+    sortCandidates(filename[0..fn_count], body_docs);
+
+    // Body candidates (both): each file's best chunk, the higher score and
+    // then the smaller chunk id, grouped by the anchor ordinal map.
+    var body = std.ArrayList(Candidate).empty;
+    var slot_of_file: []u32 = &.{};
+    const none = std.math.maxInt(u32);
+    if (field == .both) {
+        slot_of_file = try allocator.alloc(u32, catalog.len);
+        @memset(slot_of_file, none);
+        for (body_touched.items) |bi| {
+            const score = body_scores[bi];
+            if (score <= 0) continue;
+            const file = decoded.file_of[bi];
+            const doc = body_docs[bi];
+            if (slot_of_file[file] != none) {
+                const ix = slot_of_file[file];
+                if (score > body.items[ix].score or (score == body.items[ix].score and std.mem.order(u8, doc.id, body_docs[body.items[ix].body_index].id) == .lt)) body.items[ix] = .{ .path = doc.path, .body_index = bi, .score = score, .catalog_index = file };
+            } else {
+                slot_of_file[file] = @intCast(body.items.len);
+                try body.append(allocator, .{ .path = doc.path, .body_index = bi, .score = score, .catalog_index = file });
+            }
+        }
         sortCandidates(body.items, body_docs);
     }
     const fn_limit = @min(fn_count, options.candidate_k);
     const body_limit = @min(body.items.len, options.candidate_k);
     var out = std.ArrayList(Hit).empty;
     if (field == .filename) {
-        for (filename[0..fn_limit], 0..) |c, rank| if (c.score > 0 and out.items.len < options.top_k) try out.append(allocator, .{ .document_index = c.body_index, .filename_score = c.score, .filename_rank = rank + 1, .fused_score = c.score });
+        for (filename[0..fn_limit], 0..) |c, rank| if (out.items.len < options.top_k) try out.append(allocator, .{ .document_index = c.body_index, .filename_score = c.score, .filename_rank = rank + 1, .fused_score = c.score });
     } else {
-        for (body.items[0..body_limit], 0..) |c, rank| try mergeHit(allocator, &out, body_docs, c, true, rank + 1, 60);
-        for (filename[0..fn_limit], 0..) |c, rank| if (c.score > 0) try mergeHit(allocator, &out, body_docs, c, false, rank + 1, 60);
+        // Reuse the per-file array as each file's hit slot.
+        @memset(slot_of_file, none);
+        for (body.items[0..body_limit], 0..) |c, rank| try mergeHit(allocator, &out, slot_of_file, c, true, rank + 1, 60);
+        for (filename[0..fn_limit], 0..) |c, rank| try mergeHit(allocator, &out, slot_of_file, c, false, rank + 1, 60);
         std.mem.sort(Hit, out.items, body_docs, hitLess);
         out.items = out.items[0..@min(out.items.len, options.top_k)];
     }
     return out.toOwnedSlice(allocator);
 }
 
-fn mergeHit(a: std.mem.Allocator, out: *std.ArrayList(Hit), docs: []const hybrid.Document, c: Candidate, is_body: bool, rank: usize, k: f32) !void {
-    for (out.items) |*h| if (std.mem.eql(u8, docs[h.document_index].path, c.path)) {
+fn maskHides(decoded: Decoded, visible_roots: ?hybrid.RootMask) bool {
+    const mask = visible_roots orelse return false;
+    const highest = decoded.max_document_root orelse return true;
+    if (mask.allowed.len <= highest) return true;
+    for (mask.allowed[0 .. @as(usize, highest) + 1]) |allowed| if (!allowed) return true;
+    return false;
+}
+
+fn mergeHit(a: std.mem.Allocator, out: *std.ArrayList(Hit), slot_of_file: []u32, c: Candidate, is_body: bool, rank: usize, k: f32) !void {
+    const slot = &slot_of_file[c.catalog_index];
+    if (slot.* != std.math.maxInt(u32)) {
+        const h = &out.items[slot.*];
         if (is_body) {
             h.body_rank = rank;
             h.body_score = c.score;
-            h.fused_score += 1 / (k + @as(f32, @floatFromInt(rank)));
         } else {
             h.filename_rank = rank;
             h.filename_score = c.score;
-            h.fused_score += 1 / (k + @as(f32, @floatFromInt(rank)));
         }
+        h.fused_score += 1 / (k + @as(f32, @floatFromInt(rank)));
         return;
-    };
+    }
+    slot.* = @intCast(out.items.len);
     try out.append(a, .{ .document_index = c.body_index, .body_score = if (is_body) c.score else 0, .body_rank = if (is_body) rank else null, .filename_score = if (is_body) 0 else c.score, .filename_rank = if (is_body) null else rank, .fused_score = 1 / (k + @as(f32, @floatFromInt(rank))) });
 }
 fn hitLess(docs: []const hybrid.Document, a: Hit, b: Hit) bool {

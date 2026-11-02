@@ -516,6 +516,34 @@ test "S3-T3: a content hash mismatch rejects that change; the rest is published"
     try std.testing.expectEqual(@as(usize, 1), (try searchPaths(scoped, a, "kept", .{})).len);
 }
 
+test "S4-T2 R5: a root whose path has a linked prefix is read, a link below the root is still refused" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try f.tmp.dir.createDirPath(io, "real/desk/notes");
+    try f.tmp.dir.createDirPath(io, "elsewhere");
+    const words = "harbour tide words\n";
+    try f.tmp.dir.writeFile(io, .{ .sub_path = "real/desk/notes/words.txt", .data = words });
+    try f.tmp.dir.writeFile(io, .{ .sub_path = "elsewhere/secret.txt", .data = "outside words\n" });
+    // `alias` -> `real`: the declared root is `<tmp>/alias/desk`, the way a
+    // root under `/tmp` or `/var` on macOS reaches its real folder.
+    try f.tmp.dir.symLink(io, "real", "alias", .{});
+    try f.tmp.dir.symLink(io, "../../elsewhere", "real/desk/linked", .{});
+    const base = try f.tmp.dir.realPathFileAlloc(io, ".", a);
+    const desk = try std.fmt.allocPrint(a, "{s}/alias/desk", .{base});
+    const roots = try std.fmt.allocPrint(a, "[{{\"root_id\":\"desk\",\"kind\":\"local\",\"path\":\"{s}\"}}]", .{desk});
+    const change = try std.fmt.allocPrint(a, "{{\"op\":\"add\",\"root_id\":\"desk\",\"path\":\"notes/words.txt\",\"file\":\"{s}/notes/words.txt\",\"sha256\":\"{s}\"}}", .{ desk, &hex(words) });
+    const applied = try f.applyOk(try joinChanges(a, roots, &.{change}), .{ .allow_file_reads = true });
+    try std.testing.expectEqual(@as(usize, 1), applied.added);
+    try std.testing.expectEqual(@as(usize, 0), applied.unreadable_paths.len);
+    try std.testing.expectEqual(@as(u64, words.len), applied.bytes_read);
+    const scoped = try f.opened();
+    try std.testing.expectEqual(@as(usize, 1), (try searchPaths(scoped, a, "harbour", .{})).len);
+    // Below the root nothing is followed.
+    const linked = try std.fmt.allocPrint(a, "{{\"op\":\"add\",\"root_id\":\"desk\",\"path\":\"s.txt\",\"file\":\"{s}/linked/secret.txt\",\"sha256\":\"{s}\"}}", .{ desk, &hex("outside words\n") });
+    try std.testing.expectEqual(source.Code.invalid_argument, (try f.applyFail(try joinChanges(a, roots, &.{linked}), .{ .allow_file_reads = true })).code);
+}
+
 test "S3-T3: unsafe paths, a file outside its root, a symlink and disabled file reads are refused whole" {
     var f = try Fixture.init();
     defer f.deinit();

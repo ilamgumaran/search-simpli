@@ -82,7 +82,7 @@ fn writeEvidenceInternal(
     try json.objectField("candidate_k");
     try json.write(options.candidate_k);
     try json.objectField("filename_policy_id");
-    try json.write(filename_field.policy_id);
+    try json.write(engine.filename_policy_id);
     try json.endObject();
     try json.objectField("results");
     try json.beginArray();

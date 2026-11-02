@@ -544,7 +544,13 @@ pub const Folder = struct {
                         else => from_reserved,
                     };
                     if (result) |decoded| {
-                        loads.filename_decoded = decoded;
+                        var loaded = decoded;
+                        var highest: u16 = 0;
+                        for (loads.document_roots) |root| {
+                            if (root == no_root) break;
+                            highest = @max(highest, root);
+                        } else loaded.max_document_root = highest;
+                        loads.filename_decoded = loaded;
                     } else |err| switch (err) {
                         error.OutOfMemory => return error.OutOfMemory,
                         else => loads.filename_error = err,

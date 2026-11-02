@@ -1215,12 +1215,19 @@ fn readContent(allocator: std.mem.Allocator, io: std.Io, content: Content, work:
 
 // Each component is opened relative to the previous pinned directory.
 // A concurrent replacement can no longer redirect a multi-component open.
+/// Open absolute `absolute` under the declared root `root_path` (S4-T2 R5):
+/// the root itself is opened once, following links in its own path (a root
+/// under `/tmp` on macOS, or any root reached through a linked folder, is a
+/// real root), and every component below it is opened without following
+/// links, so nothing under the root can lead outside it. PR #21 walked from
+/// `/` without following links, which refused every root whose path has a
+/// linked prefix.
 fn openConfined(io: std.Io, root_path: []const u8, absolute: []const u8) !std.Io.File {
     const base = std.mem.trimEnd(u8, root_path, "/");
     if (absolute.len <= base.len + 1 or !std.mem.startsWith(u8, absolute, base) or absolute[base.len] != '/') return error.AccessDenied;
-    var current = try std.Io.Dir.openDirAbsolute(io, "/", .{});
+    var current = try std.Io.Dir.openDirAbsolute(io, if (base.len == 0) "/" else base, .{});
     defer current.close(io);
-    var parts = std.mem.splitScalar(u8, absolute[1..], '/');
+    var parts = std.mem.splitScalar(u8, absolute[base.len + 1 ..], '/');
     while (parts.next()) |part| {
         if (part.len == 0 or std.mem.eql(u8, part, ".") or std.mem.eql(u8, part, "..")) return error.AccessDenied;
         if (parts.peek() == null) return current.openFile(io, part, .{ .follow_symlinks = false });

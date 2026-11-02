@@ -155,3 +155,215 @@ test "POSIX backslash filename is indexed literally" {
     try std.testing.expectEqual(@as(usize, 1), hits.len);
     try std.testing.expectEqualStrings("notes\\draft.md", body[hits[0].document_index].path);
 }
+
+/// PR #21's query, kept as the oracle for S4-T2 R5's linear query: every
+/// visible catalog entry and chunk walked per query, chunks grouped by path
+/// through a hash map, hits merged by a scan over the output. (The body
+/// dictionary lookup is exact either way.)
+fn prQuery(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: filename_field.Decoded, query_text: []const u8, field: filename_field.Field, options: hybrid.SearchOptions) ![]filename_field.Hit {
+    const scoring = @import("scoring.zig");
+    const Candidate = struct { path: []const u8, body_index: usize, score: f32 = 0, catalog_index: usize = 0 };
+    const Order = struct {
+        fn less(docs: []const hybrid.Document, a: Candidate, b: Candidate) bool {
+            if (a.score != b.score) return a.score > b.score;
+            const order = std.mem.order(u8, a.path, b.path);
+            if (order != .eq) return order == .lt;
+            return std.mem.order(u8, docs[a.body_index].id, docs[b.body_index].id) == .lt;
+        }
+        fn hitLess(docs: []const hybrid.Document, a: filename_field.Hit, b: filename_field.Hit) bool {
+            if (a.fused_score != b.fused_score) return a.fused_score > b.fused_score;
+            const x = std.mem.order(u8, docs[a.document_index].path, docs[b.document_index].path);
+            if (x != .eq) return x == .lt;
+            return std.mem.order(u8, docs[a.document_index].id, docs[b.document_index].id) == .lt;
+        }
+        fn merge(a: std.mem.Allocator, out: *std.ArrayList(filename_field.Hit), docs: []const hybrid.Document, c: Candidate, is_body: bool, rank: usize) !void {
+            const k: f32 = 60;
+            for (out.items) |*h| if (std.mem.eql(u8, docs[h.document_index].path, c.path)) {
+                if (is_body) {
+                    h.body_rank = rank;
+                    h.body_score = c.score;
+                } else {
+                    h.filename_rank = rank;
+                    h.filename_score = c.score;
+                }
+                h.fused_score += 1 / (k + @as(f32, @floatFromInt(rank)));
+                return;
+            };
+            try out.append(a, .{ .document_index = c.body_index, .body_score = if (is_body) c.score else 0, .body_rank = if (is_body) rank else null, .filename_score = if (is_body) 0 else c.score, .filename_rank = if (is_body) null else rank, .fused_score = 1 / (k + @as(f32, @floatFromInt(rank))) });
+        }
+    };
+    const catalog = decoded.catalog;
+    const lexical = decoded.lexical;
+    const qt = try filename_field.tokenize(allocator, analyzer_v2.analyzer_id, query_text);
+    var filename = try allocator.alloc(Candidate, catalog.len);
+    var fn_count: usize = 0;
+    const filename_visible = try allocator.alloc(bool, catalog.len);
+    var filename_total_len: usize = 0;
+    for (catalog, 0..) |doc, i| {
+        filename_visible[i] = hybrid.inScope(doc, decoded.anchors[i], options);
+        if (!filename_visible[i]) continue;
+        filename_total_len += lexical.document_lengths[i];
+        filename[fn_count] = .{ .path = doc.path, .body_index = decoded.anchors[i], .catalog_index = i };
+        fn_count += 1;
+    }
+    const filename_avg = if (fn_count == 0) 0 else @as(f32, @floatFromInt(filename_total_len)) / @as(f32, @floatFromInt(fn_count));
+    const body_visible = try allocator.alloc(bool, body_docs.len);
+    var visible_count: usize = 0;
+    var total_len: usize = 0;
+    for (body_docs, 0..) |doc, i| {
+        body_visible[i] = hybrid.inScope(doc, i, options);
+        if (body_visible[i]) {
+            visible_count += 1;
+            total_len += body_index.document_lengths[i];
+        }
+    }
+    const avg = if (visible_count == 0) 0 else @as(f32, @floatFromInt(total_len)) / @as(f32, @floatFromInt(visible_count));
+    const body_scores = try allocator.alloc(f32, body_docs.len);
+    @memset(body_scores, 0);
+    const fname_scores = try allocator.alloc(f32, catalog.len);
+    @memset(fname_scores, 0);
+    for (qt, 0..) |term, qi| {
+        var repeated = false;
+        for (qt[0..qi]) |previous| if (std.mem.eql(u8, previous, term)) {
+            repeated = true;
+        };
+        if (repeated) continue;
+        if (decoded.filenameTerm(term)) |ti| {
+            const ent = lexical.terms[ti];
+            var df: u32 = 0;
+            for (lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (filename_visible[p.document_index]) {
+                df += 1;
+            };
+            for (lexical.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (filename_visible[p.document_index]) {
+                fname_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(lexical.document_lengths[p.document_index]), filename_avg, df, @intCast(fn_count), options.bm25);
+            };
+        }
+        if (postings.lookupExact(body_index, term)) |ti| {
+            const ent = body_index.terms[ti];
+            var df: u32 = 0;
+            for (body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (body_visible[p.document_index]) {
+                df += 1;
+            };
+            for (body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length]) |p| if (body_visible[p.document_index]) {
+                body_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(body_index.document_lengths[p.document_index]), avg, df, @intCast(visible_count), options.bm25);
+            };
+        }
+    }
+    var positive_count: usize = 0;
+    for (filename[0..fn_count]) |c| {
+        const score = fname_scores[c.catalog_index];
+        if (score <= 0) continue;
+        filename[positive_count] = c;
+        filename[positive_count].score = score;
+        positive_count += 1;
+    }
+    fn_count = positive_count;
+    std.mem.sort(Candidate, filename[0..fn_count], body_docs, Order.less);
+    var body = std.ArrayList(Candidate).empty;
+    if (field == .both) {
+        var by_path: std.StringHashMapUnmanaged(usize) = .empty;
+        for (body_docs, body_scores, 0..) |doc, score, bi| if (score > 0 and body_visible[bi]) {
+            const slot = try by_path.getOrPut(allocator, doc.path);
+            if (slot.found_existing) {
+                const ix = slot.value_ptr.*;
+                if (score > body.items[ix].score or (score == body.items[ix].score and std.mem.order(u8, doc.id, body_docs[body.items[ix].body_index].id) == .lt)) body.items[ix] = .{ .path = doc.path, .body_index = bi, .score = score };
+            } else {
+                slot.value_ptr.* = body.items.len;
+                try body.append(allocator, .{ .path = doc.path, .body_index = bi, .score = score });
+            }
+        };
+        std.mem.sort(Candidate, body.items, body_docs, Order.less);
+    }
+    const fn_limit = @min(fn_count, options.candidate_k);
+    const body_limit = @min(body.items.len, options.candidate_k);
+    var out = std.ArrayList(filename_field.Hit).empty;
+    if (field == .filename) {
+        for (filename[0..fn_limit], 0..) |c, rank| if (c.score > 0 and out.items.len < options.top_k) try out.append(allocator, .{ .document_index = c.body_index, .filename_score = c.score, .filename_rank = rank + 1, .fused_score = c.score });
+    } else {
+        for (body.items[0..body_limit], 0..) |c, rank| try Order.merge(allocator, &out, body_docs, c, true, rank + 1);
+        for (filename[0..fn_limit], 0..) |c, rank| if (c.score > 0) try Order.merge(allocator, &out, body_docs, c, false, rank + 1);
+        std.mem.sort(filename_field.Hit, out.items, body_docs, Order.hitLess);
+        out.items = out.items[0..@min(out.items.len, options.top_k)];
+    }
+    return out.toOwnedSlice(allocator);
+}
+
+test "S4-T2 R5: the linear filename query equals PR #21's query exactly, scoped and unscoped" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    // Invented names and bodies: shared and rare words, several chunks per
+    // file, a labelled folder, repeated query words, equal scores.
+    const words = [_][]const u8{ "harbour", "tide", "ledger", "garden", "budget", "lantern", "orchard", "copper" };
+    var documents = std.ArrayList(hybrid.Document).empty;
+    for (0..240) |file| {
+        const folder: []const u8 = switch (file % 3) {
+            0 => "notes",
+            1 => "school",
+            else => "private",
+        };
+        const path = try std.fmt.allocPrint(a, "{s}/{s}_{s}_{d:0>3}.md", .{ folder, words[file % words.len], words[(file / 8) % words.len], file % 17 });
+        const labels: []const u8 = if (file % 3 == 2) "family" else "";
+        for (0..1 + file % 3) |chunk| {
+            try documents.append(a, .{
+                .id = try std.fmt.allocPrint(a, "c{d:0>4}-{d}", .{ file, chunk }),
+                .path = path,
+                .text = try std.fmt.allocPrint(a, "{s} {s} {s} note {d}", .{ words[(file + chunk) % words.len], words[(file * 3 + chunk) % words.len], if (chunk == 1) "tide" else "page", file % 5 }),
+                .start_line = @intCast(1 + chunk * 10),
+                .end_line = @intCast(9 + chunk * 10),
+                .required_labels = labels,
+            });
+        }
+    }
+    // Paths repeat (file % 17 collides); keep one file's chunks per path.
+    var unique = std.ArrayList(hybrid.Document).empty;
+    var seen: std.StringHashMapUnmanaged([]const u8) = .empty;
+    for (documents.items) |doc| {
+        const slot = try seen.getOrPut(a, doc.path);
+        if (slot.found_existing and !std.mem.eql(u8, slot.value_ptr.*, doc.id[0..5])) continue;
+        slot.value_ptr.* = doc.id[0..5];
+        try unique.append(a, doc);
+    }
+    // Labelled (every query checks scope) and unlabelled (the unscoped
+    // queries take the totals the load summed).
+    const plain = try a.dupe(hybrid.Document, unique.items);
+    for (plain) |*doc| doc.required_labels = "";
+    const queries = [_][]const u8{ "harbour", "tide tide ledger", "budget garden 003", "lantern orchard copper harbour", "note", "absent", "copper 016", "page tide" };
+    const scopes = [_]hybrid.SearchOptions{
+        .{ .retrieval_mode = .lexical, .top_k = 5, .candidate_k = 10 },
+        .{ .retrieval_mode = .lexical, .top_k = 20, .candidate_k = 20 },
+        .{ .retrieval_mode = .lexical, .top_k = 3, .candidate_k = 100, .path_prefix = "school/" },
+        .{ .retrieval_mode = .lexical, .top_k = 10, .candidate_k = 40, .principal_labels = &.{"family"} },
+        .{ .retrieval_mode = .lexical, .top_k = 10, .candidate_k = 40, .path_prefix = "private/" },
+    };
+    var compared: usize = 0;
+    for ([_][]const hybrid.Document{ unique.items, plain }) |body| {
+        const built = try filename_field.build(a, body, analyzer_v2.analyzer_id);
+        const body_index = try makeBodyIndex(a, body);
+        const decoded = try filename_field.decode(a, body, body_index, built.catalog, built.lexical);
+        try std.testing.expectEqual(body.ptr == unique.items.ptr, decoded.labeled);
+        for (queries) |query| for (scopes) |options| for ([_]filename_field.Field{ .filename, .both }) |field| {
+            const expected = try prQuery(a, body, body_index, decoded, query, field, options);
+            const actual = try filename_field.queryDecoded(a, body, body_index, decoded, analyzer_v2.analyzer_id, query, field, options);
+            try std.testing.expectEqual(expected.len, actual.len);
+            for (expected, actual) |e, got| try std.testing.expectEqual(e, got);
+            compared += expected.len;
+        };
+        // Root masks as the servers pass them: one root per folder, a mask
+        // allowing every root (unscoped once the load knows every chunk's
+        // root) and one hiding a root.
+        const document_roots = try a.alloc(u16, body.len);
+        for (body, document_roots) |doc, *root| root.* = if (std.mem.startsWith(u8, doc.path, "notes/")) 0 else if (std.mem.startsWith(u8, doc.path, "school/")) 1 else 2;
+        var rooted = decoded;
+        rooted.max_document_root = 2;
+        for ([_][]const bool{ &.{ true, true, true }, &.{ true, false, true }, &.{ true, true } }) |allowed| for (queries) |query| for ([_]filename_field.Field{ .filename, .both }) |field| {
+            const options = hybrid.SearchOptions{ .retrieval_mode = .lexical, .top_k = 10, .candidate_k = 40, .visible_roots = .{ .document_roots = document_roots, .allowed = allowed } };
+            const expected = try prQuery(a, body, body_index, rooted, query, field, options);
+            const actual = try filename_field.queryDecoded(a, body, body_index, rooted, analyzer_v2.analyzer_id, query, field, options);
+            try std.testing.expectEqual(expected.len, actual.len);
+            for (expected, actual) |e, got| try std.testing.expectEqual(e, got);
+            compared += expected.len;
+        };
+    }
+    try std.testing.expect(compared > 100);
+}
