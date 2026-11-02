@@ -199,7 +199,8 @@ test "S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge ov
     const peaks = try measure(tmp.dir, cap_bytes, .{ .find_query = "pond", .knowledge_query = "hedgehogs in the pond", .root_id = "home", .path = "garden.md" });
     printPeaks("family-folder", peaks);
     try std.testing.expect(peaks.overall <= cap_bytes);
-    for (peaks.bytes) |value| try std.testing.expect(value > 0);
+    // This body-only fixture does not enable the optional filename channel.
+    for (peaks.bytes[0..@intFromEnum(Operation.filename)]) |value| try std.testing.expect(value > 0);
 }
 
 test "S4-T1 NFR-13: the cap bites (a 256 KiB cap refuses the same open)" {
@@ -295,5 +296,6 @@ test "filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files" {
     _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
     const peaks = try measure(out.dir, cap_bytes, .{ .find_query = "the", .knowledge_query = "the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
     printPeaks("10k filename and lazy tables", peaks);
+    for (peaks.bytes) |value| try std.testing.expect(value > 0);
     try std.testing.expect(peaks.overall <= cap_bytes);
 }
