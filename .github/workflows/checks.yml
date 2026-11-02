@@ -84,6 +84,16 @@ jobs:
         working-directory: zig
         run: zig build test -j2 --summary all
 
+      - name: Filename query access and scratch complexity (no skips)
+        working-directory: zig
+        shell: bash
+        run: |
+          set -euo pipefail
+          for guard_mode in Debug ReleaseSmall; do
+            zig test -O"$guard_mode" -lc src/filename_complexity_test.zig --test-filter 'filename query complexity' 2>&1 | tee "$RUNNER_TEMP/filename-complexity-$guard_mode.log"
+            grep -Fq 'All 2 tests passed.' "$RUNNER_TEMP/filename-complexity-$guard_mode.log"
+          done
+
       - name: Zig C ABI tests
         working-directory: zig
         run: zig build test-abi -j2 --summary all
