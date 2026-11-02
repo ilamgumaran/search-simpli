@@ -22,6 +22,11 @@ arena-cap test (`zig/src/nfr13_arena_test.zig`); the lexical-only fuse skips two
 Dart package 0.2.1, natives rebuilt (`native/SOURCE-SHA256` `41ef1574...714e`). Numbers
 in the benchmark table below (rows marked S4-T1); "upgrade" = the new library on an
 index written before S4-T1 (FNV-1a sections), until its first update.
+Verified and merged 2026-11-01 by fast-forward of `main` ([Verdict](docs/tasks/S4-T1.md)):
+the verifier re-measured `ss_open` 110 -> 7.6 to 9.1 ms and one changed file p50 232 -> 149 ms
+(`ReleaseSmall`, load average 3.3 to 5.4) and rebuilt the natives byte-identical. The
+consumer app pins the head of `main` after that fast-forward (the verifier's commit,
+named in its message: a commit cannot name its own hash), contracts 2.1.0, Dart 0.2.1.
 
 
 Series S3 (CAP-19, [plan](docs/plans/folder-knowledge-plan.md)) is complete on `main`

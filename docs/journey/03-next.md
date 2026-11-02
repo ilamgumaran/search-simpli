@@ -1,6 +1,6 @@
 # Next
 
-**1 Nov (S4-T1 builder, Xcode Mac): the phone-side costs are built on `task/S4-T1`, awaiting the verifier.**
+**1 Nov (S4-T1, Xcode Mac): the phone-side costs are verified and on `main` (fast-forward; the verifier re-measured open 110 -> 7.6 to 9.1 ms and one changed file p50 232 -> 149 ms, ReleaseSmall).**
 `ss_open` is lazy (10k index 102 -> 7.2 ms, ReleaseSmall p50 of 30); one changed file in the 10k
 index is 154–158 ms in `ReleaseSmall` (was 243–249 ms; XXH3 section checksums, manifest v2.1, so
 NFR-12's bound is `ReleaseSmall` again); NFR-13 has its 64 MiB arena-cap test (peak 60.6 MB on
@@ -194,6 +194,8 @@ at the same time. E-01A is the safe intake half of exactly that.
 |---|---|---|
 | **E-02 — negative / unanswerable evaluation** | Small, self-contained, and it is the empirical guard on the source-of-truth invariant | Feeds CAP-14 |
 | **Delta sections for `apply_changes` (S4-T1 candidate (b), filed)** | S4-T1 shipped the cheaper checksum (XXH3-64 sections, manifest v2.1), which met NFR-12 in `ReleaseSmall` (one changed file in the 10k index 154–158 ms, was 243–249 ms; five runs). Its scratch prototype of delta sections (a generation whose sections hold only the changed records, through the same publication path, `ReleaseSmall`, five runs) measured 102–130 ms (p50 105.7) with FNV-1a and 68–93 ms (p50 71.4) on top of XXH3; the prototype omits the reader's merge of base and deltas at every query, compaction and the manifest's delta chain, so these are lower bounds for the writer only. What remains after XXH3: reading the previous generation about 41 ms, the positional lexical rebuild 37 ms, encoding 40 ms, gathering 19 ms (S4-T1 Report) | Worth it only if a phone needs one changed file well under 100 ms or the corpus grows past 10k files; a format change (deltas, compaction share, reader merge) with its own task and a `docs/incremental-indexing.md` design |
+| **Consumer app: pin bump to S4-T1** | The app's task, not this repository's. Pin the head of `main` after the S4-T1 fast-forward (contracts 2.1.0, Dart 0.2.1, `native/SOURCE-SHA256` `41ef1574…714e`). An index the phones wrote at 292cb568 opens (27–28 ms on the 10k index, `ReleaseSmall`, S4-T1 verifier) and its first `apply_changes` rewrites it as v2.1 (180–188 ms), after which the open is 8–9 ms; a library older than S4-T1 then refuses the index (`UnsupportedFlags`), so the app must never roll the library back after an update. The upper-bound open measured on the iPhone (M16-T8) can be re-taken | After the merge; M16-T8's device pass |
+| **NFR-13 headroom past 10k files** | S4-T1's arena test holds the 10k index inside 64 MiB with 10 % to spare: the open alone 53.6 MB, `list_files` 60.7 MB, `find` 59.9 MB (peak live bytes, S4-T1 Verdict). A folder somewhat past 10k files would breach the cap. Measure the peak at 10k, 15k and 20k files and decide whether the open's resident tables (paths, statistics) or `list_files`' result must be bounded or paged before a phone folder grows past 10k | Before any phone folder passes 10k files |
 | **CI: keep the surface and MCP tests from skipping** | S3-T8 added a named, no-skip step to the Linux native job; the first GitHub run decides whether it is green | Check the run after the merge |
 
 ## Blocked, with the named unblocker
