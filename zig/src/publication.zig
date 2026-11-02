@@ -111,13 +111,19 @@ pub fn publishWithSourceRecorded(
     source_encoded: ?[]const u8,
     recorder: ?*Recorder,
 ) !void {
-    return publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, null, null, recorder);
+    return publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, null, null, null, recorder);
 }
 
-pub fn publishWithExtrasRecorded(dir: std.Io.Dir, io: std.Io, manifest_encoded: []const u8, documents_encoded: []const u8, lexical_encoded: []const u8, source_encoded: ?[]const u8, catalog: ?[]const u8, filename_lexical: ?[]const u8, recorder: ?*Recorder) !void {
+/// `publishWithSourceRecorded` for a generation that may also bind the v2.2
+/// filename sections and the recovery-state section (S4-T2 R3): every file
+/// the manifest names is validated against it, linked and made durable
+/// before the MANIFEST rename, and removed again if the publish fails
+/// before that rename.
+pub fn publishWithExtrasRecorded(dir: std.Io.Dir, io: std.Io, manifest_encoded: []const u8, documents_encoded: []const u8, lexical_encoded: []const u8, source_encoded: ?[]const u8, catalog: ?[]const u8, filename_lexical: ?[]const u8, state_encoded: ?[]const u8, recorder: ?*Recorder) !void {
     const metadata = try manifest.decode(manifest_encoded);
     try manifest.validateSnapshot(metadata, documents_encoded, lexical_encoded);
     try manifest.validateSource(metadata, source_encoded);
+    try manifest.validateState(metadata, state_encoded);
     if (metadata.filename != null) try manifest.validateSnapshotWithFilename(metadata, documents_encoded, lexical_encoded, catalog orelse return error.FilenameSectionsRequired, filename_lexical orelse return error.FilenameSectionsRequired);
     if (metadata.filename == null and (catalog != null or filename_lexical != null)) return error.InvalidFilenamePolicy;
 
@@ -144,6 +150,10 @@ pub fn publishWithExtrasRecorded(dir: std.Io.Dir, io: std.Io, manifest_encoded: 
             dir.deleteFile(io, f.catalog_file) catch {};
             dir.deleteFile(io, f.lexical_file) catch {};
         }
+    };
+    if (metadata.state) |state| try writeAtomicFileRecorded(dir, io, state.file, state_encoded.?, false, recorder);
+    errdefer if (!manifest_visible) {
+        if (metadata.state) |state| dir.deleteFile(io, state.file) catch {};
     };
     // Make both section renames durable before MANIFEST can name them.
     try syncDirectory(dir, io, recorder);

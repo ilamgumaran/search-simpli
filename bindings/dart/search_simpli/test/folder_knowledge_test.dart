@@ -247,6 +247,9 @@ void main() {
     } finally {
       first.close();
     }
+    // The recovery state the next writer reads is the generation's own
+    // section (manifest v2.2 flag bit 4), not the INDEX-STATE.json cache.
+    expect(File(p.join(host.path, 'state-1.hybstate')).existsSync(), isTrue);
     File(p.join(host.path, 'INDEX-STATE.json')).deleteSync();
     final report = SearchSimpli.applyChanges(host.path, {
       'expect_generation': 1,
@@ -263,6 +266,7 @@ void main() {
         searchField: SearchField.filename).results.single.citation.path,
         'phone/Lighthouse.md');
     expect(recovered.find('"updated coastal"').hits, hasLength(1));
+    expect(File(p.join(host.path, 'state-2.hybstate')).existsSync(), isTrue);
   });
 
   test('applyChanges publishes, refuses a stale generation and file reads by default', () {

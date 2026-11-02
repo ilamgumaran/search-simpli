@@ -3,6 +3,7 @@ const lexical_segment = @import("lexical_segment.zig");
 const postings = @import("postings.zig");
 const segment = @import("segment.zig");
 const source_section = @import("source.zig");
+const state_section = @import("state_section.zig");
 const std = @import("std");
 
 pub const magic = "HYBMAN01";
@@ -36,8 +37,21 @@ pub const flag_filename_sections: u16 = 8;
 /// The bytes the filename extension adds to the v2 header: file, term and
 /// posting counts, then each section's length and checksum.
 pub const filename_header_bytes: usize = 48;
+/// S4-T2 R3 (v2.2): the generation binds its recovery state as a section,
+/// `state-N.hybstate` (`state_section.zig`): 16 header bytes (its length and
+/// checksum) after the filename fields, if any, and one payload string (its
+/// file name) after every other. Only writers read the section; an open
+/// never does. Every folder writer since v2.2 sets it.
+pub const flag_state_section: u16 = 16;
+pub const state_header_bytes: usize = 16;
 /// Every v2 flag this reader knows; any other bit is `UnsupportedFlags`.
-pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections;
+pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections | flag_state_section;
+
+pub const StateMetadata = struct {
+    file: []const u8,
+    bytes: usize,
+    checksum: u64,
+};
 
 pub const FilenameMetadata = struct {
     file_count: usize,
@@ -69,6 +83,8 @@ pub const Manifest = struct {
     /// 1 or 2. Version 1 has none of the fields below.
     format_version: u16 = version,
     filename: ?FilenameMetadata = null,
+    /// v2.2 (S4-T2 R3): the bound recovery-state section, writers only.
+    state: ?StateMetadata = null,
     has_positions: bool = false,
     /// v2.1 (S4-T1): `flag_xxh3_sections`; set by the writer exactly when
     /// one of the bound sections' headers selects XXH3-64.
@@ -127,6 +143,11 @@ pub const ManifestError = error{
     SourceSectionUnexpected,
     SourceSectionSizeMismatch,
     SourceSectionChecksumMismatch,
+    InvalidStateSection,
+    StateSectionMissing,
+    StateSectionUnexpected,
+    StateSectionSizeMismatch,
+    StateSectionChecksumMismatch,
 };
 
 pub fn create(
@@ -262,26 +283,35 @@ pub fn validateFilenameSections(value: Manifest, catalog_encoded: []const u8, fi
     if (lexical.posting_count != filename.posting_count) return error.FilenamePostingCountMismatch;
 }
 
-fn payloadStrings(value: Manifest) [9][]const u8 {
-    const f = value.filename;
-    return .{ value.analyzer_id, value.embedding_model_id, value.documents_file, value.lexical_file, value.source_file, value.meta, if (f) |v| v.catalog_file else "", if (f) |v| v.lexical_file else "", if (f) |v| v.policy_id else "" };
-}
-
-fn stringCount(value: Manifest) usize {
-    if (value.format_version < version_v2) return 4;
-    return if (value.filename != null) 9 else 6;
+/// The payload strings in order: v1's four, v2's source file and meta, the
+/// v2.2 filename extension's three, then the v2.2 state file.
+fn payloadStrings(value: Manifest, out: *[10][]const u8) []const []const u8 {
+    out[0..4].* = .{ value.analyzer_id, value.embedding_model_id, value.documents_file, value.lexical_file };
+    if (value.format_version < version_v2) return out[0..4];
+    out[4] = value.source_file;
+    out[5] = value.meta;
+    var count: usize = 6;
+    if (value.filename) |f| {
+        out[6..9].* = .{ f.catalog_file, f.lexical_file, f.policy_id };
+        count = 9;
+    }
+    if (value.state) |state| {
+        out[count] = state.file;
+        count += 1;
+    }
+    return out[0..count];
 }
 
 fn headerLengthOf(value: Manifest) usize {
     if (value.format_version < version_v2) return header_length;
-    return header_length_v2 + (if (value.filename != null) filename_header_bytes else 0);
+    return header_length_v2 + (if (value.filename != null) filename_header_bytes else 0) + (if (value.state != null) state_header_bytes else 0);
 }
 
 pub fn encodedLength(value: Manifest) ManifestError!usize {
     try validateFields(value);
     var payload_length: usize = 0;
-    const strings = payloadStrings(value);
-    for (strings[0..stringCount(value)]) |field| {
+    var strings_storage: [10][]const u8 = undefined;
+    for (payloadStrings(value, &strings_storage)) |field| {
         payload_length = try checkedAdd(payload_length, @sizeOf(u32));
         payload_length = try checkedAdd(payload_length, field.len);
     }
@@ -336,6 +366,7 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
     if (value.has_positions) flags |= flag_has_positions;
     if (value.xxh3_sections) flags |= flag_xxh3_sections;
     if (value.filename != null) flags |= flag_filename_sections;
+    if (value.state != null) flags |= flag_state_section;
 
     @memcpy(output[0..magic_v2.len], magic_v2);
     var header_offset: usize = magic_v2.len;
@@ -362,14 +393,18 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
         writeU64(output, &header_offset, @intCast(f.lexical_bytes));
         writeU64(output, &header_offset, f.lexical_checksum);
     }
+    if (value.state) |state| {
+        writeU64(output, &header_offset, @intCast(state.bytes));
+        writeU64(output, &header_offset, state.checksum);
+    }
     writeU32(output, &header_offset, @intCast(payload_length));
     const checksum_offset = header_offset;
     writeU64(output, &header_offset, 0);
     std.debug.assert(header_offset == header_len);
 
     var payload_offset = header_len;
-    const strings = payloadStrings(value);
-    for (strings[0..stringCount(value)]) |field| {
+    var strings_storage: [10][]const u8 = undefined;
+    for (payloadStrings(value, &strings_storage)) |field| {
         writeU32(output, &payload_offset, @intCast(field.len));
         @memcpy(output[payload_offset .. payload_offset + field.len], field);
         payload_offset += field.len;
@@ -388,7 +423,8 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
     const flags = try cursor.readU16();
     if (flags & ~known_flags_v2 != 0) return error.UnsupportedFlags;
     const has_filename = flags & flag_filename_sections != 0;
-    const header_len: usize = header_length_v2 + (if (has_filename) filename_header_bytes else 0);
+    const has_state = flags & flag_state_section != 0;
+    const header_len: usize = header_length_v2 + (if (has_filename) filename_header_bytes else 0) + (if (has_state) state_header_bytes else 0);
     const generation = try cursor.readU64();
     const document_count = try castToUsize(try cursor.readU32());
     const vector_dimensions = try castToUsize(try cursor.readU32());
@@ -414,6 +450,12 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .lexical_file = "",
         .policy_id = "",
     };
+    var state: ?StateMetadata = null;
+    if (has_state) state = .{
+        .bytes = try castToUsize(try cursor.readU64()),
+        .checksum = try cursor.readU64(),
+        .file = "",
+    };
     const payload_length = try castToUsize(try cursor.readU32());
     const expected_checksum = try cursor.readU64();
     std.debug.assert(cursor.offset == header_len);
@@ -437,6 +479,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         f.lexical_file = try readString(&payload);
         f.policy_id = try readString(&payload);
     }
+    if (state) |*bound| bound.file = try readString(&payload);
     if (payload.offset != payload.bytes.len) return error.TrailingData;
     const has_source = flags & flag_has_source != 0;
     if (has_source != (source_count == 1) or source_count > 1 or has_source != (source_file.len != 0)) return error.InvalidSourceSection;
@@ -457,6 +500,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .lexical_file = lexical_file,
         .format_version = format,
         .filename = filename,
+        .state = state,
         .has_positions = flags & flag_has_positions != 0,
         .xxh3_sections = flags & flag_xxh3_sections != 0,
         .source_file = source_file,
@@ -581,6 +625,34 @@ pub fn validateSource(value: Manifest, source_encoded: ?[]const u8) ManifestErro
     if (!value.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
 }
 
+/// Check the recovery-state section bytes a generation names (null when
+/// the manifest binds none) against the manifest's length and checksum
+/// (v2.2, S4-T2 R3). Writers only.
+pub fn validateState(value: Manifest, state_encoded: ?[]const u8) ManifestError!void {
+    const state = value.state orelse {
+        if (state_encoded != null) return error.StateSectionUnexpected;
+        return;
+    };
+    const bytes = state_encoded orelse return error.StateSectionMissing;
+    if (bytes.len != state.bytes) return error.StateSectionSizeMismatch;
+    const header = state_section.inspect(bytes) catch |err| switch (err) {
+        error.ChecksumMismatch => return error.StateSectionChecksumMismatch,
+        else => return error.InvalidStateSection,
+    };
+    if (header.checksum != state.checksum) return error.StateSectionChecksumMismatch;
+    if (!value.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidStateSection;
+}
+
+/// `base` binding the recovery-state section `state_encoded` as `file`.
+pub fn withState(base: Manifest, file: []const u8, state_encoded: []const u8) ManifestError!Manifest {
+    const header = state_section.inspect(state_encoded) catch return error.InvalidStateSection;
+    var value = base;
+    value.state = .{ .file = file, .bytes = state_encoded.len, .checksum = header.checksum };
+    if (header.checksum_kind == .xxh3_64) value.xxh3_sections = true;
+    try validateFields(value);
+    return value;
+}
+
 fn validateFields(value: Manifest) ManifestError!void {
     if (value.generation == 0) return error.GenerationZero;
     if (value.document_count > std.math.maxInt(u32) or
@@ -606,11 +678,18 @@ fn validateFields(value: Manifest) ManifestError!void {
         };
     }
     if (value.format_version < version_v2) {
-        if (value.format_version != version or value.hasSource() or value.meta.len != 0 or value.has_positions or value.xxh3_sections or value.filename != null)
+        if (value.format_version != version or value.hasSource() or value.meta.len != 0 or value.has_positions or value.xxh3_sections or value.filename != null or value.state != null)
             return error.UnsupportedVersion;
         return;
     }
     if (value.format_version != version_v2) return error.UnsupportedVersion;
+    if (value.state) |state| {
+        try validateFilename(state.file);
+        if (state.bytes < state_section.header_length) return error.InvalidStateSection;
+        if (std.mem.eql(u8, state.file, value.documents_file) or std.mem.eql(u8, state.file, value.lexical_file) or
+            (value.hasSource() and std.mem.eql(u8, state.file, value.source_file))) return error.SameFilename;
+        if (value.filename) |f| if (std.mem.eql(u8, state.file, f.catalog_file) or std.mem.eql(u8, state.file, f.lexical_file)) return error.SameFilename;
+    }
     if (value.hasSource()) {
         try validateFilename(value.source_file);
         if (std.mem.eql(u8, value.source_file, value.documents_file) or std.mem.eql(u8, value.source_file, value.lexical_file))
@@ -1389,13 +1468,14 @@ test "S4-T2 manifest v2.2: the checksum covers every filename header field and p
 }
 
 test "S4-T2 manifest v2.2: stray flag bits, duplicate names and missing filename names are refused" {
+    // Bits 0 to 4 are known (bit 4: the recovery-state section, below).
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     var fixture = try SnapshotFixture.init();
     var storage: [1024]u8 = undefined;
     const encoded = try encode(try filenameTestManifest(&fixture), &storage);
-    var bit: u4 = 4;
+    var bit: u4 = 5;
     while (true) : (bit += 1) {
         const copy = try arena.dupe(u8, encoded);
         std.mem.writeInt(u16, copy[10..12], std.mem.readInt(u16, copy[10..12], .little) | (@as(u16, 1) << bit), .little);
@@ -1419,22 +1499,83 @@ test "S4-T2 manifest v2.2: stray flag bits, duplicate names and missing filename
 test "S4-T2 manifest v2.2: what older readers do with a generation this one writes" {
     // The flag check each older reader runs first (`decodeV2`): the 292cb568
     // library (v2.0) knows bits 0 and 1, the 0.2.1 library (v2.1, f45c06d)
-    // bits 0 to 2. Both refuse a filename generation with `UnsupportedFlags`;
-    // a generation without filename sections still sets bit 2 (XXH3), so
-    // 292cb568 refuses it too. (Measured with both libraries' `searchd` in
-    // the S4-T2 Report.)
+    // bits 0 to 2. Every folder generation this library writes binds its
+    // recovery-state section (bit 4, R3), so both refuse every one of them
+    // with `UnsupportedFlags`, with or without filename sections (bit 3):
+    // the rollback is a fresh index directory, never a downgrade in place.
+    // (Measured with both libraries' `searchd` in the S4-T2 Report.)
     const v2_0_known: u16 = flag_has_source | flag_has_positions;
     const v2_1_known: u16 = v2_0_known | flag_xxh3_sections;
     var fixture = try SnapshotFixture.init();
-    var with = try filenameTestManifest(&fixture);
-    with.xxh3_sections = true;
+    const state_bytes = try state_section.encode(std.testing.allocator, "{\"state_version\":2}");
+    defer std.testing.allocator.free(state_bytes);
+    var with = try withState(try filenameTestManifest(&fixture), "state-3.hybstate", state_bytes);
     var storage: [1024]u8 = undefined;
     const flags_with = std.mem.readInt(u16, (try encode(with, &storage))[10..12], .little);
     try std.testing.expect(flags_with & ~v2_1_known != 0);
     try std.testing.expect(flags_with & ~v2_0_known != 0);
-    var without = with;
-    without.filename = null;
-    const flags_without = std.mem.readInt(u16, (try encode(without, &storage))[10..12], .little);
+    with.filename = null;
+    const flags_without = std.mem.readInt(u16, (try encode(with, &storage))[10..12], .little);
+    try std.testing.expectEqual(flag_state_section, flags_without & ~v2_1_known);
     try std.testing.expect(flags_without & ~v2_0_known != 0);
-    try std.testing.expectEqual(@as(u16, 0), flags_without & ~v2_1_known);
+}
+
+test "S4-T2 manifest v2.2: the recovery-state binding (flag 16) round trips, is checksummed and validated" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var fixture = try SnapshotFixture.init();
+    const state_bytes = try state_section.encode(arena, "{\"state_version\":2,\"generation\":3}");
+    var plain = try filenameTestManifest(&fixture);
+    plain.filename = null;
+    var plain_storage: [1024]u8 = undefined;
+    const plain_encoded = try encode(plain, &plain_storage);
+    for ([_]bool{ false, true }) |with_filename| {
+        var base = try filenameTestManifest(&fixture);
+        if (!with_filename) base.filename = null;
+        const bound = try withState(base, "state-3.hybstate", state_bytes);
+        var storage: [1024]u8 = undefined;
+        const encoded = try encode(bound, &storage);
+        var base_storage: [1024]u8 = undefined;
+        // 16 header bytes and one payload string over the same manifest.
+        try std.testing.expectEqual((try encode(base, &base_storage)).len + state_header_bytes + 4 + "state-3.hybstate".len, encoded.len);
+        try std.testing.expect(std.mem.readInt(u16, encoded[10..12], .little) & flag_state_section != 0);
+        const decoded = try decode(encoded);
+        try std.testing.expectEqualStrings("state-3.hybstate", decoded.state.?.file);
+        try std.testing.expectEqual(state_bytes.len, decoded.state.?.bytes);
+        try std.testing.expectEqual((try state_section.inspect(state_bytes)).checksum, decoded.state.?.checksum);
+        try std.testing.expectEqual(with_filename, decoded.filename != null);
+        if (with_filename) try std.testing.expectEqualStrings("filename-field-v1", decoded.filename.?.policy_id);
+        try validateState(decoded, state_bytes);
+        // The state fields sit after the filename fields, if any.
+        const state_at = header_length_v2 - 12 + (if (with_filename) filename_header_bytes else 0);
+        for ([_]usize{ state_at, state_at + 8, std.mem.lastIndexOf(u8, encoded, "state-3.hybstate").? }) |at| {
+            const copy = try arena.dupe(u8, encoded);
+            copy[at] ^= 0x01;
+            try std.testing.expectError(error.ChecksumMismatch, decode(copy));
+        }
+        // The section bytes against the binding.
+        try std.testing.expectError(error.StateSectionMissing, validateState(decoded, null));
+        try std.testing.expectError(error.StateSectionSizeMismatch, validateState(decoded, state_bytes[0 .. state_bytes.len - 1]));
+        const flipped = try arena.dupe(u8, state_bytes);
+        flipped[flipped.len - 1] ^= 0x01;
+        try std.testing.expectError(error.StateSectionChecksumMismatch, validateState(decoded, flipped));
+        const bad_magic = try arena.dupe(u8, state_bytes);
+        bad_magic[0] = 'X';
+        try std.testing.expectError(error.InvalidStateSection, validateState(decoded, bad_magic));
+    }
+    try std.testing.expectError(error.StateSectionUnexpected, validateState(try decode(plain_encoded), state_bytes));
+    try validateState(try decode(plain_encoded), null);
+    // The state file name is distinct from every other section's.
+    try std.testing.expectError(error.SameFilename, withState(plain, "documents-3.hybseg", state_bytes));
+    try std.testing.expectError(error.SameFilename, withState(try filenameTestManifest(&fixture), "filenames-3.hybseg", state_bytes));
+    try std.testing.expectError(error.UnsafeFilename, withState(plain, "../state-3.hybstate", state_bytes));
+    // A v1 manifest cannot bind one.
+    var v1 = plain;
+    v1.format_version = version;
+    v1.meta = "";
+    v1.has_positions = false;
+    v1.xxh3_sections = false;
+    v1.state = .{ .file = "state-3.hybstate", .bytes = state_bytes.len, .checksum = 1 };
+    try std.testing.expect(std.meta.isError(encode(v1, &plain_storage)));
 }

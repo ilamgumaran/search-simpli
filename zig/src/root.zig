@@ -20,6 +20,7 @@ pub const chunker = @import("chunker.zig");
 pub const chunker_md = @import("chunker_md.zig");
 pub const checksum = @import("checksum.zig");
 pub const source = @import("source.zig");
+pub const state_section = @import("state_section.zig");
 pub const find = @import("find.zig");
 pub const analyzer_v2 = @import("analyzer_v2.zig");
 pub const lexical_build = @import("lexical_build.zig");
@@ -105,6 +106,7 @@ test "load every engine module test suite" {
     _ = chunker;
     _ = chunker_md;
     _ = source;
+    _ = state_section;
     _ = find;
     _ = analyzer_v2;
     _ = lexical_build;

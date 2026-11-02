@@ -449,7 +449,7 @@ test "a file grown past max_file_bytes is reported too_large and its old chunks 
 
 // === S2-T5: keep_generations ================================================
 
-const CountedFiles = struct { documents: usize = 0, lexical: usize = 0, source: usize = 0, control: usize = 0, other: usize = 0 };
+const CountedFiles = struct { documents: usize = 0, lexical: usize = 0, source: usize = 0, state: usize = 0, control: usize = 0, other: usize = 0 };
 
 fn countFiles(io: std.Io, dir: std.Io.Dir) !CountedFiles {
     var counted = CountedFiles{};
@@ -462,6 +462,8 @@ fn countFiles(io: std.Io, dir: std.Io.Dir) !CountedFiles {
             counted.lexical += 1;
         } else if (std.mem.endsWith(u8, entry.name, ".hybsrc")) {
             counted.source += 1;
+        } else if (std.mem.endsWith(u8, entry.name, ".hybstate")) {
+            counted.state += 1;
         } else if (std.mem.eql(u8, entry.name, "MANIFEST") or std.mem.eql(u8, entry.name, "WRITER.LOCK") or
             std.mem.eql(u8, entry.name, "INDEX-STATE.json"))
         {
@@ -508,6 +510,9 @@ fn publishTwenty(arena: std.mem.Allocator, io: std.Io, keep: ?usize) !CountedFil
     try std.testing.expectEqual(@as(usize, 0), scan.unknown_files);
     try std.testing.expectEqual(@as(usize, 1), scan.current_source_files);
     try std.testing.expectEqual(@as(usize, 0), scan.orphan_source_files);
+    // S4-T2 R3: so does its recovery-state section.
+    try std.testing.expectEqual(@as(usize, 1), scan.current_state_files);
+    try std.testing.expectEqual(@as(usize, 0), scan.orphan_state_files);
     // The current generation is still openable and queryable.
     const opened = try snapshot_open.open(arena, io, out);
     try std.testing.expectEqual(@as(u64, 20), opened.generation);
@@ -526,6 +531,8 @@ test "keep_generations=2 leaves exactly two generations over 20 publishes; absen
     // S3-T1: each generation also binds a source section; pruning removes
     // it with its generation.
     try std.testing.expectEqual(@as(usize, 2), kept.source);
+    // S4-T2 R3: and its recovery-state section, likewise.
+    try std.testing.expectEqual(@as(usize, 2), kept.state);
     try std.testing.expectEqual(@as(usize, 3), kept.control); // MANIFEST, WRITER.LOCK, INDEX-STATE.json
     try std.testing.expectEqual(@as(usize, 0), kept.other);
 
@@ -533,6 +540,7 @@ test "keep_generations=2 leaves exactly two generations over 20 publishes; absen
     try std.testing.expectEqual(@as(usize, 20), all.documents);
     try std.testing.expectEqual(@as(usize, 20), all.lexical);
     try std.testing.expectEqual(@as(usize, 20), all.source);
+    try std.testing.expectEqual(@as(usize, 20), all.state);
     try std.testing.expectEqual(@as(usize, 3), all.control);
 }
 

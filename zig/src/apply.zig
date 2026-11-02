@@ -41,6 +41,7 @@ const publication = @import("publication.zig");
 const scope = @import("scope.zig");
 const segment = @import("segment.zig");
 const source = @import("source.zig");
+const state_section = @import("state_section.zig");
 
 pub const max_changes: usize = 10_000;
 pub const default_max_file_bytes: u64 = 10 * 1024 * 1024;
@@ -626,7 +627,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var previous_meta: ?manifest.Meta = null;
     var previous_source: ?source.Section = null;
     var previous_state: ?incremental_state.State = null;
-    var previous_meta_bytes: []const u8 = "";
+    var previous_state_json: ?[]const u8 = null;
     if (!options.fresh) {
         const opened_previous: ?Previous = openPrevious(allocator, io, dir) catch |err| switch (err) {
             error.FileNotFound, error.AccessDenied, error.InputOutput => blk: {
@@ -640,7 +641,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             else => return err,
         };
         if (opened_previous) |opened| {
-            previous_meta_bytes = opened.metadata.meta;
+            previous_state_json = opened.state;
             previous_engine = opened.engine;
             if (options.filename_index == null) options.filename_index = opened.engine.filename_index_enabled;
             previous_source = opened.source;
@@ -648,9 +649,11 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
         }
         if (previous_engine) |prev| {
             if (!std.mem.eql(u8, prev.analyzer_id, options.analyzer.label())) return error.AnalyzerMismatch;
-            // Prefer the immutable state; the mutable compatibility cache is
-            // read only for generations that predate committed recovery state.
-            if (previous_meta_bytes.len != 0) previous_state = try incremental_state.parseCommitted(allocator, previous_meta_bytes);
+            // Precedence (S4-T2 R3): the generation's bound recovery-state
+            // section; else an `INDEX-STATE.json` naming this generation and
+            // analyzer (generations that predate the section); else the
+            // conservative reconstruction from the generation itself.
+            if (previous_state_json) |json| previous_state = try incremental_state.parseCommitted(allocator, json);
             if (previous_state) |state| {
                 if (state.generation != prev.generation or !std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) return error.InvalidState;
             } else if (incremental_state.load(allocator, io, dir) catch null) |state| {
@@ -1047,7 +1050,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
         error.TooManyLabels => return .{ .failed = try failure(allocator, .invalid_argument, "a file would require more than {d} labels (its root's and its own)", .{max_labels}) },
         else => return err,
     };
-    const prune = try lifecycle.publishLeasedKeepingWithExtras(allocator, dir, io, built.manifest, built.documents, built.lexical, built.source, built.catalog, built.filename_lexical, options.keep_generations);
+    const prune = try lifecycle.publishLeasedKeepingWithExtras(allocator, dir, io, built.manifest, built.documents, built.lexical, built.source, built.catalog, built.filename_lexical, built.state, options.keep_generations);
     if (options.fail_after_publish) return error.SimulatedCrash;
     // Only after the generation is published (`docs/publication-recovery.md`).
     try incremental_state.save(io, dir, allocator, .{
@@ -1080,6 +1083,9 @@ const Previous = struct {
     engine: engine_module.Engine,
     metadata: manifest.Manifest,
     source: ?source.Section,
+    /// S4-T2 R3: the state JSON of the generation's bound recovery-state
+    /// section, checked against the manifest; null when it binds none.
+    state: ?[]const u8 = null,
 };
 
 fn readWhole(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []const u8) ![]u8 {
@@ -1111,6 +1117,16 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
         if (!metadata.xxh3_sections and opened.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
         section = opened;
     }
+    // S4-T2 R3: the bound recovery state. A wrong size, header or checksum
+    // refuses the write (`StateSectionSizeMismatch`,
+    // `StateSectionChecksumMismatch`, `InvalidStateSection`); readers never
+    // read the section, so the generation stays queryable.
+    var state_json: ?[]const u8 = null;
+    if (metadata.state) |bound| {
+        const bytes = try readWhole(allocator, io, dir, bound.file);
+        try manifest.validateState(metadata, bytes);
+        state_json = state_section.payload(bytes);
+    }
     // The checks of `manifest.validateSnapshot`, with the document section's
     // checksum computed once (by `segment.decode`, against the stored value
     // that must equal the manifest's).
@@ -1138,7 +1154,7 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
         .lexical_index = lexical_index,
         .filename_index_enabled = metadata.filename != null,
         .labeled_documents = labeled,
-    }, .metadata = metadata, .source = section };
+    }, .metadata = metadata, .source = section, .state = state_json };
 }
 
 /// The checksum a section stores as the last eight bytes of its header
@@ -1638,6 +1654,8 @@ fn detectRenames(
 
 const Built = struct {
     catalog: ?[]const u8 = null,
+    /// S4-T2 R3: the generation's recovery-state section (`state-N.hybstate`).
+    state: []const u8,
     filename_lexical: ?[]const u8 = null,
     manifest: []const u8,
     documents: []const u8,
@@ -1839,7 +1857,7 @@ fn buildGeneration(
     std.mem.sort([]const u8, skipped_records.items, {}, lessThanString);
     const skipped_list = try allocator.alloc(manifest.PendingEntry, skipped_records.items.len);
     for (skipped_records.items, skipped_list) |record, *entry| entry.* = work.skipped.get(record).?;
-    var meta = try manifest.writeMetaPending(
+    const meta = try manifest.writeMetaPending(
         allocator,
         all_chunkers[0..if (uses_markdown) 2 else 1],
         meta_roots,
@@ -1849,10 +1867,12 @@ fn buildGeneration(
         if (source_encoded != null) source.version else 0,
     );
     // The exact mutation state is immutable generation data, not a mutable
-    // post-publication cache. This preserves own labels, mtimes and hashes
-    // even for files whose source bytes are not retained.
-    const recovery_state = try incremental_state.encode(allocator, .{ .generation = generation, .analyzer_id = options.analyzer.label(), .roots = state_roots, .files = state_files.items });
-    meta = try std.fmt.allocPrint(allocator, "{s},\"recovery_state\":{s}}}", .{ meta[0 .. meta.len - 1], recovery_state });
+    // post-publication cache: it preserves own labels, mtimes and hashes even
+    // for files whose source bytes are not retained. S4-T2 R3: it is its own
+    // section, `state-N.hybstate`, bound by the manifest (flag bit 4) and
+    // read only by the next writer, not copied into `meta` where every open
+    // would read it.
+    const state_encoded = try state_section.encode(allocator, try incremental_state.encode(allocator, .{ .generation = generation, .analyzer_id = options.analyzer.label(), .roots = state_roots, .files = state_files.items }));
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
     const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
     const source_file = if (source_encoded != null) try std.fmt.allocPrint(allocator, "source-{d}.hybsrc", .{generation}) else "";
@@ -1885,11 +1905,13 @@ fn buildGeneration(
     };
     const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try @import("filename_field.zig").build(allocator, documents.items, options.analyzer.label()) else null;
     if (filename_data) |f| metadata = try manifest.withFilename(metadata, try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{generation}), try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{generation}), f.catalog, f.lexical);
+    metadata = try manifest.withState(metadata, try std.fmt.allocPrint(allocator, "state-{d}.hybstate", .{generation}), state_encoded);
     const manifest_buffer = try allocator.alloc(u8, try manifest.encodedLength(metadata));
     const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
     return .{
         .catalog = if (filename_data) |f| f.catalog else null,
         .filename_lexical = if (filename_data) |f| f.lexical else null,
+        .state = state_encoded,
         .manifest = manifest_encoded,
         .documents = documents_encoded,
         .lexical = lexical_encoded,

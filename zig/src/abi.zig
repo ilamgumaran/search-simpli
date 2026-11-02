@@ -567,6 +567,27 @@ fn errorCode(err: anyerror) i64 {
         // `find` (a lazy open), not by `ss_open`.
         error.InvalidPositions,
         error.UnsortedTerms,
+        // S4-T2: the v2.2 filename sections (checked at the first filename
+        // query, a lazy load) and the recovery-state section (checked by the
+        // next writer, which refuses to write over a damaged one).
+        error.InvalidFilenameCatalog,
+        error.InvalidFilenameLexicalSection,
+        error.InvalidFilenamePolicy,
+        error.FilenameCatalogSizeMismatch,
+        error.FilenameLexicalSizeMismatch,
+        error.FilenameCatalogChecksumMismatch,
+        error.FilenameLexicalChecksumMismatch,
+        error.FilenameCatalogMismatch,
+        error.FilenameLexicalMismatch,
+        error.FilenameCountMismatch,
+        error.FilenameTermCountMismatch,
+        error.FilenamePostingCountMismatch,
+        error.FilenameSectionsRequired,
+        error.InvalidStateSection,
+        error.StateSectionMissing,
+        error.StateSectionUnexpected,
+        error.StateSectionSizeMismatch,
+        error.StateSectionChecksumMismatch,
         => SS_ERR_CORRUPT_SNAPSHOT,
 
         error.DocumentCapacityTooSmall,

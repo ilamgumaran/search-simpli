@@ -1012,6 +1012,11 @@ test "committed recovery state preserves own labels, hashes, mtimes, pending and
         "{\"op\":\"pending\",\"root_id\":\"home\",\"path\":\"waiting.txt\",\"size\":123,\"mtime_ms\":77,\"required_labels\":[\"shared\"]}",
     });
     _ = try f.applyOk(initial, .{});
+    // S4-T2 R3: the committed state is the generation's own section, bound
+    // by the manifest (flag bit 4), not a copy inside `meta`.
+    const first = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    try std.testing.expectEqualStrings("state-1.hybstate", first.state.?.file);
+    try std.testing.expect(std.mem.indexOf(u8, first.meta, "recovery_state") == null);
     const moved = "{\"changes\":[{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"moved.md\",\"moved_from\":\"note.md\",\"mtime_ms\":999}]}";
     try std.testing.expectError(error.SimulatedCrash, apply.applyChanges(a, io, f.out, moved, .{ .fail_after_publish = true }));
     // Neither the host bytes nor a matching mutable state are available.
@@ -1040,6 +1045,46 @@ test "committed recovery state preserves own labels, hashes, mtimes, pending and
     try f.out.writeFile(io, .{ .sub_path = incremental_state.state_file, .data = "not json" });
     const recovered_report = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "moved.md", "copper recovery evidence", "[\"shared\"]")}), .{});
     try std.testing.expect(recovered_report.unchanged >= 1);
+}
+
+test "S4-T2 R3: a damaged recovery-state section refuses the write and readers still open" {
+    var f = try Fixture.init(); defer f.deinit();
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, "[{\"root_id\":\"home\",\"kind\":\"host\"}]", &.{try add(a, "home", "note.md", "copper harbour evidence", "[]")}), .{});
+    const metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    const bound = metadata.state.?;
+    const original = try f.out.readFileAlloc(io, bound.file, a, .unlimited);
+    try std.testing.expectEqual(bound.bytes, original.len);
+    const next = "{\"changes\":[]}";
+
+    // One flipped payload byte: the checksum no longer matches.
+    const flipped = try a.dupe(u8, original);
+    flipped[flipped.len - 2] ^= 0x01;
+    try f.out.writeFile(io, .{ .sub_path = bound.file, .data = flipped });
+    const before = try f.listing();
+    try std.testing.expectError(error.StateSectionChecksumMismatch, apply.applyChanges(a, io, f.out, next, .{}));
+    try std.testing.expectEqualStrings(before, try f.listing());
+    // The reader never reads the section: the generation opens and answers.
+    const scoped = try f.opened();
+    try std.testing.expectEqual(@as(usize, 1), (try searchPaths(scoped, a, "copper", .{})).len);
+
+    // A short file: the size no longer matches the manifest.
+    try f.out.writeFile(io, .{ .sub_path = bound.file, .data = original[0 .. original.len - 1] });
+    try std.testing.expectError(error.StateSectionSizeMismatch, apply.applyChanges(a, io, f.out, next, .{}));
+    // A flipped magic byte with the size kept: the header is refused.
+    const bad_magic = try a.dupe(u8, original);
+    bad_magic[0] = 'X';
+    try f.out.writeFile(io, .{ .sub_path = bound.file, .data = bad_magic });
+    try std.testing.expectError(error.InvalidStateSection, apply.applyChanges(a, io, f.out, next, .{}));
+
+    // Restored, the next write succeeds and binds its own state section;
+    // pruning removes the superseded one with its generation.
+    try f.out.writeFile(io, .{ .sub_path = bound.file, .data = original });
+    _ = try f.applyOk(next, .{ .keep_generations = 1 });
+    const after = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    try std.testing.expect(after.generation > metadata.generation);
+    try std.testing.expect(!std.mem.eql(u8, after.state.?.file, bound.file));
+    try std.testing.expectError(error.FileNotFound, f.out.statFile(io, bound.file, .{}));
 }
 
 test "restricted writers cannot change root policy, hidden files or labels" {
