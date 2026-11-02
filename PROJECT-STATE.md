@@ -709,3 +709,9 @@ caches filename tables and removes recovery JSON trees from query readers.
 The unchanged 10k 64 MiB gate passes after allocator work; source capacity is
 reserved at open, while source I/O and validation remain lazy. This candidate
 is unmerged; see [current evidence and follow-ups](docs/reviews/2026-11-01-s4-integration.md).
+
+The S4 integration candidate's final native build at `dc800e3` passes all
+platform checks, clean Dart analysis and 83 Dart tests; packages are rebuilt
+at contract 2.2.0. Source tests pass 282/282 and ABI 22/22. The combined
+10k cap regression peaks at 63,859,306 bytes; 15k/20k require further memory
+work. Physical phone validation and E-02/real-folder evaluation are pending.

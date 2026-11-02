@@ -110,3 +110,45 @@ filename p50/p95 1.389/2.434 ms, peak 57,270,508 bytes; both p50/p95
 6.781/10.192 ms, peak 61,210,640 bytes. These broader body matches should
 be used alongside the filename-only `doc` scaling rows, not hidden behind
 the cheaper query's timings. Raw rows are included in the JSON report.
+
+## Verification notes
+
+A concurrent local full-suite run hit the unchanged NFC timing ratio test
+(6.04x against its 5x bound); its source and bound are unchanged. An isolated
+full-suite rerun and exact-head CI provide the final result below. The
+intermediate Python runs execute 238 tests with four platform skips and
+only the expected stale-package failure before authentic package adoption.
+C ABI checks pass 22/22. Requirements, home-path and diff whitespace checks
+pass. No failure is hidden by changing a threshold or source stamp.
+
+The isolated final Linux Zig run passes **282/282** (including both 10k cap
+regressions and the source-size/streaming-posting/state tests), with the
+original NFC bound unchanged. Exact source-head CI at `dc800e3` also passes
+the Zig engine and 22 ABI checks. Package adoption and the remaining final
+CI results are recorded below.
+
+## Authentic final native packages
+
+[macOS build 41382210500](https://github.com/ilamgumaran/search-simpli/actions/runs/41382210500)
+at source `dc800e34b479e1906f5656252ab6396c7123bf54` passes the genuine
+platform rebuild, platform checks, Dart analysis and **83/83 Dart tests**.
+The pipeline uses Zig 0.16.0 and NDK 28.2.13676358. Artifacts: macOS arm64
+790,296 bytes; Android arm64 759,784; iOS arm64 framework binary 1,032,680.
+The checker confirms the iOS platform/deployment metadata and four segments
+with 16 KiB alignment. No physical-device execution is inferred.
+
+Adopted artifact `13114145877`, archive SHA-256
+`0b3798a406a24518597ff5261ea3f82adaec31aebe8d03ed2b211c418e3388e6`.
+Verified that checksum, the archive's exact source commit, paths/types and
+its genuine build-generated source digest before copying the native paths.
+The Android JNI example copy is byte-identical to the packaged library.
+Source digest:
+`8c57075d1c5e252baf1b599d29d29b0df2a8d8a38a0f017294be1a1e8418a5b2`.
+No stamp was edited to match unbuilt source.
+
+After adopting the authentic packages, the full Python suite passes:
+**238 tests in 40.949 seconds, four platform/Unicode skips, no failures**.
+This includes native freshness and 66-request MCP/RPC canonical parity.
+Requirements, home-path and whitespace checks pass after evidence updates.
+The final package/evidence commit reruns both GitHub workflows; its result
+is linked from the PR description and update comment.

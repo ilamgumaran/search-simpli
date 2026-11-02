@@ -121,3 +121,8 @@ Current candidate includes main `f45c06d` and moves the combined contract to
 2.2.0. The earlier build results above describe the previous 2.1.0 candidate,
 not this combined tree. See [S4 integration review](../reviews/2026-11-01-s4-integration.md)
 for the new fixes, allocation tradeoff, verification and remaining acceptance.
+
+The S4 follow-up is verified at source `dc800e3`: 282 Zig / 22 ABI / 83 Dart
+tests, clean Dart analysis and genuine three-platform packages. Native build
+provenance, allocation tradeoffs, raw scaling data and remaining work are in
+the linked S4 review. Contract 2.2.0 supersedes the earlier candidate's 2.1.0.
