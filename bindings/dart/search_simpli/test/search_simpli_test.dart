@@ -258,6 +258,36 @@ void main() {
       } finally {
         engine.close();
       }
+
+      // S4-T2 R6: an update or a rebuild that omits filenameIndex keeps the
+      // directory's channel; asking for none is refused.
+      File('${folderDir.path}/Harbour-Map.md')
+          .writeAsStringSync('tide tables and moorings');
+      final updated = SearchSimpli.indexFolder(outDir.path, folderDir.path,
+          options: const IndexFolderOptions(update: true));
+      expect(updated.added, 1);
+      final rebuilt = SearchSimpli.indexFolder(outDir.path, folderDir.path);
+      expect(rebuilt.generation, greaterThan(updated.generation));
+      final kept = SearchSimpli.open(outDir.path);
+      try {
+        expect(kept.status().filenamePolicyId, 'filename-field-v1');
+        expect(
+            kept
+                .query('harbour', mode: RetrievalMode.lexical,
+                    searchField: SearchField.filename)
+                .results
+                .single
+                .citation
+                .path,
+            'Harbour-Map.md');
+      } finally {
+        kept.close();
+      }
+      expect(
+          () => SearchSimpli.indexFolder(outDir.path, folderDir.path,
+              options: const IndexFolderOptions(
+                  update: true, filenameIndex: false)),
+          throwsA(isA<SearchSimpliException>()));
     });
 
     test(

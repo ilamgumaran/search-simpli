@@ -611,7 +611,12 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     }
     if (parsed.deferred) |f| return .{ .failed = f };
     const batch = parsed.batch;
-    if (current != 0 and options.filename_index != null) {
+    if (current != 0 and options.filename_index == null) {
+        // S4-T2 R6: an omitted setting keeps the directory's, for a full
+        // rebuild as for an update.
+        const current_meta = try manifest.decode(try readWhole(allocator, io, dir, publication.current_manifest_file));
+        options.filename_index = current_meta.filename != null;
+    } else if (current != 0 and options.filename_index != null) {
         const bytes = try readWhole(allocator, io, dir, publication.current_manifest_file);
         const current_meta = try manifest.decode(bytes);
         if ((current_meta.filename != null) != options.filename_index.?) {

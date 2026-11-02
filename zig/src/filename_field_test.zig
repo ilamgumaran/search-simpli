@@ -87,8 +87,24 @@ test "opt-in folder index publishes filename channel and refresh setting is pinn
     const hits = try opened.queryFields(allocator, "annual budget", .filename, .{ .retrieval_mode = .lexical, .top_k = 3, .candidate_k = 3 });
     try std.testing.expectEqual(@as(usize, 1), hits.len);
     try std.testing.expectEqualStrings("Annual_Budget_2026.md", opened.documents[hits[0].document_index].path);
-    try std.testing.expectError(error.FilenameMigrationRequiresNewDirectory, indexer.indexFolder(allocator, io, tmp.dir, out_dir, .v2, 2, chunker.default_max_chars, chunker.default_overlap_lines, .{}));
-    try std.testing.expectError(error.FilenameSettingMismatch, indexer.indexFolderIncremental(allocator, io, tmp.dir, out_dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{}));
+    // S4-T2 R6: an omitted setting keeps the directory's, for an update and
+    // for a full rebuild; asking for none is refused.
+    try tmp.dir.writeFile(io, .{ .sub_path = "Harbour_Map.md", .data = "tide tables" });
+    _ = try indexer.indexFolderIncremental(allocator, io, tmp.dir, out_dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    _ = try indexer.indexFolder(allocator, io, tmp.dir, out_dir, .v2, 9, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    const kept = try snapshot_open.open(allocator, io, out_dir);
+    try std.testing.expectEqual(@as(u64, 9), kept.generation);
+    const harbour = try kept.queryFields(allocator, "harbour", .filename, .{ .retrieval_mode = .lexical, .top_k = 3, .candidate_k = 3 });
+    try std.testing.expectEqualStrings("Harbour_Map.md", kept.documents[harbour[0].document_index].path);
+    try std.testing.expectError(error.FilenameMigrationRequiresNewDirectory, indexer.indexFolder(allocator, io, tmp.dir, out_dir, .v2, 10, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = false }));
+    try std.testing.expectError(error.FilenameSettingMismatch, indexer.indexFolderIncremental(allocator, io, tmp.dir, out_dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = false }));
+    // A directory without the channel keeps none.
+    try tmp.dir.createDir(io, "plain", .default_dir);
+    var plain = try tmp.dir.openDir(io, "plain", .{ .iterate = true });
+    defer plain.close(io);
+    _ = try indexer.indexFolderIncremental(allocator, io, tmp.dir, plain, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    _ = try indexer.indexFolderIncremental(allocator, io, tmp.dir, plain, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    try std.testing.expect(!(try snapshot_open.open(allocator, io, plain)).filename_index_enabled);
 }
 
 test "cached filename anchors apply body ordinals and isolate scoped averages" {

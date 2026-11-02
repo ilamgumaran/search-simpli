@@ -796,7 +796,13 @@ class IndexFolderOptions {
   /// (and so [SearchSimpli.indexFolder], before any native call) throws
   /// [ArgumentError] for a value below 1.
   final int? keepGenerations;
-  final bool filenameIndex;
+
+  /// CAP-16's filename channel: `true` asks for it on a new or empty output
+  /// directory, `false` asks for none, `null` (the default) keeps the
+  /// directory's current setting (none for a new directory). A value that
+  /// differs from an existing directory's setting is refused; the switch
+  /// is a fresh directory rebuilt from every file.
+  final bool? filenameIndex;
 
   const IndexFolderOptions({
     this.analyzer = 'analyzer-v2',
@@ -806,7 +812,7 @@ class IndexFolderOptions {
     this.maxFileBytes,
     this.maxTotalBytes,
     this.keepGenerations,
-    this.filenameIndex = false,
+    this.filenameIndex,
   });
 
   /// Throws [ArgumentError] when [keepGenerations] is below 1. (Checked
@@ -829,7 +835,7 @@ class IndexFolderOptions {
     if (maxFileBytes != null) 'max_file_bytes': maxFileBytes,
     if (maxTotalBytes != null) 'max_total_bytes': maxTotalBytes,
     if (keepGenerations != null) 'keep_generations': keepGenerations,
-    if (filenameIndex) 'filename_index': true,
+    if (filenameIndex != null) 'filename_index': filenameIndex,
   };
 }
 

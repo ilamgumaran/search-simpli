@@ -247,7 +247,11 @@ fn relativePaths(allocator: std.mem.Allocator, refs: []const apply.PathRef) ![][
 /// `opts` (CLI flags or `ss_index_folder`'s `opts` JSON object) -- see
 /// `docs/tasks/S1-T3.md` criterion 2.
 pub const Caps = struct {
-    filename_index: bool = false,
+    /// CAP-16's filename channel (S4-T2 R6): `true` asks for it (a new or
+    /// empty directory only), `false` asks for none, `null` (the default,
+    /// `searchd index` without `--filename-index`) keeps the directory's
+    /// current setting (none for a new directory).
+    filename_index: ?bool = null,
     /// S2-T5, opt-in (`null`, the default, deletes nothing): after a
     /// successful publish, delete the section files of generations older
     /// than the newest `keep_generations` (>= 1). Carried here because

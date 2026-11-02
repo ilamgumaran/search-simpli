@@ -303,9 +303,12 @@ class FilenameCliTests(unittest.TestCase):
         (docs / "Removed_File.md").write_text("unrelated body\n", encoding="utf-8")
         snapshot = self.tmp / "snapshot"
         self.good_cli("index", docs, "--out", snapshot, "--filename-index")
-        wrong_mode = self.run_cli("index", docs, "--out", snapshot)
-        self.assertEqual(wrong_mode.returncode, 1, wrong_mode.stderr)
-        self.assertIn("FilenameMigrationRequiresNewDirectory", wrong_mode.stderr)
+        # S4-T2 R6: omitting --filename-index keeps the directory's setting,
+        # for a full rebuild and for --update.
+        self.good_cli("index", docs, "--out", snapshot)
+        self.good_cli("index", docs, "--out", snapshot, "--update")
+        kept = json.loads(self.good_cli("evidence", snapshot, "old marker", "--search-field", "filename"))
+        self.assertEqual(kept["results"][0]["citation"]["path"], "Old_Marker.md")
         wrong_analyzer = self.run_cli("index", docs, "--out", snapshot, "--filename-index", "--analyzer", "v1")
         self.assertEqual(wrong_analyzer.returncode, 1, wrong_analyzer.stderr)
         self.assertIn("FilenameMigrationRequiresNewDirectory", wrong_analyzer.stderr)
@@ -317,7 +320,7 @@ class FilenameCliTests(unittest.TestCase):
         (docs / "Old_Marker.md").rename(docs / "New_Marker.md")
         (docs / "New_Marker.md").write_text("unique new content\n", encoding="utf-8")
         (docs / "Removed_File.md").unlink()
-        self.good_cli("index", docs, "--out", snapshot, "--update", "--filename-index")
+        self.good_cli("index", docs, "--out", snapshot, "--update")
         changed_content = json.loads(self.good_cli("evidence", snapshot, "unique new content"))
         self.assertEqual(changed_content["evidence"][0]["path"], "New_Marker.md")
         self.assertNotIn("unique old content", changed_content["evidence"][0]["content"])

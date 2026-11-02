@@ -730,7 +730,7 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
     const overlap_lines = options.overlap_lines orelse chunker.default_overlap_lines;
     const default_caps = indexer.Caps{};
     const caps = indexer.Caps{
-        .filename_index = options.filename_index orelse false,
+        .filename_index = options.filename_index,
         .max_file_bytes = options.max_file_bytes orelse default_caps.max_file_bytes,
         .max_total_bytes = options.max_total_bytes orelse default_caps.max_total_bytes,
         .keep_generations = options.keep_generations,
