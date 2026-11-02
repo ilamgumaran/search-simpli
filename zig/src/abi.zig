@@ -1179,7 +1179,7 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     try std.testing.expectEqualStrings("guides/hybrid.md", evidence_items[0].object.get("citation").?.object.get("path").?.string);
     try std.testing.expectEqual(false, evidence_items[1].object.get("found").?.bool);
 
-    try std.testing.expectEqualStrings("2.0.0", std.mem.span(ss_version()));
+    try std.testing.expectEqualStrings("2.1.0", std.mem.span(ss_version()));
 }
 
 test "ss_import_json publishes a queryable snapshot and reports negative codes on failure" {

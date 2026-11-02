@@ -182,7 +182,7 @@ until promoted.
 
 | NFR-10 | Phrase/words latency and generation-bound paging | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
 | NFR-11 | Positional segment size budget | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
-| NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseFast, ReleaseSmall reported) | CAP-19 | Diagnostic · implemented (S3-T3: [task](../tasks/S3-T3.md)) |
+| NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseSmall since S4-T1) | CAP-19 | Diagnostic · implemented (S3-T3: [task](../tasks/S3-T3.md); S4-T1: [task](../tasks/S4-T1.md)) |
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Proposed |
 | NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic · implemented (S3-T6: `zig/src/mcp.zig` Zig only, `tests/mcp_client.py` standard library; [task](../tasks/S3-T6.md)) |
 

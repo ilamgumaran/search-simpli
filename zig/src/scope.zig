@@ -371,6 +371,8 @@ pub const Loads = struct {
     /// The manifest's length and checksum of the source section.
     source_bytes: usize = 0,
     source_checksum: u64 = 0,
+    /// The manifest's `xxh3_sections` flag (v2.1, S4-T1).
+    xxh3_sections: bool = false,
     source_done: std.atomic.Value(bool) = .init(false),
     source: ?source.Section = null,
     /// The bound source section could not be read or did not validate (a
@@ -418,6 +420,7 @@ pub const Loads = struct {
             else => return @errorName(err),
         };
         if (section.checksum != loads.source_checksum) return "SourceSectionChecksumMismatch";
+        if (!loads.xxh3_sections and section.checksum_kind != .fnv1a64) return "InvalidSourceSection";
         loads.source = section;
         return null;
     }

@@ -19,6 +19,12 @@ pub const version_v2: u16 = 2;
 pub const header_length_v2: usize = 104;
 pub const flag_has_source: u16 = 1;
 pub const flag_has_positions: u16 = 2;
+/// S4-T1 (`docs/manifest-format-v2.md` v2.1): at least one bound section
+/// carries an XXH3-64 checksum (`checksum.zig`). Readers before v2.1 refuse
+/// the manifest on this bit (`UnsupportedFlags`) instead of failing later on
+/// a section; a reader since v2.1 refuses an XXH3 section under a manifest
+/// that does not set it. The manifest's own checksum stays FNV-1a 64.
+pub const flag_xxh3_sections: u16 = 4;
 
 pub const Manifest = struct {
     generation: u64,
@@ -37,6 +43,9 @@ pub const Manifest = struct {
     /// 1 or 2. Version 1 has none of the fields below.
     format_version: u16 = version,
     has_positions: bool = false,
+    /// v2.1 (S4-T1): `flag_xxh3_sections`; set by the writer exactly when
+    /// one of the bound sections' headers selects XXH3-64.
+    xxh3_sections: bool = false,
     /// Empty when the generation binds no source section.
     source_file: []const u8 = "",
     source_bytes: usize = 0,
@@ -128,6 +137,7 @@ fn sectionFields(
         .documents_file = documents_file,
         .lexical_file = lexical_file,
         .has_positions = lexical_header.hasPositions(),
+        .xxh3_sections = document_header.checksum_kind == .xxh3_64 or lexical_header.checksum_kind == .xxh3_64,
     };
 }
 
@@ -153,6 +163,7 @@ pub fn createV2(
         value.source_file = source_file;
         value.source_bytes = bytes.len;
         value.source_checksum = header.checksum;
+        if (header.checksum_kind == .xxh3_64) value.xxh3_sections = true;
     } else if (source_file.len != 0) return error.SourceSectionMissing;
     try validateFields(value);
     return value;
@@ -226,6 +237,7 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
     var flags: u16 = 0;
     if (value.hasSource()) flags |= flag_has_source;
     if (value.has_positions) flags |= flag_has_positions;
+    if (value.xxh3_sections) flags |= flag_xxh3_sections;
 
     @memcpy(output[0..magic_v2.len], magic_v2);
     var header_offset: usize = magic_v2.len;
@@ -265,7 +277,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
     var cursor = Cursor{ .bytes = encoded, .offset = magic_v2.len };
     if (try cursor.readU16() != version_v2) return error.UnsupportedVersion;
     const flags = try cursor.readU16();
-    if (flags & ~(flag_has_source | flag_has_positions) != 0) return error.UnsupportedFlags;
+    if (flags & ~(flag_has_source | flag_has_positions | flag_xxh3_sections) != 0) return error.UnsupportedFlags;
     const generation = try cursor.readU64();
     const document_count = try castToUsize(try cursor.readU32());
     const vector_dimensions = try castToUsize(try cursor.readU32());
@@ -316,6 +328,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .lexical_file = lexical_file,
         .format_version = version_v2,
         .has_positions = flags & flag_has_positions != 0,
+        .xxh3_sections = flags & flag_xxh3_sections != 0,
         .source_file = source_file,
         .source_bytes = source_bytes,
         .source_checksum = source_checksum,
@@ -416,6 +429,11 @@ pub fn validateSnapshotHeaders(
     if (lexical_header.posting_count != value.posting_count) return error.PostingCountMismatch;
     // S3-T2: the flag and the section agree (`HYBLEX02` exactly when set).
     if (lexical_header.hasPositions() != value.has_positions) return error.InvalidLexicalSection;
+    // S4-T1: an XXH3 section only under a manifest that says so.
+    if (!value.xxh3_sections) {
+        if (document_header.checksum_kind != .fnv1a64) return error.InvalidDocumentSection;
+        if (lexical_header.checksum_kind != .fnv1a64) return error.InvalidLexicalSection;
+    }
     return .{ .documents = document_header, .lexical = lexical_header };
 }
 
@@ -430,6 +448,7 @@ pub fn validateSource(value: Manifest, source_encoded: ?[]const u8) ManifestErro
     if (bytes.len != value.source_bytes) return error.SourceSectionSizeMismatch;
     const header = source_section.inspect(bytes) catch return error.InvalidSourceSection;
     if (header.checksum != value.source_checksum) return error.SourceSectionChecksumMismatch;
+    if (!value.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
 }
 
 fn validateFields(value: Manifest) ManifestError!void {
@@ -443,7 +462,7 @@ fn validateFields(value: Manifest) ManifestError!void {
     try validateFilename(value.lexical_file);
     if (std.mem.eql(u8, value.documents_file, value.lexical_file)) return error.SameFilename;
     if (value.format_version < version_v2) {
-        if (value.format_version != version or value.hasSource() or value.meta.len != 0 or value.has_positions)
+        if (value.format_version != version or value.hasSource() or value.meta.len != 0 or value.has_positions or value.xxh3_sections)
             return error.UnsupportedVersion;
         return;
     }
@@ -1081,7 +1100,7 @@ test "manifest v2 rejects bad meta, unsafe source names and stray flags" {
     var storage: [1024]u8 = undefined;
     const encoded = try encode(value, &storage);
     // A stray flag bit with a recomputed checksum is refused as unsupported.
-    encoded[10] = 4;
+    encoded[10] = 8;
     var checksum_offset: usize = header_length_v2 - 8;
     writeU64(encoded, &checksum_offset, manifestChecksum(encoded[0 .. header_length_v2 - 8], encoded[header_length_v2..]));
     try std.testing.expectError(error.UnsupportedFlags, decode(encoded));

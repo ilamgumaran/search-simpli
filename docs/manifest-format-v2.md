@@ -1,6 +1,7 @@
-# Generation manifest format v2
+# Generation manifest format v2 (minor version 2.1)
 
-Status: implemented in `zig/src/manifest.zig` (S3-T1). Magic: `HYBMAN02`.
+Status: implemented in `zig/src/manifest.zig` (S3-T1; v2.1 flag bit 2 since
+S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1)). Magic: `HYBMAN02`.
 Written by `searchd index` / `ss_index_folder` (`zig/src/indexer.zig`).
 `import-json` still writes [v1](manifest-format-v1.md), and every reader opens
 both. Design: [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §1.
@@ -16,7 +17,7 @@ generation (CAP-19 FR-18, CFT-09).
 |---:|---:|---|---|
 | 0 | 8 | magic `HYBMAN02` | v2 (v1: `HYBMAN01`) |
 | 8 | 2 | version `2` | |
-| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`; other bits must be zero | v2 (v1: zero) |
+| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1); other bits must be zero | v2 (v1: zero) |
 | 12 | 8 | generation number (nonzero) | v1 |
 | 20 | 4 | shared document count | v1 |
 | 24 | 4 | vector dimensions | v1 |
@@ -120,6 +121,43 @@ files only (its v1 meaning), source deletions are counted apart.
 - An incremental update over a v1 generation re-chunks unchanged Markdown
   files (their chunks were line windows), reports them under `changed`, and
   publishes v2.
+
+## v2.1: XXH3 section checksums (S4-T1)
+
+Bit 2 of the flags, `xxh3_sections`, says that at least one bound section's
+own header selects the XXH3-64 checksum (seed 0) instead of FNV-1a 64 (the
+section header's flags bit 0: [segment v4](segment-format-v4.md#v41-section-checksum-s4-t1),
+[`HYBLEX02`](lexical-segment-format-v2.md#flags-bit-0-xxh3-64-s4-t1),
+[`HYBSRC01`](source-section-v1.md#flags-bit-0-xxh3-64-s4-t1)); the recorded
+section checksums are then those XXH3 values. Every folder writer since S4-T1
+(`searchd index`, `ss_index_folder`, `apply_changes`) sets it and writes all
+three sections with XXH3. The header layout, the magic, the version number
+`2` and the manifest's own FNV-1a checksum are unchanged. The reason is cost:
+FNV-1a runs one byte per step, and a generation's sections are checksummed when
+written, when published and when the next generation reads them back; on the
+10,000-file corpus one changed file went from 243–249 ms to 154–158 ms
+(ReleaseSmall, five runs; `docs/tasks/S4-T1.md`). Checksums remain
+accidental-corruption detection, not authentication; SHA-256 stays the
+per-file content id (the source section's file table, `INDEX-STATE.json`).
+
+Rules (`manifest.validateSnapshotHeaders`, `manifest.validateSource`):
+- without bit 2 every bound section must be FNV-1a (an XXH3 section under such
+  a manifest is refused as an invalid section);
+- with bit 2 each section is checked with the kind its own header names.
+
+Compatibility:
+- A reader since v2.1 opens every v2 generation written before it (FNV-1a
+  sections, bit 2 clear) unchanged; `tests/fixtures/index-292cb568/` (written
+  at commit 292cb568, the pin of the consumer app) is opened and queried by
+  `zig/src/compat_292cb568_test.zig`, and the first `apply_changes` over it
+  publishes a v2.1 generation.
+- A reader before v2.1 (292cb568 and earlier) refuses a v2.1 manifest on the
+  unknown flag bit with `UnsupportedFlags` before it reads any section
+  (measured: that commit's `searchd query`, `find` and `read-span` over a v2.1
+  index print `error: UnsupportedFlags`). An app that downgrades its engine
+  must re-index.
+- `import-json` keeps writing a v1 manifest, record v3 and `HYBLEX01` with
+  FNV-1a, byte for byte as before.
 
 ## Follow-up: cross-branch manifest version reservation
 

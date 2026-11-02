@@ -1,3 +1,4 @@
+const checksum = @import("checksum.zig");
 const postings = @import("postings.zig");
 const std = @import("std");
 
@@ -75,6 +76,8 @@ pub const Header = struct {
     positions_bytes: usize = 0,
     offsets_bytes: usize = 0,
     checksum: u64,
+    /// S4-T1: header flags bit 0 (`checksum.flag_xxh3`).
+    checksum_kind: checksum.Kind = .fnv1a64,
 
     pub fn hasPositions(header: Header) bool {
         return header.version == version_v2;
@@ -118,7 +121,10 @@ pub fn encode(index: postings.Index, output: []u8) EncodeError![]u8 {
     @memcpy(output[0..magic.len], if (v2) magic_v2 else magic);
     var header_offset: usize = magic.len;
     writeU16(output, &header_offset, if (v2) version_v2 else version);
-    writeU16(output, &header_offset, 0);
+    // Flags: bit 0 (S4-T1) = XXH3-64 checksum, set on `HYBLEX02` (the
+    // folder writers); `HYBLEX01` (`import-json`) stays FNV-1a, flags zero.
+    const kind: checksum.Kind = if (v2) .xxh3_64 else .fnv1a64;
+    writeU16(output, &header_offset, checksum.flagsOf(kind));
     writeU32(output, &header_offset, @intCast(index.document_lengths.len));
     writeU32(output, &header_offset, @intCast(index.terms.len));
     writeU64(output, &header_offset, @intCast(index.postings.len));
@@ -157,7 +163,7 @@ pub fn encode(index: postings.Index, output: []u8) EncodeError![]u8 {
     std.debug.assert(payload_offset == required);
 
     var checksum_write_offset = checksum_offset;
-    writeU64(output, &checksum_write_offset, sectionChecksum(output[0..checksum_offset], output[fixed_length..required]));
+    writeU64(output, &checksum_write_offset, checksum.compute(kind, output[0..checksum_offset], output[fixed_length..required]));
     return output[0..required];
 }
 
@@ -168,7 +174,10 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
     if (!v2 and !std.mem.eql(u8, found_magic, magic)) return error.BadMagic;
     const found_version = try cursor.readU16();
     if (found_version != (if (v2) version_v2 else version)) return error.UnsupportedVersion;
-    if (try cursor.readU16() != 0) return error.UnsupportedFlags;
+    // Flags: zero, or (S4-T1, `HYBLEX02` only) bit 0 for XXH3-64.
+    const flags = try cursor.readU16();
+    if (flags & ~(if (v2) checksum.flag_xxh3 else 0) != 0) return error.UnsupportedFlags;
+    const kind = checksum.kindOfFlags(flags);
     const document_count = try castToUsize(try cursor.readU32());
     const term_count = try castToUsize(try cursor.readU32());
     const posting_count = try castToUsize(try cursor.readU64());
@@ -192,7 +201,7 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
     expected_total = try decodeCheckedAdd(expected_total, offsets_bytes);
     if (encoded.len < expected_total) return error.Truncated;
     if (encoded.len > expected_total) return error.TrailingData;
-    const actual_checksum = sectionChecksum(encoded[0 .. fixed_length - @sizeOf(u64)], encoded[fixed_length..]);
+    const actual_checksum = checksum.compute(kind, encoded[0 .. fixed_length - @sizeOf(u64)], encoded[fixed_length..]);
     if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
     const expected_document_lengths_bytes = try decodeCheckedMultiply(document_count, @sizeOf(u32));
     const expected_postings_bytes = try decodeCheckedMultiply(posting_count, posting_record_length);
@@ -211,6 +220,7 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
         .positions_bytes = positions_bytes,
         .offsets_bytes = offsets_bytes,
         .checksum = expected_checksum,
+        .checksum_kind = kind,
     };
 }
 
@@ -473,22 +483,6 @@ fn castToUsize(value: anytype) DecodeError!usize {
     return std.math.cast(usize, value) orelse error.SizeOverflow;
 }
 
-fn sectionChecksum(header_without_checksum: []const u8, payload: []const u8) u64 {
-    var value: u64 = 14_695_981_039_346_656_037;
-    value = checksumUpdate(value, header_without_checksum);
-    value = checksumUpdate(value, payload);
-    return value;
-}
-
-fn checksumUpdate(initial: u64, bytes: []const u8) u64 {
-    var value = initial;
-    for (bytes) |byte| {
-        value ^= byte;
-        value *%= 1_099_511_628_211;
-    }
-    return value;
-}
-
 fn writeU16(output: []u8, offset: *usize, value: u16) void {
     output[offset.*] = @truncate(value);
     output[offset.* + 1] = @truncate(value >> 8);
@@ -683,9 +677,11 @@ fn positionalFixture(arena: std.mem.Allocator) !postings.Index {
 }
 
 fn rechecksum(encoded: []u8) void {
-    const fixed = if (std.mem.eql(u8, encoded[0..8], magic_v2)) header_length_v2 else header_length;
+    const v2 = std.mem.eql(u8, encoded[0..8], magic_v2);
+    const fixed = if (v2) header_length_v2 else header_length;
+    const kind: checksum.Kind = if (v2) .xxh3_64 else .fnv1a64;
     var offset = fixed - 8;
-    writeU64(encoded, &offset, sectionChecksum(encoded[0 .. fixed - 8], encoded[fixed..]));
+    writeU64(encoded, &offset, checksum.compute(kind, encoded[0 .. fixed - 8], encoded[fixed..]));
 }
 
 test "HYBLEX02 round trip keeps positions, offsets and sorted terms (S3-T2)" {

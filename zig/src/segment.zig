@@ -1,3 +1,4 @@
+const checksum = @import("checksum.zig");
 const hybrid = @import("hybrid.zig");
 const std = @import("std");
 
@@ -27,6 +28,7 @@ pub const EncodeError = error{
 pub const DecodeError = error{
     BadMagic,
     UnsupportedVersion,
+    UnsupportedFlags,
     Truncated,
     ChecksumMismatch,
     TrailingData,
@@ -45,6 +47,8 @@ pub const Header = struct {
     vector_dimensions: usize,
     payload_length: usize,
     checksum: u64,
+    /// S4-T1: header flags bit 0 (`checksum.flag_xxh3`); record v4 sets it.
+    checksum_kind: checksum.Kind = .fnv1a64,
 };
 
 /// Return the exact number of bytes required by encode (record v3).
@@ -113,7 +117,10 @@ fn encodeVersion(documents: []const hybrid.Document, output: []u8, record_versio
     @memcpy(output[0..magic.len], magic);
     var header_offset: usize = magic.len;
     writeU16(output, &header_offset, record_version);
-    writeU16(output, &header_offset, 0); // Reserved flags.
+    // Flags: bit 0 (S4-T1) = XXH3-64 checksum. Record v4 (the folder
+    // writers) sets it; v3 (`import-json`) stays FNV-1a byte for byte.
+    const kind: checksum.Kind = if (record_version >= 4) .xxh3_64 else .fnv1a64;
+    writeU16(output, &header_offset, checksum.flagsOf(kind));
     writeU32(output, &header_offset, @intCast(documents.len));
     writeU32(output, &header_offset, @intCast(dimensions));
     writeU64(output, &header_offset, @intCast(required - header_length));
@@ -154,7 +161,7 @@ fn encodeVersion(documents: []const hybrid.Document, output: []u8, record_versio
     std.debug.assert(payload_offset == required);
 
     var checksum_write_offset = checksum_offset;
-    writeU64(output, &checksum_write_offset, segmentChecksum(output[0..checksum_offset], output[header_length..required]));
+    writeU64(output, &checksum_write_offset, checksum.compute(kind, output[0..checksum_offset], output[header_length..required]));
     return output[0..required];
 }
 
@@ -165,7 +172,11 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
     if (!std.mem.eql(u8, actual_magic, magic)) return error.BadMagic;
     const actual_version = try cursor.readU16();
     if (actual_version < minimum_supported_version or actual_version > version) return error.UnsupportedVersion;
-    _ = try cursor.readU16(); // Reserved flags.
+    // Flags: bit 0 (S4-T1) selects XXH3-64; before S4-T1 the field was
+    // written zero and not read, and any other bit is refused.
+    const flags = try cursor.readU16();
+    if (flags & ~checksum.flag_xxh3 != 0) return error.UnsupportedFlags;
+    const kind = checksum.kindOfFlags(flags);
     const document_count: usize = try castU64ToUsize(try cursor.readU32());
     const dimensions: usize = try castU64ToUsize(try cursor.readU32());
     const payload_length: usize = try castU64ToUsize(try cursor.readU64());
@@ -175,7 +186,7 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
     const expected_total = try decodeCheckedAdd(header_length, payload_length);
     if (encoded.len < expected_total) return error.Truncated;
     if (encoded.len > expected_total) return error.TrailingData;
-    const actual_checksum = segmentChecksum(encoded[0 .. header_length - @sizeOf(u64)], encoded[header_length..]);
+    const actual_checksum = checksum.compute(kind, encoded[0 .. header_length - @sizeOf(u64)], encoded[header_length..]);
     if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
     return .{
         .format_version = actual_version,
@@ -183,6 +194,7 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
         .vector_dimensions = dimensions,
         .payload_length = payload_length,
         .checksum = expected_checksum,
+        .checksum_kind = kind,
     };
 }
 
@@ -345,24 +357,6 @@ fn decodeCheckedAdd(left: usize, right: usize) DecodeError!usize {
 
 fn castU64ToUsize(value: anytype) DecodeError!usize {
     return std.math.cast(usize, value) orelse error.SizeOverflow;
-}
-
-/// FNV-1a is used as an accidental-corruption checksum, not a cryptographic
-/// authenticity mechanism. A future manifest may add a cryptographic digest.
-fn segmentChecksum(header_without_checksum: []const u8, payload: []const u8) u64 {
-    var value: u64 = 14_695_981_039_346_656_037;
-    value = checksumUpdate(value, header_without_checksum);
-    value = checksumUpdate(value, payload);
-    return value;
-}
-
-fn checksumUpdate(initial: u64, bytes: []const u8) u64 {
-    var value = initial;
-    for (bytes) |byte| {
-        value ^= byte;
-        value *%= 1_099_511_628_211;
-    }
-    return value;
 }
 
 fn writeU16(output: []u8, offset: *usize, value: u16) void {
@@ -566,7 +560,7 @@ fn encodeV1ForTest(document: hybrid.Document, output: []u8) EncodeError![]u8 {
     for (document.vector) |value| writeU32(output, &payload_offset, @bitCast(value));
 
     var checksum_write_offset = checksum_offset;
-    writeU64(output, &checksum_write_offset, segmentChecksum(output[0..checksum_offset], output[header_length..required]));
+    writeU64(output, &checksum_write_offset, checksum.compute(.fnv1a64, output[0..checksum_offset], output[header_length..required]));
     return output[0..required];
 }
 

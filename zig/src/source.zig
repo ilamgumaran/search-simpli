@@ -11,6 +11,7 @@
 //! chunkers number: LF, CR, CRLF (one terminator), VT, FF, FS, GS, RS, NEL,
 //! LS and PS each end a line. A leading UTF-8 BOM is not part of line 1.
 const std = @import("std");
+const checksum_mod = @import("checksum.zig");
 const chunker = @import("chunker.zig");
 const chunker_md = @import("chunker_md.zig");
 
@@ -90,6 +91,8 @@ pub const Section = struct {
     encoded: []const u8,
     file_count: usize,
     checksum: u64,
+    /// S4-T1: the header's checksum kind (flags bit 0).
+    checksum_kind: checksum_mod.Kind = .fnv1a64,
     files_table: []const u8,
     line_maps: []const u8,
     text: []const u8,
@@ -268,7 +271,9 @@ pub fn encode(allocator: std.mem.Allocator, files: []const InputFile) EncodeErro
     @memcpy(out[0..magic.len], magic);
     offset = magic.len;
     putU16(out, &offset, version);
-    putU16(out, &offset, 0);
+    // Flags: bit 0 (S4-T1, `docs/source-section-v1.md` v1.1) = XXH3-64
+    // checksum; every writer since S4-T1 sets it.
+    putU16(out, &offset, checksum_mod.flag_xxh3);
     putU32(out, &offset, @intCast(files.len));
     putU64(out, &offset, table.items.len);
     putU64(out, &offset, maps.items.len);
@@ -286,7 +291,7 @@ pub fn encode(allocator: std.mem.Allocator, files: []const InputFile) EncodeErro
     }
     std.debug.assert(offset == total);
     var write_offset = checksum_offset;
-    putU64(out, &write_offset, checksumOf(out[0..checksum_offset], out[header_length..]));
+    putU64(out, &write_offset, checksum_mod.compute(.xxh3_64, out[0..checksum_offset], out[header_length..]));
     return out;
 }
 
@@ -296,6 +301,8 @@ pub const Header = struct {
     maps_bytes: usize,
     text_bytes: usize,
     checksum: u64,
+    /// S4-T1: header flags bit 0 (`checksum.flag_xxh3`).
+    checksum_kind: checksum_mod.Kind = .fnv1a64,
 };
 
 /// Validate the header, the declared size and the checksum only.
@@ -303,7 +310,9 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
     var cursor = Cursor{ .bytes = encoded };
     if (!std.mem.eql(u8, try cursor.take(magic.len), magic)) return error.BadMagic;
     if (try cursor.readU16() != version) return error.UnsupportedVersion;
-    if (try cursor.readU16() != 0) return error.UnsupportedFlags;
+    const flags = try cursor.readU16();
+    if (flags & ~checksum_mod.flag_xxh3 != 0) return error.UnsupportedFlags;
+    const kind = checksum_mod.kindOfFlags(flags);
     const file_count: usize = try cast(try cursor.readU32());
     const files_bytes: usize = try cast(try cursor.readU64());
     const maps_bytes: usize = try cast(try cursor.readU64());
@@ -315,8 +324,8 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
     expected = try add(expected, text_bytes);
     if (encoded.len < expected) return error.Truncated;
     if (encoded.len > expected) return error.TrailingData;
-    if (checksumOf(encoded[0 .. header_length - 8], encoded[header_length..]) != checksum) return error.ChecksumMismatch;
-    return .{ .file_count = file_count, .files_bytes = files_bytes, .maps_bytes = maps_bytes, .text_bytes = text_bytes, .checksum = checksum };
+    if (checksum_mod.compute(kind, encoded[0 .. header_length - 8], encoded[header_length..]) != checksum) return error.ChecksumMismatch;
+    return .{ .file_count = file_count, .files_bytes = files_bytes, .maps_bytes = maps_bytes, .text_bytes = text_bytes, .checksum = checksum, .checksum_kind = kind };
 }
 
 /// Validate a whole section (header, checksum, file table, paths, every line
@@ -367,6 +376,7 @@ fn openWith(encoded: []const u8, index: ?*Index) DecodeError!Section {
         .encoded = encoded,
         .file_count = header.file_count,
         .checksum = header.checksum,
+        .checksum_kind = header.checksum_kind,
         .files_table = encoded[files_start..maps_start],
         .line_maps = encoded[maps_start..text_start],
         .text = encoded[text_start..],
@@ -722,19 +732,6 @@ pub fn writeOutlineFields(json: *std.json.Stringify, data: OutlineData) !void {
     try json.write(data.lines);
     try json.objectField("chunker");
     try json.write(data.chunker.id());
-}
-
-fn checksumOf(header_without_checksum: []const u8, payload: []const u8) u64 {
-    var value: u64 = 14_695_981_039_346_656_037;
-    for (header_without_checksum) |byte| {
-        value ^= byte;
-        value *%= 1_099_511_628_211;
-    }
-    for (payload) |byte| {
-        value ^= byte;
-        value *%= 1_099_511_628_211;
-    }
-    return value;
 }
 
 fn add(left: usize, right: usize) DecodeError!usize {

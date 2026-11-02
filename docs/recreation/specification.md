@@ -236,7 +236,7 @@ contract, or expand the separately proposed E-01A pack workflow.
 | FR-25 | Scoped retrieval metadata; empty is not proof of absence | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
 | NFR-10 | Phrase/words latency and generation-bound paging | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
 | NFR-11 | Positional segment size budget | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
-| NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseFast, ReleaseSmall reported) | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
+| NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseSmall since S4-T1) | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Proposed |
 | NFR-14 | Dependency-free MCP server and conformance client | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
 

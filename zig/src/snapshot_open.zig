@@ -135,6 +135,7 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
         .index = opened_engine.lexical_index,
         .source_bytes = metadata.source_bytes,
         .source_checksum = metadata.source_checksum,
+        .xxh3_sections = metadata.xxh3_sections,
     };
     if (metadata.hasSource()) {
         if (dir.openFile(io, metadata.source_file, .{})) |file| {

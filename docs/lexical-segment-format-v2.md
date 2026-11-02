@@ -18,7 +18,7 @@ little-endian; varints are unsigned LEB128.
 |---:|---:|---|---|
 | 0 | 8 | magic | ASCII `HYBLEX02` |
 | 8 | 2 | version | `2` |
-| 10 | 2 | flags | reserved; nonzero is rejected |
+| 10 | 2 | flags | bit 0: XXH3-64 checksum (S4-T1); other bits rejected |
 | 12 | 4 | document count | as v1 |
 | 16 | 4 | term count | as v1 |
 | 20 | 8 | posting count | as v1 |
@@ -28,11 +28,19 @@ little-endian; varints are unsigned LEB128.
 | 48 | 8 | postings bytes | section 3 |
 | 56 | 8 | positions bytes | section 4 |
 | 64 | 8 | offsets bytes | section 5 |
-| 72 | 8 | checksum | FNV-1a over header bytes 0–71 followed by all payload bytes |
+| 72 | 8 | checksum | FNV-1a 64, or XXH3-64 when flags bit 0 is set, over header bytes 0–71 followed by all payload bytes |
 
 The reader accepts both magics: `HYBLEX01` (64-byte header, sections 1–3) and
 `HYBLEX02`. As in v1 it checks magic, version, flags and the declared total
 size, then the checksum, before any count-derived rule.
+
+### Flags bit 0: XXH3-64 (S4-T1)
+
+Since S4-T1 every `HYBLEX02` writer sets bit 0 and checksums with XXH3-64
+(seed 0) instead of FNV-1a 64, the same bytes covered; the binding manifest
+sets `xxh3_sections` ([manifest v2.1](manifest-format-v2.md#v21-xxh3-section-checksums-s4-t1)).
+`HYBLEX02` sections written before S4-T1 (flags zero) read as before.
+`HYBLEX01` keeps flags zero and FNV-1a; a nonzero `HYBLEX01` flag is rejected.
 
 ## Sections 1–3
 

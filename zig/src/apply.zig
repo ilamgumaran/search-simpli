@@ -1061,6 +1061,7 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
         if (bytes.len != metadata.source_bytes) return error.SourceSectionSizeMismatch;
         const opened = try source.openIndexed(allocator, bytes);
         if (opened.checksum != metadata.source_checksum) return error.SourceSectionChecksumMismatch;
+        if (!metadata.xxh3_sections and opened.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
         section = opened;
     }
     // The checks of `manifest.validateSnapshot`, with the document section's
@@ -1799,6 +1800,9 @@ fn buildGeneration(
         .lexical_bytes = lexical_encoded.len,
         .lexical_checksum = lexicalStoredChecksum(lexical_encoded),
         .has_positions = lexical_index.positions != null,
+        // S4-T1: record v4 documents (and `HYBLEX02`, `HYBSRC01`) carry
+        // XXH3-64 checksums (`checksum.zig`, manifest v2.1).
+        .xxh3_sections = true,
         .analyzer_id = options.analyzer.label(),
         .embedding_model_id = "none",
         .documents_file = documents_file,

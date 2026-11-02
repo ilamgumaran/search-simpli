@@ -4,9 +4,13 @@
 //! the position tables load at first use, once per opened generation, and
 //! a second caller during a load waits for it.
 const std = @import("std");
+const checksum = @import("checksum.zig");
 const chunker = @import("chunker.zig");
 const find_module = @import("find.zig");
 const indexer = @import("indexer.zig");
+const lexical_segment = @import("lexical_segment.zig");
+const manifest = @import("manifest.zig");
+const publication = @import("publication.zig");
 const scope = @import("scope.zig");
 const service_module = @import("service.zig");
 const snapshot_open = @import("snapshot_open.zig");
@@ -147,4 +151,64 @@ test "S4-T1: concurrent first uses load each table once and see the same tables"
         try std.testing.expectEqual(sections[0].?.encoded.ptr, section.?.encoded.ptr);
         try std.testing.expectEqual(statistics[0], stats);
     }
+}
+
+/// Rewrite the current generation's lexical section with `edit` applied to
+/// its bytes, restamp the section's own checksum and the manifest's record
+/// of it, so only the structural rules can refuse the result.
+fn rewriteLexical(a: std.mem.Allocator, dir: std.Io.Dir, edit: *const fn ([]u8, lexical_segment.Header) void) !void {
+    const manifest_bytes = try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited);
+    var metadata = try manifest.decode(manifest_bytes);
+    const lexical = try dir.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
+    const header = try lexical_segment.inspect(lexical);
+    edit(lexical, header);
+    const fixed = lexical_segment.header_length_v2;
+    const value = checksum.compute(header.checksum_kind, lexical[0 .. fixed - 8], lexical[fixed..]);
+    std.mem.writeInt(u64, lexical[fixed - 8 ..][0..8], value, .little);
+    try dir.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = lexical });
+    metadata.lexical_checksum = value;
+    try writeManifest(a, dir, metadata);
+}
+
+fn writeManifest(a: std.mem.Allocator, dir: std.Io.Dir, metadata: manifest.Manifest) !void {
+    const encoded = try manifest.encode(metadata, try a.alloc(u8, try manifest.encodedLength(metadata)));
+    try dir.writeFile(io, .{ .sub_path = publication.current_manifest_file, .data = encoded });
+}
+
+fn breakPositions(lexical: []u8, header: lexical_segment.Header) void {
+    const start = lexical_segment.header_length_v2 + header.document_lengths_bytes + header.dictionary_bytes + header.postings_bytes;
+    // Every byte a continuation byte: no ordinal varint ever ends.
+    @memset(lexical[start .. start + header.positions_bytes], 0x80);
+}
+
+test "S4-T1: damaged positions open lazily and fail the first find with the eager open's error" {
+    var indexed = try Indexed.init();
+    defer indexed.deinit();
+    const a = indexed.arena();
+    try rewriteLexical(a, indexed.out_tmp.dir, &breakPositions);
+
+    try std.testing.expectError(error.InvalidPositions, snapshot_open.open(a, io, indexed.out_tmp.dir));
+    const opened = try snapshot_open.openScoped(a, io, indexed.out_tmp.dir);
+    defer opened.folder.close();
+    const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+    try std.testing.expectEqual(@as(usize, 2), (try scoped.indexStatus(a, .{})).files);
+    try std.testing.expectError(error.InvalidPositions, scoped.find(a, .{ .query = "blue folder", .mode = .phrase }, .{}));
+    // Final for this opened generation: the second call fails the same way.
+    try std.testing.expectError(error.InvalidPositions, scoped.find(a, .{ .query = "tide" }, .{}));
+    try std.testing.expectEqual(@as(u32, 1), opened.folder.loads.positions_loads);
+}
+
+test "S4-T1: XXH3 sections are refused under a manifest that does not set flag_xxh3_sections" {
+    var indexed = try Indexed.init();
+    defer indexed.deinit();
+    const a = indexed.arena();
+    const dir = indexed.out_tmp.dir;
+    const manifest_bytes = try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited);
+    var metadata = try manifest.decode(manifest_bytes);
+    try std.testing.expect(metadata.xxh3_sections);
+    try std.testing.expectEqual(checksum.Kind.xxh3_64, (try source.inspect(try dir.readFileAlloc(io, metadata.source_file, a, .unlimited))).checksum_kind);
+    metadata.xxh3_sections = false;
+    try writeManifest(a, dir, metadata);
+    try std.testing.expectError(error.InvalidDocumentSection, snapshot_open.openScoped(a, io, dir));
+    try std.testing.expectError(error.InvalidDocumentSection, snapshot_open.open(a, io, dir));
 }
