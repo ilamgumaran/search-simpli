@@ -4,6 +4,7 @@ Claim: [issue #22](https://github.com/ilamgumaran/search-simpli/issues/22).
 Base: main `b45b1c4` (S4-T2). Branch `improve/filename-complexity-guard`.
 Owner requested reviewing overall objectives and implementing useful repo improvements.
 State: implemented and verified; PR #23, unmerged.
+Adopted on `main`: [S4-T3](S4-T3.md) (PR #23 merged at 94c6071; the suites and the plant re-run on the Mac, natives rebuilt there).
 
 ## Objectives and choice
 
