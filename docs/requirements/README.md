@@ -104,7 +104,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-14 | [Trust-calibration signal](cap-14-trust-calibration.md) | UC-001, UC-002, UC-003 | FR-14 | Proposed / future — board S-01, E-02 |
 | CAP-15 | [Structure-aware code chunking](cap-15-structure-aware-chunking.md) | UC-002 | FR-15 | Proposed / future |
 | CAP-16 | [Directory filename retrieval](cap-16-directory-filename-search.md) | UC-006, UC-001, UC-002, UC-003 | FR-16 | Proposed · future |
-| CAP-19 | [Folder knowledge: exact finding, structure, roots, host-fed changes, tools, MCP](cap-19-folder-knowledge.md) | UC-007, UC-001, UC-004 | FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, NFR-10, NFR-11, NFR-12, NFR-13, NFR-14 | Diagnostic · implemented (S3-T1 to S3-T7, 2026-10-31; [plan](../plans/folder-knowledge-plan.md); NFR-13 still Proposed: no 64 MiB arena-cap test recorded) |
+| CAP-19 | [Folder knowledge: exact finding, structure, roots, host-fed changes, tools, MCP](cap-19-folder-knowledge.md) | UC-007, UC-001, UC-004 | FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, NFR-10, NFR-11, NFR-12, NFR-13, NFR-14 | Diagnostic · implemented (S3-T1 to S3-T7, 2026-10-31; [plan](../plans/folder-knowledge-plan.md); NFR-13 Diagnostic · implemented by S4-T1's 64 MiB arena-cap test) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
@@ -183,7 +183,7 @@ until promoted.
 | NFR-10 | Phrase/words latency and generation-bound paging | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
 | NFR-11 | Positional segment size budget | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
 | NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseSmall since S4-T1) | CAP-19 | Diagnostic · implemented (S3-T3: [task](../tasks/S3-T3.md); S4-T1: [task](../tasks/S4-T1.md)) |
-| NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Proposed |
+| NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Diagnostic · implemented (S4-T1: [task](../tasks/S4-T1.md)) |
 | NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic · implemented (S3-T6: `zig/src/mcp.zig` Zig only, `tests/mcp_client.py` standard library; [task](../tasks/S3-T6.md)) |
 
 ## Contracts (CON)

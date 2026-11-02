@@ -1,6 +1,6 @@
 # CAP-19 — Folder knowledge: exact finding, document structure, several roots, host-fed changes, one tool surface for models, apps and MCP
 
-Status: Diagnostic · implemented (S3-T1 to S3-T7 verified 2026-10-31, S3-T8 hand-off; approved for build 2026-10-31 by the owner). Evidence below; NFR-13 stays Proposed.
+Status: Diagnostic · implemented (S3-T1 to S3-T7 verified 2026-10-31, S3-T8 hand-off; approved for build 2026-10-31 by the owner). Evidence below; NFR-13 Diagnostic · implemented since S4-T1 (2026-11-01).
 
 > Run through the [capability process](../capability-process.md), steps 1–6.
 > Review amendments recorded; acceptance evidence and approval pending; implementation is a later step
@@ -169,7 +169,7 @@ Measured on the invented family-folder fixture and the generated 10k corpus (App
 | NFR-10 | Diagnostic · implemented | [S3-T2](../tasks/S3-T2.md): phrase p50 17.6 µs, words p50 5.6 µs at 19,959 chunks (`ReleaseFast`) |
 | NFR-11 | Diagnostic · implemented | [S3-T2](../tasks/S3-T2.md): `HYBLEX02` 1.39× `HYBLEX01` |
 | NFR-12 | Diagnostic · implemented | [S3-T3](../tasks/S3-T3.md): full 10k index 326 ms and 144 MB; [S4-T1](../tasks/S4-T1.md): one changed file 154–158 ms `ReleaseSmall` (bound now `ReleaseSmall`), 88–91 ms `ReleaseFast` |
-| NFR-13 | Proposed | bounded reads and page caps are tested (S3-T1, S3-T2, S3-T4), but the "64 MiB arena cap" test named above is not recorded in any S3 Report |
+| NFR-13 | Diagnostic · implemented | [S4-T1](../tasks/S4-T1.md): `zig/src/nfr13_arena_test.zig` runs the open, `find`, `read_span`, `outline`, `list_files` and `search_knowledge` over `fixtures/family-folder` (peak 9.4 MB) and the open, `find` and `search_knowledge` over a 10,000-file index (peak 60.7 MB generated corpus, 60.6 MB on the S3-T1 benchmark corpus) under a capped allocator that fails past 64 MiB; bounded reads and page caps were tested before (S3-T1, S3-T2, S3-T4) |
 
 CFT-09 stays Blocked: interchange (CON-03) carries no chunker id. Device acceptance (the consumer app's fixture run on both phones) is recorded in that app's repository.
 
