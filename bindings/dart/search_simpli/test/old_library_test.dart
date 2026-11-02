@@ -3,8 +3,9 @@
 /// before anything else runs, by `SearchSimpli.open` and by the static
 /// `SearchSimpli.applyChanges`. The two libraries here are stand-ins built
 /// from a few lines of C with the pinned Zig: one that reports the previous
-/// contract ("1.2.0", what every build before this one reports), and one
-/// that reports "2.0.0" but exports none of the new functions.
+/// contract ("2.0.0", what every build before S4-T1 reports; it was "1.2.0"
+/// before S3), and one that reports this package's contract but exports
+/// none of the 2.0.0 functions.
 library;
 
 import 'dart:ffi';
@@ -31,7 +32,7 @@ void main() {
 
   setUpAll(() async {
     dir = Directory.systemTemp.createTempSync('ss-dart-old-lib-');
-    previous = await _standIn(dir, 'previous', '1.2.0');
+    previous = await _standIn(dir, 'previous', '2.0.0');
     hollow = await _standIn(dir, 'hollow', expectedContractsVersion);
   });
 
@@ -42,8 +43,8 @@ void main() {
     expect(
       () => SearchSimpli.open(index, library: previous),
       throwsA(isA<ContractsVersionMismatchException>()
-          .having((e) => e.expected, 'expected', '2.0.0')
-          .having((e) => e.actual, 'actual', '1.2.0')),
+          .having((e) => e.expected, 'expected', expectedContractsVersion)
+          .having((e) => e.actual, 'actual', '2.0.0')),
     );
     expect(() => SearchSimpli.applyChanges(index, {'changes': []}, library: previous),
         throwsA(isA<ContractsVersionMismatchException>()));
@@ -54,7 +55,7 @@ void main() {
     expect(
       () => SearchSimpli.open(dir.path, library: hollow),
       throwsA(isA<ContractsVersionMismatchException>().having(
-          (e) => e.actual, 'actual', '2.0.0 without ss_find, ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes')),
+          (e) => e.actual, 'actual', '$expectedContractsVersion without ss_find, ss_outline, ss_read_span, ss_list_files, ss_roots, ss_apply_changes')),
     );
     expect(() => SearchSimpli.applyChanges(dir.path, {'changes': []}, library: hollow),
         throwsA(isA<ContractsVersionMismatchException>()));
