@@ -48,7 +48,7 @@ invented here. ANN/reranking/sharding still require measured need.
   Distinct-candidate tie-breaking and public results remain unchanged.
 - Both guards run in the ordinary Zig suite and a named Linux CI step that
   requires exactly two passing tests. The macOS packaging workflow runs the
-  same no-skip step. Other OSs skip the protection test explicitly; neither
+  same no-skip step, in both Debug and ReleaseSmall. Other OSs skip the protection test explicitly; neither
   Linux nor macOS CI may silently skip it.
 - No production API, wire shape, contract 2.2.0 or index format changes.
   No instrumentation overhead is added to query loops. Source changes still
@@ -78,3 +78,12 @@ and phone acceptance are not inferred from the protected-memory test.
 
 Final suites, platform guard results and package provenance are appended
 after verification. No automatic merge or deployment.
+
+## Source verification
+
+Pinned Zig 0.16.0 on Linux: full suite **297/297**, C ABI **23/23**; the
+two named complexity tests pass in both Debug and ReleaseSmall. The first
+full Python run executes 238 tests with four existing platform/Unicode
+skips and only the expected native-freshness failure before rebuild/adoption.
+Requirements, home-path and diff-whitespace checks pass. The macOS CI guard
+also passes on source `554e2c3`; final platform/package results follow.
