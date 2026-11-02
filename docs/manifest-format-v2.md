@@ -1,8 +1,9 @@
 # Generation manifest format v2 (minor version 2.2)
 
 Status: implemented in `zig/src/manifest.zig` (S3-T1; v2.1 flag bit 2 since
-S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1); v2.2 flag bit 3 since
-S4-T2, see [v2.2](#v22-filename-sections-s4-t2-cap-16)). Magic: `HYBMAN02`.
+S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1); v2.2 flag bits 3 and 4
+since S4-T2, see [v2.2 filename sections](#v22-filename-sections-s4-t2-cap-16)
+and [v2.2 recovery state](#v22-recovery-state-section-s4-t2)). Magic: `HYBMAN02`.
 Written by `searchd index` / `ss_index_folder` (`zig/src/indexer.zig`).
 `import-json` still writes [v1](manifest-format-v1.md), and every reader opens
 both. Design: [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §1.
@@ -12,13 +13,13 @@ a third bound section, the [source section](source-section-v1.md), two flags,
 and a `meta` JSON object that names the chunkers and roots that produced the
 generation (CAP-19 FR-18, CFT-09).
 
-## Header (104 bytes, little-endian; 152 with the v2.2 filename extension)
+## Header (104 bytes, little-endian; +48 with v2.2 filename sections, +16 with the v2.2 state section)
 
 | Offset | Size | Field | Since |
 |---:|---:|---|---|
 | 0 | 8 | magic `HYBMAN02` | v2 (v1: `HYBMAN01`) |
 | 8 | 2 | version `2` | |
-| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2); other bits must be zero | v2 (v1: zero) |
+| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2), bit 4 `state_section` (v2.2); other bits must be zero | v2 (v1: zero) |
 | 12 | 8 | generation number (nonzero) | v1 |
 | 20 | 4 | shared document count | v1 |
 | 24 | 4 | vector dimensions | v1 |
@@ -31,8 +32,8 @@ generation (CAP-19 FR-18, CFT-09).
 | 68 | 8 | lexical section internal checksum | v1 |
 | 76 | 8 | source section byte length (`0` without one) | v2 |
 | 84 | 8 | source section internal checksum (`0` without one) | v2 |
-| 92 | 4 | variable payload byte length (at 140 with bit 3, below) | v1 at 76 |
-| 96 | 8 | manifest checksum (at 144 with bit 3) | v1 at 80 |
+| 92 | 4 | variable payload byte length (moved by bits 3 and 4, below) | v1 at 76 |
+| 96 | 8 | manifest checksum (moved by bits 3 and 4) | v1 at 80 |
 
 Offsets 0–75 have the v1 meaning. The manifest checksum is FNV-1a over header
 bytes 0–95 followed by the payload: accidental-corruption detection, not
@@ -210,14 +211,101 @@ Compatibility:
 - A reader before v2.2 refuses a filename generation on bit 3 with
   `UnsupportedFlags` before it reads any section: the 0.2.1 library (f45c06d,
   v2.1) and the 292cb568 library (v2.0) alike. A generation without filename
-  sections does not set bit 3.
+  sections does not set bit 3, but every v2.2 folder generation sets bit 4
+  (below), so the older readers refuse it too.
 - The channel is chosen when a directory is created: enabling it, disabling it
   or changing its analyzer needs a fresh directory
-  (`FilenameSettingMismatch`, `FilenameMigrationRequiresNewDirectory`); later
-  updates keep it.
+  (`FilenameSettingMismatch`, `FilenameMigrationRequiresNewDirectory`). A
+  writer that omits the setting (`searchd index` without `--filename-index`,
+  `ss_index_folder` or `ss_apply_changes` without `filename_index`, Dart
+  `filenameIndex: null`) keeps the directory's setting, for an update and a
+  full rebuild alike; an explicit different value is refused.
 - PR #21 first wrote this extension as `HYBMAN03` version 3 (152-byte header,
   nine strings, the same fields in the same order). No released library wrote
   it and its natives were never pinned by a consumer, so v2.2 replaces it and
   no reader accepts `HYBMAN03` (`BadMagic`). The CAP-16 draft at `daddbee`,
   which reused `HYBMAN02` for a 136-byte layout, is not readable either: such
   a directory is rebuilt.
+
+## v2.2: recovery-state section (S4-T2)
+
+Bit 4 of the flags, `state_section` (`0x0010`), says the generation binds its
+recovery state, the [INDEX-STATE v2](folder-knowledge-implementation.md#5-index-state-v2)
+JSON of exactly this generation, as an immutable section `state-N.hybstate`.
+Every folder writer since v2.2 (`searchd index`, `ss_index_folder`,
+`apply_changes`) sets it; `import-json` (manifest v1) does not. With bit 4 set
+the header grows by 16 bytes, after the filename fields when bit 3 is also
+set, and the payload by one string, last of all:
+
+| Offset (without bit 3 / with bit 3) | Size | Field |
+|---:|---:|---|
+| 92 / 140 | 8 | state section byte length |
+| 100 / 148 | 8 | state section internal checksum |
+| 108 / 156 | 4 | variable payload byte length |
+| 112 / 160 | 8 | manifest checksum (over the bytes before it and the payload) |
+
+So a generation is 120 bytes of header (bit 4 only) or 168 (bits 3 and 4).
+The last payload string is the state file name, a safe basename distinct from
+every other section's.
+
+The section (`zig/src/state_section.zig`), little-endian, 32-byte header:
+
+| Offset | Size | Field |
+|---:|---:|---|
+| 0 | 8 | magic `HYBSTA01` |
+| 8 | 2 | version `1` |
+| 10 | 2 | flags: bit 0 XXH3-64; other bits zero |
+| 12 | 4 | reserved, zero |
+| 16 | 8 | payload byte length |
+| 24 | 8 | checksum (XXH3-64) over bytes 0–23, then the payload |
+
+The payload is the state JSON as `INDEX-STATE.json` holds it. The manifest
+binds the section's whole byte length and the checksum its header records.
+
+**Writers only.** No open reads, stats or opens the state section; a query
+never touches it. A writer (`apply.zig`, the previous-generation path of
+`searchd index --update`, `ss_index_folder` over an existing directory and
+`apply_changes`) reads it in full and checks it before it changes anything:
+a size different from the manifest's is `StateSectionSizeMismatch`, a header
+`inspect` refuses (bad magic, version, flags, truncation, trailing bytes) is
+`InvalidStateSection`, a checksum different from the manifest's or from its
+own payload is `StateSectionChecksumMismatch` (`manifest.validateState`, which
+also has `StateSectionMissing` and `StateSectionUnexpected` for bytes absent
+or present against bit 4). The C ABI answers these, and the `Filename*` load
+errors, with `SS_ERR_CORRUPT_SNAPSHOT`. The write is refused and nothing is
+published; readers keep answering from the same generation. A state file
+that is gone is a lost section, recovered like any other
+(`recovered: "missing_section"`). The payload is parsed strictly
+(`incremental_state.parseCommitted`: a stated `state_version`, no unknown
+fields), and its `generation` and `analyzer_id` must equal the manifest's,
+else `InvalidState`.
+
+**Precedence** for the writer's previous state: the generation's bound state
+section; else, for a generation that predates it (no bit 4), an
+`INDEX-STATE.json` whose `generation` and `analyzer_id` match the manifest's;
+else the conservative reconstruction from the generation itself (S3-T3).
+`INDEX-STATE.json` is still written after each publication, as a
+compatibility cache for older writers and tools.
+
+**Publication and retention.** The state section is linked and fsynced with
+the other sections before the directory sync and the `MANIFEST` replacement,
+and removed when its publication fails. Generation allocation skips a number
+any leftover state file holds; pruning removes it with its generation, and
+orphan and superseded state files are found by the lifecycle scan
+(`generation-lifecycle.md`).
+
+**Why a section and not `meta`.** PR #21 bound the same state by copying it
+into the manifest's `meta`, which every open then read and parsed: a 10k
+index's MANIFEST grew from 540 B to about 2.5 MB and `ss_open` paid for it.
+As a section the MANIFEST stays small (measured on S4-T1's 10k corpus: 576 B
+with bit 4, 696 B with bits 3 and 4, against 540 B on f45c06d) and the open
+is unchanged.
+
+**Compatibility and rollback.** A reader before v2.2 (the 0.2.1 library at
+f45c06d, the 292cb568 library) refuses every generation a v2.2 folder writer
+publishes, including the first update of an older directory, with
+`UnsupportedFlags`. Rolling the library back therefore needs the previous
+directory: keep a copy of the index directory from before the upgrade, or
+rebuild with the older library into a fresh directory. A v2.2 reader opens
+every older generation (no bit 4: the precedence above starts at
+`INDEX-STATE.json`).

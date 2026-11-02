@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-01 (S4-T1)
+Last updated: 2026-11-01 (S4-T2, built; awaiting verification)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,38 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## Filename channel, bound recovery, scoped writers (S4-T2, 2026-11-01)
+
+[Report](docs/tasks/S4-T2.md), review [REVIEW-PR21](docs/tasks/REVIEW-PR21.md). PR #21
+(another agent's work on `improve/recovery-and-filename`) is merged onto S4-T1's `main`
+with its author's commits kept, and its costs fixed in the integration. Contracts 2.2.0,
+Dart package 0.3.0, natives rebuilt (`native/SOURCE-SHA256` `978c0e57...63d4dd`).
+
+- **CAP-16 filename search, opt-in** (`filename-field-v1`): `search_field`
+  `content|filename|both` (filename and both need lexical retrieval), separate filename
+  and content citations. The channel is the directory's: chosen when it is created
+  (`--filename-index`, `filename_index: true`, Dart `filenameIndex: true` on a new,
+  empty directory); omitting the setting keeps it on every later update or rebuild;
+  enabling it on an existing index needs a fresh directory.
+- **Manifest v2.2**: the filename sections are flag bit 3 (`HYBMAN02`, 48 more header
+  bytes; PR #21's interim `HYBMAN03` is not read); every folder generation binds its
+  recovery state as its own section `state-N.hybstate` (flag bit 4, `HYBSTA01`,
+  XXH3-64), which only writers read. The MANIFEST stays under 1 KiB (576 B, 696 B with
+  filename sections, on the 10k index).
+- **Lazy filename load**: an open reads neither filename section; the first filename or
+  both query on a handle loads and checks them once. The filename query is linear
+  (p50 0.023 ms over RPC at 10k files, was 276 ms in PR #21 as reviewed).
+- **Scoped writers**: a server with `--allow-write` and `--roots`/`--labels` feeds bytes
+  only (no root declarations, file reads or label changes). File reads open the root
+  once following links in its own path, then no-follow below.
+- **Rollback rule**: a library older than 0.3.0 refuses every folder generation 0.3.0
+  writes (`UnsupportedFlags`, bit 4), with or without filename search. Keep the
+  directory from before the upgrade to roll back to.
+
+Numbers in the benchmark table below (rows marked S4-T2); "upgrade" = this library on
+an index f45c06d wrote, from its first update on. The consumer app's pin bump is the
+app's task (contracts 2.2.0, Dart 0.3.0).
 
 ## Phone-side costs (S4-T1, 2026-11-01)
 
@@ -83,9 +115,16 @@ holds it (S3-T8 = measured by this task's builder).
 | `ss_open` + first `find` (first op p50) | 103.0 to 103.2 ms (0.02 ms) | 14.4 to 15.3 ms (7.2 to 7.9 ms: the position tables load); upgrade 31.9 to 32.9 ms | ReleaseSmall | S4-T1 |
 | NFR-13 peak live bytes under a 64 MiB cap (open and each operation) | | family folder 9.4 MB; 10k 60.6 MB (`list_files`), 59.7 MB (`find`), 53.5 MB (open) | ReleaseSmall (10k), Debug (fixture) | S4-T1 |
 | `ss_open`, family-folder fixture | 13.0 ms | 18.4 ms | ReleaseSmall | S3-T4 |
-| Native library, macOS dylib | 435,048 B | 697,544 B (S3-T8); 714,328 B (S4-T1) | ReleaseSmall | S3-T8, S4-T1 |
-| Native library, Android `.so` | 427,760 B | 676,752 B (S3-T8); 684,128 B (S4-T1) | ReleaseSmall | S3-T8, S4-T1 |
-| Native library, iOS framework binary | 430,688 B | 677,448 B (S3-T8); 677,744 B (S4-T1) | ReleaseSmall | S3-T8, S4-T1 |
+| Native library, macOS dylib | 435,048 B | 697,544 B (S3-T8); 714,328 B (S4-T1); 808,408 B (S4-T2) | ReleaseSmall | S3-T8, S4-T1, S4-T2 |
+| Native library, Android `.so` | 427,760 B | 676,752 B (S3-T8); 684,128 B (S4-T1); 777,672 B (S4-T2) | ReleaseSmall | S3-T8, S4-T1, S4-T2 |
+| Native library, iOS framework binary | 430,688 B | 677,448 B (S3-T8); 677,744 B (S4-T1); 789,368 B (S4-T2) | ReleaseSmall | S3-T8, S4-T1, S4-T2 |
+| `ss_open`, 10k index (p50 of 30, 2 rounds) | 7.35 / 7.33 ms (f45c06d) | filename off 7.35 / 7.31 ms; on 7.39 / 7.36 ms; upgrade 7.34 / 7.36 ms | ReleaseSmall | S4-T2 |
+| `ss_open` + first query (first op p50, 2 rounds) | content 0.094 ms | content 0.093 / 0.093 ms; filename 4.78 / 4.78 ms and both 4.87 / 4.89 ms (the filename sections load) | ReleaseSmall | S4-T2 |
+| `apply_changes`, one changed file in the 10k index, 5 runs | 140.1 to 142.8 ms, p50 141.3 (f45c06d) | filename off 147.2 to 150.4, p50 148.3; on 170.8 to 173.6, p50 172.6; upgrade 147.9 to 150.8, p50 148.3 | ReleaseSmall | S4-T2 |
+| MANIFEST, 10k index | 540 B (flags `0x0007`) | 576 B (`0x0017`); 696 B with filename sections (`0x001f`) | any | S4-T2 |
+| State section `state-N.hybstate` / filename catalog / filename lexical | | 2,522,562 B / 780,036 B / 490,091 B per generation | any | S4-T2 |
+| `search_knowledge` over RPC, 30 queries, p50 (`scripts/benchmark_filename_field.py`, 10k) | content 0.018 ms (f45c06d) | content 0.017; filename 0.023; both 0.043 ms (PR #21 as reviewed: filename 276 ms) | ReleaseSmall | S4-T2 |
+| NFR-13 peak live bytes under a 64 MiB cap | family folder 9.42 MB; 10k 60.7 MB (`list_files`), 53.6 MB (open) | family folder 7.98 MB; 10k 52.3 MB (`list_files`), 45.2 MB (open); 10k with filename sections 57.2 MB (`list_files`), 51.6 MB (`both`), 50.1 MB (open) | Debug (test suite) | S4-T2 |
 
 Notes. The pre-S3 index (S3-T8, built from `86096e9`) has about one chunk per file of the 10k corpus
 where `md-section-v1` makes about two, so the lexical and document rows compare
@@ -271,7 +310,8 @@ Verified and merged 2026-10-31 (round 2; round 1 rejected on the `read_span` sha
 
 The current Python/native Zig engines search supported UTF-8 document **body
 content** and return stored paths/line citations. Filenames are metadata, not
-indexed search terms. PDF/Office/OCR require external extraction; HTML is read as
+indexed search terms. (Superseded: the opt-in filename channel is implemented, PR #21
+integrated by [S4-T2](docs/tasks/S4-T2.md).) PDF/Office/OCR require external extraction; HTML is read as
 source text. Quoted queries do not enforce phrase order or adjacency.
 
 [CAP-16 / FR-16](docs/requirements/cap-16-directory-filename-search.md),
@@ -692,6 +732,9 @@ In parallel, the next self-contained scale milestone is a persisted 384-dimensio
 These choices do not block the current reference. They materially affect E005B and the service boundary.
 
 ## 2026-11-01 — Recovery/filename integration candidate
+
+(Integrated by [S4-T2](docs/tasks/S4-T2.md); the two sections below describe PR #21 as
+it stood before the integration.)
 
 Owner-authorized follow-up on `improve/recovery-and-filename`, claim #20.
 Contract 2.1.0 integrates filename search with S3 via manifest v3 (superseded by S4-T2: contract 2.2.0, manifest v2.2), exact

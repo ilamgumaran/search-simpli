@@ -69,6 +69,8 @@ The LLM-facing request cannot supply `principal_labels`. The gateway rejects tha
 
 The raw Zig JSON-RPC process accepts a bounded `principal_labels` array because it is an internal engine interface. It must sit behind an adapter that authenticates the caller and derives labels from trusted identity/session state. Passing CLI labels demonstrates the boundary; it is not itself an authentication system.
 
+**Scoped writers (S4-T2, PR #21).** A server started with `--allow-write` together with `--roots` or `--labels` (`searchd serve`, `searchd mcp`) is a scoped writer: its `apply_changes` may only feed bytes (`content_base64`) into files of the roots and labels it was configured with. It cannot declare, change or remove a root (the request's `roots` must be empty), cannot grant a filesystem read (a `file` change is refused even with `--allow-file-reads`), cannot change a file's `required_labels`, and cannot move or remove a file it could not see; each of these answers `invalid_argument` and publishes nothing (`zig/src/apply.zig`, test "restricted writers cannot change root policy, hidden files or labels" in `zig/src/apply_test.zig`). The trusted host decides roots, labels and file reads; a model request never mints them. An unscoped `--allow-write` server, and the C ABI and Dart callers (the host itself), are index administration and keep the full change request.
+
 ## Persisted representation
 
 Interchange v1 carries `required_labels` as a JSON string array. The importer validates at most 64 labels, bounds each label, rejects duplicates, sorts them, and packs them as a canonical newline-separated field.

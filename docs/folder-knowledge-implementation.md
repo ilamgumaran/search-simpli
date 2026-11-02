@@ -90,6 +90,24 @@ manifest, as today; the review's "atomic generation consistency" is met by the
 manifest binding all three sections' lengths and checksums, so a reader never
 sees a documents section without its matching source section.
 
+**S4-T2 (manifest v2.2).** Two more optional bound sections, both published
+with the others before the `MANIFEST` replacement, allocated and pruned with
+their generation ([`manifest-format-v2.md`](manifest-format-v2.md)):
+
+- flag bit 3, the opt-in filename channel: `filenames-N.hybseg` and
+  `filename-lexical-N.hyblex` (48 header bytes, three payload strings;
+  [`filename-field-format-v1.md`](filename-field-format-v1.md)). An open reads
+  neither: it opens both files and reserves their bytes, and the first
+  `filename` or `both` query on a handle loads and checks them once.
+- flag bit 4, the recovery state: `state-N.hybstate` (`HYBSTA01`, 32-byte
+  header, XXH3-64; 16 header bytes after the filename fields, one payload
+  string after every other). Every folder writer since v2.2 sets it; only
+  writers read it (§5).
+
+Both bits are unknown to readers before v2.2, which refuse the generation
+with `UnsupportedFlags`: rolling back the library needs the directory from
+before the upgrade.
+
 ## 2. Document section v4 (`HYBSEG01`, record version 4)
 
 Per-document record = v3 (`docs/segment-format-v3.md`) plus:
@@ -291,6 +309,23 @@ hashes and sizes from the source section where the root retains bytes,
 `pending` and `unchunked` from `meta`, labels from the records minus the
 root's. Version 1 still loads. Parsing is typed (no JSON object maps): a 10k
 file state is read on every call.
+
+**S4-T2 amendment (bound state).** Since manifest v2.2 a generation binds its
+own state as the section `state-N.hybstate` (flag bit 4,
+[layout](manifest-format-v2.md#v22-recovery-state-section-s4-t2)): the
+version 2 JSON above inside a `HYBSTA01` header, length and XXH3-64 checksum
+bound by the manifest. Only writers read it; an open never does. The writer's
+previous state comes, in order, from the bound section (a wrong size, header
+or checksum refuses the write: `StateSectionSizeMismatch`,
+`InvalidStateSection`, `StateSectionChecksumMismatch`, all
+`SS_ERR_CORRUPT_SNAPSHOT` through the C ABI; the generation stays
+queryable), else from an `INDEX-STATE.json` matching the manifest's
+generation and analyzer (generations before v2.2), else from the
+reconstruction above. `INDEX-STATE.json` is still written after each
+publication as a compatibility cache. PR #21 bound the same state by copying
+it into `meta`, which every open parsed; S4-T2 keeps PR #21's guarantee
+(the state of exactly the published generation, checked before use) without
+that cost.
 
 ## 6. `apply_changes` (host-fed changes)
 
@@ -783,6 +818,9 @@ INDEX-STATE as a compatibility cache, and fail writes closed on corrupt bound
 state. This is a proposed fallback, not a new implemented format. Test every
 state/manifest rename and directory-sync boundary, committed-but-error replies,
 expected-generation retries and retention/pruning before adopting it.
+(Adopted by S4-T2 as `state-N.hybstate`, manifest v2.2 flag bit 4, with an
+XXH3-64 checksum like the other sections instead of SHA-256; see §5's S4-T2
+amendment.)
 
 ### Trusted write authority
 
@@ -797,3 +835,9 @@ confinement on the actual opened handles without following symlinks in any
 component; test intermediate symlink replacement between validation and read,
 and hash the same bytes that are indexed. The existing lstat/final-no-follow
 checks alone are not evidence against intermediate-component races.
+(S4-T2: a server started with `--allow-write` and `--roots` or `--labels` is
+a restricted writer, as [`authorization.md`](authorization.md) states: no root
+declarations, no file reads, no label changes, nothing hidden moved or
+removed. A file read opens the root directory once, following links in the
+root's own path, then opens every component below it without following
+links.)

@@ -24,6 +24,10 @@ Build with pinned Zig 0.16.0 in `zig/`, then run from the repository root:
 ./zig/zig-out/bin/searchd index ./my-notes --out .search/with-filenames --update --filename-index
 ```
 
+The channel belongs to the output directory: `--filename-index` enables it on a new
+directory, and later runs without the flag (with or without `--update`) keep it.
+Enabling it on an existing index needs a fresh output directory.
+
 Human queries show **File name** and **Content** sections with matched terms and
 separate citations. The JSON evidence response provides the same `match_sections`:
 filename citations identify the path; content citations identify actual lines.

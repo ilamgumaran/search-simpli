@@ -10,9 +10,12 @@ invariant exception. Independent review checks this boundary before runtime work
 
 The filename field's semantics below remain v1. The pre-S3 draft persistence
 layout is superseded by [manifest v2.2](manifest-format-v2.md#v22-filename-sections-s4-t2-cap-16)
-(S4-T2): `HYBMAN02` version 2 with flag bit 3, a 152-byte header and nine
-payload strings, binding body, positions, source, roots and both filename
-sections. A generation without filename sections keeps the 104-byte header.
+(S4-T2): `HYBMAN02` version 2 with flag bit 3, 48 more header bytes and three
+more payload strings (catalog file, filename lexical file, policy id),
+binding body, positions, source, roots and both filename sections. Every v2.2
+folder generation also sets bit 4 and binds its
+[recovery-state section](manifest-format-v2.md#v22-recovery-state-section-s4-t2)
+(16 header bytes after the filename fields, one payload string last).
 PR #21's interim `HYBMAN03` was never released and is not read.
 The old 136-byte HYBMAN02 draft must be rebuilt in a separate directory.
 Publication syncs all bound sections before committing MANIFEST; current
@@ -22,22 +25,58 @@ Catalog reuses the existing document segment codec, no vectors. Records sort by
 bytewise relative path, one per path with a body chunk. Record id/lines/labels
 are copied from the earliest body anchor (start line, end line, chunk id);
 record text is the basename with final supported suffix removed. All chunks at
-one path must have identical required labels. Load validates path uniqueness,
-anchor identity/span/path/labels, basename text and zero vector dimensions.
-Filename postings reuse HYBLEX01, indexed by catalog record ordinal, with the
-same analyzer as body/query. Validate section bounds/counts/checksums as for body.
+one path must have identical required labels. Filename postings reuse
+HYBLEX01, indexed by catalog record ordinal, with the same analyzer as
+body/query.
 
-Readers open manifest v1, main-v2 and integrated v3; pre-S3 readers reject v3. A filename request
+**Lazy load (S4-T2 R4).** An open reads neither filename section: it opens
+both files (so the handle keeps this generation's bytes after a writer prunes
+them), reserves their bytes in the open's one section allocation without
+reading them (`filename_field.loadReservation`), and `index_status` reports
+`filename_policy_id` from the manifest alone. The first `filename` or `both`
+query on a handle loads both sections once, under the handle's lock
+(`filename_field.load`): each file's size against the manifest
+(`FilenameCatalogSizeMismatch`, `FilenameLexicalSizeMismatch`), each checksum
+computed once against the manifest's (`FilenameCatalogChecksumMismatch`,
+`FilenameLexicalChecksumMismatch`), the counts, then the catalog walk: sorted
+unique safe paths, each text equal to its stem, zero vector dimensions, each
+record anchored at a real body chunk with the same id, span and labels
+(`FilenameCatalogMismatch`, `FilenameAnchorNotFound`). An error is kept on the
+handle and every later filename query answers it (`SS_ERR_CORRUPT_SNAPSHOT`
+through the C ABI); content queries are unaffected. Writers validate the
+canonical postings in full (`filename_field.validate`) after building and
+before publishing. The one-shot `snapshot_open.open` (the CLI's single
+query) stays eager. `zig/src/lazy_open_test.zig` pins the deferral, the
+single load under concurrent queries and the damaged-section errors.
+
+**Query (S4-T2 R5).** One filename query is linear in the touched postings:
+touched lists and seen flags instead of hash maps, a body-anchor ordinal map
+for root masks, and an unscoped fast path that takes the corpus totals when
+the mask allows every root. The answers equal PR #21's query exactly
+(`zig/src/filename_field_test.zig` compares both on labelled and unlabelled
+corpora, prefixes, labels and masks).
+
+Readers open manifest v1, v2.0, v2.1 and v2.2; readers before v2.2 refuse bit
+3 and bit 4 (`UnsupportedFlags`). `HYBMAN03` is not read. A filename request
 on body-only data fails `FilenameIndexUnavailable` with rebuild guidance.
-Changing filename-index setting/analyzer during incremental refresh fails;
-full rebuild in a separate directory is required. Filename data is derived from
-the final admitted/carried-forward body set, including budget-exhausted paths.
+
+**The setting is the directory's.** Enabling the channel, disabling it or
+changing its analyzer needs a fresh directory (`FilenameSettingMismatch`,
+`FilenameMigrationRequiresNewDirectory`). Omitting the setting keeps it:
+`searchd index` (with or without `--update`) without `--filename-index`,
+`ss_index_folder` and `ss_apply_changes` without `filename_index`, and Dart
+`filenameIndex: null` all keep an enabled directory enabled and a plain one
+plain; only an explicit different value is refused (S4-T2 R6; PR #21
+defaulted the folder paths to false, so an update without the flag was
+refused). Filename data is derived from the final admitted/carried-forward
+body set, including budget-exhausted paths.
 
 ## Process contracts
 
 Contract version is 2.2.0 and Dart package 0.3.0; consumers must repin.
 Native freshness requires real platform rebuilding; never stamp stale binaries current.
-Index options add boolean `filename_index` (default false); CLI spells it
+Index options add optional boolean `filename_index` (omitted: a new
+directory is plain, an existing one keeps its setting); CLI spells it
 `--filename-index`. Python opt-in snapshot version 2 contains filename-index
 metadata; body-only stays version 1. Import payload v2 adds required
 `filename_policy_id: "filename-field-v1"`; v1 remains unchanged. Import derives
@@ -84,15 +123,18 @@ on-disk format or reindex requirement for already enabled filename snapshots.
 `query(allocator, body_documents, body_index, catalog, lexical, analyzer_id,
 query_text, field, options) -> []Hit`. Hit has `document_index`, `body_score`,
 `body_rank`, `filename_score`, `filename_rank`, `fused_score`. Null rank means
-absent from that truncated channel. Engine exposes `queryFields` and stores
-borrowed encoded filename data; default query methods are untouched.
+absent from that truncated channel. Engine exposes `queryFields` and carries
+`filename_policy_id` from the manifest; the decoded sections live on the
+handle's lazy loads (`scope.Loads`), not the engine. Default query methods are
+untouched.
 
 `manifest.Manifest.filename` is optional metadata containing counts, byte sizes,
 checksums, two safe filenames and policy id. Preserve `create`/v1 APIs; add
-`withFilename` and full-section validation. Publication preserves body APIs and
-adds `publishWithFilename` / `loadCurrentWithFilename`; loaded snapshots carry
-encoded optional sections. Shared `snapshot_open.open` validates catalog anchors
-before returning a usable engine. CLI/ABI/server reuse that loader.
+`withFilename` and full-section validation. Publication preserves body APIs;
+`publishWithExtrasRecorded` links the optional source, filename and state
+sections. Handle opens (`snapshot_open.openScoped`: the C ABI, the servers and
+the CLI's filename queries) defer the filename sections to the first filename
+query; the one-shot `snapshot_open.open` loads them before returning.
 
 Freeze six filename cases, hashes and native default-content golden output in
 `fixtures/filename-search/` before builders start. Run authorization/path

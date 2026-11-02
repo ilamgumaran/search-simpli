@@ -5,6 +5,16 @@ Claim: [issue #20](https://github.com/ilamgumaran/search-simpli/issues/20).
 Branch: `improve/recovery-and-filename`, based on main `e9d97b0` and CAP-16
 source at `daddbee`. Supersedes the pre-S3 integration base of draft PR #18.
 
+> **Integrated by [S4-T2](S4-T2.md)** (1 Nov 2026) onto main after S4-T1, with
+> this branch's commits kept by the merge. Changes from what this document
+> describes: manifest v2.2 flag bit 3 instead of `HYBMAN03`; the recovery state
+> in its own section `state-N.hybstate` (flag bit 4, read by writers only)
+> instead of the manifest's `meta`; filename sections loaded at the first
+> filename query; a linear filename query with the same answers; `openConfined`
+> following links in the root's own path; an omitted `filename_index` keeps the
+> directory's setting on the folder paths too; contracts 2.2.0, Dart 0.3.0.
+> The numbers and the deviations are in S4-T2's Report.
+
 ## Acceptance
 
 - Preserve S3 phrase/prefix/words, headings, exact source reads, roots, labels,
