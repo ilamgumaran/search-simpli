@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.1 (S4-T4; contract 2.2.0; patch: no API change)
+
+The cheaper edit. No Dart API, C ABI or contract changed (`contracts/` stays
+2.2.0); the natives are rebuilt (`native/SOURCE-SHA256` `db21322e…`).
+
+- **Recovery state: one copy, binary.** Each generation's bound state section
+  `state-N.hybstate` is now the `HYBSTA02` binary form
+  (`docs/state-section-format-v2.md`): 970,159 B on the 10k timing corpus
+  against 2,522,562 B of JSON (`HYBSTA01`). `INDEX-STATE.json` becomes a
+  version 3 pointer to it (generation, analyzer, section file name; 94 B
+  against 2,522,530 B), so a generation writes 970,253 B of state instead of
+  5,045,092 B. Writers still accept a full version 2 `INDEX-STATE.json` and a
+  `HYBSTA01` section, so directories written by 0.2.x and 0.3.0 open and
+  update (the first update writes the new forms).
+- **One changed file in the 10k index** (`applyChanges`, `ReleaseSmall`, five
+  runs, p50): 123.2 ms without filename search (0.3.0: 147.7 ms) and 141.6 ms
+  with it (0.3.0: 172.0 ms). The filename sections are byte-identical to
+  0.3.0's; `open` (7.12–7.23 ms against 7.19–7.22 ms) and filename queries
+  (p50 0.026 ms at 10k over RPC) are unchanged.
+- **Rollback rule:** a 0.3.0 library still opens and queries a directory 0.3.1
+  has updated, but refuses to update it (`SS_ERR_CORRUPT_SNAPSHOT`,
+  `InvalidStateSection`); a library older than 0.3.0 refuses it at `open`, as
+  before. Keep the previous directory (or rebuild one with the older library)
+  to roll back to; never roll the library back over a directory 0.3.1 has
+  updated and keep writing to it.
+
 ## 0.3.0 (S4-T2, PR #21; contract 2.2.0; minor: new public API)
 
 PR #21 (the filename channel, recovery bound to the commit point, scoped

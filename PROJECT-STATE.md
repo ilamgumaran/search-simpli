@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-02 (S4-T3, PR #23 adopted; awaiting the orchestrator's verification)
+Last updated: 2026-11-05 (S4-T4, the cheaper edit; awaiting the orchestrator's verification)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,33 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## The cheaper edit: one copy of the recovery state, binary (S4-T4, 2026-11-05)
+
+[Report](docs/tasks/S4-T4.md). `INDEX-STATE.json` is now a version 3 pointer (94 B: the
+generation, the analyzer and the bound section's file name) to the generation's state
+section, and that section is the `HYBSTA02` binary form
+([format](docs/state-section-format-v2.md)): 970,159 B on the 10k timing corpus against
+2,522,562 B of `HYBSTA01` JSON, so a generation writes 970,253 B of state instead of
+5,045,092 B. Writers still read a full version 2 file and a `HYBSTA01` section (directories
+written by 0.2.x and 0.3.0 open and update; the first update writes the new forms).
+`generation_alloc` reads only the generation from `INDEX-STATE.json` (it parsed the whole
+v2 file, 8.5 ms at 10k, on every write). The writer checks the filename sections it just
+encoded by decoding them and comparing with the structures it built (3.7 ms against the
+8.2 ms re-tokenization), and skips the sort when the documents already come in path order;
+the sections are byte-identical to S4-T2's. One changed file in the 10k index
+(`ReleaseSmall`, five runs, p50): 123.2 ms filename off, 141.6 ms on (596032c: 147.7 and
+172.0); `ss_open` and filename queries unchanged. Contracts 2.2.0; Dart 0.3.1; natives
+rebuilt on this Mac twice, byte-identical (benchmark rows marked S4-T4).
+
+**Rollback rule (new):** the 0.3.0 library opens and queries a directory this release has
+updated but refuses to update it (`SS_ERR_CORRUPT_SNAPSHOT`, `InvalidStateSection`); keep
+the previous directory to roll back to.
+
+**Consumer pin:** the S4-T4 merge commit on `main` (the head of `main` after it), contracts
+2.2.0, Dart 0.3.1, `native/SOURCE-SHA256`
+`db21322e2333423cf45e7c0343ea63a81a989e6aebc7df904ccad88bb70663bc`, iOS framework binary
+789,304 B (sha256 `4c39e8f6…6e563c31`). The Dart API did not change since 0.3.0.
 
 ## Filename complexity guard adopted, natives rebuilt on the Mac (S4-T3, 2026-11-02)
 
@@ -135,15 +162,17 @@ holds it (S3-T8 = measured by this task's builder).
 | `ss_open` + first `find` (first op p50) | 103.0 to 103.2 ms (0.02 ms) | 14.4 to 15.3 ms (7.2 to 7.9 ms: the position tables load); upgrade 31.9 to 32.9 ms | ReleaseSmall | S4-T1 |
 | NFR-13 peak live bytes under a 64 MiB cap (open and each operation) | | family folder 9.4 MB; 10k 60.6 MB (`list_files`), 59.7 MB (`find`), 53.5 MB (open) | ReleaseSmall (10k), Debug (fixture) | S4-T1 |
 | `ss_open`, family-folder fixture | 13.0 ms | 18.4 ms | ReleaseSmall | S3-T4 |
-| Native library, macOS dylib | 435,048 B | 697,544 B (S3-T8); 714,328 B (S4-T1); 808,408 B (S4-T2; S4-T3 the same bytes as CI's) | ReleaseSmall | S3-T8, S4-T1, S4-T2, S4-T3 |
-| Native library, Android `.so` | 427,760 B | 676,752 B (S3-T8); 684,128 B (S4-T1); 777,672 B (S4-T2; S4-T3 the same bytes as CI's) | ReleaseSmall | S3-T8, S4-T1, S4-T2, S4-T3 |
-| Native library, iOS framework binary | 430,688 B | 677,448 B (S3-T8); 677,744 B (S4-T1); 789,368 B (S4-T2); 789,368 B (S4-T3, SDK 27.0; CI's SDK 17.5 build was 1,051,512 B) | ReleaseSmall | S3-T8, S4-T1, S4-T2, S4-T3 |
+| Native library, macOS dylib | 435,048 B | 697,544 B (S3-T8); 714,328 B (S4-T1); 808,408 B (S4-T2; S4-T3 the same bytes as CI's); 825,736 B (S4-T4) | ReleaseSmall | S3-T8, S4-T1, S4-T2, S4-T3, S4-T4 |
+| Native library, Android `.so` | 427,760 B | 676,752 B (S3-T8); 684,128 B (S4-T1); 777,672 B (S4-T2; S4-T3 the same bytes as CI's); 787,216 B (S4-T4) | ReleaseSmall | S3-T8, S4-T1, S4-T2, S4-T3, S4-T4 |
+| Native library, iOS framework binary | 430,688 B | 677,448 B (S3-T8); 677,744 B (S4-T1); 789,368 B (S4-T2); 789,368 B (S4-T3, SDK 27.0; CI's SDK 17.5 build was 1,051,512 B); 789,304 B (S4-T4, SDK 27.0) | ReleaseSmall | S3-T8, S4-T1, S4-T2, S4-T3, S4-T4 |
 | `ss_open`, 10k index (p50 of 30, 2 rounds) | 7.35 / 7.33 ms (f45c06d) | filename off 7.35 / 7.31 ms; on 7.39 / 7.36 ms; upgrade 7.34 / 7.36 ms | ReleaseSmall | S4-T2 |
 | `ss_open` + first query (first op p50, 2 rounds) | content 0.094 ms | content 0.093 / 0.093 ms; filename 4.78 / 4.78 ms and both 4.87 / 4.89 ms (the filename sections load) | ReleaseSmall | S4-T2 |
 | `apply_changes`, one changed file in the 10k index, 5 runs | 140.1 to 142.8 ms, p50 141.3 (f45c06d) | filename off 147.2 to 150.4, p50 148.3; on 170.8 to 173.6, p50 172.6; upgrade 147.9 to 150.8, p50 148.3 | ReleaseSmall | S4-T2 |
 | `ss_open`, 10k index, and one changed file (S4-T2's driver) | b45b1c4: open 7.21 to 7.28 ms, one changed file p50 148.3 ms | open off 7.20 to 7.36 ms, on 7.28 to 7.41 ms; one changed file p50 148.0 off, 171.3 on (worst 175.9); filename query p50 0.027 ms at 10k (RPC) | ReleaseSmall | S4-T3 |
 | MANIFEST, 10k index | 540 B (flags `0x0007`) | 576 B (`0x0017`); 696 B with filename sections (`0x001f`) | any | S4-T2 |
 | State section `state-N.hybstate` / filename catalog / filename lexical | | 2,522,562 B / 780,036 B / 490,091 B per generation | any | S4-T2 |
+| State per generation, 10k index (`state-N.hybstate` + `INDEX-STATE.json`) | 2,522,562 + 2,522,530 = 5,045,092 B (`HYBSTA01`, v2; 596032c) | 970,159 + 94 = 970,253 B (`HYBSTA02`, v3 pointer); filename sections unchanged | any | S4-T4 |
+| `ss_open`, 10k index, and one changed file (S4-T4's driver, 2 runs) | 596032c: open 7.19 to 7.36 ms; one changed file p50 147.7 off, 172.0 on | open 7.12 to 7.23 ms; one changed file p50 123.2 off (worst 125.2), 141.6 on (worst 142.7); upgrade from 596032c p50 141.7 off, 159.4 on; filename query p50 0.026 ms at 10k (RPC) | ReleaseSmall | S4-T4 |
 | `search_knowledge` over RPC, 30 queries, p50 (`scripts/benchmark_filename_field.py`, 10k) | content 0.018 ms (f45c06d) | content 0.017; filename 0.023; both 0.043 ms (PR #21 as reviewed: filename 276 ms) | ReleaseSmall | S4-T2 |
 | NFR-13 peak live bytes under a 64 MiB cap | family folder 9.42 MB; 10k 60.7 MB (`list_files`), 53.6 MB (open) | family folder 7.98 MB; 10k 52.3 MB (`list_files`), 45.2 MB (open); 10k with filename sections 57.2 MB (`list_files`), 51.6 MB (`both`), 50.1 MB (open) | Debug (test suite) | S4-T2 |
 
