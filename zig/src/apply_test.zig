@@ -749,7 +749,10 @@ test "S3-T3: a crash between the manifest and the state write leaves a readable 
     const scoped = try f.opened();
     try std.testing.expectEqual(@as(u64, 2), scoped.service.engine.generation);
     try std.testing.expectEqual(@as(usize, 1), (try searchPaths(scoped, a, "edited", .{})).len);
-    try std.testing.expectEqual(@as(u64, 1), (try incremental_state.load(a, io, f.out)).?.generation);
+    // S4-T4: the pointer still names generation 1's section, which the
+    // MANIFEST no longer binds, so it loads as nothing (never a stale state).
+    try std.testing.expectEqual(@as(?u64, 1), incremental_state.recordedGeneration(a, io, f.out));
+    try std.testing.expect((try incremental_state.load(a, io, f.out)) == null);
     // The host retries the same content: nothing changed since generation 2.
     const retry = try f.applyOk(try joinChanges(a, "[]", &.{
         try add(a, "home", "a.md", "# A\n\nalpha words\n", ""),
@@ -1133,4 +1136,141 @@ test "restricted writers cannot change root policy, hidden files or labels" {
     }
     const changed = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "public.md", "public silver", "[]")}), options);
     try std.testing.expectEqual(@as(usize, 1), changed.changed);
+}
+
+// --- S4-T4 ruling 2: INDEX-STATE.json as a pointer to the bound section ---
+
+const pointer_roots = "[{\"root_id\":\"home\",\"kind\":\"host\",\"retain_source\":false}]";
+
+/// Generation 1 of a root whose bytes are not retained: a file with its own
+/// label, a plain file and a pending file with an mtime. Only the committed
+/// state knows the first file's hash and the pending file's mtime.
+fn pointerFixture(f: *Fixture) !void {
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, pointer_roots, &.{
+        try add(a, "home", "note.md", "copper recovery evidence", "[\"family\"]"),
+        try add(a, "home", "plain.md", "tin harbour notes", ""),
+        "{\"op\":\"pending\",\"root_id\":\"home\",\"path\":\"waiting.txt\",\"size\":123,\"mtime_ms\":77}",
+    }), .{});
+}
+
+fn stateEntry(state: incremental_state.State, path: []const u8) ?incremental_state.Entry {
+    for (state.files) |entry| if (std.mem.eql(u8, entry.path, path)) return entry;
+    return null;
+}
+
+/// The current state (through the pointer) still carries what only the
+/// committed state knew.
+fn expectCommittedDetails(f: *Fixture) !void {
+    const state = (try incremental_state.load(f.arena(), io, f.out)).?;
+    try std.testing.expectEqual(@as(usize, 3), state.files.len);
+    const note = stateEntry(state, "note.md").?;
+    try std.testing.expectEqualStrings(&hex("copper recovery evidence"), note.hash);
+    try std.testing.expectEqual(@as(usize, 1), note.required_labels.len);
+    try std.testing.expectEqualStrings("family", note.required_labels[0]);
+    const waiting = stateEntry(state, "waiting.txt").?;
+    try std.testing.expectEqual(incremental_state.Status.pending, waiting.status);
+    try std.testing.expectEqual(@as(?i64, 77), waiting.mtime_ms);
+}
+
+test "S4-T4 R2: INDEX-STATE.json is a version 3 pointer to the bound section, and loads through it" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try pointerFixture(&f);
+    try std.testing.expectEqualStrings(
+        "{\"state_version\":3,\"generation\":1,\"analyzer_id\":\"analyzer-v2\",\"state_file\":\"state-1.hybstate\"}",
+        try f.out.readFileAlloc(io, incremental_state.state_file, a, .unlimited),
+    );
+    try expectCommittedDetails(&f);
+    try std.testing.expectEqual(@as(?u64, 1), incremental_state.recordedGeneration(a, io, f.out));
+    // A changed file: the next generation's pointer names its own section.
+    const next = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "plain.md", "tin harbour notes, edited", "")}), .{});
+    try std.testing.expectEqual(@as(usize, 1), next.changed);
+    try std.testing.expectEqualStrings(
+        "{\"state_version\":3,\"generation\":2,\"analyzer_id\":\"analyzer-v2\",\"state_file\":\"state-2.hybstate\"}",
+        try f.out.readFileAlloc(io, incremental_state.state_file, a, .unlimited),
+    );
+    try expectCommittedDetails(&f);
+}
+
+test "S4-T4 R2: with the pointer deleted, the bound section carries the state into the next generation" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try pointerFixture(&f);
+    try f.out.deleteFile(io, incremental_state.state_file);
+    const next = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "plain.md", "tin harbour notes, edited", "")}), .{});
+    try std.testing.expectEqual(@as(u64, 2), next.generation);
+    try std.testing.expectEqual(@as(usize, 1), next.changed);
+    try std.testing.expect(next.recovered == null);
+    try expectCommittedDetails(&f);
+}
+
+test "S4-T4 R2: a pointer corrupted at any byte is never trusted over the bound section" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try pointerFixture(&f);
+    const original = try f.out.readFileAlloc(io, incremental_state.state_file, a, .unlimited);
+    for (0..original.len) |at| {
+        // Each round starts from a fresh pointer (the last update wrote one).
+        const pointer = try f.out.readFileAlloc(io, incremental_state.state_file, a, .unlimited);
+        if (at >= pointer.len) break;
+        const corrupted = try a.dupe(u8, pointer);
+        corrupted[at] ^= 0x01;
+        try f.out.writeFile(io, .{ .sub_path = incremental_state.state_file, .data = corrupted });
+        const before = (try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited))).generation;
+        const next = try f.applyOk("{\"changes\":[]}", .{ .keep_generations = 1 });
+        try std.testing.expect(next.generation > before);
+        try std.testing.expectEqual(@as(usize, 2), next.unchanged);
+        try std.testing.expect(next.recovered == null);
+        try expectCommittedDetails(&f);
+    }
+}
+
+test "S4-T4 R2: a pointer to a section the MANIFEST does not bind loads as null; the writer reconstructs" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try pointerFixture(&f);
+    // The section the pointer names is intact, but a MANIFEST that binds no
+    // state (as a generation older than v2.2 has) does not vouch for it.
+    const bound = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    var unbound = bound;
+    unbound.state = null;
+    const buffer = try a.alloc(u8, try manifest.encodedLength(unbound));
+    try publication.writeAtomicFile(f.out, io, publication.current_manifest_file, try manifest.encode(unbound, buffer), true);
+    try std.testing.expect((try incremental_state.load(a, io, f.out)) == null);
+    try std.testing.expectEqual(@as(?u64, 1), incremental_state.recordedGeneration(a, io, f.out));
+    // A pointer naming a section that does not exist, or another generation's.
+    try f.out.writeFile(io, .{ .sub_path = incremental_state.state_file, .data = "{\"state_version\":3,\"generation\":1,\"analyzer_id\":\"analyzer-v2\",\"state_file\":\"state-9.hybstate\"}" });
+    try std.testing.expect((try incremental_state.load(a, io, f.out)) == null);
+    try f.out.writeFile(io, .{ .sub_path = incremental_state.state_file, .data = "{\"state_version\":3,\"generation\":1,\"analyzer_id\":\"analyzer-v2\",\"state_file\":\"state-1.hybstate\"}" });
+
+    // The writer falls back to the conservative reconstruction: the update
+    // succeeds, and what only the pointed-at section knew is not used.
+    const next = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "plain.md", "tin harbour notes, edited", "")}), .{});
+    try std.testing.expectEqual(@as(u64, 2), next.generation);
+    const state = (try incremental_state.load(a, io, f.out)).?;
+    try std.testing.expectEqual(@as(usize, 3), state.files.len);
+    try std.testing.expectEqualStrings("", stateEntry(state, "note.md").?.hash);
+    try std.testing.expectEqual(@as(?i64, null), stateEntry(state, "waiting.txt").?.mtime_ms);
+    try std.testing.expectEqualStrings("{\"state_version\":3,\"generation\":2,\"analyzer_id\":\"analyzer-v2\",\"state_file\":\"state-2.hybstate\"}", try f.out.readFileAlloc(io, incremental_state.state_file, a, .unlimited));
+}
+
+test "S4-T4 R2: a version 2 INDEX-STATE.json (an older writer's) still loads and feeds the next writer" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try pointerFixture(&f);
+    const committed = (try incremental_state.load(a, io, f.out)).?;
+    // What 0.3.0 wrote beside the same generation: the full version 2 file.
+    try incremental_state.save(io, f.out, a, committed);
+    try std.testing.expect(std.mem.startsWith(u8, try f.out.readFileAlloc(io, incremental_state.state_file, a, .unlimited), "{\"state_version\":2,"));
+    try std.testing.expectEqual(@as(?u64, 1), incremental_state.recordedGeneration(a, io, f.out));
+    try expectCommittedDetails(&f);
+    _ = try f.applyOk("{\"changes\":[]}", .{});
+    try std.testing.expect(std.mem.startsWith(u8, try f.out.readFileAlloc(io, incremental_state.state_file, a, .unlimited), "{\"state_version\":3,"));
+    try expectCommittedDetails(&f);
 }

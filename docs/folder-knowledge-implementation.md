@@ -83,7 +83,8 @@ files that produced no chunk, an empty or blank file, so they can be listed
 and their labels are known). Duplicate root ids are refused.
 
 Section files: `documents-N.hybseg` (v4, §2), `lexical-N.hyblex` (v2, §3),
-`source-N.hybsrc` (v1, §4), `MANIFEST`, `INDEX-STATE.json` (v2, §5),
+`source-N.hybsrc` (v1, §4), `MANIFEST`, `INDEX-STATE.json` (v2, §5; a
+version 3 pointer since S4-T4),
 `WRITER.LOCK`. Publication keeps `lifecycle.publishSerialized` →
 `publication.writeAtomicFile` and writes `INDEX-STATE.json` **after** the
 manifest, as today; the review's "atomic generation consistency" is met by the
@@ -326,6 +327,33 @@ publication as a compatibility cache. PR #21 bound the same state by copying
 it into `meta`, which every open parsed; S4-T2 keeps PR #21's guarantee
 (the state of exactly the published generation, checked before use) without
 that cost.
+
+**S4-T4 amendment (version 3: a pointer).** Writing the same 2.5 MB twice per
+generation (the section and this file) bought nothing, so since S4-T4 (Dart
+package 0.3.1) every writer of this tree (`apply_changes`, `searchd index`
+with or without `--update`, `ss_index_folder`: all publish through
+`apply.zig`, which binds `state-N.hybstate`) writes `INDEX-STATE.json`, after
+the publication, as only
+
+```json
+{"state_version":3,"generation":17,"analyzer_id":"analyzer-v2","state_file":"state-17.hybstate"}
+```
+
+with no file table. `incremental_state.load` resolves a version 3 file by
+reading the named section from the same directory and checking it as the
+writer does (`manifest.validateState` against the current `MANIFEST`: size,
+header, checksum; then the decoded `generation` and `analyzer_id` against the
+manifest's). When there is no `MANIFEST`, or it does not bind that section for
+that generation and analyzer, `load` returns `null`, as for a missing file,
+never a partial state. The writer's precedence is unchanged: the bound section
+first, so the pointer is never trusted over it (deleted or damaged, the next
+update reads the section); for a generation without a bound section a pointer
+loads as `null` and the writer reconstructs. `generation_alloc` reads only the
+pointer's `generation` (`incremental_state.recordedGeneration`), so a lost
+`MANIFEST` still cannot make the counter start over. Which form is on disk:
+version 3 after any write by 0.3.1 or later; version 2 after a write by 0.3.0
+(the section and a full copy) or by 0.2.1 and earlier (no section); version 1
+from S1. All three load.
 
 ## 6. `apply_changes` (host-fed changes)
 

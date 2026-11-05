@@ -18,11 +18,23 @@
 //!
 //! Version 1 (no `state_version`; entries `{path, hash, size}`) still loads:
 //! its files belong to one root `r-legacy` (`kind: local`, `origin: folder`).
+//!
+//! Version 3 (S4-T4 ruling 2) is a **pointer**: once a generation binds its
+//! state as the section `state-N.hybstate` (manifest v2.2, flag bit 4), the
+//! file is only `{"state_version":3,"generation":N,"analyzer_id":"…",
+//! "state_file":"state-N.hybstate"}`, and `load` reads the named section,
+//! checked against the current `MANIFEST` as the writer checks it. A pointer
+//! the `MANIFEST` does not bind (or no `MANIFEST`) loads as `null`, never as a
+//! partial state; a writer always prefers the bound section to this file.
+const manifest = @import("manifest.zig");
 const publication = @import("publication.zig");
+const state_section = @import("state_section.zig");
 const std = @import("std");
 
 pub const state_file = "INDEX-STATE.json";
 pub const state_version: u32 = 2;
+/// `INDEX-STATE.json` as a pointer to the generation's bound state section.
+pub const pointer_version: u32 = 3;
 pub const legacy_root_id = "r-legacy";
 
 /// `indexed`: the file's chunks are in the generation. `pending`: named by
@@ -73,10 +85,28 @@ pub const State = struct {
 
 pub const LoadError = error{ InvalidState, StateTooLarge, OutOfMemory };
 
-/// Read and parse `INDEX-STATE.json` from `dir`, if present. All returned
-/// memory (including every string) is allocated from `allocator`. Returns
-/// `null` if the file does not exist.
+/// Read `INDEX-STATE.json` from `dir` and return the state it holds or, for
+/// a version 3 pointer, the state of the section it names (`resolvePointer`).
+/// All returned memory (including every string) is allocated from
+/// `allocator`. Returns `null` if the file does not exist, and for a pointer
+/// the current `MANIFEST` does not bind.
 pub fn load(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !?State {
+    const bytes = (try readStateFile(allocator, io, dir)) orelse return null;
+    if (parsePointer(allocator, bytes)) |pointer| return resolvePointer(allocator, io, dir, pointer);
+    return try parse(allocator, bytes);
+}
+
+/// The generation `INDEX-STATE.json` names, whatever its version, without
+/// reading a section (`generation_alloc`: a lost `MANIFEST` must not make the
+/// counter start over). `null` when the file is absent or unreadable.
+pub fn recordedGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) ?u64 {
+    const bytes = (readStateFile(allocator, io, dir) catch return null) orelse return null;
+    if (parsePointer(allocator, bytes)) |pointer| return pointer.generation;
+    const state = parse(allocator, bytes) catch return null;
+    return state.generation;
+}
+
+fn readStateFile(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !?[]u8 {
     var file = dir.openFile(io, state_file, .{}) catch |err| switch (err) {
         error.FileNotFound => return null,
         else => return err,
@@ -85,8 +115,67 @@ pub fn load(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !?State {
     file.close(io);
     const size = std.math.cast(usize, stat.size) orelse return error.StateTooLarge;
     const buffer = try allocator.alloc(u8, size);
-    const bytes = try dir.readFile(io, state_file, buffer);
-    return try parse(allocator, bytes);
+    return try dir.readFile(io, state_file, buffer);
+}
+
+pub const Pointer = struct {
+    generation: u64,
+    analyzer_id: []const u8,
+    /// The section's file name, `state-N.hybstate`.
+    state_file: []const u8,
+};
+
+const WirePointer = struct {
+    state_version: u32,
+    generation: u64,
+    analyzer_id: []const u8,
+    state_file: []const u8,
+};
+
+/// A version 3 pointer, exactly its four fields; `null` for anything else
+/// (a version 1 or 2 state, which fails at its first other field, or bytes
+/// that are not a pointer).
+pub fn parsePointer(allocator: std.mem.Allocator, bytes: []const u8) ?Pointer {
+    const wire = std.json.parseFromSliceLeaky(WirePointer, allocator, bytes, .{ .ignore_unknown_fields = false }) catch return null;
+    if (wire.state_version != pointer_version) return null;
+    return .{ .generation = wire.generation, .analyzer_id = wire.analyzer_id, .state_file = wire.state_file };
+}
+
+/// The state a pointer names, checked as the writer checks a bound section:
+/// the current `MANIFEST` must bind `pointer.state_file` for the pointer's
+/// generation and analyzer (else `null`), and the section must pass
+/// `manifest.validateState` (size, header, checksum) and decode to that same
+/// generation and analyzer (else `error.InvalidState`).
+pub fn resolvePointer(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, pointer: Pointer) LoadError!?State {
+    const manifest_bytes = readNamed(allocator, io, dir, publication.current_manifest_file) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return null,
+    };
+    const metadata = manifest.decode(manifest_bytes) catch return null;
+    const bound = metadata.state orelse return null;
+    if (!std.mem.eql(u8, bound.file, pointer.state_file) or metadata.generation != pointer.generation or
+        !std.mem.eql(u8, metadata.analyzer_id, pointer.analyzer_id)) return null;
+    const section = readNamed(allocator, io, dir, bound.file) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return null,
+    };
+    manifest.validateState(metadata, section) catch return error.InvalidState;
+    const state = try decodeSection(allocator, section);
+    if (state.generation != metadata.generation or !std.mem.eql(u8, state.analyzer_id, metadata.analyzer_id)) return error.InvalidState;
+    return state;
+}
+
+fn readNamed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []const u8) ![]u8 {
+    const stat = try dir.statFile(io, name, .{});
+    const size = std.math.cast(usize, stat.size) orelse return error.StateTooLarge;
+    const buffer = try allocator.alloc(u8, size);
+    return dir.readFile(io, name, buffer);
+}
+
+/// The state a recovery-state section carries (`state_section.inspect`
+/// already accepted it).
+pub fn decodeSection(allocator: std.mem.Allocator, section: []const u8) LoadError!State {
+    return parseCommitted(allocator, state_section.payload(section));
 }
 
 const WireRoot = struct {
@@ -271,9 +360,36 @@ pub fn encode(allocator: std.mem.Allocator, state: State) ![]u8 {
 
 /// Atomically (write-temp, sync, replace) write `INDEX-STATE.json` (version
 /// 2) in `dir`. Called only after the generation it describes has been
-/// published.
+/// published. Since S4-T4 the writers publish a bound state section and call
+/// `savePointer` instead; a version 2 file still loads.
 pub fn save(io: std.Io, dir: std.Io.Dir, allocator: std.mem.Allocator, state: State) !void {
     const encoded = try encode(allocator, state);
+    defer allocator.free(encoded);
+    try publication.writeAtomicFile(dir, io, state_file, encoded, true);
+}
+
+/// The version 3 pointer's JSON.
+pub fn encodePointer(allocator: std.mem.Allocator, pointer: Pointer) ![]u8 {
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    errdefer out.deinit();
+    var json = std.json.Stringify{ .writer = &out.writer };
+    try json.beginObject();
+    try json.objectField("state_version");
+    try json.write(pointer_version);
+    try json.objectField("generation");
+    try json.write(pointer.generation);
+    try json.objectField("analyzer_id");
+    try json.write(pointer.analyzer_id);
+    try json.objectField("state_file");
+    try json.write(pointer.state_file);
+    try json.endObject();
+    return out.toOwnedSlice();
+}
+
+/// Atomically write `INDEX-STATE.json` as a version 3 pointer to the bound
+/// state section of the generation just published (S4-T4 ruling 2).
+pub fn savePointer(io: std.Io, dir: std.Io.Dir, allocator: std.mem.Allocator, pointer: Pointer) !void {
+    const encoded = try encodePointer(allocator, pointer);
     defer allocator.free(encoded);
     try publication.writeAtomicFile(dir, io, state_file, encoded, true);
 }
@@ -336,4 +452,37 @@ test "state v2 keeps roots, statuses, labels and moves; v1 loads as r-legacy" {
     try std.testing.expectEqual(Status.indexed, v1.files[0].status);
     try std.testing.expectError(error.InvalidState, parse(arena, "{\"state_version\":3,\"generation\":1,\"analyzer_id\":\"a\",\"files\":[]}"));
     try std.testing.expectError(error.InvalidState, parse(arena, "[]"));
+}
+
+test "S4-T4: the version 3 pointer round-trips and is told apart from a version 1 or 2 state" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const encoded = try encodePointer(a, .{ .generation = 12, .analyzer_id = "analyzer-v2", .state_file = "state-12.hybstate" });
+    try std.testing.expectEqualStrings("{\"state_version\":3,\"generation\":12,\"analyzer_id\":\"analyzer-v2\",\"state_file\":\"state-12.hybstate\"}", encoded);
+    const back = parsePointer(a, encoded).?;
+    try std.testing.expectEqual(@as(u64, 12), back.generation);
+    try std.testing.expectEqualStrings("state-12.hybstate", back.state_file);
+    // Not a pointer: a version 2 state, a field more or less, another version.
+    const v2 = try encode(a, .{ .generation = 12, .analyzer_id = "analyzer-v2", .files = &.{} });
+    try std.testing.expect(parsePointer(a, v2) == null);
+    try std.testing.expect(parsePointer(a, "{\"state_version\":3,\"generation\":1,\"analyzer_id\":\"a\",\"state_file\":\"state-1.hybstate\",\"files\":[]}") == null);
+    try std.testing.expect(parsePointer(a, "{\"state_version\":3,\"generation\":1,\"analyzer_id\":\"a\"}") == null);
+    try std.testing.expect(parsePointer(a, "{\"state_version\":2,\"generation\":1,\"analyzer_id\":\"a\",\"state_file\":\"state-1.hybstate\"}") == null);
+    // The version 2 parser never takes a pointer for a state.
+    try std.testing.expectError(error.InvalidState, parse(a, encoded));
+}
+
+test "S4-T4: a pointer without a MANIFEST loads as null and still names its generation" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    try savePointer(io, tmp.dir, a, .{ .generation = 5, .analyzer_id = "analyzer-v2", .state_file = "state-5.hybstate" });
+    try std.testing.expect((try load(a, io, tmp.dir)) == null);
+    try std.testing.expectEqual(@as(?u64, 5), recordedGeneration(a, io, tmp.dir));
+    try tmp.dir.writeFile(io, .{ .sub_path = state_file, .data = "not json" });
+    try std.testing.expectEqual(@as(?u64, null), recordedGeneration(a, io, tmp.dir));
 }

@@ -284,8 +284,13 @@ else `InvalidState`.
 section; else, for a generation that predates it (no bit 4), an
 `INDEX-STATE.json` whose `generation` and `analyzer_id` match the manifest's;
 else the conservative reconstruction from the generation itself (S3-T3).
-`INDEX-STATE.json` is still written after each publication, as a
-compatibility cache for older writers and tools.
+After each publication `INDEX-STATE.json` is written as a **version 3
+pointer** to the bound section (S4-T4: `{"state_version":3,"generation":N,
+"analyzer_id":"…","state_file":"state-N.hybstate"}`, no file table); 0.3.0
+wrote a full version 2 copy there instead. A pointer is resolved only through
+the current `MANIFEST` (the same `validateState` checks; `null` when the
+`MANIFEST` is missing or does not bind the named section), so it never
+outranks the section ([folder-knowledge-implementation.md §5](folder-knowledge-implementation.md#5-index-state-v2)).
 
 **Publication and retention.** The state section is linked and fsynced with
 the other sections before the directory sync and the `MANIFEST` replacement,

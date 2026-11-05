@@ -6,7 +6,8 @@
 //! per `(root_id, path)`, pairs equal-content removes and adds into moves,
 //! and publishes exactly one new generation through the existing atomic path
 //! (`lifecycle.publishLeasedKeepingWithSource`: documents, lexical and source
-//! sections bound by the manifest), then writes `INDEX-STATE.json` v2.
+//! sections bound by the manifest, and the recovery-state section), then
+//! writes `INDEX-STATE.json` as a version 3 pointer to that section (S4-T4).
 //!
 //! `index_folder` (`indexer.zig`) is a walk that builds a batch of `walk`
 //! changes for its one `local` root and calls `applyBatch`, so one code path
@@ -1119,11 +1120,12 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     stages.mark("publish");
     if (options.fail_after_publish) return error.SimulatedCrash;
     // Only after the generation is published (`docs/publication-recovery.md`).
-    try incremental_state.save(io, dir, allocator, .{
+    // S4-T4 ruling 2: the generation binds its state (`state-N.hybstate`), so
+    // `INDEX-STATE.json` is a version 3 pointer to it, not a second copy.
+    try incremental_state.savePointer(io, dir, allocator, .{
         .generation = generation,
         .analyzer_id = options.analyzer.label(),
-        .roots = built.state_roots,
-        .files = built.state_files,
+        .state_file = built.state_file,
     });
     stages.mark("save_state");
 
@@ -1731,6 +1733,8 @@ const Built = struct {
     catalog: ?[]const u8 = null,
     /// S4-T2 R3: the generation's recovery-state section (`state-N.hybstate`).
     state: []const u8,
+    /// Its file name, which the `INDEX-STATE.json` pointer names (S4-T4).
+    state_file: []const u8,
     filename_lexical: ?[]const u8 = null,
     manifest: []const u8,
     documents: []const u8,
@@ -1992,7 +1996,8 @@ fn buildGeneration(
     if (filename_data) |f| try @import("filename_field.zig").validate(allocator, documents.items, f.catalog, f.lexical, options.analyzer.label());
     stages.mark("filename_validate");
     if (filename_data) |f| metadata = try manifest.withFilename(metadata, try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{generation}), try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{generation}), f.catalog, f.lexical);
-    metadata = try manifest.withState(metadata, try std.fmt.allocPrint(allocator, "state-{d}.hybstate", .{generation}), state_encoded);
+    const state_file = try std.fmt.allocPrint(allocator, "state-{d}.hybstate", .{generation});
+    metadata = try manifest.withState(metadata, state_file, state_encoded);
     const manifest_buffer = try allocator.alloc(u8, try manifest.encodedLength(metadata));
     const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
     stages.mark("manifest_bind");
@@ -2000,6 +2005,7 @@ fn buildGeneration(
         .catalog = if (filename_data) |f| f.catalog else null,
         .filename_lexical = if (filename_data) |f| f.lexical else null,
         .state = state_encoded,
+        .state_file = state_file,
         .manifest = manifest_encoded,
         .documents = documents_encoded,
         .lexical = lexical_encoded,
