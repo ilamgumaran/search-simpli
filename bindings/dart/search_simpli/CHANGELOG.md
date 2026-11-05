@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.3.2 (S4-T6; contract 2.2.0; patch: no API change)
+
+A crash in `searchd`, not in this package's library. No Dart API, C ABI or
+contract changed (`contracts/` stays 2.2.0); the three native binaries are
+byte-identical to 0.3.1's, rebuilt twice on the Mac (macOS 825,736 B,
+Android 787,216 B, iOS framework binary 789,304 B); `native/SOURCE-SHA256`
+changes (`7762a23a…`) because the sources it digests changed.
+
+- **The crash.** A release build of `searchd serve --allow-write`
+  (`ReleaseSmall`, `ReleaseFast`, `ReleaseSafe`) answered `apply_changes`
+  and then died with signal 11 on the next call that loads a table lazily
+  (`read_span`, `outline`, `find`, `search_knowledge`, `list_files`),
+  without a reply. Since S4-T1 (0.2.1) the reloaded generation kept an
+  allocator that pointed at a freed `ArenaAllocator`; Debug builds never
+  reuse freed memory, so every Debug suite stayed green. `searchd mcp` held
+  the same dangling pointer into a stack slot.
+- **The fix.** The served generation owns an arena on the heap that never
+  moves (`rpc.Generation`); a reload opens the new generation, then closes
+  the old one, files included (the old reload also left the old
+  generation's section files open, one set per write).
+- **A release library's handle after a write on the same directory**
+  (the contract, now stated in `search_simpli.h` and tested in Debug and
+  `ReleaseSmall` by `zig/tests/abi_test.c`): a handle opened before
+  `ss_apply_changes` / `SearchSimpli.applyChanges` on the same directory
+  keeps answering the generation it opened, also after the write prunes
+  that generation's files (`keepGenerations`); close it and open again to
+  see the new generation. The library path never had the defect: the same
+  test passes against the 0.3.1 library in both build modes.
+- CI now runs the engine tests, the C ABI harness and the Python suites
+  against a `ReleaseSmall` build too.
+
 ## 0.3.1 (S4-T4; contract 2.2.0; patch: no API change)
 
 The cheaper edit. No Dart API, C ABI or contract changed (`contracts/` stays
