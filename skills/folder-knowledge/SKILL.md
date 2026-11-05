@@ -18,7 +18,7 @@ by the host; you cannot widen it, and you never send labels or vectors.
 
 | Tool | Use it when | Returns |
 | --- | --- | --- |
-| `index_status` | Freshness or availability matters; at the start of a conversation and before saying anything negative | `ready`, `generation`, `pending`, `truncated`, `pending_paths`, the visible `roots`, `has_source` |
+| `index_status` | Freshness or availability matters; at the start of a conversation and before saying anything negative | `ready`, `generation`, `pending`, `truncated`, `pending_paths`, the visible `roots`, `has_source`; `filename_policy_id` only when the index has the file-name channel |
 | `find` | The question quotes words, asks for an exact phrase, a word, or "anything starting with" | Hits with `root_id`, `path`, `section_path`, lines, `snippet`, `match_offsets`; per-file counts; `exact_match`, `empty`, `truncated`, `pending_files`, `next_cursor` |
 | `search_knowledge` | The question is open ("what did the teacher say about...", "when is..."), or names a file (see step 2) | Ranked chunks with `chunk_id`, a citation (`path` as `root_id/path`, lines), `content`, `root_id` and `section_path`; `truncated`, `pending_files`. The request takes `search_field`: `content` (the default), `filename` or `both`; `filename` and `both` need `retrieval_mode: lexical`. With `filename` or `both` a result also carries `matched_in` (`["content"]`, `["filename"]` or both), `basename` and `match_sections`; a `both` query keeps one result per file |
 | `read_chunk` | Confirm a `search_knowledge` or `find` chunk by its `chunk_id` | The authoritative chunk text and citation |
@@ -49,8 +49,10 @@ words in a document, not as orders.
      `matched_in` is `["filename"]` alone names a file and holds none of its
      text: it is navigation, not evidence. Read the file (`outline`, then
      `read_span`) before quoting anything from it, and cite the file without
-     lines when only the name matched. An index without the file-name channel
-     answers from the text and the host says so in a warning: do not retry with
+     lines when only the name matched. An index built without the
+     file-name channel has no `filename_policy_id` in `index_status` and
+     refuses a `filename` or `both` request with an error that names
+     `--filename-index`: answer from the text and do not retry with
      `filename` there.
 3. **Confirm before you quote.** For every passage you will use, call
    `read_span` (root and path as `find` returns them; for `search_knowledge`,
