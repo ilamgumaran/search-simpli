@@ -250,7 +250,7 @@ test "S4-T2 R4: a damaged filename catalog opens, fails the first filename query
     try std.testing.expectError(error.FilenameCatalogChecksumMismatch, snapshot_open.open(a, io, dir));
 }
 
-test "S4-T2 R4: writers run the full filename check before publishing; readers check checksums and structure" {
+test "S4-T2 R4: the full filename check (tests, import-json) sees a resealed term; readers check checksums and structure" {
     var indexed = try Indexed.initWith(.{ .filename_index = true });
     defer indexed.deinit();
     const a = indexed.arena();

@@ -383,3 +383,87 @@ test "S4-T2 R5: the linear filename query equals PR #21's query exactly, scoped 
     }
     try std.testing.expect(compared > 100);
 }
+
+// --- S4-T4 ruling 4: the writer's check and the sort skip ---
+
+fn writerBody(a: std.mem.Allocator) ![]hybrid.Document {
+    var list = std.ArrayList(hybrid.Document).empty;
+    const names = [_][]const u8{ "docs/Annual_Budget_2026.md", "docs/annual-notes.txt", "garden/frog_spawn.md", "garden/frog_spawn.md", "school/week-07.md", "school/week-07.md", "school/week-07.md", "z/\u{e9}t\u{e9} notes.md" };
+    for (names, 0..) |path, i| try list.append(a, .{
+        .id = try std.fmt.allocPrint(a, "id-{d:0>3}", .{i}),
+        .text = "body text",
+        .path = path,
+        .start_line = @intCast(1 + 10 * i),
+        .end_line = @intCast(5 + 10 * i),
+        .required_labels = if (std.mem.startsWith(u8, path, "school/")) "family" else "",
+    });
+    return list.toOwnedSlice(a);
+}
+
+test "S4-T4 R4: the writer's check accepts what build encoded, and the full re-tokenizing check agrees" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const body = try writerBody(a);
+    const built = try filename_field.build(a, body, analyzer_v2.analyzer_id);
+    try filename_field.validateBuilt(a, body, built);
+    try filename_field.validate(a, body, built.catalog, built.lexical, analyzer_v2.analyzer_id);
+    // Documents out of path order (a caller that does not sort): the sort
+    // runs and the sections are byte-identical to the ordered input's.
+    const shuffled = try a.dupe(hybrid.Document, body);
+    std.mem.reverse(hybrid.Document, shuffled);
+    const from_shuffled = try filename_field.build(a, shuffled, analyzer_v2.analyzer_id);
+    try std.testing.expectEqualSlices(u8, built.catalog, from_shuffled.catalog);
+    try std.testing.expectEqualSlices(u8, built.lexical, from_shuffled.lexical);
+    try filename_field.validateBuilt(a, shuffled, from_shuffled);
+}
+
+test "S4-T4 R4: the writer's check refuses sections that differ from what build produced" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const body = try writerBody(a);
+    const built = try filename_field.build(a, body, analyzer_v2.analyzer_id);
+    // The structures differ from the bytes: one posting frequency, one
+    // document length, one term, one anchor line.
+    {
+        const lexical = built.decoded_lexical.?;
+        const posts = try a.dupe(postings.Posting, lexical.postings);
+        posts[posts.len - 1].term_frequency += 1;
+        var changed = built;
+        changed.decoded_lexical.?.postings = posts;
+        try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateBuilt(a, body, changed));
+    }
+    {
+        const lengths = try a.dupe(u32, built.decoded_lexical.?.document_lengths);
+        lengths[0] += 1;
+        var changed = built;
+        changed.decoded_lexical.?.document_lengths = lengths;
+        try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateBuilt(a, body, changed));
+    }
+    {
+        const terms = try a.dupe(postings.TermEntry, built.decoded_lexical.?.terms);
+        terms[0].term = "zzzz";
+        var changed = built;
+        changed.decoded_lexical.?.terms = terms;
+        try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateBuilt(a, body, changed));
+    }
+    {
+        const catalog = try a.dupe(hybrid.Document, built.decoded_catalog);
+        catalog[1].start_line += 1;
+        var changed = built;
+        changed.decoded_catalog = catalog;
+        try std.testing.expectError(error.FilenameCatalogMismatch, filename_field.validateBuilt(a, body, changed));
+    }
+    {
+        var changed = built;
+        changed.decoded_lexical = null;
+        try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateBuilt(a, body, changed));
+    }
+    // A damaged section is refused by the decode it starts with.
+    const damaged = try a.dupe(u8, built.lexical);
+    damaged[damaged.len - 1] ^= 0x01;
+    var changed = built;
+    changed.lexical = damaged;
+    try std.testing.expect(std.meta.isError(filename_field.validateBuilt(a, body, changed)));
+}

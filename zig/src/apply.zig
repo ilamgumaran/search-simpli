@@ -1991,10 +1991,11 @@ fn buildGeneration(
     };
     const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try @import("filename_field.zig").build(allocator, documents.items, options.analyzer.label()) else null;
     stages.mark("filename_build");
-    // S4-T2 R4: the full check of the filename sections (every name
-    // re-tokenized, every posting checked) runs here, after the build and
-    // before the publish, not at every reader's open.
-    if (filename_data) |f| try @import("filename_field.zig").validate(allocator, documents.items, f.catalog, f.lexical, options.analyzer.label());
+    // S4-T2 R4: the writer checks the filename sections here, after the build
+    // and before the publish, not at every reader's open. S4-T4 ruling 4: by
+    // decoding them and comparing with the catalog and index they were built
+    // from (`validateBuilt`), not by re-tokenizing every name again.
+    if (filename_data) |f| try @import("filename_field.zig").validateBuilt(allocator, documents.items, f);
     stages.mark("filename_validate");
     if (filename_data) |f| metadata = try manifest.withFilename(metadata, try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{generation}), try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{generation}), f.catalog, f.lexical);
     const state_file = try std.fmt.allocPrint(allocator, "state-{d}.hybstate", .{generation});
