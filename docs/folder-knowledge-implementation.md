@@ -103,7 +103,8 @@ their generation ([`manifest-format-v2.md`](manifest-format-v2.md)):
 - flag bit 4, the recovery state: `state-N.hybstate` (`HYBSTA01`, 32-byte
   header, XXH3-64; 16 header bytes after the filename fields, one payload
   string after every other). Every folder writer since v2.2 sets it; only
-  writers read it (§5).
+  writers read it (§5). Since S4-T4 its payload is binary, `HYBSTA02`
+  ([`state-section-format-v2.md`](state-section-format-v2.md)).
 
 Both bits are unknown to readers before v2.2, which refuse the generation
 with `UnsupportedFlags`: rolling back the library needs the directory from
@@ -354,6 +355,15 @@ pointer's `generation` (`incremental_state.recordedGeneration`), so a lost
 version 3 after any write by 0.3.1 or later; version 2 after a write by 0.3.0
 (the section and a full copy) or by 0.2.1 and earlier (no section); version 1
 from S1. All three load.
+
+**S4-T4 amendment (binary section).** The bound section itself is now written
+as `HYBSTA02` ([`state-section-format-v2.md`](state-section-format-v2.md)):
+the same 32-byte header and checksum, a binary payload with one string table
+for root ids, labels and chunker ids, each hash as 32 raw bytes and
+fixed-width little-endian records (970,159 B at 10k files against 2,522,562 B
+of JSON). Writers read `HYBSTA01` and `HYBSTA02`. The 0.3.0 library opens and
+queries a directory 0.3.1 wrote but refuses to update it
+(`InvalidStateSection`): keep the previous directory to roll back.
 
 ## 6. `apply_changes` (host-fed changes)
 

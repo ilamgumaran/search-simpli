@@ -42,7 +42,6 @@ const publication = @import("publication.zig");
 const scope = @import("scope.zig");
 const segment = @import("segment.zig");
 const source = @import("source.zig");
-const state_section = @import("state_section.zig");
 
 pub const max_changes: usize = 10_000;
 pub const default_max_file_bytes: u64 = 10 * 1024 * 1024;
@@ -687,7 +686,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var previous_meta: ?manifest.Meta = null;
     var previous_source: ?source.Section = null;
     var previous_state: ?incremental_state.State = null;
-    var previous_state_json: ?[]const u8 = null;
+    var previous_state_section: ?[]const u8 = null;
     stages.mark("setup");
     if (!options.fresh) {
         const opened_previous: ?Previous = openPrevious(allocator, io, dir) catch |err| switch (err) {
@@ -702,7 +701,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             else => return err,
         };
         if (opened_previous) |opened| {
-            previous_state_json = opened.state;
+            previous_state_section = opened.state;
             previous_engine = opened.engine;
             if (options.filename_index == null) options.filename_index = opened.engine.filename_index_enabled;
             previous_source = opened.source;
@@ -715,7 +714,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             // section; else an `INDEX-STATE.json` naming this generation and
             // analyzer (generations that predate the section); else the
             // conservative reconstruction from the generation itself.
-            if (previous_state_json) |json| previous_state = try incremental_state.parseCommitted(allocator, json);
+            if (previous_state_section) |bytes| previous_state = try incremental_state.decodeSection(allocator, bytes);
             if (previous_state) |state| {
                 if (state.generation != prev.generation or !std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) return error.InvalidState;
             } else if (incremental_state.load(allocator, io, dir) catch null) |state| {
@@ -1153,8 +1152,9 @@ const Previous = struct {
     engine: engine_module.Engine,
     metadata: manifest.Manifest,
     source: ?source.Section,
-    /// S4-T2 R3: the state JSON of the generation's bound recovery-state
-    /// section, checked against the manifest; null when it binds none.
+    /// S4-T2 R3: the generation's bound recovery-state section (`HYBSTA01`
+    /// or, since S4-T4, `HYBSTA02`), checked against the manifest; null when
+    /// it binds none.
     state: ?[]const u8 = null,
 };
 
@@ -1191,11 +1191,11 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
     // refuses the write (`StateSectionSizeMismatch`,
     // `StateSectionChecksumMismatch`, `InvalidStateSection`); readers never
     // read the section, so the generation stays queryable.
-    var state_json: ?[]const u8 = null;
+    var state_bytes: ?[]const u8 = null;
     if (metadata.state) |bound| {
         const bytes = try readWhole(allocator, io, dir, bound.file);
         try manifest.validateState(metadata, bytes);
-        state_json = state_section.payload(bytes);
+        state_bytes = bytes;
     }
     // The checks of `manifest.validateSnapshot`, with the document section's
     // checksum computed once (by `segment.decode`, against the stored value
@@ -1224,7 +1224,7 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
         .lexical_index = lexical_index,
         .filename_index_enabled = metadata.filename != null,
         .labeled_documents = labeled,
-    }, .metadata = metadata, .source = section, .state = state_json };
+    }, .metadata = metadata, .source = section, .state = state_bytes };
 }
 
 /// The checksum a section stores as the last eight bytes of its header
@@ -1956,7 +1956,8 @@ fn buildGeneration(
     // read only by the next writer, not copied into `meta` where every open
     // would read it.
     stages.mark("meta");
-    const state_encoded = try state_section.encode(allocator, try incremental_state.encode(allocator, .{ .generation = generation, .analyzer_id = options.analyzer.label(), .roots = state_roots, .files = state_files.items }));
+    // S4-T4 ruling 3: the binary form, `HYBSTA02`.
+    const state_encoded = try incremental_state.encodeSection(allocator, .{ .generation = generation, .analyzer_id = options.analyzer.label(), .roots = state_roots, .files = state_files.items });
     stages.mark("state_encode");
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
     const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});

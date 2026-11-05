@@ -1274,3 +1274,67 @@ test "S4-T4 R2: a version 2 INDEX-STATE.json (an older writer's) still loads and
     try std.testing.expect(std.mem.startsWith(u8, try f.out.readFileAlloc(io, incremental_state.state_file, a, .unlimited), "{\"state_version\":3,"));
     try expectCommittedDetails(&f);
 }
+
+// --- S4-T4 ruling 3: the binary state section (HYBSTA02) ---
+
+test "S4-T4 R3: writers publish HYBSTA02; a HYBSTA01 section (0.3.0's) is still read" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try pointerFixture(&f);
+    const metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    const section = try f.out.readFileAlloc(io, metadata.state.?.file, a, .unlimited);
+    try std.testing.expectEqualStrings("HYBSTA02", section[0..8]);
+    // The same generation as 0.3.0 wrote it: the JSON section, bound by the
+    // manifest, and a full version 2 INDEX-STATE.json.
+    const committed = (try incremental_state.load(a, io, f.out)).?;
+    const json_section = try @import("state_section.zig").encode(a, try incremental_state.encode(a, committed));
+    try std.testing.expect(json_section.len > section.len);
+    try f.out.writeFile(io, .{ .sub_path = metadata.state.?.file, .data = json_section });
+    const rebound = try manifest.withState(metadata, metadata.state.?.file, json_section);
+    const buffer = try a.alloc(u8, try manifest.encodedLength(rebound));
+    try publication.writeAtomicFile(f.out, io, publication.current_manifest_file, try manifest.encode(rebound, buffer), true);
+    try incremental_state.save(io, f.out, a, committed);
+    try expectCommittedDetails(&f);
+    const next = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "plain.md", "tin harbour notes, edited", "")}), .{});
+    try std.testing.expectEqual(@as(usize, 1), next.changed);
+    try std.testing.expectEqual(@as(usize, 1), next.unchanged);
+    try expectCommittedDetails(&f);
+    const after = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    try std.testing.expectEqualStrings("HYBSTA02", (try f.out.readFileAlloc(io, after.state.?.file, a, .unlimited))[0..8]);
+}
+
+test "S4-T4 R3: a flipped byte anywhere in a HYBSTA02 section refuses the write with a stated code; readers still open" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try pointerFixture(&f);
+    const metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    const name = metadata.state.?.file;
+    const original = try f.out.readFileAlloc(io, name, a, .unlimited);
+    const next = "{\"changes\":[]}";
+    for (0..original.len) |at| {
+        const flipped = try a.dupe(u8, original);
+        flipped[at] ^= 0x01;
+        try f.out.writeFile(io, .{ .sub_path = name, .data = flipped });
+        const before = try f.listing();
+        if (apply.applyChanges(a, io, f.out, next, .{})) |_| {
+            std.debug.print("byte {d}: the write was not refused\n", .{at});
+            return error.TestUnexpectedResult;
+        } else |err| switch (err) {
+            error.StateSectionChecksumMismatch, error.InvalidStateSection => {},
+            else => {
+                std.debug.print("byte {d}: {s}\n", .{ at, @errorName(err) });
+                return error.TestUnexpectedResult;
+            },
+        }
+        try std.testing.expectEqualStrings(before, try f.listing());
+    }
+    const scoped = try f.opened();
+    try std.testing.expectEqual(@as(usize, 1), (try searchPaths(scoped, a, "tin", .{})).len);
+    try f.out.writeFile(io, .{ .sub_path = name, .data = original[0 .. original.len - 1] });
+    try std.testing.expectError(error.StateSectionSizeMismatch, apply.applyChanges(a, io, f.out, next, .{}));
+    try f.out.writeFile(io, .{ .sub_path = name, .data = original });
+    _ = try f.applyOk(next, .{});
+    try expectCommittedDetails(&f);
+}
