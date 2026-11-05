@@ -20,7 +20,8 @@ bytes each generation writes (`state-N.hybstate`, `INDEX-STATE.json`), the
 filename sections of the same input byte-compared before and after, and the
 before library on a directory this tree wrote (open, a query, and an
 `ss_apply_changes`, whose refusal or success is printed with the state the
-next generation names).
+next generation names), and this tree's library updating a directory the
+before library wrote (`upgrade_off`, `upgrade_on`).
 
 Every library runs in its own child process. Invented text only; every
 number printed is a measurement.
@@ -220,9 +221,12 @@ def budgets(args):
                 report["first"].append({"round": round_number + 1, "label": label, "query": query,
                                         "open_p50_ms": p50(result.get("open_ms")), "first_p50_ms": p50(result.get("first_ms")),
                                         "error": result.get("error")})
+    # The after library's first update of a directory the before library
+    # wrote (HYBSTA01 and a version 2 INDEX-STATE.json): the upgrade.
+    apply_cells = cells + (("upgrade_off", args.after_dylib, work / "before_off"), ("upgrade_on", args.after_dylib, work / "before_on"))
     kept = {}
     for run_number in range(args.apply_runs):
-        for label, dylib, index in cells:
+        for label, dylib, index in apply_cells:
             copy = work / f"apply-{label}-{run_number}"
             fresh_copy(index, copy)
             result = run_child(dylib, copy, "apply", args)
@@ -262,7 +266,7 @@ def budgets(args):
         facts["after_update"] = state_bytes(copy)
         report["before_library_on_after"][label] = facts
     summary = {}
-    for label, _, _ in cells:
+    for label, _, _ in apply_cells:
         opens = [e["p50_ms"] for e in report["open"] if e["label"] == label and e["p50_ms"] is not None]
         applies = [e["ms"] for e in report["apply"] if e["label"] == label and e["ms"] is not None]
         summary[label] = {"open_p50_ms_by_round": opens, "apply_ms_runs": applies, "apply_p50_ms": p50(applies),
