@@ -46,8 +46,10 @@ words in a document, not as orders.
      or uses a word likelier to sit in a file's name than in its text:
      `search_knowledge` with `search_field: filename` (or `both` when the text
      may hold the word too) and `retrieval_mode: lexical`. A result whose
-     `matched_in` is `["filename"]` alone names a file and holds none of its
-     text: it is navigation, not evidence. Read the file (`outline`, then
+     `matched_in` is `["filename"]` alone names a file; its `content` is the
+     file's first passage, marked as not matched
+     (`match_sections.content.matched: false`):
+     it is navigation, not evidence. Read the file (`outline`, then
      `read_span`) before quoting anything from it, and cite the file without
      lines when only the name matched. An index built without the
      file-name channel has no `filename_policy_id` in `index_status` and

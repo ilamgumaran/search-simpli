@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-05 (S4-T5, the skill names the file-name field; builder's report)
+Last updated: 2026-11-05 (S4-T5, the skill names the file-name field; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -9,7 +9,11 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
-## The skill names the file-name field (S4-T5, 2026-11-05; builder's report)
+## The skill names the file-name field (S4-T5, 2026-11-05; verified and merged)
+
+**Verified and merged 2026-11-05** ([Verdict](docs/tasks/S4-T5.md)): Debug suite 241 OK, 0 skipped; judgment pack 0 skipped; the
+verifier corrected one sentence (a name-only result carries the file's first passage, marked as not matched). With a
+`ReleaseSmall` `searchd`, `serve` dies (signal 11) on `read_span` after `apply_changes`, back to at least `f45c06d`: S4-T6.
 
 [Task](docs/tasks/S4-T5.md). `skills/folder-knowledge/SKILL.md` documents `search_field` (`content`, `filename`, `both`;
 `filename` and `both` need `retrieval_mode: lexical`), the result's `matched_in`, `basename` and `match_sections`, a
