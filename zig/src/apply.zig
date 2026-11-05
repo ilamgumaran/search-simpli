@@ -580,6 +580,58 @@ fn nowNs(io: std.Io) u64 {
     return @intCast(std.Io.Clock.awake.now(io).nanoseconds);
 }
 
+/// S4-T4 ruling 1: the wall time of each stage of one `apply_changes` call,
+/// printed as one `apply-stages {...}` JSON line (milliseconds) on stderr
+/// when the process environment sets `SEARCH_SIMPLI_APPLY_STAGES=1` (builds
+/// that link libc: the shipped libraries and `searchd` on macOS). Off by
+/// default; then the cost is one `getenv` per call and no clock is read.
+pub const Stages = struct {
+    on: bool = false,
+    io: ?std.Io = null,
+    started: u64 = 0,
+    last: u64 = 0,
+    names: [max][]const u8 = undefined,
+    ns: [max]u64 = undefined,
+    count: usize = 0,
+
+    const max = 24;
+    pub const variable = "SEARCH_SIMPLI_APPLY_STAGES";
+
+    pub fn init(io: std.Io) Stages {
+        if (!enabled()) return .{};
+        const now = nowNs(io);
+        return .{ .on = true, .io = io, .started = now, .last = now };
+    }
+
+    fn enabled() bool {
+        if (!@import("builtin").link_libc) return false;
+        const value = std.c.getenv(variable) orelse return false;
+        return value[0] == '1';
+    }
+
+    /// Close the stage `name`: the time since the previous mark.
+    pub fn mark(stages: *Stages, name: []const u8) void {
+        if (!stages.on or stages.count == max) return;
+        const now = nowNs(stages.io.?);
+        stages.names[stages.count] = name;
+        stages.ns[stages.count] = now - stages.last;
+        stages.count += 1;
+        stages.last = now;
+    }
+
+    pub fn print(stages: *const Stages) void {
+        if (!stages.on) return;
+        var buffer: [2048]u8 = undefined;
+        var used: usize = 0;
+        for (stages.names[0..stages.count], stages.ns[0..stages.count]) |name, ns| {
+            const piece = std.fmt.bufPrint(buffer[used..], "\"{s}\":{d:.3},", .{ name, @as(f64, @floatFromInt(ns)) / 1e6 }) catch break;
+            used += piece.len;
+        }
+        const total = @as(f64, @floatFromInt(stages.last - stages.started)) / 1e6;
+        std.debug.print("apply-stages {{{s}\"total\":{d:.3}}}\n", .{ buffer[0..used], total });
+    }
+};
+
 /// Parse and apply a request in `dir` (an index directory). See the file
 /// comment for the refusals. `allocator` should be an arena.
 pub fn applyChanges(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, request_json: []const u8, options: Options) !Outcome {
@@ -599,6 +651,8 @@ pub fn applyBatch(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, bat
 fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed: Parsed, initial_options: Options) !Outcome {
     var options = initial_options;
     const started = nowNs(io);
+    var stages = Stages.init(io);
+    defer stages.print();
     if (options.keep_generations) |count| if (count == 0) return error.InvalidKeepGenerations;
     // One writer: the lease is held from the generation check through the
     // publication, so no other writer can publish in between.
@@ -633,6 +687,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var previous_source: ?source.Section = null;
     var previous_state: ?incremental_state.State = null;
     var previous_state_json: ?[]const u8 = null;
+    stages.mark("setup");
     if (!options.fresh) {
         const opened_previous: ?Previous = openPrevious(allocator, io, dir) catch |err| switch (err) {
             error.FileNotFound, error.AccessDenied, error.InputOutput => blk: {
@@ -652,6 +707,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             previous_source = opened.source;
             if (opened.metadata.meta.len != 0) previous_meta = try manifest.parseMeta(allocator, opened.metadata.meta);
         }
+        stages.mark("open_previous");
         if (previous_engine) |prev| {
             if (!std.mem.eql(u8, prev.analyzer_id, options.analyzer.label())) return error.AnalyzerMismatch;
             // Precedence (S4-T2 R3): the generation's bound recovery-state
@@ -667,11 +723,13 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
         }
     }
 
+    stages.mark("parse_committed");
     var work = Work{ .allocator = allocator };
     var previous_docs = std.StringHashMapUnmanaged(std.ArrayList(usize)).empty;
     if (previous_engine) |prev| {
         try loadPrevious(allocator, &work, prev, previous_meta, previous_source, previous_state, &previous_docs);
     }
+    stages.mark("load_previous");
 
     if (options.write_roots != null or options.write_labels != null) {
         // Scoped tools can mutate bytes, not provision roots or filesystem grants.
@@ -1050,12 +1108,15 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     }
 
     // --- build the generation -----------------------------------------
+    stages.mark("changes");
     const generation = options.generation orelse try generation_alloc.nextFreeGeneration(allocator, io, dir);
-    const built = buildGeneration(allocator, &work, previous_engine, previous_meta, previous_source, &previous_docs, options, generation) catch |err| switch (err) {
+    stages.mark("next_free_generation");
+    const built = buildGeneration(allocator, &work, previous_engine, previous_meta, previous_source, &previous_docs, options, generation, &stages) catch |err| switch (err) {
         error.TooManyLabels => return .{ .failed = try failure(allocator, .invalid_argument, "a file would require more than {d} labels (its root's and its own)", .{max_labels}) },
         else => return err,
     };
     const prune = try lifecycle.publishLeasedKeepingWithExtras(allocator, dir, io, built.manifest, built.documents, built.lexical, built.source, built.catalog, built.filename_lexical, built.state, options.keep_generations);
+    stages.mark("publish");
     if (options.fail_after_publish) return error.SimulatedCrash;
     // Only after the generation is published (`docs/publication-recovery.md`).
     try incremental_state.save(io, dir, allocator, .{
@@ -1064,6 +1125,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
         .roots = built.state_roots,
         .files = built.state_files,
     });
+    stages.mark("save_state");
 
     report.generation = generation;
     report.too_large_paths = try too_large.toOwnedSlice(allocator);
@@ -1081,6 +1143,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     report.prune_failures = prune.failed;
     report.recovered = recovered;
     report.ms = (nowNs(io) - started) / std.time.ns_per_ms;
+    stages.mark("report");
     return .{ .ok = report };
 }
 
@@ -1700,6 +1763,7 @@ fn buildGeneration(
     previous_docs: *std.StringHashMapUnmanaged(std.ArrayList(usize)),
     options: Options,
     generation: u64,
+    stages: *Stages,
 ) !Built {
     // Sorted by record path; pointers, not the (large) structs, are sorted.
     var files = std.ArrayList(*const File).empty;
@@ -1835,12 +1899,15 @@ fn buildGeneration(
         });
     }
 
+    stages.mark("build_documents");
     const lexical_index = try buildPositionalMerged(allocator, if (prev) |engine| engine.lexical_index else null, sources.items);
+    stages.mark("build_lexical");
     const documents_buffer = try allocator.alloc(u8, try segment.encodedLengthV4(documents.items));
     const documents_encoded = try segment.encodeV4(documents.items, documents_buffer);
     const lexical_buffer = try allocator.alloc(u8, try lexical_segment.encodedLength(lexical_index));
     const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_buffer);
     const source_encoded: ?[]const u8 = if (any_retain) try source.encode(allocator, retained.items) else null;
+    stages.mark("encode_sections");
 
     var uses_markdown = false;
     for (documents.items) |document| if (document.chunker_index == 1) {
@@ -1884,7 +1951,9 @@ fn buildGeneration(
     // section, `state-N.hybstate`, bound by the manifest (flag bit 4) and
     // read only by the next writer, not copied into `meta` where every open
     // would read it.
+    stages.mark("meta");
     const state_encoded = try state_section.encode(allocator, try incremental_state.encode(allocator, .{ .generation = generation, .analyzer_id = options.analyzer.label(), .roots = state_roots, .files = state_files.items }));
+    stages.mark("state_encode");
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
     const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
     const source_file = if (source_encoded != null) try std.fmt.allocPrint(allocator, "source-{d}.hybsrc", .{generation}) else "";
@@ -1916,14 +1985,17 @@ fn buildGeneration(
         .meta = meta,
     };
     const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try @import("filename_field.zig").build(allocator, documents.items, options.analyzer.label()) else null;
+    stages.mark("filename_build");
     // S4-T2 R4: the full check of the filename sections (every name
     // re-tokenized, every posting checked) runs here, after the build and
     // before the publish, not at every reader's open.
     if (filename_data) |f| try @import("filename_field.zig").validate(allocator, documents.items, f.catalog, f.lexical, options.analyzer.label());
+    stages.mark("filename_validate");
     if (filename_data) |f| metadata = try manifest.withFilename(metadata, try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{generation}), try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{generation}), f.catalog, f.lexical);
     metadata = try manifest.withState(metadata, try std.fmt.allocPrint(allocator, "state-{d}.hybstate", .{generation}), state_encoded);
     const manifest_buffer = try allocator.alloc(u8, try manifest.encodedLength(metadata));
     const manifest_encoded = try manifest.encode(metadata, manifest_buffer);
+    stages.mark("manifest_bind");
     return .{
         .catalog = if (filename_data) |f| f.catalog else null,
         .filename_lexical = if (filename_data) |f| f.lexical else null,
