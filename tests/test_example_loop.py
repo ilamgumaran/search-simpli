@@ -7,8 +7,10 @@ is never called; and the skill document carries the sentences the loop uses.
 `SEARCH_SIMPLI_NO_ZIG=1` skips the process tests."""
 
 import importlib.util
+import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -55,6 +57,15 @@ class SkillDocumentTests(unittest.TestCase):
             self.assertIn(needle.lower(), text.lower(), needle)
         for tool in ("search_knowledge", "read_chunk", "list_sources", "index_status", "find", "outline", "read_span", "list_files", "apply_changes"):
             self.assertIn(f"`{tool}`", text, tool)
+
+    def test_skill_names_the_filename_field(self) -> None:
+        """S4-T5: a later edit must not drop the file-name option from the skill."""
+        text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        for needle in ("search_field", "matched_in", "basename", "match_sections", "retrieval_mode: lexical",
+                       "search_field: filename", "`filename`", "`both`", "navigation, not evidence", "--filename-index"):
+            self.assertIn(needle, text, needle)
+        schema = json.loads((REPO / "contracts" / "tools" / "search_knowledge.request.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(schema["properties"]["search_field"]["enum"], ["content", "filename", "both"])
 
     def test_the_loop_cannot_call_apply_changes(self) -> None:
         self.assertNotIn("apply_changes", loop.READ_TOOLS)
@@ -161,6 +172,111 @@ class LoopOverTheFixtureTests(unittest.TestCase):
         finally:
             tools.close()
         self.assertEqual(answer, loop.NEGATIVE + "\n" + loop.CAVEAT)
+
+
+@unittest.skipIf(os.environ.get("SEARCH_SIMPLI_NO_ZIG") == "1", "SEARCH_SIMPLI_NO_ZIG=1: this environment deliberately has no Zig (CI)")
+class FilenameQuestionTests(unittest.TestCase):
+    """S4-T5: a question that names a file by a word found only in its name.
+
+    `geography` is in the name of `geography-coast.md` in the `school` folder and nowhere in its
+    text (nor in any other file of the `school` folder, the one indexed here). The stub follows the skill's
+    step 2: `search_knowledge` with `search_field: filename` and
+    `retrieval_mode: lexical` over an index built with `--filename-index`; the
+    result is navigation only, so it reads `outline` and `read_span` and cites
+    the file by name (no lines) plus the lines it actually read."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.scratch_dir = tempfile.TemporaryDirectory()
+        scratch = Path(cls.scratch_dir.name)
+        cls.binary = build_searchd(scratch)
+        cls.index = scratch / "index"
+        # The CLI has the flag: `searchd index <folder> --out <dir> --filename-index`.
+        done = subprocess.run([str(cls.binary), "index", str(loop.PACK / "school"), "--out", str(cls.index), "--filename-index"],
+                              capture_output=True, text=True)
+        assert done.returncode == 0, done.stderr
+        plain = scratch / "plain-index"
+        done = subprocess.run([str(cls.binary), "index", str(loop.PACK / "school"), "--out", str(plain)], capture_output=True, text=True)
+        assert done.returncode == 0, done.stderr
+        cls.plain = plain
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.scratch_dir.cleanup()
+
+    def answer(self, tools) -> tuple[str, dict]:
+        status = tools.call("index_status")
+        self.assertEqual(status.get("filename_policy_id"), "filename-field-v1")
+        found = tools.call("search_knowledge", query="geography", search_field="filename", retrieval_mode="lexical", top_k=3)
+        self.assertEqual(found["retrieval"]["search_field"], "filename")
+        top = found["results"][0]
+        self.assertEqual(top["matched_in"], ["filename"])
+        self.assertEqual(top["basename"], "geography-coast.md")
+        self.assertTrue(top["match_sections"]["filename"]["matched"])
+        self.assertFalse(top["match_sections"]["content"]["matched"])
+        self.assertTrue(found["answer_policy"]["filename_matches_are_navigation"])
+        # Navigation, not evidence: name the file, then read it before quoting.
+        root_id = top["root_id"]
+        path = top["citation"]["path"]
+        if path.startswith(root_id + "/"):
+            path = path[len(root_id) + 1:]
+        self.assertEqual(path, "geography-coast.md")
+        outline = tools.call("outline", root_id=root_id, path=path)
+        tides = next(h for h in outline["headings"] if h["text"] == "Tides")
+        span = tools.call("read_span", root_id=root_id, path=path, start_line=tides["line"] + 1, end_line=tides["line"] + 3)
+        quote = " ".join(span["text"].split()).split(". ")[0] + "."
+        section = loop.section_for(outline["headings"], tides["line"])
+        arrow = " \u203a "
+        text = (f"The file named for geography is {root_id}/{path}; only its name matched, so I read it. "
+                f"It says: \u201c{quote}\u201d [1]\n"
+                f"[1] {root_id}/{path} \u203a {arrow.join(section)} \u00b7 lines {span['start_line']}\u2013{span['end_line']}")
+        return text, {"root_id": root_id, "path": path, "span": span, "outline": outline}
+
+    def test_a_word_only_in_the_name_is_answered_through_filename_search(self) -> None:
+        tools = loop.Tools(str(self.binary), self.index)
+        try:
+            text, seen = self.answer(tools)
+            log = tools.log
+        finally:
+            tools.close()
+        methods = [m for m, _, _ in log]
+        self.assertEqual(methods[:2], ["index_status", "search_knowledge"])
+        self.assertLess(methods.index("search_knowledge"), methods.index("outline"))
+        self.assertLess(methods.index("outline"), methods.index("read_span"))
+        self.assertNotIn("apply_changes", methods)
+        search_params = log[1][1]
+        self.assertEqual(search_params["search_field"], "filename")
+        self.assertEqual(search_params["retrieval_mode"], "lexical")
+        # find does not see file names: the word is a miss there and in the text search.
+        tools = loop.Tools(str(self.binary), self.index)
+        try:
+            self.assertEqual(tools.call("find", query="geography", page_size=5)["hits"], [])
+            self.assertEqual(tools.call("search_knowledge", query="geography", retrieval_mode="lexical", top_k=3)["results"], [])
+        finally:
+            tools.close()
+        # The citation is the file and lines that read_span returned, none invented.
+        span = seen["span"]
+        self.assertIn("\u201cThe sea comes in and goes out twice a day.\u201d [1]", text)
+        self.assertIn(" ".join(span["text"].split()).split(". ")[0], " ".join(span["text"].split()))
+        self.assertIn(f"[1] {seen['root_id']}/geography-coast.md \u203a The coast project \u203a Tides \u00b7 lines {span['start_line']}\u2013{span['end_line']}", text)
+        lines = (loop.PACK / "school" / seen["path"]).read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), seen["outline"]["lines"])
+        self.assertTrue(1 <= span["start_line"] <= span["end_line"] <= len(lines))
+        self.assertIn("The sea comes in and goes out twice a day.", " ".join(lines[span["start_line"] - 1:span["end_line"]]))
+        for number in re.findall(r"lines (\d+)\u2013(\d+)", text):
+            self.assertEqual((int(number[0]), int(number[1])), (span["start_line"], span["end_line"]))
+
+    def test_an_index_without_the_channel_refuses_filename_search(self) -> None:
+        tools = loop.Tools(str(self.binary), self.plain)
+        try:
+            self.assertNotIn("filename_policy_id", tools.call("index_status"))
+            with self.assertRaises(RuntimeError) as caught:
+                tools.call("search_knowledge", query="geography", search_field="filename", retrieval_mode="lexical")
+            self.assertIn("--filename-index", str(caught.exception))
+            # the text still answers
+            self.assertTrue(tools.call("search_knowledge", query="tide table", retrieval_mode="lexical")["results"])
+        finally:
+            tools.close()
 
 
 if __name__ == "__main__":
