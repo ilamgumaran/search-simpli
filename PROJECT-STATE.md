@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-05 (S4-T4, the cheaper edit; awaiting the orchestrator's verification)
+Last updated: 2026-11-05 (S4-T4, the cheaper edit; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -9,7 +9,12 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
-## The cheaper edit: one copy of the recovery state, binary (S4-T4, 2026-11-05)
+## The cheaper edit: one copy of the recovery state, binary (S4-T4, 2026-11-05; verified and merged)
+
+**Verified and merged 2026-11-05** ([Verdict](docs/tasks/S4-T4.md)): the verifier's own runs (`ReleaseSmall`, 10k, two
+driver runs at load 2.1–2.7) give one changed file p50 123.3–124.1 ms off and 141.1–141.9 ms on (596032c 147.1–147.4
+and 171.4–173.0), `ss_open` within 0.14 ms of before, 970,253 B of state per generation; the natives rebuilt with
+fresh caches are byte-identical to the committed ones.
 
 [Report](docs/tasks/S4-T4.md). `INDEX-STATE.json` is now a version 3 pointer (94 B: the
 generation, the analyzer and the bound section's file name) to the generation's state
