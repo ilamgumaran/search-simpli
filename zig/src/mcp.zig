@@ -696,18 +696,6 @@ const Context = struct {
     workspaces: ops.Workspaces,
 };
 
-/// The served generation with its scope data and workspaces, from `arena`.
-fn openContext(io: std.Io, arena: std.mem.Allocator, path: []const u8) !Context {
-    const service = try cli.openService(arena, io, path);
-    const count = service.engine.documents.len;
-    return .{ .service = service, .workspaces = .{
-        .query_vector = try arena.alloc(f32, service.engine.vector_dimensions),
-        .results = try arena.alloc(hybrid.Result, count),
-        .evidence = try arena.alloc(engine_module.Evidence, count),
-        .sources = try arena.alloc(service_module.Source, count),
-    } };
-}
-
 fn splitList(allocator: std.mem.Allocator, text: []const u8) ![]const []const u8 {
     var items = std.ArrayList([]const u8).empty;
     var parts = std.mem.splitScalar(u8, text, ',');
@@ -736,15 +724,16 @@ pub fn run(io: std.Io, gpa: std.mem.Allocator, args: cli.McpArgs) !u8 {
     defer options_arena.deinit();
     var session = Session{ .options = try optionsOf(options_arena.allocator(), io, args) };
 
-    var context_arena = std.heap.ArenaAllocator.init(gpa);
-    defer context_arena.deinit();
-    var context = openContext(io, context_arena.allocator(), args.path) catch |err| {
+    // S4-T6: the served generation owns its arena (`rpc.Generation`), which
+    // the lazy loads allocate through; a reload closes the old one.
+    var context = rpc.Generation.open(gpa, io, args.path) catch |err| {
         var buffer: [512]u8 = undefined;
         var stderr = std.Io.File.stderr().writerStreaming(io, &buffer);
         try stderr.interface.print("searchd: cannot open the index at {s}: {s}\n", .{ args.path, @errorName(err) });
         try stderr.flush();
         return 1;
     };
+    defer context.close(gpa);
 
     const line_buffer = try gpa.alloc(u8, max_line_bytes);
     defer gpa.free(line_buffer);
@@ -776,13 +765,8 @@ pub fn run(io: std.Io, gpa: std.mem.Allocator, args: cli.McpArgs) !u8 {
         }
         if (session.reopen) {
             // The old generation stays served until the new one is open.
-            var next_arena = std.heap.ArenaAllocator.init(gpa);
-            const next = openContext(io, next_arena.allocator(), args.path) catch |err| {
-                next_arena.deinit();
-                return err;
-            };
-            context_arena.deinit();
-            context_arena = next_arena;
+            const next = try rpc.Generation.open(gpa, io, args.path);
+            context.close(gpa);
             context = next;
         }
     }
