@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-05 (S4-T4, the cheaper edit; verified and merged)
+Last updated: 2026-11-05 (S4-T5, the skill names the file-name field; builder's report)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,16 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## The skill names the file-name field (S4-T5, 2026-11-05; builder's report)
+
+[Task](docs/tasks/S4-T5.md). `skills/folder-knowledge/SKILL.md` documents `search_field` (`content`, `filename`, `both`;
+`filename` and `both` need `retrieval_mode: lexical`), the result's `matched_in`, `basename` and `match_sections`, a
+file-name-only hit as navigation (read `outline` and `read_span` before quoting, cite the file without lines), the error an
+index built without `--filename-index` returns, and a file-name try before "that file does not exist". `tests/test_example_loop.py`
+gains a file-name question over `fixtures/family-folder/school` (`geography-coast.md`, a word found only in its name, index built
+with `searchd index --filename-index`) and a test that the skill keeps those field names. No change under `zig/`, `contracts/`,
+`bindings/` or `native/`; the Dart package has no CHANGELOG entry.
 
 ## The cheaper edit: one copy of the recovery state, binary (S4-T4, 2026-11-05; verified and merged)
 
