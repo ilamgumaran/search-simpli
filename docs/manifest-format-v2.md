@@ -259,8 +259,16 @@ The section (`zig/src/state_section.zig`), little-endian, 32-byte header:
 | 16 | 8 | payload byte length |
 | 24 | 8 | checksum (XXH3-64) over bytes 0–23, then the payload |
 
-The payload is the state JSON as `INDEX-STATE.json` holds it. The manifest
-binds the section's whole byte length and the checksum its header records.
+The payload is the state JSON as `INDEX-STATE.json` held it (version 2). The
+manifest binds the section's whole byte length and the checksum its header
+records.
+
+**S4-T4: `HYBSTA02`.** Since S4-T4 (Dart package 0.3.1) writers publish the
+section as magic `HYBSTA02`, version `2`, with the same header, flags, length
+and checksum and a binary payload ([`state-section-format-v2.md`](state-section-format-v2.md));
+they read both forms. The manifest's binding and `validateState` are unchanged.
+A library before S4-T4 refuses `HYBSTA02` with `InvalidStateSection`: it still
+opens and queries such a directory, but cannot update it.
 
 **Writers only.** No open reads, stats or opens the state section; a query
 never touches it. A writer (`apply.zig`, the previous-generation path of
@@ -277,15 +285,21 @@ published; readers keep answering from the same generation. A state file
 that is gone is a lost section, recovered like any other
 (`recovered: "missing_section"`). The payload is parsed strictly
 (`incremental_state.parseCommitted`: a stated `state_version`, no unknown
-fields), and its `generation` and `analyzer_id` must equal the manifest's,
-else `InvalidState`.
+fields), or, for `HYBSTA02`, decoded strictly (`incremental_state.decodeBinary`),
+and its `generation` and `analyzer_id` must equal the manifest's, else
+`InvalidState`.
 
 **Precedence** for the writer's previous state: the generation's bound state
 section; else, for a generation that predates it (no bit 4), an
 `INDEX-STATE.json` whose `generation` and `analyzer_id` match the manifest's;
 else the conservative reconstruction from the generation itself (S3-T3).
-`INDEX-STATE.json` is still written after each publication, as a
-compatibility cache for older writers and tools.
+After each publication `INDEX-STATE.json` is written as a **version 3
+pointer** to the bound section (S4-T4: `{"state_version":3,"generation":N,
+"analyzer_id":"…","state_file":"state-N.hybstate"}`, no file table); 0.3.0
+wrote a full version 2 copy there instead. A pointer is resolved only through
+the current `MANIFEST` (the same `validateState` checks; `null` when the
+`MANIFEST` is missing or does not bind the named section), so it never
+outranks the section ([folder-knowledge-implementation.md §5](folder-knowledge-implementation.md#5-index-state-v2)).
 
 **Publication and retention.** The state section is linked and fsynced with
 the other sections before the directory sync and the `MANIFEST` replacement,

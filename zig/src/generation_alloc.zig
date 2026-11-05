@@ -115,9 +115,11 @@ pub fn highestGenerationOnDisk(allocator: std.mem.Allocator, io: std.Io, dir: st
     resetCause();
     var highest = try currentGeneration(allocator, io, dir);
     if (highest != 0) recordCause(.manifest, highest);
-    if (incremental_state.load(allocator, io, dir) catch null) |state| {
-        recordCause(.index_state, state.generation);
-        highest = @max(highest, state.generation);
+    // S4-T4: the generation number only (a version 3 pointer carries it; a
+    // version 1 or 2 file is parsed as before), never the section it names.
+    if (incremental_state.recordedGeneration(allocator, io, dir)) |generation| {
+        recordCause(.index_state, generation);
+        highest = @max(highest, generation);
     }
     var iterable = try dir.openDir(io, ".", .{ .iterate = true });
     defer iterable.close(io);

@@ -10,7 +10,14 @@ const std = @import("std");
 
 pub const policy_id = "filename-field-v1";
 pub const Field = enum { content, filename, both };
-pub const Built = struct { catalog: []const u8, lexical: []const u8 };
+pub const Built = struct {
+    catalog: []const u8,
+    lexical: []const u8,
+    /// S4-T4 ruling 4: the structures the two sections were encoded from,
+    /// for the writer's check (`validateBuilt`).
+    decoded_catalog: []const hybrid.Document = &.{},
+    decoded_lexical: ?postings.Index = null,
+};
 pub const Hit = struct {
     document_index: usize,
     body_score: f32 = 0,
@@ -73,8 +80,14 @@ pub fn tokenize(allocator: std.mem.Allocator, analyzer_id: []const u8, text: []c
 }
 
 fn buildDecoded(allocator: std.mem.Allocator, documents: []const hybrid.Document, analyzer_id: []const u8) !struct { catalog: []hybrid.Document, lexical: postings.Index } {
-    const sorted = try allocator.dupe(hybrid.Document, documents);
-    std.mem.sort(hybrid.Document, sorted, {}, pathLess);
+    // S4-T4 ruling 4: a writer's documents already come in path order (its
+    // files are sorted by record path, each file's chunks adjacent), so the
+    // copy and the stable sort are skipped when they would change nothing.
+    const sorted: []const hybrid.Document = if (std.sort.isSorted(hybrid.Document, documents, {}, pathLess)) documents else blk: {
+        const copy = try allocator.dupe(hybrid.Document, documents);
+        std.mem.sort(hybrid.Document, copy, {}, pathLess);
+        break :blk copy;
+    };
     var catalog = std.ArrayList(hybrid.Document).empty;
     var i: usize = 0;
     while (i < sorted.len) {
@@ -102,7 +115,39 @@ pub fn build(allocator: std.mem.Allocator, documents: []const hybrid.Document, a
     const lexical_len = try lexical_segment.encodedLength(decoded.lexical);
     const lexical_buffer = try allocator.alloc(u8, lexical_len);
     const lexical = try lexical_segment.encode(decoded.lexical, lexical_buffer);
-    return .{ .catalog = catalog, .lexical = lexical };
+    return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = decoded.catalog, .decoded_lexical = decoded.lexical };
+}
+
+/// S4-T4 ruling 4: the writer's check of the two sections `build` just
+/// encoded, before they are published. The sections are decoded with the
+/// reader's structural walk (`decode`: checksums, counts, paths unique and
+/// in order, every entry anchored to its file's first body chunk with equal
+/// labels, the dictionary free of duplicates), then compared field by field
+/// with the catalog and the lexical index `build` encoded them from (the same
+/// tokens, the same postings). `validate`, which re-tokenizes every name from
+/// the catalog text, stays the check of the tests and of `import-json`.
+pub fn validateBuilt(allocator: std.mem.Allocator, body_documents: []const hybrid.Document, built: Built) !void {
+    const expected = built.decoded_lexical orelse return error.FilenameLexicalMismatch;
+    const empty = postings.Index{ .terms = &.{}, .postings = &.{}, .document_lengths = &.{}, .average_document_length = 0 };
+    const decoded = try decode(allocator, body_documents, empty, built.catalog, built.lexical);
+    if (decoded.catalog.len != built.decoded_catalog.len) return error.FilenameCatalogMismatch;
+    for (decoded.catalog, built.decoded_catalog) |have, want| {
+        if (!std.mem.eql(u8, have.id, want.id) or !std.mem.eql(u8, have.path, want.path) or !std.mem.eql(u8, have.text, want.text) or
+            have.start_line != want.start_line or have.end_line != want.end_line or !std.mem.eql(u8, have.required_labels, want.required_labels))
+            return error.FilenameCatalogMismatch;
+    }
+    const have = decoded.lexical;
+    if (have.terms.len != expected.terms.len or have.postings.len != expected.postings.len or
+        !std.mem.eql(u32, have.document_lengths, expected.document_lengths) or
+        have.average_document_length != expected.average_document_length or
+        (have.positions == null) != (expected.positions == null)) return error.FilenameLexicalMismatch;
+    for (have.terms, expected.terms) |a, b| {
+        if (!std.mem.eql(u8, a.term, b.term) or a.document_frequency != b.document_frequency or
+            a.postings_start != b.postings_start or a.postings_length != b.postings_length) return error.FilenameLexicalMismatch;
+    }
+    for (have.postings, expected.postings) |a, b| {
+        if (a.document_index != b.document_index or a.term_frequency != b.term_frequency) return error.FilenameLexicalMismatch;
+    }
 }
 
 pub fn validate(allocator: std.mem.Allocator, body_documents: []const hybrid.Document, catalog_encoded: []const u8, lexical_encoded: []const u8, analyzer_id: []const u8) !void {

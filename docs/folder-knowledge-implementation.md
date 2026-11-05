@@ -83,7 +83,8 @@ files that produced no chunk, an empty or blank file, so they can be listed
 and their labels are known). Duplicate root ids are refused.
 
 Section files: `documents-N.hybseg` (v4, §2), `lexical-N.hyblex` (v2, §3),
-`source-N.hybsrc` (v1, §4), `MANIFEST`, `INDEX-STATE.json` (v2, §5),
+`source-N.hybsrc` (v1, §4), `MANIFEST`, `INDEX-STATE.json` (v2, §5; a
+version 3 pointer since S4-T4),
 `WRITER.LOCK`. Publication keeps `lifecycle.publishSerialized` →
 `publication.writeAtomicFile` and writes `INDEX-STATE.json` **after** the
 manifest, as today; the review's "atomic generation consistency" is met by the
@@ -102,7 +103,8 @@ their generation ([`manifest-format-v2.md`](manifest-format-v2.md)):
 - flag bit 4, the recovery state: `state-N.hybstate` (`HYBSTA01`, 32-byte
   header, XXH3-64; 16 header bytes after the filename fields, one payload
   string after every other). Every folder writer since v2.2 sets it; only
-  writers read it (§5).
+  writers read it (§5). Since S4-T4 its payload is binary, `HYBSTA02`
+  ([`state-section-format-v2.md`](state-section-format-v2.md)).
 
 Both bits are unknown to readers before v2.2, which refuse the generation
 with `UnsupportedFlags`: rolling back the library needs the directory from
@@ -326,6 +328,42 @@ publication as a compatibility cache. PR #21 bound the same state by copying
 it into `meta`, which every open parsed; S4-T2 keeps PR #21's guarantee
 (the state of exactly the published generation, checked before use) without
 that cost.
+
+**S4-T4 amendment (version 3: a pointer).** Writing the same 2.5 MB twice per
+generation (the section and this file) bought nothing, so since S4-T4 (Dart
+package 0.3.1) every writer of this tree (`apply_changes`, `searchd index`
+with or without `--update`, `ss_index_folder`: all publish through
+`apply.zig`, which binds `state-N.hybstate`) writes `INDEX-STATE.json`, after
+the publication, as only
+
+```json
+{"state_version":3,"generation":17,"analyzer_id":"analyzer-v2","state_file":"state-17.hybstate"}
+```
+
+with no file table. `incremental_state.load` resolves a version 3 file by
+reading the named section from the same directory and checking it as the
+writer does (`manifest.validateState` against the current `MANIFEST`: size,
+header, checksum; then the decoded `generation` and `analyzer_id` against the
+manifest's). When there is no `MANIFEST`, or it does not bind that section for
+that generation and analyzer, `load` returns `null`, as for a missing file,
+never a partial state. The writer's precedence is unchanged: the bound section
+first, so the pointer is never trusted over it (deleted or damaged, the next
+update reads the section); for a generation without a bound section a pointer
+loads as `null` and the writer reconstructs. `generation_alloc` reads only the
+pointer's `generation` (`incremental_state.recordedGeneration`), so a lost
+`MANIFEST` still cannot make the counter start over. Which form is on disk:
+version 3 after any write by 0.3.1 or later; version 2 after a write by 0.3.0
+(the section and a full copy) or by 0.2.1 and earlier (no section); version 1
+from S1. All three load.
+
+**S4-T4 amendment (binary section).** The bound section itself is now written
+as `HYBSTA02` ([`state-section-format-v2.md`](state-section-format-v2.md)):
+the same 32-byte header and checksum, a binary payload with one string table
+for root ids, labels and chunker ids, each hash as 32 raw bytes and
+fixed-width little-endian records (970,159 B at 10k files against 2,522,562 B
+of JSON). Writers read `HYBSTA01` and `HYBSTA02`. The 0.3.0 library opens and
+queries a directory 0.3.1 wrote but refuses to update it
+(`InvalidStateSection`): keep the previous directory to roll back.
 
 ## 6. `apply_changes` (host-fed changes)
 
