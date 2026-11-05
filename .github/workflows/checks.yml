@@ -117,3 +117,79 @@ jobs:
           if grep -Eq '(skipped|OK \(skipped)' "$RUNNER_TEMP/surfaces.log"; then
             echo "A surface or MCP test was skipped in the Zig job."; exit 1
           fi
+
+  # S4-T6: the release build a phone and a release `searchd` run. A read after
+  # `apply_changes` crashed `searchd serve` only in release builds (a stale
+  # allocator across the reload) while every Debug job above stayed green, so
+  # the engine tests, the C ABI harness and the Python suites also run against
+  # a ReleaseSmall build.
+  native-linux-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned Zig 0.16.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/zig-x86_64-linux-0.16.0.tar.xz"
+          archive_url="https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz"
+          expected_sha256="70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+
+          curl --fail --show-error --location --silent \
+            --connect-timeout 20 --max-time 180 \
+            --retry 3 --retry-delay 2 --retry-max-time 240 \
+            "$archive_url" --output "$archive"
+
+          printf '%s  %s\n' "$expected_sha256" "$archive" | sha256sum --check --status
+          tar -xf "$archive" -C "$RUNNER_TEMP"
+          zig_dir="$RUNNER_TEMP/zig-x86_64-linux-0.16.0"
+          test -x "$zig_dir/zig"
+          test "$("$zig_dir/zig" version)" = "0.16.0"
+          echo "$zig_dir" >> "$GITHUB_PATH"
+          echo "ZIG_GLOBAL_CACHE_DIR=$RUNNER_TEMP/zig-cache" >> "$GITHUB_ENV"
+
+      - name: Zig engine tests (ReleaseSmall)
+        working-directory: zig
+        run: zig build test -Doptimize=ReleaseSmall -j2 --summary all
+
+      - name: Zig C ABI tests (ReleaseSmall)
+        working-directory: zig
+        run: zig build test-abi -Doptimize=ReleaseSmall -j2 --summary all
+
+      - name: Build searchd (ReleaseSmall)
+        working-directory: zig
+        shell: bash
+        run: |
+          set -euo pipefail
+          zig build -Doptimize=ReleaseSmall -j2 --prefix "$RUNNER_TEMP/release"
+          test -x "$RUNNER_TEMP/release/bin/searchd"
+
+      # The suites find the binary through SEARCHD_BINARY (tests/test_folder_surfaces.py
+      # build_searchd, tests/test_cli_process.py); without it they build a Debug one.
+      - name: Python behavioral tests against the ReleaseSmall searchd
+        shell: bash
+        run: |
+          set -euo pipefail
+          env -u SEARCH_SIMPLI_LIBRARY_PATH -u SEARCH_SIMPLI_NO_ZIG \
+            SEARCHD_BINARY="$RUNNER_TEMP/release/bin/searchd" \
+            python3 -m unittest discover -s tests -v
+
+      - name: Folder surfaces, tool schemas and MCP against the ReleaseSmall searchd (no skips allowed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          env -u SEARCH_SIMPLI_LIBRARY_PATH -u SEARCH_SIMPLI_NO_ZIG \
+            SEARCHD_BINARY="$RUNNER_TEMP/release/bin/searchd" \
+            python3 -m unittest -v tests.test_folder_surfaces tests.test_tool_schemas tests.test_mcp 2>&1 | tee "$RUNNER_TEMP/release-surfaces.log"
+          if grep -Eq '(skipped|OK \(skipped)' "$RUNNER_TEMP/release-surfaces.log"; then
+            echo "A surface, schema or MCP test was skipped against the release searchd."; exit 1
+          fi
