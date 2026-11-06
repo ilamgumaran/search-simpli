@@ -1690,7 +1690,8 @@ fn offsetTableStarts(scratch: std.mem.Allocator, offsets: []const u8, lengths: [
         at = try skipVarintsChecked(offsets, at + 4, @as(usize, length) * 2);
     }
     starts[lengths.len] = at;
-    std.debug.assert(at == offsets.len);
+    // S4-T12 ruling 4: a refusal in every build, not a Debug assert (which
+    // `ReleaseSmall` may assume true and drop the check with it).
     if (at != offsets.len) return error.InvalidLexicalSection;
     return starts;
 }
@@ -1880,8 +1881,8 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
         terms_out[term_count] = .{ .term = name, .document_frequency = @intCast(length), .postings_start = postings_start, .postings_length = length };
         term_count += 1;
     }
-    // Every ordinal of both sections read, none left over.
-    std.debug.assert(cursor == sections.positions.len and fresh_cursor == fresh_sections.positions.len);
+    // Every ordinal of both sections read, none left over (S4-T12 ruling 4:
+    // a refusal in every build, not a Debug assert).
     if (cursor != sections.positions.len or fresh_cursor != fresh_sections.positions.len) return error.InvalidLexicalSection;
     const positions_out = try positions_sink.written();
     stages.sub("build_lexical.merge");
@@ -1911,6 +1912,46 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
         .positions = .{ .positions = positions_out, .offsets = offsets_out },
         .sorted_terms = true,
     };
+}
+
+test "S4-T12 ruling 4: the merge refuses a previous section 4 or 5 with a byte left over or missing, in every build" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const documents = [_]hybrid.Document{
+        .{ .id = "a", .text = "count me in, count me in" },
+        .{ .id = "b", .text = "the the dough rests" },
+        .{ .id = "c", .text = "பள்ளி விடுமுறை" },
+    };
+    var lists: [documents.len][]const analysis.PositionedToken = undefined;
+    for (documents, 0..) |document, i| lists[i] = try @import("analyzer_v2.zig").tokenizePositioned(a, document.text);
+    const previous = try lexical_build.buildPositional(a, &documents, &lists);
+    const sections = previous.positions.?;
+    const sources = [_]DocSource{ .{ .carried = 0 }, .{ .carried = 1 }, .{ .carried = 2 } };
+    var no_stages = Stages{};
+
+    // The walk itself: every document carried gives the same sections back.
+    const same = try mergeCarried(a, previous, &sources, &no_stages);
+    try std.testing.expectEqualSlices(u8, sections.positions, same.positions.?.positions);
+    try std.testing.expectEqualSlices(u8, sections.offsets, same.positions.?.offsets);
+
+    const positions_longer = try std.mem.concat(a, u8, &.{ sections.positions, &.{0x00} });
+    const offsets_longer = try std.mem.concat(a, u8, &.{ sections.offsets, &.{0x00} });
+    const cases = [_]postings.PositionSections{
+        // Section 4 with one byte left over: the merge's end-of-walk check.
+        .{ .positions = positions_longer, .offsets = sections.offsets },
+        // Section 4 one byte short: the walk ends early.
+        .{ .positions = sections.positions[0 .. sections.positions.len - 1], .offsets = sections.offsets },
+        // Section 5 with one byte left over: `offsetTableStarts`' end check.
+        .{ .positions = sections.positions, .offsets = offsets_longer },
+        // Section 5 one byte short: the walk ends early.
+        .{ .positions = sections.positions, .offsets = sections.offsets[0 .. sections.offsets.len - 1] },
+    };
+    for (cases) |damaged| {
+        var bad = previous;
+        bad.positions = damaged;
+        try std.testing.expectError(error.InvalidLexicalSection, mergeCarried(a, bad, &sources, &no_stages));
+    }
 }
 
 // -------------------------------------------------------- rename detection ---
