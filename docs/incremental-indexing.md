@@ -90,7 +90,9 @@ published. S4-T13 kept the line-map walk, about 10.4 ms of the open's 21 ms
 on the 10,000-file corpus, because the reader then refused a section with one
 bad map whole. Since S4-T14 the reader checks a map where it reads the file
 and refuses only that file, so the walk went (`docs/source-section-v1.md`,
-"The writer's guard (S4-T13, S4-T14)").
+"The writer's guard (S4-T13, S4-T14)"): `open_previous` 20.7 → 10.9 ms off
+and 10.7 on, one changed file 68.4 → 59.0 ms off and 78.0 → 69.2 ms on (p50
+of ten, `ReleaseSmall`).
 
 On S4-T1's 10,000-file timing corpus (one changed file, `ReleaseSmall`,
 `scripts/s4t4_budgets.py profile`, p50 of ten) `build_lexical` went from

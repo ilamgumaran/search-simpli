@@ -153,7 +153,13 @@ to a damaged file answers the integrity message, not the size limit's.
 for byte those of the resident reader (`scripts/source_read_parity.py`). The
 SHA-256 costs about 0.34 ms per MiB on the Mac (`ReleaseSmall`): 0.36 ms for
 the 1,133,158-byte largest file of `fixtures/family-folder`, about 1 µs for a
-4 KiB file.
+4 KiB file. The line-map check at a file's first read costs about 0.13 ms per
+MiB more (it skips to the next byte that can start a break 16 bytes at a
+time): that file's first `read_span` on a handle 0.44 → 0.58 ms, a 10k-corpus
+file's unchanged (0.04–0.08 ms), and later reads of either unchanged. On the
+10,000-file timing corpus the first `read_span` on a cold handle went from
+9.3–9.8 ms to 1.26 ms (`ReleaseSmall`, p50 of 30, two rounds), the walk of
+every map at first use having been about 9.9 ms of it.
 
 **The writer's guard (S4-T13, S4-T14).** A writer reads its previous
 generation's source section whole (`apply.openPrevious`). It computes the
@@ -167,7 +173,9 @@ checksum-valid map that disagrees with its bytes can only come from a wrong
 writer. Since S4-T14 such a map is carried as it is and costs its one file
 its `read_span` and `outline` (`capacity`, `InvalidLineMap`) until an update
 changes that file's bytes and scans them afresh. So neither the reader at
-first use nor the writer at its open walks every map. (S4-T13 kept the
+first use nor the writer at its open walks every map: on the 10,000-file
+corpus the writer's `open_previous` went from 20.7 ms to 10.7–10.9 ms
+(`source_open` 10.8 → 0.5 ms). (S4-T13 kept the
 writer's walk because the reader then refused such a section whole, every
 file answering `InvalidLineMap`.)
 
