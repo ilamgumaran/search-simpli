@@ -207,7 +207,7 @@ fn payloads(
         var visible = false;
         for (svc.engine.lexical_index.terms, 0..) |entry, term_index| {
             if (!std.mem.eql(u8, entry.term, probe)) continue;
-            visible = find_module.termInScope(svc.engine, find_request, term_index);
+            visible = find_module.termInScope(&svc.engine, &find_request, term_index);
         }
         try json.write(visible);
     }

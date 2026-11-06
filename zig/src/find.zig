@@ -272,7 +272,9 @@ pub fn find(allocator: std.mem.Allocator, engine: engine_module.Engine, request:
 /// the same as `list_files`') under `path_prefix`, and the caller holds its
 /// labels. Candidates are filtered by it before they are scored. With only
 /// the legacy root the relative path is the record path, as before.
-pub fn documentInScope(engine: engine_module.Engine, request: Request, document_index: usize) bool {
+/// S4-T17: the engine and the request by pointer (by value, every posting
+/// checked copied both structs).
+pub fn documentInScope(engine: *const engine_module.Engine, request: *const Request, document_index: usize) bool {
     if (request.visible_roots) |mask| if (!mask.allows(document_index)) return false;
     const document = engine.documents[document_index];
     if (request.path_prefix) |prefix| {
@@ -286,8 +288,8 @@ pub fn documentInScope(engine: engine_module.Engine, request: Request, document_
 /// `term_index` expands only when one of its postings is in `request`'s
 /// scope (`documentInScope`), so a term held only by hidden chunks, or only
 /// outside `path_prefix`, never expands and never counts toward the
-/// 1,000-term cap.
-pub fn termInScope(engine: engine_module.Engine, request: Request, term_index: usize) bool {
+/// 1,000-term cap. S4-T17: by pointer, as `documentInScope`.
+pub fn termInScope(engine: *const engine_module.Engine, request: *const Request, term_index: usize) bool {
     const index = engine.lexical_index;
     const entry = index.terms[term_index];
     for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
@@ -387,7 +389,7 @@ const Context = struct {
     }
 
     fn visible(context: *const Context, document_index: usize) bool {
-        return documentInScope(context.engine, context.request, document_index);
+        return documentInScope(&context.engine, &context.request, document_index);
     }
 
     fn contribution(context: *const Context, term_index: usize, posting: postings.Posting) f32 {
@@ -424,7 +426,7 @@ const Context = struct {
     }
 
     fn hasVisiblePosting(context: *const Context, term_index: usize) bool {
-        return termInScope(context.engine, context.request, term_index);
+        return termInScope(&context.engine, &context.request, term_index);
     }
 
     /// Visible chunks holding every term of `required` and, when
