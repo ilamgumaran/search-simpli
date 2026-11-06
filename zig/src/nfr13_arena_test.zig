@@ -14,8 +14,13 @@ const chunker = @import("chunker.zig");
 const engine_module = @import("engine.zig");
 const hybrid = @import("hybrid.zig");
 const indexer = @import("indexer.zig");
+const manifest = @import("manifest.zig");
+const postings = @import("postings.zig");
+const publication = @import("publication.zig");
+const scope = @import("scope.zig");
 const service_module = @import("service.zig");
 const snapshot_open = @import("snapshot_open.zig");
+const filename_field = @import("filename_field.zig");
 
 const io = std.testing.io;
 pub const cap_bytes: usize = 64 * 1024 * 1024;
@@ -303,6 +308,7 @@ test "filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files" {
     _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
     const peaks = try measure(out.dir, cap_bytes, .{ .find_query = "the", .knowledge_query = "the", .filename_query = "doc the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
     printPeaks("10k filename and lazy tables", peaks);
+    if (scaleEnabled()) try printOpenParts(out.dir, base_file_count, peaks.bytes[@intFromEnum(Operation.open)]);
     for (peaks.bytes) |value| try std.testing.expect(value > 0);
     try std.testing.expect(peaks.overall <= cap_bytes);
 }
@@ -370,6 +376,7 @@ fn scaleRun(file_count: usize, cap: usize) !Peaks {
     const rare = try std.fmt.allocPrint(a, "{s}", .{word(&buffer, 4321)});
     const peaks = try measure(out.dir, cap, .{ .find_query = "the", .knowledge_query = try std.fmt.allocPrint(a, "the {s}", .{rare}), .filename_query = "doc the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
     const measured = nowNs();
+    try printOpenParts(out.dir, file_count, peaks.bytes[@intFromEnum(Operation.open)]);
     const label = try std.fmt.allocPrint(a, "scale {d} files, filename channel on,", .{file_count});
     printPeaksUnder("S4-T8 NFR-13", label, cap, peaks);
     std.debug.print("S4-T8 NFR-13 scale {d} files: corpus {d} files {d} B; index {d} files {d} B; generate {d} ms, index {d} ms, measure {d} ms\n", .{
@@ -392,4 +399,166 @@ test "NFR-13 scale: 15,000 files" {
 
 test "NFR-13 scale: 20,000 files" {
     _ = try scaleRun(20_000, scale_cap_bytes);
+}
+
+// --- S4-T8 ruling 3: the open's resident bytes, by table ---------------------
+
+/// A pass-through allocator that keeps the live bytes requested of it, so a
+/// table's own size is measured beside what the arena holds for it.
+const Counting = struct {
+    parent: std.mem.Allocator,
+    live: usize = 0,
+
+    fn allocator(self: *Counting) std.mem.Allocator {
+        return .{ .ptr = self, .vtable = &.{ .alloc = alloc, .resize = resize, .remap = remap, .free = free } };
+    }
+
+    fn alloc(ctx: *anyopaque, len: usize, alignment: std.mem.Alignment, ret_addr: usize) ?[*]u8 {
+        const self: *Counting = @ptrCast(@alignCast(ctx));
+        const result = self.parent.rawAlloc(len, alignment, ret_addr) orelse return null;
+        self.live += len;
+        return result;
+    }
+
+    fn resize(ctx: *anyopaque, memory: []u8, alignment: std.mem.Alignment, new_len: usize, ret_addr: usize) bool {
+        const self: *Counting = @ptrCast(@alignCast(ctx));
+        if (!self.parent.rawResize(memory, alignment, new_len, ret_addr)) return false;
+        self.live = self.live - memory.len + new_len;
+        return true;
+    }
+
+    fn remap(ctx: *anyopaque, memory: []u8, alignment: std.mem.Alignment, new_len: usize, ret_addr: usize) ?[*]u8 {
+        const self: *Counting = @ptrCast(@alignCast(ctx));
+        const result = self.parent.rawRemap(memory, alignment, new_len, ret_addr) orelse return null;
+        self.live = self.live - memory.len + new_len;
+        return result;
+    }
+
+    fn free(ctx: *anyopaque, memory: []u8, alignment: std.mem.Alignment, ret_addr: usize) void {
+        const self: *Counting = @ptrCast(@alignCast(ctx));
+        self.parent.rawFree(memory, alignment, ret_addr);
+        self.live -= memory.len;
+    }
+};
+
+/// What `snapshot_open.openScoped` allocates, in its order: the manifest's
+/// bytes; one slab for the document and lexical sections (read), the source
+/// section (reserved, read at the first `read_span`/`outline`/`list_files`)
+/// and the filename sections with their decoded tables (reserved, read at
+/// the first filename query); the decoded documents, vectors, dictionary
+/// terms, postings and document lengths; the decode itself; the parsed
+/// meta; the folder (`scope.Loads`, `scope.Folder`, the per-document roots).
+pub const OpenPart = enum { manifest, sections, documents, vectors, terms, postings, document_lengths, decode, meta, folder };
+
+pub const OpenParts = struct {
+    /// Bytes requested of the open's arena by each part.
+    requested: [std.meta.fields(OpenPart).len]usize = @splat(0),
+    /// Bytes the capped allocator held after the part minus before it (the
+    /// arena's blocks, slack included).
+    held: [std.meta.fields(OpenPart).len]usize = @splat(0),
+    peak: usize = 0,
+    /// The slab's parts (bytes): the document section, the lexical section,
+    /// the source section's reservation, the filename reservation.
+    documents_section: usize = 0,
+    lexical_section: usize = 0,
+    source_section: usize = 0,
+    filename_reserved: usize = 0,
+    document_count: usize = 0,
+    term_count: usize = 0,
+    posting_count: usize = 0,
+    vector_dimensions: usize = 0,
+};
+
+/// `snapshot_open.openScoped`'s allocations replayed one loader at a time
+/// over the same `Capped` and arena as `measure`, recording after each. Its
+/// peak equals `measure`'s open peak (checked by the caller), so the parts
+/// add up to the open the other tests measure.
+fn attributeOpen(dir: std.Io.Dir) !OpenParts {
+    var capped = Capped{ .parent = std.heap.page_allocator, .cap = scale_cap_bytes };
+    var engine_arena = std.heap.ArenaAllocator.init(capped.allocator());
+    defer engine_arena.deinit();
+    var counting = Counting{ .parent = engine_arena.allocator() };
+    const allocator = counting.allocator();
+    var parts = OpenParts{};
+    var last_requested: usize = 0;
+    var last_held: usize = 0;
+    const Mark = struct {
+        fn at(p: *OpenParts, c: *const Counting, k: *const Capped, part: OpenPart, requested: *usize, held: *usize) void {
+            p.requested[@intFromEnum(part)] = c.live - requested.*;
+            p.held[@intFromEnum(part)] = k.live - held.*;
+            requested.* = c.live;
+            held.* = k.live;
+        }
+    };
+
+    var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
+    const manifest_stat = try manifest_file.stat(io);
+    manifest_file.close(io);
+    const manifest_buffer = try allocator.alloc(u8, @intCast(manifest_stat.size));
+    const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
+    const metadata = try manifest.decode(manifest_encoded);
+    Mark.at(&parts, &counting, &capped, .manifest, &last_requested, &last_held);
+
+    const section_bytes = metadata.documents_bytes + metadata.lexical_bytes;
+    const with_source = section_bytes + metadata.source_bytes;
+    const reserved_bytes = filename_field.loadReservation(metadata);
+    const sections = try allocator.alloc(u8, with_source + reserved_bytes);
+    const snapshot = publication.LoadedSnapshot{
+        .metadata = metadata,
+        .manifest_encoded = manifest_encoded,
+        .documents_encoded = try dir.readFile(io, metadata.documents_file, sections[0..metadata.documents_bytes]),
+        .lexical_encoded = try dir.readFile(io, metadata.lexical_file, sections[metadata.documents_bytes..section_bytes]),
+    };
+    Mark.at(&parts, &counting, &capped, .sections, &last_requested, &last_held);
+    parts.documents_section = metadata.documents_bytes;
+    parts.lexical_section = metadata.lexical_bytes;
+    parts.source_section = metadata.source_bytes;
+    parts.filename_reserved = reserved_bytes;
+    parts.document_count = metadata.document_count;
+    parts.term_count = metadata.term_count;
+    parts.posting_count = metadata.posting_count;
+    parts.vector_dimensions = metadata.vector_dimensions;
+
+    const documents = try allocator.alloc(hybrid.Document, metadata.document_count);
+    Mark.at(&parts, &counting, &capped, .documents, &last_requested, &last_held);
+    const vectors = try allocator.alloc(f32, metadata.document_count * metadata.vector_dimensions);
+    Mark.at(&parts, &counting, &capped, .vectors, &last_requested, &last_held);
+    const terms = try allocator.alloc(postings.TermEntry, metadata.term_count);
+    Mark.at(&parts, &counting, &capped, .terms, &last_requested, &last_held);
+    const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
+    Mark.at(&parts, &counting, &capped, .postings, &last_requested, &last_held);
+    const document_lengths = try allocator.alloc(u32, metadata.document_count);
+    Mark.at(&parts, &counting, &capped, .document_lengths, &last_requested, &last_held);
+    const opened = try engine_module.Engine.openWith(snapshot, documents, vectors, terms, posting_storage, document_lengths, .{ .validate_positions = false });
+    Mark.at(&parts, &counting, &capped, .decode, &last_requested, &last_held);
+
+    const meta: ?manifest.Meta = if (metadata.meta.len != 0) try manifest.parseMeta(allocator, metadata.meta) else null;
+    Mark.at(&parts, &counting, &capped, .meta, &last_requested, &last_held);
+    const loads = try allocator.create(scope.Loads);
+    loads.* = .{ .io = io, .allocator = allocator, .documents = opened.documents, .index = opened.lexical_index };
+    const folder = try allocator.create(scope.Folder);
+    folder.* = try scope.Folder.build(allocator, meta, loads);
+    Mark.at(&parts, &counting, &capped, .folder, &last_requested, &last_held);
+    parts.peak = capped.peak;
+    return parts;
+}
+
+/// Print the open's parts at `file_count` files and check they add up to
+/// `open_peak` (`measure`'s open over the same index).
+fn printOpenParts(dir: std.Io.Dir, file_count: usize, open_peak: usize) !void {
+    const parts = try attributeOpen(dir);
+    std.debug.print("S4-T8 NFR-13 open by table, {d} files (requested/held B):", .{file_count});
+    var held_sum: usize = 0;
+    for (std.enums.values(OpenPart), parts.requested, parts.held) |part, requested, held| {
+        std.debug.print(" {s} {d}/{d}", .{ @tagName(part), requested, held });
+        held_sum += held;
+    }
+    std.debug.print("; slab: documents section {d}, lexical section {d}, source reserved {d}, filename reserved {d}; documents {d}, terms {d}, postings {d}, vector dimensions {d}; sizes Document {d}, TermEntry {d}, Posting {d}; held {d}, peak {d}, measured open {d}\n", .{
+        parts.documents_section,  parts.lexical_section,       parts.source_section,      parts.filename_reserved,
+        parts.document_count,     parts.term_count,            parts.posting_count,       parts.vector_dimensions,
+        @sizeOf(hybrid.Document), @sizeOf(postings.TermEntry), @sizeOf(postings.Posting), held_sum,
+        parts.peak,               open_peak,
+    });
+    try std.testing.expectEqual(open_peak, parts.peak);
+    try std.testing.expectEqual(open_peak, held_sum);
 }
