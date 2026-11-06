@@ -786,3 +786,126 @@ test "a fresh directory and an empty folder report no recovery; zero documents o
     try std.testing.expectEqual(@as(usize, 1), added.documents);
     try std.testing.expect(added.recovered == null);
 }
+
+// --- S4-T11 ruling 2: randomized mutations against a fresh build ---------
+
+const merge_words = [_][]const u8{
+    "canal", "boat",  "lock",   "lantern", "quokka", "wombat", "000",   "7",     "zz",  "the",
+    "café",  "naïve", "பள்ளி", "விடுமுறை", "힣힣", "ducks", "river", "stone", "a",   "harbour",
+    "ferry", "rope",  "tide",   "gull",    "mist",   "oar",    "keel",  "sail",  "mast", "bow",
+};
+
+fn randomText(arena: std.mem.Allocator, random: std.Random, markdown: bool) ![]const u8 {
+    var out = std.ArrayList(u8).empty;
+    const parts = random.intRangeAtMost(usize, 0, 5);
+    for (0..parts) |part| {
+        if (markdown) try out.print(arena, "# {s} {d}\n\n", .{ merge_words[random.uintLessThan(usize, merge_words.len)], part });
+        const words = random.intRangeAtMost(usize, 1, 14);
+        for (0..words) |w| {
+            if (w != 0) try out.append(arena, if (random.uintLessThan(u8, 6) == 0) '\n' else ' ');
+            try out.appendSlice(arena, merge_words[random.uintLessThan(usize, merge_words.len)]);
+        }
+        try out.appendSlice(arena, "\n\n");
+    }
+    return out.toOwnedSlice(arena);
+}
+
+fn sectionBytes(arena: std.mem.Allocator, io: std.Io, out: std.Io.Dir) !struct { lexical: []const u8, source: []const u8, documents: []const u8 } {
+    const manifest = @import("manifest.zig");
+    const metadata = try manifest.decode(try out.readFileAlloc(io, "MANIFEST", arena, .unlimited));
+    return .{
+        .lexical = try out.readFileAlloc(io, metadata.lexical_file, arena, .unlimited),
+        .source = if (metadata.hasSource()) try out.readFileAlloc(io, metadata.source_file, arena, .unlimited) else "",
+        .documents = try out.readFileAlloc(io, metadata.documents_file, arena, .unlimited),
+    };
+}
+
+test "S4-T11 ruling 2: seeded random mutations, each round's update equals a fresh index byte for byte" {
+    const io = std.testing.io;
+    const seeds = [_]u64{ 0x5411_0001, 0x5411_0002, 0x5411_0003 };
+    const rounds: usize = 30;
+    for (seeds) |seed| {
+        var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+        defer arena_state.deinit();
+        const arena = arena_state.allocator();
+        var prng = std.Random.DefaultPrng.init(seed);
+        const random = prng.random();
+        var tmp = std.testing.tmpDir(.{ .iterate = true });
+        defer tmp.cleanup();
+        var root = try tmp.dir.createDirPathOpen(io, "root", .{ .open_options = .{ .iterate = true } });
+        defer root.close(io);
+        try tmp.dir.createDir(io, "out", .default_dir);
+        var out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+        defer out.close(io);
+
+        var names = std.ArrayList([]const u8).empty;
+        var next_name: usize = 0;
+        for (0..6) |_| {
+            const markdown = random.boolean();
+            const name = try std.fmt.allocPrint(arena, "f{d:0>3}.{s}", .{ random.uintLessThan(usize, 1000), if (markdown) "md" else "txt" });
+            try root.writeFile(io, .{ .sub_path = name, .data = try randomText(arena, random, markdown) });
+            var known = false;
+            for (names.items) |n| if (std.mem.eql(u8, n, name)) {
+                known = true;
+            };
+            if (!known) try names.append(arena, name);
+        }
+        _ = try indexOnce(arena, io, root, out);
+
+        for (0..rounds) |round| {
+            const mutations = random.intRangeAtMost(usize, 1, 4);
+            for (0..mutations) |_| {
+                const kind = random.uintLessThan(u8, 4);
+                if (kind == 0 or names.items.len == 0) {
+                    // add
+                    const markdown = random.boolean();
+                    next_name += 1;
+                    const name = try std.fmt.allocPrint(arena, "{c}{d}.{s}", .{ "abmz"[random.uintLessThan(usize, 4)], next_name, if (markdown) "md" else "txt" });
+                    try root.writeFile(io, .{ .sub_path = name, .data = try randomText(arena, random, markdown) });
+                    try names.append(arena, name);
+                } else if (kind == 1) {
+                    // edit
+                    const name = names.items[random.uintLessThan(usize, names.items.len)];
+                    try root.writeFile(io, .{ .sub_path = name, .data = try randomText(arena, random, std.mem.endsWith(u8, name, ".md")) });
+                } else if (kind == 2) {
+                    // delete
+                    const at = random.uintLessThan(usize, names.items.len);
+                    try root.deleteFile(io, names.items[at]);
+                    _ = names.swapRemove(at);
+                } else {
+                    // rename: the same bytes under a name that sorts elsewhere
+                    const at = random.uintLessThan(usize, names.items.len);
+                    const from = names.items[at];
+                    const bytes = try root.readFileAlloc(io, from, arena, .unlimited);
+                    next_name += 1;
+                    const to = try std.fmt.allocPrint(arena, "{c}{d}{s}", .{ "0Ymz"[random.uintLessThan(usize, 4)], next_name, from[std.mem.lastIndexOfScalar(u8, from, '.').?..] });
+                    try root.writeFile(io, .{ .sub_path = to, .data = bytes });
+                    try root.deleteFile(io, from);
+                    names.items[at] = to;
+                }
+            }
+            _ = try indexOnce(arena, io, root, out);
+            // A fresh index of the same folder.
+            const fresh_name = try std.fmt.allocPrint(arena, "fresh-{d}", .{round});
+            try tmp.dir.createDir(io, fresh_name, .default_dir);
+            var fresh = try tmp.dir.openDir(io, fresh_name, .{ .iterate = true });
+            defer fresh.close(io);
+            _ = try indexOnce(arena, io, root, fresh);
+            const updated = try sectionBytes(arena, io, out);
+            const expected = try sectionBytes(arena, io, fresh);
+            std.testing.expectEqualSlices(u8, expected.lexical, updated.lexical) catch |err| {
+                std.debug.print("S4-T11 random merge: seed 0x{x} round {d}: lexical sections differ\n", .{ seed, round });
+                return err;
+            };
+            std.testing.expectEqualSlices(u8, expected.source, updated.source) catch |err| {
+                std.debug.print("S4-T11 random merge: seed 0x{x} round {d}: source sections differ\n", .{ seed, round });
+                return err;
+            };
+            std.testing.expectEqualSlices(u8, expected.documents, updated.documents) catch |err| {
+                std.debug.print("S4-T11 random merge: seed 0x{x} round {d}: documents sections differ\n", .{ seed, round });
+                return err;
+            };
+        }
+    }
+    std.debug.print("S4-T11 random merge: seeds 0x54110001..0x54110003, {d} rounds each, 1-4 mutations per round: the documents, lexical and source sections equal a fresh index's in all {d} rounds\n", .{ rounds, rounds * seeds.len });
+}

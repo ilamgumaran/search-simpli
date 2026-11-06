@@ -32,21 +32,49 @@ Every candidate file (same walk/extension/ignore rules as a full rebuild,
 `indexer.collectCandidatePaths`) is still **read and SHA-256 hashed on every
 run** — a hash requires the bytes — but only a file whose hash changed since
 the last published generation is re-chunked and re-tokenized. An unchanged
-file's chunks are pulled back out of the *previous* generation's already-built
-postings (`reconstructTokensFromPostings`: walk each term's postings list and
-reconstruct each document's token multiset from `term`/`term_frequency`)
-instead of re-running the chunker and analyzer over the file's text again.
-Chunking/tokenizing text is the expensive step this reuse skips (round-A/B
-measured effect: `docs/tasks/S1-T1.md`, `docs/tasks/S1-T3.md`).
+file's chunks are carried as the previous generation's documents (S3-T2:
+with their exact token ordinals and spans), not re-chunked or re-analyzed.
 
-**The lexical index itself is still rebuilt from scratch every generation**
-(`lexical_build.build` over the full retained + new document set). There are
-no delta segments, no merge policy, and no query-time segment fan-out — see
-"What this is not" below. This is deliberate: `docs/tasks/S1-T1.md`'s
-round-A verdict found the old rebuild-heavy design's real cost was an
-`O(vocabulary × tokens)` dictionary build, not the full-index-per-generation
-shape; S1-T3 fixed the former with hash-map dictionaries and did not attempt
-the latter.
+**What a generation carries and what it builds (S4-T11).** The sections a
+generation writes are byte for byte what a full index of the same files
+writes (tested after every step of `apply_test.zig`'s parity cases, by a
+seeded randomized test in `incremental_indexing_test.zig`, and at 10,000
+files by `scripts/s4t11_budgets.py compare`), but an unchanged file is not
+rebuilt into them:
+
+- *Lexical section.* `apply.buildPositionalMerged` builds only the changed
+  files' documents fresh (the full-build path, `buildPositionalFresh`), then
+  `mergeCarried` merges that small index with the previous generation's
+  decoded one: the two dictionaries by bytes in one walk, each carried
+  posting with its document number remapped and its term frequency and
+  section-4 ordinal bytes unchanged (a whole term's run copied at once when
+  no removed, moved or fresh document touches it), and each document's
+  section-5 offset table copied. A previous term left with no posting drops
+  out; a moved file's postings are re-sorted into their new place. Nothing
+  is transposed back to tokens and nothing carried is re-sorted or
+  re-encoded. A previous `HYBLEX01` generation (no positions) is still
+  re-tokenized once, which upgrades it.
+- *Source section.* An unchanged file's record (SHA-256, line map, encoding
+  byte) is copied from the previous section (`source.carriedRecord`), which
+  the writer opened and checked (`source.openIndexed`: the section checksum
+  against the manifest, every line map against its bytes); its bytes are
+  still copied whole, and only a fresh or changed file is hashed and
+  scanned. The reader's per-call SHA-256 check (S4-T10) still catches a file
+  whose bytes no longer match.
+- *Documents section, state, filename sections, manifest.* Encoded whole
+  from the carried and fresh records, as before.
+
+On S4-T1's 10,000-file timing corpus (one changed file, `ReleaseSmall`,
+`scripts/s4t4_budgets.py profile`, p50 of ten) `build_lexical` went from
+33.8 ms to 4.9 ms and `encode_sections` from 35.7 ms to 23.1 ms (source line
+maps 10.9 → 0.35 ms, SHA-256 2.7 → 0.03 ms); the whole call from 122.1 ms to
+77.8 ms with the filename channel off and from 140.0 ms to 96.0 ms with it
+on (`scripts/s4t4_budgets.py budgets`, p50 of five; `docs/tasks/S4-T11.md`).
+What remains is mostly reading and checking the previous generation (about
+24–26 ms), building the documents (about 10 ms), encoding and validating the
+lexical section (about 16 ms) and the publish. There are still no delta
+segments, no merge policy and no query-time segment fan-out — see "What
+this is not" below.
 
 Per-file state (path, SHA-256 hex, byte size) persists beside `MANIFEST` in
 `<dir>/INDEX-STATE.json` (`incremental_state.zig`), written only *after* the
@@ -178,8 +206,10 @@ than a clean error.
 ### What this is not
 
 - No delta segments, write-ahead log, background compaction, or query-time
-  segment fan-out. The lexical index is rebuilt whole every generation; only
-  the expensive per-file chunk/tokenize step is skipped for unchanged files.
+  segment fan-out. Every generation still writes whole sections (one
+  lexical, one source, one documents section); an unchanged file is not
+  re-chunked or re-tokenized, and since S4-T11 its postings, positions,
+  offsets and source record are carried into them, not rebuilt (above).
 - No vector/embedding reuse of any kind — this path never produces vectors
   (`embedding_model_id` is always `"none"`). The Python path below is where
   embedding reuse lives.

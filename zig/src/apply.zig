@@ -590,17 +590,20 @@ pub const Stages = struct {
     io: ?std.Io = null,
     started: u64 = 0,
     last: u64 = 0,
+    /// S4-T11 ruling 1: the previous mark or sub-stage, where the next
+    /// sub-stage starts.
+    last_sub: u64 = 0,
     names: [max][]const u8 = undefined,
     ns: [max]u64 = undefined,
     count: usize = 0,
 
-    const max = 24;
+    const max = 32;
     pub const variable = "SEARCH_SIMPLI_APPLY_STAGES";
 
     pub fn init(io: std.Io) Stages {
         if (!enabled()) return .{};
         const now = nowNs(io);
-        return .{ .on = true, .io = io, .started = now, .last = now };
+        return .{ .on = true, .io = io, .started = now, .last = now, .last_sub = now };
     }
 
     fn enabled() bool {
@@ -617,11 +620,25 @@ pub const Stages = struct {
         stages.ns[stages.count] = now - stages.last;
         stages.count += 1;
         stages.last = now;
+        stages.last_sub = now;
+    }
+
+    /// S4-T11 ruling 1: close the sub-stage `name` (dotted, `parent.part`):
+    /// the time since the previous mark or sub-stage. The parent's own
+    /// `mark` still measures from the previous mark, so it stays the total
+    /// S4-T4 reported and its sub-stages are printed before it.
+    pub fn sub(stages: *Stages, name: []const u8) void {
+        if (!stages.on or stages.count == max) return;
+        const now = nowNs(stages.io.?);
+        stages.names[stages.count] = name;
+        stages.ns[stages.count] = now - stages.last_sub;
+        stages.count += 1;
+        stages.last_sub = now;
     }
 
     pub fn print(stages: *const Stages) void {
         if (!stages.on) return;
-        var buffer: [2048]u8 = undefined;
+        var buffer: [4096]u8 = undefined;
         var used: usize = 0;
         for (stages.names[0..stages.count], stages.ns[0..stages.count]) |name, ns| {
             const piece = std.fmt.bufPrint(buffer[used..], "\"{s}\":{d:.3},", .{ name, @as(f64, @floatFromInt(ns)) / 1e6 }) catch break;
@@ -1448,6 +1465,15 @@ fn chunkerOf(prev: engine_module.Engine, meta: ?manifest.Meta, indices: []const 
     return found;
 }
 
+/// S4-T11 ruling 1: `source.encodeMarked`'s passes as sub-stages of
+/// `encode_sections`.
+const SourceMarks = struct {
+    stages: *Stages,
+    pub fn mark(marks: SourceMarks, comptime name: []const u8) void {
+        marks.stages.sub("encode_sections." ++ name);
+    }
+};
+
 /// Where a document of the new generation gets its positioned tokens: a
 /// fresh chunk's, or a carried document of the previous (positional)
 /// generation.
@@ -1456,57 +1482,23 @@ const DocSource = union(enum) {
     carried: u32,
 };
 
-/// `lexical_build.buildPositional` over `sources`, byte for byte, without
-/// reading a carried document's tokens back: its (term, ordinal) pairs come
-/// from the previous section 4 (one transposition, terms mapped once per
-/// dictionary entry instead of hashed once per token) and its section 5
-/// table is copied as it is. The dictionary is ranked by bytes and
-/// occurrences laid out term-major, document then ordinal, exactly as the
-/// builder does (NFR-12's one-changed-file cost).
-fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index, sources: []const DocSource) !postings.Index {
+/// `lexical_build.buildPositional` over `sources`, byte for byte. A
+/// generation that carries documents of a positional previous generation
+/// merges (`mergeCarried`, S4-T11 ruling 2); one that carries none (a full
+/// index, a `HYBLEX01` previous generation, every file changed) builds
+/// fresh, as before.
+fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index, sources: []const DocSource, stages: *Stages) !postings.Index {
     if (sources.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
-    const scratch = std.heap.smp_allocator;
-    const Pair = struct { term: u32, ordinal: u32 };
-    const Occurrence = struct { term: u32, document: u32, ordinal: u32 };
+    for (sources) |item| if (item == .carried) return mergeCarried(allocator, previous orelse return error.InvalidLexicalSection, sources, stages);
+    return buildPositionalFresh(allocator, sources, stages);
+}
 
-    // The previous section 4 transposed to per-document (term, ordinal) pairs.
-    var old_offsets: []usize = &.{};
-    var old_pairs: []Pair = &.{};
-    var previous_to_new: []u32 = &.{};
-    var tables: ?postings.PositionTables = null;
-    defer if (old_offsets.len != 0) scratch.free(old_offsets);
-    defer if (old_pairs.len != 0) scratch.free(old_pairs);
-    defer if (previous_to_new.len != 0) scratch.free(previous_to_new);
-    var carried_any = false;
-    for (sources) |item| if (item == .carried) {
-        carried_any = true;
-    };
-    if (carried_any) {
-        const index = previous.?;
-        const sections = index.positions.?;
-        tables = try postings.buildPositionTables(allocator, index);
-        const count = index.document_lengths.len;
-        old_offsets = try scratch.alloc(usize, count + 1);
-        old_offsets[0] = 0;
-        for (index.document_lengths, 0..) |length, d| old_offsets[d + 1] = old_offsets[d] + length;
-        old_pairs = try scratch.alloc(Pair, old_offsets[count]);
-        const fill = try scratch.dupe(usize, old_offsets[0..count]);
-        defer scratch.free(fill);
-        var at: usize = 0;
-        for (index.terms, 0..) |entry, term_index| {
-            for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
-                var ordinal: u32 = 0;
-                for (0..posting.term_frequency) |k| {
-                    const value = postings.readVarint(sections.positions, &at).?;
-                    ordinal = if (k == 0) value else ordinal + value;
-                    old_pairs[fill[posting.document_index]] = .{ .term = @intCast(term_index), .ordinal = ordinal };
-                    fill[posting.document_index] += 1;
-                }
-            }
-        }
-        previous_to_new = try scratch.alloc(u32, index.terms.len);
-        @memset(previous_to_new, std.math.maxInt(u32));
-    }
+/// The fresh build (every source `.fresh`): the dictionary ranked by bytes,
+/// occurrences laid out term-major, document then ordinal, exactly as
+/// `lexical_build.buildPositional` does.
+fn buildPositionalFresh(allocator: std.mem.Allocator, sources: []const DocSource, stages: *Stages) !postings.Index {
+    const scratch = std.heap.smp_allocator;
+    const Occurrence = struct { term: u32, document: u32, ordinal: u32 };
 
     var names = std.ArrayList([]const u8).empty;
     defer names.deinit(scratch);
@@ -1521,31 +1513,7 @@ fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index
 
     for (sources, 0..) |item, document_index| {
         switch (item) {
-            .carried => |old| {
-                const index = previous.?;
-                const length = index.document_lengths[old];
-                document_lengths[document_index] = length;
-                for (old_pairs[old_offsets[old]..old_offsets[old + 1]]) |pair| {
-                    var id = previous_to_new[pair.term];
-                    if (id == std.math.maxInt(u32)) {
-                        const gop = try id_by_name.getOrPut(index.terms[pair.term].term);
-                        if (!gop.found_existing) {
-                            gop.value_ptr.* = @intCast(names.items.len);
-                            try names.append(scratch, index.terms[pair.term].term);
-                        }
-                        id = gop.value_ptr.*;
-                        previous_to_new[pair.term] = id;
-                    }
-                    try occurrences.append(scratch, .{ .term = id, .document = @intCast(document_index), .ordinal = pair.ordinal });
-                }
-                // Section 5: the document's table as it was (u32 count, then
-                // two varints per token).
-                const bytes = index.positions.?.offsets;
-                const start = tables.?.document_starts[old];
-                var end = start + 4;
-                postings.skipVarints(bytes, &end, @as(usize, length) * 2);
-                try offsets.appendSlice(scratch, bytes[start..end]);
-            },
+            .carried => unreachable,
             .fresh => |tokens| {
                 if (tokens.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
                 document_lengths[document_index] = @intCast(tokens.len);
@@ -1570,6 +1538,7 @@ fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index
         }
         total_length += document_lengths[document_index];
     }
+    stages.sub("build_lexical.occurrences");
 
     // As `buildPositional`: rank terms by bytes, lay occurrences out
     // term-major with a stable counting sort (document, then ordinal order
@@ -1599,6 +1568,7 @@ fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index
         sorted[fill[r]] = occurrence;
         fill[r] += 1;
     }
+    stages.sub("build_lexical.layout");
     var posting_total: usize = 0;
     for (sorted, 0..) |occurrence, i| {
         if (i == 0 or sorted[i - 1].term != occurrence.term or sorted[i - 1].document != occurrence.document) posting_total += 1;
@@ -1629,12 +1599,288 @@ fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index
         terms[r] = .{ .term = names.items[term], .document_frequency = @intCast(postings_length), .postings_start = postings_start, .postings_length = postings_length };
     }
     const average: f32 = if (sources.len == 0) 0 else @as(f32, @floatFromInt(total_length)) / @as(f32, @floatFromInt(sources.len));
+    const sections: postings.PositionSections = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items) };
+    stages.sub("build_lexical.encode");
     return .{
         .terms = terms,
         .postings = all_postings,
         .document_lengths = document_lengths,
         .average_document_length = average,
-        .positions = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items) },
+        .positions = sections,
+        .sorted_terms = true,
+    };
+}
+
+
+/// S4-T11 ruling 2: section bytes that are copied in order, joined into one
+/// copy while each piece starts where the previous one ended in memory.
+const ByteSink = struct {
+    out: []u8,
+    used: usize = 0,
+    pending: []const u8 = &.{},
+
+    fn append(sink: *ByteSink, bytes: []const u8) error{InvalidLexicalSection}!void {
+        if (bytes.len == 0) return;
+        if (sink.pending.len != 0 and sink.pending.ptr + sink.pending.len == bytes.ptr) {
+            sink.pending = sink.pending.ptr[0 .. sink.pending.len + bytes.len];
+            return;
+        }
+        try sink.flush();
+        sink.pending = bytes;
+    }
+
+    fn flush(sink: *ByteSink) error{InvalidLexicalSection}!void {
+        if (sink.pending.len > sink.out.len - sink.used) return error.InvalidLexicalSection;
+        @memcpy(sink.out[sink.used..][0..sink.pending.len], sink.pending);
+        sink.used += sink.pending.len;
+        sink.pending = &.{};
+    }
+
+    fn written(sink: *ByteSink) error{InvalidLexicalSection}![]u8 {
+        try sink.flush();
+        return sink.out[0..sink.used];
+    }
+};
+
+/// `source.varintsEnd` (sixteen end bytes at a time) for the lexical
+/// sections: a section that ends first is `InvalidLexicalSection`, never a
+/// read past it.
+fn skipVarintsChecked(bytes: []const u8, at: usize, count: usize) error{InvalidLexicalSection}!usize {
+    return source.varintsEnd(bytes, at, count) orelse error.InvalidLexicalSection;
+}
+
+/// Where each document's section-5 table starts in `offsets`, plus the end
+/// (`lengths.len + 1` entries): a `u32` count, then two varints per token.
+/// The walk must end exactly at the end of the section.
+fn offsetTableStarts(scratch: std.mem.Allocator, offsets: []const u8, lengths: []const u32) ![]usize {
+    const starts = try scratch.alloc(usize, lengths.len + 1);
+    errdefer scratch.free(starts);
+    var at: usize = 0;
+    for (lengths, 0..) |length, document| {
+        starts[document] = at;
+        if (offsets.len - at < 4) return error.InvalidLexicalSection;
+        at = try skipVarintsChecked(offsets, at + 4, @as(usize, length) * 2);
+    }
+    starts[lengths.len] = at;
+    std.debug.assert(at == offsets.len);
+    if (at != offsets.len) return error.InvalidLexicalSection;
+    return starts;
+}
+
+/// S4-T11 ruling 2: `lexical_build.buildPositional` over `sources`, byte
+/// for byte, from the previous generation's decoded index and the fresh
+/// documents' tokens, without re-sorting or re-encoding what is carried:
+/// (a) the document map, previous index to new index (or removed), and the
+/// lengths and average as the builder computes them; (b) the fresh
+/// documents' own positional index (`buildPositionalFresh`); (c) the
+/// dictionaries merged by bytes in one walk, each previous term's carried
+/// postings with their document index remapped and term frequency kept,
+/// their section-4 bytes copied as they are (a posting's ordinals are
+/// relative to its document), merged in new-document order with the fresh
+/// postings; a previous term with no posting left is dropped; (d) section 5,
+/// each document's table copied from the previous or the fresh index.
+/// Section 4 is term-major in dictionary order, so one cursor walks it with
+/// the dictionary; a term whose postings are all kept, in order and not
+/// shared with a fresh document is copied as one run (consecutive runs as
+/// one copy), and only a term touched by a removed, moved or fresh document
+/// is split per posting. Every varint walk is checked against the number of
+/// ordinals it must hold, and must end at the end of its section.
+fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources: []const DocSource, stages: *Stages) !postings.Index {
+    const none = std.math.maxInt(u32);
+    const scratch = std.heap.smp_allocator;
+    const sections = previous.positions orelse return error.InvalidLexicalSection;
+    if (!previous.sorted_terms) return error.InvalidLexicalSection;
+    const old_count = previous.document_lengths.len;
+
+    // (a) The document map, the lengths and the average.
+    const new_of_old = try scratch.alloc(u32, old_count);
+    defer scratch.free(new_of_old);
+    @memset(new_of_old, none);
+    var fresh_count: usize = 0;
+    for (sources) |item| {
+        if (item == .fresh) fresh_count += 1;
+    }
+    const new_of_fresh = try scratch.alloc(u32, fresh_count);
+    defer scratch.free(new_of_fresh);
+    const fresh_sources = try scratch.alloc(DocSource, fresh_count);
+    defer scratch.free(fresh_sources);
+    const document_lengths = try allocator.alloc(u32, sources.len);
+    var total_length: usize = 0;
+    var fresh_index: usize = 0;
+    for (sources, 0..) |item, new_index| {
+        switch (item) {
+            .carried => |old| {
+                // `buildGeneration` carries a previous document at most once.
+                if (old >= old_count or new_of_old[old] != none) return error.InvalidLexicalSection;
+                new_of_old[old] = @intCast(new_index);
+                document_lengths[new_index] = previous.document_lengths[old];
+            },
+            .fresh => |tokens| {
+                if (tokens.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
+                new_of_fresh[fresh_index] = @intCast(new_index);
+                fresh_sources[fresh_index] = item;
+                fresh_index += 1;
+                document_lengths[new_index] = @intCast(tokens.len);
+            },
+        }
+        total_length += document_lengths[new_index];
+    }
+    // The builder's expression: the same f32 from the same integers.
+    const average: f32 = if (sources.len == 0) 0 else @as(f32, @floatFromInt(total_length)) / @as(f32, @floatFromInt(sources.len));
+    stages.sub("build_lexical.map");
+
+    // (b) The fresh documents' index (fresh document i is fresh_sources[i]).
+    var fresh_arena = std.heap.ArenaAllocator.init(scratch);
+    defer fresh_arena.deinit();
+    var no_stages = Stages{};
+    const fresh = try buildPositionalFresh(fresh_arena.allocator(), fresh_sources, &no_stages);
+    const fresh_sections = fresh.positions.?;
+    stages.sub("build_lexical.fresh");
+
+    // (c) The dictionary, the postings and section 4.
+    const terms_out = try allocator.alloc(postings.TermEntry, previous.terms.len + fresh.terms.len);
+    const postings_out = try allocator.alloc(postings.Posting, previous.postings.len + fresh.postings.len);
+    var positions_sink = ByteSink{ .out = try allocator.alloc(u8, sections.positions.len + fresh_sections.positions.len) };
+    const Kept = struct { document: u32, frequency: u32, bytes: []const u8 };
+    var kept = std.ArrayList(Kept).empty;
+    defer kept.deinit(scratch);
+    var term_count: usize = 0;
+    var posting_count: usize = 0;
+    var cursor: usize = 0;
+    var fresh_cursor: usize = 0;
+    var previous_term: usize = 0;
+    var fresh_term: usize = 0;
+    while (previous_term < previous.terms.len or fresh_term < fresh.terms.len) {
+        const order: std.math.Order = if (previous_term == previous.terms.len)
+            .gt
+        else if (fresh_term == fresh.terms.len)
+            .lt
+        else
+            std.mem.order(u8, previous.terms[previous_term].term, fresh.terms[fresh_term].term);
+        const postings_start = posting_count;
+        var name: []const u8 = undefined;
+        if (order == .gt) {
+            // A term only fresh documents have: its run as it is.
+            const entry = fresh.terms[fresh_term];
+            name = entry.term;
+            var ordinals: usize = 0;
+            for (fresh.postings[entry.postings_start..][0..entry.postings_length]) |posting| {
+                postings_out[posting_count] = .{ .document_index = new_of_fresh[posting.document_index], .term_frequency = posting.term_frequency };
+                posting_count += 1;
+                ordinals += posting.term_frequency;
+            }
+            const end = try skipVarintsChecked(fresh_sections.positions, fresh_cursor, ordinals);
+            try positions_sink.append(fresh_sections.positions[fresh_cursor..end]);
+            fresh_cursor = end;
+            fresh_term += 1;
+        } else {
+            const entry = previous.terms[previous_term];
+            name = entry.term;
+            const list = previous.postings[entry.postings_start..][0..entry.postings_length];
+            const shared = order == .eq;
+            // Every posting kept, in order, no fresh posting to interleave:
+            // the postings remapped, section 4 copied as one run.
+            var whole = !shared;
+            var ordinals: usize = 0;
+            if (whole) {
+                var last: u32 = 0;
+                for (list, 0..) |posting, k| {
+                    const new = new_of_old[posting.document_index];
+                    if (new == none or (k != 0 and new <= last)) {
+                        whole = false;
+                        break;
+                    }
+                    postings_out[posting_count + k] = .{ .document_index = new, .term_frequency = posting.term_frequency };
+                    ordinals += posting.term_frequency;
+                    last = new;
+                }
+            }
+            if (whole) {
+                const end = try skipVarintsChecked(sections.positions, cursor, ordinals);
+                try positions_sink.append(sections.positions[cursor..end]);
+                cursor = end;
+                posting_count += list.len;
+            } else {
+                // Split per posting: the kept ones (re-sorted when a moved
+                // document changed their order), merged with the fresh
+                // postings by new document index.
+                kept.clearRetainingCapacity();
+                var in_order = true;
+                for (list) |posting| {
+                    const end = try skipVarintsChecked(sections.positions, cursor, posting.term_frequency);
+                    const new = new_of_old[posting.document_index];
+                    if (new != none) {
+                        if (kept.items.len != 0 and new < kept.items[kept.items.len - 1].document) in_order = false;
+                        try kept.append(scratch, .{ .document = new, .frequency = posting.term_frequency, .bytes = sections.positions[cursor..end] });
+                    }
+                    cursor = end;
+                }
+                if (!in_order) std.sort.pdq(Kept, kept.items, {}, struct {
+                    fn lessThan(_: void, a: Kept, b: Kept) bool {
+                        return a.document < b.document;
+                    }
+                }.lessThan);
+                const fresh_list: []const postings.Posting = if (shared) blk: {
+                    const fresh_entry = fresh.terms[fresh_term];
+                    break :blk fresh.postings[fresh_entry.postings_start..][0..fresh_entry.postings_length];
+                } else &.{};
+                var a: usize = 0;
+                var b: usize = 0;
+                while (a < kept.items.len or b < fresh_list.len) {
+                    const take_fresh = a == kept.items.len or (b < fresh_list.len and new_of_fresh[fresh_list[b].document_index] < kept.items[a].document);
+                    if (take_fresh) {
+                        const posting = fresh_list[b];
+                        const end = try skipVarintsChecked(fresh_sections.positions, fresh_cursor, posting.term_frequency);
+                        postings_out[posting_count] = .{ .document_index = new_of_fresh[posting.document_index], .term_frequency = posting.term_frequency };
+                        try positions_sink.append(fresh_sections.positions[fresh_cursor..end]);
+                        fresh_cursor = end;
+                        b += 1;
+                    } else {
+                        const item = kept.items[a];
+                        postings_out[posting_count] = .{ .document_index = item.document, .term_frequency = item.frequency };
+                        try positions_sink.append(item.bytes);
+                        a += 1;
+                    }
+                    posting_count += 1;
+                }
+                if (shared) fresh_term += 1;
+            }
+            previous_term += 1;
+        }
+        const length = posting_count - postings_start;
+        if (length == 0) continue;
+        terms_out[term_count] = .{ .term = name, .document_frequency = @intCast(length), .postings_start = postings_start, .postings_length = length };
+        term_count += 1;
+    }
+    // Every ordinal of both sections read, none left over.
+    std.debug.assert(cursor == sections.positions.len and fresh_cursor == fresh_sections.positions.len);
+    if (cursor != sections.positions.len or fresh_cursor != fresh_sections.positions.len) return error.InvalidLexicalSection;
+    const positions_out = try positions_sink.written();
+    stages.sub("build_lexical.merge");
+
+    // (d) Section 5: each document's table, previous or fresh.
+    const old_starts = try offsetTableStarts(scratch, sections.offsets, previous.document_lengths);
+    defer scratch.free(old_starts);
+    const fresh_starts = try offsetTableStarts(scratch, fresh_sections.offsets, fresh.document_lengths);
+    defer scratch.free(fresh_starts);
+    var offsets_sink = ByteSink{ .out = try allocator.alloc(u8, sections.offsets.len + fresh_sections.offsets.len) };
+    fresh_index = 0;
+    for (sources) |item| switch (item) {
+        .carried => |old| try offsets_sink.append(sections.offsets[old_starts[old]..old_starts[old + 1]]),
+        .fresh => {
+            try offsets_sink.append(fresh_sections.offsets[fresh_starts[fresh_index]..fresh_starts[fresh_index + 1]]);
+            fresh_index += 1;
+        },
+    };
+    const offsets_out = try offsets_sink.written();
+    stages.sub("build_lexical.offsets");
+
+    return .{
+        .terms = terms_out[0..term_count],
+        .postings = postings_out[0..posting_count],
+        .document_lengths = document_lengths,
+        .average_document_length = average,
+        .positions = .{ .positions = positions_out, .offsets = offsets_out },
         .sorted_terms = true,
     };
 }
@@ -1781,6 +2027,11 @@ fn buildGeneration(
     // positions (a HYBLEX01 generation is re-tokenized once, which upgrades it).
     var sources = std.ArrayList(DocSource).empty;
     const previous_positional = if (prev) |engine| engine.lexical_index.positions != null else false;
+    // S4-T11 ruling 2: the merge carries a previous document at most once
+    // (no path in this file carries one twice: a move removes its source,
+    // a rename pairs one removed file with one added file); a second carry
+    // would be re-tokenized.
+    var carried_once = if (previous_positional) try std.DynamicBitSetUnmanaged.initEmpty(allocator, prev.?.documents.len) else std.DynamicBitSetUnmanaged{};
     var retained = std.ArrayList(source.InputFile).empty;
     var pending = std.ArrayList(manifest.PendingEntry).empty;
     var unchunked = std.ArrayList(manifest.PendingEntry).empty;
@@ -1820,14 +2071,26 @@ fn buildGeneration(
         // bounded to 64 too, `rpc.zig`): the root's and the file's together.
         if (std.mem.count(u8, labels, "\n") + 1 > max_labels and labels.len != 0) return error.TooManyLabels;
         // Bytes to retain: read this run, or the previous source section's.
+        // S4-T11 ruling 3: bytes the previous section holds for this file
+        // keep their record (digest, line map, encoding) instead of being
+        // hashed and scanned again: the section's own copy, or bytes read
+        // this run whose SHA-256 equals the record's (a rename, an
+        // unchanged file the batch named).
         var bytes: ?[]const u8 = file.fresh orelse file.read;
-        if (bytes == null) if (file.prev_record) |pr| if (prev_source) |section| if (section.find(pr)) |entry| {
-            bytes = entry.bytes;
+        var carried_record: ?source.Carried = null;
+        if (file.fresh == null) if (file.prev_record) |pr| if (prev_source) |section| if (section.find(pr)) |entry| {
+            if (bytes) |read| {
+                if (read.len == entry.bytes.len and std.mem.eql(u8, file.hash, &std.fmt.bytesToHex(entry.sha256, .lower)))
+                    carried_record = source.carriedRecord(entry, false) catch return error.InvalidSourceSection;
+            } else {
+                bytes = entry.bytes;
+                carried_record = source.carriedRecord(entry, true) catch return error.InvalidSourceSection;
+            }
         };
         var source_doc_index: u32 = hybrid.no_source_doc;
         if (root.retain_source) if (bytes) |b| {
             source_doc_index = @intCast(retained.items.len);
-            try retained.append(allocator, .{ .path = file.record, .bytes = b });
+            try retained.append(allocator, .{ .path = file.record, .bytes = b, .carried = carried_record });
         };
         const first_document = documents.items.len;
         var chunker_id: ?[]const u8 = file.chunker;
@@ -1883,7 +2146,9 @@ fn buildGeneration(
                     document.required_labels = labels;
                     document.source_doc_index = source_doc_index;
                     try documents.append(allocator, document);
-                    try sources.append(allocator, if (previous_positional) .{ .carried = @intCast(old_index) } else .{ .fresh = try indexer.tokenizePositioned(allocator, options.analyzer, document.text) });
+                    const carry = previous_positional and !carried_once.isSet(old_index);
+                    if (carry) carried_once.set(old_index);
+                    try sources.append(allocator, if (carry) .{ .carried = @intCast(old_index) } else .{ .fresh = try indexer.tokenizePositioned(allocator, options.analyzer, document.text) });
                 }
             };
         }
@@ -1904,13 +2169,18 @@ fn buildGeneration(
     }
 
     stages.mark("build_documents");
-    const lexical_index = try buildPositionalMerged(allocator, if (prev) |engine| engine.lexical_index else null, sources.items);
+    const lexical_index = try buildPositionalMerged(allocator, if (prev) |engine| engine.lexical_index else null, sources.items, stages);
     stages.mark("build_lexical");
     const documents_buffer = try allocator.alloc(u8, try segment.encodedLengthV4(documents.items));
     const documents_encoded = try segment.encodeV4(documents.items, documents_buffer);
+    stages.sub("encode_sections.documents");
     const lexical_buffer = try allocator.alloc(u8, try lexical_segment.encodedLength(lexical_index));
+    // S4-T11 ruling 4: `encodedLength` is one `validateIndex` (which
+    // `encode` runs again) plus the sizes, timed apart.
+    stages.sub("encode_sections.lexical_length");
     const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_buffer);
-    const source_encoded: ?[]const u8 = if (any_retain) try source.encode(allocator, retained.items) else null;
+    stages.sub("encode_sections.lexical");
+    const source_encoded: ?[]const u8 = if (any_retain) try source.encodeMarked(allocator, retained.items, SourceMarks{ .stages = stages }) else null;
     stages.mark("encode_sections");
 
     var uses_markdown = false;

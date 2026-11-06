@@ -1010,6 +1010,55 @@ test "S3-T3: find and index_status say pending_files and truncated, over the vis
     try std.testing.expect(!(try (try f.opened()).find(a, .{ .query = "canal" }, .{})).ok.truncated);
 }
 
+/// S4-T11 ruling 2: the current generation's `lexical-N.hyblex` is byte
+/// for byte what `lexical_build.buildPositional` gives over its documents'
+/// tokens (every document re-tokenized: the oracle shares no code with the
+/// writer's merge). Returns that fresh index.
+fn expectFreshParity(f: *Fixture) !@import("postings.zig").Index {
+    const a = f.arena();
+    const scoped = try f.opened();
+    const engine = scoped.service.engine;
+    const lists = try a.alloc([]const @import("analysis.zig").PositionedToken, engine.documents.len);
+    for (engine.documents, lists) |document, *list| list.* = try indexer.tokenizePositioned(a, .v2, document.text);
+    const fresh = try lexical_build.buildPositional(a, engine.documents, lists);
+    const expected = try a.alloc(u8, try @import("lexical_segment.zig").encodedLength(fresh));
+    _ = try @import("lexical_segment.zig").encode(fresh, expected);
+    const metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    try std.testing.expectEqualSlices(u8, expected, try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited));
+    try std.testing.expect(metadata.has_positions);
+    // S4-T11 ruling 3: the source section is what `source.encode` gives
+    // over its files' bytes, every file hashed and scanned afresh.
+    if (metadata.hasSource()) {
+        const written = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
+        const section = try source.open(written);
+        const files = try a.alloc(source.InputFile, section.file_count);
+        for (files, 0..) |*file, index| {
+            const entry = section.file(index);
+            file.* = .{ .path = entry.path, .bytes = entry.bytes };
+        }
+        try std.testing.expectEqualSlices(u8, try source.encode(a, files), written);
+    }
+    return fresh;
+}
+
+/// The postings of `term` in `index` (sorted dictionary), as new document
+/// paths in posting order.
+fn termPaths(a: std.mem.Allocator, f: *Fixture, index: @import("postings.zig").Index, term: []const u8) ![]const []const u8 {
+    const scoped = try f.opened();
+    for (index.terms) |entry| {
+        if (!std.mem.eql(u8, entry.term, term)) continue;
+        const paths = try a.alloc([]const u8, entry.postings_length);
+        for (index.postings[entry.postings_start..][0..entry.postings_length], paths) |posting, *path| path.* = scoped.service.engine.documents[posting.document_index].path;
+        return paths;
+    }
+    return &.{};
+}
+
+fn hasTerm(index: @import("postings.zig").Index, term: []const u8) bool {
+    for (index.terms) |entry| if (std.mem.eql(u8, entry.term, term)) return true;
+    return false;
+}
+
 test "S3-T3: a generation carrying unchanged documents has the lexical section a fresh positional build gives" {
     var f = try Fixture.init();
     defer f.deinit();
@@ -1023,16 +1072,134 @@ test "S3-T3: a generation carrying unchanged documents has the lexical section a
         try add(a, "home", "b.txt", "a new boat with ducks\n", ""),
         "{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"z/a.md\",\"moved_from\":\"a.md\"}",
     }), .{});
-    const scoped = try f.opened();
-    const engine = scoped.service.engine;
-    const lists = try a.alloc([]const @import("analysis.zig").PositionedToken, engine.documents.len);
-    for (engine.documents, lists) |document, *list| list.* = try indexer.tokenizePositioned(a, .v2, document.text);
-    const fresh = try lexical_build.buildPositional(a, engine.documents, lists);
-    const expected = try a.alloc(u8, try @import("lexical_segment.zig").encodedLength(fresh));
-    _ = try @import("lexical_segment.zig").encode(fresh, expected);
-    const metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
-    try std.testing.expectEqualSlices(u8, expected, try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited));
-    try std.testing.expect(metadata.has_positions);
+    _ = try expectFreshParity(&f);
+}
+
+fn sections(a: std.mem.Allocator, title: []const u8, count: usize, words: []const u8) ![]const u8 {
+    var out = std.ArrayList(u8).empty;
+    // Letters, not digits, number the sections: "000" must sort first.
+    const marks = "abcdefghij";
+    for (0..count) |i| try out.print(a, "# {s} part {c}\n\nSection {c} of {s} keeps {s} and lantern{c}.\n\n", .{ title, marks[i], marks[i], title, words, marks[i] });
+    return out.toOwnedSlice(a);
+}
+
+test "S4-T11 ruling 2: the carried merge writes a fresh build's lexical section at every step" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, domain_roots, &.{
+        try add(a, "home", "a.md", try sections(a, "alpha", 3, "canal boat lantern"), ""),
+        try add(a, "home", "b.txt", "the the the boat\nboat lock lantern\n", ""),
+        try add(a, "home", "m.md", "# M\n\nmiddle file with a canal lantern\n", ""),
+        try add(a, "home", "p.md", "# P\n\nlantern in the middle of the list\n", ""),
+        try add(a, "home", "q.md", "# Q\n\nlantern after the middle\n", ""),
+        try add(a, "home", "zeta.md", "# Zeta\n\nthe last file speaks of quokka and boats\n", ""),
+        try add(a, "school", "c.md", "# C\n\nபள்ளி விடுமுறை and a lock, wombat\n", ""),
+    }), .{});
+    const first = try expectFreshParity(&f);
+    try std.testing.expect(hasTerm(first, "wombat"));
+
+    // A changed file whose chunk count grows, then one whose count shrinks.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "a.md", try sections(a, "alpha", 6, "canal boat lantern"), "")}), .{});
+    _ = try expectFreshParity(&f);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "a.md", try sections(a, "alpha", 2, "canal boat"), "")}), .{});
+    _ = try expectFreshParity(&f);
+
+    // A term's carried postings interleaved with a fresh document's posting
+    // in the middle of its list (the section-4 cursor splits there).
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "p.md", "# P\n\nlantern lantern twice now, in the middle\n", "")}), .{});
+    {
+        const index = try expectFreshParity(&f);
+        const paths = try termPaths(a, &f, index, "lantern");
+        try std.testing.expectEqual(@as(usize, 4), paths.len);
+        try std.testing.expectEqualStrings("p.md", paths[2][paths[2].len - 4 ..]);
+    }
+
+    // A deleted file.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{"{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"b.txt\"}"}), .{});
+    _ = try expectFreshParity(&f);
+
+    // Renames (moved_from) to paths that sort elsewhere: the last file to
+    // the front, a middle file to the end.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+        "{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"0first.md\",\"moved_from\":\"zeta.md\"}",
+        "{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"zz/m.md\",\"moved_from\":\"m.md\"}",
+    }), .{});
+    _ = try expectFreshParity(&f);
+
+    // A term that disappears from the corpus.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "school", "c.md", "# C\n\nபள்ளி விடுமுறை and a lock\n", "")}), .{});
+    try std.testing.expect(!hasTerm(try expectFreshParity(&f), "wombat"));
+
+    // A new term before every previous term, and one after every one.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "q.md", "# Q\n\n000 lantern after the middle\n", "")}), .{});
+    {
+        const index = try expectFreshParity(&f);
+        try std.testing.expectEqualStrings("000", index.terms[0].term);
+    }
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "p.md", "# P\n\nlantern 힣힣 in the middle\n", "")}), .{});
+    {
+        const index = try expectFreshParity(&f);
+        try std.testing.expectEqualStrings("힣힣", index.terms[index.terms.len - 1].term);
+    }
+
+    // Several changed files in one batch (a change, an add, a remove, a
+    // move and another change).
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+        try add(a, "home", "a.md", try sections(a, "alpha", 4, "boat quokka"), ""),
+        try add(a, "home", "new.md", "# New\n\nan added file with canal boats\n", ""),
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"q.md\"}",
+        "{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"b2.md\",\"moved_from\":\"0first.md\"}",
+        try add(a, "school", "c.md", "# C\n\nwombat returns\n", ""),
+    }), .{});
+    try std.testing.expect(hasTerm(try expectFreshParity(&f), "wombat"));
+
+    // The last files deleted: the empty generation.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"a.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"new.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"p.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"b2.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"zz/m.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"school\",\"path\":\"c.md\"}",
+    }), .{});
+    {
+        const index = try expectFreshParity(&f);
+        try std.testing.expectEqual(@as(usize, 0), index.document_lengths.len);
+    }
+    // And a file again after it.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "again.md", "# Again\n\ncanal\n", "")}), .{});
+    _ = try expectFreshParity(&f);
+}
+
+test "S4-T11 ruling 2: a HYBLEX01 previous generation takes the fresh path and upgrades" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, domain_roots, &.{
+        try add(a, "home", "a.md", try sections(a, "alpha", 3, "canal boat lantern"), ""),
+        try add(a, "home", "b.txt", "the the the boat\nboat lock lantern\n", ""),
+        try add(a, "school", "c.md", "# C\n\nபள்ளி விடுமுறை and a lock\n", ""),
+    }), .{});
+    // Generation 1's lexical section re-written as HYBLEX01 (no positions)
+    // and the manifest re-bound to it.
+    const lexical_segment = @import("lexical_segment.zig");
+    var metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
+    const encoded = try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
+    var index = try lexical_segment.decode(encoded, try a.alloc(@import("postings.zig").TermEntry, metadata.term_count), try a.alloc(@import("postings.zig").Posting, metadata.posting_count), try a.alloc(u32, metadata.document_count));
+    index.positions = null;
+    index.sorted_terms = false;
+    const v1 = try lexical_segment.encode(index, try a.alloc(u8, try lexical_segment.encodedLength(index)));
+    try std.testing.expectEqualStrings(lexical_segment.magic, v1[0..8]);
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = v1 });
+    metadata.lexical_bytes = v1.len;
+    metadata.lexical_checksum = std.mem.readInt(u64, v1[lexical_segment.header_length - 8 ..][0..8], .little);
+    metadata.has_positions = false;
+    try f.out.writeFile(io, .{ .sub_path = "MANIFEST", .data = try manifest.encode(metadata, try a.alloc(u8, try manifest.encodedLength(metadata))) });
+    try std.testing.expect(!(try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited))).has_positions);
+
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "b.txt", "a new boat with ducks\n", "")}), .{});
+    _ = try expectFreshParity(&f);
 }
 
 test "committed recovery state preserves own labels, hashes, mtimes, pending and moves without cache" {

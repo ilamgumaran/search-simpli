@@ -105,11 +105,15 @@ their highlights are recomputed by re-tokenizing the hit's text.
 
 ## `--update`
 
-Unchanged documents are carried with their exact token sequence and spans,
-read back from the previous `HYBLEX02` section (`lexical_build.reconstructPositioned`),
-not re-analyzed; a previous `HYBLEX01` generation is re-tokenized once, which
-upgrades it. A test checks that an update writes sections 4 and 5 byte for
-byte as a full rebuild of the same folder.
+Unchanged documents are carried, not re-analyzed: since S4-T11
+`apply.mergeCarried` merges the previous dictionary with the changed files'
+terms by bytes, keeps each carried posting with its document index remapped
+and its term frequency, copies its section-4 bytes as they are (ordinals are
+relative to their own document) and copies each carried document's section-5
+table. A previous `HYBLEX01` generation is re-tokenized once, which upgrades
+it. Tests (`apply_test.zig`, `incremental_indexing_test.zig`,
+`scripts/s4t11_budgets.py compare`) check that an update writes the whole
+section byte for byte as a full rebuild of the same files.
 
 ## Size (S3-T2, measured)
 

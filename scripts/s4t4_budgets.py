@@ -178,7 +178,11 @@ def profile(args):
     table = {}
     for label in ("off", "on"):
         runs = [r for r in report["runs"] if r["label"] == label and r["stages"]]
-        names = list(runs[0]["stages"]) if runs else []
+        # S4-T11 ruling 1: every stage and dotted sub-stage any run printed,
+        # in first-seen order (a sub-stage only some runs reach still shows).
+        names = []
+        for r in runs:
+            names += [name for name in r["stages"] if name not in names]
         table[label] = {name: {"p50_ms": p50([r["stages"][name] for r in runs if name in r["stages"]]),
                                "worst_ms": max(r["stages"][name] for r in runs if name in r["stages"]),
                                "runs_ms": [r["stages"].get(name) for r in runs]} for name in names}
