@@ -218,7 +218,8 @@ const consonants = [_][]const u8{ "b", "c", "d", "f", "g", "h", "j", "k", "l", "
 const vowels = [_][]const u8{ "a", "e", "i", "o", "u" };
 const common_words = [_][]const u8{ "the", "a", "an", "of", "and", "to", "in", "for", "with", "by", "is", "are", "that", "this", "it", "as", "from", "on", "be", "was", "were", "has", "have", "will", "can", "not" };
 const topics = [_][]const u8{ "Hybrid Retrieval", "Hash Tables", "Garbage Collection", "Type Systems", "Distributed Consensus", "Operating System Schedulers", "Compilers", "Database Indexing" };
-const file_count: usize = 10_000;
+/// The corpus of the S4-T1 and S4-T2 tests (their peaks are recorded at it).
+const base_file_count: usize = 10_000;
 const vocabulary_size: usize = 24_000;
 
 fn word(buffer: []u8, index: usize) []const u8 {
@@ -233,11 +234,13 @@ fn word(buffer: []u8, index: usize) []const u8 {
     return buffer[0..length];
 }
 
-/// The shape of `scripts/gen_timing_corpus.py` (not its bytes): 100 folders
-/// of 100 Markdown files, a heading and one to three paragraphs of three to
-/// six sentences, 35 % common words, and a closing line that uses each
-/// vocabulary word at least once across the corpus.
-fn generateCorpus(a: std.mem.Allocator, dir: std.Io.Dir) !void {
+/// The shape of `scripts/gen_timing_corpus.py` (not its bytes): folders of
+/// 100 Markdown files (`group-NN/doc-NNNNN.md`; 10,000 files are 100
+/// folders), a heading and one to three paragraphs of three to six
+/// sentences, 35 % common words, and a closing line that uses each
+/// vocabulary word at least once across the corpus. S4-T8: `file_count` is
+/// a parameter; at 10,000 the bytes are those of S4-T1's generator.
+fn generateCorpus(a: std.mem.Allocator, dir: std.Io.Dir, file_count: usize) !void {
     var prng = std.Random.DefaultPrng.init(20260917);
     const random = prng.random();
     var text: std.Io.Writer.Allocating = .init(a);
@@ -261,7 +264,7 @@ fn generateCorpus(a: std.mem.Allocator, dir: std.Io.Dir) !void {
         while (quota < vocabulary_size) : (quota += file_count) try w.print("{s} ", .{word(&buffer, quota)});
         try w.writeAll(".\n");
         const path = try std.fmt.allocPrint(a, "group-{d:0>2}/doc-{d:0>5}.md", .{ index / 100, index });
-        if (index % 100 == 0) try dir.createDirPath(io, path[0..8]);
+        if (index % 100 == 0) try dir.createDirPath(io, path[0..std.mem.indexOfScalar(u8, path, '/').?]);
         try dir.writeFile(io, .{ .sub_path = path, .data = text.written() });
     }
 }
@@ -274,7 +277,7 @@ test "S4-T1 NFR-13: find and search_knowledge over a 10,000-file index inside 64
     defer corpus.cleanup();
     var out = std.testing.tmpDir(.{ .iterate = true });
     defer out.cleanup();
-    try generateCorpus(a, corpus.dir);
+    try generateCorpus(a, corpus.dir, base_file_count);
     _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
     var buffer: [16]u8 = undefined;
     const rare = try std.fmt.allocPrint(a, "{s}", .{word(&buffer, 4321)});
@@ -292,7 +295,7 @@ test "filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files" {
     defer corpus.cleanup();
     var out = std.testing.tmpDir(.{ .iterate = true });
     defer out.cleanup();
-    try generateCorpus(a, corpus.dir);
+    try generateCorpus(a, corpus.dir, base_file_count);
     _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
     const peaks = try measure(out.dir, cap_bytes, .{ .find_query = "the", .knowledge_query = "the", .filename_query = "doc the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
     printPeaks("10k filename and lazy tables", peaks);
