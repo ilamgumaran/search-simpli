@@ -518,7 +518,14 @@ const File = struct {
     carried_after_failure: bool = false,
     /// Came from an add/change (rename-detection candidate when new).
     from_content: bool = false,
+    /// S4-T16 ruling 3: this file's position in `Work.order` when the
+    /// previous state put it there (`no_order` otherwise). A copy of the
+    /// struct under another key keeps the number; `orderedFiles` trusts it
+    /// only while `record` is the very slice `Work.order` holds there.
+    order: u32 = no_order,
 };
+
+const no_order = std.math.maxInt(u32);
 
 const Initial = struct { status: incremental_state.Status, hash: []const u8, root_id: []const u8, rel: []const u8 };
 
@@ -534,6 +541,11 @@ const Work = struct {
     files: std.StringHashMapUnmanaged(File) = .empty,
     initial: std.StringHashMapUnmanaged(Initial) = .empty,
     gone: std.StringHashMapUnmanaged(Cause) = .empty,
+    /// S4-T16 ruling 3: the record paths the previous state put, in its
+    /// order, and whether they ascend strictly by bytes (the writer writes
+    /// the state in record order since S3-T3).
+    order: std.ArrayList([]const u8) = .empty,
+    order_ascending: bool = false,
     touched: std.StringHashMapUnmanaged(Op) = .empty,
     removed_roots: std.StringHashMapUnmanaged(void) = .empty,
     /// Files given but not indexed in full (`manifest.Meta.skipped`), by
@@ -1651,6 +1663,8 @@ fn loadPrevious(
         // (`initial` is filled in the same loops as `files`, ruling 3).
         try work.files.ensureTotalCapacity(allocator, @intCast(s.files.len));
         try work.initial.ensureTotalCapacity(allocator, @intCast(s.files.len));
+        try work.order.ensureTotalCapacityPrecise(allocator, s.files.len);
+        var ascending = true;
         // S4-T16 ruling 5(b): whether a state record has previous records
         // is needed only for an entry without a chunker. When the previous
         // documents are in the range form and the state's records ascend
@@ -1665,10 +1679,13 @@ fn loadPrevious(
         for (s.files) |entry| {
             if (work.rootIndex(entry.root_id) == null) continue;
             const record = try scope.recordPath(allocator, entry.root_id, entry.path);
-            if (walk) if (last) |l| if (std.mem.order(u8, l, record) != .lt) {
+            if (last) |l| if (std.mem.order(u8, l, record) != .lt) {
+                ascending = false;
                 walk = false;
             };
             last = record;
+            const position: u32 = @intCast(work.order.items.len);
+            work.order.appendAssumeCapacity(record);
             var walked: ?PreviousDocs.Indices = null;
             if (walk) {
                 const runs = previous_docs.runs;
@@ -1699,8 +1716,10 @@ fn loadPrevious(
                 .chunker = chunker_id,
                 .prev_record = if (entry.status == .indexed) record else null,
                 .recorded_moved_from = entry.moved_from,
+                .order = position,
             });
         }
+        work.order_ascending = ascending;
         // S4-T16 ruling 5(c), why the skip is exact: `walk` still set means
         // the records put above ascend strictly (so each is one distinct
         // key of `work.files`) and the runs ascend strictly (the range
@@ -2415,6 +2434,182 @@ fn chunkerIndex(kind: chunker.Kind) u16 {
     };
 }
 
+/// S4-T16 ruling 3 (finding 4): the work table's files in record-path
+/// order, as sorting them all gives. When the previous state's records
+/// ascend strictly (`Work.order`), every file still under the key the state
+/// put it at, with the very record slice put there, takes that position;
+/// the others (added, moved, changed into a new struct, or put by a copy
+/// under another key) are sorted and merged in. Keys are unique, so the
+/// placed files ascend and no merged pair compares equal: the result is
+/// the sort's. Any other state takes the sort of every file.
+fn orderedFiles(allocator: std.mem.Allocator, work: *const Work) ![]*const File {
+    const files = try allocator.alloc(*const File, work.files.count());
+    var it = work.files.iterator();
+    if (!work.order_ascending) {
+        var i: usize = 0;
+        while (it.next()) |entry| : (i += 1) files[i] = entry.value_ptr;
+        std.mem.sort(*const File, files, {}, lessThanFileRecord);
+        return files;
+    }
+    const order = work.order.items;
+    const placed = try allocator.alloc(?*const File, order.len);
+    defer allocator.free(placed);
+    @memset(placed, null);
+    var touched = std.ArrayList(*const File).empty;
+    defer touched.deinit(allocator);
+    while (it.next()) |entry| {
+        const file = entry.value_ptr;
+        if (file.order < order.len and order[file.order].ptr == file.record.ptr and order[file.order].len == file.record.len) {
+            placed[file.order] = file;
+        } else try touched.append(allocator, file);
+    }
+    std.mem.sort(*const File, touched.items, {}, lessThanFileRecord);
+    var out: usize = 0;
+    var next_touched: usize = 0;
+    for (placed) |slot| {
+        const file = slot orelse continue;
+        while (next_touched < touched.items.len and lessThanFileRecord({}, touched.items[next_touched], file)) : (next_touched += 1) {
+            files[out] = touched.items[next_touched];
+            out += 1;
+        }
+        files[out] = file;
+        out += 1;
+    }
+    for (touched.items[next_touched..]) |file| {
+        files[out] = file;
+        out += 1;
+    }
+    std.debug.assert(out == files.len);
+    return files;
+}
+
+fn testFile(record: []const u8, order: u32) File {
+    return .{ .root_id = "r", .rel = record, .record = record, .status = .indexed, .hash = "", .size = null, .mtime_ms = null, .labels = &.{}, .chunker = null, .prev_record = record, .order = order };
+}
+
+fn testRecordName(a: std.mem.Allocator, random: std.Random) ![]u8 {
+    // Short names over a small alphabet, so names share prefixes and
+    // `.` (0x2e), `/` (0x2f) and `0` (0x30) meet at the same depth.
+    const alphabet = "ab./0";
+    const name = try a.alloc(u8, 1 + random.uintLessThan(usize, 5));
+    for (name) |*c| c.* = alphabet[random.uintLessThan(usize, alphabet.len)];
+    return name;
+}
+
+test "S4-T16 ruling 3 (finding 4): the merged file order equals the sort of every file over random batches" {
+    var prng = std.Random.DefaultPrng.init(0x5416_0003);
+    const random = prng.random();
+    var merged: usize = 0;
+    var moved_kept_order: usize = 0;
+    for (0..400) |round| {
+        var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+        defer arena.deinit();
+        const a = arena.allocator();
+        var work = Work{ .allocator = a };
+        // The previous state: distinct records, ascending.
+        var names = std.ArrayList([]const u8).empty;
+        for (0..random.uintLessThan(usize, 80)) |_| try names.append(a, try testRecordName(a, random));
+        std.mem.sort([]const u8, names.items, {}, lessThanString);
+        for (names.items, 0..) |name, index| {
+            if (index > 0 and std.mem.eql(u8, names.items[index - 1], name)) continue;
+            const position: u32 = @intCast(work.order.items.len);
+            try work.order.append(a, name);
+            try work.files.put(a, name, testFile(name, position));
+        }
+        // Every tenth round: a state out of order, the plain sort.
+        work.order_ascending = round % 10 != 0;
+        if (work.order_ascending) merged += 1;
+        // The batch.
+        for (0..random.uintLessThan(usize, 12)) |_| {
+            const keys = try a.alloc([]const u8, work.files.count());
+            var keys_it = work.files.keyIterator();
+            var k: usize = 0;
+            while (keys_it.next()) |key| : (k += 1) keys[k] = key.*;
+            const existing: ?[]const u8 = if (keys.len == 0) null else keys[random.uintLessThan(usize, keys.len)];
+            switch (random.uintLessThan(u8, 5)) {
+                // Removed.
+                0 => if (existing) |key| {
+                    _ = work.files.remove(key);
+                },
+                // Added under a new name.
+                1 => {
+                    const name = try testRecordName(a, random);
+                    if (!work.files.contains(name)) try work.files.put(a, name, testFile(name, no_order));
+                },
+                // Moved: the struct copied under a new name, keeping its
+                // order number (the case the slice check exists for).
+                2 => if (existing) |key| {
+                    const name = try testRecordName(a, random);
+                    if (!work.files.contains(name)) {
+                        var file = work.files.fetchRemove(key).?.value;
+                        file.record = name;
+                        if (file.order != no_order) moved_kept_order += 1;
+                        try work.files.put(a, name, file);
+                    }
+                },
+                // Changed: a new struct under the same name, from a new
+                // slice with the same bytes, the order number kept.
+                3 => if (existing) |key| {
+                    var file = work.files.get(key).?;
+                    file.record = try a.dupe(u8, key);
+                    try work.files.put(a, key, file);
+                },
+                // Unchanged but named: the same struct put again.
+                else => if (existing) |key| try work.files.put(a, key, work.files.get(key).?),
+            }
+        }
+        const expected = try a.alloc(*const File, work.files.count());
+        var it = work.files.iterator();
+        var i: usize = 0;
+        while (it.next()) |entry| : (i += 1) expected[i] = entry.value_ptr;
+        std.mem.sort(*const File, expected, {}, lessThanFileRecord);
+        const got = try orderedFiles(a, &work);
+        std.testing.expectEqualSlices(*const File, expected, got) catch |err| {
+            std.debug.print("S4-T16 ruling 3: round {d}\n", .{round});
+            return err;
+        };
+    }
+    try std.testing.expect(merged >= 300);
+    try std.testing.expect(moved_kept_order > 0);
+}
+
+/// S4-T16 ruling 3: the previous source section's files read in path order
+/// beside the documents pass's files. A file looked up under its own path
+/// (`in_order`: the pass visits those paths ascending) moves the cursor
+/// forward past smaller paths and takes an equal one, the same entry
+/// `Section.find`'s binary search returns; any other lookup (a moved or
+/// renamed file's previous path) and a section opened without record
+/// offsets take `Section.find`.
+const SourceWalk = struct {
+    section: source.Section,
+    next: usize = 0,
+    /// `section.file(next)`, once read.
+    peeked: ?source.FileEntry = null,
+
+    fn find(walk: *SourceWalk, path: []const u8, in_order: bool) ?source.FileEntry {
+        const section = walk.section;
+        if (!in_order or section.record_offsets.len != section.file_count) return section.find(path);
+        while (walk.next < section.file_count) {
+            const entry = walk.peeked orelse section.file(walk.next);
+            switch (std.mem.order(u8, entry.path, path)) {
+                .lt => {},
+                .eq => {
+                    walk.next += 1;
+                    walk.peeked = null;
+                    return entry;
+                },
+                .gt => {
+                    walk.peeked = entry;
+                    return null;
+                },
+            }
+            walk.next += 1;
+            walk.peeked = null;
+        }
+        return null;
+    }
+};
+
 /// S4-T13 ruling 4: where the previous generation's filename sections are
 /// (its manifest's values), for the carried filename lexical section.
 const PreviousFilename = struct {
@@ -2435,11 +2630,9 @@ fn buildGeneration(
     generation: u64,
     stages: *Stages,
 ) !Built {
-    // Sorted by record path; pointers, not the (large) structs, are sorted.
-    var files = std.ArrayList(*const File).empty;
-    var it = work.files.iterator();
-    while (it.next()) |entry| try files.append(allocator, entry.value_ptr);
-    std.mem.sort(*const File, files.items, {}, lessThanFileRecord);
+    // In record-path order (S4-T16 ruling 3: the previous state's order with
+    // the batch's files merged in, `orderedFiles`).
+    const files = try orderedFiles(allocator, work);
 
     var documents = std.ArrayList(hybrid.Document).empty;
     // S3-T2: positioned tokens, so the lexical section is HYBLEX02. A
@@ -2460,6 +2653,17 @@ fn buildGeneration(
     for (work.roots.items) |root| if (root.entry.retain_source) {
         any_retain = true;
     };
+    // S4-T16 ruling 3: the four lists sized once: a record per previous
+    // record (a changed file's new chunks usually replace about as many)
+    // and an entry per file. Growth past that is still allowed.
+    const previous_records = if (prev) |engine| engine.documents.len else 0;
+    try documents.ensureTotalCapacityPrecise(allocator, previous_records + 64);
+    try sources.ensureTotalCapacityPrecise(allocator, previous_records + 64);
+    if (any_retain) try retained.ensureTotalCapacityPrecise(allocator, files.len);
+    try state_files.ensureTotalCapacityPrecise(allocator, files.len);
+    // S4-T16 ruling 3: the previous source section read in step with the
+    // files (both in path order) for every file that carries its own path.
+    var source_walk: ?SourceWalk = if (prev_source) |section| SourceWalk{ .section = section } else null;
 
     // Fresh chunks are tokenized in a scratch arena reset per chunk and their
     // tokens interned (one copy per distinct term), so the token lists the
@@ -2468,7 +2672,7 @@ fn buildGeneration(
     defer scratch.deinit();
     var interned = std.StringHashMapUnmanaged(void).empty;
 
-    for (files.items) |file_pointer| {
+    for (files) |file_pointer| {
         const file = file_pointer.*;
         const root_index = work.rootIndex(file.root_id).?;
         const root = work.roots.items[root_index].entry;
@@ -2498,7 +2702,7 @@ fn buildGeneration(
         // unchanged file the batch named).
         var bytes: ?[]const u8 = file.fresh orelse file.read;
         var carried_record: ?source.Carried = null;
-        if (file.fresh == null) if (file.prev_record) |pr| if (prev_source) |section| if (section.find(pr)) |entry| {
+        if (file.fresh == null) if (file.prev_record) |pr| if (source_walk) |*walk| if (walk.find(pr, std.mem.eql(u8, pr, file.record))) |entry| {
             if (bytes) |read| {
                 if (read.len == entry.bytes.len and std.mem.eql(u8, file.hash, &std.fmt.bytesToHex(entry.sha256, .lower)))
                     carried_record = source.carriedRecord(entry, false) catch return error.InvalidSourceSection;

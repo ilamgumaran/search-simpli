@@ -2134,6 +2134,46 @@ test "S4-T16 rulings 2-4: every kind of update writes a fresh index's documents,
     }
 }
 
+/// S4-T16 ruling 3: roots whose bytes are not retained sort before, between
+/// and after the retained ones, so the source walk meets files the section
+/// does not hold at every position.
+const s4t16_walk_roots =
+    \\[{"root_id":"attic","label":"Attic","kind":"host","retain_source":false},{"root_id":"home","label":"Home","kind":"host"},{"root_id":"kitchen","label":"Kitchen","kind":"host","retain_source":false},{"root_id":"school","label":"School","kind":"icloud"},{"root_id":"zz","label":"Last","kind":"host","retain_source":false}]
+;
+
+test "S4-T16 ruling 3: the source walk over a section that holds only some roots' files writes a fresh index's sections" {
+    for ([_]apply.Options{ .{}, with_filenames }) |options| {
+        var f = try Fixture.init();
+        defer f.deinit();
+        const a = f.arena();
+        var m = Model{};
+        for ([_]ModelFile{
+            .{ .root_id = "attic", .path = "a.md", .text = "# Attic\n\nold boat\n" },
+            .{ .root_id = "attic", .path = "b.txt", .text = "a lantern in the attic\n" },
+            .{ .root_id = "home", .path = "a.md", .text = try sections(a, "alpha", 2, "canal") },
+            .{ .root_id = "home", .path = "c.txt", .text = "the canal lock\n" },
+            .{ .root_id = "kitchen", .path = "k.md", .text = "# Kitchen\n\nlamp oil\n" },
+            .{ .root_id = "school", .path = "d.md", .text = "# D\n\nபள்ளி and a lock\n" },
+            .{ .root_id = "school", .path = "e.txt", .text = "an e file\n" },
+            .{ .root_id = "zz", .path = "z.txt", .text = "last of all\n" },
+        }) |file| try m.set(a, file);
+        _ = try f.applyOk(try joinChanges(a, s4t16_walk_roots, try m.adds(a)), options);
+        try expectFreshSections(&f, s4t16_walk_roots, &m, options);
+        // A retained file changes between two roots that retain nothing.
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "c.txt", .text = "the canal lock\nchanged\n" })}), options);
+        try expectFreshSections(&f, s4t16_walk_roots, &m, options);
+        // A non-retained file changes, a retained one moves past another, a
+        // file is added to the first root.
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{
+            try m.put(a, .{ .root_id = "kitchen", .path = "k.md", .text = "# Kitchen\n\nlamp oil and bread\n" }),
+            "{\"op\":\"move\",\"root_id\":\"school\",\"path\":\"f.md\",\"moved_from\":\"d.md\"}",
+            try m.put(a, .{ .root_id = "attic", .path = "0.txt", .text = "first in the attic\n" }),
+        }), options);
+        try m.rename("school", "d.md", "f.md");
+        try expectFreshSections(&f, s4t16_walk_roots, &m, options);
+    }
+}
+
 /// S4-T16 ruling 2: the current generation re-written with its records out
 /// of path order (the lexical section rebuilt over the new order, the
 /// source and state sections untouched, the manifest re-bound).
