@@ -1642,13 +1642,52 @@ fn loadPrevious(
     previous_docs.* = try PreviousDocs.build(allocator, prev.documents);
     stages.sub("load_previous.previous_docs");
     const meta_chunkers: ?manifest.Meta = meta;
+    // S4-T16 ruling 5(c): set when every previous path is already a file of
+    // the work table after the state loop (below).
+    var all_named = false;
 
     if (state) |s| {
+        // S4-T16 ruling 5(a): both tables sized once for the state's files
+        // (`initial` is filled in the same loops as `files`, ruling 3).
+        try work.files.ensureTotalCapacity(allocator, @intCast(s.files.len));
+        try work.initial.ensureTotalCapacity(allocator, @intCast(s.files.len));
+        // S4-T16 ruling 5(b): whether a state record has previous records
+        // is needed only for an entry without a chunker. When the previous
+        // documents are in the range form and the state's records ascend
+        // strictly (the writer writes both in record order), one forward
+        // walk over the runs answers it with a compare per record, and
+        // `matched` counts the runs some state record named; otherwise it
+        // is looked up only for an entry without a chunker.
+        var walk = previous_docs.sorted;
+        var run: usize = 0;
+        var matched: usize = 0;
+        var last: ?[]const u8 = null;
         for (s.files) |entry| {
             if (work.rootIndex(entry.root_id) == null) continue;
             const record = try scope.recordPath(allocator, entry.root_id, entry.path);
-            const has_docs = previous_docs.contains(record);
-            try work.files.put(allocator, record, .{
+            if (walk) if (last) |l| if (std.mem.order(u8, l, record) != .lt) {
+                walk = false;
+            };
+            last = record;
+            var walked: ?PreviousDocs.Indices = null;
+            if (walk) {
+                const runs = previous_docs.runs;
+                while (run < runs.len) {
+                    if (std.mem.eql(u8, runs[run].path, record)) {
+                        walked = .{ .range = runs[run].range };
+                        matched += 1;
+                        run += 1;
+                        break;
+                    }
+                    if (std.mem.order(u8, runs[run].path, record) != .lt) break;
+                    run += 1;
+                }
+            }
+            const chunker_id = entry.chunker orelse chunker_id: {
+                const indices = if (walk) walked else previous_docs.get(record);
+                break :chunker_id if (indices) |found| chunkerOf(prev, meta_chunkers, found) else null;
+            };
+            try putLoaded(allocator, work, .{
                 .root_id = entry.root_id,
                 .rel = entry.path,
                 .record = record,
@@ -1657,22 +1696,34 @@ fn loadPrevious(
                 .size = entry.size,
                 .mtime_ms = entry.mtime_ms,
                 .labels = entry.required_labels,
-                .chunker = entry.chunker orelse if (has_docs) chunkerOf(prev, meta_chunkers, previous_docs.get(record).?) else null,
+                .chunker = chunker_id,
                 .prev_record = if (entry.status == .indexed) record else null,
                 .recorded_moved_from = entry.moved_from,
             });
         }
+        // S4-T16 ruling 5(c), why the skip is exact: `walk` still set means
+        // the records put above ascend strictly (so each is one distinct
+        // key of `work.files`) and the runs ascend strictly (the range
+        // form), so the walk paired each matched run with exactly one of
+        // those keys, equal by bytes. `matched` equal to the number of runs
+        // therefore means every previous path is a key of `work.files`, so
+        // every pass of the loop below would stop at its first `continue`
+        // and change nothing. A state that misses a path (or a walk that
+        // stopped) runs the loop as before.
+        all_named = walk and matched == previous_docs.runs.len;
     } else if (meta) |m| {
+        try work.files.ensureTotalCapacity(allocator, @intCast(m.pending.len + m.unchunked.len));
+        try work.initial.ensureTotalCapacity(allocator, @intCast(m.pending.len + m.unchunked.len));
         for (m.pending) |entry| {
             if (work.rootIndex(entry.root_id) == null) continue;
             const record = try scope.recordPath(allocator, entry.root_id, entry.path);
-            try work.files.put(allocator, record, .{ .root_id = entry.root_id, .rel = entry.path, .record = record, .status = .pending, .hash = "", .size = entry.size, .mtime_ms = null, .labels = entry.required_labels, .chunker = null, .prev_record = null });
+            try putLoaded(allocator, work, .{ .root_id = entry.root_id, .rel = entry.path, .record = record, .status = .pending, .hash = "", .size = entry.size, .mtime_ms = null, .labels = entry.required_labels, .chunker = null, .prev_record = null });
         }
         for (m.unchunked) |entry| {
             if (work.rootIndex(entry.root_id) == null) continue;
             const record = try scope.recordPath(allocator, entry.root_id, entry.path);
             const retained = if (section) |sec| sec.find(record) else null;
-            try work.files.put(allocator, record, .{
+            try putLoaded(allocator, work, .{
                 .root_id = entry.root_id,
                 .rel = entry.path,
                 .record = record,
@@ -1690,15 +1741,19 @@ fn loadPrevious(
     // Records the state does not name (no trusted state, or a state that
     // missed them): rebuilt from the generation (the source section's hash
     // when the bytes were retained).
+    if (@import("builtin").is_test) {
+        if (all_named) test_not_in_state_skipped += 1 else test_not_in_state_walked += 1;
+    }
     var it = previous_docs.iterator();
-    while (it.next()) |entry| {
+    while (!all_named) {
+        const entry = it.next() orelse break;
         const record = entry.path;
         if (work.files.contains(record)) continue;
         const root_index = scope.rootOfPath(roots, record) orelse continue;
         const root = roots[root_index];
         const first = prev.documents[entry.indices.at(0)];
         const retained = if (section) |sec| sec.find(record) else null;
-        try work.files.put(allocator, record, .{
+        try putLoaded(allocator, work, .{
             .root_id = root.root_id,
             .rel = scope.relativePath(root, record),
             .record = record,
@@ -1712,12 +1767,20 @@ fn loadPrevious(
         });
     }
     stages.sub("load_previous.not_in_state");
-    var files = work.files.iterator();
-    while (files.next()) |entry| {
-        const file = entry.value_ptr.*;
-        try work.initial.put(allocator, file.record, .{ .status = file.status, .hash = file.hash, .root_id = file.root_id, .rel = file.rel });
-    }
-    stages.sub("load_previous.initial");
+}
+
+/// S4-T16 ruling 5(c), test builds only: how many `loadPrevious` calls ran
+/// the records-not-in-state loop, and how many skipped it.
+pub var test_not_in_state_walked: usize = 0;
+pub var test_not_in_state_skipped: usize = 0;
+
+/// A file of the previous generation into the work table, and its initial
+/// values (`work.initial`, which rename detection and the counts read) in
+/// the same step: a path put twice keeps its last values in both, as the
+/// second walk over `work.files` this replaced did (S4-T16 ruling 3).
+fn putLoaded(allocator: std.mem.Allocator, work: *Work, file: File) !void {
+    try work.files.put(allocator, file.record, file);
+    try work.initial.put(allocator, file.record, .{ .status = file.status, .hash = file.hash, .root_id = file.root_id, .rel = file.rel });
 }
 
 /// The chunker id that made a file's previous chunks (a v1 manifest has no

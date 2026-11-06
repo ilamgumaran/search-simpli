@@ -2262,6 +2262,39 @@ fn dropStateEntry(f: *Fixture, root_id: []const u8, path: []const u8) !void {
     try writeManifest(f, metadata);
 }
 
+/// S4-T16 ruling 5(b): the bound state section re-written with its entries
+/// in reverse record order (a state no writer since S3-T3 writes), so the
+/// walk over the previous runs stops at the second entry.
+fn reverseStateEntries(f: *Fixture) !void {
+    const a = f.arena();
+    var metadata = try currentManifest(f);
+    const bound = metadata.state.?;
+    const state = try incremental_state.decodeSection(a, try f.out.readFileAlloc(io, bound.file, a, .unlimited));
+    const reversed = try a.dupe(incremental_state.Entry, state.files);
+    std.mem.reverse(incremental_state.Entry, reversed);
+    var rewritten = state;
+    rewritten.files = reversed;
+    const bytes = try incremental_state.encodeSection(a, rewritten);
+    try f.out.writeFile(io, .{ .sub_path = bound.file, .data = bytes });
+    metadata = try manifest.withState(metadata, bound.file, bytes);
+    try writeManifest(f, metadata);
+}
+
+test "S4-T16 ruling 5(b): a state whose entries are out of record order runs the not-in-state loop and writes the same sections" {
+    for ([_]apply.Options{ .{}, with_filenames }) |options| {
+        var f = try Fixture.init();
+        defer f.deinit();
+        const a = f.arena();
+        var m = Model{};
+        try s4t16Folder(&f, &m, options);
+        try reverseStateEntries(&f);
+        const walked = apply.test_not_in_state_walked;
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "m.md", .text = "# M\n\nchanged after a reversed state\n" })}), options);
+        try std.testing.expectEqual(walked + 1, apply.test_not_in_state_walked);
+        try expectFreshSections(&f, s4t16_roots, &m, options);
+    }
+}
+
 test "S4-T16 ruling 5(c): a previous path the state does not name is rebuilt from the generation, and the output equals the update where none is missing" {
     for ([_]bool{ false, true }) |drop| {
         for ([_]apply.Options{ .{}, with_filenames }) |options| {
@@ -2274,7 +2307,12 @@ test "S4-T16 ruling 5(c): a previous path the state does not name is rebuilt fro
                 try dropStateEntry(&f, "school", "d.md");
                 try dropStateEntry(&f, "vault", "v1.md");
             }
+            const walked = apply.test_not_in_state_walked;
+            const skipped = apply.test_not_in_state_skipped;
             _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "m.md", .text = "# M\n\nchanged once more\n" })}), options);
+            // A missing path runs the loop; none missing skips it.
+            try std.testing.expectEqual(walked + @intFromBool(drop), apply.test_not_in_state_walked);
+            try std.testing.expectEqual(skipped + @intFromBool(!drop), apply.test_not_in_state_skipped);
             expectFreshSections(&f, s4t16_roots, &m, options) catch |err| {
                 std.debug.print("S4-T16 ruling 5(c): state entries dropped: {}\n", .{drop});
                 return err;
