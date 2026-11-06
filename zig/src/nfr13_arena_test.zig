@@ -11,7 +11,10 @@
 //! come from `Capped` itself (as `ss_open` takes them from the C allocator),
 //! the formula bar bounds the open's peak by what it reads (`OpenParts.bar`)
 //! at every count, and the 15k scale test holds every operation, each on a
-//! handle of its own, inside 64 MiB.
+//! handle of its own, inside 64 MiB. S4-T10: `read_span` and `outline` keep
+//! only the source section's header, files table and line maps resident and
+//! read one file per call, so the 15k scale test holds every operation on
+//! one handle (the reading NFR-13 means) inside 64 MiB too.
 const std = @import("std");
 const apply = @import("apply.zig");
 const chunker = @import("chunker.zig");
@@ -109,6 +112,10 @@ pub const Peaks = struct {
     bytes: [std.meta.fields(Operation).len]usize = @splat(0),
     /// The highest of them.
     overall: usize = 0,
+    /// S4-T10: after the operations, the source section's resident block
+    /// (header, files table, line maps) and the text it does not hold.
+    source_resident: usize = 0,
+    source_text: usize = 0,
 };
 
 /// Open the index in `dir` and run each operation of `target`, all under
@@ -182,12 +189,23 @@ fn measureOnly(dir: std.Io.Dir, cap: usize, target: Target, only: ?Operation) !P
         }
     }
     for (peaks.bytes) |value| peaks.overall = @max(peaks.overall, value);
+    if (opened.folder.loads.source_block) |block| {
+        peaks.source_resident = block.len;
+        peaks.source_text = opened.folder.loads.source.?.text_length;
+    }
     try std.testing.expectEqual(@as(usize, 0), capped.refused);
     return peaks;
 }
 
+/// S4-T10: what the handle keeps of the source section after `read_span`.
+fn printSource(prefix: []const u8, label: []const u8, peaks: Peaks) void {
+    if (peaks.source_resident == 0) return;
+    std.debug.print("{s} {s}: source section resident {d} B (header, files table, line maps), text {d} B read per call\n", .{ prefix, label, peaks.source_resident, peaks.source_text });
+}
+
 fn printPeaks(label: []const u8, peaks: Peaks) void {
     printPeaksUnder("S4-T1 NFR-13", label, cap_bytes, peaks);
+    printSource("S4-T10 NFR-13", label, peaks);
 }
 
 fn printPeaksUnder(prefix: []const u8, label: []const u8, cap: usize, peaks: Peaks) void {
@@ -386,8 +404,8 @@ fn dirBytes(a: std.mem.Allocator, dir: std.Io.Dir) !struct { bytes: u64, files: 
 /// One scale point: the generated corpus at `file_count` files, indexed
 /// with the filename channel on, every operation measured under
 /// `scale_cap_bytes`; the peaks, the sizes and the phase times printed.
-/// S4-T9: with `asserted_cap`, every operation's peak must also be at or
-/// under it.
+/// S4-T9: with `asserted_cap`, every operation's peak on a fresh handle must
+/// also be at or under it; S4-T10: and every operation's peak on one handle.
 fn scaleRun(file_count: usize, cap: usize, asserted_cap: ?usize) !Peaks {
     if (!scaleEnabled()) {
         std.debug.print("S4-T8 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
@@ -414,11 +432,21 @@ fn scaleRun(file_count: usize, cap: usize, asserted_cap: ?usize) !Peaks {
     const measured = nowNs();
     const label = try std.fmt.allocPrint(a, "scale {d} files, filename channel on,", .{file_count});
     printPeaksUnder("S4-T8 NFR-13", label, cap, peaks);
+    printSource("S4-T10 NFR-13", try std.fmt.allocPrint(a, "scale {d} files", .{file_count}), peaks);
     std.debug.print("S4-T8 NFR-13 scale {d} files: corpus {d} files {d} B; index {d} files {d} B; generate {d} ms, index {d} ms, measure {d} ms\n", .{
         file_count,                                       corpus_size.files,                                  corpus_size.bytes,                                 index_size.files, index_size.bytes,
         @divTrunc(generated - start, std.time.ns_per_ms), @divTrunc(indexed - generated, std.time.ns_per_ms), @divTrunc(measured - indexed, std.time.ns_per_ms),
     });
     for (peaks.bytes) |value| try std.testing.expect(value > 0);
+    // S4-T10 ruling 3: with `asserted_cap`, every operation in order on one
+    // handle (the reading NFR-13 means: the app holds one handle for the
+    // life of the process) at or under it.
+    if (asserted_cap) |bound| {
+        for (std.enums.values(Operation), peaks.bytes) |operation, value| {
+            if (value > bound) std.debug.print("S4-T10 NFR-13 scale {d} files: {s} peak {d} on one handle is over {d}\n", .{ file_count, @tagName(operation), value, bound });
+            try std.testing.expect(value <= bound);
+        }
+    }
     // S4-T9 ruling 3: each operation on a handle of its own (the open plus
     // its own first-use loads and call), printed beside the run above, and
     // with `asserted_cap` every one of them at or under it.
@@ -442,16 +470,19 @@ fn scaleRun(file_count: usize, cap: usize, asserted_cap: ?usize) !Peaks {
     return peaks;
 }
 
-test "NFR-13 scale: 15,000 files (regression guard: each operation on a fresh handle under 64 MiB; one handle not asserted)" {
-    // S4-T9 ruling 3 with ruling A: a regression guard, not the NFR-13 bar.
-    // Every operation on a fresh handle (`measureEach`) at or under 64 MiB at
-    // 15k files. NFR-13 means one handle (`measure`); there `list_files`, a
-    // filename query and `both` are over 64 MiB at 15k, so that run is
-    // printed, not asserted (S4-T10).
+test "NFR-13 scale: 15,000 files (one handle under 64 MiB; each operation on a fresh handle under 64 MiB as a regression guard)" {
+    // S4-T10 ruling 3: NFR-13 means one handle (`measure`: the open, `find`,
+    // `read_span`, `outline`, `list_files`, `search_knowledge`, a filename
+    // query and a `both` query in that order on one handle), and every one of
+    // those peaks is at or under 64 MiB at 15k files. S4-T9 ruling A's
+    // regression guard stays: every operation on a fresh handle
+    // (`measureEach`) at or under 64 MiB too.
     _ = try scaleRun(15_000, scale_cap_bytes, cap_bytes);
 }
 
 test "NFR-13 scale: 20,000 files" {
+    // Reported, not asserted: at 20k the open fits under 64 MiB but `find`
+    // and the operations after it do not, on one handle or a fresh one.
     _ = try scaleRun(20_000, scale_cap_bytes, null);
 }
 
