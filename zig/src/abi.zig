@@ -97,10 +97,11 @@ pub export fn ss_version() callconv(.c) [*:0]const u8 {
 }
 
 /// Opaque handle to one opened, immutable, published snapshot generation.
-/// Everything it holds (the decoded sections, the S3-T4 scope data: roots,
-/// pending files, statistics groups, the source section with its path and
-/// sparse line indexes, the position tables) lives in one arena over the C
-/// allocator, freed together by `ss_close`.
+/// The sections it reads and the tables decoded from them are exact blocks
+/// from the C allocator (S4-T9, `snapshot_open.Allocators`); everything else
+/// it holds (the S3-T4 scope data: roots, pending files, statistics groups,
+/// the source section's path and sparse line indexes, the position tables)
+/// lives in one arena over the C allocator. `ss_close` frees both.
 pub const Handle = struct {
     arena: std.heap.ArenaAllocator,
     engine: engine_module.Engine,
@@ -137,7 +138,9 @@ fn openImpl(path: []const u8) !*Handle {
     // does not fail it (S3-T1 finding 2). S4-T1: a lazy open: the source
     // section, the statistics groups and the position tables load at first
     // use, once per handle (`scope.Loads`).
-    const opened = try snapshot_open.openScoped(handle.arena.allocator(), gio, dir);
+    // S4-T9: the open's block (and the source and filename sections' at
+    // their first use) exactly from the C allocator, the rest in the arena.
+    const opened = try snapshot_open.openScopedWith(.{ .blocks = allocator, .arena = handle.arena.allocator() }, gio, dir);
     handle.engine = opened.engine;
     handle.folder = opened.folder;
     return handle;
@@ -146,7 +149,7 @@ fn openImpl(path: []const u8) !*Handle {
 /// Free everything opened by `ss_open`. `NULL` is a safe no-op.
 pub export fn ss_close(handle: ?*Handle) callconv(.c) void {
     const h = handle orelse return;
-    h.folder.close();
+    snapshot_open.close(h.engine, h.folder);
     h.arena.deinit();
     allocator.destroy(h);
 }

@@ -359,6 +359,10 @@ pub fn documentFrequency(view: View, index: postings.Index, documents: []const h
 pub const Loads = struct {
     io: std.Io,
     allocator: std.mem.Allocator,
+    /// S4-T9: the allocator of the opened generation's exact blocks
+    /// (`snapshot_open.Allocators.blocks`), which `snapshot_open.close`
+    /// frees them through.
+    blocks: std.mem.Allocator,
     mutex: std.Io.Mutex = .init,
     documents: []const hybrid.Document,
     index: postings.Index,

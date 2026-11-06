@@ -116,8 +116,10 @@ pub fn measure(dir: std.Io.Dir, cap: usize, target: Target) !Peaks {
     var engine_arena = std.heap.ArenaAllocator.init(capped.allocator());
     defer engine_arena.deinit();
     _ = capped.markPeak();
-    const opened = try snapshot_open.openScoped(engine_arena.allocator(), io, dir);
-    defer opened.folder.close();
+    // S4-T9: the open's exact blocks from the capped allocator itself (as
+    // `ss_open` takes them from the C allocator), the rest in the arena.
+    const opened = try snapshot_open.openScopedWith(.{ .blocks = capped.allocator(), .arena = engine_arena.allocator() }, io, dir);
+    defer snapshot_open.close(opened.engine, opened.folder);
     peaks.bytes[@intFromEnum(Operation.open)] = capped.peak;
     const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
 
@@ -535,7 +537,7 @@ fn attributeOpen(dir: std.Io.Dir) !OpenParts {
     const meta: ?manifest.Meta = if (metadata.meta.len != 0) try manifest.parseMeta(allocator, metadata.meta) else null;
     Mark.at(&parts, &counting, &capped, .meta, &last_requested, &last_held);
     const loads = try allocator.create(scope.Loads);
-    loads.* = .{ .io = io, .allocator = allocator, .documents = opened.documents, .index = opened.lexical_index };
+    loads.* = .{ .io = io, .allocator = allocator, .blocks = allocator, .documents = opened.documents, .index = opened.lexical_index };
     const folder = try allocator.create(scope.Folder);
     folder.* = try scope.Folder.build(allocator, meta, loads);
     Mark.at(&parts, &counting, &capped, .folder, &last_requested, &last_held);
