@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.3.5 (S4-T11; contract 2.2.0; patch: writer only, no format or API change)
+
+One changed file costs less to write. No Dart API, C ABI, contract
+(`contracts/` stays 2.2.0), index format, reader or result changed: every
+section a generation writes is byte for byte what a full index of the same
+files writes, as before; an index any 0.3.x library wrote opens and updates
+unchanged and nothing is rebuilt. The natives changed (rebuilt twice on the
+Mac, byte-identical: macOS 826,936 B, Android 802,768 B, iOS framework
+binary 807,320 B); `native/SOURCE-SHA256` is `4a0db851…`.
+
+- **The lexical section is carried, not rebuilt.** `apply_changes` (and
+  `searchd index --update`) used to turn every unchanged document's
+  positions back into one entry per token, sort the whole corpus again and
+  re-encode every posting. It now merges the previous dictionary with the
+  changed files' terms by bytes, keeps each unchanged posting with its
+  document number remapped, and copies its position bytes as they are.
+  On the 10,000-file timing corpus the lexical build of one changed file
+  went from 33.8 ms to 4.9 ms (p50).
+- **The source section keeps each unchanged file's record.** The SHA-256,
+  the line map and the encoding byte of a file whose bytes did not change
+  are copied from the previous source section instead of being hashed and
+  scanned again; the bytes are still copied whole. Source line maps
+  10.9 ms → 0.35 ms, SHA-256 2.7 ms → 0.03 ms.
+- **One changed file, 10,000 files, p50 of five:** 122.1 ms → 77.8 ms with
+  the filename channel off, 140.0 ms → 96.0 ms with it on (NFR-12's bound
+  is 200 ms). `ss_open`, the queries, `find` and the full build are where
+  they were (the numbers are in `docs/tasks/S4-T11.md`).
+
 ## 0.3.4 (S4-T10; contract 2.2.0; patch: no format or API change)
 
 `read_span` and `outline` hold only the file they answer about. No Dart
