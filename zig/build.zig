@@ -228,6 +228,10 @@ fn fastmemModule(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
         .root_source_file = b.path("src/fastmem.zig"),
         .target = target,
         .optimize = if (optimize == .ReleaseSmall) .ReleaseFast else optimize,
+        // ReleaseSmall strips by default and ReleaseFast does not: without
+        // this the object kept its debug info, and Apple's linker wrote a
+        // debug map naming the build's own paths into the iOS binary.
+        .strip = if (optimize == .ReleaseSmall) true else null,
         .no_builtin = true,
         .pic = true,
     });
