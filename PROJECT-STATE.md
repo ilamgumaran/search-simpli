@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-05 (S4-T6, a read after `apply_changes` no longer crashes a release `searchd serve`; built, awaiting verification)
+Last updated: 2026-11-05 (S4-T6, a read after `apply_changes` no longer crashes a release `searchd serve`; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -9,7 +9,13 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
-## A read after `apply_changes` no longer crashes a release `searchd serve` (S4-T6, 2026-11-05; built, awaiting verification)
+## A read after `apply_changes` no longer crashes a release `searchd serve` (S4-T6, 2026-11-05; verified and merged)
+
+**Verified and merged 2026-11-05** ([Verdict](docs/tasks/S4-T6.md)): `zig build test` 315/315 and `zig build test-abi` 24/24 in Debug and
+`ReleaseSmall`; the Python suites 241 OK, 0 skipped, against a Debug and a `ReleaseSmall` `searchd`; the before `ReleaseSmall` `serve`
+dies by signal 11 on all six reads after `apply_changes`, the after one answers them (also through `mcp`); the old reload put back
+fails or crashes the new test in both modes; 6 → 1 source descriptors held after five writes; natives `cmp`-equal to S4-T4's;
+`ss_open` within 0.02 ms and one changed file within 0.3 ms of before.
 
 [Report](docs/tasks/S4-T6.md). Since S4-T1's lazy open, `searchd serve --allow-write` built `ReleaseSmall`, `ReleaseFast` or
 `ReleaseSafe` answered `apply_changes` and then died (signal 11, no reply) on the next `read_span`, `outline`, `find`,
