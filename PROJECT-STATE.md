@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-05 (S4-T5, the skill names the file-name field; verified and merged)
+Last updated: 2026-11-05 (S4-T6, a read after `apply_changes` no longer crashes a release `searchd serve`; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,30 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## A read after `apply_changes` no longer crashes a release `searchd serve` (S4-T6, 2026-11-05; verified and merged)
+
+**Verified and merged 2026-11-05** ([Verdict](docs/tasks/S4-T6.md)): `zig build test` 315/315 and `zig build test-abi` 24/24 in Debug and
+`ReleaseSmall`; the Python suites 241 OK, 0 skipped, against a Debug and a `ReleaseSmall` `searchd`; the before `ReleaseSmall` `serve`
+dies by signal 11 on all six reads after `apply_changes`, the after one answers them (also through `mcp`); the old reload put back
+fails or crashes the new test in both modes; 6 → 1 source descriptors held after five writes; natives `cmp`-equal to S4-T4's;
+`ss_open` within 0.02 ms and one changed file within 0.3 ms of before.
+
+[Report](docs/tasks/S4-T6.md). Since S4-T1's lazy open, `searchd serve --allow-write` built `ReleaseSmall`, `ReleaseFast` or
+`ReleaseSafe` answered `apply_changes` and then died (signal 11, no reply) on the next `read_span`, `outline`, `find`,
+`search_knowledge` or `list_files`: the reload opened the new generation into an `ArenaAllocator`, moved it by value and freed
+the struct, and the generation's `scope.Loads` allocated through the freed one (Debug's allocator never reuses a freed block, so
+the Debug suites and CI passed). `searchd mcp` had the same pattern with a stack local. The fix (`zig/src/rpc.zig`
+`Generation`, `Served`): the served generation owns a heap arena that never moves; a reload opens the new generation, then
+closes the old one with its section files (the old reload leaked one set of descriptors per write). Tests:
+`zig/src/reload_test.zig` (Debug and `ReleaseSmall`, a poisoning wrapper over the testing allocator and the C allocator), an
+`abi_test.c` check that a handle opened before `ss_apply_changes` on the same directory keeps answering its own generation
+(the C ABI never had the defect: the same check passes against the S4-T4 library), and a CI job `native-linux-release` that
+runs the engine tests, the ABI harness and the Python suites against `ReleaseSmall`. Budgets unchanged (the library is
+byte-identical); Dart 0.3.2, contracts 2.2.0, natives byte-identical to S4-T4's, `native/SOURCE-SHA256`
+`7762a23a714f79c91828e0dd455a9779a202be6c8e950e3f50ddd8cfe6495c4f`.
+
+**Consumer pin:** the S4-T6 merge on `main` (contracts 2.2.0, Dart 0.3.2, the same three native binaries as S4-T4).
 
 ## The skill names the file-name field (S4-T5, 2026-11-05; verified and merged)
 

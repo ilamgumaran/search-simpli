@@ -454,6 +454,80 @@ int main(void) {
         free(request);
     }
 
+    /* ---- S4-T6: a handle across a write on the same directory --------- *
+     * The contract (search_simpli.h, ss_apply_changes): a handle answers the
+     * generation it opened, also after ss_apply_changes publishes a newer one
+     * into the same directory and prunes the older files (the handle holds
+     * its section files from ss_open; its lazy loads read those bytes); a
+     * fresh ss_open answers the new generation. The old handle is opened cold
+     * (nothing loaded) so every lazy load runs after the write. */
+    char reload_dir[4096];
+    snprintf(reload_dir, sizeof reload_dir, "%s-reload", dir);
+    {
+        char *week64 = base64_of(week_md);
+        char *drop64 = base64_of("# Drop\n\nkites over the harbour\n");
+        char *new64 = base64_of("# New\n\nlanterns by the river\n");
+        size_t request_len = strlen(week64) + strlen(drop64) + strlen(new64) + 512;
+        char *request = malloc(request_len);
+        snprintf(request, request_len,
+                 "{\"roots\":[{\"root_id\":\"notes\",\"label\":\"Notes\",\"kind\":\"host\"}],\"changes\":["
+                 "{\"op\":\"add\",\"root_id\":\"notes\",\"path\":\"week.md\",\"content_base64\":\"%s\"},"
+                 "{\"op\":\"add\",\"root_id\":\"notes\",\"path\":\"drop.md\",\"content_base64\":\"%s\"}]}",
+                 week64, drop64);
+        static const char *const first[] = {"\"generation\":1", "\"added\":2", NULL};
+        int ok = holds(ss_apply_changes(reload_dir, request, NULL), first, why, sizeof why);
+        ss_handle *old = ok ? ss_open(reload_dir) : NULL;
+        ok = ok && old != NULL;
+        snprintf(request, request_len,
+                 "{\"expect_generation\":1,\"changes\":[{\"op\":\"remove\",\"root_id\":\"notes\",\"path\":\"drop.md\"},"
+                 "{\"op\":\"add\",\"root_id\":\"notes\",\"path\":\"new.md\",\"content_base64\":\"%s\"}]}",
+                 new64);
+        static const char *const second[] = {"\"generation\":2", "\"removed\":1", "\"added\":1", NULL};
+        ok = ok && holds(ss_apply_changes(reload_dir, request, "{\"keep_generations\":1}"), second, why, sizeof why);
+        char pruned[4200];
+        snprintf(pruned, sizeof pruned, "%s/source-1.hybsrc", reload_dir);
+        if (ok && access(pruned, F_OK) == 0) {
+            snprintf(why, sizeof why, "keep_generations 1 left %s", pruned);
+            ok = 0;
+        }
+        if (old != NULL) {
+            /* The old handle: generation 1, drop.md still there. */
+            static const char *const status[] = {"\"generation\":1,", "\"source\":\"unverified\"", NULL};
+            static const char *const span[] = {"\"text\":\"kites over the harbour\\n\"", NULL};
+            static const char *const found[] = {"\"path\":\"drop.md\"", NULL};
+            static const char *const outline[] = {"\"text\":\"Drop\"", NULL};
+            static const char *const query[] = {"\"path\":\"notes/drop.md\"", NULL};
+            static const char *const listed[] = {"\"total\":2", "\"path\":\"drop.md\"", NULL};
+            ok = ok && holds(ss_status(old), status, why, sizeof why);
+            ok = ok && holds(ss_read_span(old, "{\"root_id\":\"notes\",\"path\":\"drop.md\",\"start_line\":3,\"end_line\":3}"), span, why, sizeof why);
+            ok = ok && holds(ss_find(old, "{\"query\":\"kites\"}"), found, why, sizeof why);
+            ok = ok && holds(ss_outline(old, "{\"root_id\":\"notes\",\"path\":\"drop.md\"}"), outline, why, sizeof why);
+            ok = ok && holds(ss_query(old, "kites", NULL, 0, 3, "{\"retrieval_mode\":\"lexical\",\"roots\":[\"notes\"]}"), query, why, sizeof why);
+            ok = ok && holds(ss_list_files(old, NULL), listed, why, sizeof why);
+            ok = ok && refused(ss_read_span(old, "{\"root_id\":\"notes\",\"path\":\"new.md\",\"start_line\":1,\"end_line\":1}"), "SS_ERR_NOT_FOUND", "notes/new.md", why, sizeof why);
+        }
+        ss_handle *fresh = ok ? ss_open(reload_dir) : NULL;
+        ok = ok && fresh != NULL;
+        if (fresh != NULL) {
+            static const char *const status[] = {"\"generation\":2,", NULL};
+            static const char *const span[] = {"\"text\":\"lanterns by the river\\n\"", NULL};
+            static const char *const found[] = {"\"path\":\"new.md\"", NULL};
+            static const char *const none[] = {"\"hits\":[]", NULL};
+            ok = ok && holds(ss_status(fresh), status, why, sizeof why);
+            ok = ok && holds(ss_read_span(fresh, "{\"root_id\":\"notes\",\"path\":\"new.md\",\"start_line\":3,\"end_line\":3}"), span, why, sizeof why);
+            ok = ok && holds(ss_find(fresh, "{\"query\":\"lanterns\"}"), found, why, sizeof why);
+            ok = ok && holds(ss_find(fresh, "{\"query\":\"kites\"}"), none, why, sizeof why);
+            ok = ok && refused(ss_read_span(fresh, "{\"root_id\":\"notes\",\"path\":\"drop.md\",\"start_line\":1,\"end_line\":1}"), "SS_ERR_NOT_FOUND", "notes/drop.md", why, sizeof why);
+            ss_close(fresh);
+        }
+        if (old != NULL) ss_close(old);
+        expect_true("a handle opened before ss_apply_changes on the same directory answers its own generation after the write and the pruning (read_span, find, outline, query, list_files); a fresh handle answers the new one", ok, why);
+        free(week64);
+        free(drop64);
+        free(new64);
+        free(request);
+    }
+
     ss_close(handle);
 
     /* Best-effort cleanup of the temporary snapshot directory. */
@@ -470,6 +544,13 @@ int main(void) {
         remove(path);
     }
     rmdir(folder_dir);
+    const char *reload_names[] = {"MANIFEST", "WRITER.LOCK", "INDEX-STATE.json", "documents-1.hybseg", "lexical-1.hyblex", "source-1.hybsrc", "state-1.hybstate",
+                                  "documents-2.hybseg", "lexical-2.hyblex", "source-2.hybsrc", "state-2.hybstate"};
+    for (size_t i = 0; i < sizeof(reload_names) / sizeof(reload_names[0]); i++) {
+        snprintf(path, sizeof(path), "%s/%s", reload_dir, reload_names[i]);
+        remove(path);
+    }
+    rmdir(reload_dir);
 
     printf("abi_test: %d/%d checks passed\n", checks - failures, checks);
     return failures == 0 ? 0 : 1;

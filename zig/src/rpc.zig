@@ -7,6 +7,7 @@ const service_module = @import("service.zig");
 const ops = @import("ops.zig");
 const apply = @import("apply.zig");
 const scope = @import("scope.zig");
+const snapshot_open = @import("snapshot_open.zig");
 const std = @import("std");
 
 /// S3-T4: what `searchd serve` was started with. The scope comes from the
@@ -29,6 +30,96 @@ pub const Server = struct {
 
 /// S3-T6: the scratch now lives with the operations (`ops.Workspaces`).
 pub const Workspaces = ops.Workspaces;
+
+/// S4-T6: one opened generation and the arena that holds everything its
+/// open decoded. The arena is on the heap and never moves:
+/// `snapshot_open.openScoped` keeps `arena.allocator()`, a pointer to this
+/// arena, in the generation's `scope.Loads`, and the lazy loads (the source
+/// section, the statistics groups, the position tables, the filename
+/// sections) allocate through it for as long as the generation is served.
+/// Before S4-T6 the server moved the arena by value into its own field and
+/// freed the place it had been opened in, so every lazy load after an
+/// `apply_changes` called through a freed `ArenaAllocator` (a crash in a
+/// release build, `docs/tasks/S4-T6.md`). `close` releases the generation's
+/// files and its memory; nothing of it may be used afterwards.
+pub const Generation = struct {
+    arena: *std.heap.ArenaAllocator,
+    service: service_module.Service,
+    workspaces: Workspaces,
+
+    /// Open the current generation in `path`; everything from a new arena
+    /// over `gpa`.
+    pub fn open(gpa: std.mem.Allocator, io: std.Io, path: []const u8) !Generation {
+        const arena = try gpa.create(std.heap.ArenaAllocator);
+        arena.* = std.heap.ArenaAllocator.init(gpa);
+        errdefer {
+            arena.deinit();
+            gpa.destroy(arena);
+        }
+        const a = arena.allocator();
+        var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
+        defer dir.close(io);
+        const opened = try snapshot_open.openScoped(a, io, dir);
+        errdefer opened.folder.close();
+        const count = opened.engine.documents.len;
+        return .{
+            .arena = arena,
+            .service = .{ .engine = opened.engine, .folder = opened.folder },
+            .workspaces = .{
+                .query_vector = try a.alloc(f32, opened.engine.vector_dimensions),
+                .results = try a.alloc(hybrid.Result, count),
+                .evidence = try a.alloc(engine_module.Evidence, count),
+                .sources = try a.alloc(service_module.Source, count),
+            },
+        };
+    }
+
+    /// Release the files the open kept (the source and filename sections)
+    /// and the arena.
+    pub fn close(generation: Generation, gpa: std.mem.Allocator) void {
+        if (generation.service.folder) |folder| folder.close();
+        generation.arena.deinit();
+        gpa.destroy(generation.arena);
+    }
+};
+
+/// S4-T6: `searchd serve`'s state (stdio and `--http`): the server's scope
+/// and permissions and the served generation. A request that publishes
+/// (`apply_changes`) is answered from the old generation; then `reload`
+/// opens the new one and closes the old one, so no `scope.Loads` of a closed
+/// generation stays reachable.
+pub const Served = struct {
+    gpa: std.mem.Allocator,
+    io: std.Io,
+    path: []const u8,
+    server: Server,
+    generation: Generation,
+
+    pub fn open(gpa: std.mem.Allocator, io: std.Io, path: []const u8, server: Server) !Served {
+        return .{ .gpa = gpa, .io = io, .path = path, .server = server, .generation = try Generation.open(gpa, io, path) };
+    }
+
+    /// Answer one request line; reload after a successful `apply_changes`.
+    pub fn handle(served: *Served, line: []const u8, output: *std.Io.Writer) !void {
+        var request_arena = std.heap.ArenaAllocator.init(served.gpa);
+        defer request_arena.deinit();
+        served.server.reopen = false;
+        try handleLineWith(served.generation.service, &served.server, line, request_arena.allocator(), served.generation.workspaces, output);
+        if (served.server.reopen) try served.reload();
+    }
+
+    /// The old generation stays served until the new one is open; a failed
+    /// open leaves it served and returns the error.
+    pub fn reload(served: *Served) !void {
+        const next = try Generation.open(served.gpa, served.io, served.path);
+        served.generation.close(served.gpa);
+        served.generation = next;
+    }
+
+    pub fn close(served: *Served) void {
+        served.generation.close(served.gpa);
+    }
+};
 
 pub fn handleLine(
     service: service_module.Service,

@@ -611,7 +611,11 @@ char *ss_roots(ss_handle *handle, const char *options_json);
  * Publish one new generation in `dir_path` (created if missing) from
  * host-fed changes, exactly as `searchd apply` does
  * (docs/folder-knowledge-implementation.md section 6). Close and reopen
- * any handle on `dir_path` afterwards to see it.
+ * any handle on `dir_path` afterwards to see it. Until then a handle keeps
+ * answering the generation it opened, in every build mode, also after this
+ * call prunes that generation's files ("keep_generations"): the handle holds
+ * its section files from ss_open and its lazy loads read those bytes
+ * (S4-T6; zig/tests/abi_test.c).
  *
  *   changes_json  {"expect_generation"?: N, "roots"?: [{"root_id","label"?,
  *                  "kind"?,"required_labels"?,"retain_source"?,"path"?}],

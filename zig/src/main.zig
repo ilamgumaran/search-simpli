@@ -178,25 +178,6 @@ fn initDemoSnapshot(io: std.Io, path: []const u8) !void {
     std.debug.print("published demo generation 1 to {s}\n", .{path});
 }
 
-const ServeContext = struct {
-    service: service_module.Service,
-    workspaces: rpc.Workspaces,
-};
-
-/// S3-T4: the served generation with its scope data (roots, statistics,
-/// source section; a lost source section does not fail it), from `allocator`.
-fn openServeContext(io: std.Io, allocator: std.mem.Allocator, path: []const u8) !ServeContext {
-    const service = try cli.openService(allocator, io, path);
-    const document_count = service.engine.documents.len;
-    const workspaces = rpc.Workspaces{
-        .query_vector = try allocator.alloc(f32, service.engine.vector_dimensions),
-        .results = try allocator.alloc(hybrid.Result, document_count),
-        .evidence = try allocator.alloc(engine_module.Evidence, document_count),
-        .sources = try allocator.alloc(service_module.Source, document_count),
-    };
-    return .{ .service = service, .workspaces = workspaces };
-}
-
 /// The server's scope and permissions from the command line (S3-T4).
 fn serverOf(io: std.Io, allocator: std.mem.Allocator, args: cli.ServeArgs) !rpc.Server {
     var server = rpc.Server{
@@ -220,60 +201,13 @@ fn splitList(allocator: std.mem.Allocator, text: []const u8) ![]const []const u8
     return items.items;
 }
 
-/// Answers one request, then reopens the index after a successful
-/// `apply_changes` so the next request reads the new generation.
-const Served = struct {
-    io: std.Io,
-    allocator: std.mem.Allocator,
-    path: []const u8,
-    server: rpc.Server,
-    arena: std.heap.ArenaAllocator,
-    context: ServeContext,
-
-    /// In place: the context is allocated from `served.arena`, which must
-    /// not move afterwards.
-    fn init(served: *Served, io: std.Io, allocator: std.mem.Allocator, args: cli.ServeArgs, scope_arena: std.mem.Allocator) !void {
-        served.io = io;
-        served.allocator = allocator;
-        served.path = args.path;
-        served.server = try serverOf(io, scope_arena, args);
-        served.arena = std.heap.ArenaAllocator.init(allocator);
-        errdefer served.arena.deinit();
-        served.context = try openServeContext(io, served.arena.allocator(), args.path);
-    }
-
-    fn handle(served: *Served, line: []const u8, output: *std.Io.Writer) !void {
-        var request_arena = std.heap.ArenaAllocator.init(served.allocator);
-        defer request_arena.deinit();
-        served.server.reopen = false;
-        try rpc.handleLineWith(served.context.service, &served.server, line, request_arena.allocator(), served.context.workspaces, output);
-        if (served.server.reopen) {
-            // The old generation stays served until the new one is open.
-            const next = try served.allocator.create(std.heap.ArenaAllocator);
-            defer served.allocator.destroy(next);
-            next.* = std.heap.ArenaAllocator.init(served.allocator);
-            const context = openServeContext(served.io, next.allocator(), served.path) catch |err| {
-                next.deinit();
-                return err;
-            };
-            served.arena.deinit();
-            // Every allocation of `next` is done: moving its state is safe.
-            served.arena = next.*;
-            served.context = context;
-        }
-    }
-
-    fn deinit(served: *Served) void {
-        served.arena.deinit();
-    }
-};
-
 fn serveSnapshot(io: std.Io, allocator: std.mem.Allocator, args: cli.ServeArgs) !void {
     var scope_arena = std.heap.ArenaAllocator.init(allocator);
     defer scope_arena.deinit();
-    var served: Served = undefined;
-    try served.init(io, allocator, args, scope_arena.allocator());
-    defer served.deinit();
+    // S4-T6: the served generation owns its arena (`rpc.Generation`); a
+    // successful `apply_changes` reloads it (`rpc.Served.handle`).
+    var served = try rpc.Served.open(allocator, io, args.path, try serverOf(io, scope_arena.allocator(), args));
+    defer served.close();
 
     const request_buffer = try allocator.alloc(u8, 1024 * 1024);
     defer allocator.free(request_buffer);
@@ -305,9 +239,10 @@ fn serveHttp(io: std.Io, allocator: std.mem.Allocator, args: cli.ServeArgs, addr
 
     var scope_arena = std.heap.ArenaAllocator.init(allocator);
     defer scope_arena.deinit();
-    var served: Served = undefined;
-    try served.init(io, allocator, args, scope_arena.allocator());
-    defer served.deinit();
+    // S4-T6: the served generation owns its arena (`rpc.Generation`); a
+    // successful `apply_changes` reloads it (`rpc.Served.handle`).
+    var served = try rpc.Served.open(allocator, io, args.path, try serverOf(io, scope_arena.allocator(), args));
+    defer served.close();
 
     var loopback = std.Io.net.IpAddress.fromIp6(std.Io.net.Ip6Address.fromIp4(std.Io.net.Ip4Address.loopback(port)));
     var server = try loopback.listen(io, .{});
@@ -329,7 +264,7 @@ fn serveHttp(io: std.Io, allocator: std.mem.Allocator, args: cli.ServeArgs, addr
 fn handleHttpConnection(
     io: std.Io,
     allocator: std.mem.Allocator,
-    served: *Served,
+    served: *rpc.Served,
     stream: std.Io.net.Stream,
 ) !void {
     var read_buffer: [64 * 1024]u8 = undefined;
