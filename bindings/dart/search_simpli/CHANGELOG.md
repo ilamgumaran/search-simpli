@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.3.6 (S4-T12; contract 2.2.0; patch: writer only, no format or API change)
+
+Writing a lexical section validates it once. No Dart API, C ABI, contract
+(`contracts/` stays 2.2.0), index format, reader or result changed: every
+section a generation writes is byte for byte what 0.3.5 writes for the same
+files; an index any 0.3.x library wrote opens and updates unchanged and
+nothing is rebuilt. The natives changed (rebuilt twice on the Mac,
+byte-identical: macOS 826,696 B, Android 802,816 B, iOS framework binary
+807,648 B); `native/SOURCE-SHA256` is `ccb31963…`.
+
+- **One validation per lexical section written.** The writers sized the
+  section with `encodedLength` and then wrote it with `encode`, and each
+  ran the whole index check; they now call one function that checks once,
+  sizes, allocates and writes. Every refusal keeps its name; `encode` on
+  its own still refuses an invalid index.
+- **No hash set for a sorted dictionary.** A positional (`HYBLEX02`)
+  dictionary must be sorted, so its duplicate check is one pass over
+  neighbours; `HYBLEX01` (`import-json`, the filename channel's section)
+  keeps the hash set.
+- **The merge's end-of-walk checks refuse in every build.** Two checks that
+  were Debug asserts in front of the same refusal (dropped by
+  `ReleaseSmall`) are now plain refusals (`InvalidLexicalSection`). No file
+  reached them: the decoder refuses such a section first.
+- **On the 10,000-file timing corpus** (`ReleaseSmall`, p50): the lexical
+  section's encode in one changed file 15.9 ms → 8.8 ms; one changed file
+  80.6 ms → 74.3 ms with the filename channel off and 98.9 ms → 92.3 ms
+  with it on (a second run 79.7 → 74.3 and 98.0 → 92.2); the full 10k
+  build about 2.5 % faster. `ss_open`, `find`, the content and filename
+  queries are where they were; the warm `both` query measured 0.44 ms
+  slower in this build with no reader changed (numbers and the reason in
+  `docs/tasks/S4-T12.md`).
+
 ## 0.3.5 (S4-T11; contract 2.2.0; patch: writer only, no format or API change)
 
 One changed file costs less to write. No Dart API, C ABI, contract
