@@ -29,6 +29,16 @@ one path must have identical required labels. Filename postings reuse
 HYBLEX01, indexed by catalog record ordinal, with the same analyzer as
 body/query.
 
+**Carried lexical section (S4-T13).** An update whose files are the previous
+generation's (the same paths in the same order with the same labels, compared
+with the previous body documents) copies the previous
+`filename-lexical-N.hyblex` byte for byte, after checking its size, its
+checksum against its header and the manifest, `HYBLEX01` and its counts; only
+the catalog is re-encoded, because anchors move with a changed file's chunks.
+A rename, add, remove or label change, or a previous section that fails a
+check, takes the full build. Both sections stay byte-identical to a full
+build.
+
 **Lazy load (S4-T2 R4).** An open reads neither filename section: it opens
 both files (so the handle keeps this generation's bytes after a writer prunes
 them), reserves their bytes in the open's one section allocation without

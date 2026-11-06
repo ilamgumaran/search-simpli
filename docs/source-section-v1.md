@@ -130,6 +130,22 @@ resident reader (`scripts/source_read_parity.py`). The check costs about
 0.34 ms per MiB on the Mac (`ReleaseSmall`): 0.36 ms for the 1,133,158-byte
 largest file of `fixtures/family-folder`, about 1 µs for a 4 KiB file.
 
+**The writer's guard (S4-T13).** A writer reads its previous generation's
+source section whole (`apply.openPrevious`): the section checksum computed
+once (`source.inspect`, against the header's value, which must equal the
+manifest's: `ChecksumMismatch`, `SourceSectionChecksumMismatch`), then the
+file table and every line map and encoding byte against its file's bytes
+(`source.openIndexedInspected`, `open`'s rules and error names), before it
+carries any record into the next generation. The checksum alone would
+refuse a damaged section, but not a checksum-valid one whose line map
+disagrees with its bytes (only a wrong writer produces one), and the reader
+above refuses such a section whole at its first use, every file's
+`read_span` and `outline` answering `capacity` "re-index required: source
+section unavailable (InvalidLineMap)", not just the one file's. A carried
+map would also be carried again by every later update. So the writer keeps
+this walk and refuses the update instead (`InvalidLineMap`, nothing
+published).
+
 ## Retention
 
 `index_folder` retains every file it indexes (`indexer.Caps.retain_source`,
