@@ -1642,27 +1642,11 @@ const ByteSink = struct {
     }
 };
 
-/// The offset just past `count` LEB128 varints of `bytes` starting at `at`:
-/// it counts end bytes (high bit clear), sixteen at a time while at least
-/// sixteen remain to be found (a block then holds no byte past the last one
-/// needed). A section that ends first is `InvalidLexicalSection`, never a
+/// `source.varintsEnd` (sixteen end bytes at a time) for the lexical
+/// sections: a section that ends first is `InvalidLexicalSection`, never a
 /// read past it.
 fn skipVarintsChecked(bytes: []const u8, at: usize, count: usize) error{InvalidLexicalSection}!usize {
-    const lanes = 16;
-    const Block = @Vector(lanes, u8);
-    var remaining = count;
-    var offset = at;
-    while (remaining >= lanes and bytes.len - offset >= lanes) {
-        const block: Block = bytes[offset..][0..lanes].*;
-        const ends: u16 = @bitCast(block < @as(Block, @splat(0x80)));
-        remaining -= @popCount(ends);
-        offset += lanes;
-    }
-    while (remaining > 0) : (offset += 1) {
-        if (offset >= bytes.len) return error.InvalidLexicalSection;
-        if (bytes[offset] & 0x80 == 0) remaining -= 1;
-    }
-    return offset;
+    return source.varintsEnd(bytes, at, count) orelse error.InvalidLexicalSection;
 }
 
 /// Where each document's section-5 table starts in `offsets`, plus the end
@@ -2087,14 +2071,26 @@ fn buildGeneration(
         // bounded to 64 too, `rpc.zig`): the root's and the file's together.
         if (std.mem.count(u8, labels, "\n") + 1 > max_labels and labels.len != 0) return error.TooManyLabels;
         // Bytes to retain: read this run, or the previous source section's.
+        // S4-T11 ruling 3: bytes the previous section holds for this file
+        // keep their record (digest, line map, encoding) instead of being
+        // hashed and scanned again: the section's own copy, or bytes read
+        // this run whose SHA-256 equals the record's (a rename, an
+        // unchanged file the batch named).
         var bytes: ?[]const u8 = file.fresh orelse file.read;
-        if (bytes == null) if (file.prev_record) |pr| if (prev_source) |section| if (section.find(pr)) |entry| {
-            bytes = entry.bytes;
+        var carried_record: ?source.Carried = null;
+        if (file.fresh == null) if (file.prev_record) |pr| if (prev_source) |section| if (section.find(pr)) |entry| {
+            if (bytes) |read| {
+                if (read.len == entry.bytes.len and std.mem.eql(u8, file.hash, &std.fmt.bytesToHex(entry.sha256, .lower)))
+                    carried_record = source.carriedRecord(entry, false) catch return error.InvalidSourceSection;
+            } else {
+                bytes = entry.bytes;
+                carried_record = source.carriedRecord(entry, true) catch return error.InvalidSourceSection;
+            }
         };
         var source_doc_index: u32 = hybrid.no_source_doc;
         if (root.retain_source) if (bytes) |b| {
             source_doc_index = @intCast(retained.items.len);
-            try retained.append(allocator, .{ .path = file.record, .bytes = b });
+            try retained.append(allocator, .{ .path = file.record, .bytes = b, .carried = carried_record });
         };
         const first_document = documents.items.len;
         var chunker_id: ?[]const u8 = file.chunker;

@@ -44,7 +44,56 @@ pub const Encoding = enum(u8) {
 pub const InputFile = struct {
     path: []const u8,
     bytes: []const u8,
+    /// S4-T11 ruling 3: the previous section's record of these same bytes
+    /// (`carriedRecord`), copied instead of hashing and scanning them again.
+    carried: ?Carried = null,
 };
+
+/// S4-T11 ruling 3: what a file's record holds that depends only on its
+/// bytes, from the section the bytes were last encoded in.
+pub const Carried = struct {
+    sha256: [32]u8,
+    line_count: u32,
+    /// The record's line map, exactly its `line_count + 1` varints.
+    line_map: []const u8,
+    encoding: Encoding,
+    /// The bytes are that section's own copy, whose checksum and line maps
+    /// were verified when it was opened (`openWith`): their UTF-8 check is
+    /// skipped. False for bytes read again whose SHA-256 matched the
+    /// record: those are checked as a fresh file's are.
+    bytes_from_section: bool,
+};
+
+/// The offset just past `count` LEB128 varints of `bytes` from `at`, or
+/// null when the bytes end first. It counts end bytes (high bit clear),
+/// sixteen at a time while at least sixteen remain to be found, so a block
+/// never holds a byte past the last one needed.
+pub fn varintsEnd(bytes: []const u8, at: usize, count: usize) ?usize {
+    const lanes = 16;
+    const Block = @Vector(lanes, u8);
+    var remaining = count;
+    var offset = at;
+    if (offset > bytes.len) return null;
+    while (remaining >= lanes and bytes.len - offset >= lanes) {
+        const block: Block = bytes[offset..][0..lanes].*;
+        const ends: u16 = @bitCast(block < @as(Block, @splat(0x80)));
+        remaining -= @popCount(ends);
+        offset += lanes;
+    }
+    while (remaining > 0) : (offset += 1) {
+        if (offset >= bytes.len) return null;
+        if (bytes[offset] & 0x80 == 0) remaining -= 1;
+    }
+    return offset;
+}
+
+/// S4-T11 ruling 3: the record of `entry` (from a section opened with
+/// `open`, `openIndexed` or `openStreamed`, which validated its line map)
+/// to carry into the next section.
+pub fn carriedRecord(entry: FileEntry, bytes_from_section: bool) DecodeError!Carried {
+    const end = varintsEnd(entry.line_map, 0, @as(usize, entry.line_count) + 1) orelse return error.InvalidLineMap;
+    return .{ .sha256 = entry.sha256, .line_count = entry.line_count, .line_map = entry.line_map[0..end], .encoding = entry.encoding, .bytes_from_section = bytes_from_section };
+}
 
 pub const EncodeError = error{
     OutOfMemory,
@@ -295,7 +344,10 @@ pub const NoMarks = struct {
 /// each (S4-T11 ruling 1, the writer's stage profile): `source_line_maps`
 /// (path, order and UTF-8 checks, line starts, the maps), `source_sha256`,
 /// `source_copy` (header, files table, maps and text into the section) and
-/// `source_checksum`. The bytes are `encode`'s: each part is per file.
+/// `source_checksum`. The bytes are `encode`'s: each part is per file. A
+/// file with a `carried` record (ruling 3) takes its digest, line count,
+/// line map and encoding byte from it, and skips the UTF-8 check when its
+/// bytes are the previous section's own; its text is copied as any other.
 pub fn encodeMarked(allocator: std.mem.Allocator, files: []const InputFile, marks: anytype) EncodeError![]u8 {
     if (files.len > std.math.maxInt(u32)) return error.FieldTooLarge;
     var maps = std.ArrayList(u8).empty;
@@ -312,6 +364,15 @@ pub fn encodeMarked(allocator: std.mem.Allocator, files: []const InputFile, mark
     for (files, 0..) |input, position| {
         if (!validPath(input.path)) return error.InvalidPath;
         if (position > 0 and std.mem.order(u8, files[position - 1].path, input.path) != .lt) return error.UnsortedPaths;
+        if (input.carried) |record| {
+            if (!record.bytes_from_section and !std.unicode.utf8ValidateSlice(input.bytes)) return error.InvalidUtf8;
+            map_offsets[position] = maps.items.len;
+            line_counts[position] = record.line_count;
+            try maps.appendSlice(allocator, record.line_map);
+            text_length += input.bytes.len;
+            table_length += record_fixed_length + input.path.len;
+            continue;
+        }
         if (!std.unicode.utf8ValidateSlice(input.bytes)) return error.InvalidUtf8;
         starts.clearRetainingCapacity();
         try lineStarts(allocator, input.bytes, &starts);
@@ -331,7 +392,11 @@ pub fn encodeMarked(allocator: std.mem.Allocator, files: []const InputFile, mark
 
     const digests = try allocator.alloc([32]u8, files.len);
     defer allocator.free(digests);
-    for (files, digests) |input, *digest| std.crypto.hash.sha2.Sha256.hash(input.bytes, digest, .{});
+    for (files, digests) |input, *digest| {
+        if (input.carried) |record| {
+            digest.* = record.sha256;
+        } else std.crypto.hash.sha2.Sha256.hash(input.bytes, digest, .{});
+    }
     marks.mark("source_sha256");
 
     const total = header_length + table_length + maps.items.len + text_length;
@@ -360,7 +425,8 @@ pub fn encodeMarked(allocator: std.mem.Allocator, files: []const InputFile, mark
         putU64(out, &offset, map_offsets[position]);
         @memcpy(out[offset .. offset + 32], &digests[position]);
         offset += 32;
-        out[offset] = @intFromEnum(if (std.mem.startsWith(u8, input.bytes, "\xef\xbb\xbf")) Encoding.utf8_bom else Encoding.utf8);
+        const encoding = if (input.carried) |record| record.encoding else if (std.mem.startsWith(u8, input.bytes, "\xef\xbb\xbf")) Encoding.utf8_bom else Encoding.utf8;
+        out[offset] = @intFromEnum(encoding);
         out[offset + 1] = 0;
         out[offset + 2] = 0;
         out[offset + 3] = 0;
@@ -1603,4 +1669,95 @@ test "S4-T10: a streamed file whose bytes no longer match their SHA-256 answers 
     // Argument errors and caps are answered before the bytes are read.
     try std.testing.expectEqual(Code.invalid_argument, (try readSpan(arena, section, "home/garden.md", 0, 1, 0)).failed.code);
     try std.testing.expectEqual(Code.not_found, (try readSpan(arena, section, "home/none.md", 1, 1, 0)).failed.code);
+}
+
+test "S4-T11 ruling 3: carried records encode byte for byte as the files hashed and scanned afresh" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var long = std.ArrayList(u8).empty;
+    for (0..700) |n| {
+        try long.appendNTimes(arena, 'a' + @as(u8, @intCast(n % 26)), n % 9);
+        try long.appendSlice(arena, switch (n % 7) {
+            0 => "\r\n",
+            1 => "\r",
+            2 => "\xc2\x85",
+            3 => "\xe2\x80\xa8",
+            4 => "\xe2\x80\xa9",
+            5 => "\x0b",
+            else => "\n",
+        });
+    }
+    const previous_files = [_]InputFile{
+        .{ .path = "a/bom-only.txt", .bytes = "\xef\xbb\xbf" },
+        .{ .path = "a/crlf.md", .bytes = "one\r\ntwo\r\nthree\r\n" },
+        .{ .path = "a/final-cr.txt", .bytes = "ab\r" },
+        .{ .path = "a/long.txt", .bytes = long.items },
+        .{ .path = "b/bom.md", .bytes = "\xef\xbb\xbf# T\nbody\r\n" },
+        .{ .path = "b/cr.md", .bytes = "one\rtwo\rthree\r" },
+        .{ .path = "c/empty.txt", .bytes = "" },
+        .{ .path = "c/lf.txt", .bytes = "one\ntwo\nthree" },
+    };
+    const previous = try openIndexed(arena, try encode(arena, &previous_files));
+    // The next generation: carried files (some under a new path), fresh
+    // ones between them, one carried by a SHA-256 match of bytes read again.
+    const Next = struct { path: []const u8, from: ?[]const u8, bytes: []const u8 = "", reread: bool = false };
+    const next = [_]Next{
+        .{ .path = "a/bom-only.txt", .from = "a/bom-only.txt" },
+        .{ .path = "a/crlf.md", .from = null, .bytes = "one\r\ntwo changed\r\n" },
+        .{ .path = "a/final-cr.txt", .from = "a/final-cr.txt", .reread = true },
+        .{ .path = "a/fresh-bom.md", .from = null, .bytes = "\xef\xbb\xbf\xe2\x80\xa8x\xc2\x85" },
+        .{ .path = "a/long.txt", .from = "a/long.txt" },
+        .{ .path = "b/bom.md", .from = "b/bom.md", .reread = true },
+        .{ .path = "c/empty.txt", .from = "c/empty.txt" },
+        .{ .path = "d/moved-cr.md", .from = "b/cr.md" },
+        .{ .path = "d/moved-lf.txt", .from = "c/lf.txt" },
+    };
+    var plain = std.ArrayList(InputFile).empty;
+    var with_records = std.ArrayList(InputFile).empty;
+    var carried_count: usize = 0;
+    for (next) |item| {
+        if (item.from) |from| {
+            const entry = previous.find(from).?;
+            const bytes = if (item.reread) try arena.dupe(u8, entry.bytes) else entry.bytes;
+            try plain.append(arena, .{ .path = item.path, .bytes = bytes });
+            try with_records.append(arena, .{ .path = item.path, .bytes = bytes, .carried = try carriedRecord(entry, !item.reread) });
+            carried_count += 1;
+        } else {
+            try plain.append(arena, .{ .path = item.path, .bytes = item.bytes });
+            try with_records.append(arena, .{ .path = item.path, .bytes = item.bytes });
+        }
+    }
+    const expected = try encode(arena, plain.items);
+    try std.testing.expectEqualSlices(u8, expected, try encode(arena, with_records.items));
+    _ = try open(expected);
+    try std.testing.expectEqual(@as(usize, 7), carried_count);
+    // A carried record's line map is exactly its own varints.
+    const long_record = try carriedRecord(previous.find("a/long.txt").?, true);
+    try std.testing.expectEqual(previous.find("b/bom.md").?.line_map_offset, previous.find("a/long.txt").?.line_map_offset + long_record.line_map.len);
+    // Bytes read again (not the section's own) are UTF-8 checked as today.
+    var bad = with_records.items[2];
+    bad.bytes = "\xff\xfe";
+    bad.carried.?.bytes_from_section = false;
+    try std.testing.expectError(error.InvalidUtf8, encode(arena, &.{bad}));
+}
+
+test "S4-T11: varintsEnd counts end bytes across blocks and refuses a short section" {
+    var bytes: [70]u8 = undefined;
+    // 0x80 0x01 (one two-byte varint) then single bytes.
+    for (&bytes, 0..) |*b, i| b.* = if (i % 5 == 0) 0x80 else 0x01;
+    var count: usize = 0;
+    for (bytes) |b| {
+        if (b & 0x80 == 0) count += 1;
+    }
+    for (0..count + 1) |n| {
+        var expected: usize = 0;
+        var found: usize = 0;
+        while (found < n) : (expected += 1) {
+            if (bytes[expected] & 0x80 == 0) found += 1;
+        }
+        try std.testing.expectEqual(@as(?usize, expected), varintsEnd(&bytes, 0, n));
+    }
+    try std.testing.expectEqual(@as(?usize, null), varintsEnd(&bytes, 0, count + 1));
+    try std.testing.expectEqual(@as(?usize, null), varintsEnd(&bytes, 71, 0));
 }

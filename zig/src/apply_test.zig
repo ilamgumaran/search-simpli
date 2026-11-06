@@ -1026,6 +1026,18 @@ fn expectFreshParity(f: *Fixture) !@import("postings.zig").Index {
     const metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
     try std.testing.expectEqualSlices(u8, expected, try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited));
     try std.testing.expect(metadata.has_positions);
+    // S4-T11 ruling 3: the source section is what `source.encode` gives
+    // over its files' bytes, every file hashed and scanned afresh.
+    if (metadata.hasSource()) {
+        const written = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
+        const section = try source.open(written);
+        const files = try a.alloc(source.InputFile, section.file_count);
+        for (files, 0..) |*file, index| {
+            const entry = section.file(index);
+            file.* = .{ .path = entry.path, .bytes = entry.bytes };
+        }
+        try std.testing.expectEqualSlices(u8, try source.encode(a, files), written);
+    }
     return fresh;
 }
 
