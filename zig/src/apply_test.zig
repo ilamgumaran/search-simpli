@@ -1972,3 +1972,306 @@ test "S4-T16 finding 14: no stage name is dropped on the writer's longest paths"
     try std.testing.expectEqual(@as(usize, 0), apply.Stages.test_dropped);
     std.debug.print("S4-T16 finding 14: the most stage slots one apply_changes call used: {d}\n", .{apply.Stages.test_most});
 }
+
+/// S4-T16: a folder's files as a test keeps them, so the same files can be
+/// indexed fresh and every section an update wrote compared with it.
+const ModelFile = struct { root_id: []const u8, path: []const u8, text: []const u8, labels: []const u8 = "" };
+
+const Model = struct {
+    files: std.ArrayList(ModelFile) = .empty,
+
+    fn set(m: *Model, a: std.mem.Allocator, file: ModelFile) !void {
+        for (m.files.items) |*existing| if (std.mem.eql(u8, existing.root_id, file.root_id) and std.mem.eql(u8, existing.path, file.path)) {
+            existing.* = file;
+            return;
+        };
+        try m.files.append(a, file);
+    }
+
+    fn remove(m: *Model, root_id: []const u8, path: []const u8) !void {
+        for (m.files.items, 0..) |existing, index| if (std.mem.eql(u8, existing.root_id, root_id) and std.mem.eql(u8, existing.path, path)) {
+            _ = m.files.orderedRemove(index);
+            return;
+        };
+        return error.TestUnexpectedResult;
+    }
+
+    fn rename(m: *Model, root_id: []const u8, from: []const u8, to: []const u8) !void {
+        for (m.files.items) |*existing| if (std.mem.eql(u8, existing.root_id, root_id) and std.mem.eql(u8, existing.path, from)) {
+            existing.path = to;
+            return;
+        };
+        return error.TestUnexpectedResult;
+    }
+
+    fn get(m: *const Model, root_id: []const u8, path: []const u8) ModelFile {
+        for (m.files.items) |existing| if (std.mem.eql(u8, existing.root_id, root_id) and std.mem.eql(u8, existing.path, path)) return existing;
+        unreachable;
+    }
+
+    /// Every file as an `add` change.
+    fn adds(m: *const Model, a: std.mem.Allocator) ![]const []const u8 {
+        const out = try a.alloc([]const u8, m.files.items.len);
+        for (m.files.items, out) |file, *change| change.* = try add(a, file.root_id, file.path, file.text, file.labels);
+        return out;
+    }
+
+    /// `set` and the `add` change that does it.
+    fn put(m: *Model, a: std.mem.Allocator, file: ModelFile) ![]const u8 {
+        try m.set(a, file);
+        return add(a, file.root_id, file.path, file.text, file.labels);
+    }
+};
+
+/// S4-T16: the documents, lexical and source sections (and, when the
+/// generation binds them, both filename sections) of `f`'s current
+/// generation equal, byte for byte, those of a fresh index of `model`'s
+/// files under `roots`.
+fn expectFreshSections(f: *Fixture, roots: []const u8, model: *const Model, options: apply.Options) !void {
+    var fresh = try Fixture.init();
+    defer fresh.deinit();
+    _ = try fresh.applyOk(try joinChanges(fresh.arena(), roots, try model.adds(fresh.arena())), options);
+    const updated = try currentManifest(f);
+    const expected = try currentManifest(&fresh);
+    try expectSameSection(f, &fresh, updated.documents_file, expected.documents_file);
+    try expectSameSection(f, &fresh, updated.lexical_file, expected.lexical_file);
+    try std.testing.expectEqual(expected.hasSource(), updated.hasSource());
+    if (updated.hasSource()) try expectSameSection(f, &fresh, updated.source_file, expected.source_file);
+    try std.testing.expectEqual(expected.filename != null, updated.filename != null);
+    if (updated.filename) |bound| {
+        try expectSameSection(f, &fresh, bound.catalog_file, expected.filename.?.catalog_file);
+        try expectSameSection(f, &fresh, bound.lexical_file, expected.filename.?.lexical_file);
+    }
+}
+
+fn expectSameSection(f: *Fixture, fresh: *Fixture, updated_name: []const u8, expected_name: []const u8) !void {
+    const expected = try fresh.out.readFileAlloc(io, expected_name, f.arena(), .unlimited);
+    const updated = try f.out.readFileAlloc(io, updated_name, f.arena(), .unlimited);
+    std.testing.expectEqualSlices(u8, expected, updated) catch |err| {
+        std.debug.print("S4-T16: {s} differs from a fresh index's {s}\n", .{ updated_name, expected_name });
+        return err;
+    };
+}
+
+const s4t16_roots =
+    \\[{"root_id":"home","label":"Home","kind":"host"},{"root_id":"school","label":"School","kind":"icloud"},{"root_id":"vault","label":"Vault","kind":"host","retain_source":false}]
+;
+const s4t16_roots_relabelled =
+    \\[{"root_id":"home","label":"Home","kind":"host"},{"root_id":"school","label":"School","kind":"icloud","required_labels":["school"]},{"root_id":"vault","label":"Vault","kind":"host","retain_source":false}]
+;
+
+fn s4t16Folder(f: *Fixture, m: *Model, options: apply.Options) !void {
+    const a = f.arena();
+    const initial = [_]ModelFile{
+        .{ .root_id = "home", .path = "a.md", .text = try sections(a, "alpha", 3, "canal boat lantern") },
+        .{ .root_id = "home", .path = "b.txt", .text = "the the the boat\nboat lock lantern\n" },
+        .{ .root_id = "home", .path = "m.md", .text = "# M\n\nmiddle file with a canal lantern\n" },
+        .{ .root_id = "home", .path = "money/budget.md", .text = "# Budget\n\nThe salary pays for the boat.\n", .labels = "[\"adults\"]" },
+        .{ .root_id = "home", .path = "zeta.md", .text = "# Zeta\n\nquokka and boats\n" },
+        .{ .root_id = "school", .path = "c.md", .text = "# C\n\nபள்ளி விடுமுறை and a lock\n" },
+        .{ .root_id = "school", .path = "d.md", .text = try sections(a, "delta", 2, "lock wombat") },
+        .{ .root_id = "vault", .path = "v1.md", .text = "# V1\n\nvault notes on the canal\n" },
+        .{ .root_id = "vault", .path = "v2.txt", .text = "vault list\nlantern oil\n" },
+    };
+    for (initial) |file| try m.set(a, file);
+    _ = try f.applyOk(try joinChanges(a, s4t16_roots, try m.adds(a)), options);
+}
+
+test "S4-T16 rulings 2-4: every kind of update writes a fresh index's documents, lexical, source and filename sections" {
+    for ([_]apply.Options{ .{}, with_filenames }) |options| {
+        var f = try Fixture.init();
+        defer f.deinit();
+        const a = f.arena();
+        var m = Model{};
+        try s4t16Folder(&f, &m, options);
+        try expectFreshSections(&f, s4t16_roots, &m, options);
+
+        // One changed file.
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "m.md", .text = "# M\n\nthe middle file changed its canal\n" })}), options);
+        try expectFreshSections(&f, s4t16_roots, &m, options);
+
+        // A file's own labels change, its bytes do not (carried records,
+        // new labels).
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "b.txt", .text = m.get("home", "b.txt").text, .labels = "[\"kids\"]" })}), options);
+        try expectFreshSections(&f, s4t16_roots, &m, options);
+
+        // A root's labels change: every carried record of the root takes
+        // them; another root's file changes in the same batch.
+        _ = try f.applyOk(try joinChanges(a,
+            \\[{"root_id":"school","required_labels":["school"]}]
+        , &.{try m.put(a, .{ .root_id = "vault", .path = "v2.txt", .text = "vault list\nlamp oil\n" })}), options);
+        try expectFreshSections(&f, s4t16_roots_relabelled, &m, options);
+
+        // A retained file that sorts first: every later file's source index
+        // moves by one.
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "0aa.md", .text = "# First\n\nsorts before the rest\n" })}), options);
+        try expectFreshSections(&f, s4t16_roots_relabelled, &m, options);
+
+        // A deleted file.
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{"{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"zeta.md\"}"}), options);
+        try m.remove("home", "zeta.md");
+        try expectFreshSections(&f, s4t16_roots_relabelled, &m, options);
+
+        // Moves: a multi-record file to the end of its root, and a file of
+        // the root whose bytes are not retained to the front of its root.
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{
+            "{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"zz/a.md\",\"moved_from\":\"a.md\"}",
+            "{\"op\":\"move\",\"root_id\":\"vault\",\"path\":\"0v.md\",\"moved_from\":\"v1.md\"}",
+        }), options);
+        try m.rename("home", "a.md", "zz/a.md");
+        try m.rename("vault", "v1.md", "0v.md");
+        try expectFreshSections(&f, s4t16_roots_relabelled, &m, options);
+
+        // An unchanged file named in the batch with its bytes, beside an
+        // edit, a shrinking file and a new last file.
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{
+            try m.put(a, m.get("home", "b.txt")),
+            try m.put(a, .{ .root_id = "home", .path = "money/budget.md", .text = "# Budget\n\nThe salary pays for the lantern.\n", .labels = "[\"adults\"]" }),
+            try m.put(a, .{ .root_id = "school", .path = "d.md", .text = try sections(a, "delta", 1, "lock") }),
+            try m.put(a, .{ .root_id = "school", .path = "zz-last.md", .text = "# Last\n\nsorts after the rest\n" }),
+        }), options);
+        try expectFreshSections(&f, s4t16_roots_relabelled, &m, options);
+    }
+}
+
+/// S4-T16 ruling 2: the current generation re-written with its records out
+/// of path order (the lexical section rebuilt over the new order, the
+/// source and state sections untouched, the manifest re-bound).
+/// `.descending` keeps each file's records adjacent but lists the files in
+/// descending path order; `.split` puts the next file's records between the
+/// first record of a multi-record file and its others.
+const Unsorted = enum { descending, split };
+
+fn unsortGeneration(f: *Fixture, how: Unsorted) !void {
+    const a = f.arena();
+    var metadata = try currentManifest(f);
+    const encoded = try f.out.readFileAlloc(io, metadata.documents_file, a, .unlimited);
+    const documents = try segment_module.decode(encoded, try a.alloc(hybrid.Document, metadata.document_count), try a.alloc(f32, metadata.document_count * metadata.vector_dimensions));
+    var order = std.ArrayList(hybrid.Document).empty;
+    switch (how) {
+        .descending => {
+            var end = documents.len;
+            while (end > 0) {
+                var start = end - 1;
+                while (start > 0 and std.mem.eql(u8, documents[start - 1].path, documents[end - 1].path)) start -= 1;
+                try order.appendSlice(a, documents[start..end]);
+                end = start;
+            }
+        },
+        .split => {
+            var first_end: usize = 1;
+            while (first_end < documents.len and std.mem.eql(u8, documents[first_end].path, documents[0].path)) first_end += 1;
+            try std.testing.expect(first_end >= 2);
+            var second_end = first_end + 1;
+            while (second_end < documents.len and std.mem.eql(u8, documents[second_end].path, documents[first_end].path)) second_end += 1;
+            try order.append(a, documents[0]);
+            try order.appendSlice(a, documents[first_end..second_end]);
+            try order.appendSlice(a, documents[1..first_end]);
+            try order.appendSlice(a, documents[second_end..]);
+        },
+    }
+    try std.testing.expectEqual(documents.len, order.items.len);
+    // The order really is out of the writer's order.
+    var sorted = true;
+    for (order.items[1..], order.items[0 .. order.items.len - 1]) |document, previous| {
+        if (std.mem.order(u8, previous.path, document.path) == .gt) sorted = false;
+    }
+    try std.testing.expect(!sorted);
+
+    const lists = try a.alloc([]const @import("analysis.zig").PositionedToken, order.items.len);
+    for (order.items, lists) |document, *list| list.* = try indexer.tokenizePositioned(a, .v2, document.text);
+    const index = try lexical_build.buildPositional(a, order.items, lists);
+    const lexical = try a.alloc(u8, try lexical_segment_module.encodedLength(index));
+    _ = try lexical_segment_module.encode(index, lexical);
+    const documents_encoded = try a.alloc(u8, try segment_module.encodedLengthV4(order.items));
+    _ = try segment_module.encodeV4(order.items, documents_encoded);
+    try f.out.writeFile(io, .{ .sub_path = metadata.documents_file, .data = documents_encoded });
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = lexical });
+    metadata.documents_bytes = documents_encoded.len;
+    metadata.documents_checksum = storedSectionChecksum(documents_encoded, segment_module.header_length);
+    metadata.lexical_bytes = lexical.len;
+    metadata.lexical_checksum = storedSectionChecksum(lexical, lexical_segment_module.header_length_v2);
+    metadata.term_count = index.terms.len;
+    metadata.posting_count = index.postings.len;
+    try writeManifest(f, metadata);
+}
+
+test "S4-T16 ruling 2: an update of a generation whose records are out of path order writes a fresh index's sections" {
+    for ([_]Unsorted{ .descending, .split }) |how| {
+        for (0..3) |step| {
+            var f = try Fixture.init();
+            defer f.deinit();
+            const a = f.arena();
+            var m = Model{};
+            for ([_]ModelFile{
+                .{ .root_id = "home", .path = "a.md", .text = try sections(a, "alpha", 3, "canal boat lantern") },
+                .{ .root_id = "home", .path = "b.txt", .text = "the the the boat\nboat lock lantern\n" },
+                .{ .root_id = "home", .path = "c.md", .text = try sections(a, "gamma", 2, "lock canal") },
+                .{ .root_id = "home", .path = "e.txt", .text = "an e file\nwith a lantern\n" },
+                .{ .root_id = "school", .path = "d.md", .text = "# D\n\nபள்ளி விடுமுறை and a lock\n" },
+            }) |file| try m.set(a, file);
+            _ = try f.applyOk(try joinChanges(a, domain_roots, try m.adds(a)), .{});
+            try unsortGeneration(&f, how);
+            switch (step) {
+                // Another file changes: the out-of-order records are carried.
+                0 => _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "e.txt", .text = "an e file\nchanged\n" })}), .{}),
+                // The multi-record file itself changes.
+                1 => _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "a.md", .text = try sections(a, "alpha", 2, "canal") })}), .{}),
+                // The multi-record file moves to the end, and a file is added.
+                else => {
+                    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+                        "{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"zz/a.md\",\"moved_from\":\"a.md\"}",
+                        try m.put(a, .{ .root_id = "home", .path = "0new.md", .text = "# New\n\nfirst of all\n" }),
+                    }), .{});
+                    try m.rename("home", "a.md", "zz/a.md");
+                },
+            }
+            expectFreshSections(&f, domain_roots, &m, .{}) catch |err| {
+                std.debug.print("S4-T16 ruling 2: unsorted generation ({s}), step {d}\n", .{ @tagName(how), step });
+                return err;
+            };
+        }
+    }
+}
+
+/// S4-T16 ruling 5(c): the current generation's bound state section
+/// re-written without `path`'s entry, the manifest re-bound.
+fn dropStateEntry(f: *Fixture, root_id: []const u8, path: []const u8) !void {
+    const a = f.arena();
+    var metadata = try currentManifest(f);
+    const bound = metadata.state.?;
+    const state = try incremental_state.decodeSection(a, try f.out.readFileAlloc(io, bound.file, a, .unlimited));
+    var kept = std.ArrayList(incremental_state.Entry).empty;
+    for (state.files) |entry| {
+        if (std.mem.eql(u8, entry.root_id, root_id) and std.mem.eql(u8, entry.path, path)) continue;
+        try kept.append(a, entry);
+    }
+    try std.testing.expectEqual(state.files.len - 1, kept.items.len);
+    var trimmed = state;
+    trimmed.files = kept.items;
+    const bytes = try incremental_state.encodeSection(a, trimmed);
+    try f.out.writeFile(io, .{ .sub_path = bound.file, .data = bytes });
+    metadata = try manifest.withState(metadata, bound.file, bytes);
+    try writeManifest(f, metadata);
+}
+
+test "S4-T16 ruling 5(c): a previous path the state does not name is rebuilt from the generation, and the output equals the update where none is missing" {
+    for ([_]bool{ false, true }) |drop| {
+        for ([_]apply.Options{ .{}, with_filenames }) |options| {
+            var f = try Fixture.init();
+            defer f.deinit();
+            const a = f.arena();
+            var m = Model{};
+            try s4t16Folder(&f, &m, options);
+            if (drop) {
+                try dropStateEntry(&f, "school", "d.md");
+                try dropStateEntry(&f, "vault", "v1.md");
+            }
+            _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "m.md", .text = "# M\n\nchanged once more\n" })}), options);
+            expectFreshSections(&f, s4t16_roots, &m, options) catch |err| {
+                std.debug.print("S4-T16 ruling 5(c): state entries dropped: {}\n", .{drop});
+                return err;
+            };
+        }
+    }
+}
