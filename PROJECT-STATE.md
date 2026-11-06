@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-06 (S4-T15, the `both` and filename queries keep a bounded top `candidate_k` per channel; verified and merged)
+Last updated: 2026-11-06 (S4-T16, one changed file: the documents pass, `loadPrevious` and the documents encode stop re-doing every unchanged file; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,34 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## One changed file: the documents pass, `loadPrevious` and the documents encode stop re-doing every unchanged file (S4-T16, 2026-11-06; verified and merged)
+
+**Verified and merged 2026-11-06** ([Verdict](docs/tasks/S4-T16.md)): on the 10k timing corpus (`ReleaseSmall`, one changed
+file, `scripts/s4t4_budgets.py profile`, p50 of ten, two interleaved runs, stage timers on in all three builds)
+`load_previous` + `build_documents` + `encode_sections.documents` 20.3–20.6 → 8.60–8.68 ms, and the call's stages (`total`)
+58.8–61.4 → 47.0–47.1 ms with the filename channel off and 67.6–71.6 → 55.8–55.9 ms on (at least 11.6 ms below the untouched
+before); with the timers off (`budgets`, p50 of five) 57.4 → 45.9 and 65.7 → 55.6 ms. The untouched stages, the full 10k
+build (1.004 / 1.002), `ss_open`, the first query after an open, the queries and the reads where they were; every section
+an update writes byte-identical to before's and to a fresh index (`s4t11_budgets.py compare`; 120 randomized rounds of the
+verifier's seeds in Debug and `ReleaseSmall`, half with the filename sections; a `0f07746` generation in four cells; both
+captures, 2,762 `cf5f8575…` and 16,490 `09770196…`); NFR-13 15k one handle unchanged (open 49,139,017 B); `zig build test`
+355/357 (2 gated skips) and `test-abi` 24/24 in Debug and `ReleaseSmall`; Python 241 OK against both `searchd` builds;
+seven plants caught. **`find`** (`the`, words, 20 a page) measures 5.83–5.89 → 7.79–7.82 ms with its code unchanged: the
+`ReleaseSmall` outliner turned the byte step of its sort's 64-byte swap into a call per byte (bar 5(e) re-ruled; the fix
+is S4-T17).
+
+[Report](docs/tasks/S4-T16.md). `PreviousDocs` maps each path to one range of the previous documents section when its
+runs ascend strictly by path (every generation `buildGeneration` has written since S3-T3), else the list per path as
+before; `loadPrevious` sizes its tables once, fills `initial` with `files`, answers "has previous records" by a forward
+walk and skips the not-in-state loop when the walk matched every path; the documents pass merges the batch's files into
+the state's order (`orderedFiles`, equal to the sort) and reads the previous source section with a cursor
+(`SourceWalk`); `segment.encodeAllocV4` validates the documents section once. Format, manifest, contracts 2.2.0, C ABI and
+Dart API unchanged; Dart 0.3.10; natives rebuilt (macOS 826,536 B, Android 804,560 B, iOS framework binary 807,088 B),
+`native/SOURCE-SHA256` `1a7887aae8834dbbb95f77574889f94f29960391fd4a5ed96e1beb29ba62a631`.
+
+**Consumer pin:** not yet: the app pins once for S4-T16 and S4-T17 together, after S4-T17 merges (the `03-next.md` row),
+so no consumer sees `find`'s 7.8 ms level.
 
 ## The `both` and filename queries keep a bounded top `candidate_k` per channel (S4-T15, 2026-11-06; verified and merged)
 

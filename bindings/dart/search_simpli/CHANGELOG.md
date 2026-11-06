@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.3.10 (S4-T16; contract 2.2.0; patch: writer only, no format or API change)
+
+One changed file no longer re-does every unchanged file in the writer's
+`loadPrevious`, its documents pass and the documents encode. No Dart API, C
+ABI, contract (`contracts/` stays 2.2.0), index format, reader or result
+changed: every section a generation writes is byte for byte what 0.3.9
+writes for the same files, and every query and read answers as 0.3.9 does;
+an index any 0.3.x library wrote opens and updates unchanged and nothing is
+rebuilt. The natives changed (rebuilt twice on the Mac, byte-identical:
+macOS 826,536 B, Android 804,560 B, iOS framework binary 807,088 B);
+`native/SOURCE-SHA256` is `1a7887aa…`.
+
+- **The previous documents by range.** A generation the writer wrote keeps
+  each path's records together and in path order, so each path maps to one
+  range of the previous section (checked in the one pass that builds the
+  map; any other generation, such as an `import-json` one, takes the list
+  per path as before).
+- **One walk where there were lookups.** `loadPrevious` sizes its tables
+  once, fills the chunker and initial tables in one step, answers "has
+  previous records" by one forward walk when the state's records ascend,
+  and skips the records-not-in-state loop when the walk has matched every
+  path.
+- **No sort and no search for unchanged files.** The documents pass places
+  each file the state put, still under its key with the same record slice,
+  by its state position and merges in only the added, moved and re-put
+  files (the result is the sort's); a file's previous source entry comes
+  from a cursor over the section's table, which is in the same order.
+- **The documents section is validated once.** `segment.encodeAllocV4`
+  validates and sizes in one walk, allocates exactly and writes; the
+  writer had validated every record twice and walked the vectors three
+  times. Every refusal keeps its name.
+- **On the 10,000-file timing corpus** (`ReleaseSmall`, one changed file,
+  stage timers on, p50 of ten, two interleaved runs): the three stages
+  20.4–20.6 → 8.6–8.7 ms; the call's stages 58.4–58.5 → 46.8–47.0 ms with
+  the filename channel off and 67.3–68.1 → 55.7–55.9 ms on; the full build,
+  `ss_open`, the first query after an open, the queries and the reads where
+  they were; NFR-13 at 15,000 files on one handle unchanged. `find` (`the`,
+  words, 20 a page) measures 5.84 → 7.79 ms with its code unchanged: its
+  sort swaps 64-byte hit records a byte at a time, and in this build the
+  `ReleaseSmall` outliner turns each byte into a call; S4-T17 takes the fix
+  (numbers in `docs/tasks/S4-T16.md`).
+
 ## 0.3.9 (S4-T15; contract 2.2.0; patch: reader only, no format or API change)
 
 The `both` and filename queries keep a bounded top `candidate_k` per channel
