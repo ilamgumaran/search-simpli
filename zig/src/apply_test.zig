@@ -2211,7 +2211,12 @@ test "S4-T16 ruling 2: an update of a generation whose records are out of path o
                 .{ .root_id = "school", .path = "d.md", .text = "# D\n\nபள்ளி விடுமுறை and a lock\n" },
             }) |file| try m.set(a, file);
             _ = try f.applyOk(try joinChanges(a, domain_roots, try m.adds(a)), .{});
+            // The writer's own generation keeps the range form.
+            const sorted_fallbacks = apply.test_previous_docs_fallbacks;
+            _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "e.txt", .text = "an e file\nwith a lantern\nand a boat\n" })}), .{});
+            try std.testing.expectEqual(sorted_fallbacks, apply.test_previous_docs_fallbacks);
             try unsortGeneration(&f, how);
+            const fallbacks = apply.test_previous_docs_fallbacks;
             switch (step) {
                 // Another file changes: the out-of-order records are carried.
                 0 => _ = try f.applyOk(try joinChanges(a, "[]", &.{try m.put(a, .{ .root_id = "home", .path = "e.txt", .text = "an e file\nchanged\n" })}), .{}),
@@ -2226,6 +2231,8 @@ test "S4-T16 ruling 2: an update of a generation whose records are out of path o
                     try m.rename("home", "a.md", "zz/a.md");
                 },
             }
+            // The out-of-order generation took the list fallback, once.
+            try std.testing.expectEqual(fallbacks + 1, apply.test_previous_docs_fallbacks);
             expectFreshSections(&f, domain_roots, &m, .{}) catch |err| {
                 std.debug.print("S4-T16 ruling 2: unsorted generation ({s}), step {d}\n", .{ @tagName(how), step });
                 return err;

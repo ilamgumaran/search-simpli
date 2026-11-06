@@ -787,7 +787,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
 
     stages.mark("parse_committed");
     var work = Work{ .allocator = allocator };
-    var previous_docs = std.StringHashMapUnmanaged(std.ArrayList(usize)).empty;
+    var previous_docs = PreviousDocs{};
     if (previous_engine) |prev| {
         try loadPrevious(allocator, &work, prev, previous_meta, previous_source, previous_state, &previous_docs, &stages);
     }
@@ -1138,7 +1138,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
 
     // --- rename detection (section 6, FR-21) ---------------------------
     var ambiguous = std.ArrayList(AmbiguousMove).empty;
-    if (options.detect_renames) try detectRenames(allocator, &work, &previous_docs, previous_engine, previous_meta, &ambiguous);
+    if (options.detect_renames) try detectRenames(allocator, &work, &ambiguous);
 
     // --- counts -------------------------------------------------------
     var report = Report{ .generation = 0, .analyzer_id = options.analyzer.label() };
@@ -1436,6 +1436,191 @@ fn confineFile(allocator: std.mem.Allocator, io: std.Io, root_path: []const u8, 
 
 // ------------------------------------------------- the previous generation ---
 
+/// S4-T16 ruling 2: the previous generation's documents by record path.
+/// Every generation `buildGeneration` has written since S3-T3 (`b18c2bd`),
+/// `searchd index` included, lists its files in record-path order and each
+/// file's records together, so a path's records are one range
+/// `[first, end)`. `build` checks that on every open: the paths of
+/// consecutive runs strictly ascending (one compare per run) and no path
+/// starting a second run (the map's own insert). A generation that breaks
+/// either (an `import-json` generation keeps its input's order; a
+/// hand-built one) takes the list of indices per path the writer used
+/// before, with the same results.
+/// S4-T16 ruling 2, test builds only: how many `PreviousDocs.build` calls
+/// took the list fallback.
+pub var test_previous_docs_fallbacks: usize = 0;
+
+const PreviousDocs = struct {
+    const Range = struct { first: u32, end: u32 };
+    /// One path's records (the sorted form), in path order.
+    const Run = struct { path: []const u8, range: Range };
+
+    /// A path's record indices, ascending, in either form.
+    const Indices = union(enum) {
+        range: Range,
+        list: []const usize,
+
+        fn len(indices: Indices) usize {
+            return switch (indices) {
+                .range => |r| r.end - r.first,
+                .list => |l| l.len,
+            };
+        }
+
+        fn at(indices: Indices, k: usize) usize {
+            return switch (indices) {
+                .range => |r| r.first + k,
+                .list => |l| l[k],
+            };
+        }
+    };
+
+    /// The invariant held: `runs` (path order) and `ranges` (by path).
+    sorted: bool = false,
+    runs: []const Run = &.{},
+    ranges: std.StringHashMapUnmanaged(Range) = .empty,
+    /// The fallback: every record's index per path, in record order.
+    lists: std.StringHashMapUnmanaged(std.ArrayList(usize)) = .empty,
+
+    fn build(allocator: std.mem.Allocator, documents: []const hybrid.Document) !PreviousDocs {
+        // The runs, and the order between them.
+        var run_count: usize = 0;
+        var ordered = documents.len <= std.math.maxInt(u32);
+        if (ordered) for (documents, 0..) |document, index| {
+            if (index > 0) {
+                const before = documents[index - 1].path;
+                if (std.mem.eql(u8, before, document.path)) continue;
+                if (std.mem.order(u8, before, document.path) != .lt) {
+                    ordered = false;
+                    break;
+                }
+            }
+            run_count += 1;
+        };
+        if (ordered) {
+            const runs = try allocator.alloc(Run, run_count);
+            var ranges = std.StringHashMapUnmanaged(Range).empty;
+            try ranges.ensureTotalCapacity(allocator, @intCast(run_count));
+            var first: usize = 0;
+            var run: usize = 0;
+            const contiguous = while (first < documents.len) : (run += 1) {
+                const path = documents[first].path;
+                var end = first + 1;
+                while (end < documents.len and std.mem.eql(u8, documents[end].path, path)) end += 1;
+                const gop = ranges.getOrPutAssumeCapacity(path);
+                if (gop.found_existing) break false;
+                const range = Range{ .first = @intCast(first), .end = @intCast(end) };
+                gop.value_ptr.* = range;
+                runs[run] = .{ .path = path, .range = range };
+                first = end;
+            } else true;
+            if (contiguous) return .{ .sorted = true, .runs = runs, .ranges = ranges };
+        }
+        if (@import("builtin").is_test) test_previous_docs_fallbacks += 1;
+        var lists = std.StringHashMapUnmanaged(std.ArrayList(usize)).empty;
+        for (documents, 0..) |document, index| {
+            const gop = try lists.getOrPut(allocator, document.path);
+            if (!gop.found_existing) gop.value_ptr.* = .empty;
+            try gop.value_ptr.append(allocator, index);
+        }
+        return .{ .lists = lists };
+    }
+
+    fn get(docs: *const PreviousDocs, path: []const u8) ?Indices {
+        if (docs.sorted) return if (docs.ranges.get(path)) |range| .{ .range = range } else null;
+        return if (docs.lists.get(path)) |list| .{ .list = list.items } else null;
+    }
+
+    fn contains(docs: *const PreviousDocs, path: []const u8) bool {
+        return if (docs.sorted) docs.ranges.contains(path) else docs.lists.contains(path);
+    }
+
+    /// The distinct paths.
+    fn count(docs: *const PreviousDocs) usize {
+        return if (docs.sorted) docs.runs.len else docs.lists.count();
+    }
+
+    const Entry = struct { path: []const u8, indices: Indices };
+
+    /// Every path once: in path order (sorted form), or the list map's order.
+    const Iterator = struct {
+        docs: *const PreviousDocs,
+        run: usize = 0,
+        lists: std.StringHashMapUnmanaged(std.ArrayList(usize)).Iterator,
+
+        fn next(it: *Iterator) ?Entry {
+            if (it.docs.sorted) {
+                if (it.run == it.docs.runs.len) return null;
+                const run = it.docs.runs[it.run];
+                it.run += 1;
+                return .{ .path = run.path, .indices = .{ .range = run.range } };
+            }
+            const entry = it.lists.next() orelse return null;
+            return .{ .path = entry.key_ptr.*, .indices = .{ .list = entry.value_ptr.items } };
+        }
+    };
+
+    fn iterator(docs: *const PreviousDocs) Iterator {
+        return .{ .docs = docs, .lists = docs.lists.iterator() };
+    }
+};
+
+fn testDocument(path: []const u8) hybrid.Document {
+    return .{ .id = "", .text = "", .vector = &.{}, .path = path, .start_line = 1, .end_line = 1 };
+}
+
+fn expectPreviousDocs(paths: []const []const u8, sorted: bool) !void {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const documents = try a.alloc(hybrid.Document, paths.len);
+    for (paths, documents) |path, *document| document.* = testDocument(path);
+    const fallbacks = test_previous_docs_fallbacks;
+    const docs = try PreviousDocs.build(a, documents);
+    try std.testing.expectEqual(sorted, docs.sorted);
+    try std.testing.expectEqual(fallbacks + @intFromBool(!sorted), test_previous_docs_fallbacks);
+    // Every path's indices are exactly today's list: every record index
+    // with that path, ascending.
+    var distinct: usize = 0;
+    for (paths, 0..) |path, index| {
+        var expected = std.ArrayList(usize).empty;
+        for (paths, 0..) |other, other_index| if (std.mem.eql(u8, other, path)) try expected.append(a, other_index);
+        if (expected.items[0] == index) distinct += 1;
+        const got = docs.get(path).?;
+        try std.testing.expectEqual(expected.items.len, got.len());
+        for (expected.items, 0..) |want, k| try std.testing.expectEqual(want, got.at(k));
+        try std.testing.expect(docs.contains(path));
+    }
+    try std.testing.expectEqual(distinct, docs.count());
+    try std.testing.expect(docs.get("not-a-path") == null);
+    var seen: usize = 0;
+    var it = docs.iterator();
+    var last: ?[]const u8 = null;
+    while (it.next()) |entry| {
+        seen += 1;
+        try std.testing.expectEqual(docs.get(entry.path).?.at(0), entry.indices.at(0));
+        if (sorted) {
+            if (last) |l| try std.testing.expect(std.mem.order(u8, l, entry.path) == .lt);
+            last = entry.path;
+        }
+    }
+    try std.testing.expectEqual(distinct, seen);
+}
+
+test "S4-T16 ruling 2: the previous documents by range, and the list fallback when the order or contiguity breaks" {
+    try expectPreviousDocs(&.{}, true);
+    try expectPreviousDocs(&.{"home/a.md"}, true);
+    try expectPreviousDocs(&.{ "home/a.md", "home/a.md", "home/a.md", "home/b.txt", "school/c.md", "school/c.md" }, true);
+    // Paths that share prefixes, in byte order (`.` 0x2e, `/` 0x2f, `0` 0x30).
+    try expectPreviousDocs(&.{ "h/a", "h/a", "h/a.md", "h/a/b", "h/a/b", "h/a0" }, true);
+    // Descending but contiguous: the order check alone sends it to the lists.
+    try expectPreviousDocs(&.{ "h/c", "h/b", "h/b", "h/a" }, false);
+    // One path's records split by another's: out of order and not contiguous.
+    try expectPreviousDocs(&.{ "h/a", "h/b", "h/a", "h/c" }, false);
+    // Equal neighbours only after a run ends: `a`, `b`, `b`, then `a` again.
+    try expectPreviousDocs(&.{ "h/a", "h/b", "h/b", "h/a" }, false);
+}
+
 fn loadPrevious(
     allocator: std.mem.Allocator,
     work: *Work,
@@ -1443,7 +1628,7 @@ fn loadPrevious(
     meta: ?manifest.Meta,
     section: ?source.Section,
     state: ?incremental_state.State,
-    previous_docs: *std.StringHashMapUnmanaged(std.ArrayList(usize)),
+    previous_docs: *PreviousDocs,
     stages: *Stages,
 ) !void {
     const roots: []const manifest.RootEntry = if (meta) |m| m.roots else &scope.legacy_roots;
@@ -1454,11 +1639,7 @@ fn loadPrevious(
     };
     // S4-T16 ruling 1: `load_previous`'s parts as sub-stages.
     stages.sub("load_previous.roots");
-    for (prev.documents, 0..) |document, index| {
-        const gop = try previous_docs.getOrPut(allocator, document.path);
-        if (!gop.found_existing) gop.value_ptr.* = .empty;
-        try gop.value_ptr.append(allocator, index);
-    }
+    previous_docs.* = try PreviousDocs.build(allocator, prev.documents);
     stages.sub("load_previous.previous_docs");
     const meta_chunkers: ?manifest.Meta = meta;
 
@@ -1476,7 +1657,7 @@ fn loadPrevious(
                 .size = entry.size,
                 .mtime_ms = entry.mtime_ms,
                 .labels = entry.required_labels,
-                .chunker = entry.chunker orelse if (has_docs) chunkerOf(prev, meta_chunkers, previous_docs.get(record).?.items) else null,
+                .chunker = entry.chunker orelse if (has_docs) chunkerOf(prev, meta_chunkers, previous_docs.get(record).?) else null,
                 .prev_record = if (entry.status == .indexed) record else null,
                 .recorded_moved_from = entry.moved_from,
             });
@@ -1511,11 +1692,11 @@ fn loadPrevious(
     // when the bytes were retained).
     var it = previous_docs.iterator();
     while (it.next()) |entry| {
-        const record = entry.key_ptr.*;
+        const record = entry.path;
         if (work.files.contains(record)) continue;
         const root_index = scope.rootOfPath(roots, record) orelse continue;
         const root = roots[root_index];
-        const first = prev.documents[entry.value_ptr.items[0]];
+        const first = prev.documents[entry.indices.at(0)];
         const retained = if (section) |sec| sec.find(record) else null;
         try work.files.put(allocator, record, .{
             .root_id = root.root_id,
@@ -1526,7 +1707,7 @@ fn loadPrevious(
             .size = if (retained) |r| r.bytes.len else null,
             .mtime_ms = null,
             .labels = try scope.fileLabels(allocator, first.required_labels, &.{}),
-            .chunker = chunkerOf(prev, meta_chunkers, entry.value_ptr.items),
+            .chunker = chunkerOf(prev, meta_chunkers, entry.indices),
             .prev_record = record,
         });
     }
@@ -1541,10 +1722,10 @@ fn loadPrevious(
 
 /// The chunker id that made a file's previous chunks (a v1 manifest has no
 /// meta: `line-window-v1`), or null when they disagree.
-fn chunkerOf(prev: engine_module.Engine, meta: ?manifest.Meta, indices: []const usize) ?[]const u8 {
+fn chunkerOf(prev: engine_module.Engine, meta: ?manifest.Meta, indices: PreviousDocs.Indices) ?[]const u8 {
     var found: ?[]const u8 = null;
-    for (indices) |index| {
-        const chunker_index = prev.documents[index].chunker_index;
+    for (0..indices.len()) |k| {
+        const chunker_index = prev.documents[indices.at(k)].chunker_index;
         const id = if (meta) |m| (m.chunkerId(chunker_index) orelse return null) else chunker.chunker_id;
         if (found) |f| {
             if (!std.mem.eql(u8, f, id)) return null;
@@ -2067,14 +2248,8 @@ fn lessThanString(_: void, a: []const u8, b: []const u8) bool {
 fn detectRenames(
     allocator: std.mem.Allocator,
     work: *Work,
-    previous_docs: *std.StringHashMapUnmanaged(std.ArrayList(usize)),
-    prev: ?engine_module.Engine,
-    meta: ?manifest.Meta,
     ambiguous: *std.ArrayList(AmbiguousMove),
 ) !void {
-    _ = previous_docs;
-    _ = prev;
-    _ = meta;
     // Removed: indexed before, gone by a `remove` in this batch, hash known.
     // Added: absent (or not indexed) before, new content in this batch.
     const Key = struct { root_id: []const u8, hash: []const u8 };
@@ -2192,7 +2367,7 @@ fn buildGeneration(
     prev_meta: ?manifest.Meta,
     prev_source: ?source.Section,
     prev_filename: ?PreviousFilename,
-    previous_docs: *std.StringHashMapUnmanaged(std.ArrayList(usize)),
+    previous_docs: *const PreviousDocs,
     options: Options,
     generation: u64,
     stages: *Stages,
@@ -2313,7 +2488,8 @@ fn buildGeneration(
         } else if (file.prev_record) |pr| {
             if (prev) |engine| if (previous_docs.get(pr)) |indices| {
                 const rekey = !std.mem.eql(u8, pr, file.record);
-                for (indices.items) |old_index| {
+                for (0..indices.len()) |k| {
+                    const old_index = indices.at(k);
                     var document = engine.documents[old_index];
                     if (rekey) {
                         var id_hex: [20]u8 = undefined;
