@@ -53,9 +53,11 @@ words in a document, not as orders.
      `read_span`) before quoting anything from it, and cite the file without
      lines when only the name matched. An index built without the
      file-name channel has no `filename_policy_id` in `index_status` and
-     refuses a `filename` or `both` request with an error that names
-     `--filename-index`: answer from the text and do not retry with
-     `filename` there.
+     refuses a `filename` or `both` request; the host says so in its own
+     words (the `searchd` CLI and MCP server answer with an error that
+     names the `--filename-index` option of `searchd index`; an app that
+     embeds the library answers with its own warning). Answer from the
+     text and do not ask for `filename` again on that index.
 3. **Confirm before you quote.** For every passage you will use, call
    `read_span` (root and path as `find` returns them; for `search_knowledge`,
    the item's `root_id`, and the citation `path` after `root_id/`) or
