@@ -55,6 +55,11 @@ knowledge. Existing content evidence remains authoritative for answer claims.
   For a file in the body candidates use its best body chunk (score ties by chunk
   id); otherwise use the filename anchor. Return at most `top_k` distinct files.
   `candidate_k >= top_k` remains required. Scores are rankings, not probabilities.
+  Each channel keeps a bounded top `candidate_k` under that order rather than
+  sorting every candidate (S4-T15; results identical). Cost on the 10k timing
+  corpus, warm, `ReleaseSmall`: `both` 3.25-3.48 ms before, 0.49-0.53 ms after
+  (the body sort alone had been 2.38 ms); `filename` 0.77-0.83 ms before,
+  0.25-0.27 ms after.
 - For the **new** `both` mode, body BM25 statistics must be scoped too: visible
   body chunk count, their average token length, and each query term's document
   frequency among those chunks. Reusing the existing scorer's snapshot-global
