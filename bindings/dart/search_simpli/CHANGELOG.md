@@ -30,6 +30,12 @@ changes (`7762a23a…`) because the sources it digests changed.
   test passes against the 0.3.1 library in both build modes.
 - CI now runs the engine tests, the C ABI harness and the Python suites
   against a `ReleaseSmall` build too.
+- **The stamp moved once, the binaries did not (S4-T8).** `tool/source_digest.py`
+  no longer digests the engine's test files (`zig/src/**/*_test.zig`, 19 files;
+  none is built into the libraries), so `native/SOURCE-SHA256` changes from
+  `7762a23a…` to `00794146…` with the three binaries byte-identical to the
+  ones above. A consumer that keys on the stamp treats `7762a23a…` and
+  `00794146…` as the same core.
 
 ## 0.3.1 (S4-T4; contract 2.2.0; patch: no API change)
 

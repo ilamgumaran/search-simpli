@@ -4,7 +4,8 @@
 Used by tool/build_native.sh (writes native/SOURCE-SHA256) and by
 tests/test_native_freshness.py (recomputes and compares), so the two cannot
 drift. Inputs, sorted by repo-relative path: zig/build.zig, zig/build.zig.zon
-(if present), every zig/src/**/*.zig, zig/include/search_simpli.h,
+(if present), every zig/src/**/*.zig except the test files (*_test.zig: not
+built into the libraries; S4-T8 ruling 7), zig/include/search_simpli.h,
 contracts/CONTRACTS_VERSION (zig/build.zig compiles it into ss_version()), and
 bindings/dart/search_simpli/tool/build_native.sh (its link flags shape the
 shipped iOS framework binary, S1-T22). Each file contributes its path, a NUL,
@@ -26,7 +27,7 @@ def source_files(root=REPO_ROOT):
         root / "contracts" / "CONTRACTS_VERSION",
         root / "bindings" / "dart" / "search_simpli" / "tool" / "build_native.sh",
     ]
-    files += (zig / "src").rglob("*.zig")
+    files += (f for f in (zig / "src").rglob("*.zig") if not f.name.endswith("_test.zig"))
     return sorted((f for f in files if f.is_file()), key=lambda f: f.relative_to(root).as_posix())
 
 
