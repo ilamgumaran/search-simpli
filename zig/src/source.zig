@@ -190,15 +190,20 @@ pub const Section = struct {
     }
 
     /// S4-T10: a file's original bytes. A resident section answers from its
-    /// copy. A streamed one reads the file's `text_length` bytes at its
-    /// `text_offset`, positionally, into a buffer from `allocator` (the
-    /// call's, freed with it); a read that fails or comes back short answers
-    /// `capacity` as a damaged section does, naming why.
+    /// copy (checked whole by `open`). A streamed one reads the file's
+    /// `text_length` bytes at its `text_offset`, positionally, into a buffer
+    /// from `allocator` (the call's, freed with it) and checks them against
+    /// the record's SHA-256; a read that fails or comes back short, or bytes
+    /// that do not match, answer `capacity` as a damaged section does,
+    /// naming the check (`sha256_mismatch_name`).
     pub fn fileBytes(section: Section, allocator: std.mem.Allocator, entry: FileEntry) error{OutOfMemory}!BytesResult {
         const text = section.text_file orelse return .{ .ok = entry.bytes };
         const buffer = try allocator.alloc(u8, entry.text_length);
         const read = text.file.readPositionalAll(text.io, buffer, text.offset + entry.text_offset) catch |err| return unavailable(allocator, @errorName(err));
         if (read != buffer.len) return unavailable(allocator, "SourceSectionSizeMismatch");
+        var digest: [32]u8 = undefined;
+        std.crypto.hash.sha2.Sha256.hash(buffer, &digest, .{});
+        if (!std.mem.eql(u8, &digest, &entry.sha256)) return unavailable(allocator, sha256_mismatch_name);
         return .{ .ok = buffer };
     }
 };
@@ -206,6 +211,8 @@ pub const Section = struct {
 /// The `capacity` answer of a section that is bound but cannot be read
 /// (`service.sourceUnavailable`'s message).
 pub const unavailable_prefix = "re-index required: source section unavailable";
+/// S4-T10: the name a streamed file's failed SHA-256 check answers with.
+pub const sha256_mismatch_name = "SourceFileSha256Mismatch";
 
 pub const BytesResult = union(enum) {
     ok: []const u8,
@@ -1522,4 +1529,53 @@ test "S4-T10: the running checksum equals checksum.compute over the same bytes a
             try std.testing.expectEqual(whole, running.final());
         }
     }
+}
+
+test "S4-T10: a streamed file whose bytes no longer match their SHA-256 answers CAPACITY naming the check" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+    // A copy of four fixture files (BOM and CRLF among them).
+    var inputs = std.ArrayList(InputFile).empty;
+    for ([_][]const u8{ "home/bom-checklist.md", "home/crlf-shopping.md", "home/garden.md", "school/notes.md" }) |path| {
+        const full = try std.fmt.allocPrint(arena, "../fixtures/family-folder/{s}", .{path});
+        try inputs.append(arena, .{ .path = path, .bytes = try std.Io.Dir.cwd().readFileAlloc(io, full, arena, .unlimited) });
+    }
+    var fixture = try StreamedFixture.init(try encode(arena, inputs.items));
+    defer fixture.deinit();
+    const streamed = try fixture.openKept(arena, stream_buffer_bytes);
+    defer std.testing.allocator.free(streamed.block);
+    const section = streamed.section;
+    for (inputs.items) |input| {
+        try std.testing.expectEqualStrings(input.bytes, (try section.fileBytes(arena, section.find(input.path).?)).ok);
+        _ = try spanOk(try readSpan(arena, section, input.path, 1, 1, 0));
+        _ = (try outline(arena, section, input.path)).ok;
+    }
+    // After the open checked it, one byte of garden.md changes on disk (the
+    // same length, so only the SHA-256 can tell).
+    const garden = section.find("home/garden.md").?;
+    var write_handle = try fixture.tmp.dir.openFile(io, "source-1.hybsrc", .{ .mode = .read_write });
+    defer write_handle.close(io);
+    var byte: [1]u8 = undefined;
+    const at = section.text_file.?.offset + garden.text_offset + 5;
+    _ = try write_handle.readPositionalAll(io, &byte, at);
+    byte[0] ^= 0x20;
+    try write_handle.writePositionalAll(io, &byte, at);
+    const expected = unavailable_prefix ++ " (" ++ sha256_mismatch_name ++ ")";
+    const span = (try readSpan(arena, section, "home/garden.md", 1, 1, 0)).failed;
+    try std.testing.expectEqual(Code.capacity, span.code);
+    try std.testing.expectEqualStrings(expected, span.message);
+    const lines = (try outline(arena, section, "home/garden.md")).failed;
+    try std.testing.expectEqual(Code.capacity, lines.code);
+    try std.testing.expectEqualStrings(expected, lines.message);
+    try std.testing.expectEqualStrings(expected, (try section.fileBytes(arena, garden)).failed.message);
+    // The other files still answer, byte for byte.
+    for (inputs.items) |input| {
+        if (std.mem.eql(u8, input.path, "home/garden.md")) continue;
+        try std.testing.expectEqualStrings(input.bytes, (try section.fileBytes(arena, section.find(input.path).?)).ok);
+    }
+    // Argument errors and caps are answered before the bytes are read.
+    try std.testing.expectEqual(Code.invalid_argument, (try readSpan(arena, section, "home/garden.md", 0, 1, 0)).failed.code);
+    try std.testing.expectEqual(Code.not_found, (try readSpan(arena, section, "home/none.md", 1, 1, 0)).failed.code);
 }
