@@ -37,9 +37,9 @@ macOS 826,536 B, Android 804,560 B, iOS framework binary 807,088 B);
   the filename channel off and 67.3–68.1 → 55.7–55.9 ms on; the full build,
   `ss_open`, the first query after an open, the queries and the reads where
   they were; NFR-13 at 15,000 files on one handle unchanged. `find` (`the`,
-  words, 20 a page) measures 5.84 → 7.79 ms in this build with its code
-  unchanged; the same two sources built with symbols kept measure 7.04 and
-  7.08 ms, so the difference follows code placement, not the change
+  words, 20 a page) measures 5.84 → 7.79 ms with its code unchanged: its
+  sort swaps 64-byte hit records a byte at a time, and in this build the
+  `ReleaseSmall` outliner turns each byte into a call; S4-T17 takes the fix
   (numbers in `docs/tasks/S4-T16.md`).
 
 ## 0.3.9 (S4-T15; contract 2.2.0; patch: reader only, no format or API change)
