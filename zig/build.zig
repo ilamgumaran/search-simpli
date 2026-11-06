@@ -218,12 +218,16 @@ fn addAbiLibraries(
 
 /// S4-T18: `src/fastmem.zig`'s module: compiled with `-fno-builtin`, so
 /// LLVM never turns its loops back into calls to `memcpy` (the function it
-/// defines), and position-independent, for the shared libraries.
+/// defines), and position-independent, for the shared libraries. A
+/// `ReleaseSmall` build compiles this one object `ReleaseFast` (bar 4(c)'s
+/// remedy): in `ReleaseSmall` the machine outliner gave `memcpy` a stack
+/// frame and moved its 2-32 byte paths into calls, which every one of
+/// `find`'s 56,424 copies of 1-15 B paid. Other modes keep their own.
 fn fastmemModule(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) *std.Build.Module {
     return b.createModule(.{
         .root_source_file = b.path("src/fastmem.zig"),
         .target = target,
-        .optimize = optimize,
+        .optimize = if (optimize == .ReleaseSmall) .ReleaseFast else optimize,
         .no_builtin = true,
         .pic = true,
     });
