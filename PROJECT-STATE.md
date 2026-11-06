@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-05 (S4-T6, a read after `apply_changes` no longer crashes a release `searchd serve`; verified and merged)
+Last updated: 2026-11-06 (S4-T15, the `both` and filename queries keep a bounded top `candidate_k` per channel; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,32 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## The `both` and filename queries keep a bounded top `candidate_k` per channel (S4-T15, 2026-11-06; verified and merged)
+
+**Verified and merged 2026-11-06** ([Verdict](docs/tasks/S4-T15.md)): on the 10k timing corpus (filename channel on,
+`ReleaseSmall`, warm p50, two interleaved 20-round runs) the `both` query 3.245–3.267 → 0.487–0.500 ms against the untouched
+before (one level, spread 0.010 / 0.013 ms) and the filename query 0.762–0.774 → 0.251–0.256 ms; the content query, `ss_open`,
+`find` and the reads unchanged; `scripts/capture_query_outputs.py` byte-identical before and after (2,762 queries
+`cf5f8575…`; with `--filename-fields` 16,490 `09770196…`); NFR-13 15k one handle passes (`both` peak 58,866,083 → 57,696,077 B);
+`zig build test` 346/348 (2 gated skips) and `test-abi` 24/24 in Debug and `ReleaseSmall`; Python 241 OK against both
+`searchd` builds; four plants caught. Bar 5(a)(i) was re-ruled against the untouched before (the first-form Verdict missed
+one round of forty against *before2*'s low level).
+
+[Report](docs/tasks/S4-T15.md). `filename_field.queryDecoded` no longer sorts every scored file: each channel keeps its top
+`min(candidate_k, candidates)` in `hybrid.BoundedTop` (the generic form of the content query's `TopK`) under exactly
+`lessCandidate`'s order, a strict total order over a channel's candidates, so the kept list is the full sort's prefix and
+every hit is unchanged. The profile put 2.98 ms of the 3.25 ms call in the two full sorts and the call's two levels
+(S4-T12's layout row) in the body sort, which is gone. Format, manifest, contracts 2.2.0, C ABI and Dart API unchanged;
+Dart 0.3.9; natives rebuilt (macOS 825,976 B, Android 798,960 B, iOS framework binary 806,416 B), `native/SOURCE-SHA256`
+`1f27e1b10c14e5329d298bcd89d7e72e5845867aa5cd77bda465da354c2f9177`.
+
+**Consumer pin:** the S4-T15 merge on `main` (contracts 2.2.0, Dart 0.3.9; the signed macOS dylib should land near
+844,256 B, outside the band M16-T27 re-centred on 861,920 B: the pin task re-centres it).
+
+**Gap in this file:** no entry was written for S4-T7 to S4-T14 (all verified and merged 5–6 Nov 2026); their Reports and
+Verdicts are in `docs/tasks/S4-T7.md` … `docs/tasks/S4-T14.md`, and `docs/journey/03-next.md` carries their top entries.
+From S4-T15 the verifier adds the entry at each merge again.
 
 ## A read after `apply_changes` no longer crashes a release `searchd serve` (S4-T6, 2026-11-05; verified and merged)
 
