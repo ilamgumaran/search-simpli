@@ -8,18 +8,26 @@
 //! file and never load more (CAP-19 NFR-13).
 //!
 //! S4-T10: two ways to hold a section. `open`/`openIndexed` validate a whole
-//! section held in memory (the writer's previous generation, the eager
-//! `snapshot_open.openSource`). `openStreamed` (the scoped open's first
-//! `read_span`/`outline`, `scope.Loads.readSource`) keeps only the header,
-//! the files table and the line maps resident, streams the text area once
-//! through a buffer of at most `stream_buffer_bytes` to check the checksum
-//! and every line map, and afterwards `fileBytes` reads one file's bytes per
-//! call, positionally, and checks them against the record's SHA-256.
+//! section held in memory, every line map included (the eager
+//! `snapshot_open.openSource`, the tests). `openStreamed` (the scoped open's
+//! first `read_span`/`outline`, `scope.Loads.readSource`) keeps only the
+//! header, the files table and the line maps resident, streams the text area
+//! once through a buffer of at most `stream_buffer_bytes` for the checksum,
+//! and afterwards `fileBytes` reads one file's bytes per call, positionally,
+//! and checks them against the record's SHA-256.
+//!
+//! S4-T14: a line map is checked against its bytes where its file is read.
+//! `openStreamed` and the writer's `openTable` walk the files table and bound
+//! each map's varints (`varintsEnd`) but read no map against bytes; a
+//! streamed section's `fileBytes` checks the one file's map and encoding byte
+//! (`validateLineMap`) the first time the handle reads that file, and a map
+//! that fails costs that file alone (`capacity`, `InvalidLineMap`).
 //!
 //! Lines are `str.splitlines` lines of the original bytes, the same lines the
 //! chunkers number: LF, CR, CRLF (one terminator), VT, FF, FS, GS, RS, NEL,
 //! LS and PS each end a line. A leading UTF-8 BOM is not part of line 1.
 const std = @import("std");
+const builtin = @import("builtin");
 const checksum_mod = @import("checksum.zig");
 const chunker = @import("chunker.zig");
 const chunker_md = @import("chunker_md.zig");
@@ -57,8 +65,9 @@ pub const Carried = struct {
     /// The record's line map, exactly its `line_count + 1` varints.
     line_map: []const u8,
     encoding: Encoding,
-    /// The bytes are that section's own copy, whose checksum and line maps
-    /// were verified when it was opened (`openWith`): their UTF-8 check is
+    /// The bytes are that section's own copy, whose checksum was verified
+    /// when it was opened (`openTable`, against the manifest's) and whose
+    /// UTF-8 was checked when they were first written: their UTF-8 check is
     /// skipped. False for bytes read again whose SHA-256 matched the
     /// record: those are checked as a fresh file's are.
     bytes_from_section: bool,
@@ -88,8 +97,11 @@ pub fn varintsEnd(bytes: []const u8, at: usize, count: usize) ?usize {
 }
 
 /// S4-T11 ruling 3: the record of `entry` (from a section opened with
-/// `open`, `openIndexed` or `openStreamed`, which validated its line map)
-/// to carry into the next section.
+/// `open`, `openIndexed`, `openTable` or `openStreamed`) to carry into the
+/// next section. S4-T14: the map is copied as it is, bounded here by its
+/// varints; whether it agrees with its bytes is checked where a reader
+/// reads the file (`Section.fileBytes`), so a map only a wrong writer could
+/// make costs that one file until its bytes change.
 pub fn carriedRecord(entry: FileEntry, bytes_from_section: bool) DecodeError!Carried {
     const end = varintsEnd(entry.line_map, 0, @as(usize, entry.line_count) + 1) orelse return error.InvalidLineMap;
     return .{ .sha256 = entry.sha256, .line_count = entry.line_count, .line_map = entry.line_map[0..end], .encoding = entry.encoding, .bytes_from_section = bytes_from_section };
@@ -134,8 +146,12 @@ pub const FileEntry = struct {
     encoding: Encoding,
     /// S3-T4: this file's sparse line index (one checkpoint per
     /// `checkpoint_interval` lines), when the section was opened with
-    /// `openIndexed`; empty otherwise (the map is then decoded from line 1).
+    /// `openIndexed`; empty otherwise (the map is then decoded from line 1;
+    /// S4-T14: a streamed section has none).
     checkpoints: []const Checkpoint = &.{},
+    /// S4-T14: the record's position in the files table (0-based), as `find`
+    /// and `file` return it: the index of its bit in `Section.checked`.
+    position: usize = 0,
 };
 
 /// S3-T4 (sparse line index, built at open, no format change): every
@@ -184,10 +200,18 @@ pub const Section = struct {
     /// `openIndexed`.
     checkpoints: []const Checkpoint = &.{},
     checkpoint_starts: []const usize = &.{},
+    /// S4-T14, a streamed section only: one bit per file in table order
+    /// (`FileEntry.position`), set once `fileBytes` has checked that file's
+    /// line map and encoding byte against its SHA-256-checked bytes, so the
+    /// handle checks each file at most once. Words from the handle's arena
+    /// (`openStreamed`'s `index_allocator`). Empty for a resident section,
+    /// whose every map `open` checked.
+    checked: []std.atomic.Value(usize) = &.{},
 
     fn withCheckpoints(section: Section, index: usize, entry: FileEntry) FileEntry {
-        if (section.checkpoint_starts.len != section.file_count + 1) return entry;
         var copy = entry;
+        copy.position = index;
+        if (section.checkpoint_starts.len != section.file_count + 1) return copy;
         copy.checkpoints = section.checkpoints[section.checkpoint_starts[index]..section.checkpoint_starts[index + 1]];
         return copy;
     }
@@ -201,9 +225,23 @@ pub const Section = struct {
         var cursor = Cursor{ .bytes = section.files_table };
         var position: usize = 0;
         while (true) : (position += 1) {
-            const entry = readRecord(&cursor, section) catch unreachable; // validated by `open`
+            var entry = readRecord(&cursor, section) catch unreachable; // validated by `open`
+            entry.position = position;
             if (position == index) return entry;
         }
+    }
+
+    /// S4-T14: whether `entry`'s line map may be decoded: always for a
+    /// resident section (`open` checked every map), and for a streamed one
+    /// once `fileBytes` has checked it on this handle.
+    pub fn mapChecked(section: Section, entry: FileEntry) bool {
+        if (section.checked.len == 0) return true;
+        const word = section.checked[entry.position / word_bits].load(.acquire);
+        return word & bitOf(entry.position) != 0;
+    }
+
+    fn markChecked(section: Section, entry: FileEntry) void {
+        _ = section.checked[entry.position / word_bits].fetchOr(bitOf(entry.position), .release);
     }
 
     /// The file with this path, or null. Binary search over `record_offsets`
@@ -226,9 +264,10 @@ pub const Section = struct {
             return null;
         }
         var cursor = Cursor{ .bytes = section.files_table };
-        var remaining = section.file_count;
-        while (remaining > 0) : (remaining -= 1) {
-            const entry = readRecord(&cursor, section) catch unreachable;
+        var position: usize = 0;
+        while (position < section.file_count) : (position += 1) {
+            var entry = readRecord(&cursor, section) catch unreachable;
+            entry.position = position;
             switch (std.mem.order(u8, entry.path, path)) {
                 .eq => return entry,
                 .gt => return null,
@@ -245,6 +284,13 @@ pub const Section = struct {
     /// the record's SHA-256; a read that fails or comes back short, or bytes
     /// that do not match, answer `capacity` as a damaged section does,
     /// naming the check (`sha256_mismatch_name`).
+    ///
+    /// S4-T14: the first time a handle reads a file, its line map and
+    /// encoding byte are checked against those bytes (`validateLineMap`,
+    /// `open`'s rules); a map that disagrees answers `capacity` naming
+    /// `InvalidLineMap` for this file only, and every later call checks it
+    /// again (a file that passes is recorded in `checked` and not checked
+    /// again).
     pub fn fileBytes(section: Section, allocator: std.mem.Allocator, entry: FileEntry) error{OutOfMemory}!BytesResult {
         const text = section.text_file orelse return .{ .ok = entry.bytes };
         const buffer = try allocator.alloc(u8, entry.text_length);
@@ -253,9 +299,26 @@ pub const Section = struct {
         var digest: [32]u8 = undefined;
         std.crypto.hash.sha2.Sha256.hash(buffer, &digest, .{});
         if (!std.mem.eql(u8, &digest, &entry.sha256)) return unavailable(allocator, sha256_mismatch_name);
+        if (!section.mapChecked(entry)) {
+            if (builtin.is_test) _ = test_map_checks.fetchAdd(1, .monotonic);
+            var with_bytes = entry;
+            with_bytes.bytes = buffer;
+            _ = validateLineMap(with_bytes, null) catch |err| return unavailable(allocator, @errorName(err));
+            section.markChecked(entry);
+        }
         return .{ .ok = buffer };
     }
 };
+
+const word_bits = @bitSizeOf(usize);
+
+fn bitOf(position: usize) usize {
+    return @as(usize, 1) << @intCast(position % word_bits);
+}
+
+/// S4-T14, test builds only: how many per-file line-map checks `fileBytes`
+/// has run (ruling 2(d): a second read of a checked file runs none).
+pub var test_map_checks = std.atomic.Value(usize).init(0);
 
 /// The `capacity` answer of a section that is bound but cannot be read
 /// (`service.sourceUnavailable`'s message).
@@ -527,10 +590,30 @@ pub fn openIndexedInspected(allocator: std.mem.Allocator, encoded: []const u8, h
     return section;
 }
 
+/// S4-T14 (to replace S4-T13's `openIndexedInspected`), the writer's open of
+/// its previous generation, for bytes whose header `inspect` already
+/// returned (the checksum computed once, by that call, and compared with the
+/// manifest's by the caller): the files table walked with every rule `open`
+/// applies to it, each line map bounded by its varints (`varintsEnd`: a map
+/// that runs past the maps region is `InvalidLineMap`), and the record
+/// offsets for `find`. No line map or encoding byte is checked against its
+/// file's bytes and no sparse index is built: a carried record copies its
+/// map as it is (`carriedRecord`), and a reader checks it where it reads the
+/// file (`Section.fileBytes`).
+pub fn openTable(allocator: std.mem.Allocator, encoded: []const u8, header: Header) (DecodeError || error{OutOfMemory})!Section {
+    var index = Index{ .offsets = try allocator.alloc(usize, header.file_count) };
+    var section = residentSection(encoded, header);
+    try walkTable(section, &index, .bounds);
+    section.record_offsets = index.offsets;
+    return section;
+}
+
 const Index = struct {
     offsets: []usize,
-    starts: []usize,
-    checkpoints: []Checkpoint,
+    /// The sparse line index (S3-T4); empty when none is built (S4-T14:
+    /// `openTable`, `openStreamed`).
+    starts: []usize = &.{},
+    checkpoints: []Checkpoint = &.{},
     used: usize = 0,
 
     fn init(allocator: std.mem.Allocator, header: Header) error{OutOfMemory}!Index {
@@ -543,17 +626,20 @@ const Index = struct {
         };
     }
 
+    fn sparse(index: *Index) bool {
+        return index.starts.len != 0;
+    }
+
     fn add(index: *Index, reader: MapReader) DecodeError!void {
         return addCheckpoint(index, reader);
     }
 };
 
-fn openWith(encoded: []const u8, index: ?*Index, inspected: ?Header) DecodeError!Section {
-    const header = inspected orelse try inspect(encoded);
+fn residentSection(encoded: []const u8, header: Header) Section {
     const files_start = header_length;
     const maps_start = files_start + header.files_bytes;
     const text_start = maps_start + header.maps_bytes;
-    const section = Section{
+    return .{
         .encoded = encoded,
         .file_count = header.file_count,
         .checksum = header.checksum,
@@ -563,24 +649,64 @@ fn openWith(encoded: []const u8, index: ?*Index, inspected: ?Header) DecodeError
         .text = encoded[text_start..],
         .text_length = header.text_bytes,
     };
+}
+
+fn openWith(encoded: []const u8, index: ?*Index, inspected: ?Header) DecodeError!Section {
+    const header = inspected orelse try inspect(encoded);
+    const section = residentSection(encoded, header);
+    try walkTable(section, index, .against_bytes);
+    return section;
+}
+
+/// S4-T14: what the table walk checks of each line map.
+const MapCheck = enum {
+    /// Every map and encoding byte against its file's resident bytes
+    /// (`validateLineMap`): `open`, `openIndexed`.
+    against_bytes,
+    /// Only that the map's `line_count + 1` varints end inside the maps
+    /// region (`varintsEnd`): `openTable`, `openStreamed`. Each map's
+    /// agreement with its bytes is checked where the file is read.
+    bounds,
+};
+
+/// The files table in order: each record by `TableWalk`'s rules, then its
+/// line map by `check`, whose byte length must bring the next record's map
+/// offset (gap-free maps). With `index`, the record offsets, and when the
+/// index is sparse (`against_bytes` only) the checkpoints.
+fn walkTable(section: Section, index: ?*Index, check: MapCheck) DecodeError!void {
     var walk = TableWalk{ .cursor = .{ .bytes = section.files_table } };
     var position: usize = 0;
-    while (position < header.file_count) : (position += 1) {
+    while (position < section.file_count) : (position += 1) {
         const record = try walk.next(section);
+        var sparse: ?*Index = null;
         if (index) |built| {
             built.offsets[position] = record.start;
-            built.starts[position] = built.used;
+            if (built.sparse()) {
+                built.starts[position] = built.used;
+                sparse = built;
+            }
         }
-        walk.expected_map_offset += try validateLineMap(record.entry, index);
+        walk.expected_map_offset += switch (check) {
+            .against_bytes => try validateLineMap(record.entry, sparse),
+            .bounds => try mapLength(record.entry),
+        };
     }
-    if (index) |built| built.starts[header.file_count] = built.used;
+    if (index) |built| if (built.sparse()) {
+        built.starts[section.file_count] = built.used;
+    };
     try walk.finish(section);
-    return section;
+}
+
+/// S4-T14: the byte length of `entry`'s line map, its `line_count + 1`
+/// varints counted from its offset; `InvalidLineMap` when they run past the
+/// maps region.
+fn mapLength(entry: FileEntry) DecodeError!usize {
+    return varintsEnd(entry.line_map, 0, @as(usize, entry.line_count) + 1) orelse error.InvalidLineMap;
 }
 
 /// The files table read in order, each record checked as `open` checks it
 /// before its line map (bounds, path rules and order, the gap-free text and
-/// map offsets); shared by `openWith` and `openStreamed` (S4-T10).
+/// map offsets); used by `walkTable` (S4-T10, S4-T14).
 const TableWalk = struct {
     cursor: Cursor,
     previous_path: ?[]const u8 = null,
@@ -627,12 +753,15 @@ pub const Streamed = struct {
 /// holding its text. One exact block from `blocks` holds the header, the
 /// files table and the line maps (read positionally); the text area is read
 /// once, in order, through a buffer of at most `stream_buffer_bytes` (also
-/// from `blocks`, freed before returning) to compute the checksum and to
-/// check every line map against its file's bytes, with `open`'s rules and
-/// error names (the checksum first, then the first structural error in
-/// table order). The record offsets and the sparse line index come from
-/// `index_allocator`, as `openIndexed`'s do. Afterwards `Section.fileBytes`
-/// reads one file per call. A short read is `error.ShortRead`.
+/// from `blocks`, freed before returning) to compute the checksum. S4-T14:
+/// the files table is walked with `open`'s rules and each map bounded by its
+/// varints (`walkTable`'s `bounds`), and no map is checked against its bytes
+/// here: `Section.fileBytes` checks a file's map the first time it reads
+/// the file. Errors as `open` names them: the checksum first, then the first
+/// structural error in table order. The record offsets and the per-file
+/// record (`Section.checked`) come from `index_allocator`; no sparse line
+/// index is built (a streamed file's map is decoded from line 1). A short
+/// read is `error.ShortRead`.
 pub fn openStreamed(
     index_allocator: std.mem.Allocator,
     blocks: std.mem.Allocator,
@@ -643,8 +772,8 @@ pub fn openStreamed(
     return openStreamedWith(index_allocator, blocks, io, file, length, stream_buffer_bytes);
 }
 
-/// `openStreamed` through a buffer of at most `buffer_bytes` (at least 3:
-/// a line break's look-ahead); the tests pass small ones.
+/// `openStreamed` through a buffer of at most `buffer_bytes` (at least 1);
+/// the tests pass small ones.
 fn openStreamedWith(
     index_allocator: std.mem.Allocator,
     blocks: std.mem.Allocator,
@@ -677,51 +806,21 @@ fn openStreamedWith(
         .text_length = header.text_bytes,
         .text_file = .{ .file = file, .io = io, .offset = resident_length },
     };
-    var index = try Index.init(index_allocator, header);
-    const buffer = try blocks.alloc(u8, @min(@max(buffer_bytes, 3), header.text_bytes));
+    var index = Index{ .offsets = try index_allocator.alloc(usize, header.file_count) };
+    // The table walk reads no text; its first error is answered after the
+    // checksum, as `open` answers a damaged section by its checksum first.
+    const walked: ?DecodeError = if (walkTable(section, &index, .bounds)) |_| null else |err| err;
+    const buffer = try blocks.alloc(u8, @min(@max(buffer_bytes, 1), header.text_bytes));
     defer blocks.free(buffer);
     var stream = Stream{ .io = io, .file = file, .next_read = resident_length, .unread = header.text_bytes, .buffer = buffer, .sum = &sum };
-    const outcome = try streamFiles(section, &stream, &index);
     try stream.drain();
     if (sum.final() != header.checksum) return error.ChecksumMismatch;
-    switch (outcome) {
-        .failed => |err| return err,
-        .ok => {},
-    }
+    if (walked) |err| return err;
     section.record_offsets = index.offsets;
-    section.checkpoint_starts = index.starts;
-    section.checkpoints = index.checkpoints[0..index.used];
+    const words = try index_allocator.alloc(std.atomic.Value(usize), (header.file_count + word_bits - 1) / word_bits);
+    @memset(words, .init(0));
+    section.checked = words;
     return .{ .section = section, .block = block };
-}
-
-const StreamOutcome = union(enum) { ok, failed: DecodeError };
-
-/// Every record in table order, its line map checked against its bytes as
-/// they stream; the first structural error stops the checks (the caller
-/// still reads the rest for the checksum).
-fn streamFiles(section: Section, stream: *Stream, index: *Index) ReadError!StreamOutcome {
-    var walk = TableWalk{ .cursor = .{ .bytes = section.files_table } };
-    var position: usize = 0;
-    while (position < section.file_count) : (position += 1) {
-        const record = walk.next(section) catch |err| return .{ .failed = err };
-        index.offsets[position] = record.start;
-        index.starts[position] = index.used;
-        const map_length = validateLineMapStreamed(record.entry, stream, index) catch |err| {
-            if (decodeErrorOf(err)) |decode| return .{ .failed = decode };
-            return @as(ReadError, @errorCast(err));
-        };
-        walk.expected_map_offset += map_length;
-    }
-    index.starts[section.file_count] = index.used;
-    walk.finish(section) catch |err| return .{ .failed = err };
-    return .ok;
-}
-
-fn decodeErrorOf(err: anyerror) ?DecodeError {
-    inline for (@typeInfo(DecodeError).error_set.?) |member| {
-        if (std.mem.eql(u8, @errorName(err), member.name)) return @as(DecodeError, @errorCast(err));
-    }
-    return null;
 }
 
 /// The text area read once, in order, through `buffer`; every byte read is
@@ -739,12 +838,8 @@ const Stream = struct {
     end: usize = 0,
     sum: *Running,
 
-    fn buffered(stream: *const Stream) []const u8 {
-        return stream.buffer[stream.start..stream.end];
-    }
-
-    /// Read on so that at least `want` bytes (at most 3 here) are buffered,
-    /// or every byte has been read.
+    /// Read on so that at least `want` bytes are buffered, or every byte has
+    /// been read.
     fn fill(stream: *Stream, want: usize) ReadError!void {
         if (stream.end - stream.start >= want or stream.unread == 0) return;
         const kept = stream.end - stream.start;
@@ -837,7 +932,9 @@ fn readRecord(cursor: *Cursor, section: Section) DecodeError!FileEntry {
 
 /// Check that a file's line map is exactly the line starts of its own bytes
 /// (`lineStarts`, recomputed without allocating) and that the encoding byte
-/// matches the BOM. Returns the map's byte length. With `sparse`, records a
+/// matches the BOM (`open`'s walk over a resident section; S4-T14: and
+/// `Section.fileBytes` over one streamed file's bytes, at its first read on
+/// a handle). Returns the map's byte length. With `sparse`, records a
 /// checkpoint before every `checkpoint_interval`-th varint (the end offset's
 /// included when it falls on one).
 fn validateLineMap(entry: FileEntry, sparse: ?*Index) DecodeError!usize {
@@ -861,53 +958,6 @@ fn validateLineMap(entry: FileEntry, sparse: ?*Index) DecodeError!usize {
     }
     if (sparse) |built| if (count % checkpoint_interval == 0) try built.add(reader);
     if (try reader.next() != entry.bytes.len) return error.InvalidLineMap;
-    if (count != entry.line_count) return error.InvalidLineMap;
-    return reader.offset;
-}
-
-/// S4-T10: `validateLineMap` over the file's bytes as they stream: the same
-/// rules, checkpoints and errors, with the line-break look-ahead (at most two
-/// bytes) kept in the buffer across reads. Consumes exactly the file's
-/// `text_length` bytes from `stream` when it succeeds.
-fn validateLineMapStreamed(entry: FileEntry, stream: *Stream, sparse: ?*Index) (DecodeError || ReadError)!usize {
-    const length = entry.text_length;
-    try stream.fill(@min(3, length));
-    const has_bom = length >= 3 and std.mem.startsWith(u8, stream.buffered(), "\xef\xbb\xbf");
-    if ((entry.encoding == .utf8_bom) != has_bom) return error.InvalidLineMap;
-    var reader = MapReader{ .bytes = entry.line_map };
-    var count: u64 = 0;
-    var position: usize = 0;
-    if (has_bom) {
-        stream.start += 3;
-        position = 3;
-    }
-    var line_open = false;
-    while (position < length) {
-        try stream.fill(@min(3, length - position));
-        const available = stream.buffered();
-        const view = available[0..@min(available.len, length - position)];
-        // Short of the file's end, stop two bytes early so that a break's
-        // look-ahead (CRLF, NEL, LS, PS) is always in the view.
-        const limit = if (view.len == length - position) view.len else view.len - 2;
-        var at: usize = 0;
-        while (at < limit) {
-            if (!line_open) {
-                if (sparse) |built| if (count % checkpoint_interval == 0) try built.add(reader);
-                if (try reader.next() != position + at) return error.InvalidLineMap;
-                count += 1;
-                line_open = true;
-            }
-            const width = isBreakAt(view, at);
-            if (width != 0) {
-                at += width;
-                line_open = false;
-            } else at += 1;
-        }
-        stream.start += at;
-        position += at;
-    }
-    if (sparse) |built| if (count % checkpoint_interval == 0) try built.add(reader);
-    if (try reader.next() != length) return error.InvalidLineMap;
     if (count != entry.line_count) return error.InvalidLineMap;
     return reader.offset;
 }
@@ -1027,7 +1077,11 @@ pub const SpanResult = union(enum) {
 /// 256 KiB, and with `capacity` "re-index required: source absent" when the
 /// generation has no source section. `allocator` formats messages and, for a
 /// streamed section (S4-T10), holds the file's bytes for the call: the
-/// span's slices point into them.
+/// span's slices point into them. S4-T14: a streamed file not yet checked on
+/// this handle is read, hashed and its map checked (`Section.fileBytes`)
+/// before its map is decoded for the size limits, so a refused span reads
+/// nothing only for a file already checked, and the first request to a
+/// damaged file answers the integrity check's `capacity`.
 pub fn readSpan(
     allocator: std.mem.Allocator,
     section: ?Section,
@@ -1045,13 +1099,18 @@ pub fn readSpan(
     const first = if (start_line > context_lines) start_line - context_lines else 1;
     const last = @min(entry.line_count, last_line + context_lines);
     const lines: usize = last - first + 1;
+    var read: ?[]const u8 = null;
+    if (!present.mapChecked(entry)) read = switch (try present.fileBytes(allocator, entry)) {
+        .ok => |file_bytes| file_bytes,
+        .failed => |failure| return .{ .failed = failure },
+    };
     const outer = lineOffsets(entry, first, last + 1);
     const size = outer.stop - outer.first;
     if (lines > max_span_lines or size > max_span_bytes) {
         return fail(allocator, .capacity, "span of {d} lines and {d} bytes is over the {d}-line or {d}-byte limit", .{ lines, size, max_span_lines, max_span_bytes });
     }
     const inner = lineOffsets(entry, start_line, last_line + 1);
-    const bytes = switch (try present.fileBytes(allocator, entry)) {
+    const bytes = read orelse switch (try present.fileBytes(allocator, entry)) {
         .ok => |file_bytes| file_bytes,
         .failed => |failure| return .{ .failed = failure },
     };
@@ -1360,25 +1419,43 @@ test "source section rejects corruption, unsorted paths and bad line maps" {
         try std.testing.expectError(error.ChecksumMismatch, open(copy));
     }
     try std.testing.expectError(error.Truncated, open(encoded[0 .. encoded.len - 1]));
-    // S4-T10: the streamed open answers every damage as `open` does, and a
-    // damaged line map behind a valid checksum (resealed) is still refused.
+    // S4-T10: the streamed open answers every damage as `open` does. S4-T14:
+    // except a map that disagrees with its file's bytes behind a valid
+    // checksum (resealed): the streamed open then opens, and that one file's
+    // `read_span` and `outline` answer `capacity` naming `InvalidLineMap`
+    // (the per-file check in `fileBytes`) while the other file answers. A
+    // map whose varints miss its region is still refused whole, by the
+    // table walk's bounds. Per case: what `open` answers (unchanged) and
+    // which guard of the streamed reader catches it.
     const maps_start = header_length + 2 * record_fixed_length + "a.md".len + "b.md".len;
     const encoding_at = header_length + 4 + 8 + 8 + 4 + 8 + 32;
     const line_count_at = header_length + 4 + 8 + 8;
-    const Damage = struct { at: usize, value: u8, reseal: bool, expected: DecodeError };
+    const b_line_count_at = line_count_at + record_fixed_length + "a.md".len;
+    const Caught = union(enum) { whole: DecodeError, file: []const u8 };
+    const Damage = struct { at: usize, value: u8, reseal: bool, expected: DecodeError, streamed: Caught };
     for ([_]Damage{
-        .{ .at = 12, .value = 0x01, .reseal = false, .expected = error.ChecksumMismatch },
-        .{ .at = header_length + 10, .value = 0x01, .reseal = false, .expected = error.ChecksumMismatch },
-        .{ .at = encoded.len - 1, .value = 0x01, .reseal = false, .expected = error.ChecksumMismatch },
+        // The checksum (unsealed flips): the whole section.
+        .{ .at = 12, .value = 0x01, .reseal = false, .expected = error.ChecksumMismatch, .streamed = .{ .whole = error.ChecksumMismatch } },
+        .{ .at = header_length + 10, .value = 0x01, .reseal = false, .expected = error.ChecksumMismatch, .streamed = .{ .whole = error.ChecksumMismatch } },
+        .{ .at = encoded.len - 1, .value = 0x01, .reseal = false, .expected = error.ChecksumMismatch, .streamed = .{ .whole = error.ChecksumMismatch } },
         // a.md's second line start, 4 (delta 4) made 3: the map no longer
-        // matches the bytes.
-        .{ .at = maps_start + 1, .value = 4 ^ 3, .reseal = true, .expected = error.InvalidLineMap },
-        // The last file's last delta (the file's end) made one byte longer.
-        .{ .at = maps_start + 4, .value = 2 ^ 3, .reseal = true, .expected = error.InvalidLineMap },
-        // a.md's encoding byte says BOM; it has none.
-        .{ .at = encoding_at, .value = 0x01, .reseal = true, .expected = error.InvalidLineMap },
-        // a.md's line count 2 made 3.
-        .{ .at = line_count_at, .value = 2 ^ 3, .reseal = true, .expected = error.InvalidLineMap },
+        // matches the bytes. The per-file check, a.md only.
+        .{ .at = maps_start + 1, .value = 4 ^ 3, .reseal = true, .expected = error.InvalidLineMap, .streamed = .{ .file = "a.md" } },
+        // The last file's last delta (the file's end) made one byte longer:
+        // the per-file check, b.md only.
+        .{ .at = maps_start + 4, .value = 2 ^ 3, .reseal = true, .expected = error.InvalidLineMap, .streamed = .{ .file = "b.md" } },
+        // a.md's encoding byte says BOM; it has none: the per-file check.
+        .{ .at = encoding_at, .value = 0x01, .reseal = true, .expected = error.InvalidLineMap, .streamed = .{ .file = "a.md" } },
+        // a.md's line count 2 made 3: its 4 varints end at map offset 4,
+        // b.md's map starts at 3. The table walk's gap-free rule, at b.md's
+        // record (finding 1 of the plan: was `InvalidLineMap`).
+        .{ .at = line_count_at, .value = 2 ^ 3, .reseal = true, .expected = error.InvalidLineMap, .streamed = .{ .whole = error.InvalidFileTable } },
+        // b.md (the last record) line count 1 made 2: its 3 varints run past
+        // the maps region. The walk's varint bounds (ruling 2(c)).
+        .{ .at = b_line_count_at, .value = 1 ^ 2, .reseal = true, .expected = error.InvalidLineMap, .streamed = .{ .whole = error.InvalidLineMap } },
+        // b.md line count 1 made 0: its map ends a varint early, so the maps
+        // region is not used up. The walk's `finish`.
+        .{ .at = b_line_count_at, .value = 1, .reseal = true, .expected = error.InvalidLineMap, .streamed = .{ .whole = error.InvalidLineMap } },
     }) |damage| {
         const copy = try arena.dupe(u8, encoded);
         copy[damage.at] ^= damage.value;
@@ -1387,9 +1464,33 @@ test "source section rejects corruption, unsorted paths and bad line maps" {
         var fixture = try StreamedFixture.init(copy);
         defer fixture.deinit();
         for ([_]usize{ 3, 5, stream_buffer_bytes }) |buffer_bytes| {
-            try std.testing.expectError(damage.expected, fixture.open(arena, buffer_bytes));
+            switch (damage.streamed) {
+                .whole => |err| try std.testing.expectError(err, fixture.open(arena, buffer_bytes)),
+                .file => |path| {
+                    const streamed = try fixture.openKept(arena, buffer_bytes);
+                    defer std.testing.allocator.free(streamed.block);
+                    try expectOnlyFileRefused(arena, streamed.section, try open(encoded), path);
+                },
+            }
         }
     }
+    // A checksum-valid map whose first varint is eleven bytes long (shift
+    // past 63), as only a wrong writer (here a forged carried record) could
+    // write it: `open` refuses it; the streamed reader's bounds pass (two
+    // varints, two end bytes) and the per-file check refuses that file.
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash("x", &digest, .{});
+    const overflow_map = [_]u8{0x80} ** 10 ++ [_]u8{ 0x01, 0x01 };
+    const forged = try encode(arena, &.{
+        .{ .path = "a.md", .bytes = "x", .carried = .{ .sha256 = digest, .line_count = 1, .line_map = &overflow_map, .encoding = .utf8, .bytes_from_section = true } },
+        files[1],
+    });
+    try std.testing.expectError(error.InvalidLineMap, open(forged));
+    var forged_fixture = try StreamedFixture.init(forged);
+    defer forged_fixture.deinit();
+    const forged_streamed = try forged_fixture.openKept(arena, stream_buffer_bytes);
+    defer std.testing.allocator.free(forged_streamed.block);
+    try expectOnlyFileRefused(arena, forged_streamed.section, try open(try encode(arena, &.{ .{ .path = "a.md", .bytes = "x" }, files[1] })), "a.md");
     const unsorted = [_]InputFile{ files[1], files[0] };
     try std.testing.expectError(error.UnsortedPaths, encode(arena, &unsorted));
     try std.testing.expectError(error.InvalidPath, encode(arena, &.{.{ .path = "../x", .bytes = "" }}));
@@ -1491,6 +1592,37 @@ test "S3-T4: the sparse line index finds any line by decoding at most one block"
     try std.testing.expectEqual(@as(usize, 3), indexed.file(1).checkpoints.len);
 }
 
+/// S4-T14: on a streamed `section`, `refused`'s `read_span` and `outline`
+/// answer `capacity` naming `InvalidLineMap` (twice: a failed file is not
+/// recorded as checked), and every other file answers as `resident` does.
+fn expectOnlyFileRefused(arena: std.mem.Allocator, section: Section, resident: Section, refused: []const u8) !void {
+    const expected = unavailable_prefix ++ " (InvalidLineMap)";
+    for (0..resident.file_count) |index| {
+        const want = resident.file(index);
+        const entry = section.find(want.path).?;
+        if (std.mem.eql(u8, want.path, refused)) {
+            for (0..2) |_| {
+                const span = (try readSpan(arena, section, want.path, 1, 1, 0)).failed;
+                try std.testing.expectEqual(Code.capacity, span.code);
+                try std.testing.expectEqualStrings(expected, span.message);
+                const lines = (try outline(arena, section, want.path)).failed;
+                try std.testing.expectEqual(Code.capacity, lines.code);
+                try std.testing.expectEqualStrings(expected, lines.message);
+                try std.testing.expect(!section.mapChecked(entry));
+            }
+            continue;
+        }
+        try std.testing.expectEqualStrings(want.bytes, (try section.fileBytes(arena, entry)).ok);
+        try std.testing.expect(section.mapChecked(entry));
+        if (want.line_count == 0) continue;
+        const last: u32 = @min(want.line_count, max_span_lines);
+        const a = try spanOk(try readSpan(arena, resident, want.path, 1, last, 0));
+        const b = try spanOk(try readSpan(arena, section, want.path, 1, last, 0));
+        try std.testing.expectEqualStrings(a.text, b.text);
+        try std.testing.expectEqual(resident.find(want.path).?.line_count, (try outline(arena, section, want.path)).ok.lines);
+    }
+}
+
 /// Recompute a section's header checksum after a test changed its bytes.
 fn reseal(encoded: []u8) void {
     const header = parseHeader(encoded, encoded.len) catch unreachable;
@@ -1571,18 +1703,20 @@ test "S4-T10: the streamed open holds the table and the maps, reads each file pe
         try std.testing.expectEqual(resident.text.len, section.text_length);
         try std.testing.expectEqual(resident.checksum, section.checksum);
         try std.testing.expectEqualSlices(usize, resident.record_offsets, section.record_offsets);
-        try std.testing.expectEqualSlices(usize, resident.checkpoint_starts, section.checkpoint_starts);
-        try std.testing.expectEqual(resident.checkpoints.len, section.checkpoints.len);
-        for (resident.checkpoints, section.checkpoints) |want, got| {
-            try std.testing.expectEqual(want.map_offset, got.map_offset);
-            try std.testing.expectEqual(want.value, got.value);
-        }
+        // S4-T14: no sparse line index (a streamed map is decoded from line
+        // 1), and one bit per file, clear until the file is first read.
+        try std.testing.expectEqual(@as(usize, 0), section.checkpoint_starts.len);
+        try std.testing.expectEqual(@as(usize, 0), section.checkpoints.len);
+        try std.testing.expectEqual((files.len + word_bits - 1) / word_bits, section.checked.len);
         for (files, 0..) |input, index| {
             const entry = section.find(input.path).?;
+            try std.testing.expectEqual(index, entry.position);
             try std.testing.expectEqual(@as(usize, 0), entry.bytes.len);
             try std.testing.expectEqual(input.bytes.len, entry.text_length);
             try std.testing.expectEqualStrings(input.path, section.file(index).path);
+            try std.testing.expect(!section.mapChecked(entry));
             try std.testing.expectEqualStrings(input.bytes, (try section.fileBytes(arena, entry)).ok);
+            try std.testing.expect(section.mapChecked(entry));
             const want = resident.find(input.path).?;
             try std.testing.expectEqual(want.line_count, entry.line_count);
             try std.testing.expectEqual(want.encoding, entry.encoding);
@@ -1804,4 +1938,41 @@ test "S4-T13 ruling 3: openIndexedInspected is openIndexed with the checksum com
     reseal(bad);
     try std.testing.expectError(error.InvalidLineMap, openIndexedInspected(arena, bad, try inspect(bad)));
     try std.testing.expectError(error.InvalidLineMap, openIndexed(arena, bad));
+}
+
+test "S4-T14 ruling 2(d): a streamed file's map is checked once per handle; a file that fails is checked at every call" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const files = [_]InputFile{ .{ .path = "a.md", .bytes = "# A\nx\ny\n" }, .{ .path = "b.txt", .bytes = "one\ntwo\n" } };
+    const encoded = try encode(arena, &files);
+    var fixture = try StreamedFixture.init(encoded);
+    defer fixture.deinit();
+    const streamed = try fixture.openKept(arena, stream_buffer_bytes);
+    defer std.testing.allocator.free(streamed.block);
+    const section = streamed.section;
+    const start = test_map_checks.load(.monotonic);
+    _ = try spanOk(try readSpan(arena, section, "a.md", 1, 2, 0));
+    _ = try spanOk(try readSpan(arena, section, "a.md", 2, 3, 1));
+    _ = (try outline(arena, section, "a.md")).ok;
+    try std.testing.expectEqual(start + 1, test_map_checks.load(.monotonic));
+    _ = try spanOk(try readSpan(arena, section, "b.txt", 1, 1, 0));
+    _ = (try outline(arena, section, "b.txt")).ok;
+    try std.testing.expectEqual(start + 2, test_map_checks.load(.monotonic));
+    // A second handle checks again: the record is per handle.
+    const second = try fixture.openKept(arena, stream_buffer_bytes);
+    defer std.testing.allocator.free(second.block);
+    _ = try spanOk(try readSpan(arena, second.section, "a.md", 1, 1, 0));
+    try std.testing.expectEqual(start + 3, test_map_checks.load(.monotonic));
+    // a.md's line-2 delta off by one, resealed: every call checks again.
+    const bad = try arena.dupe(u8, encoded);
+    bad[header_length + section.files_table.len + 1] ^= 4 ^ 3;
+    reseal(bad);
+    var bad_fixture = try StreamedFixture.init(bad);
+    defer bad_fixture.deinit();
+    const damaged = try bad_fixture.openKept(arena, stream_buffer_bytes);
+    defer std.testing.allocator.free(damaged.block);
+    const before = test_map_checks.load(.monotonic);
+    for (0..3) |_| try std.testing.expectEqual(Code.capacity, (try readSpan(arena, damaged.section, "a.md", 1, 1, 0)).failed.code);
+    try std.testing.expectEqual(before + 3, test_map_checks.load(.monotonic));
 }
