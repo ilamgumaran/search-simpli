@@ -67,6 +67,17 @@ A reader before S4-T1 that met such a section would fail its checksum, but it
 never gets that far: it refuses the v2.1 manifest first. Implementation:
 `zig/src/checksum.zig`.
 
+## The writer validates once (S4-T16)
+
+No format change. `searchd`'s writer (`apply.buildGeneration`) encodes its
+documents section with `segment.encodeAllocV4`: one walk checks every record
+(the same checks `encodeV4` makes, in the same order, refusing with the same
+names) and sizes the section, and the records are then written into an exact
+buffer without a second check. `encodedLengthV4`, `encodeV4` and the v3
+`encode` keep their behaviour. Every record is still written from its
+fields: copying an unchanged record's bytes from the previous section was
+measured at under 1 ms to gain on 10,000 files and not taken.
+
 ## What the fields carry
 
 `md-section-v1` (`zig/src/chunker_md.zig`, `search_platform.core._md_section_chunks`)
