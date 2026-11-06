@@ -7,7 +7,11 @@
 //! 10,000-file corpus (`gen_timing_corpus.py`'s shape: 24,000-term syllable
 //! vocabulary, one to three paragraphs a file) `find` and `search_knowledge`
 //! do too, with the open in the same cap. The peaks print with the tests and
-//! are recorded in `docs/tasks/S4-T1.md`.
+//! are recorded in `docs/tasks/S4-T1.md`. S4-T9: the open's exact blocks
+//! come from `Capped` itself (as `ss_open` takes them from the C allocator),
+//! the formula bar bounds the open's peak by what it reads (`OpenParts.bar`)
+//! at every count, and the 15k scale test holds every operation, each on a
+//! handle of its own, inside 64 MiB.
 const std = @import("std");
 const apply = @import("apply.zig");
 const chunker = @import("chunker.zig");
@@ -109,8 +113,31 @@ pub const Peaks = struct {
 
 /// Open the index in `dir` and run each operation of `target`, all under
 /// one `cap`-byte `Capped` allocator; each operation gets its own arena over
-/// it (released after), as a host's per-call workspace would be.
+/// it (released after), as a host's per-call workspace would be. The
+/// operations run in order on the one handle, so each one's peak includes
+/// what the earlier ones loaded at first use (the position tables after
+/// `find`, the source section after `read_span`).
 pub fn measure(dir: std.Io.Dir, cap: usize, target: Target) !Peaks {
+    return measureOnly(dir, cap, target, null);
+}
+
+/// S4-T9: each operation on a handle of its own: a fresh open, then that
+/// operation alone (its own first-use loads and its call), so its peak is
+/// the open plus what it needs and nothing another operation loaded.
+/// `bytes[open]` is the open's peak (equal on every handle).
+pub fn measureEach(dir: std.Io.Dir, cap: usize, target: Target) !Peaks {
+    var peaks = Peaks{};
+    inline for (comptime std.enums.values(Operation)[1..]) |operation| {
+        const one = try measureOnly(dir, cap, target, operation);
+        if (peaks.bytes[@intFromEnum(Operation.open)] == 0) peaks.bytes[@intFromEnum(Operation.open)] = one.bytes[@intFromEnum(Operation.open)];
+        try std.testing.expectEqual(peaks.bytes[@intFromEnum(Operation.open)], one.bytes[@intFromEnum(Operation.open)]);
+        peaks.bytes[@intFromEnum(operation)] = one.bytes[@intFromEnum(operation)];
+    }
+    for (peaks.bytes) |value| peaks.overall = @max(peaks.overall, value);
+    return peaks;
+}
+
+fn measureOnly(dir: std.Io.Dir, cap: usize, target: Target, only: ?Operation) !Peaks {
     var capped = Capped{ .parent = std.heap.page_allocator, .cap = cap };
     var peaks = Peaks{};
     var engine_arena = std.heap.ArenaAllocator.init(capped.allocator());
@@ -125,7 +152,7 @@ pub fn measure(dir: std.Io.Dir, cap: usize, target: Target) !Peaks {
 
     inline for (comptime std.enums.values(Operation)[1..]) |operation| {
         const runs = if (operation == .filename or operation == .both) opened.engine.filename_index_enabled else target.root_id != null or operation == .find or operation == .search_knowledge;
-        if (runs) {
+        if (runs and (only == null or only.? == operation)) {
             var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
             defer op_arena.deinit();
             const a = op_arena.allocator();
@@ -209,6 +236,7 @@ test "S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge ov
     try indexFamilyFolder(arena_state.allocator(), tmp.dir);
     const peaks = try measure(tmp.dir, cap_bytes, .{ .find_query = "pond", .knowledge_query = "hedgehogs in the pond", .root_id = "home", .path = "garden.md" });
     printPeaks("family-folder", peaks);
+    try printOpenParts(tmp.dir, "family-folder", peaks.bytes[@intFromEnum(Operation.open)]);
     try std.testing.expect(peaks.overall <= cap_bytes);
     // This body-only fixture does not enable the optional filename channel.
     for (peaks.bytes[0..@intFromEnum(Operation.filename)]) |value| try std.testing.expect(value > 0);
@@ -295,6 +323,7 @@ test "S4-T1 NFR-13: find and search_knowledge over a 10,000-file index inside 64
     // "the" is in most chunks: the widest postings list and the most hits.
     const peaks = try measure(out.dir, cap_bytes, .{ .find_query = "the", .knowledge_query = try std.fmt.allocPrint(a, "the {s}", .{rare}), .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
     printPeaks("10k generated", peaks);
+    try printOpenParts(out.dir, "10k generated", peaks.bytes[@intFromEnum(Operation.open)]);
     try std.testing.expect(peaks.overall <= cap_bytes);
 }
 
@@ -310,7 +339,7 @@ test "filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files" {
     _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
     const peaks = try measure(out.dir, cap_bytes, .{ .find_query = "the", .knowledge_query = "the", .filename_query = "doc the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
     printPeaks("10k filename and lazy tables", peaks);
-    if (scaleEnabled()) try printOpenParts(out.dir, base_file_count, peaks.bytes[@intFromEnum(Operation.open)]);
+    try printOpenParts(out.dir, "10k filename and lazy tables", peaks.bytes[@intFromEnum(Operation.open)]);
     for (peaks.bytes) |value| try std.testing.expect(value > 0);
     try std.testing.expect(peaks.overall <= cap_bytes);
 }
@@ -323,8 +352,10 @@ const scale_variable = "SEARCH_SIMPLI_NFR13_SCALE";
 /// The scale tests' measurement cap: wide enough that a peak past 64 MiB is
 /// recorded instead of refused.
 pub const scale_cap_bytes: usize = 256 * 1024 * 1024;
-/// S4-T4's Verdict: the open's peak at 10,000 files with filename sections.
-const filename_10k_open_peak: usize = 50_128_018;
+/// S4-T9: the open's peak at 10,000 files with filename sections (S4-T4's
+/// Verdict and S4-T8 recorded 50,128,018 before the open held only what it
+/// reads).
+const filename_10k_open_peak: usize = 33_567_893;
 /// The open's peak of the last scale test that ran in this process.
 var last_scale_open: ?struct { file_count: usize, peak: usize } = null;
 
@@ -355,7 +386,9 @@ fn dirBytes(a: std.mem.Allocator, dir: std.Io.Dir) !struct { bytes: u64, files: 
 /// One scale point: the generated corpus at `file_count` files, indexed
 /// with the filename channel on, every operation measured under
 /// `scale_cap_bytes`; the peaks, the sizes and the phase times printed.
-fn scaleRun(file_count: usize, cap: usize) !Peaks {
+/// S4-T9: with `asserted_cap`, every operation's peak must also be at or
+/// under it.
+fn scaleRun(file_count: usize, cap: usize, asserted_cap: ?usize) !Peaks {
     if (!scaleEnabled()) {
         std.debug.print("S4-T8 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
         return error.SkipZigTest;
@@ -376,9 +409,9 @@ fn scaleRun(file_count: usize, cap: usize) !Peaks {
     const index_size = try dirBytes(a, out.dir);
     var buffer: [16]u8 = undefined;
     const rare = try std.fmt.allocPrint(a, "{s}", .{word(&buffer, 4321)});
-    const peaks = try measure(out.dir, cap, .{ .find_query = "the", .knowledge_query = try std.fmt.allocPrint(a, "the {s}", .{rare}), .filename_query = "doc the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
+    const target = Target{ .find_query = "the", .knowledge_query = try std.fmt.allocPrint(a, "the {s}", .{rare}), .filename_query = "doc the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" };
+    const peaks = try measure(out.dir, cap, target);
     const measured = nowNs();
-    try printOpenParts(out.dir, file_count, peaks.bytes[@intFromEnum(Operation.open)]);
     const label = try std.fmt.allocPrint(a, "scale {d} files, filename channel on,", .{file_count});
     printPeaksUnder("S4-T8 NFR-13", label, cap, peaks);
     std.debug.print("S4-T8 NFR-13 scale {d} files: corpus {d} files {d} B; index {d} files {d} B; generate {d} ms, index {d} ms, measure {d} ms\n", .{
@@ -386,6 +419,20 @@ fn scaleRun(file_count: usize, cap: usize) !Peaks {
         @divTrunc(generated - start, std.time.ns_per_ms), @divTrunc(indexed - generated, std.time.ns_per_ms), @divTrunc(measured - indexed, std.time.ns_per_ms),
     });
     for (peaks.bytes) |value| try std.testing.expect(value > 0);
+    // S4-T9 ruling 3: each operation on a handle of its own (the open plus
+    // its own first-use loads and call), printed beside the run above, and
+    // with `asserted_cap` every one of them at or under it.
+    const each = try measureEach(out.dir, cap, target);
+    printPeaksUnder("S4-T9 NFR-13", try std.fmt.allocPrint(a, "scale {d} files, each operation on its own handle,", .{file_count}), cap, each);
+    if (asserted_cap) |bound| {
+        for (std.enums.values(Operation), each.bytes) |operation, value| {
+            if (value > bound) std.debug.print("S4-T9 NFR-13 scale {d} files: {s} peak {d} on its own handle is over {d}\n", .{ file_count, @tagName(operation), value, bound });
+            try std.testing.expect(value <= bound);
+        }
+    }
+    // The by-table replay and the formula bar (after the cap, so that a
+    // restored reservation fails the cap first).
+    try printOpenParts(out.dir, try std.fmt.allocPrint(a, "scale {d} files", .{file_count}), peaks.bytes[@intFromEnum(Operation.open)]);
     const open_peak = peaks.bytes[@intFromEnum(Operation.open)];
     try std.testing.expect(open_peak > filename_10k_open_peak);
     if (last_scale_open) |last| {
@@ -396,11 +443,12 @@ fn scaleRun(file_count: usize, cap: usize) !Peaks {
 }
 
 test "NFR-13 scale: 15,000 files" {
-    _ = try scaleRun(15_000, scale_cap_bytes);
+    // S4-T9 ruling 3: every operation inside the 64 MiB cap at 15k files.
+    _ = try scaleRun(15_000, scale_cap_bytes, cap_bytes);
 }
 
 test "NFR-13 scale: 20,000 files" {
-    _ = try scaleRun(20_000, scale_cap_bytes);
+    _ = try scaleRun(20_000, scale_cap_bytes, null);
 }
 
 // --- S4-T8 ruling 3: the open's resident bytes, by table ---------------------
@@ -443,35 +491,62 @@ const Counting = struct {
     }
 };
 
-/// What `snapshot_open.openScoped` allocates, in its order: the manifest's
-/// bytes; one slab for the document and lexical sections (read), the source
-/// section (reserved, read at the first `read_span`/`outline`/`list_files`)
-/// and the filename sections with their decoded tables (reserved, read at
-/// the first filename query); the decoded documents, vectors, dictionary
-/// terms, postings and document lengths; the decode itself; the parsed
-/// meta; the folder (`scope.Loads`, `scope.Folder`, the per-document roots).
-pub const OpenPart = enum { manifest, sections, documents, vectors, terms, postings, document_lengths, decode, meta, folder };
+/// What `snapshot_open.openScopedWith` allocates, in its order (S4-T9): the
+/// manifest's bytes, read once into a buffer of their own from the blocks
+/// allocator (its counts size the block); the one exact block from the same
+/// allocator (`snapshot_open.OpenBlock`: the decoded documents, terms,
+/// vectors, postings and document lengths, the manifest's copy, the
+/// documents and lexical sections as read); the decode into it (nothing
+/// allocated); the manifest's buffer freed; then, in the arena, the parsed
+/// meta and the folder (`scope.Loads`, `scope.Folder`, the per-document
+/// roots). Nothing is reserved for the source or the filename sections.
+pub const OpenPart = enum { manifest, block, decode, manifest_freed, meta, folder };
 
 pub const OpenParts = struct {
-    /// Bytes requested of the open's arena by each part.
-    requested: [std.meta.fields(OpenPart).len]usize = @splat(0),
+    /// Bytes requested by each part (of the blocks allocator or the arena;
+    /// negative: freed).
+    requested: [std.meta.fields(OpenPart).len]i64 = @splat(0),
     /// Bytes the capped allocator held after the part minus before it (the
-    /// arena's blocks, slack included).
-    held: [std.meta.fields(OpenPart).len]usize = @splat(0),
+    /// block exactly, the arena's blocks with their slack).
+    held: [std.meta.fields(OpenPart).len]i64 = @splat(0),
     peak: usize = 0,
-    /// The slab's parts (bytes): the document section, the lexical section,
-    /// the source section's reservation, the filename reservation.
+    /// Live bytes when the open's steps are done.
+    live: usize = 0,
+    /// The block's parts (bytes) and its length.
+    manifest_bytes: usize = 0,
     documents_section: usize = 0,
     lexical_section: usize = 0,
+    documents: usize = 0,
+    vectors: usize = 0,
+    terms: usize = 0,
+    postings: usize = 0,
+    document_lengths: usize = 0,
+    block_total: usize = 0,
+    /// Not in the open: the source section's bytes and the filename block's
+    /// size (`filename_field.loadReservation`), allocated at first use.
     source_section: usize = 0,
-    filename_reserved: usize = 0,
+    filename_block: usize = 0,
     document_count: usize = 0,
     term_count: usize = 0,
     posting_count: usize = 0,
     vector_dimensions: usize = 0,
+
+    /// S4-T9 ruling 3, the formula bar: the manifest's bytes, the two
+    /// sections the open reads and the tables decoded from them (from the
+    /// manifest's counts and the struct sizes), plus 1 MiB.
+    pub fn bar(parts: OpenParts) usize {
+        return parts.manifest_bytes + parts.documents_section + parts.lexical_section + parts.tableBytes() + bar_slack_bytes;
+    }
+
+    pub fn tableBytes(parts: OpenParts) usize {
+        return parts.document_count * @sizeOf(hybrid.Document) + parts.document_count * parts.vector_dimensions * @sizeOf(f32) +
+            parts.term_count * @sizeOf(postings.TermEntry) + parts.posting_count * @sizeOf(postings.Posting) + parts.document_count * @sizeOf(u32);
+    }
 };
 
-/// `snapshot_open.openScoped`'s allocations replayed one loader at a time
+pub const bar_slack_bytes: usize = 1024 * 1024;
+
+/// `snapshot_open.openScopedWith`'s allocations replayed one step at a time
 /// over the same `Capped` and arena as `measure`, recording after each. Its
 /// peak equals `measure`'s open peak (checked by the caller), so the parts
 /// add up to the open the other tests measure.
@@ -479,88 +554,115 @@ fn attributeOpen(dir: std.Io.Dir) !OpenParts {
     var capped = Capped{ .parent = std.heap.page_allocator, .cap = scale_cap_bytes };
     var engine_arena = std.heap.ArenaAllocator.init(capped.allocator());
     defer engine_arena.deinit();
-    var counting = Counting{ .parent = engine_arena.allocator() };
-    const allocator = counting.allocator();
+    var counting_blocks = Counting{ .parent = capped.allocator() };
+    var counting_arena = Counting{ .parent = engine_arena.allocator() };
+    const blocks = counting_blocks.allocator();
+    const allocator = counting_arena.allocator();
     var parts = OpenParts{};
-    var last_requested: usize = 0;
-    var last_held: usize = 0;
+    var last_requested: i64 = 0;
+    var last_held: i64 = 0;
     const Mark = struct {
-        fn at(p: *OpenParts, c: *const Counting, k: *const Capped, part: OpenPart, requested: *usize, held: *usize) void {
-            p.requested[@intFromEnum(part)] = c.live - requested.*;
-            p.held[@intFromEnum(part)] = k.live - held.*;
-            requested.* = c.live;
-            held.* = k.live;
+        fn at(p: *OpenParts, b: *const Counting, c: *const Counting, k: *const Capped, part: OpenPart, requested: *i64, held: *i64) void {
+            const now_requested: i64 = @intCast(b.live + c.live);
+            const now_held: i64 = @intCast(k.live);
+            p.requested[@intFromEnum(part)] = now_requested - requested.*;
+            p.held[@intFromEnum(part)] = now_held - held.*;
+            requested.* = now_requested;
+            held.* = now_held;
         }
     };
 
     var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
     const manifest_stat = try manifest_file.stat(io);
     manifest_file.close(io);
-    const manifest_buffer = try allocator.alloc(u8, @intCast(manifest_stat.size));
-    const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
-    const metadata = try manifest.decode(manifest_encoded);
-    Mark.at(&parts, &counting, &capped, .manifest, &last_requested, &last_held);
+    const manifest_read = try blocks.alloc(u8, @intCast(manifest_stat.size));
+    const manifest_first = try dir.readFile(io, publication.current_manifest_file, manifest_read);
+    const layout = try snapshot_open.OpenBlock.of(try manifest.decode(manifest_first), manifest_first.len);
+    Mark.at(&parts, &counting_blocks, &counting_arena, &capped, .manifest, &last_requested, &last_held);
 
-    const section_bytes = metadata.documents_bytes + metadata.lexical_bytes;
-    const with_source = section_bytes + metadata.source_bytes;
-    const reserved_bytes = filename_field.loadReservation(metadata);
-    const sections = try allocator.alloc(u8, with_source + reserved_bytes);
+    const block = try blocks.alignedAlloc(u8, .fromByteUnits(engine_module.open_block_alignment), layout.total);
+    defer blocks.free(block);
+    const manifest_encoded = block[layout.manifest..][0..manifest_first.len];
+    @memcpy(manifest_encoded, manifest_first);
+    const metadata = try manifest.decode(manifest_encoded);
     const snapshot = publication.LoadedSnapshot{
         .metadata = metadata,
         .manifest_encoded = manifest_encoded,
-        .documents_encoded = try dir.readFile(io, metadata.documents_file, sections[0..metadata.documents_bytes]),
-        .lexical_encoded = try dir.readFile(io, metadata.lexical_file, sections[metadata.documents_bytes..section_bytes]),
+        .documents_encoded = try dir.readFile(io, metadata.documents_file, block[layout.documents_section..][0..metadata.documents_bytes]),
+        .lexical_encoded = try dir.readFile(io, metadata.lexical_file, block[layout.lexical_section..][0..metadata.lexical_bytes]),
     };
-    Mark.at(&parts, &counting, &capped, .sections, &last_requested, &last_held);
+    Mark.at(&parts, &counting_blocks, &counting_arena, &capped, .block, &last_requested, &last_held);
+    parts.manifest_bytes = manifest_first.len;
     parts.documents_section = metadata.documents_bytes;
     parts.lexical_section = metadata.lexical_bytes;
+    parts.documents = layout.terms - layout.documents;
+    parts.terms = layout.vectors - layout.terms;
+    parts.vectors = layout.postings - layout.vectors;
+    parts.postings = layout.document_lengths - layout.postings;
+    parts.document_lengths = layout.manifest - layout.document_lengths;
+    parts.block_total = layout.total;
     parts.source_section = metadata.source_bytes;
-    parts.filename_reserved = reserved_bytes;
+    parts.filename_block = filename_field.loadReservation(metadata);
     parts.document_count = metadata.document_count;
     parts.term_count = metadata.term_count;
     parts.posting_count = metadata.posting_count;
     parts.vector_dimensions = metadata.vector_dimensions;
 
-    const documents = try allocator.alloc(hybrid.Document, metadata.document_count);
-    Mark.at(&parts, &counting, &capped, .documents, &last_requested, &last_held);
-    const vectors = try allocator.alloc(f32, metadata.document_count * metadata.vector_dimensions);
-    Mark.at(&parts, &counting, &capped, .vectors, &last_requested, &last_held);
-    const terms = try allocator.alloc(postings.TermEntry, metadata.term_count);
-    Mark.at(&parts, &counting, &capped, .terms, &last_requested, &last_held);
-    const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
-    Mark.at(&parts, &counting, &capped, .postings, &last_requested, &last_held);
-    const document_lengths = try allocator.alloc(u32, metadata.document_count);
-    Mark.at(&parts, &counting, &capped, .document_lengths, &last_requested, &last_held);
-    const opened = try engine_module.Engine.openWith(snapshot, documents, vectors, terms, posting_storage, document_lengths, .{ .validate_positions = false });
-    Mark.at(&parts, &counting, &capped, .decode, &last_requested, &last_held);
+    const Slice = struct {
+        fn of(comptime T: type, bytes: engine_module.OpenBlockBytes, offset: usize, count: usize) []T {
+            if (count == 0) return &.{};
+            const first: [*]T = @ptrCast(@alignCast(bytes.ptr + offset));
+            return first[0..count];
+        }
+    };
+    const opened = try engine_module.Engine.openWith(
+        snapshot,
+        Slice.of(hybrid.Document, block, layout.documents, metadata.document_count),
+        Slice.of(f32, block, layout.vectors, metadata.document_count * metadata.vector_dimensions),
+        Slice.of(postings.TermEntry, block, layout.terms, metadata.term_count),
+        Slice.of(postings.Posting, block, layout.postings, metadata.posting_count),
+        Slice.of(u32, block, layout.document_lengths, metadata.document_count),
+        .{ .validate_positions = false },
+    );
+    Mark.at(&parts, &counting_blocks, &counting_arena, &capped, .decode, &last_requested, &last_held);
+    blocks.free(manifest_read);
+    Mark.at(&parts, &counting_blocks, &counting_arena, &capped, .manifest_freed, &last_requested, &last_held);
 
     const meta: ?manifest.Meta = if (metadata.meta.len != 0) try manifest.parseMeta(allocator, metadata.meta) else null;
-    Mark.at(&parts, &counting, &capped, .meta, &last_requested, &last_held);
+    Mark.at(&parts, &counting_blocks, &counting_arena, &capped, .meta, &last_requested, &last_held);
     const loads = try allocator.create(scope.Loads);
-    loads.* = .{ .io = io, .allocator = allocator, .blocks = allocator, .documents = opened.documents, .index = opened.lexical_index };
+    loads.* = .{ .io = io, .allocator = allocator, .blocks = blocks, .documents = opened.documents, .index = opened.lexical_index };
     const folder = try allocator.create(scope.Folder);
     folder.* = try scope.Folder.build(allocator, meta, loads);
-    Mark.at(&parts, &counting, &capped, .folder, &last_requested, &last_held);
+    Mark.at(&parts, &counting_blocks, &counting_arena, &capped, .folder, &last_requested, &last_held);
     parts.peak = capped.peak;
+    parts.live = capped.live;
     return parts;
 }
 
-/// Print the open's parts at `file_count` files and check they add up to
-/// `open_peak` (`measure`'s open over the same index).
-fn printOpenParts(dir: std.Io.Dir, file_count: usize, open_peak: usize) !void {
+/// Print the open's parts over the index `label` names, assert the formula bar
+/// (S4-T9 ruling 3) on `open_peak` (`measure`'s open over the same index),
+/// and check that the replay's peak is that open's.
+fn printOpenParts(dir: std.Io.Dir, label: []const u8, open_peak: usize) !void {
     const parts = try attributeOpen(dir);
-    std.debug.print("S4-T8 NFR-13 open by table, {d} files (requested/held B):", .{file_count});
-    var held_sum: usize = 0;
+    std.debug.print("S4-T9 NFR-13 open by table, {s} (requested/held B):", .{label});
+    var held_sum: i64 = 0;
     for (std.enums.values(OpenPart), parts.requested, parts.held) |part, requested, held| {
         std.debug.print(" {s} {d}/{d}", .{ @tagName(part), requested, held });
         held_sum += held;
     }
-    std.debug.print("; slab: documents section {d}, lexical section {d}, source reserved {d}, filename reserved {d}; documents {d}, terms {d}, postings {d}, vector dimensions {d}; sizes Document {d}, TermEntry {d}, Posting {d}; held {d}, peak {d}, measured open {d}\n", .{
-        parts.documents_section,  parts.lexical_section,       parts.source_section,      parts.filename_reserved,
-        parts.document_count,     parts.term_count,            parts.posting_count,       parts.vector_dimensions,
-        @sizeOf(hybrid.Document), @sizeOf(postings.TermEntry), @sizeOf(postings.Posting), held_sum,
-        parts.peak,               open_peak,
+    std.debug.print("; block {d}: documents {d}, terms {d}, vectors {d}, postings {d}, document lengths {d}, manifest {d}, documents section {d}, lexical section {d}; not in the open: source section {d}, filename block {d}; documents {d}, terms {d}, postings {d}, vector dimensions {d}; sizes Document {d}, TermEntry {d}, Posting {d}; held {d}, peak {d}, measured open {d}\n", .{
+        parts.block_total,        parts.documents,             parts.terms,               parts.vectors,         parts.postings,
+        parts.document_lengths,   parts.manifest_bytes,        parts.documents_section,   parts.lexical_section, parts.source_section,
+        parts.filename_block,     parts.document_count,        parts.term_count,          parts.posting_count,   parts.vector_dimensions,
+        @sizeOf(hybrid.Document), @sizeOf(postings.TermEntry), @sizeOf(postings.Posting), held_sum,              parts.peak,
+        open_peak,
     });
+    const bar = parts.bar();
+    std.debug.print("S4-T9 NFR-13 formula bar, {s}: open peak {d} <= manifest {d} + documents section {d} + lexical section {d} + decoded tables {d} + {d} = {d} (margin {d})\n", .{
+        label, open_peak, parts.manifest_bytes, parts.documents_section, parts.lexical_section, parts.tableBytes(), bar_slack_bytes, bar, @as(i64, @intCast(bar)) - @as(i64, @intCast(open_peak)),
+    });
+    try std.testing.expect(open_peak <= bar);
     try std.testing.expectEqual(open_peak, parts.peak);
-    try std.testing.expectEqual(open_peak, held_sum);
+    try std.testing.expectEqual(@as(i64, @intCast(parts.live)), held_sum);
 }

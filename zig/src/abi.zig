@@ -118,20 +118,22 @@ pub const Handle = struct {
 /// any I/O or validation failure; see `ss_last_error()`.
 pub export fn ss_open(dir_path: [*:0]const u8) callconv(.c) ?*Handle {
     clearLastError();
-    return openImpl(std.mem.span(dir_path)) catch |err| {
+    return openImpl(allocator, std.mem.span(dir_path)) catch |err| {
         setLastError("ss_open: {s}", .{@errorName(err)});
         return null;
     };
 }
 
-fn openImpl(path: []const u8) !*Handle {
+/// `parent`: the C allocator for `ss_open`; a test passes the testing
+/// allocator so that a block `closeWith` does not free fails it as a leak.
+fn openImpl(parent: std.mem.Allocator, path: []const u8) !*Handle {
     const gio = io();
     var dir = try std.Io.Dir.cwd().openDir(gio, path, .{});
     defer dir.close(gio);
 
-    const handle = try allocator.create(Handle);
-    errdefer allocator.destroy(handle);
-    handle.arena = std.heap.ArenaAllocator.init(allocator);
+    const handle = try parent.create(Handle);
+    errdefer parent.destroy(handle);
+    handle.arena = std.heap.ArenaAllocator.init(parent);
     errdefer handle.arena.deinit();
     // S3-T4: the scoped open (roots, statistics, source section, position
     // tables) so every operation answers over a scope; a lost source section
@@ -140,7 +142,7 @@ fn openImpl(path: []const u8) !*Handle {
     // use, once per handle (`scope.Loads`).
     // S4-T9: the open's block (and the source and filename sections' at
     // their first use) exactly from the C allocator, the rest in the arena.
-    const opened = try snapshot_open.openScopedWith(.{ .blocks = allocator, .arena = handle.arena.allocator() }, gio, dir);
+    const opened = try snapshot_open.openScopedWith(.{ .blocks = parent, .arena = handle.arena.allocator() }, gio, dir);
     handle.engine = opened.engine;
     handle.folder = opened.folder;
     return handle;
@@ -149,9 +151,15 @@ fn openImpl(path: []const u8) !*Handle {
 /// Free everything opened by `ss_open`. `NULL` is a safe no-op.
 pub export fn ss_close(handle: ?*Handle) callconv(.c) void {
     const h = handle orelse return;
+    closeWith(allocator, h);
+}
+
+/// `ss_close` for a handle `openImpl` opened over `parent`: the files and the
+/// exact blocks (S4-T9, `snapshot_open.close`), then the arena, then the handle.
+fn closeWith(parent: std.mem.Allocator, h: *Handle) void {
     snapshot_open.close(h.engine, h.folder);
     h.arena.deinit();
-    allocator.destroy(h);
+    parent.destroy(h);
 }
 
 /// Snapshot status as JSON (the same fields as JSON-RPC `index_status`'s
@@ -1308,4 +1316,38 @@ test "S2-T13: a vector whose L2 norm is not finite is rejected at query and impo
         \\]}
     ;
     try std.testing.expectEqual(@as(i64, 2), ss_import_json(path_z, next.ptr, next.len));
+}
+
+// === S4-T9: ss_close frees the handle's exact blocks ==========================
+test "S4-T9: ss_close frees the open's block and the source and filename blocks of their first use" {
+    const io_impl = io();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/tide-table.md", .data = "# Tide table\n\nhybrid retrieval combines lexical and semantic ranks\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+    ss_free(ss_index_folder(out_z, notes_z, "{\"filename_index\":true}") orelse return error.IndexFailed);
+
+    // The handle and all it holds come from the testing allocator, so a
+    // block the close path does not free fails this test as a leak.
+    const handle = try openImpl(std.testing.allocator, out_z);
+    defer closeWith(std.testing.allocator, handle);
+    try std.testing.expect(handle.engine.open_block != null);
+    try std.testing.expect(handle.folder.loads.source_block == null);
+    try std.testing.expect(handle.folder.loads.filename_block == null);
+    const span = ss_read_span(handle, "{\"root_id\":\"r-legacy\",\"path\":\"tide-table.md\",\"start_line\":3,\"end_line\":3}") orelse {
+        std.debug.print("ss_read_span failed: {s}\n", .{ss_last_error()});
+        return error.ReadSpanFailed;
+    };
+    ss_free(span);
+    const named = ss_query(handle, "tide", null, 0, 1, "{\"retrieval_mode\":\"lexical\",\"search_field\":\"filename\"}") orelse {
+        std.debug.print("ss_query failed: {s}\n", .{ss_last_error()});
+        return error.QueryFailed;
+    };
+    ss_free(named);
+    try std.testing.expect(handle.folder.loads.source_block != null);
+    try std.testing.expect(handle.folder.loads.filename_block != null);
 }
