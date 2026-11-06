@@ -576,21 +576,7 @@ pub fn openIndexed(allocator: std.mem.Allocator, encoded: []const u8) (DecodeErr
     return section;
 }
 
-/// S4-T13 ruling 3, the writer's open of its previous generation:
-/// `openIndexed` for bytes whose header `inspect` already returned (the
-/// checksum computed once, by that call; `openIndexed` computes it in its
-/// own `inspect` and again in `openWith`'s). The same checks otherwise: the
-/// file table and every line map against its file's bytes.
-pub fn openIndexedInspected(allocator: std.mem.Allocator, encoded: []const u8, header: Header) (DecodeError || error{OutOfMemory})!Section {
-    var index = try Index.init(allocator, header);
-    var section = try openWith(encoded, &index, header);
-    section.record_offsets = index.offsets;
-    section.checkpoint_starts = index.starts;
-    section.checkpoints = index.checkpoints[0..index.used];
-    return section;
-}
-
-/// S4-T14 (to replace S4-T13's `openIndexedInspected`), the writer's open of
+/// S4-T14 (replacing S4-T13's `openIndexedInspected`), the writer's open of
 /// its previous generation, for bytes whose header `inspect` already
 /// returned (the checksum computed once, by that call, and compared with the
 /// manifest's by the caller): the files table walked with every rule `open`
@@ -1910,7 +1896,7 @@ test "S4-T11: varintsEnd counts end bytes across blocks and refuses a short sect
     try std.testing.expectEqual(@as(?usize, null), varintsEnd(&bytes, 71, 0));
 }
 
-test "S4-T13 ruling 3: openIndexedInspected is openIndexed with the checksum computed once" {
+test "S4-T14 ruling 3: openTable walks the table and bounds the maps; a map that disagrees with its bytes is refused where the file is read" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
@@ -1923,21 +1909,48 @@ test "S4-T13 ruling 3: openIndexedInspected is openIndexed with the checksum com
     };
     const encoded = try encode(arena, &files);
     const indexed = try openIndexed(arena, encoded);
-    const inspected = try openIndexedInspected(arena, encoded, try inspect(encoded));
-    try std.testing.expectEqual(indexed.checksum, inspected.checksum);
-    try std.testing.expectEqualSlices(usize, indexed.record_offsets, inspected.record_offsets);
-    try std.testing.expectEqualSlices(usize, indexed.checkpoint_starts, inspected.checkpoint_starts);
-    try std.testing.expectEqual(indexed.checkpoints.len, inspected.checkpoints.len);
-    for (indexed.checkpoints, inspected.checkpoints) |x, y| try std.testing.expectEqual(x, y);
-    // A checksum-valid line map that disagrees with its bytes is refused.
+    const table = try openTable(arena, encoded, try inspect(encoded));
+    try std.testing.expectEqual(indexed.checksum, table.checksum);
+    try std.testing.expectEqualSlices(usize, indexed.record_offsets, table.record_offsets);
+    try std.testing.expectEqual(@as(usize, 0), table.checkpoints.len);
+    try std.testing.expectEqual(@as(usize, 0), table.checked.len);
+    for (files, 0..) |input, index| {
+        const want = indexed.file(index);
+        const got = table.find(input.path).?;
+        try std.testing.expectEqualStrings(want.bytes, got.bytes);
+        try std.testing.expectEqualSlices(u8, (try carriedRecord(want, true)).line_map, (try carriedRecord(got, true)).line_map);
+        try std.testing.expectEqual(want.line_count, got.line_count);
+        try std.testing.expectEqual(want.encoding, got.encoding);
+    }
+    // S4-T13's case: a checksum-valid line map that disagrees with its
+    // bytes. The resident readers refuse it; the writer's open carries it;
+    // a streamed reader refuses that one file at its read.
     const bad = try arena.dupe(u8, encoded);
-    const section = try open(bad);
-    const entry = section.find("home/long.txt").?;
-    const at = header_length + section.files_table.len + entry.line_map_offset + 1;
-    bad[at] +%= 1;
+    const entry = indexed.find("home/long.txt").?;
+    bad[header_length + indexed.files_table.len + entry.line_map_offset + 1] +%= 1;
     reseal(bad);
-    try std.testing.expectError(error.InvalidLineMap, openIndexedInspected(arena, bad, try inspect(bad)));
     try std.testing.expectError(error.InvalidLineMap, openIndexed(arena, bad));
+    try std.testing.expectError(error.InvalidLineMap, open(bad));
+    const carried = try openTable(arena, bad, try inspect(bad));
+    try std.testing.expectEqualStrings(long.items, carried.find("home/long.txt").?.bytes);
+    var fixture = try StreamedFixture.init(bad);
+    defer fixture.deinit();
+    const streamed = try fixture.openKept(arena, stream_buffer_bytes);
+    defer std.testing.allocator.free(streamed.block);
+    try expectOnlyFileRefused(arena, streamed.section, indexed, "home/long.txt");
+    // A map whose varints run past the maps region (the last record's line
+    // count raised) is refused by the bounds; a middle record's count that
+    // disagrees with its map, by the next record's map offset.
+    for ([_]struct { record: usize, expected: DecodeError }{
+        .{ .record = 2, .expected = error.InvalidLineMap },
+        .{ .record = 0, .expected = error.InvalidFileTable },
+    }) |case| {
+        const copy = try arena.dupe(u8, encoded);
+        copy[header_length + indexed.record_offsets[case.record] + 20] +%= 1;
+        reseal(copy);
+        try std.testing.expectError(case.expected, openTable(arena, copy, try inspect(copy)));
+        try std.testing.expectError(error.InvalidLineMap, openIndexed(arena, copy));
+    }
 }
 
 test "S4-T14 ruling 2(d): a streamed file's map is checked once per handle; a file that fails is checked at every call" {
