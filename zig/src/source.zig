@@ -1477,6 +1477,22 @@ test "source section rejects corruption, unsorted paths and bad line maps" {
     const forged_streamed = try forged_fixture.openKept(arena, stream_buffer_bytes);
     defer std.testing.allocator.free(forged_streamed.block);
     try expectOnlyFileRefused(arena, forged_streamed.section, try open(try encode(arena, &.{ .{ .path = "a.md", .bytes = "x" }, files[1] })), "a.md");
+    // A file with a BOM recorded as plain UTF-8, its map counted from byte
+    // 0 (consistent with that wrong encoding byte): only the encoding rule
+    // (the bytes' BOM against the byte) refuses it, in `open` and per file.
+    const bom_bytes = "\xef\xbb\xbfx\n";
+    std.crypto.hash.sha2.Sha256.hash(bom_bytes, &digest, .{});
+    const plain_map = [_]u8{ 0, 5 };
+    const forged_bom = try encode(arena, &.{
+        .{ .path = "a.md", .bytes = bom_bytes, .carried = .{ .sha256 = digest, .line_count = 1, .line_map = &plain_map, .encoding = .utf8, .bytes_from_section = true } },
+        files[1],
+    });
+    try std.testing.expectError(error.InvalidLineMap, open(forged_bom));
+    var bom_fixture = try StreamedFixture.init(forged_bom);
+    defer bom_fixture.deinit();
+    const bom_streamed = try bom_fixture.openKept(arena, stream_buffer_bytes);
+    defer std.testing.allocator.free(bom_streamed.block);
+    try expectOnlyFileRefused(arena, bom_streamed.section, try open(try encode(arena, &.{ .{ .path = "a.md", .bytes = bom_bytes }, files[1] })), "a.md");
     const unsorted = [_]InputFile{ files[1], files[0] };
     try std.testing.expectError(error.UnsortedPaths, encode(arena, &unsorted));
     try std.testing.expectError(error.InvalidPath, encode(arena, &.{.{ .path = "../x", .bytes = "" }}));
