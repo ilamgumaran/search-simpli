@@ -723,6 +723,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var previous_source: ?source.Section = null;
     var previous_state: ?incremental_state.State = null;
     var previous_state_section: ?[]const u8 = null;
+    var previous_filename: ?manifest.FilenameMetadata = null;
     stages.mark("setup");
     if (!options.fresh) {
         const opened_previous: ?Previous = openPrevious(allocator, io, dir, &stages) catch |err| switch (err) {
@@ -741,6 +742,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             previous_engine = opened.engine;
             if (options.filename_index == null) options.filename_index = opened.engine.filename_index_enabled;
             previous_source = opened.source;
+            previous_filename = opened.metadata.filename;
             if (opened.metadata.meta.len != 0) previous_meta = try manifest.parseMeta(allocator, opened.metadata.meta);
         }
         stages.mark("open_previous");
@@ -1147,7 +1149,8 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     stages.mark("changes");
     const generation = options.generation orelse try generation_alloc.nextFreeGeneration(allocator, io, dir);
     stages.mark("next_free_generation");
-    const built = buildGeneration(allocator, &work, previous_engine, previous_meta, previous_source, &previous_docs, options, generation, &stages) catch |err| switch (err) {
+    const carry_from: ?PreviousFilename = if (previous_filename) |sections| .{ .io = io, .dir = dir, .sections = sections } else null;
+    const built = buildGeneration(allocator, &work, previous_engine, previous_meta, previous_source, carry_from, &previous_docs, options, generation, &stages) catch |err| switch (err) {
         error.TooManyLabels => return .{ .failed = try failure(allocator, .invalid_argument, "a file would require more than {d} labels (its root's and its own)", .{max_labels}) },
         else => return err,
     };
@@ -1532,6 +1535,32 @@ const LexicalMarks = struct {
         marks.stages.inner("encode_sections.lexical." ++ name);
     }
 };
+
+/// S4-T13 ruling 4: the filename sections of a generation. The catalog is
+/// grouped from this generation's documents (each file's anchor moves with
+/// its chunks). When the files listed are the previous generation's, the
+/// same paths with the same labels (`filename_field.samePaths`, against the
+/// previous body documents already decoded), the previous filename lexical
+/// section is read once and, its checks passed (`carryLexical`), carried
+/// byte for byte instead of tokenizing every stem and building the index
+/// again; otherwise, or when it cannot be read, the full build runs.
+fn buildFilenames(allocator: std.mem.Allocator, documents: []const hybrid.Document, prev: ?engine_module.Engine, prev_filename: ?PreviousFilename, analyzer_id: []const u8, stages: *Stages) !@import("filename_field.zig").Built {
+    const filename_field = @import("filename_field.zig");
+    const marks = FilenameMarks{ .stages = stages };
+    const catalog = try filename_field.group(allocator, documents);
+    const same = if (prev) |engine| filename_field.samePaths(catalog, engine.documents) else false;
+    marks.mark("grouping");
+    if (same) if (prev_filename) |from| {
+        if (readWhole(allocator, from.io, from.dir, from.sections.lexical_file)) |bytes| {
+            if (filename_field.carryLexical(bytes, from.sections, catalog.len)) |carried|
+                return filename_field.buildCarried(allocator, catalog, bytes, carried, marks);
+        } else |err| switch (err) {
+            error.OutOfMemory => return error.OutOfMemory,
+            else => {},
+        }
+    };
+    return filename_field.buildFromCatalog(allocator, catalog, analyzer_id, marks);
+}
 
 /// S4-T13 ruling 1: `filename_field.buildMarked`'s parts as sub-stages of
 /// `filename_build`.
@@ -2113,12 +2142,21 @@ fn chunkerIndex(kind: chunker.Kind) u16 {
     };
 }
 
+/// S4-T13 ruling 4: where the previous generation's filename sections are
+/// (its manifest's values), for the carried filename lexical section.
+const PreviousFilename = struct {
+    io: std.Io,
+    dir: std.Io.Dir,
+    sections: manifest.FilenameMetadata,
+};
+
 fn buildGeneration(
     allocator: std.mem.Allocator,
     work: *Work,
     prev: ?engine_module.Engine,
     prev_meta: ?manifest.Meta,
     prev_source: ?source.Section,
+    prev_filename: ?PreviousFilename,
     previous_docs: *std.StringHashMapUnmanaged(std.ArrayList(usize)),
     options: Options,
     generation: u64,
@@ -2366,7 +2404,7 @@ fn buildGeneration(
         .source_checksum = if (source_encoded) |bytes| storedChecksum(bytes, source.header_length) else 0,
         .meta = meta,
     };
-    const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try @import("filename_field.zig").buildMarked(allocator, documents.items, options.analyzer.label(), FilenameMarks{ .stages = stages }) else null;
+    const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try buildFilenames(allocator, documents.items, prev, prev_filename, options.analyzer.label(), stages) else null;
     stages.mark("filename_build");
     // S4-T2 R4: the writer checks the filename sections here, after the build
     // and before the publish, not at every reader's open. S4-T4 ruling 4: by

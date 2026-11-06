@@ -1699,3 +1699,172 @@ test "S4-T13 ruling 3(b): a re-sealed bad line map is still refused at the write
     try std.testing.expectError(error.InvalidLineMap, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
     try std.testing.expectEqualStrings(before, try f.listing());
 }
+
+// ------------------------------- S4-T13 ruling 4: the carried filename index ---
+
+const filename_field = @import("filename_field.zig");
+const with_filenames = apply.Options{ .filename_index = true };
+
+/// The published filename sections equal a full build (`filename_field.build`
+/// over the generation's body documents) byte for byte.
+fn expectFilenameParity(f: *Fixture) !void {
+    const a = f.arena();
+    const metadata = try currentManifest(f);
+    const sections_bound = metadata.filename.?;
+    const documents = (try f.opened()).service.engine.documents;
+    const full = try filename_field.build(a, documents, metadata.analyzer_id);
+    try std.testing.expectEqualSlices(u8, full.catalog, try f.out.readFileAlloc(io, sections_bound.catalog_file, a, .unlimited));
+    try std.testing.expectEqualSlices(u8, full.lexical, try f.out.readFileAlloc(io, sections_bound.lexical_file, a, .unlimited));
+}
+
+fn filenameFixture(f: *Fixture) !void {
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, domain_roots, &.{
+        try add(a, "home", "a.md", try sections(a, "alpha", 3, "canal boat lantern"), ""),
+        try add(a, "home", "b.txt", "first line of b\nsecond line of b\n", ""),
+        try add(a, "home", "money/budget.md", "# Budget\n\nThe salary pays for the boat.\n", "[\"adults\"]"),
+        try add(a, "home", "zeta-notes.md", "# Zeta\n\nquokka and boats\n", ""),
+        try add(a, "school", "c.md", "# C\n\nபள்ளி விடுமுறை and a lock\n", ""),
+    }), with_filenames);
+    try expectFilenameParity(f);
+}
+
+test "S4-T13 ruling 4: the filename sections equal a full build at every step" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try filenameFixture(&f);
+    // One changed file, its chunk count unchanged (the carried path).
+    _ = try f.applyOk(try changeB(&f), with_filenames);
+    try expectFilenameParity(&f);
+    // A changed chunk count: the file's anchor and the others' move.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "a.md", try sections(a, "alpha", 6, "canal boat"), "")}), with_filenames);
+    try expectFilenameParity(&f);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "a.md", try sections(a, "alpha", 1, "canal"), "")}), with_filenames);
+    try expectFilenameParity(&f);
+    // An added file, a removed file.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "new-plan.md", "# Plan\n\na new plan\n", "")}), with_filenames);
+    try expectFilenameParity(&f);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{"{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"zeta-notes.md\"}"}), with_filenames);
+    try expectFilenameParity(&f);
+    // A rename, then an add and a remove in one batch (the file count kept).
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{"{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"renamed-plan.md\",\"moved_from\":\"new-plan.md\"}"}), with_filenames);
+    try expectFilenameParity(&f);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+        try add(a, "home", "other-list.md", "# List\n\nanother list\n", ""),
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"renamed-plan.md\"}",
+    }), with_filenames);
+    try expectFilenameParity(&f);
+    // A label change (same bytes, new labels).
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "b.txt", "first line of b\nsecond line of b\na third line\n", "[\"adults\"]")}), with_filenames);
+    try expectFilenameParity(&f);
+    // The empty generation, then a file again.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"a.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"b.txt\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"money/budget.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"other-list.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"school\",\"path\":\"c.md\"}",
+    }), with_filenames);
+    try expectFilenameParity(&f);
+    try std.testing.expectEqual(@as(usize, 0), (try currentManifest(&f)).filename.?.file_count);
+    // Empty to empty (an empty file has no chunk): the carried path.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "blank.txt", "", "")}), with_filenames);
+    try expectFilenameParity(&f);
+    try std.testing.expectEqual(@as(usize, 0), (try currentManifest(&f)).filename.?.file_count);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "again.md", "# Again\n\ncanal\n", "")}), with_filenames);
+    try expectFilenameParity(&f);
+}
+
+const Forge = enum { resealed_with_manifest, resealed_without_manifest, flipped };
+
+/// The previous generation's filename lexical section with one byte of its
+/// first dictionary term changed: re-sealed in the section and the manifest
+/// (a checksum-valid section only a wrong writer could produce), in the
+/// section only, or not at all. Returns the changed bytes.
+fn forgeFilenameLexical(f: *Fixture, forge: Forge) ![]const u8 {
+    const a = f.arena();
+    var metadata = try currentManifest(f);
+    var bound = metadata.filename.?;
+    const bytes = try f.out.readFileAlloc(io, bound.lexical_file, a, .unlimited);
+    const header = try lexical_segment_module.inspect(bytes);
+    try std.testing.expect(!header.hasPositions() and header.term_count > 0);
+    // Section 2's first record: u32 length, u32 frequency, u64 start, u64
+    // length, then the term's bytes.
+    const at = lexical_segment_module.header_length + header.document_lengths_bytes + 24;
+    bytes[at] ^= 0x01;
+    if (forge != .flipped) resealSection(bytes, lexical_segment_module.header_length);
+    try f.out.writeFile(io, .{ .sub_path = bound.lexical_file, .data = bytes });
+    if (forge == .resealed_with_manifest) {
+        bound.lexical_checksum = storedSectionChecksum(bytes, lexical_segment_module.header_length);
+        metadata.filename = bound;
+        try writeManifest(f, metadata);
+    }
+    return bytes;
+}
+
+fn currentFilenameLexical(f: *Fixture) ![]const u8 {
+    return f.out.readFileAlloc(io, (try currentManifest(f)).filename.?.lexical_file, f.arena(), .unlimited);
+}
+
+test "S4-T13 ruling 4: with no path changed the previous filename lexical section is carried byte for byte; its guard is the checksum" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    try filenameFixture(&f);
+    const forged = try forgeFilenameLexical(&f, .resealed_with_manifest);
+    // One changed file: the previous bytes are carried (a full build would
+    // not write the forged term), and the catalog is rebuilt.
+    _ = try f.applyOk(try changeB(&f), with_filenames);
+    try std.testing.expectEqualSlices(u8, forged, try currentFilenameLexical(&f));
+    const metadata = try currentManifest(&f);
+    const full = try filename_field.build(f.arena(), (try f.opened()).service.engine.documents, metadata.analyzer_id);
+    try std.testing.expect(!std.mem.eql(u8, full.lexical, forged));
+    try std.testing.expectEqualSlices(u8, full.catalog, try f.out.readFileAlloc(io, metadata.filename.?.catalog_file, f.arena(), .unlimited));
+    // A rename takes the full build: the forged term is gone.
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{"{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"zeta-renamed.md\",\"moved_from\":\"zeta-notes.md\"}"}), with_filenames);
+    try expectFilenameParity(&f);
+}
+
+test "S4-T13 ruling 4: a damaged previous filename lexical section is rebuilt, never carried or refused" {
+    for ([_]Forge{ .flipped, .resealed_without_manifest }) |forge| {
+        var f = try Fixture.init();
+        defer f.deinit();
+        try filenameFixture(&f);
+        const damaged = try forgeFilenameLexical(&f, forge);
+        _ = try f.applyOk(try changeB(&f), with_filenames);
+        try std.testing.expect(!std.mem.eql(u8, damaged, try currentFilenameLexical(&f)));
+        try expectFilenameParity(&f);
+    }
+    // A lost previous section: rebuilt too.
+    var f = try Fixture.init();
+    defer f.deinit();
+    try filenameFixture(&f);
+    try f.out.deleteFile(io, (try currentManifest(&f)).filename.?.lexical_file);
+    _ = try f.applyOk(try changeB(&f), with_filenames);
+    try expectFilenameParity(&f);
+}
+
+test "S4-T13 ruling 4: samePaths compares paths in order and labels, every file's chunks adjacent" {
+    const docs = [_]hybrid.Document{
+        .{ .id = "1", .text = "x", .path = "home/a.md" },
+        .{ .id = "2", .text = "y", .path = "home/a.md" },
+        .{ .id = "3", .text = "z", .path = "home/b.md", .required_labels = "adults" },
+    };
+    const catalog = [_]hybrid.Document{
+        .{ .id = "1", .text = "a", .path = "home/a.md" },
+        .{ .id = "3", .text = "b", .path = "home/b.md", .required_labels = "adults" },
+    };
+    try std.testing.expect(filename_field.samePaths(&catalog, &docs));
+    try std.testing.expect(!filename_field.samePaths(catalog[0..1], &docs));
+    try std.testing.expect(!filename_field.samePaths(&catalog, docs[0..2]));
+    var relabelled = catalog;
+    relabelled[1].required_labels = "";
+    try std.testing.expect(!filename_field.samePaths(&relabelled, &docs));
+    var renamed = catalog;
+    renamed[1].path = "home/c.md";
+    try std.testing.expect(!filename_field.samePaths(&renamed, &docs));
+    const split = [_]hybrid.Document{ docs[0], docs[2], docs[1] };
+    try std.testing.expect(!filename_field.samePaths(&catalog, &split));
+    try std.testing.expect(filename_field.samePaths(&.{}, &.{}));
+}

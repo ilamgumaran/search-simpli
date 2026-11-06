@@ -467,3 +467,76 @@ test "S4-T4 R4: the writer's check refuses sections that differ from what build 
     changed.lexical = damaged;
     try std.testing.expect(std.meta.isError(filename_field.validateBuilt(a, body, changed)));
 }
+
+test "S4-T13 ruling 4: the carried lexical section with a rebuilt catalog is a full build's, and the writer's check refuses what disagrees" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const body = try writerBody(a);
+    const full = try filename_field.build(a, body, analyzer_v2.analyzer_id);
+    const lexical = full.decoded_lexical.?;
+    const metadata = @import("manifest.zig").FilenameMetadata{
+        .file_count = full.decoded_catalog.len,
+        .term_count = lexical.terms.len,
+        .posting_count = lexical.postings.len,
+        .catalog_bytes = full.catalog.len,
+        .catalog_checksum = 0,
+        .lexical_bytes = full.lexical.len,
+        .lexical_checksum = (try @import("lexical_segment.zig").inspect(full.lexical)).checksum,
+        .catalog_file = "filenames-1.hybseg",
+        .lexical_file = "filename-lexical-1.hyblex",
+        .policy_id = filename_field.policy_id,
+    };
+    // One file's chunks moved (its anchor line changed): the catalog is
+    // rebuilt, the lexical section carried, the bytes a full build's.
+    const moved = try a.dupe(hybrid.Document, body);
+    moved[2].start_line += 1;
+    moved[2].end_line += 1;
+    const catalog = try filename_field.group(a, moved);
+    try std.testing.expect(filename_field.samePaths(catalog, body));
+    const carried = filename_field.carryLexical(full.lexical, metadata, catalog.len).?;
+    const built = try filename_field.buildCarried(a, catalog, full.lexical, carried, filename_field.NoMarks{});
+    const rebuilt = try filename_field.build(a, moved, analyzer_v2.analyzer_id);
+    try std.testing.expectEqualSlices(u8, rebuilt.catalog, built.catalog);
+    try std.testing.expectEqualSlices(u8, rebuilt.lexical, built.lexical);
+    try std.testing.expect(!std.mem.eql(u8, full.catalog, built.catalog));
+    try filename_field.validateBuilt(a, moved, built);
+    // Any count, the checksum, the size or the policy off: not carried.
+    var other = metadata;
+    other.term_count += 1;
+    try std.testing.expect(filename_field.carryLexical(full.lexical, other, catalog.len) == null);
+    other = metadata;
+    other.lexical_checksum +%= 1;
+    try std.testing.expect(filename_field.carryLexical(full.lexical, other, catalog.len) == null);
+    other = metadata;
+    other.lexical_bytes += 1;
+    try std.testing.expect(filename_field.carryLexical(full.lexical, other, catalog.len) == null);
+    other = metadata;
+    other.policy_id = "filename-field-v0";
+    try std.testing.expect(filename_field.carryLexical(full.lexical, other, catalog.len) == null);
+    try std.testing.expect(filename_field.carryLexical(full.lexical, metadata, catalog.len + 1) == null);
+    // The writer's check: a catalog that differs from the grouping, a
+    // carried header that disagrees with the catalog or the manifest.
+    {
+        var changed = built;
+        const docs = try a.dupe(hybrid.Document, built.decoded_catalog);
+        docs[0].start_line += 1;
+        changed.decoded_catalog = docs;
+        try std.testing.expectError(error.FilenameCatalogMismatch, filename_field.validateBuilt(a, moved, changed));
+    }
+    {
+        var changed = built;
+        changed.carried.?.checksum +%= 1;
+        try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateBuilt(a, moved, changed));
+    }
+    {
+        var changed = built;
+        changed.carried.?.header.document_count += 1;
+        try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateBuilt(a, moved, changed));
+    }
+    {
+        var changed = built;
+        changed.carried.?.posting_count += 1;
+        try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateBuilt(a, moved, changed));
+    }
+}
