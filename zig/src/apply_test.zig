@@ -461,7 +461,8 @@ test "S3-T3: add, change, move, pending, add, remove and remove_root, one call e
         var id: [20]u8 = undefined;
         chunker.chunkId(&id, "home/recipes/soup-v2.md", document.start_line, document.end_line, document.text);
         try std.testing.expectEqualStrings(&id, document.id); // re-keyed
-        try std.testing.expectEqualStrings("# Soup\n\nLentils, carrots and leeks simmer slowly.\n", (try scoped.service.folder.?.sourceSection()).?.find("home/recipes/soup-v2.md").?.bytes);
+        const section = (try scoped.service.folder.?.sourceSection()).?;
+        try std.testing.expectEqualStrings("# Soup\n\nLentils, carrots and leeks simmer slowly.\n", (try section.fileBytes(a, section.find("home/recipes/soup-v2.md").?)).ok);
         const state = (try incremental_state.load(a, io, f.out)).?;
         try std.testing.expectEqualStrings("recipes/soup.md", state.files[0].moved_from.?);
         try std.testing.expectEqual(@as(?i64, 1761900000000), state.files[0].mtime_ms);

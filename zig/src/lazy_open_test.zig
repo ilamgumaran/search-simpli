@@ -144,7 +144,11 @@ test "S4-T1: the lazy open answers every operation exactly as the eager open did
     }
     const section = (try snapshot_open.openSource(a, io, indexed.out_tmp.dir)).source.?;
     const lazy_section = (try lazy.folder.sourceSection()).?;
-    try std.testing.expectEqualSlices(u8, section.encoded, lazy_section.encoded);
+    // S4-T10: the lazy section holds the header, the files table and the
+    // line maps; every file's bytes, read per call, equal the eager copy's.
+    try std.testing.expectEqualSlices(u8, section.encoded[0..lazy_section.encoded.len], lazy_section.encoded);
+    try std.testing.expectEqual(section.encoded.len, lazy_section.encoded.len + lazy_section.text_length);
+    for (0..section.file_count) |index| try std.testing.expectEqualStrings(section.file(index).bytes, (try lazy_section.fileBytes(a, lazy_section.file(index))).ok);
 }
 
 const Racer = struct {

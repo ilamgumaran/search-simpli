@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.3.4 (S4-T10; contract 2.2.0; patch: no format or API change)
+
+`read_span` and `outline` hold only the file they answer about. No Dart
+API, C ABI, contract (`contracts/` stays 2.2.0), index format, writer or
+result changed; an index any 0.3.x library wrote opens unchanged and
+nothing is rebuilt. The natives changed (rebuilt twice on the Mac,
+byte-identical: macOS 826,376 B, Android 793,184 B, iOS framework binary
+790,512 B); `native/SOURCE-SHA256` is `b19b2725…`.
+
+- **One handle's peak live bytes.** The first `read_span` or `outline`
+  used to read the whole source section (every retained file's bytes) and
+  keep it for the life of the handle. It now keeps only the section's
+  header, files table and line maps (1,009,678 B at 10,000 files), reads
+  the text once through a buffer of at most 1 MiB to check the checksum
+  and the line maps, and then each call reads its own file's bytes and
+  checks them against the file's SHA-256 (a mismatch answers `CAPACITY`
+  "re-index required: source section unavailable
+  (SourceFileSha256Mismatch)"). Measured with the engine's
+  capped-allocator test, every operation in turn on one handle, filename
+  channel on, highest peak: 10,000 files 51,053,247 B before, 43,739,911 B
+  after; 15,000 files 71,326,060 → 61,221,469 B; 20,000 files 93,656,572 →
+  79,207,415 B. At 15,000 files every operation on one handle now stays
+  under the 64 MiB workspace cap (NFR-13).
+- **Time.** The first `read_span` after an open is faster (it no longer
+  copies the text); a later `read_span` or `outline` reads one file from
+  disk instead of memory; `ss_open`, `find`, the queries and one changed
+  file stay where they were (the numbers are in `docs/tasks/S4-T10.md`).
+
 ## 0.3.3 (S4-T9; contract 2.2.0; patch: no format or API change)
 
 The open holds only what it reads. No Dart API, C ABI, contract

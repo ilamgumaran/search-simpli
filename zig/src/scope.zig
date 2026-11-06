@@ -356,7 +356,9 @@ pub fn documentFrequency(view: View, index: postings.Index, documents: []const h
 /// load waits for it and never loads twice; afterwards a load is one atomic
 /// read. Everything a load allocates comes from `allocator` (the opened
 /// generation's; touched only under `mutex` after the open), except the
-/// source section's bytes and the filename sections with their tables:
+/// source section's resident bytes (S4-T10: its header, files table and line
+/// maps; the text is read per call) and the filename sections with their
+/// tables:
 /// each of those is one exact block from `blocks` (S4-T9), allocated by the
 /// first load, under `mutex`, and freed by `Folder.releaseBlocks`.
 pub const Loads = struct {
@@ -378,15 +380,18 @@ pub const Loads = struct {
     source_file: ?std.Io.File = null,
     /// The manifest's length and checksum of the source section.
     source_bytes: usize = 0,
-    /// S4-T9: the source section's bytes, one exact block from `blocks`
-    /// allocated by the first load (none is reserved at open); kept while
-    /// `source` points into it, freed by `Folder.releaseBlocks`.
+    /// S4-T9: the source section's resident bytes, one exact block from
+    /// `blocks` allocated by the first load (none is reserved at open); kept
+    /// while `source` points into it, freed by `Folder.releaseBlocks`.
+    /// S4-T10: the header, the files table and the line maps only; the text
+    /// is streamed once at that load and then read per call from
+    /// `source_file`.
     source_block: ?[]u8 = null,
     source_checksum: u64 = 0,
     /// The manifest's `xxh3_sections` flag (v2.1, S4-T1).
     xxh3_sections: bool = false,
     source_done: std.atomic.Value(bool) = .init(false),
-    source: ?source.Section = null,
+    // `source` (the section's view) is the struct's last field (S4-T10).
     /// The bound source section could not be read or did not validate (a
     /// lost file, a wrong size, a bad checksum): the error's name.
     source_error: ?[]const u8 = null,
@@ -424,6 +429,13 @@ pub const Loads = struct {
     positions_loads: u32 = 0,
     filename_loads: u32 = 0,
 
+    /// The source section's view, once loaded and validated (S4-T10: last,
+    /// after every field the query paths read, so that the view's two new
+    /// fields leave those fields where they were: with them 48 bytes later,
+    /// a `both` query after a `find` measured 0.4 ms slower at 10k, and the
+    /// same 48 bytes of padding on `main` did the same).
+    source: ?source.Section = null,
+
     fn lock(loads: *Loads) void {
         loads.mutex.lockUncancelable(loads.io);
     }
@@ -445,22 +457,24 @@ pub const Loads = struct {
         const file = loads.source_file orelse return null;
         const stat = file.stat(loads.io) catch |err| return @errorName(err);
         if (stat.size != loads.source_bytes) return "SourceSectionSizeMismatch";
-        // S4-T9: one exact block, kept only when the section validates.
-        const buffer = try loads.blocks.alloc(u8, loads.source_bytes);
-        var kept = false;
-        defer if (!kept) loads.blocks.free(buffer);
-        const read = file.readPositionalAll(loads.io, buffer, 0) catch |err| return @errorName(err);
-        if (read != loads.source_bytes) return "SourceSectionSizeMismatch";
-        // The checksum is computed once, by `openIndexed`'s header check,
-        // and must equal the manifest's (`manifest.validateSource`'s rule).
-        const section = source.openIndexed(loads.allocator, buffer) catch |err| switch (err) {
+        // S4-T10: the header, the files table and the line maps in one exact
+        // block from `blocks` (kept only when the section validates); the
+        // text streamed once for the checksum and the line maps, then read
+        // per call (`source.Section.fileBytes`). The checksum is computed
+        // once, by the stream, and must equal the manifest's
+        // (`manifest.validateSource`'s rule).
+        const streamed = source.openStreamed(loads.allocator, loads.blocks, loads.io, file, loads.source_bytes) catch |err| switch (err) {
             error.OutOfMemory => return error.OutOfMemory,
+            error.ShortRead => return "SourceSectionSizeMismatch",
             else => return @errorName(err),
         };
+        var kept = false;
+        defer if (!kept) loads.blocks.free(streamed.block);
+        const section = streamed.section;
         if (section.checksum != loads.source_checksum) return "SourceSectionChecksumMismatch";
         if (!loads.xxh3_sections and section.checksum_kind != .fnv1a64) return "InvalidSourceSection";
         loads.source = section;
-        loads.source_block = buffer;
+        loads.source_block = streamed.block;
         kept = true;
         return null;
     }

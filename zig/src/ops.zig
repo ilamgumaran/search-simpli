@@ -556,7 +556,7 @@ fn fileSize(allocator: std.mem.Allocator, folder: scope.Folder, file: service_mo
     const section = (try folder.sourceSection()) orelse return null;
     const record = try scope.recordPath(allocator, file.root_id, file.path);
     const entry = section.find(record) orelse return null;
-    return entry.bytes.len;
+    return entry.text_length;
 }
 
 const CursorParse = union(enum) { offset: usize, malformed, stale };

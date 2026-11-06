@@ -104,6 +104,32 @@ generation (`snapshot_open.openSource` reports `source_error`); only
 `read_span` and `outline` answer `capacity` "re-index required: source
 section unavailable (<error>)".
 
+## Reading (S4-T10, no format change)
+
+An opened generation reads its source section at the first `read_span` or
+`outline` (`scope.Loads.readSource`, `source.openStreamed`), not earlier:
+`index_status` reports `unverified` until then and `verified` or
+`unavailable` after, as before. That first use reads the header, the files
+table and the line maps into one exact block from the handle's parent
+allocator (freed at close; 1,009,678 B at 10,000 files, 1,519,423 B at
+15,000, 2,029,348 B at 20,000 on the generated corpus) and keeps them, with
+the record-offset table and the sparse line index. It streams the text area
+once through a buffer of at most 1 MiB (`source.stream_buffer_bytes`, freed
+before it returns) to compute the section checksum (compared with the
+header's and the manifest's value) and to validate every line map and
+encoding byte against its file's bytes by the same rules and error names as
+`source.open`, and keeps none of the text. Each later call finds its record
+by binary search, reads that file's `text_length` bytes at its
+`text_offset` into the call's allocator (`source.Section.fileBytes`, freed
+with the call) and checks them against the record's SHA-256 before it
+answers. A file whose bytes no longer match answers `capacity`
+"re-index required: source section unavailable (SourceFileSha256Mismatch)"
+(a short read answers `(SourceSectionSizeMismatch)`); `index_status` is not
+changed by a per-call failure. The answers are byte for byte those of the
+resident reader (`scripts/source_read_parity.py`). The check costs about
+0.34 ms per MiB on the Mac (`ReleaseSmall`): 0.36 ms for the 1,133,158-byte
+largest file of `fixtures/family-folder`, about 1 µs for a 4 KiB file.
+
 ## Retention
 
 `index_folder` retains every file it indexes (`indexer.Caps.retain_source`,
