@@ -347,6 +347,30 @@ fn isBreakAt(bytes: []const u8, index: usize) usize {
     }
 }
 
+/// S4-T14: the first index at or after `from` whose byte can start a break
+/// for `isBreakAt` (0x0a-0x0d, 0x1c-0x1e, and the lead bytes 0xc2 and 0xe2
+/// of NEL, LS and PS), or `bytes.len`; every byte skipped is one for which
+/// `isBreakAt` is 0.
+fn nextBreakCandidate(bytes: []const u8, from: usize) usize {
+    const lanes = 16;
+    const Block = @Vector(lanes, u8);
+    var at = from;
+    while (bytes.len - at >= lanes) : (at += lanes) {
+        const block: Block = bytes[at..][0..lanes].*;
+        const controls: u16 = @bitCast(block -% @as(Block, @splat(0x0a)) < @as(Block, @splat(4)));
+        const separators: u16 = @bitCast(block -% @as(Block, @splat(0x1c)) < @as(Block, @splat(3)));
+        const nel: u16 = @bitCast(block == @as(Block, @splat(0xc2)));
+        const ls_ps: u16 = @bitCast(block == @as(Block, @splat(0xe2)));
+        const hits = controls | separators | nel | ls_ps;
+        if (hits != 0) return at + @ctz(hits);
+    }
+    while (at < bytes.len) : (at += 1) switch (bytes[at]) {
+        0x0a...0x0d, 0x1c...0x1e, 0xc2, 0xe2 => return at,
+        else => {},
+    };
+    return at;
+}
+
 /// Byte offset of each line start, then the end offset. Appends to `out`.
 pub fn lineStarts(allocator: std.mem.Allocator, bytes: []const u8, out: *std.ArrayList(u64)) !void {
     var index: usize = if (std.mem.startsWith(u8, bytes, "\xef\xbb\xbf")) 3 else 0;
@@ -936,6 +960,9 @@ fn validateLineMap(entry: FileEntry, sparse: ?*Index) DecodeError!usize {
             count += 1;
             line_open = true;
         }
+        // S4-T14: a byte that cannot start a break is skipped 16 at a time.
+        index = nextBreakCandidate(entry.bytes, index);
+        if (index == entry.bytes.len) break;
         const width = isBreakAt(entry.bytes, index);
         if (width != 0) {
             index += width;
@@ -1910,6 +1937,57 @@ test "S4-T11: varintsEnd counts end bytes across blocks and refuses a short sect
     }
     try std.testing.expectEqual(@as(?usize, null), varintsEnd(&bytes, 0, count + 1));
     try std.testing.expectEqual(@as(?usize, null), varintsEnd(&bytes, 71, 0));
+}
+
+test "S4-T14: nextBreakCandidate stops at every byte isBreakAt can start a break at, and validateLineMap agrees with lineStarts across block edges" {
+    var bytes = [_]u8{'a'} ** 48;
+    for (0..256) |value| {
+        const byte: u8 = @intCast(value);
+        const candidate = switch (byte) {
+            0x0a...0x0d, 0x1c...0x1e, 0xc2, 0xe2 => true,
+            else => false,
+        };
+        for (0..bytes.len) |position| {
+            bytes[position] = byte;
+            defer bytes[position] = 'a';
+            for ([_]usize{ 0, position / 2, position }) |from| {
+                try std.testing.expectEqual(if (candidate) position else bytes.len, nextBreakCandidate(&bytes, from));
+            }
+            try std.testing.expectEqual(bytes.len, nextBreakCandidate(&bytes, position + 1));
+        }
+    }
+    // Every break kind, and the two lead bytes not followed by a break,
+    // placed at each offset around the 16-byte blocks.
+    const arena_state = std.testing.allocator;
+    const pieces = [_][]const u8{ "\n", "\r\n", "\r", "\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\xc2\x85", "\xe2\x80\xa8", "\xe2\x80\xa9", "\xc2\xa0", "\xe2\x82\xac" };
+    for (pieces) |piece| {
+        for (0..40) |gap| {
+            var text: std.ArrayList(u8) = .empty;
+            defer text.deinit(arena_state);
+            for (0..3) |_| {
+                try text.appendNTimes(arena_state, 'x', gap);
+                try text.appendSlice(arena_state, piece);
+            }
+            try text.appendNTimes(arena_state, 'y', gap % 7);
+            var starts: std.ArrayList(u64) = .empty;
+            defer starts.deinit(arena_state);
+            try lineStarts(arena_state, text.items, &starts);
+            var map: std.ArrayList(u8) = .empty;
+            defer map.deinit(arena_state);
+            var previous: u64 = 0;
+            for (starts.items) |offset| {
+                try writeLeb128(&map, arena_state, offset - previous);
+                previous = offset;
+            }
+            const entry = FileEntry{ .path = "p", .bytes = text.items, .line_count = @intCast(starts.items.len - 1), .line_map = map.items, .sha256 = undefined, .encoding = .utf8 };
+            try std.testing.expectEqual(map.items.len, try validateLineMap(entry, null));
+            // A start one byte late is refused.
+            if (map.items.len > 1 and map.items[1] < 0x7f and starts.items.len > 2) {
+                map.items[1] += 1;
+                try std.testing.expectError(error.InvalidLineMap, validateLineMap(entry, null));
+            }
+        }
+    }
 }
 
 test "S4-T14 ruling 3: openTable walks the table and bounds the maps; a map that disagrees with its bytes is refused where the file is read" {
