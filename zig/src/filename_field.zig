@@ -285,10 +285,12 @@ pub const Decoded = struct {
 };
 
 /// The bytes `load` needs for `metadata`'s filename sections: both encoded
-/// sections and every decoded table, with alignment slack. The open
-/// reserves them (not reads them) in its one section slab, as PR #21 did
-/// for the source section, so the first filename query never grows the
-/// handle's arena by another geometric step (S4-T2 R4).
+/// sections and every decoded table, with alignment slack. S4-T2 R4 had the
+/// open reserve them in its one section slab, so the first filename query
+/// never grew the handle's arena by another geometric step; since S4-T9 the
+/// open reserves nothing and this is the size of the one exact block the
+/// first filename query allocates from the handle's parent allocator
+/// (`scope.Folder.filenameDecoded`), for the same reason.
 pub fn loadReservation(metadata: manifest.Manifest) usize {
     const f = metadata.filename orelse return 0;
     const slack = 64;

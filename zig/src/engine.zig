@@ -38,7 +38,6 @@ pub const Engine = struct {
     /// into. Owned by the opened generation and freed by
     /// `snapshot_open.close`; null for an engine not opened from a directory.
     open_block: ?OpenBlockBytes = null,
-    source_buffer: ?[]u8 = null,
     /// The manifest binds the v2.2 filename sections (`index_status`'s
     /// `filename_policy_id`), whether or not they are loaded yet.
     filename_index_enabled: bool = false,

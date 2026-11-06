@@ -44,11 +44,7 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
         defer catalog_file.close(io);
         const lexical_file = try dir.openFile(io, f.lexical_file, .{});
         defer lexical_file.close(io);
-        var reserved = std.heap.FixedBufferAllocator.init(loaded.filename_reserved);
-        opened.filename_decoded = filename_field.load(reserved.allocator(), io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index) catch |err| switch (err) {
-            error.OutOfMemory => try filename_field.load(allocator, io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index),
-            else => return err,
-        };
+        opened.filename_decoded = try filename_field.load(allocator, io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index);
     }
     // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
     // terms' ordinals and its hits' offsets.
@@ -59,8 +55,6 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
 const Loaded = struct {
     engine: engine.Engine,
     metadata: manifest.Manifest,
-    /// S4-T2 R4: reserved, unread bytes for the filename load.
-    filename_reserved: []u8 = &.{},
 };
 
 /// S4-T9: where each part of the open's one block lies, from the manifest's
@@ -68,6 +62,9 @@ const Loaded = struct {
 /// vectors, `postings.TermEntry` × `term_count`, `postings.Posting` ×
 /// `posting_count`, the `u32` document lengths), each at its own alignment,
 /// then the manifest's bytes and the documents and lexical sections as read.
+/// Nothing is reserved for a section the open does not read: the source
+/// section and the filename sections get blocks of their own at their first
+/// use (`scope.Loads`).
 pub const OpenBlock = struct {
     documents: usize,
     terms: usize,
@@ -77,8 +74,6 @@ pub const OpenBlock = struct {
     manifest: usize,
     documents_section: usize,
     lexical_section: usize,
-    source_reserved: usize,
-    filename_reserved: usize,
     /// The block's length in bytes.
     total: usize,
 
@@ -95,8 +90,6 @@ pub const OpenBlock = struct {
         block.manifest = try place(&size, u8, manifest_bytes);
         block.documents_section = try place(&size, u8, metadata.documents_bytes);
         block.lexical_section = try place(&size, u8, metadata.lexical_bytes);
-        block.source_reserved = try place(&size, u8, metadata.source_bytes);
-        block.filename_reserved = try place(&size, u8, filename_field.loadReservation(metadata));
         block.total = size;
         return block;
     }
@@ -144,9 +137,9 @@ fn loadEngine(allocators: Allocators, io: std.Io, dir: std.Io.Dir, options: engi
     @memcpy(manifest_encoded, manifest_first);
     const metadata = try manifest.decode(manifest_encoded);
 
-    // PR #21's slab kept the source section's buffer and S4-T2 R4 the
-    // filename sections' beside the two sections read here; they are still
-    // reserved in the block. The filename sections are not read here (S4-T2 R4).
+    // PR #21's slab reserved the source section's buffer and S4-T2 R4 the
+    // filename sections' beside the two sections read here; S4-T9 reserves
+    // neither: each is one exact block at its first use (`scope.Loads`).
     const documents_buffer = block[layout.documents_section..][0..metadata.documents_bytes];
     const lexical_buffer = block[layout.lexical_section..][0..metadata.lexical_bytes];
     const snapshot = publication.LoadedSnapshot{
@@ -173,13 +166,12 @@ fn loadEngine(allocators: Allocators, io: std.Io, dir: std.Io.Dir, options: engi
         options,
     );
     opened.open_block = block;
-    if (metadata.hasSource()) opened.source_buffer = block[layout.source_reserved..][0..metadata.source_bytes];
 
     // The policy comes from the manifest; `index_status` reports it without
     // reading the sections.
     opened.filename_index_enabled = metadata.filename != null;
     if (metadata.filename) |f| opened.filename_policy_id = f.policy_id;
-    return .{ .engine = opened, .metadata = metadata, .filename_reserved = block[layout.filename_reserved..layout.total] };
+    return .{ .engine = opened, .metadata = metadata };
 }
 
 /// The current generation's manifest and source section (S3-T1), validated
@@ -257,7 +249,6 @@ pub fn openScopedWith(allocators: Allocators, io: std.Io, dir: std.Io.Dir) !Scop
         .documents = opened_engine.documents,
         .index = opened_engine.lexical_index,
         .source_bytes = metadata.source_bytes,
-        .source_buffer = opened_engine.source_buffer,
         .source_checksum = metadata.source_checksum,
         .xxh3_sections = metadata.xxh3_sections,
     };
@@ -279,7 +270,6 @@ pub fn openScopedWith(allocators: Allocators, io: std.Io, dir: std.Io.Dir) !Scop
     // own bytes even after a writer pruned them.
     if (metadata.filename) |f| {
         loads.filename_manifest = metadata;
-        loads.filename_reserved = loaded.filename_reserved;
         loads.filename_catalog_file = dir.openFile(io, f.catalog_file, .{}) catch |err| blk: {
             loads.filename_error = err;
             break :blk null;
@@ -300,11 +290,13 @@ pub fn openScopedWith(allocators: Allocators, io: std.Io, dir: std.Io.Dir) !Scop
 }
 
 /// S4-T9: release what `openScopedWith` keeps outside its arena: the files
-/// (`scope.Folder.close`) and the exact blocks, through the allocator the
-/// open was given. Nothing of the opened generation may be used afterwards;
+/// (`scope.Folder.close`) and the exact blocks (the source and filename
+/// sections' when a first use loaded them, `scope.Folder.releaseBlocks`,
+/// then the open's), through the allocator the open was given. Nothing of the opened generation may be used afterwards;
 /// the arena is the owner's to release after this.
 pub fn close(opened_engine: engine.Engine, folder: *const scope.Folder) void {
     folder.close();
+    folder.releaseBlocks();
     if (opened_engine.open_block) |block| folder.loads.blocks.free(block);
 }
 
