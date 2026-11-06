@@ -206,8 +206,10 @@ than a clean error.
 ### What this is not
 
 - No delta segments, write-ahead log, background compaction, or query-time
-  segment fan-out. The lexical index is rebuilt whole every generation; only
-  the expensive per-file chunk/tokenize step is skipped for unchanged files.
+  segment fan-out. Every generation still writes whole sections (one
+  lexical, one source, one documents section); an unchanged file is not
+  re-chunked or re-tokenized, and since S4-T11 its postings, positions,
+  offsets and source record are carried into them, not rebuilt (above).
 - No vector/embedding reuse of any kind — this path never produces vectors
   (`embedding_model_id` is always `"none"`). The Python path below is where
   embedding reuse lives.
