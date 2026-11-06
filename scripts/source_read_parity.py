@@ -11,7 +11,7 @@ measurement.
     python3 -I scripts/source_read_parity.py capture --lib LIB --index INDEX --out OUT.jsonl
     python3 -I scripts/source_read_parity.py compare BEFORE.jsonl AFTER.jsonl
     python3 -I scripts/source_read_parity.py time --lib BEFORE --lib AFTER --index INDEX \\
-        --span-path PATH [--span-path PATH ...] [--root r-legacy] [--samples 30] [--rounds 2]
+        --span-path PATH [--span-path PATH ...] [--touch-path PATH ...] [--root r-legacy] [--samples 30] [--rounds 2]
 
 `index` builds an index with `ss_index_folder` (build it once, with one
 library, and capture both libraries over it).
@@ -38,6 +38,13 @@ one handle that has made that first read, each `--span-path`'s later
 `ss_read_span` (lines 1-400) and `ss_outline`, `ss_find` ("the", words),
 `ss_query` content (lexical), filename and both. The load average is printed
 at the start and the end.
+
+S4-T14: `--touch-path PATH` (repeatable) adds each path's first touch: on a
+fresh handle that has loaded the source section (the first `--span-path`'s
+`ss_read_span`, not timed), the first `ss_read_span` of PATH (lines 1-400),
+timed, then close; `--samples` such handles per path. Since S4-T14 that read
+is where the file's line map is checked against its bytes; a later read of
+the same file on the same handle (the warm measures) does not check it again.
 """
 import argparse
 import ctypes
@@ -236,6 +243,18 @@ def child(args):
         if number >= 2:
             keep("ss_open", elapsed)
             keep("first read_span", span_ms)
+    for path in args.touch_path or []:
+        if path == args.span_path[0]:
+            raise SystemExit("--touch-path must differ from the first --span-path (that read loads the section)")
+        touch = json.dumps({"root_id": root, "path": path, "start_line": 1, "end_line": 400}).encode()
+        for number in range(2 + args.samples):
+            handle = open_handle(lib, args.index)
+            checked(lib.ss_read_span(handle, first_span))
+            elapsed, pointer = timed(clock, lambda: lib.ss_read_span(handle, touch))
+            checked(pointer)
+            lib.ss_close(handle)
+            if number >= 2:
+                keep(f"first touch read_span {path}", elapsed)
     handle = open_handle(lib, args.index)
     checked(lib.ss_read_span(handle, first_span))
     requests = []
@@ -265,6 +284,7 @@ def time_command(args):
         for lib in args.lib:
             command = [sys.executable, "-I", os.path.abspath(__file__), "time-child", "--lib", lib, "--index", args.index, "--root", args.root,
                        "--samples", str(args.samples)] + sum((["--span-path", path] for path in args.span_path), [])
+            command += sum((["--touch-path", path] for path in args.touch_path or []), [])
             if args.filename:
                 command.append("--filename")
             output = subprocess.run(command, check=True, capture_output=True, text=True, timeout=540).stdout
@@ -300,6 +320,7 @@ def main():
         measure.add_argument("--index", required=True)
         measure.add_argument("--root", default="r-legacy")
         measure.add_argument("--span-path", action="append", required=True)
+        measure.add_argument("--touch-path", action="append", help="S4-T14: time this file's first read on a handle that has loaded the section")
         measure.add_argument("--filename", action="store_true", help="also time filename and both queries")
         measure.add_argument("--samples", type=int, default=30)
         measure.add_argument("--rounds", type=int, default=2)

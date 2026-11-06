@@ -359,3 +359,145 @@ test "S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPAC
     const section = (try snapshot_open.openSource(arena, io, out_tmp.dir)).source.?;
     try std.testing.expectEqualStrings("# A\nalpha\n", section.find("a.md").?.bytes);
 }
+
+// ------------------------- S4-T14: a line map is checked where its file is read ---
+
+const service_scoped = @import("service.zig");
+const find_module = @import("find.zig");
+
+/// Every indexed file's `read_span` (lines 1-400; a middle line with two
+/// lines of context) and `outline`, then a `find` and a `search_knowledge`
+/// answer, each as one JSON line; on one fresh scoped open of `dir`.
+const Answers = struct {
+    files: []const []const u8,
+    per_file: []const []const u8,
+    find: []const u8,
+    search: []const u8,
+    status: []const u8,
+};
+
+fn familyAnswers(arena: std.mem.Allocator, dir: std.Io.Dir) !Answers {
+    const io = std.testing.io;
+    const opened = try snapshot_open.openScoped(arena, io, dir);
+    defer opened.folder.close();
+    const scoped = service_scoped.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+    var files = std.ArrayList([]const u8).empty;
+    var per_file = std.ArrayList([]const u8).empty;
+    for (try scoped.listFiles(arena, .{}, null, null)) |file| {
+        if (!std.mem.eql(u8, file.status, "indexed")) continue;
+        var out: std.Io.Writer.Allocating = .init(arena);
+        var json = std.json.Stringify{ .writer = &out.writer };
+        try json.beginArray();
+        for ([_][3]u32{ .{ 1, 400, 0 }, .{ 3, 3, 2 } }) |span| {
+            switch (try scoped.readSpan(arena, .{}, file.root_id, file.path, span[0], span[1], span[2])) {
+                .ok => |answer| try source.writeSpanJson(&json, answer),
+                .failed => |failure| try json.write(failure),
+            }
+        }
+        switch (try scoped.outline(arena, .{}, file.root_id, file.path)) {
+            .ok => |data| try source.writeOutlineJson(&json, data),
+            .failed => |failure| try json.write(failure),
+        }
+        try json.endArray();
+        try files.append(arena, file.path);
+        try per_file.append(arena, out.written());
+    }
+    var find_out: std.Io.Writer.Allocating = .init(arena);
+    var find_json = std.json.Stringify{ .writer = &find_out.writer };
+    switch (try scoped.find(arena, .{ .query = "garden beans" }, .{})) {
+        .ok => |answer| try find_module.writeJson(&find_json, answer),
+        .failed => return error.TestUnexpectedResult,
+    }
+    var results: [8]hybrid.Result = undefined;
+    var evidence: [8]@import("engine.zig").Evidence = undefined;
+    const found = try scoped.searchKnowledge(arena, "garden beans", &.{}, .{ .retrieval_mode = .lexical, .top_k = 8 }, .{}, &results, &evidence, null);
+    var search_out: std.Io.Writer.Allocating = .init(arena);
+    for (found) |item| try search_out.writer.print("{s} {d}\n", .{ item.chunk_id, item.fused_score });
+    return .{
+        .files = files.items,
+        .per_file = per_file.items,
+        .find = find_out.written(),
+        .search = search_out.written(),
+        .status = (try scoped.indexStatus(arena, .{})).source,
+    };
+}
+
+fn replaceSource(arena: std.mem.Allocator, dir: std.Io.Dir, metadata: manifest.Manifest, bytes: []const u8, reseal_manifest: bool) !void {
+    const io = std.testing.io;
+    try dir.writeFile(io, .{ .sub_path = metadata.source_file, .data = bytes });
+    var bound = metadata;
+    if (reseal_manifest) bound.source_checksum = std.mem.readInt(u64, bytes[source.header_length - 8 ..][0..8], .little);
+    const encoded = try manifest.encode(bound, try arena.alloc(u8, try manifest.encodedLength(bound)));
+    try dir.writeFile(io, .{ .sub_path = "MANIFEST", .data = encoded });
+}
+
+fn resealed(arena: std.mem.Allocator, original: []const u8, at: usize, delta: u8) ![]u8 {
+    const bytes = try arena.dupe(u8, original);
+    bytes[at] +%= delta;
+    const flags = std.mem.readInt(u16, bytes[10..12], .little);
+    const checksum = @import("checksum.zig");
+    const value = checksum.compute(checksum.kindOfFlags(flags), bytes[0 .. source.header_length - 8], bytes[source.header_length..]);
+    std.mem.writeInt(u64, bytes[source.header_length - 8 ..][0..8], value, .little);
+    return bytes;
+}
+
+test "S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const io = std.testing.io;
+    var root = try std.Io.Dir.cwd().openDir(io, pack, .{ .iterate = true });
+    defer root.close(io);
+    var out_tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer out_tmp.cleanup();
+    _ = try indexer.indexFolderIncremental(arena, io, root, out_tmp.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    const metadata = try manifest.decode(try readAll(arena, out_tmp.dir, "MANIFEST"));
+    const original = try readAll(arena, out_tmp.dir, metadata.source_file);
+    const section = try source.openIndexed(arena, original);
+    const clean = try familyAnswers(arena, out_tmp.dir);
+    try std.testing.expectEqualStrings("verified", clean.status);
+    try std.testing.expect(clean.files.len >= 40);
+    const victim = "home/garden.md";
+    const entry = section.find(victim).?;
+    const maps_start = source.header_length + section.files_table.len;
+
+    // (a) garden.md's line-2 delta off by one, the section and the manifest
+    // re-sealed: that file alone answers `capacity` naming the check.
+    try std.testing.expect(original[maps_start + entry.line_map_offset + 1] < 0x7f);
+    try replaceSource(arena, out_tmp.dir, metadata, try resealed(arena, original, maps_start + entry.line_map_offset + 1, 1), true);
+    const bad_map = try familyAnswers(arena, out_tmp.dir);
+    try std.testing.expectEqualStrings("verified", bad_map.status);
+    try std.testing.expectEqualStrings(clean.find, bad_map.find);
+    try std.testing.expectEqualStrings(clean.search, bad_map.search);
+    var refused: usize = 0;
+    for (clean.files, clean.per_file, bad_map.files, bad_map.per_file) |path, want, got_path, got| {
+        try std.testing.expectEqualStrings(path, got_path);
+        if (std.mem.eql(u8, path, victim)) {
+            // Both spans and the outline, each `capacity` naming the check.
+            try std.testing.expectEqual(@as(usize, 3), std.mem.count(u8, got, "re-index required: source section unavailable (InvalidLineMap)"));
+            refused += 1;
+        } else try std.testing.expectEqualStrings(want, got);
+    }
+    try std.testing.expectEqual(@as(usize, 1), refused);
+
+    // (b) one text byte flipped, the manifest not re-sealed: the whole
+    // section, at first use, as before S4-T14.
+    const flipped = try arena.dupe(u8, original);
+    flipped[flipped.len - 2] ^= 0x01;
+    try replaceSource(arena, out_tmp.dir, metadata, flipped, false);
+    const damaged = try familyAnswers(arena, out_tmp.dir);
+    try std.testing.expectEqualStrings("unavailable", damaged.status);
+    for (damaged.per_file) |got| try std.testing.expect(std.mem.indexOf(u8, got, "source section unavailable (ChecksumMismatch)") != null);
+
+    // (c) the last record's line count raised, re-sealed with the manifest:
+    // its varints run past the maps region; the whole section.
+    try replaceSource(arena, out_tmp.dir, metadata, try resealed(arena, original, source.header_length + section.record_offsets[section.file_count - 1] + 20, 1), true);
+    const past = try familyAnswers(arena, out_tmp.dir);
+    try std.testing.expectEqualStrings("unavailable", past.status);
+    for (past.per_file) |got| try std.testing.expect(std.mem.indexOf(u8, got, "source section unavailable (InvalidLineMap)") != null);
+
+    // The untouched section answers as at the start.
+    try replaceSource(arena, out_tmp.dir, metadata, original, false);
+    const again = try familyAnswers(arena, out_tmp.dir);
+    for (clean.per_file, again.per_file) |want, got| try std.testing.expectEqualStrings(want, got);
+}

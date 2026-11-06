@@ -1674,27 +1674,98 @@ test "S4-T13 ruling 3(a): a previous source section with a flipped byte, or one 
     _ = try expectFreshParity(&f);
 }
 
-test "S4-T13 ruling 3(b): a re-sealed bad line map is still refused at the writer's open" {
+/// S4-T14: the current source section with `delta` added to its byte `at`,
+/// re-sealed with the manifest: a checksum-valid section, as only a wrong
+/// writer could write it.
+fn resealedSource(f: *Fixture, at: usize, delta: u8) !void {
+    var metadata = try currentManifest(f);
+    const bytes = try f.out.readFileAlloc(io, metadata.source_file, f.arena(), .unlimited);
+    bytes[at] +%= delta;
+    resealSection(bytes, source.header_length);
+    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = bytes });
+    metadata.source_checksum = storedSectionChecksum(bytes, source.header_length);
+    try writeManifest(f, metadata);
+}
+
+/// The current source section as the writer opens it (`source.openTable`:
+/// no map checked against its bytes).
+fn currentSource(f: *Fixture) !source.Section {
+    const metadata = try currentManifest(f);
+    const bytes = try f.out.readFileAlloc(io, metadata.source_file, f.arena(), .unlimited);
+    return source.openTable(f.arena(), bytes, try source.inspect(bytes));
+}
+
+test "S4-T14 ruling 3(a): a re-sealed bad line map is carried by an update of another file, refused per file by the reader, and replaced by an update of its file" {
     var f = try Fixture.init();
     defer f.deinit();
     const a = f.arena();
     try writerOpenFixture(&f);
-    var metadata = try currentManifest(&f);
-    const bytes = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
-    const section = try source.open(bytes);
+    const section = try currentSource(&f);
     // `a.md`'s line map: line 2's delta (one byte) off by one, the map's
-    // length unchanged.
-    const entry = section.find("home/a.md") orelse section.file(0);
-    try std.testing.expect(std.mem.endsWith(u8, entry.path, "a.md"));
-    const maps_start = source.header_length + section.files_table.len;
-    const at = maps_start + entry.line_map_offset + 1;
-    try std.testing.expect(bytes[at] < 0x7f and bytes[at - 1] == 0);
-    bytes[at] += 1;
-    resealSection(bytes, source.header_length);
-    try std.testing.expectError(error.InvalidLineMap, source.open(bytes));
-    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = bytes });
-    metadata.source_checksum = storedSectionChecksum(bytes, source.header_length);
-    try writeManifest(&f, metadata);
+    // length unchanged (S4-T13 3(b)'s damage).
+    const entry = section.find("home/a.md").?;
+    const at = source.header_length + section.files_table.len + entry.line_map_offset + 1;
+    try std.testing.expect(section.encoded[at] < 0x7f and section.encoded[at - 1] == 0);
+    try resealedSource(&f, at, 1);
+    {
+        const metadata = try currentManifest(&f);
+        const bytes = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
+        // The resident readers still refuse the whole section.
+        try std.testing.expectError(error.InvalidLineMap, source.open(bytes));
+    }
+    // An update of b.txt publishes, carrying a.md's record as it is.
+    const damaged_map = (try source.carriedRecord((try currentSource(&f)).find("home/a.md").?, true)).line_map;
+    try std.testing.expect(!std.mem.eql(u8, (try source.carriedRecord(entry, true)).line_map, damaged_map));
+    const generation = (try currentManifest(&f)).generation;
+    _ = try f.applyOk(try changeB(&f), .{});
+    try std.testing.expectEqual(generation + 1, (try currentManifest(&f)).generation);
+    try std.testing.expectEqualSlices(u8, damaged_map, (try source.carriedRecord((try currentSource(&f)).find("home/a.md").?, true)).line_map);
+    const expected = "re-index required: source section unavailable (InvalidLineMap)";
+    {
+        const scoped = try f.opened();
+        defer scoped.service.folder.?.close();
+        for (0..2) |_| {
+            const span = (try scoped.readSpan(a, .{}, "home", "a.md", 1, 1, 0)).failed;
+            try std.testing.expectEqual(source.Code.capacity, span.code);
+            try std.testing.expectEqualStrings(expected, span.message);
+            const lines = (try scoped.outline(a, .{}, "home", "a.md")).failed;
+            try std.testing.expectEqual(source.Code.capacity, lines.code);
+            try std.testing.expectEqualStrings(expected, lines.message);
+        }
+        switch (try scoped.readSpan(a, .{}, "home", "b.txt", 3, 3, 0)) {
+            .ok => |span| try std.testing.expectEqualStrings("a third line\n", span.text),
+            .failed => return error.TestUnexpectedResult,
+        }
+        switch (try scoped.readSpan(a, .{}, "school", "c.md", 1, 1, 0)) {
+            .ok => |span| try std.testing.expectEqualStrings("# C\n", span.text),
+            .failed => return error.TestUnexpectedResult,
+        }
+        try std.testing.expectEqual(@as(u32, 3), (try scoped.outline(a, .{}, "school", "c.md")).ok.lines);
+        try std.testing.expectEqualStrings("verified", (try scoped.indexStatus(a, .{})).source);
+    }
+    // An update of a.md itself scans its bytes afresh: its map is replaced.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "a.md", "# A\n\ncanal canal canal boat\nthe canal lock\nand a new line\n", "")}), .{});
+    {
+        const scoped = try f.opened();
+        defer scoped.service.folder.?.close();
+        switch (try scoped.readSpan(a, .{}, "home", "a.md", 5, 5, 0)) {
+            .ok => |span| try std.testing.expectEqualStrings("and a new line\n", span.text),
+            .failed => return error.TestUnexpectedResult,
+        }
+    }
+    _ = try expectFreshParity(&f);
+}
+
+test "S4-T14 ruling 3(c): a previous source section whose last map runs past the maps region is refused at the writer's open" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    const section = try currentSource(&f);
+    try std.testing.expectEqualStrings("school/c.md", section.file(2).path);
+    // c.md (the last record) line count 3 made 4: its varints run past the
+    // maps region.
+    try resealedSource(&f, source.header_length + section.record_offsets[2] + 20, 1);
     const before = try f.listing();
     try std.testing.expectError(error.InvalidLineMap, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
     try std.testing.expectEqualStrings(before, try f.listing());

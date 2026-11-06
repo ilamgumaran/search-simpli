@@ -1206,7 +1206,8 @@ fn readWhole(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []
 
 /// The current generation, read once: each section's checksum is computed
 /// once (by each section's `inspect`; S4-T13 ruling 3: the source section's
-/// too, which `openIndexed` computed twice), where `snapshot_open.open` plus `openSource`
+/// too, which `openIndexed` computed twice; S4-T14: and its line maps are
+/// bounded, not walked against their bytes), where `snapshot_open.open` plus `openSource`
 /// recompute the document and lexical checksums three times and the source
 /// checksum twice. A writer reads the whole previous generation on every
 /// call, so this is NFR-12's one-changed-file cost. Same errors as
@@ -1226,15 +1227,18 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stage
         stages.sub("open_previous.source_read");
         if (bytes.len != metadata.source_bytes) return error.SourceSectionSizeMismatch;
         // S4-T13 ruling 3: the checksum once (`openIndexed` computed it
-        // twice), then the file table and every line map as before: a
-        // checksum-valid map that disagrees with its file's bytes is
-        // refused here (`InvalidLineMap`), not carried into the next
-        // generation, where every reader would refuse the whole section.
+        // twice). S4-T14: then the file table and each line map's varint
+        // bounds (`source.openTable`), not every map against its bytes: the
+        // checksum refuses a damaged section and the walk a malformed one; a
+        // checksum-valid map that disagrees with its bytes (only a wrong
+        // writer makes one) is carried as it is, and a reader refuses that
+        // one file at its first read (`capacity`, `InvalidLineMap`) until an
+        // update changes the file's bytes.
         const header = try source.inspect(bytes);
         if (header.checksum != metadata.source_checksum) return error.SourceSectionChecksumMismatch;
         if (!metadata.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
         stages.sub("open_previous.source_checksum");
-        section = try source.openIndexedInspected(allocator, bytes, header);
+        section = try source.openTable(allocator, bytes, header);
         stages.sub("open_previous.source_open");
     }
     // S4-T2 R3: the bound recovery state. A wrong size, header or checksum

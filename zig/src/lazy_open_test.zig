@@ -343,3 +343,45 @@ test "S4-T1: XXH3 sections are refused under a manifest that does not set flag_x
     try std.testing.expectError(error.InvalidDocumentSection, snapshot_open.openScoped(a, io, dir));
     try std.testing.expectError(error.InvalidDocumentSection, snapshot_open.open(a, io, dir));
 }
+
+/// S4-T14: one thread's `read_span` of `week.md`, from an arena of its own;
+/// the text's SHA-256 into its slot.
+const SpanRacer = struct {
+    service: service_module.ScopedService,
+    digests: [*][32]u8,
+    failed: *std.atomic.Value(bool),
+
+    fn run(racer: SpanRacer, slot: usize) void {
+        var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        defer arena_state.deinit();
+        const result = racer.service.readSpan(arena_state.allocator(), .{}, "r-legacy", "week.md", 1, 7, 0) catch return racer.failed.store(true, .release);
+        switch (result) {
+            .ok => |span| racer.digests[slot] = span.sha256,
+            .failed => racer.failed.store(true, .release),
+        }
+    }
+};
+
+test "S4-T14: concurrent first reads of one file on one handle check its map without a lock and answer alike" {
+    var indexed = try Indexed.init();
+    defer indexed.deinit();
+    const a = indexed.arena();
+    const opened = try snapshot_open.openScoped(a, io, indexed.out_tmp.dir);
+    defer opened.folder.close();
+    const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+    const thread_count = 8;
+    var digests: [thread_count][32]u8 = undefined;
+    var failed = std.atomic.Value(bool).init(false);
+    const racer = SpanRacer{ .service = scoped, .digests = &digests, .failed = &failed };
+    var threads: [thread_count]std.Thread = undefined;
+    for (&threads, 0..) |*thread, slot| thread.* = try std.Thread.spawn(.{}, SpanRacer.run, .{ racer, slot });
+    for (threads) |thread| thread.join();
+    try std.testing.expect(!failed.load(.acquire));
+    for (digests) |digest| try std.testing.expectEqualSlices(u8, &digests[0], &digest);
+    try std.testing.expectEqual(@as(u32, 1), opened.folder.loads.source_loads);
+    const section = (try opened.folder.sourceSection()).?;
+    try std.testing.expect(section.mapChecked(section.find("week.md").?));
+    try std.testing.expect(!section.mapChecked(section.find("list.txt").?));
+    const span = (try scoped.readSpan(a, .{}, "r-legacy", "week.md", 1, 7, 0)).ok;
+    try std.testing.expectEqualSlices(u8, &digests[0], &span.sha256);
+}

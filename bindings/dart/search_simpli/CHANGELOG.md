@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.3.8 (S4-T14; contract 2.2.0; patch: reader and writer, no format or API change)
+
+A source section's line map is checked where its file is read, not for the
+whole folder at first use and not at the writer's open. No Dart API, C ABI,
+contract (`contracts/` stays 2.2.0), index format or result for an
+undamaged index changed: every section a generation writes is byte for byte
+what 0.3.7 writes for the same files, and every `read_span`, `outline` and
+query answers as 0.3.7 does; an index any 0.3.x library wrote opens and
+updates unchanged and nothing is rebuilt. The natives changed (rebuilt twice
+on the Mac, byte-identical: macOS 843,640 B, Android 805,632 B, iOS
+framework binary 807,648 B); `native/SOURCE-SHA256` is `7e628aad…`.
+
+- **First use checks the section, not every map.** The first `read_span` or
+  `outline` on a handle still checks the section's size, header, files
+  table and checksum over the streamed text (so `index_status` moves from
+  `unverified` to `verified` or `unavailable` on the same evidence) and
+  bounds every line map by its varints, but walks no map against its bytes
+  and builds no sparse line index.
+- **Each read checks its one file.** A file's first `read_span` or
+  `outline` on a handle checks its line map and encoding byte against the
+  bytes it has just read and hashed, once per file per handle (one bit per
+  file: 1,256 B at 10,000 files). A map that disagrees answers `capacity`
+  "re-index required: source section unavailable (InvalidLineMap)" for that
+  file alone; every other file answers and `index_status` stays `verified`
+  (0.3.7 refused every file). The first request to such a file answers that
+  message even where the size limit would otherwise refuse the span.
+- **The writer's open bounds the maps instead of walking them.** A
+  checksum-valid map that disagrees with its bytes (only a wrong writer
+  makes one) is carried as it is and costs its one file until an update
+  changes that file.
+- **On the 10,000-file timing corpus** (`ReleaseSmall`, p50): the first
+  `read_span` on a cold handle 9.3–9.8 → 1.26 ms; the open of the previous
+  generation 20.7 → 10.7–10.9 ms; one changed file 68.4 → 59.0 ms with the
+  filename channel off and 78.0 → 69.2 ms with it on (two interleaved runs
+  of five); a file's first read on a handle about 0.13 ms per MiB more
+  (0.58 against 0.44 ms for a 1,133,158-byte file), later reads unchanged;
+  the full 10k build within 1 %; `ss_open`, `find` and the queries where
+  they were (numbers in `docs/tasks/S4-T14.md`).
+
 ## 0.3.7 (S4-T13; contract 2.2.0; patch: writer only, no format or API change)
 
 The writer's open of the previous generation checks each section once, and

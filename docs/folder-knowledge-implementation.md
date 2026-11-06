@@ -286,7 +286,12 @@ source section that is missing or fails validation no longer fails the open:
 `read_span` and `outline` answer `SS_ERR_CAPACITY` "re-index required:
 source section unavailable (<error>)" (an unknown or hidden file in such a
 generation gets the same answer), and `index_status` says `has_source:
-false`. A writer still treats it as a missing section and heals it.
+false`. A writer still treats it as a missing section and heals it. Two
+checks answer for one file only, with the same `SS_ERR_CAPACITY` message
+naming them, while every other file reads and `index_status` is unchanged:
+the file's bytes against its SHA-256 (`SourceFileSha256Mismatch`, S4-T10)
+and, at the file's first read on a handle, its line map against those bytes
+(`InvalidLineMap`, S4-T14).
 
 `read_span(path, a, b, context)` slices lines `a-context … b+context`
 (clamped), total ≤ 400 lines and ≤ 256 KiB, else `SS_ERR_CAPACITY` with the
