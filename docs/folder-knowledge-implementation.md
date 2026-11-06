@@ -642,6 +642,16 @@ reference `search_platform/find.py`; no ABI, CLI or RPC surface until S3-T4):
   in the ranking; `coverage` counts this page's hits; `truncated` was `false`
   and `pending_files` `0` until S3-T3 gave them a source (since S3-T3: §7,
   over the visible scope).
+- **S4-T17: how the ranking is sorted.** Every kept hit is ranked (score
+  desc, root_id, path, start_line, then the record number: a total order,
+  one hit per record), by sorting a list of 4-byte positions into the
+  candidates and then copying each hit once in rank order; sorting the
+  64-byte candidates themselves made the sort's swap move each one a byte at
+  a time, a cost the `ReleaseSmall` outliner made larger or smaller with
+  code elsewhere in the library. The whole order is kept, not a bounded
+  top page: `files` lists every file in the order it first appears in the
+  whole ranking. The scope check takes the engine and the request by
+  pointer. Output unchanged byte for byte.
 - Refusals: `INVALID_ARGUMENT` for an empty query (nothing analyzable,
   `""` and `*` included), a `*` that ends any token but the last, `page_size`
   outside 1..100, invalid UTF-8, a malformed cursor, and `"stale cursor"`
