@@ -67,7 +67,16 @@ fn hasV4Fields(document: hybrid.Document) bool {
 }
 
 fn encodedLengthVersion(documents: []const hybrid.Document, record_version: u16) EncodeError!usize {
-    _ = try vectorDimensions(documents);
+    return (try measure(documents, record_version)).length;
+}
+
+/// The section's exact length and vector dimensions: the one validation
+/// walk every encode runs (S4-T16 ruling 4(a): `encodeVersion` and
+/// `encodeAllocV4` run it once and then write without checking again).
+const Measured = struct { length: usize, dimensions: usize };
+
+fn measure(documents: []const hybrid.Document, record_version: u16) EncodeError!Measured {
+    const dimensions = try vectorDimensions(documents);
     if (documents.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
 
     var length = header_length;
@@ -95,7 +104,7 @@ fn encodedLengthVersion(documents: []const hybrid.Document, record_version: u16)
         length = try checkedAdd(length, document.required_labels.len);
         length = try checkedAdd(length, try checkedMultiply(document.vector.len, @sizeOf(f32)));
     }
-    return length;
+    return .{ .length = length, .dimensions = dimensions };
 }
 
 /// Encode one immutable segment (record v3) into caller-owned memory.
@@ -109,10 +118,28 @@ pub fn encodeV4(documents: []const hybrid.Document, output: []u8) EncodeError![]
     return encodeVersion(documents, output, version);
 }
 
+/// S4-T16 ruling 4(a): one validation walk sizes an exact buffer and the
+/// records are written into it (the pattern of S4-T12's
+/// `lexical_segment.encodeAlloc`). Every check `encodeV4` makes is made, in
+/// the same order, with the same names; the writer's documents section
+/// uses this instead of `encodedLengthV4` followed by `encodeV4`, which
+/// validated every record twice.
+pub fn encodeAllocV4(allocator: std.mem.Allocator, documents: []const hybrid.Document) (EncodeError || std.mem.Allocator.Error)![]u8 {
+    const measured = try measure(documents, version);
+    return writeVersion(documents, try allocator.alloc(u8, measured.length), version, measured);
+}
+
 fn encodeVersion(documents: []const hybrid.Document, output: []u8, record_version: u16) EncodeError![]u8 {
-    const required = try encodedLengthVersion(documents, record_version);
-    if (output.len < required) return error.BufferTooSmall;
-    const dimensions = try vectorDimensions(documents);
+    const measured = try measure(documents, record_version);
+    if (output.len < measured.length) return error.BufferTooSmall;
+    return writeVersion(documents, output, record_version, measured);
+}
+
+/// The records `measure` checked, written into `output` (at least
+/// `measured.length` bytes); no check is repeated here.
+fn writeVersion(documents: []const hybrid.Document, output: []u8, record_version: u16, measured: Measured) []u8 {
+    const required = measured.length;
+    const dimensions = measured.dimensions;
 
     @memcpy(output[0..magic.len], magic);
     var header_offset: usize = magic.len;
@@ -622,4 +649,96 @@ test "segment v4 checksum covers the new fields" {
     // Byte 28 of the record is the low byte of chunker_index.
     encoded[header_length + 28] ^= 0x01;
     try std.testing.expectError(error.ChecksumMismatch, inspect(encoded));
+}
+
+/// S4-T16 ruling 4(a): `expected` through each v4 call: `encodedLengthV4`,
+/// `encodeV4` and `encodeAllocV4` (the testing allocator: a refusal
+/// allocates nothing).
+fn expectRefusedV4(expected: EncodeError, documents: []const hybrid.Document) !void {
+    var out: [1024]u8 = undefined;
+    try std.testing.expectError(expected, encodedLengthV4(documents));
+    try std.testing.expectError(expected, encodeV4(documents, &out));
+    try std.testing.expectError(expected, encodeAllocV4(std.testing.allocator, documents));
+}
+
+test "S4-T16 ruling 4(a): every refusal keeps its name through encodedLengthV4, encodeV4 and encodeAllocV4" {
+    const vector = [_]f32{ 0.5, -1 };
+    const valid = [_]hybrid.Document{
+        .{ .id = "md", .text = "beta", .path = "week.md", .start_line = 8, .end_line = 9, .chunker_index = 1, .section_depth = 2, .heading_line = 7, .source_doc_index = 0, .section_path = "Week 7\x1fDates", .vector = &vector },
+        .{ .id = "txt", .text = "plain", .path = "a.txt", .start_line = 1, .end_line = 1, .source_doc_index = 1, .required_labels = "adults\nkids", .vector = &vector },
+        .{ .id = "none", .text = "", .path = "", .start_line = 0, .end_line = 0, .vector = &vector },
+    };
+    // The valid set: the three calls agree byte for byte, and the v3
+    // writer (a set without v4 fields) is unchanged beside them.
+    {
+        var out: [1024]u8 = undefined;
+        const fixed = try encodeV4(&valid, &out);
+        try std.testing.expectEqual(fixed.len, try encodedLengthV4(&valid));
+        const owned = try encodeAllocV4(std.testing.allocator, &valid);
+        defer std.testing.allocator.free(owned);
+        try std.testing.expectEqualSlices(u8, fixed, owned);
+        try std.testing.expectEqual(owned.len, (try inspect(owned)).payload_length + header_length);
+        const plain = [_]hybrid.Document{ .{ .id = "one", .text = "lexical text", .path = "a.md", .start_line = 1, .end_line = 2 }, .{ .id = "two", .text = "", .path = "b.md", .start_line = 3, .end_line = 3, .required_labels = "kids" } };
+        var v3_out: [512]u8 = undefined;
+        const v3 = try encode(&plain, &v3_out);
+        try std.testing.expectEqual(v3.len, try encodedLength(&plain));
+        try std.testing.expectEqual(@as(u16, 3), (try inspect(v3)).format_version);
+        const v4_plain = try encodeAllocV4(std.testing.allocator, &plain);
+        defer std.testing.allocator.free(v4_plain);
+        var v4_out: [512]u8 = undefined;
+        try std.testing.expectEqualSlices(u8, try encodeV4(&plain, &v4_out), v4_plain);
+    }
+
+    var bad: [3]hybrid.Document = undefined;
+    // InvalidCitation: a path with line 0; an end before the start; no path
+    // but a line.
+    bad = valid;
+    bad[1].start_line = 0;
+    try expectRefusedV4(error.InvalidCitation, &bad);
+    bad = valid;
+    bad[0].end_line = 7;
+    try expectRefusedV4(error.InvalidCitation, &bad);
+    bad = valid;
+    bad[2].start_line = 1;
+    try expectRefusedV4(error.InvalidCitation, &bad);
+    // InvalidRequiredLabels: unsorted, an empty label, a NUL, a CR.
+    for ([_][]const u8{ "kids\nadults", "adults\n\nkids", "adults\n", "ad\x00ults", "adults\r" }) |labels| {
+        bad = valid;
+        bad[1].required_labels = labels;
+        try expectRefusedV4(error.InvalidRequiredLabels, &bad);
+    }
+    // InvalidSection: a depth without a heading line; a path count off;
+    // a heading below the chunk; a path without a depth.
+    bad = valid;
+    bad[0].heading_line = 0;
+    try expectRefusedV4(error.InvalidSection, &bad);
+    bad = valid;
+    bad[0].section_path = "Week 7";
+    try expectRefusedV4(error.InvalidSection, &bad);
+    bad = valid;
+    bad[0].heading_line = 9;
+    try expectRefusedV4(error.InvalidSection, &bad);
+    bad = valid;
+    bad[1].section_path = "A";
+    try expectRefusedV4(error.InvalidSection, &bad);
+    // VectorDimensionsInconsistent, named before any record check (the
+    // dimensions walk runs first, as before).
+    const short = [_]f32{1};
+    bad = valid;
+    bad[2].vector = &short;
+    bad[1].start_line = 0;
+    try expectRefusedV4(error.VectorDimensionsInconsistent, &bad);
+    // The first bad record names the refusal (record order).
+    bad = valid;
+    bad[0].heading_line = 0;
+    bad[1].required_labels = "kids\nadults";
+    try expectRefusedV4(error.InvalidSection, &bad);
+    // BufferTooSmall: `encodeV4` only (the others size their own).
+    var small: [header_length + 8]u8 = undefined;
+    try std.testing.expectError(error.BufferTooSmall, encodeV4(&valid, &small));
+    // RequiresVersion4: the v3 writer, unchanged.
+    try std.testing.expectError(error.RequiresVersion4, encode(&valid, &small));
+    // Not reachable from a test: FieldTooLarge and SizeOverflow (a field or
+    // a total past 4 GiB), and DocumentCountOverflow (2^32 records; the
+    // dimensions walk reads every record first).
 }

@@ -2796,8 +2796,8 @@ fn buildGeneration(
     stages.mark("build_documents");
     const lexical_index = try buildPositionalMerged(allocator, if (prev) |engine| engine.lexical_index else null, sources.items, stages);
     stages.mark("build_lexical");
-    const documents_buffer = try allocator.alloc(u8, try segment.encodedLengthV4(documents.items));
-    const documents_encoded = try segment.encodeV4(documents.items, documents_buffer);
+    // S4-T16 ruling 4(a): one validation walk, an exact buffer, the bytes.
+    const documents_encoded = try segment.encodeAllocV4(allocator, documents.items);
     stages.sub("encode_sections.documents");
     // S4-T12 ruling 2: one `validateIndex` (its passes timed as inner parts),
     // the sizes, an exact buffer and the bytes, in one call.
