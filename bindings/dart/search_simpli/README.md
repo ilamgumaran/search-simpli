@@ -245,7 +245,10 @@ into every shared library and executable it builds. In `ReleaseSmall`, that
 and they were the library's on every target up to 0.3.11. The build now adds
 one more object to every library, `searchd` and the test binaries:
 `zig/src/fastmem.zig`, compiled with `-fno-builtin` so its loops cannot
-become calls to `memcpy`. It defines those three functions as strong and
+become calls to `memcpy`. A `ReleaseSmall` build compiles this one object
+`ReleaseFast`, stripped as `ReleaseSmall` would strip it: `ReleaseSmall`'s
+machine outliner gave `memcpy` a stack frame and turned its short-length
+paths into calls, and most of the library's copies are short. It defines those three functions as strong and
 hidden, so each binary binds its own word-wise copy (16-byte vectors,
 overlapping windows for short lengths, `memmove` exact in both directions)
 and exports nothing new. Zig's Mach-O and ELF linkers prefer the strong

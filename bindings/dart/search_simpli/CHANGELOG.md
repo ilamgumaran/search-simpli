@@ -8,10 +8,10 @@ loop step. No Dart API, C ABI, contract (`contracts/` stays 2.2.0), index
 format or result changed: every section a generation writes and every
 query and `find` page are byte for byte what 0.3.11 writes and answers. An
 index any 0.3.x library wrote opens and updates unchanged, and nothing is
-rebuilt. The natives changed (rebuilt twice on the Mac, byte-identical:
-macOS 843,384 B against 0.3.11's 843,240 B; Android 806,384 B against
-805,744 B; iOS framework binary 807,776 B against 807,624 B);
-`native/SOURCE-SHA256` is `79fd4868…`.
+rebuilt. The natives changed (rebuilt twice on the Mac, byte-identical;
+their bytes differ from 0.3.11's, two of the sizes happen not to: macOS
+843,240 B, as 0.3.11's; Android 806,544 B against 805,744 B; iOS framework
+binary 807,624 B, as 0.3.11's); `native/SOURCE-SHA256` is `7a8f13ff…`.
 
 - **What `memcpy` was and is, per target.** Zig 0.16 links its own
   `compiler_rt` into every shared library and executable. In `ReleaseSmall`
@@ -23,7 +23,11 @@ macOS 843,384 B against 0.3.11's 843,240 B; Android 806,384 B against
   Its `memcpy`, `memmove` and `memset` are hidden and nothing new is
   exported. They move 16-byte vectors, use overlapping windows for short
   lengths and the last bytes, and are exact for overlapping `memmove`
-  ranges in both directions. `compiler_rt`'s three are no longer in any
+  ranges in both directions. A `ReleaseSmall` build compiles this one
+  object `ReleaseFast` and stripped: in `ReleaseSmall` the machine outliner
+  gave `memcpy` a stack frame and turned its 2–32 byte paths into calls,
+  and most of the library's copies are that short (`find` makes 56,424 of
+  1–15 B). `compiler_rt`'s three are no longer in any
   artifact. Zeroing still calls `libSystem`'s `bzero` on macOS and iOS; on
   Android it goes through the library's `memset`. `strlen` stays
   `compiler_rt`'s (two call sites, request strings).
@@ -34,9 +38,19 @@ macOS 843,384 B against 0.3.11's 843,240 B; Android 806,384 B against
   16-byte registers and has no byte loop. The 0.3.11 natives fail that
   check.
 - **On the 10,000-file timing corpus** (`ReleaseSmall`, interleaved with
-  0.3.11's source): [the figures are filled in from the timed bars:
-  one changed file, the full build, `find`, `search_knowledge`, the first
-  query after an open, the documents-section copy].
+  0.3.11's source, p50; the second figure is the same source with symbols
+  kept, a second code layout): one changed file 47.5–47.7 → 39.5–40.4 ms
+  with filename search off and 56.6–56.9 → 49.3–49.6 ms with it on
+  (47.5–48.5 → 40.0–41.0 and 56.3–57.1 → 48.9–49.7); the full build
+  637.4 → 587.6 ms off and 651.8 → 604.3 ms on (7.8 % and 7.3 %); `find`
+  3.43–3.45 → 3.01–3.04 ms (3.41–3.43 → 3.00–3.02); `search_knowledge`'s
+  content query 0.399–0.401 → 0.139–0.142 ms (0.396–0.399 → 0.137–0.142);
+  the first query after a cold open 0.087–0.090 → 0.058–0.061 ms for
+  content, 3.80–3.84 → 3.22–3.25 ms for filename and 3.92–3.93 → 3.30–3.32
+  ms for `both` (3.19–3.21 and 3.25–3.28 in the second layout); the
+  documents section's 9,273,775 B copy 2.02–2.08 → 0.141–0.145 ms warm
+  (4.5 → 64–66 GB/s) and 2.43–2.49 → 0.60–0.62 ms cold. `ss_open`, `read_span`
+  and `outline` are where they were (numbers in `docs/tasks/S4-T18.md`).
 
 ## 0.3.11 (S4-T17; contract 2.2.0; patch: reader only, no format or API change)
 
