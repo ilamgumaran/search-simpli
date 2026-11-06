@@ -153,7 +153,11 @@ pub fn measure(dir: std.Io.Dir, cap: usize, target: Target) !Peaks {
 }
 
 fn printPeaks(label: []const u8, peaks: Peaks) void {
-    std.debug.print("S4-T1 NFR-13 {s} under a {d} B cap, peak live bytes:", .{ label, cap_bytes });
+    printPeaksUnder("S4-T1 NFR-13", label, cap_bytes, peaks);
+}
+
+fn printPeaksUnder(prefix: []const u8, label: []const u8, cap: usize, peaks: Peaks) void {
+    std.debug.print("{s} {s} under a {d} B cap, peak live bytes:", .{ prefix, label, cap });
     for (std.enums.values(Operation), peaks.bytes) |operation, value| {
         if (value != 0) std.debug.print(" {s} {d}", .{ @tagName(operation), value });
     }
@@ -301,4 +305,91 @@ test "filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files" {
     printPeaks("10k filename and lazy tables", peaks);
     for (peaks.bytes) |value| try std.testing.expect(value > 0);
     try std.testing.expect(peaks.overall <= cap_bytes);
+}
+
+// --- S4-T8: NFR-13 headroom past 10k files (gated) --------------------------
+
+/// The scale tests run only when this variable is `1`: they take longer than
+/// the rest of the suite and measure, they do not gate.
+const scale_variable = "SEARCH_SIMPLI_NFR13_SCALE";
+/// The scale tests' measurement cap: wide enough that a peak past 64 MiB is
+/// recorded instead of refused.
+pub const scale_cap_bytes: usize = 256 * 1024 * 1024;
+/// S4-T4's Verdict: the open's peak at 10,000 files with filename sections.
+const filename_10k_open_peak: usize = 50_128_018;
+/// The open's peak of the last scale test that ran in this process.
+var last_scale_open: ?struct { file_count: usize, peak: usize } = null;
+
+fn scaleEnabled() bool {
+    const value = std.testing.environ.getAlloc(std.testing.allocator, scale_variable) catch return false;
+    defer std.testing.allocator.free(value);
+    return std.mem.eql(u8, value, "1");
+}
+
+fn nowNs() i96 {
+    return std.Io.Clock.awake.now(io).nanoseconds;
+}
+
+/// The bytes of every file under `dir` (apparent sizes) and their count.
+fn dirBytes(a: std.mem.Allocator, dir: std.Io.Dir) !struct { bytes: u64, files: usize } {
+    var walker = try dir.walk(a);
+    defer walker.deinit();
+    var bytes: u64 = 0;
+    var files: usize = 0;
+    while (try walker.next(io)) |entry| {
+        if (entry.kind != .file) continue;
+        bytes += (try entry.dir.statFile(io, entry.basename, .{})).size;
+        files += 1;
+    }
+    return .{ .bytes = bytes, .files = files };
+}
+
+/// One scale point: the generated corpus at `file_count` files, indexed
+/// with the filename channel on, every operation measured under
+/// `scale_cap_bytes`; the peaks, the sizes and the phase times printed.
+fn scaleRun(file_count: usize, cap: usize) !Peaks {
+    if (!scaleEnabled()) {
+        std.debug.print("S4-T8 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
+        return error.SkipZigTest;
+    }
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var corpus = std.testing.tmpDir(.{ .iterate = true });
+    defer corpus.cleanup();
+    var out = std.testing.tmpDir(.{ .iterate = true });
+    defer out.cleanup();
+    const start = nowNs();
+    try generateCorpus(a, corpus.dir, file_count);
+    const generated = nowNs();
+    _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
+    const indexed = nowNs();
+    const corpus_size = try dirBytes(a, corpus.dir);
+    const index_size = try dirBytes(a, out.dir);
+    var buffer: [16]u8 = undefined;
+    const rare = try std.fmt.allocPrint(a, "{s}", .{word(&buffer, 4321)});
+    const peaks = try measure(out.dir, cap, .{ .find_query = "the", .knowledge_query = try std.fmt.allocPrint(a, "the {s}", .{rare}), .filename_query = "doc the", .root_id = "r-legacy", .path = "group-33/doc-03355.md" });
+    const measured = nowNs();
+    const label = try std.fmt.allocPrint(a, "scale {d} files, filename channel on,", .{file_count});
+    printPeaksUnder("S4-T8 NFR-13", label, cap, peaks);
+    std.debug.print("S4-T8 NFR-13 scale {d} files: corpus {d} files {d} B; index {d} files {d} B; generate {d} ms, index {d} ms, measure {d} ms\n", .{
+        file_count,                                       corpus_size.files,                                  corpus_size.bytes,                                 index_size.files, index_size.bytes,
+        @divTrunc(generated - start, std.time.ns_per_ms), @divTrunc(indexed - generated, std.time.ns_per_ms), @divTrunc(measured - indexed, std.time.ns_per_ms),
+    });
+    for (peaks.bytes) |value| try std.testing.expect(value > 0);
+    const open_peak = peaks.bytes[@intFromEnum(Operation.open)];
+    try std.testing.expect(open_peak > filename_10k_open_peak);
+    if (last_scale_open) |last| {
+        if (last.file_count < file_count) try std.testing.expect(open_peak > last.peak);
+    }
+    last_scale_open = .{ .file_count = file_count, .peak = open_peak };
+    return peaks;
+}
+
+test "NFR-13 scale: 15,000 files" {
+    _ = try scaleRun(15_000, scale_cap_bytes);
+}
+
+test "NFR-13 scale: 20,000 files" {
+    _ = try scaleRun(20_000, scale_cap_bytes);
 }
