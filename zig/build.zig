@@ -13,6 +13,8 @@ pub fn build(b: *std.Build) void {
         .name = "searchd",
         .root_module = executable_module,
     });
+    // S4-T18: the word-wise memcpy/memmove/memset (src/fastmem.zig).
+    executable_module.addObject(fastmemObject(b, target, optimize));
     b.installArtifact(executable);
     // S3-T6: the MCP server's tool descriptors carry contracts/tools/ verbatim.
     const tool_schema_options = toolSchemaOptions(b);
@@ -40,10 +42,15 @@ pub fn build(b: *std.Build) void {
     });
     test_module.addOptions("build_options", contracts_version_options);
     test_module.addOptions("tool_schemas", tool_schema_options);
+    // S4-T18: the engine's tests run on the same copy the artifacts ship.
+    test_module.addObject(fastmemObject(b, target, optimize));
     const unit_tests = b.addTest(.{ .root_module = test_module });
     const test_command = b.addRunArtifact(unit_tests);
     const test_step = b.step("test", "Run engine unit tests");
     test_step.dependOn(&test_command.step);
+    // S4-T18: fastmem.zig's own tests, compiled as the object is (-fno-builtin).
+    const fastmem_tests = b.addTest(.{ .root_module = fastmemModule(b, target, optimize) });
+    test_step.dependOn(&b.addRunArtifact(fastmem_tests).step);
 
     // === S1-T0: C ABI library builds and conformance harness =============
     // Additive only; owned by S1-T0 (docs/tasks/S1-T0.md). Keep this section
@@ -168,6 +175,9 @@ fn addAbiLibraries(
         if (spec.needs_android_libc and android_libc_file == null) continue;
         if (spec.needs_apple_sdk and ios_libc_file == null) continue;
         const resolved_target = b.resolveTargetQuery(spec.query);
+        // S4-T18: one word-wise memcpy/memmove/memset object per target,
+        // linked into both linkages (in the static archive it is a member).
+        const fastmem = fastmemObject(b, resolved_target, optimize);
 
         inline for (.{ std.builtin.LinkMode.static, std.builtin.LinkMode.dynamic }) |linkage| {
             const module = b.createModule(.{
@@ -177,6 +187,7 @@ fn addAbiLibraries(
                 .link_libc = true,
             });
             module.addOptions("build_options", contracts_version_options);
+            module.addObject(fastmem);
             const library = b.addLibrary(.{
                 .name = "search_simpli",
                 .linkage = linkage,
@@ -203,6 +214,31 @@ fn addAbiLibraries(
             step.dependOn(&install.step);
         }
     }
+}
+
+/// S4-T18: `src/fastmem.zig`'s module: compiled with `-fno-builtin`, so
+/// LLVM never turns its loops back into calls to `memcpy` (the function it
+/// defines), and position-independent, for the shared libraries.
+fn fastmemModule(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) *std.Build.Module {
+    return b.createModule(.{
+        .root_source_file = b.path("src/fastmem.zig"),
+        .target = target,
+        .optimize = optimize,
+        .no_builtin = true,
+        .pic = true,
+    });
+}
+
+/// S4-T18: the library's word-wise `memcpy`, `memmove` and `memset`, as an
+/// object of its own (its own compilation, so `-fno-builtin` applies to all
+/// of it). Its strong hidden symbols are bound in every artifact over the
+/// bundled `compiler_rt`'s, whose `ReleaseSmall` versions copy one byte at a
+/// time; nothing new is exported (docs/tasks/S4-T18.md).
+fn fastmemObject(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) *std.Build.Step.Compile {
+    return b.addObject(.{
+        .name = "fastmem",
+        .root_module = fastmemModule(b, target, optimize),
+    });
 }
 
 /// Writes a Zig `--libc` paths file pointing at the Android NDK's sysroot
@@ -275,6 +311,8 @@ fn addAbiTest(
         .link_libc = true,
     });
     native_module.addOptions("build_options", contracts_version_options);
+    // S4-T18: the harness runs the library on the copy it ships.
+    native_module.addObject(fastmemObject(b, target, optimize));
     const native_library = b.addLibrary(.{
         .name = "search_simpli",
         .linkage = .static,
