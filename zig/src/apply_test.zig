@@ -1506,3 +1506,365 @@ test "S4-T4 R3: a flipped byte anywhere in a HYBSTA02 section refuses the write 
     _ = try f.applyOk(next, .{});
     try expectCommittedDetails(&f);
 }
+
+// ---------------------------------------------- S4-T13: the writer's open ---
+
+const checksum_module = @import("checksum.zig");
+const lexical_segment_module = @import("lexical_segment.zig");
+
+/// Recompute a section's own header checksum (the kind its flags name)
+/// after a test changed its bytes: a checksum-valid section, as only a wrong
+/// writer could produce.
+fn resealSection(bytes: []u8, header_length: usize) void {
+    const flags = std.mem.readInt(u16, bytes[10..12], .little);
+    const value = checksum_module.compute(checksum_module.kindOfFlags(flags), bytes[0 .. header_length - 8], bytes[header_length..]);
+    std.mem.writeInt(u64, bytes[header_length - 8 ..][0..8], value, .little);
+}
+
+fn currentManifest(f: *Fixture) !manifest.Manifest {
+    return manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", f.arena(), .unlimited));
+}
+
+fn writeManifest(f: *Fixture, metadata: manifest.Manifest) !void {
+    const buffer = try f.arena().alloc(u8, try manifest.encodedLength(metadata));
+    try f.out.writeFile(io, .{ .sub_path = "MANIFEST", .data = try manifest.encode(metadata, buffer) });
+}
+
+fn storedSectionChecksum(bytes: []const u8, header_length: usize) u64 {
+    return std.mem.readInt(u64, bytes[header_length - 8 ..][0..8], .little);
+}
+
+/// Three files, one with repeated words (postings of term frequency 2 and
+/// more), each of several lines.
+fn writerOpenFixture(f: *Fixture) !void {
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, domain_roots, &.{
+        try add(a, "home", "a.md", "# A\n\ncanal canal canal boat\nthe canal lock\n", ""),
+        try add(a, "home", "b.txt", "first line of b\nsecond line of b\n", ""),
+        try add(a, "school", "c.md", "# C\n\nபள்ளி விடுமுறை and a lock\n", ""),
+    }), .{});
+}
+
+fn changeB(f: *Fixture) ![]const u8 {
+    const a = f.arena();
+    return joinChanges(a, "[]", &.{try add(a, "home", "b.txt", "first line of b\nsecond line of b\na third line\n", "")});
+}
+
+/// Where section 4 (positions) of a `HYBLEX02` section starts, and its length.
+fn positionsRange(bytes: []const u8) struct { start: usize, len: usize } {
+    const header = lexical_segment_module.inspect(bytes) catch unreachable;
+    return .{ .start = lexical_segment_module.header_length_v2 + header.document_lengths_bytes + header.dictionary_bytes + header.postings_bytes, .len = header.positions_bytes };
+}
+
+test "S4-T13 ruling 2(a): a previous lexical section with a flipped byte, or one that disagrees with the manifest, is refused at open" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    const metadata = try currentManifest(&f);
+    const original = try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
+    const before = try f.listing();
+    const range = positionsRange(original);
+    // A flipped byte in section 4: the section's own checksum.
+    const flipped = try a.dupe(u8, original);
+    flipped[range.start] ^= 0x01;
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = flipped });
+    const flipped_listing = try f.listing();
+    try std.testing.expectError(error.ChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(flipped_listing, try f.listing());
+    // The same byte re-sealed in the section, not in the manifest.
+    resealSection(flipped, lexical_segment_module.header_length_v2);
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = flipped });
+    const resealed_listing = try f.listing();
+    try std.testing.expectError(error.LexicalSectionChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(resealed_listing, try f.listing());
+    // Put back, the update publishes.
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = original });
+    try std.testing.expectEqualStrings(before, try f.listing());
+    _ = try f.applyOk(try changeB(&f), .{});
+    _ = try expectFreshParity(&f);
+}
+
+test "S4-T13 ruling 2(b): a re-sealed repeated ordinal in a carried posting is refused before anything is published" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    var metadata = try currentManifest(&f);
+    const bytes = try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
+    const header = try lexical_segment_module.inspect(bytes);
+    const index = try lexical_segment_module.decode(bytes, try a.alloc(@import("postings.zig").TermEntry, header.term_count), try a.alloc(@import("postings.zig").Posting, header.posting_count), try a.alloc(u32, header.document_count));
+    const documents = (try f.opened()).service.engine.documents;
+    // The second ordinal of a posting of `a.md` (carried: only b.txt
+    // changes), a one-byte gap set to zero: a repeated ordinal.
+    const positions = index.positions.?.positions;
+    var at: usize = 0;
+    var target: ?usize = null;
+    for (index.postings) |posting| {
+        for (0..posting.term_frequency) |k| {
+            const here = at;
+            const value = @import("postings.zig").readVarint(positions, &at).?;
+            if (target == null and k == 1 and at == here + 1 and value != 0 and std.mem.endsWith(u8, documents[posting.document_index].path, "a.md")) target = here;
+        }
+    }
+    const range = positionsRange(bytes);
+    bytes[range.start + target.?] = 0;
+    resealSection(bytes, lexical_segment_module.header_length_v2);
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = bytes });
+    metadata.lexical_checksum = storedSectionChecksum(bytes, lexical_segment_module.header_length_v2);
+    try writeManifest(&f, metadata);
+    const before = try f.listing();
+    // S4-T13: the open no longer walks the positions; the merged index's
+    // `validateIndex` (in `encodeAllocMarked`) refuses it, before publish.
+    try std.testing.expectError(error.InvalidPositions, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(before, try f.listing());
+    try std.testing.expectEqual(metadata.generation, (try currentManifest(&f)).generation);
+}
+
+test "S4-T13 ruling 2(c): a re-sealed byte appended to section 4 is refused by the merge's end-of-walk check" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    var metadata = try currentManifest(&f);
+    const bytes = try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
+    const range = positionsRange(bytes);
+    const longer = try std.mem.concat(a, u8, &.{ bytes[0 .. range.start + range.len], &.{0x00}, bytes[range.start + range.len ..] });
+    // Section 4's length (header offset 56) grows by the byte.
+    std.mem.writeInt(u64, longer[56..64], range.len + 1, .little);
+    resealSection(longer, lexical_segment_module.header_length_v2);
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = longer });
+    metadata.lexical_bytes = longer.len;
+    metadata.lexical_checksum = storedSectionChecksum(longer, lexical_segment_module.header_length_v2);
+    try writeManifest(&f, metadata);
+    const before = try f.listing();
+    try std.testing.expectError(error.InvalidLexicalSection, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(before, try f.listing());
+}
+
+test "S4-T13 ruling 2(d) (and 3(c)): an untouched previous generation gives a fresh index's sections" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    try writerOpenFixture(&f);
+    _ = try f.applyOk(try changeB(&f), .{});
+    _ = try expectFreshParity(&f);
+    try std.testing.expect((try currentManifest(&f)).hasSource());
+}
+test "S4-T13 ruling 3(a): a previous source section with a flipped byte, or one that disagrees with the manifest, is refused at open" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    const metadata = try currentManifest(&f);
+    try std.testing.expect(metadata.hasSource());
+    const original = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
+    const flipped = try a.dupe(u8, original);
+    flipped[flipped.len - 2] ^= 0x01; // a byte of the text area
+    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = flipped });
+    const flipped_listing = try f.listing();
+    try std.testing.expectError(error.ChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(flipped_listing, try f.listing());
+    resealSection(flipped, source.header_length);
+    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = flipped });
+    const resealed_listing = try f.listing();
+    try std.testing.expectError(error.SourceSectionChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(resealed_listing, try f.listing());
+    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = original });
+    _ = try f.applyOk(try changeB(&f), .{});
+    _ = try expectFreshParity(&f);
+}
+
+test "S4-T13 ruling 3(b): a re-sealed bad line map is still refused at the writer's open" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    var metadata = try currentManifest(&f);
+    const bytes = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
+    const section = try source.open(bytes);
+    // `a.md`'s line map: line 2's delta (one byte) off by one, the map's
+    // length unchanged.
+    const entry = section.find("home/a.md") orelse section.file(0);
+    try std.testing.expect(std.mem.endsWith(u8, entry.path, "a.md"));
+    const maps_start = source.header_length + section.files_table.len;
+    const at = maps_start + entry.line_map_offset + 1;
+    try std.testing.expect(bytes[at] < 0x7f and bytes[at - 1] == 0);
+    bytes[at] += 1;
+    resealSection(bytes, source.header_length);
+    try std.testing.expectError(error.InvalidLineMap, source.open(bytes));
+    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = bytes });
+    metadata.source_checksum = storedSectionChecksum(bytes, source.header_length);
+    try writeManifest(&f, metadata);
+    const before = try f.listing();
+    try std.testing.expectError(error.InvalidLineMap, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(before, try f.listing());
+}
+
+// ------------------------------- S4-T13 ruling 4: the carried filename index ---
+
+const filename_field = @import("filename_field.zig");
+const with_filenames = apply.Options{ .filename_index = true };
+
+/// The published filename sections equal a full build (`filename_field.build`
+/// over the generation's body documents) byte for byte.
+fn expectFilenameParity(f: *Fixture) !void {
+    const a = f.arena();
+    const metadata = try currentManifest(f);
+    const sections_bound = metadata.filename.?;
+    const documents = (try f.opened()).service.engine.documents;
+    const full = try filename_field.build(a, documents, metadata.analyzer_id);
+    try std.testing.expectEqualSlices(u8, full.catalog, try f.out.readFileAlloc(io, sections_bound.catalog_file, a, .unlimited));
+    try std.testing.expectEqualSlices(u8, full.lexical, try f.out.readFileAlloc(io, sections_bound.lexical_file, a, .unlimited));
+}
+
+fn filenameFixture(f: *Fixture) !void {
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, domain_roots, &.{
+        try add(a, "home", "a.md", try sections(a, "alpha", 3, "canal boat lantern"), ""),
+        try add(a, "home", "b.txt", "first line of b\nsecond line of b\n", ""),
+        try add(a, "home", "money/budget.md", "# Budget\n\nThe salary pays for the boat.\n", "[\"adults\"]"),
+        try add(a, "home", "zeta-notes.md", "# Zeta\n\nquokka and boats\n", ""),
+        try add(a, "school", "c.md", "# C\n\nபள்ளி விடுமுறை and a lock\n", ""),
+    }), with_filenames);
+    try expectFilenameParity(f);
+}
+
+test "S4-T13 ruling 4: the filename sections equal a full build at every step" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try filenameFixture(&f);
+    // One changed file, its chunk count unchanged (the carried path).
+    _ = try f.applyOk(try changeB(&f), with_filenames);
+    try expectFilenameParity(&f);
+    // A changed chunk count: the file's anchor and the others' move.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "a.md", try sections(a, "alpha", 6, "canal boat"), "")}), with_filenames);
+    try expectFilenameParity(&f);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "a.md", try sections(a, "alpha", 1, "canal"), "")}), with_filenames);
+    try expectFilenameParity(&f);
+    // An added file, a removed file.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "new-plan.md", "# Plan\n\na new plan\n", "")}), with_filenames);
+    try expectFilenameParity(&f);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{"{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"zeta-notes.md\"}"}), with_filenames);
+    try expectFilenameParity(&f);
+    // A rename, then an add and a remove in one batch (the file count kept).
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{"{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"renamed-plan.md\",\"moved_from\":\"new-plan.md\"}"}), with_filenames);
+    try expectFilenameParity(&f);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+        try add(a, "home", "other-list.md", "# List\n\nanother list\n", ""),
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"renamed-plan.md\"}",
+    }), with_filenames);
+    try expectFilenameParity(&f);
+    // A label change (same bytes, new labels).
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "b.txt", "first line of b\nsecond line of b\na third line\n", "[\"adults\"]")}), with_filenames);
+    try expectFilenameParity(&f);
+    // The empty generation, then a file again.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"a.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"b.txt\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"money/budget.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"home\",\"path\":\"other-list.md\"}",
+        "{\"op\":\"remove\",\"root_id\":\"school\",\"path\":\"c.md\"}",
+    }), with_filenames);
+    try expectFilenameParity(&f);
+    try std.testing.expectEqual(@as(usize, 0), (try currentManifest(&f)).filename.?.file_count);
+    // Empty to empty (an empty file has no chunk): the carried path.
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "blank.txt", "", "")}), with_filenames);
+    try expectFilenameParity(&f);
+    try std.testing.expectEqual(@as(usize, 0), (try currentManifest(&f)).filename.?.file_count);
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "again.md", "# Again\n\ncanal\n", "")}), with_filenames);
+    try expectFilenameParity(&f);
+}
+
+const Forge = enum { resealed_with_manifest, resealed_without_manifest, flipped };
+
+/// The previous generation's filename lexical section with one byte of its
+/// first dictionary term changed: re-sealed in the section and the manifest
+/// (a checksum-valid section only a wrong writer could produce), in the
+/// section only, or not at all. Returns the changed bytes.
+fn forgeFilenameLexical(f: *Fixture, forge: Forge) ![]const u8 {
+    const a = f.arena();
+    var metadata = try currentManifest(f);
+    var bound = metadata.filename.?;
+    const bytes = try f.out.readFileAlloc(io, bound.lexical_file, a, .unlimited);
+    const header = try lexical_segment_module.inspect(bytes);
+    try std.testing.expect(!header.hasPositions() and header.term_count > 0);
+    // Section 2's first record: u32 length, u32 frequency, u64 start, u64
+    // length, then the term's bytes.
+    const at = lexical_segment_module.header_length + header.document_lengths_bytes + 24;
+    bytes[at] ^= 0x01;
+    if (forge != .flipped) resealSection(bytes, lexical_segment_module.header_length);
+    try f.out.writeFile(io, .{ .sub_path = bound.lexical_file, .data = bytes });
+    if (forge == .resealed_with_manifest) {
+        bound.lexical_checksum = storedSectionChecksum(bytes, lexical_segment_module.header_length);
+        metadata.filename = bound;
+        try writeManifest(f, metadata);
+    }
+    return bytes;
+}
+
+fn currentFilenameLexical(f: *Fixture) ![]const u8 {
+    return f.out.readFileAlloc(io, (try currentManifest(f)).filename.?.lexical_file, f.arena(), .unlimited);
+}
+
+test "S4-T13 ruling 4: with no path changed the previous filename lexical section is carried byte for byte; its guard is the checksum" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    try filenameFixture(&f);
+    const forged = try forgeFilenameLexical(&f, .resealed_with_manifest);
+    // One changed file: the previous bytes are carried (a full build would
+    // not write the forged term), and the catalog is rebuilt.
+    _ = try f.applyOk(try changeB(&f), with_filenames);
+    try std.testing.expectEqualSlices(u8, forged, try currentFilenameLexical(&f));
+    const metadata = try currentManifest(&f);
+    const full = try filename_field.build(f.arena(), (try f.opened()).service.engine.documents, metadata.analyzer_id);
+    try std.testing.expect(!std.mem.eql(u8, full.lexical, forged));
+    try std.testing.expectEqualSlices(u8, full.catalog, try f.out.readFileAlloc(io, metadata.filename.?.catalog_file, f.arena(), .unlimited));
+    // A rename takes the full build: the forged term is gone.
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, "[]", &.{"{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"zeta-renamed.md\",\"moved_from\":\"zeta-notes.md\"}"}), with_filenames);
+    try expectFilenameParity(&f);
+}
+
+test "S4-T13 ruling 4: a damaged previous filename lexical section is rebuilt, never carried or refused" {
+    for ([_]Forge{ .flipped, .resealed_without_manifest }) |forge| {
+        var f = try Fixture.init();
+        defer f.deinit();
+        try filenameFixture(&f);
+        const damaged = try forgeFilenameLexical(&f, forge);
+        _ = try f.applyOk(try changeB(&f), with_filenames);
+        try std.testing.expect(!std.mem.eql(u8, damaged, try currentFilenameLexical(&f)));
+        try expectFilenameParity(&f);
+    }
+    // A lost previous section: rebuilt too.
+    var f = try Fixture.init();
+    defer f.deinit();
+    try filenameFixture(&f);
+    try f.out.deleteFile(io, (try currentManifest(&f)).filename.?.lexical_file);
+    _ = try f.applyOk(try changeB(&f), with_filenames);
+    try expectFilenameParity(&f);
+}
+
+test "S4-T13 ruling 4: samePaths compares paths in order and labels, every file's chunks adjacent" {
+    const docs = [_]hybrid.Document{
+        .{ .id = "1", .text = "x", .path = "home/a.md" },
+        .{ .id = "2", .text = "y", .path = "home/a.md" },
+        .{ .id = "3", .text = "z", .path = "home/b.md", .required_labels = "adults" },
+    };
+    const catalog = [_]hybrid.Document{
+        .{ .id = "1", .text = "a", .path = "home/a.md" },
+        .{ .id = "3", .text = "b", .path = "home/b.md", .required_labels = "adults" },
+    };
+    try std.testing.expect(filename_field.samePaths(&catalog, &docs));
+    try std.testing.expect(!filename_field.samePaths(catalog[0..1], &docs));
+    try std.testing.expect(!filename_field.samePaths(&catalog, docs[0..2]));
+    var relabelled = catalog;
+    relabelled[1].required_labels = "";
+    try std.testing.expect(!filename_field.samePaths(&relabelled, &docs));
+    var renamed = catalog;
+    renamed[1].path = "home/c.md";
+    try std.testing.expect(!filename_field.samePaths(&renamed, &docs));
+    const split = [_]hybrid.Document{ docs[0], docs[2], docs[1] };
+    try std.testing.expect(!filename_field.samePaths(&catalog, &split));
+    try std.testing.expect(filename_field.samePaths(&.{}, &.{}));
+}

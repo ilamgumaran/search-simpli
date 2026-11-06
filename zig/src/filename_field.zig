@@ -17,6 +17,21 @@ pub const Built = struct {
     /// for the writer's check (`validateBuilt`).
     decoded_catalog: []const hybrid.Document = &.{},
     decoded_lexical: ?postings.Index = null,
+    /// S4-T13 ruling 4: set when `lexical` is the previous generation's
+    /// filename lexical section, carried (`buildCarried`): its header and
+    /// the previous manifest's values it was checked against.
+    carried: ?CarriedLexical = null,
+};
+
+/// S4-T13 ruling 4: a previous generation's filename lexical section that
+/// the next generation carries byte for byte, as `carryLexical` checked it.
+pub const CarriedLexical = struct {
+    header: lexical_segment.Header,
+    /// The previous manifest's `FilenameMetadata` values.
+    checksum: u64,
+    file_count: usize,
+    term_count: usize,
+    posting_count: usize,
 };
 pub const Hit = struct {
     document_index: usize,
@@ -79,7 +94,10 @@ pub fn tokenize(allocator: std.mem.Allocator, analyzer_id: []const u8, text: []c
     return list.toOwnedSlice(allocator);
 }
 
-fn buildDecoded(allocator: std.mem.Allocator, documents: []const hybrid.Document, analyzer_id: []const u8) !struct { catalog: []hybrid.Document, lexical: postings.Index } {
+/// The catalog of `documents`: one entry per path, in path order, anchored
+/// to the file's first body chunk (`anchorLess`), with the file's labels
+/// and its stem as text.
+pub fn group(allocator: std.mem.Allocator, documents: []const hybrid.Document) ![]hybrid.Document {
     // S4-T4 ruling 4: a writer's documents already come in path order (its
     // files are sorted by record path, each file's chunks adjacent), so the
     // copy and the stable sort are skipped when they would change nothing.
@@ -88,7 +106,13 @@ fn buildDecoded(allocator: std.mem.Allocator, documents: []const hybrid.Document
         std.mem.sort(hybrid.Document, copy, {}, pathLess);
         break :blk copy;
     };
-    var catalog = std.ArrayList(hybrid.Document).empty;
+    // S4-T13 ruling 4: one exact allocation (a first pass counts the paths),
+    // not a list grown as it fills.
+    var files: usize = 0;
+    for (sorted, 0..) |document, k| {
+        if (k == 0 or !std.mem.eql(u8, sorted[k - 1].path, document.path)) files += 1;
+    }
+    var catalog = try std.ArrayList(hybrid.Document).initCapacity(allocator, files);
     var i: usize = 0;
     while (i < sorted.len) {
         const start = i;
@@ -99,21 +123,96 @@ fn buildDecoded(allocator: std.mem.Allocator, documents: []const hybrid.Document
             if (!std.mem.eql(u8, sorted[start].required_labels, sorted[i].required_labels)) return error.InconsistentLabels;
             if (anchorLess(sorted[i], anchor)) anchor = sorted[i];
         }
-        try catalog.append(allocator, .{ .id = anchor.id, .path = path, .text = try allocator.dupe(u8, stem(path)), .vector = &.{}, .start_line = anchor.start_line, .end_line = anchor.end_line, .required_labels = anchor.required_labels });
+        // The stem is a slice of the path (the documents outlive the catalog).
+        catalog.appendAssumeCapacity(.{ .id = anchor.id, .path = path, .text = stem(path), .vector = &.{}, .start_line = anchor.start_line, .end_line = anchor.end_line, .required_labels = anchor.required_labels });
     }
-    const docs = try catalog.toOwnedSlice(allocator);
-    const token_lists = try allocator.alloc([][]const u8, docs.len);
-    for (docs, 0..) |doc, j| token_lists[j] = try tokenize(allocator, analyzer_id, doc.text);
-    return .{ .catalog = docs, .lexical = try lexical_build.build(allocator, docs, token_lists) };
+    return catalog.items;
 }
 
+/// `buildMarked` without marks.
+pub const NoMarks = struct {
+    pub fn mark(_: NoMarks, comptime _: []const u8) void {}
+};
+
 pub fn build(allocator: std.mem.Allocator, documents: []const hybrid.Document, analyzer_id: []const u8) !Built {
-    const decoded = try buildDecoded(allocator, documents, analyzer_id);
-    const catalog_len = try segment.encodedLength(decoded.catalog);
+    return buildMarked(allocator, documents, analyzer_id, NoMarks{});
+}
+
+/// `build`, calling `marks.mark(name)` after each part (S4-T13 ruling 1,
+/// the writer's stage profile): `grouping`, `tokenize`, `lexical_build`,
+/// `encode_catalog`, `encode_lexical`.
+pub fn buildMarked(allocator: std.mem.Allocator, documents: []const hybrid.Document, analyzer_id: []const u8, marks: anytype) !Built {
+    const catalog_documents = try group(allocator, documents);
+    marks.mark("grouping");
+    return buildFromCatalog(allocator, catalog_documents, analyzer_id, marks);
+}
+
+/// S4-T13 ruling 4: whether `catalog` (this generation's `group`) lists the
+/// same files as `previous_documents` (the previous generation's body
+/// documents, the ones its catalog was built from and checked against):
+/// the same paths in the same order, each with the same packed labels, every
+/// file's chunks adjacent. The filename lexical section depends only on the
+/// paths' stems (and the analyzer, which a writer never changes), so when
+/// this holds the previous section is the one a full build would write. A
+/// rename, an add, a remove or a file left with no chunk fails it.
+pub fn samePaths(catalog: []const hybrid.Document, previous_documents: []const hybrid.Document) bool {
+    var i: usize = 0;
+    for (catalog) |entry| {
+        if (i == previous_documents.len) return false;
+        const first = previous_documents[i];
+        if (!std.mem.eql(u8, first.path, entry.path) or !std.mem.eql(u8, first.required_labels, entry.required_labels)) return false;
+        while (i < previous_documents.len and std.mem.eql(u8, previous_documents[i].path, entry.path)) i += 1;
+    }
+    return i == previous_documents.len;
+}
+
+/// S4-T13 ruling 4: the previous generation's filename lexical section
+/// `bytes`, checked for carrying against the previous manifest's `metadata`
+/// and this generation's catalog length: its size, its checksum (computed
+/// once here, against its header's value, which must equal the manifest's),
+/// `HYBLEX01` with the checksum kind the encoder writes for it, its file,
+/// term and posting counts. Null when any check fails: then the full build
+/// runs, as it did before this task (a writer never read these sections), so
+/// a damaged previous section is rebuilt, never refused.
+pub fn carryLexical(bytes: []const u8, metadata: manifest.FilenameMetadata, catalog_len: usize) ?CarriedLexical {
+    if (!std.mem.eql(u8, metadata.policy_id, policy_id)) return null;
+    if (bytes.len != metadata.lexical_bytes) return null;
+    const header = lexical_segment.inspect(bytes) catch return null;
+    if (header.checksum != metadata.lexical_checksum) return null;
+    if (header.hasPositions() or header.checksum_kind != .fnv1a64) return null;
+    if (header.document_count != catalog_len or metadata.file_count != catalog_len) return null;
+    if (header.term_count != metadata.term_count or header.posting_count != metadata.posting_count) return null;
+    return .{ .header = header, .checksum = metadata.lexical_checksum, .file_count = metadata.file_count, .term_count = metadata.term_count, .posting_count = metadata.posting_count };
+}
+
+/// S4-T13 ruling 4: the sections for `catalog` (from `group`) with the
+/// previous generation's filename lexical section `lexical` carried as it
+/// is (`carryLexical` checked it): only the catalog, whose anchors move with
+/// a changed file's chunks, is encoded.
+pub fn buildCarried(allocator: std.mem.Allocator, catalog_documents: []hybrid.Document, lexical: []const u8, carried: CarriedLexical, marks: anytype) !Built {
+    marks.mark("lexical_carried");
+    const catalog_len = try segment.encodedLength(catalog_documents);
     const catalog_buffer = try allocator.alloc(u8, catalog_len);
-    const catalog = try segment.encode(decoded.catalog, catalog_buffer);
-    const lexical = try lexical_segment.encodeAlloc(allocator, decoded.lexical);
-    return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = decoded.catalog, .decoded_lexical = decoded.lexical };
+    const catalog = try segment.encode(catalog_documents, catalog_buffer);
+    marks.mark("encode_catalog");
+    return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = catalog_documents, .carried = carried };
+}
+
+/// The full build from a catalog `group` returned: every stem tokenized,
+/// the filename lexical index built, both sections encoded.
+pub fn buildFromCatalog(allocator: std.mem.Allocator, docs: []hybrid.Document, analyzer_id: []const u8, marks: anytype) !Built {
+    const token_lists = try allocator.alloc([][]const u8, docs.len);
+    for (docs, 0..) |doc, j| token_lists[j] = try tokenize(allocator, analyzer_id, doc.text);
+    marks.mark("tokenize");
+    const lexical_index = try lexical_build.build(allocator, docs, token_lists);
+    marks.mark("lexical_build");
+    const catalog_len = try segment.encodedLength(docs);
+    const catalog_buffer = try allocator.alloc(u8, catalog_len);
+    const catalog = try segment.encode(docs, catalog_buffer);
+    marks.mark("encode_catalog");
+    const lexical = try lexical_segment.encodeAlloc(allocator, lexical_index);
+    marks.mark("encode_lexical");
+    return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = docs, .decoded_lexical = lexical_index };
 }
 
 /// S4-T4 ruling 4: the writer's check of the two sections `build` just
@@ -125,6 +224,7 @@ pub fn build(allocator: std.mem.Allocator, documents: []const hybrid.Document, a
 /// tokens, the same postings). `validate`, which re-tokenizes every name from
 /// the catalog text, stays the check of the tests and of `import-json`.
 pub fn validateBuilt(allocator: std.mem.Allocator, body_documents: []const hybrid.Document, built: Built) !void {
+    if (built.carried) |carried| return validateCarried(allocator, built, carried);
     const expected = built.decoded_lexical orelse return error.FilenameLexicalMismatch;
     const empty = postings.Index{ .terms = &.{}, .postings = &.{}, .document_lengths = &.{}, .average_document_length = 0 };
     const decoded = try decode(allocator, body_documents, empty, built.catalog, built.lexical);
@@ -146,6 +246,36 @@ pub fn validateBuilt(allocator: std.mem.Allocator, body_documents: []const hybri
     for (have.postings, expected.postings) |a, b| {
         if (a.document_index != b.document_index or a.term_frequency != b.term_frequency) return error.FilenameLexicalMismatch;
     }
+}
+
+/// S4-T13 ruling 4: `validateBuilt` for a carried filename lexical section.
+/// The catalog is decoded (its checksum, the reader's rules for each entry:
+/// valid paths in strict order, no vectors, the stem as text) and compared
+/// field by field with the grouping it was encoded from, which anchors each
+/// file to its first body chunk. The carried section is checked by its
+/// checksum and its header's counts, against the catalog and the previous
+/// manifest (`carryLexical` computed that checksum once, when it was read),
+/// not decoded a second time.
+fn validateCarried(allocator: std.mem.Allocator, built: Built, carried: CarriedLexical) !void {
+    const header = segment.inspect(built.catalog) catch return error.FilenameCatalogMismatch;
+    if (header.vector_dimensions != 0 or header.document_count != built.decoded_catalog.len) return error.FilenameCatalogMismatch;
+    const catalog = try segment.decodeInspected(built.catalog, header, try allocator.alloc(hybrid.Document, header.document_count), &.{});
+    for (catalog, built.decoded_catalog, 0..) |have, want, i| {
+        if (!validPath(have.path) or have.vector.len != 0 or !std.mem.eql(u8, have.text, stem(have.path))) return error.FilenameCatalogMismatch;
+        if (i > 0 and std.mem.order(u8, catalog[i - 1].path, have.path) != .lt) return error.FilenameCatalogMismatch;
+        if (!std.mem.eql(u8, have.id, want.id) or !std.mem.eql(u8, have.path, want.path) or !std.mem.eql(u8, have.text, want.text) or
+            have.start_line != want.start_line or have.end_line != want.end_line or !std.mem.eql(u8, have.required_labels, want.required_labels))
+            return error.FilenameCatalogMismatch;
+    }
+    const lexical = carried.header;
+    if (lexical.checksum != carried.checksum or storedLexicalChecksum(built.lexical) != carried.checksum) return error.FilenameLexicalMismatch;
+    if (lexical.document_count != catalog.len or carried.file_count != catalog.len) return error.FilenameLexicalMismatch;
+    if (lexical.term_count != carried.term_count or lexical.posting_count != carried.posting_count) return error.FilenameLexicalMismatch;
+}
+
+fn storedLexicalChecksum(bytes: []const u8) u64 {
+    if (bytes.len < lexical_segment.header_length) return 0;
+    return std.mem.readInt(u64, bytes[lexical_segment.header_length - 8 ..][0..8], .little);
 }
 
 pub fn validate(allocator: std.mem.Allocator, body_documents: []const hybrid.Document, catalog_encoded: []const u8, lexical_encoded: []const u8, analyzer_id: []const u8) !void {

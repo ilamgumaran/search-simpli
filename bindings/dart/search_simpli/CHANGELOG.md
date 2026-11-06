@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.3.7 (S4-T13; contract 2.2.0; patch: writer only, no format or API change)
+
+The writer's open of the previous generation checks each section once, and
+the filename channel carries its lexical section when no path changed. No
+Dart API, C ABI, contract (`contracts/` stays 2.2.0), index format, reader
+or result changed: every section a generation writes is byte for byte what
+0.3.6 writes for the same files; an index any 0.3.x library wrote opens and
+updates unchanged and nothing is rebuilt. The natives changed (rebuilt twice
+on the Mac, byte-identical: macOS 843,992 B, Android 806,928 B, iOS
+framework binary 808,184 B); `native/SOURCE-SHA256` is `9f013deb…`.
+
+- **The previous lexical section is decoded without its positions walk.**
+  Its checksum is still computed and compared with the manifest's. A
+  carried posting's position bytes are copied, not interpreted, and a
+  checksum-valid section whose positions are wrong (only a wrong writer
+  makes one) is still refused before anything is published: by the merge's
+  checked walk (`InvalidLexicalSection`, the S4-T12 end-of-walk checks, now
+  reachable from a file) or by the new section's own validation
+  (`InvalidPositions`).
+- **The previous source section's checksum is computed once.** Its line
+  maps are still checked against their bytes at the writer's open, so a
+  checksum-valid section with a wrong line map refuses the update
+  (`InvalidLineMap`, nothing published).
+- **The filename channel's lexical section is carried** when the update
+  keeps every path, in order, with its labels: the previous
+  `filename-lexical-N.hyblex` is copied after its size, checksum, kind and
+  counts are checked; only the catalog is re-encoded. A rename, add, remove
+  or label change, or a previous section that fails a check, takes the full
+  build.
+- **On the 10,000-file timing corpus** (`ReleaseSmall`, p50): the open of
+  the previous generation 26.3 → 21.6 ms off and 26.2 → 21.0 ms on; the
+  filename build and its check 12.8 → 4.7 ms; one changed file 73.8 →
+  68.2 ms with the filename channel off and 91.0 → 78.0 ms with it on (two
+  interleaved runs of five); the full 10k build unchanged (within 0.2 %).
+  `ss_open`, `find` and the queries are where they were (numbers in
+  `docs/tasks/S4-T13.md`).
+
 ## 0.3.6 (S4-T12; contract 2.2.0; patch: writer only, no format or API change)
 
 Writing a lexical section validates it once. No Dart API, C ABI, contract

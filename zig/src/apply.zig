@@ -723,9 +723,10 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var previous_source: ?source.Section = null;
     var previous_state: ?incremental_state.State = null;
     var previous_state_section: ?[]const u8 = null;
+    var previous_filename: ?manifest.FilenameMetadata = null;
     stages.mark("setup");
     if (!options.fresh) {
-        const opened_previous: ?Previous = openPrevious(allocator, io, dir) catch |err| switch (err) {
+        const opened_previous: ?Previous = openPrevious(allocator, io, dir, &stages) catch |err| switch (err) {
             error.FileNotFound, error.AccessDenied, error.InputOutput => blk: {
                 const manifest_present = if (dir.statFile(io, publication.current_manifest_file, .{})) |_| true else |_| false;
                 if (!manifest_present) {
@@ -741,6 +742,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             previous_engine = opened.engine;
             if (options.filename_index == null) options.filename_index = opened.engine.filename_index_enabled;
             previous_source = opened.source;
+            previous_filename = opened.metadata.filename;
             if (opened.metadata.meta.len != 0) previous_meta = try manifest.parseMeta(allocator, opened.metadata.meta);
         }
         stages.mark("open_previous");
@@ -1147,7 +1149,8 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     stages.mark("changes");
     const generation = options.generation orelse try generation_alloc.nextFreeGeneration(allocator, io, dir);
     stages.mark("next_free_generation");
-    const built = buildGeneration(allocator, &work, previous_engine, previous_meta, previous_source, &previous_docs, options, generation, &stages) catch |err| switch (err) {
+    const carry_from: ?PreviousFilename = if (previous_filename) |sections| .{ .io = io, .dir = dir, .sections = sections } else null;
+    const built = buildGeneration(allocator, &work, previous_engine, previous_meta, previous_source, carry_from, &previous_docs, options, generation, &stages) catch |err| switch (err) {
         error.TooManyLabels => return .{ .failed = try failure(allocator, .invalid_argument, "a file would require more than {d} labels (its root's and its own)", .{max_labels}) },
         else => return err,
     };
@@ -1202,26 +1205,37 @@ fn readWhole(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []
 }
 
 /// The current generation, read once: each section's checksum is computed
-/// once (by `Engine.open`'s validation and the decoders, and by the source
-/// section's `openIndexed`), where `snapshot_open.open` plus `openSource`
+/// once (by each section's `inspect`; S4-T13 ruling 3: the source section's
+/// too, which `openIndexed` computed twice), where `snapshot_open.open` plus `openSource`
 /// recompute the document and lexical checksums three times and the source
 /// checksum twice. A writer reads the whole previous generation on every
 /// call, so this is NFR-12's one-changed-file cost. Same errors as
 /// `snapshot_open.open` for a lost file (`error.FileNotFound`: a missing
 /// section, healed by a full re-index).
-fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Previous {
+fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stages: *Stages) !Previous {
     const manifest_encoded = try readWhole(allocator, io, dir, publication.current_manifest_file);
     const metadata = try manifest.decode(manifest_encoded);
+    stages.sub("open_previous.manifest");
     const documents_encoded = try readWhole(allocator, io, dir, metadata.documents_file);
+    stages.sub("open_previous.documents_read");
     const lexical_encoded = try readWhole(allocator, io, dir, metadata.lexical_file);
+    stages.sub("open_previous.lexical_read");
     var section: ?source.Section = null;
     if (metadata.hasSource()) {
         const bytes = try readWhole(allocator, io, dir, metadata.source_file);
+        stages.sub("open_previous.source_read");
         if (bytes.len != metadata.source_bytes) return error.SourceSectionSizeMismatch;
-        const opened = try source.openIndexed(allocator, bytes);
-        if (opened.checksum != metadata.source_checksum) return error.SourceSectionChecksumMismatch;
-        if (!metadata.xxh3_sections and opened.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
-        section = opened;
+        // S4-T13 ruling 3: the checksum once (`openIndexed` computed it
+        // twice), then the file table and every line map as before: a
+        // checksum-valid map that disagrees with its file's bytes is
+        // refused here (`InvalidLineMap`), not carried into the next
+        // generation, where every reader would refuse the whole section.
+        const header = try source.inspect(bytes);
+        if (header.checksum != metadata.source_checksum) return error.SourceSectionChecksumMismatch;
+        if (!metadata.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
+        stages.sub("open_previous.source_checksum");
+        section = try source.openIndexedInspected(allocator, bytes, header);
+        stages.sub("open_previous.source_open");
     }
     // S4-T2 R3: the bound recovery state. A wrong size, header or checksum
     // refuses the write (`StateSectionSizeMismatch`,
@@ -1233,16 +1247,36 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
         try manifest.validateState(metadata, bytes);
         state_bytes = bytes;
     }
+    stages.sub("open_previous.state");
     // The checks of `manifest.validateSnapshot`, with the document section's
-    // checksum computed once (by `segment.decode`, against the stored value
+    // checksum computed once (by `segment.inspect`, against the stored value
     // that must equal the manifest's).
     if (documents_encoded.len != metadata.documents_bytes) return error.DocumentSectionSizeMismatch;
     if (lexical_encoded.len != metadata.lexical_bytes) return error.LexicalSectionSizeMismatch;
     if (storedChecksum(documents_encoded, segment.header_length) != metadata.documents_checksum) return error.DocumentSectionChecksumMismatch;
     if (lexicalStoredChecksum(lexical_encoded) != metadata.lexical_checksum) return error.LexicalSectionChecksumMismatch;
     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch return error.IndexTooLarge;
-    const documents = try segment.decode(documents_encoded, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count));
-    const lexical_index = try lexical_segment.decode(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count));
+    // S4-T13 ruling 1: `segment.decode` and `lexical_segment.decode` as
+    // their parts (`inspect`, then the decode of the inspected bytes).
+    const documents_header = try segment.inspect(documents_encoded);
+    stages.sub("open_previous.documents_checksum");
+    const documents = try segment.decodeInspected(documents_encoded, documents_header, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count));
+    stages.sub("open_previous.documents_decode");
+    const lexical_header = try lexical_segment.inspect(lexical_encoded);
+    stages.sub("open_previous.lexical_checksum");
+    const lexical_index = try lexical_segment.decodeWith(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count), .{ .validate_positions = false, .inspected = lexical_header });
+    // S4-T13 ruling 2: without the walk of sections 4 and 5 (the reader's
+    // deferred setting since S4-T1). The bytes' XXH3-64 checksum has just
+    // matched the stored value, and the stored value the manifest's, so a
+    // damaged section is already refused; what the walk would add is a
+    // check of a checksum-valid section that is inconsistent, which only a
+    // wrong writer produces. The writer still walks every position it
+    // carries: `mergeCarried` counts each posting's ordinals and each
+    // document's offsets (`skipVarintsChecked`) and refuses a section that
+    // ends early or has bytes left over (`InvalidLexicalSection`), and
+    // `encodeAllocMarked` validates the merged index whole (`validateIndex`:
+    // every ordinal and offset) before anything is published.
+    stages.sub("open_previous.lexical_decode");
     if (documents.len != metadata.document_count or lexical_index.document_lengths.len != documents.len) return error.DocumentCountMismatch;
     if (lexical_index.terms.len != metadata.term_count) return error.TermCountMismatch;
     if (lexical_index.postings.len != metadata.posting_count) return error.PostingCountMismatch;
@@ -1499,6 +1533,41 @@ const LexicalMarks = struct {
     stages: *Stages,
     pub fn mark(marks: LexicalMarks, comptime name: []const u8) void {
         marks.stages.inner("encode_sections.lexical." ++ name);
+    }
+};
+
+/// S4-T13 ruling 4: the filename sections of a generation. The catalog is
+/// grouped from this generation's documents (each file's anchor moves with
+/// its chunks). When the files listed are the previous generation's, the
+/// same paths with the same labels (`filename_field.samePaths`, against the
+/// previous body documents already decoded), the previous filename lexical
+/// section is read once and, its checks passed (`carryLexical`), carried
+/// byte for byte instead of tokenizing every stem and building the index
+/// again; otherwise, or when it cannot be read, the full build runs.
+fn buildFilenames(allocator: std.mem.Allocator, documents: []const hybrid.Document, prev: ?engine_module.Engine, prev_filename: ?PreviousFilename, analyzer_id: []const u8, stages: *Stages) !@import("filename_field.zig").Built {
+    const filename_field = @import("filename_field.zig");
+    const marks = FilenameMarks{ .stages = stages };
+    const catalog = try filename_field.group(allocator, documents);
+    const same = if (prev) |engine| filename_field.samePaths(catalog, engine.documents) else false;
+    marks.mark("grouping");
+    if (same) if (prev_filename) |from| {
+        if (readWhole(allocator, from.io, from.dir, from.sections.lexical_file)) |bytes| {
+            if (filename_field.carryLexical(bytes, from.sections, catalog.len)) |carried|
+                return filename_field.buildCarried(allocator, catalog, bytes, carried, marks);
+        } else |err| switch (err) {
+            error.OutOfMemory => return error.OutOfMemory,
+            else => {},
+        }
+    };
+    return filename_field.buildFromCatalog(allocator, catalog, analyzer_id, marks);
+}
+
+/// S4-T13 ruling 1: `filename_field.buildMarked`'s parts as sub-stages of
+/// `filename_build`.
+const FilenameMarks = struct {
+    stages: *Stages,
+    pub fn mark(marks: FilenameMarks, comptime name: []const u8) void {
+        marks.stages.sub("filename_build." ++ name);
     }
 };
 
@@ -2073,12 +2142,21 @@ fn chunkerIndex(kind: chunker.Kind) u16 {
     };
 }
 
+/// S4-T13 ruling 4: where the previous generation's filename sections are
+/// (its manifest's values), for the carried filename lexical section.
+const PreviousFilename = struct {
+    io: std.Io,
+    dir: std.Io.Dir,
+    sections: manifest.FilenameMetadata,
+};
+
 fn buildGeneration(
     allocator: std.mem.Allocator,
     work: *Work,
     prev: ?engine_module.Engine,
     prev_meta: ?manifest.Meta,
     prev_source: ?source.Section,
+    prev_filename: ?PreviousFilename,
     previous_docs: *std.StringHashMapUnmanaged(std.ArrayList(usize)),
     options: Options,
     generation: u64,
@@ -2326,7 +2404,7 @@ fn buildGeneration(
         .source_checksum = if (source_encoded) |bytes| storedChecksum(bytes, source.header_length) else 0,
         .meta = meta,
     };
-    const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try @import("filename_field.zig").build(allocator, documents.items, options.analyzer.label()) else null;
+    const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try buildFilenames(allocator, documents.items, prev, prev_filename, options.analyzer.label(), stages) else null;
     stages.mark("filename_build");
     // S4-T2 R4: the writer checks the filename sections here, after the build
     // and before the publish, not at every reader's open. S4-T4 ruling 4: by
