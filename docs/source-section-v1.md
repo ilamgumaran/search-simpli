@@ -54,7 +54,12 @@ The header is 48 bytes; a record is 68 bytes plus its path.
 declared size, checksum, every record's bounds, path rules and order, the
 gap-free layout, the encoding byte against the bytes, and each line map
 against the file's own bytes (recomputed without allocating). `openIndexed`
-adds a record-offset table so a path lookup is a binary search.
+adds a record-offset table so a path lookup is a binary search. Since
+S4-T14 the reader's streamed open and the writer's open (`openTable`) check
+all of that except the last two: each map is bounded by its varints instead
+(`line_count + 1` of them must end inside the line-map area, else
+`InvalidLineMap`), and a map and encoding byte are checked against their
+file's bytes where the file is read ("Reading" below).
 
 ### Flags bit 0: XXH3-64 (S4-T1)
 
@@ -99,12 +104,15 @@ varint (the map offset and the running value), so `read_span` finds a line
 by decoding at most 256 varints from the nearest checkpoint instead of every
 varint from line 1. `(line_count / 256 + 1)` checkpoints of 16 bytes per
 file; a section opened with plain `source.open` has none and decodes from
-line 1, as before. A lost or damaged source section does not fail opening a
+line 1, as before. Since S4-T14 a streamed section (the reader's,
+"Reading" below) has none either: its maps are not decoded at first use,
+and each call reads and hashes its whole file anyway, so decoding the map
+from line 1 is a small part of the call. A lost or damaged source section does not fail opening a
 generation (`snapshot_open.openSource` reports `source_error`); only
 `read_span` and `outline` answer `capacity` "re-index required: source
 section unavailable (<error>)".
 
-## Reading (S4-T10, no format change)
+## Reading (S4-T10, S4-T14, no format change)
 
 An opened generation reads its source section at the first `read_span` or
 `outline` (`scope.Loads.readSource`, `source.openStreamed`), not earlier:
@@ -113,38 +121,55 @@ An opened generation reads its source section at the first `read_span` or
 table and the line maps into one exact block from the handle's parent
 allocator (freed at close; 1,009,678 B at 10,000 files, 1,519,423 B at
 15,000, 2,029,348 B at 20,000 on the generated corpus) and keeps them, with
-the record-offset table and the sparse line index. It streams the text area
-once through a buffer of at most 1 MiB (`source.stream_buffer_bytes`, freed
-before it returns) to compute the section checksum (compared with the
-header's and the manifest's value) and to validate every line map and
-encoding byte against its file's bytes by the same rules and error names as
-`source.open`, and keeps none of the text. Each later call finds its record
-by binary search, reads that file's `text_length` bytes at its
-`text_offset` into the call's allocator (`source.Section.fileBytes`, freed
-with the call) and checks them against the record's SHA-256 before it
-answers. A file whose bytes no longer match answers `capacity`
-"re-index required: source section unavailable (SourceFileSha256Mismatch)"
-(a short read answers `(SourceSectionSizeMismatch)`); `index_status` is not
-changed by a per-call failure. The answers are byte for byte those of the
-resident reader (`scripts/source_read_parity.py`). The check costs about
-0.34 ms per MiB on the Mac (`ReleaseSmall`): 0.36 ms for the 1,133,158-byte
-largest file of `fixtures/family-folder`, about 1 µs for a 4 KiB file.
+the record-offset table. It walks the files table with `open`'s rules
+(bounds, path rules and order, gap-free text and map offsets) and bounds
+each line map by its varints, and it streams the text area once through a
+buffer of at most 1 MiB (`source.stream_buffer_bytes`, freed before it
+returns) to compute the section checksum, compared with the header's and the
+manifest's value. It keeps none of the text and, since S4-T14, checks no
+line map against its bytes and builds no sparse line index. Every failure
+there (size, checksum, a malformed table, a map whose varints miss its
+region) makes the section `unavailable` for every file, as before.
 
-**The writer's guard (S4-T13).** A writer reads its previous generation's
-source section whole (`apply.openPrevious`): the section checksum computed
-once (`source.inspect`, against the header's value, which must equal the
-manifest's: `ChecksumMismatch`, `SourceSectionChecksumMismatch`), then the
-file table and every line map and encoding byte against its file's bytes
-(`source.openIndexedInspected`, `open`'s rules and error names), before it
-carries any record into the next generation. The checksum alone would
-refuse a damaged section, but not a checksum-valid one whose line map
-disagrees with its bytes (only a wrong writer produces one), and the reader
-above refuses such a section whole at its first use, every file's
-`read_span` and `outline` answering `capacity` "re-index required: source
-section unavailable (InvalidLineMap)", not just the one file's. A carried
-map would also be carried again by every later update. So the writer keeps
-this walk and refuses the update instead (`InvalidLineMap`, nothing
-published).
+Each later call finds its record by binary search, reads that file's
+`text_length` bytes at its `text_offset` into the call's allocator
+(`source.Section.fileBytes`, freed with the call) and checks them against
+the record's SHA-256 before it answers. A file whose bytes no longer match
+answers `capacity` "re-index required: source section unavailable
+(SourceFileSha256Mismatch)" (a short read answers
+`(SourceSectionSizeMismatch)`). **S4-T14:** the first time a handle reads a
+file, those checked bytes are also walked against the file's line map and
+encoding byte by `open`'s rules (`validateLineMap`). A map that disagrees
+answers `capacity` "re-index required: source section unavailable
+(InvalidLineMap)" for that file, at every call; every other file answers.
+A file that passes is recorded in one bit per file (`Section.checked`, from
+the handle's arena: 1,256 B at 10,000 files, 1,880 B at 15,000) and is not
+walked again on that handle. Because an unchecked map is never decoded, a
+`read_span` of a file not yet checked on the handle reads and checks it
+before the 400-line and 256 KiB limits are computed: a refused span reads
+nothing only for a file already checked on the handle, and the first request
+to a damaged file answers the integrity message, not the size limit's.
+`index_status` is not changed by a per-call failure. The answers are byte
+for byte those of the resident reader (`scripts/source_read_parity.py`). The
+SHA-256 costs about 0.34 ms per MiB on the Mac (`ReleaseSmall`): 0.36 ms for
+the 1,133,158-byte largest file of `fixtures/family-folder`, about 1 µs for a
+4 KiB file.
+
+**The writer's guard (S4-T13, S4-T14).** A writer reads its previous
+generation's source section whole (`apply.openPrevious`). It computes the
+section checksum once (`source.inspect`, against the header's value, which
+must equal the manifest's: `ChecksumMismatch`, `SourceSectionChecksumMismatch`),
+then walks the files table and bounds every line map by its varints
+(`source.openTable`: `open`'s table rules and error names), before it
+carries any record into the next generation. The checksum refuses a damaged
+section; the table walk and the varint bounds refuse a malformed one. A
+checksum-valid map that disagrees with its bytes can only come from a wrong
+writer. Since S4-T14 such a map is carried as it is and costs its one file
+its `read_span` and `outline` (`capacity`, `InvalidLineMap`) until an update
+changes that file's bytes and scans them afresh. So neither the reader at
+first use nor the writer at its open walks every map. (S4-T13 kept the
+writer's walk because the reader then refused such a section whole, every
+file answering `InvalidLineMap`.)
 
 ## Retention
 

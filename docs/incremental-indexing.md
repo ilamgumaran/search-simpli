@@ -55,13 +55,15 @@ rebuilt into them:
   re-encoded. A previous `HYBLEX01` generation (no positions) is still
   re-tokenized once, which upgrades it.
 - *Source section.* An unchanged file's record (SHA-256, line map, encoding
-  byte) is copied from the previous section (`source.carriedRecord`), which
-  the writer opened and checked (`source.openIndexedInspected` since S4-T13,
-  `openIndexed` with the checksum computed once: the section checksum
-  against the manifest, every line map against its bytes); its bytes are
-  still copied whole, and only a fresh or changed file is hashed and
-  scanned. The reader's per-call SHA-256 check (S4-T10) still catches a file
-  whose bytes no longer match.
+  byte) is copied from the previous section (`source.carriedRecord`, its map
+  bounded by its varints), which the writer opened and checked
+  (`source.openTable` since S4-T14: the section checksum, computed once,
+  against the manifest; the files table; each map's varint bounds; not each
+  map against its bytes); its bytes are still copied whole, and only a fresh
+  or changed file is hashed and scanned. The reader's per-call SHA-256 check
+  (S4-T10) still catches a file whose bytes no longer match, and its
+  per-file line-map check (S4-T14) a carried map that disagrees with its
+  bytes, for that one file.
 - *Filename sections (S4-T13).* When the update keeps every path, in order,
   with its labels (compared with the previous generation's body documents),
   the previous `filename-lexical-N.hyblex` is copied byte for byte after its
@@ -73,18 +75,22 @@ rebuilt into them:
 - *Documents section, state, manifest.* Encoded whole from the carried and
   fresh records, as before.
 
-**The writer's open of the previous generation (S4-T13).** `apply.openPrevious`
+**The writer's open of the previous generation (S4-T13, S4-T14).** `apply.openPrevious`
 computes each section's checksum once and compares it with the manifest's,
 decodes the documents section, decodes the lexical section without its
-positions walk, and opens the source section with every line map checked.
+positions walk, and opens the source section with its files table walked and
+each line map bounded by its varints (S4-T14; S4-T13 still checked every map
+against its bytes).
 The positions walk was a second check of bytes the checksum covers: a
 carried posting's section-4 bytes are copied, not interpreted, by
 `mergeCarried`, and a positions run that a wrong writer could still have
 sealed is refused by the merge's checked walk (`InvalidLexicalSection`) or by
 the new section's own validation (`InvalidPositions`) before anything is
-published. The line-map walk stays (`docs/source-section-v1.md`, "The
-writer's guard"); on the 10,000-file corpus it is about 10.4 ms of the open's
-21 ms.
+published. S4-T13 kept the line-map walk, about 10.4 ms of the open's 21 ms
+on the 10,000-file corpus, because the reader then refused a section with one
+bad map whole. Since S4-T14 the reader checks a map where it reads the file
+and refuses only that file, so the walk went (`docs/source-section-v1.md`,
+"The writer's guard (S4-T13, S4-T14)").
 
 On S4-T1's 10,000-file timing corpus (one changed file, `ReleaseSmall`,
 `scripts/s4t4_budgets.py profile`, p50 of ten) `build_lexical` went from
