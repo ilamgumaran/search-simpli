@@ -85,7 +85,18 @@ pub const Header = struct {
 };
 
 pub fn encodedLength(index: postings.Index) EncodeError!usize {
-    try validateIndex(index);
+    return encodedLengthMarked(index, NoMarks{});
+}
+
+/// `encodedLengthMarked` and `validateIndexMarked` without marks.
+pub const NoMarks = struct {
+    pub fn mark(_: NoMarks, comptime _: []const u8) void {}
+};
+
+/// S4-T12 ruling 1: `encodedLength`, calling `marks.mark(name)` after each
+/// pass of `validateIndex` (the writer's stage profile).
+pub fn encodedLengthMarked(index: postings.Index, marks: anytype) EncodeError!usize {
+    try validateIndexMarked(index, marks);
     var dictionary_bytes: usize = 0;
     for (index.terms) |entry| {
         dictionary_bytes = try checkedAdd(dictionary_bytes, term_record_length);
@@ -403,6 +414,10 @@ fn validatePositions(
 }
 
 fn validateIndex(index: postings.Index) EncodeError!void {
+    return validateIndexMarked(index, NoMarks{});
+}
+
+fn validateIndexMarked(index: postings.Index, marks: anytype) EncodeError!void {
     if (index.document_lengths.len > std.math.maxInt(u32) or index.terms.len > std.math.maxInt(u32)) {
         return error.CountOverflow;
     }
@@ -429,26 +444,32 @@ fn validateIndex(index: postings.Index) EncodeError!void {
             if (duplicate.found_existing) return error.DuplicateTerm;
         }
     }
+    marks.mark("hash_set");
     for (index.terms) |entry| {
         const postings_end = std.math.add(usize, entry.postings_start, entry.postings_length) catch
             return error.InvalidPostingRange;
         if (postings_end > index.postings.len) return error.InvalidPostingRange;
         if (entry.document_frequency != entry.postings_length) return error.DocumentFrequencyMismatch;
     }
+    marks.mark("term_ranges");
     for (index.postings) |posting| {
         if (posting.document_index >= index.document_lengths.len or posting.term_frequency == 0) {
             return error.InvalidPosting;
         }
     }
+    marks.mark("postings");
     validatePostingOrder(index.terms, index.postings) catch return error.InvalidPosting;
+    marks.mark("posting_order");
     if (index.positions) |sections| {
         for (index.terms[0..index.terms.len -| 1], 1..) |entry, next| {
             if (std.mem.order(u8, entry.term, index.terms[next].term) != .lt) return error.UnsortedTerms;
         }
+        marks.mark("sorted");
         validatePositions(index.terms, index.postings, index.document_lengths, sections) catch |err| return switch (err) {
             error.UnsortedTerms => error.UnsortedTerms,
             else => error.InvalidPositions,
         };
+        marks.mark("positions");
     }
 }
 

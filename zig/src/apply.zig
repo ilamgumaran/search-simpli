@@ -593,17 +593,20 @@ pub const Stages = struct {
     /// S4-T11 ruling 1: the previous mark or sub-stage, where the next
     /// sub-stage starts.
     last_sub: u64 = 0,
+    /// S4-T12 ruling 1: the previous mark, sub-stage or inner part, where
+    /// the next inner part starts.
+    last_inner: u64 = 0,
     names: [max][]const u8 = undefined,
     ns: [max]u64 = undefined,
     count: usize = 0,
 
-    const max = 32;
+    const max = 48;
     pub const variable = "SEARCH_SIMPLI_APPLY_STAGES";
 
     pub fn init(io: std.Io) Stages {
         if (!enabled()) return .{};
         const now = nowNs(io);
-        return .{ .on = true, .io = io, .started = now, .last = now, .last_sub = now };
+        return .{ .on = true, .io = io, .started = now, .last = now, .last_sub = now, .last_inner = now };
     }
 
     fn enabled() bool {
@@ -621,6 +624,7 @@ pub const Stages = struct {
         stages.count += 1;
         stages.last = now;
         stages.last_sub = now;
+        stages.last_inner = now;
     }
 
     /// S4-T11 ruling 1: close the sub-stage `name` (dotted, `parent.part`):
@@ -634,6 +638,21 @@ pub const Stages = struct {
         stages.ns[stages.count] = now - stages.last_sub;
         stages.count += 1;
         stages.last_sub = now;
+        stages.last_inner = now;
+    }
+
+    /// S4-T12 ruling 1: close the inner part `name` (`parent.sub.part`) of
+    /// the sub-stage being timed: the time since the previous mark,
+    /// sub-stage or inner part. It does not move the sub-stage clock, so the
+    /// enclosing sub-stage still measures its whole and its parts are
+    /// printed before it.
+    pub fn inner(stages: *Stages, name: []const u8) void {
+        if (!stages.on or stages.count == max) return;
+        const now = nowNs(stages.io.?);
+        stages.names[stages.count] = name;
+        stages.ns[stages.count] = now - stages.last_inner;
+        stages.count += 1;
+        stages.last_inner = now;
     }
 
     pub fn print(stages: *const Stages) void {
@@ -1474,6 +1493,15 @@ const SourceMarks = struct {
     }
 };
 
+/// S4-T12 ruling 1: the passes of the lexical section's `validateIndex` as
+/// inner parts of the sub-stage that runs it.
+const LexicalMarks = struct {
+    stages: *Stages,
+    pub fn mark(marks: LexicalMarks, comptime name: []const u8) void {
+        marks.stages.inner("encode_sections.lexical_length." ++ name);
+    }
+};
+
 /// Where a document of the new generation gets its positioned tokens: a
 /// fresh chunk's, or a carried document of the previous (positional)
 /// generation.
@@ -2174,7 +2202,7 @@ fn buildGeneration(
     const documents_buffer = try allocator.alloc(u8, try segment.encodedLengthV4(documents.items));
     const documents_encoded = try segment.encodeV4(documents.items, documents_buffer);
     stages.sub("encode_sections.documents");
-    const lexical_buffer = try allocator.alloc(u8, try lexical_segment.encodedLength(lexical_index));
+    const lexical_buffer = try allocator.alloc(u8, try lexical_segment.encodedLengthMarked(lexical_index, LexicalMarks{ .stages = stages }));
     // S4-T11 ruling 4: `encodedLength` is one `validateIndex` (which
     // `encode` runs again) plus the sizes, timed apart.
     stages.sub("encode_sections.lexical_length");
