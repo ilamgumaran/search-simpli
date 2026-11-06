@@ -590,17 +590,20 @@ pub const Stages = struct {
     io: ?std.Io = null,
     started: u64 = 0,
     last: u64 = 0,
+    /// S4-T11 ruling 1: the previous mark or sub-stage, where the next
+    /// sub-stage starts.
+    last_sub: u64 = 0,
     names: [max][]const u8 = undefined,
     ns: [max]u64 = undefined,
     count: usize = 0,
 
-    const max = 24;
+    const max = 32;
     pub const variable = "SEARCH_SIMPLI_APPLY_STAGES";
 
     pub fn init(io: std.Io) Stages {
         if (!enabled()) return .{};
         const now = nowNs(io);
-        return .{ .on = true, .io = io, .started = now, .last = now };
+        return .{ .on = true, .io = io, .started = now, .last = now, .last_sub = now };
     }
 
     fn enabled() bool {
@@ -617,11 +620,25 @@ pub const Stages = struct {
         stages.ns[stages.count] = now - stages.last;
         stages.count += 1;
         stages.last = now;
+        stages.last_sub = now;
+    }
+
+    /// S4-T11 ruling 1: close the sub-stage `name` (dotted, `parent.part`):
+    /// the time since the previous mark or sub-stage. The parent's own
+    /// `mark` still measures from the previous mark, so it stays the total
+    /// S4-T4 reported and its sub-stages are printed before it.
+    pub fn sub(stages: *Stages, name: []const u8) void {
+        if (!stages.on or stages.count == max) return;
+        const now = nowNs(stages.io.?);
+        stages.names[stages.count] = name;
+        stages.ns[stages.count] = now - stages.last_sub;
+        stages.count += 1;
+        stages.last_sub = now;
     }
 
     pub fn print(stages: *const Stages) void {
         if (!stages.on) return;
-        var buffer: [2048]u8 = undefined;
+        var buffer: [4096]u8 = undefined;
         var used: usize = 0;
         for (stages.names[0..stages.count], stages.ns[0..stages.count]) |name, ns| {
             const piece = std.fmt.bufPrint(buffer[used..], "\"{s}\":{d:.3},", .{ name, @as(f64, @floatFromInt(ns)) / 1e6 }) catch break;
@@ -1448,6 +1465,15 @@ fn chunkerOf(prev: engine_module.Engine, meta: ?manifest.Meta, indices: []const 
     return found;
 }
 
+/// S4-T11 ruling 1: `source.encodeMarked`'s passes as sub-stages of
+/// `encode_sections`.
+const SourceMarks = struct {
+    stages: *Stages,
+    pub fn mark(marks: SourceMarks, comptime name: []const u8) void {
+        marks.stages.sub("encode_sections." ++ name);
+    }
+};
+
 /// Where a document of the new generation gets its positioned tokens: a
 /// fresh chunk's, or a carried document of the previous (positional)
 /// generation.
@@ -1463,7 +1489,7 @@ const DocSource = union(enum) {
 /// table is copied as it is. The dictionary is ranked by bytes and
 /// occurrences laid out term-major, document then ordinal, exactly as the
 /// builder does (NFR-12's one-changed-file cost).
-fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index, sources: []const DocSource) !postings.Index {
+fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index, sources: []const DocSource, stages: *Stages) !postings.Index {
     if (sources.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
     const scratch = std.heap.smp_allocator;
     const Pair = struct { term: u32, ordinal: u32 };
@@ -1507,6 +1533,7 @@ fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index
         previous_to_new = try scratch.alloc(u32, index.terms.len);
         @memset(previous_to_new, std.math.maxInt(u32));
     }
+    stages.sub("build_lexical.transpose");
 
     var names = std.ArrayList([]const u8).empty;
     defer names.deinit(scratch);
@@ -1570,6 +1597,7 @@ fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index
         }
         total_length += document_lengths[document_index];
     }
+    stages.sub("build_lexical.occurrences");
 
     // As `buildPositional`: rank terms by bytes, lay occurrences out
     // term-major with a stable counting sort (document, then ordinal order
@@ -1599,6 +1627,7 @@ fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index
         sorted[fill[r]] = occurrence;
         fill[r] += 1;
     }
+    stages.sub("build_lexical.layout");
     var posting_total: usize = 0;
     for (sorted, 0..) |occurrence, i| {
         if (i == 0 or sorted[i - 1].term != occurrence.term or sorted[i - 1].document != occurrence.document) posting_total += 1;
@@ -1629,12 +1658,14 @@ fn buildPositionalMerged(allocator: std.mem.Allocator, previous: ?postings.Index
         terms[r] = .{ .term = names.items[term], .document_frequency = @intCast(postings_length), .postings_start = postings_start, .postings_length = postings_length };
     }
     const average: f32 = if (sources.len == 0) 0 else @as(f32, @floatFromInt(total_length)) / @as(f32, @floatFromInt(sources.len));
+    const sections: postings.PositionSections = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items) };
+    stages.sub("build_lexical.encode");
     return .{
         .terms = terms,
         .postings = all_postings,
         .document_lengths = document_lengths,
         .average_document_length = average,
-        .positions = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items) },
+        .positions = sections,
         .sorted_terms = true,
     };
 }
@@ -1904,13 +1935,15 @@ fn buildGeneration(
     }
 
     stages.mark("build_documents");
-    const lexical_index = try buildPositionalMerged(allocator, if (prev) |engine| engine.lexical_index else null, sources.items);
+    const lexical_index = try buildPositionalMerged(allocator, if (prev) |engine| engine.lexical_index else null, sources.items, stages);
     stages.mark("build_lexical");
     const documents_buffer = try allocator.alloc(u8, try segment.encodedLengthV4(documents.items));
     const documents_encoded = try segment.encodeV4(documents.items, documents_buffer);
+    stages.sub("encode_sections.documents");
     const lexical_buffer = try allocator.alloc(u8, try lexical_segment.encodedLength(lexical_index));
     const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_buffer);
-    const source_encoded: ?[]const u8 = if (any_retain) try source.encode(allocator, retained.items) else null;
+    stages.sub("encode_sections.lexical");
+    const source_encoded: ?[]const u8 = if (any_retain) try source.encodeMarked(allocator, retained.items, SourceMarks{ .stages = stages }) else null;
     stages.mark("encode_sections");
 
     var uses_markdown = false;

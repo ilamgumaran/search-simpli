@@ -283,14 +283,31 @@ fn validPath(path: []const u8) bool {
 /// and every file valid UTF-8 (a leading BOM allowed). The result is owned
 /// by `allocator`.
 pub fn encode(allocator: std.mem.Allocator, files: []const InputFile) EncodeError![]u8 {
+    return encodeMarked(allocator, files, NoMarks{});
+}
+
+/// `encodeMarked` without marks.
+pub const NoMarks = struct {
+    pub fn mark(_: NoMarks, comptime _: []const u8) void {}
+};
+
+/// `encode`, in passes over every file, calling `marks.mark(name)` after
+/// each (S4-T11 ruling 1, the writer's stage profile): `source_line_maps`
+/// (path, order and UTF-8 checks, line starts, the maps), `source_sha256`,
+/// `source_copy` (header, files table, maps and text into the section) and
+/// `source_checksum`. The bytes are `encode`'s: each part is per file.
+pub fn encodeMarked(allocator: std.mem.Allocator, files: []const InputFile, marks: anytype) EncodeError![]u8 {
     if (files.len > std.math.maxInt(u32)) return error.FieldTooLarge;
-    var table = std.ArrayList(u8).empty;
-    defer table.deinit(allocator);
     var maps = std.ArrayList(u8).empty;
     defer maps.deinit(allocator);
     var starts = std.ArrayList(u64).empty;
     defer starts.deinit(allocator);
+    const map_offsets = try allocator.alloc(u64, files.len);
+    defer allocator.free(map_offsets);
+    const line_counts = try allocator.alloc(u32, files.len);
+    defer allocator.free(line_counts);
     var text_length: u64 = 0;
+    var table_length: usize = 0;
 
     for (files, 0..) |input, position| {
         if (!validPath(input.path)) return error.InvalidPath;
@@ -300,36 +317,24 @@ pub fn encode(allocator: std.mem.Allocator, files: []const InputFile) EncodeErro
         try lineStarts(allocator, input.bytes, &starts);
         const line_count = starts.items.len - 1;
         if (line_count > std.math.maxInt(u32)) return error.FieldTooLarge;
-        const map_offset: u64 = maps.items.len;
+        map_offsets[position] = maps.items.len;
+        line_counts[position] = @intCast(line_count);
         var previous: u64 = 0;
         for (starts.items) |offset| {
             try writeLeb128(&maps, allocator, offset - previous);
             previous = offset;
         }
-        var digest: [32]u8 = undefined;
-        std.crypto.hash.sha2.Sha256.hash(input.bytes, &digest, .{});
-
-        var record: [record_fixed_length]u8 = undefined;
-        var offset: usize = 0;
-        putU32(&record, &offset, @intCast(input.path.len));
-        putU64(&record, &offset, text_length);
-        putU64(&record, &offset, input.bytes.len);
-        putU32(&record, &offset, @intCast(line_count));
-        putU64(&record, &offset, map_offset);
-        @memcpy(record[offset .. offset + 32], &digest);
-        offset += 32;
-        record[offset] = @intFromEnum(if (std.mem.startsWith(u8, input.bytes, "\xef\xbb\xbf")) Encoding.utf8_bom else Encoding.utf8);
-        record[offset + 1] = 0;
-        record[offset + 2] = 0;
-        record[offset + 3] = 0;
-        offset += 4;
-        std.debug.assert(offset == record_fixed_length);
-        try table.appendSlice(allocator, &record);
-        try table.appendSlice(allocator, input.path);
         text_length += input.bytes.len;
+        table_length += record_fixed_length + input.path.len;
     }
+    marks.mark("source_line_maps");
 
-    const total = header_length + table.items.len + maps.items.len + text_length;
+    const digests = try allocator.alloc([32]u8, files.len);
+    defer allocator.free(digests);
+    for (files, digests) |input, *digest| std.crypto.hash.sha2.Sha256.hash(input.bytes, digest, .{});
+    marks.mark("source_sha256");
+
+    const total = header_length + table_length + maps.items.len + text_length;
     const out = try allocator.alloc(u8, total);
     var offset: usize = 0;
     @memcpy(out[0..magic.len], magic);
@@ -339,14 +344,32 @@ pub fn encode(allocator: std.mem.Allocator, files: []const InputFile) EncodeErro
     // checksum; every writer since S4-T1 sets it.
     putU16(out, &offset, checksum_mod.flag_xxh3);
     putU32(out, &offset, @intCast(files.len));
-    putU64(out, &offset, table.items.len);
+    putU64(out, &offset, table_length);
     putU64(out, &offset, maps.items.len);
     putU64(out, &offset, text_length);
     const checksum_offset = offset;
     putU64(out, &offset, 0);
     std.debug.assert(offset == header_length);
-    @memcpy(out[offset .. offset + table.items.len], table.items);
-    offset += table.items.len;
+    var text_offset: u64 = 0;
+    for (files, 0..) |input, position| {
+        const record_start = offset;
+        putU32(out, &offset, @intCast(input.path.len));
+        putU64(out, &offset, text_offset);
+        putU64(out, &offset, input.bytes.len);
+        putU32(out, &offset, line_counts[position]);
+        putU64(out, &offset, map_offsets[position]);
+        @memcpy(out[offset .. offset + 32], &digests[position]);
+        offset += 32;
+        out[offset] = @intFromEnum(if (std.mem.startsWith(u8, input.bytes, "\xef\xbb\xbf")) Encoding.utf8_bom else Encoding.utf8);
+        out[offset + 1] = 0;
+        out[offset + 2] = 0;
+        out[offset + 3] = 0;
+        offset += 4;
+        std.debug.assert(offset - record_start == record_fixed_length);
+        @memcpy(out[offset .. offset + input.path.len], input.path);
+        offset += input.path.len;
+        text_offset += input.bytes.len;
+    }
     @memcpy(out[offset .. offset + maps.items.len], maps.items);
     offset += maps.items.len;
     for (files) |input| {
@@ -354,8 +377,10 @@ pub fn encode(allocator: std.mem.Allocator, files: []const InputFile) EncodeErro
         offset += input.bytes.len;
     }
     std.debug.assert(offset == total);
+    marks.mark("source_copy");
     var write_offset = checksum_offset;
     putU64(out, &write_offset, checksum_mod.compute(.xxh3_64, out[0..checksum_offset], out[header_length..]));
+    marks.mark("source_checksum");
     return out;
 }
 
