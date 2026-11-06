@@ -1498,7 +1498,7 @@ const SourceMarks = struct {
 const LexicalMarks = struct {
     stages: *Stages,
     pub fn mark(marks: LexicalMarks, comptime name: []const u8) void {
-        marks.stages.inner("encode_sections.lexical_length." ++ name);
+        marks.stages.inner("encode_sections.lexical." ++ name);
     }
 };
 
@@ -2202,11 +2202,9 @@ fn buildGeneration(
     const documents_buffer = try allocator.alloc(u8, try segment.encodedLengthV4(documents.items));
     const documents_encoded = try segment.encodeV4(documents.items, documents_buffer);
     stages.sub("encode_sections.documents");
-    const lexical_buffer = try allocator.alloc(u8, try lexical_segment.encodedLengthMarked(lexical_index, LexicalMarks{ .stages = stages }));
-    // S4-T11 ruling 4: `encodedLength` is one `validateIndex` (which
-    // `encode` runs again) plus the sizes, timed apart.
-    stages.sub("encode_sections.lexical_length");
-    const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_buffer);
+    // S4-T12 ruling 2: one `validateIndex` (its passes timed as inner parts),
+    // the sizes, an exact buffer and the bytes, in one call.
+    const lexical_encoded = try lexical_segment.encodeAllocMarked(allocator, lexical_index, LexicalMarks{ .stages = stages });
     stages.sub("encode_sections.lexical");
     const source_encoded: ?[]const u8 = if (any_retain) try source.encodeMarked(allocator, retained.items, SourceMarks{ .stages = stages }) else null;
     stages.mark("encode_sections");
