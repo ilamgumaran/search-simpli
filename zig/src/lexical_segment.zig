@@ -469,7 +469,32 @@ fn validateIndexMarked(index: postings.Index, marks: anytype) EncodeError!void {
     // allocation-free, matching `encode`/`encodedLength`'s existing
     // fixed-buffer/no-allocator contract used throughout the test suite --
     // makes it linear instead.
-    {
+    //
+    // S4-T12 ruling 3: an index with positions (`HYBLEX02`) must have a
+    // strictly sorted dictionary, so its duplicates are adjacent: one pass
+    // of neighbours names an equal pair `DuplicateTerm` and proves the order
+    // (the `sorted_terms` flag is not read). Only a dictionary with a
+    // descending pair, refused below as `UnsortedTerms` unless it also holds
+    // a duplicate, falls back to the hash set from the start, so every input
+    // gets the name it got before; a sorted dictionary (every writer's)
+    // never builds one. `HYBLEX01` (no positions) keeps the hash set.
+    var sorted = false;
+    if (index.positions != null) {
+        sorted = true;
+        for (index.terms, 0..) |entry, position| {
+            if (entry.term.len == 0 or entry.term.len > std.math.maxInt(u32)) return error.InvalidTerm;
+            if (position == 0) continue;
+            switch (std.mem.order(u8, index.terms[position - 1].term, entry.term)) {
+                .lt => {},
+                .eq => return error.DuplicateTerm,
+                .gt => {
+                    sorted = false;
+                    break;
+                },
+            }
+        }
+    }
+    if (!sorted) {
         var seen = std.StringHashMap(void).init(std.heap.page_allocator);
         defer seen.deinit();
         for (index.terms) |entry| {
@@ -478,7 +503,7 @@ fn validateIndexMarked(index: postings.Index, marks: anytype) EncodeError!void {
             if (duplicate.found_existing) return error.DuplicateTerm;
         }
     }
-    marks.mark("hash_set");
+    marks.mark("dictionary");
     for (index.terms) |entry| {
         const postings_end = std.math.add(usize, entry.postings_start, entry.postings_length) catch
             return error.InvalidPostingRange;
@@ -495,10 +520,9 @@ fn validateIndexMarked(index: postings.Index, marks: anytype) EncodeError!void {
     validatePostingOrder(index.terms, index.postings) catch return error.InvalidPosting;
     marks.mark("posting_order");
     if (index.positions) |sections| {
-        for (index.terms[0..index.terms.len -| 1], 1..) |entry, next| {
-            if (std.mem.order(u8, entry.term, index.terms[next].term) != .lt) return error.UnsortedTerms;
-        }
-        marks.mark("sorted");
+        // The dictionary pass proved the order, or found a descending pair
+        // (no duplicate, or the hash set would have named it).
+        if (!sorted) return error.UnsortedTerms;
         validatePositions(index.terms, index.postings, index.document_lengths, sections) catch |err| return switch (err) {
             error.UnsortedTerms => error.UnsortedTerms,
             else => error.InvalidPositions,
@@ -997,4 +1021,39 @@ test "S4-T12 ruling 2: every refusal keeps its name through encodedLength, encod
     var short: [1024]u8 = undefined;
     const needed = try encodedLength(valid);
     try std.testing.expectError(error.BufferTooSmall, encode(valid, short[0 .. needed - 1]));
+}
+
+fn ruling3Index(storage: anytype, names: []const []const u8, claimed: bool) postings.Index {
+    var index = handPositional(&storage.terms, &storage.values, &storage.lengths, &storage.positions, &storage.offsets, names);
+    index.sorted_terms = claimed;
+    return index;
+}
+
+const Ruling3Storage = struct {
+    terms: [3]postings.TermEntry = undefined,
+    values: [3]postings.Posting = undefined,
+    lengths: [3]u32 = undefined,
+    positions: [3]u8 = undefined,
+    offsets: [18]u8 = undefined,
+};
+
+test "S4-T12 ruling 3: a positional index with an adjacent duplicate is DuplicateTerm, whatever sorted_terms says" {
+    var storage = Ruling3Storage{};
+    for ([_]bool{ true, false }) |claimed| {
+        try expectRefusedEverywhere(error.DuplicateTerm, ruling3Index(&storage, &.{ "alpha", "alpha", "beta" }, claimed));
+        // The fallback: a descending pair plus a duplicate that is not
+        // adjacent (`beta`, `alpha`, `beta`) is `DuplicateTerm`, as the hash
+        // set named it before S4-T12.
+        try expectRefusedEverywhere(error.DuplicateTerm, ruling3Index(&storage, &.{ "beta", "alpha", "beta" }, claimed));
+    }
+}
+
+test "S4-T12 ruling 3: a positional index claiming sorted but descending is UnsortedTerms; a sorted one encodes" {
+    var storage = Ruling3Storage{};
+    for ([_]bool{ true, false }) |claimed| {
+        try expectRefusedEverywhere(error.UnsortedTerms, ruling3Index(&storage, &.{ "beta", "alpha" }, claimed));
+        try expectRefusedEverywhere(error.UnsortedTerms, ruling3Index(&storage, &.{ "alpha", "gamma", "beta" }, claimed));
+        const owned = try encodeAlloc(std.testing.allocator, ruling3Index(&storage, &.{ "alpha", "beta", "gamma" }, claimed));
+        std.testing.allocator.free(owned);
+    }
 }
