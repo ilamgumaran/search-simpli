@@ -494,7 +494,7 @@ fn parseHeader(prefix: []const u8, length: usize) DecodeError!Header {
 /// Validate a whole section (header, checksum, file table, paths, every line
 /// map) and return a borrowing view of it.
 pub fn open(encoded: []const u8) DecodeError!Section {
-    return openWith(encoded, null);
+    return openWith(encoded, null, null);
 }
 
 /// `open`, plus a record-offset table so `find` is O(log n), and (S3-T4) a
@@ -506,7 +506,21 @@ pub fn open(encoded: []const u8) DecodeError!Section {
 pub fn openIndexed(allocator: std.mem.Allocator, encoded: []const u8) (DecodeError || error{OutOfMemory})!Section {
     const header = try inspect(encoded);
     var index = try Index.init(allocator, header);
-    var section = try openWith(encoded, &index);
+    var section = try openWith(encoded, &index, null);
+    section.record_offsets = index.offsets;
+    section.checkpoint_starts = index.starts;
+    section.checkpoints = index.checkpoints[0..index.used];
+    return section;
+}
+
+/// S4-T13 ruling 3, the writer's open of its previous generation:
+/// `openIndexed` for bytes whose header `inspect` already returned (the
+/// checksum computed once, by that call; `openIndexed` computes it in its
+/// own `inspect` and again in `openWith`'s). The same checks otherwise: the
+/// file table and every line map against its file's bytes.
+pub fn openIndexedInspected(allocator: std.mem.Allocator, encoded: []const u8, header: Header) (DecodeError || error{OutOfMemory})!Section {
+    var index = try Index.init(allocator, header);
+    var section = try openWith(encoded, &index, header);
     section.record_offsets = index.offsets;
     section.checkpoint_starts = index.starts;
     section.checkpoints = index.checkpoints[0..index.used];
@@ -534,8 +548,8 @@ const Index = struct {
     }
 };
 
-fn openWith(encoded: []const u8, index: ?*Index) DecodeError!Section {
-    const header = try inspect(encoded);
+fn openWith(encoded: []const u8, index: ?*Index, inspected: ?Header) DecodeError!Section {
+    const header = inspected orelse try inspect(encoded);
     const files_start = header_length;
     const maps_start = files_start + header.files_bytes;
     const text_start = maps_start + header.maps_bytes;
@@ -1760,4 +1774,34 @@ test "S4-T11: varintsEnd counts end bytes across blocks and refuses a short sect
     }
     try std.testing.expectEqual(@as(?usize, null), varintsEnd(&bytes, 0, count + 1));
     try std.testing.expectEqual(@as(?usize, null), varintsEnd(&bytes, 71, 0));
+}
+
+test "S4-T13 ruling 3: openIndexedInspected is openIndexed with the checksum computed once" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var long = std.ArrayList(u8).empty;
+    for (0..600) |n| try long.print(arena, "line {d}\r\n", .{n});
+    const files = [_]InputFile{
+        .{ .path = "home/a.md", .bytes = "\xef\xbb\xbf# A\n\nfirst\nsecond\n" },
+        .{ .path = "home/long.txt", .bytes = long.items },
+        .{ .path = "school/c.md", .bytes = "one\rtwo\xc2\x85three" },
+    };
+    const encoded = try encode(arena, &files);
+    const indexed = try openIndexed(arena, encoded);
+    const inspected = try openIndexedInspected(arena, encoded, try inspect(encoded));
+    try std.testing.expectEqual(indexed.checksum, inspected.checksum);
+    try std.testing.expectEqualSlices(usize, indexed.record_offsets, inspected.record_offsets);
+    try std.testing.expectEqualSlices(usize, indexed.checkpoint_starts, inspected.checkpoint_starts);
+    try std.testing.expectEqual(indexed.checkpoints.len, inspected.checkpoints.len);
+    for (indexed.checkpoints, inspected.checkpoints) |x, y| try std.testing.expectEqual(x, y);
+    // A checksum-valid line map that disagrees with its bytes is refused.
+    const bad = try arena.dupe(u8, encoded);
+    const section = try open(bad);
+    const entry = section.find("home/long.txt").?;
+    const at = header_length + section.files_table.len + entry.line_map_offset + 1;
+    bad[at] +%= 1;
+    reseal(bad);
+    try std.testing.expectError(error.InvalidLineMap, openIndexedInspected(arena, bad, try inspect(bad)));
+    try std.testing.expectError(error.InvalidLineMap, openIndexed(arena, bad));
 }

@@ -1650,3 +1650,52 @@ test "S4-T13 ruling 2(d) (and 3(c)): an untouched previous generation gives a fr
     _ = try expectFreshParity(&f);
     try std.testing.expect((try currentManifest(&f)).hasSource());
 }
+test "S4-T13 ruling 3(a): a previous source section with a flipped byte, or one that disagrees with the manifest, is refused at open" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    const metadata = try currentManifest(&f);
+    try std.testing.expect(metadata.hasSource());
+    const original = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
+    const flipped = try a.dupe(u8, original);
+    flipped[flipped.len - 2] ^= 0x01; // a byte of the text area
+    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = flipped });
+    const flipped_listing = try f.listing();
+    try std.testing.expectError(error.ChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(flipped_listing, try f.listing());
+    resealSection(flipped, source.header_length);
+    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = flipped });
+    const resealed_listing = try f.listing();
+    try std.testing.expectError(error.SourceSectionChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(resealed_listing, try f.listing());
+    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = original });
+    _ = try f.applyOk(try changeB(&f), .{});
+    _ = try expectFreshParity(&f);
+}
+
+test "S4-T13 ruling 3(b): a re-sealed bad line map is still refused at the writer's open" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    var metadata = try currentManifest(&f);
+    const bytes = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
+    const section = try source.open(bytes);
+    // `a.md`'s line map: line 2's delta (one byte) off by one, the map's
+    // length unchanged.
+    const entry = section.find("home/a.md") orelse section.file(0);
+    try std.testing.expect(std.mem.endsWith(u8, entry.path, "a.md"));
+    const maps_start = source.header_length + section.files_table.len;
+    const at = maps_start + entry.line_map_offset + 1;
+    try std.testing.expect(bytes[at] < 0x7f and bytes[at - 1] == 0);
+    bytes[at] += 1;
+    resealSection(bytes, source.header_length);
+    try std.testing.expectError(error.InvalidLineMap, source.open(bytes));
+    try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = bytes });
+    metadata.source_checksum = storedSectionChecksum(bytes, source.header_length);
+    try writeManifest(&f, metadata);
+    const before = try f.listing();
+    try std.testing.expectError(error.InvalidLineMap, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(before, try f.listing());
+}
