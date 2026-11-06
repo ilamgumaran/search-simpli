@@ -2175,6 +2175,9 @@ fn buildGeneration(
     const documents_encoded = try segment.encodeV4(documents.items, documents_buffer);
     stages.sub("encode_sections.documents");
     const lexical_buffer = try allocator.alloc(u8, try lexical_segment.encodedLength(lexical_index));
+    // S4-T11 ruling 4: `encodedLength` is one `validateIndex` (which
+    // `encode` runs again) plus the sizes, timed apart.
+    stages.sub("encode_sections.lexical_length");
     const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_buffer);
     stages.sub("encode_sections.lexical");
     const source_encoded: ?[]const u8 = if (any_retain) try source.encodeMarked(allocator, retained.items, SourceMarks{ .stages = stages }) else null;
