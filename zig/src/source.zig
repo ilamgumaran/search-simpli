@@ -7,6 +7,15 @@
 //! returns a Markdown file's headings and front matter; both answer from one
 //! file and never load more (CAP-19 NFR-13).
 //!
+//! S4-T10: two ways to hold a section. `open`/`openIndexed` validate a whole
+//! section held in memory (the writer's previous generation, the eager
+//! `snapshot_open.openSource`). `openStreamed` (the scoped open's first
+//! `read_span`/`outline`, `scope.Loads.readSource`) keeps only the header,
+//! the files table and the line maps resident, streams the text area once
+//! through a buffer of at most `stream_buffer_bytes` to check the checksum
+//! and every line map, and afterwards `fileBytes` reads one file's bytes per
+//! call, positionally, and checks them against the record's SHA-256.
+//!
 //! Lines are `str.splitlines` lines of the original bytes, the same lines the
 //! chunkers number: LF, CR, CRLF (one terminator), VT, FF, FS, GS, RS, NEL,
 //! LS and PS each end a line. A leading UTF-8 BOM is not part of line 1.
@@ -61,8 +70,15 @@ pub const DecodeError = error{
 
 pub const FileEntry = struct {
     path: []const u8,
-    /// The file's original bytes (BOM included).
+    /// The file's original bytes (BOM included), when the section's text is
+    /// resident; empty for a streamed section (S4-T10: `Section.fileBytes`
+    /// reads them).
     bytes: []const u8,
+    /// S4-T10: where the bytes are in the text area, and how many.
+    text_offset: usize = 0,
+    text_length: usize = 0,
+    /// S4-T10: where the line map starts in the line-map area.
+    line_map_offset: usize = 0,
     line_count: u32,
     line_map: []const u8,
     sha256: [32]u8,
@@ -87,7 +103,17 @@ pub const Checkpoint = struct {
     value: u64,
 };
 
+/// S4-T10: where a streamed section's text area is read from.
+pub const TextFile = struct {
+    file: std.Io.File,
+    io: std.Io,
+    /// Byte offset of the text area in `file`.
+    offset: u64,
+};
+
 pub const Section = struct {
+    /// The whole section, or (S4-T10, `openStreamed`) its header, files
+    /// table and line maps only.
     encoded: []const u8,
     file_count: usize,
     checksum: u64,
@@ -95,7 +121,12 @@ pub const Section = struct {
     checksum_kind: checksum_mod.Kind = .fnv1a64,
     files_table: []const u8,
     line_maps: []const u8,
+    /// The text area when resident; empty for a streamed section.
     text: []const u8,
+    /// S4-T10: the text area's length (the header's text bytes).
+    text_length: usize = 0,
+    /// S4-T10: set for a streamed section: the text is read per call.
+    text_file: ?TextFile = null,
     /// Byte offset of each file record in `files_table`, when the section
     /// was opened with `openIndexed`; `find` then binary-searches.
     record_offsets: []const usize = &.{},
@@ -157,7 +188,33 @@ pub const Section = struct {
         }
         return null;
     }
+
+    /// S4-T10: a file's original bytes. A resident section answers from its
+    /// copy. A streamed one reads the file's `text_length` bytes at its
+    /// `text_offset`, positionally, into a buffer from `allocator` (the
+    /// call's, freed with it); a read that fails or comes back short answers
+    /// `capacity` as a damaged section does, naming why.
+    pub fn fileBytes(section: Section, allocator: std.mem.Allocator, entry: FileEntry) error{OutOfMemory}!BytesResult {
+        const text = section.text_file orelse return .{ .ok = entry.bytes };
+        const buffer = try allocator.alloc(u8, entry.text_length);
+        const read = text.file.readPositionalAll(text.io, buffer, text.offset + entry.text_offset) catch |err| return unavailable(allocator, @errorName(err));
+        if (read != buffer.len) return unavailable(allocator, "SourceSectionSizeMismatch");
+        return .{ .ok = buffer };
+    }
 };
+
+/// The `capacity` answer of a section that is bound but cannot be read
+/// (`service.sourceUnavailable`'s message).
+pub const unavailable_prefix = "re-index required: source section unavailable";
+
+pub const BytesResult = union(enum) {
+    ok: []const u8,
+    failed: Failure,
+};
+
+fn unavailable(allocator: std.mem.Allocator, name: []const u8) error{OutOfMemory}!BytesResult {
+    return .{ .failed = .{ .code = .capacity, .message = try std.fmt.allocPrint(allocator, unavailable_prefix ++ " ({s})", .{name}) } };
+}
 
 fn isBreakAt(bytes: []const u8, index: usize) usize {
     const byte = bytes[index];
@@ -307,7 +364,16 @@ pub const Header = struct {
 
 /// Validate the header, the declared size and the checksum only.
 pub fn inspect(encoded: []const u8) DecodeError!Header {
-    var cursor = Cursor{ .bytes = encoded };
+    const header = try parseHeader(encoded, encoded.len);
+    if (checksum_mod.compute(header.checksum_kind, encoded[0 .. header_length - 8], encoded[header_length..]) != header.checksum) return error.ChecksumMismatch;
+    return header;
+}
+
+/// The header of a section of `length` bytes that starts with `prefix`
+/// (at least its first `header_length` bytes, when it has them), with the
+/// declared size checked against `length`; not the checksum.
+fn parseHeader(prefix: []const u8, length: usize) DecodeError!Header {
+    var cursor = Cursor{ .bytes = prefix };
     if (!std.mem.eql(u8, try cursor.take(magic.len), magic)) return error.BadMagic;
     if (try cursor.readU16() != version) return error.UnsupportedVersion;
     const flags = try cursor.readU16();
@@ -322,9 +388,8 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
     var expected = try add(header_length, files_bytes);
     expected = try add(expected, maps_bytes);
     expected = try add(expected, text_bytes);
-    if (encoded.len < expected) return error.Truncated;
-    if (encoded.len > expected) return error.TrailingData;
-    if (checksum_mod.compute(kind, encoded[0 .. header_length - 8], encoded[header_length..]) != checksum) return error.ChecksumMismatch;
+    if (length < expected) return error.Truncated;
+    if (length > expected) return error.TrailingData;
     return .{ .file_count = file_count, .files_bytes = files_bytes, .maps_bytes = maps_bytes, .text_bytes = text_bytes, .checksum = checksum, .checksum_kind = kind };
 }
 
@@ -342,13 +407,7 @@ pub fn open(encoded: []const u8) DecodeError!Section {
 /// of them) with their per-file starts.
 pub fn openIndexed(allocator: std.mem.Allocator, encoded: []const u8) (DecodeError || error{OutOfMemory})!Section {
     const header = try inspect(encoded);
-    var index = Index{
-        .offsets = try allocator.alloc(usize, header.file_count),
-        .starts = try allocator.alloc(usize, header.file_count + 1),
-        // A line costs at least one varint byte, so a file of n lines holds
-        // n / interval + 1 checkpoints and the maps hold at least n bytes.
-        .checkpoints = try allocator.alloc(Checkpoint, header.file_count + header.maps_bytes / checkpoint_interval + 1),
-    };
+    var index = try Index.init(allocator, header);
     var section = try openWith(encoded, &index);
     section.record_offsets = index.offsets;
     section.checkpoint_starts = index.starts;
@@ -361,6 +420,16 @@ const Index = struct {
     starts: []usize,
     checkpoints: []Checkpoint,
     used: usize = 0,
+
+    fn init(allocator: std.mem.Allocator, header: Header) error{OutOfMemory}!Index {
+        return .{
+            .offsets = try allocator.alloc(usize, header.file_count),
+            .starts = try allocator.alloc(usize, header.file_count + 1),
+            // A line costs at least one varint byte, so a file of n lines holds
+            // n / interval + 1 checkpoints and the maps hold at least n bytes.
+            .checkpoints = try allocator.alloc(Checkpoint, header.file_count + header.maps_bytes / checkpoint_interval + 1),
+        };
+    }
 
     fn add(index: *Index, reader: MapReader) DecodeError!void {
         return addCheckpoint(index, reader);
@@ -380,40 +449,248 @@ fn openWith(encoded: []const u8, index: ?*Index) DecodeError!Section {
         .files_table = encoded[files_start..maps_start],
         .line_maps = encoded[maps_start..text_start],
         .text = encoded[text_start..],
+        .text_length = header.text_bytes,
     };
-    var cursor = Cursor{ .bytes = section.files_table };
-    var previous_path: ?[]const u8 = null;
-    var expected_text_offset: usize = 0;
-    var expected_map_offset: usize = 0;
+    var walk = TableWalk{ .cursor = .{ .bytes = section.files_table } };
     var position: usize = 0;
     while (position < header.file_count) : (position += 1) {
-        const record_start = cursor.offset;
-        const entry = try readRecord(&cursor, section);
-        if (!validPath(entry.path)) return error.InvalidPath;
-        if (previous_path) |previous| {
-            if (std.mem.order(u8, previous, entry.path) != .lt) return error.UnsortedPaths;
-        }
-        previous_path = entry.path;
-        // Text and maps are laid out in table order without gaps.
-        var fields = Cursor{ .bytes = section.files_table, .offset = record_start + 4 };
-        if (try fields.readU64() != expected_text_offset) return error.InvalidFileTable;
-        _ = try fields.readU64();
-        _ = try fields.readU32();
-        if (try fields.readU64() != expected_map_offset) return error.InvalidFileTable;
-        expected_text_offset += entry.bytes.len;
+        const record = try walk.next(section);
         if (index) |built| {
-            built.offsets[position] = record_start;
+            built.offsets[position] = record.start;
             built.starts[position] = built.used;
         }
-        const map_length = try validateLineMap(entry, index);
-        expected_map_offset += map_length;
+        walk.expected_map_offset += try validateLineMap(record.entry, index);
     }
     if (index) |built| built.starts[header.file_count] = built.used;
-    if (cursor.offset != section.files_table.len) return error.TrailingData;
-    if (expected_text_offset != section.text.len) return error.InvalidFileTable;
-    if (expected_map_offset != section.line_maps.len) return error.InvalidLineMap;
+    try walk.finish(section);
     return section;
 }
+
+/// The files table read in order, each record checked as `open` checks it
+/// before its line map (bounds, path rules and order, the gap-free text and
+/// map offsets); shared by `openWith` and `openStreamed` (S4-T10).
+const TableWalk = struct {
+    cursor: Cursor,
+    previous_path: ?[]const u8 = null,
+    expected_text_offset: usize = 0,
+    expected_map_offset: usize = 0,
+
+    const Record = struct { entry: FileEntry, start: usize };
+
+    fn next(walk: *TableWalk, section: Section) DecodeError!Record {
+        const record_start = walk.cursor.offset;
+        const entry = try readRecord(&walk.cursor, section);
+        if (!validPath(entry.path)) return error.InvalidPath;
+        if (walk.previous_path) |previous| {
+            if (std.mem.order(u8, previous, entry.path) != .lt) return error.UnsortedPaths;
+        }
+        walk.previous_path = entry.path;
+        // Text and maps are laid out in table order without gaps.
+        if (entry.text_offset != walk.expected_text_offset) return error.InvalidFileTable;
+        if (entry.line_map_offset != walk.expected_map_offset) return error.InvalidFileTable;
+        walk.expected_text_offset += entry.text_length;
+        return .{ .entry = entry, .start = record_start };
+    }
+
+    fn finish(walk: TableWalk, section: Section) DecodeError!void {
+        if (walk.cursor.offset != section.files_table.len) return error.TrailingData;
+        if (walk.expected_text_offset != section.text_length) return error.InvalidFileTable;
+        if (walk.expected_map_offset != section.line_maps.len) return error.InvalidLineMap;
+    }
+};
+
+/// S4-T10: the most text bytes `openStreamed` holds at once.
+pub const stream_buffer_bytes: usize = 1024 * 1024;
+
+pub const ReadError = std.Io.File.ReadPositionalError || error{ShortRead};
+
+pub const Streamed = struct {
+    section: Section,
+    /// `section.encoded`: the header, the files table and the line maps,
+    /// one exact block from the caller's `blocks` allocator, which frees it.
+    block: []u8,
+};
+
+/// S4-T10: open the source section in `file` (`length` bytes) without
+/// holding its text. One exact block from `blocks` holds the header, the
+/// files table and the line maps (read positionally); the text area is read
+/// once, in order, through a buffer of at most `stream_buffer_bytes` (also
+/// from `blocks`, freed before returning) to compute the checksum and to
+/// check every line map against its file's bytes, with `open`'s rules and
+/// error names (the checksum first, then the first structural error in
+/// table order). The record offsets and the sparse line index come from
+/// `index_allocator`, as `openIndexed`'s do. Afterwards `Section.fileBytes`
+/// reads one file per call. A short read is `error.ShortRead`.
+pub fn openStreamed(
+    index_allocator: std.mem.Allocator,
+    blocks: std.mem.Allocator,
+    io: std.Io,
+    file: std.Io.File,
+    length: usize,
+) (DecodeError || ReadError || error{OutOfMemory})!Streamed {
+    return openStreamedWith(index_allocator, blocks, io, file, length, stream_buffer_bytes);
+}
+
+/// `openStreamed` through a buffer of at most `buffer_bytes` (at least 3:
+/// a line break's look-ahead); the tests pass small ones.
+fn openStreamedWith(
+    index_allocator: std.mem.Allocator,
+    blocks: std.mem.Allocator,
+    io: std.Io,
+    file: std.Io.File,
+    length: usize,
+    buffer_bytes: usize,
+) (DecodeError || ReadError || error{OutOfMemory})!Streamed {
+    var head: [header_length]u8 = undefined;
+    const head_length = @min(length, header_length);
+    if (try file.readPositionalAll(io, head[0..head_length], 0) != head_length) return error.ShortRead;
+    const header = try parseHeader(head[0..head_length], length);
+    const maps_start = header_length + header.files_bytes;
+    const resident_length = maps_start + header.maps_bytes;
+    const block = try blocks.alloc(u8, resident_length);
+    errdefer blocks.free(block);
+    @memcpy(block[0..header_length], &head);
+    if (try file.readPositionalAll(io, block[header_length..], header_length) != resident_length - header_length) return error.ShortRead;
+    var sum = Running.init(header.checksum_kind);
+    sum.update(block[0 .. header_length - 8]);
+    sum.update(block[header_length..]);
+    var section = Section{
+        .encoded = block,
+        .file_count = header.file_count,
+        .checksum = header.checksum,
+        .checksum_kind = header.checksum_kind,
+        .files_table = block[header_length..maps_start],
+        .line_maps = block[maps_start..],
+        .text = &.{},
+        .text_length = header.text_bytes,
+        .text_file = .{ .file = file, .io = io, .offset = resident_length },
+    };
+    var index = try Index.init(index_allocator, header);
+    const buffer = try blocks.alloc(u8, @min(@max(buffer_bytes, 3), header.text_bytes));
+    defer blocks.free(buffer);
+    var stream = Stream{ .io = io, .file = file, .next_read = resident_length, .unread = header.text_bytes, .buffer = buffer, .sum = &sum };
+    const outcome = try streamFiles(section, &stream, &index);
+    try stream.drain();
+    if (sum.final() != header.checksum) return error.ChecksumMismatch;
+    switch (outcome) {
+        .failed => |err| return err,
+        .ok => {},
+    }
+    section.record_offsets = index.offsets;
+    section.checkpoint_starts = index.starts;
+    section.checkpoints = index.checkpoints[0..index.used];
+    return .{ .section = section, .block = block };
+}
+
+const StreamOutcome = union(enum) { ok, failed: DecodeError };
+
+/// Every record in table order, its line map checked against its bytes as
+/// they stream; the first structural error stops the checks (the caller
+/// still reads the rest for the checksum).
+fn streamFiles(section: Section, stream: *Stream, index: *Index) ReadError!StreamOutcome {
+    var walk = TableWalk{ .cursor = .{ .bytes = section.files_table } };
+    var position: usize = 0;
+    while (position < section.file_count) : (position += 1) {
+        const record = walk.next(section) catch |err| return .{ .failed = err };
+        index.offsets[position] = record.start;
+        index.starts[position] = index.used;
+        const map_length = validateLineMapStreamed(record.entry, stream, index) catch |err| {
+            if (decodeErrorOf(err)) |decode| return .{ .failed = decode };
+            return @as(ReadError, @errorCast(err));
+        };
+        walk.expected_map_offset += map_length;
+    }
+    index.starts[section.file_count] = index.used;
+    walk.finish(section) catch |err| return .{ .failed = err };
+    return .ok;
+}
+
+fn decodeErrorOf(err: anyerror) ?DecodeError {
+    inline for (@typeInfo(DecodeError).error_set.?) |member| {
+        if (std.mem.eql(u8, @errorName(err), member.name)) return @as(DecodeError, @errorCast(err));
+    }
+    return null;
+}
+
+/// The text area read once, in order, through `buffer`; every byte read is
+/// added to `sum`.
+const Stream = struct {
+    io: std.Io,
+    file: std.Io.File,
+    /// Offset in `file` of the next byte to read.
+    next_read: u64,
+    /// Text bytes not read yet.
+    unread: usize,
+    buffer: []u8,
+    /// `buffer[start..end]`: read, not yet consumed.
+    start: usize = 0,
+    end: usize = 0,
+    sum: *Running,
+
+    fn buffered(stream: *const Stream) []const u8 {
+        return stream.buffer[stream.start..stream.end];
+    }
+
+    /// Read on so that at least `want` bytes (at most 3 here) are buffered,
+    /// or every byte has been read.
+    fn fill(stream: *Stream, want: usize) ReadError!void {
+        if (stream.end - stream.start >= want or stream.unread == 0) return;
+        const kept = stream.end - stream.start;
+        std.mem.copyForwards(u8, stream.buffer[0..kept], stream.buffer[stream.start..stream.end]);
+        stream.start = 0;
+        stream.end = kept;
+        const room = @min(stream.buffer.len - kept, stream.unread);
+        const target = stream.buffer[kept..][0..room];
+        if (try stream.file.readPositionalAll(stream.io, target, stream.next_read) != room) return error.ShortRead;
+        stream.sum.update(target);
+        stream.end += room;
+        stream.next_read += room;
+        stream.unread -= room;
+    }
+
+    /// Read the rest of the text (for the checksum) without looking at it.
+    fn drain(stream: *Stream) ReadError!void {
+        while (true) {
+            stream.start = stream.end;
+            if (stream.unread == 0) return;
+            try stream.fill(1);
+        }
+    }
+};
+
+/// A section checksum computed over bytes given in pieces (FNV-1a 64 or
+/// XXH3-64 with seed 0, as `checksum.compute` over their concatenation).
+const Running = union(checksum_mod.Kind) {
+    fnv1a64: u64,
+    xxh3_64: std.hash.XxHash3,
+
+    const fnv_offset_basis: u64 = 14_695_981_039_346_656_037;
+    const fnv_prime: u64 = 1_099_511_628_211;
+
+    fn init(kind: checksum_mod.Kind) Running {
+        return switch (kind) {
+            .fnv1a64 => .{ .fnv1a64 = fnv_offset_basis },
+            .xxh3_64 => .{ .xxh3_64 = std.hash.XxHash3.init(0) },
+        };
+    }
+
+    fn update(running: *Running, bytes: []const u8) void {
+        switch (running.*) {
+            .fnv1a64 => |*value| for (bytes) |byte| {
+                value.* ^= byte;
+                value.* *%= fnv_prime;
+            },
+            .xxh3_64 => |*state| state.update(bytes),
+        }
+    }
+
+    fn final(running: *Running) u64 {
+        return switch (running.*) {
+            .fnv1a64 => |value| value,
+            .xxh3_64 => |*state| state.final(),
+        };
+    }
+};
 
 fn readRecord(cursor: *Cursor, section: Section) DecodeError!FileEntry {
     const path_length: usize = try cast(try cursor.readU32());
@@ -425,7 +702,7 @@ fn readRecord(cursor: *Cursor, section: Section) DecodeError!FileEntry {
     const encoding_byte = (try cursor.take(4))[0];
     const path = try cursor.take(path_length);
     const text_end = try add(text_offset, text_length);
-    if (text_end > section.text.len or map_offset > section.line_maps.len) return error.InvalidFileTable;
+    if (text_end > section.text_length or map_offset > section.line_maps.len) return error.InvalidFileTable;
     const encoding: Encoding = switch (encoding_byte) {
         0 => .utf8,
         1 => .utf8_bom,
@@ -435,7 +712,10 @@ fn readRecord(cursor: *Cursor, section: Section) DecodeError!FileEntry {
     @memcpy(&sha, digest);
     return .{
         .path = path,
-        .bytes = section.text[text_offset..text_end],
+        .bytes = if (section.text_file == null) section.text[text_offset..text_end] else &.{},
+        .text_offset = text_offset,
+        .text_length = text_length,
+        .line_map_offset = map_offset,
         .line_count = line_count,
         .line_map = section.line_maps[map_offset..],
         .sha256 = sha,
@@ -469,6 +749,53 @@ fn validateLineMap(entry: FileEntry, sparse: ?*Index) DecodeError!usize {
     }
     if (sparse) |built| if (count % checkpoint_interval == 0) try built.add(reader);
     if (try reader.next() != entry.bytes.len) return error.InvalidLineMap;
+    if (count != entry.line_count) return error.InvalidLineMap;
+    return reader.offset;
+}
+
+/// S4-T10: `validateLineMap` over the file's bytes as they stream: the same
+/// rules, checkpoints and errors, with the line-break look-ahead (at most two
+/// bytes) kept in the buffer across reads. Consumes exactly the file's
+/// `text_length` bytes from `stream` when it succeeds.
+fn validateLineMapStreamed(entry: FileEntry, stream: *Stream, sparse: ?*Index) (DecodeError || ReadError)!usize {
+    const length = entry.text_length;
+    try stream.fill(@min(3, length));
+    const has_bom = length >= 3 and std.mem.startsWith(u8, stream.buffered(), "\xef\xbb\xbf");
+    if ((entry.encoding == .utf8_bom) != has_bom) return error.InvalidLineMap;
+    var reader = MapReader{ .bytes = entry.line_map };
+    var count: u64 = 0;
+    var position: usize = 0;
+    if (has_bom) {
+        stream.start += 3;
+        position = 3;
+    }
+    var line_open = false;
+    while (position < length) {
+        try stream.fill(@min(3, length - position));
+        const available = stream.buffered();
+        const view = available[0..@min(available.len, length - position)];
+        // Short of the file's end, stop two bytes early so that a break's
+        // look-ahead (CRLF, NEL, LS, PS) is always in the view.
+        const limit = if (view.len == length - position) view.len else view.len - 2;
+        var at: usize = 0;
+        while (at < limit) {
+            if (!line_open) {
+                if (sparse) |built| if (count % checkpoint_interval == 0) try built.add(reader);
+                if (try reader.next() != position + at) return error.InvalidLineMap;
+                count += 1;
+                line_open = true;
+            }
+            const width = isBreakAt(view, at);
+            if (width != 0) {
+                at += width;
+                line_open = false;
+            } else at += 1;
+        }
+        stream.start += at;
+        position += at;
+    }
+    if (sparse) |built| if (count % checkpoint_interval == 0) try built.add(reader);
+    if (try reader.next() != length) return error.InvalidLineMap;
     if (count != entry.line_count) return error.InvalidLineMap;
     return reader.offset;
 }
@@ -586,7 +913,9 @@ pub const SpanResult = union(enum) {
 /// `context_lines` (≤ 20) on each side, byte for byte. Refused with
 /// `capacity` when the lines including context exceed 400 or the bytes
 /// 256 KiB, and with `capacity` "re-index required: source absent" when the
-/// generation has no source section. `allocator` only formats messages.
+/// generation has no source section. `allocator` formats messages and, for a
+/// streamed section (S4-T10), holds the file's bytes for the call: the
+/// span's slices point into them.
 pub fn readSpan(
     allocator: std.mem.Allocator,
     section: ?Section,
@@ -610,15 +939,19 @@ pub fn readSpan(
         return fail(allocator, .capacity, "span of {d} lines and {d} bytes is over the {d}-line or {d}-byte limit", .{ lines, size, max_span_lines, max_span_bytes });
     }
     const inner = lineOffsets(entry, start_line, last_line + 1);
-    const text = entry.bytes[inner.first..inner.stop];
+    const bytes = switch (try present.fileBytes(allocator, entry)) {
+        .ok => |file_bytes| file_bytes,
+        .failed => |failure| return .{ .failed = failure },
+    };
+    const text = bytes[inner.first..inner.stop];
     var digest: [32]u8 = undefined;
     std.crypto.hash.sha2.Sha256.hash(text, &digest, .{});
     return .{ .ok = .{
         .start_line = start_line,
         .end_line = last_line,
         .text = text,
-        .context_before = entry.bytes[outer.first..inner.first],
-        .context_after = entry.bytes[inner.stop..outer.stop],
+        .context_before = bytes[outer.first..inner.first],
+        .context_after = bytes[inner.stop..outer.stop],
         .sha256 = digest,
     } };
 }
@@ -666,16 +999,21 @@ pub const OutlineResult = union(enum) {
 
 /// `outline` (S3-T1 ruling 5): for a Markdown file its headings with level,
 /// text, line and end line, its front matter range and fields; for any
-/// file its line count and chunker. Reads only that file's bytes.
+/// file its line count and chunker. Reads only that file's bytes (S4-T10:
+/// for a streamed section, into `allocator`, for every file).
 pub fn outline(allocator: std.mem.Allocator, section: ?Section, path: []const u8) !OutlineResult {
     const present = section orelse return .{ .failed = .{ .code = .capacity, .message = source_absent_message } };
     const entry = present.find(path) orelse return .{ .failed = .{
         .code = .not_found,
         .message = try std.fmt.allocPrint(allocator, "not indexed or not retained: {s}", .{path}),
     } };
+    const bytes = switch (try present.fileBytes(allocator, entry)) {
+        .ok => |file_bytes| file_bytes,
+        .failed => |failure| return .{ .failed = failure },
+    };
     const kind = chunker.kindForPath(path);
     if (kind == .md_section) {
-        const parsed = try chunker_md.outline(allocator, entry.bytes);
+        const parsed = try chunker_md.outline(allocator, bytes);
         return .{ .ok = .{ .chunker = kind, .lines = entry.line_count, .markdown = parsed } };
     }
     return .{ .ok = .{ .chunker = kind, .lines = entry.line_count, .markdown = null } };
@@ -910,6 +1248,36 @@ test "source section rejects corruption, unsorted paths and bad line maps" {
         try std.testing.expectError(error.ChecksumMismatch, open(copy));
     }
     try std.testing.expectError(error.Truncated, open(encoded[0 .. encoded.len - 1]));
+    // S4-T10: the streamed open answers every damage as `open` does, and a
+    // damaged line map behind a valid checksum (resealed) is still refused.
+    const maps_start = header_length + 2 * record_fixed_length + "a.md".len + "b.md".len;
+    const encoding_at = header_length + 4 + 8 + 8 + 4 + 8 + 32;
+    const line_count_at = header_length + 4 + 8 + 8;
+    const Damage = struct { at: usize, value: u8, reseal: bool, expected: DecodeError };
+    for ([_]Damage{
+        .{ .at = 12, .value = 0x01, .reseal = false, .expected = error.ChecksumMismatch },
+        .{ .at = header_length + 10, .value = 0x01, .reseal = false, .expected = error.ChecksumMismatch },
+        .{ .at = encoded.len - 1, .value = 0x01, .reseal = false, .expected = error.ChecksumMismatch },
+        // a.md's second line start, 4 (delta 4) made 3: the map no longer
+        // matches the bytes.
+        .{ .at = maps_start + 1, .value = 4 ^ 3, .reseal = true, .expected = error.InvalidLineMap },
+        // The last file's last delta (the file's end) made one byte longer.
+        .{ .at = maps_start + 4, .value = 2 ^ 3, .reseal = true, .expected = error.InvalidLineMap },
+        // a.md's encoding byte says BOM; it has none.
+        .{ .at = encoding_at, .value = 0x01, .reseal = true, .expected = error.InvalidLineMap },
+        // a.md's line count 2 made 3.
+        .{ .at = line_count_at, .value = 2 ^ 3, .reseal = true, .expected = error.InvalidLineMap },
+    }) |damage| {
+        const copy = try arena.dupe(u8, encoded);
+        copy[damage.at] ^= damage.value;
+        if (damage.reseal) reseal(copy);
+        try std.testing.expectError(damage.expected, open(copy));
+        var fixture = try StreamedFixture.init(copy);
+        defer fixture.deinit();
+        for ([_]usize{ 3, 5, stream_buffer_bytes }) |buffer_bytes| {
+            try std.testing.expectError(damage.expected, fixture.open(arena, buffer_bytes));
+        }
+    }
     const unsorted = [_]InputFile{ files[1], files[0] };
     try std.testing.expectError(error.UnsortedPaths, encode(arena, &unsorted));
     try std.testing.expectError(error.InvalidPath, encode(arena, &.{.{ .path = "../x", .bytes = "" }}));
@@ -1009,4 +1377,149 @@ test "S3-T4: the sparse line index finds any line by decoding at most one block"
     );
     try std.testing.expectEqualStrings(indexed.file(0).path, "deep.txt");
     try std.testing.expectEqual(@as(usize, 3), indexed.file(1).checkpoints.len);
+}
+
+/// Recompute a section's header checksum after a test changed its bytes.
+fn reseal(encoded: []u8) void {
+    const header = parseHeader(encoded, encoded.len) catch unreachable;
+    var offset: usize = header_length - 8;
+    putU64(encoded, &offset, checksum_mod.compute(header.checksum_kind, encoded[0 .. header_length - 8], encoded[header_length..]));
+}
+
+/// A section written to a temporary file and opened, for `openStreamed`.
+const StreamedFixture = struct {
+    tmp: std.testing.TmpDir,
+    file: std.Io.File,
+    length: usize,
+
+    fn init(encoded: []const u8) !StreamedFixture {
+        var tmp = std.testing.tmpDir(.{});
+        errdefer tmp.cleanup();
+        try tmp.dir.writeFile(std.testing.io, .{ .sub_path = "source-1.hybsrc", .data = encoded });
+        return .{ .tmp = tmp, .file = try tmp.dir.openFile(std.testing.io, "source-1.hybsrc", .{}), .length = encoded.len };
+    }
+
+    /// The streamed open with its blocks from the testing allocator (a block
+    /// or buffer left behind fails the test as a leak), freed again here.
+    fn open(fixture: *StreamedFixture, index_allocator: std.mem.Allocator, buffer_bytes: usize) !Section {
+        const streamed = try openStreamedWith(index_allocator, std.testing.allocator, std.testing.io, fixture.file, fixture.length, buffer_bytes);
+        std.testing.allocator.free(streamed.block);
+        return streamed.section;
+    }
+
+    fn openKept(fixture: *StreamedFixture, index_allocator: std.mem.Allocator, buffer_bytes: usize) !Streamed {
+        return openStreamedWith(index_allocator, std.testing.allocator, std.testing.io, fixture.file, fixture.length, buffer_bytes);
+    }
+
+    fn deinit(fixture: *StreamedFixture) void {
+        fixture.file.close(std.testing.io);
+        fixture.tmp.cleanup();
+    }
+};
+
+test "S4-T10: the streamed open holds the table and the maps, reads each file per call, and agrees with openIndexed through any buffer" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var long = std.ArrayList(u8).empty;
+    for (0..700) |n| {
+        try long.appendNTimes(arena, 'a' + @as(u8, @intCast(n % 26)), n % 9);
+        try long.appendSlice(arena, switch (n % 7) {
+            0 => "\r\n",
+            1 => "\r",
+            2 => "\xc2\x85",
+            3 => "\xe2\x80\xa8",
+            4 => "\xe2\x80\xa9",
+            5 => "\x0b",
+            else => "\n",
+        });
+    }
+    const files = [_]InputFile{
+        .{ .path = "a/bom-only.txt", .bytes = "\xef\xbb\xbf" },
+        .{ .path = "a/crlf.md", .bytes = "one\r\ntwo\r\nthree\r\n" },
+        .{ .path = "a/final-cr.txt", .bytes = "ab\r" },
+        .{ .path = "a/long.txt", .bytes = long.items },
+        .{ .path = "b/bom.md", .bytes = "\xef\xbb\xbf# T\nbody\r\n" },
+        .{ .path = "b/cr.md", .bytes = "one\rtwo\rthree\r" },
+        .{ .path = "c/empty.txt", .bytes = "" },
+        .{ .path = "c/lf.txt", .bytes = "one\ntwo\nthree" },
+        .{ .path = "c/x.txt", .bytes = "x" },
+    };
+    const encoded = try encode(arena, &files);
+    const resident = try openIndexed(arena, encoded);
+    var fixture = try StreamedFixture.init(encoded);
+    defer fixture.deinit();
+    for ([_]usize{ 3, 4, 5, 7, 16, 64, 4096, stream_buffer_bytes }) |buffer_bytes| {
+        const streamed = try fixture.openKept(arena, buffer_bytes);
+        defer std.testing.allocator.free(streamed.block);
+        const section = streamed.section;
+        // Resident: the header, the files table and the line maps, no text.
+        try std.testing.expectEqualSlices(u8, encoded[0 .. encoded.len - resident.text.len], section.encoded);
+        try std.testing.expectEqual(@as(usize, 0), section.text.len);
+        try std.testing.expectEqual(resident.text.len, section.text_length);
+        try std.testing.expectEqual(resident.checksum, section.checksum);
+        try std.testing.expectEqualSlices(usize, resident.record_offsets, section.record_offsets);
+        try std.testing.expectEqualSlices(usize, resident.checkpoint_starts, section.checkpoint_starts);
+        try std.testing.expectEqual(resident.checkpoints.len, section.checkpoints.len);
+        for (resident.checkpoints, section.checkpoints) |want, got| {
+            try std.testing.expectEqual(want.map_offset, got.map_offset);
+            try std.testing.expectEqual(want.value, got.value);
+        }
+        for (files, 0..) |input, index| {
+            const entry = section.find(input.path).?;
+            try std.testing.expectEqual(@as(usize, 0), entry.bytes.len);
+            try std.testing.expectEqual(input.bytes.len, entry.text_length);
+            try std.testing.expectEqualStrings(input.path, section.file(index).path);
+            try std.testing.expectEqualStrings(input.bytes, (try section.fileBytes(arena, entry)).ok);
+            const want = resident.find(input.path).?;
+            try std.testing.expectEqual(want.line_count, entry.line_count);
+            try std.testing.expectEqual(want.encoding, entry.encoding);
+            try std.testing.expectEqualSlices(u8, &want.sha256, &entry.sha256);
+            if (entry.line_count == 0) continue;
+            for ([_][3]u32{ .{ 1, entry.line_count, 0 }, .{ 1, 1, 0 }, .{ entry.line_count, entry.line_count, 2 }, .{ (entry.line_count + 1) / 2, entry.line_count, 3 } }) |span| {
+                if (span[1] - span[0] + 2 * span[2] >= max_span_lines) continue;
+                const a = try spanOk(try readSpan(arena, resident, input.path, span[0], span[1], span[2]));
+                const b = try spanOk(try readSpan(arena, section, input.path, span[0], span[1], span[2]));
+                try std.testing.expectEqualStrings(a.text, b.text);
+                try std.testing.expectEqualStrings(a.context_before, b.context_before);
+                try std.testing.expectEqualStrings(a.context_after, b.context_after);
+                try std.testing.expectEqualSlices(u8, &a.sha256, &b.sha256);
+            }
+            var out_a: std.Io.Writer.Allocating = .init(arena);
+            var json_a = std.json.Stringify{ .writer = &out_a.writer };
+            try writeOutlineJson(&json_a, (try outline(arena, resident, input.path)).ok);
+            var out_b: std.Io.Writer.Allocating = .init(arena);
+            var json_b = std.json.Stringify{ .writer = &out_b.writer };
+            try writeOutlineJson(&json_b, (try outline(arena, section, input.path)).ok);
+            try std.testing.expectEqualStrings(out_a.written(), out_b.written());
+        }
+    }
+    // A section without the flag (FNV-1a 64) streams the same way.
+    const fnv = try arena.dupe(u8, encoded);
+    fnv[10] = 0;
+    reseal(fnv);
+    var fnv_fixture = try StreamedFixture.init(fnv);
+    defer fnv_fixture.deinit();
+    const old = try fnv_fixture.open(arena, 5);
+    try std.testing.expectEqual(checksum_mod.Kind.fnv1a64, old.checksum_kind);
+    try std.testing.expectEqual((try open(fnv)).checksum, old.checksum);
+    // A file shorter than its header declares.
+    var short = try StreamedFixture.init(encoded[0 .. encoded.len - 1]);
+    defer short.deinit();
+    try std.testing.expectError(error.Truncated, short.open(arena, 64));
+}
+
+test "S4-T10: the running checksum equals checksum.compute over the same bytes at every split" {
+    var bytes: [1031]u8 = undefined;
+    for (&bytes, 0..) |*byte, index| byte.* = @truncate(index *% 131 +% 3);
+    for ([_]checksum_mod.Kind{ .fnv1a64, .xxh3_64 }) |kind| {
+        const whole = checksum_mod.compute(kind, bytes[0..40], bytes[40..]);
+        for ([_]usize{ 40, 41, 47, 64, 300, 1030, 1031 }) |split| {
+            var running = Running.init(kind);
+            running.update(bytes[0..40]);
+            running.update(bytes[40..split]);
+            running.update(bytes[split..]);
+            try std.testing.expectEqual(whole, running.final());
+        }
+    }
 }

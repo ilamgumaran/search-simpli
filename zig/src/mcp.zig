@@ -491,7 +491,7 @@ fn listResources(session: Session, service: service_module.Service, params: std.
             if (!std.mem.eql(u8, file.status, "indexed")) continue;
             const record = try scope.recordPath(allocator, file.root_id, file.path);
             const entry = section.find(record) orelse continue;
-            try readable.append(allocator, .{ .root_id = file.root_id, .path = file.path, .size = entry.bytes.len });
+            try readable.append(allocator, .{ .root_id = file.root_id, .path = file.path, .size = entry.text_length });
         }
     }
     const start = @min(offset, readable.items.len);
