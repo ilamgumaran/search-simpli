@@ -442,8 +442,12 @@ fn scaleRun(file_count: usize, cap: usize, asserted_cap: ?usize) !Peaks {
     return peaks;
 }
 
-test "NFR-13 scale: 15,000 files" {
-    // S4-T9 ruling 3: every operation inside the 64 MiB cap at 15k files.
+test "NFR-13 scale: 15,000 files (regression guard: each operation on a fresh handle under 64 MiB; one handle not asserted)" {
+    // S4-T9 ruling 3 with ruling A: a regression guard, not the NFR-13 bar.
+    // Every operation on a fresh handle (`measureEach`) at or under 64 MiB at
+    // 15k files. NFR-13 means one handle (`measure`); there `list_files`, a
+    // filename query and `both` are over 64 MiB at 15k, so that run is
+    // printed, not asserted (S4-T10).
     _ = try scaleRun(15_000, scale_cap_bytes, cap_bytes);
 }
 
