@@ -1939,3 +1939,36 @@ test "S4-T13 ruling 4: samePaths compares paths in order and labels, every file'
     try std.testing.expect(!filename_field.samePaths(&catalog, &split));
     try std.testing.expect(filename_field.samePaths(&.{}, &.{}));
 }
+
+// ------------------------------------------------------------------ S4-T16 ---
+
+const segment_module = @import("segment.zig");
+
+test "S4-T16 finding 14: no stage name is dropped on the writer's longest paths" {
+    apply.Stages.test_force_on = true;
+    defer apply.Stages.test_force_on = false;
+    apply.Stages.test_dropped = 0;
+    apply.Stages.test_most = 0;
+    for ([_]apply.Options{ .{}, with_filenames }) |options| {
+        var f = try Fixture.init();
+        defer f.deinit();
+        const a = f.arena();
+        // A full index; one changed file (the carried lexical merge and, on,
+        // the carried filename lexical section); a rename (the filename
+        // sections' full build); every file changed (the fresh lexical path).
+        _ = try f.applyOk(try joinChanges(a, domain_roots, &.{
+            try add(a, "home", "a.md", try sections(a, "alpha", 3, "canal boat lantern"), ""),
+            try add(a, "home", "b.txt", "the the the boat\nboat lock lantern\n", ""),
+            try add(a, "school", "c.md", "# C\n\nபள்ளி விடுமுறை and a lock\n", ""),
+        }), options);
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{try add(a, "home", "b.txt", "a new boat with ducks\n", "")}), options);
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{"{\"op\":\"move\",\"root_id\":\"home\",\"path\":\"zz/a.md\",\"moved_from\":\"a.md\"}"}), options);
+        _ = try f.applyOk(try joinChanges(a, "[]", &.{
+            try add(a, "home", "zz/a.md", try sections(a, "beta", 2, "canal"), ""),
+            try add(a, "home", "b.txt", "ducks again\n", ""),
+            try add(a, "school", "c.md", "# C\n\nwombat\n", ""),
+        }), options);
+    }
+    try std.testing.expectEqual(@as(usize, 0), apply.Stages.test_dropped);
+    std.debug.print("S4-T16 finding 14: the most stage slots one apply_changes call used: {d}\n", .{apply.Stages.test_most});
+}

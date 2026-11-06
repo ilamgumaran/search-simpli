@@ -600,8 +600,20 @@ pub const Stages = struct {
     ns: [max]u64 = undefined,
     count: usize = 0,
 
-    const max = 48;
+    /// S4-T16 (finding 14): 48 slots were all taken on the longest path
+    /// (S4-T13's verifier), so `load_previous`'s sub-stages need more.
+    const max = 64;
     pub const variable = "SEARCH_SIMPLI_APPLY_STAGES";
+
+    /// S4-T16, test builds only: `test_force_on` turns the timers on
+    /// without the environment (the tests do not link libc) and without the
+    /// print; `test_dropped` counts the names `mark`, `sub` or `inner` could
+    /// not record because every slot was taken, and `test_most` is the most
+    /// slots one call used. A test drives the writer's longest paths and
+    /// requires no name dropped.
+    pub var test_force_on: bool = false;
+    pub var test_dropped: usize = 0;
+    pub var test_most: usize = 0;
 
     pub fn init(io: std.Io) Stages {
         if (!enabled()) return .{};
@@ -610,6 +622,7 @@ pub const Stages = struct {
     }
 
     fn enabled() bool {
+        if (@import("builtin").is_test and test_force_on) return true;
         if (!@import("builtin").link_libc) return false;
         const value = std.c.getenv(variable) orelse return false;
         return value[0] == '1';
@@ -617,7 +630,8 @@ pub const Stages = struct {
 
     /// Close the stage `name`: the time since the previous mark.
     pub fn mark(stages: *Stages, name: []const u8) void {
-        if (!stages.on or stages.count == max) return;
+        if (!stages.on) return;
+        if (stages.count == max) return dropped();
         const now = nowNs(stages.io.?);
         stages.names[stages.count] = name;
         stages.ns[stages.count] = now - stages.last;
@@ -632,7 +646,8 @@ pub const Stages = struct {
     /// `mark` still measures from the previous mark, so it stays the total
     /// S4-T4 reported and its sub-stages are printed before it.
     pub fn sub(stages: *Stages, name: []const u8) void {
-        if (!stages.on or stages.count == max) return;
+        if (!stages.on) return;
+        if (stages.count == max) return dropped();
         const now = nowNs(stages.io.?);
         stages.names[stages.count] = name;
         stages.ns[stages.count] = now - stages.last_sub;
@@ -647,7 +662,8 @@ pub const Stages = struct {
     /// enclosing sub-stage still measures its whole and its parts are
     /// printed before it.
     pub fn inner(stages: *Stages, name: []const u8) void {
-        if (!stages.on or stages.count == max) return;
+        if (!stages.on) return;
+        if (stages.count == max) return dropped();
         const now = nowNs(stages.io.?);
         stages.names[stages.count] = name;
         stages.ns[stages.count] = now - stages.last_inner;
@@ -655,8 +671,16 @@ pub const Stages = struct {
         stages.last_inner = now;
     }
 
+    fn dropped() void {
+        if (@import("builtin").is_test) test_dropped += 1;
+    }
+
     pub fn print(stages: *const Stages) void {
         if (!stages.on) return;
+        if (@import("builtin").is_test) {
+            test_most = @max(test_most, stages.count);
+            if (test_force_on) return;
+        }
         var buffer: [4096]u8 = undefined;
         var used: usize = 0;
         for (stages.names[0..stages.count], stages.ns[0..stages.count]) |name, ns| {
@@ -765,7 +789,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var work = Work{ .allocator = allocator };
     var previous_docs = std.StringHashMapUnmanaged(std.ArrayList(usize)).empty;
     if (previous_engine) |prev| {
-        try loadPrevious(allocator, &work, prev, previous_meta, previous_source, previous_state, &previous_docs);
+        try loadPrevious(allocator, &work, prev, previous_meta, previous_source, previous_state, &previous_docs, &stages);
     }
     stages.mark("load_previous");
 
@@ -1420,6 +1444,7 @@ fn loadPrevious(
     section: ?source.Section,
     state: ?incremental_state.State,
     previous_docs: *std.StringHashMapUnmanaged(std.ArrayList(usize)),
+    stages: *Stages,
 ) !void {
     const roots: []const manifest.RootEntry = if (meta) |m| m.roots else &scope.legacy_roots;
     for (roots) |root| try work.roots.append(allocator, .{ .entry = root });
@@ -1427,11 +1452,14 @@ fn loadPrevious(
         if (work.rootIndex(entry.root_id) == null) continue;
         try work.skipped.put(allocator, try scope.recordPath(allocator, entry.root_id, entry.path), entry);
     };
+    // S4-T16 ruling 1: `load_previous`'s parts as sub-stages.
+    stages.sub("load_previous.roots");
     for (prev.documents, 0..) |document, index| {
         const gop = try previous_docs.getOrPut(allocator, document.path);
         if (!gop.found_existing) gop.value_ptr.* = .empty;
         try gop.value_ptr.append(allocator, index);
     }
+    stages.sub("load_previous.previous_docs");
     const meta_chunkers: ?manifest.Meta = meta;
 
     if (state) |s| {
@@ -1477,6 +1505,7 @@ fn loadPrevious(
             });
         }
     }
+    stages.sub("load_previous.state_files");
     // Records the state does not name (no trusted state, or a state that
     // missed them): rebuilt from the generation (the source section's hash
     // when the bytes were retained).
@@ -1501,11 +1530,13 @@ fn loadPrevious(
             .prev_record = record,
         });
     }
+    stages.sub("load_previous.not_in_state");
     var files = work.files.iterator();
     while (files.next()) |entry| {
         const file = entry.value_ptr.*;
         try work.initial.put(allocator, file.record, .{ .status = file.status, .hash = file.hash, .root_id = file.root_id, .rel = file.rel });
     }
+    stages.sub("load_previous.initial");
 }
 
 /// The chunker id that made a file's previous chunks (a v1 manifest has no
