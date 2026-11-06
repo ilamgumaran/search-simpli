@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-06 (S4-T16, one changed file: the documents pass, `loadPrevious` and the documents encode stop re-doing every unchanged file; verified and merged)
+Last updated: 2026-11-06 (S4-T17, `find` ranks its hits by sorting a list of positions and checks scope by pointer; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,31 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## `find` ranks its hits by sorting a list of positions and checks scope by pointer (S4-T17, 2026-11-06; verified and merged)
+
+**Verified and merged 2026-11-06** ([Verdict](docs/tasks/S4-T17.md)): on the 10k timing corpus (`ReleaseSmall`, filename
+channel on, `scripts/source_read_parity.py time --filename --samples 30 --rounds 2`, two interleaved runs, two processes per
+build and run, gate recorded) `find` (`the`, words, 20 a page) p50 7.78–7.81 ms (the shipped layout of `c53c953`) and
+7.04–7.59 ms (the same source with symbols kept, a second code layout) → **3.44–3.47 ms in both layouts of the merge**,
+the two layouts within 0.030 ms. `ss_open` (medians within 0.1 ms, no round above 0.2, as restated), the reads, outlines,
+the three queries, the first `read_span` and the first query after a cold open where they were; every `find` page byte
+for byte the same (`scripts/capture_find_pages.py`: 829 cases, 1,568 pages, `0e368a62…`; S4-T16's 84 pages `dadf5f4f…`;
+the verifier's own 81 cases), both query captures (2,762 `cf5f8575…`, 16,490 `09770196…`); the writer identical
+(`s4t11_budgets.py compare`) and its stages within tolerance; NFR-13 15k one handle passes, `find`'s peak 61,221,729 →
+60,915,647 B; `zig build test` 356/358 (2 gated skips) and `test-abi` 24/24 in Debug and `ReleaseSmall`; Python 241 OK
+against both `searchd` builds; the judgment pack passes; three plants as the Report says.
+
+[Report](docs/tasks/S4-T17.md). `find` sorts a `u32` list of the kept hits' positions under the unchanged `rankedBefore`
+(score, root, path, start line, record number: a strict total order, one hit per record) and copies each hit once in rank
+order; sorting the 64-byte records made `pdq`'s swap move a byte at a time, which the `ReleaseSmall` outliner turned into a
+call per byte in some layouts. The whole order is kept (`files` lists every file in the order of its first appearance).
+`documentInScope` and `termInScope` take the engine and the request by pointer. Format, manifest, contracts 2.2.0, C ABI
+and Dart API unchanged; Dart 0.3.11; natives rebuilt (macOS 843,240 B, Android 805,744 B, iOS framework binary 807,624 B),
+`native/SOURCE-SHA256` `2c4014315c655492b34f7b14f3e666beaea66708b29f6792f2587a56155c28d1`.
+
+**Consumer pin:** due now, one pin for S4-T16 and S4-T17 together (the `03-next.md` "pin bump to S4-T17" row); the macOS
+dylib is 16,704 B larger than 0.3.10's unsigned, so the app re-centres its signed-dylib band.
 
 ## One changed file: the documents pass, `loadPrevious` and the documents encode stop re-doing every unchanged file (S4-T16, 2026-11-06; verified and merged)
 

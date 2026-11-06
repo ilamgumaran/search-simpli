@@ -236,14 +236,12 @@ pub fn find(allocator: std.mem.Allocator, engine: engine_module.Engine, request:
     }
     try context.deduplicate(candidates, parsed.mode);
 
-    var kept = std.ArrayList(Candidate).empty;
-    for (candidates) |candidate| if (candidate.kept) try kept.append(allocator, candidate);
-    std.sort.pdq(Candidate, kept.items, engine.documents, rankedBefore);
+    const kept = try rankKept(allocator, engine.documents, candidates);
 
-    const total = kept.items.len;
+    const total = kept.len;
     const page_start = @min(offset, total);
     const page_end = @min(page_start + request.page_size, total);
-    const page = kept.items[page_start..page_end];
+    const page = kept[page_start..page_end];
     if (parsed.mode != .phrase) try context.attachMatches(page);
 
     const hits = try allocator.alloc(Hit, page.len);
@@ -257,7 +255,7 @@ pub fn find(allocator: std.mem.Allocator, engine: engine_module.Engine, request:
         .cursor = request.cursor,
         .path_prefix = request.path_prefix,
         .hits = hits,
-        .files = try fileCounts(allocator, kept.items),
+        .files = try fileCounts(allocator, kept),
         .total_hits = total,
         .deduplicated = candidates.len - total,
         .exact_match = if (parsed.mode == .phrase) total > 0 else null,
@@ -274,7 +272,9 @@ pub fn find(allocator: std.mem.Allocator, engine: engine_module.Engine, request:
 /// the same as `list_files`') under `path_prefix`, and the caller holds its
 /// labels. Candidates are filtered by it before they are scored. With only
 /// the legacy root the relative path is the record path, as before.
-pub fn documentInScope(engine: engine_module.Engine, request: Request, document_index: usize) bool {
+/// S4-T17: the engine and the request by pointer (by value, every posting
+/// checked copied both structs).
+pub fn documentInScope(engine: *const engine_module.Engine, request: *const Request, document_index: usize) bool {
     if (request.visible_roots) |mask| if (!mask.allows(document_index)) return false;
     const document = engine.documents[document_index];
     if (request.path_prefix) |prefix| {
@@ -288,8 +288,8 @@ pub fn documentInScope(engine: engine_module.Engine, request: Request, document_
 /// `term_index` expands only when one of its postings is in `request`'s
 /// scope (`documentInScope`), so a term held only by hidden chunks, or only
 /// outside `path_prefix`, never expands and never counts toward the
-/// 1,000-term cap.
-pub fn termInScope(engine: engine_module.Engine, request: Request, term_index: usize) bool {
+/// 1,000-term cap. S4-T17: by pointer, as `documentInScope`.
+pub fn termInScope(engine: *const engine_module.Engine, request: *const Request, term_index: usize) bool {
     const index = engine.lexical_index;
     const entry = index.terms[term_index];
     for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
@@ -389,7 +389,7 @@ const Context = struct {
     }
 
     fn visible(context: *const Context, document_index: usize) bool {
-        return documentInScope(context.engine, context.request, document_index);
+        return documentInScope(&context.engine, &context.request, document_index);
     }
 
     fn contribution(context: *const Context, term_index: usize, posting: postings.Posting) f32 {
@@ -426,7 +426,7 @@ const Context = struct {
     }
 
     fn hasVisiblePosting(context: *const Context, term_index: usize) bool {
-        return termInScope(context.engine, context.request, term_index);
+        return termInScope(&context.engine, &context.request, term_index);
     }
 
     /// Visible chunks holding every term of `required` and, when
@@ -750,6 +750,41 @@ fn matchBefore(_: void, a: Match, b: Match) bool {
 fn orderU32(target: u32, item: u32) std.math.Order {
     return std.math.order(target, item);
 }
+
+/// The kept candidates in rank order (`rankedBefore`), in a list of their own.
+/// S4-T17: the sort runs over a `u32` list of the kept candidates' positions in
+/// `candidates`, then each record is copied once. Sorting the 64-byte records
+/// themselves made `pdq`'s swap move each one a byte at a time, and whether the
+/// `ReleaseSmall` machine outliner turned that byte step into a call per byte
+/// depended on code elsewhere in the library (S4-T16: 5.84 or 7.79 ms at 10k
+/// with `find` unchanged). `rankedBefore` is a total order (one candidate per
+/// record, the record number last), so the list is the same as sorting the
+/// records. Not a bounded top-k: `files` lists every file in the order it first
+/// appears in the whole ranking, so the whole order is needed.
+fn rankKept(allocator: std.mem.Allocator, documents: []const hybrid.Document, candidates: []const Candidate) Error![]Candidate {
+    var count: usize = 0;
+    for (candidates) |candidate| count += @intFromBool(candidate.kept);
+    const order = try allocator.alloc(u32, count);
+    var next: usize = 0;
+    for (candidates, 0..) |candidate, position| {
+        if (!candidate.kept) continue;
+        order[next] = @intCast(position);
+        next += 1;
+    }
+    std.sort.pdq(u32, order, Ranking{ .documents = documents, .candidates = candidates }, Ranking.lessThan);
+    const ranked = try allocator.alloc(Candidate, count);
+    for (order, ranked) |position, *slot| slot.* = candidates[position];
+    return ranked;
+}
+
+const Ranking = struct {
+    documents: []const hybrid.Document,
+    candidates: []const Candidate,
+
+    fn lessThan(ranking: Ranking, a: u32, b: u32) bool {
+        return rankedBefore(ranking.documents, ranking.candidates[a], ranking.candidates[b]);
+    }
+};
 
 /// Score desc, then root_id, path, start_line (INV-08), then document index.
 fn rankedBefore(documents: []const hybrid.Document, a: Candidate, b: Candidate) bool {
@@ -1094,4 +1129,123 @@ fn writeRanges(json: *std.json.Stringify, ranges: []const Range) !void {
         try json.endArray();
     }
     try json.endArray();
+}
+
+fn expectSameCandidate(expected: Candidate, actual: Candidate) !void {
+    try std.testing.expectEqual(expected.document_index, actual.document_index);
+    try std.testing.expectEqual(@as(u32, @bitCast(expected.score)), @as(u32, @bitCast(actual.score)));
+    try std.testing.expectEqual(expected.root_id.ptr, actual.root_id.ptr);
+    try std.testing.expectEqual(expected.root_id.len, actual.root_id.len);
+    try std.testing.expectEqual(expected.path.ptr, actual.path.ptr);
+    try std.testing.expectEqual(expected.path.len, actual.path.len);
+    try std.testing.expectEqual(expected.kept, actual.kept);
+    try std.testing.expectEqual(expected.attached, actual.attached);
+    try std.testing.expectEqual(expected.matches.ptr, actual.matches.ptr);
+    try std.testing.expectEqual(expected.matches.len, actual.matches.len);
+}
+
+test "S4-T17 ruling 3: the index-ranked list equals a record sort under rankedBefore, element for element, and so do the files" {
+    // Roots of which two share a prefix; paths that share prefixes; equal
+    // paths with equal and different start lines (the record number decides);
+    // scores with ties, equal across roots, and +0/-0 (equal under `!=`).
+    const roots = [_][]const u8{ "r-legacy", "home", "homework", "school" };
+    const rests = [_][]const u8{ "a.md", "a.md.bak", "a/b.md", "ab.md", "a", "b/a.md" };
+    const lines = [_]u32{ 1, 1, 5, 9 };
+    const scores = [_]f32{ 2.25, 1.0, 1.0, 0.5, 0.0, -0.0 };
+    var prng = std.Random.DefaultPrng.init(0x5417_0001);
+    const random = prng.random();
+    var ranked_total: usize = 0;
+    var path_ties: usize = 0;
+    var line_ties: usize = 0;
+    var root_ties: usize = 0;
+    var shuffled_rounds: usize = 0;
+    for (0..303) |round| {
+        var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+        defer arena_state.deinit();
+        const a = arena_state.allocator();
+        const document_count: usize = switch (round) {
+            0 => 0,
+            1 => 1,
+            2 => 2,
+            else => 1 + random.uintLessThan(usize, 400),
+        };
+        const documents = try a.alloc(hybrid.Document, document_count);
+        for (documents, 0..) |*document, number| {
+            const root = roots[random.uintLessThan(usize, roots.len)];
+            const rest = rests[random.uintLessThan(usize, rests.len)];
+            // `splitRoot` gives a path under no root to the first root.
+            const path = if (root.ptr == roots[0].ptr and random.boolean()) rest else try std.fmt.allocPrint(a, "{s}/{s}", .{ root, rest });
+            const start_line = lines[random.uintLessThan(usize, lines.len)];
+            document.* = .{ .id = try std.fmt.allocPrint(a, "c{d}", .{number}), .text = "", .path = path, .start_line = start_line, .end_line = start_line + 3 };
+        }
+        // A subset of the records, one candidate each (as `conjunctive` makes
+        // them), in random order so that positions differ from record numbers;
+        // every fourth round ascending by record, the order `find` has.
+        const picks = try a.alloc(u32, document_count);
+        for (picks, 0..) |*pick, number| pick.* = @intCast(number);
+        random.shuffle(u32, picks);
+        const taken = if (round < 3) document_count else random.uintAtMost(usize, document_count);
+        const chosen = picks[0..taken];
+        if (round % 4 == 3) std.sort.pdq(u32, chosen, {}, std.sort.asc(u32)) else shuffled_rounds += 1;
+        const candidates = try a.alloc(Candidate, taken);
+        for (candidates, chosen) |*candidate, record| {
+            const split = splitRoot(documents[record].path, &roots);
+            candidate.* = .{
+                .document_index = record,
+                .score = scores[random.uintLessThan(usize, scores.len)],
+                .root_id = split.root_id,
+                .path = split.path,
+                .kept = round < 3 or random.uintLessThan(u8, 5) != 0,
+            };
+        }
+
+        const ranked = try rankKept(a, documents, candidates);
+
+        // Reference: the records themselves sorted as `find` sorted them
+        // before S4-T17, and again by another algorithm (insertion sort).
+        var reference = std.ArrayList(Candidate).empty;
+        for (candidates) |candidate| if (candidate.kept) try reference.append(a, candidate);
+        const by_insertion = try a.dupe(Candidate, reference.items);
+        std.sort.pdq(Candidate, reference.items, documents, rankedBefore);
+        std.sort.insertion(Candidate, by_insertion, documents, rankedBefore);
+
+        try std.testing.expectEqual(reference.items.len, ranked.len);
+        try std.testing.expectEqual(reference.items.len, by_insertion.len);
+        for (reference.items, by_insertion, ranked) |expected, other, actual| {
+            try expectSameCandidate(expected, other);
+            try expectSameCandidate(expected, actual);
+        }
+        // A strict order on these lists: no two neighbours are equivalent,
+        // so the sorted sequence is unique.
+        for (ranked[0..ranked.len -| 1], ranked[@min(1, ranked.len)..]) |x, y| {
+            try std.testing.expect(rankedBefore(documents, x, y));
+            try std.testing.expect(!rankedBefore(documents, y, x));
+            if (x.score == y.score) {
+                if (!std.mem.eql(u8, x.root_id, y.root_id)) root_ties += 1 else if (std.mem.eql(u8, x.path, y.path)) {
+                    if (documents[x.document_index].start_line == documents[y.document_index].start_line) line_ties += 1 else path_ties += 1;
+                }
+            }
+        }
+        ranked_total += ranked.len;
+
+        // Ruling 3(c): `files` over the index-ranked list equals `files` over
+        // the record-ranked one.
+        const files = try fileCounts(a, ranked);
+        const expected_files = try fileCounts(a, reference.items);
+        try std.testing.expectEqual(expected_files.len, files.len);
+        for (expected_files, files) |expected, actual| {
+            try std.testing.expectEqualStrings(expected.root_id, actual.root_id);
+            try std.testing.expectEqualStrings(expected.path, actual.path);
+            try std.testing.expectEqual(expected.hits, actual.hits);
+        }
+    }
+    // The generator reaches every tiebreak: equal scores across roots, equal
+    // (score, root, path) with different start lines, and with equal start
+    // lines (the record number decides).
+    std.debug.print("S4-T17 rank test: 303 rounds, {d} ranked candidates ({d} rounds shuffled); neighbours tied on score across roots {d}, on score, root and path with different start lines {d}, with equal start lines {d}\n", .{ ranked_total, shuffled_rounds, root_ties, path_ties, line_ties });
+    try std.testing.expect(ranked_total > 10_000);
+    try std.testing.expect(root_ties > 100);
+    try std.testing.expect(path_ties > 100);
+    try std.testing.expect(line_ties > 100);
+    try std.testing.expect(shuffled_rounds > 200);
 }
