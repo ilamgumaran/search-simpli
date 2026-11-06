@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.3.9 (S4-T15; contract 2.2.0; patch: reader only, no format or API change)
+
+The `both` and filename queries keep a bounded top `candidate_k` per channel
+instead of sorting every scored file. No Dart API, C ABI, contract
+(`contracts/` stays 2.2.0), index format, writer or result changed: every
+query answers byte for byte as 0.3.8 does, every section a generation writes
+is what 0.3.8 writes; an index any 0.3.x library wrote opens and updates
+unchanged and nothing is rebuilt. The natives changed (rebuilt twice on the
+Mac, byte-identical: macOS 825,976 B, Android 798,960 B, iOS framework binary
+806,416 B); `native/SOURCE-SHA256` is `1f27e1b1…`.
+
+- **A bounded selection, the same order.** Each channel (the body's best
+  chunk per file, and the file names) keeps its top
+  `min(candidate_k, candidates)` in a heap under exactly the order the full
+  sort used (score descending, then path bytes, then the chunk id). That
+  order is total over a channel's candidates, so the kept list is the full
+  sort's first `candidate_k`, element for element; the fusion (equal RRF,
+  k = 60), the `top_k` cut and the hit order are untouched.
+- **Identical results.** The query capture's 2,762 queries and, asking every
+  query also as `filename` and `both` at eight depths over the 10,000-file
+  corpus and the family fixture, 16,490 queries are byte-identical to
+  0.3.8's; a random test compares the selection with the full sort over 30
+  corpora (64,082 candidates).
+- **On the 10,000-file timing corpus** (`ReleaseSmall`, warm p50, filename
+  channel on, 20 interleaved rounds, two runs): the `both` query 3.25–3.48 →
+  0.49–0.53 ms (the body sort alone had been 2.38 ms, the filename sort
+  0.60 ms), and its spread over 20 rounds 0.10–0.24 → 0.02–0.04 ms; the
+  filename query 0.77–0.83 → 0.25–0.27 ms; `ss_open`, `find`, the reads and
+  the content query where they were; NFR-13 at 15,000 files on one handle
+  `both` 58,866,083 → 57,696,077 B and filename 58,503,099 → 56,986,061 B
+  peak (numbers in `docs/tasks/S4-T15.md`).
+
 ## 0.3.8 (S4-T14; contract 2.2.0; patch: reader and writer, no format or API change)
 
 A source section's line map is checked where its file is read, not for the
