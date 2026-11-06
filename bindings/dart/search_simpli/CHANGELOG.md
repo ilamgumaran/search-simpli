@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.3.11 (S4-T17; contract 2.2.0; patch: reader only, no format or API change)
+
+`find` ranks its hits by sorting a list of positions and checks scope by
+pointer, so its time no longer depends on where the compiler puts a byte
+loop. No Dart API, C ABI, contract (`contracts/` stays 2.2.0), index format,
+writer or result changed: every `find` page and every query answers byte for
+byte as 0.3.10 does, every section a generation writes is what 0.3.10
+writes; an index any 0.3.x library wrote opens and updates unchanged and
+nothing is rebuilt. The natives changed (rebuilt twice on the Mac,
+byte-identical: macOS 843,240 B, 16,704 B larger than 0.3.10's 826,536 B
+unsigned, from the `ReleaseSmall` outliner's layout, not from code size:
+`__text` grew 640 B; Android 805,744 B; iOS framework binary 807,624 B);
+`native/SOURCE-SHA256` is `2c401431…`.
+
+- **The ranking sorts 4-byte positions.** Every kept hit is still ranked
+  in full (score, root, path, start line, record number: a total order),
+  but the sort moves positions into the candidate list and each hit is then
+  copied once in rank order. Sorting the 64-byte hit records themselves
+  moved each one a byte at a time, and the `ReleaseSmall` outliner made that
+  a call per byte in some builds (0.3.10's). The full order is kept, not a
+  bounded top page: `files` lists every file in the order it first appears
+  in the whole ranking.
+- **Scope by pointer.** The per-posting scope check took the engine
+  (464 B) and the request (184 B) by value and copied both for every
+  posting it checked; it takes them by pointer now, and so does the prefix
+  expansion's per-term check.
+- **On the 10,000-file timing corpus** (`find` `the`, words, 20 a page,
+  `ReleaseSmall`, p50 of 30, two interleaved runs, two processes per build
+  and run): 7.78–7.83 ms (0.3.10 as shipped) and 7.03–7.13 ms (the same
+  source with symbols kept, a second code layout) → **3.42–3.45 ms in both
+  layouts**; `ss_open`, the reads, the queries and the first query after an
+  open where they were; `find`'s NFR-13 peak at 15,000 files on one handle
+  61,221,729 → 60,915,647 B (numbers in `docs/tasks/S4-T17.md`).
+
 ## 0.3.10 (S4-T16; contract 2.2.0; patch: writer only, no format or API change)
 
 One changed file no longer re-does every unchanged file in the writer's
