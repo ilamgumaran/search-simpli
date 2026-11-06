@@ -235,60 +235,73 @@ fn candidateLess(_: void, left: Candidate, right: Candidate) bool {
     return candidateBefore(left, right);
 }
 
-/// Bounded selection of the `capacity` best candidates under
-/// `candidateBefore`, a total order (the document index breaks every tie), so
-/// the survivors are exactly the first `capacity` of a full sort. The heap
-/// root is the worst survivor.
-const TopK = struct {
-    items: []Candidate,
-    count: usize = 0,
-    /// Every candidate offered, kept or not (S2-T4: the size of the list that
-    /// `candidate_k` may have cut).
-    offered: usize = 0,
+/// The content query's bounded selection: `BoundedTop` under
+/// `candidateBefore`, a total order (the document index breaks every tie).
+const TopK = BoundedTop(Candidate, void, candidateLess);
 
-    fn offer(top: *TopK, candidate: Candidate) void {
-        top.offered += 1;
-        if (top.items.len == 0) return;
-        if (top.count < top.items.len) {
-            top.items[top.count] = candidate;
-            top.count += 1;
-            top.siftUp(top.count - 1);
-        } else if (candidateBefore(candidate, top.items[0])) {
-            top.items[0] = candidate;
-            top.siftDown(0);
+/// Bounded selection of the `items.len` best values under `before`, which
+/// must be a strict total order on the values offered: then the survivors,
+/// sorted, are exactly the first `items.len` of a full sort of every value
+/// offered, whatever the order of offering. The heap root is the worst
+/// survivor. S4-T15 made it generic over the value and the comparator's
+/// context (the filename and `both` query's channels use it); the content
+/// query's instance compares and moves as before.
+pub fn BoundedTop(comptime T: type, comptime Context: type, comptime before: fn (Context, T, T) bool) type {
+    return struct {
+        const Top = @This();
+
+        items: []T,
+        context: Context,
+        count: usize = 0,
+        /// Every value offered, kept or not (S2-T4: the size of the list that
+        /// `candidate_k` may have cut).
+        offered: usize = 0,
+
+        pub fn offer(top: *Top, value: T) void {
+            top.offered += 1;
+            if (top.items.len == 0) return;
+            if (top.count < top.items.len) {
+                top.items[top.count] = value;
+                top.count += 1;
+                top.siftUp(top.count - 1);
+            } else if (before(top.context, value, top.items[0])) {
+                top.items[0] = value;
+                top.siftDown(0);
+            }
         }
-    }
 
-    // Invariant: a parent never comes before (is never better than) its children.
-    fn siftUp(top: *TopK, start: usize) void {
-        var child = start;
-        while (child > 0) {
-            const parent = (child - 1) / 2;
-            if (!candidateBefore(top.items[parent], top.items[child])) break;
-            std.mem.swap(Candidate, &top.items[parent], &top.items[child]);
-            child = parent;
+        // Invariant: a parent never comes before (is never better than) its children.
+        fn siftUp(top: *Top, start: usize) void {
+            var child = start;
+            while (child > 0) {
+                const parent = (child - 1) / 2;
+                if (!before(top.context, top.items[parent], top.items[child])) break;
+                std.mem.swap(T, &top.items[parent], &top.items[child]);
+                child = parent;
+            }
         }
-    }
 
-    fn siftDown(top: *TopK, start: usize) void {
-        var parent = start;
-        while (true) {
-            var worst = parent;
-            const left = 2 * parent + 1;
-            const right = left + 1;
-            if (left < top.count and candidateBefore(top.items[worst], top.items[left])) worst = left;
-            if (right < top.count and candidateBefore(top.items[worst], top.items[right])) worst = right;
-            if (worst == parent) return;
-            std.mem.swap(Candidate, &top.items[parent], &top.items[worst]);
-            parent = worst;
+        fn siftDown(top: *Top, start: usize) void {
+            var parent = start;
+            while (true) {
+                var worst = parent;
+                const left = 2 * parent + 1;
+                const right = left + 1;
+                if (left < top.count and before(top.context, top.items[worst], top.items[left])) worst = left;
+                if (right < top.count and before(top.context, top.items[worst], top.items[right])) worst = right;
+                if (worst == parent) return;
+                std.mem.swap(T, &top.items[parent], &top.items[worst]);
+                parent = worst;
+            }
         }
-    }
 
-    fn sorted(top: *TopK) []Candidate {
-        std.sort.pdq(Candidate, top.items[0..top.count], {}, candidateLess);
-        return top.items[0..top.count];
-    }
-};
+        /// The survivors in `before` order.
+        pub fn sorted(top: *Top) []T {
+            std.sort.pdq(T, top.items[0..top.count], top.context, before);
+            return top.items[0..top.count];
+        }
+    };
+}
 
 const Fused = struct {
     document_index: u32,
@@ -414,8 +427,8 @@ pub fn searchSparseTraced(
     defer allocator.free(lexical_storage);
     const semantic_storage = try allocator.alloc(Candidate, if (want_semantic) depth else 0);
     defer allocator.free(semantic_storage);
-    var lexical_top = TopK{ .items = lexical_storage };
-    var semantic_top = TopK{ .items = semantic_storage };
+    var lexical_top = TopK{ .items = lexical_storage, .context = {} };
+    var semantic_top = TopK{ .items = semantic_storage, .context = {} };
     const score_start = Trace.stamp(trace);
 
     if (want_lexical) {

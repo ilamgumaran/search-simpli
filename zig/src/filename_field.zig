@@ -364,13 +364,6 @@ fn lessCandidate(a: Candidate, b: Candidate, docs: []const hybrid.Document) bool
     if (a.body_index == b.body_index) return false;
     return std.mem.order(u8, docs[a.body_index].id, docs[b.body_index].id) == .lt;
 }
-fn sortCandidates(items: []Candidate, docs: []const hybrid.Document) void {
-    std.mem.sort(Candidate, items, docs, struct {
-        fn less(d: []const hybrid.Document, a: Candidate, b: Candidate) bool {
-            return lessCandidate(a, b, d);
-        }
-    }.less);
-}
 pub const Decoded = struct {
     catalog: []const hybrid.Document,
     lexical: postings.Index,
@@ -538,11 +531,32 @@ pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, b
 /// the load summed, so it touches only the postings it scores; chunks are
 /// grouped by file through the anchor ordinal map (`file_of`), not by path.
 /// Results equal PR #21's query exactly: the same candidates, BM25 inputs,
-/// tie-breaks, candidate depth and RRF fusion.
+/// tie-breaks, candidate depth and RRF fusion. S4-T15: each channel keeps a
+/// bounded top `candidate_k` (`rankChannels`) instead of sorting every
+/// candidate; its first `candidate_k` are the full sort's.
 pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) ![]Hit {
     if (field == .content) return error.ContentQueryUseLegacy;
     if (options.retrieval_mode != .lexical) return error.InvalidRetrievalMode;
     if (options.candidate_k < options.top_k) return error.CandidateDepthTooSmall;
+    const scored = try scoreQuery(allocator, body_docs, body_index, decoded, analyzer_id, query_text, field, options);
+    const ranked = try rankChannels(allocator, body_docs, decoded, scored, field, options.candidate_k);
+    return fuse(allocator, body_docs, ranked, field, options);
+}
+
+/// S4-T15: what `scoreQuery` leaves for the selections: each catalog
+/// entry's and each chunk's summed score, and the entries and chunks
+/// scored, each once, in first-scored order.
+const Scored = struct {
+    fname_scores: []const f32,
+    fname_touched: []const u32,
+    body_scores: []const f32 = &.{},
+    body_touched: []const u32 = &.{},
+};
+
+/// The BM25 walks of a filename or both query: the visible set per field
+/// (scoped queries only), then each distinct query term's postings in
+/// each field.
+fn scoreQuery(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) !Scored {
     const catalog = decoded.catalog;
     const lexical = decoded.lexical;
     const qt = try tokenize(allocator, analyzer_id, query_text);
@@ -642,51 +656,84 @@ pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Docu
             }
         };
     }
+    return .{ .fname_scores = fname_scores, .fname_touched = fname_touched.items, .body_scores = body_scores, .body_touched = body_touched.items };
+}
 
+/// S4-T15: the two channels' candidates in `lessCandidate` order, each cut
+/// to `candidate_k`, and (both) the per-file array the merge reuses.
+const Ranked = struct {
+    filename: []Candidate,
+    body: []Candidate = &.{},
+    slot_of_file: []u32 = &.{},
+};
+
+fn candidateBefore(docs: []const hybrid.Document, a: Candidate, b: Candidate) bool {
+    return lessCandidate(a, b, docs);
+}
+const CandidateTop = hybrid.BoundedTop(Candidate, []const hybrid.Document, candidateBefore);
+const no_slot = std.math.maxInt(u32);
+
+/// S4-T15: each channel keeps a bounded top `candidate_k` (`hybrid.BoundedTop`)
+/// instead of sorting every candidate. Within one channel no two candidates
+/// share a path (one per catalog entry, and `decode` refuses a catalog whose
+/// paths are not strictly ascending), and every score is finite and
+/// positive, so `lessCandidate` is a strict total order on them: the kept
+/// candidates, sorted, are the first `candidate_k` of the full sort, element
+/// for element.
+fn rankChannels(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, decoded: Decoded, scored: Scored, field: Field, candidate_k: usize) !Ranked {
+    const catalog = decoded.catalog;
     // Filename candidates: every visible file with a positive score.
-    var filename = try allocator.alloc(Candidate, fname_touched.items.len);
-    var fn_count: usize = 0;
-    for (fname_touched.items) |i| {
-        const score = fname_scores[i];
+    var filename_top = CandidateTop{ .items = try allocator.alloc(Candidate, @min(candidate_k, scored.fname_touched.len)), .context = body_docs };
+    for (scored.fname_touched) |i| {
+        const score = scored.fname_scores[i];
         if (score <= 0) continue;
-        filename[fn_count] = .{ .path = catalog[i].path, .body_index = decoded.anchors[i], .score = score, .catalog_index = i };
-        fn_count += 1;
+        filename_top.offer(.{ .path = catalog[i].path, .body_index = decoded.anchors[i], .score = score, .catalog_index = i });
     }
-    sortCandidates(filename[0..fn_count], body_docs);
+    var ranked = Ranked{ .filename = filename_top.sorted() };
+    if (field != .both) return ranked;
 
-    // Body candidates (both): each file's best chunk, the higher score and
-    // then the smaller chunk id, grouped by the anchor ordinal map.
-    var body = std.ArrayList(Candidate).empty;
-    var slot_of_file: []u32 = &.{};
-    const none = std.math.maxInt(u32);
-    if (field == .both) {
-        slot_of_file = try allocator.alloc(u32, catalog.len);
-        @memset(slot_of_file, none);
-        for (body_touched.items) |bi| {
-            const score = body_scores[bi];
-            if (score <= 0) continue;
-            const file = decoded.file_of[bi];
-            const doc = body_docs[bi];
-            if (slot_of_file[file] != none) {
-                const ix = slot_of_file[file];
-                if (score > body.items[ix].score or (score == body.items[ix].score and std.mem.order(u8, doc.id, body_docs[body.items[ix].body_index].id) == .lt)) body.items[ix] = .{ .path = doc.path, .body_index = bi, .score = score, .catalog_index = file };
-            } else {
-                slot_of_file[file] = @intCast(body.items.len);
-                try body.append(allocator, .{ .path = doc.path, .body_index = bi, .score = score, .catalog_index = file });
-            }
+    // Body candidates: each file's best chunk, the higher score and then the
+    // smaller chunk id (the first scored on an exact tie), grouped by the
+    // anchor ordinal map. A file's chunks are not adjacent in the touched
+    // list, so the best chunk per file is found first (`slot_of_file`) and
+    // each file is offered once after.
+    const slot_of_file = try allocator.alloc(u32, catalog.len);
+    @memset(slot_of_file, no_slot);
+    var files: usize = 0;
+    for (scored.body_touched) |bi| {
+        const score = scored.body_scores[bi];
+        if (score <= 0) continue;
+        const best = &slot_of_file[decoded.file_of[bi]];
+        if (best.* == no_slot) {
+            best.* = bi;
+            files += 1;
+            continue;
         }
-        sortCandidates(body.items, body_docs);
+        const held = scored.body_scores[best.*];
+        if (score > held or (score == held and std.mem.order(u8, body_docs[bi].id, body_docs[best.*].id) == .lt)) best.* = bi;
     }
-    const fn_limit = @min(fn_count, options.candidate_k);
-    const body_limit = @min(body.items.len, options.candidate_k);
+    var body_top = CandidateTop{ .items = try allocator.alloc(Candidate, @min(candidate_k, files)), .context = body_docs };
+    for (scored.body_touched) |bi| {
+        const file = decoded.file_of[bi];
+        if (slot_of_file[file] != bi) continue;
+        body_top.offer(.{ .path = body_docs[bi].path, .body_index = bi, .score = scored.body_scores[bi], .catalog_index = file });
+    }
+    ranked.body = body_top.sorted();
+    ranked.slot_of_file = slot_of_file;
+    return ranked;
+}
+
+/// The hits: the filename channel's first `top_k`, or (both) the two
+/// channels fused per file by RRF (k = 60), sorted and cut to `top_k`.
+fn fuse(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, ranked: Ranked, field: Field, options: hybrid.SearchOptions) ![]Hit {
     var out = std.ArrayList(Hit).empty;
     if (field == .filename) {
-        for (filename[0..fn_limit], 0..) |c, rank| if (out.items.len < options.top_k) try out.append(allocator, .{ .document_index = c.body_index, .filename_score = c.score, .filename_rank = rank + 1, .fused_score = c.score });
+        for (ranked.filename, 0..) |c, rank| if (out.items.len < options.top_k) try out.append(allocator, .{ .document_index = c.body_index, .filename_score = c.score, .filename_rank = rank + 1, .fused_score = c.score });
     } else {
         // Reuse the per-file array as each file's hit slot.
-        @memset(slot_of_file, none);
-        for (body.items[0..body_limit], 0..) |c, rank| try mergeHit(allocator, &out, slot_of_file, c, true, rank + 1, 60);
-        for (filename[0..fn_limit], 0..) |c, rank| try mergeHit(allocator, &out, slot_of_file, c, false, rank + 1, 60);
+        @memset(ranked.slot_of_file, no_slot);
+        for (ranked.body, 0..) |c, rank| try mergeHit(allocator, &out, ranked.slot_of_file, c, true, rank + 1, 60);
+        for (ranked.filename, 0..) |c, rank| try mergeHit(allocator, &out, ranked.slot_of_file, c, false, rank + 1, 60);
         std.mem.sort(Hit, out.items, body_docs, hitLess);
         out.items = out.items[0..@min(out.items.len, options.top_k)];
     }
@@ -723,4 +770,268 @@ fn hitLess(docs: []const hybrid.Document, a: Hit, b: Hit) bool {
     const x = std.mem.order(u8, docs[a.document_index].path, docs[b.document_index].path);
     if (x != .eq) return x == .lt;
     return std.mem.order(u8, docs[a.document_index].id, docs[b.document_index].id) == .lt;
+}
+
+// --- S4-T15 ruling 2(a): the bounded selections against today's full sort ---
+
+/// The comparator `sortCandidates` used before S4-T15, copied: the
+/// reference keeps the full order even when `lessCandidate` is planted.
+fn referenceLess(docs: []const hybrid.Document, a: Candidate, b: Candidate) bool {
+    if (a.score != b.score) return a.score > b.score;
+    const order = std.mem.order(u8, a.path, b.path);
+    if (order != .eq) return order == .lt;
+    if (a.body_index == b.body_index) return false;
+    return std.mem.order(u8, docs[a.body_index].id, docs[b.body_index].id) == .lt;
+}
+
+/// The selection before S4-T15, copied: every positive candidate of each
+/// channel, the body channel grouped per file into a list, each list fully
+/// sorted with `std.mem.sort`. Not cut: the caller cuts to `candidate_k`.
+fn referenceFull(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, decoded: Decoded, scored: Scored, field: Field) !Ranked {
+    const catalog = decoded.catalog;
+    var filename = try allocator.alloc(Candidate, scored.fname_touched.len);
+    var fn_count: usize = 0;
+    for (scored.fname_touched) |i| {
+        const score = scored.fname_scores[i];
+        if (score <= 0) continue;
+        filename[fn_count] = .{ .path = catalog[i].path, .body_index = decoded.anchors[i], .score = score, .catalog_index = i };
+        fn_count += 1;
+    }
+    std.mem.sort(Candidate, filename[0..fn_count], body_docs, referenceLess);
+    var ranked = Ranked{ .filename = filename[0..fn_count] };
+    if (field != .both) return ranked;
+    var body = std.ArrayList(Candidate).empty;
+    const slot_of_file = try allocator.alloc(u32, catalog.len);
+    @memset(slot_of_file, no_slot);
+    for (scored.body_touched) |bi| {
+        const score = scored.body_scores[bi];
+        if (score <= 0) continue;
+        const file = decoded.file_of[bi];
+        const doc = body_docs[bi];
+        if (slot_of_file[file] != no_slot) {
+            const ix = slot_of_file[file];
+            if (score > body.items[ix].score or (score == body.items[ix].score and std.mem.order(u8, doc.id, body_docs[body.items[ix].body_index].id) == .lt)) body.items[ix] = .{ .path = doc.path, .body_index = bi, .score = score, .catalog_index = file };
+        } else {
+            slot_of_file[file] = @intCast(body.items.len);
+            try body.append(allocator, .{ .path = doc.path, .body_index = bi, .score = score, .catalog_index = file });
+        }
+    }
+    std.mem.sort(Candidate, body.items, body_docs, referenceLess);
+    ranked.body = body.items;
+    ranked.slot_of_file = slot_of_file;
+    return ranked;
+}
+
+const RandomCorpus = struct {
+    body: []hybrid.Document,
+    index: postings.Index,
+    decoded: Decoded,
+    /// Each chunk's root (its top folder), for the root masks.
+    roots: []u16,
+    catalog_len: usize,
+};
+
+const test_folders = [_][]const u8{ "school", "home", "laptop", "private" };
+const test_subfolders = [_][]const u8{ "", "trips/", "old/" };
+const test_stems = [_][]const u8{ "notes", "plan", "budget", "tide", "list", "harbour", "diary", "copper" };
+const test_words = [_][]const u8{ "harbour", "tide", "ledger", "garden", "budget", "lantern", "orchard", "copper", "pond", "maple" };
+
+/// `files` files (each 0 to 6 chunks: a file drawn with no chunk is absent),
+/// with paths drawn from few folders and stems (equal filename scores broken
+/// by path), a third of the chunk texts copied from an earlier chunk (equal body
+/// scores), and chunk ids random and unique, unrelated to line order.
+fn randomCorpus(a: std.mem.Allocator, random: std.Random, files: usize, labelled: bool) !RandomCorpus {
+    var docs = std.ArrayList(hybrid.Document).empty;
+    var roots = std.ArrayList(u16).empty;
+    var paths: std.StringHashMapUnmanaged(void) = .empty;
+    var texts = std.ArrayList([]const u8).empty;
+    var id_counter: usize = 0;
+    const suffixes: usize = @max(4, files / 40);
+    var made: usize = 0;
+    while (made < files) {
+        const folder = random.uintLessThan(usize, test_folders.len);
+        const sub = test_subfolders[random.uintLessThan(usize, test_subfolders.len)];
+        const stem_name = test_stems[random.uintLessThan(usize, test_stems.len)];
+        const suffix = random.uintLessThan(usize, suffixes + 1);
+        const ext: []const u8 = if (random.boolean()) "md" else "txt";
+        const path = if (suffix == 0)
+            try std.fmt.allocPrint(a, "{s}/{s}{s}.{s}", .{ test_folders[folder], sub, stem_name, ext })
+        else
+            try std.fmt.allocPrint(a, "{s}/{s}{s}-{d}.{s}", .{ test_folders[folder], sub, stem_name, suffix, ext });
+        const slot = try paths.getOrPut(a, path);
+        if (slot.found_existing) continue;
+        made += 1;
+        const labels: []const u8 = if (labelled and folder == 3) "family" else "";
+        const chunks = random.uintAtMost(usize, 6);
+        for (0..chunks) |chunk| {
+            const text = if (texts.items.len > 0 and random.uintLessThan(u8, 3) == 0)
+                texts.items[random.uintLessThan(usize, texts.items.len)]
+            else blk: {
+                var words = std.ArrayList(u8).empty;
+                for (0..1 + random.uintLessThan(usize, 10)) |w| {
+                    if (w > 0) try words.append(a, ' ');
+                    try words.appendSlice(a, test_words[random.uintLessThan(usize, test_words.len)]);
+                }
+                break :blk words.items;
+            };
+            try texts.append(a, text);
+            id_counter += 1;
+            try docs.append(a, .{
+                .id = try std.fmt.allocPrint(a, "{x:0>8}-{d}", .{ random.int(u32), id_counter }),
+                .path = path,
+                .text = text,
+                .start_line = @intCast(1 + chunk * 10),
+                .end_line = @intCast(9 + chunk * 10),
+                .required_labels = labels,
+            });
+            try roots.append(a, @intCast(folder));
+        }
+    }
+    // A writer's order (path order, chunks adjacent) or a shuffled one.
+    if (random.boolean()) {
+        const order = try a.alloc(usize, docs.items.len);
+        for (order, 0..) |*o, i| o.* = i;
+        random.shuffle(usize, order);
+        const shuffled = try a.alloc(hybrid.Document, docs.items.len);
+        const shuffled_roots = try a.alloc(u16, docs.items.len);
+        for (order, shuffled, shuffled_roots) |from, *doc, *root| {
+            doc.* = docs.items[from];
+            root.* = roots.items[from];
+        }
+        docs.items = shuffled;
+        roots.items = shuffled_roots;
+    } else {
+        const Pair = struct { doc: hybrid.Document, root: u16 };
+        const pairs = try a.alloc(Pair, docs.items.len);
+        for (pairs, docs.items, roots.items) |*pair, doc, root| pair.* = .{ .doc = doc, .root = root };
+        std.mem.sort(Pair, pairs, {}, struct {
+            fn less(_: void, x: Pair, y: Pair) bool {
+                return std.mem.order(u8, x.doc.path, y.doc.path) == .lt;
+            }
+        }.less);
+        for (pairs, docs.items, roots.items) |pair, *doc, *root| {
+            doc.* = pair.doc;
+            root.* = pair.root;
+        }
+    }
+    const body = docs.items;
+    const built = try build(a, body, analyzer_v2.analyzer_id);
+    const token_lists = try a.alloc([][]const u8, body.len);
+    for (body, token_lists) |doc, *tokens| tokens.* = try analyzer_v2.tokenize(a, doc.text);
+    const index = try lexical_build.build(a, body, token_lists);
+    const decoded = try decode(a, body, index, built.catalog, built.lexical);
+    return .{ .body = body, .index = index, .decoded = decoded, .roots = roots.items, .catalog_len = decoded.catalog.len };
+}
+
+fn expectSameCandidates(expected: []const Candidate, actual: []const Candidate) !void {
+    try std.testing.expectEqual(expected.len, actual.len);
+    for (expected, actual) |e, got| {
+        try std.testing.expectEqualStrings(e.path, got.path);
+        try std.testing.expectEqual(e.body_index, got.body_index);
+        try std.testing.expectEqual(e.catalog_index, got.catalog_index);
+        try std.testing.expectEqual(@as(u32, @bitCast(e.score)), @as(u32, @bitCast(got.score)));
+    }
+}
+
+/// Whether the cut at `depth` falls inside a run of equal scores.
+fn tieAtCut(list: []const Candidate, depth: usize) bool {
+    return depth > 0 and depth < list.len and list[depth - 1].score == list[depth].score;
+}
+
+test "S4-T15 ruling 2(a): the bounded selections are the full sort's first candidate_k, element for element" {
+    const seeds = [_]u64{
+        0x5415_0001, 0x5415_0002, 0x5415_0003, 0x9e37_79b9, 0x7f4a_7c15, 0x2545_f491, 0x0bad_cafe, 0x1357_9bdf,
+        0x2468_ace0, 0x0f0f_1e1e, 0x3c3c_5a5a, 0x6996_9669, 0x1111_2222, 0x3333_4444, 0x5555_6666, 0x7777_8888,
+        0x9999_aaaa, 0xbbbb_cccc, 0xdddd_eeee, 0x0123_4567, 0x89ab_cdef, 0xfeed_beef, 0xdead_10cc, 0xc0ff_ee00,
+        0x0dd5_eed5, 0x5eed_0f15, 0xa5a5_5a5a, 0x1020_3040, 0x5060_7080, 0x90a0_b0c0,
+    };
+    var compared: usize = 0;
+    var cut_runs: usize = 0;
+    var ties_at_cut: usize = 0;
+    var distinct_at_cut: usize = 0;
+    for (seeds, 0..) |seed, round| {
+        var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+        defer arena_state.deinit();
+        const a = arena_state.allocator();
+        var prng = std.Random.DefaultPrng.init(seed);
+        const random = prng.random();
+        // The edges 1, 2 and 3,000 first, then log-uniform in 1..3,000.
+        const files: usize = switch (round) {
+            0 => 1,
+            1 => 2,
+            2 => 3000,
+            else => @intFromFloat(@round(@exp(random.float(f64) * @log(3000.0)))),
+        };
+        const labelled = random.boolean();
+        const corpus = try randomCorpus(a, random, @max(1, files), labelled);
+        try std.testing.expectEqual(labelled and corpus.body.len > 0 and blk: {
+            for (corpus.body) |doc| if (doc.required_labels.len != 0) break :blk true;
+            break :blk false;
+        }, corpus.decoded.labeled);
+        var rooted = corpus.decoded;
+        rooted.max_document_root = test_folders.len - 1;
+        for (0..16) |_| {
+            // 1-3 words from the body words, the stems, a number or an absent word.
+            var words = std.ArrayList(u8).empty;
+            for (0..1 + random.uintLessThan(usize, 3)) |w| {
+                if (w > 0) try words.append(a, ' ');
+                const pick = random.uintLessThan(usize, test_words.len + test_stems.len + 2);
+                const word: []const u8 = if (pick < test_words.len)
+                    test_words[pick]
+                else if (pick < test_words.len + test_stems.len)
+                    test_stems[pick - test_words.len]
+                else if (pick == test_words.len + test_stems.len)
+                    "2"
+                else
+                    "absent";
+                try words.appendSlice(a, word);
+            }
+            // Half the requests shallow (1-10), so that small corpora are cut too.
+            const top_k = 1 + random.uintLessThan(usize, if (random.boolean()) 10 else 100);
+            const n = corpus.catalog_len;
+            const depths = [_]usize{ top_k, top_k + 1, 20, 100, n / 2, n -| 1, n, n + 1, 10_000, top_k + random.uintLessThan(usize, @max(1, n)) };
+            var options = hybrid.SearchOptions{ .retrieval_mode = .lexical, .top_k = top_k, .candidate_k = @max(top_k, depths[random.uintLessThan(usize, depths.len)]) };
+            var decoded = corpus.decoded;
+            if (random.uintLessThan(u8, 3) == 0) options.path_prefix = switch (random.uintLessThan(u8, 4)) {
+                0 => "school/",
+                1 => "home/trips/",
+                2 => "sc",
+                else => "zz/",
+            };
+            if (random.boolean()) options.principal_labels = &.{"family"};
+            if (random.uintLessThan(u8, 3) == 0) {
+                const allowed = try a.alloc(bool, if (random.uintLessThan(u8, 4) == 0) test_folders.len - 1 else test_folders.len);
+                for (allowed) |*flag| flag.* = random.uintLessThan(u8, 4) != 0;
+                options.visible_roots = .{ .document_roots = corpus.roots, .allowed = allowed };
+                decoded = rooted;
+            }
+            for ([_]Field{ .filename, .both }) |field| {
+                const scored = try scoreQuery(a, corpus.body, corpus.index, decoded, analyzer_v2.analyzer_id, words.items, field, options);
+                const full = try referenceFull(a, corpus.body, decoded, scored, field);
+                const ranked = try rankChannels(a, corpus.body, decoded, scored, field, options.candidate_k);
+                const fn_depth = @min(options.candidate_k, full.filename.len);
+                const body_depth = @min(options.candidate_k, full.body.len);
+                try expectSameCandidates(full.filename[0..fn_depth], ranked.filename);
+                try expectSameCandidates(full.body[0..body_depth], ranked.body);
+                for ([_][]const Candidate{ full.filename, full.body }) |list| {
+                    if (options.candidate_k < list.len) cut_runs += 1;
+                    if (tieAtCut(list, options.candidate_k)) ties_at_cut += 1 else if (options.candidate_k < list.len) distinct_at_cut += 1;
+                }
+                compared += ranked.filename.len + ranked.body.len;
+                // The hits: the merge over the reference's cut lists against the query.
+                const reference = Ranked{ .filename = full.filename[0..fn_depth], .body = full.body[0..body_depth], .slot_of_file = full.slot_of_file };
+                const expected = try fuse(a, corpus.body, reference, field, options);
+                const actual = try queryDecoded(a, corpus.body, corpus.index, decoded, analyzer_v2.analyzer_id, words.items, field, options);
+                try std.testing.expectEqual(expected.len, actual.len);
+                for (expected, actual) |e, got| try std.testing.expectEqual(e, got);
+            }
+        }
+    }
+    std.debug.print("S4-T15 ruling 2(a): {d} corpora, {d} candidates compared, {d} lists cut ({d} inside equal scores, {d} between different scores)\n", .{ seeds.len, compared, cut_runs, ties_at_cut, distinct_at_cut });
+    // The corpora must exercise what the order decides: cuts inside a list,
+    // and cuts that fall inside a run of equal scores.
+    try std.testing.expect(compared > 10_000);
+    try std.testing.expect(cut_runs >= 100);
+    try std.testing.expect(ties_at_cut >= 20);
+    try std.testing.expect(distinct_at_cut >= 20);
 }

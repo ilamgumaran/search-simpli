@@ -110,6 +110,18 @@ candidate truncation and equal RRF k=60; bytewise path/chunk ties. No implicit
 embedding, substring, phrase, fuzzy or parent-directory search. Unsupported
 empty/binary/hidden files remain outside passage retrieval.
 
+Each channel keeps a bounded top `min(candidate_k, candidates)` under exactly
+that order (score descending, then path bytes, then the body chunk id) instead
+of sorting every scored file (S4-T15). The order is total over a channel's
+candidates (scores are positive and finite, and each channel has one candidate
+per path), so the kept candidates are the full sort's first `candidate_k`,
+element for element, and every hit and the final order are unchanged. On the
+10k timing corpus (filename channel on, `ReleaseSmall`, `the doc`, `top_k` 10,
+`candidate_k` default) the warm `both` query went from 3.25-3.48 ms to
+0.49-0.53 ms per call and the warm filename query from 0.77-0.83 ms to
+0.25-0.27 ms; the two full sorts had cost 2.38 ms (body, 7,093 candidates) and
+0.60 ms (filename, 10,000 candidates).
+
 ## Match sections (2026-10-28 owner presentation request)
 
 New-mode results additionally carry `match_sections.filename` and `.content`.

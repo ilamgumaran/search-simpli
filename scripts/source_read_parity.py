@@ -45,6 +45,13 @@ fresh handle that has loaded the source section (the first `--span-path`'s
 timed, then close; `--samples` such handles per path. Since S4-T14 that read
 is where the file's line map is checked against its bytes; a later read of
 the same file on the same handle (the warm measures) does not check it again.
+
+S4-T15: with `--filename`, each round's entry also names its `both_level`,
+and `both_levels` per library lists the warm `both` query's p50 of every
+round's process in order, their spread (max - min), and the levels: two when
+the largest gap between neighbouring values is at least 0.15 ms (S4-T12 to
+S4-T14 measured the warm `both` query at about 2.86 or 3.25 ms from one
+process to the next of one binary), each with its count and range, else one.
 """
 import argparse
 import ctypes
@@ -278,6 +285,26 @@ def child(args):
     return {label: statistics.median(values) for label, values in samples.items()}
 
 
+LEVEL_GAP_MS = 0.15
+
+
+def both_levels(values):
+    """The per-round `both` p50s, their spread and levels (see the module text)."""
+    ordered = sorted(values)
+    gaps = [(ordered[i + 1] - ordered[i], i) for i in range(len(ordered) - 1)]
+    gap, at = max(gaps) if gaps else (0.0, 0)
+    summary = {"by_round": values, "spread_ms": ordered[-1] - ordered[0] if values else 0.0, "largest_gap_ms": gap}
+    if gap >= LEVEL_GAP_MS:
+        threshold = (ordered[at] + ordered[at + 1]) / 2
+        summary["threshold_ms"] = threshold
+        low, high = ordered[: at + 1], ordered[at + 1 :]
+        summary["levels"] = [{"level": "low", "count": len(low), "min": low[0], "max": low[-1]},
+                             {"level": "high", "count": len(high), "min": high[0], "max": high[-1]}]
+    else:
+        summary["levels"] = [{"level": "one", "count": len(values), "min": ordered[0] if values else 0.0, "max": ordered[-1] if values else 0.0}]
+    return summary
+
+
 def time_command(args):
     report = {"load_average": list(os.getloadavg()), "rounds": []}
     for round_number in range(args.rounds):
@@ -290,6 +317,15 @@ def time_command(args):
             output = subprocess.run(command, check=True, capture_output=True, text=True, timeout=540).stdout
             report["rounds"].append({"round": round_number + 1, "lib": lib, "p50_ms": json.loads(output)})
     report["load_average_end"] = list(os.getloadavg())
+    if args.filename:
+        report["both_levels"] = {}
+        for lib in args.lib:
+            rounds = [entry for entry in report["rounds"] if entry["lib"] == lib]
+            summary = both_levels([entry["p50_ms"]["query both"] for entry in rounds])
+            for entry in rounds:
+                value = entry["p50_ms"]["query both"]
+                entry["both_level"] = "one" if "threshold_ms" not in summary else ("high" if value > summary["threshold_ms"] else "low")
+            report["both_levels"][lib] = summary
     print(json.dumps(report, indent=1))
 
 
