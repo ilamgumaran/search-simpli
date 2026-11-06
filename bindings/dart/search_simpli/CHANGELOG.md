@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.3.12 (S4-T18; contract 2.2.0; patch: the library's `memcpy`, no format or API change)
+
+The library's `memcpy`, `memmove` and `memset` copy 16 bytes at a time.
+They were `compiler_rt`'s `ReleaseSmall` versions, which move one byte per
+loop step. No Dart API, C ABI, contract (`contracts/` stays 2.2.0), index
+format or result changed: every section a generation writes and every
+query and `find` page are byte for byte what 0.3.11 writes and answers. An
+index any 0.3.x library wrote opens and updates unchanged, and nothing is
+rebuilt. The natives changed (rebuilt twice on the Mac, byte-identical:
+macOS 843,384 B against 0.3.11's 843,240 B; Android 806,384 B against
+805,744 B; iOS framework binary 807,776 B against 807,624 B);
+`native/SOURCE-SHA256` is `79fd4868…`.
+
+- **What `memcpy` was and is, per target.** Zig 0.16 links its own
+  `compiler_rt` into every shared library and executable. In `ReleaseSmall`
+  that `memcpy`, `memmove` and `memset` are byte loops, and they were the
+  library's on every target. Each copy cost about one cycle per byte
+  (0.3.11 on the 10,000-file corpus: 9,273,775 B in 2.06 ms warm, 4.5 GB/s).
+  The library now links its own `fastmem` object (`zig/src/fastmem.zig`)
+  into the macOS dylib, the Android `.so`, the iOS framework and `searchd`.
+  Its `memcpy`, `memmove` and `memset` are hidden and nothing new is
+  exported. They move 16-byte vectors, use overlapping windows for short
+  lengths and the last bytes, and are exact for overlapping `memmove`
+  ranges in both directions. `compiler_rt`'s three are no longer in any
+  artifact. Zeroing still calls `libSystem`'s `bzero` on macOS and iOS; on
+  Android it goes through the library's `memset`. `strlen` stays
+  `compiler_rt`'s (two call sites, request strings).
+- **The iOS framework's link** localizes `compiler_rt.o`'s three symbols
+  before Apple's linker sees them (`tool/build_native.sh`, `nmedit -R`).
+  Without that step, Apple's linker refuses the duplicate definitions.
+  `tool/check_native.sh` checks that `memcpy` in all three natives moves
+  16-byte registers and has no byte loop. The 0.3.11 natives fail that
+  check.
+- **On the 10,000-file timing corpus** (`ReleaseSmall`, interleaved with
+  0.3.11's source): [the figures are filled in from the timed bars:
+  one changed file, the full build, `find`, `search_knowledge`, the first
+  query after an open, the documents-section copy].
+
 ## 0.3.11 (S4-T17; contract 2.2.0; patch: reader only, no format or API change)
 
 `find` ranks its hits by sorting a list of positions and checks scope by
