@@ -725,7 +725,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var previous_state_section: ?[]const u8 = null;
     stages.mark("setup");
     if (!options.fresh) {
-        const opened_previous: ?Previous = openPrevious(allocator, io, dir) catch |err| switch (err) {
+        const opened_previous: ?Previous = openPrevious(allocator, io, dir, &stages) catch |err| switch (err) {
             error.FileNotFound, error.AccessDenied, error.InputOutput => blk: {
                 const manifest_present = if (dir.statFile(io, publication.current_manifest_file, .{})) |_| true else |_| false;
                 if (!manifest_present) {
@@ -1209,19 +1209,24 @@ fn readWhole(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []
 /// call, so this is NFR-12's one-changed-file cost. Same errors as
 /// `snapshot_open.open` for a lost file (`error.FileNotFound`: a missing
 /// section, healed by a full re-index).
-fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Previous {
+fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stages: *Stages) !Previous {
     const manifest_encoded = try readWhole(allocator, io, dir, publication.current_manifest_file);
     const metadata = try manifest.decode(manifest_encoded);
+    stages.sub("open_previous.manifest");
     const documents_encoded = try readWhole(allocator, io, dir, metadata.documents_file);
+    stages.sub("open_previous.documents_read");
     const lexical_encoded = try readWhole(allocator, io, dir, metadata.lexical_file);
+    stages.sub("open_previous.lexical_read");
     var section: ?source.Section = null;
     if (metadata.hasSource()) {
         const bytes = try readWhole(allocator, io, dir, metadata.source_file);
+        stages.sub("open_previous.source_read");
         if (bytes.len != metadata.source_bytes) return error.SourceSectionSizeMismatch;
         const opened = try source.openIndexed(allocator, bytes);
         if (opened.checksum != metadata.source_checksum) return error.SourceSectionChecksumMismatch;
         if (!metadata.xxh3_sections and opened.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
         section = opened;
+        stages.sub("open_previous.source_open");
     }
     // S4-T2 R3: the bound recovery state. A wrong size, header or checksum
     // refuses the write (`StateSectionSizeMismatch`,
@@ -1233,16 +1238,28 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Prev
         try manifest.validateState(metadata, bytes);
         state_bytes = bytes;
     }
+    stages.sub("open_previous.state");
     // The checks of `manifest.validateSnapshot`, with the document section's
-    // checksum computed once (by `segment.decode`, against the stored value
+    // checksum computed once (by `segment.inspect`, against the stored value
     // that must equal the manifest's).
     if (documents_encoded.len != metadata.documents_bytes) return error.DocumentSectionSizeMismatch;
     if (lexical_encoded.len != metadata.lexical_bytes) return error.LexicalSectionSizeMismatch;
     if (storedChecksum(documents_encoded, segment.header_length) != metadata.documents_checksum) return error.DocumentSectionChecksumMismatch;
     if (lexicalStoredChecksum(lexical_encoded) != metadata.lexical_checksum) return error.LexicalSectionChecksumMismatch;
     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch return error.IndexTooLarge;
-    const documents = try segment.decode(documents_encoded, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count));
-    const lexical_index = try lexical_segment.decode(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count));
+    // S4-T13 ruling 1: `segment.decode` and `lexical_segment.decode` as
+    // their parts (`inspect`, the decode of the inspected bytes, the walk
+    // of sections 4 and 5), the same work and errors in the same order.
+    const documents_header = try segment.inspect(documents_encoded);
+    stages.sub("open_previous.documents_checksum");
+    const documents = try segment.decodeInspected(documents_encoded, documents_header, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count));
+    stages.sub("open_previous.documents_decode");
+    const lexical_header = try lexical_segment.inspect(lexical_encoded);
+    stages.sub("open_previous.lexical_checksum");
+    const lexical_index = try lexical_segment.decodeWith(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count), .{ .validate_positions = false, .inspected = lexical_header });
+    stages.sub("open_previous.lexical_decode");
+    try lexical_segment.validatePositionSections(lexical_index);
+    stages.sub("open_previous.lexical_positions");
     if (documents.len != metadata.document_count or lexical_index.document_lengths.len != documents.len) return error.DocumentCountMismatch;
     if (lexical_index.terms.len != metadata.term_count) return error.TermCountMismatch;
     if (lexical_index.postings.len != metadata.posting_count) return error.PostingCountMismatch;
@@ -1499,6 +1516,15 @@ const LexicalMarks = struct {
     stages: *Stages,
     pub fn mark(marks: LexicalMarks, comptime name: []const u8) void {
         marks.stages.inner("encode_sections.lexical." ++ name);
+    }
+};
+
+/// S4-T13 ruling 1: `filename_field.buildMarked`'s parts as sub-stages of
+/// `filename_build`.
+const FilenameMarks = struct {
+    stages: *Stages,
+    pub fn mark(marks: FilenameMarks, comptime name: []const u8) void {
+        marks.stages.sub("filename_build." ++ name);
     }
 };
 
@@ -2326,7 +2352,7 @@ fn buildGeneration(
         .source_checksum = if (source_encoded) |bytes| storedChecksum(bytes, source.header_length) else 0,
         .meta = meta,
     };
-    const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try @import("filename_field.zig").build(allocator, documents.items, options.analyzer.label()) else null;
+    const filename_data: ?@import("filename_field.zig").Built = if (options.filename_index orelse false) try @import("filename_field.zig").buildMarked(allocator, documents.items, options.analyzer.label(), FilenameMarks{ .stages = stages }) else null;
     stages.mark("filename_build");
     // S4-T2 R4: the writer checks the filename sections here, after the build
     // and before the publish, not at every reader's open. S4-T4 ruling 4: by

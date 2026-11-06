@@ -79,7 +79,10 @@ pub fn tokenize(allocator: std.mem.Allocator, analyzer_id: []const u8, text: []c
     return list.toOwnedSlice(allocator);
 }
 
-fn buildDecoded(allocator: std.mem.Allocator, documents: []const hybrid.Document, analyzer_id: []const u8) !struct { catalog: []hybrid.Document, lexical: postings.Index } {
+/// The catalog of `documents`: one entry per path, in path order, anchored
+/// to the file's first body chunk (`anchorLess`), with the file's labels
+/// and its stem as text.
+pub fn group(allocator: std.mem.Allocator, documents: []const hybrid.Document) ![]hybrid.Document {
     // S4-T4 ruling 4: a writer's documents already come in path order (its
     // files are sorted by record path, each file's chunks adjacent), so the
     // copy and the stable sort are skipped when they would change nothing.
@@ -101,19 +104,42 @@ fn buildDecoded(allocator: std.mem.Allocator, documents: []const hybrid.Document
         }
         try catalog.append(allocator, .{ .id = anchor.id, .path = path, .text = try allocator.dupe(u8, stem(path)), .vector = &.{}, .start_line = anchor.start_line, .end_line = anchor.end_line, .required_labels = anchor.required_labels });
     }
-    const docs = try catalog.toOwnedSlice(allocator);
-    const token_lists = try allocator.alloc([][]const u8, docs.len);
-    for (docs, 0..) |doc, j| token_lists[j] = try tokenize(allocator, analyzer_id, doc.text);
-    return .{ .catalog = docs, .lexical = try lexical_build.build(allocator, docs, token_lists) };
+    return catalog.toOwnedSlice(allocator);
 }
 
+/// `buildMarked` without marks.
+pub const NoMarks = struct {
+    pub fn mark(_: NoMarks, comptime _: []const u8) void {}
+};
+
 pub fn build(allocator: std.mem.Allocator, documents: []const hybrid.Document, analyzer_id: []const u8) !Built {
-    const decoded = try buildDecoded(allocator, documents, analyzer_id);
-    const catalog_len = try segment.encodedLength(decoded.catalog);
+    return buildMarked(allocator, documents, analyzer_id, NoMarks{});
+}
+
+/// `build`, calling `marks.mark(name)` after each part (S4-T13 ruling 1,
+/// the writer's stage profile): `grouping`, `tokenize`, `lexical_build`,
+/// `encode_catalog`, `encode_lexical`.
+pub fn buildMarked(allocator: std.mem.Allocator, documents: []const hybrid.Document, analyzer_id: []const u8, marks: anytype) !Built {
+    const catalog_documents = try group(allocator, documents);
+    marks.mark("grouping");
+    return buildFromCatalog(allocator, catalog_documents, analyzer_id, marks);
+}
+
+/// The full build from a catalog `group` returned: every stem tokenized,
+/// the filename lexical index built, both sections encoded.
+fn buildFromCatalog(allocator: std.mem.Allocator, docs: []hybrid.Document, analyzer_id: []const u8, marks: anytype) !Built {
+    const token_lists = try allocator.alloc([][]const u8, docs.len);
+    for (docs, 0..) |doc, j| token_lists[j] = try tokenize(allocator, analyzer_id, doc.text);
+    marks.mark("tokenize");
+    const lexical_index = try lexical_build.build(allocator, docs, token_lists);
+    marks.mark("lexical_build");
+    const catalog_len = try segment.encodedLength(docs);
     const catalog_buffer = try allocator.alloc(u8, catalog_len);
-    const catalog = try segment.encode(decoded.catalog, catalog_buffer);
-    const lexical = try lexical_segment.encodeAlloc(allocator, decoded.lexical);
-    return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = decoded.catalog, .decoded_lexical = decoded.lexical };
+    const catalog = try segment.encode(docs, catalog_buffer);
+    marks.mark("encode_catalog");
+    const lexical = try lexical_segment.encodeAlloc(allocator, lexical_index);
+    marks.mark("encode_lexical");
+    return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = docs, .decoded_lexical = lexical_index };
 }
 
 /// S4-T4 ruling 4: the writer's check of the two sections `build` just
