@@ -84,39 +84,84 @@ pub const Header = struct {
     }
 };
 
+/// The section's length for `index`, after `validateIndex` (once).
 pub fn encodedLength(index: postings.Index) EncodeError!usize {
     try validateIndex(index);
+    return (try sizes(index)).total;
+}
+
+/// `encodeAllocMarked` and `validateIndexMarked` without marks.
+pub const NoMarks = struct {
+    pub fn mark(_: NoMarks, comptime _: []const u8) void {}
+};
+
+/// Write `index` as `HYBLEX01`, or as `HYBLEX02` when it carries positions
+/// (its dictionary must then be sorted, its term ranges contiguous in
+/// dictionary order and sections 4/5 valid: `validateIndex` checks), into
+/// `output`. S4-T12 ruling 2: `validateIndex` runs once, here, not again
+/// through `encodedLength`; an invalid index is refused before any byte is
+/// written.
+pub fn encode(index: postings.Index, output: []u8) EncodeError![]u8 {
+    try validateIndex(index);
+    const sized = try sizes(index);
+    if (output.len < sized.total) return error.BufferTooSmall;
+    return writeSized(index, sized, output);
+}
+
+/// S4-T12 ruling 2: `encode` into a buffer of exactly the section's length
+/// from `allocator` (the returned slice is the whole allocation), with one
+/// `validateIndex`: the writers' call (`apply`, `filename_field.build`,
+/// `importer`), instead of `encodedLength` then `encode`, which validated
+/// the index twice.
+pub fn encodeAlloc(allocator: std.mem.Allocator, index: postings.Index) EncodeError![]u8 {
+    return encodeAllocMarked(allocator, index, NoMarks{});
+}
+
+/// `encodeAlloc`, calling `marks.mark(name)` after each pass of
+/// `validateIndex` (S4-T12 ruling 1: the writer's stage profile).
+pub fn encodeAllocMarked(allocator: std.mem.Allocator, index: postings.Index, marks: anytype) EncodeError![]u8 {
+    try validateIndexMarked(index, marks);
+    const sized = try sizes(index);
+    return writeSized(index, sized, try allocator.alloc(u8, sized.total));
+}
+
+/// The byte counts of the sections `writeSized` writes and their total,
+/// with checked arithmetic; no validation (the callers run it first).
+const Sizes = struct {
+    document_lengths: usize,
+    dictionary: usize,
+    postings: usize,
+    total: usize,
+};
+
+fn sizes(index: postings.Index) EncodeError!Sizes {
     var dictionary_bytes: usize = 0;
     for (index.terms) |entry| {
         dictionary_bytes = try checkedAdd(dictionary_bytes, term_record_length);
         dictionary_bytes = try checkedAdd(dictionary_bytes, entry.term.len);
     }
+    const document_lengths_bytes = try checkedMultiply(index.document_lengths.len, @sizeOf(u32));
+    const postings_bytes = try checkedMultiply(index.postings.len, posting_record_length);
     var length = if (index.positions == null) header_length else header_length_v2;
-    length = try checkedAdd(length, try checkedMultiply(index.document_lengths.len, @sizeOf(u32)));
+    length = try checkedAdd(length, document_lengths_bytes);
     length = try checkedAdd(length, dictionary_bytes);
-    length = try checkedAdd(length, try checkedMultiply(index.postings.len, posting_record_length));
+    length = try checkedAdd(length, postings_bytes);
     if (index.positions) |sections| {
         length = try checkedAdd(length, sections.positions.len);
         length = try checkedAdd(length, sections.offsets.len);
     }
-    return length;
+    return .{ .document_lengths = document_lengths_bytes, .dictionary = dictionary_bytes, .postings = postings_bytes, .total = length };
 }
 
-/// Write `index` as `HYBLEX01`, or as `HYBLEX02` when it carries positions
-/// (its dictionary must then be sorted, its term ranges contiguous in
-/// dictionary order and sections 4/5 valid: `validateIndex` checks).
-pub fn encode(index: postings.Index, output: []u8) EncodeError![]u8 {
-    const required = try encodedLength(index);
-    if (output.len < required) return error.BufferTooSmall;
+/// The section's bytes for a validated `index` into `output`, at least
+/// `sized.total` long (`sizes(index)`).
+fn writeSized(index: postings.Index, sized: Sizes, output: []u8) []u8 {
+    const required = sized.total;
     const v2 = index.positions != null;
     const fixed_length = if (v2) header_length_v2 else header_length;
-
-    var dictionary_bytes: usize = 0;
-    for (index.terms) |entry| {
-        dictionary_bytes = try checkedAdd(dictionary_bytes, term_record_length + entry.term.len);
-    }
-    const document_lengths_bytes = try checkedMultiply(index.document_lengths.len, @sizeOf(u32));
-    const postings_bytes = try checkedMultiply(index.postings.len, posting_record_length);
+    const dictionary_bytes = sized.dictionary;
+    const document_lengths_bytes = sized.document_lengths;
+    const postings_bytes = sized.postings;
 
     @memcpy(output[0..magic.len], if (v2) magic_v2 else magic);
     var header_offset: usize = magic.len;
@@ -403,6 +448,10 @@ fn validatePositions(
 }
 
 fn validateIndex(index: postings.Index) EncodeError!void {
+    return validateIndexMarked(index, NoMarks{});
+}
+
+fn validateIndexMarked(index: postings.Index, marks: anytype) EncodeError!void {
     if (index.document_lengths.len > std.math.maxInt(u32) or index.terms.len > std.math.maxInt(u32)) {
         return error.CountOverflow;
     }
@@ -420,7 +469,32 @@ fn validateIndex(index: postings.Index) EncodeError!void {
     // allocation-free, matching `encode`/`encodedLength`'s existing
     // fixed-buffer/no-allocator contract used throughout the test suite --
     // makes it linear instead.
-    {
+    //
+    // S4-T12 ruling 3: an index with positions (`HYBLEX02`) must have a
+    // strictly sorted dictionary, so its duplicates are adjacent: one pass
+    // of neighbours names an equal pair `DuplicateTerm` and proves the order
+    // (the `sorted_terms` flag is not read). Only a dictionary with a
+    // descending pair, refused below as `UnsortedTerms` unless it also holds
+    // a duplicate, falls back to the hash set from the start, so every input
+    // gets the name it got before; a sorted dictionary (every writer's)
+    // never builds one. `HYBLEX01` (no positions) keeps the hash set.
+    var sorted = false;
+    if (index.positions != null) {
+        sorted = true;
+        for (index.terms, 0..) |entry, position| {
+            if (entry.term.len == 0 or entry.term.len > std.math.maxInt(u32)) return error.InvalidTerm;
+            if (position == 0) continue;
+            switch (std.mem.order(u8, index.terms[position - 1].term, entry.term)) {
+                .lt => {},
+                .eq => return error.DuplicateTerm,
+                .gt => {
+                    sorted = false;
+                    break;
+                },
+            }
+        }
+    }
+    if (!sorted) {
         var seen = std.StringHashMap(void).init(std.heap.page_allocator);
         defer seen.deinit();
         for (index.terms) |entry| {
@@ -429,26 +503,31 @@ fn validateIndex(index: postings.Index) EncodeError!void {
             if (duplicate.found_existing) return error.DuplicateTerm;
         }
     }
+    marks.mark("dictionary");
     for (index.terms) |entry| {
         const postings_end = std.math.add(usize, entry.postings_start, entry.postings_length) catch
             return error.InvalidPostingRange;
         if (postings_end > index.postings.len) return error.InvalidPostingRange;
         if (entry.document_frequency != entry.postings_length) return error.DocumentFrequencyMismatch;
     }
+    marks.mark("term_ranges");
     for (index.postings) |posting| {
         if (posting.document_index >= index.document_lengths.len or posting.term_frequency == 0) {
             return error.InvalidPosting;
         }
     }
+    marks.mark("postings");
     validatePostingOrder(index.terms, index.postings) catch return error.InvalidPosting;
+    marks.mark("posting_order");
     if (index.positions) |sections| {
-        for (index.terms[0..index.terms.len -| 1], 1..) |entry, next| {
-            if (std.mem.order(u8, entry.term, index.terms[next].term) != .lt) return error.UnsortedTerms;
-        }
+        // The dictionary pass proved the order, or found a descending pair
+        // (no duplicate, or the hash set would have named it).
+        if (!sorted) return error.UnsortedTerms;
         validatePositions(index.terms, index.postings, index.document_lengths, sections) catch |err| return switch (err) {
             error.UnsortedTerms => error.UnsortedTerms,
             else => error.InvalidPositions,
         };
+        marks.mark("positions");
     }
 }
 
@@ -786,4 +865,195 @@ test "HYBLEX02 corruption: checksum first, then every section 4/5 rule (S3-T2)" 
     unsorted.terms = swapped[0..index.terms.len];
     var out: [4096]u8 = undefined;
     try std.testing.expectError(error.UnsortedTerms, encode(unsorted, &out));
+}
+
+/// S4-T12: a minimal valid `HYBLEX02` index by hand: one token per
+/// document, one term per document, `terms` in the given order (each term's
+/// one posting is its own document).
+fn handPositional(terms: []postings.TermEntry, values: []postings.Posting, lengths: []u32, positions: []u8, offsets: []u8, names: []const []const u8) postings.Index {
+    for (names, 0..) |name, i| {
+        terms[i] = .{ .term = name, .document_frequency = 1, .postings_start = i, .postings_length = 1 };
+        values[i] = .{ .document_index = @intCast(i), .term_frequency = 1 };
+        lengths[i] = 1;
+        positions[i] = 0;
+        @memcpy(offsets[i * 6 ..][0..6], &[_]u8{ 1, 0, 0, 0, 0, 1 });
+    }
+    return .{
+        .terms = terms[0..names.len],
+        .postings = values[0..names.len],
+        .document_lengths = lengths[0..names.len],
+        .average_document_length = 1,
+        .positions = .{ .positions = positions[0..names.len], .offsets = offsets[0 .. names.len * 6] },
+        .sorted_terms = true,
+    };
+}
+
+/// S4-T12 ruling 2: `expected` through each public call a writer or a
+/// caller uses: `encodedLength`, `encode` and `encodeAlloc`.
+fn expectRefusedEverywhere(expected: EncodeError, index: postings.Index) !void {
+    var out: [1024]u8 = undefined;
+    try std.testing.expectError(expected, encodedLength(index));
+    try std.testing.expectError(expected, encode(index, &out));
+    try std.testing.expectError(expected, encodeAlloc(std.testing.allocator, index));
+    try std.testing.expectError(expected, encodeAllocMarked(std.testing.allocator, index, NoMarks{}));
+}
+
+test "S4-T12 ruling 2: every refusal keeps its name through encodedLength, encode and encodeAlloc" {
+    var terms: [3]postings.TermEntry = undefined;
+    var values: [3]postings.Posting = undefined;
+    var lengths: [3]u32 = undefined;
+    var positions: [3]u8 = undefined;
+    var offsets: [18]u8 = undefined;
+    const valid = handPositional(&terms, &values, &lengths, &positions, &offsets, &.{ "alpha", "beta" });
+    var v1 = valid;
+    v1.positions = null;
+    v1.sorted_terms = false;
+
+    // Both valid indexes encode, and the three calls agree byte for byte.
+    for ([_]postings.Index{ valid, v1 }) |index| {
+        var out: [1024]u8 = undefined;
+        const fixed = try encode(index, &out);
+        try std.testing.expectEqual(fixed.len, try encodedLength(index));
+        const owned = try encodeAlloc(std.testing.allocator, index);
+        defer std.testing.allocator.free(owned);
+        try std.testing.expectEqualSlices(u8, fixed, owned);
+    }
+
+    // CountOverflow: 2^32 document lengths (a slice over one u32, never read:
+    // the length is refused first).
+    const one = [_]u32{1};
+    var huge = v1;
+    huge.document_lengths = @as([*]const u32, &one)[0 .. @as(usize, std.math.maxInt(u32)) + 1];
+    try expectRefusedEverywhere(error.CountOverflow, huge);
+
+    for ([_]f32{ std.math.nan(f32), -1, std.math.inf(f32) }) |average| {
+        var bad = valid;
+        bad.average_document_length = average;
+        try expectRefusedEverywhere(error.InvalidAverageDocumentLength, bad);
+    }
+
+    // InvalidTerm: an empty term, v1 and v2.
+    var term_copy: [3]postings.TermEntry = undefined;
+    for ([_]postings.Index{ valid, v1 }) |base| {
+        @memcpy(term_copy[0..2], base.terms);
+        term_copy[1].term = "";
+        var bad = base;
+        bad.terms = term_copy[0..2];
+        try expectRefusedEverywhere(error.InvalidTerm, bad);
+    }
+
+    // DuplicateTerm: v1 with a non-adjacent duplicate, v2 with an adjacent one.
+    {
+        var t: [3]postings.TermEntry = undefined;
+        var p: [3]postings.Posting = undefined;
+        var l: [3]u32 = undefined;
+        var s4: [3]u8 = undefined;
+        var s5: [18]u8 = undefined;
+        var bad = handPositional(&t, &p, &l, &s4, &s5, &.{ "alpha", "beta", "alpha" });
+        bad.positions = null;
+        bad.sorted_terms = false;
+        try expectRefusedEverywhere(error.DuplicateTerm, bad);
+        const adjacent = handPositional(&t, &p, &l, &s4, &s5, &.{ "alpha", "alpha" });
+        try expectRefusedEverywhere(error.DuplicateTerm, adjacent);
+    }
+
+    // InvalidPostingRange: a range past the postings.
+    @memcpy(term_copy[0..2], valid.terms);
+    term_copy[1].postings_length = 2;
+    term_copy[1].document_frequency = 2;
+    var bad_range = valid;
+    bad_range.terms = term_copy[0..2];
+    try expectRefusedEverywhere(error.InvalidPostingRange, bad_range);
+
+    // DocumentFrequencyMismatch.
+    @memcpy(term_copy[0..2], valid.terms);
+    term_copy[0].document_frequency = 2;
+    var bad_frequency = valid;
+    bad_frequency.terms = term_copy[0..2];
+    try expectRefusedEverywhere(error.DocumentFrequencyMismatch, bad_frequency);
+
+    // InvalidPosting: a document out of range, a zero term frequency, and a
+    // term's postings out of document order.
+    var posting_copy: [3]postings.Posting = undefined;
+    @memcpy(posting_copy[0..2], valid.postings);
+    posting_copy[1].document_index = 2;
+    var bad_document = valid;
+    bad_document.postings = posting_copy[0..2];
+    try expectRefusedEverywhere(error.InvalidPosting, bad_document);
+    @memcpy(posting_copy[0..2], valid.postings);
+    posting_copy[0].term_frequency = 0;
+    var bad_tf = valid;
+    bad_tf.postings = posting_copy[0..2];
+    try expectRefusedEverywhere(error.InvalidPosting, bad_tf);
+    const one_term = [_]postings.TermEntry{.{ .term = "alpha", .document_frequency = 2, .postings_start = 0, .postings_length = 2 }};
+    const descending = [_]postings.Posting{ .{ .document_index = 1, .term_frequency = 1 }, .{ .document_index = 0, .term_frequency = 1 } };
+    var bad_order = v1;
+    bad_order.terms = &one_term;
+    bad_order.postings = &descending;
+    try expectRefusedEverywhere(error.InvalidPosting, bad_order);
+
+    // UnsortedTerms: descending terms, and sorted terms whose ranges are not
+    // in dictionary order.
+    @memcpy(term_copy[0..2], valid.terms);
+    std.mem.swap([]const u8, &term_copy[0].term, &term_copy[1].term);
+    var unsorted = valid;
+    unsorted.terms = term_copy[0..2];
+    try expectRefusedEverywhere(error.UnsortedTerms, unsorted);
+    @memcpy(term_copy[0..2], valid.terms);
+    term_copy[0].postings_start = 1;
+    term_copy[1].postings_start = 0;
+    var crossed = valid;
+    crossed.terms = term_copy[0..2];
+    try expectRefusedEverywhere(error.UnsortedTerms, crossed);
+
+    // InvalidPositions: an ordinal past its document's length, and a byte
+    // left over in section 4.
+    const past = [_]u8{ 0, 1 };
+    var bad_ordinal = valid;
+    bad_ordinal.positions = .{ .positions = &past, .offsets = valid.positions.?.offsets };
+    try expectRefusedEverywhere(error.InvalidPositions, bad_ordinal);
+    const left_over = [_]u8{ 0, 0, 0 };
+    var bad_tail = valid;
+    bad_tail.positions = .{ .positions = &left_over, .offsets = valid.positions.?.offsets };
+    try expectRefusedEverywhere(error.InvalidPositions, bad_tail);
+
+    // BufferTooSmall: `encode` only (the others size their own buffer).
+    var short: [1024]u8 = undefined;
+    const needed = try encodedLength(valid);
+    try std.testing.expectError(error.BufferTooSmall, encode(valid, short[0 .. needed - 1]));
+}
+
+fn ruling3Index(storage: anytype, names: []const []const u8, claimed: bool) postings.Index {
+    var index = handPositional(&storage.terms, &storage.values, &storage.lengths, &storage.positions, &storage.offsets, names);
+    index.sorted_terms = claimed;
+    return index;
+}
+
+const Ruling3Storage = struct {
+    terms: [3]postings.TermEntry = undefined,
+    values: [3]postings.Posting = undefined,
+    lengths: [3]u32 = undefined,
+    positions: [3]u8 = undefined,
+    offsets: [18]u8 = undefined,
+};
+
+test "S4-T12 ruling 3: a positional index with an adjacent duplicate is DuplicateTerm, whatever sorted_terms says" {
+    var storage = Ruling3Storage{};
+    for ([_]bool{ true, false }) |claimed| {
+        try expectRefusedEverywhere(error.DuplicateTerm, ruling3Index(&storage, &.{ "alpha", "alpha", "beta" }, claimed));
+        // The fallback: a descending pair plus a duplicate that is not
+        // adjacent (`beta`, `alpha`, `beta`) is `DuplicateTerm`, as the hash
+        // set named it before S4-T12.
+        try expectRefusedEverywhere(error.DuplicateTerm, ruling3Index(&storage, &.{ "beta", "alpha", "beta" }, claimed));
+    }
+}
+
+test "S4-T12 ruling 3: a positional index claiming sorted but descending is UnsortedTerms; a sorted one encodes" {
+    var storage = Ruling3Storage{};
+    for ([_]bool{ true, false }) |claimed| {
+        try expectRefusedEverywhere(error.UnsortedTerms, ruling3Index(&storage, &.{ "beta", "alpha" }, claimed));
+        try expectRefusedEverywhere(error.UnsortedTerms, ruling3Index(&storage, &.{ "alpha", "gamma", "beta" }, claimed));
+        const owned = try encodeAlloc(std.testing.allocator, ruling3Index(&storage, &.{ "alpha", "beta", "gamma" }, claimed));
+        std.testing.allocator.free(owned);
+    }
 }

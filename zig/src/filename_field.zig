@@ -112,9 +112,7 @@ pub fn build(allocator: std.mem.Allocator, documents: []const hybrid.Document, a
     const catalog_len = try segment.encodedLength(decoded.catalog);
     const catalog_buffer = try allocator.alloc(u8, catalog_len);
     const catalog = try segment.encode(decoded.catalog, catalog_buffer);
-    const lexical_len = try lexical_segment.encodedLength(decoded.lexical);
-    const lexical_buffer = try allocator.alloc(u8, lexical_len);
-    const lexical = try lexical_segment.encode(decoded.lexical, lexical_buffer);
+    const lexical = try lexical_segment.encodeAlloc(allocator, decoded.lexical);
     return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = decoded.catalog, .decoded_lexical = decoded.lexical };
 }
 

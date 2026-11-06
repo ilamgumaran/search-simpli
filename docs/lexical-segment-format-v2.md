@@ -49,7 +49,11 @@ term bytes; 8-byte postings), with two v2 rules:
 
 - **Sorted dictionary.** Terms are strictly increasing by bytes
   (`std.mem.order`), which also rules out duplicates, so the v2 reader needs
-  no hash set. Lookups binary-search; a prefix is one contiguous range.
+  no hash set; since S4-T12 neither does the writer's check
+  (`validateIndex`, run once per section written): one pass over
+  neighbours names an equal pair `DuplicateTerm` and a descending one
+  `UnsortedTerms` (or `DuplicateTerm`, as before, if the unsorted
+  dictionary also holds a duplicate elsewhere). Lookups binary-search; a prefix is one contiguous range.
 - **Contiguous term ranges.** Term *i*'s postings start where term *i − 1*'s
   end (the first at 0) and the last ends at the posting count, so postings
   are term-major in dictionary order and a term's ordinals are one run of

@@ -593,17 +593,20 @@ pub const Stages = struct {
     /// S4-T11 ruling 1: the previous mark or sub-stage, where the next
     /// sub-stage starts.
     last_sub: u64 = 0,
+    /// S4-T12 ruling 1: the previous mark, sub-stage or inner part, where
+    /// the next inner part starts.
+    last_inner: u64 = 0,
     names: [max][]const u8 = undefined,
     ns: [max]u64 = undefined,
     count: usize = 0,
 
-    const max = 32;
+    const max = 48;
     pub const variable = "SEARCH_SIMPLI_APPLY_STAGES";
 
     pub fn init(io: std.Io) Stages {
         if (!enabled()) return .{};
         const now = nowNs(io);
-        return .{ .on = true, .io = io, .started = now, .last = now, .last_sub = now };
+        return .{ .on = true, .io = io, .started = now, .last = now, .last_sub = now, .last_inner = now };
     }
 
     fn enabled() bool {
@@ -621,6 +624,7 @@ pub const Stages = struct {
         stages.count += 1;
         stages.last = now;
         stages.last_sub = now;
+        stages.last_inner = now;
     }
 
     /// S4-T11 ruling 1: close the sub-stage `name` (dotted, `parent.part`):
@@ -634,6 +638,21 @@ pub const Stages = struct {
         stages.ns[stages.count] = now - stages.last_sub;
         stages.count += 1;
         stages.last_sub = now;
+        stages.last_inner = now;
+    }
+
+    /// S4-T12 ruling 1: close the inner part `name` (`parent.sub.part`) of
+    /// the sub-stage being timed: the time since the previous mark,
+    /// sub-stage or inner part. It does not move the sub-stage clock, so the
+    /// enclosing sub-stage still measures its whole and its parts are
+    /// printed before it.
+    pub fn inner(stages: *Stages, name: []const u8) void {
+        if (!stages.on or stages.count == max) return;
+        const now = nowNs(stages.io.?);
+        stages.names[stages.count] = name;
+        stages.ns[stages.count] = now - stages.last_inner;
+        stages.count += 1;
+        stages.last_inner = now;
     }
 
     pub fn print(stages: *const Stages) void {
@@ -1474,6 +1493,15 @@ const SourceMarks = struct {
     }
 };
 
+/// S4-T12 ruling 1: the passes of the lexical section's `validateIndex` as
+/// inner parts of the sub-stage that runs it.
+const LexicalMarks = struct {
+    stages: *Stages,
+    pub fn mark(marks: LexicalMarks, comptime name: []const u8) void {
+        marks.stages.inner("encode_sections.lexical." ++ name);
+    }
+};
+
 /// Where a document of the new generation gets its positioned tokens: a
 /// fresh chunk's, or a carried document of the previous (positional)
 /// generation.
@@ -1662,7 +1690,8 @@ fn offsetTableStarts(scratch: std.mem.Allocator, offsets: []const u8, lengths: [
         at = try skipVarintsChecked(offsets, at + 4, @as(usize, length) * 2);
     }
     starts[lengths.len] = at;
-    std.debug.assert(at == offsets.len);
+    // S4-T12 ruling 4: a refusal in every build, not a Debug assert (which
+    // `ReleaseSmall` may assume true and drop the check with it).
     if (at != offsets.len) return error.InvalidLexicalSection;
     return starts;
 }
@@ -1852,8 +1881,8 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
         terms_out[term_count] = .{ .term = name, .document_frequency = @intCast(length), .postings_start = postings_start, .postings_length = length };
         term_count += 1;
     }
-    // Every ordinal of both sections read, none left over.
-    std.debug.assert(cursor == sections.positions.len and fresh_cursor == fresh_sections.positions.len);
+    // Every ordinal of both sections read, none left over (S4-T12 ruling 4:
+    // a refusal in every build, not a Debug assert).
     if (cursor != sections.positions.len or fresh_cursor != fresh_sections.positions.len) return error.InvalidLexicalSection;
     const positions_out = try positions_sink.written();
     stages.sub("build_lexical.merge");
@@ -1883,6 +1912,46 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
         .positions = .{ .positions = positions_out, .offsets = offsets_out },
         .sorted_terms = true,
     };
+}
+
+test "S4-T12 ruling 4: the merge refuses a previous section 4 or 5 with a byte left over or missing, in every build" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const documents = [_]hybrid.Document{
+        .{ .id = "a", .text = "count me in, count me in" },
+        .{ .id = "b", .text = "the the dough rests" },
+        .{ .id = "c", .text = "பள்ளி விடுமுறை" },
+    };
+    var lists: [documents.len][]const analysis.PositionedToken = undefined;
+    for (documents, 0..) |document, i| lists[i] = try @import("analyzer_v2.zig").tokenizePositioned(a, document.text);
+    const previous = try lexical_build.buildPositional(a, &documents, &lists);
+    const sections = previous.positions.?;
+    const sources = [_]DocSource{ .{ .carried = 0 }, .{ .carried = 1 }, .{ .carried = 2 } };
+    var no_stages = Stages{};
+
+    // The walk itself: every document carried gives the same sections back.
+    const same = try mergeCarried(a, previous, &sources, &no_stages);
+    try std.testing.expectEqualSlices(u8, sections.positions, same.positions.?.positions);
+    try std.testing.expectEqualSlices(u8, sections.offsets, same.positions.?.offsets);
+
+    const positions_longer = try std.mem.concat(a, u8, &.{ sections.positions, &.{0x00} });
+    const offsets_longer = try std.mem.concat(a, u8, &.{ sections.offsets, &.{0x00} });
+    const cases = [_]postings.PositionSections{
+        // Section 4 with one byte left over: the merge's end-of-walk check.
+        .{ .positions = positions_longer, .offsets = sections.offsets },
+        // Section 4 one byte short: the walk ends early.
+        .{ .positions = sections.positions[0 .. sections.positions.len - 1], .offsets = sections.offsets },
+        // Section 5 with one byte left over: `offsetTableStarts`' end check.
+        .{ .positions = sections.positions, .offsets = offsets_longer },
+        // Section 5 one byte short: the walk ends early.
+        .{ .positions = sections.positions, .offsets = sections.offsets[0 .. sections.offsets.len - 1] },
+    };
+    for (cases) |damaged| {
+        var bad = previous;
+        bad.positions = damaged;
+        try std.testing.expectError(error.InvalidLexicalSection, mergeCarried(a, bad, &sources, &no_stages));
+    }
 }
 
 // -------------------------------------------------------- rename detection ---
@@ -2174,11 +2243,9 @@ fn buildGeneration(
     const documents_buffer = try allocator.alloc(u8, try segment.encodedLengthV4(documents.items));
     const documents_encoded = try segment.encodeV4(documents.items, documents_buffer);
     stages.sub("encode_sections.documents");
-    const lexical_buffer = try allocator.alloc(u8, try lexical_segment.encodedLength(lexical_index));
-    // S4-T11 ruling 4: `encodedLength` is one `validateIndex` (which
-    // `encode` runs again) plus the sizes, timed apart.
-    stages.sub("encode_sections.lexical_length");
-    const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_buffer);
+    // S4-T12 ruling 2: one `validateIndex` (its passes timed as inner parts),
+    // the sizes, an exact buffer and the bytes, in one call.
+    const lexical_encoded = try lexical_segment.encodeAllocMarked(allocator, lexical_index, LexicalMarks{ .stages = stages });
     stages.sub("encode_sections.lexical");
     const source_encoded: ?[]const u8 = if (any_retain) try source.encodeMarked(allocator, retained.items, SourceMarks{ .stages = stages }) else null;
     stages.mark("encode_sections");

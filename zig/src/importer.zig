@@ -153,10 +153,8 @@ pub fn importJsonKeeping(
         .analyzer_v2 => try buildAnalyzerV2(lexical_arena.allocator(), documents),
     };
 
-    const lexical_encoded_length = try lexical_segment.encodedLength(lexical_index);
-    const lexical_encoded_storage = try allocator.alloc(u8, lexical_encoded_length);
-    defer allocator.free(lexical_encoded_storage);
-    const lexical_encoded = try lexical_segment.encode(lexical_index, lexical_encoded_storage);
+    const lexical_encoded = try lexical_segment.encodeAlloc(allocator, lexical_index);
+    defer allocator.free(lexical_encoded);
 
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{payload.generation});
     defer allocator.free(documents_file);
