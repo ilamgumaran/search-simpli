@@ -391,7 +391,7 @@ pub const Loads = struct {
     /// The manifest's `xxh3_sections` flag (v2.1, S4-T1).
     xxh3_sections: bool = false,
     source_done: std.atomic.Value(bool) = .init(false),
-    source: ?source.Section = null,
+    // `source` (the section's view) is the struct's last field (S4-T10).
     /// The bound source section could not be read or did not validate (a
     /// lost file, a wrong size, a bad checksum): the error's name.
     source_error: ?[]const u8 = null,
@@ -428,6 +428,13 @@ pub const Loads = struct {
     statistics_loads: u32 = 0,
     positions_loads: u32 = 0,
     filename_loads: u32 = 0,
+
+    /// The source section's view, once loaded and validated (S4-T10: last,
+    /// after every field the query paths read, so that the view's two new
+    /// fields leave those fields where they were: with them 48 bytes later,
+    /// a `both` query after a `find` measured 0.4 ms slower at 10k, and the
+    /// same 48 bytes of padding on `main` did the same).
+    source: ?source.Section = null,
 
     fn lock(loads: *Loads) void {
         loads.mutex.lockUncancelable(loads.io);
