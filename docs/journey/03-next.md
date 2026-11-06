@@ -240,6 +240,15 @@ at the same time. E-01A is the safe intake half of exactly that.
 - **Persisted 384-d startup / memory / concurrency benchmark** remains the gate
   that decides whether the next engine work is ANN, lexical pruning, or simply
   better process management. No scale machinery before it.
+- **`index_status.source` after a per-call SHA-256 failure** (filed by
+  [S4-T10](../tasks/S4-T10.md), ruling E): when one file's bytes no longer
+  match their SHA-256 after the section was validated at first use (the file
+  changed underneath: disk damage), that `read_span` or `outline` answers
+  `capacity` "re-index required: source section unavailable
+  (SourceFileSha256Mismatch)" while `index_status.source` stays `verified`.
+  Whether such a failure should flip the state to `unavailable` is a
+  contract-semantics question (`verified` means read and validated) for a
+  later task.
 
 ## Standing candidates (not yet scheduled)
 
