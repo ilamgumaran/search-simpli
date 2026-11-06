@@ -106,7 +106,13 @@ pub fn group(allocator: std.mem.Allocator, documents: []const hybrid.Document) !
         std.mem.sort(hybrid.Document, copy, {}, pathLess);
         break :blk copy;
     };
-    var catalog = std.ArrayList(hybrid.Document).empty;
+    // S4-T13 ruling 4: one exact allocation (a first pass counts the paths),
+    // not a list grown as it fills.
+    var files: usize = 0;
+    for (sorted, 0..) |document, k| {
+        if (k == 0 or !std.mem.eql(u8, sorted[k - 1].path, document.path)) files += 1;
+    }
+    var catalog = try std.ArrayList(hybrid.Document).initCapacity(allocator, files);
     var i: usize = 0;
     while (i < sorted.len) {
         const start = i;
@@ -117,9 +123,10 @@ pub fn group(allocator: std.mem.Allocator, documents: []const hybrid.Document) !
             if (!std.mem.eql(u8, sorted[start].required_labels, sorted[i].required_labels)) return error.InconsistentLabels;
             if (anchorLess(sorted[i], anchor)) anchor = sorted[i];
         }
-        try catalog.append(allocator, .{ .id = anchor.id, .path = path, .text = try allocator.dupe(u8, stem(path)), .vector = &.{}, .start_line = anchor.start_line, .end_line = anchor.end_line, .required_labels = anchor.required_labels });
+        // The stem is a slice of the path (the documents outlive the catalog).
+        catalog.appendAssumeCapacity(.{ .id = anchor.id, .path = path, .text = stem(path), .vector = &.{}, .start_line = anchor.start_line, .end_line = anchor.end_line, .required_labels = anchor.required_labels });
     }
-    return catalog.toOwnedSlice(allocator);
+    return catalog.items;
 }
 
 /// `buildMarked` without marks.
