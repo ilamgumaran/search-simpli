@@ -27,11 +27,13 @@ or the error text; the file's sha256 is printed):
   `scripts/gen_timing_corpus.py` corpora (lexical, as `searchd index` makes
   them), plus the four research-doc timing queries;
 * S4-T15, only with --filename-fields: every query asked of the 10,000-chunk
-  corpus above, again on a filename-enabled snapshot of it (unscoped and with
-  a path prefix), and the family-folder pack's 20 query strings plus its 68
+  corpus above plus five that name its files ("doc", "the doc", "group",
+  "doc the", "group doc 00042": the random words name none), again on a
+  filename-enabled snapshot of it (unscoped and with a path prefix), and the
+  family-folder pack's 20 query strings plus its 68
   path words on a filename-enabled snapshot of fixtures/family-folder as three
-  roots plus one labelled root (unscoped, two root sets, the label, a path
-  prefix), each as `search_field` filename and both with top_k 5 and 10 and
+  roots plus one labelled root (unscoped, two root sets, the label, the
+  path prefix `home/trips/`), each as `search_field` filename and both with top_k 5 and 10 and
   candidate_k equal to top_k, 20, 100 and 10,000. Without the flag the output
   is the S2-T3 set alone (2,762 queries).
 
@@ -203,6 +205,9 @@ FAMILY_ROOTS = ("home", "laptop", "school")
 # Invented, as in tests/test_folder_surfaces.py: the one file of the labelled root.
 PRIVATE_TEXT = "# Plans\n\nThe tide table hides a surprise party for Grandpa.\n"
 # S4-T15 bar 5(d): (top_k, candidate_k) for the filename and both fields.
+# Queries that name the 10k corpus's files (`group-NN/doc-NNNNN.md`); the
+# random words of section 4 are body words only.
+FILENAME_QUERIES_10K = ["doc", "the doc", "group", "doc the", "group doc 00042"]
 FIELD_DEPTHS = [(5, 5), (5, 20), (5, 100), (5, 10000), (10, 10), (10, 20), (10, 100), (10, 10000)]
 
 
@@ -374,7 +379,7 @@ def main() -> int:
             run([args.searchd, "index", str(make_corpus(args.work, "c10k", 10000)), "--out", str(snapshot), "--filename-index"])
         handle = lib.open(snapshot)
         for scope_name, scope in (("all", {}), ("prefix-group-4", {"path_prefix": "group-4"})):
-            for number, text in enumerate(asked["c10k"]):
+            for number, text in enumerate(asked["c10k"] + FILENAME_QUERIES_10K):
                 fields(f"fields:c10k:{scope_name}:{number}", handle, text, scope)
         lib.lib.ss_close(handle)
 
@@ -387,7 +392,7 @@ def main() -> int:
             ("roots-school", {"roots": ["school"]}),
             ("roots-home-laptop", {"roots": ["home", "laptop"]}),
             ("labels-adults", {"principal_labels": ["adults"]}),
-            ("prefix-trips", {"path_prefix": "trips/"}),
+            ("prefix-home-trips", {"path_prefix": "home/trips/"}),
         )
         for scope_name, scope in family_scopes:
             for number, text in enumerate(family_queries()):
