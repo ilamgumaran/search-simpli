@@ -13,11 +13,28 @@ const scope = @import("scope.zig");
 const source_section = @import("source.zig");
 const filename_field = @import("filename_field.zig");
 
+/// S4-T9: the two allocators of an open. `blocks` gives the exact blocks a
+/// handle keeps (the open's, `OpenBlock`; later the source section's and the
+/// filename sections' at their first use), each one allocation of the size
+/// the manifest states, so none of them pays an arena's geometric growth;
+/// `close` frees them. `arena` gives the rest (the parsed meta, the folder,
+/// the per-load tables), released wholesale by the owner. A one-shot caller
+/// passes one allocator for both (`Allocators.one`), usually an arena,
+/// discarded wholesale with everything in it.
+pub const Allocators = struct {
+    blocks: std.mem.Allocator,
+    arena: std.mem.Allocator,
+
+    pub fn one(allocator: std.mem.Allocator) Allocators {
+        return .{ .blocks = allocator, .arena = allocator };
+    }
+};
+
 /// Open the current published generation in `dir`. All returned buffers
 /// (and the decoded `Engine`) are allocated from `allocator`; the intended
 /// use is a one-shot CLI command or test with an arena, discarded wholesale.
 pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.Engine {
-    const loaded = try loadEngine(allocator, io, dir, .{});
+    const loaded = try loadEngine(.one(allocator), io, dir, .{});
     var opened = loaded.engine;
     if (loaded.metadata.meta.len != 0) opened.roots = (try manifest.parseMeta(allocator, loaded.metadata.meta)).roots;
     // The one-shot open is eager: it also loads the filename sections now
@@ -27,11 +44,7 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
         defer catalog_file.close(io);
         const lexical_file = try dir.openFile(io, f.lexical_file, .{});
         defer lexical_file.close(io);
-        var reserved = std.heap.FixedBufferAllocator.init(loaded.filename_reserved);
-        opened.filename_decoded = filename_field.load(reserved.allocator(), io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index) catch |err| switch (err) {
-            error.OutOfMemory => try filename_field.load(allocator, io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index),
-            else => return err,
-        };
+        opened.filename_decoded = try filename_field.load(allocator, io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index);
     }
     // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
     // terms' ordinals and its hits' offsets.
@@ -42,33 +55,93 @@ pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.E
 const Loaded = struct {
     engine: engine.Engine,
     metadata: manifest.Manifest,
-    /// S4-T2 R4: reserved, unread bytes for the filename load.
-    filename_reserved: []u8 = &.{},
+};
+
+/// S4-T9: where each part of the open's one block lies, from the manifest's
+/// counts: the decoded tables (`hybrid.Document` × `document_count`, the
+/// vectors, `postings.TermEntry` × `term_count`, `postings.Posting` ×
+/// `posting_count`, the `u32` document lengths), each at its own alignment,
+/// then the manifest's bytes and the documents and lexical sections as read.
+/// Nothing is reserved for a section the open does not read: the source
+/// section and the filename sections get blocks of their own at their first
+/// use (`scope.Loads`).
+pub const OpenBlock = struct {
+    documents: usize,
+    terms: usize,
+    vectors: usize,
+    postings: usize,
+    document_lengths: usize,
+    manifest: usize,
+    documents_section: usize,
+    lexical_section: usize,
+    /// The block's length in bytes.
+    total: usize,
+
+    pub fn of(metadata: manifest.Manifest, manifest_bytes: usize) error{IndexTooLarge}!OpenBlock {
+        var size: usize = 0;
+        const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch
+            return error.IndexTooLarge;
+        var block: OpenBlock = undefined;
+        block.documents = try place(&size, hybrid.Document, metadata.document_count);
+        block.terms = try place(&size, postings.TermEntry, metadata.term_count);
+        block.vectors = try place(&size, f32, vector_count);
+        block.postings = try place(&size, postings.Posting, metadata.posting_count);
+        block.document_lengths = try place(&size, u32, metadata.document_count);
+        block.manifest = try place(&size, u8, manifest_bytes);
+        block.documents_section = try place(&size, u8, metadata.documents_bytes);
+        block.lexical_section = try place(&size, u8, metadata.lexical_bytes);
+        block.total = size;
+        return block;
+    }
+
+    fn place(size: *usize, comptime T: type, count: usize) error{IndexTooLarge}!usize {
+        const start = std.mem.alignForward(usize, size.*, @alignOf(T));
+        const bytes = std.math.mul(usize, count, @sizeOf(T)) catch return error.IndexTooLarge;
+        size.* = std.math.add(usize, start, bytes) catch return error.IndexTooLarge;
+        return start;
+    }
+
+    fn slice(comptime T: type, block: engine.OpenBlockBytes, offset: usize, count: usize) []T {
+        if (count == 0) return &.{};
+        const first: [*]T = @ptrCast(@alignCast(block.ptr + offset));
+        return first[0..count];
+    }
 };
 
 /// The manifest and the document and lexical sections, each section's
 /// checksum computed once (S4-T1; `publication.loadCurrent` followed by
 /// `Engine.open` computed it three times), with every check of
 /// `manifest.validateSnapshot` and `Engine.open`.
-fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options: engine.Engine.OpenOptions) !Loaded {
+///
+/// S4-T9: everything the open keeps of them is one exact block from
+/// `allocators.blocks` (`OpenBlock`), owned by the engine
+/// (`Engine.open_block`) and freed by `close`; before, one arena request
+/// held the two sections, and the arena sized its block at about 1.5 times
+/// that (`docs/tasks/S4-T8.md`). The manifest is read once into a buffer of
+/// its own (its counts size the block), then copied into the block and
+/// decoded from there; that buffer is freed before the open returns.
+fn loadEngine(allocators: Allocators, io: std.Io, dir: std.Io.Dir, options: engine.Engine.OpenOptions) !Loaded {
+    const blocks = allocators.blocks;
     var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
     const manifest_stat = try manifest_file.stat(io);
     manifest_file.close(io);
     const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
-    const manifest_buffer = try allocator.alloc(u8, manifest_size);
-    const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
+    const manifest_read = try blocks.alloc(u8, manifest_size);
+    defer blocks.free(manifest_read);
+    const manifest_first = try dir.readFile(io, publication.current_manifest_file, manifest_read);
+    const layout = try OpenBlock.of(try manifest.decode(manifest_first), manifest_first.len);
+
+    const block = try blocks.alignedAlloc(u8, .fromByteUnits(engine.open_block_alignment), layout.total);
+    errdefer blocks.free(block);
+    const manifest_encoded = block[layout.manifest..][0..manifest_first.len];
+    @memcpy(manifest_encoded, manifest_first);
     const metadata = try manifest.decode(manifest_encoded);
 
-    // One allocation avoids arena geometric-growth slack between the large
-    // serialized sections (PR #21's slab; the source section's buffer is
-    // reserved here and filled at its first use). The filename sections are
-    // not read here (S4-T2 R4).
-    const section_bytes = std.math.add(usize, metadata.documents_bytes, metadata.lexical_bytes) catch return error.IndexTooLarge;
-    const with_source = std.math.add(usize, section_bytes, metadata.source_bytes) catch return error.IndexTooLarge;
-    const reserved_bytes = filename_field.loadReservation(metadata);
-    const sections = try allocator.alloc(u8, std.math.add(usize, with_source, reserved_bytes) catch return error.IndexTooLarge);
-    const documents_buffer = sections[0..metadata.documents_bytes];
-    const lexical_buffer = sections[metadata.documents_bytes..section_bytes];
+    // PR #21's slab reserved the source section's buffer and S4-T2 R4 the
+    // filename sections' beside the two sections read here; S4-T9 reserves
+    // neither: each is one exact block at its first use (`scope.Loads`).
+    const documents_buffer = block[layout.documents_section..][0..metadata.documents_bytes];
+    const lexical_buffer = block[layout.lexical_section..][0..metadata.lexical_bytes];
     const snapshot = publication.LoadedSnapshot{
         .metadata = metadata,
         .manifest_encoded = manifest_encoded,
@@ -82,22 +155,23 @@ fn loadEngine(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, options
     // (`openSource` reports why). A writer still treats it as a missing
     // section and heals it (`index --update`, `apply_changes`).
 
-    const documents = try allocator.alloc(hybrid.Document, metadata.document_count);
-    const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch
-        return error.IndexTooLarge;
-    const vectors = try allocator.alloc(f32, vector_count);
-    const terms = try allocator.alloc(postings.TermEntry, metadata.term_count);
-    const posting_storage = try allocator.alloc(postings.Posting, metadata.posting_count);
-    const document_lengths = try allocator.alloc(u32, metadata.document_count);
-
-    var opened = try engine.Engine.openWith(snapshot, documents, vectors, terms, posting_storage, document_lengths, options);
-    if (metadata.hasSource()) opened.source_buffer = sections[section_bytes..with_source];
+    const vector_count = metadata.document_count * metadata.vector_dimensions; // checked by `OpenBlock.of`
+    var opened = try engine.Engine.openWith(
+        snapshot,
+        OpenBlock.slice(hybrid.Document, block, layout.documents, metadata.document_count),
+        OpenBlock.slice(f32, block, layout.vectors, vector_count),
+        OpenBlock.slice(postings.TermEntry, block, layout.terms, metadata.term_count),
+        OpenBlock.slice(postings.Posting, block, layout.postings, metadata.posting_count),
+        OpenBlock.slice(u32, block, layout.document_lengths, metadata.document_count),
+        options,
+    );
+    opened.open_block = block;
 
     // The policy comes from the manifest; `index_status` reports it without
     // reading the sections.
     opened.filename_index_enabled = metadata.filename != null;
     if (metadata.filename) |f| opened.filename_policy_id = f.policy_id;
-    return .{ .engine = opened, .metadata = metadata, .filename_reserved = sections[with_source..] };
+    return .{ .engine = opened, .metadata = metadata };
 }
 
 /// The current generation's manifest and source section (S3-T1), validated
@@ -152,7 +226,17 @@ pub const Scoped = struct {
 };
 
 pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Scoped {
-    const loaded = try loadEngine(allocator, io, dir, .{ .validate_positions = false });
+    return openScopedWith(.one(allocator), io, dir);
+}
+
+/// S4-T9: `openScoped` with the exact blocks from `allocators.blocks` (the
+/// handle's parent allocator: `ss_open`'s C allocator, `rpc.Generation`'s
+/// `gpa`) and the rest from `allocators.arena`. The owner calls `close`
+/// before it releases the arena.
+pub fn openScopedWith(allocators: Allocators, io: std.Io, dir: std.Io.Dir) !Scoped {
+    const allocator = allocators.arena;
+    const loaded = try loadEngine(allocators, io, dir, .{ .validate_positions = false });
+    errdefer allocators.blocks.free(loaded.engine.open_block.?);
     var opened_engine = loaded.engine;
     const metadata = loaded.metadata;
     const meta: ?manifest.Meta = if (metadata.meta.len != 0) try manifest.parseMeta(allocator, metadata.meta) else null;
@@ -161,10 +245,10 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
     loads.* = .{
         .io = io,
         .allocator = allocator,
+        .blocks = allocators.blocks,
         .documents = opened_engine.documents,
         .index = opened_engine.lexical_index,
         .source_bytes = metadata.source_bytes,
-        .source_buffer = opened_engine.source_buffer,
         .source_checksum = metadata.source_checksum,
         .xxh3_sections = metadata.xxh3_sections,
     };
@@ -186,7 +270,6 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
     // own bytes even after a writer pruned them.
     if (metadata.filename) |f| {
         loads.filename_manifest = metadata;
-        loads.filename_reserved = loaded.filename_reserved;
         loads.filename_catalog_file = dir.openFile(io, f.catalog_file, .{}) catch |err| blk: {
             loads.filename_error = err;
             break :blk null;
@@ -204,6 +287,17 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
     folder.source_bound = metadata.hasSource();
     opened_engine.folder = folder;
     return .{ .engine = opened_engine, .folder = folder };
+}
+
+/// S4-T9: release what `openScopedWith` keeps outside its arena: the files
+/// (`scope.Folder.close`) and the exact blocks (the source and filename
+/// sections' when a first use loaded them, `scope.Folder.releaseBlocks`,
+/// then the open's), through the allocator the open was given. Nothing of the opened generation may be used afterwards;
+/// the arena is the owner's to release after this.
+pub fn close(opened_engine: engine.Engine, folder: *const scope.Folder) void {
+    folder.close();
+    folder.releaseBlocks();
+    if (opened_engine.open_block) |block| folder.loads.blocks.free(block);
 }
 
 test "open reproduces a published demo generation" {

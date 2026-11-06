@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.3 (S4-T9; contract 2.2.0; patch: no format or API change)
+
+The open holds only what it reads. No Dart API, C ABI, contract
+(`contracts/` stays 2.2.0), index format or result changed; an index any
+0.3.x library wrote opens unchanged and nothing is rebuilt. The natives
+changed (rebuilt twice on the Mac, byte-identical: macOS 826,344 B, Android
+788,000 B, iOS framework binary 789,840 B); `native/SOURCE-SHA256` is
+`d1240609…`.
+
+- **The open's peak live bytes.** `ss_open` used to take one arena request
+  for the documents and lexical sections plus a reservation for the source
+  section and the filename sections it does not read, and the arena sized
+  that block at about 1.5 times the request. It now allocates one exact
+  block from the C allocator for what it reads (the manifest, the two
+  sections, the tables decoded from them), and the source section and the
+  filename sections get one exact block each at their first use; `ss_close`
+  frees them. Measured with the engine's capped-allocator test (filename
+  channel on, peak live bytes): 10,000 files 50,128,018 B before,
+  33,567,893 B after; 15,000 files 74,149,978 → 49,138,697 B; 20,000 files
+  98,275,150 → 64,782,850 B. At 15,000 files every operation, each on its
+  own handle, now stays under the 64 MiB workspace cap (NFR-13).
+- **Time.** `ss_open` at 10,000 files, the first `read_span`, the first
+  filename query and one changed file stay where they were (the numbers
+  are in `docs/tasks/S4-T9.md`).
+
 ## 0.3.2 (S4-T6; contract 2.2.0; patch: no API change)
 
 A crash in `searchd`, not in this package's library. No Dart API, C ABI or

@@ -355,10 +355,17 @@ pub fn documentFrequency(view: View, index: postings.Index, documents: []const h
 /// first `find`). Each load runs under `mutex`: a second caller during a
 /// load waits for it and never loads twice; afterwards a load is one atomic
 /// read. Everything a load allocates comes from `allocator` (the opened
-/// generation's; touched only under `mutex` after the open).
+/// generation's; touched only under `mutex` after the open), except the
+/// source section's bytes and the filename sections with their tables:
+/// each of those is one exact block from `blocks` (S4-T9), allocated by the
+/// first load, under `mutex`, and freed by `Folder.releaseBlocks`.
 pub const Loads = struct {
     io: std.Io,
     allocator: std.mem.Allocator,
+    /// S4-T9: the allocator of the opened generation's exact blocks
+    /// (`snapshot_open.Allocators.blocks`), which `snapshot_open.close`
+    /// frees them through.
+    blocks: std.mem.Allocator,
     mutex: std.Io.Mutex = .init,
     documents: []const hybrid.Document,
     index: postings.Index,
@@ -371,7 +378,10 @@ pub const Loads = struct {
     source_file: ?std.Io.File = null,
     /// The manifest's length and checksum of the source section.
     source_bytes: usize = 0,
-    source_buffer: ?[]u8 = null,
+    /// S4-T9: the source section's bytes, one exact block from `blocks`
+    /// allocated by the first load (none is reserved at open); kept while
+    /// `source` points into it, freed by `Folder.releaseBlocks`.
+    source_block: ?[]u8 = null,
     source_checksum: u64 = 0,
     /// The manifest's `xxh3_sections` flag (v2.1, S4-T1).
     xxh3_sections: bool = false,
@@ -393,8 +403,11 @@ pub const Loads = struct {
     /// first filename or both query (`filename_field.load`). `filename_manifest`
     /// is the manifest that binds them (null: none bound).
     filename_manifest: ?manifest.Manifest = null,
-    /// The bytes the open reserved for the load (`filename_field.loadReservation`).
-    filename_reserved: []u8 = &.{},
+    /// S4-T9: the filename sections and their decoded tables, one exact
+    /// block from `blocks` of `filename_field.loadReservation`'s size,
+    /// allocated by the first filename query (none is reserved at open);
+    /// freed by `Folder.releaseBlocks`.
+    filename_block: ?[]u8 = null,
     filename_catalog_file: ?std.Io.File = null,
     filename_lexical_file: ?std.Io.File = null,
     filename_done: std.atomic.Value(bool) = .init(false),
@@ -432,7 +445,10 @@ pub const Loads = struct {
         const file = loads.source_file orelse return null;
         const stat = file.stat(loads.io) catch |err| return @errorName(err);
         if (stat.size != loads.source_bytes) return "SourceSectionSizeMismatch";
-        const buffer = loads.source_buffer orelse try loads.allocator.alloc(u8, loads.source_bytes);
+        // S4-T9: one exact block, kept only when the section validates.
+        const buffer = try loads.blocks.alloc(u8, loads.source_bytes);
+        var kept = false;
+        defer if (!kept) loads.blocks.free(buffer);
         const read = file.readPositionalAll(loads.io, buffer, 0) catch |err| return @errorName(err);
         if (read != loads.source_bytes) return "SourceSectionSizeMismatch";
         // The checksum is computed once, by `openIndexed`'s header check,
@@ -444,6 +460,8 @@ pub const Loads = struct {
         if (section.checksum != loads.source_checksum) return "SourceSectionChecksumMismatch";
         if (!loads.xxh3_sections and section.checksum_kind != .fnv1a64) return "InvalidSourceSection";
         loads.source = section;
+        loads.source_block = buffer;
+        kept = true;
         return null;
     }
 };
@@ -520,6 +538,22 @@ pub const Folder = struct {
         loads.filename_lexical_file = null;
     }
 
+    /// S4-T9: free the exact blocks the first uses allocated (the source
+    /// section's, the filename sections'), through `Loads.blocks`. Called by
+    /// `snapshot_open.close` after `close`; nothing loaded may be used
+    /// afterwards.
+    pub fn releaseBlocks(folder: Folder) void {
+        const loads = folder.loads;
+        loads.lock();
+        defer loads.unlock();
+        if (loads.source_block) |block| loads.blocks.free(block);
+        loads.source_block = null;
+        loads.source = null;
+        if (loads.filename_block) |block| loads.blocks.free(block);
+        loads.filename_block = null;
+        loads.filename_decoded = null;
+    }
+
     /// S4-T2 R4: the decoded filename sections, loaded at the first call
     /// (once per opened generation, under the same lock as the other
     /// loads). `error.FilenameIndexUnavailable` when the generation binds
@@ -535,14 +569,24 @@ pub const Folder = struct {
                 loads.filename_loads += 1;
                 const metadata = loads.filename_manifest orelse return error.FilenameIndexUnavailable;
                 if (loads.filename_error == null) {
-                    var reserved = std.heap.FixedBufferAllocator.init(loads.filename_reserved);
-                    const from_reserved = filename_field.load(reserved.allocator(), loads.io, loads.filename_catalog_file.?, loads.filename_lexical_file.?, metadata, loads.documents, loads.index);
-                    const result = if (from_reserved) |decoded| decoded else |err| switch (err) {
-                        // Never expected (the reservation is computed from
-                        // the same manifest); the handle's arena then.
+                    // S4-T9: one exact block of the size the manifest gives
+                    // (`filename_field.loadReservation`), allocated now (the
+                    // open reserves none) and kept only when the load succeeds.
+                    const block = try loads.blocks.alloc(u8, filename_field.loadReservation(metadata));
+                    var kept = false;
+                    defer if (!kept) loads.blocks.free(block);
+                    var fixed = std.heap.FixedBufferAllocator.init(block);
+                    const from_block = filename_field.load(fixed.allocator(), loads.io, loads.filename_catalog_file.?, loads.filename_lexical_file.?, metadata, loads.documents, loads.index);
+                    const result = if (from_block) |decoded| decoded else |err| switch (err) {
+                        // Never expected (the size is computed from the same
+                        // manifest); the handle's arena then.
                         error.OutOfMemory => filename_field.load(loads.allocator, loads.io, loads.filename_catalog_file.?, loads.filename_lexical_file.?, metadata, loads.documents, loads.index),
-                        else => from_reserved,
+                        else => from_block,
                     };
+                    if (from_block) |_| {
+                        loads.filename_block = block;
+                        kept = true;
+                    } else |_| {}
                     if (result) |decoded| {
                         var loaded = decoded;
                         var highest: u16 = 0;

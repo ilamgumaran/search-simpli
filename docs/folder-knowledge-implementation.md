@@ -98,13 +98,32 @@ their generation ([`manifest-format-v2.md`](manifest-format-v2.md)):
 - flag bit 3, the opt-in filename channel: `filenames-N.hybseg` and
   `filename-lexical-N.hyblex` (48 header bytes, three payload strings;
   [`filename-field-format-v1.md`](filename-field-format-v1.md)). An open reads
-  neither: it opens both files and reserves their bytes, and the first
-  `filename` or `both` query on a handle loads and checks them once.
+  neither: it opens both files (and reserved their bytes until S4-T9), and
+  the first `filename` or `both` query on a handle loads and checks them once.
 - flag bit 4, the recovery state: `state-N.hybstate` (`HYBSTA01`, 32-byte
   header, XXH3-64; 16 header bytes after the filename fields, one payload
   string after every other). Every folder writer since v2.2 sets it; only
   writers read it (§5). Since S4-T4 its payload is binary, `HYBSTA02`
   ([`state-section-format-v2.md`](state-section-format-v2.md)).
+
+**What the open holds (S4-T9).** An opened generation keeps three kinds of
+memory. (1) One block of exactly the size its manifest states, allocated from
+the handle's parent allocator (the C allocator under `ss_open`, the server's
+under `searchd serve`/`mcp`) and never from an arena: the manifest's bytes,
+the documents and lexical sections as read, and the tables decoded from them
+(the chunk records, the dictionary terms, the postings, the document lengths,
+the vectors); `snapshot_open.OpenBlock` lays it out from the manifest's counts.
+(2) At their first use, one exact block each from the same allocator for the
+sections the open does not read: the source section (the first `read_span` or
+`outline`) and the filename sections with their decoded tables (the first
+`filename` or `both` query). Nothing is reserved for them at open. (3) An
+arena for the small parsed state (meta, roots, the per-document root map) and
+the tables later loads build (statistics groups, position tables, the source
+section's path and line indexes). `ss_close` (and `rpc.Generation.close`)
+frees the blocks, then the arena. Before S4-T9 the two sections and the two
+reservations were one arena request, which the arena served from a block about
+1.5 times its size, so the open's peak was that block (S4-T8); now it is within
+1 MiB of the bytes the open reads (`zig/src/nfr13_arena_test.zig`).
 
 Both bits are unknown to readers before v2.2, which refuse the generation
 with `UnsupportedFlags`: rolling back the library needs the directory from

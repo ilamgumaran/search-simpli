@@ -23,10 +23,21 @@ pub const Evidence = struct {
     semantic_rank: ?usize,
 };
 
+/// S4-T9: the alignment of the open's one block (`snapshot_open.OpenBlock`):
+/// the strictest of the decoded tables it holds.
+pub const open_block_alignment: usize = @max(@alignOf(hybrid.Document), @alignOf(postings.TermEntry), @alignOf(postings.Posting), @alignOf(f32), @alignOf(u32));
+pub const OpenBlockBytes = []align(open_block_alignment) u8;
+
 pub const Engine = struct {
     roots: []const manifest.RootEntry = &.{},
     folder: ?*const scope.Folder = null,
-    source_buffer: ?[]u8 = null,
+    /// S4-T9: the one block the open allocated exactly from its `blocks`
+    /// allocator (`snapshot_open.OpenBlock`): the manifest's bytes, the
+    /// documents and lexical sections and the tables decoded from them,
+    /// which `documents`, `lexical_index` and the manifest strings point
+    /// into. Owned by the opened generation and freed by
+    /// `snapshot_open.close`; null for an engine not opened from a directory.
+    open_block: ?OpenBlockBytes = null,
     /// The manifest binds the v2.2 filename sections (`index_status`'s
     /// `filename_policy_id`), whether or not they are loaded yet.
     filename_index_enabled: bool = false,

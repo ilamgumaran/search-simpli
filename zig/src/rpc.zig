@@ -31,8 +31,10 @@ pub const Server = struct {
 /// S3-T6: the scratch now lives with the operations (`ops.Workspaces`).
 pub const Workspaces = ops.Workspaces;
 
-/// S4-T6: one opened generation and the arena that holds everything its
-/// open decoded. The arena is on the heap and never moves:
+/// S4-T6: one opened generation and the arena that holds what its open
+/// keeps beside the exact blocks (S4-T9: the sections it reads and the
+/// tables decoded from them are blocks from `gpa`, `snapshot_open.Allocators`,
+/// freed by `close`). The arena is on the heap and never moves:
 /// `snapshot_open.openScoped` keeps `arena.allocator()`, a pointer to this
 /// arena, in the generation's `scope.Loads`, and the lazy loads (the source
 /// section, the statistics groups, the position tables, the filename
@@ -59,8 +61,9 @@ pub const Generation = struct {
         const a = arena.allocator();
         var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
         defer dir.close(io);
-        const opened = try snapshot_open.openScoped(a, io, dir);
-        errdefer opened.folder.close();
+        // S4-T9: the exact blocks from `gpa`, freed by `close`.
+        const opened = try snapshot_open.openScopedWith(.{ .blocks = gpa, .arena = a }, io, dir);
+        errdefer snapshot_open.close(opened.engine, opened.folder);
         const count = opened.engine.documents.len;
         return .{
             .arena = arena,
@@ -74,10 +77,10 @@ pub const Generation = struct {
         };
     }
 
-    /// Release the files the open kept (the source and filename sections)
-    /// and the arena.
+    /// Release the files the open kept (the source and filename sections),
+    /// its exact blocks (S4-T9) and the arena.
     pub fn close(generation: Generation, gpa: std.mem.Allocator) void {
-        if (generation.service.folder) |folder| folder.close();
+        if (generation.service.folder) |folder| snapshot_open.close(generation.service.engine, folder);
         generation.arena.deinit();
         gpa.destroy(generation.arena);
     }
