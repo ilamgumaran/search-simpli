@@ -1506,3 +1506,147 @@ test "S4-T4 R3: a flipped byte anywhere in a HYBSTA02 section refuses the write 
     _ = try f.applyOk(next, .{});
     try expectCommittedDetails(&f);
 }
+
+// ---------------------------------------------- S4-T13: the writer's open ---
+
+const checksum_module = @import("checksum.zig");
+const lexical_segment_module = @import("lexical_segment.zig");
+
+/// Recompute a section's own header checksum (the kind its flags name)
+/// after a test changed its bytes: a checksum-valid section, as only a wrong
+/// writer could produce.
+fn resealSection(bytes: []u8, header_length: usize) void {
+    const flags = std.mem.readInt(u16, bytes[10..12], .little);
+    const value = checksum_module.compute(checksum_module.kindOfFlags(flags), bytes[0 .. header_length - 8], bytes[header_length..]);
+    std.mem.writeInt(u64, bytes[header_length - 8 ..][0..8], value, .little);
+}
+
+fn currentManifest(f: *Fixture) !manifest.Manifest {
+    return manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", f.arena(), .unlimited));
+}
+
+fn writeManifest(f: *Fixture, metadata: manifest.Manifest) !void {
+    const buffer = try f.arena().alloc(u8, try manifest.encodedLength(metadata));
+    try f.out.writeFile(io, .{ .sub_path = "MANIFEST", .data = try manifest.encode(metadata, buffer) });
+}
+
+fn storedSectionChecksum(bytes: []const u8, header_length: usize) u64 {
+    return std.mem.readInt(u64, bytes[header_length - 8 ..][0..8], .little);
+}
+
+/// Three files, one with repeated words (postings of term frequency 2 and
+/// more), each of several lines.
+fn writerOpenFixture(f: *Fixture) !void {
+    const a = f.arena();
+    _ = try f.applyOk(try joinChanges(a, domain_roots, &.{
+        try add(a, "home", "a.md", "# A\n\ncanal canal canal boat\nthe canal lock\n", ""),
+        try add(a, "home", "b.txt", "first line of b\nsecond line of b\n", ""),
+        try add(a, "school", "c.md", "# C\n\nபள்ளி விடுமுறை and a lock\n", ""),
+    }), .{});
+}
+
+fn changeB(f: *Fixture) ![]const u8 {
+    const a = f.arena();
+    return joinChanges(a, "[]", &.{try add(a, "home", "b.txt", "first line of b\nsecond line of b\na third line\n", "")});
+}
+
+/// Where section 4 (positions) of a `HYBLEX02` section starts, and its length.
+fn positionsRange(bytes: []const u8) struct { start: usize, len: usize } {
+    const header = lexical_segment_module.inspect(bytes) catch unreachable;
+    return .{ .start = lexical_segment_module.header_length_v2 + header.document_lengths_bytes + header.dictionary_bytes + header.postings_bytes, .len = header.positions_bytes };
+}
+
+test "S4-T13 ruling 2(a): a previous lexical section with a flipped byte, or one that disagrees with the manifest, is refused at open" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    const metadata = try currentManifest(&f);
+    const original = try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
+    const before = try f.listing();
+    const range = positionsRange(original);
+    // A flipped byte in section 4: the section's own checksum.
+    const flipped = try a.dupe(u8, original);
+    flipped[range.start] ^= 0x01;
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = flipped });
+    const flipped_listing = try f.listing();
+    try std.testing.expectError(error.ChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(flipped_listing, try f.listing());
+    // The same byte re-sealed in the section, not in the manifest.
+    resealSection(flipped, lexical_segment_module.header_length_v2);
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = flipped });
+    const resealed_listing = try f.listing();
+    try std.testing.expectError(error.LexicalSectionChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(resealed_listing, try f.listing());
+    // Put back, the update publishes.
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = original });
+    try std.testing.expectEqualStrings(before, try f.listing());
+    _ = try f.applyOk(try changeB(&f), .{});
+    _ = try expectFreshParity(&f);
+}
+
+test "S4-T13 ruling 2(b): a re-sealed repeated ordinal in a carried posting is refused before anything is published" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    var metadata = try currentManifest(&f);
+    const bytes = try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
+    const header = try lexical_segment_module.inspect(bytes);
+    const index = try lexical_segment_module.decode(bytes, try a.alloc(@import("postings.zig").TermEntry, header.term_count), try a.alloc(@import("postings.zig").Posting, header.posting_count), try a.alloc(u32, header.document_count));
+    const documents = (try f.opened()).service.engine.documents;
+    // The second ordinal of a posting of `a.md` (carried: only b.txt
+    // changes), a one-byte gap set to zero: a repeated ordinal.
+    const positions = index.positions.?.positions;
+    var at: usize = 0;
+    var target: ?usize = null;
+    for (index.postings) |posting| {
+        for (0..posting.term_frequency) |k| {
+            const here = at;
+            const value = @import("postings.zig").readVarint(positions, &at).?;
+            if (target == null and k == 1 and at == here + 1 and value != 0 and std.mem.endsWith(u8, documents[posting.document_index].path, "a.md")) target = here;
+        }
+    }
+    const range = positionsRange(bytes);
+    bytes[range.start + target.?] = 0;
+    resealSection(bytes, lexical_segment_module.header_length_v2);
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = bytes });
+    metadata.lexical_checksum = storedSectionChecksum(bytes, lexical_segment_module.header_length_v2);
+    try writeManifest(&f, metadata);
+    const before = try f.listing();
+    // S4-T13: the open no longer walks the positions; the merged index's
+    // `validateIndex` (in `encodeAllocMarked`) refuses it, before publish.
+    try std.testing.expectError(error.InvalidPositions, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(before, try f.listing());
+    try std.testing.expectEqual(metadata.generation, (try currentManifest(&f)).generation);
+}
+
+test "S4-T13 ruling 2(c): a re-sealed byte appended to section 4 is refused by the merge's end-of-walk check" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    const a = f.arena();
+    try writerOpenFixture(&f);
+    var metadata = try currentManifest(&f);
+    const bytes = try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
+    const range = positionsRange(bytes);
+    const longer = try std.mem.concat(a, u8, &.{ bytes[0 .. range.start + range.len], &.{0x00}, bytes[range.start + range.len ..] });
+    // Section 4's length (header offset 56) grows by the byte.
+    std.mem.writeInt(u64, longer[56..64], range.len + 1, .little);
+    resealSection(longer, lexical_segment_module.header_length_v2);
+    try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = longer });
+    metadata.lexical_bytes = longer.len;
+    metadata.lexical_checksum = storedSectionChecksum(longer, lexical_segment_module.header_length_v2);
+    try writeManifest(&f, metadata);
+    const before = try f.listing();
+    try std.testing.expectError(error.InvalidLexicalSection, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
+    try std.testing.expectEqualStrings(before, try f.listing());
+}
+
+test "S4-T13 ruling 2(d) (and 3(c)): an untouched previous generation gives a fresh index's sections" {
+    var f = try Fixture.init();
+    defer f.deinit();
+    try writerOpenFixture(&f);
+    _ = try f.applyOk(try changeB(&f), .{});
+    _ = try expectFreshParity(&f);
+    try std.testing.expect((try currentManifest(&f)).hasSource());
+}

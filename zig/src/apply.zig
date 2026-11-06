@@ -1248,8 +1248,7 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stage
     if (lexicalStoredChecksum(lexical_encoded) != metadata.lexical_checksum) return error.LexicalSectionChecksumMismatch;
     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch return error.IndexTooLarge;
     // S4-T13 ruling 1: `segment.decode` and `lexical_segment.decode` as
-    // their parts (`inspect`, the decode of the inspected bytes, the walk
-    // of sections 4 and 5), the same work and errors in the same order.
+    // their parts (`inspect`, then the decode of the inspected bytes).
     const documents_header = try segment.inspect(documents_encoded);
     stages.sub("open_previous.documents_checksum");
     const documents = try segment.decodeInspected(documents_encoded, documents_header, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count));
@@ -1257,9 +1256,18 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stage
     const lexical_header = try lexical_segment.inspect(lexical_encoded);
     stages.sub("open_previous.lexical_checksum");
     const lexical_index = try lexical_segment.decodeWith(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count), .{ .validate_positions = false, .inspected = lexical_header });
+    // S4-T13 ruling 2: without the walk of sections 4 and 5 (the reader's
+    // deferred setting since S4-T1). The bytes' XXH3-64 checksum has just
+    // matched the stored value, and the stored value the manifest's, so a
+    // damaged section is already refused; what the walk would add is a
+    // check of a checksum-valid section that is inconsistent, which only a
+    // wrong writer produces. The writer still walks every position it
+    // carries: `mergeCarried` counts each posting's ordinals and each
+    // document's offsets (`skipVarintsChecked`) and refuses a section that
+    // ends early or has bytes left over (`InvalidLexicalSection`), and
+    // `encodeAllocMarked` validates the merged index whole (`validateIndex`:
+    // every ordinal and offset) before anything is published.
     stages.sub("open_previous.lexical_decode");
-    try lexical_segment.validatePositionSections(lexical_index);
-    stages.sub("open_previous.lexical_positions");
     if (documents.len != metadata.document_count or lexical_index.document_lengths.len != documents.len) return error.DocumentCountMismatch;
     if (lexical_index.terms.len != metadata.term_count) return error.TermCountMismatch;
     if (lexical_index.postings.len != metadata.posting_count) return error.PostingCountMismatch;
