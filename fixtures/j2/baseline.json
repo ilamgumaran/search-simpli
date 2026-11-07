@@ -1,25 +1,25 @@
 {
   "schema": "j2-baseline-v1",
-  "judgments_sha256": "5fd2ab5eeaeffb92f257dd4fc1ac5401ec723f164bfd953e64c96ed2e4bdf0d9",
-  "engine_commit": "6b67b897694c14a9816513267234a1a09b573a4f",
-  "run_commit": "6b67b897694c14a9816513267234a1a09b573a4f",
+  "judgments_sha256": "342e5d38cf043c365cdb5a634b2517703406724cd899985cd19084eb5359a44d",
+  "engine_commit": "e0d258b5b1c145745585833bb0f158a324ff8d1c",
+  "run_commit": "fa027340c7acb8750a50479d845094eef135ec0a",
   "natives_digest": "8f73bf9c3f874e98197c98c0b23237cc49358f028025a18ff35fef2934142055",
   "recorded": "2026-11-07",
   "load": {
     "before": [
-      3.83,
-      4.1,
-      3.73
+      8.88,
+      7.11,
+      5.16
     ],
     "after": [
-      3.83,
-      4.1,
-      3.73
+      8.88,
+      7.11,
+      5.16
     ],
     "top_sample": [
-      "Processes: 982 total, 3 running, 979 sleeping, 4622 threads",
-      "Load Avg: 3.83, 4.10, 3.73",
-      "CPU usage: 3.22% user, 1.63% sys, 95.14% idle"
+      "Processes: 1039 total, 5 running, 1034 sleeping, 5118 threads",
+      "Load Avg: 8.88, 7.11, 5.16",
+      "CPU usage: 15.82% user, 2.12% sys, 82.5% idle"
     ]
   },
   "top_k": 10,
@@ -28,8 +28,8 @@
       "binary": {
         "sha256": "3e700dc4d0fba72f2092365d557e273c7a3c81943b5ab0980e339f05469db5ad",
         "size": 1026904,
-        "optimize": "unknown",
-        "zig": null
+        "optimize": "ReleaseSmall",
+        "zig": "0.16.0"
       },
       "runs": {
         "content": {
@@ -96,6 +96,27 @@
               "mrr_at_10": 0.958333,
               "ndcg_at_10": 0.969244,
               "recall_at_5": 1.0
+            },
+            "morphology-heldout": {
+              "n": 14,
+              "success_at_1": 0.214286,
+              "mrr_at_10": 0.369048,
+              "ndcg_at_10": 0.420914,
+              "recall_at_5": 0.571429
+            },
+            "accent-heldout": {
+              "n": 11,
+              "success_at_1": 0.454545,
+              "mrr_at_10": 0.5,
+              "ndcg_at_10": 0.511903,
+              "recall_at_5": 0.545455
+            },
+            "tamil-heldout": {
+              "n": 13,
+              "success_at_1": 0.153846,
+              "mrr_at_10": 0.192308,
+              "ndcg_at_10": 0.202379,
+              "recall_at_5": 0.230769
             }
           },
           "overall": {
@@ -220,7 +241,45 @@
             "mh09": 1,
             "mh10": 2,
             "mh11": 1,
-            "mh12": 1
+            "mh12": 1,
+            "oh01": null,
+            "oh02": null,
+            "oh03": null,
+            "oh04": 2,
+            "oh05": 2,
+            "oh06": 1,
+            "oh07": 1,
+            "oh08": 2,
+            "oh09": 3,
+            "oh10": 3,
+            "oh11": null,
+            "oh12": null,
+            "oh13": 1,
+            "oh14": null,
+            "ah01": null,
+            "ah02": null,
+            "ah03": null,
+            "ah04": null,
+            "ah05": 1,
+            "ah06": 2,
+            "ah07": 1,
+            "ah08": null,
+            "ah09": 1,
+            "ah10": 1,
+            "ah11": 1,
+            "tah01": null,
+            "tah02": null,
+            "tah03": null,
+            "tah04": null,
+            "tah05": null,
+            "tah06": null,
+            "tah07": null,
+            "tah08": null,
+            "tah09": null,
+            "tah10": null,
+            "tag1": 1,
+            "tag2": 1,
+            "tag3": 2
           },
           "slice_of": {
             "c01": "control",
@@ -355,7 +414,51 @@
             "mh11": "misspelling-heldout",
             "mh12": "misspelling-heldout",
             "mhn1": "negatives",
-            "mhn2": "negatives"
+            "mhn2": "negatives",
+            "oh01": "morphology-heldout",
+            "oh02": "morphology-heldout",
+            "oh03": "morphology-heldout",
+            "oh04": "morphology-heldout",
+            "oh05": "morphology-heldout",
+            "oh06": "morphology-heldout",
+            "oh07": "morphology-heldout",
+            "oh08": "morphology-heldout",
+            "oh09": "morphology-heldout",
+            "oh10": "morphology-heldout",
+            "oh11": "morphology-heldout",
+            "oh12": "morphology-heldout",
+            "oh13": "morphology-heldout",
+            "oh14": "morphology-heldout",
+            "ohn1": "negatives",
+            "ohn2": "negatives",
+            "ah01": "accent-heldout",
+            "ah02": "accent-heldout",
+            "ah03": "accent-heldout",
+            "ah04": "accent-heldout",
+            "ah05": "accent-heldout",
+            "ah06": "accent-heldout",
+            "ah07": "accent-heldout",
+            "ah08": "accent-heldout",
+            "ah09": "accent-heldout",
+            "ah10": "accent-heldout",
+            "ah11": "accent-heldout",
+            "ahn1": "negatives",
+            "ahn2": "negatives",
+            "tah01": "tamil-heldout",
+            "tah02": "tamil-heldout",
+            "tah03": "tamil-heldout",
+            "tah04": "tamil-heldout",
+            "tah05": "tamil-heldout",
+            "tah06": "tamil-heldout",
+            "tah07": "tamil-heldout",
+            "tah08": "tamil-heldout",
+            "tah09": "tamil-heldout",
+            "tah10": "tamil-heldout",
+            "tag1": "tamil-heldout",
+            "tag2": "tamil-heldout",
+            "tag3": "tamil-heldout",
+            "tahn1": "negatives",
+            "tahn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -555,6 +658,72 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "ohn1": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "school",
+                "path": "reading-log-pip.md",
+                "start_line": 3,
+                "end_line": 7
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ohn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "school",
+                "path": "class-notes-wren.md",
+                "start_line": 5,
+                "end_line": 9
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ahn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "recipes/pancakes.md",
+                "start_line": 1,
+                "end_line": 4
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ahn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/bedtime-stories.md",
+                "start_line": 13,
+                "end_line": 20
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "tahn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/tamil-jottings.md",
+                "start_line": 20,
+                "end_line": 26
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tahn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/tamil-jottings.md",
+                "start_line": 8,
+                "end_line": 13
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         },
@@ -622,6 +791,27 @@
               "mrr_at_10": 0.958333,
               "ndcg_at_10": 0.969244,
               "recall_at_5": 1.0
+            },
+            "morphology-heldout": {
+              "n": 14,
+              "success_at_1": 0.214286,
+              "mrr_at_10": 0.392857,
+              "ndcg_at_10": 0.439618,
+              "recall_at_5": 0.571429
+            },
+            "accent-heldout": {
+              "n": 11,
+              "success_at_1": 0.454545,
+              "mrr_at_10": 0.454545,
+              "ndcg_at_10": 0.454545,
+              "recall_at_5": 0.454545
+            },
+            "tamil-heldout": {
+              "n": 13,
+              "success_at_1": 0.153846,
+              "mrr_at_10": 0.192308,
+              "ndcg_at_10": 0.202379,
+              "recall_at_5": 0.230769
             }
           },
           "overall": {
@@ -746,7 +936,45 @@
             "mh09": 1,
             "mh10": 2,
             "mh11": 1,
-            "mh12": 1
+            "mh12": 1,
+            "oh01": null,
+            "oh02": null,
+            "oh03": null,
+            "oh04": 2,
+            "oh05": 2,
+            "oh06": 1,
+            "oh07": 1,
+            "oh08": 2,
+            "oh09": 2,
+            "oh10": 2,
+            "oh11": null,
+            "oh12": null,
+            "oh13": 1,
+            "oh14": null,
+            "ah01": null,
+            "ah02": null,
+            "ah03": null,
+            "ah04": null,
+            "ah05": 1,
+            "ah06": null,
+            "ah07": 1,
+            "ah08": null,
+            "ah09": 1,
+            "ah10": 1,
+            "ah11": 1,
+            "tah01": null,
+            "tah02": null,
+            "tah03": null,
+            "tah04": null,
+            "tah05": null,
+            "tah06": null,
+            "tah07": null,
+            "tah08": null,
+            "tah09": null,
+            "tah10": null,
+            "tag1": 1,
+            "tag2": 1,
+            "tag3": 2
           },
           "slice_of": {
             "c01": "control",
@@ -881,7 +1109,51 @@
             "mh11": "misspelling-heldout",
             "mh12": "misspelling-heldout",
             "mhn1": "negatives",
-            "mhn2": "negatives"
+            "mhn2": "negatives",
+            "oh01": "morphology-heldout",
+            "oh02": "morphology-heldout",
+            "oh03": "morphology-heldout",
+            "oh04": "morphology-heldout",
+            "oh05": "morphology-heldout",
+            "oh06": "morphology-heldout",
+            "oh07": "morphology-heldout",
+            "oh08": "morphology-heldout",
+            "oh09": "morphology-heldout",
+            "oh10": "morphology-heldout",
+            "oh11": "morphology-heldout",
+            "oh12": "morphology-heldout",
+            "oh13": "morphology-heldout",
+            "oh14": "morphology-heldout",
+            "ohn1": "negatives",
+            "ohn2": "negatives",
+            "ah01": "accent-heldout",
+            "ah02": "accent-heldout",
+            "ah03": "accent-heldout",
+            "ah04": "accent-heldout",
+            "ah05": "accent-heldout",
+            "ah06": "accent-heldout",
+            "ah07": "accent-heldout",
+            "ah08": "accent-heldout",
+            "ah09": "accent-heldout",
+            "ah10": "accent-heldout",
+            "ah11": "accent-heldout",
+            "ahn1": "negatives",
+            "ahn2": "negatives",
+            "tah01": "tamil-heldout",
+            "tah02": "tamil-heldout",
+            "tah03": "tamil-heldout",
+            "tah04": "tamil-heldout",
+            "tah05": "tamil-heldout",
+            "tah06": "tamil-heldout",
+            "tah07": "tamil-heldout",
+            "tah08": "tamil-heldout",
+            "tah09": "tamil-heldout",
+            "tah10": "tamil-heldout",
+            "tag1": "tamil-heldout",
+            "tag2": "tamil-heldout",
+            "tag3": "tamil-heldout",
+            "tahn1": "negatives",
+            "tahn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -1081,6 +1353,72 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "ohn1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "reading-log-pip.md",
+                "start_line": 3,
+                "end_line": 7
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ohn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "school",
+                "path": "class-notes-wren.md",
+                "start_line": 5,
+                "end_line": 9
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ahn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "recipes/pancakes.md",
+                "start_line": 1,
+                "end_line": 4
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ahn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/bedtime-stories.md",
+                "start_line": 13,
+                "end_line": 20
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "tahn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/tamil-jottings.md",
+                "start_line": 20,
+                "end_line": 26
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tahn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/tamil-jottings.md",
+                "start_line": 8,
+                "end_line": 13
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         }
@@ -1154,6 +1492,27 @@
               "mrr_at_10": 0.958333,
               "ndcg_at_10": 0.969244,
               "recall_at_5": 1.0
+            },
+            "morphology-heldout": {
+              "n": 14,
+              "success_at_1": 0.214286,
+              "mrr_at_10": 0.369048,
+              "ndcg_at_10": 0.420914,
+              "recall_at_5": 0.571429
+            },
+            "accent-heldout": {
+              "n": 11,
+              "success_at_1": 0.454545,
+              "mrr_at_10": 0.5,
+              "ndcg_at_10": 0.511903,
+              "recall_at_5": 0.545455
+            },
+            "tamil-heldout": {
+              "n": 13,
+              "success_at_1": 0.153846,
+              "mrr_at_10": 0.192308,
+              "ndcg_at_10": 0.202379,
+              "recall_at_5": 0.230769
             }
           },
           "overall": {
@@ -1278,7 +1637,45 @@
             "mh09": 1,
             "mh10": 2,
             "mh11": 1,
-            "mh12": 1
+            "mh12": 1,
+            "oh01": null,
+            "oh02": null,
+            "oh03": null,
+            "oh04": 2,
+            "oh05": 2,
+            "oh06": 1,
+            "oh07": 1,
+            "oh08": 2,
+            "oh09": 3,
+            "oh10": 3,
+            "oh11": null,
+            "oh12": null,
+            "oh13": 1,
+            "oh14": null,
+            "ah01": null,
+            "ah02": null,
+            "ah03": null,
+            "ah04": null,
+            "ah05": 1,
+            "ah06": 2,
+            "ah07": 1,
+            "ah08": null,
+            "ah09": 1,
+            "ah10": 1,
+            "ah11": 1,
+            "tah01": null,
+            "tah02": null,
+            "tah03": null,
+            "tah04": null,
+            "tah05": null,
+            "tah06": null,
+            "tah07": null,
+            "tah08": null,
+            "tah09": null,
+            "tah10": null,
+            "tag1": 1,
+            "tag2": 1,
+            "tag3": 2
           },
           "slice_of": {
             "c01": "control",
@@ -1413,7 +1810,51 @@
             "mh11": "misspelling-heldout",
             "mh12": "misspelling-heldout",
             "mhn1": "negatives",
-            "mhn2": "negatives"
+            "mhn2": "negatives",
+            "oh01": "morphology-heldout",
+            "oh02": "morphology-heldout",
+            "oh03": "morphology-heldout",
+            "oh04": "morphology-heldout",
+            "oh05": "morphology-heldout",
+            "oh06": "morphology-heldout",
+            "oh07": "morphology-heldout",
+            "oh08": "morphology-heldout",
+            "oh09": "morphology-heldout",
+            "oh10": "morphology-heldout",
+            "oh11": "morphology-heldout",
+            "oh12": "morphology-heldout",
+            "oh13": "morphology-heldout",
+            "oh14": "morphology-heldout",
+            "ohn1": "negatives",
+            "ohn2": "negatives",
+            "ah01": "accent-heldout",
+            "ah02": "accent-heldout",
+            "ah03": "accent-heldout",
+            "ah04": "accent-heldout",
+            "ah05": "accent-heldout",
+            "ah06": "accent-heldout",
+            "ah07": "accent-heldout",
+            "ah08": "accent-heldout",
+            "ah09": "accent-heldout",
+            "ah10": "accent-heldout",
+            "ah11": "accent-heldout",
+            "ahn1": "negatives",
+            "ahn2": "negatives",
+            "tah01": "tamil-heldout",
+            "tah02": "tamil-heldout",
+            "tah03": "tamil-heldout",
+            "tah04": "tamil-heldout",
+            "tah05": "tamil-heldout",
+            "tah06": "tamil-heldout",
+            "tah07": "tamil-heldout",
+            "tah08": "tamil-heldout",
+            "tah09": "tamil-heldout",
+            "tah10": "tamil-heldout",
+            "tag1": "tamil-heldout",
+            "tag2": "tamil-heldout",
+            "tag3": "tamil-heldout",
+            "tahn1": "negatives",
+            "tahn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -1613,6 +2054,72 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "ohn1": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "school",
+                "path": "reading-log-pip.md",
+                "start_line": 3,
+                "end_line": 7
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ohn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "school",
+                "path": "class-notes-wren.md",
+                "start_line": 5,
+                "end_line": 9
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ahn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "recipes/pancakes.md",
+                "start_line": 1,
+                "end_line": 4
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ahn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/bedtime-stories.md",
+                "start_line": 13,
+                "end_line": 20
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "tahn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/tamil-jottings.md",
+                "start_line": 20,
+                "end_line": 26
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tahn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/tamil-jottings.md",
+                "start_line": 8,
+                "end_line": 13
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         },
@@ -1680,6 +2187,27 @@
               "mrr_at_10": 0.958333,
               "ndcg_at_10": 0.969244,
               "recall_at_5": 1.0
+            },
+            "morphology-heldout": {
+              "n": 14,
+              "success_at_1": 0.214286,
+              "mrr_at_10": 0.392857,
+              "ndcg_at_10": 0.439618,
+              "recall_at_5": 0.571429
+            },
+            "accent-heldout": {
+              "n": 11,
+              "success_at_1": 0.454545,
+              "mrr_at_10": 0.454545,
+              "ndcg_at_10": 0.454545,
+              "recall_at_5": 0.454545
+            },
+            "tamil-heldout": {
+              "n": 13,
+              "success_at_1": 0.153846,
+              "mrr_at_10": 0.192308,
+              "ndcg_at_10": 0.202379,
+              "recall_at_5": 0.230769
             }
           },
           "overall": {
@@ -1804,7 +2332,45 @@
             "mh09": 1,
             "mh10": 2,
             "mh11": 1,
-            "mh12": 1
+            "mh12": 1,
+            "oh01": null,
+            "oh02": null,
+            "oh03": null,
+            "oh04": 2,
+            "oh05": 2,
+            "oh06": 1,
+            "oh07": 1,
+            "oh08": 2,
+            "oh09": 2,
+            "oh10": 2,
+            "oh11": null,
+            "oh12": null,
+            "oh13": 1,
+            "oh14": null,
+            "ah01": null,
+            "ah02": null,
+            "ah03": null,
+            "ah04": null,
+            "ah05": 1,
+            "ah06": null,
+            "ah07": 1,
+            "ah08": null,
+            "ah09": 1,
+            "ah10": 1,
+            "ah11": 1,
+            "tah01": null,
+            "tah02": null,
+            "tah03": null,
+            "tah04": null,
+            "tah05": null,
+            "tah06": null,
+            "tah07": null,
+            "tah08": null,
+            "tah09": null,
+            "tah10": null,
+            "tag1": 1,
+            "tag2": 1,
+            "tag3": 2
           },
           "slice_of": {
             "c01": "control",
@@ -1939,7 +2505,51 @@
             "mh11": "misspelling-heldout",
             "mh12": "misspelling-heldout",
             "mhn1": "negatives",
-            "mhn2": "negatives"
+            "mhn2": "negatives",
+            "oh01": "morphology-heldout",
+            "oh02": "morphology-heldout",
+            "oh03": "morphology-heldout",
+            "oh04": "morphology-heldout",
+            "oh05": "morphology-heldout",
+            "oh06": "morphology-heldout",
+            "oh07": "morphology-heldout",
+            "oh08": "morphology-heldout",
+            "oh09": "morphology-heldout",
+            "oh10": "morphology-heldout",
+            "oh11": "morphology-heldout",
+            "oh12": "morphology-heldout",
+            "oh13": "morphology-heldout",
+            "oh14": "morphology-heldout",
+            "ohn1": "negatives",
+            "ohn2": "negatives",
+            "ah01": "accent-heldout",
+            "ah02": "accent-heldout",
+            "ah03": "accent-heldout",
+            "ah04": "accent-heldout",
+            "ah05": "accent-heldout",
+            "ah06": "accent-heldout",
+            "ah07": "accent-heldout",
+            "ah08": "accent-heldout",
+            "ah09": "accent-heldout",
+            "ah10": "accent-heldout",
+            "ah11": "accent-heldout",
+            "ahn1": "negatives",
+            "ahn2": "negatives",
+            "tah01": "tamil-heldout",
+            "tah02": "tamil-heldout",
+            "tah03": "tamil-heldout",
+            "tah04": "tamil-heldout",
+            "tah05": "tamil-heldout",
+            "tah06": "tamil-heldout",
+            "tah07": "tamil-heldout",
+            "tah08": "tamil-heldout",
+            "tah09": "tamil-heldout",
+            "tah10": "tamil-heldout",
+            "tag1": "tamil-heldout",
+            "tag2": "tamil-heldout",
+            "tag3": "tamil-heldout",
+            "tahn1": "negatives",
+            "tahn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -2136,6 +2746,72 @@
                 "path": "weekend/sale-in-the-field.md",
                 "start_line": 1,
                 "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "ohn1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "reading-log-pip.md",
+                "start_line": 3,
+                "end_line": 7
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ohn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "school",
+                "path": "class-notes-wren.md",
+                "start_line": 5,
+                "end_line": 9
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ahn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "recipes/pancakes.md",
+                "start_line": 1,
+                "end_line": 4
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "ahn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/bedtime-stories.md",
+                "start_line": 13,
+                "end_line": 20
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "tahn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/tamil-jottings.md",
+                "start_line": 20,
+                "end_line": 26
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tahn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/tamil-jottings.md",
+                "start_line": 8,
+                "end_line": 13
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
@@ -2269,6 +2945,14 @@
       "judgments_sha256": "5fd2ab5eeaeffb92f257dd4fc1ac5401ec723f164bfd953e64c96ed2e4bdf0d9",
       "natives_digest": "62c37f1f5a769dbacc7c0a059a1565cd1fb4c835a1939e7b616a6ee79ab3477e",
       "why": "S5-T3: fuzzy-v1 (misspelling tolerance) changes the ranking of every query with an unmatched Latin word of 5+ code points; re-recorded on both surfaces at the S5-T3 branch after the gate passed against the S5-T2 baseline with an empty allow-list"
+    },
+    {
+      "engine_commit": "6b67b897694c14a9816513267234a1a09b573a4f",
+      "run_commit": "6b67b897694c14a9816513267234a1a09b573a4f",
+      "recorded": "2026-11-07",
+      "judgments_sha256": "5fd2ab5eeaeffb92f257dd4fc1ac5401ec723f164bfd953e64c96ed2e4bdf0d9",
+      "natives_digest": "8f73bf9c3f874e98197c98c0b23237cc49358f028025a18ff35fef2934142055",
+      "why": "S5-T4 step 1: three held-out slices added (morphology-heldout, accent-heldout, tamil-heldout; six new files, 31 sections); every earlier cell on both surfaces unchanged (366 of 366)"
     }
   ]
 }

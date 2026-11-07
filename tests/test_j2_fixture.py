@@ -19,7 +19,8 @@ PACK = REPO / "fixtures" / "j2"
 ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
 SLICE_MINIMUMS = {"control": 20, "misspelling": 15, "morphology": 12, "accent": 6, "tamil": 10,
-                  "title": 10, "phrase": 8, "title-heldout": 6, "misspelling-heldout": 10}
+                  "title": 10, "phrase": 8, "title-heldout": 6, "misspelling-heldout": 10,
+                  "morphology-heldout": 12, "accent-heldout": 10, "tamil-heldout": 10}
 
 
 def pack_files() -> dict[str, bytes]:
@@ -137,6 +138,53 @@ class InventoryTests(unittest.TestCase):
             self.assertEqual(q["mode"], "knowledge", q["id"])
             self.assertFalse({c["typed"], c["meant"]} & mwords, q["id"])
             self.assertTrue(any(k["check"].startswith("held out") for k in q["checks"]), q["id"])
+    def kinds(self, name: str, field: str) -> dict[str, int]:
+        held = [q for q in self.judgments["queries"] if q["slice"] == name]
+        out: dict[str, int] = {}
+        for q in held:
+            out[q.get(field)] = out.get(q.get(field), 0) + 1
+            self.assertEqual(q["mode"], "knowledge", q["id"])
+            self.assertTrue(any(c["check"].startswith("held out") for c in q["checks"]), q["id"])
+        return out
+
+    def test_heldout_morphology_slice(self):
+        """S5-T4 ruling 11 of its plan: two -ies, two -ches, two -oes, three keep
+        guards, three -ing/-ed rows, one title-only row; both directions."""
+        kinds = self.kinds("morphology-heldout", "kind")
+        for kind, minimum in (("-ies", 2), ("-ches", 2), ("-oes", 2), ("keep", 3), ("-ing/-ed", 3), ("title", 1)):
+            self.assertGreaterEqual(kinds.get(kind, 0), minimum, kind)
+        held = [q for q in self.judgments["queries"] if q["slice"] == "morphology-heldout"]
+        directions = {c.get("direction") for q in held for c in q["checks"]}
+        self.assertTrue({"query plural", "query singular"} <= directions)
+        for q in held:
+            if q["kind"] == "keep":
+                self.assertTrue(any(c["check"].startswith("keep guard") for c in q["checks"]), q["id"])
+
+    def test_heldout_accent_slice(self):
+        """S5-T4 ruling 11 of its plan: four short words, two compatibility forms, the
+        sharp s, a table letter, a merge guard; plain and accented queries."""
+        kinds = self.kinds("accent-heldout", "kind")
+        for kind, minimum in (("short", 4), ("nfkc", 2), ("sharp-s", 1), ("table", 1), ("merge-guard", 1)):
+            self.assertGreaterEqual(kinds.get(kind, 0), minimum, kind)
+        held = [q for q in self.judgments["queries"] if q["slice"] == "accent-heldout"]
+        directions = {c.get("direction") for q in held for c in q["checks"]}
+        self.assertTrue({"plain query", "accented query"} <= directions)
+        for q in held:
+            if q["kind"] == "short":
+                fact = next(c for c in q["checks"] if "query_code_points" in c)
+                self.assertLessEqual(fact["query_code_points"], 4, q["id"])
+
+    def test_heldout_tamil_slice(self):
+        """S5-T4 ruling 11 of its plan: ten rule rows over the seven suffixes and three
+        guards of three kinds, on words in none of J2's Tamil rows."""
+        rules = self.kinds("tamil-heldout", "rule")
+        rules.pop(None, None)
+        self.assertGreaterEqual(sum(rules.values()), 10)
+        self.assertEqual(set(rules), {"ங்கள்", "கள்", "த்தில்", "த்தின்", "க்கு", "யில்", "யின்"})
+        guards = self.kinds("tamil-heldout", "tamil_guard")
+        guards.pop(None, None)
+        self.assertEqual(set(guards), {"accusative", "-வு noun", "keep-list pronoun"})
+
 
     def test_rows(self):
         lines = {f"{f['root_id']}/{f['path']}": f["lines"] for f in self.judgments["files"]}
@@ -204,6 +252,21 @@ class CheckTests(unittest.TestCase):
 
     def test_heldout_name_word_must_be_absent_from_every_body(self):
         self.broken("mh01", name=True)
+
+    def test_heldout_morphology_must_not_reuse_a_morphology_slice_word(self):
+        self.broken("o02", slice="morphology-heldout", kind="-s")
+
+    def test_keep_guard_needs_the_merged_form_in_the_distractor(self):
+        self.broken("oh08", guard=("glasses", "glas"))
+
+    def test_merge_guard_needs_the_other_word_in_the_distractor(self):
+        self.broken("ah11", guard=("méla", "mella"))
+
+    def test_heldout_tamil_rule_must_end_the_form(self):
+        self.broken("tah01", rule="க்கு")
+
+    def test_heldout_tamil_must_not_reuse_a_tamil_row_word(self):
+        self.broken("t01", slice="tamil-heldout", rule="கள்")
 
     def test_phrase_distractor_must_hold_the_words_apart(self):
         self.broken("p01", adjacent=1, apart=0)

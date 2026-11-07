@@ -24,7 +24,10 @@
     "phrase": 8,
     "negatives": 0,
     "title-heldout": 6,
-    "misspelling-heldout": 10
+    "misspelling-heldout": 10,
+    "morphology-heldout": 12,
+    "accent-heldout": 10,
+    "tamil-heldout": 10
   },
   "counts": {
     "control": 23,
@@ -34,9 +37,12 @@
     "tamil": 13,
     "title": 11,
     "phrase": 10,
-    "negatives": 18,
+    "negatives": 24,
     "title-heldout": 8,
-    "misspelling-heldout": 12
+    "misspelling-heldout": 12,
+    "morphology-heldout": 14,
+    "accent-heldout": 11,
+    "tamil-heldout": 13
   },
   "files": [
     {
@@ -59,6 +65,13 @@
       "bytes": 539,
       "lines": 23,
       "sha256": "c3a07ac9f3dc7cb00524c9bfc6af716b1514f1a00f67914e792b768609e690ea"
+    },
+    {
+      "root_id": "home",
+      "path": "days-out/seals.md",
+      "bytes": 293,
+      "lines": 6,
+      "sha256": "c241b35c826a3bddcb09fb84a61c3ab4bfc7c351d6b92531c9ce7f4556c1b8b9"
     },
     {
       "root_id": "home",
@@ -94,6 +107,13 @@
       "bytes": 283,
       "lines": 14,
       "sha256": "147b8e1c0d6bf79d332a8d7c995d448c7a57132e8667867b9c397900cb2c2fc4"
+    },
+    {
+      "root_id": "home",
+      "path": "household.md",
+      "bytes": 1597,
+      "lines": 35,
+      "sha256": "336ff47e9e6ebb8e1fcc9d84fcf4d7a9cc2adcaf22572456c38dd8a8529bdee0"
     },
     {
       "root_id": "home",
@@ -164,6 +184,13 @@
       "bytes": 120,
       "lines": 12,
       "sha256": "fdf223af696a47f6d95d352196df2b8c8ed457f81078a9b130cf7206287e7c18"
+    },
+    {
+      "root_id": "home",
+      "path": "tamil/tamil-jottings.md",
+      "bytes": 3927,
+      "lines": 46,
+      "sha256": "7d482cbd93964022af33d2c8eb3bf188d95a8792986179747022c3a0dfcc3648"
     },
     {
       "root_id": "home",
@@ -251,6 +278,13 @@
     },
     {
       "root_id": "laptop",
+      "path": "notes/bedtime-stories.md",
+      "bytes": 967,
+      "lines": 25,
+      "sha256": "b8999b0d06bdae7af65267c77e9ea4f5732c9151c0bc3f15359f28712aa85e3e"
+    },
+    {
+      "root_id": "laptop",
       "path": "notes/car-garage.md",
       "bytes": 228,
       "lines": 11,
@@ -262,6 +296,13 @@
       "bytes": 230,
       "lines": 10,
       "sha256": "a599e61ee7e560083c0bb9843b42ba98dfde79d8f914cb204f24c37928f43e48"
+    },
+    {
+      "root_id": "laptop",
+      "path": "notes/jottings.md",
+      "bytes": 2055,
+      "lines": 45,
+      "sha256": "2b7f79fd9c93169b72d28605f1dd36c483d3dab0cb4a85faa04be5456c87141a"
     },
     {
       "root_id": "laptop",
@@ -430,6 +471,13 @@
       "bytes": 193,
       "lines": 5,
       "sha256": "737f052134a3b91d036b5b0d3923ace2894c9d5dfd35009b0a3f3f0c200033c9"
+    },
+    {
+      "root_id": "school",
+      "path": "noticeboard.md",
+      "bytes": 2062,
+      "lines": 51,
+      "sha256": "3e83390db586dd64800141b6c10a9638a224893041ce7d3d400ae495a7ea4696"
     },
     {
       "root_id": "school",
@@ -6335,6 +6383,1641 @@
           "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
           "present": [
             "sale"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh01",
+      "question": "Can we see the puppy at the farm?",
+      "query": "puppy",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "Hollybank Farm"
+          ],
+          "note": "six puppies"
+        }
+      ],
+      "kind": "-ies",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "puppy",
+          "file_form": "puppies",
+          "kind": "-ies",
+          "direction": "query singular"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh02",
+      "question": "How do I make pastries?",
+      "query": "pastries",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "Sunday baking"
+          ],
+          "note": "shortcrust pastry"
+        }
+      ],
+      "kind": "-ies",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "pastries",
+          "file_form": "pastry",
+          "kind": "-ies",
+          "direction": "query plural"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh03",
+      "question": "Who needs a watch on race day?",
+      "query": "watch",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 9,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "Race timekeepers"
+          ],
+          "note": "both with watches"
+        }
+      ],
+      "kind": "-ches",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "watch",
+          "file_form": "watches",
+          "kind": "-ches",
+          "direction": "query singular"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh04",
+      "question": "Are there peaches at the farm?",
+      "query": "peaches",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "Hollybank Farm"
+          ],
+          "note": "one old peach tree"
+        }
+      ],
+      "kind": "-ches",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "peaches",
+          "file_form": "peach",
+          "kind": "-ches",
+          "direction": "query plural"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh05",
+      "question": "Where is the domino set?",
+      "query": "domino",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 17,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "Rainy afternoons"
+          ],
+          "note": "in the tin under the stairs"
+        }
+      ],
+      "kind": "-oes",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "domino",
+          "file_form": "dominoes",
+          "kind": "-oes",
+          "direction": "query singular"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh06",
+      "question": "Which comic heroes does Pip draw?",
+      "query": "comic heroes",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 25,
+          "end_line": 31,
+          "grade": 2,
+          "section_path": [
+            "Comic swap"
+          ],
+          "note": "one comic hero every evening"
+        }
+      ],
+      "kind": "-oes",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "heroes",
+          "file_form": "hero",
+          "kind": "-oes",
+          "direction": "query plural"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh07",
+      "question": "Where are my gloves?",
+      "query": "gloves",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 9,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "Hooks by door"
+          ],
+          "note": "one red glove missing"
+        }
+      ],
+      "kind": "-s",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "gloves",
+          "file_form": "glove",
+          "kind": "-s",
+          "direction": "query plural"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh08",
+      "question": "When are Joss's new glasses ready?",
+      "query": "glasses",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 33,
+          "end_line": 38,
+          "grade": 2,
+          "section_path": [
+            "Glasses"
+          ],
+          "note": "collects new glasses on Monday"
+        },
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "section_path": [
+            "Sunday baking"
+          ],
+          "note": "glass three times: jars, lids, funnel"
+        }
+      ],
+      "kind": "keep",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "keep guard: the word is in the answer; the form a plural rule without the keep list would make, and not the word, is in the distractor",
+          "word": "glasses",
+          "merged": "glass",
+          "kind": "keep"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh09",
+      "question": "Any news from the neighbours?",
+      "query": "news",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 17,
+          "end_line": 22,
+          "grade": 2,
+          "section_path": [
+            "News from Orchard Row"
+          ],
+          "note": "the news"
+        },
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 24,
+          "end_line": 28,
+          "grade": 0,
+          "section_path": [
+            "Gate"
+          ],
+          "note": "new three times"
+        }
+      ],
+      "kind": "keep",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "keep guard: the word is in the answer; the form a plural rule without the keep list would make, and not the word, is in the distractor",
+          "word": "news",
+          "merged": "new",
+          "kind": "keep"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh10",
+      "question": "Which German word means side?",
+      "query": "means",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 23,
+          "end_line": 28,
+          "grade": 2,
+          "section_path": [
+            "German corner"
+          ],
+          "note": "Mannschaft means side"
+        },
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 30,
+          "end_line": 35,
+          "grade": 0,
+          "section_path": [
+            "Mean"
+          ],
+          "note": "mean, the average, four times"
+        }
+      ],
+      "kind": "keep",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "keep guard: the word is in the answer; the form a plural rule without the keep list would make, and not the word, is in the distractor",
+          "word": "means",
+          "merged": "mean",
+          "kind": "keep"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh11",
+      "question": "Who did the knitting?",
+      "query": "knitting",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 9,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "Hooks by door"
+          ],
+          "note": "Aunt Edie knitted two scarves"
+        }
+      ],
+      "kind": "-ing/-ed",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "knitting",
+          "file_form": "knitted",
+          "kind": "-ing/-ed"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh12",
+      "question": "Where have Joss and Pip cycled?",
+      "query": "cycled",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 40,
+          "end_line": 45,
+          "grade": 2,
+          "section_path": [
+            "Towpath"
+          ],
+          "note": "went cycling along the towpath"
+        }
+      ],
+      "kind": "-ing/-ed",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "cycled",
+          "file_form": "cycling",
+          "kind": "-ing/-ed"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh13",
+      "question": "Who danced round the maypole?",
+      "query": "danced maypole",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "Assembly notes"
+          ],
+          "note": "maypole dancing"
+        }
+      ],
+      "kind": "-ing/-ed",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "danced",
+          "file_form": "dancing",
+          "kind": "-ing/-ed"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "morphology-heldout",
+      "id": "oh14",
+      "question": "Did we see a seal?",
+      "query": "seal",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "days-out/seals.md",
+          "start_line": 1,
+          "end_line": 6,
+          "grade": 2,
+          "note": "the file; seals is in its name only"
+        }
+      ],
+      "kind": "title",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "title only: neither form in the body; the other form in the file name",
+          "query_form": "seal",
+          "title_form": "seals",
+          "kind": "title"
+        },
+        {
+          "check": "held out: no query word or form is a query word or form of the morphology slice"
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "ohn1",
+      "question": "Any fox cubs?",
+      "query": "fox cubs",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "school-play.md",
+          "start_line": 3,
+          "end_line": 3,
+          "grade": 0,
+          "note": "the play's fox"
+        }
+      ],
+      "negative": true,
+      "negative_of": "morphology-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "fox"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "ohn2",
+      "question": "Is there a hero costume?",
+      "query": "hero costume",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 25,
+          "end_line": 31,
+          "grade": 0,
+          "section_path": [
+            "Comic swap"
+          ],
+          "note": "a comic hero, no costume"
+        }
+      ],
+      "negative": true,
+      "negative_of": "morphology-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "hero",
+            "costume"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah01",
+      "question": "When is the summer fete?",
+      "query": "fete",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 9,
+          "end_line": 14,
+          "grade": 2,
+          "section_path": [
+            "Summer fête"
+          ],
+          "note": "fête, accented in the file"
+        }
+      ],
+      "kind": "short",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "fete",
+          "file_form": "fête",
+          "kind": "short",
+          "direction": "plain query",
+          "query_code_points": 4
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah02",
+      "question": "When does Zoë join? (typed with the diaeresis)",
+      "query": "zoë",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "Assembly notes"
+          ],
+          "note": "Zoe, plain in the file"
+        }
+      ],
+      "kind": "short",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "zoë",
+          "file_form": "zoe",
+          "kind": "short",
+          "direction": "accented query",
+          "query_code_points": 3
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah03",
+      "question": "What role does Pip have?",
+      "query": "role",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 9,
+          "end_line": 14,
+          "grade": 2,
+          "section_path": [
+            "Summer fête"
+          ],
+          "note": "rôle, accented in the file"
+        }
+      ],
+      "kind": "short",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "role",
+          "file_form": "rôle",
+          "kind": "short",
+          "direction": "plain query",
+          "query_code_points": 4
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah04",
+      "question": "Who had déjà vu? (typed with the accents)",
+      "query": "déjà",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 16,
+          "end_line": 21,
+          "grade": 2,
+          "section_path": [
+            "Tasting"
+          ],
+          "note": "deja, plain in the file"
+        }
+      ],
+      "kind": "short",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "déjà",
+          "file_form": "deja",
+          "kind": "short",
+          "direction": "accented query",
+          "query_code_points": 4
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah05",
+      "question": "Who brought creme brulee?",
+      "query": "creme brulee",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 16,
+          "end_line": 21,
+          "grade": 2,
+          "section_path": [
+            "Tasting"
+          ],
+          "note": "crème brûlée, accented in the file"
+        }
+      ],
+      "kind": "long",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "brulee",
+          "file_form": "brûlée",
+          "kind": "long",
+          "direction": "plain query",
+          "query_code_points": 6
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah06",
+      "question": "What happens in chapter IV?",
+      "query": "chapter iv",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/bedtime-stories.md",
+          "start_line": 21,
+          "end_line": 25,
+          "grade": 2,
+          "section_path": [
+            "Chapter Ⅳ"
+          ],
+          "note": "the roman numeral four, one code point"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/bedtime-stories.md",
+          "start_line": 13,
+          "end_line": 19,
+          "grade": 0,
+          "section_path": [
+            "Otter"
+          ],
+          "note": "chapters one to three"
+        }
+      ],
+      "kind": "nfkc",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "iv",
+          "file_form": "ⅳ",
+          "kind": "nfkc",
+          "direction": "plain query",
+          "query_code_points": 2
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah07",
+      "question": "When is the coffee morning?",
+      "query": "coffee morning",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 37,
+          "end_line": 44,
+          "grade": 2,
+          "section_path": [
+            "PTA flyer"
+          ],
+          "note": "the ff ligature, pasted from a PDF"
+        }
+      ],
+      "kind": "nfkc",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "coffee",
+          "file_form": "coﬀee",
+          "kind": "nfkc",
+          "direction": "plain query",
+          "query_code_points": 6
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah08",
+      "question": "Who came 2nd at the gala?",
+      "query": "2nd",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 46,
+          "end_line": 51,
+          "grade": 2,
+          "section_path": [
+            "Swim gala results"
+          ],
+          "note": "superscript nd"
+        }
+      ],
+      "kind": "nfkc",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "2nd",
+          "file_form": "2ⁿᵈ",
+          "kind": "nfkc",
+          "direction": "plain query",
+          "query_code_points": 3
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah09",
+      "question": "What is Fußball? (typed with ß)",
+      "query": "fußball",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 23,
+          "end_line": 28,
+          "grade": 2,
+          "section_path": [
+            "German corner"
+          ],
+          "note": "Fussball, written with ss"
+        }
+      ],
+      "kind": "sharp-s",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "fußball",
+          "file_form": "fussball",
+          "kind": "sharp-s",
+          "direction": "accented query",
+          "query_code_points": 7
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah10",
+      "question": "What is smorrebrod?",
+      "query": "smorrebrod",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 30,
+          "end_line": 35,
+          "grade": 2,
+          "section_path": [
+            "Supper"
+          ],
+          "note": "smørrebrød, o-slash twice"
+        }
+      ],
+      "kind": "table",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "smorrebrod",
+          "file_form": "smørrebrød",
+          "kind": "table",
+          "direction": "plain query",
+          "query_code_points": 10
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "accent-heldout",
+      "id": "ah11",
+      "question": "Who is Méla?",
+      "query": "méla",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/bedtime-stories.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Méla"
+          ],
+          "note": "Méla the hedgehog"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/bedtime-stories.md",
+          "start_line": 7,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Mela"
+          ],
+          "note": "Mela the mole, three times: an accent apart"
+        }
+      ],
+      "kind": "merge-guard",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "merge guard: the word is in the answer; a word that differs from it only by an accent, and not the word, is in the distractor",
+          "word": "méla",
+          "other": "mela",
+          "kind": "merge-guard"
+        },
+        {
+          "check": "held out: no query word or fold word is one of the accent slice"
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "ahn1",
+      "question": "A pâté recipe?",
+      "query": "pâté recipe",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/rasam.md",
+          "start_line": 1,
+          "end_line": 10,
+          "grade": 0,
+          "note": "a recipe, no pâté"
+        }
+      ],
+      "negative": true,
+      "negative_of": "accent-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "recipe"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "ahn2",
+      "question": "Is there a chapter V?",
+      "query": "chapter v",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/bedtime-stories.md",
+          "start_line": 21,
+          "end_line": 25,
+          "grade": 0,
+          "section_path": [
+            "Chapter Ⅳ"
+          ],
+          "note": "chapter four is the last"
+        }
+      ],
+      "negative": true,
+      "negative_of": "accent-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "chapter"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah01",
+      "question": "படங்கள் எங்கே? (where are the pictures?)",
+      "query": "படங்கள்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 20,
+          "end_line": 25,
+          "grade": 2,
+          "section_path": [
+            "Kavin"
+          ],
+          "note": "படம், the picture of the river"
+        }
+      ],
+      "rule": "ங்கள்",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "படங்கள்",
+          "file_form": "படம்",
+          "rule": "ங்கள்"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah02",
+      "question": "பறவை பற்றி? (about the bird?)",
+      "query": "பறவை",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 1,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Village"
+          ],
+          "note": "பறவைகள், plural"
+        }
+      ],
+      "rule": "கள்",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "பறவை",
+          "file_form": "பறவைகள்",
+          "rule": "கள்"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah03",
+      "question": "பிப்பின் நண்பர்கள் யார்? (Pip's friends?)",
+      "query": "நண்பர்கள்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 20,
+          "end_line": 25,
+          "grade": 2,
+          "section_path": [
+            "Kavin"
+          ],
+          "note": "நண்பர், Kavin"
+        }
+      ],
+      "rule": "கள்",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "நண்பர்கள்",
+          "file_form": "நண்பர்",
+          "rule": "கள்"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah04",
+      "question": "கிராமத்தில் என்ன? (in the village?)",
+      "query": "கிராமத்தில்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 1,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Village"
+          ],
+          "note": "கிராமம்"
+        }
+      ],
+      "rule": "த்தில்",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "கிராமத்தில்",
+          "file_form": "கிராமம்",
+          "rule": "த்தில்"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah05",
+      "question": "நகரம் பற்றி? (about the town?)",
+      "query": "நகரம்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 1,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Village"
+          ],
+          "note": "நகரத்தின், genitive"
+        }
+      ],
+      "rule": "த்தின்",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "நகரம்",
+          "file_form": "நகரத்தின்",
+          "rule": "த்தின்"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah06",
+      "question": "தங்கைக்கு எத்தனை வயது? (how old is the little sister?)",
+      "query": "தங்கைக்கு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 20,
+          "end_line": 25,
+          "grade": 2,
+          "section_path": [
+            "Kavin"
+          ],
+          "note": "தங்கை, Wren"
+        }
+      ],
+      "rule": "க்கு",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "தங்கைக்கு",
+          "file_form": "தங்கை",
+          "rule": "க்கு"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah07",
+      "question": "பெட்டியில் என்ன? (what is in the box?)",
+      "query": "பெட்டியில்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 37,
+          "end_line": 41,
+          "grade": 2,
+          "section_path": [
+            "River"
+          ],
+          "note": "பெட்டி, the red box"
+        }
+      ],
+      "rule": "யில்",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "பெட்டியில்",
+          "file_form": "பெட்டி",
+          "rule": "யில்"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah08",
+      "question": "குருவி எங்கே? (where is the sparrow?)",
+      "query": "குருவி",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 37,
+          "end_line": 41,
+          "grade": 2,
+          "section_path": [
+            "River"
+          ],
+          "note": "குருவியின், genitive"
+        }
+      ],
+      "rule": "யின்",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "குருவி",
+          "file_form": "குருவியின்",
+          "rule": "யின்"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah09",
+      "question": "குளம் எங்கே? (where is the pond?)",
+      "query": "குளம்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 1,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Village"
+          ],
+          "note": "குளத்தில், locative"
+        }
+      ],
+      "rule": "த்தில்",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "குளம்",
+          "file_form": "குளத்தில்",
+          "rule": "த்தில்"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tah10",
+      "question": "தம்பிக்கு என்ன பெயர்? (the little brother's name?)",
+      "query": "தம்பிக்கு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 20,
+          "end_line": 25,
+          "grade": 2,
+          "section_path": [
+            "Kavin"
+          ],
+          "note": "தம்பியின் பெயர், genitive"
+        }
+      ],
+      "rule": "க்கு",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+          "query_form": "தம்பிக்கு",
+          "file_form": "தம்பியின்",
+          "rule": "க்கு"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tag1",
+      "question": "அப்பாவுக்கு வேலை அதிகமா? (is there a lot of work?)",
+      "query": "வேலை",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 8,
+          "end_line": 12,
+          "grade": 2,
+          "section_path": [
+            "Work"
+          ],
+          "note": "வேலை, work"
+        },
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 14,
+          "end_line": 18,
+          "grade": 0,
+          "section_path": [
+            "Festival"
+          ],
+          "note": "வேல், spear: வேலை read as வேல் + accusative"
+        }
+      ],
+      "tamil_guard": "accusative",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "suffix guard: the word is in the answer; the word a stripper would make, and not the word, is in the distractor",
+          "word": "வேலை",
+          "homograph": "வேல்",
+          "kind": "accusative"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tag2",
+      "question": "போட்டியின் முடிவு எப்போது? (when is the result?)",
+      "query": "முடிவு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 27,
+          "end_line": 30,
+          "grade": 2,
+          "section_path": [
+            "Result"
+          ],
+          "note": "முடிவு, result"
+        },
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 32,
+          "end_line": 35,
+          "grade": 0,
+          "section_path": [
+            "Haircut"
+          ],
+          "note": "முடி, hair: the nominal -வு"
+        }
+      ],
+      "tamil_guard": "-வு noun",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "suffix guard: the word is in the answer; the word a stripper would make, and not the word, is in the distractor",
+          "word": "முடிவு",
+          "homograph": "முடி",
+          "kind": "-வு noun"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "tamil-heldout",
+      "id": "tag3",
+      "question": "நாங்கள் எங்கே நீந்தினோம்? (where did we swim?)",
+      "query": "நாங்கள்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 37,
+          "end_line": 41,
+          "grade": 2,
+          "section_path": [
+            "River"
+          ],
+          "note": "நாங்கள், we"
+        },
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 43,
+          "end_line": 46,
+          "grade": 0,
+          "section_path": [
+            "Together"
+          ],
+          "note": "நாம், we (inclusive), three times: the plural rule would make நாங்கள் நாம்"
+        }
+      ],
+      "tamil_guard": "keep-list pronoun",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "suffix guard: the word is in the answer; the word a stripper would make, and not the word, is in the distractor",
+          "word": "நாங்கள்",
+          "homograph": "நாம்",
+          "kind": "keep-list pronoun"
+        },
+        {
+          "check": "held out: no query word or form is a word of J2's Tamil rows"
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "tahn1",
+      "question": "படம் கண்காட்சி? (a picture exhibition?)",
+      "query": "படம் கண்காட்சி",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 20,
+          "end_line": 25,
+          "grade": 0,
+          "section_path": [
+            "Kavin"
+          ],
+          "note": "a drawing, no exhibition"
+        }
+      ],
+      "negative": true,
+      "negative_of": "tamil-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "படம்"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "tahn2",
+      "question": "வேலை நேரம்? (working hours?)",
+      "query": "வேலை நேரம்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 8,
+          "end_line": 12,
+          "grade": 0,
+          "section_path": [
+            "Work"
+          ],
+          "note": "a lot of work, no hours"
+        }
+      ],
+      "negative": true,
+      "negative_of": "tamil-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "வேலை"
           ]
         }
       ]

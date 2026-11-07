@@ -1,5 +1,6 @@
 """The judged queries of J2 (S5-T1): seven slices plus named negatives, and the
-held-out title (S5-T2) and misspelling (S5-T3) slices.
+held-out title (S5-T2), misspelling (S5-T3), morphology, accent and Tamil (S5-T4)
+slices.
 
 A row is (path, anchor, grade, note). The generator turns each anchor into a line
 range of the file it names:
@@ -32,6 +33,9 @@ SLICE_MINIMUMS = {
     "phrase": 8,
     "title-heldout": 6,
     "misspelling-heldout": 10,
+    "morphology-heldout": 12,
+    "accent-heldout": 10,
+    "tamil-heldout": 10,
 }
 
 QUERIES: list[dict] = []
@@ -643,3 +647,182 @@ q("negatives", "mhn2", "Are paper lanterns for sale?", "lantren sale", K, [
     ("school/art-club/autumn-projects.md", "§Paper lantern", 0, "a lantern to make, not to buy"),
     ("home/weekend/sale-in-the-field.md", "*", 0, "a sale, no lanterns"),
 ], of="misspelling-heldout")
+
+# -------------------------------------------------- morphology-heldout (14) --
+# S5-T4, ruling 11 of its plan: plural and singular forms held out from the key
+# function S5-T4 measures on o01-o13, written and judged before any key function
+# existed on either surface and before any run of these queries. New files
+# only (content.py, S5-T4). forms = [(query word, the form in the answer)];
+# kind names what the row measures: "-ies" (y/ies), "-ches" (ch, x, sh + es),
+# "-oes", "-s", "keep" (a word the plural rule keeps whole: guard = (the word,
+# the form a rule without the keep list would make), that form in the grade-0
+# row and the word not), "-ing/-ed" (a form no plural rule reaches) and "title"
+# (the other form sits only in the answer's file name). The generator asserts
+# the forms and that no query word or form is one of the morphology slice.
+
+q("morphology-heldout", "oh01", "Can we see the puppy at the farm?", "puppy", K, [
+    ("laptop/notes/jottings.md", "§Hollybank Farm", 2, "six puppies"),
+], forms=[("puppy", "puppies")], kind="-ies")
+q("morphology-heldout", "oh02", "How do I make pastries?", "pastries", K, [
+    ("home/household.md", "§Sunday baking", 2, "shortcrust pastry"),
+], forms=[("pastries", "pastry")], kind="-ies")
+q("morphology-heldout", "oh03", "Who needs a watch on race day?", "watch", K, [
+    ("laptop/notes/jottings.md", "§Race timekeepers", 2, "both with watches"),
+], forms=[("watch", "watches")], kind="-ches")
+q("morphology-heldout", "oh04", "Are there peaches at the farm?", "peaches", K, [
+    ("laptop/notes/jottings.md", "§Hollybank Farm", 2, "one old peach tree"),
+], forms=[("peaches", "peach")], kind="-ches")
+q("morphology-heldout", "oh05", "Where is the domino set?", "domino", K, [
+    ("laptop/notes/jottings.md", "§Rainy afternoons", 2, "in the tin under the stairs"),
+], forms=[("domino", "dominoes")], kind="-oes")
+q("morphology-heldout", "oh06", "Which comic heroes does Pip draw?", "comic heroes", K, [
+    ("laptop/notes/jottings.md", "§Comic swap", 2, "one comic hero every evening"),
+], forms=[("heroes", "hero")], kind="-oes")
+q("morphology-heldout", "oh07", "Where are my gloves?", "gloves", K, [
+    ("home/household.md", "§Hooks by door", 2, "one red glove missing"),
+], forms=[("gloves", "glove")], kind="-s")
+q("morphology-heldout", "oh08", "When are Joss's new glasses ready?", "glasses", K, [
+    ("laptop/notes/jottings.md", "§Glasses", 2, "collects new glasses on Monday"),
+    ("home/household.md", "§Sunday baking", 0, "glass three times: jars, lids, funnel"),
+], forms=[], kind="keep", guard=("glasses", "glass"))
+q("morphology-heldout", "oh09", "Any news from the neighbours?", "news", K, [
+    ("home/household.md", "§News from Orchard Row", 2, "the news"),
+    ("home/household.md", "§Gate", 0, "new three times"),
+], forms=[], kind="keep", guard=("news", "new"))
+q("morphology-heldout", "oh10", "Which German word means side?", "means", K, [
+    ("school/noticeboard.md", "§German corner", 2, "Mannschaft means side"),
+    ("school/noticeboard.md", "§Mean", 0, "mean, the average, four times"),
+], forms=[], kind="keep", guard=("means", "mean"))
+q("morphology-heldout", "oh11", "Who did the knitting?", "knitting", K, [
+    ("home/household.md", "§Hooks by door", 2, "Aunt Edie knitted two scarves"),
+], forms=[("knitting", "knitted")], kind="-ing/-ed")
+q("morphology-heldout", "oh12", "Where have Joss and Pip cycled?", "cycled", K, [
+    ("laptop/notes/jottings.md", "§Towpath", 2, "went cycling along the towpath"),
+], forms=[("cycled", "cycling")], kind="-ing/-ed")
+q("morphology-heldout", "oh13", "Who danced round the maypole?", "danced maypole", K, [
+    ("school/noticeboard.md", "§Assembly notes", 2, "maypole dancing"),
+], forms=[("danced", "dancing")], kind="-ing/-ed")
+q("morphology-heldout", "oh14", "Did we see a seal?", "seal", K, [
+    ("home/days-out/seals.md", "*", 2, "the file; seals is in its name only"),
+], forms=[], kind="title", title_only=("seal", "seals"))
+
+q("negatives", "ohn1", "Any fox cubs?", "fox cubs", K, [
+    ("school/school-play.md", "=The Lantern Fox", 0, "the play's fox"),
+], of="morphology-heldout")
+q("negatives", "ohn2", "Is there a hero costume?", "hero costume", K, [
+    ("laptop/notes/jottings.md", "§Comic swap", 0, "a comic hero, no costume"),
+], of="morphology-heldout")
+
+# ------------------------------------------------------ accent-heldout (11) --
+# S5-T4, ruling 11 of its plan: accent, width and compatibility forms held out
+# from o01-o13's and a01-a09's measure, written and judged before any key
+# function existed. New files only. fold = (query word, the form in the
+# answer); kind: "short" (a word of 4 code points or fewer, below fuzzy-v1's
+# floor), "nfkc" (a compatibility form: ligature, superscript, roman numeral),
+# "sharp-s", "table" (a letter of the Latin table: o-slash, l-stroke, ae),
+# "long" (a word fuzzy-v1 can reach) and "merge-guard" (two invented words told
+# apart only by an accent, both in the fixture: guard = (the query word, the
+# other word), the other in the grade-0 row and the query word not).
+
+q("accent-heldout", "ah01", "When is the summer fete?", "fete", K, [
+    ("school/noticeboard.md", "§Summer fête", 2, "fête, accented in the file"),
+], fold=("fete", "fête"), kind="short")
+q("accent-heldout", "ah02", "When does Zoë join? (typed with the diaeresis)", "zoë", K, [
+    ("school/noticeboard.md", "§Assembly notes", 2, "Zoe, plain in the file"),
+], fold=("zoë", "zoe"), kind="short")
+q("accent-heldout", "ah03", "What role does Pip have?", "role", K, [
+    ("school/noticeboard.md", "§Summer fête", 2, "rôle, accented in the file"),
+], fold=("role", "rôle"), kind="short")
+q("accent-heldout", "ah04", "Who had déjà vu? (typed with the accents)", "déjà", K, [
+    ("school/noticeboard.md", "§Tasting", 2, "deja, plain in the file"),
+], fold=("déjà", "deja"), kind="short")
+q("accent-heldout", "ah05", "Who brought creme brulee?", "creme brulee", K, [
+    ("school/noticeboard.md", "§Tasting", 2, "crème brûlée, accented in the file"),
+], fold=("brulee", "brûlée"), kind="long")
+q("accent-heldout", "ah06", "What happens in chapter IV?", "chapter iv", K, [
+    ("laptop/notes/bedtime-stories.md", "§Chapter Ⅳ", 2, "the roman numeral four, one code point"),
+    ("laptop/notes/bedtime-stories.md", "§Otter", 0, "chapters one to three"),
+], fold=("iv", "ⅳ"), kind="nfkc")
+q("accent-heldout", "ah07", "When is the coffee morning?", "coffee morning", K, [
+    ("school/noticeboard.md", "§PTA flyer", 2, "the ff ligature, pasted from a PDF"),
+], fold=("coffee", "coﬀee"), kind="nfkc")
+q("accent-heldout", "ah08", "Who came 2nd at the gala?", "2nd", K, [
+    ("school/noticeboard.md", "§Swim gala results", 2, "superscript nd"),
+], fold=("2nd", "2ⁿᵈ"), kind="nfkc")
+q("accent-heldout", "ah09", "What is Fußball? (typed with ß)", "fußball", K, [
+    ("school/noticeboard.md", "§German corner", 2, "Fussball, written with ss"),
+], fold=("fußball", "fussball"), kind="sharp-s")
+q("accent-heldout", "ah10", "What is smorrebrod?", "smorrebrod", K, [
+    ("home/household.md", "§Supper", 2, "smørrebrød, o-slash twice"),
+], fold=("smorrebrod", "smørrebrød"), kind="table")
+q("accent-heldout", "ah11", "Who is Méla?", "méla", K, [
+    ("laptop/notes/bedtime-stories.md", "§Méla", 2, "Méla the hedgehog"),
+    ("laptop/notes/bedtime-stories.md", "§Mela", 0, "Mela the mole, three times: an accent apart"),
+], fold=("méla", "méla"), kind="merge-guard", guard=("méla", "mela"))
+
+q("negatives", "ahn1", "A pâté recipe?", "pâté recipe", K, [
+    ("home/recipes/rasam.md", "*", 0, "a recipe, no pâté"),
+], of="accent-heldout")
+q("negatives", "ahn2", "Is there a chapter V?", "chapter v", K, [
+    ("laptop/notes/bedtime-stories.md", "§Chapter Ⅳ", 0, "chapter four is the last"),
+], of="accent-heldout")
+
+# ------------------------------------------------------- tamil-heldout (13) --
+# S5-T4, ruling 11 of its plan: Tamil inflections held out from the suffix list
+# S5-T4 wrote on t01-t10, on words in none of J2's Tamil rows, written and
+# judged before any key function existed. New files only; the Tamil is
+# invented. forms = [(query word, the form in the answer)]; rule names the
+# suffix the inflected form of the pair ends in (ங்கள், கள், த்தில், த்தின்,
+# க்கு, யில், யின்). A guard is (query word, the word an over-eager stripper would
+# make): the query word in the answer, the other word, and not the query word,
+# in the grade-0 row.
+
+q("tamil-heldout", "tah01", "படங்கள் எங்கே? (where are the pictures?)", "படங்கள்", K, [
+    ("home/tamil/tamil-jottings.md", "§Kavin", 2, "படம், the picture of the river"),
+], forms=[("படங்கள்", "படம்")], rule="ங்கள்")
+q("tamil-heldout", "tah02", "பறவை பற்றி? (about the bird?)", "பறவை", K, [
+    ("home/tamil/tamil-jottings.md", "§Village", 2, "பறவைகள், plural"),
+], forms=[("பறவை", "பறவைகள்")], rule="கள்")
+q("tamil-heldout", "tah03", "பிப்பின் நண்பர்கள் யார்? (Pip's friends?)", "நண்பர்கள்", K, [
+    ("home/tamil/tamil-jottings.md", "§Kavin", 2, "நண்பர், Kavin"),
+], forms=[("நண்பர்கள்", "நண்பர்")], rule="கள்")
+q("tamil-heldout", "tah04", "கிராமத்தில் என்ன? (in the village?)", "கிராமத்தில்", K, [
+    ("home/tamil/tamil-jottings.md", "§Village", 2, "கிராமம்"),
+], forms=[("கிராமத்தில்", "கிராமம்")], rule="த்தில்")
+q("tamil-heldout", "tah05", "நகரம் பற்றி? (about the town?)", "நகரம்", K, [
+    ("home/tamil/tamil-jottings.md", "§Village", 2, "நகரத்தின், genitive"),
+], forms=[("நகரம்", "நகரத்தின்")], rule="த்தின்")
+q("tamil-heldout", "tah06", "தங்கைக்கு எத்தனை வயது? (how old is the little sister?)", "தங்கைக்கு", K, [
+    ("home/tamil/tamil-jottings.md", "§Kavin", 2, "தங்கை, Wren"),
+], forms=[("தங்கைக்கு", "தங்கை")], rule="க்கு")
+q("tamil-heldout", "tah07", "பெட்டியில் என்ன? (what is in the box?)", "பெட்டியில்", K, [
+    ("home/tamil/tamil-jottings.md", "§River", 2, "பெட்டி, the red box"),
+], forms=[("பெட்டியில்", "பெட்டி")], rule="யில்")
+q("tamil-heldout", "tah08", "குருவி எங்கே? (where is the sparrow?)", "குருவி", K, [
+    ("home/tamil/tamil-jottings.md", "§River", 2, "குருவியின், genitive"),
+], forms=[("குருவி", "குருவியின்")], rule="யின்")
+q("tamil-heldout", "tah09", "குளம் எங்கே? (where is the pond?)", "குளம்", K, [
+    ("home/tamil/tamil-jottings.md", "§Village", 2, "குளத்தில், locative"),
+], forms=[("குளம்", "குளத்தில்")], rule="த்தில்")
+q("tamil-heldout", "tah10", "தம்பிக்கு என்ன பெயர்? (the little brother's name?)", "தம்பிக்கு", K, [
+    ("home/tamil/tamil-jottings.md", "§Kavin", 2, "தம்பியின் பெயர், genitive"),
+], forms=[("தம்பிக்கு", "தம்பியின்")], rule="க்கு")
+q("tamil-heldout", "tag1", "அப்பாவுக்கு வேலை அதிகமா? (is there a lot of work?)", "வேலை", K, [
+    ("home/tamil/tamil-jottings.md", "§Work", 2, "வேலை, work"),
+    ("home/tamil/tamil-jottings.md", "§Festival", 0, "வேல், spear: வேலை read as வேல் + accusative"),
+], guard=("வேலை", "வேல்"), guard_kind="accusative")
+q("tamil-heldout", "tag2", "போட்டியின் முடிவு எப்போது? (when is the result?)", "முடிவு", K, [
+    ("home/tamil/tamil-jottings.md", "§Result", 2, "முடிவு, result"),
+    ("home/tamil/tamil-jottings.md", "§Haircut", 0, "முடி, hair: the nominal -வு"),
+], guard=("முடிவு", "முடி"), guard_kind="-வு noun")
+q("tamil-heldout", "tag3", "நாங்கள் எங்கே நீந்தினோம்? (where did we swim?)", "நாங்கள்", K, [
+    ("home/tamil/tamil-jottings.md", "§River", 2, "நாங்கள், we"),
+    ("home/tamil/tamil-jottings.md", "§Together", 0, "நாம், we (inclusive), three times: the plural rule would make நாங்கள் நாம்"),
+], guard=("நாங்கள்", "நாம்"), guard_kind="keep-list pronoun")
+
+q("negatives", "tahn1", "படம் கண்காட்சி? (a picture exhibition?)", "படம் கண்காட்சி", K, [
+    ("home/tamil/tamil-jottings.md", "§Kavin", 0, "a drawing, no exhibition"),
+], of="tamil-heldout")
+q("negatives", "tahn2", "வேலை நேரம்? (working hours?)", "வேலை நேரம்", K, [
+    ("home/tamil/tamil-jottings.md", "§Work", 0, "a lot of work, no hours"),
+], of="tamil-heldout")

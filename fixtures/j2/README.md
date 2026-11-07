@@ -5,9 +5,9 @@ Year 5, Wren in Year 2, Paati their grandmother, Biscuit the dog), Thistlecombe
 Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone numbers
 are from the ranges set aside for drama.
 
-J2 says where keyword search loses. It holds 133 queries in seven slices,
-a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3) and named
-negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
+J2 says where keyword search loses. It holds 177 queries in seven slices,
+a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3), held-out
+morphology, accent and Tamil slices (S5-T4) and named negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
 search tasks are judged against (`fixtures/j2/baseline.json`,
 `scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
 
@@ -26,9 +26,9 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 
 | Root | Files |
 | --- | --- |
-| `school/` | 27 |
-| `home/` | 21 |
-| `laptop/` | 20 |
+| `school/` | 28 |
+| `home/` | 24 |
+| `laptop/` | 22 |
 
 | File | Why |
 | --- | --- |
@@ -58,9 +58,12 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 | tamil | 13 | 10 | Tamil inflections, both directions, plus suffix guards |
 | title | 11 | 10 | the words name the file (stem or folder), not its body |
 | phrase | 10 | 8 | the words adjacent in the answer, apart in a distractor |
-| negatives | 18 | - | nothing answers; distractors named |
+| negatives | 24 | - | nothing answers; distractors named |
 | title-heldout | 8 | 6 | title intent held out from S5-T2's weight; no word of the title slice |
 | misspelling-heldout | 12 | 10 | misspellings held out from S5-T3's rule; no typed or meant word of the misspelling slice |
+| morphology-heldout | 14 | 12 | plural forms held out from S5-T4's key function, keep-list guards, -ing/-ed, a name-only form |
+| accent-heldout | 11 | 10 | accent, width and compatibility forms held out from S5-T4; short words, a merge guard |
+| tamil-heldout | 13 | 10 | Tamil inflections held out from S5-T4's suffix list, each rule once, three guards |
 
 ## Queries
 
@@ -201,3 +204,47 @@ Grade-2 rows only; `judgments.json` holds every row with its note.
 | mh12 | misspelling-heldout | knowledge | `send the invitiations` | `home/birthday-party-wren.md` 5-11 |
 | mhn1 | negatives | knowledge | `tournamnet tickets` | none |
 | mhn2 | negatives | knowledge | `lantren sale` | none |
+| oh01 | morphology-heldout | knowledge | `puppy` | `laptop/notes/jottings.md` 1-7 |
+| oh02 | morphology-heldout | knowledge | `pastries` | `home/household.md` 1-7 |
+| oh03 | morphology-heldout | knowledge | `watch` | `laptop/notes/jottings.md` 9-15 |
+| oh04 | morphology-heldout | knowledge | `peaches` | `laptop/notes/jottings.md` 1-7 |
+| oh05 | morphology-heldout | knowledge | `domino` | `laptop/notes/jottings.md` 17-23 |
+| oh06 | morphology-heldout | knowledge | `comic heroes` | `laptop/notes/jottings.md` 25-31 |
+| oh07 | morphology-heldout | knowledge | `gloves` | `home/household.md` 9-15 |
+| oh08 | morphology-heldout | knowledge | `glasses` | `laptop/notes/jottings.md` 33-38 |
+| oh09 | morphology-heldout | knowledge | `news` | `home/household.md` 17-22 |
+| oh10 | morphology-heldout | knowledge | `means` | `school/noticeboard.md` 23-28 |
+| oh11 | morphology-heldout | knowledge | `knitting` | `home/household.md` 9-15 |
+| oh12 | morphology-heldout | knowledge | `cycled` | `laptop/notes/jottings.md` 40-45 |
+| oh13 | morphology-heldout | knowledge | `danced maypole` | `school/noticeboard.md` 1-7 |
+| oh14 | morphology-heldout | knowledge | `seal` | `home/days-out/seals.md` 1-6 |
+| ohn1 | negatives | knowledge | `fox cubs` | none |
+| ohn2 | negatives | knowledge | `hero costume` | none |
+| ah01 | accent-heldout | knowledge | `fete` | `school/noticeboard.md` 9-14 |
+| ah02 | accent-heldout | knowledge | `zoë` | `school/noticeboard.md` 1-7 |
+| ah03 | accent-heldout | knowledge | `role` | `school/noticeboard.md` 9-14 |
+| ah04 | accent-heldout | knowledge | `déjà` | `school/noticeboard.md` 16-21 |
+| ah05 | accent-heldout | knowledge | `creme brulee` | `school/noticeboard.md` 16-21 |
+| ah06 | accent-heldout | knowledge | `chapter iv` | `laptop/notes/bedtime-stories.md` 21-25 |
+| ah07 | accent-heldout | knowledge | `coffee morning` | `school/noticeboard.md` 37-44 |
+| ah08 | accent-heldout | knowledge | `2nd` | `school/noticeboard.md` 46-51 |
+| ah09 | accent-heldout | knowledge | `fußball` | `school/noticeboard.md` 23-28 |
+| ah10 | accent-heldout | knowledge | `smorrebrod` | `home/household.md` 30-35 |
+| ah11 | accent-heldout | knowledge | `méla` | `laptop/notes/bedtime-stories.md` 1-5 |
+| ahn1 | negatives | knowledge | `pâté recipe` | none |
+| ahn2 | negatives | knowledge | `chapter v` | none |
+| tah01 | tamil-heldout | knowledge | `படங்கள்` | `home/tamil/tamil-jottings.md` 20-25 |
+| tah02 | tamil-heldout | knowledge | `பறவை` | `home/tamil/tamil-jottings.md` 1-6 |
+| tah03 | tamil-heldout | knowledge | `நண்பர்கள்` | `home/tamil/tamil-jottings.md` 20-25 |
+| tah04 | tamil-heldout | knowledge | `கிராமத்தில்` | `home/tamil/tamil-jottings.md` 1-6 |
+| tah05 | tamil-heldout | knowledge | `நகரம்` | `home/tamil/tamil-jottings.md` 1-6 |
+| tah06 | tamil-heldout | knowledge | `தங்கைக்கு` | `home/tamil/tamil-jottings.md` 20-25 |
+| tah07 | tamil-heldout | knowledge | `பெட்டியில்` | `home/tamil/tamil-jottings.md` 37-41 |
+| tah08 | tamil-heldout | knowledge | `குருவி` | `home/tamil/tamil-jottings.md` 37-41 |
+| tah09 | tamil-heldout | knowledge | `குளம்` | `home/tamil/tamil-jottings.md` 1-6 |
+| tah10 | tamil-heldout | knowledge | `தம்பிக்கு` | `home/tamil/tamil-jottings.md` 20-25 |
+| tag1 | tamil-heldout | knowledge | `வேலை` | `home/tamil/tamil-jottings.md` 8-12 |
+| tag2 | tamil-heldout | knowledge | `முடிவு` | `home/tamil/tamil-jottings.md` 27-30 |
+| tag3 | tamil-heldout | knowledge | `நாங்கள்` | `home/tamil/tamil-jottings.md` 37-41 |
+| tahn1 | negatives | knowledge | `படம் கண்காட்சி` | none |
+| tahn2 | negatives | knowledge | `வேலை நேரம்` | none |
