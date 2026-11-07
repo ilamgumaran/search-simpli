@@ -6,6 +6,7 @@ file's best body chunk (or its first chunk) under `content`, and merged per file
 under `both`."""
 
 import ctypes
+import functools
 import json
 import os
 import platform
@@ -17,6 +18,7 @@ import unicodedata
 import unittest
 from collections import Counter
 from pathlib import Path
+from unittest import mock
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
@@ -24,6 +26,7 @@ sys.path.insert(0, str(REPO))
 from src.search_platform.core import (  # noqa: E402
     TITLE_WEIGHT, _bm25_scores, _title_scores, _title_tokens, build_index, search, tokenize,
 )
+import relevance_smoke  # noqa: E402
 from relevance_smoke import run_j2_pack  # noqa: E402
 
 sys.path.insert(0, str(REPO / "scripts"))
@@ -249,7 +252,11 @@ class J2SurfaceTests(unittest.TestCase):
 
     def test_searchd_ranks_agree_with_the_reference_but_for_the_analyzer_rows(self):
         engine = j2_run.run_searchd(self.binary, Path(self.scratch.name), None)["runs"]
-        reference = run_j2_pack()["runs"]
+        # S5-T3 Phase 1: the reference carries fuzzy-v1 ahead of the engine, so the
+        # engine is compared with the reference's ranking before it (`fuzzy=False`)
+        # until the engine's own expansion lands (S5-T3 Phase 2 restores this line).
+        with mock.patch.object(relevance_smoke, "search", functools.partial(relevance_smoke.search, fuzzy=False)):
+            reference = run_j2_pack()["runs"]
         for variant in ("content", "both"):
             differ = {q for q, r in reference[variant]["queries"].items()
                       if r.get("first_grade2_rank") != engine[variant]["queries"][q].get("first_grade2_rank")}

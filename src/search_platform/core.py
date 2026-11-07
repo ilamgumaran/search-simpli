@@ -960,7 +960,14 @@ def load_index(path: Path) -> dict:
     return index
 
 
-def _bm25_scores(chunks: list[dict], query_terms: list[str]) -> dict[str, float]:
+def _bm25_scores(chunks: list[dict], query_terms: list[str],
+                 groups: dict[str, tuple[tuple[str, float], ...]] | None = None) -> dict[str, float]:
+    """BM25 over `chunks` (their own document frequencies and average length).
+
+    `groups` (fuzzy-v1, S5-T3) maps a query term to the expansions it is searched
+    as, each with its weight: in each chunk the term then contributes the best
+    member's weight * BM25, every member at one shared document frequency (the
+    largest of theirs). A query with no group runs the arithmetic of before S5-T3."""
     if not chunks or not query_terms:
         return {}
     document_frequency: Counter[str] = Counter()
@@ -969,15 +976,44 @@ def _bm25_scores(chunks: list[dict], query_terms: list[str]) -> dict[str, float]
     average_length = sum(chunk["length"] for chunk in chunks) / len(chunks)
     scores: dict[str, float] = defaultdict(float)
     k1, b = 1.2, 0.75
+    active = {term: groups[term] for term in set(query_terms) if term in groups} if groups else {}
+    if not active:
+        for chunk in chunks:
+            for term in sorted(set(query_terms)):
+                frequency = chunk["terms"].get(term, 0)
+                if not frequency:
+                    continue
+                df = document_frequency[term]
+                idf = math.log(1.0 + (len(chunks) - df + 0.5) / (df + 0.5))
+                denominator = frequency + k1 * (1.0 - b + b * chunk["length"] / average_length)
+                scores[chunk["id"]] += idf * (frequency * (k1 + 1.0) / denominator)
+        return dict(scores)
+    shared = {term: max(document_frequency.get(member, 0) for member, _ in members) for term, members in active.items()}
     for chunk in chunks:
         for term in sorted(set(query_terms)):
-            frequency = chunk["terms"].get(term, 0)
-            if not frequency:
+            members = active.get(term)
+            if members is None:
+                frequency = chunk["terms"].get(term, 0)
+                if not frequency:
+                    continue
+                df = document_frequency[term]
+                idf = math.log(1.0 + (len(chunks) - df + 0.5) / (df + 0.5))
+                denominator = frequency + k1 * (1.0 - b + b * chunk["length"] / average_length)
+                scores[chunk["id"]] += idf * (frequency * (k1 + 1.0) / denominator)
                 continue
-            df = document_frequency[term]
-            idf = math.log(1.0 + (len(chunks) - df + 0.5) / (df + 0.5))
-            denominator = frequency + k1 * (1.0 - b + b * chunk["length"] / average_length)
-            scores[chunk["id"]] += idf * (frequency * (k1 + 1.0) / denominator)
+            df = shared[term]
+            best = None
+            for member, weight in members:
+                frequency = chunk["terms"].get(member, 0)
+                if not frequency:
+                    continue
+                idf = math.log(1.0 + (len(chunks) - df + 0.5) / (df + 0.5))
+                denominator = frequency + k1 * (1.0 - b + b * chunk["length"] / average_length)
+                part = weight * idf * (frequency * (k1 + 1.0) / denominator)
+                if best is None or part > best:
+                    best = part
+            if best is not None:
+                scores[chunk["id"]] += best
     return dict(scores)
 
 
@@ -1084,24 +1120,150 @@ def _title_root_ids(index: dict, title_root_ids: Iterable[str] | None) -> tuple[
     return tuple(title_root_ids or ())
 
 
-def _title_scores(visible_chunks: list[dict], query: str, root_ids: tuple[str, ...],
-                  weight: float) -> dict[str, float]:
-    """The weighted title part per file path: weight * BM25_title * coverage, over the
-    files of `visible_chunks` (the statistics: labels narrow them, a path prefix does not)."""
-    terms = sorted(set(_filename_tokenize(query)))
-    if not terms or not weight:
-        return {}
+def _title_fields(visible_chunks: list[dict], root_ids: tuple[str, ...]) -> dict[str, tuple[str, ...]]:
     fields: dict[str, tuple[str, ...]] = {}
     for chunk in visible_chunks:
         if chunk["path"] not in fields:
             fields[chunk["path"]] = _title_tokens(chunk["path"], root_ids)
+    return fields
+
+
+def _title_scores(visible_chunks: list[dict], query: str, root_ids: tuple[str, ...],
+                  weight: float, groups: dict[str, tuple[tuple[str, float], ...]] | None = None) -> dict[str, float]:
+    """The weighted title part per file path: weight * BM25_title * coverage, over the
+    files of `visible_chunks` (the statistics: labels narrow them, a path prefix does not).
+    With fuzzy-v1 `groups`, a grouped term scores as its best held member at the
+    members' largest title document frequency, and counts as covered when the field
+    holds any member."""
+    terms = sorted(set(_filename_tokenize(query)))
+    if not terms or not weight:
+        return {}
+    fields = _title_fields(visible_chunks, root_ids)
     docs = [{"id": path, "terms": Counter(tokens), "length": len(tokens)} for path, tokens in fields.items()]
+    active = {term: groups[term] for term in terms if term in groups} if groups else {}
     out = {}
-    for path, score in _bm25_scores(docs, terms).items():
+    for path, score in _bm25_scores(docs, terms, active).items():
         held = set(fields[path])
-        coverage = sum(1 for term in terms if term in held) / len(terms)
+        coverage = sum(1 for term in terms if term in held
+                       or any(member in held for member, _ in active.get(term, ()))) / len(terms)
         out[path] = weight * (score * coverage)
     return out
+
+
+# fuzzy-v1 (S5-T3, docs/tasks/S5-T3.md ruling 2): a query term that no chunk in scope
+# holds and no visible file's title field holds, all Latin script and at least
+# FUZZY_MIN_CODE_POINTS long, is also searched as its nearest dictionary words. The
+# candidates are the in-scope body terms (df >= 1) and the visible title terms that
+# share its first code point, within an optimal-string-alignment distance of 1 (5
+# code points) or 2 (6 or more), on code points; ordered by (distance, key df
+# descending, UTF-8 bytes), key df the in-scope body df or 1 for a title-only term;
+# the first FUZZY_MAX_EXPANSIONS kept, weighted by FUZZY_WEIGHTS. The Zig engine
+# implements the same rule (zig/src/fuzzy.zig).
+
+FUZZY_POLICY_ID = "fuzzy-v1"
+FUZZY_MIN_CODE_POINTS = 5
+FUZZY_DISTANCE_2_MIN_CODE_POINTS = 6
+FUZZY_MAX_EXPANSIONS = 3
+FUZZY_WEIGHTS = {1: 1.0, 2: 0.5}
+# A digit 0-9 or a Latin letter, by code point range (not by Unicode name).
+FUZZY_LATIN_RANGES = ((0x30, 0x39), (0x61, 0x7A), (0xDF, 0xF6), (0xF8, 0xFF), (0x100, 0x24F), (0x1E00, 0x1EFF))
+
+
+def _fuzzy_latin(term: str) -> bool:
+    return all(any(low <= ord(character) <= high for low, high in FUZZY_LATIN_RANGES) for character in term)
+
+
+def _fuzzy_max_distance(term: str) -> int:
+    length = len(term)
+    if length >= FUZZY_DISTANCE_2_MIN_CODE_POINTS:
+        return 2
+    return 1 if length >= FUZZY_MIN_CODE_POINTS else 0
+
+
+def _osa_within(a: str, b: str, k: int) -> int | None:
+    """The optimal-string-alignment distance of two code-point strings when it is at
+    most `k`, else None: a table banded to |i - j| <= k that stops when a row's
+    minimum exceeds `k` (a transposition reaches row i only from a row-(i-1) cell
+    no larger, so the stop is exact)."""
+    la, lb = len(a), len(b)
+    if abs(la - lb) > k:
+        return None
+    big = k + 1
+    before: list[int] | None = None
+    previous = [j if j <= k else big for j in range(lb + 1)]
+    for i in range(1, la + 1):
+        current = [big] * (lb + 1)
+        if i <= k:
+            current[0] = i
+        row_min = current[0]
+        for j in range(max(1, i - k), min(lb, i + k) + 1):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            value = min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
+            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
+                value = min(value, before[j - 2] + 1)
+            current[j] = min(value, big)
+            row_min = min(row_min, current[j])
+        if row_min > k:
+            return None
+        before, previous = previous, current
+    return previous[lb] if previous[lb] <= k else None
+
+
+def _fuzzy_groups(terms: Iterable[str], body_df: Counter, title_vocabulary: set[str]
+                  ) -> dict[str, tuple[tuple[str, float], ...]]:
+    """{query term: ((member, weight), ...) best first} for each distinct term that
+    triggers and has a candidate. `body_df` is the in-scope document frequency of the
+    body terms; `title_vocabulary` the terms of the visible files' title fields."""
+    groups: dict[str, tuple[tuple[str, float], ...]] = {}
+    pool: list[tuple[str, int]] | None = None
+    for term in sorted(set(terms)):
+        k = _fuzzy_max_distance(term)
+        if not k or body_df.get(term, 0) or not _fuzzy_latin(term) or term in title_vocabulary:
+            continue
+        if pool is None:
+            keyed = {candidate: df for candidate, df in body_df.items() if df >= 1}
+            for candidate in title_vocabulary:
+                keyed.setdefault(candidate, 1)
+            pool = list(keyed.items())
+        found = []
+        for candidate, key_df in pool:
+            if candidate[:1] != term[:1] or abs(len(candidate) - len(term)) > k:
+                continue
+            distance = _osa_within(term, candidate, k)
+            if distance:
+                found.append((distance, -key_df, candidate.encode("utf-8"), candidate))
+        found.sort()
+        if found:
+            groups[term] = tuple((candidate, FUZZY_WEIGHTS[distance])
+                                 for distance, _, _, candidate in found[:FUZZY_MAX_EXPANSIONS])
+    return groups
+
+
+def _fuzzy_query_groups(chunks: list[dict], visible_chunks: list[dict], terms: Iterable[str],
+                        root_ids: tuple[str, ...]) -> dict[str, tuple[tuple[str, float], ...]]:
+    """The query's groups, once per query: the body statistics are the chunks in scope
+    (`chunks`), the title guard and the title candidates the visible files."""
+    terms = set(terms)
+    if not any(_fuzzy_max_distance(term) for term in terms):
+        return {}
+    body_df: Counter[str] = Counter()
+    for chunk in chunks:
+        body_df.update(chunk["terms"].keys())
+    title_vocabulary = {token for tokens in _title_fields(visible_chunks, root_ids).values() for token in tokens}
+    return _fuzzy_groups(terms, body_df, title_vocabulary)
+
+
+def fuzzy_expansions(index: dict, query: str, *, path_prefix: str | None = None,
+                     principal_labels: Iterable[str] = (), search_field: str = "content",
+                     title_root_ids: Iterable[str] | None = None) -> dict[str, list[str]]:
+    """The expansions `search` uses for `query` (fuzzy-v1), {typed term: [members best
+    first]}: what the engine reports in its `query_term_expanded` warnings."""
+    principal_labels = tuple(principal_labels)
+    visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
+    chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
+    terms = _filename_tokenize(query) if search_field == "both" else tokenize(query) + _filename_tokenize(query)
+    groups = _fuzzy_query_groups(chunks, visible, terms, _title_root_ids(index, title_root_ids))
+    return {term: [member for member, _ in members] for term, members in groups.items()}
 
 
 def _first_chunk_key(chunk: dict) -> tuple:
@@ -1155,12 +1317,17 @@ def _search_filename_fields(
     search_field: str,
     title_root_ids: tuple[str, ...] = (),
     title_weight: float = TITLE_WEIGHT,
+    fuzzy: bool = True,
 ) -> list[dict]:
     terms = _filename_tokenize(query)
     if not terms:
         return []
     visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
     chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
+    # fuzzy-v1: `both` shares one set of groups between its body scoring and its
+    # title part; the file-name channel is never expanded.
+    groups = (_fuzzy_query_groups(chunks, visible, terms, title_root_ids)
+              if fuzzy and search_field == "both" else {})
     by_path: dict[str, list[dict]] = defaultdict(list)
     for chunk in chunks:
         by_path[chunk["path"]].append(chunk)
@@ -1171,7 +1338,7 @@ def _search_filename_fields(
     body_scores: dict[str, float] = {}
     best_by_path: dict[str, dict] = {}
     if search_field == "both":
-        raw = _bm25_scores(chunks, terms)
+        raw = _bm25_scores(chunks, terms, groups)
         chunk_by_id = {chunk["id"]: chunk for chunk in chunks}
         for identifier, score in raw.items():
             candidate = chunk_by_id[identifier]
@@ -1210,7 +1377,7 @@ def _search_filename_fields(
         # chunk's BM25 plus the title part. The stem channel no longer ranks (it is
         # kept for matched_in, ranking.filename and match_sections), and candidate_k
         # cuts no channel before the sum.
-        title = _title_scores(visible, query, title_root_ids, title_weight)
+        title = _title_scores(visible, query, title_root_ids, title_weight, groups)
         final_scores = dict(body_scores)
         for path, part in title.items():
             if part > 0.0 and path in anchors:
@@ -1299,11 +1466,12 @@ def search(
     search_field: str = "content",
     title_root_ids: Iterable[str] | None = None,
     title_weight: float = TITLE_WEIGHT,
+    fuzzy: bool = True,
 ) -> list[dict]:
     """`title_root_ids` names the roots whose ids prefix the index's paths (a union of
     roots copied side by side), so the title field never takes a root id as a folder
     word; an index that carries `roots` uses its own. `title_weight` 0 is the ranking
-    before S5-T2."""
+    before S5-T2; `fuzzy` False the ranking before S5-T3 (fuzzy-v1)."""
     if top_k < 1:
         raise ValueError("top_k must be at least 1")
     if candidate_k < top_k:
@@ -1320,7 +1488,7 @@ def search(
         return _search_filename_fields(
             index, query, top_k=top_k, candidate_k=candidate_k, path_prefix=path_prefix,
             principal_labels=tuple(principal_labels), search_field=search_field,
-            title_root_ids=_title_root_ids(index, title_root_ids), title_weight=title_weight,
+            title_root_ids=_title_root_ids(index, title_root_ids), title_weight=title_weight, fuzzy=fuzzy,
         )
     query_terms = tokenize(query)
     if not query_terms:
@@ -1328,11 +1496,15 @@ def search(
     principal_labels = tuple(principal_labels)
     visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
     chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
-    lexical_scores = _bm25_scores(chunks, query_terms) if retrieval_mode != "vector" else {}
+    root_ids = _title_root_ids(index, title_root_ids)
+    # fuzzy-v1: the groups are computed once, for the body terms and the title terms.
+    groups = (_fuzzy_query_groups(chunks, visible, query_terms + _filename_tokenize(query), root_ids)
+              if fuzzy and retrieval_mode != "vector" else {})
+    lexical_scores = _bm25_scores(chunks, query_terms, groups) if retrieval_mode != "vector" else {}
     received: dict[str, float] = {}
     if retrieval_mode != "vector":
         # S5-T2: the title part joins the lexical channel before it is ranked or cut.
-        title = _title_scores(visible, query, _title_root_ids(index, title_root_ids), title_weight)
+        title = _title_scores(visible, query, root_ids, title_weight, groups)
         lexical_scores, received = _add_title_to_content(chunks, lexical_scores, title)
     vector_scores = (
         _cosine_scores(index, chunks, query, embedding_provider)
