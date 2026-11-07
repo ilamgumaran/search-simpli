@@ -39,6 +39,15 @@ jobs:
       - name: Family-folder judgment pack
         run: python3 scripts/relevance_smoke.py --pack family-folder
 
+      # S5-T1: J2, the judged fixture, through the Python reference and the gate
+      # against the committed baseline (fixtures/j2/baseline.json).
+      - name: J2 judged pack (Python reference) through the gate
+        env:
+          PYTHONHASHSEED: "0"
+        run: |
+          python3 scripts/relevance_smoke.py --pack j2 --output "$RUNNER_TEMP/j2.json"
+          python3 scripts/j2_gate.py "$RUNNER_TEMP/j2.json"
+
       - name: No trailing whitespace in docs/scripts
         run: |
           if git grep -nP ' +$' -- '*.md' '*.py' ; then

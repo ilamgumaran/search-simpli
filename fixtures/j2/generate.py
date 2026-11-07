@@ -23,6 +23,7 @@ sys.dont_write_bytecode = True
 
 import argparse  # noqa: E402
 import hashlib  # noqa: E402
+import importlib.util  # noqa: E402
 import json  # noqa: E402
 import unicodedata  # noqa: E402
 from pathlib import Path, PurePosixPath  # noqa: E402
@@ -31,9 +32,20 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent.parent))
 
-import content  # noqa: E402
-import queries  # noqa: E402
 from src.search_platform.core import _filename_tokenize, file_chunks  # noqa: E402
+
+
+def _load(name: str):
+    """content.py and queries.py by path, under J2-only names: the family-folder
+    generator also has a `content` module, and a test run imports both."""
+    spec = importlib.util.spec_from_file_location(f"j2_{name}", HERE / f"{name}.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+content = _load("content")
+queries = _load("queries")
 
 ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
