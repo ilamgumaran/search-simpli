@@ -226,7 +226,7 @@ test "S2-T1: import-json still rejects an analyzer id outside the contract's enu
     }
 }
 
-test "S1-T14: Tamil words absent from the corpus match nothing through either door" {
+test "S1-T14: Tamil words absent from the corpus match nothing through either door (S5-T4: fold-groups-v1 off; on, only the plural of a held word)" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
@@ -247,19 +247,36 @@ test "S1-T14: Tamil words absent from the corpus match nothing through either do
     const queries = parsed.object.get("queries").?.array.items;
     try std.testing.expect(queries.len >= 10);
     var total_hits: usize = 0;
+    var folded_hits: usize = 0;
     inline for (.{ folder_engine, import_engine }) |engine| {
         for (queries) |query_value| {
             const query_text = query_value.object.get("query").?.string;
             const results_buffer = try arena.alloc(hybrid.Result, engine.documents.len);
+            // S1-T14's property is the tokenizer's: no fragment of an absent
+            // word matches. fold-groups-v1 is off for it.
             const results = try engine.queryTokenized(arena, query_text, &.{}, results_buffer, .{
                 .top_k = 10,
                 .candidate_k = engine.documents.len,
                 .retrieval_mode = .lexical,
+                .fold = false,
             });
             total_hits += results.len;
             if (results.len != 0) std.debug.print("absent query {s} matched {d} passages\n", .{ query_text, results.len });
+            // S5-T4: with fold-groups-v1 on, the one "absent" word that is
+            // the plural of a held word (யானைகள் -> யானை, T's rule 2)
+            // finds the passage holding the singular; every other stays at 0.
+            const folded = try engine.queryTokenized(arena, query_text, &.{}, results_buffer, .{
+                .top_k = 10,
+                .candidate_k = engine.documents.len,
+                .retrieval_mode = .lexical,
+            });
+            folded_hits += folded.len;
+            if (std.mem.eql(u8, query_text, "யானைகள்")) {
+                try std.testing.expectEqual(@as(usize, 1), folded.len);
+                try std.testing.expect(std.mem.endsWith(u8, engine.documents[folded[0].document_index].path, "passage-04-animals.md"));
+            } else try std.testing.expectEqual(@as(usize, 0), folded.len);
         }
     }
-    std.debug.print("S1-T14 absent Tamil queries: {d} queries x 2 doors, {d} hits\n", .{ queries.len, total_hits });
+    std.debug.print("S1-T14 absent Tamil queries: {d} queries x 2 doors, {d} hits; S5-T4 with fold-groups-v1 {d} hits (the plural of a held word)\n", .{ queries.len, total_hits, folded_hits });
     try std.testing.expectEqual(@as(usize, 0), total_hits);
 }

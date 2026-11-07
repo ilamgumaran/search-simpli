@@ -956,3 +956,126 @@ test "S5-T3 NFR-13 scale: the same at 20,000 files (information)" {
     const peaks = try fuzzyPeaks(a, out.dir, scale_cap_bytes);
     std.debug.print("S5-T3 NFR-13 20000 files (information), typed {s}: live before {d}; triggering content peak {d} (left {d}), both peak {d} (left {d}); one scan peak {d}\n", .{ peaks.typed, peaks.before, peaks.content, peaks.content_left, peaks.both, peaks.both_left, peaks.scan_peak });
 }
+
+// --- S5-T4 restated bounds (h) and (i): fold-groups-v1 under the cap -------
+
+const fold = @import("fold.zig");
+
+const FoldPeaks = struct {
+    content: usize,
+    both: usize,
+    before: usize,
+    first_kept: usize,
+    map_kept: usize,
+    map_entries: usize,
+    second_left: usize,
+    both_left: usize,
+    build_peak: usize,
+    build_left: usize,
+};
+
+/// On one capped handle: warm queries with fold-groups-v1 off (the title
+/// field and every lazily read table), then the first grouped content query
+/// (it derives the key map, which stays), a second one and a grouped both
+/// query (each keeps nothing); then the key map's build alone on a cap of
+/// its own.
+fn foldPeaks(dir: std.Io.Dir, cap: usize, typed: []const u8) !FoldPeaks {
+    var result: FoldPeaks = undefined;
+    var capped = Capped{ .parent = std.heap.page_allocator, .cap = cap };
+    var engine_arena = std.heap.ArenaAllocator.init(capped.allocator());
+    defer engine_arena.deinit();
+    const opened = try snapshot_open.openScopedWith(.{ .blocks = capped.allocator(), .arena = engine_arena.allocator() }, io, dir);
+    defer snapshot_open.close(opened.engine, opened.folder);
+    const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+    const off = hybrid.SearchOptions{ .retrieval_mode = .lexical, .fold = false };
+    for (0..2) |i| {
+        var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        defer op_arena.deinit();
+        const o = op_arena.allocator();
+        if (i == 0) {
+            _ = try scoped.searchKnowledge(o, "the doc", &.{}, off, .{}, try o.alloc(hybrid.Result, 10), try o.alloc(engine_module.Evidence, 10), null);
+        } else _ = try opened.engine.queryFields(o, "doc the", .both, off);
+    }
+    result.before = capped.live;
+    _ = capped.markPeak();
+    const on = hybrid.SearchOptions{ .retrieval_mode = .lexical };
+    for (0..2) |i| {
+        var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        const o = op_arena.allocator();
+        var trace = hybrid.Trace{ .allocator = o, .io = io };
+        const evidence = try scoped.searchKnowledge(o, typed, &.{}, on, .{}, try o.alloc(hybrid.Result, 10), try o.alloc(engine_module.Evidence, 10), &trace);
+        try std.testing.expect(evidence.len > 0);
+        try std.testing.expectEqual(@as(usize, 1), trace.grouped.items.len);
+        op_arena.deinit();
+        if (i == 0) result.first_kept = capped.live - result.before else result.second_left = capped.live;
+    }
+    result.content = capped.peak;
+    const map = opened.folder.loads.key_map;
+    result.map_kept = map.keptBytes();
+    result.map_entries = map.len();
+    {
+        var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        _ = capped.markPeak();
+        const hits = try opened.engine.queryFields(op_arena.allocator(), typed, .both, on);
+        try std.testing.expect(hits.len > 0);
+        result.both = capped.peak;
+        op_arena.deinit();
+        result.both_left = capped.live;
+    }
+    try std.testing.expectEqual(@as(usize, 0), capped.refused);
+    try std.testing.expectEqual(@as(u32, 1), opened.folder.loads.key_map_loads);
+    var build = Capped{ .parent = std.heap.page_allocator, .cap = cap };
+    const s = build.allocator();
+    var again = try fold.KeyMap.deriveIndexed(s, s, opened.engine.lexical_index, try opened.folder.titleField());
+    try std.testing.expectEqual(result.map_kept, again.keptBytes());
+    again.deinit(s);
+    result.build_peak = build.peak;
+    result.build_left = build.live;
+    return result;
+}
+
+fn foldRun(file_count: usize, gated: bool) !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var corpus = std.testing.tmpDir(.{ .iterate = true });
+    defer corpus.cleanup();
+    var out = std.testing.tmpDir(.{ .iterate = true });
+    defer out.cleanup();
+    try generateCorpus(a, corpus.dir, file_count);
+    _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
+    // `system`: held by no chunk; `systems` (the topic heading) shares its key.
+    const peaks = try foldPeaks(out.dir, scale_cap_bytes, "system");
+    std.debug.print("S5-T4 NFR-13 {d} files{s}, one handle, typed system: live before {d}; first grouped content query keeps {d} (the key map: {d} entries, {d} B); content peak {d}; second content query left {d}, grouped both peak {d} (left {d}); the key map's build alone: peak {d} (left {d})\n", .{ file_count, if (gated) "" else " (information)", peaks.before, peaks.first_kept, peaks.map_entries, peaks.map_kept, peaks.content, peaks.second_left, peaks.both, peaks.both_left, peaks.build_peak, peaks.build_left });
+    if (!gated) return;
+    // (h) the key map kept, at most 64 KiB, and nothing else; nothing kept
+    // between queries; the build's peak at most 1.0 MB.
+    try std.testing.expectEqual(peaks.map_kept, peaks.first_kept);
+    try std.testing.expect(peaks.map_kept <= 64 * 1024);
+    try std.testing.expectEqual(peaks.before + peaks.first_kept, peaks.second_left);
+    try std.testing.expectEqual(peaks.second_left, peaks.both_left);
+    try std.testing.expect(peaks.build_peak <= 1_000_000);
+    try std.testing.expectEqual(@as(usize, 0), peaks.build_left);
+    // (i) the open with a grouped content and both query, one handle, under 64 MiB.
+    try std.testing.expect(peaks.content <= cap_bytes and peaks.both <= cap_bytes);
+}
+
+test "S5-T4 NFR-13: a grouped content and both query at 10k files: the key map alone kept (<= 64 KiB), its build <= 1.0 MB, under 64 MiB" {
+    try foldRun(base_file_count, true);
+}
+
+test "S5-T4 NFR-13 scale: the same at 15,000 files" {
+    if (!scaleEnabled()) {
+        std.debug.print("S5-T4 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
+        return error.SkipZigTest;
+    }
+    try foldRun(15_000, true);
+}
+
+test "S5-T4 NFR-13 scale: the same at 20,000 files (information)" {
+    if (!scaleEnabled()) {
+        std.debug.print("S5-T4 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
+        return error.SkipZigTest;
+    }
+    try foldRun(20_000, false);
+}

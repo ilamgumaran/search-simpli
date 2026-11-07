@@ -571,16 +571,23 @@ pub fn scoreQuery(allocator: std.mem.Allocator, field: *const Field, documents: 
     var found = std.ArrayList(Found).empty;
     for (query_tokens[0..distinct]) |token| {
         if (groups) |g| if (g.of(token)) |group| {
-            var item = Found{ .grouped = true };
+            // S5-T4: a fold-groups-v1 group may hold more than fuzzy-v1's three.
+            const terms = try tmp.alloc(Term, group.members.len);
+            const weights = try tmp.alloc(f32, group.members.len);
+            var len: usize = 0;
             for (group.members) |member| if (field.lookup(member.term)) |term| {
-                item.terms[item.len] = term;
-                item.weights[item.len] = member.weight;
-                item.len += 1;
+                terms[len] = term;
+                weights[len] = member.weight;
+                len += 1;
             };
-            if (item.len != 0) try found.append(tmp, item);
+            if (len != 0) try found.append(tmp, .{ .terms = terms[0..len], .weights = weights[0..len], .grouped = true });
             continue;
         };
-        if (field.lookup(token)) |term| try found.append(tmp, .{ .terms = .{ term, undefined, undefined }, .len = 1 });
+        if (field.lookup(token)) |term| {
+            const one = try tmp.alloc(Term, 1);
+            one[0] = term;
+            try found.append(tmp, .{ .terms = one, .weights = &plain_weight });
+        }
     }
     if (found.items.len == 0) return null;
 
@@ -656,11 +663,12 @@ pub fn scoreQuery(allocator: std.mem.Allocator, field: *const Field, documents: 
 /// One distinct query token's title terms: the token itself, or (S5-T3)
 /// the members of its fuzzy-v1 group that the field holds, with weights.
 const Found = struct {
-    terms: [fuzzy.max_expansions]Term = undefined,
-    weights: [fuzzy.max_expansions]f32 = .{ 1, 1, 1 },
-    len: usize = 0,
+    terms: []const Term,
+    weights: []const f32,
     grouped: bool = false,
 };
+
+const plain_weight = [1]f32{1};
 
 /// S5-T3: a grouped token's title part. The members share one df (the
 /// largest visible title df among them); each file adds its best held
@@ -669,7 +677,7 @@ const Found = struct {
 /// array.
 fn scoreGroup(allocator: std.mem.Allocator, field: *const Field, item: Found, visible: ?[]const bool, average: f32, count: u32, options: hybrid.SearchOptions, scores: []f32, covered: []u32, touched: *std.ArrayList(u32)) !void {
     var df: u32 = 0;
-    for (item.terms[0..item.len]) |term| {
+    for (item.terms) |term| {
         var member_df: u32 = 0;
         const list = field.termPostings(term);
         if (visible) |flags| {
@@ -680,16 +688,19 @@ fn scoreGroup(allocator: std.mem.Allocator, field: *const Field, item: Found, vi
         df = @max(df, member_df);
     }
     const weight = Bm25Term.init(average, df, count, options.bm25);
-    var cursors: [fuzzy.max_expansions]usize = @splat(0);
+    var cursor_buffer: [fuzzy.max_expansions]usize = @splat(0);
+    const cursors: []usize = if (item.terms.len <= cursor_buffer.len) cursor_buffer[0..item.terms.len] else try allocator.alloc(usize, item.terms.len);
+    defer if (item.terms.len > cursor_buffer.len) allocator.free(cursors);
+    @memset(cursors, 0);
     while (true) {
         var file: ?u32 = null;
-        for (item.terms[0..item.len], cursors[0..item.len]) |term, cursor| {
+        for (item.terms, cursors) |term, cursor| {
             const list = field.termPostings(term);
             if (cursor < list.len and (file == null or list[cursor].file < file.?)) file = list[cursor].file;
         }
         const f = file orelse break;
         var best: ?f32 = null;
-        for (item.terms[0..item.len], cursors[0..item.len], item.weights[0..item.len]) |term, *cursor, w| {
+        for (item.terms, cursors, item.weights) |term, *cursor, w| {
             const list = field.termPostings(term);
             if (cursor.* >= list.len or list[cursor.*].file != f) continue;
             const part = w * weight.contribution(@floatFromInt(list[cursor.*].frequency), @floatFromInt(field.files[f].length));

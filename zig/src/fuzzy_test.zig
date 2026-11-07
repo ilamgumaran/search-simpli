@@ -540,7 +540,9 @@ test "the expansions and the lexical and title scores match the Python reference
         if (!std.mem.eql(u8, q.object.get("kind").?.string, "j2")) planted += 1;
         const out = try a.alloc(hybrid.Result, documents.len);
         var trace = hybrid.Trace{ .allocator = a, .io = io };
-        const results = try engine.queryTraced(a, query, &.{}, out, .{ .top_k = documents.len, .candidate_k = documents.len, .retrieval_mode = .lexical, .title = &derived.field }, &trace);
+        // S5-T4: the golden is fuzzy-v1's alone (fold-groups-v1 off, as the
+        // reference that wrote it).
+        const results = try engine.queryTraced(a, query, &.{}, out, .{ .top_k = documents.len, .candidate_k = documents.len, .retrieval_mode = .lexical, .title = &derived.field, .fold = false }, &trace);
         // The expansions, exactly, in query order against the golden's map.
         const want_expansions = q.object.get("expansions").?.object;
         if (want_expansions.count() != trace.expanded.items.len) {

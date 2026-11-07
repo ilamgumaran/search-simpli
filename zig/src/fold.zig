@@ -29,8 +29,11 @@
 //! lowercasing, A leaves it, T cannot apply, and only S looks at it.
 
 const std = @import("std");
+const fuzzy = @import("fuzzy.zig");
 const nfc = @import("nfc.zig");
+const postings = @import("postings.zig");
 const tables = @import("unicode_tables.zig");
+const title_field = @import("title_field.zig");
 
 pub const policy_id = "fold-groups-v1";
 
@@ -460,8 +463,13 @@ pub const KeyMap = struct {
     /// Into `keys`: entry i's key is keys[key_offsets[i]..key_offsets[i + 1]].
     key_offsets: []u32,
     keys: []u8,
-    /// The term index of entry i.
+    /// The term index of entry i (`deriveIndexed`: below `body_terms` a
+    /// body dictionary index, else `body_terms` + a title field term index).
     term_of: []u32,
+    body_terms: u32 = 0,
+    /// `deriveIndexed`'s title field: the one its title numbers index (a
+    /// query's own field may be another; members are looked up by bytes).
+    field: ?*const title_field.Field = null,
 
     pub fn deinit(self: *KeyMap, allocator: std.mem.Allocator) void {
         allocator.free(self.key_offsets);
@@ -499,6 +507,39 @@ pub const KeyMap = struct {
     /// Builds the map over `terms` (any order). `scratch` holds the transient
     /// buffers and is freed before return; the map is owned by `allocator`.
     pub fn derive(allocator: std.mem.Allocator, scratch: std.mem.Allocator, terms: []const []const u8) Error!KeyMap {
+        const Terms = struct {
+            terms: []const []const u8,
+            fn at(s: @This(), i: usize) ?[]const u8 {
+                return s.terms[i];
+            }
+        };
+        return deriveWith(allocator, scratch, terms.len, Terms{ .terms = terms }, Terms.at);
+    }
+
+    /// The query side's map (ruling 10): over the whole body dictionary and
+    /// the title field's terms the body does not hold, numbered body first.
+    /// No term list is built: each term is read where it lies.
+    pub fn deriveIndexed(allocator: std.mem.Allocator, scratch: std.mem.Allocator, index: postings.Index, field: ?*const title_field.Field) Error!KeyMap {
+        const Terms = struct {
+            index: postings.Index,
+            field: ?*const title_field.Field,
+            fn at(s: @This(), i: usize) ?[]const u8 {
+                if (i < s.index.terms.len) return s.index.terms[i].term;
+                const f = s.field.?;
+                const bytes = f.termBytes(f.terms[i - s.index.terms.len]);
+                if (postings.lookupExact(s.index, bytes) != null) return null;
+                return bytes;
+            }
+        };
+        const titles = if (field) |f| f.terms.len else 0;
+        var map = try deriveWith(allocator, scratch, index.terms.len + titles, Terms{ .index = index, .field = field }, Terms.at);
+        map.body_terms = @intCast(index.terms.len);
+        map.field = field;
+        return map;
+    }
+
+    /// `derive` over `n` terms read by `termAt` (null: skip that number).
+    pub fn deriveWith(allocator: std.mem.Allocator, scratch: std.mem.Allocator, n_terms: usize, source: anytype, comptime termAt: fn (@TypeOf(source), usize) ?[]const u8) Error!KeyMap {
         var keyer = Keyer.init(scratch);
         defer keyer.deinit();
         var buffer = std.ArrayList(u8).empty;
@@ -508,7 +549,8 @@ pub const KeyMap = struct {
         defer entries.deinit(scratch);
         var pool = std.ArrayList(u8).empty;
         defer pool.deinit(scratch);
-        for (terms, 0..) |term, i| {
+        for (0..n_terms) |i| {
+            const term = termAt(source, i) orelse continue;
             buffer.clearRetainingCapacity();
             try keyer.appendKey(term, &buffer);
             if (std.mem.eql(u8, buffer.items, term)) continue;
@@ -546,6 +588,132 @@ pub const KeyMap = struct {
         return .{ .key_offsets = key_offsets, .keys = keys, .term_of = term_of };
     }
 };
+
+// ------------------------------------------------------- the query side --
+
+/// The term of map numbering `i` (`KeyMap.deriveIndexed`): a body entry, or
+/// a title-only term.
+const Numbered = struct { body: ?postings.TermEntry, bytes: []const u8 };
+
+fn numbered(context: fuzzy.Context, map: *const KeyMap, i: u32) Numbered {
+    if (i < map.body_terms) {
+        const entry = context.index.terms[i];
+        return .{ .body = entry, .bytes = entry.term };
+    }
+    const field = map.field.?;
+    return .{ .body = null, .bytes = field.termBytes(field.terms[i - map.body_terms]) };
+}
+
+/// One candidate of a group (ruling 10), or null when the request cannot use
+/// it: a body term held by a chunk in scope (path prefix included) is a body
+/// member; otherwise a term a visible title under the prefix holds is a
+/// title member (no body postings). The order's key df is the term's body df
+/// over the roots and labels (a prefix does not narrow it), 0 for a term the
+/// body does not hold.
+fn member(context: fuzzy.Context, candidate: Numbered) ?fuzzy.Member {
+    const key_df: u32 = if (candidate.body) |entry| context.keyFrequency(entry) else 0;
+    if (candidate.body) |entry| if (context.heldInScope(entry)) {
+        return .{ .term = entry.term, .distance = 0, .weight = 1, .key_df = key_df, .body = entry };
+    };
+    const field = context.title orelse return null;
+    const term = field.lookup(candidate.bytes) orelse return null;
+    if (!context.titleHeld(field, term, true)) return null;
+    return .{ .term = field.termBytes(term), .distance = 0, .weight = 1, .key_df = key_df, .body = null };
+}
+
+/// The group order: the typed term first, then key df descending, then bytes.
+fn memberBefore(typed: []const u8, a: fuzzy.Member, b: fuzzy.Member) bool {
+    const a_typed = std.mem.eql(u8, a.term, typed);
+    const b_typed = std.mem.eql(u8, b.term, typed);
+    if (a_typed != b_typed) return a_typed;
+    if (a.key_df != b.key_df) return a.key_df > b.key_df;
+    return std.mem.order(u8, a.term, b.term) == .lt;
+}
+
+/// fold-groups-v1 (ruling 10): for each distinct token, the in-scope body
+/// terms and visible title terms whose key equals the token's, each at weight
+/// 1.0; a group is kept when it is not empty and not the token alone. Null
+/// when no token has one. The groups score through fuzzy-v1's machinery (one
+/// shared df, the best member per chunk); `map` is over the whole index and
+/// the scope is applied here, at use.
+pub fn compute(allocator: std.mem.Allocator, context: fuzzy.Context, map: *const KeyMap, tokens: []const []const u8) !?fuzzy.Groups {
+    var keyer = Keyer.init(allocator);
+    defer keyer.deinit();
+    var k = std.ArrayList(u8).empty;
+    defer k.deinit(allocator);
+    var kk = std.ArrayList(u8).empty;
+    defer kk.deinit(allocator);
+    var members = std.ArrayList(fuzzy.Member).empty;
+    defer members.deinit(allocator);
+    var items = std.ArrayList(fuzzy.Group).empty;
+    errdefer {
+        for (items.items) |g| {
+            allocator.free(g.typed);
+            allocator.free(g.members);
+        }
+        items.deinit(allocator);
+    }
+    for (tokens, 0..) |token, position| {
+        var repeated = false;
+        for (tokens[0..position]) |earlier| if (std.mem.eql(u8, earlier, token)) {
+            repeated = true;
+            break;
+        };
+        if (repeated) continue;
+        k.clearRetainingCapacity();
+        try keyer.appendKey(token, &k);
+        members.clearRetainingCapacity();
+        // The term equal to the key, when its own key is itself.
+        const self: ?Numbered = if (postings.lookupExact(context.index, k.items)) |i|
+            .{ .body = context.index.terms[i], .bytes = context.index.terms[i].term }
+        else if (context.title) |field| (if (field.lookup(k.items)) |term| Numbered{ .body = null, .bytes = field.termBytes(term) } else null) else null;
+        if (self) |candidate| {
+            kk.clearRetainingCapacity();
+            try keyer.appendKey(candidate.bytes, &kk);
+            if (std.mem.eql(u8, kk.items, k.items)) if (member(context, candidate)) |m| try members.append(allocator, m);
+        }
+        const r = map.range(k.items);
+        for (map.term_of[r.start..r.end]) |i| if (member(context, numbered(context, map, i))) |m| try members.append(allocator, m);
+        if (members.items.len == 0) continue;
+        if (members.items.len == 1 and std.mem.eql(u8, members.items[0].term, token)) continue;
+        std.mem.sort(fuzzy.Member, members.items, token, memberBefore);
+        const owned = try allocator.dupe(fuzzy.Member, members.items);
+        errdefer allocator.free(owned);
+        const typed = try allocator.dupe(u8, token);
+        errdefer allocator.free(typed);
+        try items.append(allocator, .{ .typed = typed, .members = owned });
+    }
+    if (items.items.len == 0) {
+        items.deinit(allocator);
+        return null;
+    }
+    return .{ .items = try items.toOwnedSlice(allocator) };
+}
+
+/// The tokens without a group in `groups` (fuzzy-v1 runs on these only),
+/// borrowed from `tokens`.
+pub fn ungrouped(allocator: std.mem.Allocator, tokens: []const []const u8, groups: ?fuzzy.Groups) ![]const []const u8 {
+    var out = std.ArrayList([]const u8).empty;
+    errdefer out.deinit(allocator);
+    for (tokens) |token| {
+        if (groups) |g| if (g.of(token) != null) continue;
+        try out.append(allocator, token);
+    }
+    return out.toOwnedSlice(allocator);
+}
+
+/// Both sets of groups as one (fold groups first), taking ownership of
+/// their contents; null when both are null.
+pub fn merge(allocator: std.mem.Allocator, folded: ?fuzzy.Groups, expanded: ?fuzzy.Groups) !?fuzzy.Groups {
+    const a = folded orelse return expanded;
+    const b = expanded orelse return folded;
+    const items = try allocator.alloc(fuzzy.Group, a.items.len + b.items.len);
+    @memcpy(items[0..a.items.len], a.items);
+    @memcpy(items[a.items.len..], b.items);
+    allocator.free(a.items);
+    allocator.free(b.items);
+    return .{ .items = items };
+}
 
 test "K on the traps of rulings 2-5" {
     const a = std.testing.allocator;
