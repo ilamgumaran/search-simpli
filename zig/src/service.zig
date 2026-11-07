@@ -122,16 +122,21 @@ pub const Service = struct {
         // them a scoped query would count its scope exactly, with equal
         // scores.
         var engine = service.engine;
+        var titled_options = options;
         if (service.folder) |folder| {
             if (engine.statistics == null and (options.visible_roots != null or (engine.labeled_documents orelse true)))
                 engine.statistics = try folder.statistics();
+            // S5-T2 (ruling 3): every scoped entry point ranks with the
+            // generation's title field, derived at its first lexical query.
+            if (titled_options.title == null and options.retrieval_mode != .vector)
+                titled_options.title = try folder.titleField();
         }
         const results = try engine.queryTraced(
             allocator,
             query_text,
             query_vector,
             result_output,
-            options,
+            titled_options,
             trace,
         );
         if (evidence_output.len < results.len) return error.EvidenceCapacityTooSmall;

@@ -1204,7 +1204,9 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     const service = service_module.Service{ .engine = handle.engine };
     var results: [documents.len]hybrid.Result = undefined;
     var evidence_storage: [documents.len]engine_module.Evidence = undefined;
-    const evidence = try service.searchKnowledge(std.testing.allocator, "hybrid", &query_vector, .{ .top_k = 1 }, &results, &evidence_storage);
+    // S5-T2: ss_query ranks with the handle's title field; the RPC path's
+    // service here has no folder, so it is given the same field.
+    const evidence = try service.searchKnowledge(std.testing.allocator, "hybrid", &query_vector, .{ .top_k = 1, .title = try handle.folder.titleField() }, &results, &evidence_storage);
     var golden: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer golden.deinit();
     var golden_json = std.json.Stringify{ .writer = &golden.writer };

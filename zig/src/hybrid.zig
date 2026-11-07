@@ -1,6 +1,7 @@
 const analysis = @import("analysis.zig");
 const scoring = @import("scoring.zig");
 const std = @import("std");
+const title_field = @import("title_field.zig");
 
 pub const Document = struct {
     id: []const u8,
@@ -38,6 +39,11 @@ pub const SearchOptions = struct {
     /// S3-T3: the roots the caller named (`scope.zig`), applied with the
     /// labels before any chunk becomes a candidate; null = every root.
     visible_roots: ?RootMask = null,
+    /// S5-T2: the opened generation's title field (`title_field.zig`, set by
+    /// the scoped service); null ranks as before S5-T2.
+    title: ?*const title_field.Field = null,
+    /// S5-T2 ruling 2: w, one constant (`title_field.default_weight`).
+    title_weight: f32 = title_field.default_weight,
 };
 
 /// S3-T3: which roots a request may see. `document_roots[i]` is the root
@@ -77,6 +83,9 @@ pub const Result = struct {
     lexical_rank: ?usize,
     semantic_rank: ?usize,
     fused_score: f32,
+    /// S5-T2: the title part inside `lexical_score`, on the one chunk per
+    /// file that carries it; null otherwise.
+    title_score: ?f32 = null,
 };
 
 pub const SearchError = error{

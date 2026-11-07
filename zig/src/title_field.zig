@@ -30,6 +30,7 @@ const analyzer_v2 = @import("analyzer_v2.zig");
 const hybrid = @import("hybrid.zig");
 const manifest = @import("manifest.zig");
 const scope = @import("scope.zig");
+const scoring = @import("scoring.zig");
 
 pub const policy_id = "title-field-v1";
 /// Ruling 2: the measured plateau's middle; one constant per surface
@@ -69,6 +70,14 @@ pub const Field = struct {
     term_bytes: []const u8,
     /// Sum of every file's length (the unscoped average's numerator).
     total_length: u64,
+    /// Any chunk carries a required label (then every query counts its
+    /// visible files).
+    labeled: bool = false,
+    /// The highest root ordinal of any chunk when every chunk lies under a
+    /// root (set by `scope.Folder.titleField`; null: unknown, or some chunk
+    /// under no root): a root mask allowing every ordinal up to it hides
+    /// nothing (as `filename_field.Decoded.max_document_root`).
+    max_document_root: ?u16 = null,
 
     pub fn termBytes(field: Field, term: Term) []const u8 {
         return field.term_bytes[term.bytes_start .. term.bytes_start + term.bytes_len];
@@ -290,6 +299,11 @@ pub fn deriveMarked(blocks: std.mem.Allocator, scratch: std.mem.Allocator, docum
     if (!profile.in_order) try groupScattered(scratch, documents, file_of, &first);
     const file_count = first.items.len;
     profile.files = file_count;
+    var labeled = false;
+    for (documents) |document| if (document.required_labels.len != 0) {
+        labeled = true;
+        break;
+    };
     marks.mark("grouping");
 
     // -- folders: each distinct folders part tokenized once, its tokens
@@ -446,7 +460,7 @@ pub fn deriveMarked(blocks: std.mem.Allocator, scratch: std.mem.Allocator, docum
     profile.block_bytes = block.len;
     marks.mark("lookup");
     return .{
-        .field = .{ .files = kept_files, .file_of = kept_file_of, .postings = kept_postings, .terms = kept_terms, .term_bytes = kept_bytes, .total_length = total_length },
+        .field = .{ .files = kept_files, .file_of = kept_file_of, .postings = kept_postings, .terms = kept_terms, .term_bytes = kept_bytes, .total_length = total_length, .labeled = labeled },
         .block = block,
         .profile = profile,
     };
@@ -492,4 +506,202 @@ fn groupScattered(scratch: std.mem.Allocator, documents: []const hybrid.Document
         }
         first.appendAssumeCapacity(anchor);
     }
+}
+
+// ---------------------------------------------------------------- scoring ---
+
+/// One query's title parts (ruling 2): per file ordinal, w · BM25_title ·
+/// coverage over the files the request may see (roots and labels narrow the
+/// statistics, a path prefix does not), 0 for a file no query term reaches.
+pub const Parts = struct {
+    scores: []f32,
+    /// The files with a positive part, in first-reached order.
+    touched: []u32,
+
+    pub fn deinit(parts: Parts, allocator: std.mem.Allocator) void {
+        allocator.free(parts.scores);
+        allocator.free(parts.touched);
+    }
+};
+
+fn maskHides(field: *const Field, visible_roots: ?hybrid.RootMask) bool {
+    const mask = visible_roots orelse return false;
+    const highest = field.max_document_root orelse return true;
+    if (mask.allowed.len <= highest) return true;
+    for (mask.allowed[0 .. @as(usize, highest) + 1]) |allowed| if (!allowed) return true;
+    return false;
+}
+
+fn fileVisible(documents: []const hybrid.Document, chunk: u32, options: hybrid.SearchOptions) bool {
+    if (options.visible_roots) |mask| if (!mask.allows(chunk)) return false;
+    return hybrid.isAuthorized(documents[chunk].required_labels, options.principal_labels);
+}
+
+fn bytesLess(_: void, a: []const u8, b: []const u8) bool {
+    return std.mem.order(u8, a, b) == .lt;
+}
+
+/// The title parts of `query_text`, or null when none is positive (no query
+/// token, a zero weight, or no query term in any title): the caller then
+/// ranks exactly as without the field. Everything returned is owned by
+/// `allocator` (`Parts.deinit`); the rest is freed before returning.
+pub fn scoreQuery(allocator: std.mem.Allocator, field: *const Field, documents: []const hybrid.Document, query_text: []const u8, options: hybrid.SearchOptions) !?Parts {
+    if (!(options.title_weight > 0) or field.files.len == 0) return null;
+    var tmp_state = std.heap.ArenaAllocator.init(allocator);
+    defer tmp_state.deinit();
+    const tmp = tmp_state.allocator();
+    // Q: the distinct analyzer-v2 tokens, in byte order (the reference's
+    // summation order).
+    const query_tokens = try tokenizeText(tmp, query_text);
+    std.mem.sort([]const u8, query_tokens, {}, bytesLess);
+    var distinct: usize = 0;
+    for (query_tokens, 0..) |token, i| {
+        if (i != 0 and std.mem.eql(u8, query_tokens[i - 1], token)) continue;
+        query_tokens[distinct] = token;
+        distinct += 1;
+    }
+    if (distinct == 0) return null;
+    var found = std.ArrayList(Term).empty;
+    for (query_tokens[0..distinct]) |token| if (field.lookup(token)) |term| try found.append(tmp, term);
+    if (found.items.len == 0) return null;
+
+    // The statistics: every file, or the files the roots and labels let
+    // the request see (a file's chunks share its root and labels, so its
+    // first chunk speaks for it).
+    const files = field.files;
+    var visible: ?[]bool = null;
+    var count: usize = files.len;
+    var total: u64 = field.total_length;
+    if (maskHides(field, options.visible_roots) or field.labeled) {
+        const flags = try tmp.alloc(bool, files.len);
+        count = 0;
+        total = 0;
+        for (files, flags) |file, *flag| {
+            flag.* = fileVisible(documents, file.first_chunk, options);
+            if (!flag.*) continue;
+            count += 1;
+            total += file.length;
+        }
+        visible = flags;
+    }
+    if (count == 0) return null;
+    const average: f32 = @as(f32, @floatFromInt(total)) / @as(f32, @floatFromInt(count));
+
+    const scores = try allocator.alloc(f32, files.len);
+    errdefer allocator.free(scores);
+    @memset(scores, 0);
+    const covered = try tmp.alloc(u32, files.len);
+    @memset(covered, 0);
+    var touched = std.ArrayList(u32).empty;
+    errdefer touched.deinit(allocator);
+    for (found.items) |term| {
+        const list = field.termPostings(term);
+        var df: u32 = 0;
+        if (visible) |flags| {
+            for (list) |posting| if (flags[posting.file]) {
+                df += 1;
+            };
+        } else df = @intCast(list.len);
+        for (list) |posting| {
+            if (visible) |flags| if (!flags[posting.file]) continue;
+            if (covered[posting.file] == 0) try touched.append(allocator, posting.file);
+            covered[posting.file] += 1;
+            scores[posting.file] += scoring.bm25Contribution(@floatFromInt(posting.frequency), @floatFromInt(files[posting.file].length), average, df, @intCast(count), options.bm25);
+        }
+    }
+    const query_terms: f32 = @floatFromInt(distinct);
+    var kept: usize = 0;
+    for (touched.items) |f| {
+        const coverage = @as(f32, @floatFromInt(covered[f])) / query_terms;
+        scores[f] = options.title_weight * (scores[f] * coverage);
+        if (scores[f] > 0) {
+            touched.items[kept] = f;
+            kept += 1;
+        } else scores[f] = 0;
+    }
+    touched.shrinkRetainingCapacity(kept);
+    if (kept == 0) {
+        allocator.free(scores);
+        touched.deinit(allocator);
+        return null;
+    }
+    return .{ .scores = scores, .touched = try touched.toOwnedSlice(allocator) };
+}
+
+const no_target = std.math.maxInt(u32);
+
+/// The `content` path's lexical source (ruling 3): `Inner`'s body matches
+/// with each titled file's part added to its best in-scope body chunk (the
+/// higher score, then the smaller id bytewise), and the first chunk of each
+/// titled file no body match reached. `hybrid.searchSparseTraced` takes it
+/// as any lexical source; `scoreOf` stays consistent with `next`.
+pub fn Titled(comptime Inner: type) type {
+    return struct {
+        const Self = @This();
+        inner: *Inner,
+        field: *const Field,
+        parts: Parts,
+        /// Per file: the chunk that carries its part, or `no_target`.
+        target: []u32,
+        matches: []hybrid.LexicalMatch,
+        position: usize = 0,
+
+        pub fn init(allocator: std.mem.Allocator, inner: *Inner, field: *const Field, parts: Parts, documents: []const hybrid.Document, options: hybrid.SearchOptions) !Self {
+            const target = try allocator.alloc(u32, field.files.len);
+            errdefer allocator.free(target);
+            @memset(target, no_target);
+            const best = try allocator.alloc(f32, field.files.len);
+            defer allocator.free(best);
+            var matches = std.ArrayList(hybrid.LexicalMatch).empty;
+            errdefer matches.deinit(allocator);
+            while (inner.next()) |match| {
+                try matches.append(allocator, match);
+                const d = match.document_index;
+                const f = field.file_of[d];
+                if (parts.scores[f] == 0 or !(match.score > 0)) continue;
+                if (!hybrid.inScope(documents[d], d, options)) continue;
+                const held = target[f];
+                if (held == no_target or match.score > best[f] or
+                    (match.score == best[f] and std.mem.order(u8, documents[d].id, documents[held].id) == .lt))
+                {
+                    target[f] = d;
+                    best[f] = match.score;
+                }
+            }
+            for (matches.items) |*match| {
+                const f = field.file_of[match.document_index];
+                if (target[f] == match.document_index) match.score += parts.scores[f];
+            }
+            for (parts.touched) |f| {
+                if (target[f] != no_target) continue;
+                const chunk = field.files[f].first_chunk;
+                if (!hybrid.inScope(documents[chunk], chunk, options)) continue;
+                target[f] = chunk;
+                try matches.append(allocator, .{ .document_index = chunk, .score = parts.scores[f] });
+            }
+            return .{ .inner = inner, .field = field, .parts = parts, .target = target, .matches = try matches.toOwnedSlice(allocator) };
+        }
+
+        pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+            allocator.free(self.target);
+            allocator.free(self.matches);
+        }
+
+        pub fn next(self: *Self) ?hybrid.LexicalMatch {
+            if (self.position >= self.matches.len) return null;
+            defer self.position += 1;
+            return self.matches[self.position];
+        }
+
+        /// The title part on `document_index`, or null.
+        pub fn titleOf(self: *const Self, document_index: usize) ?f32 {
+            const f = self.field.file_of[document_index];
+            return if (self.target[f] == document_index) self.parts.scores[f] else null;
+        }
+
+        pub fn scoreOf(self: *const Self, document_index: usize) f32 {
+            const base = self.inner.scoreOf(document_index);
+            return if (self.titleOf(document_index)) |part| base + part else base;
+        }
+    };
 }

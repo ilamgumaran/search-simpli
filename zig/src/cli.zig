@@ -20,6 +20,7 @@ const chunker = @import("chunker.zig");
 const engine_module = @import("engine.zig");
 const generation_alloc = @import("generation_alloc.zig");
 const hybrid = @import("hybrid.zig");
+const title_field = @import("title_field.zig");
 const indexer = @import("indexer.zig");
 const snapshot_open = @import("snapshot_open.zig");
 const find_module = @import("find.zig");
@@ -803,7 +804,10 @@ fn runSearch(
     top_k: usize,
 ) ![]hybrid.Result {
     const result_output = try allocator.alloc(hybrid.Result, engine.documents.len);
-    const options = hybrid.SearchOptions{ .top_k = top_k, .candidate_k = @max(top_k, engine.documents.len), .retrieval_mode = .lexical };
+    // S5-T2 (ruling 3): a one-shot query derives the title field itself
+    // (`allocator` is the command's arena).
+    const title = try title_field.derive(allocator, allocator, engine.documents, engine.roots);
+    const options = hybrid.SearchOptions{ .top_k = top_k, .candidate_k = @max(top_k, engine.documents.len), .retrieval_mode = .lexical, .title = &title.field };
     return engine.queryTokenized(allocator, query_text, &.{}, result_output, options);
 }
 
