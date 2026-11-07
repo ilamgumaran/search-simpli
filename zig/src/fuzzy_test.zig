@@ -14,6 +14,8 @@ const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const title_field = @import("title_field.zig");
 
+const golden_path = "../fixtures/fuzzy-golden.json";
+
 // ---------------------------------------------------------------- OSA
 
 /// The full optimal-string-alignment table on code points.
@@ -436,4 +438,128 @@ test "warnings: a word held only by a hidden chunk is never named as an expansio
     defer labelled.deinit();
     try std.testing.expectEqual(@as(usize, 2), labelled.value.object.get("warnings").?.array.items.len);
     try std.testing.expectEqual(@as(usize, 1), labelled.value.object.get("results").?.array.items.len);
+}
+
+// ------------------------------------------------------------ the golden
+
+fn jsonFloat(value: std.json.Value) !f64 {
+    return switch (value) {
+        .float => |f| f,
+        .integer => |n| @floatFromInt(n),
+        else => error.TestUnexpectedResult,
+    };
+}
+
+fn near(got: f64, want: f64) bool {
+    return @abs(got - want) <= 1e-4 * @max(1.0, @abs(want));
+}
+
+test "the expansions and the lexical and title scores match the Python reference's golden" {
+    const io = std.testing.io;
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const bytes = std.Io.Dir.cwd().readFileAlloc(io, golden_path, a, .unlimited) catch |err| switch (err) {
+        error.FileNotFound => {
+            std.debug.print("skipping: {s} not found (run scripts/gen_fuzzy_golden.py)\n", .{golden_path});
+            return;
+        },
+        else => return err,
+    };
+    const golden = try std.json.parseFromSliceLeaky(std.json.Value, a, bytes, .{});
+    try std.testing.expectEqualStrings(fuzzy.policy_id, golden.object.get("policy_id").?.string);
+    var golden_roots = std.ArrayList(manifest.RootEntry).empty;
+    for (golden.object.get("roots").?.array.items) |root| try golden_roots.append(a, .{ .root_id = root.string, .label = root.string, .kind = "host", .retain_source = true });
+    // The reference's own term counts: the two analyzers' folding difference
+    // (ß) never reaches the comparison.
+    const golden_chunks = golden.object.get("chunks").?.array.items;
+    const documents = try a.alloc(hybrid.Document, golden_chunks.len);
+    const token_lists = try a.alloc([][]const u8, golden_chunks.len);
+    for (golden_chunks, documents, token_lists) |chunk, *document, *tokens| {
+        document.* = .{
+            .id = chunk.object.get("id").?.string,
+            .text = "",
+            .path = chunk.object.get("path").?.string,
+            .start_line = @intCast(chunk.object.get("start_line").?.integer),
+            .end_line = @intCast(chunk.object.get("end_line").?.integer),
+        };
+        var list = std.ArrayList([]const u8).empty;
+        var it = chunk.object.get("terms").?.object.iterator();
+        while (it.next()) |entry| for (0..@intCast(entry.value_ptr.integer)) |_| try list.append(a, entry.key_ptr.*);
+        tokens.* = list.items;
+    }
+    var index = try lexical_build.build(a, documents, token_lists);
+    const terms = try a.dupe(postings.TermEntry, index.terms);
+    std.mem.sort(postings.TermEntry, terms, {}, struct {
+        fn less(_: void, x: postings.TermEntry, y: postings.TermEntry) bool {
+            return std.mem.order(u8, x.term, y.term) == .lt;
+        }
+    }.less);
+    index.terms = terms;
+    index.sorted_terms = true;
+    const derived = try title_field.derive(a, a, documents, golden_roots.items);
+    const engine = engine_module.Engine{ .generation = 1, .analyzer_id = analyzer_v2.analyzer_id, .embedding_model_id = "", .vector_dimensions = 0, .documents = documents, .lexical_index = index, .roots = golden_roots.items };
+
+    var compared: usize = 0;
+    var expanded_queries: usize = 0;
+    var planted: usize = 0;
+    for (golden.object.get("queries").?.array.items) |q| {
+        const query = q.object.get("query").?.string;
+        if (!std.mem.eql(u8, q.object.get("kind").?.string, "j2")) planted += 1;
+        const out = try a.alloc(hybrid.Result, documents.len);
+        var trace = hybrid.Trace{ .allocator = a, .io = io };
+        const results = try engine.queryTraced(a, query, &.{}, out, .{ .top_k = documents.len, .candidate_k = documents.len, .retrieval_mode = .lexical, .title = &derived.field }, &trace);
+        // The expansions, exactly, in query order against the golden's map.
+        const want_expansions = q.object.get("expansions").?.object;
+        if (want_expansions.count() != trace.expanded.items.len) {
+            std.debug.print("query {s}: zig expanded {d} terms, python {d}\n", .{ query, trace.expanded.items.len, want_expansions.count() });
+            return error.TestExpectedEqual;
+        }
+        for (trace.expanded.items) |expanded| {
+            const want = (want_expansions.get(expanded.term) orelse {
+                std.debug.print("query {s}: zig expanded {s}, python did not\n", .{ query, expanded.term });
+                return error.TestUnexpectedResult;
+            }).array.items;
+            try std.testing.expectEqual(want.len, expanded.expansions.len);
+            for (want, expanded.expansions) |w, g| try std.testing.expectEqualStrings(w.string, g);
+        }
+        if (want_expansions.count() > 0) expanded_queries += 1;
+        // Every chunk with a positive lexical score, its score and its part.
+        const want_chunks = q.object.get("chunks").?.array.items;
+        var positive: usize = 0;
+        for (results) |r| {
+            if (r.lexical_score > 0) positive += 1;
+        }
+        if (positive != want_chunks.len) {
+            std.debug.print("query {s}: zig scored {d} chunks, python {d}\n", .{ query, positive, want_chunks.len });
+            return error.TestExpectedEqual;
+        }
+        for (want_chunks) |chunk| {
+            const id = chunk.object.get("id").?.string;
+            const got = for (results) |r| {
+                if (std.mem.eql(u8, r.document_id, id)) break r;
+            } else {
+                std.debug.print("query {s}: chunk {s} missing in zig\n", .{ query, id });
+                return error.TestUnexpectedResult;
+            };
+            const want_lexical = try jsonFloat(chunk.object.get("lexical").?);
+            if (!near(got.lexical_score, want_lexical)) {
+                std.debug.print("query {s} chunk {s}: zig {d} python {d}\n", .{ query, id, got.lexical_score, want_lexical });
+                return error.TestExpectedEqual;
+            }
+            switch (chunk.object.get("title").?) {
+                .null => try std.testing.expect(got.title_score == null or got.title_score.? == 0),
+                else => |value| {
+                    const want_title = try jsonFloat(value);
+                    if (got.title_score == null or !near(got.title_score.?, want_title)) {
+                        std.debug.print("query {s} chunk {s}: zig title {?d} python {d}\n", .{ query, id, got.title_score, want_title });
+                        return error.TestExpectedEqual;
+                    }
+                },
+            }
+            compared += 1;
+        }
+    }
+    try std.testing.expect(compared > 1000 and expanded_queries > 30 and planted >= 9);
+    std.debug.print("S5-T3 fuzzy golden: {d} chunk scores in {d} expanded queries ({d} planted cases) within 1e-4\n", .{ compared, expanded_queries, planted });
 }
