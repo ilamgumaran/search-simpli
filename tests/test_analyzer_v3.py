@@ -145,10 +145,10 @@ def write(root: Path, files: dict) -> None:
 
 
 class FoldGroupsTests(unittest.TestCase):
-    """fold-groups-v1 in the reference (ruling 10); S5-T4 Phase 1 runs it with
-    `fold="FAST"`, the default stays off until the engine carries it."""
+    """fold-groups-v1 in the reference (ruling 10); since S5-T4 Phase 2 the
+    default is `fold="FAST"`, as the engine's."""
 
-    def test_groups_trigger_order_and_the_default_is_off(self):
+    def test_groups_trigger_order_and_the_default_is_on(self):
         import tempfile
         from search_platform.core import build_index, fold_groups, search
         with tempfile.TemporaryDirectory() as temporary:
@@ -159,12 +159,13 @@ class FoldGroupsTests(unittest.TestCase):
             self.assertEqual(fold_groups(index, "pony"), {"pony": ["pony", "ponies"]})
             self.assertEqual(fold_groups(index, "ponies"), {"ponies": ["ponies", "pony"]})
             self.assertEqual(fold_groups(index, "rain"), {})  # the term alone: no group
-            plain = search(index, "ponies", retrieval_mode="lexical")
+            plain = search(index, "ponies", retrieval_mode="lexical", fold="")
             self.assertEqual({h["citation"]["path"] for h in plain}, {"a.md", "c.md"})
-            grouped = search(index, "ponies", retrieval_mode="lexical", fold="FAST")
+            grouped = search(index, "ponies", retrieval_mode="lexical")
             self.assertEqual({h["citation"]["path"] for h in grouped}, {"a.md", "b.md", "c.md"})
-            self.assertEqual(search(index, "rain", retrieval_mode="lexical", fold="FAST"),
-                             search(index, "rain", retrieval_mode="lexical"))
+            self.assertEqual(search(index, "ponies", retrieval_mode="lexical", fold="FAST"), grouped)
+            self.assertEqual(search(index, "rain", retrieval_mode="lexical"),
+                             search(index, "rain", retrieval_mode="lexical", fold=""))
 
     def test_a_grouped_term_is_not_also_expanded_by_fuzzy(self):
         import tempfile

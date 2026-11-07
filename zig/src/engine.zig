@@ -296,13 +296,17 @@ pub const Engine = struct {
                 if (computed.folded) |g| try noteGrouped(t, g);
                 if (computed.expanded) |g| try noteExpanded(t, g);
             }
+            // The fold groups come first in the merged list (`fold.merge`
+            // frees the two lists it was given).
+            const folded_len = if (computed.folded) |folded| folded.items.len else 0;
             groups = try fold.merge(allocator, computed.folded, computed.expanded);
             if (groups) |*found| {
+                const folded = fuzzy.Groups{ .items = found.items[0..folded_len] };
                 plain_terms = try allocator.alloc(postings.TermEntry, terms.len);
                 plain_frequencies = try allocator.alloc(u32, terms.len);
                 var kept: usize = 0;
                 for (terms, 0..) |entry, i| {
-                    if (computed.folded) |folded| if (folded.of(entry.term) != null) continue;
+                    if (folded.of(entry.term) != null) continue;
                     plain_terms[kept] = entry;
                     if (scorer.document_frequencies != null) plain_frequencies[kept] = frequencies[i];
                     kept += 1;

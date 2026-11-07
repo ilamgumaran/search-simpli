@@ -344,3 +344,37 @@ test "warnings: a member held only by a hidden chunk is never named" {
     try std.testing.expectEqualStrings("box", members[0].string);
     try std.testing.expectEqualStrings("boxs", members[1].string);
 }
+
+test "a fold group and a fuzzy-v1 group in one query, on a freeing allocator: each scores once, nothing leaks" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const corpus = try makeCorpus(a, &docs);
+    // `box` groups with `boxes`; `terrase` (7 Latin code points, held
+    // nowhere) is expanded by fuzzy-v1 to `terrace`. The query's own
+    // allocator frees: a plain entry read from a freed list would score
+    // `box` twice.
+    // The body alone (no title part: its coverage depends on the query's
+    // length).
+    const t = std.testing.allocator;
+    var body = lexical(&corpus);
+    body.title = null;
+    const out = try a.alloc(hybrid.Result, docs.len);
+    const both = try corpus.engine.queryTokenized(t, "box terrase", &.{}, out, body);
+    const alone = try corpus.engine.queryTokenized(t, "box", &.{}, try a.alloc(hybrid.Result, docs.len), body);
+    const typo = try corpus.engine.queryTokenized(t, "terrase", &.{}, try a.alloc(hybrid.Result, docs.len), body);
+    try std.testing.expectEqual(alone.len + typo.len, both.len);
+    for (both) |r| {
+        const single = for (alone) |x| {
+            if (x.document_index == r.document_index) break x;
+        } else for (typo) |x| {
+            if (x.document_index == r.document_index) break x;
+        } else return error.TestUnexpectedResult;
+        try std.testing.expectEqual(single.lexical_score, r.lexical_score);
+    }
+    // The trace names both groups.
+    var trace = hybrid.Trace{ .allocator = a, .io = std.testing.io };
+    _ = try corpus.engine.queryTraced(t, "box terrase", &.{}, out, lexical(&corpus), &trace);
+    try std.testing.expectEqual(@as(usize, 1), trace.grouped.items.len);
+    try std.testing.expectEqual(@as(usize, 1), trace.expanded.items.len);
+}

@@ -1563,14 +1563,14 @@ def search(
     title_root_ids: Iterable[str] | None = None,
     title_weight: float = TITLE_WEIGHT,
     fuzzy: bool = True,
-    fold: str = "",
+    fold: str = "FAST",
 ) -> list[dict]:
     """`title_root_ids` names the roots whose ids prefix the index's paths (a union of
     roots copied side by side), so the title field never takes a root id as a folder
     word; an index that carries `roots` uses its own. `title_weight` 0 is the ranking
     before S5-T2; `fuzzy` False the ranking before S5-T3 (fuzzy-v1). `fold` names
-    the parts of K that fold-groups-v1 (S5-T4) applies: "FAST" is the rule, "" (the
-    default in S5-T4's Phase 1) the ranking before S5-T4."""
+    the parts of K that fold-groups-v1 (S5-T4) applies: "FAST" (the default, as the
+    engine) is the rule, "" the ranking before S5-T4."""
     if top_k < 1:
         raise ValueError("top_k must be at least 1")
     if candidate_k < top_k:
@@ -1705,6 +1705,8 @@ def context_envelope(
         retrieval["title_policy_id"] = TITLE_POLICY_ID
         # Contract 2.4.0: the lexical channel ran under content or both.
         retrieval["fuzzy_policy_id"] = FUZZY_POLICY_ID
+        # Contract 2.5.0: likewise fold-groups-v1.
+        retrieval["fold_policy_id"] = FOLD_POLICY_ID
     return {
         "tool": "search_knowledge",
         "query": query,

@@ -7,4 +7,4 @@
 /// `../../../contracts/CONTRACTS_VERSION` file and fails if it no longer
 /// matches this constant, so a drift is caught by `dart test` rather than
 /// silently asserted against a stale value at `SearchSimpli.open`.
-const String expectedContractsVersion = '2.4.0';
+const String expectedContractsVersion = '2.5.0';

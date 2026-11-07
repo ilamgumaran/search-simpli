@@ -588,11 +588,12 @@ def j2_load() -> list[float] | None:
         return None
 
 
-def run_j2_pack(fold: str = "") -> dict:
+def run_j2_pack(fold: str = "FAST") -> dict:
     """J2 through the Python reference: one union index of the three roots with the
     file-name channel on; knowledge rows lexical, top 10, `content` and `both`;
     find rows first page of 10. `fold` names the parts of K that fold-groups-v1
-    applies (S5-T4: "FAST" is the rule, "" off; `find` is never grouped)."""
+    applies (S5-T4: "FAST", the default, is the rule, "" off; `find` is never
+    grouped)."""
     import os
     import platform
     pack_dir = PACKS["j2"]
@@ -676,8 +677,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--max-regression", type=float, default=0.0)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--fold", default="", metavar="PARTS",
-                        help="--pack j2 only: fold-groups-v1 with these parts of K (S5-T4; FAST is the rule)")
+    parser.add_argument("--fold", default=None, metavar="PARTS",
+                        help="--pack j2 only: fold-groups-v1 with these parts of K (S5-T4; FAST, the default,"
+                             " is the rule; 'off' is the ranking before S5-T4)")
     arguments = list(sys.argv[1:] if argv is None else argv)
     args = parser.parse_args(arguments)
     if args.top_k is not None and args.top_k < 1:
@@ -693,15 +695,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.pack == "j2":
             if args.top_k not in (None, J2_TOP_K):
                 parser.error(f"--pack j2 runs at top_k {J2_TOP_K}")
-            if args.fold and (set(args.fold) - set("FAST") or len(set(args.fold)) != len(args.fold)):
-                parser.error("--fold takes letters of FAST, each once")
-            results = run_j2_pack("".join(c for c in "FAST" if c in args.fold))
+            fold = "FAST" if args.fold is None else ("" if args.fold == "off" else args.fold)
+            if fold and (set(fold) - set("FAST") or len(set(fold)) != len(fold)):
+                parser.error("--fold takes letters of FAST, each once, or 'off'")
+            results = run_j2_pack("".join(c for c in "FAST" if c in fold))
             print_j2_report(results)
             if args.output:
                 args.output.parent.mkdir(parents=True, exist_ok=True)
                 args.output.write_text(json.dumps(results, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             return 0
-        if args.fold:
+        if args.fold is not None:
             parser.error("--fold runs with --pack j2 only")
         report = run_pack(args.pack, top_k=5 if args.top_k is None else args.top_k)
         print_pack_report(report)

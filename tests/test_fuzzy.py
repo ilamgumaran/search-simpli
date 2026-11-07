@@ -275,9 +275,10 @@ class J2Tests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.runs = run_j2_pack()["runs"]
+        # S5-T3's bars, as measured before fold-groups-v1 (S5-T4): fold off.
+        cls.runs = run_j2_pack(fold="")["runs"]
         with mock.patch.object(relevance_smoke, "search", functools.partial(relevance_smoke.search, fuzzy=False)):
-            cls.before = run_j2_pack()["runs"]
+            cls.before = run_j2_pack(fold="")["runs"]
 
     def test_the_bars(self):
         bars = {"content": (0.438, 0.55), "both": (0.438, 0.50)}

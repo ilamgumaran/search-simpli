@@ -163,18 +163,19 @@ fn decomposeInto(allocator: std.mem.Allocator, cp: u21, out: *std.ArrayList(u21)
 
 // ---------------------------------------------------- S: English plural --
 
-const plural_keep = [_][]const u8{
-    "news",     "species",      "series",  "always",    "perhaps",    "christmas", "lens",       "atlas",
-    "canvas",   "bias",         "alias",   "chaos",     "cosmos",     "pants",     "trousers",   "scissors",
-    "glasses",  "maths",        "physics", "athletics", "gymnastics", "politics",  "measles",    "mumps",
-    "means",    "lots",         "thanks",  "towards",   "afterwards", "upstairs",  "downstairs", "indoors",
-    "outdoors", "headquarters", "whereas", "yes",       "does",       "goes",      "was",        "has",
-    "his",      "its",          "this",    "thus",      "plus",       "bus",       "gas",        "us",
-    "is",       "as",
-};
+// The keep lists are one string each, words separated by a space: a list of
+// slices would be pointers the loader relocates (bound (g), library growth).
+const plural_keep = "news species series always perhaps christmas lens atlas " ++
+    "canvas bias alias chaos cosmos pants trousers scissors " ++
+    "glasses maths physics athletics gymnastics politics measles mumps " ++
+    "means lots thanks towards afterwards upstairs downstairs indoors " ++
+    "outdoors headquarters whereas yes does goes was has " ++
+    "his its this thus plus bus gas us " ++
+    "is as";
 
-fn inList(list: []const []const u8, piece: []const u8) bool {
-    for (list) |word| if (std.mem.eql(u8, word, piece)) return true;
+fn inList(list: []const u8, piece: []const u8) bool {
+    var words = std.mem.splitScalar(u8, list, ' ');
+    while (words.next()) |word| if (std.mem.eql(u8, word, piece)) return true;
     return false;
 }
 
@@ -187,7 +188,7 @@ fn stemPlural(piece: []const u8) Stem {
     for (piece) |b| if (b < 'a' or b > 'z') return whole;
     const ends = std.mem.endsWith;
     if (ends(u8, piece, "ss") or ends(u8, piece, "us") or ends(u8, piece, "is") or !ends(u8, piece, "s")) return whole;
-    if (inList(&plural_keep, piece)) return whole;
+    if (inList(plural_keep, piece)) return whole;
     if (ends(u8, piece, "ies")) {
         return if (piece.len >= 5) .{ .len = piece.len - 3, .y = true } else .{ .len = piece.len - 1 };
     }
@@ -200,20 +201,47 @@ fn stemPlural(piece: []const u8) Stem {
 
 // ------------------------------------------------------------- T: Tamil --
 
-const tamil_keep = [_][]const u8{ "நாங்கள்", "நீங்கள்", "உங்கள்", "எங்கள்", "தங்கள்", "அவர்கள்", "இவர்கள்", "மக்கள்" };
-const tamil_vowel_signs = [_][]const u8{ "ா", "ி", "ீ", "ு", "ூ", "ெ", "ே", "ை", "ொ", "ோ", "ௌ" };
-const tamil_i_ai = [_][]const u8{ "ி", "ீ", "ை" };
+const tamil_keep = "நாங்கள் நீங்கள் உங்கள் எங்கள் தங்கள் அவர்கள் இவர்கள் மக்கள்";
 
-const TamilRule = struct { suffix: []const u8, replacement: []const u8, stem_ends: ?[]const []const u8 };
-const tamil_rules = [_]TamilRule{
-    .{ .suffix = "ங்கள்", .replacement = "ம்", .stem_ends = null },
-    .{ .suffix = "கள்", .replacement = "", .stem_ends = null },
-    .{ .suffix = "த்தில்", .replacement = "ம்", .stem_ends = null },
-    .{ .suffix = "த்தின்", .replacement = "ம்", .stem_ends = null },
-    .{ .suffix = "க்கு", .replacement = "", .stem_ends = &tamil_vowel_signs },
-    .{ .suffix = "யில்", .replacement = "", .stem_ends = &tamil_i_ai },
-    .{ .suffix = "யின்", .replacement = "", .stem_ends = &tamil_i_ai },
+/// The code point a rule's stem must end in: any of the eleven vowel signs
+/// (ா ி ீ ு ூ ெ ே ை ொ ோ ௌ), or ி ீ ை.
+const StemEnd = enum {
+    any,
+    vowel_sign,
+    i_ai,
+
+    fn holds(end: StemEnd, stem: []const u8) bool {
+        if (end == .any) return true;
+        // Every Tamil code point is three UTF-8 bytes.
+        if (stem.len < 3) return false;
+        const cp = std.unicode.utf8Decode(stem[stem.len - 3 ..]) catch return false;
+        return switch (end) {
+            .any => true,
+            .vowel_sign => switch (cp) {
+                0x0BBE...0x0BC2, 0x0BC6...0x0BC8, 0x0BCA...0x0BCC => true,
+                else => false,
+            },
+            .i_ai => cp == 0x0BBF or cp == 0x0BC0 or cp == 0x0BC8,
+        };
+    }
 };
+
+const TamilRule = struct { suffix: []const u8, replacement: []const u8, stem_end: StemEnd };
+/// Unrolled at compile time (`inline for`): no table of slices is kept.
+const tamil_rules = .{
+    TamilRule{ .suffix = "ங்கள்", .replacement = "ம்", .stem_end = .any },
+    TamilRule{ .suffix = "கள்", .replacement = "", .stem_end = .any },
+    TamilRule{ .suffix = "த்தில்", .replacement = "ம்", .stem_end = .any },
+    TamilRule{ .suffix = "த்தின்", .replacement = "ம்", .stem_end = .any },
+    TamilRule{ .suffix = "க்கு", .replacement = "", .stem_end = .vowel_sign },
+    TamilRule{ .suffix = "யில்", .replacement = "", .stem_end = .i_ai },
+    TamilRule{ .suffix = "யின்", .replacement = "", .stem_end = .i_ai },
+};
+
+fn tamilLettersComptime(comptime text: []const u8) usize {
+    @setEvalBranchQuota(10_000);
+    return comptime tamilLetters(text);
+}
 
 /// Tamil letters (U+0B85-U+0BB9) in valid UTF-8 `text`.
 fn tamilLetters(text: []const u8) usize {
@@ -243,22 +271,15 @@ fn allTamil(text: []const u8) bool {
 
 /// T: appends the stemmed `piece` to `out`.
 fn appendTamil(allocator: std.mem.Allocator, piece: []const u8, out: *std.ArrayList(u8)) Error!void {
-    if (allTamil(piece) and !inList(&tamil_keep, piece)) {
-        for (tamil_rules) |rule| {
-            if (!std.mem.endsWith(u8, piece, rule.suffix)) continue;
-            const stem = piece[0 .. piece.len - rule.suffix.len];
-            if (rule.stem_ends) |ends| {
-                var ok = false;
-                for (ends) |e| if (std.mem.endsWith(u8, stem, e)) {
-                    ok = true;
-                    break;
-                };
-                if (!ok) continue;
-            }
-            if (tamilLetters(stem) + tamilLetters(rule.replacement) >= 2) {
-                try out.appendSlice(allocator, stem);
-                try out.appendSlice(allocator, rule.replacement);
-                return;
+    if (allTamil(piece) and !inList(tamil_keep, piece)) {
+        inline for (tamil_rules) |rule| {
+            if (std.mem.endsWith(u8, piece, rule.suffix)) {
+                const stem = piece[0 .. piece.len - rule.suffix.len];
+                if (rule.stem_end.holds(stem) and tamilLetters(stem) + (comptime tamilLettersComptime(rule.replacement)) >= 2) {
+                    try out.appendSlice(allocator, stem);
+                    try out.appendSlice(allocator, rule.replacement);
+                    return;
+                }
             }
         }
     }
@@ -568,7 +589,9 @@ pub const KeyMap = struct {
                 };
             }
         };
-        std.mem.sort(Entry, entries.items, Ctx{ .pool = pool.items }, Ctx.less);
+        // Heap sort: the order is total (the term index breaks ties), and its
+        // code is a small part of the block sort's (bound (g), library growth).
+        std.sort.heap(Entry, entries.items, Ctx{ .pool = pool.items }, Ctx.less);
         const n = entries.items.len;
         const key_offsets = try allocator.alloc(u32, n + 1);
         errdefer allocator.free(key_offsets);
@@ -676,7 +699,7 @@ pub fn compute(allocator: std.mem.Allocator, context: fuzzy.Context, map: *const
         for (map.term_of[r.start..r.end]) |i| if (member(context, numbered(context, map, i))) |m| try members.append(allocator, m);
         if (members.items.len == 0) continue;
         if (members.items.len == 1 and std.mem.eql(u8, members.items[0].term, token)) continue;
-        std.mem.sort(fuzzy.Member, members.items, token, memberBefore);
+        std.sort.heap(fuzzy.Member, members.items, token, memberBefore);
         const owned = try allocator.dupe(fuzzy.Member, members.items);
         errdefer allocator.free(owned);
         const typed = try allocator.dupe(u8, token);

@@ -334,8 +334,73 @@ void main() {
 
     test('a word held in scope is not expanded', () {
       final result = v2.query('dinosaur', topK: 5, mode: RetrievalMode.lexical);
-      expect(result.warnings, isEmpty);
+      // Contract 2.5.0: no expansion; it is grouped with its plural instead.
+      expect(
+        result.warnings!.map((w) => w.code),
+        [SearchWarningCode.queryTermGrouped],
+      );
       expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v1');
+    });
+  });
+
+  test('contract 2.5.0: an ascii-alnum-v1 index is never grouped', () {
+    final result = engine.query('hybrid', topK: 3, mode: RetrievalMode.lexical);
+    expect(result.retrieval.foldPolicyId, isNull);
+    expect(result.retrieval.toJson().containsKey('fold_policy_id'), isFalse);
+  });
+
+  group('contract 2.5.0 on an analyzer-v2 index', () {
+    late Directory v2Dir;
+    late SearchSimpli v2;
+
+    setUp(() {
+      v2Dir = Directory.systemTemp.createTempSync('ss-dart-fold-');
+      importSnapshotJson(v2Dir.path, _interchangeV2);
+      v2 = SearchSimpli.open(v2Dir.path);
+    });
+
+    tearDown(() {
+      v2.close();
+      v2Dir.deleteSync(recursive: true);
+    });
+
+    test('a plural no file holds is unmatched, then grouped with its singular', () {
+      final result = v2.query(
+        'tournaments museum dinosaur',
+        topK: 5,
+        mode: RetrievalMode.lexical,
+      );
+      expect(result.retrieval.foldPolicyId, 'fold-groups-v1');
+      // A record compares a list by identity: the members are joined.
+      expect(
+        result.warnings!.map((w) => (w.code, w.term, w.members?.join(','))),
+        [
+          (SearchWarningCode.queryTermUnmatched, 'tournaments', null),
+          (SearchWarningCode.queryTermGrouped, 'tournaments', 'tournament'),
+          (SearchWarningCode.queryTermGrouped, 'dinosaur', 'dinosaurs'),
+        ],
+      );
+      expect(result.warnings![1].message, 'also searched as: tournament');
+      expect(result.warnings![1].expansions, isNull);
+      // a holds dinosaur and museum; b the tournament and the dinosaurs.
+      expect(result.results.map((r) => r.citation.path), [
+        'public/a.md',
+        'public/b.md',
+      ]);
+      expect(
+        SearchKnowledgeResult.fromJson(result.toJson()).toJson(),
+        result.toJson(),
+      );
+      expect(
+        SearchWarning.fromJson(result.warnings![2].toJson()),
+        result.warnings![2],
+      );
+    });
+
+    test('a word with no other form keeps its old report', () {
+      final result = v2.query('museum', topK: 5, mode: RetrievalMode.lexical);
+      expect(result.warnings, isEmpty);
+      expect(result.retrieval.foldPolicyId, 'fold-groups-v1');
     });
   });
 }
