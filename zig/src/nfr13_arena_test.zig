@@ -821,3 +821,138 @@ fn printOpenParts(dir: std.Io.Dir, label: []const u8, open_peak: usize) !void {
     try std.testing.expectEqual(open_peak, parts.peak);
     try std.testing.expectEqual(@as(i64, @intCast(parts.live)), held_sum);
 }
+
+// --- S5-T3 restated ruling 8 (f)-(h): fuzzy-v1 under the cap ---------------
+
+const fuzzy = @import("fuzzy.zig");
+
+/// A dictionary word of 7+ ASCII letters whose neighbour swap (letters 3
+/// and 4) is in neither the dictionary nor the title field: typed, it
+/// triggers and expands back to the word.
+fn triggeringWord(a: std.mem.Allocator, index: postings.Index, field: *const title_field.Field) ![]const u8 {
+    for (index.terms) |entry| {
+        const term = entry.term;
+        if (term.len < 7) continue;
+        const letters = for (term) |c| {
+            if (c < 'a' or c > 'z') break false;
+        } else true;
+        if (!letters or term[2] == term[3]) continue;
+        const typed = try a.dupe(u8, term);
+        std.mem.swap(u8, &typed[2], &typed[3]);
+        if (postings.lookupExact(index, typed) != null or field.lookup(typed) != null) continue;
+        return typed;
+    }
+    return error.NoTriggeringWord;
+}
+
+const FuzzyPeaks = struct { typed: []const u8, content: usize, content_left: usize, both: usize, both_left: usize, before: usize, scan_peak: usize, scan_left: usize, members: usize };
+
+fn fuzzyPeaks(a: std.mem.Allocator, dir: std.Io.Dir, cap: usize) !FuzzyPeaks {
+    var result: FuzzyPeaks = undefined;
+    var capped = Capped{ .parent = std.heap.page_allocator, .cap = cap };
+    var engine_arena = std.heap.ArenaAllocator.init(capped.allocator());
+    defer engine_arena.deinit();
+    const opened = try snapshot_open.openScopedWith(.{ .blocks = capped.allocator(), .arena = engine_arena.allocator() }, io, dir);
+    defer snapshot_open.close(opened.engine, opened.folder);
+    const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+    // Warm: the title field and every lazily read table, through queries
+    // that do not trigger, so the triggering ones below add only their own.
+    for ([_][]const u8{ "the doc", "doc the" }, 0..) |warm, i| {
+        var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        defer op_arena.deinit();
+        const o = op_arena.allocator();
+        if (i == 0) {
+            _ = try scoped.searchKnowledge(o, warm, &.{}, .{ .retrieval_mode = .lexical }, .{}, try o.alloc(hybrid.Result, 10), try o.alloc(engine_module.Evidence, 10), null);
+        } else _ = try opened.engine.queryFields(o, warm, .both, .{ .retrieval_mode = .lexical });
+    }
+    const field = try opened.folder.titleField();
+    result.typed = try triggeringWord(a, opened.engine.lexical_index, field);
+    result.before = capped.live;
+    {
+        var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        const o = op_arena.allocator();
+        _ = capped.markPeak();
+        var trace = hybrid.Trace{ .allocator = o, .io = io };
+        const evidence = try scoped.searchKnowledge(o, result.typed, &.{}, .{ .retrieval_mode = .lexical }, .{}, try o.alloc(hybrid.Result, 10), try o.alloc(engine_module.Evidence, 10), &trace);
+        try std.testing.expect(evidence.len > 0);
+        try std.testing.expectEqual(@as(usize, 1), trace.expanded.items.len);
+        result.content = capped.peak;
+        op_arena.deinit();
+        result.content_left = capped.live;
+    }
+    {
+        var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        _ = capped.markPeak();
+        const hits = try opened.engine.queryFields(op_arena.allocator(), result.typed, .both, .{ .retrieval_mode = .lexical });
+        try std.testing.expect(hits.len > 0);
+        result.both = capped.peak;
+        op_arena.deinit();
+        result.both_left = capped.live;
+    }
+    try std.testing.expectEqual(@as(usize, 0), capped.refused);
+    // One scan with its group and scorer arrays, on a cap of its own.
+    var scan = Capped{ .parent = std.heap.page_allocator, .cap = cap };
+    const s = scan.allocator();
+    const context = fuzzy.Context{ .index = opened.engine.lexical_index, .documents = opened.engine.documents, .title = field, .options = .{} };
+    var groups = (try fuzzy.compute(s, context, &.{result.typed})) orelse return error.NoGroup;
+    var terms = try fuzzy.scorerTerms(s, &.{}, null, groups);
+    result.members = groups.items[0].members.len;
+    terms.deinit(s);
+    groups.deinit(s);
+    result.scan_peak = scan.peak;
+    result.scan_left = scan.live;
+    return result;
+}
+
+fn fuzzyRun(file_count: usize) !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var corpus = std.testing.tmpDir(.{ .iterate = true });
+    defer corpus.cleanup();
+    var out = std.testing.tmpDir(.{ .iterate = true });
+    defer out.cleanup();
+    try generateCorpus(a, corpus.dir, file_count);
+    _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
+    const peaks = try fuzzyPeaks(a, out.dir, scale_cap_bytes);
+    std.debug.print("S5-T3 NFR-13 {d} files, one handle, typed {s}: live before {d}; triggering content peak {d} (left {d}), both peak {d} (left {d}); one scan with its group and scorer arrays: peak {d} (left {d}), {d} members\n", .{ file_count, peaks.typed, peaks.before, peaks.content, peaks.content_left, peaks.both, peaks.both_left, peaks.scan_peak, peaks.scan_left, peaks.members });
+    // (f) nothing kept: the live bytes after each triggering query are the
+    // live bytes before it.
+    try std.testing.expectEqual(peaks.before, peaks.content_left);
+    try std.testing.expectEqual(peaks.before, peaks.both_left);
+    // (g) one scan's transient, the group arrays included, at most 256 KiB.
+    try std.testing.expect(peaks.scan_peak <= 256 * 1024);
+    try std.testing.expectEqual(@as(usize, 0), peaks.scan_left);
+    // (h) both triggering queries on the one handle under 64 MiB.
+    try std.testing.expect(peaks.content <= cap_bytes and peaks.both <= cap_bytes);
+}
+
+test "S5-T3 NFR-13: a triggering content and both query at 10k files: nothing kept, one scan under 256 KiB, under 64 MiB" {
+    try fuzzyRun(base_file_count);
+}
+
+test "S5-T3 NFR-13 scale: the same at 15,000 files" {
+    if (!scaleEnabled()) {
+        std.debug.print("S5-T3 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
+        return error.SkipZigTest;
+    }
+    try fuzzyRun(15_000);
+}
+
+test "S5-T3 NFR-13 scale: the same at 20,000 files (information)" {
+    if (!scaleEnabled()) {
+        std.debug.print("S5-T3 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
+        return error.SkipZigTest;
+    }
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var corpus = std.testing.tmpDir(.{ .iterate = true });
+    defer corpus.cleanup();
+    var out = std.testing.tmpDir(.{ .iterate = true });
+    defer out.cleanup();
+    try generateCorpus(a, corpus.dir, 20_000);
+    _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
+    const peaks = try fuzzyPeaks(a, out.dir, scale_cap_bytes);
+    std.debug.print("S5-T3 NFR-13 20000 files (information), typed {s}: live before {d}; triggering content peak {d} (left {d}), both peak {d} (left {d}); one scan peak {d}\n", .{ peaks.typed, peaks.before, peaks.content, peaks.content_left, peaks.both, peaks.both_left, peaks.scan_peak });
+}
