@@ -1292,6 +1292,75 @@ def fuzzy_expansions(index: dict, query: str, *, path_prefix: str | None = None,
     return {term: [member for member, _ in members] for term, members in groups.items()}
 
 
+# fold-groups-v1 (S5-T4, docs/tasks/S5-T4.md ruling 10): on an analyzer-v2 index a
+# query term is also searched as every in-scope body term and visible title term
+# whose key K (`analyzer_v3.key`) equals its own, the term first, then key df
+# descending, then UTF-8 bytes, each at weight 1.0, through fuzzy-v1's group
+# scoring (one word, the members' largest df, the best member per chunk). A group
+# is used when it is not empty and not the term alone; fuzzy-v1 runs as before on
+# every term without one. As fuzzy-v1: membership is narrowed by a path prefix,
+# the order's key df is not; a member held only by a label-hidden chunk is not
+# used. `fold` names the parts of K applied ("FAST" is K; "" is off).
+
+FOLD_POLICY_ID = "fold-groups-v1"
+
+
+def _fold_groups(terms: Iterable[str], members_by_key: dict[str, set[str]], key_df: Counter,
+                 parts: str) -> dict[str, tuple[tuple[str, float], ...]]:
+    from . import analyzer_v3
+    groups: dict[str, tuple[tuple[str, float], ...]] = {}
+    for term in sorted(set(terms)):
+        members = members_by_key.get(analyzer_v3.key(term, parts), set())
+        if members and members != {term}:
+            order = sorted(members, key=lambda m: (m != term, -key_df.get(m, 0), m.encode("utf-8")))
+            groups[term] = tuple((member, 1.0) for member in order)
+    return groups
+
+
+def _query_groups(chunks: list[dict], visible_chunks: list[dict], terms: Iterable[str],
+                  root_ids: tuple[str, ...], path_prefix: str | None = None, fold: str = "",
+                  fuzzy: bool = True) -> dict[str, tuple[tuple[str, float], ...]]:
+    """The query's groups, once per query: fold-groups-v1's (when `fold` names parts
+    of K), then fuzzy-v1's for every term without one (when `fuzzy`)."""
+    from . import analyzer_v3
+    terms = set(terms)
+    groups: dict[str, tuple[tuple[str, float], ...]] = {}
+    if fold and terms:
+        key_df: Counter[str] = Counter()
+        for chunk in visible_chunks:
+            key_df.update(chunk["terms"].keys())
+        vocabulary: set[str] = set()
+        for chunk in chunks:
+            vocabulary.update(chunk["terms"].keys())
+        for path, tokens in _title_fields(visible_chunks, root_ids).items():
+            if path_prefix is None or path.startswith(path_prefix):
+                vocabulary.update(tokens)
+        members_by_key: dict[str, set[str]] = {}
+        for word in vocabulary:
+            members_by_key.setdefault(analyzer_v3.key(word, fold), set()).add(word)
+        groups = _fold_groups(terms, members_by_key, key_df, fold)
+    if fuzzy:
+        rest = [term for term in terms if term not in groups]
+        if rest:
+            groups.update(_fuzzy_query_groups(chunks, visible_chunks, rest, root_ids, path_prefix))
+    return groups
+
+
+def fold_groups(index: dict, query: str, *, path_prefix: str | None = None,
+                principal_labels: Iterable[str] = (), search_field: str = "content",
+                title_root_ids: Iterable[str] | None = None, fold: str = "FAST") -> dict[str, list[str]]:
+    """The fold groups `search` uses for `query` (fold-groups-v1), {term: [members in
+    order]}: what the engine reports in its `query_term_grouped` warnings (with the
+    term itself left out there)."""
+    principal_labels = tuple(principal_labels)
+    visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
+    chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
+    terms = _filename_tokenize(query) if search_field == "both" else tokenize(query) + _filename_tokenize(query)
+    groups = _query_groups(chunks, visible, terms, _title_root_ids(index, title_root_ids), path_prefix,
+                           fold=fold, fuzzy=False)
+    return {term: [member for member, _ in members] for term, members in groups.items()}
+
+
 def _first_chunk_key(chunk: dict) -> tuple:
     return (chunk["start_line"], chunk["end_line"], chunk["id"].encode("utf-8"))
 
@@ -1344,16 +1413,17 @@ def _search_filename_fields(
     title_root_ids: tuple[str, ...] = (),
     title_weight: float = TITLE_WEIGHT,
     fuzzy: bool = True,
+    fold: str = "",
 ) -> list[dict]:
     terms = _filename_tokenize(query)
     if not terms:
         return []
     visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
     chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
-    # fuzzy-v1: `both` shares one set of groups between its body scoring and its
-    # title part; the file-name channel is never expanded.
-    groups = (_fuzzy_query_groups(chunks, visible, terms, title_root_ids, path_prefix)
-              if fuzzy and search_field == "both" else {})
+    # fuzzy-v1 and fold-groups-v1: `both` shares one set of groups between its body
+    # scoring and its title part; the file-name channel is never grouped.
+    groups = (_query_groups(chunks, visible, terms, title_root_ids, path_prefix, fold=fold, fuzzy=fuzzy)
+              if search_field == "both" else {})
     by_path: dict[str, list[dict]] = defaultdict(list)
     for chunk in chunks:
         by_path[chunk["path"]].append(chunk)
@@ -1493,11 +1563,14 @@ def search(
     title_root_ids: Iterable[str] | None = None,
     title_weight: float = TITLE_WEIGHT,
     fuzzy: bool = True,
+    fold: str = "",
 ) -> list[dict]:
     """`title_root_ids` names the roots whose ids prefix the index's paths (a union of
     roots copied side by side), so the title field never takes a root id as a folder
     word; an index that carries `roots` uses its own. `title_weight` 0 is the ranking
-    before S5-T2; `fuzzy` False the ranking before S5-T3 (fuzzy-v1)."""
+    before S5-T2; `fuzzy` False the ranking before S5-T3 (fuzzy-v1). `fold` names
+    the parts of K that fold-groups-v1 (S5-T4) applies: "FAST" is the rule, "" (the
+    default in S5-T4's Phase 1) the ranking before S5-T4."""
     if top_k < 1:
         raise ValueError("top_k must be at least 1")
     if candidate_k < top_k:
@@ -1515,6 +1588,7 @@ def search(
             index, query, top_k=top_k, candidate_k=candidate_k, path_prefix=path_prefix,
             principal_labels=tuple(principal_labels), search_field=search_field,
             title_root_ids=_title_root_ids(index, title_root_ids), title_weight=title_weight, fuzzy=fuzzy,
+            fold=fold,
         )
     query_terms = tokenize(query)
     if not query_terms:
@@ -1523,9 +1597,11 @@ def search(
     visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
     chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
     root_ids = _title_root_ids(index, title_root_ids)
-    # fuzzy-v1: the groups are computed once, for the body terms and the title terms.
-    groups = (_fuzzy_query_groups(chunks, visible, query_terms + _filename_tokenize(query), root_ids, path_prefix)
-              if fuzzy and retrieval_mode != "vector" else {})
+    # fuzzy-v1 and fold-groups-v1: the groups are computed once, for the body terms
+    # and the title terms.
+    groups = (_query_groups(chunks, visible, query_terms + _filename_tokenize(query), root_ids, path_prefix,
+                            fold=fold, fuzzy=fuzzy)
+              if retrieval_mode != "vector" else {})
     lexical_scores = _bm25_scores(chunks, query_terms, groups) if retrieval_mode != "vector" else {}
     received: dict[str, float] = {}
     if retrieval_mode != "vector":

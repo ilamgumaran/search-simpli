@@ -129,5 +129,77 @@ class KTests(unittest.TestCase):
         self.assertEqual([K(t) for t in reversed(tokens)], list(reversed(first)))
 
 
+def write(root: Path, files: dict) -> None:
+    for path, text in files.items():
+        target = root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+
+
+class FoldGroupsTests(unittest.TestCase):
+    """fold-groups-v1 in the reference (ruling 10); S5-T4 Phase 1 runs it with
+    `fold="FAST"`, the default stays off until the engine carries it."""
+
+    def test_groups_trigger_order_and_the_default_is_off(self):
+        import tempfile
+        from search_platform.core import build_index, fold_groups, search
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write(root, {"a.md": "Two ponies in the field.", "b.md": "One pony, one pony.", "c.md": "Ponies and a pony.",
+                         "d.md": "Rain."})
+            index = build_index(root)
+            self.assertEqual(fold_groups(index, "pony"), {"pony": ["pony", "ponies"]})
+            self.assertEqual(fold_groups(index, "ponies"), {"ponies": ["ponies", "pony"]})
+            self.assertEqual(fold_groups(index, "rain"), {})  # the term alone: no group
+            plain = search(index, "ponies", retrieval_mode="lexical")
+            self.assertEqual({h["citation"]["path"] for h in plain}, {"a.md", "c.md"})
+            grouped = search(index, "ponies", retrieval_mode="lexical", fold="FAST")
+            self.assertEqual({h["citation"]["path"] for h in grouped}, {"a.md", "b.md", "c.md"})
+            self.assertEqual(search(index, "rain", retrieval_mode="lexical", fold="FAST"),
+                             search(index, "rain", retrieval_mode="lexical"))
+
+    def test_a_grouped_term_is_not_also_expanded_by_fuzzy(self):
+        import tempfile
+        from search_platform.core import _query_groups, build_index
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write(root, {"a.md": "The dinosaur bones.", "b.md": "Some bones."})
+            index = build_index(root)
+            chunks = index["chunks"]
+            # boxes: no file holds it; fuzzy-v1 alone reaches bones (plant P9')
+            self.assertEqual(_query_groups(chunks, chunks, ["boxes"], (), fold=""), {"boxes": (("bones", 1.0),)})
+            write(root, {"c.md": "A box of crayons."})
+            index = build_index(root)
+            chunks = index["chunks"]
+            self.assertEqual(_query_groups(chunks, chunks, ["boxes"], (), fold="FAST"), {"boxes": (("box", 1.0),)})
+
+    def test_privacy_and_the_prefix_narrow_membership(self):
+        import tempfile
+        from search_platform.core import build_index, fold_groups
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write(root, {"private/plan.md": "The secret ponies.", "public/notes.md": "One pony.",
+                         "other/more.md": "Pony rides."})
+            rules = [{"path_prefix": "private/", "required_labels": ["tenant:x"]}]
+            index = build_index(root, access_rules=rules)
+            self.assertEqual(fold_groups(index, "pony"), {})  # ponies only in a hidden chunk
+            self.assertEqual(fold_groups(index, "pony", principal_labels=["tenant:x"]), {"pony": ["pony", "ponies"]})
+            self.assertEqual(fold_groups(index, "ponies", principal_labels=["tenant:x"], path_prefix="public/"),
+                             {"ponies": ["pony"]})
+
+    def test_title_terms_are_members(self):
+        import tempfile
+        from search_platform.core import build_index, fold_groups, search
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write(root, {"days-out/seals.md": "Grey ones on the rocks.", "other.md": "Nothing much."})
+            index = build_index(root, filename_index=True)
+            self.assertEqual(fold_groups(index, "seal"), {"seal": ["seals"]})
+            for field in ("content", "both"):
+                hits = search(index, "seal", retrieval_mode="lexical", search_field=field, fold="FAST")
+                self.assertEqual([h["citation"]["path"] for h in hits], ["days-out/seals.md"], field)
+            self.assertEqual(search(index, "seal", retrieval_mode="lexical", search_field="filename", fold="FAST"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

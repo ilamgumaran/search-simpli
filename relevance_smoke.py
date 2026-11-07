@@ -588,10 +588,11 @@ def j2_load() -> list[float] | None:
         return None
 
 
-def run_j2_pack() -> dict:
+def run_j2_pack(fold: str = "") -> dict:
     """J2 through the Python reference: one union index of the three roots with the
     file-name channel on; knowledge rows lexical, top 10, `content` and `both`;
-    find rows first page of 10."""
+    find rows first page of 10. `fold` names the parts of K that fold-groups-v1
+    applies (S5-T4: "FAST" is the rule, "" off; `find` is never grouped)."""
     import os
     import platform
     pack_dir = PACKS["j2"]
@@ -609,7 +610,7 @@ def run_j2_pack() -> dict:
         def knowledge(query: str, field: str) -> list[dict]:
             out = []
             for r in search(index, query, top_k=J2_TOP_K, retrieval_mode="lexical", search_field=field,
-                            title_root_ids=judgments["roots"]):
+                            title_root_ids=judgments["roots"], fold=fold):
                 root, rest = split(r["citation"]["path"])
                 score = r["ranking"]["lexical"]["score"] if field == "content" else r["score"]
                 out.append({"root_id": root, "path": rest, "start_line": r["citation"]["start_line"],
@@ -630,7 +631,7 @@ def run_j2_pack() -> dict:
         "surface": "python-reference",
         "judgments_sha256": j2_judgments_sha256(pack_dir),
         "engine": {"commit": j2_git_head(), "python_version": platform.python_version(),
-                   "hashseed": os.environ.get("PYTHONHASHSEED")},
+                   "hashseed": os.environ.get("PYTHONHASHSEED"), **({"fold": fold} if fold else {})},
         "load": j2_load(),
         "top_k": J2_TOP_K,
         "runs": runs,
@@ -675,6 +676,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--max-regression", type=float, default=0.0)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--fold", default="", metavar="PARTS",
+                        help="--pack j2 only: fold-groups-v1 with these parts of K (S5-T4; FAST is the rule)")
     arguments = list(sys.argv[1:] if argv is None else argv)
     args = parser.parse_args(arguments)
     if args.top_k is not None and args.top_k < 1:
@@ -684,18 +687,22 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--pack takes no corpus or suite")
         unsupported = sorted({value.split("=", 1)[0] for value in arguments
                               if value.startswith("--")
-                              and value.split("=", 1)[0] not in {"--pack", "--top-k", "--output"}})
+                              and value.split("=", 1)[0] not in {"--pack", "--top-k", "--output", "--fold"}})
         if unsupported:
             parser.error("--pack does not support " + ", ".join(unsupported))
         if args.pack == "j2":
             if args.top_k not in (None, J2_TOP_K):
                 parser.error(f"--pack j2 runs at top_k {J2_TOP_K}")
-            results = run_j2_pack()
+            if args.fold and (set(args.fold) - set("FAST") or len(set(args.fold)) != len(args.fold)):
+                parser.error("--fold takes letters of FAST, each once")
+            results = run_j2_pack("".join(c for c in "FAST" if c in args.fold))
             print_j2_report(results)
             if args.output:
                 args.output.parent.mkdir(parents=True, exist_ok=True)
                 args.output.write_text(json.dumps(results, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             return 0
+        if args.fold:
+            parser.error("--fold runs with --pack j2 only")
         report = run_pack(args.pack, top_k=5 if args.top_k is None else args.top_k)
         print_pack_report(report)
         if args.output:
