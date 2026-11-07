@@ -291,3 +291,10 @@ Tamil and the title slices do not move. The surfaces differ on a first
 grade-2 rank only by the analyzer (`a06`, `a07`; `a09` now agrees through the
 expansion `strasse` → `straße` in the engine). The baseline is re-recorded at
 S5-T3 in its own commit.
+
+The older packs do not move, except mixed, which moves exactly as the plan
+named (Python reference): MRR 0.775 → 0.833, nDCG 0.833 → 0.876, success@1
+0.60 → 0.70. `bread-rises`, `combine-exact-and-meaning` and
+`crash-safe-snapshot` gain, and `latency-breakdown` goes 1 → 2, because
+`inference` is also searched as `influence` (distance 2). That loss was
+accepted as a named move (S5-T3 ruling 1).
