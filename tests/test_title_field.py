@@ -6,7 +6,6 @@ file's best body chunk (or its first chunk) under `content`, and merged per file
 under `both`."""
 
 import ctypes
-import functools
 import json
 import os
 import platform
@@ -18,7 +17,6 @@ import unicodedata
 import unittest
 from collections import Counter
 from pathlib import Path
-from unittest import mock
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
@@ -26,7 +24,6 @@ sys.path.insert(0, str(REPO))
 from src.search_platform.core import (  # noqa: E402
     TITLE_WEIGHT, _bm25_scores, _title_scores, _title_tokens, build_index, search, tokenize,
 )
-import relevance_smoke  # noqa: E402
 from relevance_smoke import run_j2_pack  # noqa: E402
 
 sys.path.insert(0, str(REPO / "scripts"))
@@ -37,11 +34,15 @@ SHIPPED = REPO / "bindings" / "dart" / "search_simpli" / "native" / "macos-arm64
 # The rows where searchd's first grade-2 rank differs from the reference's, all
 # through the analyzer (accent folding the reference does and analyzer-v2 does
 # not, docs/tasks/S5-T2.md): every other J2 row agrees between the surfaces.
-ANALYZER_ROWS = {"content": {"a06", "a07", "a09"}, "both": {"a06", "a09"}}
-# S5-T3's held-out misspelling rows whose answer ties a grade-0 chunk at an equal
-# score (`j2_run.py --compare`: "tie order", document index in searchd, chunk id
-# in the reference); the test checks that the two scores are equal.
-TIE_ORDER_ROWS = {"content": {"mh08", "mh11"}, "both": set()}
+# S5-T3: `a09` (`strasse`) now agrees in both variants: the engine's fuzzy-v1
+# expands it to the body's `straße` (distance 2), which the reference's full case
+# folding matches directly.
+ANALYZER_ROWS = {"content": {"a06", "a07"}, "both": {"a06"}}
+# Rows whose answer ties a grade-0 chunk at an equal score (`j2_run.py --compare`:
+# "tie order", document index in searchd, chunk id in the reference); the test
+# checks that the two scores are equal. S5-T3 Phase 1 had `mh08` and `mh11` here
+# (today's engine); with fuzzy-v1 on both surfaces their answers rank first.
+TIE_ORDER_ROWS = {"content": set(), "both": set()}
 
 ROOTS = ("school", "home", "laptop")
 
@@ -252,11 +253,7 @@ class J2SurfaceTests(unittest.TestCase):
 
     def test_searchd_ranks_agree_with_the_reference_but_for_the_analyzer_rows(self):
         engine = j2_run.run_searchd(self.binary, Path(self.scratch.name), None)["runs"]
-        # S5-T3 Phase 1: the reference carries fuzzy-v1 ahead of the engine, so the
-        # engine is compared with the reference's ranking before it (`fuzzy=False`)
-        # until the engine's own expansion lands (S5-T3 Phase 2 restores this line).
-        with mock.patch.object(relevance_smoke, "search", functools.partial(relevance_smoke.search, fuzzy=False)):
-            reference = run_j2_pack()["runs"]
+        reference = run_j2_pack()["runs"]
         for variant in ("content", "both"):
             differ = {q for q, r in reference[variant]["queries"].items()
                       if r.get("first_grade2_rank") != engine[variant]["queries"][q].get("first_grade2_rank")}

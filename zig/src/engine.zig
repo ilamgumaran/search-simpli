@@ -1,4 +1,5 @@
 const filename_field = @import("filename_field.zig");
+const fuzzy = @import("fuzzy.zig");
 const analyzer_v2 = @import("analyzer_v2.zig");
 const hybrid = @import("hybrid.zig");
 const lexical_build = @import("lexical_build.zig");
@@ -155,6 +156,14 @@ pub const Engine = struct {
         if (field == .both and titled_options.title == null) if (engine.folder) |folder| {
             titled_options.title = try folder.titleField();
         };
+        // S5-T3: one scan per triggering term, shared by the body scoring
+        // and the title part; the filename channel is never expanded.
+        if (field == .both) {
+            const groups = try engine.bothGroups(allocator, query_text, titled_options);
+            defer if (groups) |g| g.deinit(allocator);
+            if (groups) |*g| titled_options.fuzzy_groups = g;
+            return filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options);
+        }
         return filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options);
     }
 
@@ -224,15 +233,18 @@ pub const Engine = struct {
             t.scope_roots = options.visible_roots;
         }
         const tokenize_start = hybrid.Trace.stamp(trace);
+        // S5-T3: the analyzer-v2 tokens stay until the fuzzy-v1 trigger has
+        // read them (the other analyzers are not expanded).
+        var v2_tokens: ?[][]const u8 = null;
+        defer if (v2_tokens) |tokens| {
+            for (tokens) |token| allocator.free(token);
+            allocator.free(tokens);
+        };
         const terms = if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id))
             try postings.resolveQueryTraced(allocator, engine.lexical_index, query_text, trace, lookup)
         else terms: {
-            const tokens = try analyzer_v2.tokenize(allocator, query_text);
-            defer {
-                for (tokens) |token| allocator.free(token);
-                allocator.free(tokens);
-            }
-            break :terms try lexical_build.resolveTokensTraced(allocator, engine.lexical_index, tokens, trace, lookup);
+            v2_tokens = try analyzer_v2.tokenize(allocator, query_text);
+            break :terms try lexical_build.resolveTokensTraced(allocator, engine.lexical_index, v2_tokens.?, trace, lookup);
         };
         defer allocator.free(terms);
         if (trace) |t| {
@@ -248,20 +260,45 @@ pub const Engine = struct {
         // authorization.
         var frequencies: []u32 = &.{};
         defer allocator.free(frequencies);
+        var view: ?scope.View = null;
+        defer if (view) |*v| v.deinit(allocator);
         if (lookup) {
             if (try scope.visibleCollection(allocator, engine.lexical_index, engine.documents, engine.statistics, engine.labeled_documents, options.visible_roots, options.principal_labels)) |found| {
-                var view = found;
-                defer view.deinit(allocator);
+                view = found;
                 frequencies = try allocator.alloc(u32, terms.len);
-                for (terms, frequencies) |entry, *frequency| frequency.* = scope.documentFrequency(view, engine.lexical_index, engine.documents, entry);
-                scorer.collection = view.collection;
+                for (terms, frequencies) |entry, *frequency| frequency.* = scope.documentFrequency(found, engine.lexical_index, engine.documents, entry);
+                scorer.collection = found.collection;
                 scorer.document_frequencies = frequencies;
             }
         }
+        // S5-T3 (fuzzy-v1): a term no chunk in scope and no visible title
+        // holds is also searched as its nearest spellings. With no group the
+        // query keeps today's scorer and options.
+        var groups: ?fuzzy.Groups = null;
+        defer if (groups) |g| g.deinit(allocator);
+        var grouped: ?fuzzy.ScorerTerms = null;
+        defer if (grouped) |g| g.deinit(allocator);
+        var grouped_cursors: []usize = &.{};
+        defer allocator.free(grouped_cursors);
+        var scored_options = options;
+        if (lookup and options.fuzzy) if (v2_tokens) |tokens| {
+            groups = try fuzzy.compute(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens);
+            if (groups) |*found| {
+                grouped = try fuzzy.scorerTerms(allocator, terms, if (scorer.document_frequencies != null) frequencies else null, found.*);
+                grouped_cursors = try allocator.alloc(usize, grouped.?.terms.len);
+                const collection = scorer.collection;
+                scorer = postings.SparseScorer.init(engine.lexical_index, grouped.?.terms, grouped_cursors, options.bm25);
+                scorer.collection = collection;
+                scorer.document_frequencies = grouped.?.frequencies;
+                scorer.grouping = grouped.?.grouping();
+                scored_options.fuzzy_groups = found;
+                if (trace) |t| try noteExpanded(t, found.*);
+            }
+        };
         // S5-T2 (ruling 3): with the opened generation's title field, the
         // title part joins the lexical channel before it is ranked or cut.
         if (lookup) if (options.title) |field| {
-            if (try title_field.scoreQuery(allocator, field, engine.documents, query_text, options)) |parts| {
+            if (try title_field.scoreQuery(allocator, field, engine.documents, query_text, scored_options)) |parts| {
                 defer parts.deinit(allocator);
                 var titled = try title_field.Titled(postings.SparseScorer).init(allocator, &scorer, field, parts, engine.documents, options);
                 defer titled.deinit(allocator);
@@ -271,6 +308,40 @@ pub const Engine = struct {
             }
         };
         return hybrid.searchSparseTraced(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options, trace);
+    }
+
+    /// S5-T3: record each group in `trace` (copied into `trace.allocator`)
+    /// for its `query_term_expanded` warning.
+    fn noteExpanded(trace: *hybrid.Trace, groups: fuzzy.Groups) !void {
+        for (groups.items) |group| {
+            const expansions = try trace.allocator.alloc([]const u8, group.members.len);
+            for (group.members, expansions) |member, *slot| slot.* = try trace.allocator.dupe(u8, member.term);
+            try trace.expanded.append(trace.allocator, .{ .term = try trace.allocator.dupe(u8, group.typed), .expansions = expansions });
+        }
+    }
+
+    /// S5-T3: the fuzzy-v1 groups of a `both` query (the body scoring and
+    /// the title part share them), or null. Statistics as `queryTraced`
+    /// takes them: roots and labels narrow the key df, a prefix does not.
+    pub fn bothGroups(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, options: hybrid.SearchOptions) !?fuzzy.Groups {
+        if (!options.fuzzy or options.retrieval_mode == .vector) return null;
+        if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id)) return null;
+        const tokens = try analyzer_v2.tokenize(allocator, query_text);
+        defer {
+            for (tokens) |token| allocator.free(token);
+            allocator.free(tokens);
+        }
+        var view = try scope.visibleCollection(allocator, engine.lexical_index, engine.documents, engine.statistics, engine.labeled_documents, options.visible_roots, options.principal_labels);
+        defer if (view) |*v| v.deinit(allocator);
+        return fuzzy.compute(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens);
+    }
+
+    /// S5-T3: whether `fuzzy-v1` applies to a `field` query with `options`
+    /// (`retrieval.fuzzy_policy_id`): `content` and `both` with a lexical
+    /// channel on an analyzer-v2 snapshot.
+    pub fn fuzzyApplies(engine: Engine, field: filename_field.Field, options: hybrid.SearchOptions) bool {
+        if (field == .filename or options.retrieval_mode == .vector or !options.fuzzy) return false;
+        return std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id);
     }
 
     /// `query_text` must be valid UTF-8, for every analyzer and retrieval mode

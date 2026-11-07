@@ -2,6 +2,7 @@ const analysis = @import("analysis.zig");
 const scoring = @import("scoring.zig");
 const std = @import("std");
 const title_field = @import("title_field.zig");
+const fuzzy = @import("fuzzy.zig");
 
 pub const Document = struct {
     id: []const u8,
@@ -44,6 +45,12 @@ pub const SearchOptions = struct {
     title: ?*const title_field.Field = null,
     /// S5-T2 ruling 2: w, one constant (`title_field.default_weight`).
     title_weight: f32 = title_field.default_weight,
+    /// S5-T3: whether a query term no file holds is also searched as its
+    /// nearest spellings (`fuzzy.zig`); false ranks as before S5-T3.
+    fuzzy: bool = true,
+    /// S5-T3: the query's fuzzy-v1 groups, set by the engine once per query
+    /// for the title part and the `both` body scoring; null: none.
+    fuzzy_groups: ?*const fuzzy.Groups = null,
 };
 
 /// S3-T3: which roots a request may see. `document_roots[i]` is the root
@@ -342,6 +349,12 @@ pub const Trace = struct {
     pub const Unmatched = struct {
         term: []const u8,
     };
+    /// S5-T3: an unmatched term also searched as its nearest spellings
+    /// (fuzzy-v1), best first.
+    pub const Expanded = struct {
+        term: []const u8,
+        expansions: []const []const u8,
+    };
 
     allocator: std.mem.Allocator,
     /// Only used for the monotonic clock, and only when `profile` is set.
@@ -356,6 +369,8 @@ pub const Trace = struct {
     unique_terms: usize = 0,
     /// In query order, each analysed term once (first occurrence).
     unmatched: std.ArrayList(Unmatched) = .empty,
+    /// S5-T3: in query order, each group of the query (`fuzzy.zig`).
+    expanded: std.ArrayList(Expanded) = .empty,
     /// The scope that decides whether a dictionary term "matches" (set by
     /// `Engine.queryTraced` before the terms are resolved).
     scope_documents: []const Document = &.{},

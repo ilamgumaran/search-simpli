@@ -1209,11 +1209,19 @@ def _osa_within(a: str, b: str, k: int) -> int | None:
     return previous[lb] if previous[lb] <= k else None
 
 
-def _fuzzy_groups(terms: Iterable[str], body_df: Counter, title_vocabulary: set[str]
+def _fuzzy_groups(terms: Iterable[str], body_df: Counter, title_vocabulary: set[str],
+                  key_df: Counter | None = None, title_candidates: set[str] | None = None,
                   ) -> dict[str, tuple[tuple[str, float], ...]]:
     """{query term: ((member, weight), ...) best first} for each distinct term that
-    triggers and has a candidate. `body_df` is the in-scope document frequency of the
-    body terms; `title_vocabulary` the terms of the visible files' title fields."""
+    triggers and has a candidate. `body_df` counts the body terms of the chunks in
+    scope, path prefix included (the trigger, and a body candidate must be held
+    there); `key_df` is the order's key df, over the roots and labels only (a prefix
+    does not narrow statistics: S5-T3 Phase 1 deviation 8; default `body_df`);
+    `title_vocabulary` is the visible files' title terms (the guard) and
+    `title_candidates` those of the visible files under the prefix (default the
+    same)."""
+    key_df = body_df if key_df is None else key_df
+    title_candidates = title_vocabulary if title_candidates is None else title_candidates
     groups: dict[str, tuple[tuple[str, float], ...]] = {}
     pool: list[tuple[str, int]] | None = None
     for term in sorted(set(terms)):
@@ -1221,8 +1229,8 @@ def _fuzzy_groups(terms: Iterable[str], body_df: Counter, title_vocabulary: set[
         if not k or body_df.get(term, 0) or not _fuzzy_latin(term) or term in title_vocabulary:
             continue
         if pool is None:
-            keyed = {candidate: df for candidate, df in body_df.items() if df >= 1}
-            for candidate in title_vocabulary:
+            keyed = {candidate: key_df[candidate] for candidate, df in body_df.items() if df >= 1}
+            for candidate in title_candidates:
                 keyed.setdefault(candidate, 1)
             pool = list(keyed.items())
         found = []
@@ -1240,17 +1248,27 @@ def _fuzzy_groups(terms: Iterable[str], body_df: Counter, title_vocabulary: set[
 
 
 def _fuzzy_query_groups(chunks: list[dict], visible_chunks: list[dict], terms: Iterable[str],
-                        root_ids: tuple[str, ...]) -> dict[str, tuple[tuple[str, float], ...]]:
-    """The query's groups, once per query: the body statistics are the chunks in scope
-    (`chunks`), the title guard and the title candidates the visible files."""
+                        root_ids: tuple[str, ...], path_prefix: str | None = None,
+                        ) -> dict[str, tuple[tuple[str, float], ...]]:
+    """The query's groups, once per query, as the engine takes them: the trigger and
+    body membership over the chunks in scope (`chunks`, the prefix applied), the
+    order's key df over the visible chunks (a prefix narrows membership, not
+    statistics), the title guard over the visible files and the title candidates over
+    the visible files under the prefix."""
     terms = set(terms)
     if not any(_fuzzy_max_distance(term) for term in terms):
         return {}
     body_df: Counter[str] = Counter()
     for chunk in chunks:
         body_df.update(chunk["terms"].keys())
-    title_vocabulary = {token for tokens in _title_fields(visible_chunks, root_ids).values() for token in tokens}
-    return _fuzzy_groups(terms, body_df, title_vocabulary)
+    key_df: Counter[str] = Counter()
+    for chunk in visible_chunks:
+        key_df.update(chunk["terms"].keys())
+    fields = _title_fields(visible_chunks, root_ids)
+    title_vocabulary = {token for tokens in fields.values() for token in tokens}
+    title_candidates = {token for path, tokens in fields.items()
+                        if path_prefix is None or path.startswith(path_prefix) for token in tokens}
+    return _fuzzy_groups(terms, body_df, title_vocabulary, key_df, title_candidates)
 
 
 def fuzzy_expansions(index: dict, query: str, *, path_prefix: str | None = None,
@@ -1262,7 +1280,7 @@ def fuzzy_expansions(index: dict, query: str, *, path_prefix: str | None = None,
     visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
     chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
     terms = _filename_tokenize(query) if search_field == "both" else tokenize(query) + _filename_tokenize(query)
-    groups = _fuzzy_query_groups(chunks, visible, terms, _title_root_ids(index, title_root_ids))
+    groups = _fuzzy_query_groups(chunks, visible, terms, _title_root_ids(index, title_root_ids), path_prefix)
     return {term: [member for member, _ in members] for term, members in groups.items()}
 
 
@@ -1326,7 +1344,7 @@ def _search_filename_fields(
     chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
     # fuzzy-v1: `both` shares one set of groups between its body scoring and its
     # title part; the file-name channel is never expanded.
-    groups = (_fuzzy_query_groups(chunks, visible, terms, title_root_ids)
+    groups = (_fuzzy_query_groups(chunks, visible, terms, title_root_ids, path_prefix)
               if fuzzy and search_field == "both" else {})
     by_path: dict[str, list[dict]] = defaultdict(list)
     for chunk in chunks:
@@ -1498,7 +1516,7 @@ def search(
     chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
     root_ids = _title_root_ids(index, title_root_ids)
     # fuzzy-v1: the groups are computed once, for the body terms and the title terms.
-    groups = (_fuzzy_query_groups(chunks, visible, query_terms + _filename_tokenize(query), root_ids)
+    groups = (_fuzzy_query_groups(chunks, visible, query_terms + _filename_tokenize(query), root_ids, path_prefix)
               if fuzzy and retrieval_mode != "vector" else {})
     lexical_scores = _bm25_scores(chunks, query_terms, groups) if retrieval_mode != "vector" else {}
     received: dict[str, float] = {}

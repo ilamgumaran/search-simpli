@@ -9,7 +9,9 @@ weighted 1.0 at distance 1 and 0.5 at distance 2 (docs/tasks/S5-T3.md ruling 2).
 
 import functools
 import math
+import os
 import random
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -25,6 +27,13 @@ from src.search_platform.core import (  # noqa: E402
 )
 import relevance_smoke  # noqa: E402
 from relevance_smoke import run_j2_pack  # noqa: E402
+
+sys.path.insert(0, str(REPO / "scripts"))
+import j2_run  # noqa: E402
+try:  # `unittest discover -s tests` (CI) or `unittest tests.test_fuzzy`
+    from test_title_field import searchd_binary  # noqa: E402
+except ImportError:
+    from tests.test_title_field import searchd_binary  # noqa: E402
 
 
 def osa_full(a: str, b: str) -> int:
@@ -206,6 +215,59 @@ class SearchTests(unittest.TestCase):
 
     def test_the_policy_id(self):
         self.assertEqual(FUZZY_POLICY_ID, "fuzzy-v1")
+
+
+# Ruling 8 (S5-T3 Phase 2): a path prefix narrows membership, not statistics.
+# baker is held by four chunks, one of them under kitchen/b/; bakes, baked and
+# bakel by two each, all under it. The whole-scope key df keeps baker (4),
+# baked, bakel and cuts bakes by bytes, so kitchen/b/three.md (bakes alone) is
+# not found; a prefix-narrowed df would keep baked, bakel, bakes and find it.
+PREFIX_FILES = {
+    "kitchen/a/one.md": "baker", "kitchen/a/two.md": "baker", "kitchen/a/three.md": "baker",
+    "kitchen/b/one.md": "baker bakes baked bakel", "kitchen/b/two.md": "baked bakel", "kitchen/b/three.md": "bakes",
+}
+
+
+class PrefixRuleTests(unittest.TestCase):
+    def test_the_reference_keeps_whole_scope_key_df_and_holds_candidates_under_the_prefix(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write(root, PREFIX_FILES)
+            index = build_index(root)
+            self.assertEqual(fuzzy_expansions(index, "bakex", path_prefix="kitchen/b/"),
+                             {"bakex": ["baker", "baked", "bakel"]})
+            hits = search(index, "bakex", retrieval_mode="lexical", path_prefix="kitchen/b/")
+            self.assertEqual(sorted(h["citation"]["path"] for h in hits), ["kitchen/b/one.md", "kitchen/b/two.md"])
+
+    @unittest.skipIf(os.environ.get("SEARCH_SIMPLI_NO_ZIG") == "1", "SEARCH_SIMPLI_NO_ZIG=1: no searchd")
+    def test_searchd_and_the_reference_agree_on_a_prefixed_query(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            scratch = Path(temporary)
+            folder = scratch / "folder"
+            write(folder, PREFIX_FILES)
+            binary = searchd_binary(scratch)
+            done = subprocess.run([str(binary), "index", str(folder), "--out", str(scratch / "idx")],
+                                  capture_output=True, text=True, timeout=300)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            serve = j2_run.Serve(binary, scratch / "idx")
+            try:
+                # `searchd index FOLDER` writes one legacy root, whose record
+                # paths carry no root id.
+                rpc = serve.call("search_knowledge", {"query": "bakex", "top_k": 10, "retrieval_mode": "lexical",
+                                                      "path_prefix": "kitchen/b/"})
+            finally:
+                serve.close()
+            # search_knowledge over JSON-RPC carries no warnings (the C ABI's
+            # ss_query does: fuzzy_test.zig); the hits and their scores say which
+            # reading was taken: kitchen/b/three.md (bakes alone) is not found.
+            self.assertEqual(sorted(r["citation"]["path"] for r in rpc["results"]),
+                             ["kitchen/b/one.md", "kitchen/b/two.md"])
+            reference = search(build_index(folder), "bakex", retrieval_mode="lexical", path_prefix="kitchen/b/")
+            # The same hits in the same order. The scores differ by the reference's
+            # prefix-narrowed BM25 statistics, a difference older than S5-T3 (a plain
+            # prefixed "bakes" differs the same way), so only the order is compared.
+            self.assertEqual([r["citation"]["path"] for r in rpc["results"]],
+                             [r["citation"]["path"] for r in reference])
 
 
 class J2Tests(unittest.TestCase):

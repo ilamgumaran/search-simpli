@@ -1,6 +1,7 @@
 const analyzer_v2 = @import("analyzer_v2.zig");
 const hybrid = @import("hybrid.zig");
 const title_field = @import("title_field.zig");
+const fuzzy = @import("fuzzy.zig");
 const lexical_build = @import("lexical_build.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const manifest = @import("manifest.zig");
@@ -722,6 +723,13 @@ fn scoreQuery(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, 
                 fname_scores[p.document_index] += scoring.bm25Contribution(@floatFromInt(p.term_frequency), @floatFromInt(lexical.document_lengths[p.document_index]), filename_avg, df, @intCast(filename_n), options.bm25);
             }
         }
+        if (field == .both) if (options.fuzzy_groups) |groups| if (groups.of(term)) |fuzzy_group| {
+            // S5-T3: the term's fuzzy-v1 group, at one df (the largest of
+            // the members' in this walk's visible set), each chunk its best
+            // weighted member; the filename channel above is not expanded.
+            try scoreBodyGroup(allocator, body_index, fuzzy_group, body_visible, body_avg, @intCast(body_n), options, body_scores, body_seen, &body_touched);
+            continue;
+        };
         if (field == .both) if (postings.lookupExact(body_index, term)) |ti| {
             const ent = body_index.terms[ti];
             const list = body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length];
@@ -742,6 +750,47 @@ fn scoreQuery(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, 
         };
     }
     return .{ .fname_scores = fname_scores, .fname_touched = fname_touched.items, .body_scores = body_scores, .body_touched = body_touched.items };
+}
+
+fn scoreBodyGroup(allocator: std.mem.Allocator, body_index: postings.Index, fuzzy_group: fuzzy.Group, body_visible: ?[]const bool, body_avg: f32, body_n: u32, options: hybrid.SearchOptions, body_scores: []f32, body_seen: []bool, body_touched: *std.ArrayList(u32)) !void {
+    var lists: [fuzzy.max_expansions][]const postings.Posting = undefined;
+    var weights: [fuzzy.max_expansions]f32 = undefined;
+    var len: usize = 0;
+    var df: u32 = 0;
+    for (fuzzy_group.members) |member| if (member.body) |ent| {
+        const list = body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length];
+        var member_df: u32 = 0;
+        if (body_visible) |visible| {
+            for (list) |p| if (visible[p.document_index]) {
+                member_df += 1;
+            };
+        } else member_df = @intCast(list.len);
+        df = @max(df, member_df);
+        lists[len] = list;
+        weights[len] = member.weight;
+        len += 1;
+    };
+    var cursors: [fuzzy.max_expansions]usize = @splat(0);
+    while (true) {
+        var chunk: ?u32 = null;
+        for (lists[0..len], cursors[0..len]) |list, cursor| {
+            if (cursor < list.len and (chunk == null or list[cursor].document_index < chunk.?)) chunk = list[cursor].document_index;
+        }
+        const d = chunk orelse break;
+        var best: ?f32 = null;
+        for (lists[0..len], cursors[0..len], weights[0..len]) |list, *cursor, w| {
+            if (cursor.* >= list.len or list[cursor.*].document_index != d) continue;
+            const part = w * scoring.bm25Contribution(@floatFromInt(list[cursor.*].term_frequency), @floatFromInt(body_index.document_lengths[d]), body_avg, df, body_n, options.bm25);
+            if (best == null or part > best.?) best = part;
+            cursor.* += 1;
+        }
+        if (body_visible) |visible| if (!visible[d]) continue;
+        if (!body_seen[d]) {
+            body_seen[d] = true;
+            try body_touched.append(allocator, d);
+        }
+        body_scores[d] += best.?;
+    }
 }
 
 /// S4-T15: the two channels' candidates in `lessCandidate` order, each cut
