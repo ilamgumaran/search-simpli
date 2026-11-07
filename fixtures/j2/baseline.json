@@ -1,25 +1,25 @@
 {
   "schema": "j2-baseline-v1",
-  "judgments_sha256": "14b0507f924bbce1e65e99667dfbaabdd719ba8ad6ca8574d4cf373971def415",
-  "engine_commit": "97c6d0ae107fb730e23e4d4345662f4c2f3407e1",
-  "run_commit": "97c6d0ae107fb730e23e4d4345662f4c2f3407e1",
+  "judgments_sha256": "5fd2ab5eeaeffb92f257dd4fc1ac5401ec723f164bfd953e64c96ed2e4bdf0d9",
+  "engine_commit": "8709e3959df6bb9874cbd66603b5516440a5850f",
+  "run_commit": "8709e3959df6bb9874cbd66603b5516440a5850f",
   "natives_digest": "62c37f1f5a769dbacc7c0a059a1565cd1fb4c835a1939e7b616a6ee79ab3477e",
-  "recorded": "2026-11-06",
+  "recorded": "2026-11-07",
   "load": {
     "before": [
-      1.79,
-      1.96,
-      2.11
+      4.14,
+      3.66,
+      3.05
     ],
     "after": [
-      1.79,
-      1.96,
-      2.11
+      4.14,
+      3.66,
+      3.05
     ],
     "top_sample": [
-      "Processes: 1007 total, 2 running, 1005 sleeping, 4570 threads",
-      "Load Avg: 1.79, 1.96, 2.11",
-      "CPU usage: 5.11% user, 4.13% sys, 90.74% idle"
+      "Processes: 1012 total, 3 running, 1009 sleeping, 4612 threads",
+      "Load Avg: 4.14, 3.66, 3.05",
+      "CPU usage: 13.3% user, 1.92% sys, 85.4% idle"
     ]
   },
   "top_k": 10,
@@ -89,6 +89,13 @@
               "mrr_at_10": 1.0,
               "ndcg_at_10": 1.0,
               "recall_at_5": 1.0
+            },
+            "misspelling-heldout": {
+              "n": 12,
+              "success_at_1": 0.333333,
+              "mrr_at_10": 0.558333,
+              "ndcg_at_10": 0.648304,
+              "recall_at_5": 0.916667
             }
           },
           "overall": {
@@ -201,7 +208,19 @@
             "th05": 1,
             "th06": 1,
             "th07": 1,
-            "th08": 1
+            "th08": 1,
+            "mh01": 3,
+            "mh02": 5,
+            "mh03": 2,
+            "mh04": null,
+            "mh05": 1,
+            "mh06": 2,
+            "mh07": 1,
+            "mh08": 3,
+            "mh09": 1,
+            "mh10": 2,
+            "mh11": 3,
+            "mh12": 1
           },
           "slice_of": {
             "c01": "control",
@@ -322,7 +341,21 @@
             "th07": "title-heldout",
             "th08": "title-heldout",
             "thn1": "negatives",
-            "thn2": "negatives"
+            "thn2": "negatives",
+            "mh01": "misspelling-heldout",
+            "mh02": "misspelling-heldout",
+            "mh03": "misspelling-heldout",
+            "mh04": "misspelling-heldout",
+            "mh05": "misspelling-heldout",
+            "mh06": "misspelling-heldout",
+            "mh07": "misspelling-heldout",
+            "mh08": "misspelling-heldout",
+            "mh09": "misspelling-heldout",
+            "mh10": "misspelling-heldout",
+            "mh11": "misspelling-heldout",
+            "mh12": "misspelling-heldout",
+            "mhn1": "negatives",
+            "mhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -500,6 +533,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "mhn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 29,
+                "end_line": 34
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mhn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend/sale-in-the-field.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         },
@@ -560,6 +615,13 @@
               "mrr_at_10": 1.0,
               "ndcg_at_10": 1.0,
               "recall_at_5": 1.0
+            },
+            "misspelling-heldout": {
+              "n": 12,
+              "success_at_1": 0.333333,
+              "mrr_at_10": 0.465278,
+              "ndcg_at_10": 0.516045,
+              "recall_at_5": 0.666667
             }
           },
           "overall": {
@@ -672,7 +734,19 @@
             "th05": 1,
             "th06": 1,
             "th07": 1,
-            "th08": 1
+            "th08": 1,
+            "mh01": 3,
+            "mh02": 4,
+            "mh03": null,
+            "mh04": null,
+            "mh05": 1,
+            "mh06": 2,
+            "mh07": 1,
+            "mh08": null,
+            "mh09": 1,
+            "mh10": 2,
+            "mh11": null,
+            "mh12": 1
           },
           "slice_of": {
             "c01": "control",
@@ -793,7 +867,21 @@
             "th07": "title-heldout",
             "th08": "title-heldout",
             "thn1": "negatives",
-            "thn2": "negatives"
+            "thn2": "negatives",
+            "mh01": "misspelling-heldout",
+            "mh02": "misspelling-heldout",
+            "mh03": "misspelling-heldout",
+            "mh04": "misspelling-heldout",
+            "mh05": "misspelling-heldout",
+            "mh06": "misspelling-heldout",
+            "mh07": "misspelling-heldout",
+            "mh08": "misspelling-heldout",
+            "mh09": "misspelling-heldout",
+            "mh10": "misspelling-heldout",
+            "mh11": "misspelling-heldout",
+            "mh12": "misspelling-heldout",
+            "mhn1": "negatives",
+            "mhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -971,6 +1059,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "mhn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 29,
+                "end_line": 34
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mhn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend/sale-in-the-field.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         }
@@ -1037,6 +1147,13 @@
               "mrr_at_10": 1.0,
               "ndcg_at_10": 1.0,
               "recall_at_5": 1.0
+            },
+            "misspelling-heldout": {
+              "n": 12,
+              "success_at_1": 0.333333,
+              "mrr_at_10": 0.544444,
+              "ndcg_at_10": 0.63675,
+              "recall_at_5": 0.916667
             }
           },
           "overall": {
@@ -1149,7 +1266,19 @@
             "th05": 1,
             "th06": 1,
             "th07": 1,
-            "th08": 1
+            "th08": 1,
+            "mh01": 3,
+            "mh02": 5,
+            "mh03": 2,
+            "mh04": null,
+            "mh05": 1,
+            "mh06": 2,
+            "mh07": 1,
+            "mh08": 4,
+            "mh09": 1,
+            "mh10": 2,
+            "mh11": 4,
+            "mh12": 1
           },
           "slice_of": {
             "c01": "control",
@@ -1270,7 +1399,21 @@
             "th07": "title-heldout",
             "th08": "title-heldout",
             "thn1": "negatives",
-            "thn2": "negatives"
+            "thn2": "negatives",
+            "mh01": "misspelling-heldout",
+            "mh02": "misspelling-heldout",
+            "mh03": "misspelling-heldout",
+            "mh04": "misspelling-heldout",
+            "mh05": "misspelling-heldout",
+            "mh06": "misspelling-heldout",
+            "mh07": "misspelling-heldout",
+            "mh08": "misspelling-heldout",
+            "mh09": "misspelling-heldout",
+            "mh10": "misspelling-heldout",
+            "mh11": "misspelling-heldout",
+            "mh12": "misspelling-heldout",
+            "mhn1": "negatives",
+            "mhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -1448,6 +1591,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "mhn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 29,
+                "end_line": 34
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mhn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend/sale-in-the-field.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         },
@@ -1508,6 +1673,13 @@
               "mrr_at_10": 1.0,
               "ndcg_at_10": 1.0,
               "recall_at_5": 1.0
+            },
+            "misspelling-heldout": {
+              "n": 12,
+              "success_at_1": 0.333333,
+              "mrr_at_10": 0.465278,
+              "ndcg_at_10": 0.516045,
+              "recall_at_5": 0.666667
             }
           },
           "overall": {
@@ -1620,7 +1792,19 @@
             "th05": 1,
             "th06": 1,
             "th07": 1,
-            "th08": 1
+            "th08": 1,
+            "mh01": 3,
+            "mh02": 4,
+            "mh03": null,
+            "mh04": null,
+            "mh05": 1,
+            "mh06": 2,
+            "mh07": 1,
+            "mh08": null,
+            "mh09": 1,
+            "mh10": 2,
+            "mh11": null,
+            "mh12": 1
           },
           "slice_of": {
             "c01": "control",
@@ -1741,7 +1925,21 @@
             "th07": "title-heldout",
             "th08": "title-heldout",
             "thn1": "negatives",
-            "thn2": "negatives"
+            "thn2": "negatives",
+            "mh01": "misspelling-heldout",
+            "mh02": "misspelling-heldout",
+            "mh03": "misspelling-heldout",
+            "mh04": "misspelling-heldout",
+            "mh05": "misspelling-heldout",
+            "mh06": "misspelling-heldout",
+            "mh07": "misspelling-heldout",
+            "mh08": "misspelling-heldout",
+            "mh09": "misspelling-heldout",
+            "mh10": "misspelling-heldout",
+            "mh11": "misspelling-heldout",
+            "mh12": "misspelling-heldout",
+            "mhn1": "negatives",
+            "mhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -1919,6 +2117,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "mhn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 29,
+                "end_line": 34
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mhn2": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend/sale-in-the-field.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         }
@@ -1972,6 +2192,57 @@
         ]
       },
       "s5t1_cells_unchanged": true
+    },
+    {
+      "task": "S5-T3",
+      "slice": "misspelling-heldout",
+      "queries": [
+        "mh01",
+        "mh02",
+        "mh03",
+        "mh04",
+        "mh05",
+        "mh06",
+        "mh07",
+        "mh08",
+        "mh09",
+        "mh10",
+        "mh11",
+        "mh12",
+        "mhn1",
+        "mhn2"
+      ],
+      "why": "S5-T3 chose its misspelling rule (fuzzy-v1) on the misspelling slice; ruling 7 of its plan and orchestrator ruling 10 require a held-out misspelling slice, judged before any expansion code, with today's cells recorded before the build",
+      "judgments_sha256_before": "14b0507f924bbce1e65e99667dfbaabdd719ba8ad6ca8574d4cf373971def415",
+      "recorded": "2026-11-07",
+      "engine_commit": "8709e3959df6bb9874cbd66603b5516440a5850f",
+      "natives_digest": "62c37f1f5a769dbacc7c0a059a1565cd1fb4c835a1939e7b616a6ee79ab3477e",
+      "searchd_binary": {
+        "sha256": "cf17c735a26f5b8f2f7d047d17d40faae6908b089fbde36f6a70b892c11d91f6",
+        "size": 1008920,
+        "optimize": "ReleaseSmall",
+        "zig": "0.16.0"
+      },
+      "python_version": "3.9.6",
+      "hashseed": "0",
+      "load": {
+        "before": [
+          4.14,
+          3.66,
+          3.05
+        ],
+        "after": [
+          4.14,
+          3.66,
+          3.05
+        ],
+        "top_sample": [
+          "Processes: 1012 total, 3 running, 1009 sleeping, 4612 threads",
+          "Load Avg: 4.14, 3.66, 3.05",
+          "CPU usage: 13.3% user, 1.92% sys, 85.4% idle"
+        ]
+      },
+      "earlier_cells_unchanged": true
     }
   ],
   "replaces": [
@@ -1982,6 +2253,14 @@
       "judgments_sha256": "14b0507f924bbce1e65e99667dfbaabdd719ba8ad6ca8574d4cf373971def415",
       "natives_digest": "7a8f13ff7c5bb5a38d777c1fa6cdeaf3d4409740295b44976d9c6a062eb7b7bd",
       "why": "S5-T2: the title field (title-field-v1) changes the ranking under content and both by design; ruling 6's bars passed on both surfaces against the S5-T1 baseline extended by the title-heldout cells (gate pass with an empty allow-list), so the baseline is re-recorded at the S5-T2 engine"
+    },
+    {
+      "engine_commit": "97c6d0ae107fb730e23e4d4345662f4c2f3407e1",
+      "run_commit": "97c6d0ae107fb730e23e4d4345662f4c2f3407e1",
+      "recorded": "2026-11-06",
+      "judgments_sha256": "14b0507f924bbce1e65e99667dfbaabdd719ba8ad6ca8574d4cf373971def415",
+      "natives_digest": "62c37f1f5a769dbacc7c0a059a1565cd1fb4c835a1939e7b616a6ee79ab3477e",
+      "why": "S5-T3 (plan ruling 7, orchestrator ruling 10): J2 gains the held-out misspelling slice misspelling-heldout (mh01-mh12, negatives mhn1 and mhn2), written and judged before any expansion code on either surface; today's engine (zig/ and contracts/ at 8709e39, the S5-T2 engine unchanged; searchd ReleaseSmall cf17c735, the S5-T2 baseline's bytes) and the Python reference re-run on both surfaces: every earlier cell reproduced unchanged, the new slice's cells added"
     }
   ]
 }

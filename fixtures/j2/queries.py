@@ -1,4 +1,5 @@
-"""The judged queries of J2 (S5-T1): seven slices plus named negatives.
+"""The judged queries of J2 (S5-T1): seven slices plus named negatives, and the
+held-out title (S5-T2) and misspelling (S5-T3) slices.
 
 A row is (path, anchor, grade, note). The generator turns each anchor into a line
 range of the file it names:
@@ -30,6 +31,7 @@ SLICE_MINIMUMS = {
     "title": 10,
     "phrase": 8,
     "title-heldout": 6,
+    "misspelling-heldout": 10,
 }
 
 QUERIES: list[dict] = []
@@ -566,3 +568,78 @@ q("negatives", "thn2", "Is there a music exam?", "music exam", K, [
     ("home/music/recorder-practice.md", "*", 0, "music by folder only, no exam"),
     ("school/tamil/tamil-class.md", "§Exam", 0, "a Tamil exam"),
 ], of="title-heldout")
+
+# ------------------------------------------------- misspelling-heldout (12) --
+# S5-T3, ruling 7 of its plan and orchestrator ruling 10: misspellings held out
+# from the rule S5-T3 chose on m01-m16, written and judged before any expansion
+# code existed on either surface and before any run of these queries. Existing
+# files only, so no other row's numbers move. typo = (as typed, the word meant,
+# is it one adjacent transposition); edit names the edit (swap, deletion,
+# insertion, substitution, or two edits); name=True marks a word that only the
+# answer's file or folder name holds. The generator asserts the edit and that no
+# typed or meant word is a typed or meant word of m01-m16.
+
+q("misspelling-heldout", "mh01", "How do I make hot chocolate?", "hot choclate", K, [
+    ("home/recipes/winter-drinks.md", "§Hot chocolate", 2, "the recipe"),
+    ("home/fridge-notes.md", "§Shopping", 0, "chocolate for the cake, not a drink"),
+], typo=("choclate", "chocolate", False), edit="deletion")
+q("misspelling-heldout", "mh02", "When is Pip's football tournament?", "football tournamnet", K, [
+    ("home/calendar-november.md", "=football tournament", 2, "Sat 22"),
+    ("laptop/club-timetable.md", "§Football", 0, "football practice, football three times"),
+    ("laptop/clubs/football/match-days.md", "*", 0, "Saturday games, no tournament"),
+], typo=("tournamnet", "tournament", True), edit="swap")
+q("misspelling-heldout", "mh03", "Is the dentist on Thursday?", "dentist thrusday", K, [
+    ("laptop/notes/dentist.md", "§Next appointment", 2, "Thursday 4 December"),
+    ("laptop/log/homework-tracker.txt", "=Thu 3 Dec..=Fri 4 Dec", 0, "dentist appointment twice in the log, no Thursday"),
+    ("laptop/notes/dentist.md", "§Brushing teeth", 0, "the same file, brushing"),
+], typo=("thrusday", "thursday", True), edit="swap")
+q("misspelling-heldout", "mh04", "Show me my wishlist", "my wislist", K, [
+    ("laptop/wishlist.md", "*", 2, "the file; wishlist is in its name only"),
+    ("school/tamil/tamil-class.md", "§My family", 0, "my, another file"),
+], typo=("wislist", "wishlist", False), edit="deletion", name=True)
+q("misspelling-heldout", "mh05", "What's the wifi password?", "wifi pasword", K, [
+    ("home/fridge-notes.md", "§Wifi", 2, "the password"),
+], typo=("pasword", "password", False), edit="deletion")
+q("misspelling-heldout", "mh06", "Are there sandwiches and cake at the party?", "sandwitches and cake", K, [
+    ("home/birthday-party-wren.md", "§Food", 2, "sandwiches and an ice cream cake"),
+    ("home/fridge-notes.md", "§Shopping", 0, "chocolate for the cake"),
+    ("laptop/meeting-notes-pta.md", "§Fundraising", 0, "the cake stall"),
+], typo=("sandwitches", "sandwiches", False), edit="insertion")
+q("misspelling-heldout", "mh07", "Who is saving for a microscope?", "saving for a mikroscope", K, [
+    ("home/money/pocket-money.md", "§What they are saving for", 2, "Wren: a microscope"),
+    ("home/money/pocket-money.md", "=Pip gets three pounds", 0, "the saving jar"),
+    ("laptop/budget-autumn.md", "§Saving", 0, "the family's saving"),
+], typo=("mikroscope", "microscope", False), edit="substitution")
+q("misspelling-heldout", "mh08", "Which week is necessary a spelling word?", "neccesary spelling", K, [
+    ("school/spelling-lists.md", "§Week 8", 2, "necessary is on the week 8 list"),
+    ("school/spelling-lists.md", "§Week 9", 0, "another week's list"),
+    ("school/spelling-lists.md", "§Week 10", 0, "another week's list"),
+    ("school/class-notes-pip.md", "§Spelling", 0, "spelling, in the class notes"),
+], typo=("neccesary", "necessary", False), edit="two edits")
+q("misspelling-heldout", "mh09", "What's for Saturday breakfast?", "saturday brekfest", K, [
+    ("home/recipes/pancakes.md", "=Saturday breakfast", 2, "pancakes on Saturday"),
+    ("laptop/clubs/football/match-days.md", "*", 0, "Saturday games"),
+    ("laptop/club-timetable.md", "§Changes this week", 0, "football off on Saturday"),
+], typo=("brekfest", "breakfast", False), edit="two edits")
+q("misspelling-heldout", "mh10", "Did anyone find the lost coat?", "lost caot", K, [
+    ("laptop/emails-to-school.md", "§Lost coat", 2, "the email about the coat"),
+    ("school/newsletter-autumn.md", "§Lost property", 0, "the lost property box"),
+], typo=("caot", "coat", True), edit="swap")
+q("misspelling-heldout", "mh11", "How do we make the paper lantern?", "paper lantren", K, [
+    ("school/art-club/autumn-projects.md", "§Paper lantern", 2, "fold, cut and glue"),
+    ("school/art-club/autumn-projects.md", "§Leaf prints", 0, "craft paper twice"),
+    ("school/school-play.md", "=The Lantern Fox", 0, "the play's title"),
+], typo=("lantren", "lantern", True), edit="swap")
+q("misspelling-heldout", "mh12", "When do we send the invitations?", "send the invitiations", K, [
+    ("home/birthday-party-wren.md", "§Friends to invite", 2, "send the invitations by 28 November"),
+    ("home/calendar-november.md", "=invitations go out", 0, "the calendar line"),
+], typo=("invitiations", "invitations", False), edit="insertion")
+
+q("negatives", "mhn1", "Are there tickets for the football tournament?", "tournamnet tickets", K, [
+    ("home/calendar-november.md", "*", 0, "the tournament, no tickets"),
+    ("school/newsletter-autumn.md", "§Noël carol concert", 0, "concert tickets"),
+], of="misspelling-heldout")
+q("negatives", "mhn2", "Are paper lanterns for sale?", "lantren sale", K, [
+    ("school/art-club/autumn-projects.md", "§Paper lantern", 0, "a lantern to make, not to buy"),
+    ("home/weekend/sale-in-the-field.md", "*", 0, "a sale, no lanterns"),
+], of="misspelling-heldout")
