@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-07 (S5-T3, misspelling tolerance: a word nothing visible holds is also searched as its nearest dictionary words; verified and merged)
+Last updated: 2026-11-07 (S5-T4, word-form groups: a query word is also searched as the words the files hold that share its fold key; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,61 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## Word-form groups: a query word is also searched as the words the files hold that share its fold key (S5-T4, 2026-11-07; verified and merged)
+
+**Verified and merged 2026-11-07** ([Verdict](docs/tasks/S5-T4.md)). Every check below is from the verifier's own builds
+and runs:
+- **J2.** A fresh `ReleaseSmall` `searchd` (1,078,504 B, `bc716140…`) and the Python reference (3.9.6, `PYTHONHASHSEED` 0
+  and 1) reproduce every cell of the re-recorded `fixtures/j2/baseline.json` (0 differ on each surface). The S5-T1 gate
+  against the baseline as extended at `a7f50db` passes on both surfaces and both variants with `fixtures/j2/allow.json`
+  holding `ah11` alone (the declared accent merge guard).
+- **The plants.** All nine (the two keep lists, Porter `-ed`, marks after any base, no re-split, fuzzy-v1 on grouped
+  words, no scope filter, no title terms in the key map, the use-after-free) are caught by the tests the Report names.
+- **The captures.** The 16,508-case capture against `main` explains all 350 differences by a group; 0 unexplained.
+- **The writer.** Every file the writer writes is byte-identical to `main`'s (10k corpus and family folder, off and on).
+- **The natives.** Rebuilt twice, they are `cmp`-equal to the committed ones.
+- **The goldens.** The analyzer-v3, title, bm25 and fuzzy goldens regenerate byte for byte. The title golden was stale
+  at the first pass (J2 had grown); it was regenerated, and `tests/test_goldens_fresh.py` now fails on any stale golden.
+  It runs only on a Python whose Unicode is 13.0.0 (this Mac's 3.9.6), so CI's Python 3.11 skips it.
+- **The suites.** Python 333 OK (with Zig; and against a `ReleaseSmall` `searchd`) and 297 run, OK (38 skipped, no
+  Zig). `zig build test` 414/422 (8 scale skips; 422/422 with `SEARCH_SIMPLI_NFR13_SCALE=1`) and `test-abi` 24/24, in
+  Debug and in `ReleaseSmall`. Dart +90.
+- **The old packs.** Identical to `main`'s except mixed: MRR 0.833 → 0.796, success@1 0.70 → 0.65, with the five named
+  moves (true singular/plural pairs).
+
+[Report](docs/tasks/S5-T4.md). `fold-groups-v1` ([docs/fold-groups-v1.md](docs/fold-groups-v1.md)).
+
+**The key K** maps an analyzer-v2 term to its key: F (NFKC case fold through a 3,746-entry table, then analyzer-v2's
+split, Unicode 13.0.0) → A (combining marks after a–z dropped, eight letters mapped) → S (English plural, a 50-word keep
+list) → T (seven Tamil suffix rules, an 8-word keep list, two Tamil letters kept). The Zig engine (`zig/src/fold.zig`)
+and the Python mirror (`src/search_platform/analyzer_v3.py`) agree on 49,122 golden terms.
+
+**The groups.** Query side only: no index format, writer or analyzer change, and no rebuild. The key map (the terms
+whose key is not themselves) is built once per opened generation at the first `content` or `both` query. A query word's
+group is the in-scope body terms and visible title terms with its key; it is used when it is not the word alone, scores
+as one word through fuzzy-v1's machinery (one df, the best member per chunk or file), and a grouped word is not also
+fuzzy-expanded. `find` and the `filename` field are not grouped.
+
+**The contract.** Contracts **2.5.0**, additive: `retrieval.fold_policy_id` is `"fold-groups-v1"`; the warning
+`query_term_grouped` (with `term` and `members`) in `ss_query` and `searchd query`; JSON-RPC `search_knowledge` carries
+no warnings. Dart **0.6.0**. Natives: macOS 936,792 B, Android `arm64-v8a` 910,944 B, iOS framework binary 917,904 B
+(+52,160 / +52,720 / +52,808 B over 0.5.0); `native/SOURCE-SHA256`
+`81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c`. A 0.5.x library still opens every index.
+
+**J2, `searchd`, `content` success@1 · MRR@10, before → after:** morphology 0.308 · 0.429 → 0.538 · 0.718; accent
+0.444 · 0.551 → 0.778 · 0.846; Tamil 0.231 · 0.308 → 1.000 · 1.000; misspelling 0.500 · 0.593 → 0.562 · 0.649;
+control, title and phrase unchanged; overall 0.632 · 0.700 → 0.811 · 0.872 (`both` 0.632 · 0.683 → 0.811 · 0.857).
+The held-out slices, judged before K: morphology-heldout 0.214 → 0.571, accent-heldout 0.455 → 0.909, tamil-heldout
+0.154 → 0.923, on both surfaces.
+
+**Cost** (10k timing corpus, `ReleaseSmall`, six interleaved rounds under the gate, the verifier's medians): the first
+`content` query after an open +1.05 to +1.11 ms (the key map build 1.06 ms, 114 B kept); warm queries with no group
++0.0004 to +0.012 ms; the grouped `system` +0.056 ms `content` and **+0.067 ms `both` (bound ≤ +0.03: missed, recorded,
+orchestrator ruling 1)**; an unmatched word with a group −0.455 to −0.477 ms; `ss_open` −0.015 to −0.020 ms. NFR-13 at
+10k and 15k under 64 MiB. A generated Tamil-heavy 10k corpus: key map 445,993 B kept, first query 3.13 → 12.97 ms.
+
+**For the consumer app:** M16-T33, as the Report's "What M16-T33 carries" and orchestrator ruling 9 state.
 
 ## Misspelling tolerance: a query word that nothing visible holds is also searched as its nearest dictionary words (S5-T3, 2026-11-07; verified and merged)
 
