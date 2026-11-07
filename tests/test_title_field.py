@@ -5,6 +5,12 @@ with BM25 over the visible files times coverage, times the weight 2.5; added to 
 file's best body chunk (or its first chunk) under `content`, and merged per file
 under `both`."""
 
+import ctypes
+import json
+import os
+import platform
+import shutil
+import subprocess
 import sys
 import tempfile
 import unicodedata
@@ -19,6 +25,16 @@ from src.search_platform.core import (  # noqa: E402
     TITLE_WEIGHT, _bm25_scores, _title_scores, _title_tokens, build_index, search, tokenize,
 )
 from relevance_smoke import run_j2_pack  # noqa: E402
+
+sys.path.insert(0, str(REPO / "scripts"))
+import j2_gate  # noqa: E402
+import j2_run  # noqa: E402
+
+SHIPPED = REPO / "bindings" / "dart" / "search_simpli" / "native" / "macos-arm64" / "libsearch_simpli.dylib"
+# The rows where searchd's first grade-2 rank differs from the reference's, all
+# through the analyzer (accent folding the reference does and analyzer-v2 does
+# not, docs/tasks/S5-T2.md): every other J2 row agrees between the surfaces.
+ANALYZER_ROWS = {"content": {"a06", "a07", "a09"}, "both": {"a06", "a09"}}
 
 ROOTS = ("school", "home", "laptop")
 
@@ -177,6 +193,114 @@ class J2Tests(unittest.TestCase):
             lost = [q for q, r in self.runs[variant]["queries"].items()
                     if r["slice"] == "control" and r["first_grade2_rank"] != 1]
             self.assertEqual(lost, [], variant)
+
+    def test_the_gate_passes_against_the_committed_baseline_with_no_allowance(self):
+        baseline = json.loads(j2_gate.BASELINE.read_text(encoding="utf-8"))["surfaces"]["python-reference"]["runs"]
+        for variant in ("content", "both"):
+            failures, _ = j2_gate.judge(self.runs[variant], baseline[variant], {})
+            self.assertEqual(failures, [], variant)
+
+
+def searchd_binary(scratch: Path) -> Path:
+    """`$SEARCHD_BINARY`, else one `zig build --prefix` (as test_folder_surfaces.py)."""
+    if os.environ.get("SEARCHD_BINARY"):
+        return Path(os.environ["SEARCHD_BINARY"])
+    if shutil.which("zig") is None:
+        raise AssertionError("zig is not on PATH and SEARCHD_BINARY is not set")
+    built = subprocess.run(["zig", "build", "--prefix", str(scratch / "prefix")], cwd=REPO / "zig",
+                           capture_output=True, text=True, timeout=540)
+    if built.returncode != 0:
+        raise AssertionError("zig build failed:\n" + built.stderr)
+    return scratch / "prefix" / "bin" / "searchd"
+
+
+@unittest.skipIf(os.environ.get("SEARCH_SIMPLI_NO_ZIG") == "1", "SEARCH_SIMPLI_NO_ZIG=1: no searchd")
+class J2SurfaceTests(unittest.TestCase):
+    """The engine against the reference on J2, and the engine's three doors
+    (C ABI, `searchd query`, `serve`) against each other."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.scratch = tempfile.TemporaryDirectory()
+        scratch = Path(cls.scratch.name)
+        cls.binary = searchd_binary(scratch)
+        cls.judgments = json.loads((j2_run.PACK / "judgments.json").read_text(encoding="utf-8"))
+        cls.index = scratch / "idx"
+        (scratch / "empty").mkdir()
+        (scratch / "changes.json").write_text(json.dumps(j2_run.changes_request(cls.judgments)), encoding="utf-8")
+        for cmd in ([str(cls.binary), "index", str(scratch / "empty"), "--out", str(cls.index), "--filename-index"],
+                    [str(cls.binary), "apply", str(cls.index), "--changes", str(scratch / "changes.json")]):
+            done = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            if done.returncode != 0:
+                raise AssertionError(f"{cmd[1]} failed:\n{done.stdout}\n{done.stderr}")
+        cls.knowledge = [q for q in cls.judgments["queries"] if q["mode"] == "knowledge"]
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.scratch.cleanup()
+
+    def request(self, query: str, field: str) -> dict:
+        return {"query": query, "top_k": j2_run.J2_TOP_K, "retrieval_mode": "lexical",
+                "roots": self.judgments["roots"], "search_field": field}
+
+    def test_searchd_ranks_agree_with_the_reference_but_for_the_analyzer_rows(self):
+        engine = j2_run.run_searchd(self.binary, Path(self.scratch.name), None)["runs"]
+        reference = run_j2_pack()["runs"]
+        for variant in ("content", "both"):
+            differ = {q for q, r in reference[variant]["queries"].items()
+                      if r.get("first_grade2_rank") != engine[variant]["queries"][q].get("first_grade2_rank")}
+            self.assertEqual(differ, ANALYZER_ROWS[variant], variant)
+
+    def test_the_c_abi_searchd_query_and_serve_give_the_same_results(self):
+        library = os.environ.get("SEARCH_SIMPLI_LIBRARY_PATH") or (
+            str(SHIPPED) if platform.system() == "Darwin" and platform.machine() == "arm64" and SHIPPED.exists() else None)
+        if library is None:
+            self.skipTest("needs the shipped macOS arm64 library")
+        lib = ctypes.CDLL(library)
+        lib.ss_open.argtypes = [ctypes.c_char_p]
+        lib.ss_open.restype = ctypes.c_void_p
+        lib.ss_query.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_void_p, ctypes.c_size_t,
+                                 ctypes.c_size_t, ctypes.c_char_p]
+        lib.ss_query.restype = ctypes.c_void_p
+        lib.ss_free.argtypes = [ctypes.c_void_p]
+        lib.ss_close.argtypes = [ctypes.c_void_p]
+        lib.ss_last_error.restype = ctypes.c_char_p
+        handle = lib.ss_open(str(self.index).encode())
+        self.assertTrue(handle, lib.ss_last_error())
+        serve = j2_run.Serve(self.binary, self.index)
+        try:
+            for q in self.knowledge:
+                for field in ("content", "both"):
+                    options = self.request(q["query"], field)
+                    del options["query"], options["top_k"]
+                    raw = lib.ss_query(handle, q["query"].encode(), None, 0, j2_run.J2_TOP_K, json.dumps(options).encode())
+                    self.assertTrue(raw, lib.ss_last_error())
+                    abi = json.loads(ctypes.string_at(raw).decode("utf-8"))
+                    lib.ss_free(raw)
+                    rpc = serve.call("search_knowledge", self.request(q["query"], field))
+                    # ss_query's result is the query's, not search_knowledge's whole
+                    # envelope (search_simpli.h): the hits, their rankings (the title
+                    # part included) and the retrieval policy must be the same.
+                    def shared(result: dict) -> tuple:
+                        return (result["retrieval"], [(r["chunk_id"], r["citation"], r["content"], r["score"], r["ranking"])
+                                                      for r in result["results"]])
+                    self.assertEqual(shared(abi), shared(rpc), (q["id"], field))
+                    self.assertEqual(rpc["retrieval"].get("title_policy_id"), "title-field-v1")
+                    if field != "content":
+                        continue
+                    # `searchd query` answers content over every root: the J2 roots
+                    # (the legacy root holds no file).
+                    cli = subprocess.run([str(self.binary), "query", str(self.index), q["query"], "--json",
+                                          "--top-k", str(j2_run.J2_TOP_K)], capture_output=True, text=True, timeout=60)
+                    self.assertEqual(cli.returncode, 0, cli.stderr)
+                    self.assertEqual(
+                        [(r["chunk_id"], r["path"], r["start_line"], r["end_line"], r["score"])
+                         for r in json.loads(cli.stdout)["results"]],
+                        [(r["chunk_id"], r["citation"]["path"], r["citation"]["start_line"], r["citation"]["end_line"],
+                          r["score"]) for r in rpc["results"]], q["id"])
+        finally:
+            serve.close()
+            lib.ss_close(handle)
 
 
 if __name__ == "__main__":
