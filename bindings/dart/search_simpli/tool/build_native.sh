@@ -91,6 +91,14 @@ if [ -f "$IOS_A" ]; then
   # the members (the engine and the bundled compiler_rt) are linked as objects;
   # Zig writes them with mode 000.
   (cd "$IOS_OBJS" && ar x "$IOS_A" && rm -f __.SYMDEF* && chmod 644 ./*.o)
+  # S4-T18: the archive's compiler_rt.o defines memcpy, memmove and memset
+  # (one byte at a time in ReleaseSmall) as strong private externs, and
+  # fastmem.o defines the library's word-wise ones (zig/src/fastmem.zig), so
+  # ld64 refuses the link ("duplicate symbol '_memcpy'"); Zig's own linkers
+  # bind fastmem's for the other targets. Making compiler_rt.o's three local
+  # lets the engine's calls bind fastmem's, as on macOS and Android.
+  printf '_memcpy\n_memmove\n_memset\n' > "$IOS_OBJS/compiler_rt_local.txt"
+  xcrun nmedit -R "$IOS_OBJS/compiler_rt_local.txt" "$IOS_OBJS/compiler_rt.o"
   # -dead_strip keeps what the exported ss_* functions reach (Zig's own linker
   # also drops unreferenced code); the versions are the 1.0.0 Zig's linker
   # wrote before S1-T22; iOS output from ld is not ad-hoc signed.

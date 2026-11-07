@@ -239,6 +239,29 @@ copy stays in sync. Without `SS_ANDROID_NDK` set, the macOS library still
 rebuilds but the script exits 1 rather than silently leaving a stale
 Android library in place. The script also writes `native/SOURCE-SHA256`, a digest of the Zig sources, C header, `contracts/CONTRACTS_VERSION` and `tool/build_native.sh` itself (its link flags shape the iOS binary, since S1-T22) the libraries were built from (computed by `tool/source_digest.py`); the Python test `tests/test_native_freshness.py` recomputes it and fails when the libraries are older than the source.
 
+**`memcpy` in the natives (S4-T18).** Zig 0.16 links its own `compiler_rt`
+into every shared library and executable it builds. In `ReleaseSmall`, that
+`compiler_rt`'s `memcpy`, `memmove` and `memset` are byte-at-a-time loops,
+and they were the library's on every target up to 0.3.11. The build now adds
+one more object to every library, `searchd` and the test binaries:
+`zig/src/fastmem.zig`, compiled with `-fno-builtin` so its loops cannot
+become calls to `memcpy`. A `ReleaseSmall` build compiles this one object
+`ReleaseFast`, stripped as `ReleaseSmall` would strip it: `ReleaseSmall`'s
+machine outliner gave `memcpy` a stack frame and turned its short-length
+paths into calls, and most of the library's copies are short. It defines those three functions as strong and
+hidden, so each binary binds its own word-wise copy (16-byte vectors,
+overlapping windows for short lengths, `memmove` exact in both directions)
+and exports nothing new. Zig's Mach-O and ELF linkers prefer the strong
+definitions over `compiler_rt`'s and drop `compiler_rt`'s. Apple's linker
+refuses two definitions of a name, so before the iOS link `build_native.sh`
+localizes `compiler_rt.o`'s three with `xcrun nmedit -R`. On macOS and iOS,
+zeroing still calls `libSystem`'s `bzero`; Android has no `bzero`, so the
+same zeroing goes through the library's `memset`. `tool/check_native.sh`
+checks the result in all three binaries: the most-called function (`memcpy`)
+moves 16-byte registers and has no byte loop, Apple's `_memcpy` is that
+function and nothing exports it, and the Android library imports no
+`memcpy`, `memmove` or `memset`.
+
 ## Regenerating the FFI bindings
 
 `lib/src/bindings_generated.dart` is machine-generated from
