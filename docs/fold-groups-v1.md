@@ -90,11 +90,18 @@ string of the block).
 - **When a group is used.** When it is not empty and not {t} alone. A query
   word with a group is not also expanded by [fuzzy-v1](fuzzy-v1.md); fuzzy-v1
   runs on the words without one.
-- **The score** is fuzzy-v1's: one document frequency for the group (the
-  largest of its body members'), each chunk its best member's BM25, never the
-  sum; the same over the file names in the title part; `both` computes the
-  groups once for its body and title parts. The `filename` field is never
-  grouped.
+- **The score** is fuzzy-v1's. In the body: one document frequency for the
+  group (the largest of its body members'), each chunk its best member's BM25,
+  never the sum. In the title part ([title-field-v1](title-field-v1.md)): every
+  member the title field holds, body member or title member, weighs 1.0; the
+  group takes one document frequency, the largest of its members' title
+  document frequencies over the files the caller may see (roots and labels,
+  not the prefix); each file takes its best member's title BM25 at that
+  frequency, never the sum; the group counts as one query word in the file's
+  coverage; the part is 2.5 × that BM25 × coverage. A title member's key
+  document frequency 0 orders the group only and never enters a score.
+  `both` computes the groups once for its body and title parts. The
+  `filename` field is never grouped.
 
 A word that only hidden chunks or files hold is never a member, so it is
 neither searched nor named. A query with no group runs the arithmetic of
