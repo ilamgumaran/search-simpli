@@ -40,6 +40,21 @@ or the error text; the file's sha256 is printed):
 The snapshots are built once into --work and reused, so that both runs read
 the same bytes. Only the standard library plus this repository's reference
 index code is used.
+
+S5-T2 (ruling 7), the title field's comparison:
+
+    python3 -I scripts/capture_query_outputs.py --compare-title BEFORE.jsonl AFTER.jsonl \
+        --searchd SEARCHD --work WORKDIR
+
+cuts contract 2.3.0's two additions out of every AFTER output byte by byte
+(`,"title_policy_id":"title-field-v1"` at the end of `retrieval`, and
+`,"title":{"score":...}` at the end of a result's `ranking`), compares it with
+the BEFORE output of the same case, and names each differing case's cause: a
+query term that is a title word of some file of the case's snapshot (its
+folder names or file stem, `title-field-v1`; the paths come from `searchd
+list-files`). A differing case without one is an unexplained change and fails
+the run (exit 1), as does any random-vocabulary case of the 10,000-chunk
+corpus that differs.
 """
 
 from __future__ import annotations
@@ -246,7 +261,128 @@ def family_queries() -> list[str]:
     return strings + sorted(words - set(strings))
 
 
+TITLE_POLICY = ',"title_policy_id":"title-field-v1"}'
+TITLE_PART = re.compile(r',"title":\{"score":(?:null|-?[0-9][0-9.eE+-]*)\}\}')
+
+
+def strip_title(output: str) -> tuple[str, int]:
+    """AFTER's output without contract 2.3.0's additions, and how many result parts were cut."""
+    if output.startswith("ERROR"):
+        return output, 0
+    retrieval = output.index('"retrieval":{')
+    results = output.index('},"results":[', retrieval)
+    head, tail = output[:results + 1], output[results + 1:]
+    if head.endswith(TITLE_POLICY):
+        head = head[: -len(TITLE_POLICY)] + "}"
+    tail, parts = TITLE_PART.subn("}", tail)
+    return head + tail, parts
+
+
+def snapshot_of(case: str) -> str:
+    kind, name = case.split(":")[:2]
+    if kind == "judged" or kind == "random":
+        return f"snap-{name}"
+    if kind.startswith("semantic"):
+        return "snap-semantic-vectors"
+    if kind == "synthetic-vectors":
+        return "snap-synthetic-vectors"
+    if kind == "fields":
+        return {"c10k": "snap-c10k-filename", "family": "snap-family-filename"}[name]
+    if kind == "invalid":
+        return f"snap-invalid-{name}"
+    raise ValueError(f"no snapshot for case {case}")
+
+
+def title_words(searchd: str, snapshot: Path) -> set[str]:
+    from src.search_platform import core
+
+    words: set[str] = set()
+    cursor = None
+    while True:
+        command = [searchd, "list-files", str(snapshot), "--json", "--page-size", "1000"]
+        if cursor:
+            command += ["--cursor", cursor]
+        page = json.loads(subprocess.run(command, check=True, capture_output=True, text=True).stdout)
+        for entry in page["files"]:
+            if entry["root_id"] == "r-legacy":
+                words.update(core._title_tokens(entry["path"], ()))
+            else:
+                words.update(core._title_tokens(f"{entry['root_id']}/{entry['path']}", (entry["root_id"],)))
+        cursor = page.get("next_cursor")
+        if not cursor:
+            return words
+
+
+def compare_title(before: Path, after: Path, searchd: str, work: Path) -> int:
+    from src.search_platform import core
+
+    old = [json.loads(line) for line in before.open(encoding="utf-8")]
+    new = [json.loads(line) for line in after.open(encoding="utf-8")]
+    if [(o["case"], o["query"], o["options"]) for o in old] != [(n["case"], n["query"], n["options"]) for n in new]:
+        print("the two captures ask different cases")
+        return 2
+    words: dict[str, set[str]] = {}
+    identical = parts = merged_body = 0
+    differing: dict[str, list[str]] = {}
+    unexplained: list[str] = []
+    random_10k: list[str] = []
+    for o, n in zip(old, new):
+        stripped, cut = strip_title(n["output"])
+        parts += cut
+        if stripped == o["output"]:
+            identical += 1
+            continue
+        snapshot = snapshot_of(o["case"])
+        if snapshot not in words:
+            words[snapshot] = title_words(searchd, work / snapshot)
+        query = o["query"] if not o["query"].startswith("bytes:") else ""
+        terms = sorted(set(core._filename_tokenize(query)) & words[snapshot])
+        if o["case"].startswith("random:c10k:"):
+            random_10k.append(o["case"])
+        field = o["options"].get("search_field", "content")
+        if field == "both" and not terms:
+            # Ruling 3: both is a score-level merge, so it differs from the RRF it
+            # replaces on every query. With no title word the merge is the body
+            # BM25 alone: each score is its lexical score and no title part.
+            merged = json.loads(n["output"])["results"]
+            scores = [r["score"] for r in merged]
+            if (scores != sorted(scores, reverse=True)
+                    or any(r["score"] != r["ranking"]["lexical"]["score"] or r["ranking"]["title"]["score"] is not None
+                           for r in merged)):
+                unexplained.append(o["case"])
+            else:
+                merged_body += 1
+        elif terms and field != "filename":
+            differing.setdefault(" ".join(terms), []).append(o["case"])
+        else:
+            unexplained.append(o["case"])
+    total = len(old)
+    print(f"compared {total} cases: {identical} identical with the 2.3.0 keys cut ({parts} ranking.title parts cut), "
+          f"{total - identical} differ")
+    print(f"  both, no title word: {merged_body} cases, the score-level merge (ruling 3) of body BM25 alone "
+          "(each score its lexical score, no title part, scores descending)")
+    for term, cases in sorted(differing.items(), key=lambda item: (-len(item[1]), item[0])):
+        groups: dict[str, int] = {}
+        for case in cases:
+            group = ":".join(case.split(":")[:2])
+            groups[group] = groups.get(group, 0) + 1
+        print(f"  title word(s) {term!r}: {len(cases)} cases ({', '.join(f'{g} {c}' for g, c in sorted(groups.items()))})")
+    print(f"random-vocabulary cases of the 10k corpus that differ: {len(random_10k)}")
+    print(f"differing cases unexplained (no title word, a filename case, or a both merge that is not body BM25): "
+          f"{len(unexplained)}")
+    for case in unexplained[:20]:
+        print(f"  {case}")
+    return 1 if unexplained or random_10k else 0
+
+
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "--compare-title":
+        compare = argparse.ArgumentParser(description="S5-T2: compare two captures with the title keys cut")
+        compare.add_argument("--compare-title", nargs=2, type=Path, required=True, metavar=("BEFORE", "AFTER"))
+        compare.add_argument("--searchd", required=True)
+        compare.add_argument("--work", type=Path, required=True)
+        args = compare.parse_args()
+        return compare_title(args.compare_title[0], args.compare_title[1], args.searchd, args.work)
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--lib", required=True)
     parser.add_argument("--searchd", required=True)
