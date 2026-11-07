@@ -1,5 +1,6 @@
 import contextlib
 import io
+import math
 import tempfile
 import unittest
 from pathlib import Path
@@ -135,7 +136,8 @@ class FilenameSearchTests(unittest.TestCase):
         self.assertEqual([r["citation"]["path"] for r in secured_payload["results"]], ["public/needle.md"])
         self.assertEqual(secured_scoped, plain_payload)
 
-    def test_both_fuses_per_file_ranks_and_ties_use_path_order(self) -> None:
+    def test_both_merges_body_and_title_scores_per_file_and_ties_use_path_order(self) -> None:
+        """S5-T2: `both` is a score-level merge (best body chunk + the title part), not RRF."""
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "a-alpha.md").write_text("needle body", encoding="utf-8")
@@ -143,12 +145,21 @@ class FilenameSearchTests(unittest.TestCase):
             index = build_index(root, filename_index=True)
             filename = search(index, "alpha", retrieval_mode="lexical", search_field="filename")
             both = search(index, "needle alpha", retrieval_mode="lexical", search_field="both")
+            tied = search(index, "alpha", retrieval_mode="lexical", search_field="both")
 
         self.assertEqual([r["citation"]["path"] for r in filename], ["a-alpha.md", "b-alpha.md"])
         self.assertEqual([r["citation"]["path"] for r in both], ["a-alpha.md", "b-alpha.md"])
+        # The title field of each file is [a|b, alpha]: alpha in both (idf ln 1.2, tf part 1),
+        # half of the query's two terms: 2.5 * ln(1.2) * 0.5.
+        title = 2.5 * (math.log(1.2) * 0.5)
         hit = both[0]
         self.assertEqual(hit["matched_in"], ["content", "filename"])
-        self.assertAlmostEqual(hit["score"], 1 / 61 + 1 / 61)
+        self.assertAlmostEqual(hit["score"], hit["ranking"]["lexical"]["score"] + title)
+        self.assertEqual(both[1]["matched_in"], ["filename"])
+        self.assertIsNone(both[1]["ranking"]["lexical"]["score"])
+        self.assertAlmostEqual(both[1]["score"], title)
+        self.assertEqual([r["citation"]["path"] for r in tied], ["a-alpha.md", "b-alpha.md"])
+        self.assertEqual(tied[0]["score"], tied[1]["score"])
 
     def test_both_cites_the_best_matching_chunk_for_a_multichunk_file(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -195,7 +206,9 @@ class FilenameSearchTests(unittest.TestCase):
         self.assertEqual(passage["citation"]["field"], "content")
         self.assertEqual(passage["citation"]["path"], "passage.md")
 
-    def test_match_sections_report_real_terms_even_when_a_ranking_channel_is_cut(self) -> None:
+    def test_match_sections_report_real_terms_and_candidate_k_cuts_no_channel_under_both(self) -> None:
+        """S5-T2: a cut before a sum is wrong, so candidate_k no longer cuts `both`'s body
+        channel (z-other.md is body rank 1, target.md body rank 2 with candidate_k 1)."""
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "target.md").write_text("common", encoding="utf-8")
@@ -206,7 +219,8 @@ class FilenameSearchTests(unittest.TestCase):
             )[0]
 
         self.assertEqual(hit["citation"]["path"], "target.md")
-        self.assertEqual(hit["matched_in"], ["filename"])
+        self.assertEqual(hit["matched_in"], ["content", "filename"])
+        self.assertEqual(hit["ranking"]["lexical"]["rank"], 2)
         self.assertTrue(hit["match_sections"]["content"]["matched"])
         self.assertEqual(hit["match_sections"]["content"]["matched_terms"], ["common"])
         self.assertTrue(hit["match_sections"]["filename"]["matched"])

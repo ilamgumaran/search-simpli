@@ -75,7 +75,8 @@ def run(root: str, queries: list[str]) -> list[dict]:
     index = core.build_index(Path(root), vector_mode="none")
     out = []
     for query in queries:
-        hits = core.search(index, query, top_k=50, retrieval_mode="lexical")
+        # Plain BM25, the formula the Zig golden test checks: S5-T2's title part is off.
+        hits = core.search(index, query, top_k=50, retrieval_mode="lexical", title_weight=0)
         out.append(
             {
                 "query": query,
