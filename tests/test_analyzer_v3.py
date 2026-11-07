@@ -27,6 +27,14 @@ class FoldTableTests(unittest.TestCase):
                                capture_output=True, text=True, check=True).stdout
         self.assertEqual(fresh, (ROOT / "src" / "search_platform" / "_fold.py").read_text(encoding="utf-8"))
 
+    def test_zig_tables_regenerate_byte_for_byte(self):
+        """zig/src/unicode_tables.zig, fold table included, is what the generator writes."""
+        if unicodedata.unidata_version != UNICODE_VERSION:
+            self.skipTest("table generated with Unicode " + UNICODE_VERSION)
+        fresh = subprocess.run([sys.executable, str(ROOT / "scripts" / "gen_unicode_tables.py")],
+                               capture_output=True, text=True, check=True).stdout
+        self.assertEqual(fresh, (ROOT / "zig" / "src" / "unicode_tables.zig").read_text(encoding="utf-8"))
+
     def test_table_counts(self):
         self.assertEqual(len(FOLD), 6158)
         self.assertEqual(sum(1 for v in FOLD.values() if len(v) > 1), 1303)
