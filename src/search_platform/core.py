@@ -1109,11 +1109,12 @@ def _first_chunk_key(chunk: dict) -> tuple:
 
 
 def _add_title_to_content(chunks: list[dict], lexical_scores: dict[str, float],
-                          title: dict[str, float]) -> dict[str, float]:
+                          title: dict[str, float]) -> tuple[dict[str, float], dict[str, float]]:
     """The title part goes on one chunk per file: its best body chunk (ties to the
-    smaller id, bytewise), or its first chunk when no chunk of the file matches."""
+    smaller id, bytewise), or its first chunk when no chunk of the file matches.
+    Returns the lexical scores with the parts added and each receiving chunk's part."""
     if not title:
-        return lexical_scores
+        return lexical_scores, {}
     best: dict[str, dict] = {}
     first: dict[str, dict] = {}
     for chunk in chunks:
@@ -1133,12 +1134,14 @@ def _add_title_to_content(chunks: list[dict], lexical_scores: dict[str, float],
         if score > held_score or (score == held_score and chunk["id"].encode("utf-8") < held["id"].encode("utf-8")):
             best[path] = chunk
     out = dict(lexical_scores)
+    received: dict[str, float] = {}
     for path, part in title.items():
         if part <= 0.0 or path not in first:
             continue
         target = best.get(path, first[path])["id"]
         out[target] = out.get(target, 0.0) + part
-    return out
+        received[target] = part
+    return out, received
 
 
 def _search_filename_fields(
@@ -1215,13 +1218,18 @@ def _search_filename_fields(
         ordered = sorted(((path, score) for path, score in final_scores.items() if score > 0.0),
                          key=lambda item: (-item[1], item[0].encode("utf-8"),
                                            best_by_path.get(item[0], anchors[item[0]])["id"].encode("utf-8")))[:top_k]
+    if search_field == "both":
+        # The reported ranks are positions within each channel's first candidate_k,
+        # as the engine reports them; matched_in names a channel that scored the file.
+        body_ranks = {path: rank for path, rank in body_ranks.items() if rank <= candidate_k}
+        filename_ranks = {path: rank for path, rank in filename_ranks.items() if rank <= candidate_k}
     for path, final_score in ordered:
         chunk = best_by_path.get(path, anchors[path])
         record = records_by_path.get(path)
         matched_in = []
-        if path in body_ranks:
+        if body_scores.get(path, 0.0) > 0.0:
             matched_in.append("content")
-        if path in filename_ranks:
+        if filename_scores.get(path, 0.0) > 0.0:
             matched_in.append("filename")
         result = {
             "chunk_id": chunk["id"],
@@ -1236,6 +1244,9 @@ def _search_filename_fields(
                 "vector": {"rank": None, "score": None, "mode": index.get("vector_mode", "none")},
             },
         }
+        if search_field == "both":
+            part = title.get(path, 0.0)
+            result["ranking"]["title"] = {"score": part if part > 0.0 else None}
         filename_query_terms = list(dict.fromkeys(_filename_tokenize(query)))
         body_query_terms = list(dict.fromkeys(tokenize(query)))
         filename_available_terms = set(record["terms"]) if record else set()
@@ -1318,10 +1329,11 @@ def search(
     visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
     chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
     lexical_scores = _bm25_scores(chunks, query_terms) if retrieval_mode != "vector" else {}
+    received: dict[str, float] = {}
     if retrieval_mode != "vector":
         # S5-T2: the title part joins the lexical channel before it is ranked or cut.
         title = _title_scores(visible, query, _title_root_ids(index, title_root_ids), title_weight)
-        lexical_scores = _add_title_to_content(chunks, lexical_scores, title)
+        lexical_scores, received = _add_title_to_content(chunks, lexical_scores, title)
     vector_scores = (
         _cosine_scores(index, chunks, query, embedding_provider)
         if retrieval_mode != "lexical"
@@ -1366,6 +1378,9 @@ def search(
                 },
             }
         )
+        if identifier in received:
+            # Contract 2.3.0: only the chunk that received its file's title part.
+            results[-1]["ranking"]["title"] = {"score": received[identifier]}
     return results
 
 
@@ -1412,6 +1427,8 @@ def context_envelope(
         retrieval["search_field"] = search_field
         retrieval["filename_policy_id"] = FILENAME_POLICY_ID
         answer_policy["filename_matches_are_navigation"] = True
+    if search_field != "filename" and retrieval_mode != "vector":
+        retrieval["title_policy_id"] = TITLE_POLICY_ID
     return {
         "tool": "search_knowledge",
         "query": query,

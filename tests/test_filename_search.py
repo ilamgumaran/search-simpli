@@ -208,7 +208,9 @@ class FilenameSearchTests(unittest.TestCase):
 
     def test_match_sections_report_real_terms_and_candidate_k_cuts_no_channel_under_both(self) -> None:
         """S5-T2: a cut before a sum is wrong, so candidate_k no longer cuts `both`'s body
-        channel (z-other.md is body rank 1, target.md body rank 2 with candidate_k 1)."""
+        channel (z-other.md is body rank 1, target.md body rank 2 with candidate_k 1).
+        The reported rank stays a position within the channel's first candidate_k, as
+        the engine reports it: null here, with the body score and matched_in kept."""
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "target.md").write_text("common", encoding="utf-8")
@@ -220,7 +222,10 @@ class FilenameSearchTests(unittest.TestCase):
 
         self.assertEqual(hit["citation"]["path"], "target.md")
         self.assertEqual(hit["matched_in"], ["content", "filename"])
-        self.assertEqual(hit["ranking"]["lexical"]["rank"], 2)
+        self.assertIsNone(hit["ranking"]["lexical"]["rank"])
+        self.assertGreater(hit["ranking"]["lexical"]["score"], 0.0)
+        self.assertEqual(hit["ranking"]["filename"]["rank"], 1)
+        self.assertGreater(hit["ranking"]["title"]["score"], 0.0)
         self.assertTrue(hit["match_sections"]["content"]["matched"])
         self.assertEqual(hit["match_sections"]["content"]["matched_terms"], ["common"])
         self.assertTrue(hit["match_sections"]["filename"]["matched"])

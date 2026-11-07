@@ -22,6 +22,9 @@ pub const Evidence = struct {
     semantic_score: f32,
     lexical_rank: ?usize,
     semantic_rank: ?usize,
+    /// S5-T2: the title part inside `lexical_score`, or null when this
+    /// chunk received none (`hybrid.Result.title_score`).
+    title_score: ?f32 = null,
 };
 
 /// S4-T9: the alignment of the open's one block (`snapshot_open.OpenBlock`):
@@ -126,6 +129,14 @@ pub const Engine = struct {
         };
     }
 
+    /// S5-T2: whether a `field` query with `options` ranks with the title
+    /// field (`queryFields`): `content` and `both` in a mode with a lexical
+    /// channel, given a field or opened with a folder that derives one.
+    pub fn titleApplies(engine: Engine, field: filename_field.Field, options: hybrid.SearchOptions) bool {
+        if (field == .filename or options.retrieval_mode == .vector) return false;
+        return options.title != null or engine.folder != null;
+    }
+
     pub fn queryFields(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, field: filename_field.Field, options: hybrid.SearchOptions) ![]filename_field.Hit {
         if (field == .content) {
             var titled_options = options;
@@ -134,7 +145,7 @@ pub const Engine = struct {
             };
             const results = try engine.queryTokenized(allocator, query_text, &.{}, try allocator.alloc(hybrid.Result, @min(options.top_k, engine.documents.len)), titled_options);
             const hits = try allocator.alloc(filename_field.Hit, results.len);
-            for (results, hits) |r, *h| h.* = .{ .document_index = r.document_index, .body_score = r.lexical_score, .body_rank = r.lexical_rank, .fused_score = r.fused_score };
+            for (results, hits) |r, *h| h.* = .{ .document_index = r.document_index, .body_score = r.lexical_score, .body_rank = r.lexical_rank, .fused_score = r.fused_score, .title_score = r.title_score };
             return hits;
         }
         if (!engine.filename_index_enabled) return error.FilenameIndexUnavailable;
@@ -283,6 +294,7 @@ pub const Engine = struct {
             .semantic_score = result.semantic_score,
             .lexical_rank = result.lexical_rank,
             .semantic_rank = result.semantic_rank,
+            .title_score = result.title_score,
         };
     }
 };

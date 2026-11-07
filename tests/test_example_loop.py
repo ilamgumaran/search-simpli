@@ -247,11 +247,15 @@ class FilenameQuestionTests(unittest.TestCase):
         search_params = log[1][1]
         self.assertEqual(search_params["search_field"], "filename")
         self.assertEqual(search_params["retrieval_mode"], "lexical")
-        # find does not see file names: the word is a miss there and in the text search.
+        # find does not see file names: the word is a miss there. Since S5-T2 the
+        # content search answers it through the file's title part alone (the part
+        # is the whole lexical score), which is navigation, not evidence.
         tools = loop.Tools(str(self.binary), self.index)
         try:
             self.assertEqual(tools.call("find", query="geography", page_size=5)["hits"], [])
-            self.assertEqual(tools.call("search_knowledge", query="geography", retrieval_mode="lexical", top_k=3)["results"], [])
+            named = tools.call("search_knowledge", query="geography", retrieval_mode="lexical", top_k=3)["results"]
+            self.assertEqual([r["citation"]["path"] for r in named], ["geography-coast.md"])
+            self.assertEqual(named[0]["ranking"]["title"]["score"], named[0]["ranking"]["lexical"]["score"])
         finally:
             tools.close()
         # The citation is the file and lines that read_span returned, none invented.

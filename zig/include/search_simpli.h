@@ -92,6 +92,17 @@
  * manifest v2.2 (docs/manifest-format-v2.md); older libraries refuse them
  * with UnsupportedFlags, so a directory this library has updated must not be
  * opened by an older one. */
+
+/* Contract 2.3.0 (S5-T2) adds, additive, with no request field and no
+ * signature or index format change: the title field (title-field-v1,
+ * docs/title-field-v1.md). A file's folder names and file stem add a BM25
+ * part to its best chunk whenever the lexical channel runs under "content"
+ * (lexical or hybrid) or "both"; ss_query's result gains
+ * retrieval.title_policy_id and, per result, ranking.title {score}, and
+ * ranking.lexical.score is the body score plus that part. "both" is a
+ * score-level merge, one result per file, that candidate_k does not cut.
+ * The field is derived from the generation's records at its first such
+ * query on a handle, never at ss_open. */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 
@@ -120,7 +131,7 @@ typedef struct ss_handle ss_handle;
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "2.2.0". The returned pointer is static storage owned by the library:
+ * "2.3.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);

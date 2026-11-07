@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.4.0 (S5-T2; contract 2.3.0; minor: ranking change and additive result fields)
+
+The title field (`title-field-v1`, `docs/title-field-v1.md`). A file's
+folder names (relative to its root, never the root id) and its file stem,
+tokenized with `analyzer-v2`, are a short field scored with BM25 (k1 1.2,
+b 0.75) times its coverage of the query's distinct terms, weighted 2.5.
+The part joins the lexical channel. Code written for 0.3.x compiles and
+behaves the same against 0.4.0, but rankings change wherever a query word
+names a folder or a file.
+
+- **Contracts 2.3.0** (`contracts/CONTRACTS_VERSION`). As before the
+  package accepts exactly its own contract version: a 2.2.0 library is
+  refused at `open` with `ContractsVersionMismatchException`, and the
+  natives move with the package.
+- **`content` (the default).** With a lexical channel (`lexical` or
+  `hybrid` mode), each file's title part is added to its best in-scope
+  chunk (an exact tie goes to the smaller chunk id), or, when no chunk of
+  the file matches the body, to its first chunk; the channel's
+  `candidate_k` cut comes after the sum. `ranking.lexical.score` is the
+  body score plus that part.
+- **`both`.** A score-level merge, one result per file: the file's best
+  body chunk's BM25 plus its title part, ordered by score, then path, then
+  chunk id. `candidate_k` is still validated (≥ `topK`) but cuts no
+  channel before the sum. `ranking.lexical.rank` and
+  `ranking.filename.rank` stay positions within each channel's first
+  `candidate_k`; the scores are reported whenever positive, and
+  `matchedIn` names a channel that scored the file. `filename` is
+  unchanged.
+- **New, nullable:** `SearchRetrieval.titlePolicyId` (`"title-field-v1"`
+  whenever the lexical channel ran under `content` or `both`) and
+  `SearchResultItem.titleScore` (`ranking.title.score`). Under `content`
+  only the chunk that received its file's part carries `ranking.title`;
+  under `both` every result does, with a null score when the file's title
+  took no part.
+- **Scope.** The title statistics (file count, average length, document
+  frequency) are over the files the request can see: roots and labels
+  narrow them, a path prefix does not.
+- **No index format change.** The field is derived from a generation's
+  records at its first `content` or `both` query on a handle, once per
+  opened generation, and never at `open`. Every index a 0.3.x library
+  wrote opens unchanged, and nothing is rebuilt. No C ABI signature
+  changed.
+- **Natives** rebuilt on the Mac: macOS 865,496 B (0.3.12: 843,240),
+  Android 840,944 B (806,544), iOS framework binary 846,352 B (807,624);
+  `native/SOURCE-SHA256` is `0f044a44…`.
+
 ## 0.3.12 (S4-T18; contract 2.2.0; patch: the library's `memcpy`, no format or API change)
 
 The library's `memcpy`, `memmove` and `memset` copy 16 bytes at a time.

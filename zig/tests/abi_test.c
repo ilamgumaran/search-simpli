@@ -137,18 +137,22 @@ static const char *golden_status_json =
     "\"embedding_model_id\":\"manual-demo-vectors-v1\",\"vector_dimensions\":2,"
     "\"documents\":3,\"terms\":21,\"postings\":23}";
 
-/* S5-T2: the title field (title-field-v1) adds a part to guides/hybrid.md,
- * whose stem is the query word "hybrid": its lexical rank and score and the
- * fused score changed; every other byte is the S1-T0 capture. */
+/* S5-T2 (contracts 2.3.0): the title field (title-field-v1) adds a part to
+ * guides/hybrid.md, whose stem is the query word "hybrid": its lexical rank
+ * and score and the fused score changed, and the result gains
+ * retrieval.title_policy_id and ranking.title; every other byte is the
+ * S1-T0 capture. */
 static const char *golden_query_result_json =
     "{\"tool\":\"search_knowledge\",\"query\":\"hybrid ranking\",\"index\":{\"version\":2,"
     "\"generation\":1,\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"manual-demo-vectors-v1\"},"
     "\"retrieval\":{\"mode\":\"hybrid\",\"vector_dimensions\":2,\"authorization\":{"
-    "\"semantics\":\"all-required-labels-v1\",\"principal_label_count\":0}},"
+    "\"semantics\":\"all-required-labels-v1\",\"principal_label_count\":0},"
+    "\"title_policy_id\":\"title-field-v1\"},"
     "\"results\":[{\"chunk_id\":\"hybrid-guide\",\"citation\":{\"path\":\"guides/hybrid.md\","
     "\"start_line\":1,\"end_line\":6},\"content\":\"hybrid retrieval combines lexical and semantic "
     "ranks with reciprocal rank fusion\",\"score\":0.032522473484277725,\"ranking\":{\"lexical\":{"
-    "\"rank\":1,\"score\":2.0587539672851562},\"vector\":{\"rank\":2,\"score\":0.9938837289810181}}}],"
+    "\"rank\":1,\"score\":2.0587539672851562},\"vector\":{\"rank\":2,\"score\":0.9938837289810181},"
+    "\"title\":{\"score\":1.2260364294052124}}}],"
     "\"answer_policy\":{\"ground_in_results\":true,\"cite_path_and_lines\":true,"
     "\"say_when_evidence_is_insufficient\":true}}";
 
@@ -168,7 +172,7 @@ int main(void) {
         return 1;
     }
 
-    expect_streq("ss_version", "2.2.0", ss_version());
+    expect_streq("ss_version", "2.3.0", ss_version());
 
     long long generation = ss_import_json(dir, demo_interchange_json, strlen(demo_interchange_json));
     expect_true("ss_import_json publishes generation 1", generation == 1, "unexpected generation/error code");

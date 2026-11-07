@@ -107,6 +107,13 @@ pub const Service = struct {
     }
 
     /// `searchKnowledge` that also fills `trace` (S2-T4).
+    /// S5-T2: whether `searchKnowledge` in `mode` ranks with the title
+    /// field: a service with a folder derives it for every mode with a
+    /// lexical channel (`retrieval.title_policy_id` in the result).
+    pub fn titled(service: Service, mode: hybrid.RetrievalMode) bool {
+        return service.folder != null and mode != .vector;
+    }
+
     pub fn searchKnowledgeTraced(
         service: Service,
         allocator: std.mem.Allocator,

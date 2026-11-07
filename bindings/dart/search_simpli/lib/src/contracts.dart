@@ -223,6 +223,13 @@ class SearchRetrieval {
   final SearchField? searchField;
   final String? filenamePolicyId;
 
+  /// `retrieval.title_policy_id` (contract 2.3.0, `"title-field-v1"`):
+  /// present whenever the lexical channel ran under `content` or `both`, so
+  /// a file's folder names and file stem took part in the ranking
+  /// (`docs/title-field-v1.md`). Null on a 2.2.0 result, in `vector` mode
+  /// and under `filename`.
+  final String? titlePolicyId;
+
   const SearchRetrieval({
     required this.mode,
     required this.vectorDimensions,
@@ -232,6 +239,7 @@ class SearchRetrieval {
     this.embedding,
     this.searchField,
     this.filenamePolicyId,
+    this.titlePolicyId,
   });
 
   factory SearchRetrieval.fromJson(Map<String, Object?> json) =>
@@ -248,6 +256,7 @@ class SearchRetrieval {
             ? null
             : SearchField.fromJson(json['search_field']! as String),
         filenamePolicyId: json['filename_policy_id'] as String?,
+        titlePolicyId: json['title_policy_id'] as String?,
       );
 
   Map<String, Object?> toJson() => {
@@ -259,6 +268,7 @@ class SearchRetrieval {
     if (embedding != null) 'embedding': embedding,
     if (searchField != null) 'search_field': searchField!.toJson(),
     if (filenamePolicyId != null) 'filename_policy_id': filenamePolicyId,
+    if (titlePolicyId != null) 'title_policy_id': titlePolicyId,
   };
 }
 
@@ -440,6 +450,18 @@ class SearchResultItem {
     if (basename != null) 'basename': basename,
     if (matchSections != null) 'match_sections': matchSections!.toJson(),
   };
+
+  /// `ranking.title.score` (contract 2.3.0): the weighted title part inside
+  /// this result's lexical score. Under `content` only the one chunk per
+  /// file that received its file's part carries `ranking.title`; under
+  /// `both` every result does, with a null score when the file's title took
+  /// no part. Null when absent.
+  double? get titleScore {
+    final title = ranking['title'];
+    if (title is! Map) return null;
+    final score = title['score'];
+    return score is num ? score.toDouble() : null;
+  }
 
   @override
   String toString() => 'SearchResultItem($chunkId, ${citation.path})';

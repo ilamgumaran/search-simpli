@@ -91,7 +91,7 @@ pub export fn ss_last_error() callconv(.c) [*:0]const u8 {
 }
 
 /// The engine contract/build version (`contracts/CONTRACTS_VERSION`), e.g.
-/// `"2.2.0"`. Static storage: never pass this pointer to `ss_free`.
+/// `"2.3.0"`. Static storage: never pass this pointer to `ss_free`.
 pub export fn ss_version() callconv(.c) [*:0]const u8 {
     return contracts_version.ptr;
 }
@@ -1201,12 +1201,12 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     const first = parsed.value.object.get("results").?.array.items[0].object;
     try std.testing.expectEqualStrings("both", first.get("chunk_id").?.string);
 
-    const service = service_module.Service{ .engine = handle.engine };
+    const service = service_module.Service{ .engine = handle.engine, .folder = handle.folder };
     var results: [documents.len]hybrid.Result = undefined;
     var evidence_storage: [documents.len]engine_module.Evidence = undefined;
-    // S5-T2: ss_query ranks with the handle's title field; the RPC path's
-    // service here has no folder, so it is given the same field.
-    const evidence = try service.searchKnowledge(std.testing.allocator, "hybrid", &query_vector, .{ .top_k = 1, .title = try handle.folder.titleField() }, &results, &evidence_storage);
+    // S5-T2: given the handle's folder, the service ranks with the same
+    // title field as ss_query.
+    const evidence = try service.searchKnowledge(std.testing.allocator, "hybrid", &query_vector, .{ .top_k = 1 }, &results, &evidence_storage);
     var golden: std.Io.Writer.Allocating = .init(std.testing.allocator);
     defer golden.deinit();
     var golden_json = std.json.Stringify{ .writer = &golden.writer };
@@ -1228,7 +1228,7 @@ test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence
     try std.testing.expectEqualStrings("guides/hybrid.md", evidence_items[0].object.get("citation").?.object.get("path").?.string);
     try std.testing.expectEqual(false, evidence_items[1].object.get("found").?.bool);
 
-    try std.testing.expectEqualStrings("2.2.0", std.mem.span(ss_version()));
+    try std.testing.expectEqualStrings("2.3.0", std.mem.span(ss_version()));
 }
 
 test "ss_import_json publishes a queryable snapshot and reports negative codes on failure" {

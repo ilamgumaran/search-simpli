@@ -3,7 +3,7 @@ description: >
   Dart FFI bindings for Search Simpli's C ABI (ss_*) hybrid search engine —
   open a published snapshot, query it, and read cited evidence, from Dart
   or Flutter, with no daemon process.
-version: 0.3.12
+version: 0.4.0
 publish_to: "none"
 
 environment:
