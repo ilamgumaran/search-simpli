@@ -1,0 +1,1740 @@
+{
+  "schema": "j2-baseline-v1",
+  "judgments_sha256": "fc081a1c17f8a6dc2b56c6491c2e41b4e64dfa5a6a7203b9f2fc2f549a3423ac",
+  "engine_commit": "6ef4c3b44524c1ab36d8765d9baf6a4cf35a2ea4",
+  "run_commit": "27016e4bbc5d2a0f442d6b173dd11b190297b11d",
+  "natives_digest": "7a8f13ff7c5bb5a38d777c1fa6cdeaf3d4409740295b44976d9c6a062eb7b7bd",
+  "recorded": "2026-11-06",
+  "load": {
+    "before": [
+      4.23,
+      2.38,
+      1.75
+    ],
+    "after": [
+      4.23,
+      2.38,
+      1.75
+    ],
+    "top_sample": [
+      "Processes: 1013 total, 5 running, 1008 sleeping, 4742 threads",
+      "Load Avg: 4.23, 2.38, 1.75",
+      "CPU usage: 11.62% user, 4.45% sys, 83.92% idle"
+    ]
+  },
+  "top_k": 10,
+  "surfaces": {
+    "searchd": {
+      "binary": {
+        "sha256": "1799d0c1b5bd7db4d70ad3b8bd4ed394f3cd3c3adb61a63e0e0dc177fe4aba85",
+        "size": 969688,
+        "optimize": "ReleaseSmall",
+        "zig": "0.16.0"
+      },
+      "runs": {
+        "content": {
+          "slices": {
+            "control": {
+              "n": 23,
+              "success_at_1": 1.0,
+              "mrr_at_10": 1.0,
+              "ndcg_at_10": 0.998432,
+              "recall_at_5": 1.0
+            },
+            "misspelling": {
+              "n": 16,
+              "success_at_1": 0.0625,
+              "mrr_at_10": 0.198512,
+              "ndcg_at_10": 0.254308,
+              "recall_at_5": 0.375
+            },
+            "morphology": {
+              "n": 13,
+              "success_at_1": 0.153846,
+              "mrr_at_10": 0.361538,
+              "ndcg_at_10": 0.426269,
+              "recall_at_5": 0.615385
+            },
+            "accent": {
+              "n": 9,
+              "success_at_1": 0.111111,
+              "mrr_at_10": 0.25463,
+              "ndcg_at_10": 0.327377,
+              "recall_at_5": 0.444444
+            },
+            "tamil": {
+              "n": 13,
+              "success_at_1": 0.230769,
+              "mrr_at_10": 0.307692,
+              "ndcg_at_10": 0.327835,
+              "recall_at_5": 0.384615
+            },
+            "title": {
+              "n": 11,
+              "success_at_1": 0.0,
+              "mrr_at_10": 0.257937,
+              "ndcg_at_10": 0.392185,
+              "recall_at_5": 0.545455
+            },
+            "phrase": {
+              "n": 10,
+              "success_at_1": 0.8,
+              "mrr_at_10": 0.9,
+              "ndcg_at_10": 0.926186,
+              "recall_at_5": 1.0
+            }
+          },
+          "overall": {
+            "n": 95,
+            "success_at_1": 0.4,
+            "mrr_at_10": 0.515844,
+            "ndcg_at_10": 0.561669,
+            "recall_at_5": 0.652632
+          },
+          "first_grade2_rank": {
+            "c01": 1,
+            "c02": 1,
+            "c03": 1,
+            "c04": 1,
+            "c05": 1,
+            "c06": 1,
+            "c07": 1,
+            "c08": 1,
+            "c09": 1,
+            "c10": 1,
+            "c11": 1,
+            "c12": 1,
+            "c13": 1,
+            "c14": 1,
+            "c15": 1,
+            "c16": 1,
+            "c17": 1,
+            "c18": 1,
+            "c19": 1,
+            "c20": 1,
+            "c21": 1,
+            "c22": 1,
+            "c23": 1,
+            "m01": 2,
+            "m02": 3,
+            "m03": null,
+            "m04": null,
+            "m05": null,
+            "m06": null,
+            "m07": null,
+            "m08": null,
+            "m09": 1,
+            "m10": 2,
+            "m11": null,
+            "m12": null,
+            "m13": 7,
+            "m14": 3,
+            "m15": 5,
+            "m16": null,
+            "o01": 2,
+            "o02": null,
+            "o03": null,
+            "o04": 1,
+            "o05": null,
+            "o06": 2,
+            "o07": 5,
+            "o08": 1,
+            "o09": null,
+            "o10": 2,
+            "o11": 2,
+            "o12": null,
+            "o13": 2,
+            "a01": 2,
+            "a02": 3,
+            "a03": null,
+            "a04": 3,
+            "a05": null,
+            "a06": 8,
+            "a07": null,
+            "a08": 1,
+            "a09": null,
+            "t01": null,
+            "t02": null,
+            "t03": null,
+            "t04": 2,
+            "t05": null,
+            "t06": 2,
+            "t07": null,
+            "t08": null,
+            "t09": null,
+            "t10": null,
+            "g1": 1,
+            "g2": 1,
+            "g3": 1,
+            "ti01": 9,
+            "ti02": 7,
+            "ti03": 2,
+            "ti04": 3,
+            "ti05": 3,
+            "ti06": 6,
+            "ti07": 2,
+            "ti08": null,
+            "ti09": 2,
+            "ti10": null,
+            "ti11": 4,
+            "p01": 1,
+            "p02": 2,
+            "p03": 1,
+            "p04": 1,
+            "p05": 2,
+            "p06": 1,
+            "p07": 1,
+            "p08": 1,
+            "p09": 1,
+            "p10": 1
+          },
+          "slice_of": {
+            "c01": "control",
+            "c02": "control",
+            "c03": "control",
+            "c04": "control",
+            "c05": "control",
+            "c06": "control",
+            "c07": "control",
+            "c08": "control",
+            "c09": "control",
+            "c10": "control",
+            "c11": "control",
+            "c12": "control",
+            "c13": "control",
+            "c14": "control",
+            "c15": "control",
+            "c16": "control",
+            "c17": "control",
+            "c18": "control",
+            "c19": "control",
+            "c20": "control",
+            "c21": "control",
+            "c22": "control",
+            "c23": "control",
+            "m01": "misspelling",
+            "m02": "misspelling",
+            "m03": "misspelling",
+            "m04": "misspelling",
+            "m05": "misspelling",
+            "m06": "misspelling",
+            "m07": "misspelling",
+            "m08": "misspelling",
+            "m09": "misspelling",
+            "m10": "misspelling",
+            "m11": "misspelling",
+            "m12": "misspelling",
+            "m13": "misspelling",
+            "m14": "misspelling",
+            "m15": "misspelling",
+            "m16": "misspelling",
+            "o01": "morphology",
+            "o02": "morphology",
+            "o03": "morphology",
+            "o04": "morphology",
+            "o05": "morphology",
+            "o06": "morphology",
+            "o07": "morphology",
+            "o08": "morphology",
+            "o09": "morphology",
+            "o10": "morphology",
+            "o11": "morphology",
+            "o12": "morphology",
+            "o13": "morphology",
+            "a01": "accent",
+            "a02": "accent",
+            "a03": "accent",
+            "a04": "accent",
+            "a05": "accent",
+            "a06": "accent",
+            "a07": "accent",
+            "a08": "accent",
+            "a09": "accent",
+            "t01": "tamil",
+            "t02": "tamil",
+            "t03": "tamil",
+            "t04": "tamil",
+            "t05": "tamil",
+            "t06": "tamil",
+            "t07": "tamil",
+            "t08": "tamil",
+            "t09": "tamil",
+            "t10": "tamil",
+            "g1": "tamil",
+            "g2": "tamil",
+            "g3": "tamil",
+            "ti01": "title",
+            "ti02": "title",
+            "ti03": "title",
+            "ti04": "title",
+            "ti05": "title",
+            "ti06": "title",
+            "ti07": "title",
+            "ti08": "title",
+            "ti09": "title",
+            "ti10": "title",
+            "ti11": "title",
+            "p01": "phrase",
+            "p02": "phrase",
+            "p03": "phrase",
+            "p04": "phrase",
+            "p05": "phrase",
+            "p06": "phrase",
+            "p07": "phrase",
+            "p08": "phrase",
+            "p09": "phrase",
+            "p10": "phrase",
+            "cn1": "negatives",
+            "cn2": "negatives",
+            "mn1": "negatives",
+            "mn2": "negatives",
+            "on1": "negatives",
+            "on2": "negatives",
+            "an1": "negatives",
+            "an2": "negatives",
+            "tn1": "negatives",
+            "tn2": "negatives",
+            "tin1": "negatives",
+            "tin2": "negatives",
+            "pn1": "negatives",
+            "pn2": "negatives"
+          },
+          "negatives": {
+            "cn1": {
+              "returned": 5,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "wishlist.md",
+                "start_line": 3,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "cn2": {
+              "returned": 8,
+              "top_hit": {
+                "root_id": "school",
+                "path": "trip-permission-museum.md",
+                "start_line": 3,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mn1": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "school",
+                "path": "trip-permission-museum.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mn2": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 9,
+                "end_line": 12
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "on1": {
+              "returned": 6,
+              "top_hit": {
+                "root_id": "school",
+                "path": "dinosaur-topic.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "on2": {
+              "returned": 10,
+              "top_hit": {
+                "root_id": "home",
+                "path": "garden-diary.md",
+                "start_line": 234,
+                "end_line": 266
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "an1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "recipes/pancakes.md",
+                "start_line": 1,
+                "end_line": 4
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "an2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "letters/letter-home-oct.txt",
+                "start_line": 1,
+                "end_line": 16
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "tamil/tamil-stories.md",
+                "start_line": 21,
+                "end_line": 23
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/பாட்டி-கடிதங்கள்.md",
+                "start_line": 9,
+                "end_line": 12
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tin1": {
+              "returned": 7,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "tin2": {
+              "returned": 8,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend-plans.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "pn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "birthday-party-wren.md",
+                "start_line": 13,
+                "end_line": 18
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "pn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "home",
+                "path": "birthday-party-wren.md",
+                "start_line": 13,
+                "end_line": 18
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            }
+          }
+        },
+        "both": {
+          "slices": {
+            "control": {
+              "n": 23,
+              "success_at_1": 0.869565,
+              "mrr_at_10": 0.923913,
+              "ndcg_at_10": 0.943154,
+              "recall_at_5": 1.0
+            },
+            "misspelling": {
+              "n": 16,
+              "success_at_1": 0.0625,
+              "mrr_at_10": 0.15625,
+              "ndcg_at_10": 0.152227,
+              "recall_at_5": 0.21875
+            },
+            "morphology": {
+              "n": 13,
+              "success_at_1": 0.076923,
+              "mrr_at_10": 0.294872,
+              "ndcg_at_10": 0.35805,
+              "recall_at_5": 0.538462
+            },
+            "accent": {
+              "n": 9,
+              "success_at_1": 0.111111,
+              "mrr_at_10": 0.219577,
+              "ndcg_at_10": 0.273807,
+              "recall_at_5": 0.333333
+            },
+            "tamil": {
+              "n": 13,
+              "success_at_1": 0.230769,
+              "mrr_at_10": 0.25641,
+              "ndcg_at_10": 0.269231,
+              "recall_at_5": 0.307692
+            },
+            "title": {
+              "n": 11,
+              "success_at_1": 0.545455,
+              "mrr_at_10": 0.684848,
+              "ndcg_at_10": 0.762441,
+              "recall_at_5": 1.0
+            },
+            "phrase": {
+              "n": 10,
+              "success_at_1": 0.8,
+              "mrr_at_10": 0.9,
+              "ndcg_at_10": 0.926186,
+              "recall_at_5": 1.0
+            }
+          },
+          "overall": {
+            "n": 95,
+            "success_at_1": 0.421053,
+            "mrr_at_10": 0.520276,
+            "ndcg_at_10": 0.551535,
+            "recall_at_5": 0.647368
+          },
+          "first_grade2_rank": {
+            "c01": 1,
+            "c02": 2,
+            "c03": 1,
+            "c04": 1,
+            "c05": 1,
+            "c06": 4,
+            "c07": 2,
+            "c08": 1,
+            "c09": 1,
+            "c10": 1,
+            "c11": 1,
+            "c12": 1,
+            "c13": 1,
+            "c14": 1,
+            "c15": 1,
+            "c16": 1,
+            "c17": 1,
+            "c18": 1,
+            "c19": 1,
+            "c20": 1,
+            "c21": 1,
+            "c22": 1,
+            "c23": 1,
+            "m01": 2,
+            "m02": null,
+            "m03": null,
+            "m04": null,
+            "m05": null,
+            "m06": null,
+            "m07": null,
+            "m08": null,
+            "m09": 1,
+            "m10": 2,
+            "m11": null,
+            "m12": null,
+            "m13": null,
+            "m14": null,
+            "m15": null,
+            "m16": null,
+            "o01": 2,
+            "o02": null,
+            "o03": null,
+            "o04": 1,
+            "o05": null,
+            "o06": null,
+            "o07": 2,
+            "o08": 2,
+            "o09": null,
+            "o10": 2,
+            "o11": 2,
+            "o12": null,
+            "o13": 3,
+            "a01": 2,
+            "a02": null,
+            "a03": null,
+            "a04": 3,
+            "a05": null,
+            "a06": 7,
+            "a07": null,
+            "a08": 1,
+            "a09": null,
+            "t01": null,
+            "t02": null,
+            "t03": null,
+            "t04": null,
+            "t05": null,
+            "t06": 3,
+            "t07": null,
+            "t08": null,
+            "t09": null,
+            "t10": null,
+            "g1": 1,
+            "g2": 1,
+            "g3": 1,
+            "ti01": 3,
+            "ti02": 1,
+            "ti03": 1,
+            "ti04": 1,
+            "ti05": 1,
+            "ti06": 5,
+            "ti07": 3,
+            "ti08": 3,
+            "ti09": 1,
+            "ti10": 1,
+            "ti11": 3,
+            "p01": 1,
+            "p02": 1,
+            "p03": 1,
+            "p04": 1,
+            "p05": 2,
+            "p06": 2,
+            "p07": 1,
+            "p08": 1,
+            "p09": 1,
+            "p10": 1
+          },
+          "slice_of": {
+            "c01": "control",
+            "c02": "control",
+            "c03": "control",
+            "c04": "control",
+            "c05": "control",
+            "c06": "control",
+            "c07": "control",
+            "c08": "control",
+            "c09": "control",
+            "c10": "control",
+            "c11": "control",
+            "c12": "control",
+            "c13": "control",
+            "c14": "control",
+            "c15": "control",
+            "c16": "control",
+            "c17": "control",
+            "c18": "control",
+            "c19": "control",
+            "c20": "control",
+            "c21": "control",
+            "c22": "control",
+            "c23": "control",
+            "m01": "misspelling",
+            "m02": "misspelling",
+            "m03": "misspelling",
+            "m04": "misspelling",
+            "m05": "misspelling",
+            "m06": "misspelling",
+            "m07": "misspelling",
+            "m08": "misspelling",
+            "m09": "misspelling",
+            "m10": "misspelling",
+            "m11": "misspelling",
+            "m12": "misspelling",
+            "m13": "misspelling",
+            "m14": "misspelling",
+            "m15": "misspelling",
+            "m16": "misspelling",
+            "o01": "morphology",
+            "o02": "morphology",
+            "o03": "morphology",
+            "o04": "morphology",
+            "o05": "morphology",
+            "o06": "morphology",
+            "o07": "morphology",
+            "o08": "morphology",
+            "o09": "morphology",
+            "o10": "morphology",
+            "o11": "morphology",
+            "o12": "morphology",
+            "o13": "morphology",
+            "a01": "accent",
+            "a02": "accent",
+            "a03": "accent",
+            "a04": "accent",
+            "a05": "accent",
+            "a06": "accent",
+            "a07": "accent",
+            "a08": "accent",
+            "a09": "accent",
+            "t01": "tamil",
+            "t02": "tamil",
+            "t03": "tamil",
+            "t04": "tamil",
+            "t05": "tamil",
+            "t06": "tamil",
+            "t07": "tamil",
+            "t08": "tamil",
+            "t09": "tamil",
+            "t10": "tamil",
+            "g1": "tamil",
+            "g2": "tamil",
+            "g3": "tamil",
+            "ti01": "title",
+            "ti02": "title",
+            "ti03": "title",
+            "ti04": "title",
+            "ti05": "title",
+            "ti06": "title",
+            "ti07": "title",
+            "ti08": "title",
+            "ti09": "title",
+            "ti10": "title",
+            "ti11": "title",
+            "p01": "phrase",
+            "p02": "phrase",
+            "p03": "phrase",
+            "p04": "phrase",
+            "p05": "phrase",
+            "p06": "phrase",
+            "p07": "phrase",
+            "p08": "phrase",
+            "p09": "phrase",
+            "p10": "phrase",
+            "cn1": "negatives",
+            "cn2": "negatives",
+            "mn1": "negatives",
+            "mn2": "negatives",
+            "on1": "negatives",
+            "on2": "negatives",
+            "an1": "negatives",
+            "an2": "negatives",
+            "tn1": "negatives",
+            "tn2": "negatives",
+            "tin1": "negatives",
+            "tin2": "negatives",
+            "pn1": "negatives",
+            "pn2": "negatives"
+          },
+          "negatives": {
+            "cn1": {
+              "returned": 5,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "wishlist.md",
+                "start_line": 3,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "cn2": {
+              "returned": 5,
+              "top_hit": {
+                "root_id": "school",
+                "path": "trip-permission-museum.md",
+                "start_line": 3,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mn1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "trip-permission-museum.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mn2": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 9,
+                "end_line": 12
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "on1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "dinosaur-topic.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "on2": {
+              "returned": 10,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend/sale-in-the-field.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "an1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "recipes/pancakes.md",
+                "start_line": 1,
+                "end_line": 4
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "an2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "letters/letter-home-oct.txt",
+                "start_line": 1,
+                "end_line": 16
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "tamil/tamil-stories.md",
+                "start_line": 21,
+                "end_line": 23
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/பாட்டி-கடிதங்கள்.md",
+                "start_line": 9,
+                "end_line": 12
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tin1": {
+              "returned": 6,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "log/homework-tracker.txt",
+                "start_line": 1,
+                "end_line": 42
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tin2": {
+              "returned": 8,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend-plans.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "pn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "birthday-party-wren.md",
+                "start_line": 13,
+                "end_line": 18
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "pn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "home",
+                "path": "birthday-party-wren.md",
+                "start_line": 13,
+                "end_line": 18
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            }
+          }
+        }
+      }
+    },
+    "python-reference": {
+      "python_version": "3.9.6",
+      "hashseed": "0",
+      "runs": {
+        "content": {
+          "slices": {
+            "control": {
+              "n": 23,
+              "success_at_1": 1.0,
+              "mrr_at_10": 1.0,
+              "ndcg_at_10": 0.998432,
+              "recall_at_5": 1.0
+            },
+            "misspelling": {
+              "n": 16,
+              "success_at_1": 0.0625,
+              "mrr_at_10": 0.198512,
+              "ndcg_at_10": 0.254308,
+              "recall_at_5": 0.375
+            },
+            "morphology": {
+              "n": 13,
+              "success_at_1": 0.153846,
+              "mrr_at_10": 0.361538,
+              "ndcg_at_10": 0.426269,
+              "recall_at_5": 0.615385
+            },
+            "accent": {
+              "n": 9,
+              "success_at_1": 0.333333,
+              "mrr_at_10": 0.485185,
+              "ndcg_at_10": 0.557531,
+              "recall_at_5": 0.777778
+            },
+            "tamil": {
+              "n": 13,
+              "success_at_1": 0.230769,
+              "mrr_at_10": 0.307692,
+              "ndcg_at_10": 0.327835,
+              "recall_at_5": 0.384615
+            },
+            "title": {
+              "n": 11,
+              "success_at_1": 0.0,
+              "mrr_at_10": 0.257937,
+              "ndcg_at_10": 0.392185,
+              "recall_at_5": 0.545455
+            },
+            "phrase": {
+              "n": 10,
+              "success_at_1": 0.8,
+              "mrr_at_10": 0.9,
+              "ndcg_at_10": 0.926186,
+              "recall_at_5": 1.0
+            }
+          },
+          "overall": {
+            "n": 95,
+            "success_at_1": 0.421053,
+            "mrr_at_10": 0.537686,
+            "ndcg_at_10": 0.583473,
+            "recall_at_5": 0.684211
+          },
+          "first_grade2_rank": {
+            "c01": 1,
+            "c02": 1,
+            "c03": 1,
+            "c04": 1,
+            "c05": 1,
+            "c06": 1,
+            "c07": 1,
+            "c08": 1,
+            "c09": 1,
+            "c10": 1,
+            "c11": 1,
+            "c12": 1,
+            "c13": 1,
+            "c14": 1,
+            "c15": 1,
+            "c16": 1,
+            "c17": 1,
+            "c18": 1,
+            "c19": 1,
+            "c20": 1,
+            "c21": 1,
+            "c22": 1,
+            "c23": 1,
+            "m01": 2,
+            "m02": 3,
+            "m03": null,
+            "m04": null,
+            "m05": null,
+            "m06": null,
+            "m07": null,
+            "m08": null,
+            "m09": 1,
+            "m10": 2,
+            "m11": null,
+            "m12": null,
+            "m13": 7,
+            "m14": 3,
+            "m15": 5,
+            "m16": null,
+            "o01": 2,
+            "o02": null,
+            "o03": null,
+            "o04": 1,
+            "o05": null,
+            "o06": 2,
+            "o07": 5,
+            "o08": 1,
+            "o09": null,
+            "o10": 2,
+            "o11": 2,
+            "o12": null,
+            "o13": 2,
+            "a01": 2,
+            "a02": 3,
+            "a03": null,
+            "a04": 3,
+            "a05": null,
+            "a06": 5,
+            "a07": 1,
+            "a08": 1,
+            "a09": 1,
+            "t01": null,
+            "t02": null,
+            "t03": null,
+            "t04": 2,
+            "t05": null,
+            "t06": 2,
+            "t07": null,
+            "t08": null,
+            "t09": null,
+            "t10": null,
+            "g1": 1,
+            "g2": 1,
+            "g3": 1,
+            "ti01": 9,
+            "ti02": 7,
+            "ti03": 2,
+            "ti04": 3,
+            "ti05": 3,
+            "ti06": 6,
+            "ti07": 2,
+            "ti08": null,
+            "ti09": 2,
+            "ti10": null,
+            "ti11": 4,
+            "p01": 1,
+            "p02": 2,
+            "p03": 1,
+            "p04": 1,
+            "p05": 2,
+            "p06": 1,
+            "p07": 1,
+            "p08": 1,
+            "p09": 1,
+            "p10": 1
+          },
+          "slice_of": {
+            "c01": "control",
+            "c02": "control",
+            "c03": "control",
+            "c04": "control",
+            "c05": "control",
+            "c06": "control",
+            "c07": "control",
+            "c08": "control",
+            "c09": "control",
+            "c10": "control",
+            "c11": "control",
+            "c12": "control",
+            "c13": "control",
+            "c14": "control",
+            "c15": "control",
+            "c16": "control",
+            "c17": "control",
+            "c18": "control",
+            "c19": "control",
+            "c20": "control",
+            "c21": "control",
+            "c22": "control",
+            "c23": "control",
+            "m01": "misspelling",
+            "m02": "misspelling",
+            "m03": "misspelling",
+            "m04": "misspelling",
+            "m05": "misspelling",
+            "m06": "misspelling",
+            "m07": "misspelling",
+            "m08": "misspelling",
+            "m09": "misspelling",
+            "m10": "misspelling",
+            "m11": "misspelling",
+            "m12": "misspelling",
+            "m13": "misspelling",
+            "m14": "misspelling",
+            "m15": "misspelling",
+            "m16": "misspelling",
+            "o01": "morphology",
+            "o02": "morphology",
+            "o03": "morphology",
+            "o04": "morphology",
+            "o05": "morphology",
+            "o06": "morphology",
+            "o07": "morphology",
+            "o08": "morphology",
+            "o09": "morphology",
+            "o10": "morphology",
+            "o11": "morphology",
+            "o12": "morphology",
+            "o13": "morphology",
+            "a01": "accent",
+            "a02": "accent",
+            "a03": "accent",
+            "a04": "accent",
+            "a05": "accent",
+            "a06": "accent",
+            "a07": "accent",
+            "a08": "accent",
+            "a09": "accent",
+            "t01": "tamil",
+            "t02": "tamil",
+            "t03": "tamil",
+            "t04": "tamil",
+            "t05": "tamil",
+            "t06": "tamil",
+            "t07": "tamil",
+            "t08": "tamil",
+            "t09": "tamil",
+            "t10": "tamil",
+            "g1": "tamil",
+            "g2": "tamil",
+            "g3": "tamil",
+            "ti01": "title",
+            "ti02": "title",
+            "ti03": "title",
+            "ti04": "title",
+            "ti05": "title",
+            "ti06": "title",
+            "ti07": "title",
+            "ti08": "title",
+            "ti09": "title",
+            "ti10": "title",
+            "ti11": "title",
+            "p01": "phrase",
+            "p02": "phrase",
+            "p03": "phrase",
+            "p04": "phrase",
+            "p05": "phrase",
+            "p06": "phrase",
+            "p07": "phrase",
+            "p08": "phrase",
+            "p09": "phrase",
+            "p10": "phrase",
+            "cn1": "negatives",
+            "cn2": "negatives",
+            "mn1": "negatives",
+            "mn2": "negatives",
+            "on1": "negatives",
+            "on2": "negatives",
+            "an1": "negatives",
+            "an2": "negatives",
+            "tn1": "negatives",
+            "tn2": "negatives",
+            "tin1": "negatives",
+            "tin2": "negatives",
+            "pn1": "negatives",
+            "pn2": "negatives"
+          },
+          "negatives": {
+            "cn1": {
+              "returned": 5,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "wishlist.md",
+                "start_line": 3,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "cn2": {
+              "returned": 8,
+              "top_hit": {
+                "root_id": "school",
+                "path": "trip-permission-museum.md",
+                "start_line": 3,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mn1": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "school",
+                "path": "trip-permission-museum.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mn2": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 9,
+                "end_line": 12
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "on1": {
+              "returned": 6,
+              "top_hit": {
+                "root_id": "school",
+                "path": "dinosaur-topic.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "on2": {
+              "returned": 10,
+              "top_hit": {
+                "root_id": "home",
+                "path": "garden-diary.md",
+                "start_line": 234,
+                "end_line": 266
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "an1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "recipes/pancakes.md",
+                "start_line": 1,
+                "end_line": 4
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "an2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "letters/letter-home-oct.txt",
+                "start_line": 1,
+                "end_line": 16
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "tamil/tamil-stories.md",
+                "start_line": 21,
+                "end_line": 23
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/பாட்டி-கடிதங்கள்.md",
+                "start_line": 9,
+                "end_line": 12
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tin1": {
+              "returned": 7,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "tin2": {
+              "returned": 8,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend-plans.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "pn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "birthday-party-wren.md",
+                "start_line": 13,
+                "end_line": 18
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "pn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "home",
+                "path": "birthday-party-wren.md",
+                "start_line": 13,
+                "end_line": 18
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            }
+          }
+        },
+        "both": {
+          "slices": {
+            "control": {
+              "n": 23,
+              "success_at_1": 0.869565,
+              "mrr_at_10": 0.923913,
+              "ndcg_at_10": 0.943154,
+              "recall_at_5": 1.0
+            },
+            "misspelling": {
+              "n": 16,
+              "success_at_1": 0.0625,
+              "mrr_at_10": 0.15625,
+              "ndcg_at_10": 0.152227,
+              "recall_at_5": 0.21875
+            },
+            "morphology": {
+              "n": 13,
+              "success_at_1": 0.076923,
+              "mrr_at_10": 0.294872,
+              "ndcg_at_10": 0.35805,
+              "recall_at_5": 0.538462
+            },
+            "accent": {
+              "n": 9,
+              "success_at_1": 0.222222,
+              "mrr_at_10": 0.337037,
+              "ndcg_at_10": 0.390865,
+              "recall_at_5": 0.555556
+            },
+            "tamil": {
+              "n": 13,
+              "success_at_1": 0.230769,
+              "mrr_at_10": 0.25641,
+              "ndcg_at_10": 0.269231,
+              "recall_at_5": 0.307692
+            },
+            "title": {
+              "n": 11,
+              "success_at_1": 0.545455,
+              "mrr_at_10": 0.684848,
+              "ndcg_at_10": 0.762441,
+              "recall_at_5": 1.0
+            },
+            "phrase": {
+              "n": 10,
+              "success_at_1": 0.8,
+              "mrr_at_10": 0.9,
+              "ndcg_at_10": 0.926186,
+              "recall_at_5": 1.0
+            }
+          },
+          "overall": {
+            "n": 95,
+            "success_at_1": 0.431579,
+            "mrr_at_10": 0.531404,
+            "ndcg_at_10": 0.562624,
+            "recall_at_5": 0.668421
+          },
+          "first_grade2_rank": {
+            "c01": 1,
+            "c02": 2,
+            "c03": 1,
+            "c04": 1,
+            "c05": 1,
+            "c06": 4,
+            "c07": 2,
+            "c08": 1,
+            "c09": 1,
+            "c10": 1,
+            "c11": 1,
+            "c12": 1,
+            "c13": 1,
+            "c14": 1,
+            "c15": 1,
+            "c16": 1,
+            "c17": 1,
+            "c18": 1,
+            "c19": 1,
+            "c20": 1,
+            "c21": 1,
+            "c22": 1,
+            "c23": 1,
+            "m01": 2,
+            "m02": null,
+            "m03": null,
+            "m04": null,
+            "m05": null,
+            "m06": null,
+            "m07": null,
+            "m08": null,
+            "m09": 1,
+            "m10": 2,
+            "m11": null,
+            "m12": null,
+            "m13": null,
+            "m14": null,
+            "m15": null,
+            "m16": null,
+            "o01": 2,
+            "o02": null,
+            "o03": null,
+            "o04": 1,
+            "o05": null,
+            "o06": null,
+            "o07": 2,
+            "o08": 2,
+            "o09": null,
+            "o10": 2,
+            "o11": 2,
+            "o12": null,
+            "o13": 3,
+            "a01": 2,
+            "a02": null,
+            "a03": null,
+            "a04": 3,
+            "a05": null,
+            "a06": 5,
+            "a07": null,
+            "a08": 1,
+            "a09": 1,
+            "t01": null,
+            "t02": null,
+            "t03": null,
+            "t04": null,
+            "t05": null,
+            "t06": 3,
+            "t07": null,
+            "t08": null,
+            "t09": null,
+            "t10": null,
+            "g1": 1,
+            "g2": 1,
+            "g3": 1,
+            "ti01": 3,
+            "ti02": 1,
+            "ti03": 1,
+            "ti04": 1,
+            "ti05": 1,
+            "ti06": 5,
+            "ti07": 3,
+            "ti08": 3,
+            "ti09": 1,
+            "ti10": 1,
+            "ti11": 3,
+            "p01": 1,
+            "p02": 1,
+            "p03": 1,
+            "p04": 1,
+            "p05": 2,
+            "p06": 2,
+            "p07": 1,
+            "p08": 1,
+            "p09": 1,
+            "p10": 1
+          },
+          "slice_of": {
+            "c01": "control",
+            "c02": "control",
+            "c03": "control",
+            "c04": "control",
+            "c05": "control",
+            "c06": "control",
+            "c07": "control",
+            "c08": "control",
+            "c09": "control",
+            "c10": "control",
+            "c11": "control",
+            "c12": "control",
+            "c13": "control",
+            "c14": "control",
+            "c15": "control",
+            "c16": "control",
+            "c17": "control",
+            "c18": "control",
+            "c19": "control",
+            "c20": "control",
+            "c21": "control",
+            "c22": "control",
+            "c23": "control",
+            "m01": "misspelling",
+            "m02": "misspelling",
+            "m03": "misspelling",
+            "m04": "misspelling",
+            "m05": "misspelling",
+            "m06": "misspelling",
+            "m07": "misspelling",
+            "m08": "misspelling",
+            "m09": "misspelling",
+            "m10": "misspelling",
+            "m11": "misspelling",
+            "m12": "misspelling",
+            "m13": "misspelling",
+            "m14": "misspelling",
+            "m15": "misspelling",
+            "m16": "misspelling",
+            "o01": "morphology",
+            "o02": "morphology",
+            "o03": "morphology",
+            "o04": "morphology",
+            "o05": "morphology",
+            "o06": "morphology",
+            "o07": "morphology",
+            "o08": "morphology",
+            "o09": "morphology",
+            "o10": "morphology",
+            "o11": "morphology",
+            "o12": "morphology",
+            "o13": "morphology",
+            "a01": "accent",
+            "a02": "accent",
+            "a03": "accent",
+            "a04": "accent",
+            "a05": "accent",
+            "a06": "accent",
+            "a07": "accent",
+            "a08": "accent",
+            "a09": "accent",
+            "t01": "tamil",
+            "t02": "tamil",
+            "t03": "tamil",
+            "t04": "tamil",
+            "t05": "tamil",
+            "t06": "tamil",
+            "t07": "tamil",
+            "t08": "tamil",
+            "t09": "tamil",
+            "t10": "tamil",
+            "g1": "tamil",
+            "g2": "tamil",
+            "g3": "tamil",
+            "ti01": "title",
+            "ti02": "title",
+            "ti03": "title",
+            "ti04": "title",
+            "ti05": "title",
+            "ti06": "title",
+            "ti07": "title",
+            "ti08": "title",
+            "ti09": "title",
+            "ti10": "title",
+            "ti11": "title",
+            "p01": "phrase",
+            "p02": "phrase",
+            "p03": "phrase",
+            "p04": "phrase",
+            "p05": "phrase",
+            "p06": "phrase",
+            "p07": "phrase",
+            "p08": "phrase",
+            "p09": "phrase",
+            "p10": "phrase",
+            "cn1": "negatives",
+            "cn2": "negatives",
+            "mn1": "negatives",
+            "mn2": "negatives",
+            "on1": "negatives",
+            "on2": "negatives",
+            "an1": "negatives",
+            "an2": "negatives",
+            "tn1": "negatives",
+            "tn2": "negatives",
+            "tin1": "negatives",
+            "tin2": "negatives",
+            "pn1": "negatives",
+            "pn2": "negatives"
+          },
+          "negatives": {
+            "cn1": {
+              "returned": 5,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "wishlist.md",
+                "start_line": 3,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "cn2": {
+              "returned": 5,
+              "top_hit": {
+                "root_id": "school",
+                "path": "trip-permission-museum.md",
+                "start_line": 3,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mn1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "trip-permission-museum.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "mn2": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "school",
+                "path": "newsletter-autumn.md",
+                "start_line": 9,
+                "end_line": 12
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "on1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "dinosaur-topic.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "on2": {
+              "returned": 10,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend/sale-in-the-field.md",
+                "start_line": 1,
+                "end_line": 5
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "an1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "recipes/pancakes.md",
+                "start_line": 1,
+                "end_line": 4
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "an2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "letters/letter-home-oct.txt",
+                "start_line": 1,
+                "end_line": 16
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tn1": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "tamil/tamil-stories.md",
+                "start_line": 21,
+                "end_line": 23
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "tamil/பாட்டி-கடிதங்கள்.md",
+                "start_line": 9,
+                "end_line": 12
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tin1": {
+              "returned": 6,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "log/homework-tracker.txt",
+                "start_line": 1,
+                "end_line": 42
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "tin2": {
+              "returned": 8,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend-plans.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "pn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "home",
+                "path": "birthday-party-wren.md",
+                "start_line": 13,
+                "end_line": 18
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "pn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "home",
+                "path": "birthday-party-wren.md",
+                "start_line": 13,
+                "end_line": 18
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

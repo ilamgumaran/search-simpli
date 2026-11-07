@@ -80,21 +80,19 @@ def zig_version() -> str | None:
 
 
 def top_sample() -> list[str]:
-    """The machine's load at the run: the header of one `top` sample and its busiest processes."""
+    """The machine's load at the run: the header lines of a `top` sample taken over one
+    second (the second of two samples, so CPU figures are a real interval). Process
+    names are left out: the baseline is committed to a public repository."""
     if platform.system() == "Darwin":
-        cmd = ["top", "-l", "1", "-n", "5", "-o", "cpu", "-stats", "command,cpu"]
+        cmd, marks = ["top", "-l", "2", "-n", "0", "-s", "1"], ("Processes", "Load Avg", "CPU usage")
     else:
-        cmd = ["top", "-b", "-n", "1", "-o", "%CPU"]
+        cmd, marks = ["top", "-b", "-n", "2", "-d", "1"], ("top -", "Tasks", "%Cpu")
     try:
         done = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
     except (OSError, subprocess.SubprocessError):
         return []
-    lines = [line.rstrip() for line in done.stdout.splitlines() if line.strip()]
-    keep = [line for line in lines if line.startswith(("Processes", "Load Avg", "CPU usage", "top -", "%Cpu", "Tasks"))]
-    header = next((i for i, line in enumerate(lines) if line.split()[:1] in (["COMMAND"], ["PID"])), None)
-    if header is not None:
-        keep += lines[header:header + 6]
-    return keep
+    lines = [line.strip() for line in done.stdout.splitlines() if line.strip().startswith(marks)]
+    return lines[-len(marks):]
 
 
 def build_searchd(scratch: Path) -> Path:
@@ -298,13 +296,28 @@ def baseline_runs(results: dict) -> dict:
     return out
 
 
-def write_baseline(target: Path, searchd: dict, python: dict) -> None:
+def engine_commit(named: str | None) -> str | None:
+    """The commit whose engine this is: HEAD, or a named commit whose Zig sources and
+    contracts HEAD carries unchanged (checked)."""
+    head = j2_git_head()
+    if not named:
+        return head
+    done = subprocess.run(["git", "diff", "--quiet", named, "HEAD", "--", "zig", "contracts"], cwd=ROOT,
+                          capture_output=True, text=True, timeout=60)
+    if done.returncode != 0:
+        raise SystemExit(f"j2_run: zig/ or contracts/ differ between {named} and HEAD")
+    full = subprocess.run(["git", "rev-parse", named], cwd=ROOT, capture_output=True, text=True, timeout=60)
+    return full.stdout.strip()
+
+
+def write_baseline(target: Path, searchd: dict, python: dict, engine: str | None) -> None:
     if searchd["judgments_sha256"] != python["judgments_sha256"]:
         raise SystemExit("j2_run: the two surfaces judged different judgments.json files")
     baseline = {
         "schema": BASELINE_SCHEMA,
         "judgments_sha256": searchd["judgments_sha256"],
-        "engine_commit": searchd["engine"]["commit"],
+        "engine_commit": engine,
+        "run_commit": searchd["engine"]["commit"],
         "natives_digest": searchd["engine"]["natives_digest"],
         "recorded": datetime.date.today().isoformat(),
         "load": searchd["load"],
@@ -329,10 +342,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", type=Path, help="write the searchd results here")
     parser.add_argument("--write-baseline", type=Path, metavar="BASELINE")
     parser.add_argument("--python-output", type=Path, help="with --write-baseline: write the Python results here")
+    parser.add_argument("--engine-commit", help="with --write-baseline: the branch point whose engine HEAD carries unchanged")
     args = parser.parse_args(argv)
     if args.compare:
         return compare(*args.compare)
-    scratch_root = args.scratch
+    scratch_root = args.scratch.resolve() if args.scratch else None
     if scratch_root:
         scratch_root.mkdir(parents=True, exist_ok=True)
     scratch = Path(tempfile.mkdtemp(prefix="j2-run-", dir=scratch_root))
@@ -361,7 +375,7 @@ def main(argv: list[str] | None = None) -> int:
         python = run_j2_pack()
         if args.python_output:
             args.python_output.write_text(json.dumps(python, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        write_baseline(args.write_baseline, results, python)
+        write_baseline(args.write_baseline, results, python, engine_commit(args.engine_commit))
         print(f"baseline written: {args.write_baseline}")
     return 0
 
