@@ -52,6 +52,11 @@ For a query q and a file f, over the files the request can see:
 Coverage keeps a one-word name match from outranking a full body answer
 (without it, J2's control row `c02` loses rank 1).
 
+Since S5-T4 the title terms are also in [fold-groups-v1](fold-groups-v1.md)'s
+key map, so a word that only a file's name holds joins its other forms' group,
+scored here as a fuzzy-v1 group is (each file its best member, counted once in
+coverage).
+
 ## Where the part goes
 
 - **`content`** (the default), with a lexical channel (`lexical` or `hybrid`

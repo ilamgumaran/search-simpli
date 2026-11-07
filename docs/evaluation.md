@@ -298,3 +298,59 @@ named (Python reference): MRR 0.775 → 0.833, nDCG 0.833 → 0.876, success@1
 `crash-safe-snapshot` gain, and `latency-breakdown` goes 1 → 2, because
 `inference` is also searched as `influence` (distance 2). That loss was
 accepted as a named move (S5-T3 ruling 1).
+
+### S5-T4: word-form groups
+
+[S5-T4](tasks/S5-T4.md) adds [fold-groups-v1](fold-groups-v1.md): at query time
+a word is also searched as the words the files hold that share its key (K:
+fold, Latin marks, English plural, Tamil suffixes), scored as one word, before
+fuzzy-v1 runs on the words without a group. J2 gained three held-out slices,
+**`morphology-heldout`** (14 rows), **`accent-heldout`** (11) and
+**`tamil-heldout`** (13), judged before any K code existed, their cells with
+the engine before S5-T4 recorded in that commit. The Python reference's v2 body
+fold was made the engine's simple fold first (the `ß` row; mirror follows
+engine), so the two surfaces now agree on every accent cell. At S5-T4
+(`searchd` ReleaseSmall; MRR@10, success@1 in brackets; S5-T3's cells above):
+
+| Slice | n | searchd content | searchd both | Python content | Python both |
+|---|---:|---:|---:|---:|---:|
+| control | 23 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+| misspelling | 16 | 0.649 (0.562) | 0.594 (0.562) | 0.649 (0.562) | 0.594 (0.562) |
+| morphology | 13 | 0.718 (0.538) | 0.679 (0.538) | 0.718 (0.538) | 0.679 (0.538) |
+| accent | 9 | 0.846 (0.778) | 0.847 (0.778) | 0.846 (0.778) | 0.847 (0.778) |
+| Tamil | 13 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+| title intent | 11 | 0.955 (0.909) | 0.955 (0.909) | 0.955 (0.909) | 0.955 (0.909) |
+| phrase | 10 | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) |
+| overall | 95 | 0.872 (0.811) | 0.857 (0.811) | 0.872 (0.811) | 0.857 (0.811) |
+| title-heldout | 8 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+| misspelling-heldout | 12 | 0.958 (0.917) | 0.958 (0.917) | 0.958 (0.917) | 0.958 (0.917) |
+| morphology-heldout | 14 | 0.690 (0.571) | 0.714 (0.571) | 0.690 (0.571) | 0.714 (0.571) |
+| accent-heldout | 11 | 0.955 (0.909) | 0.909 (0.909) | 0.955 (0.909) | 0.909 (0.909) |
+| tamil-heldout | 13 | 0.962 (0.923) | 0.962 (0.923) | 0.962 (0.923) | 0.962 (0.923) |
+
+(The held-out slices before S5-T4, through `searchd`: `morphology-heldout`
+0.369 (0.214) under `content` and 0.393 (0.214) under `both`;
+`accent-heldout` 0.500 (0.455) and 0.455 (0.455); `tamil-heldout` 0.192
+(0.154) both ways.) The S5-T1 gate passes on both surfaces and both variants
+with one row allowed, `ah11`, by orchestrator ruling 3 (`fixtures/j2/allow.json`
+says why: the declared merge guard: `méla` groups with `mela`, which the
+answer's other section holds). Four ranks
+worsen by one place, within the gate's limit: `a06` (8 → 9 under `content`,
+7 → 8 under `both`), `m03` 6 → 7 and `m16` 3 → 4 under `content`. `o10`
+returns to rank 1 (`boxes` now searches `box`, not `bones`), and `m07`
+(`libary books`) reaches rank 1. The surfaces differ only in tie order below the answer (13 `content`
+rows, no `both` row). The baseline is re-recorded at S5-T4 in its own commit.
+
+The older packs do not move, except mixed, which moves exactly as Phase 1
+traced (Python reference): MRR 0.833 → 0.796, success@1 0.70 → 0.65, above the
+bars (0.775, 0.60). Each move is S grouping a true singular and plural and
+another chunk's BM25 winning, none a stemmer error, and all were accepted as
+named moves (S5-T4 orchestrator ruling 4 on Phase 1):
+
+| Query | First relevant rank | Group | The chunk that passes, through |
+|---|---|---|---|
+| `crash-safe-snapshot` | 1 → 2 | `readers` → `reader` | `storage/compaction.md`, `reader` |
+| `permission-filter-order` | 1 → 2 | `candidates` → `candidate` | `search/hybrid.md`, `candidate` |
+| `avoid-full-corpus-scan` | 2 → 3 | `file` → `files` | `storage/compaction.md`, `files` |
+| `malicious-indexed-instructions` | 3 → 4 | `document` → `documents` | `storage/compaction.md`, `documents` |
+| `safe-old-file-cleanup` | 2 → 1 (gain) | `readers` → `reader` | the answer, `storage/compaction.md`, `reader` |

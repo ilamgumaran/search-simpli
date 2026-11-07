@@ -1,0 +1,9 @@
+{
+  "task": "S5-T4",
+  "queries": [
+    {
+      "id": "ah11",
+      "why": "The declared accent merge guard of plan ruling 11 (orchestrator ruling 3 on Phase 1): A merges mela and méla, and the other section of the same file now ranks with it, so the grade-2 passage goes 1 -> 2 under content and, because both sections are one file and both returns a file once, 1 -> out of the top 10 under both. Its loss is A's recorded cost, reported, not gated."
+    }
+  ]
+}

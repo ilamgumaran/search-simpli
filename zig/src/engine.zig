@@ -1,4 +1,5 @@
 const filename_field = @import("filename_field.zig");
+const fold = @import("fold.zig");
 const fuzzy = @import("fuzzy.zig");
 const analyzer_v2 = @import("analyzer_v2.zig");
 const hybrid = @import("hybrid.zig");
@@ -281,10 +282,36 @@ pub const Engine = struct {
         var grouped_cursors: []usize = &.{};
         defer allocator.free(grouped_cursors);
         var scored_options = options;
-        if (lookup and options.fuzzy) if (v2_tokens) |tokens| {
-            groups = try fuzzy.compute(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens);
+        // S5-T4 (fold-groups-v1): first, a term is also searched as the
+        // in-scope words that share its key; fuzzy-v1 then runs on the terms
+        // without such a group. A grouped term scores as its group alone, so
+        // its plain entry leaves the scorer's terms.
+        var plain_terms: []postings.TermEntry = &.{};
+        defer allocator.free(plain_terms);
+        var plain_frequencies: []u32 = &.{};
+        defer allocator.free(plain_frequencies);
+        if (lookup and (options.fuzzy or options.fold)) if (v2_tokens) |tokens| {
+            const computed = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens, options);
+            if (trace) |t| {
+                if (computed.folded) |g| try noteGrouped(t, g);
+                if (computed.expanded) |g| try noteExpanded(t, g);
+            }
+            // The fold groups come first in the merged list (`fold.merge`
+            // frees the two lists it was given).
+            const folded_len = if (computed.folded) |folded| folded.items.len else 0;
+            groups = try fold.merge(allocator, computed.folded, computed.expanded);
             if (groups) |*found| {
-                grouped = try fuzzy.scorerTerms(allocator, terms, if (scorer.document_frequencies != null) frequencies else null, found.*);
+                const folded = fuzzy.Groups{ .items = found.items[0..folded_len] };
+                plain_terms = try allocator.alloc(postings.TermEntry, terms.len);
+                plain_frequencies = try allocator.alloc(u32, terms.len);
+                var kept: usize = 0;
+                for (terms, 0..) |entry, i| {
+                    if (folded.of(entry.term) != null) continue;
+                    plain_terms[kept] = entry;
+                    if (scorer.document_frequencies != null) plain_frequencies[kept] = frequencies[i];
+                    kept += 1;
+                }
+                grouped = try fuzzy.scorerTerms(allocator, plain_terms[0..kept], if (scorer.document_frequencies != null) plain_frequencies[0..kept] else null, found.*);
                 grouped_cursors = try allocator.alloc(usize, grouped.?.terms.len);
                 const collection = scorer.collection;
                 scorer = postings.SparseScorer.init(engine.lexical_index, grouped.?.terms, grouped_cursors, options.bm25);
@@ -292,7 +319,6 @@ pub const Engine = struct {
                 scorer.document_frequencies = grouped.?.frequencies;
                 scorer.grouping = grouped.?.grouping();
                 scored_options.fuzzy_groups = found;
-                if (trace) |t| try noteExpanded(t, found.*);
             }
         };
         // S5-T2 (ruling 3): with the opened generation's title field, the
@@ -310,6 +336,50 @@ pub const Engine = struct {
         return hybrid.searchSparseTraced(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options, trace);
     }
 
+    /// S5-T4: a query's groups before they merge: fold-groups-v1's (when
+    /// `options.fold`), then fuzzy-v1's on the tokens without one (when
+    /// `options.fuzzy`). Both are owned by `allocator`.
+    const ComputedGroups = struct { folded: ?fuzzy.Groups = null, expanded: ?fuzzy.Groups = null };
+
+    fn computeGroups(engine: Engine, allocator: std.mem.Allocator, context: fuzzy.Context, tokens: []const []const u8, options: hybrid.SearchOptions) !ComputedGroups {
+        var out = ComputedGroups{};
+        errdefer if (out.folded) |g| g.deinit(allocator);
+        if (options.fold) {
+            if (engine.folder) |folder| {
+                // The map is the generation's, over every body term and the
+                // folder's title field; the scope is applied by
+                // `fold.compute`, member by member.
+                const field = try folder.titleField();
+                const map = try folder.keyMap(engine.lexical_index, field);
+                out.folded = try fold.compute(allocator, context, map, tokens);
+            } else {
+                var map = try fold.KeyMap.deriveIndexed(allocator, allocator, engine.lexical_index, options.title);
+                defer map.deinit(allocator);
+                out.folded = try fold.compute(allocator, context, &map, tokens);
+            }
+        }
+        if (options.fuzzy) {
+            const rest = try fold.ungrouped(allocator, tokens, out.folded);
+            defer allocator.free(rest);
+            out.expanded = try fuzzy.compute(allocator, context, rest);
+        }
+        return out;
+    }
+
+    /// S5-T4: record each fold group in `trace` (copied into
+    /// `trace.allocator`) for its `query_term_grouped` warning, the term
+    /// itself left out of the members.
+    fn noteGrouped(trace: *hybrid.Trace, groups: fuzzy.Groups) !void {
+        for (groups.items) |group| {
+            var members = std.ArrayList([]const u8).empty;
+            for (group.members) |member| {
+                if (std.mem.eql(u8, member.term, group.typed)) continue;
+                try members.append(trace.allocator, try trace.allocator.dupe(u8, member.term));
+            }
+            try trace.grouped.append(trace.allocator, .{ .term = try trace.allocator.dupe(u8, group.typed), .members = try members.toOwnedSlice(trace.allocator) });
+        }
+    }
+
     /// S5-T3: record each group in `trace` (copied into `trace.allocator`)
     /// for its `query_term_expanded` warning.
     fn noteExpanded(trace: *hybrid.Trace, groups: fuzzy.Groups) !void {
@@ -324,7 +394,7 @@ pub const Engine = struct {
     /// the title part share them), or null. Statistics as `queryTraced`
     /// takes them: roots and labels narrow the key df, a prefix does not.
     pub fn bothGroups(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, options: hybrid.SearchOptions) !?fuzzy.Groups {
-        if (!options.fuzzy or options.retrieval_mode == .vector) return null;
+        if (!(options.fuzzy or options.fold) or options.retrieval_mode == .vector) return null;
         if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id)) return null;
         const tokens = try analyzer_v2.tokenize(allocator, query_text);
         defer {
@@ -333,7 +403,16 @@ pub const Engine = struct {
         }
         var view = try scope.visibleCollection(allocator, engine.lexical_index, engine.documents, engine.statistics, engine.labeled_documents, options.visible_roots, options.principal_labels);
         defer if (view) |*v| v.deinit(allocator);
-        return fuzzy.compute(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens);
+        const computed = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens, options);
+        return fold.merge(allocator, computed.folded, computed.expanded);
+    }
+
+    /// S5-T4: whether fold-groups-v1 applies to a `field` query with
+    /// `options` (`retrieval.fold_policy_id`): `content` and `both` with a
+    /// lexical channel on an analyzer-v2 snapshot.
+    pub fn foldApplies(engine: Engine, field: filename_field.Field, options: hybrid.SearchOptions) bool {
+        if (field == .filename or options.retrieval_mode == .vector or !options.fold) return false;
+        return std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id);
     }
 
     /// S5-T3: whether `fuzzy-v1` applies to a `field` query with `options`

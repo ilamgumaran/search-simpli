@@ -32,12 +32,13 @@ import j2_run  # noqa: E402
 
 SHIPPED = REPO / "bindings" / "dart" / "search_simpli" / "native" / "macos-arm64" / "libsearch_simpli.dylib"
 # The rows where searchd's first grade-2 rank differs from the reference's, all
-# through the analyzer (accent folding the reference does and analyzer-v2 does
-# not, docs/tasks/S5-T2.md): every other J2 row agrees between the surfaces.
-# S5-T3: `a09` (`strasse`) now agrees in both variants: the engine's fuzzy-v1
-# expands it to the body's `straße` (distance 2), which the reference's full case
-# folding matches directly.
-ANALYZER_ROWS = {"content": {"a06", "a07"}, "both": {"a06"}}
+# through the analyzer (docs/tasks/S5-T2.md): every other J2 row agrees between
+# the surfaces. S5-T3: `a09` (`strasse`) agreed in both variants once the
+# engine's fuzzy-v1 expanded it to the body's `straße`. S5-T4 (the `ß` row of
+# its ruling 10): the reference's body fold is the engine's simple fold, so
+# `a06` and `a07` (`straße` in the body, full case folding made it `strasse`)
+# agree too, and no row differs.
+ANALYZER_ROWS = {"content": set(), "both": set()}
 # Rows whose answer ties a grade-0 chunk at an equal score (`j2_run.py --compare`:
 # "tie order", document index in searchd, chunk id in the reference); the test
 # checks that the two scores are equal. S5-T3 Phase 1 had `mh08` and `mh11` here

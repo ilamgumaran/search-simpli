@@ -283,7 +283,8 @@ class FilenameSearchTests(unittest.TestCase):
         self.assertEqual(paths("ﬁ"), ["ﬁ.md"])
         self.assertEqual(paths("i"), [])
         self.assertEqual(paths("İ"), ["İ.md"])
-        self.assertEqual(tokenize("Straße"), ["strasse"])
+        # S5-T4 (the `ß` row): the body analyzer folds as the engine does, simply.
+        self.assertEqual(tokenize("Straße"), ["straße"])
 
     def test_export_v2_includes_policy_but_not_python_filename_postings(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

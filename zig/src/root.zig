@@ -48,6 +48,8 @@ pub const query_utf8_test = @import("query_utf8_test.zig");
 pub const filename_field_test = @import("filename_field_test.zig");
 pub const title_field_test = @import("title_field_test.zig");
 pub const fuzzy_test = @import("fuzzy_test.zig");
+pub const fold_test = @import("fold_test.zig");
+pub const fold_groups_test = @import("fold_groups_test.zig");
 pub const filename_complexity_test = @import("filename_complexity_test.zig");
 pub const nfc_timing_test = @import("nfc_timing_test.zig");
 pub const find_fixture_test = @import("find_fixture_test.zig");
@@ -143,6 +145,8 @@ test "load every engine module test suite" {
     _ = filename_field_test;
     _ = title_field_test;
     _ = fuzzy_test;
+    _ = fold_test;
+    _ = fold_groups_test;
     _ = filename_complexity_test;
     _ = cli_test;
 }

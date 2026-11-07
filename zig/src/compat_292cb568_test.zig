@@ -172,3 +172,29 @@ test "S5-T3: a 292cb568 index opens and expands a misspelt word (fuzzy-v1 needs 
     const none = try scoped.searchKnowledge(a, "gardne", &.{}, off, .{}, try a.alloc(hybrid.Result, 4), try a.alloc(engine_module.Evidence, 4), null);
     try std.testing.expectEqual(@as(usize, 0), none.len);
 }
+
+test "S5-T4: a 292cb568 index opens and groups a plural with its singular (fold-groups-v1 needs no rebuild)" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try copyFixture(a, tmp.dir);
+    const opened = try snapshot_open.openScoped(a, io, tmp.dir);
+    defer opened.folder.close();
+    const options = hybrid.SearchOptions{ .retrieval_mode = .lexical, .top_k = 4 };
+    try std.testing.expect(opened.engine.foldApplies(.content, options));
+    const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+    // `frog` is held by no chunk and no name; `frogs` (garden.md) shares its key.
+    var trace = hybrid.Trace{ .allocator = a, .io = io };
+    const evidence = try scoped.searchKnowledge(a, "frog", &.{}, options, .{}, try a.alloc(hybrid.Result, 4), try a.alloc(engine_module.Evidence, 4), &trace);
+    try std.testing.expect(evidence.len >= 1);
+    try std.testing.expectEqualStrings("garden.md", evidence[0].path);
+    try std.testing.expectEqual(@as(usize, 1), trace.grouped.items.len);
+    try std.testing.expectEqualStrings("frogs", trace.grouped.items[0].members[0]);
+    // With fold-groups-v1 off the same word finds nothing, as before S5-T4.
+    var off = options;
+    off.fold = false;
+    const none = try scoped.searchKnowledge(a, "frog", &.{}, off, .{}, try a.alloc(hybrid.Result, 4), try a.alloc(engine_module.Evidence, 4), null);
+    try std.testing.expectEqual(@as(usize, 0), none.len);
+}

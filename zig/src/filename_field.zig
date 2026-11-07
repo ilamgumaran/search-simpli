@@ -753,8 +753,18 @@ fn scoreQuery(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, 
 }
 
 fn scoreBodyGroup(allocator: std.mem.Allocator, body_index: postings.Index, fuzzy_group: fuzzy.Group, body_visible: ?[]const bool, body_avg: f32, body_n: u32, options: hybrid.SearchOptions, body_scores: []f32, body_seen: []bool, body_touched: *std.ArrayList(u32)) !void {
-    var lists: [fuzzy.max_expansions][]const postings.Posting = undefined;
-    var weights: [fuzzy.max_expansions]f32 = undefined;
+    // S5-T4: a fold-groups-v1 group may hold more than fuzzy-v1's three.
+    var list_buffer: [fuzzy.max_expansions][]const postings.Posting = undefined;
+    var weight_buffer: [fuzzy.max_expansions]f32 = undefined;
+    var cursor_buffer: [fuzzy.max_expansions]usize = @splat(0);
+    const many = fuzzy_group.members.len > fuzzy.max_expansions;
+    const lists: [][]const postings.Posting = if (many) try allocator.alloc([]const postings.Posting, fuzzy_group.members.len) else &list_buffer;
+    defer if (many) allocator.free(lists);
+    const weights: []f32 = if (many) try allocator.alloc(f32, fuzzy_group.members.len) else &weight_buffer;
+    defer if (many) allocator.free(weights);
+    const cursors: []usize = if (many) try allocator.alloc(usize, fuzzy_group.members.len) else &cursor_buffer;
+    defer if (many) allocator.free(cursors);
+    @memset(cursors, 0);
     var len: usize = 0;
     var df: u32 = 0;
     for (fuzzy_group.members) |member| if (member.body) |ent| {
@@ -770,7 +780,6 @@ fn scoreBodyGroup(allocator: std.mem.Allocator, body_index: postings.Index, fuzz
         weights[len] = member.weight;
         len += 1;
     };
-    var cursors: [fuzzy.max_expansions]usize = @splat(0);
     while (true) {
         var chunk: ?u32 = null;
         for (lists[0..len], cursors[0..len]) |list, cursor| {

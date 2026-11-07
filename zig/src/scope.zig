@@ -29,6 +29,7 @@
 //! visible the index's own values are used, so an unscoped query scores
 //! exactly as before.
 const std = @import("std");
+const fold = @import("fold.zig");
 const title_field = @import("title_field.zig");
 const hybrid = @import("hybrid.zig");
 const manifest = @import("manifest.zig");
@@ -446,6 +447,15 @@ pub const Loads = struct {
     /// same 48 bytes of padding on `main` did the same).
     source: ?source.Section = null,
 
+    /// S5-T4: fold-groups-v1's key map (`fold.KeyMap.deriveIndexed`) over the
+    /// whole body dictionary and the title field, derived by the first
+    /// content or both query that groups (`Folder.keyMap`) from `blocks`
+    /// (freed by `Folder.releaseBlocks`); the scope is applied at use. Last,
+    /// after the fields the query paths read (the S4-T10 note above).
+    key_map_done: std.atomic.Value(bool) = .init(false),
+    key_map: fold.KeyMap = undefined,
+    key_map_loads: u32 = 0,
+
     fn lock(loads: *Loads) void {
         loads.mutex.lockUncancelable(loads.io);
     }
@@ -578,6 +588,28 @@ pub const Folder = struct {
         loads.filename_decoded = null;
         if (loads.title_block) |block| loads.blocks.free(block);
         loads.title_block = null;
+        if (loads.key_map_done.load(.monotonic)) {
+            loads.key_map.deinit(loads.blocks);
+            loads.key_map_done.store(false, .release);
+        }
+    }
+
+    /// S5-T4 (ruling 10): fold-groups-v1's key map, derived at the first call
+    /// (once per opened generation, under the loads' lock) over the body
+    /// dictionary and `field`'s terms (the title field, which the caller has
+    /// derived). Out of memory leaves it underived (a later call retries).
+    pub fn keyMap(folder: Folder, index: postings.Index, field: ?*const title_field.Field) !*const fold.KeyMap {
+        const loads = folder.loads;
+        if (!loads.key_map_done.load(.acquire)) {
+            loads.lock();
+            defer loads.unlock();
+            if (!loads.key_map_done.load(.monotonic)) {
+                loads.key_map_loads += 1;
+                loads.key_map = try fold.KeyMap.deriveIndexed(loads.blocks, loads.blocks, index, field);
+                loads.key_map_done.store(true, .release);
+            }
+        }
+        return &folder.loads.key_map;
     }
 
     /// S5-T2 (ruling 3): the title field, derived at the first call (once

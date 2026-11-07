@@ -107,6 +107,10 @@
         "fuzzy_policy_id": {
           "const": "fuzzy-v1",
           "description": "Fuzzy policy id (contract 2.4.0): present whenever the lexical channel ran under content or both. A query word of 5 or more Latin code points that no chunk in scope and no visible file's name holds is also searched as up to 3 dictionary words within 1 edit (5 code points) or 2 edits (6 or more) sharing its first letter (fuzzy-v1, docs/fuzzy-v1.md)."
+        },
+        "fold_policy_id": {
+          "const": "fold-groups-v1",
+          "description": "Fold policy id (contract 2.5.0): present whenever the lexical channel ran under content or both. A query word is also searched as the words of the files in scope and the visible file names that share its fold key: case and compatibility forms folded, Latin accents dropped, an English plural or one of seven Tamil suffixes taken off (fold-groups-v1, docs/fold-groups-v1.md). Misspelling tolerance (fuzzy-v1) runs only on the words that have no such group."
         }
       }
     },
@@ -318,6 +322,7 @@
             "enum": [
               "query_term_unmatched",
               "query_term_expanded",
+              "query_term_grouped",
               "query_empty_after_analysis",
               "vector_ignored",
               "candidate_depth_cut"
@@ -327,7 +332,7 @@
             "type": "string"
           },
           "term": {
-            "description": "The analysed query term (query_term_unmatched and query_term_expanded), never the index's spelling. One query_term_unmatched warning per distinct term, in query order; since 2.4.0 a query_term_expanded warning follows it when fuzzy-v1 also searched other words for it.",
+            "description": "The analysed query term (query_term_unmatched, query_term_expanded and query_term_grouped), never the index's spelling. One query_term_unmatched warning per distinct term, in query order; since 2.4.0 a query_term_expanded warning follows it when fuzzy-v1 also searched other words for it; since 2.5.0 a query_term_grouped warning follows it instead when fold-groups-v1 did. The query_term_grouped warnings of terms the files hold come after every unmatched term's, in query order.",
             "type": "string"
           },
           "expansions": {
@@ -338,6 +343,14 @@
             },
             "minItems": 1,
             "maxItems": 3
+          },
+          "members": {
+            "description": "Contract 2.5.0, query_term_grouped only: the words also searched for term because they share its fold key (fold-groups-v1), in the group's order (the most chunks in scope first, then bytes), term itself left out; never a word only hidden chunks or files hold.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
           }
         },
         "additionalProperties": false

@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.6.0 (S5-T4; contract 2.5.0; minor: ranking change and additive result fields)
+
+Query-side folding and light stemming (`fold-groups-v1`,
+`docs/fold-groups-v1.md`). A query word is also searched as the words of
+the files in scope, and of the visible file names, that share its fold
+key: case and compatibility forms folded (full-width letters, ligatures,
+`ß` as `ss`), accents dropped from Latin letters (`café` and `cafe`), an
+English plural taken off (`boxes` and `box`, `ponies` and `pony`, with a
+short keep list such as `glasses`), and seven Tamil plural and case
+suffixes taken off while two Tamil letters stay. Code written for 0.5.x
+compiles and behaves the same against 0.6.0, but a query now also finds
+the other forms of its words.
+
+- **Contracts 2.5.0** (`contracts/CONTRACTS_VERSION`). As before the
+  package accepts exactly its own contract version: a 2.4.0 library is
+  refused at `open` with `ContractsVersionMismatchException`, and the
+  natives move with the package.
+- **The members.** Every word that shares the key and is held by a chunk
+  in scope (roots, labels and the path prefix), or by a visible file's
+  name under the prefix. The typed word first, then the most chunks in
+  scope, then bytes. A word only hidden chunks or files hold is never
+  used or reported. There is no cap on the members.
+- **The scoring.** The members score as one word, as fuzzy-v1's do: one
+  document frequency (the largest of theirs), and each chunk adds its best
+  member's part, every member weighted 1.0. A file's title part does the
+  same over the names. `both` uses the same groups for its body and title
+  parts; `filename` is never grouped. `fuzzy-v1` runs only on the words
+  that have no group. A query with no group ranks exactly as under 0.5.x.
+- **New, nullable:** `SearchRetrieval.foldPolicyId` (`"fold-groups-v1"`
+  whenever the lexical channel ran under `content` or `both` on an
+  `analyzer-v2` index), `SearchWarningCode.queryTermGrouped` and
+  `SearchWarning.members`: a word with a group gets a `queryTermGrouped`
+  warning with the other words searched (the word itself left out). An
+  unmatched word keeps its `queryTermUnmatched` warning, and its
+  `queryTermGrouped` warning follows it; the grouped warnings of words the
+  files hold come after every unmatched word's, in query order.
+- **`ascii-alnum-v1` indexes** are not grouped and carry no
+  `foldPolicyId`.
+- **No index format change.** Nothing is stored in the index: the key map
+  is built from the dictionary and the file names at the first grouped
+  query on a handle (kept with the handle, freed at close). Every index a
+  0.5.x library wrote opens unchanged, and nothing is rebuilt. No C ABI
+  signature changed.
+- **Natives** rebuilt on the Mac: macOS 936,792 B (0.5.0: 884,632),
+  Android 910,944 B (858,224), iOS framework binary 917,904 B (865,096);
+  `native/SOURCE-SHA256` is `81f9c76b…`.
+
 ## 0.5.0 (S5-T3; contract 2.4.0; minor: ranking change and additive result fields)
 
 Misspelling tolerance (`fuzzy-v1`, `docs/fuzzy-v1.md`). A query word that

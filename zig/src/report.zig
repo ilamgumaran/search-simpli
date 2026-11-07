@@ -10,6 +10,7 @@
 //! | ---------------------------- | ------- | ------ | ------ |
 //! | `query_term_unmatched`       | yes     | yes    | no     |
 //! | `query_term_expanded` (S5-T3) | yes    | yes    | no     |
+//! | `query_term_grouped` (S5-T4) | yes     | yes    | no     |
 //! | `query_empty_after_analysis` | yes     | yes    | no     |
 //! | `vector_ignored`             | when a vector was passed | when passed and the snapshot has no vectors | same |
 //! | `candidate_depth_cut`        | only if candidate_k < top_k | each channel, when both channels offered candidates | only if candidate_k < top_k |
@@ -79,6 +80,35 @@ fn expandedWarning(json: *std.json.Stringify, allocator: std.mem.Allocator, expa
     try json.endObject();
 }
 
+/// S5-T4: `query_term_grouped`, the term and the words that share its key
+/// (fold-groups-v1, `fold.zig`), in the group's order, the term left out.
+fn groupedWarning(json: *std.json.Stringify, allocator: std.mem.Allocator, grouped: hybrid.Trace.Grouped) !void {
+    try json.beginObject();
+    try json.objectField("code");
+    try json.write("query_term_grouped");
+    try json.objectField("message");
+    var message = std.Io.Writer.Allocating.init(allocator);
+    defer message.deinit();
+    try message.writer.writeAll("also searched as: ");
+    for (grouped.members, 0..) |m, i| {
+        if (i != 0) try message.writer.writeAll(", ");
+        try message.writer.writeAll(m);
+    }
+    try json.write(message.written());
+    try json.objectField("term");
+    try json.write(grouped.term);
+    try json.objectField("members");
+    try json.beginArray();
+    for (grouped.members) |m| try json.write(m);
+    try json.endArray();
+    try json.endObject();
+}
+
+fn isUnmatched(trace: *const hybrid.Trace, term: []const u8) bool {
+    for (trace.unmatched.items) |item| if (std.mem.eql(u8, item.term, term)) return true;
+    return false;
+}
+
 /// Whether a channel that offered `offered` candidates gets a
 /// `candidate_depth_cut`: only when the cut can change the returned list. In
 /// hybrid mode that needs both channels to have offered candidates (a hybrid
@@ -102,7 +132,7 @@ fn hasWarnings(extras: Extras) bool {
     const trace = extras.trace;
     if (extras.vector_ignored != null) return true;
     if (extras.mode != .vector) {
-        if (trace.unique_terms == 0 or trace.unmatched.items.len != 0) return true;
+        if (trace.unique_terms == 0 or trace.unmatched.items.len != 0 or trace.grouped.items.len != 0) return true;
         if (depthCutApplies(extras, trace.lexical_candidates)) return true;
     }
     if (extras.mode != .lexical and depthCutApplies(extras, trace.semantic_candidates)) return true;
@@ -121,7 +151,16 @@ fn writeWarnings(json: *std.json.Stringify, extras: Extras) !void {
             for (trace.expanded.items) |expanded| if (std.mem.eql(u8, expanded.term, item.term)) {
                 try expandedWarning(json, trace.allocator, expanded);
             };
+            // S5-T4: or by the words that share its key.
+            for (trace.grouped.items) |grouped| if (std.mem.eql(u8, grouped.term, item.term)) {
+                try groupedWarning(json, trace.allocator, grouped);
+            };
         }
+        // S5-T4: a grouped term the files hold has no other warning; its
+        // group follows the unmatched terms', in query order.
+        for (trace.grouped.items) |grouped| if (!isUnmatched(trace, grouped.term)) {
+            try groupedWarning(json, trace.allocator, grouped);
+        };
     }
     if (extras.vector_ignored) |reason| try warning(json, "vector_ignored", reason.message(), null);
     if (extras.mode != .vector) try depthCut(json, "lexical", trace.lexical_candidates, extras);

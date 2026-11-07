@@ -93,6 +93,11 @@ fn writeEvidenceInternal(
         try json.objectField("fuzzy_policy_id");
         try json.write(@import("fuzzy.zig").policy_id);
     }
+    // S5-T4 (contract 2.5.0): content and both group; filename never does.
+    if (engine.foldApplies(field, options)) {
+        try json.objectField("fold_policy_id");
+        try json.write(@import("fold.zig").policy_id);
+    }
     try json.endObject();
     try json.objectField("results");
     try json.beginArray();

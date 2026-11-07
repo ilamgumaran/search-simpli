@@ -194,7 +194,8 @@ class SearchSimpliBindings {
   /// removing them gives the 1.1.0 output exactly):
   ///
   /// "warnings"  array, always present, usually empty, of
-  /// {"code", "message", "term"?, "expansions"?}. Codes:
+  /// {"code", "message", "term"?, "expansions"?, "members"?}.
+  /// Codes:
   /// query_term_unmatched       an analysed query word that was
   /// not found in the searched files. "term" is the
   /// query's own analysed form (lowercased under
@@ -213,6 +214,13 @@ class SearchSimpliBindings {
   /// dictionary words best first, each held by a chunk
   /// or a file name in scope (never only by hidden
   /// ones). "term" is the typed word, as above.
+  /// query_term_grouped         (2.5.0) the word was also
+  /// searched as "members", the words that share its
+  /// fold key (fold-groups-v1), in the group's order, the
+  /// word itself left out, each held by a chunk or a file
+  /// name in scope (never only by hidden ones). "term" is
+  /// the typed word, as above. A word with a group is not
+  /// expanded by fuzzy-v1.
   /// query_empty_after_analysis the query has no searchable
   /// terms (empty, punctuation, unknown script for the
   /// analyzer). Lexical and hybrid modes only.
@@ -229,7 +237,9 @@ class SearchSimpliBindings {
   /// occur there). "lexical" and/or "vector" in the message.
   /// Order of the array: query_empty_after_analysis, then the
   /// query_term_unmatched entries in query order (each
-  /// followed by its query_term_expanded entry, if any), then
+  /// followed by its query_term_expanded or query_term_grouped
+  /// entry, if any), then the query_term_grouped entries of the
+  /// words the files hold, in query order, then
   /// vector_ignored, then candidate_depth_cut.
   /// "request"   {"analyzer_id", "retrieval_mode", "top_k", "candidate_k",
   /// "path_prefix"}: what the engine used, defaults filled in

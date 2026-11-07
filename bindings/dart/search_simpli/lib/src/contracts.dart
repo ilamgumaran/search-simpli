@@ -237,6 +237,14 @@ class SearchRetrieval {
   /// `vector` mode and under `filename`.
   final String? fuzzyPolicyId;
 
+  /// `retrieval.fold_policy_id` (contract 2.5.0, `"fold-groups-v1"`):
+  /// present whenever the lexical channel ran under `content` or `both` on an
+  /// `analyzer-v2` index, so a query word was also searched as the words that
+  /// share its fold key: accents, case and compatibility forms, an English
+  /// plural, seven Tamil suffixes (`docs/fold-groups-v1.md`). Null on a 2.4.0
+  /// result, in `vector` mode and under `filename`.
+  final String? foldPolicyId;
+
   const SearchRetrieval({
     required this.mode,
     required this.vectorDimensions,
@@ -248,6 +256,7 @@ class SearchRetrieval {
     this.filenamePolicyId,
     this.titlePolicyId,
     this.fuzzyPolicyId,
+    this.foldPolicyId,
   });
 
   factory SearchRetrieval.fromJson(Map<String, Object?> json) =>
@@ -266,6 +275,7 @@ class SearchRetrieval {
         filenamePolicyId: json['filename_policy_id'] as String?,
         titlePolicyId: json['title_policy_id'] as String?,
         fuzzyPolicyId: json['fuzzy_policy_id'] as String?,
+        foldPolicyId: json['fold_policy_id'] as String?,
       );
 
   Map<String, Object?> toJson() => {
@@ -279,6 +289,7 @@ class SearchRetrieval {
     if (filenamePolicyId != null) 'filename_policy_id': filenamePolicyId,
     if (titlePolicyId != null) 'title_policy_id': titlePolicyId,
     if (fuzzyPolicyId != null) 'fuzzy_policy_id': fuzzyPolicyId,
+    if (foldPolicyId != null) 'fold_policy_id': foldPolicyId,
   };
 }
 
@@ -518,6 +529,10 @@ enum SearchWarningCode {
   /// Contract 2.4.0: an unmatched word was also searched as
   /// [SearchWarning.expansions].
   queryTermExpanded('query_term_expanded'),
+
+  /// Contract 2.5.0: a word was also searched as the words that share its
+  /// fold key, [SearchWarning.members].
+  queryTermGrouped('query_term_grouped'),
   queryEmptyAfterAnalysis('query_empty_after_analysis'),
   vectorIgnored('vector_ignored'),
   candidateDepthCut('candidate_depth_cut'),
@@ -541,19 +556,25 @@ class SearchWarning {
   final String codeName;
   final String message;
 
-  /// The analysed query word (`query_term_unmatched` and
-  /// `query_term_expanded`).
+  /// The analysed query word (`query_term_unmatched`,
+  /// `query_term_expanded` and `query_term_grouped`).
   final String? term;
 
   /// `query_term_expanded` only (contract 2.4.0): the dictionary words also
   /// searched for [term], best first, at most 3. Null otherwise.
   final List<String>? expansions;
 
+  /// `query_term_grouped` only (contract 2.5.0): the words also searched for
+  /// [term] because they share its fold key, in the group's order, [term]
+  /// itself left out. Null otherwise.
+  final List<String>? members;
+
   const SearchWarning({
     required this.codeName,
     required this.message,
     this.term,
     this.expansions,
+    this.members,
   });
 
   SearchWarningCode get code => SearchWarningCode.fromWire(codeName);
@@ -565,6 +586,9 @@ class SearchWarning {
     expansions: (json['expansions'] as List<Object?>?)?.cast<String>().toList(
       growable: false,
     ),
+    members: (json['members'] as List<Object?>?)?.cast<String>().toList(
+      growable: false,
+    ),
   );
 
   Map<String, Object?> toJson() => {
@@ -572,6 +596,7 @@ class SearchWarning {
     'message': message,
     if (term != null) 'term': term,
     if (expansions != null) 'expansions': expansions,
+    if (members != null) 'members': members,
   };
 
   @override
@@ -581,7 +606,8 @@ class SearchWarning {
           other.codeName == codeName &&
           other.message == message &&
           other.term == term &&
-          _sameStrings(other.expansions, expansions));
+          _sameStrings(other.expansions, expansions) &&
+          _sameStrings(other.members, members));
 
   @override
   int get hashCode => Object.hash(
@@ -589,6 +615,7 @@ class SearchWarning {
     message,
     term,
     expansions == null ? null : Object.hashAll(expansions!),
+    members == null ? null : Object.hashAll(members!),
   );
 
   static bool _sameStrings(List<String>? a, List<String>? b) {

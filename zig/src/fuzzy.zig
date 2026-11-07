@@ -208,19 +208,19 @@ pub const Context = struct {
     view: ?scope.View = null,
     options: hybrid.SearchOptions,
 
-    fn heldInScope(context: Context, entry: postings.TermEntry) bool {
+    pub fn heldInScope(context: Context, entry: postings.TermEntry) bool {
         const list = context.index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
         for (list) |p| if (hybrid.inScope(context.documents[p.document_index], p.document_index, context.options)) return true;
         return false;
     }
 
-    fn keyFrequency(context: Context, entry: postings.TermEntry) u32 {
+    pub fn keyFrequency(context: Context, entry: postings.TermEntry) u32 {
         return if (context.view) |view| scope.documentFrequency(view, context.index, context.documents, entry) else entry.document_frequency;
     }
 
     /// A visible file's title holds `term` (roots and labels; `under_prefix`
     /// also asks for the file to lie under the request's prefix).
-    fn titleHeld(context: Context, field: *const title_field.Field, term: title_field.Term, under_prefix: bool) bool {
+    pub fn titleHeld(context: Context, field: *const title_field.Field, term: title_field.Term, under_prefix: bool) bool {
         for (field.termPostings(term)) |p| {
             const chunk = field.files[p.file].first_chunk;
             if (context.options.visible_roots) |mask| if (!mask.allows(chunk)) continue;

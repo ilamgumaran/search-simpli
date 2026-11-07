@@ -49,8 +49,13 @@ pub const SearchOptions = struct {
     /// nearest spellings (`fuzzy.zig`); false ranks as before S5-T3.
     fuzzy: bool = true,
     /// S5-T3: the query's fuzzy-v1 groups, set by the engine once per query
-    /// for the title part and the `both` body scoring; null: none.
+    /// for the title part and the `both` body scoring; null: none. S5-T4:
+    /// the fold-groups-v1 groups travel here too, ahead of fuzzy-v1's.
     fuzzy_groups: ?*const fuzzy.Groups = null,
+    /// S5-T4: whether a query term is also searched as the in-scope words
+    /// that share its key (`fold.zig`, fold-groups-v1); false ranks as
+    /// before S5-T4.
+    fold: bool = true,
 };
 
 /// S3-T3: which roots a request may see. `document_roots[i]` is the root
@@ -356,6 +361,13 @@ pub const Trace = struct {
         expansions: []const []const u8,
     };
 
+    /// S5-T4: a term also searched as the words that share its key
+    /// (fold-groups-v1), the term itself left out of `members`.
+    pub const Grouped = struct {
+        term: []const u8,
+        members: []const []const u8,
+    };
+
     allocator: std.mem.Allocator,
     /// Only used for the monotonic clock, and only when `profile` is set.
     io: std.Io,
@@ -371,6 +383,8 @@ pub const Trace = struct {
     unmatched: std.ArrayList(Unmatched) = .empty,
     /// S5-T3: in query order, each group of the query (`fuzzy.zig`).
     expanded: std.ArrayList(Expanded) = .empty,
+    /// S5-T4: in query order, each fold group of the query (`fold.zig`).
+    grouped: std.ArrayList(Grouped) = .empty,
     /// The scope that decides whether a dictionary term "matches" (set by
     /// `Engine.queryTraced` before the terms are resolved).
     scope_documents: []const Document = &.{},

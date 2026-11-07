@@ -12,9 +12,11 @@ on the chunk that received it) and the title part. `zig/src/fuzzy_test.zig` buil
 an index from the same term counts, derives the title field from the same paths and
 compares the expansions exactly and the scores to f32 tolerance.
 
-A query whose words the reference's body analyzer (full case folding) and the
-engine's (simple folding) analyse differently, which only `ß` does in J2, is left
-out and named in `skipped` (docs/tasks/S5-T3.md, the known surface difference).
+A query whose words the reference's body analyzer and the file-name analyzer
+analyse differently is left out and named in `skipped`. Since S5-T4 both fold
+simply (the `ß` row), so none is. The reference runs with fold-groups-v1 off
+(`fold=""`), as `zig/src/fuzzy_test.zig` runs the engine: the golden is fuzzy-v1's
+alone.
 
 The planted cases, each checked here before it is written:
 - `tamil`: a Tamil word one swap from a held one. Not Latin, so never expanded
@@ -79,7 +81,7 @@ def main() -> None:
 
     def answer(query: str) -> dict:
         hits = core.search(index, query, top_k=len(chunks), candidate_k=len(chunks), retrieval_mode="lexical",
-                           title_root_ids=roots)
+                           title_root_ids=roots, fold="")
         scored = []
         for hit in hits:
             lexical = hit["ranking"]["lexical"]["score"]

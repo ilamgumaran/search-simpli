@@ -50,13 +50,24 @@ queries = _load("queries")
 ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
 SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "negatives",
-          "title-heldout", "misspelling-heldout")
+          "title-heldout", "misspelling-heldout", "morphology-heldout", "accent-heldout", "tamil-heldout")
 # S5-T3, ruling 7 of its plan: the edits the held-out misspelling slice must hold,
 # at least this many rows of each (a distance-2 row needs a meant word of 8 or more
 # code points; "name" is a word only the answer's file or folder name holds;
 # "common" a meant word in 8 or more files; "short" a 4-code-point meant word).
 HELDOUT_MISSPELLING_MIX = {"swap": 2, "deletion": 2, "insertion": 1, "substitution": 1,
                            "two edits": 2, "name": 1, "common": 1, "short": 1}
+# S5-T4, ruling 11 of its plan: the rows each held-out slice must hold, at least
+# this many of each kind.
+HELDOUT_MORPHOLOGY_MIX = {"-ies": 2, "-ches": 2, "-oes": 2, "keep": 3, "-ing/-ed": 3, "title": 1,
+                          "query plural": 1, "query singular": 1}
+HELDOUT_ACCENT_MIX = {"short": 4, "nfkc": 2, "sharp-s": 1, "table": 1, "merge-guard": 1,
+                      "plain query": 1, "accented query": 1}
+TAMIL_RULES = ("ங்கள்", "கள்", "த்தில்", "த்தின்", "க்கு", "யில்", "யின்")
+TAMIL_GUARDS = ("accusative", "-வு noun", "keep-list pronoun")
+# The Latin letters of S5-T4's table (o-slash, d-stroke, l-stroke, h-stroke,
+# t-stroke, dotless i, ae, oe): what the "table" kind must hold.
+LATIN_TABLE_LETTERS = set("øđłħŧıæœ")
 MODES = ("knowledge", "find:words", "find:phrase", "find:prefix")
 
 
@@ -214,6 +225,29 @@ def misspelling_slice_words() -> set[str]:
     return {word for spec in queries.QUERIES if spec["slice"] == "misspelling" for word in spec["typo"][:2]}
 
 
+def heldout_words(slice_name: str) -> set[str]:
+    """Every query word and every form or fold word of an S5-T1 slice: S5-T4's
+    held-out rows of the matching slice use none."""
+    words: set[str] = set()
+    for spec in queries.QUERIES:
+        if spec["slice"] != slice_name:
+            continue
+        words.update(toks(spec["query"]))
+        for pair in spec.get("forms", ()):
+            words.update(pair)
+        if "fold" in spec:
+            words.update(spec["fold"])
+        if "guard" in spec and isinstance(spec["guard"], tuple):
+            words.update(spec["guard"])
+    return words
+
+
+def strip_marks(word: str) -> str:
+    """The word without its combining marks (NFD), for the merge guard's check
+    that two words differ only by an accent."""
+    return "".join(c for c in unicodedata.normalize("NFD", word) if not unicodedata.combining(c))
+
+
 def build_query(corpus: Corpus, spec: dict) -> dict:
     qid = spec["id"]
 
@@ -307,6 +341,100 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
         need(homograph in zt and word not in zt, f"{homograph} in the distractor, {word} not")
         checks.append({"check": "suffix guard: the word is in the answer; its homograph stem, and not the word, is in the distractor",
                        "word": word, "homograph": homograph, "kind": spec["guard_kind"]})
+    elif s == "morphology-heldout":
+        kind = spec["kind"]
+        for query_form, file_form in spec["forms"]:
+            need(query_form in query_tokens, f"{query_form} is a query word")
+            need(query_form not in first, f"{query_form} is absent from the answer")
+            need(file_form in first, f"{file_form} is present in the answer")
+            checks.append({"check": "query form absent from the answer, other form present",
+                           "query_form": query_form, "file_form": file_form, "kind": kind,
+                           **({"direction": "query plural" if len(query_form) > len(file_form) else "query singular"}
+                              if kind in ("-ies", "-ches", "-oes", "-s") else {})})
+        if kind == "keep":
+            word, merged = spec["guard"]
+            zero = [r for r in expected if r["grade"] == 0]
+            need(word in query_tokens and word in first, f"{word} is in the answer")
+            need(len(zero) == 1, "one distractor row")
+            zt = corpus.range_tokens(zero[0])
+            need(merged in zt and word not in zt, f"{merged} in the distractor, {word} not")
+            checks.append({"check": "keep guard: the word is in the answer; the form a plural rule without the keep "
+                                    "list would make, and not the word, is in the distractor",
+                           "word": word, "merged": merged, "kind": kind})
+        if kind == "title":
+            word, title_form = spec["title_only"]
+            pure = PurePosixPath(answers[0]["path"])
+            path_words = set(toks(pure.stem)) | {t for part in pure.parent.parts for t in toks(part)}
+            need(word in query_tokens, f"{word} is a query word")
+            need(word not in first and title_form not in first, f"neither {word} nor {title_form} is in the body")
+            need(title_form in path_words and word not in path_words, f"{title_form}, not {word}, is in the file name")
+            checks.append({"check": "title only: neither form in the body; the other form in the file name",
+                           "query_form": word, "title_form": title_form, "kind": kind})
+        need(kind in HELDOUT_MORPHOLOGY_MIX or kind == "-s", f"kind {kind}")
+        need(bool(spec["forms"]) or kind in ("keep", "title"), "a form pair, a keep guard or a title form")
+        reused = sorted((set(query_tokens) | {w for pair in spec["forms"] for w in pair}) & heldout_words("morphology"))
+        need(not reused, f"held out: {reused} is a query word or form of the morphology slice")
+        checks.append({"check": "held out: no query word or form is a query word or form of the morphology slice"})
+    elif s == "accent-heldout":
+        kind = spec["kind"]
+        query_form, file_form = spec["fold"]
+        need(query_form in query_tokens, f"{query_form} is a query word")
+        need(file_form in first, f"{file_form} is in the answer")
+        if kind == "merge-guard":
+            word, other = spec["guard"]
+            zero = [r for r in expected if r["grade"] == 0]
+            need(word == query_form and word in first, f"{word} is in the answer")
+            need(word != other and strip_marks(word) == strip_marks(other), f"{word} and {other} differ only by marks")
+            need(len(zero) == 1, "one distractor row")
+            zt = corpus.range_tokens(zero[0])
+            need(other in zt and word not in zt, f"{other} in the distractor, {word} not")
+            checks.append({"check": "merge guard: the word is in the answer; a word that differs from it only by an "
+                                    "accent, and not the word, is in the distractor",
+                           "word": word, "other": other, "kind": kind})
+        else:
+            need(query_form != file_form and query_form not in first, f"{query_form} is absent from the answer")
+            accented = "accented query" if not query_form.isascii() else "plain query"
+            checks.append({"check": "query form absent from the answer, the other form present",
+                           "query_form": query_form, "file_form": file_form, "kind": kind, "direction": accented,
+                           "query_code_points": len(query_form)})
+        if kind == "short":
+            need(len(query_form) <= 4, f"{query_form} has 4 code points or fewer")
+        if kind == "nfkc":
+            need(unicodedata.normalize("NFKC", file_form) != file_form, f"{file_form} has a compatibility form")
+        if kind == "sharp-s":
+            need("ß" in query_form + file_form and "ss" in query_form + file_form, "one form has ß, the other ss")
+        if kind == "table":
+            need(bool(LATIN_TABLE_LETTERS & set(query_form + file_form)), "a letter of the Latin table")
+        need(kind in HELDOUT_ACCENT_MIX or kind == "long", f"kind {kind}")
+        reused = sorted({query_form, file_form} & heldout_words("accent"))
+        need(not reused, f"held out: {reused} is a query word or fold word of the accent slice")
+        checks.append({"check": "held out: no query word or fold word is one of the accent slice"})
+    elif s == "tamil-heldout":
+        if "forms" in spec:
+            rule = spec["rule"]
+            need(rule in TAMIL_RULES, f"rule {rule}")
+            for query_form, file_form in spec["forms"]:
+                need(query_form in query_tokens, f"{query_form} is a query word")
+                need(query_form not in first, f"{query_form} is absent from the answer")
+                need(file_form in first, f"{file_form} is present in the answer")
+                need(query_form.endswith(rule) or file_form.endswith(rule), f"a form ends in {rule}")
+                checks.append({"check": "query form absent from the answer, other form present; a form ends in the rule's suffix",
+                               "query_form": query_form, "file_form": file_form, "rule": rule})
+            words = {w for pair in spec["forms"] for w in pair}
+        else:
+            word, homograph = spec["guard"]
+            zero = [r for r in expected if r["grade"] == 0]
+            need(spec["guard_kind"] in TAMIL_GUARDS, f"guard kind {spec['guard_kind']}")
+            need(word in query_tokens and word in first, f"{word} is in the answer")
+            need(len(zero) == 1, "one homograph row")
+            zt = corpus.range_tokens(zero[0])
+            need(homograph in zt and word not in zt, f"{homograph} in the distractor, {word} not")
+            checks.append({"check": "suffix guard: the word is in the answer; the word a stripper would make, and not the word, is in the distractor",
+                           "word": word, "homograph": homograph, "kind": spec["guard_kind"]})
+            words = {word, homograph}
+        reused = sorted((set(query_tokens) | words) & heldout_words("tamil"))
+        need(not reused, f"held out: {reused} is a query word or form of the Tamil slice")
+        checks.append({"check": "held out: no query word or form is a word of J2's Tamil rows"})
     elif s == "accent":
         query_form, file_form = spec["fold"]
         need(query_form in query_tokens, f"{query_form} is a query word")
@@ -369,6 +497,13 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
         item["only_form"] = bool(spec.get("only_form"))
     if s == "tamil" and "guard" in spec:
         item["guard"] = spec["guard_kind"]
+    if s in ("morphology-heldout", "accent-heldout"):
+        item["kind"] = spec["kind"]
+    if s == "tamil-heldout":
+        if "guard" in spec:
+            item["tamil_guard"] = spec["guard_kind"]
+        else:
+            item["rule"] = spec["rule"]
     if s == "phrase" and spec.get("reversed"):
         item["reversed"] = True
     item["checks"] = checks
@@ -399,6 +534,28 @@ def build_judgments(corpus: Corpus) -> dict:
     for kind, minimum in HELDOUT_MISSPELLING_MIX.items():
         if have[kind] < minimum:
             raise SystemExit(f"misspelling-heldout: {have[kind]} rows of kind {kind}, minimum {minimum}")
+    morph = [c for i in items if i["slice"] == "morphology-heldout" for c in i["checks"] if "kind" in c]
+    have = {kind: sum(1 for i in items if i["slice"] == "morphology-heldout" and i["kind"] == kind)
+            for kind in HELDOUT_MORPHOLOGY_MIX}
+    for direction in ("query plural", "query singular"):
+        have[direction] = sum(1 for c in morph if c.get("direction") == direction)
+    for kind, minimum in HELDOUT_MORPHOLOGY_MIX.items():
+        if have[kind] < minimum:
+            raise SystemExit(f"morphology-heldout: {have[kind]} rows of kind {kind}, minimum {minimum}")
+    accent = [i for i in items if i["slice"] == "accent-heldout"]
+    have = {kind: sum(1 for i in accent if i["kind"] == kind) for kind in HELDOUT_ACCENT_MIX}
+    for direction in ("plain query", "accented query"):
+        have[direction] = sum(1 for i in accent for c in i["checks"] if c.get("direction") == direction)
+    for kind, minimum in HELDOUT_ACCENT_MIX.items():
+        if have[kind] < minimum:
+            raise SystemExit(f"accent-heldout: {have[kind]} rows of kind {kind}, minimum {minimum}")
+    tamil = [i for i in items if i["slice"] == "tamil-heldout"]
+    for rule in TAMIL_RULES:
+        if not any(i.get("rule") == rule for i in tamil):
+            raise SystemExit(f"tamil-heldout: no row of the rule {rule}")
+    for kind in TAMIL_GUARDS:
+        if not any(i.get("tamil_guard") == kind for i in tamil):
+            raise SystemExit(f"tamil-heldout: no guard of the kind {kind}")
     if sum(1 for i in items if i.get("transposition")) < 5:
         raise SystemExit("fewer than 5 transpositions")
     if sum(1 for i in items if i.get("only_form")) < 3:
@@ -435,8 +592,8 @@ Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone number
 are from the ranges set aside for drama.
 
 J2 says where keyword search loses. It holds {total} queries in seven slices,
-a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3) and named
-negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
+a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3), held-out
+morphology, accent and Tamil slices (S5-T4) and named negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
 search tasks are judged against (`fixtures/j2/baseline.json`,
 `scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
 
@@ -504,6 +661,9 @@ SLICE_TEXT = {
     "negatives": "nothing answers; distractors named",
     "title-heldout": "title intent held out from S5-T2's weight; no word of the title slice",
     "misspelling-heldout": "misspellings held out from S5-T3's rule; no typed or meant word of the misspelling slice",
+    "morphology-heldout": "plural forms held out from S5-T4's key function, keep-list guards, -ing/-ed, a name-only form",
+    "accent-heldout": "accent, width and compatibility forms held out from S5-T4; short words, a merge guard",
+    "tamil-heldout": "Tamil inflections held out from S5-T4's suffix list, each rule once, three guards",
 }
 
 

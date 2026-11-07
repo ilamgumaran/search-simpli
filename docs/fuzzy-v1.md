@@ -33,7 +33,10 @@ four hold, checked cheapest first:
    names a file is not a misspelling.
 
 Only analyzer-v2 indexes expand; an `ascii-alnum-v1` index never does. The
-`filename` field is never expanded.
+`filename` field is never expanded. Since S5-T4 a word that has a
+[fold-groups-v1](fold-groups-v1.md) group (other forms of it that the files
+hold) is searched as that group and is not expanded, so J2's `boxes` (below)
+now searches `box`, not `bones`.
 
 ## The candidates
 

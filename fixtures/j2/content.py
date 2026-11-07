@@ -1332,3 +1332,241 @@ Saturday games for Pip's football team: kick-off at ten at Mill Field, home
 games in the green shirts, away games in white. Orange slices at half time,
 and a lift rota on the group chat.
 """
+
+# ------------------------------------------- S5-T4 held-out slices (files) --
+
+# Files added by S5-T4 (ruling 11 of its plan) for the morphology-heldout,
+# accent-heldout and tamil-heldout slices, written and judged before any key
+# function existed in the engine or the reference. They keep out of every word
+# an earlier J2 query searches (and of the near words fuzzy-v1 expands those
+# to). They are few files of long sections because every earlier row's BM25
+# reads the pack's chunk count, its average chunk length and (the title field)
+# its file count: a first draft of 22 short files moved 39 earlier cells of the
+# reference, these six move none. The Tamil is invented, written as everyday
+# Tamil.
+
+FILES["laptop/notes/jottings.md"] = """\
+# Hollybank Farm
+
+Hollybank Farm has six puppies this autumn, born in September to Juno, their
+old sheepdog. Wren may hold one if she sits still on hay bales in barn; they
+are black with white paws, all very sleepy. Pears ripen by October, cider
+press runs on Sundays in barn yard, one old peach tree grows on south wall,
+netted against blackbirds, with fruit only in warm summers.
+
+# Race timekeepers
+
+Two parents stand at each lane end, both with watches set to seconds. Races
+begin on whistle from Mr Quarrie. Write down each finish to nearest second on
+yellow cards, then pass cards to Ms Lune at results desk by gate. Spare
+pencils sit in tray beside her, with clipboards, rubber bands, one spare
+whistle in case Mr Quarrie loses his.
+
+# Rainy afternoons
+
+Old wooden dominoes live in tin under stairs, with two pieces missing. Wren
+stands them in long rows across hall carpet, curving round chair legs, then
+knocks over first one while everyone counts. Snap, happy families, old maid,
+rummy with Joss on wet afternoons; cards are kept in drawer by sofa, with
+rubber band round each pack.
+
+# Comic swap
+
+Pip draws one comic hero every evening: Captain Puddle, who saves ducks from
+drains, wearing wellies with every outfit, cape made from old curtain.
+Kavin draws villains: Baron Drizzle, Mister Fog. On Mondays they swap copies
+at gate; Pip colours hers with felt tips at kitchen counter, then sticks them
+in scrapbook.
+
+# Glasses
+
+Joss collects new glasses on Monday from optician on Mill Lane, ready by
+four, frames chosen last month. Old glasses go in top drawer as spares, in their blue case with cloth.
+Eye check again in twelve months; Pip also needs one in spring, booked on
+first Monday of April, morning slot, before nine if possible, with Dr Fenn.
+
+# Towpath
+
+Joss went cycling with Pip along canal towpath on Sunday, out to lock gates
+by old mill, then home, six miles in all. Ducks everywhere, one heron on far
+bank, narrowboats moored by bridge with smoke from their chimneys. Puncture
+repairs: pump stays in saddle bag, spare tube too.
+"""
+
+FILES["laptop/notes/bedtime-stories.md"] = """\
+# Méla
+
+Méla is hedgehog who rolls downhill into puddles, then sneezes. Wren invented
+her one wet evening; each story ends with Méla asleep in leaves under hedge,
+snoring softly, while owls hoot overhead.
+
+# Mela
+
+Mela, mole under Mill Lane, digs tunnels all winter. Mela hates daylight;
+Mela sings in her burrow, loudly, off key. Pip tells these stories, doing
+voices, until Wren falls asleep.
+
+# Otter
+
+Chapter Ⅰ: otter wakes by river at dawn, shakes dew from whiskers, slides
+down muddy bank into cold water. Chapter Ⅱ: otter meets heron on mudbank;
+heron stands on one leg, says nothing, flaps off, cross. Chapter Ⅲ: rain all
+evening; river rises, brown, fast, roaring under bridge; otter shelters in
+hollow willow root with two voles, telling jokes until dawn.
+
+# Chapter Ⅳ
+
+Otter finds old brass key on riverbank when water drops. Nobody knows what it
+opens. She hides it under flat stone near willow, marked with feather, then
+swims off downstream.
+"""
+
+FILES["home/household.md"] = """\
+# Sunday baking
+
+Joss makes shortcrust pastry on Sundays with cold butter, cold water, pinch of
+salt, rubbed in quickly with fingertips, rested in fridge until firm, then
+rolled out thin on floured worktop; scraps become jam tarts. Plum jam goes
+into glass jars warmed in oven: glass lids, glass funnel, wax discs, labels
+on top with month written in pen. Twelve jars last until spring.
+
+# Hooks by door
+
+Woolly hats on top row of hooks: Wren has pink with bobble, Pip has grey,
+Joss has striped one. One red glove missing, left one, since walk to bus
+stop on Monday; its partner waits on lowest hook. Aunt Edie knitted two
+scarves last winter, one green, one yellow, both far too long; they hang on
+end hook so they do not drag on floor.
+
+# News from Orchard Row
+
+Kestrels moved into Hawthorn Cottage at end of row; Mr Hobb retired from
+bakery at seventy, thirty years on; bakery reopens on Monday under Mrs Penrose, with
+sourdough every weekend morning. More news goes on noticeboard by bus stop, pinned
+with red drawing pins, beside parish notices, bus timetables.
+
+# Gate
+
+New gate, new path, new hedge at Hawthorn Cottage. Gate swings both ways,
+then clicks shut on its own, which Wren likes to try each morning on way
+past, pushing it open with one thumb, counting how long it swings, laughing.
+
+# Supper
+
+Smørrebrød on Mondays: rye bread spread with butter, topped with cucumber,
+cress, prawns, sliced radish; Joss learned it from Uncle Anders, each person
+builds their own on wooden board. Roast on Sundays, then crumble with custard;
+leftovers go into pie on Monday or soup by midweek.
+"""
+
+FILES["home/days-out/seals.md"] = """\
+# Boat from harbour
+
+Boat leaves harbour at ten, returns by noon. Grey ones lie on rocks near
+lighthouse, pups too, white, fluffy, blinking. Pack binoculars, waterproofs,
+flask, spare socks; it is windy out past headland, so wear hats. Pay at
+kiosk on quay, cash only, then queue by railings.
+"""
+
+FILES["school/noticeboard.md"] = """\
+# Assembly notes
+
+Year 2 learn maypole dancing in spring with Ms Lune, ribbons red, white,
+blue; parents watch from benches on May morning while children weave in,
+out, round. Zoe Brannock joins Year 2 from Easter, moving from coast with
+her two brothers. Wren will show her round: cloakroom, hall, peg with her
+label.
+
+# Summer fête
+
+Thistlecombe fête is on 21 June on village green: Year 5 runs lemonade
+stall, Year 2 runs tombola, parents run raffle. Pip has one speaking rôle in
+Year 5 assembly that morning: she reads first verse of harvest poem, slowly,
+facing hall. She practises at home with Joss as audience.
+
+# Tasting
+
+Ms Lune brought crème brûlée to French tasting: burnt sugar on top, custard
+underneath, tapped with spoon until it cracked. Wren had deja vu on Monday:
+same song twice in assembly, same verse, same clapping. Ms Lune says deja vu
+is French, meaning already seen.
+
+# German corner
+
+Fussball, Tennis, Schwimmen, Laufen: German sport vocabulary on wall chart by
+window. Tor is goal, Pfeife is whistle; Pip shouts Tor at every goal in
+playground. Mannschaft means side, Spieler means player, Trainer means
+coach. Ms Lune quizzes them on Mondays with flash cards.
+
+# Mean
+
+Mean: add them all, then divide by how many there are. Mean of 4, 6, 8 is 6;
+mean of 10, 20 is 15. Median is middle one once sorted; mode is most common
+one. Pip checks her mean on calculator, then explains it to Wren with
+counters on kitchen counter.
+
+# PTA flyer
+
+Autumn flyer, copied from PDF
+
+Coﬀee morning in hall each Monday, quarter past nine, run by PTA volunteers.
+Toddlers welcome; toys in corner, squash in beakers. Spare jumpers by
+oﬃce door, two pounds each, into honesty jar. Raffle at
+door; prizes donated by village shops, drawn at eleven.
+
+# Swim gala results
+
+Pip came 2ⁿᵈ in backstroke, just behind Kavin, by one stroke; her cap came
+off at turn, she kept going, medal on ribbon now on bedroom door. Wren came
+3ʳᵈ in width race, with arm bands, kicking hard. Then orange squash, crisps,
+towel round shoulders in viewing gallery.
+"""
+
+FILES["home/tamil/tamil-jottings.md"] = """\
+# Village
+
+அம்மாவின் கிராமம் ஒரு சிறிய ஊர். அங்கே எல்லோருக்கும் எல்லோரையும் தெரியும்.
+ஊர்க் குளத்தில் தாமரைப் பூக்கள் மிதக்கின்றன. மாலையில் வானத்தில் பறவைகள்
+கூட்டமாகப் பறந்தன. நகரத்தின் நடுவில் ஒரு பெரிய மணிக்கூண்டு உள்ளது. அது
+ஒவ்வொரு மணிக்கும் அடிக்கும். அதன் அருகே சந்தை கூடுகிறது.
+
+# Work
+
+அப்பாவுக்கு இந்த வாரம் நிறைய வேலை. இரவு தாமதமாகத்தான் வருவார். அதனால்
+அம்மா சமைக்கிறார். ஞாயிறு அன்று அவர் ஓய்வு எடுப்பார். அன்று எல்லோரும்
+சேர்ந்து சாப்பிடுவோம்.
+
+# Festival
+
+கோயில் சிலையின் கையில் ஒரு வேல் இருக்கிறது. திருவிழா அன்று அதற்கு மாலை
+போட்டோம். பிரசாதமாக சர்க்கரைப் பொங்கல் கிடைத்தது. இரவு முழுவதும் மேளம்
+ஒலித்தது.
+
+# Kavin
+
+ரென் ஆற்றின் படம் வரைந்தாள். நீல நிறம் நிறைய பயன்படுத்தினாள். பிப்பின் நண்பர்
+கவின் ஊருக்கு வந்தான். இருவரும் மைதானத்தில் கிரிக்கெட் விளையாடினார்கள். ரென்
+என் தங்கை. அவளுக்கு ஏழு வயது. கவினின் தம்பியின் பெயர் சிவா. அவனுக்கு ஐந்து
+வயது.
+
+# Result
+
+ஓவியப் போட்டியின் முடிவு திங்கள் அன்று வரும். எல்லோரும் ஆவலுடன்
+காத்திருக்கிறோம். ரென் தன் ஓவியத்தை இரண்டு முறை சரிபார்த்தாள்.
+
+# Haircut
+
+ரென் நேற்று முடி வெட்டிக்கொண்டாள். இப்போது குட்டையாக இருக்கிறது. அவளுக்கு அது
+பிடித்திருக்கிறது. அம்மா புகைப்படம் எடுத்தார்.
+
+# River
+
+சிவப்புப் பெட்டி ஒன்று அலமாரி மேல் இருக்கிறது. அதில் பழைய பொம்மைகள் உள்ளன.
+குருவியின் கூடு ஜன்னல் அருகே இருக்கிறது. நாங்கள் ஞாயிறு அன்று ஆற்றில்
+நீந்தினோம். தண்ணீர் குளிராக இருந்தது. அப்பா கரையில் காத்திருந்தார்.
+
+# Together
+
+நாம் எல்லோரும் சேர்ந்து பாடுவோம். நாம் ஆடுவோம். நாம் சிரிப்போம். இது எங்கள்
+வகுப்புப் பாட்டு. ஒவ்வொரு வெள்ளியும் இதைப் பாடுகிறோம்.
+"""

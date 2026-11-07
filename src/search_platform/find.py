@@ -29,7 +29,7 @@ import unicodedata
 from collections import Counter
 
 from .access import is_authorized
-from .core import TOKEN_PATTERN, VARIATION_SELECTORS, ReadError, tokenize
+from .core import TOKEN_PATTERN, VARIATION_SELECTORS, ReadError, simple_fold, tokenize
 
 MODES = ("words", "phrase", "prefix")
 DEFAULT_PAGE_SIZE = 20
@@ -96,7 +96,7 @@ def tokenize_positioned(text: str) -> list[tuple[str, int, int]]:
         indexes = kept[match.start():match.end()]
         start = min(starts[k] for k in indexes)
         end = max(ends[k] for k in indexes)
-        tokens.append((match.group().casefold(), start, end - start))
+        tokens.append((simple_fold(match.group()), start, end - start))
     return tokens
 
 
