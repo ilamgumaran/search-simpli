@@ -114,3 +114,107 @@ A second controlled suite exercises the dependency-free ground-up PPMI semantic 
 `fixtures/mixed-knowledge` and `fixtures/mixed-judgments.json` add 13 documents and 20 paraphrased queries spanning search, storage, agents, operations, systems programming, and several general domains. The exact output is saved in `benchmarks/mixed-diagnostic-2026-07-11.json`; see [the neural provider report](neural-embedding-provider.md) for the full interpretation.
 
 At k=1, BM25 scored 0.60 success, PPMI vector 0.70, local BGE neural vector 0.90, and equal-weight neural RRF 0.85. At k=3 both neural vector and hybrid found relevant evidence for all queries, but vector-only had higher MRR. This demonstrates both pretrained semantic value and a fusion regression. It remains diagnostic rather than representative because its documents and questions were authored together for this project.
+
+## J2: the judged fixture (S5-T1)
+
+`fixtures/j2/` is the harder judged benchmark the agreed order has named since
+4 Oct 2026 ("then a harder judged benchmark"): invented family folders (school,
+home, laptop; 68 files) and 109 judged queries that say **where keyword search
+loses**, slice by slice. It is diagnostic evidence written against this
+engine's analyzer and chunkers, not a production relevance claim: the content
+and the questions were authored together, and each miss is made real by a
+generator check, not sampled from use.
+
+**Slices** (task minimums in brackets): control 23 (20), misspelling 16 (15;
+8 transpositions), morphology 13 (12; 5 where only the form differs), accent and
+compatibility 9 (6), Tamil 13 (10; two inflectional suffix guards and one
+derivational guard kept for information), title intent 11 (10; three where only
+the folder carries the words), phrase and adjacency 10 (8; `p07` reversed), and
+14 negatives (two per slice). Grades: 2 the answer, 1 useful context, 0 a named
+distractor. Title intent grades the whole file (the intent is "open that file").
+`fixtures/j2/README.md` lists every query; `judgments.json` holds every row.
+
+**Checks.** `fixtures/j2/generate.py` asserts, before it writes, that each miss
+is real, using the analyzer-v2 simple case fold: a misspelt word is in no file
+and is one or two edits (Damerau) from a word in the answer; a morphology, accent
+or Tamil row's answer holds the other form and not the query's; a guard's
+homograph stem is in its distractor; a title row's words sit in the file name
+(stem) or only its folder, at most once in the body; a phrase row's words are
+adjacent in one row and apart in the other; a negative has no relevant row and a
+query word that occurs; and no chunk overlaps a grade-2 and a grade-0 row of one
+query.
+
+**Two surfaces, two variants.** `scripts/j2_run.py` indexes J2 through the
+shipped `searchd` (`index EMPTY --filename-index`, then `apply` with three host
+roots: `apply` cannot turn the file-name channel on for a new directory, so the
+index also holds an empty `r-legacy` root; every request names the three roots)
+and `python3 scripts/relevance_smoke.py --pack j2` runs the Python reference.
+Knowledge rows run `search_knowledge` (lexical, top 10) twice, with
+`search_field: content` (the primary number, the one later bars are written
+against unless a task's bar says `both`) and `both`; find rows (`find:words`,
+`find:phrase`, `find:prefix`) run once. Both surfaces score with the same code
+in `relevance_smoke.py`.
+
+**Metrics** per slice and overall (the mean over the 95 graded queries, not a
+mean of slices): success@1 (grade 2 at rank 1), MRR@10 (first hit of grade 1 or
+more), nDCG@10 (gain 2^g − 1, as above), recall@5 (rows of grade 1 or more found
+in the top 5), every query's first grade-2 rank, and for negatives the hit count,
+the top hit and whether it is a named distractor. A hit takes the highest-grade
+unmatched row it overlaps; each row counts once, so a second hit in the same
+title-intent file counts nothing.
+
+**The gate.** `scripts/j2_gate.py RUN.json` compares a run with the same surface
+in `fixtures/j2/baseline.json`, variant by variant. It fails when a slice's
+MRR@10 drops by more than 0.02, when a control query loses rank 1 (never
+excused), or when a query's first grade-2 rank worsens by more than three places
+(not in the top 10 counts as 11) and the run's allow-list does not name it. The
+allow-list is a file the task that moves a judgment commits beside it. CI runs
+the Python reference through the gate in the Zig-less `checks` job with
+`PYTHONHASHSEED=0`; the `searchd` numbers are recorded on macOS arm64.
+
+**Where the surfaces may differ.** Only three reasons are accepted, and
+`j2_run.py --compare A B` names one for every query whose first grade-2 rank or
+top 10 differs: the analyzer (the Python reference folds case fully for body
+text, `searchd` simply: `ﬁ`, `ﬂ`, `ß`), tie order on exactly equal scores (document
+index in `searchd`, chunk id in Python), and f32 against f64 near-ties. At the
+baseline: `a06`, `a07`, `a09` by the analyzer (`a07` and `a09` are rank 1 in Python
+and not found by `searchd`); `c06`, `c07`, `c10`, `c12`, `c14`, `c21`, `o04`, `o08` by tie
+order below the answer (no first grade-2 rank moves); nothing unexplained.
+
+**The baseline** (6 Nov 2026, engine `6ef4c3b`, `searchd` ReleaseSmall; MRR@10,
+with success@1 in brackets):
+
+| Slice | n | searchd content | searchd both | Python content | Python both |
+|---|---:|---:|---:|---:|---:|
+| control | 23 | 1.000 (1.000) | 0.924 (0.870) | 1.000 (1.000) | 0.924 (0.870) |
+| misspelling | 16 | 0.199 (0.062) | 0.156 (0.062) | 0.199 (0.062) | 0.156 (0.062) |
+| morphology | 13 | 0.362 (0.154) | 0.295 (0.077) | 0.362 (0.154) | 0.295 (0.077) |
+| accent | 9 | 0.255 (0.111) | 0.220 (0.111) | 0.485 (0.333) | 0.337 (0.222) |
+| Tamil | 13 | 0.308 (0.231) | 0.256 (0.231) | 0.308 (0.231) | 0.256 (0.231) |
+| title intent | 11 | 0.258 (0.000) | 0.685 (0.545) | 0.258 (0.000) | 0.685 (0.545) |
+| phrase | 10 | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) |
+| overall | 95 | 0.516 (0.400) | 0.520 (0.421) | 0.538 (0.421) | 0.531 (0.432) |
+
+Read it as a map, not a score. Keyword search answers the control slice and
+nothing past an exact token: a misspelt, inflected, accented or Tamil-suffixed
+word is simply dropped, and the answer survives only where another query word
+carries it (Tamil's three successes are the guards, which must stay as they
+are). Title intent is lost in the body (no answer at rank 1) and mostly
+recovered by `both`, except where only the folder carries the words. `both` costs
+control three rank-1 answers (`c02`, `c06`, `c07`: a one-word file-name match on
+`pe-kit`, `emails-to-school` and `fish-tank` fuses above a full body answer). The
+phrase slice is weaker than it was meant to be: in eight of ten rows BM25 already
+puts the adjacent answer first, because the answers are short sections that
+repeat the words in their heading; a proximity change has little to win there,
+and `p07` (the reversed row) is the one it must not flip.
+
+**Written against the code as of `6ef4c3b`**, where
+`docs/research/2026-10-luxir-learnings.md` is out of date on four points:
+§2/§5 describe Tamil words split at every vowel sign (S1-T14 keeps them whole,
+so a Tamil inflection is a clean miss, not fragment noise); §3.0/§8 predate
+`find` with positions, phrase and prefix modes (S3-T2), so phrase rows use the
+knowledge query, where proximity is absent, and keep one `find:phrase` row;
+learning 7's additive file-name weight is not what shipped (S4-T4's channel is
+stem only and `both` fuses per file with RRF); and the apostrophe already splits
+a singular possessive (`dinosaur's` → `dinosaur`, `s`), so the loss is the plural
+form, not the possessive. The research doc itself is not edited.
