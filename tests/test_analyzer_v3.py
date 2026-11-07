@@ -34,6 +34,27 @@ class FoldTableTests(unittest.TestCase):
         self.assertNotIn(0xD800, FOLD)
 
 
+class GoldenTests(unittest.TestCase):
+    def test_golden_regenerates_byte_for_byte(self):
+        """fixtures/analyzer-v3-golden.json is what the mirror writes today."""
+        if unicodedata.unidata_version != UNICODE_VERSION:
+            self.skipTest("golden generated with Unicode " + UNICODE_VERSION)
+        fresh = subprocess.run([sys.executable, str(ROOT / "scripts" / "gen_analyzer_v3_golden.py")],
+                               capture_output=True, text=True, check=True).stdout
+        self.assertEqual(fresh, (ROOT / "fixtures" / "analyzer-v3-golden.json").read_text(encoding="utf-8"))
+
+    def test_golden_holds_every_set(self):
+        import json
+        golden = json.loads((ROOT / "fixtures" / "analyzer-v3-golden.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(golden["sets"]), {"j2", "family-folder", "timing-10k", "fold-table", "traps"})
+        self.assertEqual(golden["sets"]["fold-table"]["terms"], len(FOLD))
+        self.assertEqual(golden["count"]["terms"], len(golden["same"]) + len(golden["changed"]))
+        changed = dict((t, k) for t, k in golden["changed"])
+        self.assertEqual(changed["½"], ["1", "2"])
+        self.assertEqual(changed["மரங்கள்"], ["மரம்"])
+        self.assertIn("glasses", golden["same"])
+
+
 class KTests(unittest.TestCase):
     def test_fold_traps(self):
         """Ruling 2's measured traps."""
