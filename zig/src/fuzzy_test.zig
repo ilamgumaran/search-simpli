@@ -255,6 +255,38 @@ test "scan privacy: a word held only by a label-hidden chunk or file is neither 
     try std.testing.expectEqual(@as(usize, 1), trace.unmatched.items.len);
 }
 
+test "privacy through the engine: the order's key df counts only the chunks the caller can see" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    // Visible: baker, baked, bakel and bakes once each. Hidden: bakes three
+    // times more. Counted over what the caller sees the four tie at df 1 and
+    // bytes keep baked, bakel, baker; counted over the whole index bakes
+    // (df 4) would lead, and its rank would tell of the hidden files.
+    const hidden = [_]hybrid.Document{
+        .{ .id = "v1", .text = "baker", .path = "r-home/v/one.md", .start_line = 1, .end_line = 1 },
+        .{ .id = "v2", .text = "baked", .path = "r-home/v/two.md", .start_line = 1, .end_line = 1 },
+        .{ .id = "v3", .text = "bakel", .path = "r-home/v/three.md", .start_line = 1, .end_line = 1 },
+        .{ .id = "v4", .text = "bakes", .path = "r-home/v/four.md", .start_line = 1, .end_line = 1 },
+        .{ .id = "h1", .text = "bakes", .path = "r-home/h/one.md", .start_line = 1, .end_line = 1, .required_labels = "private" },
+        .{ .id = "h2", .text = "bakes", .path = "r-home/h/two.md", .start_line = 1, .end_line = 1, .required_labels = "private" },
+        .{ .id = "h3", .text = "bakes", .path = "r-home/h/three.md", .start_line = 1, .end_line = 1, .required_labels = "private" },
+    };
+    const corpus = try sortedCorpus(a, &hidden);
+    const expect = struct {
+        fn order(engine: engine_module.Engine, allocator: std.mem.Allocator, options: hybrid.SearchOptions, want: []const []const u8) !void {
+            var trace = hybrid.Trace{ .allocator = allocator, .io = std.testing.io };
+            _ = try engine.queryTraced(allocator, "bakex", &.{}, try allocator.alloc(hybrid.Result, 8), options, &trace);
+            try std.testing.expectEqual(@as(usize, 1), trace.expanded.items.len);
+            const got = trace.expanded.items[0].expansions;
+            try std.testing.expectEqual(want.len, got.len);
+            for (want, got) |w, g| try std.testing.expectEqualStrings(w, g);
+        }
+    };
+    try expect.order(corpus.engine, a, .{ .retrieval_mode = .lexical }, &.{ "baked", "bakel", "baker" });
+    try expect.order(corpus.engine, a, .{ .retrieval_mode = .lexical, .principal_labels = &.{"private"} }, &.{ "bakes", "baked", "bakel" });
+}
+
 test "scan under a path prefix: the key df is the scope's, the candidate must be held under the prefix" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
