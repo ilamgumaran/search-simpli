@@ -108,6 +108,10 @@
         "title_policy_id": {
           "const": "title-field-v1",
           "description": "Title policy id (contract 2.3.0): present whenever the lexical channel ran under content or both. A file's folder names and file stem (title-field-v1, docs/title-field-v1.md) add a BM25 part to its best chunk."
+        },
+        "fuzzy_policy_id": {
+          "const": "fuzzy-v1",
+          "description": "Fuzzy policy id (contract 2.4.0): present whenever the lexical channel ran under content or both. A query word of 5 or more Latin code points that no chunk in scope and no visible file's name holds is also searched as up to 3 dictionary words within 1 edit (5 code points) or 2 edits (6 or more) sharing its first letter (fuzzy-v1, docs/fuzzy-v1.md)."
         }
       },
       "additionalProperties": false,
@@ -486,6 +490,15 @@
           "term": {
             "type": "string",
             "description": "The analysed query term, when relevant."
+          },
+          "expansions": {
+            "type": "array",
+            "description": "Contract 2.4.0, query_term_expanded only: the dictionary words also searched for term, best first.",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 3
           }
         },
         "additionalProperties": false,

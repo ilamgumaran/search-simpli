@@ -230,6 +230,13 @@ class SearchRetrieval {
   /// and under `filename`.
   final String? titlePolicyId;
 
+  /// `retrieval.fuzzy_policy_id` (contract 2.4.0, `"fuzzy-v1"`): present
+  /// whenever the lexical channel ran under `content` or `both` on an
+  /// `analyzer-v2` index, so a query word no file holds was also searched as
+  /// its nearest spellings (`docs/fuzzy-v1.md`). Null on a 2.3.0 result, in
+  /// `vector` mode and under `filename`.
+  final String? fuzzyPolicyId;
+
   const SearchRetrieval({
     required this.mode,
     required this.vectorDimensions,
@@ -240,6 +247,7 @@ class SearchRetrieval {
     this.searchField,
     this.filenamePolicyId,
     this.titlePolicyId,
+    this.fuzzyPolicyId,
   });
 
   factory SearchRetrieval.fromJson(Map<String, Object?> json) =>
@@ -257,6 +265,7 @@ class SearchRetrieval {
             : SearchField.fromJson(json['search_field']! as String),
         filenamePolicyId: json['filename_policy_id'] as String?,
         titlePolicyId: json['title_policy_id'] as String?,
+        fuzzyPolicyId: json['fuzzy_policy_id'] as String?,
       );
 
   Map<String, Object?> toJson() => {
@@ -269,6 +278,7 @@ class SearchRetrieval {
     if (searchField != null) 'search_field': searchField!.toJson(),
     if (filenamePolicyId != null) 'filename_policy_id': filenamePolicyId,
     if (titlePolicyId != null) 'title_policy_id': titlePolicyId,
+    if (fuzzyPolicyId != null) 'fuzzy_policy_id': fuzzyPolicyId,
   };
 }
 
@@ -504,6 +514,10 @@ class AnswerPolicy {
 /// [SearchWarning.codeName].
 enum SearchWarningCode {
   queryTermUnmatched('query_term_unmatched'),
+
+  /// Contract 2.4.0: an unmatched word was also searched as
+  /// [SearchWarning.expansions].
+  queryTermExpanded('query_term_expanded'),
   queryEmptyAfterAnalysis('query_empty_after_analysis'),
   vectorIgnored('vector_ignored'),
   candidateDepthCut('candidate_depth_cut'),
@@ -527,13 +541,19 @@ class SearchWarning {
   final String codeName;
   final String message;
 
-  /// The analysed query word (`query_term_unmatched` only).
+  /// The analysed query word (`query_term_unmatched` and
+  /// `query_term_expanded`).
   final String? term;
+
+  /// `query_term_expanded` only (contract 2.4.0): the dictionary words also
+  /// searched for [term], best first, at most 3. Null otherwise.
+  final List<String>? expansions;
 
   const SearchWarning({
     required this.codeName,
     required this.message,
     this.term,
+    this.expansions,
   });
 
   SearchWarningCode get code => SearchWarningCode.fromWire(codeName);
@@ -542,12 +562,16 @@ class SearchWarning {
     codeName: json['code']! as String,
     message: json['message']! as String,
     term: json['term'] as String?,
+    expansions: (json['expansions'] as List<Object?>?)?.cast<String>().toList(
+      growable: false,
+    ),
   );
 
   Map<String, Object?> toJson() => {
     'code': codeName,
     'message': message,
     if (term != null) 'term': term,
+    if (expansions != null) 'expansions': expansions,
   };
 
   @override
@@ -556,10 +580,25 @@ class SearchWarning {
       (other is SearchWarning &&
           other.codeName == codeName &&
           other.message == message &&
-          other.term == term);
+          other.term == term &&
+          _sameStrings(other.expansions, expansions));
 
   @override
-  int get hashCode => Object.hash(codeName, message, term);
+  int get hashCode => Object.hash(
+    codeName,
+    message,
+    term,
+    expansions == null ? null : Object.hashAll(expansions!),
+  );
+
+  static bool _sameStrings(List<String>? a, List<String>? b) {
+    if (a == null || b == null) return a == b;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 
   @override
   String toString() =>

@@ -960,6 +960,12 @@ pub fn writeSearchResult(
         try json.objectField("title_policy_id");
         try json.write(title_field.policy_id);
     }
+    // S5-T3 (contract 2.4.0): whenever the lexical channel ran under content
+    // on an analyzer-v2 generation, as for title_policy_id.
+    if (service.engine.fuzzyApplies(.content, .{ .retrieval_mode = mode })) {
+        try json.objectField("fuzzy_policy_id");
+        try json.write(@import("fuzzy.zig").policy_id);
+    }
     try json.endObject();
     try json.objectField("results");
     try json.beginArray();

@@ -1619,6 +1619,8 @@ def context_envelope(
         answer_policy["filename_matches_are_navigation"] = True
     if search_field != "filename" and retrieval_mode != "vector":
         retrieval["title_policy_id"] = TITLE_POLICY_ID
+        # Contract 2.4.0: the lexical channel ran under content or both.
+        retrieval["fuzzy_policy_id"] = FUZZY_POLICY_ID
     return {
         "tool": "search_knowledge",
         "query": query,

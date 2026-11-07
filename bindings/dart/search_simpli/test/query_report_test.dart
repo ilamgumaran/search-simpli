@@ -18,6 +18,16 @@ const String _interchange =
     '"text":"hybrid Zebra","vector":[],"required_labels":[]}'
     ']}';
 
+/// Contract 2.4.0 (S5-T3): fuzzy-v1 runs on analyzer-v2 indexes only.
+const String _interchangeV2 =
+    '{"format_version":1,"generation":1,"analyzer_id":"analyzer-v2",'
+    '"embedding_model_id":"none","documents":['
+    '{"id":"a","path":"public/a.md","start_line":1,"end_line":1,'
+    '"text":"the dinosaur museum","vector":[],"required_labels":[]},'
+    '{"id":"b","path":"public/b.md","start_line":1,"end_line":1,'
+    '"text":"dinosaurs and a tournament","vector":[],"required_labels":[]}'
+    ']}';
+
 void main() {
   late Directory dir;
   late SearchSimpli engine;
@@ -267,5 +277,65 @@ void main() {
     expect(old.warnings, isNull);
     expect(old.request, isNull);
     expect(old.profile, isNull);
+  });
+  test('contract 2.4.0: an ascii-alnum-v1 index is never expanded', () {
+    final result = engine.query('hybrid', topK: 3, mode: RetrievalMode.lexical);
+    expect(result.retrieval.fuzzyPolicyId, isNull);
+    expect(result.retrieval.toJson().containsKey('fuzzy_policy_id'), isFalse);
+  });
+
+  group('contract 2.4.0 on an analyzer-v2 index', () {
+    late Directory v2Dir;
+    late SearchSimpli v2;
+
+    setUp(() {
+      v2Dir = Directory.systemTemp.createTempSync('ss-dart-fuzzy-');
+      importSnapshotJson(v2Dir.path, _interchangeV2);
+      v2 = SearchSimpli.open(v2Dir.path);
+    });
+
+    tearDown(() {
+      v2.close();
+      v2Dir.deleteSync(recursive: true);
+    });
+
+    test('a misspelt word is unmatched, then expanded, and finds the word', () {
+      final result = v2.query(
+        'tournamnet dinosuar',
+        topK: 5,
+        mode: RetrievalMode.lexical,
+      );
+      expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v1');
+      // A record compares a list by identity: the expansions are joined.
+      expect(
+        result.warnings!.map((w) => (w.code, w.term, w.expansions?.join(','))),
+        [
+          (SearchWarningCode.queryTermUnmatched, 'tournamnet', null),
+          (SearchWarningCode.queryTermExpanded, 'tournamnet', 'tournament'),
+          (SearchWarningCode.queryTermUnmatched, 'dinosuar', null),
+          (
+            SearchWarningCode.queryTermExpanded,
+            'dinosuar',
+            'dinosaur,dinosaurs',
+          ),
+        ],
+      );
+      expect(result.warnings![3].message, 'also searched: dinosaur, dinosaurs');
+      expect(result.results.first.citation.path, 'public/b.md');
+      expect(
+        SearchKnowledgeResult.fromJson(result.toJson()).toJson(),
+        result.toJson(),
+      );
+      expect(
+        SearchWarning.fromJson(result.warnings![1].toJson()),
+        result.warnings![1],
+      );
+    });
+
+    test('a word held in scope is not expanded', () {
+      final result = v2.query('dinosaur', topK: 5, mode: RetrievalMode.lexical);
+      expect(result.warnings, isEmpty);
+      expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v1');
+    });
   });
 }

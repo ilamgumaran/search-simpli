@@ -416,6 +416,11 @@ test "warnings: query_term_unmatched kept, followed by query_term_expanded with 
     try std.testing.expectEqualStrings("dinosaurs", expansions[1].string);
     try std.testing.expectEqualStrings("also searched: dinosaur, dinosaurs", warnings[4].object.get("message").?.string);
     try std.testing.expect(report.value.object.get("results").?.array.items.len == 2);
+    // Contract 2.4.0: the policy id sits beside title_policy_id.
+    try std.testing.expectEqualStrings(fuzzy.policy_id, report.value.object.get("retrieval").?.object.get("fuzzy_policy_id").?.string);
+    var vector = try fixture.run("dinosuar", "{\"retrieval_mode\":\"vector\"}");
+    defer vector.deinit();
+    try std.testing.expect(vector.value.object.get("retrieval").?.object.get("fuzzy_policy_id") == null);
 }
 
 test "warnings: a word held only by a hidden chunk is never named as an expansion" {
