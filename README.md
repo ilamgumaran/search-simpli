@@ -47,7 +47,9 @@ Semantic modes remain separate explicit options.
 
 The [S3 integration report](docs/tasks/recovery-filename-integration.md)
 records tests, native build provenance and platform limits. Contract 2.2.0
-integrates filename search with S3, and the bundled macOS/Android/iOS arm64
+integrated filename search with S3; contract 2.3.0 (S5-T2) adds the title
+field ([title-field-v1](docs/title-field-v1.md): a file's folder names and file
+name count toward a `content` match), and the bundled macOS/Android/iOS arm64
 libraries are rebuilt from that source. Physical-device validation remains pending.
 [CAP-16](docs/requirements/cap-16-directory-filename-search.md) and its
 [format contract](docs/filename-field-format-v1.md) describe the design.
