@@ -1,35 +1,35 @@
 {
   "schema": "j2-baseline-v1",
   "judgments_sha256": "5fd2ab5eeaeffb92f257dd4fc1ac5401ec723f164bfd953e64c96ed2e4bdf0d9",
-  "engine_commit": "8709e3959df6bb9874cbd66603b5516440a5850f",
-  "run_commit": "8709e3959df6bb9874cbd66603b5516440a5850f",
-  "natives_digest": "62c37f1f5a769dbacc7c0a059a1565cd1fb4c835a1939e7b616a6ee79ab3477e",
+  "engine_commit": "6b67b897694c14a9816513267234a1a09b573a4f",
+  "run_commit": "6b67b897694c14a9816513267234a1a09b573a4f",
+  "natives_digest": "8f73bf9c3f874e98197c98c0b23237cc49358f028025a18ff35fef2934142055",
   "recorded": "2026-11-07",
   "load": {
     "before": [
-      4.14,
-      3.66,
-      3.05
+      3.83,
+      4.1,
+      3.73
     ],
     "after": [
-      4.14,
-      3.66,
-      3.05
+      3.83,
+      4.1,
+      3.73
     ],
     "top_sample": [
-      "Processes: 1012 total, 3 running, 1009 sleeping, 4612 threads",
-      "Load Avg: 4.14, 3.66, 3.05",
-      "CPU usage: 13.3% user, 1.92% sys, 85.4% idle"
+      "Processes: 982 total, 3 running, 979 sleeping, 4622 threads",
+      "Load Avg: 3.83, 4.10, 3.73",
+      "CPU usage: 3.22% user, 1.63% sys, 95.14% idle"
     ]
   },
   "top_k": 10,
   "surfaces": {
     "searchd": {
       "binary": {
-        "sha256": "cf17c735a26f5b8f2f7d047d17d40faae6908b089fbde36f6a70b892c11d91f6",
-        "size": 1008920,
-        "optimize": "ReleaseSmall",
-        "zig": "0.16.0"
+        "sha256": "3e700dc4d0fba72f2092365d557e273c7a3c81943b5ab0980e339f05469db5ad",
+        "size": 1026904,
+        "optimize": "unknown",
+        "zig": null
       },
       "runs": {
         "content": {
@@ -43,24 +43,24 @@
             },
             "misspelling": {
               "n": 16,
-              "success_at_1": 0.0625,
-              "mrr_at_10": 0.198512,
-              "ndcg_at_10": 0.254308,
-              "recall_at_5": 0.375
+              "success_at_1": 0.5,
+              "mrr_at_10": 0.592882,
+              "ndcg_at_10": 0.656141,
+              "recall_at_5": 0.6875
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.153846,
-              "mrr_at_10": 0.348718,
-              "ndcg_at_10": 0.416198,
+              "success_at_1": 0.307692,
+              "mrr_at_10": 0.429487,
+              "ndcg_at_10": 0.476349,
               "recall_at_5": 0.615385
             },
             "accent": {
               "n": 9,
-              "success_at_1": 0.111111,
-              "mrr_at_10": 0.25463,
-              "ndcg_at_10": 0.327377,
-              "recall_at_5": 0.444444
+              "success_at_1": 0.444444,
+              "mrr_at_10": 0.550926,
+              "ndcg_at_10": 0.605155,
+              "recall_at_5": 0.666667
             },
             "tamil": {
               "n": 13,
@@ -92,18 +92,18 @@
             },
             "misspelling-heldout": {
               "n": 12,
-              "success_at_1": 0.333333,
-              "mrr_at_10": 0.558333,
-              "ndcg_at_10": 0.648304,
-              "recall_at_5": 0.916667
+              "success_at_1": 0.916667,
+              "mrr_at_10": 0.958333,
+              "ndcg_at_10": 0.969244,
+              "recall_at_5": 1.0
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.505263,
-            "mrr_at_10": 0.594749,
-            "ndcg_at_10": 0.626784,
-            "recall_at_5": 0.705263
+            "success_at_1": 0.631579,
+            "mrr_at_10": 0.700292,
+            "ndcg_at_10": 0.729008,
+            "recall_at_5": 0.778947
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -129,44 +129,44 @@
             "c21": 1,
             "c22": 1,
             "c23": 1,
-            "m01": 2,
-            "m02": 3,
-            "m03": null,
-            "m04": null,
-            "m05": null,
+            "m01": 1,
+            "m02": 1,
+            "m03": 6,
+            "m04": 9,
+            "m05": 1,
             "m06": null,
             "m07": null,
-            "m08": null,
+            "m08": 4,
             "m09": 1,
-            "m10": 2,
-            "m11": null,
-            "m12": null,
-            "m13": 7,
-            "m14": 3,
-            "m15": 5,
-            "m16": null,
-            "o01": 2,
+            "m10": 1,
+            "m11": 1,
+            "m12": 2,
+            "m13": 1,
+            "m14": 1,
+            "m15": 8,
+            "m16": 3,
+            "o01": 1,
             "o02": null,
             "o03": null,
             "o04": 1,
             "o05": null,
             "o06": 3,
-            "o07": 5,
+            "o07": 1,
             "o08": 2,
             "o09": null,
-            "o10": 2,
+            "o10": 4,
             "o11": 2,
             "o12": null,
             "o13": 1,
             "a01": 2,
-            "a02": 3,
-            "a03": null,
+            "a02": 1,
+            "a03": 1,
             "a04": 3,
             "a05": null,
             "a06": 8,
             "a07": null,
             "a08": 1,
-            "a09": null,
+            "a09": 1,
             "t01": null,
             "t02": null,
             "t03": null,
@@ -209,17 +209,17 @@
             "th06": 1,
             "th07": 1,
             "th08": 1,
-            "mh01": 3,
-            "mh02": 5,
-            "mh03": 2,
-            "mh04": null,
+            "mh01": 1,
+            "mh02": 1,
+            "mh03": 1,
+            "mh04": 1,
             "mh05": 1,
-            "mh06": 2,
+            "mh06": 1,
             "mh07": 1,
-            "mh08": 3,
+            "mh08": 1,
             "mh09": 1,
             "mh10": 2,
-            "mh11": 3,
+            "mh11": 1,
             "mh12": 1
           },
           "slice_of": {
@@ -381,12 +381,12 @@
               "top_is_named_distractor": true
             },
             "mn1": {
-              "returned": 4,
+              "returned": 6,
               "top_hit": {
                 "root_id": "school",
-                "path": "trip-permission-museum.md",
-                "start_line": 1,
-                "end_line": 2
+                "path": "dinosaur-topic.md",
+                "start_line": 6,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
@@ -416,10 +416,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "home",
-                "path": "pets/biscuit-the-dog.md",
-                "start_line": 16,
-                "end_line": 20
+                "root_id": "school",
+                "path": "science-homework.md",
+                "start_line": 11,
+                "end_line": 15
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -436,7 +436,7 @@
               "top_is_named_distractor": true
             },
             "an2": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "school",
                 "path": "letters/letter-home-oct.txt",
@@ -491,7 +491,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 2,
+              "returned": 7,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -513,7 +513,7 @@
               "top_is_named_distractor": true
             },
             "thn1": {
-              "returned": 4,
+              "returned": 6,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -535,7 +535,7 @@
               "top_is_named_distractor": true
             },
             "mhn1": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "school",
                 "path": "newsletter-autumn.md",
@@ -546,7 +546,7 @@
               "top_is_named_distractor": true
             },
             "mhn2": {
-              "returned": 2,
+              "returned": 7,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend/sale-in-the-field.md",
@@ -569,24 +569,24 @@
             },
             "misspelling": {
               "n": 16,
-              "success_at_1": 0.0625,
-              "mrr_at_10": 0.15625,
-              "ndcg_at_10": 0.152227,
-              "recall_at_5": 0.21875
+              "success_at_1": 0.5,
+              "mrr_at_10": 0.539062,
+              "ndcg_at_10": 0.548289,
+              "recall_at_5": 0.53125
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.153846,
-              "mrr_at_10": 0.346154,
-              "ndcg_at_10": 0.396511,
+              "success_at_1": 0.307692,
+              "mrr_at_10": 0.403846,
+              "ndcg_at_10": 0.437887,
               "recall_at_5": 0.538462
             },
             "accent": {
               "n": 9,
-              "success_at_1": 0.111111,
-              "mrr_at_10": 0.219577,
-              "ndcg_at_10": 0.273807,
-              "recall_at_5": 0.333333
+              "success_at_1": 0.444444,
+              "mrr_at_10": 0.55291,
+              "ndcg_at_10": 0.60714,
+              "recall_at_5": 0.666667
             },
             "tamil": {
               "n": 13,
@@ -618,18 +618,18 @@
             },
             "misspelling-heldout": {
               "n": 12,
-              "success_at_1": 0.333333,
-              "mrr_at_10": 0.465278,
-              "ndcg_at_10": 0.516045,
-              "recall_at_5": 0.666667
+              "success_at_1": 0.916667,
+              "mrr_at_10": 0.958333,
+              "ndcg_at_10": 0.969244,
+              "recall_at_5": 1.0
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.505263,
-            "mrr_at_10": 0.578697,
-            "ndcg_at_10": 0.595561,
-            "recall_at_5": 0.647368
+            "success_at_1": 0.631579,
+            "mrr_at_10": 0.682644,
+            "ndcg_at_10": 0.699507,
+            "recall_at_5": 0.731579
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -655,44 +655,44 @@
             "c21": 1,
             "c22": 1,
             "c23": 1,
-            "m01": 2,
-            "m02": null,
+            "m01": 1,
+            "m02": 1,
             "m03": null,
             "m04": null,
-            "m05": null,
+            "m05": 1,
             "m06": null,
-            "m07": null,
+            "m07": 8,
             "m08": null,
             "m09": 1,
-            "m10": 2,
-            "m11": null,
-            "m12": null,
-            "m13": null,
-            "m14": null,
+            "m10": 1,
+            "m11": 1,
+            "m12": 2,
+            "m13": 1,
+            "m14": 1,
             "m15": null,
             "m16": null,
-            "o01": 2,
+            "o01": 1,
             "o02": null,
             "o03": null,
             "o04": 1,
             "o05": null,
             "o06": null,
-            "o07": 2,
+            "o07": 1,
             "o08": 2,
             "o09": null,
-            "o10": 2,
+            "o10": 4,
             "o11": 2,
             "o12": null,
             "o13": 1,
             "a01": 2,
-            "a02": null,
-            "a03": null,
+            "a02": 1,
+            "a03": 1,
             "a04": 3,
             "a05": null,
             "a06": 7,
             "a07": null,
             "a08": 1,
-            "a09": null,
+            "a09": 1,
             "t01": null,
             "t02": null,
             "t03": null,
@@ -735,17 +735,17 @@
             "th06": 1,
             "th07": 1,
             "th08": 1,
-            "mh01": 3,
-            "mh02": 4,
-            "mh03": null,
-            "mh04": null,
+            "mh01": 1,
+            "mh02": 1,
+            "mh03": 1,
+            "mh04": 1,
             "mh05": 1,
-            "mh06": 2,
+            "mh06": 1,
             "mh07": 1,
-            "mh08": null,
+            "mh08": 1,
             "mh09": 1,
             "mh10": 2,
-            "mh11": null,
+            "mh11": 1,
             "mh12": 1
           },
           "slice_of": {
@@ -910,9 +910,9 @@
               "returned": 3,
               "top_hit": {
                 "root_id": "school",
-                "path": "trip-permission-museum.md",
-                "start_line": 1,
-                "end_line": 2
+                "path": "dinosaur-topic.md",
+                "start_line": 6,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
@@ -942,10 +942,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "home",
-                "path": "pets/biscuit-the-dog.md",
-                "start_line": 16,
-                "end_line": 20
+                "root_id": "school",
+                "path": "science-homework.md",
+                "start_line": 11,
+                "end_line": 15
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -962,7 +962,7 @@
               "top_is_named_distractor": true
             },
             "an2": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "school",
                 "path": "letters/letter-home-oct.txt",
@@ -1017,7 +1017,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 2,
+              "returned": 5,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -1039,7 +1039,7 @@
               "top_is_named_distractor": true
             },
             "thn1": {
-              "returned": 4,
+              "returned": 6,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -1061,7 +1061,7 @@
               "top_is_named_distractor": true
             },
             "mhn1": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "school",
                 "path": "newsletter-autumn.md",
@@ -1072,7 +1072,7 @@
               "top_is_named_distractor": true
             },
             "mhn2": {
-              "returned": 2,
+              "returned": 7,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend/sale-in-the-field.md",
@@ -1101,24 +1101,24 @@
             },
             "misspelling": {
               "n": 16,
-              "success_at_1": 0.0625,
-              "mrr_at_10": 0.198512,
-              "ndcg_at_10": 0.254308,
-              "recall_at_5": 0.375
+              "success_at_1": 0.5,
+              "mrr_at_10": 0.592882,
+              "ndcg_at_10": 0.656141,
+              "recall_at_5": 0.6875
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.153846,
-              "mrr_at_10": 0.348718,
-              "ndcg_at_10": 0.416198,
+              "success_at_1": 0.307692,
+              "mrr_at_10": 0.429487,
+              "ndcg_at_10": 0.476349,
               "recall_at_5": 0.615385
             },
             "accent": {
               "n": 9,
-              "success_at_1": 0.333333,
-              "mrr_at_10": 0.481481,
-              "ndcg_at_10": 0.554126,
-              "recall_at_5": 0.666667
+              "success_at_1": 0.555556,
+              "mrr_at_10": 0.666667,
+              "ndcg_at_10": 0.720793,
+              "recall_at_5": 0.777778
             },
             "tamil": {
               "n": 13,
@@ -1150,18 +1150,18 @@
             },
             "misspelling-heldout": {
               "n": 12,
-              "success_at_1": 0.333333,
-              "mrr_at_10": 0.544444,
-              "ndcg_at_10": 0.63675,
-              "recall_at_5": 0.916667
+              "success_at_1": 0.916667,
+              "mrr_at_10": 0.958333,
+              "ndcg_at_10": 0.969244,
+              "recall_at_5": 1.0
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.526316,
-            "mrr_at_10": 0.616241,
-            "ndcg_at_10": 0.648266,
-            "recall_at_5": 0.726316
+            "success_at_1": 0.642105,
+            "mrr_at_10": 0.711257,
+            "ndcg_at_10": 0.739963,
+            "recall_at_5": 0.789474
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -1187,38 +1187,38 @@
             "c21": 1,
             "c22": 1,
             "c23": 1,
-            "m01": 2,
-            "m02": 3,
-            "m03": null,
-            "m04": null,
-            "m05": null,
+            "m01": 1,
+            "m02": 1,
+            "m03": 6,
+            "m04": 9,
+            "m05": 1,
             "m06": null,
             "m07": null,
-            "m08": null,
+            "m08": 4,
             "m09": 1,
-            "m10": 2,
-            "m11": null,
-            "m12": null,
-            "m13": 7,
-            "m14": 3,
-            "m15": 5,
-            "m16": null,
-            "o01": 2,
+            "m10": 1,
+            "m11": 1,
+            "m12": 2,
+            "m13": 1,
+            "m14": 1,
+            "m15": 8,
+            "m16": 3,
+            "o01": 1,
             "o02": null,
             "o03": null,
             "o04": 1,
             "o05": null,
             "o06": 3,
-            "o07": 5,
+            "o07": 1,
             "o08": 2,
             "o09": null,
-            "o10": 2,
+            "o10": 4,
             "o11": 2,
             "o12": null,
             "o13": 1,
             "a01": 2,
-            "a02": 3,
-            "a03": null,
+            "a02": 1,
+            "a03": 1,
             "a04": 3,
             "a05": null,
             "a06": 6,
@@ -1267,17 +1267,17 @@
             "th06": 1,
             "th07": 1,
             "th08": 1,
-            "mh01": 3,
-            "mh02": 5,
-            "mh03": 2,
-            "mh04": null,
+            "mh01": 1,
+            "mh02": 1,
+            "mh03": 1,
+            "mh04": 1,
             "mh05": 1,
-            "mh06": 2,
+            "mh06": 1,
             "mh07": 1,
-            "mh08": 4,
+            "mh08": 1,
             "mh09": 1,
             "mh10": 2,
-            "mh11": 4,
+            "mh11": 1,
             "mh12": 1
           },
           "slice_of": {
@@ -1439,12 +1439,12 @@
               "top_is_named_distractor": true
             },
             "mn1": {
-              "returned": 4,
+              "returned": 6,
               "top_hit": {
                 "root_id": "school",
-                "path": "trip-permission-museum.md",
-                "start_line": 1,
-                "end_line": 2
+                "path": "dinosaur-topic.md",
+                "start_line": 6,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
@@ -1474,10 +1474,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "home",
-                "path": "pets/biscuit-the-dog.md",
-                "start_line": 16,
-                "end_line": 20
+                "root_id": "school",
+                "path": "science-homework.md",
+                "start_line": 11,
+                "end_line": 15
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -1494,7 +1494,7 @@
               "top_is_named_distractor": true
             },
             "an2": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "school",
                 "path": "letters/letter-home-oct.txt",
@@ -1549,7 +1549,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 2,
+              "returned": 7,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -1571,7 +1571,7 @@
               "top_is_named_distractor": true
             },
             "thn1": {
-              "returned": 4,
+              "returned": 6,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -1593,7 +1593,7 @@
               "top_is_named_distractor": true
             },
             "mhn1": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "school",
                 "path": "newsletter-autumn.md",
@@ -1604,7 +1604,7 @@
               "top_is_named_distractor": true
             },
             "mhn2": {
-              "returned": 2,
+              "returned": 7,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend/sale-in-the-field.md",
@@ -1627,24 +1627,24 @@
             },
             "misspelling": {
               "n": 16,
-              "success_at_1": 0.0625,
-              "mrr_at_10": 0.15625,
-              "ndcg_at_10": 0.152227,
-              "recall_at_5": 0.21875
+              "success_at_1": 0.5,
+              "mrr_at_10": 0.539062,
+              "ndcg_at_10": 0.548289,
+              "recall_at_5": 0.53125
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.153846,
-              "mrr_at_10": 0.346154,
-              "ndcg_at_10": 0.396511,
+              "success_at_1": 0.307692,
+              "mrr_at_10": 0.403846,
+              "ndcg_at_10": 0.437887,
               "recall_at_5": 0.538462
             },
             "accent": {
               "n": 9,
-              "success_at_1": 0.222222,
-              "mrr_at_10": 0.337037,
-              "ndcg_at_10": 0.390865,
-              "recall_at_5": 0.555556
+              "success_at_1": 0.444444,
+              "mrr_at_10": 0.559259,
+              "ndcg_at_10": 0.613087,
+              "recall_at_5": 0.777778
             },
             "tamil": {
               "n": 13,
@@ -1676,18 +1676,18 @@
             },
             "misspelling-heldout": {
               "n": 12,
-              "success_at_1": 0.333333,
-              "mrr_at_10": 0.465278,
-              "ndcg_at_10": 0.516045,
-              "recall_at_5": 0.666667
+              "success_at_1": 0.916667,
+              "mrr_at_10": 0.958333,
+              "ndcg_at_10": 0.969244,
+              "recall_at_5": 1.0
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.515789,
-            "mrr_at_10": 0.589825,
-            "ndcg_at_10": 0.60665,
-            "recall_at_5": 0.668421
+            "success_at_1": 0.631579,
+            "mrr_at_10": 0.683246,
+            "ndcg_at_10": 0.70007,
+            "recall_at_5": 0.742105
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -1713,38 +1713,38 @@
             "c21": 1,
             "c22": 1,
             "c23": 1,
-            "m01": 2,
-            "m02": null,
+            "m01": 1,
+            "m02": 1,
             "m03": null,
             "m04": null,
-            "m05": null,
+            "m05": 1,
             "m06": null,
-            "m07": null,
+            "m07": 8,
             "m08": null,
             "m09": 1,
-            "m10": 2,
-            "m11": null,
-            "m12": null,
-            "m13": null,
-            "m14": null,
+            "m10": 1,
+            "m11": 1,
+            "m12": 2,
+            "m13": 1,
+            "m14": 1,
             "m15": null,
             "m16": null,
-            "o01": 2,
+            "o01": 1,
             "o02": null,
             "o03": null,
             "o04": 1,
             "o05": null,
             "o06": null,
-            "o07": 2,
+            "o07": 1,
             "o08": 2,
             "o09": null,
-            "o10": 2,
+            "o10": 4,
             "o11": 2,
             "o12": null,
             "o13": 1,
             "a01": 2,
-            "a02": null,
-            "a03": null,
+            "a02": 1,
+            "a03": 1,
             "a04": 3,
             "a05": null,
             "a06": 5,
@@ -1793,17 +1793,17 @@
             "th06": 1,
             "th07": 1,
             "th08": 1,
-            "mh01": 3,
-            "mh02": 4,
-            "mh03": null,
-            "mh04": null,
+            "mh01": 1,
+            "mh02": 1,
+            "mh03": 1,
+            "mh04": 1,
             "mh05": 1,
-            "mh06": 2,
+            "mh06": 1,
             "mh07": 1,
-            "mh08": null,
+            "mh08": 1,
             "mh09": 1,
             "mh10": 2,
-            "mh11": null,
+            "mh11": 1,
             "mh12": 1
           },
           "slice_of": {
@@ -1968,9 +1968,9 @@
               "returned": 3,
               "top_hit": {
                 "root_id": "school",
-                "path": "trip-permission-museum.md",
-                "start_line": 1,
-                "end_line": 2
+                "path": "dinosaur-topic.md",
+                "start_line": 6,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
@@ -2000,10 +2000,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "home",
-                "path": "pets/biscuit-the-dog.md",
-                "start_line": 16,
-                "end_line": 20
+                "root_id": "school",
+                "path": "science-homework.md",
+                "start_line": 11,
+                "end_line": 15
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -2020,7 +2020,7 @@
               "top_is_named_distractor": true
             },
             "an2": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "school",
                 "path": "letters/letter-home-oct.txt",
@@ -2075,7 +2075,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 2,
+              "returned": 5,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -2097,7 +2097,7 @@
               "top_is_named_distractor": true
             },
             "thn1": {
-              "returned": 4,
+              "returned": 6,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -2119,7 +2119,7 @@
               "top_is_named_distractor": true
             },
             "mhn1": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "school",
                 "path": "newsletter-autumn.md",
@@ -2130,7 +2130,7 @@
               "top_is_named_distractor": true
             },
             "mhn2": {
-              "returned": 2,
+              "returned": 7,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend/sale-in-the-field.md",
@@ -2261,6 +2261,14 @@
       "judgments_sha256": "14b0507f924bbce1e65e99667dfbaabdd719ba8ad6ca8574d4cf373971def415",
       "natives_digest": "62c37f1f5a769dbacc7c0a059a1565cd1fb4c835a1939e7b616a6ee79ab3477e",
       "why": "S5-T3 (plan ruling 7, orchestrator ruling 10): J2 gains the held-out misspelling slice misspelling-heldout (mh01-mh12, negatives mhn1 and mhn2), written and judged before any expansion code on either surface; today's engine (zig/ and contracts/ at 8709e39, the S5-T2 engine unchanged; searchd ReleaseSmall cf17c735, the S5-T2 baseline's bytes) and the Python reference re-run on both surfaces: every earlier cell reproduced unchanged, the new slice's cells added"
+    },
+    {
+      "engine_commit": "8709e3959df6bb9874cbd66603b5516440a5850f",
+      "run_commit": "8709e3959df6bb9874cbd66603b5516440a5850f",
+      "recorded": "2026-11-07",
+      "judgments_sha256": "5fd2ab5eeaeffb92f257dd4fc1ac5401ec723f164bfd953e64c96ed2e4bdf0d9",
+      "natives_digest": "62c37f1f5a769dbacc7c0a059a1565cd1fb4c835a1939e7b616a6ee79ab3477e",
+      "why": "S5-T3: fuzzy-v1 (misspelling tolerance) changes the ranking of every query with an unmatched Latin word of 5+ code points; re-recorded on both surfaces at the S5-T3 branch after the gate passed against the S5-T2 baseline with an empty allow-list"
     }
   ]
 }
