@@ -218,3 +218,41 @@ learning 7's additive file-name weight is not what shipped (S4-T4's channel is
 stem only and `both` fuses per file with RRF); and the apostrophe already splits
 a singular possessive (`dinosaur's` → `dinosaur`, `s`), so the loss is the plural
 form, not the possessive. The research doc itself is not edited.
+
+### S5-T2: the title field
+
+[S5-T2](tasks/S5-T2.md) adds the [title field](title-field-v1.md) (a file's
+root-relative folder names and stem, BM25 times coverage, weight 2.5) to the
+lexical channel under `content` and makes `both` a score-level merge per file.
+J2 gained the slice **`title-heldout`** (8 rows, judged before any ranking code
+existed, its cells with the engine before S5-T2 recorded as an extension of the
+baseline): the weight was chosen on `title` and checked, not re-tuned, there.
+The overall line stays the mean over S5-T1's 95 graded queries; `title-heldout`
+has its own line. At S5-T2 (`searchd` ReleaseSmall; MRR@10, success@1 in
+brackets; S5-T1's baseline above):
+
+| Slice | n | searchd content | searchd both | Python content | Python both |
+|---|---:|---:|---:|---:|---:|
+| control | 23 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+| misspelling | 16 | 0.199 (0.062) | 0.156 (0.062) | 0.199 (0.062) | 0.156 (0.062) |
+| morphology | 13 | 0.349 (0.154) | 0.346 (0.154) | 0.349 (0.154) | 0.346 (0.154) |
+| accent | 9 | 0.255 (0.111) | 0.220 (0.111) | 0.481 (0.333) | 0.337 (0.222) |
+| Tamil | 13 | 0.308 (0.231) | 0.269 (0.231) | 0.308 (0.231) | 0.269 (0.231) |
+| title intent | 11 | 0.955 (0.909) | 0.955 (0.909) | 0.955 (0.909) | 0.955 (0.909) |
+| phrase | 10 | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) |
+| overall | 95 | 0.595 (0.505) | 0.579 (0.505) | 0.616 (0.526) | 0.590 (0.516) |
+| title-heldout | 8 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+
+(`title-heldout` before S5-T2: 0.375 (0.375) under `content` and 0.500 (0.500)
+under `both` on both surfaces.) Title intent goes from no answer at rank 1 to
+ten of eleven under `content`, and `both` no longer costs control (`c02`,
+`c06`, `c07` back at rank 1). The ranks that move otherwise are the ones the
+plan predicted: `content` `o06` 2 → 3, `o08` 1 → 2, `o13` 2 → 1, `p02` 2 → 1,
+`p06` 1 → 2 and, in Python only, `a06` 5 → 6 (`searchd` keeps 8); `both` `o13`
+3 → 1, `t06` 3 → 2, `ti09` 1 → 2. Among the negatives the top hit of `cn1`,
+`mn2`, `on2` and `tin1` changes (under `both`, the first three): `on2`
+("painting the fence") now tops `pets/biscuit-the-dog.md` through the word
+`the` in its name, the known residual of a field without stop words. The
+surfaces still differ only by the analyzer on a first grade-2 rank (`a06`,
+`a07`, `a09`) and by tie order below the answer. The baseline is re-recorded at
+S5-T2 in its own commit.

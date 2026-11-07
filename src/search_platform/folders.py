@@ -644,7 +644,9 @@ class FolderIndex:
                top_k: int = 5, conjunctive: bool = False) -> list[dict]:
         """BM25 over the visible scope (statistics included). `conjunctive`
         keeps only chunks holding every query term (the lifecycle runner's
-        `words` filter; S3-T2 owns the real `find` modes)."""
+        `words` filter; S3-T2 owns the real `find` modes). S5-T2: this keeps
+        the ranking before the title field (`docs/title-field-v1.md`);
+        `core.search` is the reference that carries it."""
         terms = tokenize(query)
         if not terms:
             return []
