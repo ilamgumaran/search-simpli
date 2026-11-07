@@ -78,6 +78,10 @@ pub const Field = struct {
     /// under no root): a root mask allowing every ordinal up to it hides
     /// nothing (as `filename_field.Decoded.max_document_root`).
     max_document_root: ?u16 = null,
+    /// Every file's chunks form one run of document indexes (the derive's
+    /// one-pass grouping applied): `Titled` then streams per file; false
+    /// keeps the drain, which any grouping allows.
+    contiguous: bool = false,
 
     pub fn termBytes(field: Field, term: Term) []const u8 {
         return field.term_bytes[term.bytes_start .. term.bytes_start + term.bytes_len];
@@ -460,7 +464,7 @@ pub fn deriveMarked(blocks: std.mem.Allocator, scratch: std.mem.Allocator, docum
     profile.block_bytes = block.len;
     marks.mark("lookup");
     return .{
-        .field = .{ .files = kept_files, .file_of = kept_file_of, .postings = kept_postings, .terms = kept_terms, .term_bytes = kept_bytes, .total_length = total_length, .labeled = labeled },
+        .field = .{ .files = kept_files, .file_of = kept_file_of, .postings = kept_postings, .terms = kept_terms, .term_bytes = kept_bytes, .total_length = total_length, .labeled = labeled, .contiguous = profile.in_order },
         .block = block,
         .profile = profile,
     };
@@ -602,11 +606,12 @@ pub fn scoreQuery(allocator: std.mem.Allocator, field: *const Field, documents: 
                 df += 1;
             };
         } else df = @intCast(list.len);
+        const weight = Bm25Term.init(average, df, @intCast(count), options.bm25);
         for (list) |posting| {
             if (visible) |flags| if (!flags[posting.file]) continue;
             if (covered[posting.file] == 0) try touched.append(allocator, posting.file);
             covered[posting.file] += 1;
-            scores[posting.file] += scoring.bm25Contribution(@floatFromInt(posting.frequency), @floatFromInt(files[posting.file].length), average, df, @intCast(count), options.bm25);
+            scores[posting.file] += weight.contribution(@floatFromInt(posting.frequency), @floatFromInt(files[posting.file].length));
         }
     }
     const query_terms: f32 = @floatFromInt(distinct);
@@ -628,28 +633,76 @@ pub fn scoreQuery(allocator: std.mem.Allocator, field: *const Field, documents: 
     return .{ .scores = scores, .touched = try touched.toOwnedSlice(allocator) };
 }
 
+/// `scoring.bm25Contribution` with the term's inverse document frequency
+/// computed once: the same operations in the same order, so every value is
+/// the same bit for bit (a test holds it), without a logarithm per posting.
+pub const Bm25Term = struct {
+    idf: f32,
+    average: f32,
+    parameters: scoring.Bm25Parameters,
+
+    pub fn init(average_document_length: f32, document_frequency: u32, document_count: u32, parameters: scoring.Bm25Parameters) Bm25Term {
+        const df: f32 = @floatFromInt(document_frequency);
+        const count: f32 = @floatFromInt(document_count);
+        return .{ .idf = @log(1.0 + (count - df + 0.5) / (df + 0.5)), .average = average_document_length, .parameters = parameters };
+    }
+
+    pub fn contribution(term: Bm25Term, term_frequency: f32, document_length: f32) f32 {
+        if (term_frequency <= 0 or term.average <= 0) return 0;
+        const length_normalization = 1.0 - term.parameters.b + term.parameters.b * document_length / term.average;
+        return term.idf * (term_frequency * (term.parameters.k1 + 1.0)) /
+            (term_frequency + term.parameters.k1 * length_normalization);
+    }
+};
+
 const no_target = std.math.maxInt(u32);
 
 /// The `content` path's lexical source (ruling 3): `Inner`'s body matches
 /// with each titled file's part added to its best in-scope body chunk (the
 /// higher score, then the smaller id bytewise), and the first chunk of each
 /// titled file no body match reached. `hybrid.searchSparseTraced` takes it
-/// as any lexical source; `scoreOf` stays consistent with `next`.
+/// as any lexical source; `scoreOf` and `titleOf` agree with `next` once it
+/// has returned null.
+///
+/// On a `contiguous` field the matches stream: `Inner` yields them in
+/// document order, so a file's group ends at the first match of another
+/// file. Only the group's best candidate so far is held back; every other
+/// match passes through unchanged, and the held one leaves with the part
+/// when its group ends. Otherwise every match is drained first. Both yield
+/// the same matches with the same scores (the order differs, which the
+/// ranking's total order does not see).
 pub fn Titled(comptime Inner: type) type {
     return struct {
         const Self = @This();
         inner: *Inner,
         field: *const Field,
         parts: Parts,
+        documents: []const hybrid.Document,
+        options: hybrid.SearchOptions,
         /// Per file: the chunk that carries its part, or `no_target`.
         target: []u32,
-        matches: []hybrid.LexicalMatch,
+        /// The drain's matches (empty when streaming).
+        matches: []hybrid.LexicalMatch = &.{},
         position: usize = 0,
+        streaming: bool,
+        /// Some chunk can be out of scope (a root mask, a path prefix or a
+        /// required label); false: every chunk is in scope.
+        scoped: bool,
+        /// Streaming: the current titled file's best candidate, unchanged.
+        held: ?hybrid.LexicalMatch = null,
+        /// Streaming: the match that ended the held group, not yet seen.
+        lookahead: ?hybrid.LexicalMatch = null,
+        inner_done: bool = false,
+        /// The next `parts.touched` entry for the title-only first chunks.
+        tail: usize = 0,
 
         pub fn init(allocator: std.mem.Allocator, inner: *Inner, field: *const Field, parts: Parts, documents: []const hybrid.Document, options: hybrid.SearchOptions) !Self {
             const target = try allocator.alloc(u32, field.files.len);
             errdefer allocator.free(target);
             @memset(target, no_target);
+            var self = Self{ .inner = inner, .field = field, .parts = parts, .documents = documents, .options = options, .target = target, .streaming = field.contiguous, .scoped = options.visible_roots != null or
+                (options.path_prefix != null and options.path_prefix.?.len != 0) or field.labeled };
+            if (self.streaming) return self;
             const best = try allocator.alloc(f32, field.files.len);
             defer allocator.free(best);
             var matches = std.ArrayList(hybrid.LexicalMatch).empty;
@@ -658,28 +711,20 @@ pub fn Titled(comptime Inner: type) type {
                 try matches.append(allocator, match);
                 const d = match.document_index;
                 const f = field.file_of[d];
-                if (parts.scores[f] == 0 or !(match.score > 0)) continue;
-                if (!hybrid.inScope(documents[d], d, options)) continue;
+                if (!self.candidate(match)) continue;
                 const held = target[f];
-                if (held == no_target or match.score > best[f] or
-                    (match.score == best[f] and std.mem.order(u8, documents[d].id, documents[held].id) == .lt))
-                {
-                    target[f] = d;
-                    best[f] = match.score;
-                }
+                if (held != no_target and !self.better(match, .{ .document_index = held, .score = best[f] })) continue;
+                if (!self.inScope(d)) continue;
+                target[f] = d;
+                best[f] = match.score;
             }
             for (matches.items) |*match| {
                 const f = field.file_of[match.document_index];
                 if (target[f] == match.document_index) match.score += parts.scores[f];
             }
-            for (parts.touched) |f| {
-                if (target[f] != no_target) continue;
-                const chunk = field.files[f].first_chunk;
-                if (!hybrid.inScope(documents[chunk], chunk, options)) continue;
-                target[f] = chunk;
-                try matches.append(allocator, .{ .document_index = chunk, .score = parts.scores[f] });
-            }
-            return .{ .inner = inner, .field = field, .parts = parts, .target = target, .matches = try matches.toOwnedSlice(allocator) };
+            self.inner_done = true;
+            self.matches = try matches.toOwnedSlice(allocator);
+            return self;
         }
 
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
@@ -687,10 +732,67 @@ pub fn Titled(comptime Inner: type) type {
             allocator.free(self.matches);
         }
 
+        /// A positive match of a titled file (its scope is asked only when
+        /// it would take the part: `inScope`).
+        fn candidate(self: *const Self, match: hybrid.LexicalMatch) bool {
+            return self.parts.scores[self.field.file_of[match.document_index]] != 0 and match.score > 0;
+        }
+
+        fn inScope(self: *const Self, d: u32) bool {
+            return !self.scoped or hybrid.inScope(self.documents[d], d, self.options);
+        }
+
+        /// `a` takes the part over `b` (same file): higher score, then the
+        /// smaller id bytewise.
+        fn better(self: *const Self, a: hybrid.LexicalMatch, b: hybrid.LexicalMatch) bool {
+            if (a.score != b.score) return a.score > b.score;
+            return std.mem.order(u8, self.documents[a.document_index].id, self.documents[b.document_index].id) == .lt;
+        }
+
+        fn finish(self: *Self, match: hybrid.LexicalMatch) hybrid.LexicalMatch {
+            const f = self.field.file_of[match.document_index];
+            self.target[f] = match.document_index;
+            return .{ .document_index = match.document_index, .score = match.score + self.parts.scores[f] };
+        }
+
         pub fn next(self: *Self) ?hybrid.LexicalMatch {
-            if (self.position >= self.matches.len) return null;
-            defer self.position += 1;
-            return self.matches[self.position];
+            if (!self.streaming) {
+                if (self.position < self.matches.len) {
+                    defer self.position += 1;
+                    return self.matches[self.position];
+                }
+            } else while (!self.inner_done) {
+                const match = if (self.lookahead) |ahead| ahead else self.inner.next() orelse {
+                    self.inner_done = true;
+                    if (self.held) |held| {
+                        self.held = null;
+                        return self.finish(held);
+                    }
+                    break;
+                };
+                self.lookahead = null;
+                if (self.held) |held| if (self.field.file_of[held.document_index] != self.field.file_of[match.document_index]) {
+                    self.held = null;
+                    self.lookahead = match;
+                    return self.finish(held);
+                };
+                if (!self.candidate(match)) return match;
+                if (self.held) |held| if (!self.better(match, held)) return match;
+                if (!self.inScope(match.document_index)) return match;
+                const previous = self.held;
+                self.held = match;
+                if (previous) |held| return held;
+            }
+            while (self.tail < self.parts.touched.len) {
+                const f = self.parts.touched[self.tail];
+                self.tail += 1;
+                if (self.target[f] != no_target) continue;
+                const chunk = self.field.files[f].first_chunk;
+                if (!self.inScope(chunk)) continue;
+                self.target[f] = chunk;
+                return .{ .document_index = chunk, .score = self.parts.scores[f] };
+            }
+            return null;
         }
 
         /// The title part on `document_index`, or null.

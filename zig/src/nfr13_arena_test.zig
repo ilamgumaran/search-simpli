@@ -28,6 +28,7 @@ const scope = @import("scope.zig");
 const service_module = @import("service.zig");
 const snapshot_open = @import("snapshot_open.zig");
 const filename_field = @import("filename_field.zig");
+const title_field = @import("title_field.zig");
 
 const io = std.testing.io;
 pub const cap_bytes: usize = 64 * 1024 * 1024;
@@ -484,6 +485,125 @@ test "NFR-13 scale: 20,000 files" {
     // Reported, not asserted: at 20k the open fits under 64 MiB but `find`
     // and the operations after it do not, on one handle or a fresh one.
     _ = try scaleRun(20_000, scale_cap_bytes, null);
+}
+
+// --- S5-T2 ruling 8(f)-(h): the title field under the cap -------------------
+
+/// One handle: the open, the first content query (`search_knowledge`, which
+/// derives the title field) and the first `both` query, each peak under one
+/// cap; then, on a fresh handle, the derive alone (`Folder.titleField`): its
+/// peak above the bytes live before it (the working arrays and the kept
+/// block together) and the bytes it keeps; and `title_field.derive` over the
+/// same records with its working arrays on a cap of their own (`scratch`,
+/// ruling 8(g)) and its block on another (`kept`, ruling 8(f)).
+const TitlePeaks = struct { open: usize, content: usize, both: usize, derive_peak: usize, kept: usize, block: usize, scratch_peak: usize, scratch_left: usize, derive_kept: usize };
+
+fn titlePeaks(dir: std.Io.Dir, cap: usize, knowledge_query: []const u8, both_query: []const u8) !TitlePeaks {
+    var result: TitlePeaks = undefined;
+    {
+        var capped = Capped{ .parent = std.heap.page_allocator, .cap = cap };
+        var engine_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        defer engine_arena.deinit();
+        _ = capped.markPeak();
+        const opened = try snapshot_open.openScopedWith(.{ .blocks = capped.allocator(), .arena = engine_arena.allocator() }, io, dir);
+        defer snapshot_open.close(opened.engine, opened.folder);
+        result.open = capped.peak;
+        const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+        {
+            var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+            defer op_arena.deinit();
+            const a = op_arena.allocator();
+            _ = capped.markPeak();
+            const evidence = try scoped.searchKnowledge(a, knowledge_query, &.{}, .{ .retrieval_mode = .lexical }, .{}, try a.alloc(hybrid.Result, 10), try a.alloc(engine_module.Evidence, 10), null);
+            try std.testing.expect(evidence.len > 0);
+            try std.testing.expect(opened.folder.titleDerived());
+            result.content = capped.peak;
+        }
+        {
+            var op_arena = std.heap.ArenaAllocator.init(capped.allocator());
+            defer op_arena.deinit();
+            _ = capped.markPeak();
+            const hits = try opened.engine.queryFields(op_arena.allocator(), both_query, .both, .{ .retrieval_mode = .lexical });
+            try std.testing.expect(hits.len > 0);
+            result.both = capped.peak;
+        }
+        try std.testing.expectEqual(@as(usize, 0), capped.refused);
+    }
+    {
+        var capped = Capped{ .parent = std.heap.page_allocator, .cap = cap };
+        var engine_arena = std.heap.ArenaAllocator.init(capped.allocator());
+        defer engine_arena.deinit();
+        const opened = try snapshot_open.openScopedWith(.{ .blocks = capped.allocator(), .arena = engine_arena.allocator() }, io, dir);
+        defer snapshot_open.close(opened.engine, opened.folder);
+        const before = capped.markPeak();
+        _ = try opened.folder.titleField();
+        result.derive_peak = capped.peak - before;
+        result.kept = capped.live - before;
+        result.block = opened.folder.loads.title_block.?.len;
+        var kept = Capped{ .parent = std.heap.page_allocator, .cap = cap };
+        var scratch = Capped{ .parent = std.heap.page_allocator, .cap = cap };
+        const derived = try title_field.derive(kept.allocator(), scratch.allocator(), opened.engine.documents, opened.folder.roots);
+        defer derived.deinit(kept.allocator());
+        result.scratch_peak = scratch.peak;
+        result.scratch_left = scratch.live;
+        result.derive_kept = kept.live;
+    }
+    return result;
+}
+
+fn titleRun(file_count: usize) !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var corpus = std.testing.tmpDir(.{ .iterate = true });
+    defer corpus.cleanup();
+    var out = std.testing.tmpDir(.{ .iterate = true });
+    defer out.cleanup();
+    try generateCorpus(a, corpus.dir, file_count);
+    _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
+    // "the doc": a body word in most chunks and a title word of every file.
+    const peaks = try titlePeaks(out.dir, scale_cap_bytes, "the doc", "doc the");
+    std.debug.print("S5-T2 NFR-13 {d} files, one handle, peak live bytes: open {d} first content {d} first both {d}; the derive alone: peak {d} above the live bytes before it, kept {d} (title block {d}); working arrays peak {d} (left {d}), block {d}\n", .{ file_count, peaks.open, peaks.content, peaks.both, peaks.derive_peak, peaks.kept, peaks.block, peaks.scratch_peak, peaks.scratch_left, peaks.derive_kept });
+    try std.testing.expectEqual(@as(usize, 0), peaks.scratch_left);
+    try std.testing.expectEqual(peaks.kept, peaks.derive_kept);
+    // Ruling 8(h): every peak on the one handle under 64 MiB.
+    try std.testing.expect(peaks.open <= cap_bytes and peaks.content <= cap_bytes and peaks.both <= cap_bytes);
+    if (file_count == base_file_count) {
+        // Ruling 8(f) and (g) at 10k: the kept tables at most 1.0 MB, the
+        // derive's working arrays at most 2.0 MB at their peak.
+        try std.testing.expect(peaks.kept <= 1_000_000);
+        try std.testing.expect(peaks.scratch_peak <= 2_000_000);
+    }
+}
+
+test "S5-T2 NFR-13: the open, the first content query and the first both query on one handle at 10k files, under 64 MiB" {
+    try titleRun(base_file_count);
+}
+
+test "S5-T2 NFR-13 scale: the same at 15,000 files" {
+    if (!scaleEnabled()) {
+        std.debug.print("S5-T2 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
+        return error.SkipZigTest;
+    }
+    try titleRun(15_000);
+}
+
+test "S5-T2 NFR-13 scale: the same at 20,000 files (information)" {
+    if (!scaleEnabled()) {
+        std.debug.print("S5-T2 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
+        return error.SkipZigTest;
+    }
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    var corpus = std.testing.tmpDir(.{ .iterate = true });
+    defer corpus.cleanup();
+    var out = std.testing.tmpDir(.{ .iterate = true });
+    defer out.cleanup();
+    try generateCorpus(a, corpus.dir, 20_000);
+    _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
+    const peaks = try titlePeaks(out.dir, scale_cap_bytes, "the doc", "doc the");
+    std.debug.print("S5-T2 NFR-13 20000 files (information), one handle, peak live bytes: open {d} first content {d} first both {d}; the derive alone: peak {d}, kept {d} (title block {d}); working arrays peak {d}\n", .{ peaks.open, peaks.content, peaks.both, peaks.derive_peak, peaks.kept, peaks.block, peaks.scratch_peak });
 }
 
 // --- S4-T8 ruling 3: the open's resident bytes, by table ---------------------

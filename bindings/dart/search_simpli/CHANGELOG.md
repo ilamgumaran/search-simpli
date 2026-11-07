@@ -42,9 +42,9 @@ names a folder or a file.
   opened generation, and never at `open`. Every index a 0.3.x library
   wrote opens unchanged, and nothing is rebuilt. No C ABI signature
   changed.
-- **Natives** rebuilt on the Mac: macOS 865,496 B (0.3.12: 843,240),
-  Android 840,944 B (806,544), iOS framework binary 846,352 B (807,624);
-  `native/SOURCE-SHA256` is `0f044a44…`.
+- **Natives** rebuilt on the Mac: macOS 866,168 B (0.3.12: 843,240),
+  Android 842,272 B (806,544), iOS framework binary 846,680 B (807,624);
+  `native/SOURCE-SHA256` is `62c37f1f…`.
 
 ## 0.3.12 (S4-T18; contract 2.2.0; patch: the library's `memcpy`, no format or API change)
 

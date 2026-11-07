@@ -551,13 +551,20 @@ pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Docu
 /// One file of the S5-T2 merge: its cited chunk and merged score.
 const Merged = struct { chunk: u32, score: f32 };
 
-fn mergedBefore(docs: []const hybrid.Document, a: Merged, b: Merged) bool {
+/// The merge's order: score, then path, then chunk id. Its values are
+/// distinct files, and the catalog's paths are strictly ascending
+/// (`decode` refuses any other), so the path order is the file ordinal's
+/// (`Decoded.file_of`) and no path is compared.
+const MergedOrder = struct { docs: []const hybrid.Document, file_of: []const u32 };
+
+fn mergedBefore(order: MergedOrder, a: Merged, b: Merged) bool {
     if (a.score != b.score) return a.score > b.score;
-    const x = std.mem.order(u8, docs[a.chunk].path, docs[b.chunk].path);
-    if (x != .eq) return x == .lt;
-    return std.mem.order(u8, docs[a.chunk].id, docs[b.chunk].id) == .lt;
+    const fa = order.file_of[a.chunk];
+    const fb = order.file_of[b.chunk];
+    if (fa != fb) return fa < fb;
+    return std.mem.order(u8, order.docs[a.chunk].id, order.docs[b.chunk].id) == .lt;
 }
-const MergedTop = hybrid.BoundedTop(Merged, []const hybrid.Document, mergedBefore);
+const MergedTop = hybrid.BoundedTop(Merged, MergedOrder, mergedBefore);
 
 /// S5-T2 (ruling 3): `both` as a score-level merge, one result per file:
 /// the file's best body chunk's BM25 plus its title part
@@ -569,23 +576,31 @@ const MergedTop = hybrid.BoundedTop(Merged, []const hybrid.Document, mergedBefor
 fn merge(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, decoded: Decoded, scored: Scored, ranked: Ranked, title: *const title_field.Field, query_text: []const u8, options: hybrid.SearchOptions) ![]Hit {
     const parts = try title_field.scoreQuery(allocator, title, body_docs, query_text, options);
     defer if (parts) |p| p.deinit(allocator);
-    var top = MergedTop{ .items = try allocator.alloc(Merged, options.top_k), .context = body_docs };
-    // Files with a body match: the best chunk (`rankChannels` left it in
-    // `slot_of_file`, over every body match) plus the file's part.
-    for (scored.body_touched) |bi| {
-        if (ranked.slot_of_file[decoded.file_of[bi]] != bi) continue;
-        var score = scored.body_scores[bi];
-        if (parts) |p| score += p.scores[title.file_of[bi]];
-        if (score > 0) top.offer(.{ .chunk = @intCast(bi), .score = score });
+    var top = MergedTop{ .items = try allocator.alloc(Merged, options.top_k), .context = .{ .docs = body_docs, .file_of = decoded.file_of } };
+    if (parts) |p| {
+        // Files with a body match: the best chunk (`rankChannels` left it
+        // in `slot_of_file`, over every body match) plus the file's part.
+        for (scored.body_touched) |bi| {
+            if (ranked.slot_of_file[decoded.file_of[bi]] != bi) continue;
+            const score = scored.body_scores[bi] + p.scores[title.file_of[bi]];
+            if (score > 0) top.offer(.{ .chunk = @intCast(bi), .score = score });
+        }
+        // Title-only files, at their first chunk, when the request may see
+        // them.
+        for (p.touched) |f| {
+            const chunk = title.files[f].first_chunk;
+            if (ranked.slot_of_file[decoded.file_of[chunk]] != no_slot) continue;
+            if (!inScope(body_docs[chunk], chunk, options)) continue;
+            top.offer(.{ .chunk = chunk, .score = p.scores[f] });
+        }
+    } else {
+        // No query word is in any title: each file's score is its best
+        // body chunk's, which the body channel already holds in this order
+        // (score, then path) over its first `candidate_k >= top_k`.
+        for (ranked.body[0..@min(options.top_k, ranked.body.len)], 0..) |c, i| top.items[i] = .{ .chunk = @intCast(c.body_index), .score = c.score };
+        top.count = @min(options.top_k, ranked.body.len);
     }
-    // Title-only files, at their first chunk, when the request may see them.
-    if (parts) |p| for (p.touched) |f| {
-        const chunk = title.files[f].first_chunk;
-        if (ranked.slot_of_file[decoded.file_of[chunk]] != no_slot) continue;
-        if (!inScope(body_docs[chunk], chunk, options)) continue;
-        top.offer(.{ .chunk = chunk, .score = p.scores[f] });
-    };
-    const kept = top.sorted();
+    const kept = if (parts == null) top.items[0..top.count] else top.sorted();
     const hits = try allocator.alloc(Hit, kept.len);
     for (kept, hits) |m, *hit| {
         const file = decoded.file_of[m.chunk];

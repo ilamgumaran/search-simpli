@@ -462,3 +462,107 @@ test "the title field is derived once per opened generation, at the first conten
     _ = try opened.engine.queryFields(a, "garden", .both, .{ .retrieval_mode = .lexical, .top_k = 4, .candidate_k = 4 });
     try std.testing.expectEqual(@as(u32, 1), loads.title_loads);
 }
+
+/// A lexical source yielding fixed matches in document order.
+const FixedMatches = struct {
+    matches: []const hybrid.LexicalMatch,
+    position: usize = 0,
+
+    pub fn next(self: *FixedMatches) ?hybrid.LexicalMatch {
+        if (self.position >= self.matches.len) return null;
+        defer self.position += 1;
+        return self.matches[self.position];
+    }
+
+    pub fn scoreOf(self: *const FixedMatches, document_index: usize) f32 {
+        for (self.matches) |match| if (match.document_index == document_index) return match.score;
+        return 0;
+    }
+};
+
+fn drainTitled(a: std.mem.Allocator, field: *const title_field.Field, parts: title_field.Parts, documents: []const hybrid.Document, matches: []const hybrid.LexicalMatch, options: hybrid.SearchOptions, out_titles: []?f32) ![]hybrid.LexicalMatch {
+    var inner = FixedMatches{ .matches = matches };
+    var titled = try title_field.Titled(FixedMatches).init(a, &inner, field, parts, documents, options);
+    defer titled.deinit(a);
+    var got = std.ArrayList(hybrid.LexicalMatch).empty;
+    while (titled.next()) |match| try got.append(a, match);
+    for (out_titles, 0..) |*slot, d| slot.* = titled.titleOf(d);
+    std.sort.pdq(hybrid.LexicalMatch, got.items, {}, struct {
+        fn less(_: void, x: hybrid.LexicalMatch, y: hybrid.LexicalMatch) bool {
+            if (x.document_index != y.document_index) return x.document_index < y.document_index;
+            return x.score < y.score;
+        }
+    }.less);
+    return got.items;
+}
+
+test "content: streaming per file yields the drain's matches, scores and parts" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    // Files of one to four chunks in path order, anchors not always first.
+    var documents = std.ArrayList(hybrid.Document).empty;
+    var prng = std.Random.DefaultPrng.init(0x5e72);
+    const random = prng.random();
+    const folders = [_][]const u8{ "garden", "music", "house" };
+    for (0..40) |n| {
+        const path = try std.fmt.allocPrint(a, "r-home/{s}/note-{d:0>2}.md", .{ folders[n % folders.len], n });
+        const chunks = 1 + random.uintLessThan(usize, 4);
+        for (0..chunks) |c| {
+            const start: u32 = @intCast(1 + ((c + n) % chunks) * 10);
+            try documents.append(a, .{ .id = try std.fmt.allocPrint(a, "{s}#{d}", .{ path, (c * 7 + n) % 5 }), .text = "", .path = path, .start_line = start, .end_line = start + 9 });
+        }
+    }
+    std.sort.pdq(hybrid.Document, documents.items, {}, struct {
+        fn less(_: void, x: hybrid.Document, y: hybrid.Document) bool {
+            return std.mem.order(u8, x.path, y.path) == .lt;
+        }
+    }.less);
+    const derived = try title_field.derive(a, a, documents.items, &roots);
+    try std.testing.expect(derived.field.contiguous);
+    var scattered = derived.field;
+    scattered.contiguous = false;
+    // Matches with ties, zeros and gaps; scopes that hide chunks.
+    const levels = [_]f32{ 0, 0.5, 1.25, 1.25, 2.0 };
+    for (0..25) |round| {
+        var matches = std.ArrayList(hybrid.LexicalMatch).empty;
+        for (0..documents.items.len) |d| if (random.uintLessThan(u8, 3) != 0) {
+            try matches.append(a, .{ .document_index = @intCast(d), .score = levels[random.uintLessThan(usize, levels.len)] });
+        };
+        const options: hybrid.SearchOptions = switch (round % 3) {
+            0 => .{},
+            1 => .{ .path_prefix = "r-home/garden/" },
+            else => .{ .path_prefix = "r-home/music/note-1" },
+        };
+        for ([_][]const u8{ "garden note", "music", "note 07", "house garden music" }) |query| {
+            const parts = (try title_field.scoreQuery(a, &derived.field, documents.items, query, options)) orelse continue;
+            const streamed_titles = try a.alloc(?f32, documents.items.len);
+            const drained_titles = try a.alloc(?f32, documents.items.len);
+            const streamed = try drainTitled(a, &derived.field, parts, documents.items, matches.items, options, streamed_titles);
+            const drained = try drainTitled(a, &scattered, parts, documents.items, matches.items, options, drained_titles);
+            try std.testing.expectEqual(drained.len, streamed.len);
+            for (drained, streamed) |x, y| {
+                try std.testing.expectEqual(x.document_index, y.document_index);
+                try std.testing.expectEqual(x.score, y.score);
+            }
+            try std.testing.expectEqualSlices(?f32, drained_titles, streamed_titles);
+        }
+    }
+}
+
+test "title BM25 with the idf once equals scoring.bm25Contribution bit for bit" {
+    const scoring = @import("scoring.zig");
+    var prng = std.Random.DefaultPrng.init(0x1df0);
+    const random = prng.random();
+    for (0..20000) |_| {
+        const count = 1 + random.uintLessThan(u32, 40000);
+        const df = 1 + random.uintLessThan(u32, count);
+        const average = 0.5 + random.float(f32) * 12;
+        const frequency: f32 = @floatFromInt(random.uintLessThan(u32, 6));
+        const length: f32 = @floatFromInt(random.uintLessThan(u32, 30));
+        const parameters = scoring.Bm25Parameters{ .k1 = 1.2, .b = 0.75 };
+        const want = scoring.bm25Contribution(frequency, length, average, df, count, parameters);
+        const got = title_field.Bm25Term.init(average, df, count, parameters).contribution(frequency, length);
+        try std.testing.expectEqual(@as(u32, @bitCast(want)), @as(u32, @bitCast(got)));
+    }
+}
