@@ -42,14 +42,18 @@ location; repeat `--filename-index` on updates. Use `public/` as a directory pre
 `public` is a literal prefix and also matches `public-secret/`.
 
 PDF/Office/OCR need external extraction; HTML is read as source text. Queries
-match analyzed tokens, not exact phrases, arbitrary substrings or fuzzy spelling.
-Semantic modes remain separate explicit options.
+match analyzed tokens, not exact phrases or arbitrary substrings. A query word of
+five or more Latin letters that no file in scope holds is also searched as up to
+three near spellings ([fuzzy-v1](docs/fuzzy-v1.md), contract 2.4.0); `find` stays
+exact. Semantic modes remain separate explicit options.
 
 The [S3 integration report](docs/tasks/recovery-filename-integration.md)
 records tests, native build provenance and platform limits. Contract 2.2.0
 integrated filename search with S3; contract 2.3.0 (S5-T2) adds the title
 field ([title-field-v1](docs/title-field-v1.md): a file's folder names and file
-name count toward a `content` match), and the bundled macOS/Android/iOS arm64
+name count toward a `content` match); contract 2.4.0 (S5-T3) adds misspelling
+tolerance ([fuzzy-v1](docs/fuzzy-v1.md): `retrieval.fuzzy_policy_id` and the
+`query_term_expanded` warning), and the bundled macOS/Android/iOS arm64
 libraries are rebuilt from that source. Physical-device validation remains pending.
 [CAP-16](docs/requirements/cap-16-directory-filename-search.md) and its
 [format contract](docs/filename-field-format-v1.md) describe the design.

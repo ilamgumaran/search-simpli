@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-07 (S5-T2, the title field: a file's folder names and file name count toward its words; verified and merged)
+Last updated: 2026-11-07 (S5-T3, misspelling tolerance: a word nothing visible holds is also searched as its nearest dictionary words; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,93 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## Misspelling tolerance: a query word that nothing visible holds is also searched as its nearest dictionary words (S5-T3, 2026-11-07; verified and merged)
+
+**Verified and merged 2026-11-07** ([Verdict](docs/tasks/S5-T3.md)). Every check below is from the verifier's own builds
+and runs:
+- **J2.** A fresh `ReleaseSmall` `searchd` (1,026,904 B, `3e700dc4…`) and the Python reference (3.9.6, `PYTHONHASHSEED`
+  0, 1, 2) reproduce every cell of the re-recorded `fixtures/j2/baseline.json` (0 differ on each surface). The S5-T1 gate
+  against the S5-T2 baseline (as extended at `7ccf33f` with the held-out misspelling slice) passes on both surfaces and
+  both variants with no allow file.
+- **The plants.** All eight (title guard, df ≤ 1, weight 0, Latin check, first letter, 3 code points, whole-index df,
+  the unmatched warning) are caught by the tests the Report names.
+- **The captures.** The 16,508-case capture against `main` explains all 516 differences by an expansion, and every
+  random-vocabulary 10k case is identical.
+- **The writer.** Every file the writer writes is byte-identical to `main`'s.
+- **The natives.** Rebuilt twice, they are `cmp`-equal to the committed ones.
+- **The suites.** Python 306 OK (with Zig; and against a `ReleaseSmall` `searchd`) and 270 run, OK (38 skipped, no Zig).
+  `zig build test` 398/404 (6 scale skips; 404/404 with `SEARCH_SIMPLI_NFR13_SCALE=1`) and `test-abi` 24/24, in Debug
+  and in `ReleaseSmall`. Dart +87.
+- **The old packs.** Identical to `main`'s except mixed: MRR 0.775 → 0.833, with the four named moves, `latency-breakdown`
+  1 → 2 among them.
+
+[Report](docs/tasks/S5-T3.md). `fuzzy-v1` ([docs/fuzzy-v1.md](docs/fuzzy-v1.md)).
+
+**When a word triggers.** All four of these hold:
+- it has 5 or more code points;
+- it is all Latin letters and digits (ruling 2's table);
+- no chunk in scope holds it (roots, labels, path prefix);
+- no visible file's title field holds it (roots and labels).
+
+**The candidates and the score.**
+- The candidates are the in-scope body words and the visible title words that keep its first code point, within an OSA
+  distance of 1 (5 code points) or 2 (6 or more).
+- They are ordered by distance, key df descending (the roots-and-labels df: a prefix narrows membership, not
+  statistics), then bytes, and 3 are kept.
+- They score as one word: one group df (the largest), each chunk or file its best member, weighted 1.0 at distance 1
+  and 0.5 at distance 2.
+- This applies in the lexical channel and in the title field, under `content` and `both` (one set of groups). It never
+  applies to `filename`, `find`, vector retrieval or an analyzer-v1 index.
+
+**The contract.** Contracts **2.4.0**, additive:
+- `retrieval.fuzzy_policy_id` is `"fuzzy-v1"`;
+- the warning `query_term_expanded` (with `term` and `expansions`) follows the word's `query_term_unmatched` in `ss_query`
+  and `searchd query`;
+- JSON-RPC `search_knowledge` carries no warnings.
+
+Dart **0.5.0**. Natives: macOS 884,632 B, Android `arm64-v8a` 858,224 B, iOS framework binary 865,096 B;
+`native/SOURCE-SHA256` `8f73bf9c3f874e98197c98c0b23237cc49358f028025a18ff35fef2934142055`. No index format, writer or
+analyzer change; no phone rebuild.
+
+**J2, `searchd`, success@1 · MRR@10, before → after:**
+
+| Slice | `content` | `both` |
+|---|---|---|
+| misspelling | 0.062 · 0.199 → 0.500 · 0.593 | 0.062 · 0.156 → 0.500 · 0.539 |
+| the held-out misspelling slice | 0.333 · 0.558 → 0.917 · 0.958 | 0.333 · 0.465 → 0.917 · 0.958 |
+| morphology | 0.154 · 0.349 → 0.308 · 0.429 | (moves too) |
+| accent | 0.111 · 0.255 → 0.444 · 0.551 | (moves too) |
+| control, Tamil, title intent, title-heldout | unchanged | unchanged |
+| overall | 0.505 · 0.595 → 0.632 · 0.700 | 0.505 · 0.579 → 0.632 · 0.683 |
+
+Two rows get worse, both within the gate's limit: `m15` 5 → 8 and `o10` 2 → 4.
+
+**Cost.** 10k timing corpus, `ReleaseSmall`, six interleaved rounds against the untouched `main` under the gate; the
+median per-round difference:
+
+| Measure | Bound | Measured |
+|---|---|---|
+| one misspelt word, `content` | ≤ +0.70 ms | **+0.559 ms** |
+| two misspelt words | ≤ +1.40 ms | **+1.124 ms** |
+| one misspelt word, `both` | ≤ +0.75 ms | **+0.627 ms** |
+| the S4 query set, `content` (nothing triggers) | ≤ +0.02 ms | **+0.0003 to +0.013 ms** |
+| `ss_open` | unchanged | **−0.003 ms** |
+
+Measured, with no bound:
+- a `both` query whose word does not trigger costs +0.032 ms (the 03-next row: `bothGroups` builds its scope view on
+  every query);
+- the first `content` query after a cold open costs +0.07 ms.
+
+Memory: nothing is kept between queries (the live bytes are equal before and after a triggering query), and one scan
+peaks at 435 B. NFR-13 on one handle: 10k 38,054,528 B and 15k 55,850,030 B peaks, both under 64 MiB.
+
+**For the consumer app:** M16-T32, as the Report's section 13 and ruling 8 on it state:
+- Dart 0.5.0;
+- the `SearchWarningCode` switch must accept `queryTermExpanded`;
+- re-centre the dylib-size band on 884,632 B;
+- regenerate the contracts and the skill text;
+- no index rebuild.
 
 ## The title field: a file's folder names and file name count toward its words, and `both` merges per file (S5-T2, 2026-11-07; verified and merged)
 
