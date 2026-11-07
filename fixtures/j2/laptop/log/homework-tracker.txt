@@ -1,0 +1,141 @@
+Homework tracker
+Pip and Wren, autumn term
+
+Mon 7 Sep: Pip maths homework done.
+Mon 7 Sep: Wren reading done.
+Tue 8 Sep: Pip science homework done.
+Tue 8 Sep: Wren phonics cards done.
+Wed 9 Sep: Pip spelling practice done.
+Wed 9 Sep: Wren reading done, two pages.
+Thu 10 Sep: Pip maths homework half done.
+Thu 10 Sep: Wren number bonds done.
+Fri 11 Sep: Pip science homework done, needs a drawing.
+Fri 11 Sep: Wren reading done.
+Mon 14 Sep: Pip maths homework done.
+Mon 14 Sep: Wren phonics cards done.
+Tue 15 Sep: Pip science homework done.
+Tue 15 Sep: Wren reading done, two pages.
+Wed 16 Sep: Pip spelling practice done.
+Wed 16 Sep: Wren number bonds done.
+Thu 17 Sep: Pip maths homework half done.
+Thu 17 Sep: Wren reading done.
+Fri 18 Sep: Pip science homework done, needs a drawing.
+Fri 18 Sep: Wren phonics cards done.
+Mon 21 Sep: Pip maths homework done.
+Mon 21 Sep: Wren reading done, two pages.
+Tue 22 Sep: Pip science homework done.
+Tue 22 Sep: Wren number bonds done.
+Wed 23 Sep: Pip spelling practice done.
+Wed 23 Sep: Wren reading done.
+Thu 24 Sep: Pip maths homework half done.
+Thu 24 Sep: Wren phonics cards done.
+Fri 25 Sep: Pip science homework done, needs a drawing.
+Fri 25 Sep: Wren reading done, two pages.
+Mon 28 Sep: Pip maths homework done.
+Mon 28 Sep: Wren number bonds done.
+Tue 29 Sep: Pip science homework done.
+Tue 29 Sep: Wren reading done.
+Wed 30 Sep: Pip spelling practice done.
+Wed 30 Sep: Wren phonics cards done.
+Thu 1 Oct: Pip maths homework half done.
+Thu 1 Oct: Wren reading done, two pages.
+Fri 2 Oct: Pip science homework done, needs a drawing.
+Fri 2 Oct: Wren number bonds done.
+Mon 5 Oct: Pip maths homework done.
+Mon 5 Oct: Wren reading done.
+Tue 6 Oct: Pip science homework done.
+Tue 6 Oct: Wren phonics cards done.
+Wed 7 Oct: Pip spelling practice done.
+Wed 7 Oct: Wren reading done, two pages.
+Thu 8 Oct: Pip maths homework half done.
+Thu 8 Oct: Wren number bonds done.
+Fri 9 Oct: Pip science homework done, needs a drawing.
+Fri 9 Oct: Wren reading done.
+Mon 12 Oct: Pip maths homework done.
+Mon 12 Oct: Wren phonics cards done.
+Tue 13 Oct: Pip science homework done.
+Tue 13 Oct: Wren reading done, two pages.
+Wed 14 Oct: Pip spelling practice done.
+Wed 14 Oct: Wren number bonds done.
+Thu 15 Oct: Pip maths homework half done.
+Thu 15 Oct: Wren reading done.
+Fri 16 Oct: Pip science homework done, needs a drawing.
+Fri 16 Oct: Wren phonics cards done.
+Mon 19 Oct: Pip maths homework done.
+Mon 19 Oct: Wren reading done, two pages.
+Tue 20 Oct: Pip science homework done.
+Tue 20 Oct: Wren number bonds done.
+Wed 21 Oct: Pip spelling practice done.
+Wed 21 Oct: Wren reading done.
+Thu 22 Oct: Pip maths homework half done.
+Thu 22 Oct: Wren phonics cards done.
+Fri 23 Oct: Pip science homework done, needs a drawing.
+Fri 23 Oct: Wren reading done, two pages.
+Mon 26 Oct: Pip maths homework done.
+Mon 26 Oct: Wren number bonds done.
+Tue 27 Oct: Pip science homework done.
+Tue 27 Oct: Wren reading done.
+Wed 28 Oct: Pip spelling practice done.
+Wed 28 Oct: Wren phonics cards done.
+Thu 29 Oct: Pip maths homework half done.
+Thu 29 Oct: Wren reading done, two pages.
+Fri 30 Oct: Pip science homework done, needs a drawing.
+Fri 30 Oct: Wren number bonds done.
+Mon 2 Nov: Pip maths homework done.
+Mon 2 Nov: Wren reading done.
+Tue 3 Nov: Pip science homework done.
+Tue 3 Nov: Wren phonics cards done.
+Wed 4 Nov: Pip spelling practice done.
+Wed 4 Nov: Wren reading done, two pages.
+Thu 5 Nov: Pip maths homework half done.
+Thu 5 Nov: Wren number bonds done.
+Fri 6 Nov: Pip science homework done, needs a drawing.
+Fri 6 Nov: Wren reading done.
+Mon 9 Nov: Pip maths homework done.
+Mon 9 Nov: Wren phonics cards done.
+Tue 10 Nov: Pip science homework done.
+Tue 10 Nov: Wren reading done, two pages.
+Wed 11 Nov: Pip spelling practice done.
+Wed 11 Nov: Wren number bonds done.
+Thu 12 Nov: Pip maths homework half done.
+Thu 12 Nov: Wren reading done.
+Fri 13 Nov: Pip science homework done, needs a drawing.
+Fri 13 Nov: Wren phonics cards done.
+Mon 16 Nov: Pip maths homework done.
+Mon 16 Nov: Wren reading done, two pages.
+Tue 17 Nov: Pip science homework done.
+Tue 17 Nov: Wren number bonds done.
+Wed 18 Nov: Pip spelling practice done.
+Wed 18 Nov: Wren reading done.
+Thu 19 Nov: Pip maths homework half done.
+Thu 19 Nov: Wren phonics cards done.
+Fri 20 Nov: Pip science homework done, needs a drawing.
+Fri 20 Nov: Wren reading done, two pages.
+Mon 23 Nov: Pip maths homework done.
+Mon 23 Nov: Wren number bonds done.
+Tue 24 Nov: Pip science homework done.
+Tue 24 Nov: Wren reading done.
+Wed 25 Nov: Pip spelling practice done.
+Wed 25 Nov: Wren phonics cards done.
+Thu 26 Nov: Pip maths homework half done.
+Thu 26 Nov: Wren reading done, two pages.
+Fri 27 Nov: Pip science homework done, needs a drawing.
+Fri 27 Nov: Wren number bonds done.
+Mon 30 Nov: Pip maths homework done.
+Mon 30 Nov: Wren reading done.
+Tue 1 Dec: Pip science homework done.
+Tue 1 Dec: Wren phonics cards done.
+Wed 2 Dec: Pip spelling practice done.
+Wed 2 Dec: Wren reading done, two pages.
+Thu 3 Dec: no homework tonight, dentist appointment in the morning.
+Fri 4 Dec: dentist appointment card is in the blue folder.
+Mon 7 Dec: Pip maths homework done.
+Mon 7 Dec: Wren phonics cards done.
+Tue 8 Dec: Pip science homework done.
+Tue 8 Dec: Wren reading done, two pages.
+Wed 9 Dec: Pip spelling practice done.
+Wed 9 Dec: Wren number bonds done.
+Thu 10 Dec: Pip maths homework half done.
+Thu 10 Dec: Wren reading done.
+Fri 11 Dec: Pip science homework done, needs a drawing.
+Fri 11 Dec: Wren phonics cards done.

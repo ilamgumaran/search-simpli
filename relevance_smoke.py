@@ -20,7 +20,12 @@ from src.search_platform.core import (
     save_index,
     search,
 )
-from src.search_platform.evaluation import RETRIEVAL_MODES, evaluate_modes, load_suite
+from src.search_platform.evaluation import (
+    RETRIEVAL_MODES,
+    discounted_cumulative_gain,
+    evaluate_modes,
+    load_suite,
+)
 from src.search_platform.folders import FolderIndex, add_change, folder_changes
 from src.search_platform.find import find, find_all
 from src.search_platform.providers import (
@@ -166,7 +171,10 @@ def run_smoke(
     return report
 
 
-PACKS = {"family-folder": Path(__file__).resolve().parent / "fixtures" / "family-folder"}
+PACKS = {
+    "family-folder": Path(__file__).resolve().parent / "fixtures" / "family-folder",
+    "j2": Path(__file__).resolve().parent / "fixtures" / "j2",
+}
 PACK_WORDS_GATE = 0.9
 # Case kinds the Python reference answers since S3-T2 (`find`): judged for precision
 # and recall across all pages after overlap deduplication; listed engine misses
@@ -433,6 +441,206 @@ def print_pack_report(report: dict) -> None:
     print(f"gate: {'pass' if report['gate']['passed'] else 'FAIL'}")
 
 
+
+# ------------------------------------------------------------------- J2 ---
+# S5-T1: the judged fixture that says where keyword search loses. The metric
+# code lives here so the Python reference (`--pack j2`) and the shipped engine
+# (`scripts/j2_run.py`) score with one implementation. A hit is
+# {root_id, path, start_line, end_line, score, chunk_id}; it takes the
+# highest-grade unmatched row it overlaps, each row matched at most once (as
+# `evaluation._ranked_relevance`), anything else is grade 0.
+
+J2_TOP_K = 10
+J2_VARIANTS = ("content", "both")
+J2_SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase")
+J2_RESULTS_SCHEMA = "j2-results-v1"
+
+
+def j2_grades(hits: list[dict], expected: list[dict]) -> tuple[list[int], list[int | None]]:
+    """Grade of each hit, and the row index each hit matched (None when none)."""
+    unmatched = set(range(len(expected)))
+    grades: list[int] = []
+    rows: list[int | None] = []
+    for hit in hits:
+        candidates = [i for i in unmatched if _hit_overlaps(hit, expected[i])]
+        if not candidates:
+            grades.append(0)
+            rows.append(None)
+            continue
+        best = max(candidates, key=lambda i: (expected[i]["grade"], -i))
+        unmatched.remove(best)
+        grades.append(expected[best]["grade"])
+        rows.append(best)
+    return grades, rows
+
+
+def j2_tie_groups(scores: list[float]) -> list[list[int]]:
+    """1-based [first, last] rank runs whose scores are exactly equal on this surface."""
+    groups = []
+    start = 0
+    for i in range(1, len(scores) + 1):
+        if i == len(scores) or scores[i] != scores[start]:
+            if i - start > 1:
+                groups.append([start + 1, i])
+            start = i
+    return groups
+
+
+def j2_query_metrics(grades: list[int], expected: list[dict]) -> dict:
+    relevant = [row["grade"] for row in expected if row["grade"] >= 1]
+    top = grades[:J2_TOP_K]
+    first_relevant = next((rank for rank, g in enumerate(top, start=1) if g >= 1), None)
+    first_answer = next((rank for rank, g in enumerate(top, start=1) if g == 2), None)
+    ideal = discounted_cumulative_gain(sorted(relevant, reverse=True)[:J2_TOP_K])
+    return {
+        "success_at_1": 1.0 if top[:1] == [2] else 0.0,
+        "mrr_at_10": 1.0 / first_relevant if first_relevant else 0.0,
+        "ndcg_at_10": discounted_cumulative_gain(top) / ideal if ideal else 0.0,
+        "recall_at_5": sum(1 for g in grades[:5] if g >= 1) / len(relevant) if relevant else 0.0,
+        "first_grade2_rank": first_answer,
+    }
+
+
+def j2_record(item: dict, hits: list[dict]) -> dict:
+    """One query's record: graded hits, ties, metrics (or the negative's information)."""
+    hits = hits[:J2_TOP_K]
+    grades, rows = j2_grades(hits, item["expected"])
+    listed = []
+    for rank, (hit, grade, row) in enumerate(zip(hits, grades, rows), start=1):
+        listed.append({"rank": rank, "root_id": hit["root_id"], "path": hit["path"],
+                       "start_line": hit["start_line"], "end_line": hit["end_line"], "grade": grade,
+                       "row": row, "score": hit["score"], "chunk_id": hit.get("chunk_id")})
+    ties = j2_tie_groups([hit["score"] for hit in hits])
+    record = {"slice": item["slice"], "mode": item["mode"], "query": item["query"], "hits": listed, "ties": ties}
+    if item.get("negative"):
+        top = listed[0] if listed else None
+        record.update({
+            "returned": len(listed),
+            "top_hit": None if top is None else {k: top[k] for k in ("root_id", "path", "start_line", "end_line")},
+            "top_hit_grade": None if top is None else top["grade"],
+            "top_is_named_distractor": None if top is None else top["row"] is not None,
+        })
+        return record
+    record.update(j2_query_metrics(grades, item["expected"]))
+    first = record["first_grade2_rank"]
+    record["first_grade2_tied"] = bool(first and any(a <= first <= b for a, b in ties))
+    return record
+
+
+def j2_summarise(judgments: dict, records: dict[str, dict]) -> dict:
+    """Slice means and the overall mean over every graded query (not a mean of slices)."""
+    keys = ("success_at_1", "mrr_at_10", "ndcg_at_10", "recall_at_5")
+
+    def mean(items: list[dict]) -> dict:
+        return {"n": len(items), **{k: round(sum(r[k] for r in items) / len(items), 6) if items else 0.0 for k in keys}}
+
+    graded = [q for q in judgments["queries"] if not q.get("negative")]
+    slices = {name: mean([records[q["id"]] for q in graded if q["slice"] == name]) for name in J2_SLICES}
+    negatives = {q["id"]: {k: records[q["id"]][k] for k in ("returned", "top_hit", "top_hit_grade", "top_is_named_distractor")}
+                 for q in judgments["queries"] if q.get("negative")}
+    return {"slices": slices, "overall": mean([records[q["id"]] for q in graded]),
+            "queries": {q["id"]: records[q["id"]] for q in judgments["queries"]}, "negatives": negatives}
+
+
+def j2_run_queries(judgments: dict, knowledge, find_page) -> dict:
+    """Both variants. `knowledge(query, search_field)` and `find_page(query, mode)` return
+    hits; a find row runs once and its record stands in both variants."""
+    found = {q["id"]: find_page(q["query"], q["mode"].split(":", 1)[1])
+             for q in judgments["queries"] if q["mode"].startswith("find:")}
+    runs = {}
+    for variant in J2_VARIANTS:
+        records = {}
+        for q in judgments["queries"]:
+            hits = found[q["id"]] if q["id"] in found else knowledge(q["query"], variant)
+            records[q["id"]] = j2_record(q, hits)
+        runs[variant] = j2_summarise(judgments, records)
+    return runs
+
+
+def j2_judgments_sha256(pack_dir: Path | None = None) -> str:
+    return hashlib.sha256(((pack_dir or PACKS["j2"]) / "judgments.json").read_bytes()).hexdigest()
+
+
+def j2_git_head() -> str | None:
+    import subprocess
+    try:
+        done = subprocess.run(["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parent,
+                              capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return done.stdout.strip() or None if done.returncode == 0 else None
+
+
+def j2_load() -> list[float] | None:
+    import os
+    try:
+        return [round(x, 2) for x in os.getloadavg()]
+    except (AttributeError, OSError):
+        return None
+
+
+def run_j2_pack() -> dict:
+    """J2 through the Python reference: one union index of the three roots with the
+    file-name channel on; knowledge rows lexical, top 10, `content` and `both`;
+    find rows first page of 10."""
+    import os
+    import platform
+    pack_dir = PACKS["j2"]
+    judgments = json.loads((pack_dir / "judgments.json").read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory() as scratch:
+        union = Path(scratch) / "union"
+        for root in judgments["roots"]:
+            shutil.copytree(pack_dir / root, union / root)
+        index = build_index(union, filename_index=True)
+
+        def split(path: str) -> tuple[str, str]:
+            root, _, rest = path.partition("/")
+            return root, rest
+
+        def knowledge(query: str, field: str) -> list[dict]:
+            out = []
+            for r in search(index, query, top_k=J2_TOP_K, retrieval_mode="lexical", search_field=field):
+                root, rest = split(r["citation"]["path"])
+                score = r["ranking"]["lexical"]["score"] if field == "content" else r["score"]
+                out.append({"root_id": root, "path": rest, "start_line": r["citation"]["start_line"],
+                            "end_line": r["citation"]["end_line"], "score": score, "chunk_id": r.get("chunk_id")})
+            return out
+
+        def find_page(query: str, mode: str) -> list[dict]:
+            out = []
+            for h in find(index, query, mode=mode, page_size=J2_TOP_K)["hits"]:
+                root, rest = split(h["path"])
+                out.append({"root_id": root, "path": rest, "start_line": h["start_line"], "end_line": h["end_line"],
+                            "score": h["score"], "chunk_id": h.get("chunk_id")})
+            return out
+
+        runs = j2_run_queries(judgments, knowledge, find_page)
+    return {
+        "schema": J2_RESULTS_SCHEMA,
+        "surface": "python-reference",
+        "judgments_sha256": j2_judgments_sha256(pack_dir),
+        "engine": {"commit": j2_git_head(), "python_version": platform.python_version(),
+                   "hashseed": os.environ.get("PYTHONHASHSEED")},
+        "load": j2_load(),
+        "top_k": J2_TOP_K,
+        "runs": runs,
+    }
+
+
+def print_j2_report(results: dict) -> None:
+    print(f"J2 through the {results['surface']} (top {results['top_k']}, judgments {results['judgments_sha256'][:12]})")
+    for variant, run in results["runs"].items():
+        print(f"  search_field {variant}:  slice         n  success@1  MRR@10  nDCG@10  recall@5")
+        for name, m in list(run["slices"].items()) + [("overall", run["overall"])]:
+            print(f"    {name:<12} {m['n']:>3}  {m['success_at_1']:9.3f}  {m['mrr_at_10']:6.3f}  "
+                  f"{m['ndcg_at_10']:7.3f}  {m['recall_at_5']:8.3f}")
+        lost = [qid for qid, r in run["queries"].items()
+                if r["slice"] == "control" and r["first_grade2_rank"] != 1]
+        print(f"    control rows not at rank 1: {lost or 'none'}")
+        returned = sum(1 for n in run["negatives"].values() if n["returned"])
+        print(f"    negatives: {returned}/{len(run['negatives'])} return hits")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         allow_abbrev=False,
@@ -469,6 +677,15 @@ def main(argv: list[str] | None = None) -> int:
                               and value.split("=", 1)[0] not in {"--pack", "--top-k", "--output"}})
         if unsupported:
             parser.error("--pack does not support " + ", ".join(unsupported))
+        if args.pack == "j2":
+            if args.top_k not in (None, J2_TOP_K):
+                parser.error(f"--pack j2 runs at top_k {J2_TOP_K}")
+            results = run_j2_pack()
+            print_j2_report(results)
+            if args.output:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(json.dumps(results, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            return 0
         report = run_pack(args.pack, top_k=5 if args.top_k is None else args.top_k)
         print_pack_report(report)
         if args.output:

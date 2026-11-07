@@ -969,7 +969,7 @@ def _bm25_scores(chunks: list[dict], query_terms: list[str]) -> dict[str, float]
     scores: dict[str, float] = defaultdict(float)
     k1, b = 1.2, 0.75
     for chunk in chunks:
-        for term in set(query_terms):
+        for term in sorted(set(query_terms)):
             frequency = chunk["terms"].get(term, 0)
             if not frequency:
                 continue

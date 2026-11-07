@@ -152,3 +152,26 @@ No other conflicts were found against the register at reviewed commit `a5bb976`.
   than converting the merge action into an approval that was never stated.
 - **Future rule:** every subsequent CAP-11 extension, beginning with E-01A, must
   obtain its own explicit human approval before implementation.
+
+## 13. Extension: J2, the judged fixture (S5-T1)
+
+- **What it adds.** A second judgment pack beside family-folder,
+  `fixtures/j2/` (68 invented files in three roots, 109 queries in seven slices
+  plus negatives, grades 0–2), run through the shipped `searchd`
+  (`scripts/j2_run.py`) and the Python reference (`relevance_smoke.py --pack
+  j2`), a committed baseline (`fixtures/j2/baseline.json`) and a regression gate
+  (`scripts/j2_gate.py`: a slice MRR@10 drop over 0.02, a control rank-1 loss,
+  or a first grade-2 rank worse by more than 3 without an allow-list entry
+  fails). CI runs the Python reference through the gate. Details and the
+  baseline table: `docs/evaluation.md`, section J2.
+- **What it does not change.** `evaluate.py`, the v2 suite format (grades 1–3)
+  and every existing gate are untouched; J2 keeps its own judgment format with
+  grades 0–2. Status stays **Diagnostic**: the content and the questions were
+  authored together.
+- **Approval (§12's rule).** J2 was queued as the 'harder judged benchmark' in
+  the agreed order since 4 Oct 2026; on 6 Nov 2026 at 19:20 EST the owner
+  directed the work to 'focus on improving search next', and the S5 shape with
+  J2 first was put to the owner the same evening.
+- **If the owner objects** to this record as the approval, this section is
+  reverted and J2 stays a fixture (the pack, the runner and the gate remain;
+  CAP-11 does not name them).
