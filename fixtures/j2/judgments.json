@@ -1,0 +1,4998 @@
+{
+  "version": 1,
+  "pack": "j2",
+  "roots": [
+    "school",
+    "home",
+    "laptop"
+  ],
+  "conventions": {
+    "lines": "1-based; a line ends at \\n or \\r\\n; a final line without a terminator counts; a BOM is not part of any line",
+    "grades": "2 the answer; 1 useful context; 0 a named distractor (never relevant). Title intent: grade 2 is the whole file",
+    "hit_match": "a hit matches a row when root_id and path are equal and the line ranges overlap; a hit takes the highest-grade unmatched row it overlaps and each row is matched at most once",
+    "modes": "knowledge = search_knowledge (lexical, top 10, search_field content and both); find:words, find:phrase, find:prefix = find in that mode, first page of 10",
+    "negatives": "an empty answer set; rows name the distractors; reported as hit count, top hit and whether it is a named distractor",
+    "checks": "asserted by generate.py with the analyzer-v2 simple case fold"
+  },
+  "slices": {
+    "control": 20,
+    "misspelling": 15,
+    "morphology": 12,
+    "accent": 6,
+    "tamil": 10,
+    "title": 10,
+    "phrase": 8,
+    "negatives": 0
+  },
+  "counts": {
+    "control": 23,
+    "misspelling": 16,
+    "morphology": 13,
+    "accent": 9,
+    "tamil": 13,
+    "title": 11,
+    "phrase": 10,
+    "negatives": 14
+  },
+  "files": [
+    {
+      "root_id": "home",
+      "path": "birthday-party-wren.md",
+      "bytes": 376,
+      "lines": 23,
+      "sha256": "d3680a1a71c35d99558a6967ae14c5d262d720cd1c07a33acbfd5418840e63b2"
+    },
+    {
+      "root_id": "home",
+      "path": "calendar-november.md",
+      "bytes": 252,
+      "lines": 7,
+      "sha256": "b7be43c399e766346d57ede3aacfbfb08b126ce1ebd451ae027a08fcf4c2abdc"
+    },
+    {
+      "root_id": "home",
+      "path": "chores.md",
+      "bytes": 539,
+      "lines": 23,
+      "sha256": "c3a07ac9f3dc7cb00524c9bfc6af716b1514f1a00f67914e792b768609e690ea"
+    },
+    {
+      "root_id": "home",
+      "path": "fridge-notes.md",
+      "bytes": 358,
+      "lines": 15,
+      "sha256": "1361cbfb1a0e958e3a198d3d672c4d21f12bf61de820ba2233b5270a31551f54"
+    },
+    {
+      "root_id": "home",
+      "path": "garden-diary.md",
+      "bytes": 15584,
+      "lines": 397,
+      "sha256": "a415b5eeeb1798886df984dec06082290ca99d1df2348ab2eb20771c2a3c71e6"
+    },
+    {
+      "root_id": "home",
+      "path": "health/doctor-visits.md",
+      "bytes": 143,
+      "lines": 9,
+      "sha256": "d7cfb1b36fd4ca5e3385500e9a661bb93dfc98df486e4129896ecc0c564ff821"
+    },
+    {
+      "root_id": "home",
+      "path": "holiday/seaside-packing.md",
+      "bytes": 138,
+      "lines": 9,
+      "sha256": "239889622593ff724012ef64df99051f48eb982fc92466cf40fe35c54a42bc33"
+    },
+    {
+      "root_id": "home",
+      "path": "house-rules.md",
+      "bytes": 283,
+      "lines": 14,
+      "sha256": "147b8e1c0d6bf79d332a8d7c995d448c7a57132e8667867b9c397900cb2c2fc4"
+    },
+    {
+      "root_id": "home",
+      "path": "money/pocket-money.md",
+      "bytes": 377,
+      "lines": 16,
+      "sha256": "36a732815a35ac803f0e7e960db7c5f231c9ba405da3f6ce8c27ca7dc3472381"
+    },
+    {
+      "root_id": "home",
+      "path": "music/recorder-practice.md",
+      "bytes": 271,
+      "lines": 15,
+      "sha256": "219a2da5c86c88c27d50c655e2146729dad329a4d0d5bc6427b48d1f457fb36b"
+    },
+    {
+      "root_id": "home",
+      "path": "pets/biscuit-the-dog.md",
+      "bytes": 485,
+      "lines": 23,
+      "sha256": "b3c6498f1a36e5622f68da1803418c42cf27cbdd5e1c965f9c666dc812615a06"
+    },
+    {
+      "root_id": "home",
+      "path": "pets/fish-tank.md",
+      "bytes": 150,
+      "lines": 4,
+      "sha256": "835765bcda10f3ba92737050f6490e18205b2e7fd183ebd3aeb77cae7b00ee1e"
+    },
+    {
+      "root_id": "home",
+      "path": "phone-numbers.txt",
+      "bytes": 148,
+      "lines": 7,
+      "sha256": "c7da170257e1a0352271cad17c6898ced19f79ade9165c5cd6d9ddf2d4dccf24"
+    },
+    {
+      "root_id": "home",
+      "path": "recipes/pancakes.md",
+      "bytes": 321,
+      "lines": 17,
+      "sha256": "b2ad0514e47dca41cf77deb839b2dbfe0eeab2e9c50817b2fb8586b59a14491c"
+    },
+    {
+      "root_id": "home",
+      "path": "recipes/rasam.md",
+      "bytes": 324,
+      "lines": 10,
+      "sha256": "29153d100a416e07edf34c39f03c4c4e0f0a987a0c356a8383830f3d7dc08ee8"
+    },
+    {
+      "root_id": "home",
+      "path": "recipes/winter-drinks.md",
+      "bytes": 265,
+      "lines": 10,
+      "sha256": "31bbba763c3b0867fabbc7c7a22f577b187e783d20f1a14098d7f1a8af86efec"
+    },
+    {
+      "root_id": "home",
+      "path": "roof-and-heating.md",
+      "bytes": 175,
+      "lines": 4,
+      "sha256": "555f16049491ec665934fe456d9cc9b934af3dcc013d7ac47b398afd084e5795"
+    },
+    {
+      "root_id": "home",
+      "path": "shopping-list.md",
+      "bytes": 120,
+      "lines": 12,
+      "sha256": "fdf223af696a47f6d95d352196df2b8c8ed457f81078a9b130cf7206287e7c18"
+    },
+    {
+      "root_id": "home",
+      "path": "tamil/பாட்டி-கடிதங்கள்.md",
+      "bytes": 1628,
+      "lines": 35,
+      "sha256": "3b9cf8aaa1e66b0fb1696a4ac8f101d1f87bc435bb0c5982f0ba1ff8c4f8ae81"
+    },
+    {
+      "root_id": "home",
+      "path": "weekend-plans.md",
+      "bytes": 358,
+      "lines": 15,
+      "sha256": "d1320fea31e28686b2b055ac623a7fe691ede5280ffc36525615b9c954934db4"
+    },
+    {
+      "root_id": "home",
+      "path": "weekend/sale-in-the-field.md",
+      "bytes": 247,
+      "lines": 5,
+      "sha256": "82de2063b55c295f4cf03c6d1d09da8499b9aa971f477d49672db1a6701f3709"
+    },
+    {
+      "root_id": "laptop",
+      "path": "archive/old-term-dates.md",
+      "bytes": 142,
+      "lines": 7,
+      "sha256": "fe5e8c1af4cde3a227a78a83543218b01a7e3729b66dabc35966784b6232f28c"
+    },
+    {
+      "root_id": "laptop",
+      "path": "budget-autumn.md",
+      "bytes": 225,
+      "lines": 14,
+      "sha256": "1771698fe77884e15713993d0ccfbcb8ce8ecbc6d5d4ed416c0110b5baf4902d"
+    },
+    {
+      "root_id": "laptop",
+      "path": "club-timetable.md",
+      "bytes": 579,
+      "lines": 28,
+      "sha256": "abdfbea57b8ac11de9bd5144ce2d7b1dbf14b07799851c2bd26c972db0f3884b"
+    },
+    {
+      "root_id": "laptop",
+      "path": "clubs/football/match-days.md",
+      "bytes": 201,
+      "lines": 5,
+      "sha256": "4b2385ede7629399dc1c7ec2b88bbd805488eec88ed6b1ff77879c770222312a"
+    },
+    {
+      "root_id": "laptop",
+      "path": "emails-to-school.md",
+      "bytes": 388,
+      "lines": 16,
+      "sha256": "1af2ce1162401c7d413823c193c0ad12cd1a23240ccafca806b15a4eaeb138f8"
+    },
+    {
+      "root_id": "laptop",
+      "path": "ideas/kitchen-science.md",
+      "bytes": 176,
+      "lines": 4,
+      "sha256": "8717a69ccfec58066291e15a443e465625094b9eeee40680d525233d16a03c97"
+    },
+    {
+      "root_id": "laptop",
+      "path": "kids-questions.md",
+      "bytes": 304,
+      "lines": 15,
+      "sha256": "dbb387ec1673f1dc4e3856c45c6a0605821a04cfa5a0464b00c42294642238b5"
+    },
+    {
+      "root_id": "laptop",
+      "path": "log/homework-tracker.txt",
+      "bytes": 5510,
+      "lines": 141,
+      "sha256": "82e3bbef29dac4f598d10a3b15ea91e61e37c468326ea18ed2dec33d11a1fa60"
+    },
+    {
+      "root_id": "laptop",
+      "path": "meeting-notes-pta.md",
+      "bytes": 489,
+      "lines": 20,
+      "sha256": "89a5a1fb6d99249fda1ca243f8f4e740865879a8769111551de3b54206c71a2d"
+    },
+    {
+      "root_id": "laptop",
+      "path": "notes/car-garage.md",
+      "bytes": 228,
+      "lines": 11,
+      "sha256": "69b5082e98249acca54a9b52f4643c659e246cb99640d1d628d3376318a1bef7"
+    },
+    {
+      "root_id": "laptop",
+      "path": "notes/dentist.md",
+      "bytes": 230,
+      "lines": 10,
+      "sha256": "a599e61ee7e560083c0bb9843b42ba98dfde79d8f914cb204f24c37928f43e48"
+    },
+    {
+      "root_id": "laptop",
+      "path": "notes/uniform.md",
+      "bytes": 250,
+      "lines": 5,
+      "sha256": "4b1f9ea4acce7ce6458601876a85c677d1df59b451cad3952df002705cd741c0"
+    },
+    {
+      "root_id": "laptop",
+      "path": "packing-lists/camping.md",
+      "bytes": 270,
+      "lines": 15,
+      "sha256": "117ed68421dd9e520dae141c6c38f55d801dba80a265fcbf887dc3e12dee8dd8"
+    },
+    {
+      "root_id": "laptop",
+      "path": "plans/half-term-plans.md",
+      "bytes": 211,
+      "lines": 12,
+      "sha256": "c42c65543ab2500df659161db387fa796116f5173e1452f53637b5ac72b862bb"
+    },
+    {
+      "root_id": "laptop",
+      "path": "projects/pip-planet-model.md",
+      "bytes": 299,
+      "lines": 11,
+      "sha256": "32d64ff74b7f2010b0aaaa1d3b2e2fdd10d4411006244338d78bd9cecc2bf3fe"
+    },
+    {
+      "root_id": "laptop",
+      "path": "reading-list.md",
+      "bytes": 261,
+      "lines": 14,
+      "sha256": "b0e03ea49f85cc06487ded619afa19e0031649111c06164d7b7a7440731d7aa9"
+    },
+    {
+      "root_id": "laptop",
+      "path": "recipes-to-try.txt",
+      "bytes": 211,
+      "lines": 7,
+      "sha256": "c9a7acdce8c3e4898e9fd748fb3b85a67a53fe2c7a80de1f19f16c82f8bccf3a"
+    },
+    {
+      "root_id": "laptop",
+      "path": "school-run-rota.md",
+      "bytes": 349,
+      "lines": 21,
+      "sha256": "aa8c2bfaf8f99ee271b7b7d456f5693311a4b7338fc401c71d79d54b03765612"
+    },
+    {
+      "root_id": "laptop",
+      "path": "tamil/tamil-stories.md",
+      "bytes": 1084,
+      "lines": 23,
+      "sha256": "ffa894762c45a0afb0ada92695dfcff3d29e151345e7f114b82617229d516807"
+    },
+    {
+      "root_id": "laptop",
+      "path": "wishlist.md",
+      "bytes": 133,
+      "lines": 8,
+      "sha256": "ad6c71d4b6faf46490fddd57a507a84a608e53a7a4581496830b89bcecec6481"
+    },
+    {
+      "root_id": "school",
+      "path": "art-club/autumn-projects.md",
+      "bytes": 385,
+      "lines": 16,
+      "sha256": "ebf7e82db08894db040cb08b768cc1e0bcc5b78a78381e9d556a28c76cc1ba74"
+    },
+    {
+      "root_id": "school",
+      "path": "art/year5-pottery.md",
+      "bytes": 263,
+      "lines": 11,
+      "sha256": "c541cdab48f03980bc7bfd24a19ff0263039e50cc25ec1ee9bd483479476dee4"
+    },
+    {
+      "root_id": "school",
+      "path": "class-notes-pip.md",
+      "bytes": 794,
+      "lines": 38,
+      "sha256": "ceb0568e2968c22e3268f0982dbb30ab0e42ddf3ecdef99ed1b473cc50455bef"
+    },
+    {
+      "root_id": "school",
+      "path": "class-notes-wren.md",
+      "bytes": 414,
+      "lines": 20,
+      "sha256": "8e51340a756b1ed55f97166b7fc24ea3479ff7ba8015f8626a17e850d1924eae"
+    },
+    {
+      "root_id": "school",
+      "path": "class-rules.md",
+      "bytes": 319,
+      "lines": 12,
+      "sha256": "3317b086635a64d65153ad096095198f0203b423cc4a7117f34a044fe197b346"
+    },
+    {
+      "root_id": "school",
+      "path": "contacts.txt",
+      "bytes": 304,
+      "lines": 9,
+      "sha256": "c693501f20d3bbd3d411c80e8b6310fbcae8581422b1cc8b97ae1121ee7cf8ed"
+    },
+    {
+      "root_id": "school",
+      "path": "dinosaur-topic.md",
+      "bytes": 794,
+      "lines": 25,
+      "sha256": "237cee521e27f77e1ae8b3f577c35276753b63a8015bd4d3e488df82a1ada6b8"
+    },
+    {
+      "root_id": "school",
+      "path": "empty-notes.txt",
+      "bytes": 0,
+      "lines": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "root_id": "school",
+      "path": "german-club.md",
+      "bytes": 278,
+      "lines": 15,
+      "sha256": "744c71621085ad8d63bc536ed7159175c5d74ecccd0f4b4b9c449256cd718a58"
+    },
+    {
+      "root_id": "school",
+      "path": "letters/letter-home-oct.txt",
+      "bytes": 496,
+      "lines": 16,
+      "sha256": "e4cb99048faf0ce8d6669527a870d032dcb8886e7a1ec1170c6c547e425b56d3"
+    },
+    {
+      "root_id": "school",
+      "path": "lunch-menu.md",
+      "bytes": 379,
+      "lines": 23,
+      "sha256": "4463edd8cac2aaecc78425b980b3dcf273aa15b1f630deec258ca4bacb83e526"
+    },
+    {
+      "root_id": "school",
+      "path": "maths-homework.md",
+      "bytes": 557,
+      "lines": 20,
+      "sha256": "e762d4c64b5a4c340c74e69d8a8ed8ccd775941289d79f4eb208f48c84c393ee"
+    },
+    {
+      "root_id": "school",
+      "path": "maths-practice.md",
+      "bytes": 506,
+      "lines": 19,
+      "sha256": "b0f2bd2d868c270be23334c83bb389c07ffb34ae2ad4e6af5dadf0857f4b347a"
+    },
+    {
+      "root_id": "school",
+      "path": "newsletter-autumn.md",
+      "bytes": 1326,
+      "lines": 58,
+      "sha256": "59f7518fa905cacade9712a123b3549c42d09441adbd73463f9ce60927126997"
+    },
+    {
+      "root_id": "school",
+      "path": "notes-from-phone.txt",
+      "bytes": 193,
+      "lines": 5,
+      "sha256": "737f052134a3b91d036b5b0d3923ace2894c9d5dfd35009b0a3f3f0c200033c9"
+    },
+    {
+      "root_id": "school",
+      "path": "pe-kit.txt",
+      "bytes": 63,
+      "lines": 1,
+      "sha256": "890478ef994e8d2f449b1efb12f44e68bdd76e9d9fd2457733c837ccc341ce92"
+    },
+    {
+      "root_id": "school",
+      "path": "reading-log-pip.md",
+      "bytes": 590,
+      "lines": 21,
+      "sha256": "a3149a167b00ea00cf66864911523a652e114a5327c6ddb24abab456f7b99ced"
+    },
+    {
+      "root_id": "school",
+      "path": "school-play.md",
+      "bytes": 589,
+      "lines": 20,
+      "sha256": "dff9fed443d3ecc93397ff37d01507ad0579a13bd92c22bc7f89d8a11a3a105d"
+    },
+    {
+      "root_id": "school",
+      "path": "science-fair.md",
+      "bytes": 693,
+      "lines": 19,
+      "sha256": "e759446eb57713c181667cf01d654fad8614cde3479997d0c5e218b9461d9b19"
+    },
+    {
+      "root_id": "school",
+      "path": "science-homework.md",
+      "bytes": 1024,
+      "lines": 34,
+      "sha256": "0c795a2ba11cd3bd25f88cec3ff39517c577528d53a7720e3ec8189a2973a24d"
+    },
+    {
+      "root_id": "school",
+      "path": "spelling-lists.md",
+      "bytes": 536,
+      "lines": 22,
+      "sha256": "1e8f68fd75ea63bf57c5b14608f28fcf16b9c50bc810c17beb7710b53935bc70"
+    },
+    {
+      "root_id": "school",
+      "path": "sports-day.md",
+      "bytes": 347,
+      "lines": 16,
+      "sha256": "4c954a538d414577281c6b46be35475bae87b05d78e6f864e6ee25260ab52588"
+    },
+    {
+      "root_id": "school",
+      "path": "swimming-lessons/autumn-term.md",
+      "bytes": 390,
+      "lines": 7,
+      "sha256": "eac2bf04d94f80f835ebc9f5eead0335916c009f0e63a279b69a896364aa3b79"
+    },
+    {
+      "root_id": "school",
+      "path": "tamil/tamil-class.md",
+      "bytes": 1524,
+      "lines": 27,
+      "sha256": "620a6fde9197f1b9e2bad36c14ccdc6f19dc6c4ae5fb2e2af4118aedd330663f"
+    },
+    {
+      "root_id": "school",
+      "path": "term-dates.md",
+      "bytes": 320,
+      "lines": 16,
+      "sha256": "5f2c60e36534ff26b63dea9e1dba2c7c67171c69724529270a488ad72e6517e1"
+    },
+    {
+      "root_id": "school",
+      "path": "trip-permission-museum.md",
+      "bytes": 405,
+      "lines": 15,
+      "sha256": "e36a4935b16fc4704ef014372ff5fb4bf0d996d6c0d9fe9747c265e6fe66d818"
+    },
+    {
+      "root_id": "school",
+      "path": "volcano-project.md",
+      "bytes": 612,
+      "lines": 21,
+      "sha256": "72be845b434fc5f20fedf0a67c7285d9d10f84d54d859bd8e0d82de60afa7600"
+    }
+  ],
+  "queries": [
+    {
+      "slice": "control",
+      "id": "c01",
+      "question": "When is the volcano project due?",
+      "query": "volcano project due date",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "volcano-project.md",
+          "start_line": 11,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "Volcano project",
+            "Due date"
+          ],
+          "note": "the due date"
+        },
+        {
+          "root_id": "school",
+          "path": "class-notes-pip.md",
+          "start_line": 32,
+          "end_line": 32,
+          "grade": 1,
+          "note": "the class note that it is due soon"
+        },
+        {
+          "root_id": "laptop",
+          "path": "projects/pip-planet-model.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 0,
+          "section_path": [
+            "Planet model",
+            "What to make"
+          ],
+          "note": "another project"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 25,
+          "end_line": 27,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Science week"
+          ],
+          "note": "a volcano demo, not the project"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c02",
+      "question": "What do I need for swimming on Tuesday?",
+      "query": "swimming kit tuesday",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-notes-wren.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 2,
+          "section_path": [
+            "Year 2 class notes",
+            "Reminders"
+          ],
+          "note": "the kit list"
+        },
+        {
+          "root_id": "school",
+          "path": "swimming-lessons/autumn-term.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "the lessons, no kit list"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Swimming"
+          ],
+          "note": "lessons start"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c03",
+      "question": "What time does the school play start?",
+      "query": "school play start time",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "school-play.md",
+          "start_line": 5,
+          "end_line": 9,
+          "grade": 2,
+          "section_path": [
+            "School play",
+            "The evening"
+          ],
+          "note": "start at six"
+        },
+        {
+          "root_id": "school",
+          "path": "school-play.md",
+          "start_line": 11,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "School play",
+            "Rehearsal"
+          ],
+          "note": "rehearsal times, not the play"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c04",
+      "question": "Who is in the relay team?",
+      "query": "relay team",
+      "mode": "find:words",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "sports-day.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 2,
+          "section_path": [
+            "Sports day",
+            "Relay"
+          ],
+          "note": "the team"
+        },
+        {
+          "root_id": "school",
+          "path": "sports-day.md",
+          "start_line": 10,
+          "end_line": 12,
+          "grade": 0,
+          "section_path": [
+            "Sports day",
+            "Food stall"
+          ],
+          "note": "same page, other part"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c05",
+      "question": "When does the library book go back?",
+      "query": "library book due back",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-notes-pip.md",
+          "start_line": 20,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "Year 5 class notes",
+            "Week 8"
+          ],
+          "note": "return by Monday"
+        },
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 4,
+          "end_line": 4,
+          "grade": 0,
+          "note": "a library visit"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c06",
+      "question": "What's the screen time rule on school nights?",
+      "query": "screen time school nights",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "house-rules.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "House rules",
+            "Screens"
+          ],
+          "note": "the rule"
+        },
+        {
+          "root_id": "laptop",
+          "path": "meeting-notes-pta.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 0,
+          "section_path": [
+            "PTA meeting notes",
+            "Screen time talk"
+          ],
+          "note": "a talk about screen time"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c07",
+      "question": "Is it fish and chips on Friday?",
+      "query": "fish chips friday",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 21,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "School lunch menu",
+            "Friday"
+          ],
+          "note": "fish and chips"
+        },
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 13,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "School lunch menu",
+            "Wednesday"
+          ],
+          "note": "fish fingers"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c08",
+      "question": "When is the dentist appointment?",
+      "query": "dentist appointment",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/dentist.md",
+          "start_line": 3,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Dentist",
+            "Next appointment"
+          ],
+          "note": "the appointment, a short section"
+        },
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 130,
+          "end_line": 131,
+          "grade": 0,
+          "note": "a long log window holding the pair twice: the length-normalisation row"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c09",
+      "question": "What's the wifi password?",
+      "query": "wifi password",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Fridge notes",
+            "Wifi"
+          ],
+          "note": "the password"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c10",
+      "question": "When is half term?",
+      "query": "half term dates",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "term-dates.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 2,
+          "section_path": [
+            "School year",
+            "Autumn term"
+          ],
+          "note": "this year's half term"
+        },
+        {
+          "root_id": "laptop",
+          "path": "archive/old-term-dates.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "last year's dates"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c11",
+      "question": "How long should I practise the recorder?",
+      "query": "recorder practice minutes",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "music/recorder-practice.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Recorder",
+            "Every day"
+          ],
+          "note": "fifteen minutes"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c12",
+      "question": "Who picks up on Wednesday?",
+      "query": "wednesday pickup",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "school-run-rota.md",
+          "start_line": 11,
+          "end_line": 13,
+          "grade": 2,
+          "section_path": [
+            "School run rota",
+            "Wednesday"
+          ],
+          "note": "Joss"
+        },
+        {
+          "root_id": "laptop",
+          "path": "school-run-rota.md",
+          "start_line": 3,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "School run rota",
+            "Monday"
+          ],
+          "note": "another day"
+        },
+        {
+          "root_id": "laptop",
+          "path": "school-run-rota.md",
+          "start_line": 7,
+          "end_line": 9,
+          "grade": 0,
+          "section_path": [
+            "School run rota",
+            "Tuesday"
+          ],
+          "note": "another day"
+        },
+        {
+          "root_id": "laptop",
+          "path": "school-run-rota.md",
+          "start_line": 15,
+          "end_line": 17,
+          "grade": 0,
+          "section_path": [
+            "School run rota",
+            "Thursday"
+          ],
+          "note": "another day"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c13",
+      "question": "What does Biscuit eat?",
+      "query": "biscuit dog food",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "pets/biscuit-the-dog.md",
+          "start_line": 8,
+          "end_line": 10,
+          "grade": 2,
+          "section_path": [
+            "Biscuit",
+            "Food"
+          ],
+          "note": "dog food twice a day"
+        },
+        {
+          "root_id": "home",
+          "path": "pets/biscuit-the-dog.md",
+          "start_line": 12,
+          "end_line": 14,
+          "grade": 0,
+          "section_path": [
+            "Biscuit",
+            "Treats"
+          ],
+          "note": "treats, not meals"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c14",
+      "question": "What are this week's spelling words?",
+      "query": "spelling words week 9",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "spelling-lists.md",
+          "start_line": 12,
+          "end_line": 16,
+          "grade": 2,
+          "section_path": [
+            "Spelling lists",
+            "Week 9"
+          ],
+          "note": "the week 9 list (setext heading)"
+        },
+        {
+          "root_id": "school",
+          "path": "spelling-lists.md",
+          "start_line": 6,
+          "end_line": 10,
+          "grade": 0,
+          "section_path": [
+            "Spelling lists",
+            "Week 8"
+          ],
+          "note": "the week before"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c15",
+      "question": "பூனை கதை எங்கே? (where is the cat story?)",
+      "query": "பூனை கதை",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "tamil/tamil-stories.md",
+          "start_line": 5,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "கதைகள்",
+            "The cat"
+          ],
+          "note": "the cat story"
+        },
+        {
+          "root_id": "laptop",
+          "path": "tamil/tamil-stories.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "கதைகள்",
+            "Elephants"
+          ],
+          "note": "another story"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c16",
+      "question": "When is the café open?",
+      "query": "café opening hours",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "weekend-plans.md",
+          "start_line": 3,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "Weekend plans",
+            "Café on Mill Lane"
+          ],
+          "note": "opening hours"
+        },
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 1,
+          "end_line": 3,
+          "grade": 0,
+          "section_path": [
+            "School lunch menu"
+          ],
+          "note": "another menu"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c17",
+      "question": "Find \"bring a packed lunch\".",
+      "query": "bring a packed lunch",
+      "mode": "find:phrase",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "trip-permission-museum.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "Toy Museum trip",
+            "What to bring"
+          ],
+          "note": "the phrase, in a CRLF file"
+        },
+        {
+          "root_id": "school",
+          "path": "sports-day.md",
+          "start_line": 14,
+          "end_line": 16,
+          "grade": 0,
+          "section_path": [
+            "Sports day",
+            "Lunch"
+          ],
+          "note": "packed lunch without bring"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c18",
+      "question": "Anything starting with fossil?",
+      "query": "fossil*",
+      "mode": "find:prefix",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "dinosaur-topic.md",
+          "start_line": 17,
+          "end_line": 21,
+          "grade": 2,
+          "section_path": [
+            "Our dinosaur topic",
+            "Fossils"
+          ],
+          "note": "the fossils section"
+        },
+        {
+          "root_id": "laptop",
+          "path": "kids-questions.md",
+          "start_line": 8,
+          "end_line": 8,
+          "grade": 1,
+          "note": "a question about a fossil"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c19",
+      "question": "What's Paati's phone number?",
+      "query": "paati phone number",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "phone-numbers.txt",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 2,
+          "note": "the number list, one chunk"
+        },
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 0,
+          "note": "Paati's letters"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c20",
+      "question": "Is flour on the shopping list?",
+      "query": "shopping list eggs flour",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "shopping-list.md",
+          "start_line": 3,
+          "end_line": 8,
+          "grade": 2,
+          "note": "this week's list, CRLF"
+        },
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 12,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Fridge notes",
+            "Shopping"
+          ],
+          "note": "a shopping note without flour"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c21",
+      "question": "What are the class rules about hands up?",
+      "query": "class rules hands up",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-rules.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 2,
+          "section_path": [
+            "Class rules",
+            "In the classroom"
+          ],
+          "note": "hands up, in a file with a BOM"
+        },
+        {
+          "root_id": "home",
+          "path": "house-rules.md",
+          "start_line": 1,
+          "end_line": 14,
+          "grade": 0,
+          "note": "other rules"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c22",
+      "question": "When did we pot the tomato seedlings?",
+      "query": "tomato seedlings potted",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "garden-diary.md",
+          "start_line": 84,
+          "end_line": 84,
+          "grade": 2,
+          "note": "14 March, in the long diary"
+        },
+        {
+          "root_id": "home",
+          "path": "garden-diary.md",
+          "start_line": 145,
+          "end_line": 145,
+          "grade": 0,
+          "note": "another planting day"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "control",
+      "id": "c23",
+      "question": "Which day is PE kit?",
+      "query": "pe kit thursday",
+      "mode": "find:words",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "pe-kit.txt",
+          "start_line": 1,
+          "end_line": 1,
+          "grade": 2,
+          "note": "one line, no final newline"
+        },
+        {
+          "root_id": "school",
+          "path": "class-notes-wren.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 0,
+          "section_path": [
+            "Year 2 class notes",
+            "Reminders"
+          ],
+          "note": "swimming kit"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m01",
+      "question": "Show me the dinosaur bones page",
+      "query": "dinosoar bones",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "dinosaur-topic.md",
+          "start_line": 6,
+          "end_line": 10,
+          "grade": 2,
+          "section_path": [
+            "Our dinosaur topic",
+            "Bones and skeletons"
+          ],
+          "note": "the bones section"
+        },
+        {
+          "root_id": "home",
+          "path": "pets/biscuit-the-dog.md",
+          "start_line": 12,
+          "end_line": 14,
+          "grade": 0,
+          "section_path": [
+            "Biscuit",
+            "Treats"
+          ],
+          "note": "chew bones, short"
+        }
+      ],
+      "transposition": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "dinosoar",
+          "meant": "dinosaur",
+          "df": 0,
+          "distance": 2,
+          "transposition": false
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m02",
+      "question": "Why do we learn multiplication tables?",
+      "query": "multiplicaton tables",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "maths-practice.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 2,
+          "section_path": [
+            "Maths practice",
+            "Why we learn them"
+          ],
+          "note": "the reason"
+        },
+        {
+          "root_id": "school",
+          "path": "maths-practice.md",
+          "start_line": 10,
+          "end_line": 13,
+          "grade": 1,
+          "section_path": [
+            "Maths practice",
+            "Times tables test"
+          ],
+          "note": "the same topic"
+        },
+        {
+          "root_id": "home",
+          "path": "chores.md",
+          "start_line": 12,
+          "end_line": 14,
+          "grade": 0,
+          "section_path": [
+            "Chores",
+            "Setting the tables"
+          ],
+          "note": "tables, the furniture"
+        }
+      ],
+      "transposition": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "multiplicaton",
+          "meant": "multiplication",
+          "df": 0,
+          "distance": 1,
+          "transposition": false
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m03",
+      "question": "What do I make for the volcano project?",
+      "query": "volcanoe project",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "volcano-project.md",
+          "start_line": 5,
+          "end_line": 9,
+          "grade": 2,
+          "section_path": [
+            "Volcano project",
+            "What to make"
+          ],
+          "note": "the model"
+        },
+        {
+          "root_id": "laptop",
+          "path": "projects/pip-planet-model.md",
+          "start_line": 8,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Planet model",
+            "Project notes"
+          ],
+          "note": "project three times, short"
+        }
+      ],
+      "transposition": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "volcanoe",
+          "meant": "volcano",
+          "df": 0,
+          "distance": 1,
+          "transposition": false
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m04",
+      "question": "What's the fractions homework?",
+      "query": "fractoins homework",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "maths-homework.md",
+          "start_line": 3,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "Fractions sheet",
+            "This week"
+          ],
+          "note": "the fractions sheet"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 5,
+          "end_line": 7,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Homework club"
+          ],
+          "note": "homework, dense"
+        },
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 1,
+          "end_line": 141,
+          "grade": 0,
+          "note": "the homework log"
+        }
+      ],
+      "transposition": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "fractoins",
+          "meant": "fractions",
+          "df": 0,
+          "distance": 1,
+          "transposition": true
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m05",
+      "question": "Which friends are coming to the party?",
+      "query": "freind birthday party",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 5,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "Wren turns seven",
+            "Friends to invite"
+          ],
+          "note": "the guest list"
+        },
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "another birthday party, short"
+        }
+      ],
+      "transposition": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "freind",
+          "meant": "friend",
+          "df": 0,
+          "distance": 1,
+          "transposition": true
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m06",
+      "question": "Who picks up on Wednesday?",
+      "query": "wendesday pickup",
+      "mode": "find:words",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "school-run-rota.md",
+          "start_line": 11,
+          "end_line": 13,
+          "grade": 2,
+          "section_path": [
+            "School run rota",
+            "Wednesday"
+          ],
+          "note": "Joss"
+        }
+      ],
+      "transposition": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "wendesday",
+          "meant": "wednesday",
+          "df": 0,
+          "distance": 1,
+          "transposition": true
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m07",
+      "question": "When do the library books go back?",
+      "query": "libary books",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-notes-pip.md",
+          "start_line": 20,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "Year 5 class notes",
+            "Week 8"
+          ],
+          "note": "return by Monday"
+        },
+        {
+          "root_id": "laptop",
+          "path": "reading-list.md",
+          "start_line": 5,
+          "end_line": 9,
+          "grade": 0,
+          "section_path": [
+            "Books for the winter",
+            "Books to borrow"
+          ],
+          "note": "books, other sense"
+        }
+      ],
+      "transposition": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "libary",
+          "meant": "library",
+          "df": 0,
+          "distance": 1,
+          "transposition": false
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m08",
+      "question": "How tall is the bean?",
+      "query": "bean hieght",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "science-homework.md",
+          "start_line": 16,
+          "end_line": 21,
+          "grade": 2,
+          "section_path": [
+            "Bean diary",
+            "Measuring"
+          ],
+          "note": "how to measure the height"
+        },
+        {
+          "root_id": "home",
+          "path": "garden-diary.md",
+          "start_line": 145,
+          "end_line": 145,
+          "grade": 0,
+          "note": "a bean row in the garden"
+        }
+      ],
+      "transposition": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "hieght",
+          "meant": "height",
+          "df": 0,
+          "distance": 1,
+          "transposition": true
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m09",
+      "question": "What was the weird noise in the car?",
+      "query": "wierd noise car",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/car-garage.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Car",
+            "The noise"
+          ],
+          "note": "the click"
+        },
+        {
+          "root_id": "home",
+          "path": "weekend/sale-in-the-field.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "note": "car three times"
+        }
+      ],
+      "transposition": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "wierd",
+          "meant": "weird",
+          "df": 0,
+          "distance": 1,
+          "transposition": true
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m10",
+      "question": "Which night do the recycling bins go out?",
+      "query": "recyling bins",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 8,
+          "end_line": 10,
+          "grade": 2,
+          "section_path": [
+            "Fridge notes",
+            "Bins"
+          ],
+          "note": "Wednesday night"
+        },
+        {
+          "root_id": "home",
+          "path": "chores.md",
+          "start_line": 3,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Chores",
+            "Bins"
+          ],
+          "note": "bins twice, short"
+        }
+      ],
+      "transposition": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "recyling",
+          "meant": "recycling",
+          "df": 0,
+          "distance": 1,
+          "transposition": false
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m11",
+      "question": "Show me the dinosaur stuff",
+      "query": "dinosuar",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "dinosaur-topic.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "section_path": [
+            "Our dinosaur topic"
+          ],
+          "note": "the topic page"
+        }
+      ],
+      "transposition": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "dinosuar",
+          "meant": "dinosaur",
+          "df": 0,
+          "distance": 1,
+          "transposition": true
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m12",
+      "question": "What's happening in February?",
+      "query": "febuary",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "term-dates.md",
+          "start_line": 10,
+          "end_line": 12,
+          "grade": 2,
+          "section_path": [
+            "School year",
+            "Spring term"
+          ],
+          "note": "the February break"
+        }
+      ],
+      "transposition": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "febuary",
+          "meant": "february",
+          "df": 0,
+          "distance": 1,
+          "transposition": false
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m13",
+      "question": "When are the play rehearsals?",
+      "query": "play rehersal times",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "school-play.md",
+          "start_line": 11,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "School play",
+            "Rehearsal"
+          ],
+          "note": "rehearsal times"
+        },
+        {
+          "root_id": "school",
+          "path": "maths-practice.md",
+          "start_line": 10,
+          "end_line": 13,
+          "grade": 0,
+          "section_path": [
+            "Maths practice",
+            "Times tables test"
+          ],
+          "note": "times, other sense"
+        }
+      ],
+      "transposition": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "rehersal",
+          "meant": "rehearsal",
+          "df": 0,
+          "distance": 1,
+          "transposition": false
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m14",
+      "question": "Where are my swimming goggles?",
+      "query": "swimming goggels",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-notes-wren.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 2,
+          "section_path": [
+            "Year 2 class notes",
+            "Reminders"
+          ],
+          "note": "goggles in the kit"
+        },
+        {
+          "root_id": "school",
+          "path": "swimming-lessons/autumn-term.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "swimming lessons"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Swimming"
+          ],
+          "note": "swimming lessons start"
+        }
+      ],
+      "transposition": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "goggels",
+          "meant": "goggles",
+          "df": 0,
+          "distance": 1,
+          "transposition": true
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m15",
+      "question": "What are the science fair rules?",
+      "query": "sciense fair",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "science-fair.md",
+          "start_line": 3,
+          "end_line": 14,
+          "grade": 2,
+          "section_path": [
+            "Science fair",
+            "Science fair rules"
+          ],
+          "note": "the rules, a long list"
+        },
+        {
+          "root_id": "home",
+          "path": "weekend-plans.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Weekend plans",
+            "Winter fair"
+          ],
+          "note": "another fair, short"
+        }
+      ],
+      "transposition": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "sciense",
+          "meant": "science",
+          "df": 0,
+          "distance": 1,
+          "transposition": false
+        }
+      ]
+    },
+    {
+      "slice": "misspelling",
+      "id": "m16",
+      "question": "How do I make pancakes?",
+      "query": "pancaeks recipe",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/pancakes.md",
+          "start_line": 12,
+          "end_line": 17,
+          "grade": 2,
+          "section_path": [
+            "Pancakes",
+            "Method"
+          ],
+          "note": "the method"
+        },
+        {
+          "root_id": "home",
+          "path": "recipes/rasam.md",
+          "start_line": 1,
+          "end_line": 3,
+          "grade": 0,
+          "section_path": [
+            "Rasam"
+          ],
+          "note": "recipe, another dish"
+        }
+      ],
+      "transposition": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+          "typed": "pancaeks",
+          "meant": "pancakes",
+          "df": 0,
+          "distance": 1,
+          "transposition": true
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o01",
+      "question": "Did dinosaurs have sharp teeth?",
+      "query": "dinosaurs teeth",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "dinosaur-topic.md",
+          "start_line": 12,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "Our dinosaur topic",
+            "Teeth"
+          ],
+          "note": "sharp teeth"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/dentist.md",
+          "start_line": 7,
+          "end_line": 10,
+          "grade": 0,
+          "section_path": [
+            "Dentist",
+            "Brushing teeth"
+          ],
+          "note": "teeth three times"
+        }
+      ],
+      "only_form": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "dinosaurs",
+          "file_form": "dinosaur"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o02",
+      "question": "Can we go on a pony ride?",
+      "query": "pony ride",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "plans/half-term-plans.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "The week off",
+            "Farm day"
+          ],
+          "note": "the ponies give rides"
+        },
+        {
+          "root_id": "laptop",
+          "path": "school-run-rota.md",
+          "start_line": 19,
+          "end_line": 21,
+          "grade": 0,
+          "section_path": [
+            "School run rota",
+            "Friday"
+          ],
+          "note": "ride bikes"
+        }
+      ],
+      "only_form": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "pony",
+          "file_form": "ponies"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "ride",
+          "file_form": "rides"
+        },
+        {
+          "check": "only the form differs: no query word occurs in the answer"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o03",
+      "question": "What are the teachers' names?",
+      "query": "teachers names",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "contacts.txt",
+          "start_line": 1,
+          "end_line": 9,
+          "grade": 2,
+          "note": "teacher, name"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 21,
+          "end_line": 23,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Staff news"
+          ],
+          "note": "two new teachers"
+        }
+      ],
+      "only_form": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "teachers",
+          "file_form": "teacher"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "names",
+          "file_form": "name"
+        },
+        {
+          "check": "only the form differs: no query word occurs in the answer"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o04",
+      "question": "Where's Biscuit's lead?",
+      "query": "biscuit's lead",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "pets/biscuit-the-dog.md",
+          "start_line": 21,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "Biscuit",
+            "Lead"
+          ],
+          "note": "the hook by the back door"
+        },
+        {
+          "root_id": "home",
+          "path": "pets/biscuit-the-dog.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 0,
+          "section_path": [
+            "Biscuit",
+            "About Biscuit"
+          ],
+          "note": "Biscuit four times"
+        }
+      ],
+      "only_form": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "a singular possessive: the apostrophe splits it, every query word is in the answer"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o05",
+      "question": "When were the tulips planted?",
+      "query": "planting tulips",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "garden-diary.md",
+          "start_line": 313,
+          "end_line": 313,
+          "grade": 2,
+          "note": "12 October"
+        },
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 12,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Fridge notes",
+            "Shopping"
+          ],
+          "note": "buy tulips"
+        },
+        {
+          "root_id": "school",
+          "path": "science-homework.md",
+          "start_line": 11,
+          "end_line": 14,
+          "grade": 0,
+          "section_path": [
+            "Bean diary",
+            "Planting day"
+          ],
+          "note": "planting a bean"
+        }
+      ],
+      "only_form": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "planting",
+          "file_form": "planted"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "tulips",
+          "file_form": "tulip"
+        },
+        {
+          "check": "only the form differs: no query word occurs in the answer"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o06",
+      "question": "Why was football practice cancelled?",
+      "query": "football practice cancelled",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "club-timetable.md",
+          "start_line": 13,
+          "end_line": 16,
+          "grade": 2,
+          "section_path": [
+            "Club timetable",
+            "Changes this week"
+          ],
+          "note": "the pitch is flooded"
+        },
+        {
+          "root_id": "laptop",
+          "path": "club-timetable.md",
+          "start_line": 8,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Club timetable",
+            "Football"
+          ],
+          "note": "football practice, the usual times"
+        }
+      ],
+      "only_form": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "cancelled",
+          "file_form": "cancelling"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o07",
+      "question": "Who feeds Biscuit?",
+      "query": "feeds biscuit",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "chores.md",
+          "start_line": 7,
+          "end_line": 10,
+          "grade": 2,
+          "section_path": [
+            "Chores",
+            "Pets"
+          ],
+          "note": "Pip feeds him"
+        },
+        {
+          "root_id": "home",
+          "path": "pets/biscuit-the-dog.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 0,
+          "section_path": [
+            "Biscuit",
+            "About Biscuit"
+          ],
+          "note": "Biscuit four times"
+        }
+      ],
+      "only_form": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "feeds",
+          "file_form": "feed"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o08",
+      "question": "When are the spelling tests?",
+      "query": "spelling tests",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-notes-pip.md",
+          "start_line": 25,
+          "end_line": 28,
+          "grade": 2,
+          "section_path": [
+            "Year 5 class notes",
+            "Spelling"
+          ],
+          "note": "every Friday"
+        },
+        {
+          "root_id": "school",
+          "path": "spelling-lists.md",
+          "start_line": 6,
+          "end_line": 10,
+          "grade": 0,
+          "section_path": [
+            "Spelling lists",
+            "Week 8"
+          ],
+          "note": "a spelling list"
+        }
+      ],
+      "only_form": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "tests",
+          "file_form": "test"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o09",
+      "question": "When did we get strawberries?",
+      "query": "strawberries",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "garden-diary.md",
+          "start_line": 187,
+          "end_line": 187,
+          "grade": 2,
+          "note": "18 June"
+        },
+        {
+          "root_id": "laptop",
+          "path": "recipes-to-try.txt",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "strawberries and cream, a recipe idea"
+        }
+      ],
+      "only_form": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "strawberries",
+          "file_form": "strawberry"
+        },
+        {
+          "check": "only the form differs: no query word occurs in the answer"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o10",
+      "question": "Where are the craft boxes?",
+      "query": "craft boxes",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "chores.md",
+          "start_line": 20,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "Chores",
+            "Where things live"
+          ],
+          "note": "under the stairs"
+        },
+        {
+          "root_id": "school",
+          "path": "art-club/autumn-projects.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 0,
+          "section_path": [
+            "Autumn projects",
+            "Leaf prints"
+          ],
+          "note": "craft twice"
+        }
+      ],
+      "only_form": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "boxes",
+          "file_form": "box"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o11",
+      "question": "Where's my skip rope?",
+      "query": "skip rope",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "chores.md",
+          "start_line": 20,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "Chores",
+            "Where things live"
+          ],
+          "note": "in the shed"
+        },
+        {
+          "root_id": "laptop",
+          "path": "packing-lists/camping.md",
+          "start_line": 5,
+          "end_line": 9,
+          "grade": 0,
+          "section_path": [
+            "Tent weekend",
+            "Tent and sleeping"
+          ],
+          "note": "tent rope twice"
+        }
+      ],
+      "only_form": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "skip",
+          "file_form": "skipping"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o12",
+      "question": "When do we paint the pots?",
+      "query": "painted pots",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "art/year5-pottery.md",
+          "start_line": 8,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "Year 5 pottery",
+            "Next week"
+          ],
+          "note": "next week we paint the pot"
+        },
+        {
+          "root_id": "home",
+          "path": "chores.md",
+          "start_line": 16,
+          "end_line": 18,
+          "grade": 0,
+          "section_path": [
+            "Chores",
+            "Garden jobs"
+          ],
+          "note": "plant pots twice"
+        }
+      ],
+      "only_form": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "painted",
+          "file_form": "paint"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "pots",
+          "file_form": "pot"
+        },
+        {
+          "check": "only the form differs: no query word occurs in the answer"
+        }
+      ]
+    },
+    {
+      "slice": "morphology",
+      "id": "o13",
+      "question": "Where are Paati's recipes?",
+      "query": "paati's recipes",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/rasam.md",
+          "start_line": 1,
+          "end_line": 3,
+          "grade": 2,
+          "section_path": [
+            "Rasam"
+          ],
+          "note": "Paati's recipe"
+        },
+        {
+          "root_id": "laptop",
+          "path": "recipes-to-try.txt",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "recipes twice"
+        }
+      ],
+      "only_form": false,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "recipes",
+          "file_form": "recipe"
+        }
+      ]
+    },
+    {
+      "slice": "accent",
+      "id": "a01",
+      "question": "What's on the cafe menu?",
+      "query": "cafe menu",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "weekend-plans.md",
+          "start_line": 3,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "Weekend plans",
+            "Café on Mill Lane"
+          ],
+          "note": "café, accented in the file"
+        },
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 1,
+          "end_line": 3,
+          "grade": 0,
+          "section_path": [
+            "School lunch menu"
+          ],
+          "note": "another menu"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "cafe",
+          "file_form": "café"
+        }
+      ]
+    },
+    {
+      "slice": "accent",
+      "id": "a02",
+      "question": "Which book has the naïve snail?",
+      "query": "naïve character book",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "reading-log-pip.md",
+          "start_line": 13,
+          "end_line": 17,
+          "grade": 2,
+          "section_path": [
+            "Pip's reading log",
+            "Book 3"
+          ],
+          "note": "naive, plain in the file"
+        },
+        {
+          "root_id": "school",
+          "path": "reading-log-pip.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 0,
+          "section_path": [
+            "Pip's reading log",
+            "Book 1"
+          ],
+          "note": "another book"
+        },
+        {
+          "root_id": "school",
+          "path": "reading-log-pip.md",
+          "start_line": 8,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Pip's reading log",
+            "Book 2"
+          ],
+          "note": "another book"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "naïve",
+          "file_form": "naive"
+        }
+      ]
+    },
+    {
+      "slice": "accent",
+      "id": "a03",
+      "question": "What does fruhling mean?",
+      "query": "fruhling",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "german-club.md",
+          "start_line": 5,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "German club",
+            "Words for spring"
+          ],
+          "note": "Frühling"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "fruhling",
+          "file_form": "frühling"
+        }
+      ]
+    },
+    {
+      "slice": "accent",
+      "id": "a04",
+      "question": "Which room is Year 5 in?",
+      "query": "room 12",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "notes-from-phone.txt",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "note": "Room １２, full-width digits in the file"
+        },
+        {
+          "root_id": "school",
+          "path": "class-notes-pip.md",
+          "start_line": 30,
+          "end_line": 33,
+          "grade": 0,
+          "section_path": [
+            "Year 5 class notes",
+            "Week 9"
+          ],
+          "note": "the room move, no number"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "12",
+          "file_form": "１２"
+        }
+      ]
+    },
+    {
+      "slice": "accent",
+      "id": "a05",
+      "question": "Where are my ｇｏｇｇｌｅｓ? (typed full-width)",
+      "query": "ｇｏｇｇｌｅｓ",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-notes-wren.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 2,
+          "section_path": [
+            "Year 2 class notes",
+            "Reminders"
+          ],
+          "note": "goggles"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "ｇｏｇｇｌｅｓ",
+          "file_form": "goggles"
+        }
+      ]
+    },
+    {
+      "slice": "accent",
+      "id": "a06",
+      "question": "When is the field trip?",
+      "query": "field trip date",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "letters/letter-home-oct.txt",
+          "start_line": 1,
+          "end_line": 16,
+          "grade": 2,
+          "note": "the ligature ﬁ, pasted from a PDF"
+        },
+        {
+          "root_id": "school",
+          "path": "trip-permission-museum.md",
+          "start_line": 3,
+          "end_line": 7,
+          "grade": 0,
+          "section_path": [
+            "Toy Museum trip",
+            "About the trip"
+          ],
+          "note": "another trip, with its date"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "field",
+          "file_form": "ﬁeld"
+        }
+      ]
+    },
+    {
+      "slice": "accent",
+      "id": "a07",
+      "question": "When does flute start? (pasted with a ligature)",
+      "query": "ﬂute",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "music/recorder-practice.md",
+          "start_line": 8,
+          "end_line": 10,
+          "grade": 2,
+          "section_path": [
+            "Recorder",
+            "Flute next year"
+          ],
+          "note": "flute"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "ﬂute",
+          "file_form": "flute"
+        }
+      ]
+    },
+    {
+      "slice": "accent",
+      "id": "a08",
+      "question": "When is the Noël concert?",
+      "query": "noël concert",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 29,
+          "end_line": 33,
+          "grade": 2,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Noël carol concert"
+          ],
+          "note": "decomposed Noël in the file"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 35,
+          "end_line": 37,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Band"
+          ],
+          "note": "the band concert"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "NFC guard: the query form and the file's decomposed form are one token",
+          "query_form": "noël",
+          "file_form": "noël"
+        }
+      ]
+    },
+    {
+      "slice": "accent",
+      "id": "a09",
+      "question": "What does strasse mean?",
+      "query": "strasse",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "german-club.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "German club",
+            "Street words"
+          ],
+          "note": "Straße"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, the other form present",
+          "query_form": "strasse",
+          "file_form": "straße"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t01",
+      "question": "புத்தகங்கள் எங்கே? (where are the books?)",
+      "query": "புத்தகங்கள்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "Library"
+          ],
+          "note": "புத்தகம், the library book"
+        },
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 29,
+          "end_line": 31,
+          "grade": 0,
+          "section_path": [
+            "Paati's letters",
+            "Books sent"
+          ],
+          "note": "புத்தகங்கள், Paati's parcel"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "புத்தகங்கள்",
+          "file_form": "புத்தகம்"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t02",
+      "question": "யானை கதை? (the elephant story?)",
+      "query": "யானை",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "tamil/tamil-stories.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "கதைகள்",
+            "Elephants"
+          ],
+          "note": "யானைகள், plural"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "யானை",
+          "file_form": "யானைகள்"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t03",
+      "question": "பாட்டி எந்தக் கடைக்கு போனார்? (which shop?)",
+      "query": "கடைக்கு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 5,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "Paati's letters",
+            "Shop"
+          ],
+          "note": "கடை"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "கடைக்கு",
+          "file_form": "கடை"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t04",
+      "question": "மரம் பற்றிய கதை? (a story about a tree?)",
+      "query": "மரம் கதை",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "tamil/tamil-stories.md",
+          "start_line": 13,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "கதைகள்",
+            "Monkey"
+          ],
+          "note": "மரத்தில், மரங்கள்"
+        },
+        {
+          "root_id": "laptop",
+          "path": "tamil/tamil-stories.md",
+          "start_line": 5,
+          "end_line": 7,
+          "grade": 0,
+          "section_path": [
+            "கதைகள்",
+            "The cat"
+          ],
+          "note": "கதை only"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "மரம்",
+          "file_form": "மரத்தில்"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t05",
+      "question": "நூலகத்தில் என்ன நடக்கும்? (at the library?)",
+      "query": "நூலகத்தில்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 13,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "Paati's letters",
+            "Library"
+          ],
+          "note": "நூலகம்"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "நூலகத்தில்",
+          "file_form": "நூலகம்"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t06",
+      "question": "பாட்டி வீடு எங்கே? (Paati's house?)",
+      "query": "பாட்டி வீடு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 25,
+          "end_line": 27,
+          "grade": 2,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "My family"
+          ],
+          "note": "பாட்டியின் வீடு"
+        },
+        {
+          "root_id": "laptop",
+          "path": "tamil/tamil-stories.md",
+          "start_line": 17,
+          "end_line": 19,
+          "grade": 0,
+          "section_path": [
+            "கதைகள்",
+            "New house"
+          ],
+          "note": "வீடு twice, short"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "பாட்டி",
+          "file_form": "பாட்டியின்"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t07",
+      "question": "தோட்டத்துப் பழங்கள்? (fruit from the garden?)",
+      "query": "பழங்கள்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 17,
+          "end_line": 19,
+          "grade": 2,
+          "section_path": [
+            "Paati's letters",
+            "Garden"
+          ],
+          "note": "பழம்"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "பழங்கள்",
+          "file_form": "பழம்"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t08",
+      "question": "தேர்வுக்கு என்ன படிக்க வேண்டும்? (for the exam?)",
+      "query": "தேர்வுக்கு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 13,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "Exam"
+          ],
+          "note": "தேர்வு"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "தேர்வுக்கு",
+          "file_form": "தேர்வு"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t09",
+      "question": "அந்தப் பாடல்? (the song?)",
+      "query": "பாடல்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 21,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "Songs"
+          ],
+          "note": "பாடல்கள்"
+        },
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 17,
+          "end_line": 19,
+          "grade": 0,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "Lessons"
+          ],
+          "note": "பாடங்கள், lessons"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "பாடல்",
+          "file_form": "பாடல்கள்"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "t10",
+      "question": "பள்ளிக்கு எப்போது? (going to school?)",
+      "query": "பள்ளிக்கு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 5,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "School time"
+          ],
+          "note": "பள்ளி"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "query form absent from the answer, other form present",
+          "query_form": "பள்ளிக்கு",
+          "file_form": "பள்ளி"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "g1",
+      "question": "காலை எப்போது? (when in the morning?)",
+      "query": "காலை",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 5,
+          "end_line": 7,
+          "grade": 2,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "School time"
+          ],
+          "note": "காலை, morning"
+        },
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 25,
+          "end_line": 27,
+          "grade": 0,
+          "section_path": [
+            "Paati's letters",
+            "Wren's football"
+          ],
+          "note": "கால், leg: காலை read as கால் + accusative"
+        }
+      ],
+      "guard": "inflectional",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "suffix guard: the word is in the answer; its homograph stem, and not the word, is in the distractor",
+          "word": "காலை",
+          "homograph": "கால்",
+          "kind": "inflectional"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "g2",
+      "question": "நாளை யார் வருகிறார்கள்? (who is coming tomorrow?)",
+      "query": "நாளை",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 33,
+          "end_line": 35,
+          "grade": 2,
+          "section_path": [
+            "Paati's letters",
+            "Visit"
+          ],
+          "note": "நாளை, tomorrow"
+        },
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 25,
+          "end_line": 27,
+          "grade": 0,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "My family"
+          ],
+          "note": "நாள், day: நாளை read as நாள் + accusative"
+        }
+      ],
+      "guard": "inflectional",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "suffix guard: the word is in the answer; its homograph stem, and not the word, is in the distractor",
+          "word": "நாளை",
+          "homograph": "நாள்",
+          "kind": "inflectional"
+        }
+      ]
+    },
+    {
+      "slice": "tamil",
+      "id": "g3",
+      "question": "தேர்வு எப்போது? (when is the exam?)",
+      "query": "தேர்வு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 13,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "Exam"
+          ],
+          "note": "தேர்வு, exam"
+        },
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 21,
+          "end_line": 23,
+          "grade": 0,
+          "section_path": [
+            "Paati's letters",
+            "Temple festival"
+          ],
+          "note": "தேர், chariot: the nominal -வு, derivational"
+        }
+      ],
+      "guard": "derivational, information",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "suffix guard: the word is in the answer; its homograph stem, and not the word, is in the distractor",
+          "word": "தேர்வு",
+          "homograph": "தேர்",
+          "kind": "derivational, information"
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti01",
+      "question": "Open my science homework",
+      "query": "science homework",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "science-homework.md",
+          "start_line": 1,
+          "end_line": 34,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 1,
+          "end_line": 141,
+          "grade": 0,
+          "note": "science homework done, many times"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 5,
+          "end_line": 7,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Homework club"
+          ],
+          "note": "science homework, dense"
+        },
+        {
+          "root_id": "laptop",
+          "path": "ideas/kitchen-science.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "note": "science three times"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "science": "stem",
+            "homework": "stem"
+          },
+          "body_counts": {
+            "science": 1,
+            "homework": 0
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti02",
+      "question": "Where's the maths homework?",
+      "query": "maths homework",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "maths-homework.md",
+          "start_line": 1,
+          "end_line": 20,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 1,
+          "end_line": 141,
+          "grade": 0,
+          "note": "maths homework done, many times"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 5,
+          "end_line": 7,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Homework club"
+          ],
+          "note": "maths homework, dense"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "maths": "stem",
+            "homework": "stem"
+          },
+          "body_counts": {
+            "maths": 1,
+            "homework": 0
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti03",
+      "question": "Show me the pocket money note",
+      "query": "pocket money",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "money/pocket-money.md",
+          "start_line": 1,
+          "end_line": 16,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "laptop",
+          "path": "budget-autumn.md",
+          "start_line": 7,
+          "end_line": 10,
+          "grade": 0,
+          "section_path": [
+            "Autumn budget",
+            "Kids"
+          ],
+          "note": "pocket money twice"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "pocket": "stem",
+            "money": "stem"
+          },
+          "body_counts": {
+            "pocket": 0,
+            "money": 1
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti04",
+      "question": "Wren's birthday party plan",
+      "query": "birthday party",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "Ada's birthday party"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "birthday": "stem",
+            "party": "stem"
+          },
+          "body_counts": {
+            "birthday": 0,
+            "party": 1
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti05",
+      "question": "The camping list",
+      "query": "camping list",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "packing-lists/camping.md",
+          "start_line": 1,
+          "end_line": 15,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "laptop",
+          "path": "wishlist.md",
+          "start_line": 1,
+          "end_line": 8,
+          "grade": 0,
+          "note": "camping chairs on a list"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "camping": "stem",
+            "list": "none"
+          },
+          "body_counts": {
+            "camping": 1,
+            "list": 0
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti06",
+      "question": "The swimming lessons file",
+      "query": "swimming lessons",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "swimming-lessons/autumn-term.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Swimming"
+          ],
+          "note": "swimming lessons start"
+        },
+        {
+          "root_id": "school",
+          "path": "class-notes-wren.md",
+          "start_line": 14,
+          "end_line": 16,
+          "grade": 0,
+          "section_path": [
+            "Year 2 class notes",
+            "Next term"
+          ],
+          "note": "swimming will resume"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "swimming": "folder",
+            "lessons": "folder"
+          },
+          "body_counts": {
+            "swimming": 0,
+            "lessons": 1
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti07",
+      "question": "Art club notes",
+      "query": "art club",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "art-club/autumn-projects.md",
+          "start_line": 1,
+          "end_line": 16,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "laptop",
+          "path": "club-timetable.md",
+          "start_line": 18,
+          "end_line": 20,
+          "grade": 0,
+          "section_path": [
+            "Club timetable",
+            "Art club"
+          ],
+          "note": "art club times"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "art": "folder",
+            "club": "folder"
+          },
+          "body_counts": {
+            "art": 1,
+            "club": 1
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti08",
+      "question": "Our reading list",
+      "query": "reading list",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "reading-list.md",
+          "start_line": 1,
+          "end_line": 14,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "school",
+          "path": "reading-log-pip.md",
+          "start_line": 19,
+          "end_line": 21,
+          "grade": 0,
+          "section_path": [
+            "Pip's reading log",
+            "Reading at home"
+          ],
+          "note": "reading every night"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 17,
+          "end_line": 19,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Reading list"
+          ],
+          "note": "the school's reading list"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "reading": "stem",
+            "list": "stem"
+          },
+          "body_counts": {
+            "reading": 1,
+            "list": 0
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti09",
+      "question": "School uniform list",
+      "query": "school uniform",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/uniform.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 13,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Uniform"
+          ],
+          "note": "school uniform, label it"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "school": "none",
+            "uniform": "stem"
+          },
+          "body_counts": {
+            "school": 1,
+            "uniform": 1
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti10",
+      "question": "பாட்டி கடிதங்கள் (Paati's letters)",
+      "query": "பாட்டி கடிதங்கள்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 2,
+          "note": "the file; the Tamil words are in its name only"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "பாட்டி": "stem",
+            "கடிதங்கள்": "stem"
+          },
+          "body_counts": {
+            "பாட்டி": 0,
+            "கடிதங்கள்": 0
+          }
+        }
+      ]
+    },
+    {
+      "slice": "title",
+      "id": "ti11",
+      "question": "Football stuff",
+      "query": "football",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "clubs/football/match-days.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "note": "the file"
+        },
+        {
+          "root_id": "laptop",
+          "path": "club-timetable.md",
+          "start_line": 8,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Club timetable",
+            "Football"
+          ],
+          "note": "football practice"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
+          "where": {
+            "football": "folder"
+          },
+          "body_counts": {
+            "football": 1
+          }
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p01",
+      "question": "How do we make hot chocolate?",
+      "query": "hot chocolate",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/winter-drinks.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Winter drinks",
+            "Hot chocolate"
+          ],
+          "note": "the recipe"
+        },
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 12,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Fridge notes",
+            "Shopping"
+          ],
+          "note": "chocolate, hot oven, chocolate"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 2,
+          "apart_grade": 0
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p02",
+      "question": "Pip's solar system model?",
+      "query": "solar system model",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "projects/pip-planet-model.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Planet model",
+            "What to make"
+          ],
+          "note": "the model"
+        },
+        {
+          "root_id": "home",
+          "path": "roof-and-heating.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "note": "solar panels, heating system, model number"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 2,
+          "apart_grade": 0
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p03",
+      "question": "When is the times tables test?",
+      "query": "times tables test",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "maths-practice.md",
+          "start_line": 10,
+          "end_line": 13,
+          "grade": 2,
+          "section_path": [
+            "Maths practice",
+            "Times tables test"
+          ],
+          "note": "Friday mornings"
+        },
+        {
+          "root_id": "laptop",
+          "path": "meeting-notes-pta.md",
+          "start_line": 8,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "PTA meeting notes",
+            "Hall bookings"
+          ],
+          "note": "a test, booking times, tables"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 2,
+          "apart_grade": 0
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p04",
+      "question": "Is there ice cream at the party?",
+      "query": "ice cream",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 13,
+          "end_line": 17,
+          "grade": 2,
+          "section_path": [
+            "Wren turns seven",
+            "Food"
+          ],
+          "note": "ice cream cake"
+        },
+        {
+          "root_id": "laptop",
+          "path": "recipes-to-try.txt",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "cream, then ice in the freezer"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 2,
+          "apart_grade": 0
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p05",
+      "question": "When is the car boot sale?",
+      "query": "car boot sale",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "weekend/sale-in-the-field.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "note": "Sunday from seven"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/car-garage.md",
+          "start_line": 8,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Car",
+            "Boot"
+          ],
+          "note": "the boot of the car, on sale"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 2,
+          "apart_grade": 0
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p06",
+      "question": "Is it fish fingers on Wednesday?",
+      "query": "fish fingers",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 13,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "School lunch menu",
+            "Wednesday"
+          ],
+          "note": "fish fingers"
+        },
+        {
+          "root_id": "home",
+          "path": "pets/fish-tank.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "note": "wash your fingers after feeding the fish"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 2,
+          "apart_grade": 0
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p07",
+      "question": "Is it too hot for the dog to go out?",
+      "query": "hot dog",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "pets/biscuit-the-dog.md",
+          "start_line": 16,
+          "end_line": 19,
+          "grade": 2,
+          "section_path": [
+            "Biscuit",
+            "Hot days"
+          ],
+          "note": "hot ... dog, apart"
+        },
+        {
+          "root_id": "school",
+          "path": "sports-day.md",
+          "start_line": 10,
+          "end_line": 12,
+          "grade": 0,
+          "section_path": [
+            "Sports day",
+            "Food stall"
+          ],
+          "note": "a hot dog stall, adjacent"
+        }
+      ],
+      "reversed": true,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 0,
+          "apart_grade": 2
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p08",
+      "question": "Find hot chocolate (every word)",
+      "query": "hot chocolate",
+      "mode": "find:words",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/winter-drinks.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Winter drinks",
+            "Hot chocolate"
+          ],
+          "note": "the recipe"
+        },
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 12,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Fridge notes",
+            "Shopping"
+          ],
+          "note": "chocolate, hot oven, chocolate"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 2,
+          "apart_grade": 0
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p09",
+      "question": "Find \"hot chocolate\"",
+      "query": "hot chocolate",
+      "mode": "find:phrase",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/winter-drinks.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Winter drinks",
+            "Hot chocolate"
+          ],
+          "note": "the recipe"
+        },
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 12,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Fridge notes",
+            "Shopping"
+          ],
+          "note": "excluded by the phrase"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 2,
+          "apart_grade": 0
+        }
+      ]
+    },
+    {
+      "slice": "phrase",
+      "id": "p10",
+      "question": "When is after school club?",
+      "query": "after school club",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "club-timetable.md",
+          "start_line": 22,
+          "end_line": 24,
+          "grade": 2,
+          "section_path": [
+            "Club timetable",
+            "After school club"
+          ],
+          "note": "until six"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 39,
+          "end_line": 42,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Clubs"
+          ],
+          "note": "after lunch, every school day, a club"
+        }
+      ],
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "adjacent in one row, present but apart in the other",
+          "adjacent_grade": 2,
+          "apart_grade": 0
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "cn1",
+      "question": "Any piano lessons?",
+      "query": "piano lessons",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "wishlist.md",
+          "start_line": 1,
+          "end_line": 8,
+          "grade": 0,
+          "note": "a toy piano"
+        },
+        {
+          "root_id": "school",
+          "path": "swimming-lessons/autumn-term.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "lessons, swimming"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "piano",
+            "lessons"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "cn2",
+      "question": "When is the volcano trip?",
+      "query": "volcano trip",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "volcano-project.md",
+          "start_line": 1,
+          "end_line": 21,
+          "grade": 0,
+          "note": "a volcano project"
+        },
+        {
+          "root_id": "school",
+          "path": "trip-permission-museum.md",
+          "start_line": 1,
+          "end_line": 15,
+          "grade": 0,
+          "note": "a museum trip"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "volcano",
+            "trip"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "mn1",
+      "question": "Is there a dinosaur museum trip?",
+      "query": "dinosuar museum",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "trip-permission-museum.md",
+          "start_line": 1,
+          "end_line": 15,
+          "grade": 0,
+          "note": "the Toy Museum"
+        },
+        {
+          "root_id": "school",
+          "path": "dinosaur-topic.md",
+          "start_line": 1,
+          "end_line": 25,
+          "grade": 0,
+          "note": "the museum team"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "museum"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "mn2",
+      "question": "Skating lessons?",
+      "query": "skateing lessons",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "swimming-lessons/autumn-term.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "lessons, swimming"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "lessons"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "on1",
+      "question": "Dinosaur eggs hatching?",
+      "query": "dinosaur eggs hatching",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "dinosaur-topic.md",
+          "start_line": 1,
+          "end_line": 25,
+          "grade": 0,
+          "note": "dinosaurs, no eggs"
+        },
+        {
+          "root_id": "home",
+          "path": "shopping-list.md",
+          "start_line": 1,
+          "end_line": 12,
+          "grade": 0,
+          "note": "eggs to buy"
+        }
+      ],
+      "negative": true,
+      "negative_of": "morphology",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "dinosaur",
+            "eggs"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "on2",
+      "question": "Did we paint the fence?",
+      "query": "painting the fence",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "art/year5-pottery.md",
+          "start_line": 1,
+          "end_line": 11,
+          "grade": 0,
+          "note": "paint a pot"
+        },
+        {
+          "root_id": "home",
+          "path": "garden-diary.md",
+          "start_line": 257,
+          "end_line": 257,
+          "grade": 0,
+          "note": "the fence was mended"
+        }
+      ],
+      "negative": true,
+      "negative_of": "morphology",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "the",
+            "fence"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "an1",
+      "question": "A crêpe recipe?",
+      "query": "crêpe recipe",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/pancakes.md",
+          "start_line": 1,
+          "end_line": 17,
+          "grade": 0,
+          "note": "pancakes, not crêpes"
+        }
+      ],
+      "negative": true,
+      "negative_of": "accent",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "recipe"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "an2",
+      "question": "Where's my résumé and its cover letter?",
+      "query": "résumé letter",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-notes-wren.md",
+          "start_line": 14,
+          "end_line": 16,
+          "grade": 0,
+          "section_path": [
+            "Year 2 class notes",
+            "Next term"
+          ],
+          "note": "resume, the verb"
+        },
+        {
+          "root_id": "school",
+          "path": "letters/letter-home-oct.txt",
+          "start_line": 1,
+          "end_line": 16,
+          "grade": 0,
+          "note": "a letter home from school"
+        }
+      ],
+      "negative": true,
+      "negative_of": "accent",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "letter"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "tn1",
+      "question": "ரயில் பயணம்? (a train journey?)",
+      "query": "ரயில் பயணம்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "tamil/tamil-stories.md",
+          "start_line": 21,
+          "end_line": 23,
+          "grade": 0,
+          "section_path": [
+            "கதைகள்",
+            "The journey"
+          ],
+          "note": "a long journey, no train"
+        }
+      ],
+      "negative": true,
+      "negative_of": "tamil",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "பயணம்"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "tn2",
+      "question": "கடற்கரை அலைகள்? (waves at the beach?)",
+      "query": "கடற்கரை அலைகள்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/பாட்டி-கடிதங்கள்.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Paati's letters",
+            "Sea"
+          ],
+          "note": "the sea and its waves, not a beach visit"
+        }
+      ],
+      "negative": true,
+      "negative_of": "tamil",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "அலைகள்"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "tin1",
+      "question": "Music homework",
+      "query": "music homework",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "music/recorder-practice.md",
+          "start_line": 1,
+          "end_line": 15,
+          "grade": 0,
+          "note": "music, by folder only"
+        },
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 1,
+          "end_line": 141,
+          "grade": 0,
+          "note": "homework, no music"
+        }
+      ],
+      "negative": true,
+      "negative_of": "title",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "music",
+            "homework"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "tin2",
+      "question": "Garden plans",
+      "query": "garden plans",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "plans/half-term-plans.md",
+          "start_line": 1,
+          "end_line": 12,
+          "grade": 0,
+          "note": "plans, a week off"
+        },
+        {
+          "root_id": "home",
+          "path": "garden-diary.md",
+          "start_line": 1,
+          "end_line": 397,
+          "grade": 0,
+          "note": "the garden diary"
+        }
+      ],
+      "negative": true,
+      "negative_of": "title",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "garden",
+            "plans"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "pn1",
+      "question": "Ice skating?",
+      "query": "ice skating",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "recipes-to-try.txt",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "ice in the freezer"
+        },
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 13,
+          "end_line": 17,
+          "grade": 0,
+          "section_path": [
+            "Wren turns seven",
+            "Food"
+          ],
+          "note": "ice cream"
+        }
+      ],
+      "negative": true,
+      "negative_of": "phrase",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "ice"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "pn2",
+      "question": "Cream tea?",
+      "query": "cream tea",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 13,
+          "end_line": 17,
+          "grade": 0,
+          "section_path": [
+            "Wren turns seven",
+            "Food"
+          ],
+          "note": "ice cream"
+        },
+        {
+          "root_id": "laptop",
+          "path": "recipes-to-try.txt",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "strawberries and cream"
+        }
+      ],
+      "negative": true,
+      "negative_of": "phrase",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "cream",
+            "tea"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,397 @@
+# Garden diary
+
+One line a day, mostly by Joss.
+
+## January
+
+- 1 January: mulched the roses with compost.
+- 2 January: mowed the grass short.
+- 3 January: rain all morning and the water butt is full.
+- 4 January: sun by the middle of the day.
+- 5 January: dug over the corner bed.
+- 6 January: picked up windfall apples.
+- 7 January: swept the path and the front step.
+- 8 January: watered the herbs on the step.
+- 9 January: filled the bird bath.
+- 10 January: the shed roof leaked a little.
+- 11 January: raked leaves into the wire cage.
+- 12 January: cut back the lavender.
+- 13 January: light drizzle in the evening.
+- 14 January: trimmed the hedge along the lane.
+- 15 January: cold wind from the north.
+- 16 January: cloudy and still all day.
+- 17 January: tied up the climbing rose.
+- 18 January: frost on the lawn until ten.
+- 19 January: two sparrows at the feeder.
+- 20 January: turned the compost heap.
+- 21 January: cleaned the greenhouse glass.
+- 22 January: a robin sat on the spade handle.
+- 23 January: a frog by the little pond.
+- 24 January: a hedgehog under the hedge at dusk.
+- 25 January: a blackbird singing on the gate.
+- 26 January: weeded the long bed by the wall.
+- 27 January: mulched the roses with compost.
+- 28 January: mowed the grass short.
+- 29 January: rain all morning and the water butt is full.
+- 30 January: sun by the middle of the day.
+
+## February
+
+- 1 February: a hedgehog under the hedge at dusk.
+- 2 February: a blackbird singing on the gate.
+- 3 February: weeded the long bed by the wall.
+- 4 February: mulched the roses with compost.
+- 5 February: mowed the grass short.
+- 6 February: rain all morning and the water butt is full.
+- 7 February: sun by the middle of the day.
+- 8 February: dug over the corner bed.
+- 9 February: picked up windfall apples.
+- 10 February: swept the path and the front step.
+- 11 February: watered the herbs on the step.
+- 12 February: filled the bird bath.
+- 13 February: the shed roof leaked a little.
+- 14 February: raked leaves into the wire cage.
+- 15 February: cut back the lavender.
+- 16 February: light drizzle in the evening.
+- 17 February: trimmed the hedge along the lane.
+- 18 February: cold wind from the north.
+- 19 February: cloudy and still all day.
+- 20 February: tied up the climbing rose.
+- 21 February: frost on the lawn until ten.
+- 22 February: two sparrows at the feeder.
+- 23 February: turned the compost heap.
+- 24 February: cleaned the greenhouse glass.
+- 25 February: a robin sat on the spade handle.
+- 26 February: a frog by the little pond.
+- 27 February: a hedgehog under the hedge at dusk.
+- 28 February: a blackbird singing on the gate.
+
+## March
+
+- 1 March: cleaned the greenhouse glass.
+- 2 March: a robin sat on the spade handle.
+- 3 March: a frog by the little pond.
+- 4 March: a hedgehog under the hedge at dusk.
+- 5 March: a blackbird singing on the gate.
+- 6 March: weeded the long bed by the wall.
+- 7 March: mulched the roses with compost.
+- 8 March: mowed the grass short.
+- 9 March: rain all morning and the water butt is full.
+- 10 March: sun by the middle of the day.
+- 11 March: dug over the corner bed.
+- 12 March: picked up windfall apples.
+- 13 March: swept the path and the front step.
+- 14 March: potted the tomato seedlings on into bigger trays by the window.
+- 15 March: filled the bird bath.
+- 16 March: the shed roof leaked a little.
+- 17 March: raked leaves into the wire cage.
+- 18 March: cut back the lavender.
+- 19 March: light drizzle in the evening.
+- 20 March: trimmed the hedge along the lane.
+- 21 March: cold wind from the north.
+- 22 March: cloudy and still all day.
+- 23 March: tied up the climbing rose.
+- 24 March: frost on the lawn until ten.
+- 25 March: two sparrows at the feeder.
+- 26 March: turned the compost heap.
+- 27 March: cleaned the greenhouse glass.
+- 28 March: a robin sat on the spade handle.
+- 29 March: a frog by the little pond.
+- 30 March: a hedgehog under the hedge at dusk.
+
+## April
+
+- 1 April: frost on the lawn until ten.
+- 2 April: two sparrows at the feeder.
+- 3 April: turned the compost heap.
+- 4 April: cleaned the greenhouse glass.
+- 5 April: a robin sat on the spade handle.
+- 6 April: a frog by the little pond.
+- 7 April: a hedgehog under the hedge at dusk.
+- 8 April: a blackbird singing on the gate.
+- 9 April: weeded the long bed by the wall.
+- 10 April: mulched the roses with compost.
+- 11 April: mowed the grass short.
+- 12 April: rain all morning and the water butt is full.
+- 13 April: sun by the middle of the day.
+- 14 April: dug over the corner bed.
+- 15 April: picked up windfall apples.
+- 16 April: swept the path and the front step.
+- 17 April: watered the herbs on the step.
+- 18 April: filled the bird bath.
+- 19 April: the shed roof leaked a little.
+- 20 April: raked leaves into the wire cage.
+- 21 April: cut back the lavender.
+- 22 April: light drizzle in the evening.
+- 23 April: trimmed the hedge along the lane.
+- 24 April: cold wind from the north.
+- 25 April: cloudy and still all day.
+- 26 April: tied up the climbing rose.
+- 27 April: frost on the lawn until ten.
+- 28 April: two sparrows at the feeder.
+- 29 April: turned the compost heap.
+- 30 April: cleaned the greenhouse glass.
+
+## May
+
+- 1 May: cold wind from the north.
+- 2 May: cloudy and still all day.
+- 3 May: tied up the climbing rose.
+- 4 May: frost on the lawn until ten.
+- 5 May: two sparrows at the feeder.
+- 6 May: turned the compost heap.
+- 7 May: cleaned the greenhouse glass.
+- 8 May: a robin sat on the spade handle.
+- 9 May: the bean poles went up and the runner bean row is sown.
+- 10 May: a hedgehog under the hedge at dusk.
+- 11 May: a blackbird singing on the gate.
+- 12 May: weeded the long bed by the wall.
+- 13 May: mulched the roses with compost.
+- 14 May: mowed the grass short.
+- 15 May: rain all morning and the water butt is full.
+- 16 May: sun by the middle of the day.
+- 17 May: dug over the corner bed.
+- 18 May: picked up windfall apples.
+- 19 May: swept the path and the front step.
+- 20 May: watered the herbs on the step.
+- 21 May: filled the bird bath.
+- 22 May: the shed roof leaked a little.
+- 23 May: raked leaves into the wire cage.
+- 24 May: cut back the lavender.
+- 25 May: light drizzle in the evening.
+- 26 May: trimmed the hedge along the lane.
+- 27 May: cold wind from the north.
+- 28 May: cloudy and still all day.
+- 29 May: tied up the climbing rose.
+- 30 May: frost on the lawn until ten.
+
+## June
+
+- 1 June: cut back the lavender.
+- 2 June: light drizzle in the evening.
+- 3 June: trimmed the hedge along the lane.
+- 4 June: cold wind from the north.
+- 5 June: cloudy and still all day.
+- 6 June: tied up the climbing rose.
+- 7 June: frost on the lawn until ten.
+- 8 June: two sparrows at the feeder.
+- 9 June: turned the compost heap.
+- 10 June: cleaned the greenhouse glass.
+- 11 June: a robin sat on the spade handle.
+- 12 June: a frog by the little pond.
+- 13 June: a hedgehog under the hedge at dusk.
+- 14 June: a blackbird singing on the gate.
+- 15 June: weeded the long bed by the wall.
+- 16 June: mulched the roses with compost.
+- 17 June: mowed the grass short.
+- 18 June: picked the first strawberry of the year and netted the strawberry bed.
+- 19 June: sun by the middle of the day.
+- 20 June: dug over the corner bed.
+- 21 June: picked up windfall apples.
+- 22 June: swept the path and the front step.
+- 23 June: watered the herbs on the step.
+- 24 June: filled the bird bath.
+- 25 June: the shed roof leaked a little.
+- 26 June: raked leaves into the wire cage.
+- 27 June: cut back the lavender.
+- 28 June: light drizzle in the evening.
+- 29 June: trimmed the hedge along the lane.
+- 30 June: cold wind from the north.
+
+## July
+
+- 1 July: filled the bird bath.
+- 2 July: the shed roof leaked a little.
+- 3 July: raked leaves into the wire cage.
+- 4 July: cut back the lavender.
+- 5 July: light drizzle in the evening.
+- 6 July: trimmed the hedge along the lane.
+- 7 July: cold wind from the north.
+- 8 July: cloudy and still all day.
+- 9 July: tied up the climbing rose.
+- 10 July: frost on the lawn until ten.
+- 11 July: two sparrows at the feeder.
+- 12 July: turned the compost heap.
+- 13 July: cleaned the greenhouse glass.
+- 14 July: a robin sat on the spade handle.
+- 15 July: a frog by the little pond.
+- 16 July: a hedgehog under the hedge at dusk.
+- 17 July: a blackbird singing on the gate.
+- 18 July: weeded the long bed by the wall.
+- 19 July: mulched the roses with compost.
+- 20 July: mowed the grass short.
+- 21 July: rain all morning and the water butt is full.
+- 22 July: sun by the middle of the day.
+- 23 July: dug over the corner bed.
+- 24 July: picked up windfall apples.
+- 25 July: swept the path and the front step.
+- 26 July: watered the herbs on the step.
+- 27 July: filled the bird bath.
+- 28 July: the shed roof leaked a little.
+- 29 July: raked leaves into the wire cage.
+- 30 July: cut back the lavender.
+
+## August
+
+- 1 August: picked up windfall apples.
+- 2 August: swept the path and the front step.
+- 3 August: watered the herbs on the step.
+- 4 August: filled the bird bath.
+- 5 August: the shed roof leaked a little.
+- 6 August: raked leaves into the wire cage.
+- 7 August: cut back the lavender.
+- 8 August: light drizzle in the evening.
+- 9 August: trimmed the hedge along the lane.
+- 10 August: cold wind from the north.
+- 11 August: cloudy and still all day.
+- 12 August: tied up the climbing rose.
+- 13 August: frost on the lawn until ten.
+- 14 August: two sparrows at the feeder.
+- 15 August: turned the compost heap.
+- 16 August: cleaned the greenhouse glass.
+- 17 August: a robin sat on the spade handle.
+- 18 August: a frog by the little pond.
+- 19 August: a hedgehog under the hedge at dusk.
+- 20 August: a blackbird singing on the gate.
+- 21 August: weeded the long bed by the wall.
+- 22 August: Joss mended the fence by the shed.
+- 23 August: mowed the grass short.
+- 24 August: rain all morning and the water butt is full.
+- 25 August: sun by the middle of the day.
+- 26 August: dug over the corner bed.
+- 27 August: picked up windfall apples.
+- 28 August: swept the path and the front step.
+- 29 August: watered the herbs on the step.
+- 30 August: filled the bird bath.
+
+## September
+
+- 1 September: rain all morning and the water butt is full.
+- 2 September: sun by the middle of the day.
+- 3 September: dug over the corner bed.
+- 4 September: picked up windfall apples.
+- 5 September: swept the path and the front step.
+- 6 September: watered the herbs on the step.
+- 7 September: filled the bird bath.
+- 8 September: the shed roof leaked a little.
+- 9 September: raked leaves into the wire cage.
+- 10 September: cut back the lavender.
+- 11 September: light drizzle in the evening.
+- 12 September: trimmed the hedge along the lane.
+- 13 September: cold wind from the north.
+- 14 September: cloudy and still all day.
+- 15 September: tied up the climbing rose.
+- 16 September: frost on the lawn until ten.
+- 17 September: two sparrows at the feeder.
+- 18 September: turned the compost heap.
+- 19 September: cleaned the greenhouse glass.
+- 20 September: a robin sat on the spade handle.
+- 21 September: a frog by the little pond.
+- 22 September: a hedgehog under the hedge at dusk.
+- 23 September: a blackbird singing on the gate.
+- 24 September: weeded the long bed by the wall.
+- 25 September: mulched the roses with compost.
+- 26 September: mowed the grass short.
+- 27 September: rain all morning and the water butt is full.
+- 28 September: sun by the middle of the day.
+- 29 September: dug over the corner bed.
+- 30 September: picked up windfall apples.
+
+## October
+
+- 1 October: weeded the long bed by the wall.
+- 2 October: mulched the roses with compost.
+- 3 October: mowed the grass short.
+- 4 October: rain all morning and the water butt is full.
+- 5 October: sun by the middle of the day.
+- 6 October: dug over the corner bed.
+- 7 October: picked up windfall apples.
+- 8 October: swept the path and the front step.
+- 9 October: watered the herbs on the step.
+- 10 October: filled the bird bath.
+- 11 October: the shed roof leaked a little.
+- 12 October: we planted the tulip bulbs by the gate, twenty of them.
+- 13 October: cut back the lavender.
+- 14 October: light drizzle in the evening.
+- 15 October: trimmed the hedge along the lane.
+- 16 October: cold wind from the north.
+- 17 October: cloudy and still all day.
+- 18 October: tied up the climbing rose.
+- 19 October: frost on the lawn until ten.
+- 20 October: two sparrows at the feeder.
+- 21 October: turned the compost heap.
+- 22 October: cleaned the greenhouse glass.
+- 23 October: a robin sat on the spade handle.
+- 24 October: a frog by the little pond.
+- 25 October: a hedgehog under the hedge at dusk.
+- 26 October: a blackbird singing on the gate.
+- 27 October: weeded the long bed by the wall.
+- 28 October: mulched the roses with compost.
+- 29 October: mowed the grass short.
+- 30 October: rain all morning and the water butt is full.
+
+## November
+
+- 1 November: a frog by the little pond.
+- 2 November: a hedgehog under the hedge at dusk.
+- 3 November: a blackbird singing on the gate.
+- 4 November: weeded the long bed by the wall.
+- 5 November: mulched the roses with compost.
+- 6 November: mowed the grass short.
+- 7 November: rain all morning and the water butt is full.
+- 8 November: sun by the middle of the day.
+- 9 November: dug over the corner bed.
+- 10 November: picked up windfall apples.
+- 11 November: swept the path and the front step.
+- 12 November: watered the herbs on the step.
+- 13 November: filled the bird bath.
+- 14 November: the shed roof leaked a little.
+- 15 November: raked leaves into the wire cage.
+- 16 November: cut back the lavender.
+- 17 November: light drizzle in the evening.
+- 18 November: trimmed the hedge along the lane.
+- 19 November: cold wind from the north.
+- 20 November: cloudy and still all day.
+- 21 November: tied up the climbing rose.
+- 22 November: frost on the lawn until ten.
+- 23 November: two sparrows at the feeder.
+- 24 November: turned the compost heap.
+- 25 November: cleaned the greenhouse glass.
+- 26 November: a robin sat on the spade handle.
+- 27 November: a frog by the little pond.
+- 28 November: a hedgehog under the hedge at dusk.
+- 29 November: a blackbird singing on the gate.
+- 30 November: weeded the long bed by the wall.
+
+## December
+
+- 1 December: turned the compost heap.
+- 2 December: cleaned the greenhouse glass.
+- 3 December: a robin sat on the spade handle.
+- 4 December: a frog by the little pond.
+- 5 December: a hedgehog under the hedge at dusk.
+- 6 December: a blackbird singing on the gate.
+- 7 December: weeded the long bed by the wall.
+- 8 December: mulched the roses with compost.
+- 9 December: mowed the grass short.
+- 10 December: rain all morning and the water butt is full.
+- 11 December: sun by the middle of the day.
+- 12 December: dug over the corner bed.
+- 13 December: picked up windfall apples.
+- 14 December: swept the path and the front step.
+- 15 December: watered the herbs on the step.
+- 16 December: filled the bird bath.
+- 17 December: the shed roof leaked a little.
+- 18 December: raked leaves into the wire cage.
+- 19 December: cut back the lavender.
+- 20 December: light drizzle in the evening.
+- 21 December: trimmed the hedge along the lane.
+- 22 December: cold wind from the north.
+- 23 December: cloudy and still all day.
+- 24 December: tied up the climbing rose.
+- 25 December: frost on the lawn until ten.
+- 26 December: two sparrows at the feeder.
+- 27 December: turned the compost heap.
+- 28 December: cleaned the greenhouse glass.
+- 29 December: a robin sat on the spade handle.
+- 30 December: a frog by the little pond.

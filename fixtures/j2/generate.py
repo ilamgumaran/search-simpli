@@ -22,6 +22,7 @@ import sys
 sys.dont_write_bytecode = True
 
 import argparse  # noqa: E402
+import hashlib  # noqa: E402
 import json  # noqa: E402
 import unicodedata  # noqa: E402
 from pathlib import Path, PurePosixPath  # noqa: E402
@@ -37,7 +38,7 @@ from src.search_platform.core import _filename_tokenize, file_chunks  # noqa: E4
 ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
 SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "negatives")
-MODES = ("knowledge", "words", "phrase", "prefix")
+MODES = ("knowledge", "find:words", "find:phrase", "find:prefix")
 
 
 def toks(text: str) -> list[str]:
@@ -318,12 +319,15 @@ def build_judgments(corpus: Corpus) -> dict:
             "lines": "1-based; a line ends at \\n or \\r\\n; a final line without a terminator counts; a BOM is not part of any line",
             "grades": "2 the answer; 1 useful context; 0 a named distractor (never relevant). Title intent: grade 2 is the whole file",
             "hit_match": "a hit matches a row when root_id and path are equal and the line ranges overlap; a hit takes the highest-grade unmatched row it overlaps and each row is matched at most once",
-            "modes": "knowledge = search_knowledge (lexical, top 10, search_field content and both); words, phrase, prefix = find, first page of 10",
+            "modes": "knowledge = search_knowledge (lexical, top 10, search_field content and both); find:words, find:phrase, find:prefix = find in that mode, first page of 10",
             "negatives": "an empty answer set; rows name the distractors; reported as hit count, top hit and whether it is a named distractor",
             "checks": "asserted by generate.py with the analyzer-v2 simple case fold",
         },
         "slices": {name: queries.SLICE_MINIMUMS.get(name, 0) for name in SLICES},
         "counts": counts,
+        "files": [{"root_id": p.split("/", 1)[0], "path": p.split("/", 1)[1], "bytes": len(d),
+                   "lines": len(corpus.lines[p]), "sha256": hashlib.sha256(d).hexdigest()}
+                  for p, d in corpus.files.items()],
         "queries": items,
     }
 
