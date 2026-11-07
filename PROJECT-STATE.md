@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-06 (S4-T18, the library's `memcpy`, `memmove` and `memset` copy 16 bytes at a time; verified and merged)
+Last updated: 2026-11-06 (S5-T1, J2: the judged fixture that says where keyword search loses; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,63 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## J2, the judged fixture that says where keyword search loses (S5-T1, 2026-11-06; verified and merged)
+
+**Verified and merged 2026-11-06** ([Verdict](docs/tasks/S5-T1.md)): `fixtures/j2/` regenerates byte for byte
+(`judgments.json` `fc081a1c…`); every generator check holds on an independent re-check (0 failures over 109 queries); a
+fresh `ReleaseSmall` `searchd` (969,688 B, `1799d0c1…`) through `scripts/j2_run.py` reproduces every `searchd` cell of
+`fixtures/j2/baseline.json` (298 cells: both variants, every slice and metric, every first grade-2 rank, every negative), and
+`relevance_smoke.py --pack j2` on Python 3.9.6 every Python cell under three hash seeds; the two surfaces differ only by the
+analyzer (`a06`, `a07`, `a09`) and by tie order (`c06`, `c07`, `c10` at the cut, `c12`, `c14`, `c21`, `o04`, `o08`); the
+four plants (BM25 `b` = 0, case folding off, a doctored baseline, a hand-edited judgment) fail as the Report says; the
+family-folder, relevance-smoke and mixed outputs are identical to `main`'s; Python 229 OK (no Zig) and 265 OK (with Zig;
+against a `ReleaseSmall` `searchd`), `zig build test` 362/364 (2 gated skips) and `test-abi` 24/24 in Debug and
+`ReleaseSmall`, Dart +83. No ranking, analyzer, format, contract, C ABI or Dart API change; natives unchanged
+(`native/SOURCE-SHA256` `7a8f13ff…`).
+
+[Report](docs/tasks/S5-T1.md). J2 is a second judged pack beside the family-folder one: 68 invented files in three roots
+(`school/`, `home/`, `laptop/`: the Varnells of Thistlecombe; CRLF, a BOM, no final newline, an empty file, a Tamil file in
+each root, a Tamil file name, a 397-line diary) and 109 queries: 95 graded 0–2 in seven slices plus 14 negatives.
+`fixtures/j2/generate.py` writes the files, `judgments.json` and the README from `content.py` and `queries.py`, computes
+every line range, and before it writes asserts the checks that keep each miss real (a misspelt word in no file at
+Damerau distance 1–2; a morphology, accent or Tamil answer holding the other form and not the query's; a title word where
+the file name carries it and at most once in the body; a phrase distractor holding the words apart; no chunk holding a
+grade-2 and a grade-0 row of one query). `scripts/j2_run.py` indexes through the shipped CLI (`searchd index EMPTY
+--filename-index`, then `apply` of the three roots) and runs every knowledge row with `search_field` `content` (the
+primary number) and `both`, and the `find` rows once; `relevance_smoke.py --pack j2` runs the same pack through the Python
+reference; both score with one implementation (success@1, MRR@10, nDCG@10, recall@5, the first grade-2 rank per query,
+the negatives' top hit). The Python reference's BM25 sums its terms in sorted order (`src/search_platform/core.py`, one
+line), so its ties no longer depend on `PYTHONHASHSEED`.
+
+**The baseline** (engine `6ef4c3b`; success@1 · MRR@10):
+
+| Slice | n | searchd content | searchd both | Python content | Python both |
+|---|---:|---|---|---|---|
+| control | 23 | 1.000 · 1.000 | 0.870 · 0.924 | 1.000 · 1.000 | 0.870 · 0.924 |
+| misspelling | 16 | 0.062 · 0.199 | 0.062 · 0.156 | 0.062 · 0.199 | 0.062 · 0.156 |
+| morphology | 13 | 0.154 · 0.362 | 0.077 · 0.295 | 0.154 · 0.362 | 0.077 · 0.295 |
+| accent | 9 | 0.111 · 0.255 | 0.111 · 0.220 | 0.333 · 0.485 | 0.222 · 0.337 |
+| Tamil | 13 | 0.231 · 0.308 | 0.231 · 0.256 | 0.231 · 0.308 | 0.231 · 0.256 |
+| title intent | 11 | 0.000 · 0.258 | 0.545 · 0.685 | 0.000 · 0.258 | 0.545 · 0.685 |
+| phrase | 10 | 0.800 · 0.900 | 0.800 · 0.900 | 0.800 · 0.900 | 0.800 · 0.900 |
+| overall | 95 | 0.400 · 0.516 | 0.421 · 0.520 | 0.421 · 0.538 | 0.432 · 0.531 |
+
+**The gate** (`scripts/j2_gate.py RUN.json [--baseline fixtures/j2/baseline.json] [--allow FILE]`) compares a run with the
+same surface of the baseline, variant by variant, and exits 1 if (a) any slice's MRR@10 drops by more than 0.02 (negatives
+excluded); (b) a control query at rank 1 in that variant's baseline loses rank 1 (the allow-list never excuses this; under
+`both`, `c02`, `c06` and `c07` are not at rank 1 today, so (c) guards them there); (c) any query's first grade-2 rank worsens
+by more than 3 (not in the top 10 counts as 11; a `null` baseline cannot worsen) unless the run's allow-list (a file the task
+that moves a judgment commits beside it) names it. Exit 2 on a usage error, a judgments sha256 mismatch or a missing
+surface, variant, slice or query; otherwise it prints each slice's deltas and exits 0. CI's `checks` job (Python 3.11)
+runs the Python reference through it against the committed baseline (`PYTHONHASHSEED=0`). The pack is frozen: a later
+change to a judgment is a reviewed commit that says why, with the baseline update, named in that task's Report.
+
+**What it says, for S5:** keyword search answers in the file's own words and little else: misspelling, morphology,
+accents and compatibility forms, and Tamil inflections (seven of ten inflection rows return nothing) are where it loses;
+title intent is never rank 1 under `content` and 0.55 under `both`, which costs control three rank-1 answers; the phrase
+slice has little headroom (S5-T4 extends it first). The two analyzers' folding differs (worth 0.22 success@1 on the accent
+slice) and must agree before analyzer-v3 is specified (S5-T3).
 
 ## The library's `memcpy`, `memmove` and `memset` copy 16 bytes at a time (S4-T18, 2026-11-06; verified and merged)
 
