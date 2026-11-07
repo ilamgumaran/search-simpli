@@ -19,7 +19,7 @@ PACK = REPO / "fixtures" / "j2"
 ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
 SLICE_MINIMUMS = {"control": 20, "misspelling": 15, "morphology": 12, "accent": 6, "tamil": 10,
-                  "title": 10, "phrase": 8, "title-heldout": 6}
+                  "title": 10, "phrase": 8, "title-heldout": 6, "misspelling-heldout": 10}
 
 
 def pack_files() -> dict[str, bytes]:
@@ -116,6 +116,28 @@ class InventoryTests(unittest.TestCase):
         for q in held:
             self.assertTrue(any(c["check"].startswith("held out") for c in q["checks"]), q["id"])
 
+    def test_heldout_misspelling_slice(self):
+        """S5-T3 ruling 7 of its plan: at least two adjacent swaps, two deletions, one
+        insertion and one substitution; two distance-2 typos of words of 8 or more code
+        points; one word only a file or folder name holds; one common word (in 8 or more
+        files); one 4-code-point word; all knowledge rows, none reusing m01-m16's words."""
+        held = [q for q in self.judgments["queries"] if q["slice"] == "misspelling-heldout"]
+        facts = [next(c for c in q["checks"] if "edit" in c) for q in held]
+        count = lambda test: sum(1 for c in facts if test(c))  # noqa: E731
+        for kind, minimum in (("swap", 2), ("deletion", 2), ("insertion", 1), ("substitution", 1)):
+            self.assertGreaterEqual(count(lambda c: c["edit"] == kind and c["distance"] == 1), minimum, kind)
+        self.assertGreaterEqual(count(lambda c: c["edit"] == "two edits" and c["distance"] == 2
+                                      and c["meant_code_points"] >= 8), 2)
+        self.assertGreaterEqual(count(lambda c: c["where"] == "name" and c["meant_df"] == 0), 1)
+        self.assertGreaterEqual(count(lambda c: c["meant_df"] >= 8), 1)
+        self.assertGreaterEqual(count(lambda c: c["meant_code_points"] == 4), 1)
+        mwords = {w for q in self.judgments["queries"] if q["slice"] == "misspelling"
+                  for c in q["checks"] if "typed" in c for w in (c["typed"], c["meant"])}
+        for q, c in zip(held, facts):
+            self.assertEqual(q["mode"], "knowledge", q["id"])
+            self.assertFalse({c["typed"], c["meant"]} & mwords, q["id"])
+            self.assertTrue(any(k["check"].startswith("held out") for k in q["checks"]), q["id"])
+
     def test_rows(self):
         lines = {f"{f['root_id']}/{f['path']}": f["lines"] for f in self.judgments["files"]}
         modes = {"knowledge", "find:words", "find:phrase", "find:prefix"}
@@ -173,6 +195,15 @@ class CheckTests(unittest.TestCase):
 
     def test_heldout_row_must_not_reuse_a_title_slice_word(self):
         self.broken("th02", query="house homework", name=[("house", "stem")])
+
+    def test_heldout_misspelling_must_not_reuse_a_misspelling_slice_word(self):
+        self.broken("mh05", query="wifi libary", typo=("libary", "library", False))
+
+    def test_heldout_misspelling_edit_must_be_true_to_the_typo(self):
+        self.broken("mh07", edit="deletion")
+
+    def test_heldout_name_word_must_be_absent_from_every_body(self):
+        self.broken("mh01", name=True)
 
     def test_phrase_distractor_must_hold_the_words_apart(self):
         self.broken("p01", adjacent=1, apart=0)

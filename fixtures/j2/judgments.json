@@ -23,7 +23,8 @@
     "title": 10,
     "phrase": 8,
     "negatives": 0,
-    "title-heldout": 6
+    "title-heldout": 6,
+    "misspelling-heldout": 10
   },
   "counts": {
     "control": 23,
@@ -33,8 +34,9 @@
     "tamil": 13,
     "title": 11,
     "phrase": 10,
-    "negatives": 16,
-    "title-heldout": 8
+    "negatives": 18,
+    "title-heldout": 8,
+    "misspelling-heldout": 12
   },
   "files": [
     {
@@ -5529,6 +5531,810 @@
           "present": [
             "music",
             "exam"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh01",
+      "question": "How do I make hot chocolate?",
+      "query": "hot choclate",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/winter-drinks.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Winter drinks",
+            "Hot chocolate"
+          ],
+          "note": "the recipe"
+        },
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 12,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Fridge notes",
+            "Shopping"
+          ],
+          "note": "chocolate for the cake, not a drink"
+        }
+      ],
+      "transposition": false,
+      "edit": "deletion",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "choclate",
+          "meant": "chocolate",
+          "df": 0,
+          "distance": 1,
+          "transposition": false,
+          "edit": "deletion",
+          "where": "body",
+          "meant_df": 2,
+          "typed_code_points": 8,
+          "meant_code_points": 9
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh02",
+      "question": "When is Pip's football tournament?",
+      "query": "football tournamnet",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 6,
+          "end_line": 6,
+          "grade": 2,
+          "note": "Sat 22"
+        },
+        {
+          "root_id": "laptop",
+          "path": "club-timetable.md",
+          "start_line": 8,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Club timetable",
+            "Football"
+          ],
+          "note": "football practice, football three times"
+        },
+        {
+          "root_id": "laptop",
+          "path": "clubs/football/match-days.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "note": "Saturday games, no tournament"
+        }
+      ],
+      "transposition": true,
+      "edit": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "tournamnet",
+          "meant": "tournament",
+          "df": 0,
+          "distance": 1,
+          "transposition": true,
+          "edit": "swap",
+          "where": "body",
+          "meant_df": 1,
+          "typed_code_points": 10,
+          "meant_code_points": 10
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh03",
+      "question": "Is the dentist on Thursday?",
+      "query": "dentist thrusday",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/dentist.md",
+          "start_line": 3,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Dentist",
+            "Next appointment"
+          ],
+          "note": "Thursday 4 December"
+        },
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 130,
+          "end_line": 131,
+          "grade": 0,
+          "note": "dentist appointment twice in the log, no Thursday"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/dentist.md",
+          "start_line": 7,
+          "end_line": 10,
+          "grade": 0,
+          "section_path": [
+            "Dentist",
+            "Brushing teeth"
+          ],
+          "note": "the same file, brushing"
+        }
+      ],
+      "transposition": true,
+      "edit": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "thrusday",
+          "meant": "thursday",
+          "df": 0,
+          "distance": 1,
+          "transposition": true,
+          "edit": "swap",
+          "where": "body",
+          "meant_df": 9,
+          "typed_code_points": 8,
+          "meant_code_points": 8
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh04",
+      "question": "Show me my wishlist",
+      "query": "my wislist",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "wishlist.md",
+          "start_line": 1,
+          "end_line": 8,
+          "grade": 2,
+          "note": "the file; wishlist is in its name only"
+        },
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 25,
+          "end_line": 27,
+          "grade": 0,
+          "section_path": [
+            "தமிழ் வகுப்பு",
+            "My family"
+          ],
+          "note": "my, another file"
+        }
+      ],
+      "transposition": false,
+      "edit": "deletion",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "wislist",
+          "meant": "wishlist",
+          "df": 0,
+          "distance": 1,
+          "transposition": false,
+          "edit": "deletion",
+          "where": "name",
+          "meant_df": 0,
+          "typed_code_points": 7,
+          "meant_code_points": 8
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh05",
+      "question": "What's the wifi password?",
+      "query": "wifi pasword",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Fridge notes",
+            "Wifi"
+          ],
+          "note": "the password"
+        }
+      ],
+      "transposition": false,
+      "edit": "deletion",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "pasword",
+          "meant": "password",
+          "df": 0,
+          "distance": 1,
+          "transposition": false,
+          "edit": "deletion",
+          "where": "body",
+          "meant_df": 1,
+          "typed_code_points": 7,
+          "meant_code_points": 8
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh06",
+      "question": "Are there sandwiches and cake at the party?",
+      "query": "sandwitches and cake",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 13,
+          "end_line": 17,
+          "grade": 2,
+          "section_path": [
+            "Wren turns seven",
+            "Food"
+          ],
+          "note": "sandwiches and an ice cream cake"
+        },
+        {
+          "root_id": "home",
+          "path": "fridge-notes.md",
+          "start_line": 12,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Fridge notes",
+            "Shopping"
+          ],
+          "note": "chocolate for the cake"
+        },
+        {
+          "root_id": "laptop",
+          "path": "meeting-notes-pta.md",
+          "start_line": 13,
+          "end_line": 16,
+          "grade": 0,
+          "section_path": [
+            "PTA meeting notes",
+            "Fundraising"
+          ],
+          "note": "the cake stall"
+        }
+      ],
+      "transposition": false,
+      "edit": "insertion",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "sandwitches",
+          "meant": "sandwiches",
+          "df": 0,
+          "distance": 1,
+          "transposition": false,
+          "edit": "insertion",
+          "where": "body",
+          "meant_df": 1,
+          "typed_code_points": 11,
+          "meant_code_points": 10
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh07",
+      "question": "Who is saving for a microscope?",
+      "query": "saving for a mikroscope",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "money/pocket-money.md",
+          "start_line": 13,
+          "end_line": 16,
+          "grade": 2,
+          "section_path": [
+            "Saving jar",
+            "What they are saving for"
+          ],
+          "note": "Wren: a microscope"
+        },
+        {
+          "root_id": "home",
+          "path": "money/pocket-money.md",
+          "start_line": 3,
+          "end_line": 3,
+          "grade": 0,
+          "note": "the saving jar"
+        },
+        {
+          "root_id": "laptop",
+          "path": "budget-autumn.md",
+          "start_line": 12,
+          "end_line": 14,
+          "grade": 0,
+          "section_path": [
+            "Autumn budget",
+            "Saving"
+          ],
+          "note": "the family's saving"
+        }
+      ],
+      "transposition": false,
+      "edit": "substitution",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "mikroscope",
+          "meant": "microscope",
+          "df": 0,
+          "distance": 1,
+          "transposition": false,
+          "edit": "substitution",
+          "where": "body",
+          "meant_df": 1,
+          "typed_code_points": 10,
+          "meant_code_points": 10
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh08",
+      "question": "Which week is necessary a spelling word?",
+      "query": "neccesary spelling",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "spelling-lists.md",
+          "start_line": 6,
+          "end_line": 10,
+          "grade": 2,
+          "section_path": [
+            "Spelling lists",
+            "Week 8"
+          ],
+          "note": "necessary is on the week 8 list"
+        },
+        {
+          "root_id": "school",
+          "path": "spelling-lists.md",
+          "start_line": 12,
+          "end_line": 16,
+          "grade": 0,
+          "section_path": [
+            "Spelling lists",
+            "Week 9"
+          ],
+          "note": "another week's list"
+        },
+        {
+          "root_id": "school",
+          "path": "spelling-lists.md",
+          "start_line": 18,
+          "end_line": 22,
+          "grade": 0,
+          "section_path": [
+            "Spelling lists",
+            "Week 10"
+          ],
+          "note": "another week's list"
+        },
+        {
+          "root_id": "school",
+          "path": "class-notes-pip.md",
+          "start_line": 25,
+          "end_line": 28,
+          "grade": 0,
+          "section_path": [
+            "Year 5 class notes",
+            "Spelling"
+          ],
+          "note": "spelling, in the class notes"
+        }
+      ],
+      "transposition": false,
+      "edit": "two edits",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "neccesary",
+          "meant": "necessary",
+          "df": 0,
+          "distance": 2,
+          "transposition": false,
+          "edit": "two edits",
+          "where": "body",
+          "meant_df": 1,
+          "typed_code_points": 9,
+          "meant_code_points": 9
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh09",
+      "question": "What's for Saturday breakfast?",
+      "query": "saturday brekfest",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/pancakes.md",
+          "start_line": 3,
+          "end_line": 3,
+          "grade": 2,
+          "note": "pancakes on Saturday"
+        },
+        {
+          "root_id": "laptop",
+          "path": "clubs/football/match-days.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "note": "Saturday games"
+        },
+        {
+          "root_id": "laptop",
+          "path": "club-timetable.md",
+          "start_line": 13,
+          "end_line": 16,
+          "grade": 0,
+          "section_path": [
+            "Club timetable",
+            "Changes this week"
+          ],
+          "note": "football off on Saturday"
+        }
+      ],
+      "transposition": false,
+      "edit": "two edits",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "brekfest",
+          "meant": "breakfast",
+          "df": 0,
+          "distance": 2,
+          "transposition": false,
+          "edit": "two edits",
+          "where": "body",
+          "meant_df": 1,
+          "typed_code_points": 8,
+          "meant_code_points": 9
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh10",
+      "question": "Did anyone find the lost coat?",
+      "query": "lost caot",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "emails-to-school.md",
+          "start_line": 13,
+          "end_line": 16,
+          "grade": 2,
+          "section_path": [
+            "Emails to school (drafts)",
+            "Lost coat"
+          ],
+          "note": "the email about the coat"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 44,
+          "end_line": 47,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Lost property"
+          ],
+          "note": "the lost property box"
+        }
+      ],
+      "transposition": true,
+      "edit": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "caot",
+          "meant": "coat",
+          "df": 0,
+          "distance": 1,
+          "transposition": true,
+          "edit": "swap",
+          "where": "body",
+          "meant_df": 6,
+          "typed_code_points": 4,
+          "meant_code_points": 4
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh11",
+      "question": "How do we make the paper lantern?",
+      "query": "paper lantren",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "art-club/autumn-projects.md",
+          "start_line": 14,
+          "end_line": 16,
+          "grade": 2,
+          "section_path": [
+            "Autumn projects",
+            "Paper lantern"
+          ],
+          "note": "fold, cut and glue"
+        },
+        {
+          "root_id": "school",
+          "path": "art-club/autumn-projects.md",
+          "start_line": 5,
+          "end_line": 8,
+          "grade": 0,
+          "section_path": [
+            "Autumn projects",
+            "Leaf prints"
+          ],
+          "note": "craft paper twice"
+        },
+        {
+          "root_id": "school",
+          "path": "school-play.md",
+          "start_line": 3,
+          "end_line": 3,
+          "grade": 0,
+          "note": "the play's title"
+        }
+      ],
+      "transposition": true,
+      "edit": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "lantren",
+          "meant": "lantern",
+          "df": 0,
+          "distance": 1,
+          "transposition": true,
+          "edit": "swap",
+          "where": "body",
+          "meant_df": 5,
+          "typed_code_points": 7,
+          "meant_code_points": 7
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-heldout",
+      "id": "mh12",
+      "question": "When do we send the invitations?",
+      "query": "send the invitiations",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 5,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "Wren turns seven",
+            "Friends to invite"
+          ],
+          "note": "send the invitations by 28 November"
+        },
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 7,
+          "end_line": 7,
+          "grade": 0,
+          "note": "the calendar line"
+        }
+      ],
+      "transposition": false,
+      "edit": "insertion",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; meant word in the answer (body), or only in its file or folder name (name)",
+          "typed": "invitiations",
+          "meant": "invitations",
+          "df": 0,
+          "distance": 1,
+          "transposition": false,
+          "edit": "insertion",
+          "where": "body",
+          "meant_df": 2,
+          "typed_code_points": 12,
+          "meant_code_points": 11
+        },
+        {
+          "check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "mhn1",
+      "question": "Are there tickets for the football tournament?",
+      "query": "tournamnet tickets",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "the tournament, no tickets"
+        },
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 29,
+          "end_line": 33,
+          "grade": 0,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Noël carol concert"
+          ],
+          "note": "concert tickets"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "tickets"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "mhn2",
+      "question": "Are paper lanterns for sale?",
+      "query": "lantren sale",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "art-club/autumn-projects.md",
+          "start_line": 14,
+          "end_line": 16,
+          "grade": 0,
+          "section_path": [
+            "Autumn projects",
+            "Paper lantern"
+          ],
+          "note": "a lantern to make, not to buy"
+        },
+        {
+          "root_id": "home",
+          "path": "weekend/sale-in-the-field.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "note": "a sale, no lanterns"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "sale"
           ]
         }
       ]

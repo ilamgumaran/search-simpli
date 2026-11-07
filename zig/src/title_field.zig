@@ -31,6 +31,7 @@ const hybrid = @import("hybrid.zig");
 const manifest = @import("manifest.zig");
 const scope = @import("scope.zig");
 const scoring = @import("scoring.zig");
+const fuzzy = @import("fuzzy.zig");
 
 pub const policy_id = "title-field-v1";
 /// Ruling 2: the measured plateau's middle; one constant per surface
@@ -565,8 +566,22 @@ pub fn scoreQuery(allocator: std.mem.Allocator, field: *const Field, documents: 
         distinct += 1;
     }
     if (distinct == 0) return null;
-    var found = std.ArrayList(Term).empty;
-    for (query_tokens[0..distinct]) |token| if (field.lookup(token)) |term| try found.append(tmp, term);
+    // S5-T3: a token with a fuzzy-v1 group is looked up as its members.
+    const groups = options.fuzzy_groups;
+    var found = std.ArrayList(Found).empty;
+    for (query_tokens[0..distinct]) |token| {
+        if (groups) |g| if (g.of(token)) |group| {
+            var item = Found{ .grouped = true };
+            for (group.members) |member| if (field.lookup(member.term)) |term| {
+                item.terms[item.len] = term;
+                item.weights[item.len] = member.weight;
+                item.len += 1;
+            };
+            if (item.len != 0) try found.append(tmp, item);
+            continue;
+        };
+        if (field.lookup(token)) |term| try found.append(tmp, .{ .terms = .{ term, undefined, undefined }, .len = 1 });
+    }
     if (found.items.len == 0) return null;
 
     // The statistics: every file, or the files the roots and labels let
@@ -598,7 +613,12 @@ pub fn scoreQuery(allocator: std.mem.Allocator, field: *const Field, documents: 
     @memset(covered, 0);
     var touched = std.ArrayList(u32).empty;
     errdefer touched.deinit(allocator);
-    for (found.items) |term| {
+    for (found.items) |item| {
+        if (item.grouped) {
+            try scoreGroup(allocator, field, item, visible, average, @intCast(count), options, scores, covered, &touched);
+            continue;
+        }
+        const term = item.terms[0];
         const list = field.termPostings(term);
         var df: u32 = 0;
         if (visible) |flags| {
@@ -631,6 +651,56 @@ pub fn scoreQuery(allocator: std.mem.Allocator, field: *const Field, documents: 
         return null;
     }
     return .{ .scores = scores, .touched = try touched.toOwnedSlice(allocator) };
+}
+
+/// One distinct query token's title terms: the token itself, or (S5-T3)
+/// the members of its fuzzy-v1 group that the field holds, with weights.
+const Found = struct {
+    terms: [fuzzy.max_expansions]Term = undefined,
+    weights: [fuzzy.max_expansions]f32 = .{ 1, 1, 1 },
+    len: usize = 0,
+    grouped: bool = false,
+};
+
+/// S5-T3: a grouped token's title part. The members share one df (the
+/// largest visible title df among them); each file adds its best held
+/// member's weight x BM25 and counts the token as covered once. The
+/// members' postings are in file order, so they merge without a per-file
+/// array.
+fn scoreGroup(allocator: std.mem.Allocator, field: *const Field, item: Found, visible: ?[]const bool, average: f32, count: u32, options: hybrid.SearchOptions, scores: []f32, covered: []u32, touched: *std.ArrayList(u32)) !void {
+    var df: u32 = 0;
+    for (item.terms[0..item.len]) |term| {
+        var member_df: u32 = 0;
+        const list = field.termPostings(term);
+        if (visible) |flags| {
+            for (list) |posting| if (flags[posting.file]) {
+                member_df += 1;
+            };
+        } else member_df = @intCast(list.len);
+        df = @max(df, member_df);
+    }
+    const weight = Bm25Term.init(average, df, count, options.bm25);
+    var cursors: [fuzzy.max_expansions]usize = @splat(0);
+    while (true) {
+        var file: ?u32 = null;
+        for (item.terms[0..item.len], cursors[0..item.len]) |term, cursor| {
+            const list = field.termPostings(term);
+            if (cursor < list.len and (file == null or list[cursor].file < file.?)) file = list[cursor].file;
+        }
+        const f = file orelse break;
+        var best: ?f32 = null;
+        for (item.terms[0..item.len], cursors[0..item.len], item.weights[0..item.len]) |term, *cursor, w| {
+            const list = field.termPostings(term);
+            if (cursor.* >= list.len or list[cursor.*].file != f) continue;
+            const part = w * weight.contribution(@floatFromInt(list[cursor.*].frequency), @floatFromInt(field.files[f].length));
+            if (best == null or part > best.?) best = part;
+            cursor.* += 1;
+        }
+        if (visible) |flags| if (!flags[f]) continue;
+        if (covered[f] == 0) try touched.append(allocator, f);
+        covered[f] += 1;
+        scores[f] += best.?;
+    }
 }
 
 /// `scoring.bm25Contribution` with the term's inverse document frequency

@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.5.0 (S5-T3; contract 2.4.0; minor: ranking change and additive result fields)
+
+Misspelling tolerance (`fuzzy-v1`, `docs/fuzzy-v1.md`). A query word that
+no chunk in scope and no visible file's name holds, written in Latin
+letters and at least 5 code points long, is also searched as up to 3
+dictionary words within one edit (5 code points) or two (6 or more), an
+edit being an insertion, a deletion, a substitution or a swap of two
+neighbours (optimal string alignment). The first letter is kept. Code
+written for 0.4.x compiles and behaves the same against 0.5.0, but a
+query with a misspelt word now finds what the right word finds.
+
+- **Contracts 2.4.0** (`contracts/CONTRACTS_VERSION`). As before the
+  package accepts exactly its own contract version: a 2.3.0 library is
+  refused at `open` with `ContractsVersionMismatchException`, and the
+  natives move with the package.
+- **The words kept.** Fewest edits first, then the most chunks in scope
+  (roots and labels; a path prefix decides membership, not the count),
+  then bytes. A word only hidden chunks or files hold is never used or
+  reported. A file-name word no chunk holds counts as one chunk.
+- **The scoring.** The kept words score as one word: one document
+  frequency (the largest of theirs), and each chunk adds its best word's
+  part, weighted 1.0 at one edit and 0.5 at two. A file's title part does
+  the same over the names. `both` uses the same words for its body and
+  title parts; `filename` is never expanded. A query with no such word
+  ranks exactly as under 0.4.x.
+- **New, nullable:** `SearchRetrieval.fuzzyPolicyId` (`"fuzzy-v1"`
+  whenever the lexical channel ran under `content` or `both` on an
+  `analyzer-v2` index), `SearchWarningCode.queryTermExpanded` and
+  `SearchWarning.expansions`: the typed word keeps its
+  `queryTermUnmatched` warning, and a `queryTermExpanded` warning with the
+  words searched, best first, follows it.
+- **`ascii-alnum-v1` indexes** are not expanded and carry no
+  `fuzzyPolicyId`.
+- **No index format change.** Nothing is stored: the words are found at
+  query time from the dictionary the index already holds. Every index a
+  0.4.x library wrote opens unchanged, and nothing is rebuilt. No C ABI
+  signature changed.
+- **Natives** rebuilt on the Mac: macOS 884,632 B (0.4.0: 866,168),
+  Android 858,224 B (842,272), iOS framework binary 865,096 B (846,680);
+  `native/SOURCE-SHA256` is `8f73bf9c…`.
+
 ## 0.4.0 (S5-T2; contract 2.3.0; minor: ranking change and additive result fields)
 
 The title field (`title-field-v1`, `docs/title-field-v1.md`). A file's

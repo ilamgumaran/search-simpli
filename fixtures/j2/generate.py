@@ -50,7 +50,13 @@ queries = _load("queries")
 ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
 SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "negatives",
-          "title-heldout")
+          "title-heldout", "misspelling-heldout")
+# S5-T3, ruling 7 of its plan: the edits the held-out misspelling slice must hold,
+# at least this many rows of each (a distance-2 row needs a meant word of 8 or more
+# code points; "name" is a word only the answer's file or folder name holds;
+# "common" a meant word in 8 or more files; "short" a 4-code-point meant word).
+HELDOUT_MISSPELLING_MIX = {"swap": 2, "deletion": 2, "insertion": 1, "substitution": 1,
+                           "two edits": 2, "name": 1, "common": 1, "short": 1}
 MODES = ("knowledge", "find:words", "find:phrase", "find:prefix")
 
 
@@ -162,6 +168,19 @@ def is_one_swap(typed: str, meant: str) -> bool:
             and typed[diff[0]] == meant[diff[1]] and typed[diff[1]] == meant[diff[0]])
 
 
+def edit_kind(typed: str, meant: str) -> str:
+    """The edit a misspelling is: one adjacent swap, deletion, insertion or
+    substitution, or "two edits" (distance 2)."""
+    distance = osa_distance(typed, meant)
+    if distance == 2:
+        return "two edits"
+    if distance != 1:
+        return f"distance {distance}"
+    if is_one_swap(typed, meant):
+        return "swap"
+    return {-1: "deletion", 1: "insertion", 0: "substitution"}[len(typed) - len(meant)]
+
+
 def contains_run(seq: list[str], want: list[str]) -> bool:
     return any(seq[i:i + len(want)] == want for i in range(len(seq) - len(want) + 1))
 
@@ -187,6 +206,12 @@ def title_slice_words() -> set[str]:
                 for part in pure.parent.parts:
                     words.update(toks(part))
     return words
+
+
+def misspelling_slice_words() -> set[str]:
+    """Every typed and every meant word of the misspelling slice (m01-m16):
+    S5-T3's held-out rows use none."""
+    return {word for spec in queries.QUERIES if spec["slice"] == "misspelling" for word in spec["typo"][:2]}
 
 
 def build_query(corpus: Corpus, spec: dict) -> dict:
@@ -228,16 +253,38 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
 
     first = corpus.range_tokens(answers[0]) if answers else []
     s = spec["slice"]
-    if s == "misspelling":
+    if s in ("misspelling", "misspelling-heldout"):
         typed, meant, swap = spec["typo"]
         need(typed in query_tokens, f"{typed} is a query word")
         need(corpus.df(typed) == 0, f"{typed} occurs in no file (df {corpus.df(typed)})")
         distance = osa_distance(typed, meant)
         need(1 <= distance <= 2, f"{typed}->{meant} distance {distance}")
         need(is_one_swap(typed, meant) == swap, f"{typed}->{meant} transposition flag {swap}")
-        need(meant in first, f"{meant} is in the answer")
-        checks.append({"check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
-                       "typed": typed, "meant": meant, "df": 0, "distance": distance, "transposition": swap})
+        if s == "misspelling":
+            need(meant in first, f"{meant} is in the answer")
+            checks.append({"check": "misspelt word in no file; Damerau distance 1-2; transposition flag; meant word in the answer",
+                           "typed": typed, "meant": meant, "df": 0, "distance": distance, "transposition": swap})
+        else:
+            edit = edit_kind(typed, meant)
+            need(edit == spec["edit"], f"{typed}->{meant} is {edit}, declared {spec['edit']}")
+            need(edit != "two edits" or len(meant) >= 8, f"a distance-2 row needs a meant word of 8+ code points ({meant})")
+            if spec.get("name"):
+                pure = PurePosixPath(answers[0]["path"])
+                path_words = set(toks(pure.stem)) | {t for part in pure.parent.parts for t in toks(part)}
+                need(corpus.df(meant) == 0, f"{meant} occurs in no file (df {corpus.df(meant)})")
+                need(meant in path_words, f"{meant} is in the answer's file or folder name")
+                where = "name"
+            else:
+                need(meant in first, f"{meant} is in the answer")
+                where = "body"
+            checks.append({"check": "misspelt word in no file; Damerau distance 1-2; transposition flag; the edit; "
+                                    "meant word in the answer (body), or only in its file or folder name (name)",
+                           "typed": typed, "meant": meant, "df": 0, "distance": distance, "transposition": swap,
+                           "edit": edit, "where": where, "meant_df": corpus.df(meant),
+                           "typed_code_points": len(typed), "meant_code_points": len(meant)})
+            reused = sorted({typed, meant} & misspelling_slice_words())
+            need(not reused, f"held out: {reused} is a typed or meant word of the misspelling slice")
+            checks.append({"check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"})
     elif s in ("morphology", "tamil") and "forms" in spec:
         for query_form, file_form in spec["forms"]:
             need(query_form in query_tokens, f"{query_form} is a query word")
@@ -314,8 +361,10 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
     if negative:
         item["negative"] = True
         item["negative_of"] = spec["of"]
-    if s == "misspelling":
+    if s in ("misspelling", "misspelling-heldout"):
         item["transposition"] = spec["typo"][2]
+    if s == "misspelling-heldout":
+        item["edit"] = spec["edit"]
     if s == "morphology":
         item["only_form"] = bool(spec.get("only_form"))
     if s == "tamil" and "guard" in spec:
@@ -341,6 +390,15 @@ def build_judgments(corpus: Corpus) -> dict:
     for name in queries.SLICE_MINIMUMS:
         if not any(i.get("negative_of") == name for i in items):
             raise SystemExit(f"slice {name} has no negative")
+    held = [next(c for c in i["checks"] if "edit" in c) for i in items if i["slice"] == "misspelling-heldout"]
+    have = {kind: sum(1 for c in held if c["edit"] == kind) for kind in ("swap", "deletion", "insertion", "substitution")}
+    have["two edits"] = sum(1 for c in held if c["edit"] == "two edits" and c["meant_code_points"] >= 8)
+    have["name"] = sum(1 for c in held if c["where"] == "name")
+    have["common"] = sum(1 for c in held if c["meant_df"] >= 8)
+    have["short"] = sum(1 for c in held if c["meant_code_points"] == 4)
+    for kind, minimum in HELDOUT_MISSPELLING_MIX.items():
+        if have[kind] < minimum:
+            raise SystemExit(f"misspelling-heldout: {have[kind]} rows of kind {kind}, minimum {minimum}")
     if sum(1 for i in items if i.get("transposition")) < 5:
         raise SystemExit("fewer than 5 transpositions")
     if sum(1 for i in items if i.get("only_form")) < 3:
@@ -377,10 +435,10 @@ Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone number
 are from the ranges set aside for drama.
 
 J2 says where keyword search loses. It holds {total} queries in seven slices,
-a held-out title slice (S5-T2) and named negatives, graded 0 to 2, over three
-roots. Its numbers are the baseline later search tasks are judged against
-(`fixtures/j2/baseline.json`, `scripts/j2_gate.py`); see `docs/evaluation.md`,
-section J2.
+a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3) and named
+negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
+search tasks are judged against (`fixtures/j2/baseline.json`,
+`scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
 
 Do not edit the files by hand. `python3 fixtures/j2/generate.py` rewrites every
 file, `judgments.json` and this README from `content.py`, `queries.py` and
@@ -445,6 +503,7 @@ SLICE_TEXT = {
     "phrase": "the words adjacent in the answer, apart in a distractor",
     "negatives": "nothing answers; distractors named",
     "title-heldout": "title intent held out from S5-T2's weight; no word of the title slice",
+    "misspelling-heldout": "misspellings held out from S5-T3's rule; no typed or meant word of the misspelling slice",
 }
 
 

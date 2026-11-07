@@ -353,6 +353,17 @@ pub fn hasInScopePosting(index: Index, entry: TermEntry, trace: *const hybrid.Tr
 /// dense array's entry. Needs each term's postings to be strictly ascending by
 /// document (the segment decoder rejects anything else) and keeps no
 /// per-chunk state: only one cursor per query term.
+/// S5-T3 (`fuzzy.zig`): which of a `SparseScorer`'s terms are the members
+/// of a typed term's group. A group's members are adjacent in `terms`; in a
+/// chunk the group adds its best member's `weight` x BM25 (at the group's
+/// one df, in `document_frequencies`), never their sum.
+pub const Grouping = struct {
+    pub const plain = std.math.maxInt(u32);
+    /// Per term: its group, or `plain`.
+    group_of: []const u32,
+    weights: []const f32,
+};
+
 pub const SparseScorer = struct {
     index: Index,
     terms: []const TermEntry,
@@ -364,6 +375,9 @@ pub const SparseScorer = struct {
     /// S3-T3: each resolved term's document frequency in the visible scope,
     /// in `terms` order; null = the dictionary's.
     document_frequencies: ?[]const u32 = null,
+    /// S5-T3: the fuzzy-v1 groups among `terms`; null scores every term as
+    /// before (the code path of before S5-T3).
+    grouping: ?Grouping = null,
 
     /// `cursors` must hold `terms.len` entries.
     pub fn init(index: Index, terms: []const TermEntry, cursors: []usize, parameters: scoring.Bm25Parameters) SparseScorer {
@@ -402,6 +416,7 @@ pub const SparseScorer = struct {
             if (smallest == null or candidate < smallest.?) smallest = candidate;
         }
         const document_index = smallest orelse return null;
+        if (scorer.grouping) |grouping| return .{ .document_index = document_index, .score = scorer.groupedAt(grouping, document_index, true) };
         var score: f32 = 0;
         for (scorer.terms, scorer.cursors, 0..) |entry, *cursor, term_index| {
             const list = scorer.postingsOf(entry);
@@ -412,9 +427,49 @@ pub const SparseScorer = struct {
         return .{ .document_index = document_index, .score = score };
     }
 
+    /// The grouped score of `document_index`: plain terms summed in order,
+    /// each group's best weighted member added where the group ends. With
+    /// `advance`, the cursors at `document_index` move on (`next`);
+    /// otherwise each list is searched (`scoreOf`).
+    fn groupedAt(scorer: *SparseScorer, grouping: Grouping, document_index: u32, comptime advance: bool) f32 {
+        var score: f32 = 0;
+        var best: ?f32 = null;
+        for (scorer.terms, 0..) |entry, term_index| {
+            const group = grouping.group_of[term_index];
+            if (best != null and (group == Grouping.plain or group != grouping.group_of[term_index - 1])) {
+                score += best.?;
+                best = null;
+            }
+            const list = scorer.postingsOf(entry);
+            const at: usize = if (advance) scorer.cursors[term_index] else lowerPosting(list, document_index);
+            if (at >= list.len or list[at].document_index != document_index) continue;
+            if (advance) scorer.cursors[term_index] += 1;
+            const part = scorer.contribution(term_index, entry, list[at]);
+            if (group == Grouping.plain) {
+                score += part;
+            } else {
+                const weighted = grouping.weights[term_index] * part;
+                if (best == null or weighted > best.?) best = weighted;
+            }
+        }
+        if (best) |b| score += b;
+        return score;
+    }
+
+    fn lowerPosting(list: []const Posting, document_index: usize) usize {
+        var low: usize = 0;
+        var high: usize = list.len;
+        while (low < high) {
+            const middle = low + (high - low) / 2;
+            if (list[middle].document_index < document_index) low = middle + 1 else high = middle;
+        }
+        return low;
+    }
+
     /// The score `next` yields for `document_index` (0 when no query term
     /// occurs in it), found by binary search; same summation order.
     pub fn scoreOf(scorer: *const SparseScorer, document_index: usize) f32 {
+        if (scorer.grouping) |grouping| return @constCast(scorer).groupedAt(grouping, @intCast(document_index), false);
         var score: f32 = 0;
         for (scorer.terms, 0..) |entry, term_index| {
             const list = scorer.postingsOf(entry);

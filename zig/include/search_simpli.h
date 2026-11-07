@@ -103,6 +103,17 @@
  * score-level merge, one result per file, that candidate_k does not cut.
  * The field is derived from the generation's records at its first such
  * query on a handle, never at ss_open. */
+
+/* Contract 2.4.0 (S5-T3) adds, additive, with no request field and no
+ * signature or index format change: misspelling tolerance (fuzzy-v1,
+ * docs/fuzzy-v1.md). A query word of 5 or more Latin code points that no
+ * chunk in scope and no visible file's name holds is also searched as up
+ * to 3 dictionary words within 1 edit (5 code points) or 2 (6 or more)
+ * that share its first letter; they score as one word. ss_query's result
+ * gains retrieval.fuzzy_policy_id whenever the lexical channel runs under
+ * "content" or "both" on an analyzer-v2 generation, and a
+ * query_term_expanded warning with "expansions" after the word's
+ * query_term_unmatched warning. "filename" is never expanded. */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 
@@ -131,7 +142,7 @@ typedef struct ss_handle ss_handle;
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "2.3.0". The returned pointer is static storage owned by the library:
+ * "2.4.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);
@@ -289,7 +300,7 @@ char *ss_status(ss_handle *handle);
  * removing them gives the 1.1.0 output exactly):
  *
  *   "warnings"  array, always present, usually empty, of
- *               {"code", "message", "term"?}. Codes:
+ *               {"code", "message", "term"?, "expansions"?}. Codes:
  *                 query_term_unmatched       an analysed query word that was
  *                     not found in the searched files. "term" is the
  *                     query's own analysed form (lowercased under
@@ -303,6 +314,11 @@ char *ss_status(ss_handle *handle);
  *                     the index and words hidden by the scope are
  *                     interleaved as they appear). Lexical and hybrid modes
  *                     only: vector mode does not use the words.
+ *                 query_term_expanded        (2.4.0) the unmatched word
+ *                     was also searched as "expansions", up to 3
+ *                     dictionary words best first, each held by a chunk
+ *                     or a file name in scope (never only by hidden
+ *                     ones). "term" is the typed word, as above.
  *                 query_empty_after_analysis the query has no searchable
  *                     terms (empty, punctuation, unknown script for the
  *                     analyzer). Lexical and hybrid modes only.
@@ -318,7 +334,8 @@ char *ss_status(ss_handle *handle);
  *                     top_k (which this function rejects, so it does not
  *                     occur there). "lexical" and/or "vector" in the message.
  *               Order of the array: query_empty_after_analysis, then the
- *               query_term_unmatched entries in query order, then
+ *               query_term_unmatched entries in query order (each
+ *               followed by its query_term_expanded entry, if any), then
  *               vector_ignored, then candidate_depth_cut.
  *   "request"   {"analyzer_id", "retrieval_mode", "top_k", "candidate_k",
  *               "path_prefix"}: what the engine used, defaults filled in

@@ -9,6 +9,7 @@
 //! | code                         | lexical | hybrid | vector |
 //! | ---------------------------- | ------- | ------ | ------ |
 //! | `query_term_unmatched`       | yes     | yes    | no     |
+//! | `query_term_expanded` (S5-T3) | yes    | yes    | no     |
 //! | `query_empty_after_analysis` | yes     | yes    | no     |
 //! | `vector_ignored`             | when a vector was passed | when passed and the snapshot has no vectors | same |
 //! | `candidate_depth_cut`        | only if candidate_k < top_k | each channel, when both channels offered candidates | only if candidate_k < top_k |
@@ -54,6 +55,30 @@ fn warning(json: *std.json.Stringify, code: []const u8, message: []const u8, ter
     try json.endObject();
 }
 
+/// S5-T3: `query_term_expanded`, the typed term and its fuzzy-v1
+/// expansions best first (`fuzzy.zig`).
+fn expandedWarning(json: *std.json.Stringify, allocator: std.mem.Allocator, expanded: hybrid.Trace.Expanded) !void {
+    try json.beginObject();
+    try json.objectField("code");
+    try json.write("query_term_expanded");
+    try json.objectField("message");
+    var message = std.Io.Writer.Allocating.init(allocator);
+    defer message.deinit();
+    try message.writer.writeAll("also searched: ");
+    for (expanded.expansions, 0..) |e, i| {
+        if (i != 0) try message.writer.writeAll(", ");
+        try message.writer.writeAll(e);
+    }
+    try json.write(message.written());
+    try json.objectField("term");
+    try json.write(expanded.term);
+    try json.objectField("expansions");
+    try json.beginArray();
+    for (expanded.expansions) |e| try json.write(e);
+    try json.endArray();
+    try json.endObject();
+}
+
 /// Whether a channel that offered `offered` candidates gets a
 /// `candidate_depth_cut`: only when the cut can change the returned list. In
 /// hybrid mode that needs both channels to have offered candidates (a hybrid
@@ -92,6 +117,10 @@ fn writeWarnings(json: *std.json.Stringify, extras: Extras) !void {
         }
         for (trace.unmatched.items) |item| {
             try warning(json, "query_term_unmatched", "the term was not found in the searched files", item.term);
+            // S5-T3: followed by the spellings it was also searched as.
+            for (trace.expanded.items) |expanded| if (std.mem.eql(u8, expanded.term, item.term)) {
+                try expandedWarning(json, trace.allocator, expanded);
+            };
         }
     }
     if (extras.vector_ignored) |reason| try warning(json, "vector_ignored", reason.message(), null);

@@ -5,11 +5,11 @@ Year 5, Wren in Year 2, Paati their grandmother, Biscuit the dog), Thistlecombe
 Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone numbers
 are from the ranges set aside for drama.
 
-J2 says where keyword search loses. It holds 119 queries in seven slices,
-a held-out title slice (S5-T2) and named negatives, graded 0 to 2, over three
-roots. Its numbers are the baseline later search tasks are judged against
-(`fixtures/j2/baseline.json`, `scripts/j2_gate.py`); see `docs/evaluation.md`,
-section J2.
+J2 says where keyword search loses. It holds 133 queries in seven slices,
+a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3) and named
+negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
+search tasks are judged against (`fixtures/j2/baseline.json`,
+`scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
 
 Do not edit the files by hand. `python3 fixtures/j2/generate.py` rewrites every
 file, `judgments.json` and this README from `content.py`, `queries.py` and
@@ -58,8 +58,9 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 | tamil | 13 | 10 | Tamil inflections, both directions, plus suffix guards |
 | title | 11 | 10 | the words name the file (stem or folder), not its body |
 | phrase | 10 | 8 | the words adjacent in the answer, apart in a distractor |
-| negatives | 16 | - | nothing answers; distractors named |
+| negatives | 18 | - | nothing answers; distractors named |
 | title-heldout | 8 | 6 | title intent held out from S5-T2's weight; no word of the title slice |
+| misspelling-heldout | 12 | 10 | misspellings held out from S5-T3's rule; no typed or meant word of the misspelling slice |
 
 ## Queries
 
@@ -186,3 +187,17 @@ Grade-2 rows only; `judgments.json` holds every row with its note.
 | th08 | title-heldout | knowledge | `health` | `home/health/doctor-visits.md` 1-9 |
 | thn1 | negatives | knowledge | `holiday photos` | none |
 | thn2 | negatives | knowledge | `music exam` | none |
+| mh01 | misspelling-heldout | knowledge | `hot choclate` | `home/recipes/winter-drinks.md` 3-6 |
+| mh02 | misspelling-heldout | knowledge | `football tournamnet` | `home/calendar-november.md` 6-6 |
+| mh03 | misspelling-heldout | knowledge | `dentist thrusday` | `laptop/notes/dentist.md` 3-5 |
+| mh04 | misspelling-heldout | knowledge | `my wislist` | `laptop/wishlist.md` 1-8 |
+| mh05 | misspelling-heldout | knowledge | `wifi pasword` | `home/fridge-notes.md` 3-6 |
+| mh06 | misspelling-heldout | knowledge | `sandwitches and cake` | `home/birthday-party-wren.md` 13-17 |
+| mh07 | misspelling-heldout | knowledge | `saving for a mikroscope` | `home/money/pocket-money.md` 13-16 |
+| mh08 | misspelling-heldout | knowledge | `neccesary spelling` | `school/spelling-lists.md` 6-10 |
+| mh09 | misspelling-heldout | knowledge | `saturday brekfest` | `home/recipes/pancakes.md` 3-3 |
+| mh10 | misspelling-heldout | knowledge | `lost caot` | `laptop/emails-to-school.md` 13-16 |
+| mh11 | misspelling-heldout | knowledge | `paper lantren` | `school/art-club/autumn-projects.md` 14-16 |
+| mh12 | misspelling-heldout | knowledge | `send the invitiations` | `home/birthday-party-wren.md` 5-11 |
+| mhn1 | negatives | knowledge | `tournamnet tickets` | none |
+| mhn2 | negatives | knowledge | `lantren sale` | none |

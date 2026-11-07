@@ -88,6 +88,11 @@ fn writeEvidenceInternal(
         try json.objectField("title_policy_id");
         try json.write(@import("title_field.zig").policy_id);
     }
+    // S5-T3 (contract 2.4.0): both expands; filename never does.
+    if (engine.fuzzyApplies(field, options)) {
+        try json.objectField("fuzzy_policy_id");
+        try json.write(@import("fuzzy.zig").policy_id);
+    }
     try json.endObject();
     try json.objectField("results");
     try json.beginArray();

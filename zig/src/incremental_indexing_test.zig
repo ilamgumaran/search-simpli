@@ -32,6 +32,10 @@ fn queryPaths(arena: std.mem.Allocator, io: std.Io, out: std.Io.Dir, query_text:
         .top_k = opened.documents.len,
         .candidate_k = opened.documents.len,
         .retrieval_mode = .lexical,
+        // S5-T3: these steps ask what the index holds, word for word; with
+        // fuzzy-v1 a removed word ("ranking") would also be searched as a
+        // near spelling that remains ("reranking").
+        .fuzzy = false,
     });
     var paths = std.ArrayList([]const u8).empty;
     for (found) |result| {

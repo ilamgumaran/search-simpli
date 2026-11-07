@@ -55,6 +55,21 @@ folder names or file stem, `title-field-v1`; the paths come from `searchd
 list-files`). A differing case without one is an unexplained change and fails
 the run (exit 1), as does any random-vocabulary case of the 10,000-chunk
 corpus that differs.
+
+S5-T3, the fuzzy-v1 comparison:
+
+    python3 -I scripts/capture_query_outputs.py --compare-fuzzy BEFORE.jsonl AFTER.jsonl \
+        --lib AFTER_LIB --work WORKDIR
+
+cuts contract 2.4.0's two additions out of every AFTER output byte by byte
+(`,"fuzzy_policy_id":"fuzzy-v1"` at the end of `retrieval`, and every
+`query_term_expanded` warning) and compares it with the BEFORE output of the
+same case. A differing case is explained when an expansion caused it: its own
+AFTER output carries a `query_term_expanded` warning, or, for `both` (whose
+response carries no warnings), the same query asked under `content` with the
+same options of AFTER_LIB on the case's snapshot does. Any other differing case,
+any `filename` case that differs and any random-vocabulary case of the
+10,000-chunk corpus that differs fails the run (exit 1).
 """
 
 from __future__ import annotations
@@ -375,7 +390,88 @@ def compare_title(before: Path, after: Path, searchd: str, work: Path) -> int:
     return 1 if unexplained or random_10k else 0
 
 
+FUZZY_POLICY = ',"fuzzy_policy_id":"fuzzy-v1"}'
+FUZZY_WARNING = re.compile(r',?\{"code":"query_term_expanded","message":"[^"]*","term":"[^"]*","expansions":\[[^\]]*\]\}')
+
+
+def strip_fuzzy(output: str) -> tuple[str, int]:
+    """AFTER's output without contract 2.4.0's additions, and how many warnings were cut."""
+    if output.startswith("ERROR"):
+        return output, 0
+    retrieval = output.index('"retrieval":{')
+    results = output.index('},"results":[', retrieval)
+    head, tail = output[:results + 1], output[results + 1:]
+    if head.endswith(FUZZY_POLICY):
+        head = head[: -len(FUZZY_POLICY)] + "}"
+    tail, warnings = FUZZY_WARNING.subn("", tail)
+    return head + tail.replace('"warnings":[,', '"warnings":['), warnings
+
+
+def expanded_terms(output: str) -> list[str]:
+    if output.startswith("ERROR"):
+        return []
+    return [w["term"] for w in json.loads(output).get("warnings", []) if w["code"] == "query_term_expanded"]
+
+
+def compare_fuzzy(before: Path, after: Path, library: str, work: Path) -> int:
+    old = [json.loads(line) for line in before.open(encoding="utf-8")]
+    new = [json.loads(line) for line in after.open(encoding="utf-8")]
+    if [(o["case"], o["query"], o["options"]) for o in old] != [(n["case"], n["query"], n["options"]) for n in new]:
+        print("the two captures ask different cases")
+        return 2
+    lib = Library(library)
+    handles: dict[str, int] = {}
+    identical = cut = 0
+    explained: dict[str, list[str]] = {}
+    unexplained: list[str] = []
+    random_10k: list[str] = []
+    for o, n in zip(old, new):
+        stripped, warnings = strip_fuzzy(n["output"])
+        cut += warnings
+        if stripped == o["output"]:
+            identical += 1
+            continue
+        if o["case"].startswith("random:c10k:"):
+            random_10k.append(o["case"])
+        field = o["options"].get("search_field", "content")
+        terms = expanded_terms(n["output"])
+        if field == "both" and not terms:
+            snapshot = snapshot_of(o["case"])
+            if snapshot not in handles:
+                handles[snapshot] = lib.open(work / snapshot)
+            options = {k: v for k, v in o["options"].items() if k != "search_field"}
+            text = o["query"] if not o["query"].startswith("bytes:") else bytes.fromhex(o["query"][6:])
+            terms = expanded_terms(lib.query(handles[snapshot], text, o["vector"], o["top_k"], options))
+        if terms and field != "filename":
+            explained.setdefault(f"{field}: {' '.join(sorted(set(terms)))}", []).append(o["case"])
+        else:
+            unexplained.append(o["case"])
+    for handle in handles.values():
+        lib.lib.ss_close(handle)
+    total = len(old)
+    print(f"compared {total} cases: {identical} identical with the 2.4.0 keys cut "
+          f"({cut} query_term_expanded warnings cut), {total - identical} differ")
+    for key, cases in sorted(explained.items(), key=lambda item: (-len(item[1]), item[0])):
+        groups: dict[str, int] = {}
+        for case in cases:
+            group = ":".join(case.split(":")[:2])
+            groups[group] = groups.get(group, 0) + 1
+        print(f"  expanded {key!r}: {len(cases)} cases ({', '.join(f'{g} {c}' for g, c in sorted(groups.items()))})")
+    print(f"random-vocabulary cases of the 10k corpus that differ: {len(random_10k)}")
+    print(f"differing cases unexplained (no expansion, or a filename case): {len(unexplained)}")
+    for case in unexplained[:20]:
+        print(f"  {case}")
+    return 1 if unexplained or random_10k else 0
+
+
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "--compare-fuzzy":
+        compare = argparse.ArgumentParser(description="S5-T3: compare two captures with the fuzzy keys cut")
+        compare.add_argument("--compare-fuzzy", nargs=2, type=Path, required=True, metavar=("BEFORE", "AFTER"))
+        compare.add_argument("--lib", required=True)
+        compare.add_argument("--work", type=Path, required=True)
+        args = compare.parse_args()
+        return compare_fuzzy(args.compare_fuzzy[0], args.compare_fuzzy[1], args.lib, args.work)
     if len(sys.argv) > 1 and sys.argv[1] == "--compare-title":
         compare = argparse.ArgumentParser(description="S5-T2: compare two captures with the title keys cut")
         compare.add_argument("--compare-title", nargs=2, type=Path, required=True, metavar=("BEFORE", "AFTER"))

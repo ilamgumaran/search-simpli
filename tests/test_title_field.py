@@ -34,7 +34,15 @@ SHIPPED = REPO / "bindings" / "dart" / "search_simpli" / "native" / "macos-arm64
 # The rows where searchd's first grade-2 rank differs from the reference's, all
 # through the analyzer (accent folding the reference does and analyzer-v2 does
 # not, docs/tasks/S5-T2.md): every other J2 row agrees between the surfaces.
-ANALYZER_ROWS = {"content": {"a06", "a07", "a09"}, "both": {"a06", "a09"}}
+# S5-T3: `a09` (`strasse`) now agrees in both variants: the engine's fuzzy-v1
+# expands it to the body's `straße` (distance 2), which the reference's full case
+# folding matches directly.
+ANALYZER_ROWS = {"content": {"a06", "a07"}, "both": {"a06"}}
+# Rows whose answer ties a grade-0 chunk at an equal score (`j2_run.py --compare`:
+# "tie order", document index in searchd, chunk id in the reference); the test
+# checks that the two scores are equal. S5-T3 Phase 1 had `mh08` and `mh11` here
+# (today's engine); with fuzzy-v1 on both surfaces their answers rank first.
+TIE_ORDER_ROWS = {"content": set(), "both": set()}
 
 ROOTS = ("school", "home", "laptop")
 
@@ -249,7 +257,13 @@ class J2SurfaceTests(unittest.TestCase):
         for variant in ("content", "both"):
             differ = {q for q, r in reference[variant]["queries"].items()
                       if r.get("first_grade2_rank") != engine[variant]["queries"][q].get("first_grade2_rank")}
-            self.assertEqual(differ, ANALYZER_ROWS[variant], variant)
+            self.assertEqual(differ, ANALYZER_ROWS[variant] | TIE_ORDER_ROWS[variant], variant)
+            for qid in TIE_ORDER_ROWS[variant]:
+                ranks = [reference[variant]["queries"][qid]["first_grade2_rank"],
+                         engine[variant]["queries"][qid]["first_grade2_rank"]]
+                for run in (reference, engine):
+                    hits = run[variant]["queries"][qid]["hits"]
+                    self.assertEqual(len({round(hits[r - 1]["score"], 4) for r in ranks}), 1, (variant, qid))
 
     def test_the_c_abi_searchd_query_and_serve_give_the_same_results(self):
         library = os.environ.get("SEARCH_SIMPLI_LIBRARY_PATH") or (

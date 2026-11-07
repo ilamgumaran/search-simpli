@@ -194,7 +194,7 @@ class SearchSimpliBindings {
   /// removing them gives the 1.1.0 output exactly):
   ///
   /// "warnings"  array, always present, usually empty, of
-  /// {"code", "message", "term"?}. Codes:
+  /// {"code", "message", "term"?, "expansions"?}. Codes:
   /// query_term_unmatched       an analysed query word that was
   /// not found in the searched files. "term" is the
   /// query's own analysed form (lowercased under
@@ -208,6 +208,11 @@ class SearchSimpliBindings {
   /// the index and words hidden by the scope are
   /// interleaved as they appear). Lexical and hybrid modes
   /// only: vector mode does not use the words.
+  /// query_term_expanded        (2.4.0) the unmatched word
+  /// was also searched as "expansions", up to 3
+  /// dictionary words best first, each held by a chunk
+  /// or a file name in scope (never only by hidden
+  /// ones). "term" is the typed word, as above.
   /// query_empty_after_analysis the query has no searchable
   /// terms (empty, punctuation, unknown script for the
   /// analyzer). Lexical and hybrid modes only.
@@ -223,7 +228,8 @@ class SearchSimpliBindings {
   /// top_k (which this function rejects, so it does not
   /// occur there). "lexical" and/or "vector" in the message.
   /// Order of the array: query_empty_after_analysis, then the
-  /// query_term_unmatched entries in query order, then
+  /// query_term_unmatched entries in query order (each
+  /// followed by its query_term_expanded entry, if any), then
   /// vector_ignored, then candidate_depth_cut.
   /// "request"   {"analyzer_id", "retrieval_mode", "top_k", "candidate_k",
   /// "path_prefix"}: what the engine used, defaults filled in
