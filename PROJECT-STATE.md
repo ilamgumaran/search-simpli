@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-06 (S4-T17, `find` ranks its hits by sorting a list of positions and checks scope by pointer; verified and merged)
+Last updated: 2026-11-06 (S4-T18, the library's `memcpy`, `memmove` and `memset` copy 16 bytes at a time; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,38 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## The library's `memcpy`, `memmove` and `memset` copy 16 bytes at a time (S4-T18, 2026-11-06; verified and merged)
+
+**Verified and merged 2026-11-06** ([Verdict](docs/tasks/S4-T18.md)): on the 10k timing corpus (`ReleaseSmall`, two code
+layouts: shipped and symbols kept; *before* `2e09650` and *before2* interleaved; gate recorded at every timed start) the
+documents section's 9.27 MB copy 2.02–2.07 → 0.141 ms warm and 2.44–2.49 → 0.59–0.62 ms cold; one changed file 6.61–7.45 ms
+below *before* (47.2–47.6 → 40.4–40.7 ms off, 56.0–56.9 → 49.4–50.1 on); `find` (`the`, words, 20 a page) 3.42–3.44 →
+3.004–3.035 ms in both layouts; `search_knowledge`'s content query 0.40 → 0.140–0.144 ms; the full 10k build −7.5 % off
+and −7.3 % on; the first content query after a cold open 0.086–0.092 → 0.059–0.066 ms, the first filename query 3.80–3.85
+→ 3.19–3.25 ms (one symbols-kept round of sixteen at 3.321), and **the first `both` query 3.90–3.96 → 3.244–3.322 ms,
+missing its 3.3 ms line by up to 0.022 ms in half the shipped rounds** (recorded as ruled; the 03-next row "What remains of
+a cold first filename or `both` query" holds the rest); `ss_open`, `read_span` and `outline` where they were. Every
+section a generation writes, every query answer (2,762 `cf5f8575…`, 16,490 `09770196…`) and every `find` page (829
+cases, `0e368a62…`; S4-T16's 84 pages `dadf5f4f…`) byte-identical to *before*; the randomized harness with the verifier's
+seed in Debug and `ReleaseSmall`; NFR-13 15k one handle passes with every peak unchanged (`find` 60,915,647 B); `zig
+build test` 362/364 (2 gated skips) and `test-abi` 24/24 in Debug and `ReleaseSmall`; Python 241 OK against a
+`ReleaseSmall` `searchd`; Dart +83; five plants caught as ruled.
+
+[Report](docs/tasks/S4-T18.md). Zig 0.16 bundles `compiler_rt` into every shared library and executable, and in
+`ReleaseSmall` its `memcpy`, `memmove` and `memset` are byte loops (about a cycle per byte); `bundle_compiler_rt = false`
+is not available (the library needs `compiler_rt`'s f128 helpers, which no platform library provides). `zig/src/fastmem.zig`
+now defines the three, strong and hidden, 16-byte vector windows that overlap for short lengths and the last bytes,
+`memmove` exact both ways; `zig/build.zig` compiles it as its own object (`-fno-builtin`; `ReleaseFast` and stripped in a
+`ReleaseSmall` build, because the outliner gave `memcpy` a frame and calls for its short paths) and links it into every
+library, `searchd` and the test binaries. The iOS link localizes `compiler_rt.o`'s three with `xcrun nmedit -R`
+(`tool/build_native.sh`); `tool/check_native.sh` checks that `memcpy` in all three natives moves 16-byte registers and has
+no byte loop (0.3.11's fail). `bzero` stays `libSystem`'s on Apple targets; `strlen` stays `compiler_rt`'s. Format,
+manifest, contracts 2.2.0, C ABI and Dart API unchanged; Dart 0.3.12; natives rebuilt (macOS 843,240 B, Android 806,544 B,
+iOS framework binary 807,624 B), `native/SOURCE-SHA256` `7a8f13ff7c5bb5a38d777c1fa6cdeaf3d4409740295b44976d9c6a062eb7b7bd`.
+
+**Consumer pin:** the `03-next.md` "pin bump to S4-T18" row, at the app's convenience; the macOS dylib's size is 0.3.11's
+(new bytes), and the pin task builds the app's apk and iOS app with these natives and launches each once before its chain.
 
 ## `find` ranks its hits by sorting a list of positions and checks scope by pointer (S4-T17, 2026-11-06; verified and merged)
 
