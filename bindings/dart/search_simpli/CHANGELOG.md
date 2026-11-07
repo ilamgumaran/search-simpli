@@ -43,9 +43,9 @@ the other forms of its words.
   query on a handle (kept with the handle, freed at close). Every index a
   0.5.x library wrote opens unchanged, and nothing is rebuilt. No C ABI
   signature changed.
-- **Natives** rebuilt on the Mac: macOS 936,824 B (0.5.0: 884,632),
-  Android 910,544 B (858,224), iOS framework binary 917,984 B (865,096);
-  `native/SOURCE-SHA256` is `99709d2d…`.
+- **Natives** rebuilt on the Mac: macOS 936,792 B (0.5.0: 884,632),
+  Android 910,944 B (858,224), iOS framework binary 917,904 B (865,096);
+  `native/SOURCE-SHA256` is `81f9c76b…`.
 
 ## 0.5.0 (S5-T3; contract 2.4.0; minor: ranking change and additive result fields)
 

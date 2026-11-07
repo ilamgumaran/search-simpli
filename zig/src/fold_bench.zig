@@ -4,7 +4,7 @@
 //! adds to a warm `content` and `both` query. Opt-in diagnostic, not part of
 //! any library or the build graph:
 //!
-//!     zig run -lc -OReleaseSmall zig/src/fold_bench.zig -- INDEX
+//!     zig run -lc -OReleaseSmall zig/src/fold_bench.zig -- INDEX [--derive-only]
 //!
 //! INDEX is a `searchd index --filename-index` over a
 //! `scripts/gen_timing_corpus.py` corpus. Prints, as JSON lines:
@@ -18,7 +18,9 @@
 //!   a full-depth search);
 //! - `derive`: the key map over the body terms and the title-only terms (the
 //!   list built inside the timing), its entries, the keys shared by two or more
-//!   indexed terms, kept bytes, and the derive's transient peak;
+//!   indexed terms, kept bytes, and the derive's transient peak; and
+//!   `derive_indexed_us`, the engine's own build (`KeyMap.deriveIndexed`, no
+//!   term list), and `k_total_us`, K alone over the same terms;
 //! - `group`: per query word of the bench's list (below), the group (the
 //!   indexed terms whose key is K(t), t first when indexed), K(t) plus the
 //!   map lookup in ns, and today's warm `Engine.queryFields` (top 10,
@@ -220,6 +222,7 @@ pub fn main(init: std.process.Init) !void {
     var args = init.minimal.args.iterate();
     _ = args.next();
     const path = args.next() orelse return error.MissingIndex;
+    const derive_only = if (args.next()) |flag| std.mem.eql(u8, flag, "--derive-only") else false;
 
     var open_arena = std.heap.ArenaAllocator.init(gpa);
     defer open_arena.deinit();
@@ -312,9 +315,35 @@ pub fn main(init: std.process.Init) !void {
                 std.mem.doNotOptimizeAway(m.len());
             }
         }.run, 1, false);
+        // Phase 3: the engine's own build (`KeyMap.deriveIndexed`, what
+        // `scope.Folder.keyMap` runs once per opened generation), walking the
+        // two tables with no term list.
+        try samples.print("derive_indexed_us", io, &request, .{ .index = index, .field = field }, struct {
+            fn run(allocator: std.mem.Allocator, c: anytype) !void {
+                const m = try fold.KeyMap.deriveIndexed(allocator, allocator, c.index, c.field);
+                std.mem.doNotOptimizeAway(m.len());
+            }
+        }.run, 1, false);
+        // K alone over the same terms (the build's share spent in K).
+        try samples.print("k_total_us", io, &request, .{ .terms = terms }, struct {
+            fn run(allocator: std.mem.Allocator, c: anytype) !void {
+                var keyer = fold.Keyer.init(allocator);
+                var buffer = std.ArrayList(u8).empty;
+                var differ: usize = 0;
+                for (c.terms) |t| {
+                    buffer.clearRetainingCapacity();
+                    try keyer.appendKey(t, &buffer);
+                    differ += @intFromBool(!std.mem.eql(u8, buffer.items, t));
+                }
+                std.mem.doNotOptimizeAway(differ);
+            }
+        }.run, 1, false);
         std.debug.print("}}\n", .{});
     }
 
+    // `--derive-only` (a corpus where every inflected form is a group word,
+    // such as `scripts/gen_tamil_timing_corpus.py`'s) stops here.
+    if (derive_only) return;
     const ctx = Context{ .index = index, .field = field, .terms = terms, .map = &map };
     var words = std.ArrayList([]const u8).empty;
     try chooseWords(w, ctx, map, &words);

@@ -324,6 +324,19 @@ pub const Keyer = struct {
             out.appendAssumeCapacity(0);
             return 1;
         }
+        if (tamilNfcWord(token)) {
+            // F, A and the split leave such a token as it is; S cannot apply.
+            try appendTamil(a, token, out);
+            try out.append(a, 0);
+            return 1;
+        }
+        return self.appendPiecesFull(token, out);
+    }
+
+    /// `appendPieces` without its two fast paths: F, the split, then A, S and
+    /// T on each piece.
+    fn appendPiecesFull(self: *Keyer, token: []const u8, out: *std.ArrayList(u8)) Error!usize {
+        const a = self.allocator;
         // F: the table or the simple fold per code point, then NFC.
         self.folded.clearRetainingCapacity();
         var view = std.unicode.Utf8View.init(token) catch return error.InvalidUtf8;
@@ -430,6 +443,34 @@ pub const Keyer = struct {
 
 fn isAscii(bytes: []const u8) bool {
     for (bytes) |b| if (b >= 0x80) return false;
+    return true;
+}
+
+/// Phase 3's non-ASCII fast path: a run of U+0B80-U+0BFF code points that
+/// starts with a letter or digit, holds only letters, digits and marks, and is
+/// in NFC. No fold table entry and no simple fold lies in that block, and its
+/// only compositions are the four adjacent pairs below (its one mark of
+/// nonzero class, the virama, never reorders), so F gives the token itself,
+/// the v2 split gives it whole, and A's decomposition and NFC give it back:
+/// K is T alone. Checked against NFC over every one-, two- and three-code-point
+/// string of the block (Unicode 13.0.0).
+fn tamilNfcWord(bytes: []const u8) bool {
+    if (bytes.len == 0 or bytes[0] != 0xE0) return false;
+    var view = std.unicode.Utf8View.init(bytes) catch return false;
+    var iterator = view.iterator();
+    var previous: u21 = 0;
+    while (iterator.nextCodepoint()) |cp| {
+        if (cp < 0x0B80 or cp > 0x0BFF) return false;
+        if (previous == 0) {
+            if (!isLetterOrDigit(cp)) return false;
+        } else if (!isLetterOrDigit(cp) and !isMark(cp)) return false;
+        switch (cp) {
+            0x0BBE => if (previous == 0x0BC6 or previous == 0x0BC7) return false,
+            0x0BD7 => if (previous == 0x0B92 or previous == 0x0BC6) return false,
+            else => {},
+        }
+        previous = cp;
+    }
     return true;
 }
 
@@ -736,6 +777,45 @@ pub fn merge(allocator: std.mem.Allocator, folded: ?fuzzy.Groups, expanded: ?fuz
     allocator.free(a.items);
     allocator.free(b.items);
     return .{ .items = items };
+}
+
+test "the Tamil fast path equals K's full path on every one- and two-code-point string of U+0B80-U+0BFF and on inflected words" {
+    const a = std.testing.allocator;
+    var keyer = Keyer.init(a);
+    defer keyer.deinit();
+    var fast = std.ArrayList(u8).empty;
+    defer fast.deinit(a);
+    var full = std.ArrayList(u8).empty;
+    defer full.deinit(a);
+    var token = std.ArrayList(u8).empty;
+    defer token.deinit(a);
+    var taken: usize = 0;
+    const words = [_][]const u8{ "புத்தகங்கள்", "யானைகள்", "பள்ளிக்கு", "நாங்கள்", "வீட்டில்", "மரத்தின்", "கொடி", "கோயில்", "ஔவை", "ஔ" };
+    for (words) |w| {
+        fast.clearRetainingCapacity();
+        full.clearRetainingCapacity();
+        const n = try keyer.appendPieces(w, &fast);
+        const m = try keyer.appendPiecesFull(w, &full);
+        try std.testing.expectEqual(m, n);
+        try std.testing.expectEqualStrings(full.items, fast.items);
+    }
+    var first: u21 = 0x0B80;
+    while (first <= 0x0BFF) : (first += 1) {
+        var second: u21 = 0x0B7F;
+        while (second <= 0x0BFF) : (second += 1) {
+            token.clearRetainingCapacity();
+            try appendUtf8(a, &token, first);
+            if (second >= 0x0B80) try appendUtf8(a, &token, second);
+            if (tamilNfcWord(token.items)) taken += 1;
+            fast.clearRetainingCapacity();
+            full.clearRetainingCapacity();
+            const n = try keyer.appendPieces(token.items, &fast);
+            const m = try keyer.appendPiecesFull(token.items, &full);
+            try std.testing.expectEqual(m, n);
+            try std.testing.expectEqualStrings(full.items, fast.items);
+        }
+    }
+    try std.testing.expect(taken > 1000);
 }
 
 test "K on the traps of rulings 2-5" {
