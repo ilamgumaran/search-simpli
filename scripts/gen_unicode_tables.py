@@ -45,6 +45,16 @@ Three tables are produced:
    the Unicode Standard (not data-table driven) and is left out of these
    generated tables; `zig/src/nfc.zig` implements it (S1-T15).
 
+4. The fold table (S5-T4, `fold-groups-v1`, docs/tasks/S5-T4.md ruling 2): for
+   every code point c (surrogates excepted) whose fold differs from c, the fold
+   `NFKC(casefold(NFKC(c)))` iterated to a fixpoint. With `--python-fold` it is
+   emitted as `src/search_platform/_fold.py` for the Python mirror of K
+   (`src/search_platform/analyzer_v3.py`), which reads the table and never calls
+   `str.casefold` or NFKC at run time. The header records the counts the plan
+   states: the code points that change, those not already handled by NFC and a
+   simple lowercase map, their UTF-8 bytes, the multi-code-point outputs and the
+   longest.
+
 Run: `python3 scripts/gen_unicode_tables.py > zig/src/unicode_tables.zig`
 No third-party dependencies; stdlib `unicodedata` only.
 """
@@ -176,9 +186,74 @@ def main_python_marks():
     print("\n".join(out))
 
 
+def fold_code_point(cp: int) -> str:
+    """`NFKC(casefold(NFKC(c)))` iterated to a fixpoint (one more round is never needed
+    in Unicode 13.0.0; the loop stops on a repeat)."""
+    out = chr(cp)
+    for _ in range(8):
+        nxt = unicodedata.normalize("NFKC", unicodedata.normalize("NFKC", out).casefold())
+        if nxt == out:
+            return out
+        out = nxt
+    raise SystemExit(f"fold of U+{cp:04X} has no fixpoint in 8 rounds")
+
+
+def gen_fold_table():
+    """Every code point whose fold differs from itself, with the fold."""
+    table = []
+    for cp in range(MAX_CODEPOINT):
+        if 0xD800 <= cp <= 0xDFFF:
+            continue
+        folded = fold_code_point(cp)
+        if folded != chr(cp):
+            table.append((cp, folded))
+    return table
+
+
+def fold_table_counts(table):
+    """The plan's counts (docs/tasks/S5-T4-prototype.md): `new` are the entries a
+    simple lowercase map over NFD, then NFC, does not already give."""
+    def simple_lower(ch: str) -> str:
+        lowered = ch.lower()
+        return lowered if len(lowered) == 1 else ch
+    new = [(cp, f) for cp, f in table
+           if f != unicodedata.normalize("NFC", "".join(simple_lower(c) for c in unicodedata.normalize("NFD", chr(cp))))]
+    return {"changed": len(table), "new": len(new), "new_utf8_bytes": sum(len(f.encode("utf-8")) for _, f in new),
+            "multi": sum(1 for _, f in table if len(f) > 1), "longest": max(len(f) for _, f in table)}
+
+
+def main_python_fold():
+    """`--python-fold`: emit src/search_platform/_fold.py (S5-T4)."""
+    table = gen_fold_table()
+    counts = fold_table_counts(table)
+    out = ['"""Generated file -- do not edit by hand.',
+           "",
+           f"Produced by scripts/gen_unicode_tables.py --python-fold using Python {sys.version.split()[0]}'s",
+           f"`unicodedata` (Unicode {unicodedata.unidata_version}): K's fold table (S5-T4, fold-groups-v1, ruling 2",
+           "of docs/tasks/S5-T4.md). For each code point c whose fold differs from c, the fold",
+           "NFKC(casefold(NFKC(c))) iterated to a fixpoint. Read by src/search_platform/analyzer_v3.py.",
+           f"{counts['changed']:,} code points change; {counts['new']:,} of them are not already given by NFC and a",
+           f"simple lowercase map, with {counts['new_utf8_bytes']:,} bytes of UTF-8 output; {counts['multi']:,} map to more",
+           f"than one code point; the longest maps to {counts['longest']}.",
+           "Regenerate: python3 scripts/gen_unicode_tables.py --python-fold > src/search_platform/_fold.py",
+           '"""',
+           "",
+           f'UNICODE_VERSION = "{unicodedata.unidata_version}"',
+           "",
+           "FOLD = {",
+           ]
+    out.extend(f"    0x{cp:X}: {ascii(folded)}," for cp, folded in table)
+    out.append("}")
+    out.append("")
+    print("\n".join(out))
+
+
 def main():
     if "--python-marks" in sys.argv[1:]:
         main_python_marks()
+        return
+    if "--python-fold" in sys.argv[1:]:
+        main_python_fold()
         return
     unidata_version = unicodedata.unidata_version
     python_version = sys.version.split()[0]
