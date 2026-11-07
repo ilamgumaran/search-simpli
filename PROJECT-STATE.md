@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-06 (S5-T1, J2: the judged fixture that says where keyword search loses; verified and merged)
+Last updated: 2026-11-07 (S5-T2, the title field: a file's folder names and file name count toward its words; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,72 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## The title field: a file's folder names and file name count toward its words, and `both` merges per file (S5-T2, 2026-11-07; verified and merged)
+
+**Verified and merged 2026-11-07** ([Verdict](docs/tasks/S5-T2.md)): a fresh `ReleaseSmall` `searchd` (1,008,920 B,
+`cf17c735…`) and the Python reference (3.9.6, `PYTHONHASHSEED` 0, 1, 2) reproduce every cell of the re-recorded
+`fixtures/j2/baseline.json` (758 cells each, 0 differ); the S5-T1 gate against the S5-T1 baseline passes on both surfaces
+and variants with no allow file; the surfaces differ only by the analyzer (`a06`, `a07`, `a09`) and by tie order; the
+five plants (coverage removed, folders dropped, weight 0, statistics over all files, the root id kept) fail as the Report
+says; the 16,490-case capture against `main` explains every difference (3,568 `both` merges without a title word, 2,026
+cases with a title word; every `filename` case and every random-vocabulary 10k case identical; a weight-0 build gives
+every `content` case identical to `main`); every section a generation writes is byte-identical to `main`'s (10k corpus
+with file names off and on, the family folder through `index` and `ss_apply_changes`); the natives rebuilt twice are
+`cmp`-equal to the committed ones; Python 283 OK (with Zig; against a `ReleaseSmall` `searchd`) and 247 OK (37 skipped,
+no Zig), `zig build test` 382/386 (4 scale skips; 386/386 with `SEARCH_SIMPLI_NFR13_SCALE=1`) and `test-abi` 24/24 in
+Debug and `ReleaseSmall`, Dart +84; the old Python packs' metrics and first ranks identical to `main`'s.
+
+[Report](docs/tasks/S5-T2.md). `title-field-v1` ([docs/title-field-v1.md](docs/title-field-v1.md)): each file's
+root-relative folder names and its stem (Python's `Path.stem`), tokenized with analyzer-v2, the root id never a word; its
+score is 2.5 × BM25 (k1 1.2, b 0.75, over the files the request can see: roots and labels narrow the statistics, a path
+prefix does not) × coverage (the share of the query's distinct terms the field holds). Under `content` the part is added
+to the file's best in-scope body chunk (a title-only file's first chunk) before `candidate_k` cuts; `both` is a
+score-level merge, one result per file (best body chunk plus the part; ordered by score, path, chunk id; `candidate_k`
+validated but cutting nothing); `filename` is unchanged. `zig/src/title_field.zig` derives the field from the documents
+section at the first `content` or `both` query of an opened generation (`scope.Folder.titleField`, under the `Loads`
+lock), never at `ss_open` and never written: **no index format, manifest or writer change, and no phone rebuilds**.
+Contracts **2.3.0** (additive: `retrieval.title_policy_id` `"title-field-v1"`, `ranking.title {score}`;
+`ranking.lexical.score` is body plus part); no request field, no C ABI signature change. J2 gains a held-out slice
+`title-heldout` (8 rows written and judged before any ranking code).
+
+**J2, before (S5-T1 baseline) → after**, success@1 · MRR@10:
+
+| Slice | n | searchd content | searchd both | Python content | Python both |
+|---|---:|---|---|---|---|
+| control | 23 | 1.000 · 1.000 → 1.000 · 1.000 | 0.870 · 0.924 → **1.000 · 1.000** | 1.000 · 1.000 → 1.000 · 1.000 | 0.870 · 0.924 → **1.000 · 1.000** |
+| misspelling | 16 | 0.062 · 0.199 → 0.062 · 0.199 | 0.062 · 0.156 → 0.062 · 0.156 | 0.062 · 0.199 → 0.062 · 0.199 | 0.062 · 0.156 → 0.062 · 0.156 |
+| morphology | 13 | 0.154 · 0.362 → 0.154 · 0.349 | 0.077 · 0.295 → 0.154 · 0.346 | 0.154 · 0.362 → 0.154 · 0.349 | 0.077 · 0.295 → 0.154 · 0.346 |
+| accent | 9 | 0.111 · 0.255 → 0.111 · 0.255 | 0.111 · 0.220 → 0.111 · 0.220 | 0.333 · 0.485 → 0.333 · 0.481 | 0.222 · 0.337 → 0.222 · 0.337 |
+| Tamil | 13 | 0.231 · 0.308 → 0.231 · 0.308 | 0.231 · 0.256 → 0.231 · 0.269 | 0.231 · 0.308 → 0.231 · 0.308 | 0.231 · 0.256 → 0.231 · 0.269 |
+| title intent | 11 | 0.000 · 0.258 → **0.909 · 0.955** | 0.545 · 0.685 → **0.909 · 0.955** | 0.000 · 0.258 → **0.909 · 0.955** | 0.545 · 0.685 → **0.909 · 0.955** |
+| phrase | 10 | 0.800 · 0.900 → 0.800 · 0.900 | 0.800 · 0.900 → 0.800 · 0.900 | 0.800 · 0.900 → 0.800 · 0.900 | 0.800 · 0.900 → 0.800 · 0.900 |
+| overall | 95 | 0.400 · 0.516 → 0.505 · 0.595 | 0.421 · 0.520 → 0.505 · 0.579 | 0.421 · 0.538 → 0.526 · 0.616 | 0.432 · 0.531 → 0.516 · 0.590 |
+| **title-heldout** | 8 | 0.375 · 0.375 → **1.000 · 1.000** | 0.500 · 0.500 → **1.000 · 1.000** | 0.375 · 0.375 → **1.000 · 1.000** | 0.500 · 0.500 → **1.000 · 1.000** |
+
+The held-out bar (success@1 ≥ 0.667 under `content`, w not re-tuned) is met at 1.000 on both surfaces. Known residuals
+for S5-T3: no stop words in names (`on2` "painting the fence" now tops `pets/biscuit-the-dog.md`), a half-covered name
+(`p06` 1 → 2). `fixtures/j2/baseline.json` is re-recorded at the S5-T2 engine (`replaces` names the S5-T1 baseline and
+why; from now on a re-recording needs `scripts/j2_run.py --why`).
+
+**Cost** (10k timing corpus, `ReleaseSmall`, interleaved with the untouched `main` under the gate; the verifier's six
+rounds): `ss_open` −0.056 ms; the first content query after a cold open +3.18 ms (the derive; bound +5.0); the five
+file-naming queries `content` +0.098..+0.177 ms (bound +0.20) and `both` +0.094..+0.187 (bound +0.25); the S4 research
+queries `content` +0.001 and +0.002, and **+0.026 (`how does the hybrid retrieval work for a search`) and +0.034 (`the and
+of to in`) against a bound of +0.02: two misses, recorded, not re-drawn** (no title word in either; the extra follows code
+placement: +0.036 / +0.037 in the symbols-kept layout; the 03-next row holds it); `both` research queries +0.000..+0.020
+(bound +0.10). Memory at 10k: 691,584 B kept, the derive's working arrays peak 1,541,164 B (whole derive peak 2,153,560
+B); NFR-13 one handle: 10k 38,424,836 B, 15k 56,407,378 B, under 64 MiB.
+
+Dart **0.4.0** (`SearchRetrieval.titlePolicyId`, `SearchResultItem.titleScore`); `skills/folder-knowledge/SKILL.md` gains
+one sentence (a title part equal to the lexical score means only the name matched: navigation, not evidence). Natives
+rebuilt (macOS 866,168 B, Android 842,272 B, iOS framework binary 846,680 B), `native/SOURCE-SHA256`
+`62c37f1f5a769dbacc7c0a059a1565cd1fb4c835a1939e7b616a6ee79ab3477e`.
+
+**Consumer pin:** M16-T31, the `03-next.md` "pin bump to S5-T2" row (filed by the orchestrator after this merge):
+contracts 2.3.0, Dart 0.4.0, the natives above (the macOS dylib 22,928 B larger unsigned than 0.3.12's: re-centre the
+dylib-size band), regenerated `tool_contracts.g.dart` and skill text, the accuracy pack rerun for `content` and `both`;
+no index rebuild on either phone.
 
 ## J2, the judged fixture that says where keyword search loses (S5-T1, 2026-11-06; verified and merged)
 

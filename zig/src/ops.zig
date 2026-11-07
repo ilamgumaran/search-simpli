@@ -42,6 +42,7 @@ const hybrid = @import("hybrid.zig");
 const query_report = @import("report.zig");
 const scoring = @import("scoring.zig");
 const scope = @import("scope.zig");
+const title_field = @import("title_field.zig");
 const service_module = @import("service.zig");
 const source = @import("source.zig");
 
@@ -955,6 +956,10 @@ pub fn writeSearchResult(
     try json.objectField("principal_label_count");
     try json.write(principal_label_count);
     try json.endObject();
+    if (service.titled(mode)) {
+        try json.objectField("title_policy_id");
+        try json.write(title_field.policy_id);
+    }
     try json.endObject();
     try json.objectField("results");
     try json.beginArray();
@@ -991,6 +996,12 @@ pub fn writeSearchResult(
         try json.objectField("score");
         try json.write(item.semantic_score);
         try json.endObject();
+        // S5-T2: under `content`, only the chunk that received its file's
+        // title part carries `title`.
+        if (item.title_score) |part| {
+            try json.objectField("title");
+            try json.write(.{ .score = part });
+        }
         try json.endObject();
         if (folder_fields) |fields| {
             const documents = service.engine.documents;

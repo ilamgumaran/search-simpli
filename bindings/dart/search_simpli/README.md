@@ -77,7 +77,7 @@ wrote — see the [root README](../../../README.md) and
 
 - `SearchSimpli.open(String snapshotDir, {DynamicLibrary? library})` — opens
   a snapshot. Asserts the native library's `ss_version()` equals this
-  package's `CONTRACTS_VERSION` (`2.2.0`) and that it exports every 2.0.0
+  package's `CONTRACTS_VERSION` (`2.3.0`) and that it exports every 2.0.0
   function before touching `snapshotDir` at
   all; throws `ContractsVersionMismatchException` on a mismatch (an older
   library) and

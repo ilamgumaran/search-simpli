@@ -120,3 +120,32 @@ test "S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XX
     const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
     try std.testing.expectEqual(@as(usize, 1), (try scoped.find(a, .{ .query = "lock" }, .{})).ok.hits.len);
 }
+
+test "S5-T2: a 292cb568 index gets the title field by the derive, at its first content query and not at the open" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try copyFixture(a, tmp.dir);
+    const opened = try snapshot_open.openScoped(a, io, tmp.dir);
+    defer opened.folder.close();
+    try std.testing.expect(!opened.folder.titleDerived());
+    const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+    const status = try scoped.indexStatus(a, .{});
+    const evidence = try scoped.searchKnowledge(a, "garden", &.{}, .{ .retrieval_mode = .lexical, .top_k = 4 }, .{}, try a.alloc(hybrid.Result, 4), try a.alloc(engine_module.Evidence, 4), null);
+    try std.testing.expect(opened.folder.titleDerived());
+    const field = try opened.folder.titleField();
+    // One title document per file with a chunk (an empty file has none).
+    var paths: usize = 0;
+    for (opened.engine.documents, 0..) |document, i| {
+        if (i == 0 or !std.mem.eql(u8, opened.engine.documents[i - 1].path, document.path)) paths += 1;
+    }
+    try std.testing.expectEqual(paths, field.files.len);
+    try std.testing.expect(field.files.len <= status.files);
+    try std.testing.expect(evidence.len >= 1);
+    try std.testing.expectEqualStrings("garden.md", evidence[0].path);
+    // The file's name took its part, inside the lexical score.
+    const part = evidence[0].title_score orelse return error.TestUnexpectedResult;
+    try std.testing.expect(part > 0 and part < evidence[0].lexical_score);
+}

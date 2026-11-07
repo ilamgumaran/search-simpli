@@ -29,6 +29,7 @@
 //! visible the index's own values are used, so an unscoped query scores
 //! exactly as before.
 const std = @import("std");
+const title_field = @import("title_field.zig");
 const hybrid = @import("hybrid.zig");
 const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
@@ -423,6 +424,15 @@ pub const Loads = struct {
     /// unaffected.
     filename_error: ?anyerror = null,
 
+    /// S5-T2: the title field (`title_field.zig`), derived from `documents`
+    /// and the roots by the first content or both query
+    /// (`Folder.titleField`), into one exact block from `blocks` (freed by
+    /// `Folder.releaseBlocks`); never at open.
+    title_done: std.atomic.Value(bool) = .init(false),
+    title_field: title_field.Field = undefined,
+    title_block: ?[]align(8) u8 = null,
+    title_loads: u32 = 0,
+
     /// How many times each load ran (each at most once; tests read them).
     source_loads: u32 = 0,
     statistics_loads: u32 = 0,
@@ -566,6 +576,40 @@ pub const Folder = struct {
         if (loads.filename_block) |block| loads.blocks.free(block);
         loads.filename_block = null;
         loads.filename_decoded = null;
+        if (loads.title_block) |block| loads.blocks.free(block);
+        loads.title_block = null;
+    }
+
+    /// S5-T2 (ruling 3): the title field, derived at the first call (once
+    /// per opened generation, under the loads' lock, as `filenameDecoded`):
+    /// its tables in one exact block from `Loads.blocks`, its working arrays
+    /// from the same allocator and freed before this returns. Out of memory
+    /// leaves it underived (a later call retries).
+    pub fn titleField(folder: Folder) !*const title_field.Field {
+        const loads = folder.loads;
+        if (!loads.title_done.load(.acquire)) {
+            loads.lock();
+            defer loads.unlock();
+            if (!loads.title_done.load(.monotonic)) {
+                loads.title_loads += 1;
+                const derived = try title_field.derive(loads.blocks, loads.blocks, loads.documents, folder.roots);
+                var field = derived.field;
+                var highest: u16 = 0;
+                for (loads.document_roots) |root| {
+                    if (root == no_root) break;
+                    highest = @max(highest, root);
+                } else field.max_document_root = highest;
+                loads.title_field = field;
+                loads.title_block = derived.block;
+                loads.title_done.store(true, .release);
+            }
+        }
+        return &folder.loads.title_field;
+    }
+
+    /// Whether a query has derived the title field (tests).
+    pub fn titleDerived(folder: Folder) bool {
+        return folder.loads.title_done.load(.acquire);
     }
 
     /// S4-T2 R4: the decoded filename sections, loaded at the first call

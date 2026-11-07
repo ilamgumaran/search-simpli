@@ -7,6 +7,7 @@ const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
 const scope = @import("scope.zig");
+const title_field = @import("title_field.zig");
 const segment = @import("segment.zig");
 const std = @import("std");
 
@@ -21,6 +22,9 @@ pub const Evidence = struct {
     semantic_score: f32,
     lexical_rank: ?usize,
     semantic_rank: ?usize,
+    /// S5-T2: the title part inside `lexical_score`, or null when this
+    /// chunk received none (`hybrid.Result.title_score`).
+    title_score: ?f32 = null,
 };
 
 /// S4-T9: the alignment of the open's one block (`snapshot_open.OpenBlock`):
@@ -125,16 +129,33 @@ pub const Engine = struct {
         };
     }
 
+    /// S5-T2: whether a `field` query with `options` ranks with the title
+    /// field (`queryFields`): `content` and `both` in a mode with a lexical
+    /// channel, given a field or opened with a folder that derives one.
+    pub fn titleApplies(engine: Engine, field: filename_field.Field, options: hybrid.SearchOptions) bool {
+        if (field == .filename or options.retrieval_mode == .vector) return false;
+        return options.title != null or engine.folder != null;
+    }
+
     pub fn queryFields(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, field: filename_field.Field, options: hybrid.SearchOptions) ![]filename_field.Hit {
         if (field == .content) {
-            const results = try engine.queryTokenized(allocator, query_text, &.{}, try allocator.alloc(hybrid.Result, @min(options.top_k, engine.documents.len)), options);
+            var titled_options = options;
+            if (titled_options.title == null and options.retrieval_mode != .vector) if (engine.folder) |folder| {
+                titled_options.title = try folder.titleField();
+            };
+            const results = try engine.queryTokenized(allocator, query_text, &.{}, try allocator.alloc(hybrid.Result, @min(options.top_k, engine.documents.len)), titled_options);
             const hits = try allocator.alloc(filename_field.Hit, results.len);
-            for (results, hits) |r, *h| h.* = .{ .document_index = r.document_index, .body_score = r.lexical_score, .body_rank = r.lexical_rank, .fused_score = r.fused_score };
+            for (results, hits) |r, *h| h.* = .{ .document_index = r.document_index, .body_score = r.lexical_score, .body_rank = r.lexical_rank, .fused_score = r.fused_score, .title_score = r.title_score };
             return hits;
         }
         if (!engine.filename_index_enabled) return error.FilenameIndexUnavailable;
         const decoded = engine.filename_decoded orelse if (engine.folder) |folder| try folder.filenameDecoded() else return error.FilenameIndexUnavailable;
-        return filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, options);
+        // S5-T2: `both` merges the title part per file (ruling 3).
+        var titled_options = options;
+        if (field == .both and titled_options.title == null) if (engine.folder) |folder| {
+            titled_options.title = try folder.titleField();
+        };
+        return filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options);
     }
 
     pub fn query(
@@ -237,6 +258,18 @@ pub const Engine = struct {
                 scorer.document_frequencies = frequencies;
             }
         }
+        // S5-T2 (ruling 3): with the opened generation's title field, the
+        // title part joins the lexical channel before it is ranked or cut.
+        if (lookup) if (options.title) |field| {
+            if (try title_field.scoreQuery(allocator, field, engine.documents, query_text, options)) |parts| {
+                defer parts.deinit(allocator);
+                var titled = try title_field.Titled(postings.SparseScorer).init(allocator, &scorer, field, parts, engine.documents, options);
+                defer titled.deinit(allocator);
+                const results = try hybrid.searchSparseTraced(title_field.Titled(postings.SparseScorer), allocator, &titled, query_vector, engine.documents, result_output, options, trace);
+                for (results) |*result| result.title_score = titled.titleOf(result.document_index);
+                return results;
+            }
+        };
         return hybrid.searchSparseTraced(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options, trace);
     }
 
@@ -261,6 +294,7 @@ pub const Engine = struct {
             .semantic_score = result.semantic_score,
             .lexical_rank = result.lexical_rank,
             .semantic_rank = result.semantic_rank,
+            .title_score = result.title_score,
         };
     }
 };

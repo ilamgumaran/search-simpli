@@ -148,7 +148,16 @@ class FilenameCliTests(unittest.TestCase):
                 )
                 payload = json.loads(new)
                 self.assertEqual(payload["analyzer_id"], entry["analyzer_id"])
-                self.assertEqual(payload["results"], entry["results"])
+                named = [case["path"] for case in CASES["cases"] if case["query"] == query]
+                if entry["results"] or not named:
+                    self.assertEqual(payload["results"], entry["results"])
+                else:
+                    # S5-T2 (title-field-v1): a word only in a file's name now
+                    # answers under content too, through that file's title part
+                    # on its first chunk; the frozen golden records the empty
+                    # answer before it. A query with no title term (the golden's
+                    # non-empty rows) is unchanged.
+                    self.assertEqual([r["path"] for r in payload["results"]], named)
                 self.assertNotIn("search_field", payload)
                 self.assertNotIn("filename_policy_id", payload)
                 self.assertEqual(

@@ -28,6 +28,7 @@ pub const incremental_state = @import("incremental_state.zig");
 pub const generation_alloc = @import("generation_alloc.zig");
 pub const indexer = @import("indexer.zig");
 pub const filename_field = @import("filename_field.zig");
+pub const title_field = @import("title_field.zig");
 pub const snapshot_open = @import("snapshot_open.zig");
 pub const scope = @import("scope.zig");
 pub const apply = @import("apply.zig");
@@ -45,6 +46,7 @@ pub const query_report_test = @import("query_report_test.zig");
 pub const import_build_timing_test = @import("import_build_timing_test.zig");
 pub const query_utf8_test = @import("query_utf8_test.zig");
 pub const filename_field_test = @import("filename_field_test.zig");
+pub const title_field_test = @import("title_field_test.zig");
 pub const filename_complexity_test = @import("filename_complexity_test.zig");
 pub const nfc_timing_test = @import("nfc_timing_test.zig");
 pub const find_fixture_test = @import("find_fixture_test.zig");
@@ -116,6 +118,7 @@ test "load every engine module test suite" {
     _ = generation_alloc;
     _ = indexer;
     _ = filename_field;
+    _ = title_field;
     _ = snapshot_open;
     _ = scope;
     _ = apply;
@@ -137,6 +140,7 @@ test "load every engine module test suite" {
     _ = reload_test;
     _ = query_utf8_test;
     _ = filename_field_test;
+    _ = title_field_test;
     _ = filename_complexity_test;
     _ = cli_test;
 }

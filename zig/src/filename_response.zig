@@ -83,14 +83,21 @@ fn writeEvidenceInternal(
     try json.write(options.candidate_k);
     try json.objectField("filename_policy_id");
     try json.write(engine.filename_policy_id);
+    const titled = engine.titleApplies(field, options);
+    if (titled) {
+        try json.objectField("title_policy_id");
+        try json.write(@import("title_field.zig").policy_id);
+    }
     try json.endObject();
     try json.objectField("results");
     try json.beginArray();
     for (hits) |hit| {
         if (hit.document_index >= engine.documents.len) return error.InvalidFilenameHit;
         const document = engine.documents[hit.document_index];
-        const matched_body = hit.body_rank != null;
-        const matched_filename = hit.filename_rank != null;
+        // S5-T2: a channel matched when it scored the file, ranked within
+        // its first `candidate_k` or not (`both` no longer cuts a channel).
+        const matched_body = hit.body_rank != null or hit.body_score > 0;
+        const matched_filename = hit.filename_rank != null or hit.filename_score > 0;
         try json.beginObject();
         try json.objectField("chunk_id");
         try json.write(document.id);
@@ -149,6 +156,12 @@ fn writeEvidenceInternal(
         try json.endObject();
         try json.objectField("vector");
         try json.write(.{ .rank = @as(?usize, null), .score = @as(?f32, null), .mode = "none" });
+        // S5-T2: under `both`, every result names its title part (null
+        // when its file's title took none).
+        if (titled) {
+            try json.objectField("title");
+            try json.write(.{ .score = hit.title_score });
+        }
         try json.endObject();
         try json.endObject();
     }

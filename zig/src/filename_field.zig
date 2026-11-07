@@ -1,5 +1,6 @@
 const analyzer_v2 = @import("analyzer_v2.zig");
 const hybrid = @import("hybrid.zig");
+const title_field = @import("title_field.zig");
 const lexical_build = @import("lexical_build.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const manifest = @import("manifest.zig");
@@ -40,6 +41,9 @@ pub const Hit = struct {
     filename_score: f32 = 0,
     filename_rank: ?usize = null,
     fused_score: f32 = 0,
+    /// S5-T2: the title part inside `fused_score` (the merge of `both`), or
+    /// null when the file's title took no part.
+    title_score: ?f32 = null,
 };
 
 const Candidate = struct { path: []const u8, body_index: usize, score: f32 = 0, rank: ?usize = null, catalog_index: usize = 0 };
@@ -540,7 +544,88 @@ pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Docu
     if (options.candidate_k < options.top_k) return error.CandidateDepthTooSmall;
     const scored = try scoreQuery(allocator, body_docs, body_index, decoded, analyzer_id, query_text, field, options);
     const ranked = try rankChannels(allocator, body_docs, decoded, scored, field, options.candidate_k);
+    if (field == .both) if (options.title) |title| return merge(allocator, body_docs, decoded, scored, ranked, title, query_text, options);
     return fuse(allocator, body_docs, ranked, field, options);
+}
+
+/// One file of the S5-T2 merge: its cited chunk and merged score.
+const Merged = struct { chunk: u32, score: f32 };
+
+/// The merge's order: score, then path, then chunk id. Its values are
+/// distinct files, and the catalog's paths are strictly ascending
+/// (`decode` refuses any other), so the path order is the file ordinal's
+/// (`Decoded.file_of`) and no path is compared.
+const MergedOrder = struct { docs: []const hybrid.Document, file_of: []const u32 };
+
+fn mergedBefore(order: MergedOrder, a: Merged, b: Merged) bool {
+    if (a.score != b.score) return a.score > b.score;
+    const fa = order.file_of[a.chunk];
+    const fb = order.file_of[b.chunk];
+    if (fa != fb) return fa < fb;
+    return std.mem.order(u8, order.docs[a.chunk].id, order.docs[b.chunk].id) == .lt;
+}
+const MergedTop = hybrid.BoundedTop(Merged, MergedOrder, mergedBefore);
+
+/// S5-T2 (ruling 3): `both` as a score-level merge, one result per file:
+/// the file's best body chunk's BM25 plus its title part
+/// (`title_field.scoreQuery`), the cited chunk the best body chunk or the
+/// file's first chunk, ordered by score, then path, then chunk id, cut to
+/// `top_k` by a bounded top. No channel is cut before the sum; the stem
+/// channel only reports (`filename_score`, `filename_rank` within its first
+/// `candidate_k`, as `body_rank` is).
+fn merge(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, decoded: Decoded, scored: Scored, ranked: Ranked, title: *const title_field.Field, query_text: []const u8, options: hybrid.SearchOptions) ![]Hit {
+    const parts = try title_field.scoreQuery(allocator, title, body_docs, query_text, options);
+    defer if (parts) |p| p.deinit(allocator);
+    var top = MergedTop{ .items = try allocator.alloc(Merged, options.top_k), .context = .{ .docs = body_docs, .file_of = decoded.file_of } };
+    if (parts) |p| {
+        // Files with a body match: the best chunk (`rankChannels` left it
+        // in `slot_of_file`, over every body match) plus the file's part.
+        for (scored.body_touched) |bi| {
+            if (ranked.slot_of_file[decoded.file_of[bi]] != bi) continue;
+            const score = scored.body_scores[bi] + p.scores[title.file_of[bi]];
+            if (score > 0) top.offer(.{ .chunk = @intCast(bi), .score = score });
+        }
+        // Title-only files, at their first chunk, when the request may see
+        // them.
+        for (p.touched) |f| {
+            const chunk = title.files[f].first_chunk;
+            if (ranked.slot_of_file[decoded.file_of[chunk]] != no_slot) continue;
+            if (!inScope(body_docs[chunk], chunk, options)) continue;
+            top.offer(.{ .chunk = chunk, .score = p.scores[f] });
+        }
+    } else {
+        // No query word is in any title: each file's score is its best
+        // body chunk's, which the body channel already holds in this order
+        // (score, then path) over its first `candidate_k >= top_k`.
+        for (ranked.body[0..@min(options.top_k, ranked.body.len)], 0..) |c, i| top.items[i] = .{ .chunk = @intCast(c.body_index), .score = c.score };
+        top.count = @min(options.top_k, ranked.body.len);
+    }
+    const kept = if (parts == null) top.items[0..top.count] else top.sorted();
+    const hits = try allocator.alloc(Hit, kept.len);
+    for (kept, hits) |m, *hit| {
+        const file = decoded.file_of[m.chunk];
+        const has_body = ranked.slot_of_file[file] == m.chunk;
+        hit.* = .{ .document_index = m.chunk, .fused_score = m.score };
+        if (has_body) {
+            hit.body_score = scored.body_scores[m.chunk];
+            for (ranked.body, 0..) |c, rank| if (c.catalog_index == file) {
+                hit.body_rank = rank + 1;
+                break;
+            };
+        }
+        if (scored.fname_scores[file] > 0) {
+            hit.filename_score = scored.fname_scores[file];
+            for (ranked.filename, 0..) |c, rank| if (c.catalog_index == file) {
+                hit.filename_rank = rank + 1;
+                break;
+            };
+        }
+        if (parts) |p| {
+            const part = p.scores[title.file_of[m.chunk]];
+            if (part > 0) hit.title_score = part;
+        }
+    }
+    return hits;
 }
 
 /// S4-T15: what `scoreQuery` leaves for the selections: each catalog

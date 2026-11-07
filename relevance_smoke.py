@@ -273,7 +273,8 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
             hits = [
                 {"path": r["citation"]["path"], "start_line": r["citation"]["start_line"],
                  "end_line": r["citation"]["end_line"]}
-                for r in search(index, query, top_k=top_k, retrieval_mode="lexical")
+                for r in search(index, query, top_k=top_k, retrieval_mode="lexical",
+                                 title_root_ids=judgments["roots"])
             ]
             covered = sum(1 for e in expected if any(_overlaps(h, e) for h in hits))
             cases.append({"id": case_id, "query": query, "expected": len(expected),
@@ -349,7 +350,8 @@ def run_pack(name: str, *, top_k: int = 5) -> dict:
             if kind in ("words", "answer"):
                 retrieve(sc["id"], sc["query"], sc["expected"])
             elif kind == "empty":
-                newt = (not search(index, sc["query"], top_k=top_k, retrieval_mode="lexical")
+                newt = (not search(index, sc["query"], top_k=top_k, retrieval_mode="lexical",
+                                 title_root_ids=judgments["roots"])
                         and find(index, sc["query"], mode=sc["mode"], root_ids=roots)["empty"])
             elif kind in ("phrase", "prefix"):
                 judge_find(sc["id"], kind, {**by_ref[sc["ref"].split(":")[1]], "query": sc["query"], "mode": sc["mode"]})
@@ -452,7 +454,10 @@ def print_pack_report(report: dict) -> None:
 
 J2_TOP_K = 10
 J2_VARIANTS = ("content", "both")
-J2_SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase")
+J2_SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "title-heldout")
+# S5-T2: the held-out title slice is reported beside the overall, not inside it, so
+# the overall stays the mean over S5-T1's 95 graded queries and comparable with it.
+J2_OVERALL_EXCLUDES = ("title-heldout",)
 J2_RESULTS_SCHEMA = "j2-results-v1"
 
 
@@ -538,7 +543,8 @@ def j2_summarise(judgments: dict, records: dict[str, dict]) -> dict:
     slices = {name: mean([records[q["id"]] for q in graded if q["slice"] == name]) for name in J2_SLICES}
     negatives = {q["id"]: {k: records[q["id"]][k] for k in ("returned", "top_hit", "top_hit_grade", "top_is_named_distractor")}
                  for q in judgments["queries"] if q.get("negative")}
-    return {"slices": slices, "overall": mean([records[q["id"]] for q in graded]),
+    overall = [records[q["id"]] for q in graded if q["slice"] not in J2_OVERALL_EXCLUDES]
+    return {"slices": slices, "overall": mean(overall),
             "queries": {q["id"]: records[q["id"]] for q in judgments["queries"]}, "negatives": negatives}
 
 
@@ -599,7 +605,8 @@ def run_j2_pack() -> dict:
 
         def knowledge(query: str, field: str) -> list[dict]:
             out = []
-            for r in search(index, query, top_k=J2_TOP_K, retrieval_mode="lexical", search_field=field):
+            for r in search(index, query, top_k=J2_TOP_K, retrieval_mode="lexical", search_field=field,
+                            title_root_ids=judgments["roots"]):
                 root, rest = split(r["citation"]["path"])
                 score = r["ranking"]["lexical"]["score"] if field == "content" else r["score"]
                 out.append({"root_id": root, "path": rest, "start_line": r["citation"]["start_line"],

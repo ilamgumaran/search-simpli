@@ -99,11 +99,15 @@
             "filename",
             "both"
           ],
-          "description": "Search field."
+          "description": "Search field. both (since 2.3.0) is a score-level merge, one result per file: the file's best body chunk's BM25 plus its title part; candidate_k is validated but does not cut it."
         },
         "filename_policy_id": {
           "const": "filename-field-v1",
           "description": "Filename policy id."
+        },
+        "title_policy_id": {
+          "const": "title-field-v1",
+          "description": "Title policy id (contract 2.3.0): present whenever the lexical channel ran under content or both. A file's folder names and file stem (title-field-v1, docs/title-field-v1.md) add a BM25 part to its best chunk."
         }
       },
       "additionalProperties": false,
@@ -177,7 +181,7 @@
                       "number",
                       "null"
                     ],
-                    "description": "Score."
+                    "description": "Score: the body BM25 plus, since 2.3.0, the title part (ranking.title.score)."
                   }
                 },
                 "additionalProperties": false,
@@ -239,6 +243,23 @@
                 "additionalProperties": false,
                 "required": [
                   "rank",
+                  "score"
+                ]
+              },
+              "title": {
+                "type": "object",
+                "description": "The weighted title part inside this result's score (contract 2.3.0). Under content only the one chunk per file that received its file's part carries it; under both every result carries it, null when the file's title took no part.",
+                "properties": {
+                  "score": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "description": "Title part, null when none was added."
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
                   "score"
                 ]
               }

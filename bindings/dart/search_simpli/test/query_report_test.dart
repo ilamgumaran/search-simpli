@@ -158,6 +158,35 @@ void main() {
     expect(again.toJson(), result.toJson());
   });
 
+  test('contract 2.3.0: the title policy and the title part round-trip', () {
+    // The folder name "public" is a title word of a.md and b.md: each takes
+    // a part inside its lexical score; c.md (folder "other") takes none.
+    final result = engine.query('hybrid public', topK: 3, mode: RetrievalMode.lexical);
+    expect(result.retrieval.titlePolicyId, 'title-field-v1');
+    expect(result.results.map((r) => r.citation.path).take(2).toSet(), {'public/a.md', 'public/b.md'});
+    for (final item in result.results) {
+      final lexical = (item.ranking['lexical']! as Map<String, Object?>)['score']! as num;
+      if (item.citation.path.startsWith('public/')) {
+        expect(item.titleScore, isNotNull);
+        expect(lexical.toDouble(), greaterThan(item.titleScore!));
+      } else {
+        expect(item.titleScore, isNull);
+        expect(item.ranking.containsKey('title'), isFalse);
+      }
+    }
+    expect(
+      SearchKnowledgeResult.fromJson(result.toJson()).toJson(),
+      result.toJson(),
+    );
+    // A title-only match: no body word, cited at the file's first chunk.
+    final titleOnly = engine.query('public', topK: 3, mode: RetrievalMode.lexical);
+    expect(titleOnly.results.map((r) => r.citation.path).toSet(), {'public/a.md', 'public/b.md'});
+    for (final item in titleOnly.results) {
+      final lexical = (item.ranking['lexical']! as Map<String, Object?>)['score']! as num;
+      expect(lexical.toDouble(), item.titleScore);
+    }
+  });
+
   test('filename query fields round-trip, while legacy JSON omits them', () {
     final legacy = engine.query('hybrid', topK: 2, mode: RetrievalMode.lexical);
     expect(legacy.retrieval.toJson().containsKey('search_field'), isFalse);

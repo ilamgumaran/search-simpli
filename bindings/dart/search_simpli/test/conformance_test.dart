@@ -55,15 +55,22 @@ const String goldenStatusJson =
     '"embedding_model_id":"manual-demo-vectors-v1","vector_dimensions":2,'
     '"documents":3,"terms":21,"postings":23}';
 
+/// S5-T2 (contract 2.3.0): the title field adds a part to guides/hybrid.md,
+/// whose stem is the query word "hybrid" (its lexical rank and score and the
+/// fused score changed), and the result gains `retrieval.title_policy_id`
+/// and `ranking.title`; every other byte is the S1-T0 capture
+/// (`zig/tests/abi_test.c`'s golden).
 const String goldenQueryResultJson =
     '{"tool":"search_knowledge","query":"hybrid ranking","index":{"version":2,'
     '"generation":1,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"manual-demo-vectors-v1"},'
     '"retrieval":{"mode":"hybrid","vector_dimensions":2,"authorization":{'
-    '"semantics":"all-required-labels-v1","principal_label_count":0}},'
+    '"semantics":"all-required-labels-v1","principal_label_count":0},'
+    '"title_policy_id":"title-field-v1"},'
     '"results":[{"chunk_id":"hybrid-guide","citation":{"path":"guides/hybrid.md",'
     '"start_line":1,"end_line":6},"content":"hybrid retrieval combines lexical and semantic '
-    'ranks with reciprocal rank fusion","score":0.032258063554763794,"ranking":{"lexical":{'
-    '"rank":2,"score":0.8327174186706543},"vector":{"rank":2,"score":0.9938837289810181}}}],'
+    'ranks with reciprocal rank fusion","score":0.032522473484277725,"ranking":{"lexical":{'
+    '"rank":1,"score":2.0587539672851562},"vector":{"rank":2,"score":0.9938837289810181},'
+    '"title":{"score":1.2260364294052124}}}],'
     '"answer_policy":{"ground_in_results":true,"cite_path_and_lines":true,'
     '"say_when_evidence_is_insufficient":true}}';
 
@@ -177,6 +184,7 @@ void main() {
         addTearDown(engine.close);
 
         var compared = 0;
+        var titled = 0;
         for (final entry in queries) {
           final queryText = entry['query']! as String;
           final ranking = (entry['ranking']! as List<Object?>).cast<Map<String, Object?>>();
@@ -195,16 +203,25 @@ void main() {
           // differently on purpose (Zig by document index, Python by chunk
           // id), so the FFI top-1 may be any path the reference scored equal
           // to its top (same rule as zig/src/bm25_conformance_test.zig).
-          final expectedScore = (expectedTop['lexical_score']! as num).toDouble();
-          final tiedTopPaths = ranking
-              .takeWhile((item) => ((item['lexical_score']! as num).toDouble() - expectedScore).abs() < 1e-4)
-              .map((item) => item['path']! as String)
-              .toSet();
-          expect(
-            tiedTopPaths,
-            contains(ffiResult.results.first.citation.path),
-            reason: 'FFI top-1 path mismatch vs Python reference for "$queryText" in $corpusName (expected $expectedPath)',
-          );
+          // S5-T2: the golden is plain BM25 (generated at title weight 0).
+          // When the FFI top-1 carries no title part its score is its plain
+          // body score and every other score only grew, so it is the plain
+          // top-1 too; when it carries one, the title field may have moved
+          // it, and only the CLI agreement below applies.
+          if (ffiResult.results.first.titleScore != null) {
+            titled++;
+          } else {
+            final expectedScore = (expectedTop['lexical_score']! as num).toDouble();
+            final tiedTopPaths = ranking
+                .takeWhile((item) => ((item['lexical_score']! as num).toDouble() - expectedScore).abs() < 1e-4)
+                .map((item) => item['path']! as String)
+                .toSet();
+            expect(
+              tiedTopPaths,
+              contains(ffiResult.results.first.citation.path),
+              reason: 'FFI top-1 path mismatch vs Python reference for "$queryText" in $corpusName (expected $expectedPath)',
+            );
+          }
 
           // (b) The searchd CLI, over the same published snapshot.
           final cliResult = await Process.run(searchdBin, [
@@ -245,7 +262,8 @@ void main() {
         // N identical" line, same convention as
         // `zig/src/bm25_conformance_test.zig`'s own summary line.
         // ignore: avoid_print
-        print('$corpusName conformance: $compared queries compared, $compared identical (Python top-1 and CLI top-1)');
+        print('$corpusName conformance: $compared queries compared, ${compared - titled} identical to the plain-BM25 Python top-1 '
+            '($titled with a title part at top-1, compared with the CLI only), $compared identical to the CLI top-1');
       });
     }
   });

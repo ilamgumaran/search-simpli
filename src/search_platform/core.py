@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import math
@@ -8,7 +9,7 @@ import unicodedata
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Iterable, Iterator
 
 from ._marks import MARK_RANGES
@@ -1038,6 +1039,111 @@ def _ranks(scores: dict[str, float], *, positive_only: bool = False) -> dict[str
     return {identifier: rank for rank, (identifier, _) in enumerate(ordered, start=1)}
 
 
+# ------------------------------------------------------------ title field ---
+# S5-T2 (`title-field-v1`): a file's root-relative folder names and its stem,
+# tokenized with analyzer-v2 (`_filename_tokenize`), one document per file, BM25
+# over the visible files times coverage (the share of the query's distinct
+# analyzer-v2 terms the field holds), times TITLE_WEIGHT. The Zig engine derives
+# the same field from the documents section's record paths (zig/src/title_field.zig).
+
+TITLE_POLICY_ID = "title-field-v1"
+TITLE_WEIGHT = 2.5
+TITLE_LEGACY_ROOT_ID = "r-legacy"
+
+
+def _title_relative_path(path: str, root_ids: tuple[str, ...]) -> str:
+    """`scope.relativePath(scope.rootOfPath(path))`: the part after `root_id/` for the
+    first root that prefixes the path; a legacy-root or unrooted path is taken whole."""
+    for root_id in root_ids:
+        if root_id == TITLE_LEGACY_ROOT_ID:
+            continue
+        if len(path) > len(root_id) and path.startswith(root_id) and path[len(root_id)] == "/":
+            return path[len(root_id) + 1:]
+    return path
+
+
+@functools.lru_cache(maxsize=65536)
+def _title_tokens(path: str, root_ids: tuple[str, ...]) -> tuple[str, ...]:
+    """The title field's tokens: every folder name of the root-relative path (never
+    the root id), then the stem (Python's `Path.stem`: the last component without
+    its final `.ext`; a name whose only dot is its first character is kept whole)."""
+    parts = _title_relative_path(path, root_ids).split("/")
+    tokens: list[str] = []
+    for folder in parts[:-1]:
+        tokens.extend(_filename_tokenize(folder))
+    tokens.extend(_filename_tokenize(PurePosixPath(parts[-1]).stem if parts[-1] else ""))
+    return tuple(tokens)
+
+
+def _title_root_ids(index: dict, title_root_ids: Iterable[str] | None) -> tuple[str, ...]:
+    roots = index.get("roots")
+    if isinstance(roots, dict):
+        return tuple(roots)
+    if isinstance(roots, list):
+        return tuple(r["root_id"] if isinstance(r, dict) else r for r in roots)
+    return tuple(title_root_ids or ())
+
+
+def _title_scores(visible_chunks: list[dict], query: str, root_ids: tuple[str, ...],
+                  weight: float) -> dict[str, float]:
+    """The weighted title part per file path: weight * BM25_title * coverage, over the
+    files of `visible_chunks` (the statistics: labels narrow them, a path prefix does not)."""
+    terms = sorted(set(_filename_tokenize(query)))
+    if not terms or not weight:
+        return {}
+    fields: dict[str, tuple[str, ...]] = {}
+    for chunk in visible_chunks:
+        if chunk["path"] not in fields:
+            fields[chunk["path"]] = _title_tokens(chunk["path"], root_ids)
+    docs = [{"id": path, "terms": Counter(tokens), "length": len(tokens)} for path, tokens in fields.items()]
+    out = {}
+    for path, score in _bm25_scores(docs, terms).items():
+        held = set(fields[path])
+        coverage = sum(1 for term in terms if term in held) / len(terms)
+        out[path] = weight * (score * coverage)
+    return out
+
+
+def _first_chunk_key(chunk: dict) -> tuple:
+    return (chunk["start_line"], chunk["end_line"], chunk["id"].encode("utf-8"))
+
+
+def _add_title_to_content(chunks: list[dict], lexical_scores: dict[str, float],
+                          title: dict[str, float]) -> tuple[dict[str, float], dict[str, float]]:
+    """The title part goes on one chunk per file: its best body chunk (ties to the
+    smaller id, bytewise), or its first chunk when no chunk of the file matches.
+    Returns the lexical scores with the parts added and each receiving chunk's part."""
+    if not title:
+        return lexical_scores, {}
+    best: dict[str, dict] = {}
+    first: dict[str, dict] = {}
+    for chunk in chunks:
+        path = chunk["path"]
+        if path not in title:
+            continue
+        if path not in first or _first_chunk_key(chunk) < _first_chunk_key(first[path]):
+            first[path] = chunk
+        score = lexical_scores.get(chunk["id"])
+        if score is None:
+            continue
+        held = best.get(path)
+        if held is None:
+            best[path] = chunk
+            continue
+        held_score = lexical_scores[held["id"]]
+        if score > held_score or (score == held_score and chunk["id"].encode("utf-8") < held["id"].encode("utf-8")):
+            best[path] = chunk
+    out = dict(lexical_scores)
+    received: dict[str, float] = {}
+    for path, part in title.items():
+        if part <= 0.0 or path not in first:
+            continue
+        target = best.get(path, first[path])["id"]
+        out[target] = out.get(target, 0.0) + part
+        received[target] = part
+    return out, received
+
+
 def _search_filename_fields(
     index: dict,
     query: str,
@@ -1047,15 +1153,14 @@ def _search_filename_fields(
     path_prefix: str | None,
     principal_labels: tuple[str, ...],
     search_field: str,
+    title_root_ids: tuple[str, ...] = (),
+    title_weight: float = TITLE_WEIGHT,
 ) -> list[dict]:
     terms = _filename_tokenize(query)
     if not terms:
         return []
-    chunks = [
-        chunk for chunk in index["chunks"]
-        if (path_prefix is None or chunk["path"].startswith(path_prefix))
-        and is_authorized(chunk.get("required_labels", []), principal_labels)
-    ]
+    visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
+    chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
     by_path: dict[str, list[dict]] = defaultdict(list)
     for chunk in chunks:
         by_path[chunk["path"]].append(chunk)
@@ -1094,26 +1199,37 @@ def _search_filename_fields(
         filename_ranks = {}
         filename_scores = {}
 
-    body_ranks = {path: rank for path, rank in body_ranks.items() if rank <= candidate_k}
-    filename_ranks = {path: rank for path, rank in filename_ranks.items() if rank <= candidate_k}
-    fused: dict[str, float] = defaultdict(float)
-    for path, rank in body_ranks.items():
-        fused[path] += 1.0 / (60.0 + rank)
-    for path, rank in filename_ranks.items():
-        fused[path] += 1.0 / (60.0 + rank)
     records_by_path = {record["path"]: record for record in filename_records}
     results = []
     if search_field == "filename":
+        filename_ranks = {path: rank for path, rank in filename_ranks.items() if rank <= candidate_k}
         final_scores = {path: filename_scores[path] for path in filename_ranks}
+        ordered = sorted(final_scores.items(), key=lambda item: (-item[1], item[0].encode("utf-8")))[:top_k]
     else:
-        final_scores = dict(fused)
-    for path, final_score in sorted(final_scores.items(), key=lambda item: (-item[1], item[0].encode("utf-8")))[:top_k]:
+        # S5-T2: `both` is a score-level merge, one result per file: its best body
+        # chunk's BM25 plus the title part. The stem channel no longer ranks (it is
+        # kept for matched_in, ranking.filename and match_sections), and candidate_k
+        # cuts no channel before the sum.
+        title = _title_scores(visible, query, title_root_ids, title_weight)
+        final_scores = dict(body_scores)
+        for path, part in title.items():
+            if part > 0.0 and path in anchors:
+                final_scores[path] = final_scores.get(path, 0.0) + part
+        ordered = sorted(((path, score) for path, score in final_scores.items() if score > 0.0),
+                         key=lambda item: (-item[1], item[0].encode("utf-8"),
+                                           best_by_path.get(item[0], anchors[item[0]])["id"].encode("utf-8")))[:top_k]
+    if search_field == "both":
+        # The reported ranks are positions within each channel's first candidate_k,
+        # as the engine reports them; matched_in names a channel that scored the file.
+        body_ranks = {path: rank for path, rank in body_ranks.items() if rank <= candidate_k}
+        filename_ranks = {path: rank for path, rank in filename_ranks.items() if rank <= candidate_k}
+    for path, final_score in ordered:
         chunk = best_by_path.get(path, anchors[path])
         record = records_by_path.get(path)
         matched_in = []
-        if path in body_ranks:
+        if body_scores.get(path, 0.0) > 0.0:
             matched_in.append("content")
-        if path in filename_ranks:
+        if filename_scores.get(path, 0.0) > 0.0:
             matched_in.append("filename")
         result = {
             "chunk_id": chunk["id"],
@@ -1128,6 +1244,9 @@ def _search_filename_fields(
                 "vector": {"rank": None, "score": None, "mode": index.get("vector_mode", "none")},
             },
         }
+        if search_field == "both":
+            part = title.get(path, 0.0)
+            result["ranking"]["title"] = {"score": part if part > 0.0 else None}
         filename_query_terms = list(dict.fromkeys(_filename_tokenize(query)))
         body_query_terms = list(dict.fromkeys(tokenize(query)))
         filename_available_terms = set(record["terms"]) if record else set()
@@ -1178,7 +1297,13 @@ def search(
     embedding_provider: EmbeddingProvider | None = None,
     principal_labels: Iterable[str] = (),
     search_field: str = "content",
+    title_root_ids: Iterable[str] | None = None,
+    title_weight: float = TITLE_WEIGHT,
 ) -> list[dict]:
+    """`title_root_ids` names the roots whose ids prefix the index's paths (a union of
+    roots copied side by side), so the title field never takes a root id as a folder
+    word; an index that carries `roots` uses its own. `title_weight` 0 is the ranking
+    before S5-T2."""
     if top_k < 1:
         raise ValueError("top_k must be at least 1")
     if candidate_k < top_k:
@@ -1195,18 +1320,20 @@ def search(
         return _search_filename_fields(
             index, query, top_k=top_k, candidate_k=candidate_k, path_prefix=path_prefix,
             principal_labels=tuple(principal_labels), search_field=search_field,
+            title_root_ids=_title_root_ids(index, title_root_ids), title_weight=title_weight,
         )
     query_terms = tokenize(query)
     if not query_terms:
         return []
     principal_labels = tuple(principal_labels)
-    chunks = [
-        chunk
-        for chunk in index["chunks"]
-        if (path_prefix is None or chunk["path"].startswith(path_prefix))
-        and is_authorized(chunk.get("required_labels", []), principal_labels)
-    ]
+    visible = [chunk for chunk in index["chunks"] if is_authorized(chunk.get("required_labels", []), principal_labels)]
+    chunks = [chunk for chunk in visible if path_prefix is None or chunk["path"].startswith(path_prefix)]
     lexical_scores = _bm25_scores(chunks, query_terms) if retrieval_mode != "vector" else {}
+    received: dict[str, float] = {}
+    if retrieval_mode != "vector":
+        # S5-T2: the title part joins the lexical channel before it is ranked or cut.
+        title = _title_scores(visible, query, _title_root_ids(index, title_root_ids), title_weight)
+        lexical_scores, received = _add_title_to_content(chunks, lexical_scores, title)
     vector_scores = (
         _cosine_scores(index, chunks, query, embedding_provider)
         if retrieval_mode != "lexical"
@@ -1251,6 +1378,9 @@ def search(
                 },
             }
         )
+        if identifier in received:
+            # Contract 2.3.0: only the chunk that received its file's title part.
+            results[-1]["ranking"]["title"] = {"score": received[identifier]}
     return results
 
 
@@ -1297,6 +1427,8 @@ def context_envelope(
         retrieval["search_field"] = search_field
         retrieval["filename_policy_id"] = FILENAME_POLICY_ID
         answer_policy["filename_matches_are_navigation"] = True
+    if search_field != "filename" and retrieval_mode != "vector":
+        retrieval["title_policy_id"] = TITLE_POLICY_ID
     return {
         "tool": "search_knowledge",
         "query": query,

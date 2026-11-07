@@ -46,6 +46,15 @@ timed, then close; `--samples` such handles per path. Since S4-T14 that read
 is where the file's line map is checked against its bytes; a later read of
 the same file on the same handle (the warm measures) does not check it again.
 
+S5-T2 (ruling 8): `--cold-content` adds the first content query after a
+cold open (`ss_open`, then the first `ss_query` content "the doc", timed,
+then `ss_close`; `--samples` handles): on a 2.3.0 library that query
+derives the title field. `--title-queries` adds, on the warm handle, the
+content and `both` queries of the five file-naming queries
+(`capture_query_outputs.py`'s "doc", "the doc", "group", "doc the", "group
+doc 00042") and of the four research queries (`qbench.py`'s; no title word
+of the 10k corpus): `query content <q>` and `query both <q>`.
+
 S4-T15: with `--filename`, each round's entry also names its `both_level`,
 and `both_levels` per library lists the warm `both` query's p50 of every
 round's process in order, their spread (max - min), and the levels: two when
@@ -224,6 +233,10 @@ def timed(clock, function):
     return (clock() - start) / 1e6, result
 
 
+NAMING_QUERIES = ["doc", "the doc", "group", "doc the", "group doc 00042"]
+RESEARCH_QUERIES = ["benico", "hybrid retrieval", "how does the hybrid retrieval work for a search", "the and of to in"]
+
+
 def child(args):
     lib = load(args.lib[0])
     clock = time.perf_counter_ns
@@ -250,6 +263,14 @@ def child(args):
         if number >= 2:
             keep("ss_open", elapsed)
             keep("first read_span", span_ms)
+    if args.cold_content:
+        for number in range(2 + args.samples):
+            handle = open_handle(lib, args.index)
+            elapsed, pointer = timed(clock, lambda: lib.ss_query(handle, b"the doc", None, 0, 10, query_options("content")))
+            checked(pointer)
+            lib.ss_close(handle)
+            if number >= 2:
+                keep("first content query", elapsed)
     for path in args.touch_path or []:
         if path == args.span_path[0]:
             raise SystemExit("--touch-path must differ from the first --span-path (that read loads the section)")
@@ -273,6 +294,10 @@ def child(args):
         if field != "content" and not args.filename:
             continue
         requests.append((f"query {field}", lambda f=field: lib.ss_query(handle, b"the doc", None, 0, 10, query_options(f))))
+    if args.title_queries:
+        for text in NAMING_QUERIES + RESEARCH_QUERIES:
+            for field in ("content", "both"):
+                requests.append((f"query {field} {text}", lambda t=text.encode(), f=field: lib.ss_query(handle, t, None, 0, 10, query_options(f))))
     for _ in range(2):
         for _, function in requests:
             checked(function())
@@ -314,6 +339,10 @@ def time_command(args):
             command += sum((["--touch-path", path] for path in args.touch_path or []), [])
             if args.filename:
                 command.append("--filename")
+            if args.cold_content:
+                command.append("--cold-content")
+            if args.title_queries:
+                command.append("--title-queries")
             output = subprocess.run(command, check=True, capture_output=True, text=True, timeout=540).stdout
             report["rounds"].append({"round": round_number + 1, "lib": lib, "p50_ms": json.loads(output)})
     report["load_average_end"] = list(os.getloadavg())
@@ -358,6 +387,8 @@ def main():
         measure.add_argument("--span-path", action="append", required=True)
         measure.add_argument("--touch-path", action="append", help="S4-T14: time this file's first read on a handle that has loaded the section")
         measure.add_argument("--filename", action="store_true", help="also time filename and both queries")
+        measure.add_argument("--cold-content", action="store_true", help="S5-T2: time the first content query after a cold open")
+        measure.add_argument("--title-queries", action="store_true", help="S5-T2: time content and both on the naming and research queries")
         measure.add_argument("--samples", type=int, default=30)
         measure.add_argument("--rounds", type=int, default=2)
     args = parser.parse_args()

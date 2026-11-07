@@ -59,7 +59,7 @@
         "filename",
         "both"
       ],
-      "description": "Opt-in filename navigation or combined lexical retrieval; requires explicit lexical retrieval_mode."
+      "description": "Opt-in filename navigation or combined lexical retrieval; requires explicit lexical retrieval_mode. both (since 2.3.0) ranks each file once by its best passage's score plus its folder and file names' title part, a score-level merge that candidate_k does not cut."
     }
   },
   "additionalProperties": false,
