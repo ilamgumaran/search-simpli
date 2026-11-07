@@ -54,15 +54,9 @@ def _token_pattern() -> re.Pattern[str]:
 
 
 def _simple_fold(token: str) -> str:
-    """analyzer-v2's simple fold (`core._filename_tokenize`, the engine's body fold)."""
-    out = []
-    for character in token:
-        folded = character.casefold()
-        if len(folded) != 1:
-            lowered = character.lower()
-            folded = lowered if len(lowered) == 1 else character
-        out.append(folded)
-    return "".join(out)
+    """analyzer-v2's simple fold (`core.simple_fold`, the engine's body fold)."""
+    from .core import simple_fold
+    return simple_fold(token)
 
 
 # ---------------------------------------------------------------- F: fold --

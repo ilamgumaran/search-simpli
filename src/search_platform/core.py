@@ -93,30 +93,38 @@ class Chunk:
 VARIATION_SELECTORS = re.compile("[\ufe00-\ufe0f\U000e0100-\U000e01ef]")
 
 
-def tokenize(text: str) -> list[str]:
-    normalized = VARIATION_SELECTORS.sub("", unicodedata.normalize("NFC", text))
-    return [token.casefold() for token in TOKEN_PATTERN.findall(normalized)]
-
-
-def _filename_tokenize(text: str) -> list[str]:
-    """Tokenize filename text with Unicode simple folding (analyzer-v2).
+def simple_fold(token: str) -> str:
+    """analyzer-v2's Unicode simple folding, the engine's (`analyzer_v2.zig`).
 
     Python exposes full case folding, so use it when it stays one code point;
     when it expands, accept a one-code-point lowercase mapping or preserve the
     original character. This keeps sharp-s, ligatures, and dotted capital I
     from expanding into multiple search terms.
     """
-    normalized = VARIATION_SELECTORS.sub("", unicodedata.normalize("NFC", text))
-
-    def simple_fold(character: str) -> str:
+    out = []
+    for character in token:
         folded = character.casefold()
-        if len(folded) == 1:
-            return folded
-        lowered = character.lower()
-        return lowered if len(lowered) == 1 else character
+        if len(folded) != 1:
+            lowered = character.lower()
+            folded = lowered if len(lowered) == 1 else character
+        out.append(folded)
+    return "".join(out)
 
-    return ["".join(simple_fold(character) for character in token)
-            for token in TOKEN_PATTERN.findall(normalized)]
+
+def tokenize(text: str) -> list[str]:
+    """The body analyzer, analyzer-v2. S5-T4 (the `ß` row of docs/tasks/S5-T4.md
+    ruling 10): the body fold is the engine's simple fold, as the file-name and
+    title fold always were; before S5-T4 it was full case folding, which only
+    `ß` among J2's words told apart (`straße` was `strasse` here, `straße` in
+    the engine)."""
+    normalized = VARIATION_SELECTORS.sub("", unicodedata.normalize("NFC", text))
+    return [simple_fold(token) for token in TOKEN_PATTERN.findall(normalized)]
+
+
+def _filename_tokenize(text: str) -> list[str]:
+    """Tokenize filename text with Unicode simple folding (analyzer-v2)."""
+    normalized = VARIATION_SELECTORS.sub("", unicodedata.normalize("NFC", text))
+    return [simple_fold(token) for token in TOKEN_PATTERN.findall(normalized)]
 
 
 def _hash_vector(tokens: Iterable[str], dimensions: int = 128) -> list[float]:

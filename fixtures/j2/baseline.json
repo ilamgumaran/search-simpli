@@ -2,24 +2,24 @@
   "schema": "j2-baseline-v1",
   "judgments_sha256": "342e5d38cf043c365cdb5a634b2517703406724cd899985cd19084eb5359a44d",
   "engine_commit": "e0d258b5b1c145745585833bb0f158a324ff8d1c",
-  "run_commit": "fa027340c7acb8750a50479d845094eef135ec0a",
+  "run_commit": "1b88a9690a9a2ebfd834ebf55d7015797c94c668",
   "natives_digest": "8f73bf9c3f874e98197c98c0b23237cc49358f028025a18ff35fef2934142055",
   "recorded": "2026-11-07",
   "load": {
     "before": [
-      8.88,
-      7.11,
-      5.16
+      4.79,
+      5.31,
+      4.98
     ],
     "after": [
-      8.88,
-      7.11,
-      5.16
+      4.79,
+      5.31,
+      4.98
     ],
     "top_sample": [
-      "Processes: 1039 total, 5 running, 1034 sleeping, 5118 threads",
-      "Load Avg: 8.88, 7.11, 5.16",
-      "CPU usage: 15.82% user, 2.12% sys, 82.5% idle"
+      "Processes: 1015 total, 5 running, 1010 sleeping, 4889 threads",
+      "Load Avg: 4.79, 5.31, 4.98",
+      "CPU usage: 9.67% user, 3.19% sys, 87.13% idle"
     ]
   },
   "top_k": 10,
@@ -1453,10 +1453,10 @@
             },
             "accent": {
               "n": 9,
-              "success_at_1": 0.555556,
-              "mrr_at_10": 0.666667,
-              "ndcg_at_10": 0.720793,
-              "recall_at_5": 0.777778
+              "success_at_1": 0.444444,
+              "mrr_at_10": 0.550926,
+              "ndcg_at_10": 0.605155,
+              "recall_at_5": 0.666667
             },
             "tamil": {
               "n": 13,
@@ -1517,10 +1517,10 @@
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.642105,
-            "mrr_at_10": 0.711257,
-            "ndcg_at_10": 0.739963,
-            "recall_at_5": 0.789474
+            "success_at_1": 0.631579,
+            "mrr_at_10": 0.700292,
+            "ndcg_at_10": 0.729008,
+            "recall_at_5": 0.778947
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -1580,8 +1580,8 @@
             "a03": 1,
             "a04": 3,
             "a05": null,
-            "a06": 6,
-            "a07": 1,
+            "a06": 8,
+            "a07": null,
             "a08": 1,
             "a09": 1,
             "t01": null,
@@ -2149,9 +2149,9 @@
             "accent": {
               "n": 9,
               "success_at_1": 0.444444,
-              "mrr_at_10": 0.559259,
-              "ndcg_at_10": 0.613087,
-              "recall_at_5": 0.777778
+              "mrr_at_10": 0.55291,
+              "ndcg_at_10": 0.60714,
+              "recall_at_5": 0.666667
             },
             "tamil": {
               "n": 13,
@@ -2213,9 +2213,9 @@
           "overall": {
             "n": 95,
             "success_at_1": 0.631579,
-            "mrr_at_10": 0.683246,
-            "ndcg_at_10": 0.70007,
-            "recall_at_5": 0.742105
+            "mrr_at_10": 0.682644,
+            "ndcg_at_10": 0.699507,
+            "recall_at_5": 0.731579
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -2275,7 +2275,7 @@
             "a03": 1,
             "a04": 3,
             "a05": null,
-            "a06": 5,
+            "a06": 7,
             "a07": null,
             "a08": 1,
             "a09": 1,
@@ -2953,6 +2953,14 @@
       "judgments_sha256": "5fd2ab5eeaeffb92f257dd4fc1ac5401ec723f164bfd953e64c96ed2e4bdf0d9",
       "natives_digest": "8f73bf9c3f874e98197c98c0b23237cc49358f028025a18ff35fef2934142055",
       "why": "S5-T4 step 1: three held-out slices added (morphology-heldout, accent-heldout, tamil-heldout; six new files, 31 sections); every earlier cell on both surfaces unchanged (366 of 366)"
+    },
+    {
+      "engine_commit": "e0d258b5b1c145745585833bb0f158a324ff8d1c",
+      "run_commit": "fa027340c7acb8750a50479d845094eef135ec0a",
+      "recorded": "2026-11-07",
+      "judgments_sha256": "342e5d38cf043c365cdb5a634b2517703406724cd899985cd19084eb5359a44d",
+      "natives_digest": "8f73bf9c3f874e98197c98c0b23237cc49358f028025a18ff35fef2934142055",
+      "why": "S5-T4 (the ß row of its ruling 10): the Python reference's v2 body fold is the engine's simple fold (mirror follows engine); Python cells that moved: accent content s@1 0.556->0.444, MRR 0.667->0.551, nDCG 0.721->0.605, R@5 0.778->0.667; accent both MRR 0.559->0.553, nDCG 0.613->0.607, R@5 0.778->0.667; overall content and both moved with them; rows a06 content 6->8, both 5->7, a07 content 1->none; the reference now equals searchd on every cell; searchd unchanged"
     }
   ]
 }
