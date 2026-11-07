@@ -89,8 +89,10 @@ fn writeEvidenceInternal(
     for (hits) |hit| {
         if (hit.document_index >= engine.documents.len) return error.InvalidFilenameHit;
         const document = engine.documents[hit.document_index];
-        const matched_body = hit.body_rank != null;
-        const matched_filename = hit.filename_rank != null;
+        // S5-T2: a channel matched when it scored the file, ranked within
+        // its first `candidate_k` or not (`both` no longer cuts a channel).
+        const matched_body = hit.body_rank != null or hit.body_score > 0;
+        const matched_filename = hit.filename_rank != null or hit.filename_score > 0;
         try json.beginObject();
         try json.objectField("chunk_id");
         try json.write(document.id);

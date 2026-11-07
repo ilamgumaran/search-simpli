@@ -397,6 +397,37 @@ test "content: title weight 0 and no title field give today's results, byte for 
     }
 }
 
+test "both: one result per file, the merged order, and the ranking fields" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const corpus = try makeCorpus(a, &content_docs, &roots);
+    const built = try filename_field.build(a, &content_docs, analyzer_v2_module.analyzer_id);
+    const options = hybrid.SearchOptions{ .top_k = 10, .candidate_k = 10, .retrieval_mode = .lexical, .title = &corpus.field };
+    const hits = try filename_field.query(a, &content_docs, corpus.engine.lexical_index, built.catalog, built.lexical, analyzer_v2_module.analyzer_id, "garden tomato health", .both, options);
+    // garden.md (body + title), notes.md (body), doctor-visits.md (title only).
+    try std.testing.expectEqual(@as(usize, 3), hits.len);
+    var seen: std.StringHashMapUnmanaged(void) = .empty;
+    for (hits, 0..) |hit, i| {
+        const doc = content_docs[hit.document_index];
+        try std.testing.expect(!seen.contains(doc.path));
+        try seen.put(a, doc.path, {});
+        if (i > 0) try std.testing.expect(hits[i - 1].fused_score >= hit.fused_score);
+        const part = hit.title_score orelse 0;
+        try std.testing.expectEqual(hit.body_score + part, hit.fused_score);
+    }
+    try std.testing.expectEqualStrings("g-a", content_docs[hits[0].document_index].id);
+    try std.testing.expect(hits[0].body_rank != null and hits[0].title_score != null and hits[0].filename_rank != null);
+    const title_only = for (hits) |hit| {
+        if (std.mem.eql(u8, content_docs[hit.document_index].id, "d-1")) break hit;
+    } else return error.TestUnexpectedResult;
+    try std.testing.expect(title_only.body_rank == null and title_only.body_score == 0 and title_only.title_score != null);
+    const body_only = for (hits) |hit| {
+        if (std.mem.eql(u8, content_docs[hit.document_index].path, "r-home/notes.md")) break hit;
+    } else return error.TestUnexpectedResult;
+    try std.testing.expect(body_only.title_score == null and body_only.body_rank != null);
+}
+
 test "the title field is derived once per opened generation, at the first content or both query, never at the open" {
     const io = std.testing.io;
     const chunker = @import("chunker.zig");
