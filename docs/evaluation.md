@@ -256,3 +256,38 @@ plan predicted: `content` `o06` 2 → 3, `o08` 1 → 2, `o13` 2 → 1, `p02` 2 �
 surfaces still differ only by the analyzer on a first grade-2 rank (`a06`,
 `a07`, `a09`) and by tie order below the answer. The baseline is re-recorded at
 S5-T2 in its own commit.
+
+### S5-T3: misspelling tolerance
+
+[S5-T3](tasks/S5-T3.md) adds [fuzzy-v1](fuzzy-v1.md): a Latin query word of 5
+or more code points that no chunk in scope and no visible file's name holds is
+also searched as up to 3 dictionary words sharing its first letter, within one
+edit (5 code points) or two (6 or more), scored as one word. J2 gained the
+slice **`misspelling-heldout`** (12 rows, judged before any ranking code
+existed; bar: `content` success@1 ≥ 0.40, no row at rank 1 lost). At S5-T3
+(`searchd` ReleaseSmall; MRR@10, success@1 in brackets; S5-T2's cells above):
+
+| Slice | n | searchd content | searchd both | Python content | Python both |
+|---|---:|---:|---:|---:|---:|
+| control | 23 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+| misspelling | 16 | 0.593 (0.500) | 0.539 (0.500) | 0.593 (0.500) | 0.539 (0.500) |
+| morphology | 13 | 0.429 (0.308) | 0.404 (0.308) | 0.429 (0.308) | 0.404 (0.308) |
+| accent | 9 | 0.551 (0.444) | 0.553 (0.444) | 0.667 (0.556) | 0.559 (0.444) |
+| Tamil | 13 | 0.308 (0.231) | 0.269 (0.231) | 0.308 (0.231) | 0.269 (0.231) |
+| title intent | 11 | 0.955 (0.909) | 0.955 (0.909) | 0.955 (0.909) | 0.955 (0.909) |
+| phrase | 10 | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) |
+| overall | 95 | 0.700 (0.632) | 0.683 (0.632) | 0.711 (0.642) | 0.683 (0.632) |
+| title-heldout | 8 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+| misspelling-heldout | 12 | 0.958 (0.917) | 0.958 (0.917) | 0.958 (0.917) | 0.958 (0.917) |
+
+(`misspelling-heldout` before S5-T3: 0.558 (0.333) under `content` and 0.465
+(0.333) under `both` through `searchd`.) The S5-T1 gate passes on both
+surfaces and both variants with an empty allow-list. Two ranks worsen, as the
+plan measured: `m15` 5 → 8 under `content` (exactly the gate's three-place
+limit: `science` also lifts `ideas/kitchen-science.md`) and `o10` 2 → 4 in both
+variants (`boxes` is not in J2 and expands to `bones`). `m03`, `m04`, `m15`
+and `m16` reach the right file through its intro chunk, which J2 grades 0.
+Tamil and the title slices do not move. The surfaces differ on a first
+grade-2 rank only by the analyzer (`a06`, `a07`; `a09` now agrees through the
+expansion `strasse` → `straße` in the engine). The baseline is re-recorded at
+S5-T3 in its own commit.
