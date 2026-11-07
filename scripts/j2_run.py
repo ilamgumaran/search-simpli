@@ -5,7 +5,7 @@
   j2_run.py --build [--scratch DIR] [--output RUN.json]
   j2_run.py --compare A.json B.json
   j2_run.py (--searchd PATH | --build) --write-baseline fixtures/j2/baseline.json
-            [--python-output PY.json] [--output RUN.json]
+            [--python-output PY.json] [--output RUN.json] [--why TEXT]
 
 The index is built the way the app builds one, through the shipped CLI: an
 empty folder is indexed with the file-name channel on (`searchd index EMPTY
@@ -21,6 +21,8 @@ uses, so both surfaces score with one implementation.
 
 --write-baseline also runs the Python reference in this process and writes
 both surfaces into one baseline file; set PYTHONHASHSEED=0 for the record.
+Over an existing baseline it needs --why (the frozen-pack rule), keeps the old
+file's `extensions` and adds a `replaces` entry naming the baseline replaced.
 """
 
 from __future__ import annotations
@@ -310,9 +312,24 @@ def engine_commit(named: str | None) -> str | None:
     return full.stdout.strip()
 
 
-def write_baseline(target: Path, searchd: dict, python: dict, engine: str | None) -> None:
+def write_baseline(target: Path, searchd: dict, python: dict, engine: str | None, why: str | None = None) -> None:
     if searchd["judgments_sha256"] != python["judgments_sha256"]:
         raise SystemExit("j2_run: the two surfaces judged different judgments.json files")
+    # S5-T2: a re-recording keeps the replaced file's provenance: its extension
+    # records as they were, and one `replaces` entry per re-recording (oldest
+    # first) naming the baseline it replaced and why.
+    carried: dict = {}
+    if target.is_file():
+        previous = json.loads(target.read_text(encoding="utf-8"))
+        if not why:
+            raise SystemExit("j2_run: re-recording a baseline needs --why")
+        carried["extensions"] = previous.get("extensions", [])
+        carried["replaces"] = previous.get("replaces", []) + [{
+            "engine_commit": previous.get("engine_commit"), "run_commit": previous.get("run_commit"),
+            "recorded": previous.get("recorded"), "judgments_sha256": previous.get("judgments_sha256"),
+            "natives_digest": previous.get("natives_digest"), "why": why}]
+        if not carried["extensions"]:
+            del carried["extensions"]
     baseline = {
         "schema": BASELINE_SCHEMA,
         "judgments_sha256": searchd["judgments_sha256"],
@@ -327,6 +344,7 @@ def write_baseline(target: Path, searchd: dict, python: dict, engine: str | None
             "python-reference": {"python_version": python["engine"]["python_version"],
                                  "hashseed": python["engine"]["hashseed"], "runs": baseline_runs(python)},
         },
+        **carried,
     }
     target.write_text(json.dumps(baseline, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -343,6 +361,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--write-baseline", type=Path, metavar="BASELINE")
     parser.add_argument("--python-output", type=Path, help="with --write-baseline: write the Python results here")
     parser.add_argument("--engine-commit", help="with --write-baseline: the branch point whose engine HEAD carries unchanged")
+    parser.add_argument("--why", help="with --write-baseline over an existing baseline: why it is re-recorded (kept in `replaces`)")
     args = parser.parse_args(argv)
     if args.compare:
         return compare(*args.compare)
@@ -375,7 +394,7 @@ def main(argv: list[str] | None = None) -> int:
         python = run_j2_pack()
         if args.python_output:
             args.python_output.write_text(json.dumps(python, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        write_baseline(args.write_baseline, results, python, engine_commit(args.engine_commit))
+        write_baseline(args.write_baseline, results, python, engine_commit(args.engine_commit), args.why)
         print(f"baseline written: {args.write_baseline}")
     return 0
 
