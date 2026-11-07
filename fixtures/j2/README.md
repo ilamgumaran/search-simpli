@@ -5,10 +5,11 @@ Year 5, Wren in Year 2, Paati their grandmother, Biscuit the dog), Thistlecombe
 Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone numbers
 are from the ranges set aside for drama.
 
-J2 says where keyword search loses. It holds 109 queries in seven slices
-plus named negatives, graded 0 to 2, over three roots. Its numbers are the
-baseline later search tasks are judged against (`fixtures/j2/baseline.json`,
-`scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
+J2 says where keyword search loses. It holds 119 queries in seven slices,
+a held-out title slice (S5-T2) and named negatives, graded 0 to 2, over three
+roots. Its numbers are the baseline later search tasks are judged against
+(`fixtures/j2/baseline.json`, `scripts/j2_gate.py`); see `docs/evaluation.md`,
+section J2.
 
 Do not edit the files by hand. `python3 fixtures/j2/generate.py` rewrites every
 file, `judgments.json` and this README from `content.py`, `queries.py` and
@@ -57,7 +58,8 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 | tamil | 13 | 10 | Tamil inflections, both directions, plus suffix guards |
 | title | 11 | 10 | the words name the file (stem or folder), not its body |
 | phrase | 10 | 8 | the words adjacent in the answer, apart in a distractor |
-| negatives | 14 | - | nothing answers; distractors named |
+| negatives | 16 | - | nothing answers; distractors named |
+| title-heldout | 8 | 6 | title intent held out from S5-T2's weight; no word of the title slice |
 
 ## Queries
 
@@ -174,3 +176,13 @@ Grade-2 rows only; `judgments.json` holds every row with its note.
 | tin2 | negatives | knowledge | `garden plans` | none |
 | pn1 | negatives | knowledge | `ice skating` | none |
 | pn2 | negatives | knowledge | `cream tea` | none |
+| th01 | title-heldout | knowledge | `garden diary` | `home/garden-diary.md` 1-397 |
+| th02 | title-heldout | knowledge | `house rules` | `home/house-rules.md` 1-14 |
+| th03 | title-heldout | knowledge | `kids questions` | `laptop/kids-questions.md` 1-15 |
+| th04 | title-heldout | knowledge | `november calendar` | `home/calendar-november.md` 1-7 |
+| th05 | title-heldout | knowledge | `holiday` | `home/holiday/seaside-packing.md` 1-9 |
+| th06 | title-heldout | knowledge | `ideas` | `laptop/ideas/kitchen-science.md` 1-4 |
+| th07 | title-heldout | knowledge | `music` | `home/music/recorder-practice.md` 1-15 |
+| th08 | title-heldout | knowledge | `health` | `home/health/doctor-visits.md` 1-9 |
+| thn1 | negatives | knowledge | `holiday photos` | none |
+| thn2 | negatives | knowledge | `music exam` | none |

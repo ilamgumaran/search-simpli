@@ -29,6 +29,7 @@ SLICE_MINIMUMS = {
     "tamil": 10,
     "title": 10,
     "phrase": 8,
+    "title-heldout": 6,
 }
 
 QUERIES: list[dict] = []
@@ -507,3 +508,61 @@ q("negatives", "pn2", "Cream tea?", "cream tea", K, [
     ("home/birthday-party-wren.md", "§Food", 0, "ice cream"),
     ("laptop/recipes-to-try.txt", "*", 0, "strawberries and cream"),
 ], of="phrase")
+
+# ------------------------------------------------------ title-heldout (8) --
+# S5-T2, orchestrator ruling 5 on its plan: title-intent rows held out from the
+# weight that S5-T2 chose on ti01-ti11, written and judged before any ranking
+# code existed and before any run of these queries. Existing files only, so no
+# other row's numbers move. The generator also asserts that no query word here
+# is a query word of ti01-ti11 or a word of their targets' paths (root included).
+
+q("title-heldout", "th01", "Joss's garden diary", "garden diary", K, [
+    ("home/garden-diary.md", "*", 2, "the file"),
+    ("school/science-homework.md", "*", 0, "a bean diary, diary four times"),
+    ("home/chores.md", "§Garden jobs", 0, "garden jobs"),
+    ("school/newsletter-autumn.md", "§Dates for the diary", 0, "dates for the diary"),
+], name=[("garden", "stem"), ("diary", "stem")])
+q("title-heldout", "th02", "What are our house rules?", "house rules", K, [
+    ("home/house-rules.md", "*", 2, "the file"),
+    ("school/class-rules.md", "*", 0, "the class rules, rules twice"),
+    ("laptop/budget-autumn.md", "§House", 0, "the house budget"),
+], name=[("house", "stem"), ("rules", "stem")])
+q("title-heldout", "th03", "The questions the kids asked", "kids questions", K, [
+    ("laptop/kids-questions.md", "*", 2, "the file"),
+    ("laptop/budget-autumn.md", "§Kids", 0, "kids twice"),
+    ("school/science-homework.md", "§Questions to answer", 0, "homework questions"),
+], name=[("kids", "stem"), ("questions", "stem")])
+q("title-heldout", "th04", "What's on the November calendar?", "november calendar", K, [
+    ("home/calendar-november.md", "*", 2, "the file"),
+    ("laptop/archive/old-term-dates.md", "*", 0, "last year's calendar, November"),
+    ("home/garden-diary.md", "§November", 0, "November thirty times"),
+], name=[("november", "stem"), ("calendar", "stem")])
+q("title-heldout", "th05", "The holiday file", "holiday", K, [
+    ("home/holiday/seaside-packing.md", "*", 2, "the file"),
+    ("laptop/budget-autumn.md", "=Holiday pot", 0, "the holiday pot"),
+    ("laptop/archive/old-term-dates.md", "*", 0, "last year's October holiday"),
+    ("school/class-notes-wren.md", "§Next term", 0, "after the October holiday"),
+], name=[("holiday", "folder")])
+q("title-heldout", "th06", "Open my ideas folder", "ideas", K, [
+    ("laptop/ideas/kitchen-science.md", "*", 2, "the file"),
+    ("laptop/plans/half-term-plans.md", "§Rainy day ideas", 0, "rainy day ideas"),
+    ("school/science-fair.md", "§Ideas", 0, "science fair ideas"),
+    ("school/maths-practice.md", "=Practice ideas", 0, "practice ideas"),
+], name=[("ideas", "folder")])
+q("title-heldout", "th07", "Pip's music things", "music", K, [
+    ("home/music/recorder-practice.md", "*", 2, "the file"),
+    ("school/notes-from-phone.txt", "*", 0, "the music room"),
+    ("school/class-notes-pip.md", "=music room", 0, "the music room"),
+], name=[("music", "folder")])
+q("title-heldout", "th08", "Our health records", "health", K, [
+    ("home/health/doctor-visits.md", "*", 2, "the file; health is in its folder name only"),
+], name=[("health", "folder")])
+
+q("negatives", "thn1", "The holiday photos?", "holiday photos", K, [
+    ("home/holiday/seaside-packing.md", "*", 0, "the holiday folder, no photos"),
+    ("school/newsletter-autumn.md", "§Dates for the diary", 0, "a school photo day"),
+], of="title-heldout")
+q("negatives", "thn2", "Is there a music exam?", "music exam", K, [
+    ("home/music/recorder-practice.md", "*", 0, "music by folder only, no exam"),
+    ("school/tamil/tamil-class.md", "§Exam", 0, "a Tamil exam"),
+], of="title-heldout")

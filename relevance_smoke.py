@@ -452,7 +452,10 @@ def print_pack_report(report: dict) -> None:
 
 J2_TOP_K = 10
 J2_VARIANTS = ("content", "both")
-J2_SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase")
+J2_SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "title-heldout")
+# S5-T2: the held-out title slice is reported beside the overall, not inside it, so
+# the overall stays the mean over S5-T1's 95 graded queries and comparable with it.
+J2_OVERALL_EXCLUDES = ("title-heldout",)
 J2_RESULTS_SCHEMA = "j2-results-v1"
 
 
@@ -538,7 +541,8 @@ def j2_summarise(judgments: dict, records: dict[str, dict]) -> dict:
     slices = {name: mean([records[q["id"]] for q in graded if q["slice"] == name]) for name in J2_SLICES}
     negatives = {q["id"]: {k: records[q["id"]][k] for k in ("returned", "top_hit", "top_hit_grade", "top_is_named_distractor")}
                  for q in judgments["queries"] if q.get("negative")}
-    return {"slices": slices, "overall": mean([records[q["id"]] for q in graded]),
+    overall = [records[q["id"]] for q in graded if q["slice"] not in J2_OVERALL_EXCLUDES]
+    return {"slices": slices, "overall": mean(overall),
             "queries": {q["id"]: records[q["id"]] for q in judgments["queries"]}, "negatives": negatives}
 
 

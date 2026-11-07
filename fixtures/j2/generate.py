@@ -49,7 +49,8 @@ queries = _load("queries")
 
 ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
-SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "negatives")
+SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "negatives",
+          "title-heldout")
 MODES = ("knowledge", "find:words", "find:phrase", "find:prefix")
 
 
@@ -171,6 +172,23 @@ class CheckFailed(SystemExit):
     pass
 
 
+def title_slice_words() -> set[str]:
+    """Every query word of the title slice (ti01-ti11) and every word of its grade-2
+    targets' root-relative paths, root included: S5-T2's held-out rows use none."""
+    words: set[str] = set()
+    for spec in queries.QUERIES:
+        if spec["slice"] != "title":
+            continue
+        words.update(toks(spec["query"]))
+        for path, _anchor, grade, _note in spec["rows"]:
+            if grade == 2:
+                pure = PurePosixPath(path)
+                words.update(toks(pure.stem))
+                for part in pure.parent.parts:
+                    words.update(toks(part))
+    return words
+
+
 def build_query(corpus: Corpus, spec: dict) -> dict:
     qid = spec["id"]
 
@@ -254,7 +272,7 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
             need(query_form != file_form and query_form not in first, f"{query_form} is absent from the answer")
             checks.append({"check": "query form absent from the answer, the other form present",
                            "query_form": query_form, "file_form": file_form})
-    elif s == "title":
+    elif s in ("title", "title-heldout"):
         target = answers[0]
         pure = PurePosixPath(target["path"])
         stem = toks(pure.stem)
@@ -270,6 +288,10 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
         need(any(w != "none" for _, w in spec["name"]), "at least one query word is in the path")
         checks.append({"check": "the words sit in the file name (stem) or only in its folder; each at most once in the body",
                        "where": {w: p for w, p in spec["name"]}, "body_counts": counts})
+        if s == "title-heldout":
+            reused = sorted(set(query_tokens) & title_slice_words())
+            need(not reused, f"held out: {reused} is a query word or a target path word of the title slice")
+            checks.append({"check": "held out: no query word is a query word of the title slice or a word of its targets' paths"})
     elif s == "phrase":
         near = corpus.range_tokens(expected[spec["adjacent"]])
         far = corpus.range_tokens(expected[spec["apart"]])
@@ -354,10 +376,11 @@ Year 5, Wren in Year 2, Paati their grandmother, Biscuit the dog), Thistlecombe
 Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone numbers
 are from the ranges set aside for drama.
 
-J2 says where keyword search loses. It holds {total} queries in seven slices
-plus named negatives, graded 0 to 2, over three roots. Its numbers are the
-baseline later search tasks are judged against (`fixtures/j2/baseline.json`,
-`scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
+J2 says where keyword search loses. It holds {total} queries in seven slices,
+a held-out title slice (S5-T2) and named negatives, graded 0 to 2, over three
+roots. Its numbers are the baseline later search tasks are judged against
+(`fixtures/j2/baseline.json`, `scripts/j2_gate.py`); see `docs/evaluation.md`,
+section J2.
 
 Do not edit the files by hand. `python3 fixtures/j2/generate.py` rewrites every
 file, `judgments.json` and this README from `content.py`, `queries.py` and
@@ -421,6 +444,7 @@ SLICE_TEXT = {
     "title": "the words name the file (stem or folder), not its body",
     "phrase": "the words adjacent in the answer, apart in a distractor",
     "negatives": "nothing answers; distractors named",
+    "title-heldout": "title intent held out from S5-T2's weight; no word of the title slice",
 }
 
 

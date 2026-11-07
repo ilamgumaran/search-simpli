@@ -1,6 +1,6 @@
 {
   "schema": "j2-baseline-v1",
-  "judgments_sha256": "fc081a1c17f8a6dc2b56c6491c2e41b4e64dfa5a6a7203b9f2fc2f549a3423ac",
+  "judgments_sha256": "14b0507f924bbce1e65e99667dfbaabdd719ba8ad6ca8574d4cf373971def415",
   "engine_commit": "6ef4c3b44524c1ab36d8765d9baf6a4cf35a2ea4",
   "run_commit": "27016e4bbc5d2a0f442d6b173dd11b190297b11d",
   "natives_digest": "7a8f13ff7c5bb5a38d777c1fa6cdeaf3d4409740295b44976d9c6a062eb7b7bd",
@@ -82,6 +82,13 @@
               "mrr_at_10": 0.9,
               "ndcg_at_10": 0.926186,
               "recall_at_5": 1.0
+            },
+            "title-heldout": {
+              "n": 8,
+              "success_at_1": 0.375,
+              "mrr_at_10": 0.375,
+              "ndcg_at_10": 0.375,
+              "recall_at_5": 0.375
             }
           },
           "overall": {
@@ -186,7 +193,15 @@
             "p07": 1,
             "p08": 1,
             "p09": 1,
-            "p10": 1
+            "p10": 1,
+            "th01": 1,
+            "th02": 1,
+            "th03": 1,
+            "th04": null,
+            "th05": null,
+            "th06": null,
+            "th07": null,
+            "th08": null
           },
           "slice_of": {
             "c01": "control",
@@ -297,7 +312,17 @@
             "tin1": "negatives",
             "tin2": "negatives",
             "pn1": "negatives",
-            "pn2": "negatives"
+            "pn2": "negatives",
+            "th01": "title-heldout",
+            "th02": "title-heldout",
+            "th03": "title-heldout",
+            "th04": "title-heldout",
+            "th05": "title-heldout",
+            "th06": "title-heldout",
+            "th07": "title-heldout",
+            "th08": "title-heldout",
+            "thn1": "negatives",
+            "thn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -453,6 +478,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "thn1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "budget-autumn.md",
+                "start_line": 12,
+                "end_line": 14
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "thn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "tamil/tamil-class.md",
+                "start_line": 13,
+                "end_line": 16
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         },
@@ -506,6 +553,13 @@
               "mrr_at_10": 0.9,
               "ndcg_at_10": 0.926186,
               "recall_at_5": 1.0
+            },
+            "title-heldout": {
+              "n": 8,
+              "success_at_1": 0.5,
+              "mrr_at_10": 0.5,
+              "ndcg_at_10": 0.5,
+              "recall_at_5": 0.5
             }
           },
           "overall": {
@@ -610,7 +664,15 @@
             "p07": 1,
             "p08": 1,
             "p09": 1,
-            "p10": 1
+            "p10": 1,
+            "th01": 1,
+            "th02": 1,
+            "th03": 1,
+            "th04": 1,
+            "th05": null,
+            "th06": null,
+            "th07": null,
+            "th08": null
           },
           "slice_of": {
             "c01": "control",
@@ -721,7 +783,17 @@
             "tin1": "negatives",
             "tin2": "negatives",
             "pn1": "negatives",
-            "pn2": "negatives"
+            "pn2": "negatives",
+            "th01": "title-heldout",
+            "th02": "title-heldout",
+            "th03": "title-heldout",
+            "th04": "title-heldout",
+            "th05": "title-heldout",
+            "th06": "title-heldout",
+            "th07": "title-heldout",
+            "th08": "title-heldout",
+            "thn1": "negatives",
+            "thn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -877,6 +949,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "thn1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "budget-autumn.md",
+                "start_line": 12,
+                "end_line": 14
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "thn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "tamil/tamil-class.md",
+                "start_line": 13,
+                "end_line": 16
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         }
@@ -936,6 +1030,13 @@
               "mrr_at_10": 0.9,
               "ndcg_at_10": 0.926186,
               "recall_at_5": 1.0
+            },
+            "title-heldout": {
+              "n": 8,
+              "success_at_1": 0.375,
+              "mrr_at_10": 0.375,
+              "ndcg_at_10": 0.375,
+              "recall_at_5": 0.375
             }
           },
           "overall": {
@@ -1040,7 +1141,15 @@
             "p07": 1,
             "p08": 1,
             "p09": 1,
-            "p10": 1
+            "p10": 1,
+            "th01": 1,
+            "th02": 1,
+            "th03": 1,
+            "th04": null,
+            "th05": null,
+            "th06": null,
+            "th07": null,
+            "th08": null
           },
           "slice_of": {
             "c01": "control",
@@ -1151,7 +1260,17 @@
             "tin1": "negatives",
             "tin2": "negatives",
             "pn1": "negatives",
-            "pn2": "negatives"
+            "pn2": "negatives",
+            "th01": "title-heldout",
+            "th02": "title-heldout",
+            "th03": "title-heldout",
+            "th04": "title-heldout",
+            "th05": "title-heldout",
+            "th06": "title-heldout",
+            "th07": "title-heldout",
+            "th08": "title-heldout",
+            "thn1": "negatives",
+            "thn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -1307,6 +1426,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "thn1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "budget-autumn.md",
+                "start_line": 12,
+                "end_line": 14
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "thn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "tamil/tamil-class.md",
+                "start_line": 13,
+                "end_line": 16
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         },
@@ -1360,6 +1501,13 @@
               "mrr_at_10": 0.9,
               "ndcg_at_10": 0.926186,
               "recall_at_5": 1.0
+            },
+            "title-heldout": {
+              "n": 8,
+              "success_at_1": 0.5,
+              "mrr_at_10": 0.5,
+              "ndcg_at_10": 0.5,
+              "recall_at_5": 0.5
             }
           },
           "overall": {
@@ -1464,7 +1612,15 @@
             "p07": 1,
             "p08": 1,
             "p09": 1,
-            "p10": 1
+            "p10": 1,
+            "th01": 1,
+            "th02": 1,
+            "th03": 1,
+            "th04": 1,
+            "th05": null,
+            "th06": null,
+            "th07": null,
+            "th08": null
           },
           "slice_of": {
             "c01": "control",
@@ -1575,7 +1731,17 @@
             "tin1": "negatives",
             "tin2": "negatives",
             "pn1": "negatives",
-            "pn2": "negatives"
+            "pn2": "negatives",
+            "th01": "title-heldout",
+            "th02": "title-heldout",
+            "th03": "title-heldout",
+            "th04": "title-heldout",
+            "th05": "title-heldout",
+            "th06": "title-heldout",
+            "th07": "title-heldout",
+            "th08": "title-heldout",
+            "thn1": "negatives",
+            "thn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -1731,10 +1897,81 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "thn1": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "budget-autumn.md",
+                "start_line": 12,
+                "end_line": 14
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "thn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "school",
+                "path": "tamil/tamil-class.md",
+                "start_line": 13,
+                "end_line": 16
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         }
       }
     }
-  }
+  },
+  "extensions": [
+    {
+      "task": "S5-T2",
+      "slice": "title-heldout",
+      "queries": [
+        "th01",
+        "th02",
+        "th03",
+        "th04",
+        "th05",
+        "th06",
+        "th07",
+        "th08",
+        "thn1",
+        "thn2"
+      ],
+      "why": "S5-T2 chose its title weight on the title slice; orchestrator ruling 5 on its plan requires a held-out title-intent slice, judged before any ranking code, with today's cells recorded before the build",
+      "judgments_sha256_before": "fc081a1c17f8a6dc2b56c6491c2e41b4e64dfa5a6a7203b9f2fc2f549a3423ac",
+      "recorded": "2026-11-06",
+      "engine_commit": "095ac1ba6a3a6b56810b845603eddb238530633f",
+      "natives_digest": "7a8f13ff7c5bb5a38d777c1fa6cdeaf3d4409740295b44976d9c6a062eb7b7bd",
+      "searchd_binary": {
+        "sha256": "1799d0c1b5bd7db4d70ad3b8bd4ed394f3cd3c3adb61a63e0e0dc177fe4aba85",
+        "size": 969688,
+        "optimize": "ReleaseSmall",
+        "zig": "0.16.0"
+      },
+      "python_version": "3.9.6",
+      "hashseed": "0",
+      "load": {
+        "before": [
+          2.14,
+          2.55,
+          2.46
+        ],
+        "after": [
+          2.14,
+          2.55,
+          2.46
+        ],
+        "top_sample": [
+          "Processes: 1011 total, 5 running, 1006 sleeping, 4771 threads",
+          "Load Avg: 2.14, 2.55, 2.46",
+          "CPU usage: 7.3% user, 2.18% sys, 90.78% idle"
+        ]
+      },
+      "s5t1_cells_unchanged": true
+    }
+  ]
 }

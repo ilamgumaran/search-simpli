@@ -19,7 +19,7 @@ PACK = REPO / "fixtures" / "j2"
 ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
 SLICE_MINIMUMS = {"control": 20, "misspelling": 15, "morphology": 12, "accent": 6, "tamil": 10,
-                  "title": 10, "phrase": 8}
+                  "title": 10, "phrase": 8, "title-heldout": 6}
 
 
 def pack_files() -> dict[str, bytes]:
@@ -107,6 +107,15 @@ class InventoryTests(unittest.TestCase):
         self.assertTrue(any(q["slice"] == "title" and q["checks"][-1]["where"] and
                             all(w == "folder" for w in q["checks"][-1]["where"].values()) for q in queries))
 
+    def test_heldout_title_slice(self):
+        """S5-T2 ruling 5 on the plan: at least two folder-only and two stem-only rows."""
+        held = [q for q in self.judgments["queries"] if q["slice"] == "title-heldout"]
+        where = [next(c["where"] for c in q["checks"] if "where" in c) for q in held]
+        self.assertGreaterEqual(sum(1 for w in where if set(w.values()) == {"folder"}), 2)
+        self.assertGreaterEqual(sum(1 for w in where if set(w.values()) == {"stem"}), 2)
+        for q in held:
+            self.assertTrue(any(c["check"].startswith("held out") for c in q["checks"]), q["id"])
+
     def test_rows(self):
         lines = {f"{f['root_id']}/{f['path']}": f["lines"] for f in self.judgments["files"]}
         modes = {"knowledge", "find:words", "find:phrase", "find:prefix"}
@@ -161,6 +170,9 @@ class CheckTests(unittest.TestCase):
 
     def test_title_word_must_sit_where_declared(self):
         self.broken("ti06", name=[("swimming", "stem"), ("lessons", "folder")])
+
+    def test_heldout_row_must_not_reuse_a_title_slice_word(self):
+        self.broken("th02", query="house homework", name=[("house", "stem")])
 
     def test_phrase_distractor_must_hold_the_words_apart(self):
         self.broken("p01", adjacent=1, apart=0)
