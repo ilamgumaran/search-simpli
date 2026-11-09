@@ -1,6 +1,6 @@
 # Recovery PR #11: integration handoff after iPhone support
 
-Date: 2026-10-19 · Status: re-landed on current `main` by [S1-T23](S1-T23.md) (2026-11-09) without a native rebuild; PR #11 closes as merged when S1-T23 merges
+Date: 2026-10-19 · Status: re-landed on current `main` by [S1-T23](S1-T23.md) (2026-11-09) without a native rebuild; verified and merged 2026-11-09, which closes PR #11 as merged
 
 [PR #11](https://github.com/ilamgumaran/search-simpli/pull/11) at `bf71ab5` contains
 the tested occupied-symlink generation fix. [PR #12](https://github.com/ilamgumaran/search-simpli/pull/12)

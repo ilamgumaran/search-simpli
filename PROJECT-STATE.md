@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-09 (S1-T23, PR #11's symlink generation-slot regressions re-landed on current `main` without a native rebuild; built, awaiting verification)
+Last updated: 2026-11-09 (S1-T23, PR #11's symlink generation-slot regressions re-landed on current `main` without a native rebuild; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -9,7 +9,9 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
-## Symlinked generation slots: PR #11's regressions on current `main` (S1-T23, 2026-11-09; built, awaiting verification)
+## Symlinked generation slots: PR #11's regressions on current `main` (S1-T23, 2026-11-09; verified and merged)
+
+**Verified and merged 2026-11-09** ([Verdict](docs/tasks/S1-T23.md)); the verifier's own runs gave the same counts.
 
 A publish that numbers itself (`ss_index_folder`, `searchd index` without `--generation`) treats a dangling link, or a
 link to itself, under any of the six names it probes (`documents-N.hybseg`, `lexical-N.hyblex`, `source-N.hybsrc`,

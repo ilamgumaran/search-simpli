@@ -389,8 +389,8 @@ each earns the next with evidence.
 - **Exit check:** Predecessor fails the new recovery regressions; fixed engine/CLI/ABI paths choose a free generation without modifying links/data; native/Python checks pass with matching libraries (no rebuild needed: the fix has been in the natives since S4-T3 and S1-T23 changes no digest-covered file) and recorded limits.
 - **HIO tie:** Reliable local indexing keeps human and agent evidence stores recoverable without destructive repair.
 - **Owner-type:** agent
-- **Status:** in-progress
-- **Owner:** Codex cloud session (19 Oct, filed on the branch as S1-T21; Sol implemented, parent reviewed); re-landed on current `main` by S1-T23 (Xcode Mac, 9 Nov): built, awaiting verification and merge. `done` when S1-T23 merges.
+- **Status:** done
+- **Owner:** Codex cloud session (19 Oct, filed on the branch as S1-T21; Sol implemented, parent reviewed); re-landed on current `main` by S1-T23 (Xcode Mac, 9 Nov): verified and merged 9 Nov ([Verdict](docs/tasks/S1-T23.md)).
 - **Links:** [Claim issue #10](https://github.com/ilamgumaran/search-simpli/issues/10), [S1-T23 scope/evidence](docs/tasks/S1-T23.md), [PR #11](https://github.com/ilamgumaran/search-simpli/pull/11).
 
 ---
