@@ -1,6 +1,6 @@
 # Recovery PR #11: integration handoff after iPhone support
 
-Date: 2026-10-19 · Status: blocked on equipped-Mac native rebuild; not merged
+Date: 2026-10-19 · Status: re-landed on current `main` by [S1-T23](S1-T23.md) (2026-11-09) without a native rebuild; PR #11 closes as merged when S1-T23 merges
 
 [PR #11](https://github.com/ilamgumaran/search-simpli/pull/11) at `bf71ab5` contains
 the tested occupied-symlink generation fix. [PR #12](https://github.com/ilamgumaran/search-simpli/pull/12)
@@ -34,3 +34,14 @@ tools. The required integrated iOS rebuild/verification is therefore outstanding
 Do not merge PR #11 with a stale iOS binary or call it complete based on old CI.
 Independent SQ-01 documentation work can be reviewed while this native task is
 pending; runtime work requiring either task must respect its own gates.
+
+## Closing (2026-11-09, S1-T23)
+
+The six steps against what [S1-T23](S1-T23.md) did on `main` at `07e842a`:
+
+1. **Claimed** as S1-T23 on current `main`; `main`'s iOS task, build, loader and tests are untouched (nothing under `bindings/` changes).
+2. **Renamed.** The recovery work is S1-T23. The branch's `docs/tasks/S1-T21.md` text is kept unchanged in S1-T23's closing section; `main`'s iPhone S1-T21 is not overwritten. The board, experiment and queue entries point to S1-T23.
+3. **Retained.** The source fix (the no-follow probe) has been on `main` since PR #21 (S4-T2/S4-T3). The regressions are re-landed and widened to the six names the allocator now probes; the queue gets a dated entry, and the earlier dated lines that say the pull request is open stay as records of their dates.
+4. **Not needed.** No digest-covered file changes (`source_digest.py` prints `81f9c76b…` before and after), so the natives and the stamp stay as they are; the fix has been in them since S4-T3. Neither the branch's `0b00cc7f…` stamp nor its 19 Oct binaries are taken (the branch's ancestry is recorded by a `-s ours` merge).
+5. **Checked** on the Xcode Mac: Zig in Debug and `ReleaseSmall`, the C ABI harness, the Python suite, native freshness, tracked home paths and whitespace; the predecessor (probe returned to following links) fails the new regressions. Counts are in S1-T23's Report. No device behaviour was exercised; no Dart file changed, so the Dart suite was not rerun.
+6. **Pushed** as `task/S1-T23` for an independent verifier, who merges with `Fixes #10`; the outcome is recorded in S1-T23's Verdict.
