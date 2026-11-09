@@ -8,6 +8,8 @@ const generation_alloc = @import("generation_alloc.zig");
 const hybrid = @import("hybrid.zig");
 const indexer = @import("indexer.zig");
 const lifecycle = @import("lifecycle.zig");
+const manifest_module = @import("manifest.zig");
+const publication = @import("publication.zig");
 const snapshot_open = @import("snapshot_open.zig");
 
 const default_caps = indexer.Caps{};
@@ -912,4 +914,166 @@ test "S4-T11 ruling 2: seeded random mutations, each round's update equals a fre
         }
     }
     std.debug.print("S4-T11 random merge: seeds 0x54110001..0x54110003, {d} rounds each, 1-4 mutations per round: the documents, lexical and source sections equal a fresh index's in all {d} rounds\n", .{ rounds, rounds * seeds.len });
+}
+
+// === S1-T23 (PR #11): occupied generation slots held by symlinks ============
+// `nextFreeGeneration` probes six names per candidate without following
+// links (`pathExists`, `statFile(.{ .follow_symlinks = false })`): a dangling
+// link and a link to itself reserve their own name, the allocator tries the
+// next number, and nothing reads, repairs or replaces the link. The
+// highest-generation scan counts regular files only, so a link is never a
+// trace. `docs/tasks/S1-T23.md` rulings 3(a) and 3(b).
+
+const SlotName = struct {
+    /// The candidate name, `{d}` the generation.
+    pattern: []const u8,
+    /// Whether the exhausted-candidate branch records a cause for it (all
+    /// but `source-N.hybsrc` today; ruling 7).
+    named_at_exhaustion: bool,
+};
+
+const slot_names = [_]SlotName{
+    .{ .pattern = "documents-{d}.hybseg", .named_at_exhaustion = true },
+    .{ .pattern = "lexical-{d}.hyblex", .named_at_exhaustion = true },
+    .{ .pattern = "source-{d}.hybsrc", .named_at_exhaustion = false },
+    .{ .pattern = "filenames-{d}.hybseg", .named_at_exhaustion = true },
+    .{ .pattern = "filename-lexical-{d}.hyblex", .named_at_exhaustion = true },
+    .{ .pattern = "state-{d}.hybstate", .named_at_exhaustion = true },
+};
+
+const LinkKind = enum { dangling, self };
+
+fn slotName(buffer: []u8, comptime pattern: []const u8, generation: u64) ![]const u8 {
+    return std.fmt.bufPrint(buffer, pattern, .{generation});
+}
+
+/// Makes `name` a link: to an absent target, or to itself. Returns the
+/// target text, which the link must still hold afterwards.
+fn makeSlotLink(io: std.Io, dir: std.Io.Dir, name: []const u8, kind: LinkKind) ![]const u8 {
+    const target = switch (kind) {
+        .dangling => "absent-target",
+        .self => name,
+    };
+    try dir.symLink(io, target, name, .{});
+    return target;
+}
+
+fn expectLinkUnchanged(io: std.Io, dir: std.Io.Dir, name: []const u8, target: []const u8) !void {
+    var buffer: [128]u8 = undefined;
+    const len = try dir.readLink(io, name, &buffer);
+    try std.testing.expectEqualStrings(target, buffer[0..len]);
+    try std.testing.expectEqual(std.Io.File.Kind.sym_link, (try dir.statFile(io, name, .{ .follow_symlinks = false })).kind);
+    // The absent target stays absent: nothing was created through the link.
+    var probe: [1]u8 = undefined;
+    try std.testing.expectError(error.FileNotFound, dir.readFile(io, "absent-target", &probe));
+}
+
+/// A `MANIFEST` at `generation`, through the public `manifest` API (the
+/// writer of the same name in `generation_alloc.zig` is private).
+fn writeManifestAt(io: std.Io, dir: std.Io.Dir, generation: u64) !void {
+    const value = manifest_module.Manifest{
+        .generation = generation,
+        .document_count = 0,
+        .vector_dimensions = 0,
+        .term_count = 0,
+        .posting_count = 0,
+        .documents_bytes = 0,
+        .documents_checksum = 0,
+        .lexical_bytes = 0,
+        .lexical_checksum = 0,
+        .analyzer_id = "analyzer-v2",
+        .embedding_model_id = "none",
+        .documents_file = "documents-test.hybseg",
+        .lexical_file = "lexical-test.hyblex",
+    };
+    var encoded: [256]u8 = undefined;
+    try dir.writeFile(io, .{ .sub_path = publication.current_manifest_file, .data = try manifest_module.encode(value, &encoded) });
+}
+
+test "S1-T23 3(a): each of the six candidate names, as a dangling link and as a link to itself, reserves its slot and is left unchanged" {
+    const io = std.testing.io;
+    inline for (slot_names) |slot| {
+        for ([_]LinkKind{ .dangling, .self }) |kind| {
+            // The link at generation 1 blocks 1; generation 2's six names are
+            // free, so 2 is the first number whose six names are all free.
+            {
+                var tmp = std.testing.tmpDir(.{ .iterate = true });
+                defer tmp.cleanup();
+                var name_buffer: [80]u8 = undefined;
+                const name = try slotName(&name_buffer, slot.pattern, 1);
+                const target = try makeSlotLink(io, tmp.dir, name, kind);
+                std.testing.expectEqual(@as(u64, 2), try generation_alloc.nextFreeGeneration(std.testing.allocator, io, tmp.dir)) catch |err| {
+                    std.debug.print("S1-T23 3(a): {s} ({s}) at generation 1\n", .{ name, @tagName(kind) });
+                    return err;
+                };
+                try expectLinkUnchanged(io, tmp.dir, name, target);
+            }
+            // A link is not a trace: alone at generation 5 it does not raise
+            // the counter, and 1 is free.
+            {
+                var tmp = std.testing.tmpDir(.{ .iterate = true });
+                defer tmp.cleanup();
+                var name_buffer: [80]u8 = undefined;
+                const name = try slotName(&name_buffer, slot.pattern, 5);
+                const target = try makeSlotLink(io, tmp.dir, name, kind);
+                std.testing.expectEqual(@as(u64, 1), try generation_alloc.nextFreeGeneration(std.testing.allocator, io, tmp.dir)) catch |err| {
+                    std.debug.print("S1-T23 3(a): {s} ({s}) at generation 5\n", .{ name, @tagName(kind) });
+                    return err;
+                };
+                try expectLinkUnchanged(io, tmp.dir, name, target);
+            }
+        }
+    }
+}
+
+test "S1-T23 3(a): six links on generations 1 to 6, one name each, kinds alternating: the allocator answers 7 and every link is unchanged" {
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var names: [slot_names.len][80]u8 = undefined;
+    var name_lens: [slot_names.len]usize = undefined;
+    var targets: [slot_names.len][]const u8 = undefined;
+    inline for (slot_names, 0..) |slot, i| {
+        const name = try slotName(&names[i], slot.pattern, i + 1);
+        name_lens[i] = name.len;
+        // A self link's target is `name` itself, which lives in `names[i]`.
+        targets[i] = try makeSlotLink(io, tmp.dir, name, if (i % 2 == 0) .dangling else .self);
+    }
+    try std.testing.expectEqual(@as(u64, 7), try generation_alloc.nextFreeGeneration(std.testing.allocator, io, tmp.dir));
+    for (0..slot_names.len) |i| try expectLinkUnchanged(io, tmp.dir, names[i][0..name_lens[i]], targets[i]);
+}
+
+test "S1-T23 3(b): MANIFEST at u64 max - 1 and a link at the max candidate under each name: NoFreeGeneration, the link unchanged, the entry named (source-N: see ruling 7)" {
+    const io = std.testing.io;
+    const max = std.math.maxInt(u64);
+    inline for (slot_names) |slot| {
+        for ([_]LinkKind{ .dangling, .self }) |kind| {
+            var tmp = std.testing.tmpDir(.{ .iterate = true });
+            defer tmp.cleanup();
+            var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+            defer arena_state.deinit();
+            try writeManifestAt(io, tmp.dir, max - 1);
+            var name_buffer: [80]u8 = undefined;
+            const name = try slotName(&name_buffer, slot.pattern, max);
+            const target = try makeSlotLink(io, tmp.dir, name, kind);
+
+            try std.testing.expectError(error.NoFreeGeneration, generation_alloc.nextFreeGeneration(arena_state.allocator(), io, tmp.dir));
+            try expectLinkUnchanged(io, tmp.dir, name, target);
+            var line_buffer: [384]u8 = undefined;
+            const line = generation_alloc.describeNoFreeGeneration(&line_buffer);
+            if (slot.named_at_exhaustion) {
+                var expected_buffer: [384]u8 = undefined;
+                const expected = try std.fmt.bufPrint(
+                    &expected_buffer,
+                    "NoFreeGeneration: no generation number above 18446744073709551615 (traces: {s}); use a fresh output directory; inspect listed traces before repair",
+                    .{name},
+                );
+                try std.testing.expectEqualStrings(expected, line);
+            } else if (kind == .dangling) {
+                // Ruling 3(b): for `source-N.hybsrc` only the error and the
+                // unchanged link are asserted; the line is printed as it is.
+                std.debug.print("S1-T23 3(b) {s}: {s}\n", .{ name, line });
+            }
+        }
+    }
 }
