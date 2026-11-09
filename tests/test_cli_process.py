@@ -8,7 +8,9 @@ puts it there). The test fails, not skips, if neither is available, with one
 exception: `SEARCH_SIMPLI_NO_ZIG=1`, which the CI workflow sets because its runner
 deliberately has no Zig. Only that explicit opt-out skips; nothing implicit does."""
 
+import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -23,6 +25,29 @@ MAX_TRACES = (
     f"documents-{MAX_GENERATION}.hybseg",
     f"lexical-{MAX_GENERATION}.hyblex",
 )
+# S1-T23: the six names `nextFreeGeneration` probes for each candidate.
+SLOT_PATTERNS = (
+    "documents-{}.hybseg",
+    "lexical-{}.hyblex",
+    "source-{}.hybsrc",
+    "filenames-{}.hybseg",
+    "filename-lexical-{}.hyblex",
+    "state-{}.hybstate",
+)
+
+
+def entries(directory: Path) -> dict:
+    """Every entry by name: a link's target text, a regular file's bytes, or
+    "<dir>"; nothing is followed."""
+    found = {}
+    for path in directory.iterdir():
+        if path.is_symlink():
+            found[path.name] = ("link", os.readlink(path))
+        elif path.is_file():
+            found[path.name] = ("file", path.read_bytes())
+        else:
+            found[path.name] = ("dir", None)
+    return found
 
 
 class CliProcessTests(unittest.TestCase):
@@ -180,6 +205,112 @@ class CliProcessTests(unittest.TestCase):
         self.assertIn(stray, lines[0])
         self.assertIn("18446744073709551615", lines[0])
         self.assertNotIn(str(out), lines[0])
+
+    def require_symlinks(self, base: Path) -> None:
+        probe = base / "symlink-probe"
+        try:
+            probe.symlink_to("absent")
+        except (OSError, NotImplementedError) as exc:
+            self.skipTest(f"symlinks unavailable: {exc}")
+        probe.unlink()
+
+    def test_auto_generation_routes_around_dangling_and_looping_section_links(self) -> None:
+        """S1-T23 (PR #11): a dangling link and a link to itself reserve their
+        own slot names; a fresh index and an update publish to the exact next
+        free generation and leave every link, its absent target and the
+        earlier snapshot as they were."""
+        base = Path(self.scratch.name) / "linked-generation-names"
+        folder = base / "docs"
+        folder.mkdir(parents=True)
+        (folder / "a.md").write_text("alpha beta\n", encoding="utf-8")
+        self.require_symlinks(base)
+
+        # Fresh directory: one link per probed name on generations 1..6,
+        # dangling and self-referential in turn, so 7 is the first number
+        # whose six names are free (links are not traces: nothing raises it).
+        fresh = base / "fresh"
+        fresh.mkdir()
+        fresh_links = {}
+        for number, pattern in enumerate(SLOT_PATTERNS, start=1):
+            name = pattern.format(number)
+            fresh_links[name] = "absent" if number % 2 else name
+        for name, target in fresh_links.items():
+            (fresh / name).symlink_to(target)
+        result = self.run_searchd("index", str(folder), "--out", str(fresh), "--analyzer", "v2")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(re.findall(r"\bgeneration=(\d+)\b", result.stdout), ["7"], result.stdout)
+        for name, target in fresh_links.items():
+            self.assertEqual(os.readlink(fresh / name), target)
+        self.assertFalse(os.path.lexists(fresh / "absent"))
+        fresh_query = self.run_searchd("query", str(fresh), "alpha")
+        self.assertEqual(fresh_query.returncode, 0, fresh_query.stderr)
+        self.assertIn("a.md", fresh_query.stdout)
+
+        # Existing snapshot at generation 1, then the branch's two links.
+        existing = base / "existing"
+        first = self.run_searchd("index", str(folder), "--out", str(existing), "--analyzer", "v2")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        saved = {p.name: p.read_bytes() for p in existing.iterdir() if p.is_file()}
+        # Today's generation 1 is four sections; the comparison below is not vacuous.
+        for pattern in ("documents-{}.hybseg", "lexical-{}.hyblex", "source-{}.hybsrc", "state-{}.hybstate"):
+            self.assertIn(pattern.format(1), saved)
+        links = {
+            "lexical-2.hyblex": "absent",
+            "documents-3.hybseg": "documents-3.hybseg",
+        }
+        for name, target in links.items():
+            (existing / name).symlink_to(target)
+        updated = self.run_searchd("index", str(folder), "--out", str(existing), "--analyzer", "v2", "--update")
+        self.assertEqual(updated.returncode, 0, updated.stderr)
+        self.assertEqual(json.loads(updated.stdout)["generation"], 4)
+        for name, target in links.items():
+            self.assertEqual(os.readlink(existing / name), target)
+        self.assertFalse(os.path.lexists(existing / "absent"))
+        # The CLI's default retention keeps every generation (no
+        # --keep-generations), so every earlier file except the two that a
+        # publish rewrites is still there, byte for byte.
+        for name, content in saved.items():
+            if name not in ("MANIFEST", "INDEX-STATE.json"):
+                self.assertEqual((existing / name).read_bytes(), content, name)
+        self.assertNotEqual((existing / "MANIFEST").read_bytes(), saved["MANIFEST"])
+        queried = self.run_searchd("query", str(existing), "alpha")
+        self.assertEqual(queried.returncode, 0, queried.stderr)
+        self.assertIn("a.md", queried.stdout)
+
+    def test_max_candidate_symlink_fails_without_changing_snapshot(self) -> None:
+        """S1-T23 (PR #11): a dangling link at the u64 max candidate is an
+        occupied slot: one NoFreeGeneration line naming it, exit 1, nothing on
+        stdout, and every entry (files, the link) unchanged."""
+        base = Path(self.scratch.name) / "linked-max-generation"
+        folder = base / "docs"
+        out = base / "out"
+        folder.mkdir(parents=True)
+        (folder / "a.md").write_text("alpha beta\n", encoding="utf-8")
+        self.require_symlinks(base)
+        first = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        link = out / f"lexical-{MAX_GENERATION}.hyblex"
+        link.symlink_to("absent-target")
+        # INDEX-STATE.json is a pointer (state_version 3); its generation is
+        # the trace that puts the next candidate at u64 max.
+        state = out / "INDEX-STATE.json"
+        state_data = json.loads(state.read_text(encoding="utf-8"))
+        self.assertEqual(state_data.get("state_version"), 3, state_data)
+        state_data["generation"] = int(MAX_GENERATION) - 1
+        state.write_text(json.dumps(state_data), encoding="utf-8")
+        before = entries(out)
+
+        failed = self.run_searchd("index", str(folder), "--out", str(out), "--analyzer", "v2", "--update")
+        self.assertEqual(failed.returncode, 1, failed.stderr)
+        self.assertEqual(failed.stdout, "")
+        self.assertEqual(len(failed.stderr.splitlines()), 1, failed.stderr)
+        line = failed.stderr.strip()
+        self.assertTrue(line.startswith("error: NoFreeGeneration"), line)
+        self.assertIn(f"(traces: {link.name})", line)
+        self.assertNotIn(str(out), line)
+        self.assertEqual(os.readlink(link), "absent-target")
+        self.assertFalse(os.path.lexists(out / "absent-target"))
+        self.assertEqual(entries(out), before)
 
     def test_no_free_generation_lists_all_four_valid_max_traces_without_changing_snapshot(self) -> None:
         """A real max-generation publish supplies all four canonical traces."""

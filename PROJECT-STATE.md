@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-07 (S5-T4, word-form groups: a query word is also searched as the words the files hold that share its fold key; verified and merged)
+Last updated: 2026-11-09 (S1-T23, PR #11's symlink generation-slot regressions re-landed on current `main` without a native rebuild; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,22 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## Symlinked generation slots: PR #11's regressions on current `main` (S1-T23, 2026-11-09; verified and merged)
+
+**Verified and merged 2026-11-09** ([Verdict](docs/tasks/S1-T23.md)); the verifier's own runs gave the same counts.
+
+A publish that numbers itself (`ss_index_folder`, `searchd index` without `--generation`) treats a dangling link, or a
+link to itself, under any of the six names it probes (`documents-N.hybseg`, `lexical-N.hyblex`, `source-N.hybsrc`,
+`filenames-N.hybseg`, `filename-lexical-N.hyblex`, `state-N.hybstate`) as an occupied slot and takes the next number; the
+link and its absent target are left as they are, and a link is never a numbering trace. This behaviour has been on `main`
+and in the natives since S4-T3 (PR #21); S1-T23 lands PR #11's tests for it, widened to all six names, a C ABI update and
+two real `searchd` runs, and records PR #11's branch in history (`-s ours`: its 19 Oct natives are not taken). No
+digest-covered file changes (`native/SOURCE-SHA256` stays `81f9c76b…`); no contract, Dart or version change. On this Mac:
+Zig 418/426 (8 scale skips) in Debug and `ReleaseSmall`, C ABI 24/24, Python 335 OK; with the probe returned to following
+links 5 Zig tests and both `searchd` tests fail. Known gap (a `03-next` row): at the exhausted `u64` candidate a lone
+`source-N.hybsrc` entry gives a `NoFreeGeneration` line with an empty trace list. Lifecycle rule:
+[docs/generation-lifecycle.md](docs/generation-lifecycle.md). [S1-T23](docs/tasks/S1-T23.md)
 
 ## Word-form groups: a query word is also searched as the words the files hold that share its fold key (S5-T4, 2026-11-07; verified and merged)
 

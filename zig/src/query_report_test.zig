@@ -422,3 +422,70 @@ test "an unknown option is still rejected" {
     try std.testing.expect(abi.ss_query(fixture.handle, "hybrid", null, 0, 3, "{\"bogus\":1}") == null);
     try std.testing.expect(abi.ss_query(fixture.handle, "hybrid", null, 0, 3, "{\"profile\":\"yes\"}") == null);
 }
+
+// === S1-T23 (PR #11): ss_index_folder routes around symlinked slots =========
+// Lives here because this file is the C ABI's general test file (S2-T4: it
+// drives `ss_import_json`/`ss_open`/`ss_query` and reads `ss_last_error`
+// through `abi.zig`), unlike the policy-specific fuzzy, fold-group and
+// UTF-8 watchdog files; and, as a `*_test.zig`, it is outside the source
+// digest (S4-T8 ruling 7), so the natives do not move.
+test "S1-T23 3(c): ss_index_folder update skips a dangling and a self-referential section link, keeps both, publishes generation 4" {
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDir(io, "notes", .default_dir);
+    try tmp.dir.writeFile(io, .{ .sub_path = "notes/a.md", .data = "alpha beta\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+
+    const first = abi.ss_index_folder(out_z, notes_z, null) orelse {
+        std.debug.print("ss_index_folder failed: {s}\n", .{abi.ss_last_error()});
+        return error.IndexFailed;
+    };
+    {
+        defer abi.ss_free(first);
+        var parsed = try parse(std.mem.span(first));
+        defer parsed.deinit();
+        try std.testing.expectEqual(@as(i64, 1), parsed.value.object.get("generation").?.integer);
+    }
+    var manifest_buffer: [4096]u8 = undefined;
+    const old_manifest = try std.testing.allocator.dupe(u8, try tmp.dir.readFile(io, "out/MANIFEST", &manifest_buffer));
+    defer std.testing.allocator.free(old_manifest);
+    try tmp.dir.symLink(io, "absent-target", "out/lexical-2.hyblex", .{});
+    try tmp.dir.symLink(io, "documents-3.hybseg", "out/documents-3.hybseg", .{});
+
+    const result = abi.ss_index_folder(out_z, notes_z, "{\"update\":true}") orelse {
+        std.debug.print("ss_index_folder failed: {s}\n", .{abi.ss_last_error()});
+        return error.IndexFailed;
+    };
+    defer abi.ss_free(result);
+    {
+        // 4, exactly: generation 1 is the highest trace (the links are not
+        // traces), 2 is blocked by the dangling lexical-2.hyblex and 3 by the
+        // self-referential documents-3.hybseg; 4's six names are free.
+        var parsed = try parse(std.mem.span(result));
+        defer parsed.deinit();
+        try std.testing.expectEqual(@as(i64, 4), parsed.value.object.get("generation").?.integer);
+    }
+    try std.testing.expectEqualStrings("", std.mem.span(abi.ss_last_error()));
+    var target_buffer: [64]u8 = undefined;
+    const dangling_len = try tmp.dir.readLink(io, "out/lexical-2.hyblex", &target_buffer);
+    try std.testing.expectEqualStrings("absent-target", target_buffer[0..dangling_len]);
+    const looping_len = try tmp.dir.readLink(io, "out/documents-3.hybseg", &target_buffer);
+    try std.testing.expectEqualStrings("documents-3.hybseg", target_buffer[0..looping_len]);
+    var probe: [1]u8 = undefined;
+    try std.testing.expectError(error.FileNotFound, tmp.dir.readFile(io, "out/absent-target", &probe));
+    try std.testing.expect(!std.mem.eql(u8, old_manifest, try tmp.dir.readFile(io, "out/MANIFEST", &manifest_buffer)));
+
+    const handle = abi.ss_open(out_z) orelse return error.OpenFailed;
+    defer abi.ss_close(handle);
+    const query = abi.ss_query(handle, "alpha", null, 0, 1, "{\"retrieval_mode\":\"lexical\"}") orelse return error.QueryFailed;
+    defer abi.ss_free(query);
+    var report = try parse(std.mem.span(query));
+    defer report.deinit();
+    const results = report.value.object.get("results").?.array.items;
+    try std.testing.expectEqual(@as(usize, 1), results.len);
+    try std.testing.expectEqualStrings("a.md", results[0].object.get("citation").?.object.get("path").?.string);
+}
