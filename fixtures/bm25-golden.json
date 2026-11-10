@@ -123,6 +123,22 @@
      "fused_score": 0.0136986301369863,
      "lexical_rank": 13,
      "lexical_score": 0.5917882233489286
+    },
+    {
+     "path": "context/persona/summarize.md",
+     "start_line": 1,
+     "end_line": 5,
+     "fused_score": 0.013513513513513514,
+     "lexical_rank": 14,
+     "lexical_score": 0.250957984527703
+    },
+    {
+     "path": "tutoring/rubric.md",
+     "start_line": 28,
+     "end_line": 43,
+     "fused_score": 0.013333333333333334,
+     "lexical_rank": 15,
+     "lexical_score": 0.16424880185482954
     }
    ]
   },

@@ -4,7 +4,7 @@ S5-T4) can never leave one stale again. Each generator is run as its docstring s
 (`python3 scripts/gen_*.py > fixtures/*.json`, from the repository root) and its
 output compared byte for byte, in the pattern of `test_analyzer_v3.py`'s table check.
 
-None of the three generators needs the Zig library today; a generator marked as
+None of the four generators needs the Zig library today; a generator marked as
 needing it is skipped under `SEARCH_SIMPLI_NO_ZIG=1`. The goldens depend on the
 interpreter's Unicode tables (the tokenizer reads `unicodedata`), so the check is
 skipped on any other Unicode version, as the analyzer-v3 golden's check is."""
@@ -26,6 +26,7 @@ GOLDENS = [
     ("gen_title_golden.py", "title-field-golden.json", False),
     ("gen_bm25_golden.py", "bm25-golden.json", False),
     ("gen_fuzzy_golden.py", "fuzzy-golden.json", False),
+    ("gen_verb_forms_golden.py", "verb-forms-golden.json", False),
 ]
 
 
@@ -50,6 +51,10 @@ class GoldensFreshTests(unittest.TestCase):
 
     def test_fuzzy_golden_regenerates_byte_for_byte(self):
         self.check(*GOLDENS[2])
+
+    def test_verb_forms_golden_regenerates_byte_for_byte(self):
+        # S5-T5: R's golden (fold-groups-v2), over the same term sets as K's.
+        self.check(*GOLDENS[3])
 
 
 if __name__ == "__main__":
