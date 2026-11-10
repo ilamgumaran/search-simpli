@@ -1035,6 +1035,10 @@ fn foldPeaks(dir: std.Io.Dir, cap: usize, typed: []const u8) !FoldPeaks {
 }
 
 fn foldRun(file_count: usize, gated: bool) !void {
+    return foldRunTyped(file_count, gated, "system", "S5-T4");
+}
+
+fn foldRunTyped(file_count: usize, gated: bool, typed: []const u8, task: []const u8) !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const a = arena.allocator();
@@ -1045,8 +1049,10 @@ fn foldRun(file_count: usize, gated: bool) !void {
     try generateCorpus(a, corpus.dir, file_count);
     _ = try indexer.indexFolderIncremental(a, io, corpus.dir, out.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .filename_index = true });
     // `system`: held by no chunk; `systems` (the topic heading) shares its key.
-    const peaks = try foldPeaks(out.dir, scale_cap_bytes, "system");
-    std.debug.print("S5-T4 NFR-13 {d} files{s}, one handle, typed system: live before {d}; first grouped content query keeps {d} (the key map: {d} entries, {d} B); content peak {d}; second content query left {d}, grouped both peak {d} (left {d}); the key map's build alone: peak {d} (left {d})\n", .{ file_count, if (gated) "" else " (information)", peaks.before, peaks.first_kept, peaks.map_entries, peaks.map_kept, peaks.content, peaks.second_left, peaks.both, peaks.both_left, peaks.build_peak, peaks.build_left });
+    // S5-T5: `hashing`: held by no chunk; `hash` (the topic heading) is one of
+    // R's forms (fold-groups-v2), its only member.
+    const peaks = try foldPeaks(out.dir, scale_cap_bytes, typed);
+    std.debug.print("{s} NFR-13 {d} files{s}, one handle, typed {s}: live before {d}; first grouped content query keeps {d} (the key map: {d} entries, {d} B); content peak {d}; second content query left {d}, grouped both peak {d} (left {d}); the key map's build alone: peak {d} (left {d})\n", .{ task, file_count, if (gated) "" else " (information)", typed, peaks.before, peaks.first_kept, peaks.map_entries, peaks.map_kept, peaks.content, peaks.second_left, peaks.both, peaks.both_left, peaks.build_peak, peaks.build_left });
     if (!gated) return;
     // (h) the key map kept, at most 64 KiB, and nothing else; nothing kept
     // between queries; the build's peak at most 1.0 MB.
@@ -1078,4 +1084,18 @@ test "S5-T4 NFR-13 scale: the same at 20,000 files (information)" {
         return error.SkipZigTest;
     }
     try foldRun(20_000, false);
+}
+
+// --- S5-T5 bounds: fold-groups-v2 keeps nothing beyond fold-groups-v1 -------
+
+test "S5-T5 NFR-13: a content and both query grouped through R alone at 10k files: the key map alone kept, nothing between queries, under 64 MiB" {
+    try foldRunTyped(base_file_count, true, "hashing", "S5-T5");
+}
+
+test "S5-T5 NFR-13 scale: the same at 15,000 files" {
+    if (!scaleEnabled()) {
+        std.debug.print("S5-T5 NFR-13 scale: skipped ({s}=1 runs it)\n", .{scale_variable});
+        return error.SkipZigTest;
+    }
+    try foldRunTyped(15_000, true, "hashing", "S5-T5");
 }

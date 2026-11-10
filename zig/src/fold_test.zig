@@ -1,4 +1,4 @@
-//! S5-T4: K (`fold.zig`, fold-groups-v1) against the Python mirror's golden
+//! S5-T4: K (`fold.zig`, fold-groups-v1's key, kept by fold-groups-v2) against the Python mirror's golden
 //! (`fixtures/analyzer-v3-golden.json`, `scripts/gen_analyzer_v3_golden.py`):
 //! every listed term's pieces, byte for byte, and the fold table's shape.
 const std = @import("std");
@@ -36,7 +36,7 @@ test "K equals the Python mirror's golden on every term, byte for byte" {
     const a = arena_state.allocator();
     const bytes = try std.Io.Dir.cwd().readFileAlloc(io, golden_path, a, .unlimited);
     const golden = try std.json.parseFromSliceLeaky(std.json.Value, a, bytes, .{});
-    try std.testing.expectEqualStrings(fold.policy_id, golden.object.get("policy").?.string);
+    try std.testing.expectEqualStrings(fold.key_policy_id, golden.object.get("policy").?.string);
     try std.testing.expectEqualStrings(tables.unicode_version, golden.object.get("unicode").?.string);
     const same = golden.object.get("same").?.array.items;
     const changed = golden.object.get("changed").?.array.items;

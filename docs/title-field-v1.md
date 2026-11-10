@@ -55,7 +55,8 @@ Coverage keeps a one-word name match from outranking a full body answer
 Since S5-T4 the title terms are also in [fold-groups-v1](fold-groups-v1.md)'s
 key map, so a word that only a file's name holds joins its other forms' group,
 scored here as a fuzzy-v1 group is (each file its best member, counted once in
-coverage).
+coverage). Since S5-T5 ([fold-groups-v2](fold-groups-v2.md)) a visible file's
+title term can also join as a query word's `-ing` or `-ed` form.
 
 ## Where the part goes
 

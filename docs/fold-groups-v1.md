@@ -1,6 +1,9 @@
 # Word-form groups v1 (`fold-groups-v1`)
 
-Status: shipped by [S5-T4](tasks/S5-T4.md), contracts 2.5.0. Query side only:
+Status: shipped by [S5-T4](tasks/S5-T4.md), contracts 2.5.0; succeeded by
+[fold-groups-v2](fold-groups-v2.md) (S5-T5, contracts 2.6.0), which keeps K,
+the key map, the order and the scoring below and adds `-ing`/`-ed` verb forms
+as members. This page stays v1's record. Query side only:
 no index format, writer or analyzer changes, and an index written before
 S5-T4 groups its words the same way. The key function K is implemented twice
 and held equal byte for byte by a golden: the Zig engine (`zig/src/fold.zig`)
@@ -144,7 +147,8 @@ S5-T4 ([S5-T4's Report](tasks/S5-T4.md)):
 
 - **`-ing` and `-ed`** are not grouped (`painting` / `painted` / `paint`);
   stripping them needs a stemmer's undoubling rules, and Porter's `-ed` rule
-  costs J2's control slice (`c22`).
+  costs J2's control slice (`c22`). Closed by
+  [fold-groups-v2](fold-groups-v2.md), which generates the forms at query time.
 - **True pairs that move a rank.** Grouping a real singular and plural can let
   another chunk's BM25 win: the mixed pack's five named moves (`readers` /
   `reader`, `candidates` / `candidate`, `file` / `files`, `document` /

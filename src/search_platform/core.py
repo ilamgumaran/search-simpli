@@ -1302,26 +1302,55 @@ def fuzzy_expansions(index: dict, query: str, *, path_prefix: str | None = None,
 # the order's key df is not; a member held only by a label-hidden chunk is not
 # used. `fold` names the parts of K applied ("FAST" is K; "" is off).
 
-FOLD_POLICY_ID = "fold-groups-v1"
+# fold-groups-v2 (S5-T5, docs/tasks/S5-T5.md, Phase 1 ruling 1; docs/fold-groups-v2.md)
+# adds R's verb forms (`verb_forms.forms`) to each group: a form joins when it is an
+# in-scope body term or a visible title term under the prefix and is not already a
+# key-mate. When no chunk in scope and no visible title holds the term, its forms join
+# at weight 1.0 (and fuzzy-v1 does not also run on it when one joins); when the term is
+# held, a form joins at VERB_FORM_HELD_WEIGHT only if its key df is no higher than the
+# term's own (key df over the visible chunks: a prefix narrows membership, not
+# statistics), so a held word's group never takes a df above the word's own through R.
+
+FOLD_POLICY_ID = "fold-groups-v2"
+VERB_FORM_HELD_WEIGHT = 0.5
+VERB_FORM_UNHELD_WEIGHT = 1.0
 
 
 def _fold_groups(terms: Iterable[str], members_by_key: dict[str, set[str]], key_df: Counter,
-                 parts: str) -> dict[str, tuple[tuple[str, float], ...]]:
-    from . import analyzer_v3
+                 parts: str, vocabulary: set[str] | None = None,
+                 held: set[str] | None = None) -> dict[str, tuple[tuple[str, float], ...]]:
+    """{term: ((member, weight), ...)} in the group's order. With `vocabulary` (the
+    in-scope body terms and the visible title terms under the prefix) R's forms join
+    as fold-groups-v2 says; `held` is the set of terms a chunk in scope or a visible
+    title holds. Without `vocabulary` the groups are fold-groups-v1's."""
+    from . import analyzer_v3, verb_forms
     groups: dict[str, tuple[tuple[str, float], ...]] = {}
     for term in sorted(set(terms)):
-        members = members_by_key.get(analyzer_v3.key(term, parts), set())
-        if members and members != {term}:
-            order = sorted(members, key=lambda m: (m != term, -key_df.get(m, 0), m.encode("utf-8")))
-            groups[term] = tuple((member, 1.0) for member in order)
+        mates = members_by_key.get(analyzer_v3.key(term, parts), set())
+        weights = {member: 1.0 for member in mates}
+        if vocabulary is not None:
+            is_held = held is not None and term in held
+            own = key_df.get(term, 0)
+            for form in verb_forms.forms(term):
+                if form in weights or form not in vocabulary:
+                    continue
+                if is_held:
+                    if key_df.get(form, 0) <= own:
+                        weights[form] = VERB_FORM_HELD_WEIGHT
+                else:
+                    weights[form] = VERB_FORM_UNHELD_WEIGHT
+        if weights and set(weights) != {term}:
+            order = sorted(weights, key=lambda m: (m != term, -key_df.get(m, 0), m.encode("utf-8")))
+            groups[term] = tuple((member, weights[member]) for member in order)
     return groups
 
 
 def _query_groups(chunks: list[dict], visible_chunks: list[dict], terms: Iterable[str],
                   root_ids: tuple[str, ...], path_prefix: str | None = None, fold: str = "",
                   fuzzy: bool = True) -> dict[str, tuple[tuple[str, float], ...]]:
-    """The query's groups, once per query: fold-groups-v1's (when `fold` names parts
-    of K), then fuzzy-v1's for every term without one (when `fuzzy`)."""
+    """The query's groups, once per query: fold-groups-v2's (when `fold` names parts
+    of K: the key-mates and R's verb forms), then fuzzy-v1's for every term without
+    one (when `fuzzy`)."""
     from . import analyzer_v3
     terms = set(terms)
     groups: dict[str, tuple[tuple[str, float], ...]] = {}
@@ -1332,13 +1361,15 @@ def _query_groups(chunks: list[dict], visible_chunks: list[dict], terms: Iterabl
         vocabulary: set[str] = set()
         for chunk in chunks:
             vocabulary.update(chunk["terms"].keys())
+        held = set(vocabulary)
         for path, tokens in _title_fields(visible_chunks, root_ids).items():
+            held.update(tokens)
             if path_prefix is None or path.startswith(path_prefix):
                 vocabulary.update(tokens)
         members_by_key: dict[str, set[str]] = {}
         for word in vocabulary:
             members_by_key.setdefault(analyzer_v3.key(word, fold), set()).add(word)
-        groups = _fold_groups(terms, members_by_key, key_df, fold)
+        groups = _fold_groups(terms, members_by_key, key_df, fold, vocabulary, held)
     if fuzzy:
         rest = [term for term in terms if term not in groups]
         if rest:
@@ -1349,7 +1380,7 @@ def _query_groups(chunks: list[dict], visible_chunks: list[dict], terms: Iterabl
 def fold_groups(index: dict, query: str, *, path_prefix: str | None = None,
                 principal_labels: Iterable[str] = (), search_field: str = "content",
                 title_root_ids: Iterable[str] | None = None, fold: str = "FAST") -> dict[str, list[str]]:
-    """The fold groups `search` uses for `query` (fold-groups-v1), {term: [members in
+    """The fold groups `search` uses for `query` (fold-groups-v2), {term: [members in
     order]}: what the engine reports in its `query_term_grouped` warnings (with the
     term itself left out there)."""
     principal_labels = tuple(principal_labels)
@@ -1705,7 +1736,7 @@ def context_envelope(
         retrieval["title_policy_id"] = TITLE_POLICY_ID
         # Contract 2.4.0: the lexical channel ran under content or both.
         retrieval["fuzzy_policy_id"] = FUZZY_POLICY_ID
-        # Contract 2.5.0: likewise fold-groups-v1.
+        # Contract 2.5.0: likewise the fold groups (fold-groups-v2 since 2.6.0).
         retrieval["fold_policy_id"] = FOLD_POLICY_ID
     return {
         "tool": "search_knowledge",

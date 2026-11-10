@@ -966,7 +966,8 @@ pub fn writeSearchResult(
         try json.objectField("fuzzy_policy_id");
         try json.write(@import("fuzzy.zig").policy_id);
     }
-    // S5-T4 (contract 2.5.0): likewise for fold-groups-v1.
+    // S5-T4 (contract 2.5.0): likewise for the fold groups (fold-groups-v2
+    // since contract 2.6.0, S5-T5).
     if (service.engine.foldApplies(.content, .{ .retrieval_mode = mode })) {
         try json.objectField("fold_policy_id");
         try json.write(@import("fold.zig").policy_id);

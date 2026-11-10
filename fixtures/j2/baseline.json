@@ -1,35 +1,35 @@
 {
   "schema": "j2-baseline-v1",
-  "judgments_sha256": "342e5d38cf043c365cdb5a634b2517703406724cd899985cd19084eb5359a44d",
-  "engine_commit": "6b4628d94a4d2c4e1f6f5b8f2b7c4f12fadad3d4",
-  "run_commit": "6b4628d94a4d2c4e1f6f5b8f2b7c4f12fadad3d4",
-  "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
-  "recorded": "2026-11-07",
+  "judgments_sha256": "5142497646e4bbb309e61ff67f20d57d67418e49c7ded6438e4df802e09fb0bc",
+  "engine_commit": "cd7bf47ecb990794479c9d584af977486363d294",
+  "run_commit": "cd7bf47ecb990794479c9d584af977486363d294",
+  "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
+  "recorded": "2026-11-09",
   "load": {
     "before": [
-      1.23,
-      2.23,
-      2.5
+      0.64,
+      1.21,
+      1.77
     ],
     "after": [
-      1.23,
-      2.23,
-      2.5
+      0.64,
+      1.21,
+      1.77
     ],
     "top_sample": [
-      "Processes: 993 total, 4 running, 989 sleeping, 4639 threads",
-      "Load Avg: 1.23, 2.23, 2.50",
-      "CPU usage: 4.21% user, 2.5% sys, 93.72% idle"
+      "Processes: 988 total, 3 running, 985 sleeping, 4513 threads",
+      "Load Avg: 0.64, 1.21, 1.77",
+      "CPU usage: 3.29% user, 1.11% sys, 95.59% idle"
     ]
   },
   "top_k": 10,
   "surfaces": {
     "searchd": {
       "binary": {
-        "sha256": "bc7161403a580f1f383d455d199e15e1c0d8eef4b42fcba4daef3e7973ddf315",
-        "size": 1078504,
+        "sha256": "99931316c90418e2a80fbe2fb25b55c19228c95564ea834e260361ab14108afd",
+        "size": 1078952,
         "optimize": "ReleaseSmall",
-        "zig": "0.16.0"
+        "zig": null
       },
       "runs": {
         "content": {
@@ -44,15 +44,15 @@
             "misspelling": {
               "n": 16,
               "success_at_1": 0.5625,
-              "mrr_at_10": 0.648686,
-              "ndcg_at_10": 0.712878,
-              "recall_at_5": 0.75
+              "mrr_at_10": 0.859375,
+              "ndcg_at_10": 0.766738,
+              "recall_at_5": 0.84375
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.538462,
-              "mrr_at_10": 0.717949,
-              "ndcg_at_10": 0.788384,
+              "success_at_1": 0.692308,
+              "mrr_at_10": 0.807692,
+              "ndcg_at_10": 0.855236,
               "recall_at_5": 0.923077
             },
             "accent": {
@@ -99,10 +99,10 @@
             },
             "morphology-heldout": {
               "n": 14,
-              "success_at_1": 0.571429,
-              "mrr_at_10": 0.690476,
-              "ndcg_at_10": 0.73299,
-              "recall_at_5": 0.857143
+              "success_at_1": 0.714286,
+              "mrr_at_10": 0.833333,
+              "ndcg_at_10": 0.875847,
+              "recall_at_5": 1.0
             },
             "accent-heldout": {
               "n": 11,
@@ -117,14 +117,21 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "verbform-heldout": {
+              "n": 19,
+              "success_at_1": 0.947368,
+              "mrr_at_10": 0.973684,
+              "ndcg_at_10": 0.980575,
+              "recall_at_5": 1.0
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.810526,
-            "mrr_at_10": 0.871825,
-            "ndcg_at_10": 0.899408,
-            "recall_at_5": 0.936842
+            "success_at_1": 0.831579,
+            "mrr_at_10": 0.919591,
+            "ndcg_at_10": 0.917627,
+            "recall_at_5": 0.952632
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -171,12 +178,12 @@
             "o03": 1,
             "o04": 1,
             "o05": 3,
-            "o06": 3,
+            "o06": 1,
             "o07": 1,
             "o08": 2,
             "o09": 2,
             "o10": 1,
-            "o11": 2,
+            "o11": 1,
             "o12": 6,
             "o13": 1,
             "a01": 2,
@@ -252,8 +259,8 @@
             "oh08": 2,
             "oh09": 3,
             "oh10": 3,
-            "oh11": null,
-            "oh12": null,
+            "oh11": 1,
+            "oh12": 1,
             "oh13": 1,
             "oh14": 1,
             "ah01": 1,
@@ -279,7 +286,26 @@
             "tah10": 1,
             "tag1": 1,
             "tag2": 1,
-            "tag3": 2
+            "tag3": 2,
+            "vh01": 1,
+            "vh02": 1,
+            "vh03": 1,
+            "vh04": 1,
+            "vh05": 1,
+            "vh06": 1,
+            "vh07": 1,
+            "vh08": 1,
+            "vh09": 1,
+            "vh10": 1,
+            "vh11": 1,
+            "vh12": 1,
+            "vg1": 1,
+            "vg2": 1,
+            "vg3": 1,
+            "vg4": 1,
+            "vg5": 1,
+            "vt1": 2,
+            "vt2": 1
           },
           "slice_of": {
             "c01": "control",
@@ -458,7 +484,28 @@
             "tag2": "tamil-heldout",
             "tag3": "tamil-heldout",
             "tahn1": "negatives",
-            "tahn2": "negatives"
+            "tahn2": "negatives",
+            "vh01": "verbform-heldout",
+            "vh02": "verbform-heldout",
+            "vh03": "verbform-heldout",
+            "vh04": "verbform-heldout",
+            "vh05": "verbform-heldout",
+            "vh06": "verbform-heldout",
+            "vh07": "verbform-heldout",
+            "vh08": "verbform-heldout",
+            "vh09": "verbform-heldout",
+            "vh10": "verbform-heldout",
+            "vh11": "verbform-heldout",
+            "vh12": "verbform-heldout",
+            "vg1": "verbform-heldout",
+            "vg2": "verbform-heldout",
+            "vg3": "verbform-heldout",
+            "vg4": "verbform-heldout",
+            "vg5": "verbform-heldout",
+            "vt1": "verbform-heldout",
+            "vt2": "verbform-heldout",
+            "vhn1": "negatives",
+            "vhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -519,10 +566,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "school",
-                "path": "science-homework.md",
-                "start_line": 11,
-                "end_line": 15
+                "root_id": "laptop",
+                "path": "projects/pip-planet-model.md",
+                "start_line": 8,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -583,7 +630,7 @@
               "top_is_named_distractor": true
             },
             "tin2": {
-              "returned": 9,
+              "returned": 10,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend-plans.md",
@@ -724,6 +771,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "vhn1": {
+              "returned": 5,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/weekend-jobs.md",
+                "start_line": 42,
+                "end_line": 46
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "vhn2": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "school-run-rota.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             }
           }
         },
@@ -739,16 +808,16 @@
             "misspelling": {
               "n": 16,
               "success_at_1": 0.5625,
-              "mrr_at_10": 0.59375,
-              "ndcg_at_10": 0.591073,
-              "recall_at_5": 0.59375
+              "mrr_at_10": 0.84375,
+              "ndcg_at_10": 0.659926,
+              "recall_at_5": 0.71875
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.538462,
-              "mrr_at_10": 0.679487,
-              "ndcg_at_10": 0.722522,
-              "recall_at_5": 0.846154
+              "success_at_1": 0.692308,
+              "mrr_at_10": 0.794872,
+              "ndcg_at_10": 0.827835,
+              "recall_at_5": 0.923077
             },
             "accent": {
               "n": 9,
@@ -794,10 +863,10 @@
             },
             "morphology-heldout": {
               "n": 14,
-              "success_at_1": 0.571429,
-              "mrr_at_10": 0.714286,
-              "ndcg_at_10": 0.751694,
-              "recall_at_5": 0.857143
+              "success_at_1": 0.714286,
+              "mrr_at_10": 0.857143,
+              "ndcg_at_10": 0.894551,
+              "recall_at_5": 1.0
             },
             "accent-heldout": {
               "n": 11,
@@ -812,14 +881,21 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "verbform-heldout": {
+              "n": 19,
+              "success_at_1": 0.947368,
+              "mrr_at_10": 0.947368,
+              "ndcg_at_10": 0.947368,
+              "recall_at_5": 0.947368
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.810526,
-            "mrr_at_10": 0.857456,
-            "ndcg_at_10": 0.870412,
-            "recall_at_5": 0.9
+            "success_at_1": 0.831579,
+            "mrr_at_10": 0.915351,
+            "ndcg_at_10": 0.89642,
+            "recall_at_5": 0.931579
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -866,12 +942,12 @@
             "o03": 1,
             "o04": 1,
             "o05": 3,
-            "o06": null,
+            "o06": 1,
             "o07": 1,
             "o08": 2,
             "o09": 2,
             "o10": 1,
-            "o11": 2,
+            "o11": 1,
             "o12": null,
             "o13": 1,
             "a01": 2,
@@ -947,8 +1023,8 @@
             "oh08": 2,
             "oh09": 2,
             "oh10": 2,
-            "oh11": null,
-            "oh12": null,
+            "oh11": 1,
+            "oh12": 1,
             "oh13": 1,
             "oh14": 1,
             "ah01": 1,
@@ -974,7 +1050,26 @@
             "tah10": 1,
             "tag1": 1,
             "tag2": 1,
-            "tag3": 2
+            "tag3": 2,
+            "vh01": 1,
+            "vh02": 1,
+            "vh03": 1,
+            "vh04": 1,
+            "vh05": 1,
+            "vh06": 1,
+            "vh07": 1,
+            "vh08": 1,
+            "vh09": 1,
+            "vh10": 1,
+            "vh11": 1,
+            "vh12": 1,
+            "vg1": 1,
+            "vg2": 1,
+            "vg3": 1,
+            "vg4": 1,
+            "vg5": 1,
+            "vt1": null,
+            "vt2": 1
           },
           "slice_of": {
             "c01": "control",
@@ -1153,7 +1248,28 @@
             "tag2": "tamil-heldout",
             "tag3": "tamil-heldout",
             "tahn1": "negatives",
-            "tahn2": "negatives"
+            "tahn2": "negatives",
+            "vh01": "verbform-heldout",
+            "vh02": "verbform-heldout",
+            "vh03": "verbform-heldout",
+            "vh04": "verbform-heldout",
+            "vh05": "verbform-heldout",
+            "vh06": "verbform-heldout",
+            "vh07": "verbform-heldout",
+            "vh08": "verbform-heldout",
+            "vh09": "verbform-heldout",
+            "vh10": "verbform-heldout",
+            "vh11": "verbform-heldout",
+            "vh12": "verbform-heldout",
+            "vg1": "verbform-heldout",
+            "vg2": "verbform-heldout",
+            "vg3": "verbform-heldout",
+            "vg4": "verbform-heldout",
+            "vg5": "verbform-heldout",
+            "vt1": "verbform-heldout",
+            "vt2": "verbform-heldout",
+            "vhn1": "negatives",
+            "vhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -1214,10 +1330,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "school",
-                "path": "science-homework.md",
-                "start_line": 11,
-                "end_line": 15
+                "root_id": "laptop",
+                "path": "projects/pip-planet-model.md",
+                "start_line": 8,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -1278,7 +1394,7 @@
               "top_is_named_distractor": true
             },
             "tin2": {
-              "returned": 8,
+              "returned": 9,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend-plans.md",
@@ -1419,6 +1535,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "vhn1": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/weekend-jobs.md",
+                "start_line": 42,
+                "end_line": 46
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "vhn2": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "school-run-rota.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             }
           }
         }
@@ -1440,15 +1578,15 @@
             "misspelling": {
               "n": 16,
               "success_at_1": 0.5625,
-              "mrr_at_10": 0.648686,
-              "ndcg_at_10": 0.712878,
-              "recall_at_5": 0.75
+              "mrr_at_10": 0.859375,
+              "ndcg_at_10": 0.766738,
+              "recall_at_5": 0.84375
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.538462,
-              "mrr_at_10": 0.717949,
-              "ndcg_at_10": 0.788384,
+              "success_at_1": 0.692308,
+              "mrr_at_10": 0.807692,
+              "ndcg_at_10": 0.855236,
               "recall_at_5": 0.923077
             },
             "accent": {
@@ -1495,10 +1633,10 @@
             },
             "morphology-heldout": {
               "n": 14,
-              "success_at_1": 0.571429,
-              "mrr_at_10": 0.690476,
-              "ndcg_at_10": 0.73299,
-              "recall_at_5": 0.857143
+              "success_at_1": 0.714286,
+              "mrr_at_10": 0.833333,
+              "ndcg_at_10": 0.875847,
+              "recall_at_5": 1.0
             },
             "accent-heldout": {
               "n": 11,
@@ -1513,14 +1651,21 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "verbform-heldout": {
+              "n": 19,
+              "success_at_1": 0.947368,
+              "mrr_at_10": 0.973684,
+              "ndcg_at_10": 0.980575,
+              "recall_at_5": 1.0
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.810526,
-            "mrr_at_10": 0.871825,
-            "ndcg_at_10": 0.899408,
-            "recall_at_5": 0.936842
+            "success_at_1": 0.831579,
+            "mrr_at_10": 0.919591,
+            "ndcg_at_10": 0.917627,
+            "recall_at_5": 0.952632
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -1567,12 +1712,12 @@
             "o03": 1,
             "o04": 1,
             "o05": 3,
-            "o06": 3,
+            "o06": 1,
             "o07": 1,
             "o08": 2,
             "o09": 2,
             "o10": 1,
-            "o11": 2,
+            "o11": 1,
             "o12": 6,
             "o13": 1,
             "a01": 2,
@@ -1648,8 +1793,8 @@
             "oh08": 2,
             "oh09": 3,
             "oh10": 3,
-            "oh11": null,
-            "oh12": null,
+            "oh11": 1,
+            "oh12": 1,
             "oh13": 1,
             "oh14": 1,
             "ah01": 1,
@@ -1675,7 +1820,26 @@
             "tah10": 1,
             "tag1": 1,
             "tag2": 1,
-            "tag3": 2
+            "tag3": 2,
+            "vh01": 1,
+            "vh02": 1,
+            "vh03": 1,
+            "vh04": 1,
+            "vh05": 1,
+            "vh06": 1,
+            "vh07": 1,
+            "vh08": 1,
+            "vh09": 1,
+            "vh10": 1,
+            "vh11": 1,
+            "vh12": 1,
+            "vg1": 1,
+            "vg2": 1,
+            "vg3": 1,
+            "vg4": 1,
+            "vg5": 1,
+            "vt1": 2,
+            "vt2": 1
           },
           "slice_of": {
             "c01": "control",
@@ -1854,7 +2018,28 @@
             "tag2": "tamil-heldout",
             "tag3": "tamil-heldout",
             "tahn1": "negatives",
-            "tahn2": "negatives"
+            "tahn2": "negatives",
+            "vh01": "verbform-heldout",
+            "vh02": "verbform-heldout",
+            "vh03": "verbform-heldout",
+            "vh04": "verbform-heldout",
+            "vh05": "verbform-heldout",
+            "vh06": "verbform-heldout",
+            "vh07": "verbform-heldout",
+            "vh08": "verbform-heldout",
+            "vh09": "verbform-heldout",
+            "vh10": "verbform-heldout",
+            "vh11": "verbform-heldout",
+            "vh12": "verbform-heldout",
+            "vg1": "verbform-heldout",
+            "vg2": "verbform-heldout",
+            "vg3": "verbform-heldout",
+            "vg4": "verbform-heldout",
+            "vg5": "verbform-heldout",
+            "vt1": "verbform-heldout",
+            "vt2": "verbform-heldout",
+            "vhn1": "negatives",
+            "vhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -1915,10 +2100,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "school",
-                "path": "science-homework.md",
-                "start_line": 11,
-                "end_line": 15
+                "root_id": "laptop",
+                "path": "projects/pip-planet-model.md",
+                "start_line": 8,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -1979,7 +2164,7 @@
               "top_is_named_distractor": true
             },
             "tin2": {
-              "returned": 9,
+              "returned": 10,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend-plans.md",
@@ -2120,6 +2305,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "vhn1": {
+              "returned": 5,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/weekend-jobs.md",
+                "start_line": 42,
+                "end_line": 46
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "vhn2": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "school-run-rota.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             }
           }
         },
@@ -2135,16 +2342,16 @@
             "misspelling": {
               "n": 16,
               "success_at_1": 0.5625,
-              "mrr_at_10": 0.59375,
-              "ndcg_at_10": 0.591073,
-              "recall_at_5": 0.59375
+              "mrr_at_10": 0.84375,
+              "ndcg_at_10": 0.659926,
+              "recall_at_5": 0.71875
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.538462,
-              "mrr_at_10": 0.679487,
-              "ndcg_at_10": 0.722522,
-              "recall_at_5": 0.846154
+              "success_at_1": 0.692308,
+              "mrr_at_10": 0.794872,
+              "ndcg_at_10": 0.827835,
+              "recall_at_5": 0.923077
             },
             "accent": {
               "n": 9,
@@ -2190,10 +2397,10 @@
             },
             "morphology-heldout": {
               "n": 14,
-              "success_at_1": 0.571429,
-              "mrr_at_10": 0.714286,
-              "ndcg_at_10": 0.751694,
-              "recall_at_5": 0.857143
+              "success_at_1": 0.714286,
+              "mrr_at_10": 0.857143,
+              "ndcg_at_10": 0.894551,
+              "recall_at_5": 1.0
             },
             "accent-heldout": {
               "n": 11,
@@ -2208,14 +2415,21 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "verbform-heldout": {
+              "n": 19,
+              "success_at_1": 0.947368,
+              "mrr_at_10": 0.947368,
+              "ndcg_at_10": 0.947368,
+              "recall_at_5": 0.947368
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.810526,
-            "mrr_at_10": 0.857456,
-            "ndcg_at_10": 0.870412,
-            "recall_at_5": 0.9
+            "success_at_1": 0.831579,
+            "mrr_at_10": 0.915351,
+            "ndcg_at_10": 0.89642,
+            "recall_at_5": 0.931579
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -2262,12 +2476,12 @@
             "o03": 1,
             "o04": 1,
             "o05": 3,
-            "o06": null,
+            "o06": 1,
             "o07": 1,
             "o08": 2,
             "o09": 2,
             "o10": 1,
-            "o11": 2,
+            "o11": 1,
             "o12": null,
             "o13": 1,
             "a01": 2,
@@ -2343,8 +2557,8 @@
             "oh08": 2,
             "oh09": 2,
             "oh10": 2,
-            "oh11": null,
-            "oh12": null,
+            "oh11": 1,
+            "oh12": 1,
             "oh13": 1,
             "oh14": 1,
             "ah01": 1,
@@ -2370,7 +2584,26 @@
             "tah10": 1,
             "tag1": 1,
             "tag2": 1,
-            "tag3": 2
+            "tag3": 2,
+            "vh01": 1,
+            "vh02": 1,
+            "vh03": 1,
+            "vh04": 1,
+            "vh05": 1,
+            "vh06": 1,
+            "vh07": 1,
+            "vh08": 1,
+            "vh09": 1,
+            "vh10": 1,
+            "vh11": 1,
+            "vh12": 1,
+            "vg1": 1,
+            "vg2": 1,
+            "vg3": 1,
+            "vg4": 1,
+            "vg5": 1,
+            "vt1": null,
+            "vt2": 1
           },
           "slice_of": {
             "c01": "control",
@@ -2549,7 +2782,28 @@
             "tag2": "tamil-heldout",
             "tag3": "tamil-heldout",
             "tahn1": "negatives",
-            "tahn2": "negatives"
+            "tahn2": "negatives",
+            "vh01": "verbform-heldout",
+            "vh02": "verbform-heldout",
+            "vh03": "verbform-heldout",
+            "vh04": "verbform-heldout",
+            "vh05": "verbform-heldout",
+            "vh06": "verbform-heldout",
+            "vh07": "verbform-heldout",
+            "vh08": "verbform-heldout",
+            "vh09": "verbform-heldout",
+            "vh10": "verbform-heldout",
+            "vh11": "verbform-heldout",
+            "vh12": "verbform-heldout",
+            "vg1": "verbform-heldout",
+            "vg2": "verbform-heldout",
+            "vg3": "verbform-heldout",
+            "vg4": "verbform-heldout",
+            "vg5": "verbform-heldout",
+            "vt1": "verbform-heldout",
+            "vt2": "verbform-heldout",
+            "vhn1": "negatives",
+            "vhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -2610,10 +2864,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "school",
-                "path": "science-homework.md",
-                "start_line": 11,
-                "end_line": 15
+                "root_id": "laptop",
+                "path": "projects/pip-planet-model.md",
+                "start_line": 8,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -2674,7 +2928,7 @@
               "top_is_named_distractor": true
             },
             "tin2": {
-              "returned": 8,
+              "returned": 9,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend-plans.md",
@@ -2815,6 +3069,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "vhn1": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/weekend-jobs.md",
+                "start_line": 42,
+                "end_line": 46
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "vhn2": {
+              "returned": 4,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "school-run-rota.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             }
           }
         }
@@ -2919,6 +3195,64 @@
         ]
       },
       "earlier_cells_unchanged": true
+    },
+    {
+      "task": "S5-T5",
+      "slice": "verbform-heldout",
+      "queries": [
+        "vh01",
+        "vh02",
+        "vh03",
+        "vh04",
+        "vh05",
+        "vh06",
+        "vh07",
+        "vh08",
+        "vh09",
+        "vh10",
+        "vh11",
+        "vh12",
+        "vg1",
+        "vg2",
+        "vg3",
+        "vg4",
+        "vg5",
+        "vt1",
+        "vt2",
+        "vhn1",
+        "vhn2"
+      ],
+      "why": "S5-T5 chooses its verb-form rule R on the morphology slices; ruling 4 of its task file requires a held-out verb-form slice in new files, judged and committed with today's cells before any code of R exists on either surface and before any run of those queries through a candidate",
+      "judgments_sha256_before": "4f16ecedac1a5697372591ca577170318a2482366394d6bab2a56ffccd693181",
+      "recorded": "2026-11-09",
+      "engine_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
+      "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
+      "searchd_binary": {
+        "sha256": "bc7161403a580f1f383d455d199e15e1c0d8eef4b42fcba4daef3e7973ddf315",
+        "size": 1078504,
+        "optimize": "ReleaseSmall",
+        "zig": "0.16.0"
+      },
+      "python_version": "3.9.6",
+      "hashseed": "0",
+      "load": {
+        "before": [
+          3.09,
+          2.81,
+          2.27
+        ],
+        "after": [
+          3.24,
+          2.85,
+          2.28
+        ],
+        "top_sample": [
+          "Processes: 983 total, 3 running, 980 sleeping, 4572 threads",
+          "Load Avg: 3.24, 2.85, 2.28",
+          "CPU usage: 3.95% user, 2.49% sys, 93.55% idle"
+        ]
+      },
+      "earlier_cells_unchanged": true
     }
   ],
   "replaces": [
@@ -2969,6 +3303,30 @@
       "judgments_sha256": "342e5d38cf043c365cdb5a634b2517703406724cd899985cd19084eb5359a44d",
       "natives_digest": "8f73bf9c3f874e98197c98c0b23237cc49358f028025a18ff35fef2934142055",
       "why": "S5-T4 (fold-groups-v1, contracts 2.5.0): a query word is also searched as the in-scope words sharing its key K = F, A, S, T; cells re-recorded at the S5-T4 engine (frozen-pack rule). searchd content s@1: misspelling 0.500->0.562, morphology 0.308->0.538, accent 0.444->0.778, tamil 0.231->1.000, morphology-heldout 0.214->0.571, accent-heldout 0.455->0.909, tamil-heldout 0.154->0.923, overall 0.632->0.811; control, title, phrase, title-heldout, misspelling-heldout unchanged; ah11 (the accent merge guard) content 1->2, both 1->none, allowed by orchestrator ruling 3; the Python reference equals searchd on every cell"
+    },
+    {
+      "engine_commit": "6b4628d94a4d2c4e1f6f5b8f2b7c4f12fadad3d4",
+      "run_commit": "6b4628d94a4d2c4e1f6f5b8f2b7c4f12fadad3d4",
+      "recorded": "2026-11-07",
+      "judgments_sha256": "342e5d38cf043c365cdb5a634b2517703406724cd899985cd19084eb5359a44d",
+      "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
+      "why": "S5-T5 step 0 (ruling 1, the J2 regrade pass of S5-T3 ruling Q3 and its 03-next row): the H1/intro chunks of m03, m04, m15 and m16 graded 1 (four new grade-1 rows; no grade-2 row, file or query changed); engine unchanged (searchd ReleaseSmall bc716140, the S5-T4 baseline's bytes). Moved on both surfaces: misspelling and overall MRR@10, nDCG@10 and recall@5 under content and both; success@1 and every first grade-2 rank cannot move by their definition (top hit, first rank of grade 2) and did not; no negative moved"
+    },
+    {
+      "engine_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
+      "run_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
+      "recorded": "2026-11-09",
+      "judgments_sha256": "4f16ecedac1a5697372591ca577170318a2482366394d6bab2a56ffccd693181",
+      "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
+      "why": "S5-T5 ruling 4: the held-out slice verbform-heldout (vh01-vh12, vg1-vg5, vt1, vt2) and the negatives vhn1, vhn2 added in three new files (home/family-log.md, laptop/notes/weekend-jobs.md, school/year2-blog.md), judged and recorded with today's engine before any code of rule R exists; engine unchanged (searchd ReleaseSmall, the step-0 bytes); every earlier cell (484 per surface) unchanged on both surfaces; the Python reference equals searchd on every cell"
+    },
+    {
+      "engine_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
+      "run_commit": "2c7ca97e73380d9b0b82df8dcb180dfb3e626c5c",
+      "recorded": "2026-11-09",
+      "judgments_sha256": "5142497646e4bbb309e61ff67f20d57d67418e49c7ded6438e4df802e09fb0bc",
+      "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
+      "why": "S5-T5 Phase 2 (fold-groups-v2, contracts 2.6.0): -ing/-ed verb forms join a query word's fold group (1.0 for a word nothing visible holds, 0.5 under a key-df cap for one the files hold); 73 cells move per surface, every first grade-2 move a gain (content: o06 3->1, o11 2->1, oh11 and oh12 out->1, vh01-vh12 ->1, vt2 3->1, vt1 3->2; both: the same but vt1), control and every slice but morphology, morphology-heldout, verbform-heldout and overall unchanged"
     }
   ]
 }

@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.7.0 (S5-T5; contract 2.6.0; minor: ranking change)
+
+Verb forms in the word-form groups (`fold-groups-v2`,
+`docs/fold-groups-v2.md`). A query word of 4 to 49 letters a-z (after
+folding) is also searched as its `-ing` and `-ed` verb forms that a chunk
+in scope or a visible file's name holds (`paint`, `paints`, `painted`,
+`painting`; `hop`, `hopped`, `hoping`; `tidy`, `tidied`). Code written for
+0.6.x compiles and behaves the same against 0.7.0, but a query now also
+finds the other verb forms of its words.
+
+- **Contracts 2.6.0** (`contracts/CONTRACTS_VERSION`). As before the
+  package accepts exactly its own contract version: a 2.5.0 library is
+  refused at `open` with `ContractsVersionMismatchException`, and the
+  natives move with the package.
+- **The weights.** A word no chunk in scope and no visible file's name
+  holds takes its forms at full weight (and `fuzzy-v1` does not also run
+  on it). A word the files hold takes a form at half weight, and only when
+  the form is held by no more chunks than the word itself, so a word's
+  group never takes a document frequency above the word's own through its
+  verb forms.
+- **The report.** `SearchRetrieval.foldPolicyId` is `"fold-groups-v2"`.
+  The forms are listed in the `queryTermGrouped` warning's
+  `SearchWarning.members`, in the group's order; there is no new warning
+  code and no new field.
+- **No index format change.** Nothing is stored in the index and nothing
+  is kept between queries; every index a 0.6.x library wrote opens and
+  answers the same way. No C ABI signature changed.
+
 ## 0.6.0 (S5-T4; contract 2.5.0; minor: ranking change and additive result fields)
 
 Query-side folding and light stemming (`fold-groups-v1`,

@@ -28,6 +28,20 @@ const String _interchangeV2 =
     '"text":"dinosaurs and a tournament","vector":[],"required_labels":[]}'
     ']}';
 
+/// Contract 2.6.0 (S5-T5): fold-groups-v2's verb forms.
+const String _interchangeVerbs =
+    '{"format_version":1,"generation":1,"analyzer_id":"analyzer-v2",'
+    '"embedding_model_id":"none","documents":['
+    '{"id":"a","path":"public/a.md","start_line":1,"end_line":1,'
+    '"text":"we went dancing on friday","vector":[],"required_labels":[]},'
+    '{"id":"b","path":"public/b.md","start_line":1,"end_line":1,'
+    '"text":"the painted gate","vector":[],"required_labels":[]},'
+    '{"id":"c","path":"public/c.md","start_line":1,"end_line":1,'
+    '"text":"painting the fence","vector":[],"required_labels":[]},'
+    '{"id":"d","path":"private/d.md","start_line":1,"end_line":1,'
+    '"text":"secret dancers","vector":[],"required_labels":["tenant:x"]}'
+    ']}';
+
 void main() {
   late Directory dir;
   late SearchSimpli engine;
@@ -370,7 +384,7 @@ void main() {
         topK: 5,
         mode: RetrievalMode.lexical,
       );
-      expect(result.retrieval.foldPolicyId, 'fold-groups-v1');
+      expect(result.retrieval.foldPolicyId, 'fold-groups-v2');
       // A record compares a list by identity: the members are joined.
       expect(
         result.warnings!.map((w) => (w.code, w.term, w.members?.join(','))),
@@ -400,7 +414,45 @@ void main() {
     test('a word with no other form keeps its old report', () {
       final result = v2.query('museum', topK: 5, mode: RetrievalMode.lexical);
       expect(result.warnings, isEmpty);
-      expect(result.retrieval.foldPolicyId, 'fold-groups-v1');
+      expect(result.retrieval.foldPolicyId, 'fold-groups-v2');
+    });
+  });
+
+  group('contract 2.6.0: verb forms on an analyzer-v2 index', () {
+    late Directory verbsDir;
+    late SearchSimpli verbs;
+
+    setUp(() {
+      verbsDir = Directory.systemTemp.createTempSync('ss-dart-verbs-');
+      importSnapshotJson(verbsDir.path, _interchangeVerbs);
+      verbs = SearchSimpli.open(verbsDir.path);
+    });
+
+    tearDown(() {
+      verbs.close();
+      verbsDir.deleteSync(recursive: true);
+    });
+
+    test('a verb form no file holds is unmatched, then grouped with the forms the files hold', () {
+      final result = verbs.query('danced', topK: 5, mode: RetrievalMode.lexical);
+      expect(result.retrieval.foldPolicyId, 'fold-groups-v2');
+      expect(
+        result.warnings!.map((w) => (w.code, w.term, w.members?.join(','))),
+        [
+          (SearchWarningCode.queryTermUnmatched, 'danced', null),
+          (SearchWarningCode.queryTermGrouped, 'danced', 'dancing'),
+        ],
+      );
+      expect(result.results.map((r) => r.citation.path), ['public/a.md']);
+    });
+
+    test('a held word is grouped with a form no more common than itself', () {
+      final result = verbs.query('painting', topK: 5, mode: RetrievalMode.lexical);
+      expect(
+        result.warnings!.map((w) => (w.code, w.term, w.members?.join(','))),
+        [(SearchWarningCode.queryTermGrouped, 'painting', 'painted')],
+      );
+      expect(result.results.map((r) => r.citation.path), ['public/c.md', 'public/b.md']);
     });
   });
 }

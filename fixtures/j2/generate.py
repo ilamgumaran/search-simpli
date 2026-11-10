@@ -32,6 +32,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent.parent))
 
+from src.search_platform import analyzer_v3  # noqa: E402
 from src.search_platform.core import _filename_tokenize, file_chunks  # noqa: E402
 
 
@@ -50,7 +51,8 @@ queries = _load("queries")
 ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
 SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "negatives",
-          "title-heldout", "misspelling-heldout", "morphology-heldout", "accent-heldout", "tamil-heldout")
+          "title-heldout", "misspelling-heldout", "morphology-heldout", "accent-heldout", "tamil-heldout",
+          "verbform-heldout")
 # S5-T3, ruling 7 of its plan: the edits the held-out misspelling slice must hold,
 # at least this many rows of each (a distance-2 row needs a meant word of 8 or more
 # code points; "name" is a word only the answer's file or folder name holds;
@@ -63,6 +65,13 @@ HELDOUT_MORPHOLOGY_MIX = {"-ies": 2, "-ches": 2, "-oes": 2, "keep": 3, "-ing/-ed
                           "query plural": 1, "query singular": 1}
 HELDOUT_ACCENT_MIX = {"short": 4, "nfkc": 2, "sharp-s": 1, "table": 1, "merge-guard": 1,
                       "plain query": 1, "accented query": 1}
+# S5-T5, ruling 4: the rows the verb-form held-out slice must hold, at least this
+# many of each kind; the verb rows cover every direction pair and each feature.
+HELDOUT_VERBFORM_MIX = {"verb": 8, "guard": 4, "held": 2}
+VERBFORM_DIRECTIONS = {"-ing->-ed": ("ing", "ed"), "-ed->-ing": ("ed", "ing"), "base->-ing": ("", "ing"),
+                       "-ing->base": ("ing", ""), "base->-ed": ("", "ed"), "-ed->base": ("ed", "")}
+VERBFORM_PAIRS = ({"-ing->-ed", "-ed->-ing"}, {"base->-ing", "-ing->base"}, {"base->-ed", "-ed->base"})
+VERBFORM_FEATURES = ("doubled", "dropped e", "-ied")
 TAMIL_RULES = ("ங்கள்", "கள்", "த்தில்", "த்தின்", "க்கு", "யில்", "யின்")
 TAMIL_GUARDS = ("accusative", "-வு noun", "keep-list pronoun")
 # The Latin letters of S5-T4's table (o-slash, d-stroke, l-stroke, h-stroke,
@@ -240,6 +249,27 @@ def heldout_words(slice_name: str) -> set[str]:
         if "guard" in spec and isinstance(spec["guard"], tuple):
             words.update(spec["guard"])
     return words
+
+
+def new_file_hygiene(corpus: Corpus) -> list[str]:
+    """S5-T5's new files keep out of every earlier slice's query words and of their
+    fold-groups-v1 forms (the keys `analyzer_v3.key` gives), in body and path, so
+    that adding them moves no earlier row by a word they hold."""
+    earlier: set[str] = set()
+    for spec in queries.QUERIES:
+        if spec["slice"] != "verbform-heldout" and spec.get("of") != "verbform-heldout":
+            earlier.update(toks(spec["query"].rstrip("*")))
+    keys = {analyzer_v3.key(w): w for w in earlier}
+    problems = []
+    for path in content.VERBFORM_FILES:
+        rel = PurePosixPath(path.split("/", 1)[1])
+        held = set(toks("\n".join(corpus.lines[path]))) | {t for part in rel.parent.parts for t in toks(part)} | set(toks(rel.stem))
+        for word in sorted(held):
+            if word in earlier:
+                problems.append(f"{path} holds {word}, an earlier query word")
+            elif analyzer_v3.key(word) in keys:
+                problems.append(f"{path} holds {word}, a fold-groups-v1 form of {keys[analyzer_v3.key(word)]}")
+    return problems
 
 
 def strip_marks(word: str) -> str:
@@ -435,6 +465,69 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
         reused = sorted((set(query_tokens) | words) & heldout_words("tamil"))
         need(not reused, f"held out: {reused} is a query word or form of the Tamil slice")
         checks.append({"check": "held out: no query word or form is a word of J2's Tamil rows"})
+    elif s == "verbform-heldout":
+        kind = spec["kind"]
+        need(kind in HELDOUT_VERBFORM_MIX, f"kind {kind}")
+        need(all(r[0] in content.VERBFORM_FILES for r in spec["rows"]), "every row is in one of S5-T5's new files")
+        zero = [r for r in expected if r["grade"] == 0]
+        words = set(query_tokens)
+        if kind == "verb":
+            base, direction, feature = spec["base"], spec["direction"], spec["feature"]
+            need(direction in VERBFORM_DIRECTIONS, f"direction {direction}")
+            need(feature in VERBFORM_FEATURES + (None,), f"feature {feature}")
+            need(len(spec["forms"]) == 1, "one form pair")
+            query_form, file_form = spec["forms"][0]
+            need(query_form in query_tokens, f"{query_form} is a query word")
+            need(query_form not in first, f"{query_form} is absent from the answer")
+            need(file_form in first, f"{file_form} is present in the answer")
+            need(corpus.df(query_form) == 0, f"{query_form} occurs in no file (df {corpus.df(query_form)})")
+            same_key = sorted(w for w in corpus.vocabulary if analyzer_v3.key(w) == analyzer_v3.key(query_form))
+            need(not same_key, f"no file holds a fold-groups-v1 form of {query_form} ({same_key})")
+            q_end, f_end = VERBFORM_DIRECTIONS[direction]
+            for form, end in ((query_form, q_end), (file_form, f_end)):
+                if end:
+                    need(form.endswith(end), f"{form} ends in -{end}")
+                else:
+                    need(form == base, f"{form} is the base {base}")
+            if feature == "doubled":
+                need(any(f in (base + base[-1] + "ing", base + base[-1] + "ed") for f in (query_form, file_form)),
+                     f"a form doubles the final consonant of {base}")
+            if feature == "dropped e":
+                need(base.endswith("e") and any(f in (base[:-1] + "ing", base + "d") for f in (query_form, file_form)),
+                     f"a form drops the final e of {base} before -ing, or adds only d")
+            if feature == "-ied":
+                need(base.endswith("y") and base[:-1] + "ied" in (query_form, file_form), f"a form is {base[:-1]}ied")
+            checks.append({"check": "verb form: the answer holds only another form of the query's verb; no file holds "
+                                    "the query form or a fold-groups-v1 form of it",
+                           "query_form": query_form, "file_form": file_form, "base": base, "direction": direction,
+                           "feature": feature, "kind": kind})
+            words |= {query_form, file_form, base}
+        elif kind == "guard":
+            word, lookalike = spec["guard"]
+            need(word in query_tokens and word in first, f"{word} is in the answer")
+            need(word.startswith(lookalike) and word[len(lookalike):] in
+                 ("ing", "ed", lookalike[-1] + "ing", lookalike[-1] + "ed"),
+                 f"{word} is {lookalike} with -ing or -ed (and a doubled consonant)")
+            need(len(zero) == 1, "one distractor row")
+            zt = corpus.range_tokens(zero[0])
+            need(lookalike in zt and word not in zt, f"{lookalike} in the distractor, {word} not")
+            checks.append({"check": "guard: the query word is in the answer; the word left when its -ing or -ed "
+                                    "(and a doubled consonant) is taken off, and not the query word, is in the distractor",
+                           "word": word, "lookalike": lookalike, "kind": kind})
+            words |= {word, lookalike}
+        else:
+            typed, file_form = spec["held"]
+            need(typed in query_tokens, f"{typed} is a query word")
+            need(typed not in first and file_form in first, f"{typed} absent from the answer, {file_form} present")
+            need(any(typed in corpus.range_tokens(z) for z in zero), f"a grade-0 row holds {typed}")
+            checks.append({"check": "held: a grade-0 row holds the typed word; the answer holds another form of it "
+                                    "and not the typed word",
+                           "typed": typed, "file_form": file_form, "kind": kind})
+            words |= {typed, file_form}
+        reused = sorted(words & (heldout_words("morphology") | heldout_words("morphology-heldout")))
+        need(not reused, f"held out: {reused} is a query word or form of the morphology or morphology-heldout slice")
+        checks.append({"check": "held out: no query word, form or base is a query word or form of the morphology "
+                                "or morphology-heldout slices"})
     elif s == "accent":
         query_form, file_form = spec["fold"]
         need(query_form in query_tokens, f"{query_form} is a query word")
@@ -499,6 +592,11 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
         item["guard"] = spec["guard_kind"]
     if s in ("morphology-heldout", "accent-heldout"):
         item["kind"] = spec["kind"]
+    if s == "verbform-heldout":
+        item["kind"] = spec["kind"]
+        if spec["kind"] == "verb":
+            item["direction"] = spec["direction"]
+            item["feature"] = spec["feature"]
     if s == "tamil-heldout":
         if "guard" in spec:
             item["tamil_guard"] = spec["guard_kind"]
@@ -556,6 +654,20 @@ def build_judgments(corpus: Corpus) -> dict:
     for kind in TAMIL_GUARDS:
         if not any(i.get("tamil_guard") == kind for i in tamil):
             raise SystemExit(f"tamil-heldout: no guard of the kind {kind}")
+    verbs = [i for i in items if i["slice"] == "verbform-heldout"]
+    for kind, minimum in HELDOUT_VERBFORM_MIX.items():
+        have = sum(1 for i in verbs if i["kind"] == kind)
+        if have < minimum:
+            raise SystemExit(f"verbform-heldout: {have} rows of kind {kind}, minimum {minimum}")
+    for pair in VERBFORM_PAIRS:
+        if not any(i.get("direction") in pair for i in verbs):
+            raise SystemExit(f"verbform-heldout: no verb row of the directions {sorted(pair)}")
+    for feature in VERBFORM_FEATURES:
+        if not any(i.get("feature") == feature for i in verbs):
+            raise SystemExit(f"verbform-heldout: no verb row with the feature {feature}")
+    hygiene = new_file_hygiene(corpus)
+    if hygiene:
+        raise SystemExit("verbform-heldout files: " + "; ".join(hygiene))
     if sum(1 for i in items if i.get("transposition")) < 5:
         raise SystemExit("fewer than 5 transpositions")
     if sum(1 for i in items if i.get("only_form")) < 3:
@@ -593,7 +705,7 @@ are from the ranges set aside for drama.
 
 J2 says where keyword search loses. It holds {total} queries in seven slices,
 a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3), held-out
-morphology, accent and Tamil slices (S5-T4) and named negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
+morphology, accent and Tamil slices (S5-T4), a held-out verb-form slice (S5-T5) and named negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
 search tasks are judged against (`fixtures/j2/baseline.json`,
 `scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
 
@@ -664,6 +776,7 @@ SLICE_TEXT = {
     "morphology-heldout": "plural forms held out from S5-T4's key function, keep-list guards, -ing/-ed, a name-only form",
     "accent-heldout": "accent, width and compatibility forms held out from S5-T4; short words, a merge guard",
     "tamil-heldout": "Tamil inflections held out from S5-T4's suffix list, each rule once, three guards",
+    "verbform-heldout": "-ing/-ed/base forms held out from S5-T5's rule; doubled, dropped e, -ied; look-alike guards; held typed words",
 }
 
 

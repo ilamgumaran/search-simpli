@@ -36,7 +36,9 @@ Only analyzer-v2 indexes expand; an `ascii-alnum-v1` index never does. The
 `filename` field is never expanded. Since S5-T4 a word that has a
 [fold-groups-v1](fold-groups-v1.md) group (other forms of it that the files
 hold) is searched as that group and is not expanded, so J2's `boxes` (below)
-now searches `box`, not `bones`.
+now searches `box`, not `bones`. Since S5-T5 ([fold-groups-v2](fold-groups-v2.md))
+that includes a word no file holds whose `-ing` or `-ed` forms the files hold:
+`painting` searches `paint` and `painted`, not `planting`.
 
 ## The candidates
 

@@ -237,12 +237,14 @@ class SearchRetrieval {
   /// `vector` mode and under `filename`.
   final String? fuzzyPolicyId;
 
-  /// `retrieval.fold_policy_id` (contract 2.5.0, `"fold-groups-v1"`):
-  /// present whenever the lexical channel ran under `content` or `both` on an
-  /// `analyzer-v2` index, so a query word was also searched as the words that
-  /// share its fold key: accents, case and compatibility forms, an English
-  /// plural, seven Tamil suffixes (`docs/fold-groups-v1.md`). Null on a 2.4.0
-  /// result, in `vector` mode and under `filename`.
+  /// `retrieval.fold_policy_id` (contract 2.5.0; `"fold-groups-v2"` since
+  /// 2.6.0): present whenever the lexical channel ran under `content` or
+  /// `both` on an `analyzer-v2` index, so a query word was also searched as
+  /// the words that share its fold key: accents, case and compatibility
+  /// forms, an English plural, seven Tamil suffixes (`docs/fold-groups-v1.md`);
+  /// and, since 2.6.0, as its `-ing` and `-ed` verb forms the files hold
+  /// (`docs/fold-groups-v2.md`). Null on a 2.4.0 result, in `vector` mode and
+  /// under `filename`.
   final String? foldPolicyId;
 
   const SearchRetrieval({
@@ -531,7 +533,7 @@ enum SearchWarningCode {
   queryTermExpanded('query_term_expanded'),
 
   /// Contract 2.5.0: a word was also searched as the words that share its
-  /// fold key, [SearchWarning.members].
+  /// fold key (since 2.6.0, also its verb forms), [SearchWarning.members].
   queryTermGrouped('query_term_grouped'),
   queryEmptyAfterAnalysis('query_empty_after_analysis'),
   vectorIgnored('vector_ignored'),
@@ -565,8 +567,9 @@ class SearchWarning {
   final List<String>? expansions;
 
   /// `query_term_grouped` only (contract 2.5.0): the words also searched for
-  /// [term] because they share its fold key, in the group's order, [term]
-  /// itself left out. Null otherwise.
+  /// [term] because they share its fold key or (since 2.6.0) are among its
+  /// `-ing` and `-ed` verb forms, in the group's order, [term] itself left
+  /// out. Null otherwise.
   final List<String>? members;
 
   const SearchWarning({

@@ -47,8 +47,8 @@ five or more Latin letters that no file in scope holds is also searched as up to
 three near spellings ([fuzzy-v1](docs/fuzzy-v1.md), contract 2.4.0). A query word is also
 searched as the words the files hold that share its fold key: case and width folded,
 accents dropped from Latin letters, an English plural and seven Tamil suffixes taken
-off (`boxes` finds `box`, `résumé` finds `resume`, `யானை` finds `யானைகள்`;
-[fold-groups-v1](docs/fold-groups-v1.md), contract 2.5.0). `find` stays exact. Semantic modes remain separate explicit options.
+off (`boxes` finds `box`, `résumé` finds `resume`, `யானை` finds `யானைகள்`,
+`painting` finds `painted`; [fold-groups-v2](docs/fold-groups-v2.md), contract 2.6.0). `find` stays exact. Semantic modes remain separate explicit options.
 
 The [S3 integration report](docs/tasks/recovery-filename-integration.md)
 records tests, native build provenance and platform limits. Contract 2.2.0
@@ -58,8 +58,9 @@ name count toward a `content` match); contract 2.4.0 (S5-T3) adds misspelling
 tolerance ([fuzzy-v1](docs/fuzzy-v1.md): `retrieval.fuzzy_policy_id` and the
 `query_term_expanded` warning); contract 2.5.0 (S5-T4) adds word-form groups
 ([fold-groups-v1](docs/fold-groups-v1.md): `retrieval.fold_policy_id` and the
-`query_term_grouped` warning), and the bundled macOS/Android/iOS arm64
-libraries are rebuilt from that source. Physical-device validation remains pending.
+`query_term_grouped` warning); contract 2.6.0 (S5-T5) adds `-ing`/`-ed` verb
+forms to those groups ([fold-groups-v2](docs/fold-groups-v2.md)), and the
+bundled macOS/Android/iOS arm64 libraries are rebuilt from that source. Physical-device validation remains pending.
 [CAP-16](docs/requirements/cap-16-directory-filename-search.md) and its
 [format contract](docs/filename-field-format-v1.md) describe the design.
 

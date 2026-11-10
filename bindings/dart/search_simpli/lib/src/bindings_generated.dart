@@ -216,7 +216,9 @@ class SearchSimpliBindings {
   /// ones). "term" is the typed word, as above.
   /// query_term_grouped         (2.5.0) the word was also
   /// searched as "members", the words that share its
-  /// fold key (fold-groups-v1), in the group's order, the
+  /// fold key (fold-groups-v1) or, since 2.6.0, its -ing
+  /// and -ed verb forms (fold-groups-v2), in the group's
+  /// order, the
   /// word itself left out, each held by a chunk or a file
   /// name in scope (never only by hidden ones). "term" is
   /// the typed word, as above. A word with a group is not

@@ -5,9 +5,9 @@ Year 5, Wren in Year 2, Paati their grandmother, Biscuit the dog), Thistlecombe
 Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone numbers
 are from the ranges set aside for drama.
 
-J2 says where keyword search loses. It holds 177 queries in seven slices,
+J2 says where keyword search loses. It holds 198 queries in seven slices,
 a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3), held-out
-morphology, accent and Tamil slices (S5-T4) and named negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
+morphology, accent and Tamil slices (S5-T4), a held-out verb-form slice (S5-T5) and named negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
 search tasks are judged against (`fixtures/j2/baseline.json`,
 `scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
 
@@ -26,9 +26,9 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 
 | Root | Files |
 | --- | --- |
-| `school/` | 28 |
-| `home/` | 24 |
-| `laptop/` | 22 |
+| `school/` | 29 |
+| `home/` | 25 |
+| `laptop/` | 23 |
 
 | File | Why |
 | --- | --- |
@@ -58,12 +58,13 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 | tamil | 13 | 10 | Tamil inflections, both directions, plus suffix guards |
 | title | 11 | 10 | the words name the file (stem or folder), not its body |
 | phrase | 10 | 8 | the words adjacent in the answer, apart in a distractor |
-| negatives | 24 | - | nothing answers; distractors named |
+| negatives | 26 | - | nothing answers; distractors named |
 | title-heldout | 8 | 6 | title intent held out from S5-T2's weight; no word of the title slice |
 | misspelling-heldout | 12 | 10 | misspellings held out from S5-T3's rule; no typed or meant word of the misspelling slice |
 | morphology-heldout | 14 | 12 | plural forms held out from S5-T4's key function, keep-list guards, -ing/-ed, a name-only form |
 | accent-heldout | 11 | 10 | accent, width and compatibility forms held out from S5-T4; short words, a merge guard |
 | tamil-heldout | 13 | 10 | Tamil inflections held out from S5-T4's suffix list, each rule once, three guards |
+| verbform-heldout | 19 | 14 | -ing/-ed/base forms held out from S5-T5's rule; doubled, dropped e, -ied; look-alike guards; held typed words |
 
 ## Queries
 
@@ -248,3 +249,24 @@ Grade-2 rows only; `judgments.json` holds every row with its note.
 | tag3 | tamil-heldout | knowledge | `நாங்கள்` | `home/tamil/tamil-jottings.md` 37-41 |
 | tahn1 | negatives | knowledge | `படம் கண்காட்சி` | none |
 | tahn2 | negatives | knowledge | `வேலை நேரம்` | none |
+| vh01 | verbform-heldout | knowledge | `sack hopping` | `school/year2-blog.md` 1-5 |
+| vh02 | verbform-heldout | knowledge | `wobbled` | `laptop/notes/weekend-jobs.md` 1-5 |
+| vh03 | verbform-heldout | knowledge | `tidied` | `laptop/notes/weekend-jobs.md` 7-10 |
+| vh04 | verbform-heldout | knowledge | `stir porridge` | `laptop/notes/weekend-jobs.md` 12-15 |
+| vh05 | verbform-heldout | knowledge | `scrubbed` | `laptop/notes/weekend-jobs.md` 22-25 |
+| vh06 | verbform-heldout | knowledge | `juggling` | `laptop/notes/weekend-jobs.md` 27-30 |
+| vh07 | verbform-heldout | knowledge | `buried` | `school/year2-blog.md` 24-27 |
+| vh08 | verbform-heldout | knowledge | `drip` | `home/family-log.md` 1-5 |
+| vh09 | verbform-heldout | knowledge | `knead dough` | `laptop/notes/weekend-jobs.md` 32-35 |
+| vh10 | verbform-heldout | knowledge | `sketching` | `school/year2-blog.md` 19-22 |
+| vh11 | verbform-heldout | knowledge | `drummed` | `school/year2-blog.md` 13-17 |
+| vh12 | verbform-heldout | knowledge | `diving` | `laptop/notes/weekend-jobs.md` 42-45 |
+| vg1 | verbform-heldout | knowledge | `herring` | `home/family-log.md` 7-11 |
+| vg2 | verbform-heldout | knowledge | `outing` | `home/family-log.md` 19-23 |
+| vg3 | verbform-heldout | knowledge | `pasted` | `home/family-log.md` 31-35 |
+| vg4 | verbform-heldout | knowledge | `wedding` | `home/family-log.md` 42-46 |
+| vg5 | verbform-heldout | knowledge | `petting` | `home/family-log.md` 54-57 |
+| vt1 | verbform-heldout | knowledge | `sledging hill` | `home/family-log.md` 64-67 |
+| vt2 | verbform-heldout | knowledge | `paddling canoe` | `laptop/notes/weekend-jobs.md` 47-50 |
+| vhn1 | negatives | knowledge | `diving board` | none |
+| vhn2 | negatives | knowledge | `tidying rota` | none |

@@ -20,7 +20,8 @@ ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
 SLICE_MINIMUMS = {"control": 20, "misspelling": 15, "morphology": 12, "accent": 6, "tamil": 10,
                   "title": 10, "phrase": 8, "title-heldout": 6, "misspelling-heldout": 10,
-                  "morphology-heldout": 12, "accent-heldout": 10, "tamil-heldout": 10}
+                  "morphology-heldout": 12, "accent-heldout": 10, "tamil-heldout": 10,
+                  "verbform-heldout": 14}
 
 
 def pack_files() -> dict[str, bytes]:
@@ -185,6 +186,25 @@ class InventoryTests(unittest.TestCase):
         guards.pop(None, None)
         self.assertEqual(set(guards), {"accusative", "-வு noun", "keep-list pronoun"})
 
+    def test_heldout_verbform_slice(self):
+        """S5-T5 ruling 4: eight verb rows over both directions of each ending pair,
+        with the doubled consonant, the dropped e and -ied each exercised; four
+        guards whose look-alike sits in the distractor; two rows whose typed word a
+        file holds elsewhere; every row in the three new files."""
+        kinds = self.kinds("verbform-heldout", "kind")
+        for kind, minimum in (("verb", 8), ("guard", 4), ("held", 2)):
+            self.assertGreaterEqual(kinds.get(kind, 0), minimum, kind)
+        held = [q for q in self.judgments["queries"] if q["slice"] == "verbform-heldout"]
+        directions = {q.get("direction") for q in held if q["kind"] == "verb"}
+        self.assertEqual(directions, {"-ing->-ed", "-ed->-ing", "base->-ing", "-ing->base", "base->-ed", "-ed->base"})
+        features = {q.get("feature") for q in held if q["kind"] == "verb"}
+        self.assertTrue({"doubled", "dropped e", "-ied"} <= features)
+        new = {"home/family-log.md", "laptop/notes/weekend-jobs.md", "school/year2-blog.md"}
+        for q in held:
+            self.assertTrue(all(f"{r['root_id']}/{r['path']}" in new for r in q["expected"]), q["id"])
+            lead = {"verb": "verb form", "guard": "guard", "held": "held"}[q["kind"]]
+            self.assertTrue(any(c["check"].startswith(lead) for c in q["checks"]), q["id"])
+
 
     def test_rows(self):
         lines = {f"{f['root_id']}/{f['path']}": f["lines"] for f in self.judgments["files"]}
@@ -267,6 +287,31 @@ class CheckTests(unittest.TestCase):
 
     def test_heldout_tamil_must_not_reuse_a_tamil_row_word(self):
         self.broken("t01", slice="tamil-heldout", rule="கள்")
+
+    def test_verbform_query_form_present_in_the_answer_fails(self):
+        self.broken("vh02", query="wobbling", forms=[("wobbling", "wobbling")])
+
+    def test_verbform_direction_must_be_true_to_the_forms(self):
+        self.broken("vh02", direction="-ing->-ed")
+
+    def test_verbform_feature_must_be_true_to_the_forms(self):
+        self.broken("vh09", feature="doubled")
+
+    def test_verbform_guard_needs_the_lookalike_in_the_distractor(self):
+        self.broken("vg1", guard=("herring", "herr"))
+
+    def test_verbform_held_row_needs_the_typed_word_in_a_distractor(self):
+        rows = [r for r in self.specs["vt1"]["rows"] if "Winter notices" not in r[1]]
+        self.broken("vt1", rows=rows)
+
+    def test_verbform_row_must_not_reuse_a_morphology_word(self):
+        self.broken("vh09", query="knead dough teeth")
+
+    def test_verbform_files_must_keep_out_of_earlier_query_words(self):
+        files = dict(self.generator.build_files())
+        files["home/family-log.md"] += "\nGran found one dinosaur bone.\n".encode("utf-8")
+        problems = self.generator.new_file_hygiene(self.generator.Corpus(files))
+        self.assertTrue(any("dinosaur" in p for p in problems), problems)
 
     def test_phrase_distractor_must_hold_the_words_apart(self):
         self.broken("p01", adjacent=1, apart=0)

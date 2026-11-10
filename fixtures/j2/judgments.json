@@ -27,7 +27,8 @@
     "misspelling-heldout": 10,
     "morphology-heldout": 12,
     "accent-heldout": 10,
-    "tamil-heldout": 10
+    "tamil-heldout": 10,
+    "verbform-heldout": 14
   },
   "counts": {
     "control": 23,
@@ -37,12 +38,13 @@
     "tamil": 13,
     "title": 11,
     "phrase": 10,
-    "negatives": 24,
+    "negatives": 26,
     "title-heldout": 8,
     "misspelling-heldout": 12,
     "morphology-heldout": 14,
     "accent-heldout": 11,
-    "tamil-heldout": 13
+    "tamil-heldout": 13,
+    "verbform-heldout": 19
   },
   "files": [
     {
@@ -72,6 +74,13 @@
       "bytes": 293,
       "lines": 6,
       "sha256": "c241b35c826a3bddcb09fb84a61c3ab4bfc7c351d6b92531c9ce7f4556c1b8b9"
+    },
+    {
+      "root_id": "home",
+      "path": "family-log.md",
+      "bytes": 2429,
+      "lines": 77,
+      "sha256": "9051a9bf5b39f4d679b6f3d68a5edf15c74c554a178f76f2390135b0dba0a202"
     },
     {
       "root_id": "home",
@@ -310,6 +319,13 @@
       "bytes": 250,
       "lines": 5,
       "sha256": "4b1f9ea4acce7ce6458601876a85c677d1df59b451cad3952df002705cd741c0"
+    },
+    {
+      "root_id": "laptop",
+      "path": "notes/weekend-jobs.md",
+      "bytes": 1512,
+      "lines": 60,
+      "sha256": "d2a39fd4888146fce29908cd51d27aaa896344859ccf06c5b1d5b35cecacb599"
     },
     {
       "root_id": "laptop",
@@ -562,6 +578,13 @@
       "bytes": 612,
       "lines": 21,
       "sha256": "72be845b434fc5f20fedf0a67c7285d9d10f84d54d859bd8e0d82de60afa7600"
+    },
+    {
+      "root_id": "school",
+      "path": "year2-blog.md",
+      "bytes": 866,
+      "lines": 27,
+      "sha256": "9daabf1bbc5ff1e1856816a66ba44efe8d05d44cd3476cb6cea1f209f4d35acf"
     }
   ],
   "queries": [
@@ -1548,6 +1571,17 @@
           "note": "the model"
         },
         {
+          "root_id": "school",
+          "path": "volcano-project.md",
+          "start_line": 1,
+          "end_line": 3,
+          "grade": 1,
+          "section_path": [
+            "Volcano project"
+          ],
+          "note": "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"
+        },
+        {
           "root_id": "laptop",
           "path": "projects/pip-planet-model.md",
           "start_line": 8,
@@ -1593,6 +1627,17 @@
             "This week"
           ],
           "note": "the fractions sheet"
+        },
+        {
+          "root_id": "school",
+          "path": "maths-homework.md",
+          "start_line": 1,
+          "end_line": 1,
+          "grade": 1,
+          "section_path": [
+            "Fractions sheet"
+          ],
+          "note": "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"
         },
         {
           "root_id": "school",
@@ -2079,6 +2124,17 @@
           "note": "the rules, a long list"
         },
         {
+          "root_id": "school",
+          "path": "science-fair.md",
+          "start_line": 1,
+          "end_line": 1,
+          "grade": 1,
+          "section_path": [
+            "Science fair"
+          ],
+          "note": "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"
+        },
+        {
           "root_id": "home",
           "path": "weekend-plans.md",
           "start_line": 9,
@@ -2124,6 +2180,17 @@
             "Method"
           ],
           "note": "the method"
+        },
+        {
+          "root_id": "home",
+          "path": "recipes/pancakes.md",
+          "start_line": 1,
+          "end_line": 3,
+          "grade": 1,
+          "section_path": [
+            "Pancakes"
+          ],
+          "note": "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"
         },
         {
           "root_id": "home",
@@ -8018,6 +8085,951 @@
           "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
           "present": [
             "வேலை"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh01",
+      "question": "Who was hopping in the sack race?",
+      "query": "sack hopping",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "year2-blog.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Sack race"
+          ],
+          "note": "Wren hopped down the track in a sack"
+        },
+        {
+          "root_id": "school",
+          "path": "year2-blog.md",
+          "start_line": 7,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Jumble stall"
+          ],
+          "note": "sack four times, no race"
+        }
+      ],
+      "kind": "verb",
+      "direction": "-ing->-ed",
+      "feature": "doubled",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "hopping",
+          "file_form": "hopped",
+          "base": "hop",
+          "direction": "-ing->-ed",
+          "feature": "doubled",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh02",
+      "question": "Who wobbled on the scooter?",
+      "query": "wobbled",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Scooter"
+          ],
+          "note": "Wren kept wobbling"
+        }
+      ],
+      "kind": "verb",
+      "direction": "-ed->-ing",
+      "feature": "dropped e",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "wobbled",
+          "file_form": "wobbling",
+          "base": "wobble",
+          "direction": "-ed->-ing",
+          "feature": "dropped e",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh03",
+      "question": "Has Pip tidied the bedroom?",
+      "query": "tidied",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 7,
+          "end_line": 10,
+          "grade": 2,
+          "section_path": [
+            "Bedroom"
+          ],
+          "note": "Pip must tidy the bedroom every Sunday"
+        }
+      ],
+      "kind": "verb",
+      "direction": "-ed->base",
+      "feature": "-ied",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "tidied",
+          "file_form": "tidy",
+          "base": "tidy",
+          "direction": "-ed->base",
+          "feature": "-ied",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh04",
+      "question": "How do you stir the porridge?",
+      "query": "stir porridge",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 12,
+          "end_line": 15,
+          "grade": 2,
+          "section_path": [
+            "Porridge"
+          ],
+          "note": "keep stirring the pan with a wooden spoon"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 17,
+          "end_line": 20,
+          "grade": 0,
+          "section_path": [
+            "Oats jar"
+          ],
+          "note": "porridge three times, no stirring"
+        }
+      ],
+      "kind": "verb",
+      "direction": "base->-ing",
+      "feature": "doubled",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "stir",
+          "file_form": "stirring",
+          "base": "stir",
+          "direction": "base->-ing",
+          "feature": "doubled",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh05",
+      "question": "Who scrubbed the patio?",
+      "query": "scrubbed",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 22,
+          "end_line": 25,
+          "grade": 2,
+          "section_path": [
+            "Patio"
+          ],
+          "note": "Maren asked Pip to scrub the patio"
+        }
+      ],
+      "kind": "verb",
+      "direction": "-ed->base",
+      "feature": "doubled",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "scrubbed",
+          "file_form": "scrub",
+          "base": "scrub",
+          "direction": "-ed->base",
+          "feature": "doubled",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh06",
+      "question": "Who was juggling on the call?",
+      "query": "juggling",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 27,
+          "end_line": 30,
+          "grade": 2,
+          "section_path": [
+            "Video call"
+          ],
+          "note": "Uncle Ravi juggled oranges"
+        }
+      ],
+      "kind": "verb",
+      "direction": "-ing->-ed",
+      "feature": "dropped e",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "juggling",
+          "file_form": "juggled",
+          "base": "juggle",
+          "direction": "-ing->-ed",
+          "feature": "dropped e",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh07",
+      "question": "What has Year 2 buried?",
+      "query": "buried",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "year2-blog.md",
+          "start_line": 24,
+          "end_line": 27,
+          "grade": 2,
+          "section_path": [
+            "Capsule"
+          ],
+          "note": "burying a locked tin under the willow"
+        }
+      ],
+      "kind": "verb",
+      "direction": "-ed->-ing",
+      "feature": "-ied",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "buried",
+          "file_form": "burying",
+          "base": "bury",
+          "direction": "-ed->-ing",
+          "feature": "-ied",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh08",
+      "question": "Where did the rain drip in?",
+      "query": "drip",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Leak in porch"
+          ],
+          "note": "rain dripped through the porch roof"
+        }
+      ],
+      "kind": "verb",
+      "direction": "base->-ed",
+      "feature": "doubled",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "drip",
+          "file_form": "dripped",
+          "base": "drip",
+          "direction": "base->-ed",
+          "feature": "doubled",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh09",
+      "question": "How long do you knead the dough?",
+      "query": "knead dough",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 32,
+          "end_line": 35,
+          "grade": 2,
+          "section_path": [
+            "Bread"
+          ],
+          "note": "Maren kneaded the dough until smooth"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 37,
+          "end_line": 40,
+          "grade": 0,
+          "section_path": [
+            "Pizza Sunday"
+          ],
+          "note": "dough three times, no kneading"
+        }
+      ],
+      "kind": "verb",
+      "direction": "base->-ed",
+      "feature": null,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "knead",
+          "file_form": "kneaded",
+          "base": "knead",
+          "direction": "base->-ed",
+          "feature": null,
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh10",
+      "question": "Who went sketching in the woods?",
+      "query": "sketching",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "year2-blog.md",
+          "start_line": 19,
+          "end_line": 22,
+          "grade": 2,
+          "section_path": [
+            "Nature walk"
+          ],
+          "note": "one quick sketch of an oak leaf each"
+        }
+      ],
+      "kind": "verb",
+      "direction": "-ing->base",
+      "feature": null,
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "sketching",
+          "file_form": "sketch",
+          "base": "sketch",
+          "direction": "-ing->base",
+          "feature": null,
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh11",
+      "question": "Who drummed in the parade?",
+      "query": "drummed",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "year2-blog.md",
+          "start_line": 13,
+          "end_line": 17,
+          "grade": 2,
+          "section_path": [
+            "Parade"
+          ],
+          "note": "Kavin was drumming at the front"
+        }
+      ],
+      "kind": "verb",
+      "direction": "-ed->-ing",
+      "feature": "doubled",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "drummed",
+          "file_form": "drumming",
+          "base": "drum",
+          "direction": "-ed->-ing",
+          "feature": "doubled",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vh12",
+      "question": "Can Pip do diving at the pool now?",
+      "query": "diving",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 42,
+          "end_line": 45,
+          "grade": 2,
+          "section_path": [
+            "Pool"
+          ],
+          "note": "Pip can dive off the side now"
+        }
+      ],
+      "kind": "verb",
+      "direction": "-ing->base",
+      "feature": "dropped e",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb form: the answer holds only another form of the query's verb; no file holds the query form or a fold-groups-v1 form of it",
+          "query_form": "diving",
+          "file_form": "dive",
+          "base": "dive",
+          "direction": "-ing->base",
+          "feature": "dropped e",
+          "kind": "verb"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vg1",
+      "question": "When did Uncle Ravi buy herring?",
+      "query": "herring",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 7,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "Harbour"
+          ],
+          "note": "fresh herring at the harbour wall"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 13,
+          "end_line": 17,
+          "grade": 0,
+          "section_path": [
+            "Gran"
+          ],
+          "note": "her six times: herring less -ing and one r"
+        }
+      ],
+      "kind": "guard",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "guard: the query word is in the answer; the word left when its -ing or -ed (and a doubled consonant) is taken off, and not the query word, is in the distractor",
+          "word": "herring",
+          "lookalike": "her",
+          "kind": "guard"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vg2",
+      "question": "When is the Brownies outing?",
+      "query": "outing",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 19,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "Brownies outing"
+          ],
+          "note": "Sunday, coach at nine"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 25,
+          "end_line": 29,
+          "grade": 0,
+          "section_path": [
+            "Cat flap"
+          ],
+          "note": "out twice: outing less -ing"
+        }
+      ],
+      "kind": "guard",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "guard: the query word is in the answer; the word left when its -ing or -ed (and a doubled consonant) is taken off, and not the query word, is in the distractor",
+          "word": "outing",
+          "lookalike": "out",
+          "kind": "guard"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vg3",
+      "question": "What did Pip paste in the scrapbook?",
+      "query": "pasted",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 31,
+          "end_line": 35,
+          "grade": 2,
+          "section_path": [
+            "Postcards"
+          ],
+          "note": "Pip pasted postcards, pansies, a feather"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 37,
+          "end_line": 40,
+          "grade": 0,
+          "section_path": [
+            "Bus stop"
+          ],
+          "note": "past four times: pasted less -ed"
+        }
+      ],
+      "kind": "guard",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "guard: the query word is in the answer; the word left when its -ing or -ed (and a doubled consonant) is taken off, and not the query word, is in the distractor",
+          "word": "pasted",
+          "lookalike": "past",
+          "kind": "guard"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vg4",
+      "question": "Where is Auntie Mira's wedding?",
+      "query": "wedding",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 42,
+          "end_line": 46,
+          "grade": 2,
+          "section_path": [
+            "Cousin wedding"
+          ],
+          "note": "at Thistlecombe church in June"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 48,
+          "end_line": 52,
+          "grade": 0,
+          "section_path": [
+            "Cooking rota"
+          ],
+          "note": "Wed twice: wedding less -ing and one d"
+        }
+      ],
+      "kind": "guard",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "guard: the query word is in the answer; the word left when its -ing or -ed (and a doubled consonant) is taken off, and not the query word, is in the distractor",
+          "word": "wedding",
+          "lookalike": "wed",
+          "kind": "guard"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vg5",
+      "question": "Where is the petting farm?",
+      "query": "petting",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 54,
+          "end_line": 57,
+          "grade": 2,
+          "section_path": [
+            "Petting farm"
+          ],
+          "note": "near Brook End"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 59,
+          "end_line": 62,
+          "grade": 0,
+          "section_path": [
+            "Pet passport"
+          ],
+          "note": "pet twice: petting less -ing and one t"
+        }
+      ],
+      "kind": "guard",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "guard: the query word is in the answer; the word left when its -ing or -ed (and a doubled consonant) is taken off, and not the query word, is in the distractor",
+          "word": "petting",
+          "lookalike": "pet",
+          "kind": "guard"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vt1",
+      "question": "When did we go sledging on the hill?",
+      "query": "sledging hill",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 64,
+          "end_line": 67,
+          "grade": 2,
+          "section_path": [
+            "Snow day"
+          ],
+          "note": "Pip and Wren sledged down Gorse Hill"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 69,
+          "end_line": 72,
+          "grade": 0,
+          "section_path": [
+            "Winter notices"
+          ],
+          "note": "no sledging near the pond"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 74,
+          "end_line": 77,
+          "grade": 0,
+          "section_path": [
+            "Hill walk"
+          ],
+          "note": "hill four times, a walk"
+        }
+      ],
+      "kind": "held",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "held: a grade-0 row holds the typed word; the answer holds another form of it and not the typed word",
+          "typed": "sledging",
+          "file_form": "sledged",
+          "kind": "held"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-heldout",
+      "id": "vt2",
+      "question": "When did Joss and Pip go paddling in the canoe?",
+      "query": "paddling canoe",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 47,
+          "end_line": 50,
+          "grade": 2,
+          "section_path": [
+            "Canoe on Ashby Mere"
+          ],
+          "note": "paddled the red canoe across the mere"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 52,
+          "end_line": 55,
+          "grade": 0,
+          "section_path": [
+            "Paddling pool"
+          ],
+          "note": "the paddling pool in the shed"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 57,
+          "end_line": 60,
+          "grade": 0,
+          "section_path": [
+            "Boat shed"
+          ],
+          "note": "canoe three times, in the shed"
+        }
+      ],
+      "kind": "held",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "held: a grade-0 row holds the typed word; the answer holds another form of it and not the typed word",
+          "typed": "paddling",
+          "file_form": "paddled",
+          "kind": "held"
+        },
+        {
+          "check": "held out: no query word, form or base is a query word or form of the morphology or morphology-heldout slices"
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "vhn1",
+      "question": "Is there a diving board?",
+      "query": "diving board",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 42,
+          "end_line": 45,
+          "grade": 0,
+          "section_path": [
+            "Pool"
+          ],
+          "note": "dive off the side, no board"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 32,
+          "end_line": 35,
+          "grade": 0,
+          "section_path": [
+            "Bread"
+          ],
+          "note": "a wooden board for bread"
+        }
+      ],
+      "negative": true,
+      "negative_of": "verbform-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "board"
+          ]
+        }
+      ]
+    },
+    {
+      "slice": "negatives",
+      "id": "vhn2",
+      "question": "Is there a tidying rota?",
+      "query": "tidying rota",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 7,
+          "end_line": 10,
+          "grade": 0,
+          "section_path": [
+            "Bedroom"
+          ],
+          "note": "tidy the bedroom, no rota"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 48,
+          "end_line": 52,
+          "grade": 0,
+          "section_path": [
+            "Cooking rota"
+          ],
+          "note": "a cooking rota, no tidying"
+        }
+      ],
+      "negative": true,
+      "negative_of": "verbform-heldout",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "no row with grade 1 or more; at least one query word occurs in the corpus",
+          "present": [
+            "rota"
           ]
         }
       ]
