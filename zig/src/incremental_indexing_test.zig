@@ -925,20 +925,19 @@ test "S4-T11 ruling 2: seeded random mutations, each round's update equals a fre
 // trace. `docs/tasks/S1-T23.md` rulings 3(a) and 3(b).
 
 const SlotName = struct {
-    /// The candidate name, `{d}` the generation.
+    /// The candidate name, `{d}` the generation. The exhausted-candidate
+    /// branch names every one of the six (`source-N.hybsrc` since S5-T5,
+    /// plan ruling 8; S1-T23 ruling 7 recorded it missing).
     pattern: []const u8,
-    /// Whether the exhausted-candidate branch records a cause for it (all
-    /// but `source-N.hybsrc` today; ruling 7).
-    named_at_exhaustion: bool,
 };
 
 const slot_names = [_]SlotName{
-    .{ .pattern = "documents-{d}.hybseg", .named_at_exhaustion = true },
-    .{ .pattern = "lexical-{d}.hyblex", .named_at_exhaustion = true },
-    .{ .pattern = "source-{d}.hybsrc", .named_at_exhaustion = false },
-    .{ .pattern = "filenames-{d}.hybseg", .named_at_exhaustion = true },
-    .{ .pattern = "filename-lexical-{d}.hyblex", .named_at_exhaustion = true },
-    .{ .pattern = "state-{d}.hybstate", .named_at_exhaustion = true },
+    .{ .pattern = "documents-{d}.hybseg" },
+    .{ .pattern = "lexical-{d}.hyblex" },
+    .{ .pattern = "source-{d}.hybsrc" },
+    .{ .pattern = "filenames-{d}.hybseg" },
+    .{ .pattern = "filename-lexical-{d}.hyblex" },
+    .{ .pattern = "state-{d}.hybstate" },
 };
 
 const LinkKind = enum { dangling, self };
@@ -1043,7 +1042,7 @@ test "S1-T23 3(a): six links on generations 1 to 6, one name each, kinds alterna
     for (0..slot_names.len) |i| try expectLinkUnchanged(io, tmp.dir, names[i][0..name_lens[i]], targets[i]);
 }
 
-test "S1-T23 3(b): MANIFEST at u64 max - 1 and a link at the max candidate under each name: NoFreeGeneration, the link unchanged, the entry named (source-N: see ruling 7)" {
+test "S1-T23 3(b): MANIFEST at u64 max - 1 and a link at the max candidate under each name: NoFreeGeneration, the link unchanged, the entry named (source-N since S5-T5)" {
     const io = std.testing.io;
     const max = std.math.maxInt(u64);
     inline for (slot_names) |slot| {
@@ -1061,19 +1060,13 @@ test "S1-T23 3(b): MANIFEST at u64 max - 1 and a link at the max candidate under
             try expectLinkUnchanged(io, tmp.dir, name, target);
             var line_buffer: [384]u8 = undefined;
             const line = generation_alloc.describeNoFreeGeneration(&line_buffer);
-            if (slot.named_at_exhaustion) {
-                var expected_buffer: [384]u8 = undefined;
-                const expected = try std.fmt.bufPrint(
-                    &expected_buffer,
-                    "NoFreeGeneration: no generation number above 18446744073709551615 (traces: {s}); use a fresh output directory; inspect listed traces before repair",
-                    .{name},
-                );
-                try std.testing.expectEqualStrings(expected, line);
-            } else if (kind == .dangling) {
-                // Ruling 3(b): for `source-N.hybsrc` only the error and the
-                // unchanged link are asserted; the line is printed as it is.
-                std.debug.print("S1-T23 3(b) {s}: {s}\n", .{ name, line });
-            }
+            var expected_buffer: [384]u8 = undefined;
+            const expected = try std.fmt.bufPrint(
+                &expected_buffer,
+                "NoFreeGeneration: no generation number above 18446744073709551615 (traces: {s}); use a fresh output directory; inspect listed traces before repair",
+                .{name},
+            );
+            try std.testing.expectEqualStrings(expected, line);
         }
     }
 }

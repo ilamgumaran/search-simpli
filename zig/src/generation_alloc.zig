@@ -28,6 +28,9 @@ const Cause = enum(u8) {
     filename_catalog = 16,
     filename_lexical = 32,
     state = 64,
+    /// Only at the exhausted candidate: `source-N.hybsrc` is probed but is
+    /// not a trace (S5-T5, plan ruling 8; filed by S1-T23).
+    source = 128,
 };
 
 threadlocal var cause_mask: u8 = 0;
@@ -63,6 +66,7 @@ pub fn describeNoFreeGeneration(buffer: []u8) []const u8 {
     if (cause_mask & 2 != 0) appendLiteralCauseName(&names_buffer, &names_len, "INDEX-STATE.json");
     if (cause_mask & 4 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "documents-{d}.hybseg");
     if (cause_mask & 8 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "lexical-{d}.hyblex");
+    if (cause_mask & 128 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "source-{d}.hybsrc");
     if (cause_mask & 16 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "filenames-{d}.hybseg");
     if (cause_mask & 32 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "filename-lexical-{d}.hyblex");
     if (cause_mask & 64 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "state-{d}.hybstate");
@@ -190,6 +194,7 @@ pub fn nextFreeGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.
             if (state_taken) recordCause(.state, candidate);
             if (documents_taken) cause_mask |= @intFromEnum(Cause.documents);
             if (lexical_taken) cause_mask |= @intFromEnum(Cause.lexical);
+            if (source_taken) cause_mask |= @intFromEnum(Cause.source);
             return error.NoFreeGeneration;
         }
     }
