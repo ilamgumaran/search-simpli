@@ -111,6 +111,11 @@ class Candidate:
     weight_empty: float   # R-only member weight when the v1 group is empty
     df_cap: bool = False  # v1 group not empty: an R-only member joins only if its in-scope
                           # body df is no larger than the largest of the v1 members'
+    ruled: bool = False   # Phase 2 (orchestrator ruling 1 at 0d16100): the word is "held"
+                          # when a chunk in scope or a visible title holds it; a held word's
+                          # R-only member joins at weight_held only if its key df (visible
+                          # chunks) is no higher than the word's own key df; a word not held
+                          # takes R's members at weight_empty with no cap
 
 
 CANDIDATES = {
@@ -120,6 +125,8 @@ CANDIDATES = {
     "D": Candidate("D", "always", 0.5, 1.0),
     # The builder's own (declared in docs/tasks/S5-T5-prototype.md before any held-out run):
     "E": Candidate("E", "always", 0.5, 1.0, df_cap=True),
+    # Phase 2: E as ruling 1 words it (the cap on the word's own key df).
+    "Er": Candidate("Er", "always", 0.5, 1.0, ruled=True),
 }
 
 
@@ -144,11 +151,23 @@ def make_groups(candidate: Candidate | None):
             members_by_key: dict = {}
             for word in vocabulary:
                 members_by_key.setdefault(analyzer_v3.key(word, fold), set()).add(word)
+            title_all: set = set()
+            for tokens in core._title_fields(visible_chunks, root_ids).values():
+                title_all.update(tokens)
             for term in sorted(terms):
                 mates = members_by_key.get(analyzer_v3.key(term, fold), set())
                 extra: set = set()
                 weight = 1.0
-                if candidate is not None and not (candidate.trigger == "v1-empty" and mates):
+                if candidate is not None and candidate.ruled:
+                    held_word = body_df.get(term, 0) > 0 or term in title_all
+                    found = [f for f in forms(term) if f in vocabulary and f not in mates]
+                    if held_word:
+                        own = key_df.get(term, 0)
+                        found = [f for f in found if key_df.get(f, 0) <= own]
+                    LOG.setdefault("lookups", {})[term] = len(forms(term))
+                    extra = set(found)
+                    weight = candidate.weight_held if held_word else candidate.weight_empty
+                elif candidate is not None and not (candidate.trigger == "v1-empty" and mates):
                     held = [f for f in forms(term) if f in vocabulary]
                     if candidate.df_cap and mates:
                         cap = max(body_df.get(m, 0) for m in mates)

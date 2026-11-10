@@ -159,3 +159,12 @@ Under every candidate R gives each of them a member, so fuzzy-v1 no longer runs 
   - C runs R only on a word with an empty v1 group, so a held word costs C no lookup. A, B, D and E run R on every word.
 - **By key.** A base → words map over the whole dictionary holds 24,049 (base, word) pairs. Only 10 pairs (over the 5 words above) are beyond each word's own base. A map that keeps only those, as S5-T4's key map keeps only the words whose key differs, holds 10 entries.
 - **E's cap** reads one df per held form. On the 10k corpus only `hashing` has one (`hash`).
+
+## Phase 2: E as ruled (`Er`)
+
+Ruling 1 at `0d16100` words E's cap on the word's own key df, not on the largest key df of its fold-groups-v1 members, and splits on whether the word is held (a chunk in scope or a visible title holds it), not on whether its v1 group is empty. The prototype carries that wording as candidate `Er` (`verbforms.py`), the form the engine and the reference ship as fold-groups-v2:
+
+- the word is held: an R-only member joins at 0.5 only when its key df (the visible chunks) is no higher than the word's own key df;
+- the word is not held: R's members join at 1.0 with no cap, whether or not the word has v1 key-mates.
+
+`PYTHONHASHSEED=0 python3 scripts/prototypes/s5t5/proto_s5t5.py --candidates today E Er --detail` on 9 Nov: `Er` equals `E` on every judged cell of both modes (success@1, MRR@10, nDCG@10, recall@5, first grade-2 rank and ties for all 198 queries); bars (a)–(e) as E's. Two groups differ: `feeds` (not held, key-mate `feed`) takes `feeding` at 1.0 instead of 0.5, and `names` (held, df 1) no longer takes `named` (df 2). They move only grade-0 hits at ranks 7–10 of `o03` and a score of `o07`.
