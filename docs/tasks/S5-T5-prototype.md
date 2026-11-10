@@ -74,7 +74,24 @@ Nothing else is generated. In particular, no relative of a relative and no plura
 - No keep list in any candidate.
 - Any candidate of the builder's own (at most two) is declared below, before any held-out run.
 
-**The builder's own candidates.** None declared at this commit.
+**The builder's own candidates.** One is declared, in a commit of its own, before any held-out run.
+
+- **E: D with a df cap on the held side.**
+  - When the v1 group is empty, R-only members join at 1.0, exactly as C and D.
+  - When it is not empty, an R-only member joins at 0.5 only if its in-scope body df is no larger than the largest in-scope body df among the v1 members (the word itself when held, and its key-mates).
+  - The df compared is the one fuzzy-v1's group scoring takes for the shared df (the chunks in scope, the path prefix applied). So on the held side R never changes the word's body df, and so never its idf. It only adds a half-weight match in the chunks that hold the rarer relative.
+  - This is a membership filter only: the group code and its scoring are unchanged.
+  - When every v1 member is title-only, the cap is 0, so only title-only relatives join.
+
+**The runs made before this declaration** all left out the 19 `verbform-heldout` rows and `vhn1` / `vhn2` (`proto_s5t5.py --no-heldout`).
+- **The grid.** A, B, C, D on every other row.
+- **A weight sweep on the held side.** D's R-only weight for a held word at 0.5, 0.25, 0.1 and 0.05.
+  - Control `c22` (`tomato seedlings potted`) went 1 → 2 under every weight, in both modes.
+  - The cause is the shared df: `pot` and `pots` are commoner than `potted`, so adding them lowers the word's idf whatever their weight.
+  - That is what E's cap addresses.
+- **F: E with 1.0 on the held side.** Also run. It lost `c22` (1 → 2: `pots` passes the cap at weight 1.0), so it is not declared.
+
+None of these runs touched a held-out row.
 
 ## How it is measured
 
