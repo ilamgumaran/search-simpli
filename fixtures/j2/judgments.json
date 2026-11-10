@@ -1548,6 +1548,17 @@
           "note": "the model"
         },
         {
+          "root_id": "school",
+          "path": "volcano-project.md",
+          "start_line": 1,
+          "end_line": 3,
+          "grade": 1,
+          "section_path": [
+            "Volcano project"
+          ],
+          "note": "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"
+        },
+        {
           "root_id": "laptop",
           "path": "projects/pip-planet-model.md",
           "start_line": 8,
@@ -1593,6 +1604,17 @@
             "This week"
           ],
           "note": "the fractions sheet"
+        },
+        {
+          "root_id": "school",
+          "path": "maths-homework.md",
+          "start_line": 1,
+          "end_line": 1,
+          "grade": 1,
+          "section_path": [
+            "Fractions sheet"
+          ],
+          "note": "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"
         },
         {
           "root_id": "school",
@@ -2079,6 +2101,17 @@
           "note": "the rules, a long list"
         },
         {
+          "root_id": "school",
+          "path": "science-fair.md",
+          "start_line": 1,
+          "end_line": 1,
+          "grade": 1,
+          "section_path": [
+            "Science fair"
+          ],
+          "note": "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"
+        },
+        {
           "root_id": "home",
           "path": "weekend-plans.md",
           "start_line": 9,
@@ -2124,6 +2157,17 @@
             "Method"
           ],
           "note": "the method"
+        },
+        {
+          "root_id": "home",
+          "path": "recipes/pancakes.md",
+          "start_line": 1,
+          "end_line": 3,
+          "grade": 1,
+          "section_path": [
+            "Pancakes"
+          ],
+          "note": "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"
         },
         {
           "root_id": "home",

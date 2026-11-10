@@ -161,10 +161,12 @@ q("misspelling", "m02", "Why do we learn multiplication tables?", "multiplicaton
 ], typo=("multiplicaton", "multiplication", False))
 q("misspelling", "m03", "What do I make for the volcano project?", "volcanoe project", K, [
     ("school/volcano-project.md", "§What to make", 2, "the model"),
+    ("school/volcano-project.md", "§Volcano project", 1, "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"),
     ("laptop/projects/pip-planet-model.md", "§Project notes", 0, "project three times, short"),
 ], typo=("volcanoe", "volcano", False))
 q("misspelling", "m04", "What's the fractions homework?", "fractoins homework", K, [
     ("school/maths-homework.md", "§This week", 2, "the fractions sheet"),
+    ("school/maths-homework.md", "§Fractions sheet", 1, "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"),
     ("school/newsletter-autumn.md", "§Homework club", 0, "homework, dense"),
     ("laptop/log/homework-tracker.txt", "*", 0, "the homework log"),
 ], typo=("fractoins", "fractions", True))
@@ -208,10 +210,12 @@ q("misspelling", "m14", "Where are my swimming goggles?", "swimming goggels", K,
 ], typo=("goggels", "goggles", True))
 q("misspelling", "m15", "What are the science fair rules?", "sciense fair", K, [
     ("school/science-fair.md", "§Science fair rules", 2, "the rules, a long list"),
+    ("school/science-fair.md", "§Science fair", 1, "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"),
     ("home/weekend-plans.md", "§Winter fair", 0, "another fair, short"),
 ], typo=("sciense", "science", False))
 q("misspelling", "m16", "How do I make pancakes?", "pancaeks recipe", K, [
     ("home/recipes/pancakes.md", "§Method", 2, "the method"),
+    ("home/recipes/pancakes.md", "§Pancakes", 1, "the H1/intro chunk of the right file (S5-T5 step 0 regrade)"),
     ("home/recipes/rasam.md", "§Rasam", 0, "recipe, another dish"),
 ], typo=("pancaeks", "pancakes", True))
 
