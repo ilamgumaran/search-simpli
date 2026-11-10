@@ -2,27 +2,25 @@
 """Generate R's cross-language golden (S5-T5, fold-groups-v2, docs/tasks/S5-T5.md
 Phase 1 ruling 7; docs/fold-groups-v2.md).
 
-R (`src/search_platform/verb_forms.py`) is written for the same term sets as K's
-golden (`scripts/gen_analyzer_v3_golden.py`): every analyzer-v2 term of J2's three
-roots, of `fixtures/family-folder` and of the 10k timing corpus (generated into a
-temporary folder), over file text and every path component; and R's traps.
+R (`src/search_platform/verb_forms.py`) is written for every term K's golden lists
+(`fixtures/analyzer-v3-golden.json`: J2's three roots, `fixtures/family-folder`, the
+10k timing corpus, the fold table's code points and K's traps), and for R's own
+traps.
 
 For every term, in UTF-8 byte order, one line `term TAB bases TAB forms LF` (the
 bases and the forms each joined by one space, empty when R does not apply) is
 hashed into `digest.sha256`; `digest` also counts the terms, those R applies to and
-the forms (R's exact lookups). The terms of J2, the family folder and the traps are
+the forms (R's exact lookups). The terms of J2, the family folder and R's traps are
 also listed in full: `listed` holds each one R applies to with its bases and forms,
 `off` each one it does not. `zig/src/verb_forms_test.zig` computes R on every term
-and must equal both, byte for byte.
+(K's golden's and the traps) and must equal both, byte for byte. Regenerate K's
+golden first when it is stale.
 
 Run: `python3 scripts/gen_verb_forms_golden.py > fixtures/verb-forms-golden.json`
 """
 import hashlib
 import json
-import os
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,7 +30,7 @@ from search_platform import core  # noqa: E402
 from search_platform import verb_forms as r  # noqa: E402
 
 J2_ROOTS = ("school", "home", "laptop")
-TIMING_FILES = 10000
+K_GOLDEN = ROOT / "fixtures" / "analyzer-v3-golden.json"
 
 TRAPS = [
     # the -ing and -ed remainders: length, the vowel (y counts), undoubling (not l, s, z)
@@ -74,6 +72,11 @@ def describe(terms: set) -> dict:
             "sha256": hashlib.sha256("\n".join(ordered).encode("utf-8")).hexdigest()}
 
 
+def k_golden_terms() -> set:
+    golden = json.loads(K_GOLDEN.read_text(encoding="utf-8"))
+    return set(golden["same"]) | {row[0] for row in golden["changed"]}
+
+
 def main() -> None:
     sets = {}
     j2 = set()
@@ -81,14 +84,9 @@ def main() -> None:
         j2 |= terms_of(ROOT / "fixtures" / "j2" / root)
     sets["j2"] = j2
     sets["family-folder"] = terms_of(ROOT / "fixtures" / "family-folder")
-    scratch = Path(os.environ.get("TMPDIR") or tempfile.gettempdir())
-    with tempfile.TemporaryDirectory(dir=scratch) as temporary:
-        corpus = Path(temporary) / "timing-10k"
-        subprocess.run([sys.executable, str(ROOT / "scripts" / "gen_timing_corpus.py"), str(corpus),
-                        str(TIMING_FILES)], check=True, stdout=subprocess.DEVNULL)
-        sets["timing-10k"] = terms_of(corpus)
+    sets["k-golden"] = k_golden_terms()
     sets["traps"] = set(TRAPS)
-    every = set().union(*sets.values())
+    every = sets["k-golden"] | sets["traps"]
     digest = hashlib.sha256()
     applies = lookups = 0
     for term in utf8_sorted(every):

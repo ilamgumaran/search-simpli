@@ -336,8 +336,9 @@ pub const Engine = struct {
         return hybrid.searchSparseTraced(postings.SparseScorer, allocator, &scorer, query_vector, engine.documents, result_output, options, trace);
     }
 
-    /// S5-T4: a query's groups before they merge: fold-groups-v1's (when
-    /// `options.fold`), then fuzzy-v1's on the tokens without one (when
+    /// S5-T4: a query's groups before they merge: the fold groups (when
+    /// `options.fold`; fold-groups-v2 since S5-T5, the key-mates and R's verb
+    /// forms), then fuzzy-v1's on the tokens without one (when
     /// `options.fuzzy`). Both are owned by `allocator`.
     const ComputedGroups = struct { folded: ?fuzzy.Groups = null, expanded: ?fuzzy.Groups = null };
 

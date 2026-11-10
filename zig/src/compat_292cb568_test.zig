@@ -198,3 +198,25 @@ test "S5-T4: a 292cb568 index opens and groups a plural with its singular (fold-
     const none = try scoped.searchKnowledge(a, "frog", &.{}, off, .{}, try a.alloc(hybrid.Result, 4), try a.alloc(engine_module.Evidence, 4), null);
     try std.testing.expectEqual(@as(usize, 0), none.len);
 }
+
+test "S5-T5: a 292cb568 index opens and groups a word with its verb forms (fold-groups-v2 needs no rebuild)" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try copyFixture(a, tmp.dir);
+    const opened = try snapshot_open.openScoped(a, io, tmp.dir);
+    defer opened.folder.close();
+    const options = hybrid.SearchOptions{ .retrieval_mode = .lexical, .top_k = 4 };
+    const scoped = service_module.ScopedService{ .service = .{ .engine = opened.engine, .folder = opened.folder } };
+    // `baked` is held by no chunk and no name; R reaches `bake` and `baking`,
+    // each at 1.0, and fuzzy-v1 does not also run on it.
+    var trace = hybrid.Trace{ .allocator = a, .io = io };
+    const evidence = try scoped.searchKnowledge(a, "baked", &.{}, options, .{}, try a.alloc(hybrid.Result, 4), try a.alloc(engine_module.Evidence, 4), &trace);
+    try std.testing.expect(evidence.len >= 1);
+    try std.testing.expectEqual(@as(usize, 1), trace.grouped.items.len);
+    try std.testing.expectEqual(@as(usize, 2), trace.grouped.items[0].members.len);
+    try std.testing.expectEqual(@as(usize, 0), trace.expanded.items.len);
+    for (trace.grouped.items[0].members) |m| try std.testing.expect(std.mem.eql(u8, m, "bake") or std.mem.eql(u8, m, "baking"));
+}

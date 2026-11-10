@@ -61,8 +61,16 @@ fn makeCorpus(a: std.mem.Allocator, documents: []const hybrid.Document) !Corpus 
     };
 }
 
-/// The members `fold.compute` gives `typed` under `options` (empty: no group).
+/// The members `fold.compute` gives `typed` under `options` (empty: no group),
+/// each at weight 1.0.
 fn expectGroup(a: std.mem.Allocator, corpus: *const Corpus, options: hybrid.SearchOptions, typed: []const u8, expected: []const []const u8) !void {
+    const ones = [_]f32{1.0} ** 8;
+    return expectWeighted(a, corpus, options, typed, expected, ones[0..expected.len]);
+}
+
+/// The members and their weights (S5-T5: an R-only member of a held word
+/// weighs 0.5).
+fn expectWeighted(a: std.mem.Allocator, corpus: *const Corpus, options: hybrid.SearchOptions, typed: []const u8, expected: []const []const u8, weights: []const f32) !void {
     var map = try fold.KeyMap.deriveIndexed(a, a, corpus.engine.lexical_index, &corpus.field);
     defer map.deinit(a);
     const context = fuzzy.Context{ .index = corpus.engine.lexical_index, .documents = corpus.engine.documents, .title = &corpus.field, .options = options };
@@ -74,9 +82,9 @@ fn expectGroup(a: std.mem.Allocator, corpus: *const Corpus, options: hybrid.Sear
         std.debug.print("\n", .{});
     }
     try std.testing.expectEqual(expected.len, members.len);
-    for (members, expected) |m, e| {
+    for (members, expected, weights) |m, e, w| {
         try std.testing.expectEqualStrings(e, m.term);
-        try std.testing.expectEqual(@as(f32, 1.0), m.weight);
+        try std.testing.expectEqual(w, m.weight);
     }
 }
 
@@ -89,10 +97,14 @@ test "groups: the trigger (not empty, not the term alone), the order (term, key 
     defer arena.deinit();
     const a = arena.allocator();
     const corpus = try makeCorpus(a, &docs);
-    try expectGroup(a, &corpus, .{}, "boxes", &.{ "boxes", "box" });
+    // S5-T5 (fold-groups-v2): `boxing` is one of R's forms of `boxes` (its
+    // base is `box`); boxes is held (df 1) and boxing's df (1) is not above
+    // it, so it joins at 0.5. R needs four letters: `box` takes none.
+    try expectWeighted(a, &corpus, .{}, "boxes", &.{ "boxes", "box", "boxing" }, &.{ 1.0, 1.0, 0.5 });
     try expectGroup(a, &corpus, .{}, "box", &.{ "box", "boxes" });
-    // `boxing` keys to itself and no other term shares it.
-    try expectGroup(a, &corpus, .{}, "boxing", &.{});
+    // `boxing` keys to itself and no other term shares it; R reaches `boxes`
+    // (df 1, not above boxing's 1) but not `box` (df 2, above it).
+    try expectWeighted(a, &corpus, .{}, "boxing", &.{ "boxing", "boxes" }, &.{ 1.0, 0.5 });
     // An unheld typed term: café (df 2) before cafe (df 1), the df over bytes.
     try expectGroup(a, &corpus, .{}, "cafes", &.{ "café", "cafe" });
     try expectGroup(a, &corpus, .{}, "cafe", &.{ "cafe", "café" });
@@ -200,7 +212,7 @@ test "scoring: the best member per chunk at one df; fold off ranks as before; no
     try std.testing.expectEqual(@as(usize, 1), five.len);
     try std.testing.expectEqual(one[0].lexical_score, five[0].lexical_score);
     // A query with no group (and no fuzzy trigger) is identical on and off.
-    for ([_][]const u8{ "shelf club", "boxing", "the a of", "opening hours" }) |q| {
+    for ([_][]const u8{ "shelf club", "noon", "the a of", "opening hours" }) |q| {
         const x = try corpus.engine.queryTokenized(a, q, &.{}, try a.alloc(hybrid.Result, docs.len), on);
         const y = try corpus.engine.queryTokenized(a, q, &.{}, try a.alloc(hybrid.Result, docs.len), off);
         try std.testing.expectEqual(y.len, x.len);

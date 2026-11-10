@@ -1,5 +1,7 @@
 //! K, the key function of `fold-groups-v1` (S5-T4, docs/tasks/S5-T4.md rulings
-//! 2-5 of the plan and ruling 10's query side), and the key map built on it.
+//! 2-5 of the plan and ruling 10's query side), the key map built on it, and
+//! the query side of `fold-groups-v2` (S5-T5: the key-mates and R's verb
+//! forms, `verb_forms.zig`).
 //!
 //! K maps one analyzer-v2 term (or a raw token: F folds both the same way) to
 //! zero or more pieces through four parts, in order:
@@ -34,8 +36,19 @@ const nfc = @import("nfc.zig");
 const postings = @import("postings.zig");
 const tables = @import("unicode_tables.zig");
 const title_field = @import("title_field.zig");
+const verb_forms = @import("verb_forms.zig");
 
-pub const policy_id = "fold-groups-v1";
+/// The query side's policy (`retrieval.fold_policy_id`, contract 2.6.0).
+pub const policy_id = "fold-groups-v2";
+/// K's policy: fold-groups-v2 keeps fold-groups-v1's key unchanged
+/// (`fixtures/analyzer-v3-golden.json` names it).
+pub const key_policy_id = "fold-groups-v1";
+
+/// fold-groups-v2: the weight of an R-only member of a group whose word the
+/// files hold (ruling 1 of S5-T5 Phase 1); a word they do not hold takes its
+/// R-only members at 1.0.
+pub const verb_form_held_weight: f32 = 0.5;
+pub const verb_form_unheld_weight: f32 = 1.0;
 
 pub const Error = nfc.Error;
 
@@ -180,9 +193,9 @@ fn inList(list: []const u8, piece: []const u8) bool {
 }
 
 /// S's output length (a prefix of `piece`) and whether a final `y` follows it.
-const Stem = struct { len: usize, y: bool = false };
+pub const Stem = struct { len: usize, y: bool = false };
 
-fn stemPlural(piece: []const u8) Stem {
+pub fn stemPlural(piece: []const u8) Stem {
     const whole = Stem{ .len = piece.len };
     if (piece.len < 3 or piece.len > 49) return whole;
     for (piece) |b| if (b < 'a' or b > 'z') return whole;
@@ -296,6 +309,8 @@ pub const Keyer = struct {
     run: std.ArrayList(u8) = .empty,
     marks: std.ArrayList(u21) = .empty,
     marked: std.ArrayList(u8) = .empty,
+    /// `appendWord`: F, the split and A only (S and T left out).
+    fa_only: bool = false,
 
     pub fn init(allocator: std.mem.Allocator) Keyer {
         return .{ .allocator = allocator };
@@ -413,6 +428,11 @@ pub const Keyer = struct {
             owned = try nfc.normalize(a, self.marked.items);
             piece = owned.?;
         }
+        if (self.fa_only) {
+            try out.appendSlice(a, piece);
+            try out.append(a, 0);
+            return;
+        }
         // S, then T (each applies to a piece the other never does).
         const stem = stemPlural(piece);
         if (stem.len != piece.len or stem.y) {
@@ -422,6 +442,26 @@ pub const Keyer = struct {
             try appendTamil(a, piece, out);
         }
         try out.append(a, 0);
+    }
+
+    /// R's word of `token` (fold-groups-v2): u = A(F(token)) when F leaves
+    /// one piece and that piece is 4 to 49 letters a-z, written into `out`
+    /// (cleared first), else null. An ASCII token takes no table lookup.
+    pub fn appendWord(self: *Keyer, token: []const u8, out: *std.ArrayList(u8)) Error!?[]const u8 {
+        out.clearRetainingCapacity();
+        if (asciiWord(token)) {
+            if (token.len < verb_forms.min_letters or token.len > verb_forms.max_letters) return null;
+            try out.ensureUnusedCapacity(self.allocator, token.len);
+            for (token) |b| out.appendAssumeCapacity(std.ascii.toLower(b));
+        } else {
+            if (tamilNfcWord(token)) return null;
+            self.fa_only = true;
+            defer self.fa_only = false;
+            const pieces = try self.appendPiecesFull(token, out);
+            if (pieces != 1) return null;
+            out.items.len -= 1; // the piece's 0x00
+        }
+        return if (verb_forms.applies(out.items)) out.items else null;
     }
 
     /// The group key of `term` (ruling 10): K's pieces joined by one space, or
@@ -694,12 +734,71 @@ fn memberBefore(typed: []const u8, a: fuzzy.Member, b: fuzzy.Member) bool {
     return std.mem.order(u8, a.term, b.term) == .lt;
 }
 
-/// fold-groups-v1 (ruling 10): for each distinct token, the in-scope body
-/// terms and visible title terms whose key equals the token's, each at weight
-/// 1.0; a group is kept when it is not empty and not the token alone. Null
-/// when no token has one. The groups score through fuzzy-v1's machinery (one
-/// shared df, the best member per chunk); `map` is over the whole index and
-/// the scope is applied here, at use.
+/// The term of `bytes` in the body dictionary, else in the title field, for
+/// `member` (null: neither holds it).
+fn exact(context: fuzzy.Context, bytes: []const u8) ?Numbered {
+    if (postings.lookupExact(context.index, bytes)) |i| return .{ .body = context.index.terms[i], .bytes = context.index.terms[i].term };
+    const field = context.title orelse return null;
+    const term = field.lookup(bytes) orelse return null;
+    return .{ .body = null, .bytes = field.termBytes(term) };
+}
+
+/// Whether a chunk in scope or a visible title holds `token` (fuzzy-v1's
+/// trigger without its length and script), and the token's own key df (0
+/// when the body does not hold it).
+const Held = struct { held: bool, key_df: u32 };
+
+fn heldOf(context: fuzzy.Context, token: []const u8) Held {
+    var out = Held{ .held = false, .key_df = 0 };
+    if (postings.lookupExact(context.index, token)) |i| {
+        const entry = context.index.terms[i];
+        out.key_df = context.keyFrequency(entry);
+        if (context.heldInScope(entry)) out.held = true;
+    }
+    if (!out.held) if (context.title) |field| if (field.lookup(token)) |t| {
+        if (context.titleHeld(field, t, false)) out.held = true;
+    };
+    return out;
+}
+
+fn listed(members: []const fuzzy.Member, bytes: []const u8) bool {
+    for (members) |m| if (std.mem.eql(u8, m.term, bytes)) return true;
+    return false;
+}
+
+/// fold-groups-v2 (S5-T5 Phase 1 ruling 1): R's forms of `token` that the
+/// request can use and that are not already members, appended to `members`.
+/// A token no chunk in scope and no visible title holds takes them at 1.0; a
+/// held token takes one at 0.5 only when its key df is no higher than the
+/// token's own, so the group's df never rises above the token's through R.
+fn appendVerbForms(allocator: std.mem.Allocator, context: fuzzy.Context, keyer: *Keyer, word: *std.ArrayList(u8), token: []const u8, members: *std.ArrayList(fuzzy.Member)) !void {
+    const u = (try keyer.appendWord(token, word)) orelse return;
+    var found = verb_forms.Words{};
+    verb_forms.forms(u, token, &found);
+    var held: ?Held = null;
+    for (0..found.len) |i| {
+        const form = found.get(i);
+        const candidate = exact(context, form) orelse continue;
+        if (listed(members.items, candidate.bytes)) continue;
+        var m = member(context, candidate) orelse continue;
+        if (held == null) held = heldOf(context, token);
+        if (held.?.held) {
+            if (m.key_df > held.?.key_df) continue;
+            m.weight = verb_form_held_weight;
+        } else {
+            m.weight = verb_form_unheld_weight;
+        }
+        try members.append(allocator, m);
+    }
+}
+
+/// fold-groups-v2: for each distinct token, the in-scope body terms and
+/// visible title terms whose key equals the token's, each at weight 1.0
+/// (fold-groups-v1, ruling 10 of S5-T4), and R's forms the request can use
+/// (`appendVerbForms`); a group is kept when it is not empty and not the
+/// token alone. Null when no token has one. The groups score through
+/// fuzzy-v1's machinery (one shared df, the best member per chunk); `map` is
+/// over the whole index and the scope is applied here, at use.
 pub fn compute(allocator: std.mem.Allocator, context: fuzzy.Context, map: *const KeyMap, tokens: []const []const u8) !?fuzzy.Groups {
     var keyer = Keyer.init(allocator);
     defer keyer.deinit();
@@ -707,6 +806,8 @@ pub fn compute(allocator: std.mem.Allocator, context: fuzzy.Context, map: *const
     defer k.deinit(allocator);
     var kk = std.ArrayList(u8).empty;
     defer kk.deinit(allocator);
+    var word = std.ArrayList(u8).empty;
+    defer word.deinit(allocator);
     var members = std.ArrayList(fuzzy.Member).empty;
     defer members.deinit(allocator);
     var items = std.ArrayList(fuzzy.Group).empty;
@@ -738,6 +839,7 @@ pub fn compute(allocator: std.mem.Allocator, context: fuzzy.Context, map: *const
         }
         const r = map.range(k.items);
         for (map.term_of[r.start..r.end]) |i| if (member(context, numbered(context, map, i))) |m| try members.append(allocator, m);
+        try appendVerbForms(allocator, context, &keyer, &word, token, &members);
         if (members.items.len == 0) continue;
         if (members.items.len == 1 and std.mem.eql(u8, members.items[0].term, token)) continue;
         std.sort.heap(fuzzy.Member, members.items, token, memberBefore);
