@@ -698,7 +698,7 @@ limits, negative controls and genuine package provenance: [task report](docs/tas
 keeping only those the files hold, with a cap for words the files already hold, gains J2's verb rows without costing
 the control slice (`c22`, which Porter's `-ed` rule costs).
 
-**Setup:** Main `07e842a` plus S5-T5's step 0 regrade and a held-out slice `verbform-heldout` (19 rows, judged before
+**Setup:** Main `4afd4c3` (the task filed at `41ae08e`) plus S5-T5's step 0 regrade and a held-out slice `verbform-heldout` (19 rows, judged before
 any rule code). Five candidates in a Python prototype (`scripts/prototypes/s5t5/`, record in
 [docs/tasks/S5-T5-prototype.md](docs/tasks/S5-T5-prototype.md)): A (full weight), B (half), C (words not held only), D
 (half for held words), E (D with a cap on the form's key document frequency). Zig 0.16.0, Python 3.9.6, macOS arm64.
@@ -718,4 +718,6 @@ word (`hop` → `hopes`); no J2 group took one. The held-out rows sit in three f
 
 **Conclusion:** Ship E. A query-side generator with a membership test and a document-frequency cap is enough for the
 regular verb forms J2 judges, at no control cost. Details: [S5-T5](docs/tasks/S5-T5.md),
-[fold-groups-v2](docs/fold-groups-v2.md).
+[fold-groups-v2](docs/fold-groups-v2.md). Status: verified and merged 2026-11-10 (the verifier's own runs reproduced
+every J2 cell on both surfaces, the plants and the natives; its timing rounds: first query after an open −0.021 to
++0.049 ms, warm queries with no form −0.009 to +0.002 ms, `hashing` +0.034 / +0.035 ms).

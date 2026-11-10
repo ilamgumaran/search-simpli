@@ -106,9 +106,11 @@ against the fold-groups-v1 library, with a second copy of it as the noise
 reference ([S5-T5's Report](tasks/S5-T5.md)):
 
 - **The first `content` query after an open:** +0.04 to +0.05 ms
-  (`hybrid retrieval`, `system`), +0.08 ms for `hashing`.
+  (`hybrid retrieval`, `system`), +0.08 ms for `hashing` (the verifier's six
+  rounds: −0.021 to +0.003 ms and +0.025 / +0.049 ms).
 - **A warm query whose words gain no form:** at most +0.002 ms `content` and
-  `both`; the two long queries measured −0.006 to −0.012 ms (code placement).
+  `both`; the two long queries measured −0.006 to −0.012 ms (code placement). The verifier's rounds:
+  at most +0.002 ms, and −0.003 to −0.009 ms for the long queries.
 - **`hashing`**, the one corpus word that gains a form (`hash`, 1,239
   postings): +0.034 ms `content`, +0.035 ms `both`.
 - **Memory:** nothing is kept. R runs on the stack; the key map is

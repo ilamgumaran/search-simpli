@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-09 (S5-T5, verb forms at query time, `fold-groups-v2`, contracts 2.6.0; builder's Report, verification pending)
+Last updated: 2026-11-10 (S5-T5, verb forms at query time, `fold-groups-v2`, contracts 2.6.0; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -9,9 +9,10 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
-## Verb forms: a query word is also searched as its `-ing` and `-ed` forms that the files hold (S5-T5, 2026-11-09; builder's Report, verification pending)
+## Verb forms: a query word is also searched as its `-ing` and `-ed` forms that the files hold (S5-T5, 2026-11-09; verified and merged 2026-11-10)
 
-[Report](docs/tasks/S5-T5.md). `fold-groups-v2` ([docs/fold-groups-v2.md](docs/fold-groups-v2.md)), over
+**Verified and merged 2026-11-10** ([Verdict](docs/tasks/S5-T5.md)); the verifier's own runs gave every J2 cell below on
+both surfaces, the plants and the natives byte for byte. [Report](docs/tasks/S5-T5.md). `fold-groups-v2` ([docs/fold-groups-v2.md](docs/fold-groups-v2.md)), over
 `fold-groups-v1` unchanged.
 
 **R** generates a word's verb forms: for u = A(F(t)) of 4 to 49 letters a–z, the bases (the plural stem; the `-ing` or
