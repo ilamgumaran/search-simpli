@@ -126,6 +126,18 @@
  * the lexical channel runs under "content" or "both" on an analyzer-v2
  * generation, and a query_term_grouped warning with "members". "filename"
  * is never grouped. */
+
+/* Contract 2.6.0 (S5-T5) adds, additive, with no request field and no
+ * signature or index format change: -ing and -ed verb forms in the fold
+ * groups (fold-groups-v2, docs/fold-groups-v2.md). A word of 4 to 49
+ * letters a-z (after folding) is also searched as its verb forms (paint,
+ * paints, painted, painting; hop, hopped, hoping; tidy, tidied) that a
+ * chunk in scope or a visible file's name holds: at full weight when no
+ * chunk in scope and no visible file's name holds the word itself (fuzzy-v1
+ * then does not run on it), at half weight and only when the form is no
+ * more common than the word when they do. retrieval.fold_policy_id is
+ * "fold-groups-v2"; the forms are listed in the query_term_grouped
+ * warning's "members". */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 
@@ -154,7 +166,7 @@ typedef struct ss_handle ss_handle;
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "2.5.0". The returned pointer is static storage owned by the library:
+ * "2.6.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);
@@ -334,7 +346,9 @@ char *ss_status(ss_handle *handle);
  *                     ones). "term" is the typed word, as above.
  *                 query_term_grouped         (2.5.0) the word was also
  *                     searched as "members", the words that share its
- *                     fold key (fold-groups-v1), in the group's order, the
+ *                     fold key (fold-groups-v1) or, since 2.6.0, its -ing
+ *                     and -ed verb forms (fold-groups-v2), in the group's
+ *                     order, the
  *                     word itself left out, each held by a chunk or a file
  *                     name in scope (never only by hidden ones). "term" is
  *                     the typed word, as above. A word with a group is not
