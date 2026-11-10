@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-09 (S1-T23, PR #11's symlink generation-slot regressions re-landed on current `main` without a native rebuild; verified and merged)
+Last updated: 2026-11-09 (S5-T5, verb forms at query time, `fold-groups-v2`, contracts 2.6.0; builder's Report, verification pending)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -8,6 +8,43 @@ Project: **Search Simpli** (`search-simpli`)
 > [`docs/journey/`](docs/journey/README.md) — vision, how we work, the next task,
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
+
+## Verb forms: a query word is also searched as its `-ing` and `-ed` forms that the files hold (S5-T5, 2026-11-09; builder's Report, verification pending)
+
+[Report](docs/tasks/S5-T5.md). `fold-groups-v2` ([docs/fold-groups-v2.md](docs/fold-groups-v2.md)), over
+`fold-groups-v1` unchanged.
+
+**R** generates a word's verb forms: for u = A(F(t)) of 4 to 49 letters a–z, the bases (the plural stem; the `-ing` or
+`-ed` remainder of at least 3 letters with a vowel, plus `e` and undoubled; `-ied` → `y`) and their relatives (`s`,
+`es`, `ed`, `ing`, the `e`, doubling and `y` shapes), one exact dictionary lookup each (at most 19 for a J2 word, 45 by
+construction). The Zig engine (`zig/src/verb_forms.zig`, used by `zig/src/fold.zig`) and the Python mirror
+(`src/search_platform/verb_forms.py`) are held equal by `fixtures/verb-forms-golden.json` (2,856 terms listed, 16,211
+listed as off, a digest over 49,347 terms).
+
+**The groups.** Query side only: no index format, writer or analyzer change, and no rebuild. A form joins a word's
+fold-groups-v1 group when it is a member by v1's own test (in-scope body, or a visible title under the prefix). A word
+no chunk in scope and no visible file name holds takes every such form at 1.0 and is not also fuzzy-expanded; a word
+the files hold takes a form at 0.5 only when the form's key document frequency is no higher than its own (visible
+chunks; a prefix narrows membership, not statistics). Scoring and order are v1's.
+
+**The contract.** Contracts **2.6.0**, additive: `retrieval.fold_policy_id` is `"fold-groups-v2"`; R's forms appear in
+the existing `query_term_grouped` warning's `members` (no new code or field). Dart **0.7.0**. Natives: macOS 953,800
+B, Android `arm64-v8a` 915,744 B, iOS framework binary 918,536 B (+17,008 / +4,800 / +632 B over 0.6.0);
+`native/SOURCE-SHA256` `cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b`. The `NoFreeGeneration`
+line now names a `source-N.hybsrc` entry (`docs/generation-lifecycle.md`).
+
+**J2, `searchd`, success@1 under `content` and `both`, before → after:** morphology 0.538 → 0.692; morphology-heldout
+0.571 → 0.714; verbform-heldout (19 rows judged before R) 0.263 → 0.947; control 1.000; every other slice unchanged;
+overall 0.811 → 0.832. The two surfaces agree on all 1,720 per-query cells. The gate passes with nothing added to the
+allow-list. The older packs do not move. Step 0 (the regrade of `m03`, `m04`, `m15`, `m16`) moved 12 MRR, nDCG and
+recall cells and no success@1.
+
+**Cost** (10k timing corpus, `ReleaseSmall`, six interleaved rounds under the gate, a second S5-T4 library as the
+noise reference): the first `content` query after an open +0.039 to +0.088 ms (bound ≤ +0.30); warm queries with no
+form −0.012 to +0.002 ms (bound ≤ +0.03); `hashing` (grouped with `hash`, 1,239 postings) +0.034 ms `content`, +0.035
+ms `both`; nothing kept beyond fold-groups-v1's 64 B key map; NFR-13 at 10k and 15k under 64 MiB.
+
+**For the consumer app:** the Report's "What M16 carries".
 
 ## Symlinked generation slots: PR #11's regressions on current `main` (S1-T23, 2026-11-09; verified and merged)
 

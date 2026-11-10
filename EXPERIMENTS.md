@@ -691,3 +691,31 @@ limits, negative controls and genuine package provenance: [task report](docs/tas
 **Re-landed (2026-11-09, S1-T23, on `main` `07e842a`):** The runtime line had already reached `main` with PR #21 (S4-T2/S4-T3) and is in the shipped natives; the branch's natives (19 Oct) were not taken, and no digest-covered file changed (`81f9c76b…` before and after), so nothing was rebuilt. The regressions were ported and widened to the six names the allocator now probes (`documents`, `lexical`, `source`, `filenames`, `filename-lexical`, `state`), each as a dangling link and as a link to itself, plus exhaustion at the `u64` max candidate for each name. On a scratch copy with only the probe returned to following links: 5 Zig tests fail (`main`'s existing filename test, the three new allocator tests, the C ABI test with `PathAlreadyExists`) and both real `searchd` tests fail (`PathAlreadyExists`); with the fix, on this Mac: Zig 418/426 (8 scale skips) in Debug and `ReleaseSmall`, C ABI 24/24, Python 335 OK (Python 3.9.6, no skips). Finding: at the exhausted candidate a `source-N.hybsrc` entry is not named by `NoFreeGeneration` (the trace list prints empty); recorded in [03-next](docs/journey/03-next.md), not fixed, because the fix changes a digest-covered file.
 
 **Conclusion:** The bounded occupancy fix is on `main` and in the natives; its regressions cover every probed name. Keep non-regular entries excluded from highest-generation scanning while respecting their occupied candidate names. Status: re-landed by S1-T23, verified and merged 2026-11-09 (the merge closes PR #11 and issue #10).
+
+## 2026-11-09 — Verb forms at query time (S5-T5)
+
+**Hypothesis:** `-ing` and `-ed` forms can be grouped at query time without a stemmer: generating a word's forms and
+keeping only those the files hold, with a cap for words the files already hold, gains J2's verb rows without costing
+the control slice (`c22`, which Porter's `-ed` rule costs).
+
+**Setup:** Main `07e842a` plus S5-T5's step 0 regrade and a held-out slice `verbform-heldout` (19 rows, judged before
+any rule code). Five candidates in a Python prototype (`scripts/prototypes/s5t5/`, record in
+[docs/tasks/S5-T5-prototype.md](docs/tasks/S5-T5-prototype.md)): A (full weight), B (half), C (words not held only), D
+(half for held words), E (D with a cap on the form's key document frequency). Zig 0.16.0, Python 3.9.6, macOS arm64.
+
+**Observation:** A, B and D cost `c22` its rank 1 (7, 2, 2). C and E keep control at 1.000; E gains two held rows over
+C (`vt2` 3 → 1, `vt1` 3 → 2). E as ruled (the cap on the word's own key df; 1.0 for an unheld word) equals E on every
+judged cell. Shipped as `fold-groups-v2`: verbform-heldout 0.263 → 0.947 success@1 on `searchd` in both modes,
+morphology 0.538 → 0.692, morphology-heldout 0.571 → 0.714, control 1.000, older packs unchanged. Cost on the 10k
+timing corpus at most +0.09 ms on a first query and +0.002 ms on a warm query with no form. Plants: the cap removed
+fails three Zig and two Python tests and drops `c22` to rank 2 (the J2 gate fails); the visibility filter removed
+fails five Zig tests and one Python test; the remainder's vowel condition removed fails the R golden in Zig and
+two Python tests.
+
+**Did not prove:** Irregular verbs, `-er`/`-est` and other languages are not handled. R also generates forms of another
+word (`hop` → `hopes`); no J2 group took one. The held-out rows sit in three files, so `both` measures R less than
+`content`. No device measurement.
+
+**Conclusion:** Ship E. A query-side generator with a membership test and a document-frequency cap is enough for the
+regular verb forms J2 judges, at no control cost. Details: [S5-T5](docs/tasks/S5-T5.md),
+[fold-groups-v2](docs/fold-groups-v2.md).

@@ -354,3 +354,53 @@ named moves (S5-T4 orchestrator ruling 4 on Phase 1):
 | `avoid-full-corpus-scan` | 2 → 3 | `file` → `files` | `storage/compaction.md`, `files` |
 | `malicious-indexed-instructions` | 3 → 4 | `document` → `documents` | `storage/compaction.md`, `documents` |
 | `safe-old-file-cleanup` | 2 → 1 (gain) | `readers` → `reader` | the answer, `storage/compaction.md`, `reader` |
+
+### S5-T5: verb forms
+
+[S5-T5](tasks/S5-T5.md) first graded the intro chunks of `m03`, `m04`, `m15`
+and `m16` 1 (step 0, S5-T3 ruling Q3's regrade): 12 of 484 cells moved per
+surface, all MRR@10, nDCG@10 and recall@5 of the misspelling slice and of
+overall (misspelling MRR@10 0.649 → 0.859 under `content`, 0.594 → 0.844 under
+`both`), and no success@1 cell or first grade-2 rank. J2 then gained
+**`verbform-heldout`** (19 rows and 2 negatives in three new files: 12 verb
+rows, 5 look-alike guards, 2 rows whose typed word the files hold), judged
+before any R code existed. The task adds
+[fold-groups-v2](fold-groups-v2.md): a query word is also searched as its `-ing`
+and `-ed` forms that the files hold, at 1.0 for a word no file holds and at 0.5,
+under a cap on the form's key document frequency, for one they do. At S5-T5
+(`searchd` ReleaseSmall; MRR@10, success@1 in brackets):
+
+| Slice | n | searchd content | searchd both | Python content | Python both |
+|---|---:|---:|---:|---:|---:|
+| control | 23 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+| misspelling | 16 | 0.859 (0.562) | 0.844 (0.562) | 0.859 (0.562) | 0.844 (0.562) |
+| morphology | 13 | 0.808 (0.692) | 0.795 (0.692) | 0.808 (0.692) | 0.795 (0.692) |
+| accent | 9 | 0.846 (0.778) | 0.847 (0.778) | 0.846 (0.778) | 0.847 (0.778) |
+| Tamil | 13 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+| title intent | 11 | 0.955 (0.909) | 0.955 (0.909) | 0.955 (0.909) | 0.955 (0.909) |
+| phrase | 10 | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) | 0.900 (0.800) |
+| overall | 95 | 0.920 (0.832) | 0.915 (0.832) | 0.920 (0.832) | 0.915 (0.832) |
+| title-heldout | 8 | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) | 1.000 (1.000) |
+| misspelling-heldout | 12 | 0.958 (0.917) | 0.958 (0.917) | 0.958 (0.917) | 0.958 (0.917) |
+| morphology-heldout | 14 | 0.833 (0.714) | 0.857 (0.714) | 0.833 (0.714) | 0.857 (0.714) |
+| accent-heldout | 11 | 0.955 (0.909) | 0.909 (0.909) | 0.955 (0.909) | 0.909 (0.909) |
+| tamil-heldout | 13 | 0.962 (0.923) | 0.962 (0.923) | 0.962 (0.923) | 0.962 (0.923) |
+| verbform-heldout | 19 | 0.974 (0.947) | 0.947 (0.947) | 0.974 (0.947) | 0.947 (0.947) |
+
+(`verbform-heldout` before S5-T5, through `searchd`: 0.377 (0.263) under
+`content`, 0.263 (0.263) under `both`. Before S5-T5, after step 0: morphology
+0.718 (0.538) / 0.679 (0.538), morphology-heldout 0.690 (0.571) / 0.714
+(0.571), overall 0.907 (0.811) / 0.900 (0.811).) The two surfaces agree on all
+1,720 per-query cells. The first grade-2 rank moves on 18 rows under `content`
+and 17 under `both`, every move a gain: `o06` 3 → 1 (outside the top 10 → 1
+under `both`), `o11` 2 → 1, `oh11` and `oh12` outside → 1, the twelve verb rows
+`vh01`–`vh12` to rank 1, `vt2` 3 → 1 (outside → 1 under `both`) and `vt1` 3 → 2
+under `content`. The five guards `vg1`–`vg5` and `c22` stay at rank 1. `o05`
+stays at 3, `o12` at 6 under `content` and outside the top 10 under `both`, and
+`vt1` outside the top 10 under `both`. The S5-T1 gate passes on both surfaces
+and both variants with nothing added to the allow-list; with R's cap removed
+(a plant) `c22` drops to rank 2, control MRR@10 to 0.978, and the gate fails.
+The negative `on2` (`painting the fence`) now tops `projects/pip-planet-model.md`
+through `paint` (recorded, not gated: S5-T5 ruling 5). The older packs do not
+move (Python reference: every pack's metrics and per-query ranks equal
+fold-groups-v1's). The baseline is re-recorded at S5-T5 in its own commit.
