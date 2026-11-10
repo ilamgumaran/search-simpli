@@ -1,35 +1,35 @@
 {
   "schema": "j2-baseline-v1",
   "judgments_sha256": "5142497646e4bbb309e61ff67f20d57d67418e49c7ded6438e4df802e09fb0bc",
-  "engine_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
-  "run_commit": "2c7ca97e73380d9b0b82df8dcb180dfb3e626c5c",
-  "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
+  "engine_commit": "cd7bf47ecb990794479c9d584af977486363d294",
+  "run_commit": "cd7bf47ecb990794479c9d584af977486363d294",
+  "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
   "recorded": "2026-11-09",
   "load": {
     "before": [
-      3.09,
-      2.81,
-      2.27
+      0.64,
+      1.21,
+      1.77
     ],
     "after": [
-      3.24,
-      2.85,
-      2.28
+      0.64,
+      1.21,
+      1.77
     ],
     "top_sample": [
-      "Processes: 983 total, 3 running, 980 sleeping, 4572 threads",
-      "Load Avg: 3.24, 2.85, 2.28",
-      "CPU usage: 3.95% user, 2.49% sys, 93.55% idle"
+      "Processes: 988 total, 3 running, 985 sleeping, 4513 threads",
+      "Load Avg: 0.64, 1.21, 1.77",
+      "CPU usage: 3.29% user, 1.11% sys, 95.59% idle"
     ]
   },
   "top_k": 10,
   "surfaces": {
     "searchd": {
       "binary": {
-        "sha256": "bc7161403a580f1f383d455d199e15e1c0d8eef4b42fcba4daef3e7973ddf315",
-        "size": 1078504,
+        "sha256": "99931316c90418e2a80fbe2fb25b55c19228c95564ea834e260361ab14108afd",
+        "size": 1078952,
         "optimize": "ReleaseSmall",
-        "zig": "0.16.0"
+        "zig": null
       },
       "runs": {
         "content": {
@@ -50,9 +50,9 @@
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.538462,
-              "mrr_at_10": 0.717949,
-              "ndcg_at_10": 0.788384,
+              "success_at_1": 0.692308,
+              "mrr_at_10": 0.807692,
+              "ndcg_at_10": 0.855236,
               "recall_at_5": 0.923077
             },
             "accent": {
@@ -99,10 +99,10 @@
             },
             "morphology-heldout": {
               "n": 14,
-              "success_at_1": 0.571429,
-              "mrr_at_10": 0.690476,
-              "ndcg_at_10": 0.73299,
-              "recall_at_5": 0.857143
+              "success_at_1": 0.714286,
+              "mrr_at_10": 0.833333,
+              "ndcg_at_10": 0.875847,
+              "recall_at_5": 1.0
             },
             "accent-heldout": {
               "n": 11,
@@ -120,17 +120,17 @@
             },
             "verbform-heldout": {
               "n": 19,
-              "success_at_1": 0.263158,
-              "mrr_at_10": 0.377193,
-              "ndcg_at_10": 0.41541,
-              "recall_at_5": 0.526316
+              "success_at_1": 0.947368,
+              "mrr_at_10": 0.973684,
+              "ndcg_at_10": 0.980575,
+              "recall_at_5": 1.0
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.810526,
-            "mrr_at_10": 0.90731,
-            "ndcg_at_10": 0.908479,
+            "success_at_1": 0.831579,
+            "mrr_at_10": 0.919591,
+            "ndcg_at_10": 0.917627,
             "recall_at_5": 0.952632
           },
           "first_grade2_rank": {
@@ -178,12 +178,12 @@
             "o03": 1,
             "o04": 1,
             "o05": 3,
-            "o06": 3,
+            "o06": 1,
             "o07": 1,
             "o08": 2,
             "o09": 2,
             "o10": 1,
-            "o11": 2,
+            "o11": 1,
             "o12": 6,
             "o13": 1,
             "a01": 2,
@@ -259,8 +259,8 @@
             "oh08": 2,
             "oh09": 3,
             "oh10": 3,
-            "oh11": null,
-            "oh12": null,
+            "oh11": 1,
+            "oh12": 1,
             "oh13": 1,
             "oh14": 1,
             "ah01": 1,
@@ -287,25 +287,25 @@
             "tag1": 1,
             "tag2": 1,
             "tag3": 2,
-            "vh01": 2,
-            "vh02": null,
-            "vh03": null,
-            "vh04": 2,
-            "vh05": null,
-            "vh06": null,
-            "vh07": null,
-            "vh08": null,
-            "vh09": 2,
-            "vh10": null,
-            "vh11": null,
-            "vh12": null,
+            "vh01": 1,
+            "vh02": 1,
+            "vh03": 1,
+            "vh04": 1,
+            "vh05": 1,
+            "vh06": 1,
+            "vh07": 1,
+            "vh08": 1,
+            "vh09": 1,
+            "vh10": 1,
+            "vh11": 1,
+            "vh12": 1,
             "vg1": 1,
             "vg2": 1,
             "vg3": 1,
             "vg4": 1,
             "vg5": 1,
-            "vt1": 3,
-            "vt2": 3
+            "vt1": 2,
+            "vt2": 1
           },
           "slice_of": {
             "c01": "control",
@@ -566,10 +566,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "school",
-                "path": "science-homework.md",
-                "start_line": 11,
-                "end_line": 15
+                "root_id": "laptop",
+                "path": "projects/pip-planet-model.md",
+                "start_line": 8,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -630,7 +630,7 @@
               "top_is_named_distractor": true
             },
             "tin2": {
-              "returned": 9,
+              "returned": 10,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend-plans.md",
@@ -773,18 +773,18 @@
               "top_is_named_distractor": true
             },
             "vhn1": {
-              "returned": 7,
+              "returned": 5,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/weekend-jobs.md",
-                "start_line": 32,
-                "end_line": 36
+                "start_line": 42,
+                "end_line": 46
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
             },
             "vhn2": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "school-run-rota.md",
@@ -814,10 +814,10 @@
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.538462,
-              "mrr_at_10": 0.679487,
-              "ndcg_at_10": 0.722522,
-              "recall_at_5": 0.846154
+              "success_at_1": 0.692308,
+              "mrr_at_10": 0.794872,
+              "ndcg_at_10": 0.827835,
+              "recall_at_5": 0.923077
             },
             "accent": {
               "n": 9,
@@ -863,10 +863,10 @@
             },
             "morphology-heldout": {
               "n": 14,
-              "success_at_1": 0.571429,
-              "mrr_at_10": 0.714286,
-              "ndcg_at_10": 0.751694,
-              "recall_at_5": 0.857143
+              "success_at_1": 0.714286,
+              "mrr_at_10": 0.857143,
+              "ndcg_at_10": 0.894551,
+              "recall_at_5": 1.0
             },
             "accent-heldout": {
               "n": 11,
@@ -884,18 +884,18 @@
             },
             "verbform-heldout": {
               "n": 19,
-              "success_at_1": 0.263158,
-              "mrr_at_10": 0.263158,
-              "ndcg_at_10": 0.263158,
-              "recall_at_5": 0.263158
+              "success_at_1": 0.947368,
+              "mrr_at_10": 0.947368,
+              "ndcg_at_10": 0.947368,
+              "recall_at_5": 0.947368
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.810526,
-            "mrr_at_10": 0.899561,
-            "ndcg_at_10": 0.882008,
-            "recall_at_5": 0.921053
+            "success_at_1": 0.831579,
+            "mrr_at_10": 0.915351,
+            "ndcg_at_10": 0.89642,
+            "recall_at_5": 0.931579
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -942,12 +942,12 @@
             "o03": 1,
             "o04": 1,
             "o05": 3,
-            "o06": null,
+            "o06": 1,
             "o07": 1,
             "o08": 2,
             "o09": 2,
             "o10": 1,
-            "o11": 2,
+            "o11": 1,
             "o12": null,
             "o13": 1,
             "a01": 2,
@@ -1023,8 +1023,8 @@
             "oh08": 2,
             "oh09": 2,
             "oh10": 2,
-            "oh11": null,
-            "oh12": null,
+            "oh11": 1,
+            "oh12": 1,
             "oh13": 1,
             "oh14": 1,
             "ah01": 1,
@@ -1051,25 +1051,25 @@
             "tag1": 1,
             "tag2": 1,
             "tag3": 2,
-            "vh01": null,
-            "vh02": null,
-            "vh03": null,
-            "vh04": null,
-            "vh05": null,
-            "vh06": null,
-            "vh07": null,
-            "vh08": null,
-            "vh09": null,
-            "vh10": null,
-            "vh11": null,
-            "vh12": null,
+            "vh01": 1,
+            "vh02": 1,
+            "vh03": 1,
+            "vh04": 1,
+            "vh05": 1,
+            "vh06": 1,
+            "vh07": 1,
+            "vh08": 1,
+            "vh09": 1,
+            "vh10": 1,
+            "vh11": 1,
+            "vh12": 1,
             "vg1": 1,
             "vg2": 1,
             "vg3": 1,
             "vg4": 1,
             "vg5": 1,
             "vt1": null,
-            "vt2": null
+            "vt2": 1
           },
           "slice_of": {
             "c01": "control",
@@ -1330,10 +1330,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "school",
-                "path": "science-homework.md",
-                "start_line": 11,
-                "end_line": 15
+                "root_id": "laptop",
+                "path": "projects/pip-planet-model.md",
+                "start_line": 8,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -1394,7 +1394,7 @@
               "top_is_named_distractor": true
             },
             "tin2": {
-              "returned": 8,
+              "returned": 9,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend-plans.md",
@@ -1537,18 +1537,18 @@
               "top_is_named_distractor": true
             },
             "vhn1": {
-              "returned": 7,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/weekend-jobs.md",
-                "start_line": 32,
-                "end_line": 36
+                "start_line": 42,
+                "end_line": 46
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
             },
             "vhn2": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "school-run-rota.md",
@@ -1584,9 +1584,9 @@
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.538462,
-              "mrr_at_10": 0.717949,
-              "ndcg_at_10": 0.788384,
+              "success_at_1": 0.692308,
+              "mrr_at_10": 0.807692,
+              "ndcg_at_10": 0.855236,
               "recall_at_5": 0.923077
             },
             "accent": {
@@ -1633,10 +1633,10 @@
             },
             "morphology-heldout": {
               "n": 14,
-              "success_at_1": 0.571429,
-              "mrr_at_10": 0.690476,
-              "ndcg_at_10": 0.73299,
-              "recall_at_5": 0.857143
+              "success_at_1": 0.714286,
+              "mrr_at_10": 0.833333,
+              "ndcg_at_10": 0.875847,
+              "recall_at_5": 1.0
             },
             "accent-heldout": {
               "n": 11,
@@ -1654,17 +1654,17 @@
             },
             "verbform-heldout": {
               "n": 19,
-              "success_at_1": 0.263158,
-              "mrr_at_10": 0.377193,
-              "ndcg_at_10": 0.41541,
-              "recall_at_5": 0.526316
+              "success_at_1": 0.947368,
+              "mrr_at_10": 0.973684,
+              "ndcg_at_10": 0.980575,
+              "recall_at_5": 1.0
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.810526,
-            "mrr_at_10": 0.90731,
-            "ndcg_at_10": 0.908479,
+            "success_at_1": 0.831579,
+            "mrr_at_10": 0.919591,
+            "ndcg_at_10": 0.917627,
             "recall_at_5": 0.952632
           },
           "first_grade2_rank": {
@@ -1712,12 +1712,12 @@
             "o03": 1,
             "o04": 1,
             "o05": 3,
-            "o06": 3,
+            "o06": 1,
             "o07": 1,
             "o08": 2,
             "o09": 2,
             "o10": 1,
-            "o11": 2,
+            "o11": 1,
             "o12": 6,
             "o13": 1,
             "a01": 2,
@@ -1793,8 +1793,8 @@
             "oh08": 2,
             "oh09": 3,
             "oh10": 3,
-            "oh11": null,
-            "oh12": null,
+            "oh11": 1,
+            "oh12": 1,
             "oh13": 1,
             "oh14": 1,
             "ah01": 1,
@@ -1821,25 +1821,25 @@
             "tag1": 1,
             "tag2": 1,
             "tag3": 2,
-            "vh01": 2,
-            "vh02": null,
-            "vh03": null,
-            "vh04": 2,
-            "vh05": null,
-            "vh06": null,
-            "vh07": null,
-            "vh08": null,
-            "vh09": 2,
-            "vh10": null,
-            "vh11": null,
-            "vh12": null,
+            "vh01": 1,
+            "vh02": 1,
+            "vh03": 1,
+            "vh04": 1,
+            "vh05": 1,
+            "vh06": 1,
+            "vh07": 1,
+            "vh08": 1,
+            "vh09": 1,
+            "vh10": 1,
+            "vh11": 1,
+            "vh12": 1,
             "vg1": 1,
             "vg2": 1,
             "vg3": 1,
             "vg4": 1,
             "vg5": 1,
-            "vt1": 3,
-            "vt2": 3
+            "vt1": 2,
+            "vt2": 1
           },
           "slice_of": {
             "c01": "control",
@@ -2100,10 +2100,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "school",
-                "path": "science-homework.md",
-                "start_line": 11,
-                "end_line": 15
+                "root_id": "laptop",
+                "path": "projects/pip-planet-model.md",
+                "start_line": 8,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -2164,7 +2164,7 @@
               "top_is_named_distractor": true
             },
             "tin2": {
-              "returned": 9,
+              "returned": 10,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend-plans.md",
@@ -2307,18 +2307,18 @@
               "top_is_named_distractor": true
             },
             "vhn1": {
-              "returned": 7,
+              "returned": 5,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/weekend-jobs.md",
-                "start_line": 32,
-                "end_line": 36
+                "start_line": 42,
+                "end_line": 46
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
             },
             "vhn2": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "school-run-rota.md",
@@ -2348,10 +2348,10 @@
             },
             "morphology": {
               "n": 13,
-              "success_at_1": 0.538462,
-              "mrr_at_10": 0.679487,
-              "ndcg_at_10": 0.722522,
-              "recall_at_5": 0.846154
+              "success_at_1": 0.692308,
+              "mrr_at_10": 0.794872,
+              "ndcg_at_10": 0.827835,
+              "recall_at_5": 0.923077
             },
             "accent": {
               "n": 9,
@@ -2397,10 +2397,10 @@
             },
             "morphology-heldout": {
               "n": 14,
-              "success_at_1": 0.571429,
-              "mrr_at_10": 0.714286,
-              "ndcg_at_10": 0.751694,
-              "recall_at_5": 0.857143
+              "success_at_1": 0.714286,
+              "mrr_at_10": 0.857143,
+              "ndcg_at_10": 0.894551,
+              "recall_at_5": 1.0
             },
             "accent-heldout": {
               "n": 11,
@@ -2418,18 +2418,18 @@
             },
             "verbform-heldout": {
               "n": 19,
-              "success_at_1": 0.263158,
-              "mrr_at_10": 0.263158,
-              "ndcg_at_10": 0.263158,
-              "recall_at_5": 0.263158
+              "success_at_1": 0.947368,
+              "mrr_at_10": 0.947368,
+              "ndcg_at_10": 0.947368,
+              "recall_at_5": 0.947368
             }
           },
           "overall": {
             "n": 95,
-            "success_at_1": 0.810526,
-            "mrr_at_10": 0.899561,
-            "ndcg_at_10": 0.882008,
-            "recall_at_5": 0.921053
+            "success_at_1": 0.831579,
+            "mrr_at_10": 0.915351,
+            "ndcg_at_10": 0.89642,
+            "recall_at_5": 0.931579
           },
           "first_grade2_rank": {
             "c01": 1,
@@ -2476,12 +2476,12 @@
             "o03": 1,
             "o04": 1,
             "o05": 3,
-            "o06": null,
+            "o06": 1,
             "o07": 1,
             "o08": 2,
             "o09": 2,
             "o10": 1,
-            "o11": 2,
+            "o11": 1,
             "o12": null,
             "o13": 1,
             "a01": 2,
@@ -2557,8 +2557,8 @@
             "oh08": 2,
             "oh09": 2,
             "oh10": 2,
-            "oh11": null,
-            "oh12": null,
+            "oh11": 1,
+            "oh12": 1,
             "oh13": 1,
             "oh14": 1,
             "ah01": 1,
@@ -2585,25 +2585,25 @@
             "tag1": 1,
             "tag2": 1,
             "tag3": 2,
-            "vh01": null,
-            "vh02": null,
-            "vh03": null,
-            "vh04": null,
-            "vh05": null,
-            "vh06": null,
-            "vh07": null,
-            "vh08": null,
-            "vh09": null,
-            "vh10": null,
-            "vh11": null,
-            "vh12": null,
+            "vh01": 1,
+            "vh02": 1,
+            "vh03": 1,
+            "vh04": 1,
+            "vh05": 1,
+            "vh06": 1,
+            "vh07": 1,
+            "vh08": 1,
+            "vh09": 1,
+            "vh10": 1,
+            "vh11": 1,
+            "vh12": 1,
             "vg1": 1,
             "vg2": 1,
             "vg3": 1,
             "vg4": 1,
             "vg5": 1,
             "vt1": null,
-            "vt2": null
+            "vt2": 1
           },
           "slice_of": {
             "c01": "control",
@@ -2864,10 +2864,10 @@
             "on2": {
               "returned": 10,
               "top_hit": {
-                "root_id": "school",
-                "path": "science-homework.md",
-                "start_line": 11,
-                "end_line": 15
+                "root_id": "laptop",
+                "path": "projects/pip-planet-model.md",
+                "start_line": 8,
+                "end_line": 11
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -2928,7 +2928,7 @@
               "top_is_named_distractor": true
             },
             "tin2": {
-              "returned": 8,
+              "returned": 9,
               "top_hit": {
                 "root_id": "home",
                 "path": "weekend-plans.md",
@@ -3071,18 +3071,18 @@
               "top_is_named_distractor": true
             },
             "vhn1": {
-              "returned": 7,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/weekend-jobs.md",
-                "start_line": 32,
-                "end_line": 36
+                "start_line": 42,
+                "end_line": 46
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
             },
             "vhn2": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "school-run-rota.md",
@@ -3319,6 +3319,14 @@
       "judgments_sha256": "4f16ecedac1a5697372591ca577170318a2482366394d6bab2a56ffccd693181",
       "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
       "why": "S5-T5 ruling 4: the held-out slice verbform-heldout (vh01-vh12, vg1-vg5, vt1, vt2) and the negatives vhn1, vhn2 added in three new files (home/family-log.md, laptop/notes/weekend-jobs.md, school/year2-blog.md), judged and recorded with today's engine before any code of rule R exists; engine unchanged (searchd ReleaseSmall, the step-0 bytes); every earlier cell (484 per surface) unchanged on both surfaces; the Python reference equals searchd on every cell"
+    },
+    {
+      "engine_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
+      "run_commit": "2c7ca97e73380d9b0b82df8dcb180dfb3e626c5c",
+      "recorded": "2026-11-09",
+      "judgments_sha256": "5142497646e4bbb309e61ff67f20d57d67418e49c7ded6438e4df802e09fb0bc",
+      "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
+      "why": "S5-T5 Phase 2 (fold-groups-v2, contracts 2.6.0): -ing/-ed verb forms join a query word's fold group (1.0 for a word nothing visible holds, 0.5 under a key-df cap for one the files hold); 73 cells move per surface, every first grade-2 move a gain (content: o06 3->1, o11 2->1, oh11 and oh12 out->1, vh01-vh12 ->1, vt2 3->1, vt1 3->2; both: the same but vt1), control and every slice but morphology, morphology-heldout, verbform-heldout and overall unchanged"
     }
   ]
 }
