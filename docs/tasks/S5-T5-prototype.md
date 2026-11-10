@@ -8,9 +8,12 @@ This is the builder's Phase 1 record for `docs/tasks/S5-T5.md` (rulings 2, 3 and
 |---|---|---|
 | Step 0, the regrade pass | `2c7ca97` | No code of R. |
 | The held-out slice `verbform-heldout`, judged, recorded with today's engine | `f4cb29d` | No code of R on either surface; no candidate has run those queries. |
-| This record: R restated and the candidates declared | the commit that adds this file | No code of R; no held-out run through a candidate. |
+| This record: R restated and the candidates A–D declared | `02fe99f` | No code of R; no held-out run through a candidate. |
+| The builder's own candidate E declared | `6f84df7` | The prototype's R existed, uncommitted, in the builder's worktree. It had run only with the 21 held-out queries left out (listed below). |
+| The first run of the held-out queries through any candidate | after `6f84df7` (progress file, 9 Nov) | The full grid below. |
+| The prototype and these results | the commit that adds `scripts/prototypes/s5t5/` | |
 
-The prototype's code (`scripts/prototypes/s5t5/`) is written after this commit. Any candidate of the builder's own is declared in this file, in a commit of its own, before the first run of a `verbform-heldout` row or of `vhn1` / `vhn2` through any candidate. Runs made before that declaration leave those 21 queries out, and the record says which runs they were.
+The prototype's code (`scripts/prototypes/s5t5/`) was written after `02fe99f`. The builder's own candidate was declared in this file, in a commit of its own (`6f84df7`), before the first run of a `verbform-heldout` row or of `vhn1` / `vhn2` through any candidate. The runs made before that declaration left those 21 queries out; they are listed under the declaration.
 
 ## R restated (ruling 2)
 
@@ -100,3 +103,59 @@ None of these runs touched a held-out row.
 - Gate: `scripts/j2_gate.py` against that baseline.
 - Old packs: as `scripts/prototypes/s5t4/proto_s5t4_packs.py`.
 - Cost: on the 10k timing corpus (`scripts/gen_timing_corpus.py`), the dictionary lookups R generates per query term and the key-map entries a key-based placement would hold.
+
+## The scripts (`scripts/prototypes/s5t5/`)
+
+| Script | What it does |
+|---|---|
+| `verbforms.py` | R as restated above (`word_of`, `bases`, `relatives`, `forms`). The candidates, as a replacement for `core._query_groups` (`install`, `restore`). `today` is fold-groups-v1 rewritten there with no R; `today-orig` is core's own function. |
+| `proto_s5t5.py` | The grid: every candidate in both variants, the baseline check, the per-slice table, the first grade-2 moves, bars (a)–(e), the gate against the `searchd` cells and the negatives. `--no-heldout` leaves out the 21 held-out queries. |
+| `proto_s5t5_packs.py` | The old packs at each candidate against today, bar (f). |
+| `cost.py` | R's counts on a corpus's dictionary: lookups per word, and the entries a key map would hold. |
+
+**Reproduce** from a checkout (about 20 s in all). `$S` is a scratch directory.
+
+```
+export TMPDIR=$S
+PYTHONHASHSEED=0 python3 scripts/prototypes/s5t5/proto_s5t5.py --candidates today A B C D E --detail --json $S/grid.json
+PYTHONHASHSEED=0 python3 scripts/prototypes/s5t5/proto_s5t5.py --no-heldout --detail
+PYTHONHASHSEED=0 python3 scripts/prototypes/s5t5/proto_s5t5_packs.py A B C D E
+python3 scripts/gen_timing_corpus.py $S/corpus10k 10000 && python3 scripts/prototypes/s5t5/cost.py $S/corpus10k
+```
+
+**The baseline reproduces.** On every run, `today-orig` and `today` each equal all 536 cells of both surfaces of `fixtures/j2/baseline.json`. They also equal every old pack (`proto_s5t5_packs.py` prints `True`).
+
+## Results
+
+The per-candidate table, the bars and the recommendation are in the Report of `docs/tasks/S5-T5.md` (Phase 1). This section keeps the detail behind them.
+
+**The groups R forms on J2.** From `--detail`, `content` and `both` together.
+- **C**: R gives a member to 19 words, all with an empty v1 group: `buried`, `cancelled`, `cycled`, `danced`, `diving`, `drip`, `drummed`, `hopping`, `juggling`, `knead`, `knitting`, `painting` (`paint`, `painted`), `scrubbed`, `sketching`, `skip`, `stir`, `tidied`, `tidying`, `wobbled`. Each takes exactly the other form the files hold.
+- **E**: the same 19 words, plus 20 held words that take an R-only member at 0.5 under the cap:
+  - `book` (`booked`, `booking`) and `books` (the same);
+  - `feeds` (`feeding`), `flour` (`floured`), `hands` (`handed`), `herring` (`hers`), `names` (`named`), `opening` (`opened`), `paddling` (`paddled`), `pasted` (`paste`), `petting` (`pet`, `pets`), `plans` (`planned`), `planting` (`planted`), `pots` (`potted`), `potted` (`pots`), `reading` (`reads`, `read`), `saving` (`saved`, `saves`), `shopping` (`shop`, `shops`), `sledging` (`sledged`), `swimming` (`swim`, `swims`).
+- **The cap at work.** It keeps out the four commoner look-alikes: `her` (df 6), `out` (df 17), `past` (df 8) and `wed` (df 2), each above its word's df of 1. It also keeps out `pot` for `potted` (`c22`), and `paint` for `painted` (`o12`). It lets `pet` in for `petting`, both at df 1; guard `vg5` holds at weight 0.5 (7.810 against `§Pet passport` 4.335).
+
+**fuzzy-v1 replaced.** Today four of these words reach fuzzy-v1 and take a wrong neighbour:
+- `hopping` → `helping`;
+- `tidied` → `tied`, `tried`;
+- `diving` → `divide`, `doing`, `drying`;
+- `painting` → `planting`.
+
+Under every candidate R gives each of them a member, so fuzzy-v1 no longer runs on it. Every other fuzzy-v1 expansion is unchanged under every candidate.
+
+**Margins worth knowing** (`content` lexical scores, E):
+- `c22`: the answer 4.602, against 4.564 for `rasam.md` (today's margin, unchanged). `chores.md` rises to 4.249 with `pots` at 0.5.
+- `vt1`: `§Winter notices` 8.615 against the answer 8.335.
+
+**What R as ruling 2 writes also generates.** A base not ending in `e` also takes *b* + `es` / `ed` / `ing`. For `hop` that gives `hopes`, `hoped` and `hoping`, which are forms of `hope`. No J2 group took such a form. It is a residual of the rule's text, not of a candidate.
+
+**The cost** (`cost.py`, the 10k timing corpus: 10,000 files; 24,057 body terms, 10,102 title terms, 34,159 distinct).
+- **Where R applies.** 24,039 dictionary words are 4–49 letters `a`–`z`. Only 5 have a base other than their own plural form: `distributed`, `hashing`, `indexing`, `operating`, `ranking`.
+- **By generated form.**
+  - Over the dictionary: 4 to 16 lookups per word, median 4.
+  - The timing words: `system`, `systems`, `hybrid`, `retrieval`, `schedulers`, `tables` take 6 each; `benico` and `bazechas` take 4; `indexing` and `operating` take 14; `hashing` and `ranking` take 12.
+  - Across J2's words, at most 19 (`drummed`, `scrubbed`, `potted`).
+  - C runs R only on a word with an empty v1 group, so a held word costs C no lookup. A, B, D and E run R on every word.
+- **By key.** A base → words map over the whole dictionary holds 24,049 (base, word) pairs. Only 10 pairs (over the 5 words above) are beyond each word's own base. A map that keeps only those, as S5-T4's key map keeps only the words whose key differs, holds 10 entries.
+- **E's cap** reads one df per held form. On the 10k corpus only `hashing` has one (`hash`).
