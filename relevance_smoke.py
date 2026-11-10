@@ -455,12 +455,12 @@ def print_pack_report(report: dict) -> None:
 J2_TOP_K = 10
 J2_VARIANTS = ("content", "both")
 J2_SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "title-heldout",
-             "misspelling-heldout", "morphology-heldout", "accent-heldout", "tamil-heldout")
-# S5-T2, S5-T3 and S5-T4: the held-out slices are reported beside the overall, not
-# inside it, so the overall stays the mean over S5-T1's 95 graded queries and
-# comparable with it.
+             "misspelling-heldout", "morphology-heldout", "accent-heldout", "tamil-heldout", "verbform-heldout")
+# S5-T2, S5-T3, S5-T4 and S5-T5: the held-out slices are reported beside the
+# overall, not inside it, so the overall stays the mean over S5-T1's 95 graded
+# queries and comparable with it.
 J2_OVERALL_EXCLUDES = ("title-heldout", "misspelling-heldout", "morphology-heldout", "accent-heldout",
-                       "tamil-heldout")
+                       "tamil-heldout", "verbform-heldout")
 J2_RESULTS_SCHEMA = "j2-results-v1"
 
 

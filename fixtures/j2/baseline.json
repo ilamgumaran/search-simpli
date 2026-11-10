@@ -1,25 +1,25 @@
 {
   "schema": "j2-baseline-v1",
-  "judgments_sha256": "4f16ecedac1a5697372591ca577170318a2482366394d6bab2a56ffccd693181",
+  "judgments_sha256": "5142497646e4bbb309e61ff67f20d57d67418e49c7ded6438e4df802e09fb0bc",
   "engine_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
-  "run_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
+  "run_commit": "2c7ca97e73380d9b0b82df8dcb180dfb3e626c5c",
   "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
   "recorded": "2026-11-09",
   "load": {
     "before": [
-      3.58,
-      2.54,
-      1.82
+      3.09,
+      2.81,
+      2.27
     ],
     "after": [
-      3.58,
-      2.54,
-      1.82
+      3.24,
+      2.85,
+      2.28
     ],
     "top_sample": [
-      "Processes: 1015 total, 3 running, 1012 sleeping, 4669 threads",
-      "Load Avg: 3.58, 2.54, 1.82",
-      "CPU usage: 4.14% user, 1.99% sys, 93.86% idle"
+      "Processes: 983 total, 3 running, 980 sleeping, 4572 threads",
+      "Load Avg: 3.24, 2.85, 2.28",
+      "CPU usage: 3.95% user, 2.49% sys, 93.55% idle"
     ]
   },
   "top_k": 10,
@@ -29,7 +29,7 @@
         "sha256": "bc7161403a580f1f383d455d199e15e1c0d8eef4b42fcba4daef3e7973ddf315",
         "size": 1078504,
         "optimize": "ReleaseSmall",
-        "zig": null
+        "zig": "0.16.0"
       },
       "runs": {
         "content": {
@@ -117,6 +117,13 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "verbform-heldout": {
+              "n": 19,
+              "success_at_1": 0.263158,
+              "mrr_at_10": 0.377193,
+              "ndcg_at_10": 0.41541,
+              "recall_at_5": 0.526316
             }
           },
           "overall": {
@@ -279,7 +286,26 @@
             "tah10": 1,
             "tag1": 1,
             "tag2": 1,
-            "tag3": 2
+            "tag3": 2,
+            "vh01": 2,
+            "vh02": null,
+            "vh03": null,
+            "vh04": 2,
+            "vh05": null,
+            "vh06": null,
+            "vh07": null,
+            "vh08": null,
+            "vh09": 2,
+            "vh10": null,
+            "vh11": null,
+            "vh12": null,
+            "vg1": 1,
+            "vg2": 1,
+            "vg3": 1,
+            "vg4": 1,
+            "vg5": 1,
+            "vt1": 3,
+            "vt2": 3
           },
           "slice_of": {
             "c01": "control",
@@ -458,7 +484,28 @@
             "tag2": "tamil-heldout",
             "tag3": "tamil-heldout",
             "tahn1": "negatives",
-            "tahn2": "negatives"
+            "tahn2": "negatives",
+            "vh01": "verbform-heldout",
+            "vh02": "verbform-heldout",
+            "vh03": "verbform-heldout",
+            "vh04": "verbform-heldout",
+            "vh05": "verbform-heldout",
+            "vh06": "verbform-heldout",
+            "vh07": "verbform-heldout",
+            "vh08": "verbform-heldout",
+            "vh09": "verbform-heldout",
+            "vh10": "verbform-heldout",
+            "vh11": "verbform-heldout",
+            "vh12": "verbform-heldout",
+            "vg1": "verbform-heldout",
+            "vg2": "verbform-heldout",
+            "vg3": "verbform-heldout",
+            "vg4": "verbform-heldout",
+            "vg5": "verbform-heldout",
+            "vt1": "verbform-heldout",
+            "vt2": "verbform-heldout",
+            "vhn1": "negatives",
+            "vhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -724,6 +771,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "vhn1": {
+              "returned": 7,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/weekend-jobs.md",
+                "start_line": 32,
+                "end_line": 36
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "vhn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "school-run-rota.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             }
           }
         },
@@ -812,6 +881,13 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "verbform-heldout": {
+              "n": 19,
+              "success_at_1": 0.263158,
+              "mrr_at_10": 0.263158,
+              "ndcg_at_10": 0.263158,
+              "recall_at_5": 0.263158
             }
           },
           "overall": {
@@ -974,7 +1050,26 @@
             "tah10": 1,
             "tag1": 1,
             "tag2": 1,
-            "tag3": 2
+            "tag3": 2,
+            "vh01": null,
+            "vh02": null,
+            "vh03": null,
+            "vh04": null,
+            "vh05": null,
+            "vh06": null,
+            "vh07": null,
+            "vh08": null,
+            "vh09": null,
+            "vh10": null,
+            "vh11": null,
+            "vh12": null,
+            "vg1": 1,
+            "vg2": 1,
+            "vg3": 1,
+            "vg4": 1,
+            "vg5": 1,
+            "vt1": null,
+            "vt2": null
           },
           "slice_of": {
             "c01": "control",
@@ -1153,7 +1248,28 @@
             "tag2": "tamil-heldout",
             "tag3": "tamil-heldout",
             "tahn1": "negatives",
-            "tahn2": "negatives"
+            "tahn2": "negatives",
+            "vh01": "verbform-heldout",
+            "vh02": "verbform-heldout",
+            "vh03": "verbform-heldout",
+            "vh04": "verbform-heldout",
+            "vh05": "verbform-heldout",
+            "vh06": "verbform-heldout",
+            "vh07": "verbform-heldout",
+            "vh08": "verbform-heldout",
+            "vh09": "verbform-heldout",
+            "vh10": "verbform-heldout",
+            "vh11": "verbform-heldout",
+            "vh12": "verbform-heldout",
+            "vg1": "verbform-heldout",
+            "vg2": "verbform-heldout",
+            "vg3": "verbform-heldout",
+            "vg4": "verbform-heldout",
+            "vg5": "verbform-heldout",
+            "vt1": "verbform-heldout",
+            "vt2": "verbform-heldout",
+            "vhn1": "negatives",
+            "vhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -1419,6 +1535,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "vhn1": {
+              "returned": 7,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/weekend-jobs.md",
+                "start_line": 32,
+                "end_line": 36
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "vhn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "school-run-rota.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             }
           }
         }
@@ -1513,6 +1651,13 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "verbform-heldout": {
+              "n": 19,
+              "success_at_1": 0.263158,
+              "mrr_at_10": 0.377193,
+              "ndcg_at_10": 0.41541,
+              "recall_at_5": 0.526316
             }
           },
           "overall": {
@@ -1675,7 +1820,26 @@
             "tah10": 1,
             "tag1": 1,
             "tag2": 1,
-            "tag3": 2
+            "tag3": 2,
+            "vh01": 2,
+            "vh02": null,
+            "vh03": null,
+            "vh04": 2,
+            "vh05": null,
+            "vh06": null,
+            "vh07": null,
+            "vh08": null,
+            "vh09": 2,
+            "vh10": null,
+            "vh11": null,
+            "vh12": null,
+            "vg1": 1,
+            "vg2": 1,
+            "vg3": 1,
+            "vg4": 1,
+            "vg5": 1,
+            "vt1": 3,
+            "vt2": 3
           },
           "slice_of": {
             "c01": "control",
@@ -1854,7 +2018,28 @@
             "tag2": "tamil-heldout",
             "tag3": "tamil-heldout",
             "tahn1": "negatives",
-            "tahn2": "negatives"
+            "tahn2": "negatives",
+            "vh01": "verbform-heldout",
+            "vh02": "verbform-heldout",
+            "vh03": "verbform-heldout",
+            "vh04": "verbform-heldout",
+            "vh05": "verbform-heldout",
+            "vh06": "verbform-heldout",
+            "vh07": "verbform-heldout",
+            "vh08": "verbform-heldout",
+            "vh09": "verbform-heldout",
+            "vh10": "verbform-heldout",
+            "vh11": "verbform-heldout",
+            "vh12": "verbform-heldout",
+            "vg1": "verbform-heldout",
+            "vg2": "verbform-heldout",
+            "vg3": "verbform-heldout",
+            "vg4": "verbform-heldout",
+            "vg5": "verbform-heldout",
+            "vt1": "verbform-heldout",
+            "vt2": "verbform-heldout",
+            "vhn1": "negatives",
+            "vhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -2120,6 +2305,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "vhn1": {
+              "returned": 7,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/weekend-jobs.md",
+                "start_line": 32,
+                "end_line": 36
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "vhn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "school-run-rota.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             }
           }
         },
@@ -2208,6 +2415,13 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "verbform-heldout": {
+              "n": 19,
+              "success_at_1": 0.263158,
+              "mrr_at_10": 0.263158,
+              "ndcg_at_10": 0.263158,
+              "recall_at_5": 0.263158
             }
           },
           "overall": {
@@ -2370,7 +2584,26 @@
             "tah10": 1,
             "tag1": 1,
             "tag2": 1,
-            "tag3": 2
+            "tag3": 2,
+            "vh01": null,
+            "vh02": null,
+            "vh03": null,
+            "vh04": null,
+            "vh05": null,
+            "vh06": null,
+            "vh07": null,
+            "vh08": null,
+            "vh09": null,
+            "vh10": null,
+            "vh11": null,
+            "vh12": null,
+            "vg1": 1,
+            "vg2": 1,
+            "vg3": 1,
+            "vg4": 1,
+            "vg5": 1,
+            "vt1": null,
+            "vt2": null
           },
           "slice_of": {
             "c01": "control",
@@ -2549,7 +2782,28 @@
             "tag2": "tamil-heldout",
             "tag3": "tamil-heldout",
             "tahn1": "negatives",
-            "tahn2": "negatives"
+            "tahn2": "negatives",
+            "vh01": "verbform-heldout",
+            "vh02": "verbform-heldout",
+            "vh03": "verbform-heldout",
+            "vh04": "verbform-heldout",
+            "vh05": "verbform-heldout",
+            "vh06": "verbform-heldout",
+            "vh07": "verbform-heldout",
+            "vh08": "verbform-heldout",
+            "vh09": "verbform-heldout",
+            "vh10": "verbform-heldout",
+            "vh11": "verbform-heldout",
+            "vh12": "verbform-heldout",
+            "vg1": "verbform-heldout",
+            "vg2": "verbform-heldout",
+            "vg3": "verbform-heldout",
+            "vg4": "verbform-heldout",
+            "vg5": "verbform-heldout",
+            "vt1": "verbform-heldout",
+            "vt2": "verbform-heldout",
+            "vhn1": "negatives",
+            "vhn2": "negatives"
           },
           "negatives": {
             "cn1": {
@@ -2815,6 +3069,28 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "vhn1": {
+              "returned": 7,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "notes/weekend-jobs.md",
+                "start_line": 32,
+                "end_line": 36
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "vhn2": {
+              "returned": 3,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "school-run-rota.md",
+                "start_line": 1,
+                "end_line": 2
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             }
           }
         }
@@ -2919,6 +3195,64 @@
         ]
       },
       "earlier_cells_unchanged": true
+    },
+    {
+      "task": "S5-T5",
+      "slice": "verbform-heldout",
+      "queries": [
+        "vh01",
+        "vh02",
+        "vh03",
+        "vh04",
+        "vh05",
+        "vh06",
+        "vh07",
+        "vh08",
+        "vh09",
+        "vh10",
+        "vh11",
+        "vh12",
+        "vg1",
+        "vg2",
+        "vg3",
+        "vg4",
+        "vg5",
+        "vt1",
+        "vt2",
+        "vhn1",
+        "vhn2"
+      ],
+      "why": "S5-T5 chooses its verb-form rule R on the morphology slices; ruling 4 of its task file requires a held-out verb-form slice in new files, judged and committed with today's cells before any code of R exists on either surface and before any run of those queries through a candidate",
+      "judgments_sha256_before": "4f16ecedac1a5697372591ca577170318a2482366394d6bab2a56ffccd693181",
+      "recorded": "2026-11-09",
+      "engine_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
+      "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
+      "searchd_binary": {
+        "sha256": "bc7161403a580f1f383d455d199e15e1c0d8eef4b42fcba4daef3e7973ddf315",
+        "size": 1078504,
+        "optimize": "ReleaseSmall",
+        "zig": "0.16.0"
+      },
+      "python_version": "3.9.6",
+      "hashseed": "0",
+      "load": {
+        "before": [
+          3.09,
+          2.81,
+          2.27
+        ],
+        "after": [
+          3.24,
+          2.85,
+          2.28
+        ],
+        "top_sample": [
+          "Processes: 983 total, 3 running, 980 sleeping, 4572 threads",
+          "Load Avg: 3.24, 2.85, 2.28",
+          "CPU usage: 3.95% user, 2.49% sys, 93.55% idle"
+        ]
+      },
+      "earlier_cells_unchanged": true
     }
   ],
   "replaces": [
@@ -2977,6 +3311,14 @@
       "judgments_sha256": "342e5d38cf043c365cdb5a634b2517703406724cd899985cd19084eb5359a44d",
       "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
       "why": "S5-T5 step 0 (ruling 1, the J2 regrade pass of S5-T3 ruling Q3 and its 03-next row): the H1/intro chunks of m03, m04, m15 and m16 graded 1 (four new grade-1 rows; no grade-2 row, file or query changed); engine unchanged (searchd ReleaseSmall bc716140, the S5-T4 baseline's bytes). Moved on both surfaces: misspelling and overall MRR@10, nDCG@10 and recall@5 under content and both; success@1 and every first grade-2 rank cannot move by their definition (top hit, first rank of grade 2) and did not; no negative moved"
+    },
+    {
+      "engine_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
+      "run_commit": "41ae08e3c07526a0c044ac6c87fb9d877c1809f2",
+      "recorded": "2026-11-09",
+      "judgments_sha256": "4f16ecedac1a5697372591ca577170318a2482366394d6bab2a56ffccd693181",
+      "natives_digest": "81f9c76b90aad0b21709af002c0344c0ef12fcf044e2f8024c4c38042bd7d48c",
+      "why": "S5-T5 ruling 4: the held-out slice verbform-heldout (vh01-vh12, vg1-vg5, vt1, vt2) and the negatives vhn1, vhn2 added in three new files (home/family-log.md, laptop/notes/weekend-jobs.md, school/year2-blog.md), judged and recorded with today's engine before any code of rule R exists; engine unchanged (searchd ReleaseSmall, the step-0 bytes); every earlier cell (484 per surface) unchanged on both surfaces; the Python reference equals searchd on every cell"
     }
   ]
 }

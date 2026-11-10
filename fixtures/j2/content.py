@@ -1570,3 +1570,189 @@ FILES["home/tamil/tamil-jottings.md"] = """\
 நாம் எல்லோரும் சேர்ந்து பாடுவோம். நாம் ஆடுவோம். நாம் சிரிப்போம். இது எங்கள்
 வகுப்புப் பாட்டு. ஒவ்வொரு வெள்ளியும் இதைப் பாடுகிறோம்.
 """
+
+# ------------------------------------------- S5-T5 held-out slice (files) --
+
+# Files added by S5-T5 (ruling 4) for the verbform-heldout slice, written and
+# judged before any code of its verb-form rule existed in the engine or the
+# reference, and before any run of those queries through a candidate. Like
+# S5-T4's, they are few files of long sections and keep out of every word an
+# earlier J2 query searches, of the fold-groups-v1 forms of those words, and of
+# their -ing/-ed relatives (generate.py asserts the first two; the third was
+# checked by hand, see docs/tasks/S5-T5.md). Each look-alike (her, out, past,
+# wed, pet) and each held typed word sits in one named grade-0 section only.
+
+VERBFORM_FILES = ("home/family-log.md", "laptop/notes/weekend-jobs.md", "school/year2-blog.md")
+
+FILES["home/family-log.md"] = """\
+# Leak in porch
+
+Rain dripped through porch roof all evening, into one blue bucket by wellies
+on mat. Joss went onto ladder at dawn, found one cracked tile, then fixed it
+with filler from shed; Maren mopped floor, hung wet mat on radiator.
+
+# Harbour
+
+Uncle Ravi bought fresh herring at harbour wall on Sunday, grilled it over
+charcoal with lemon, served with rice, peas, pickled onions. Wren tried
+one bite, Pip ate two whole ones, Joss cut heads off.
+
+# Gran
+
+Gran keeps her keys on brass hook by mirror, her purse in top drawer, her hat
+on shelf over radiator. Her umbrella lives by porch steps; her
+slippers wait under bench, her basket by cellar door.
+
+# Brownies outing
+
+Brownies outing on Sunday: coach leaves Mill Lane at nine, picnic in Hollow
+Woods, home by four. Wren needs wellies, waterproof jacket, water bottle, two
+pounds in purse, sun hat.
+
+# Cat flap
+
+Tabby goes out at dusk, stays out till dawn, comes in through cat flap with
+muddy paws. On bonfire evening lock flap; keep Tabby in with litter tray,
+blanket, water bowl.
+
+# Postcards
+
+Pip pasted postcards from Cornwall, pressed pansies, one jay feather into
+scrapbook, with captions in silver pen under each. Wren drew waves round every
+page.
+
+# Bus stop
+
+Route 14 bus comes at ten past seven, quarter past eight, twenty past nine; on
+Sundays only at ten past eleven. Stop is opposite post office.
+
+# Cousin wedding
+
+Auntie Mira gets married in June: wedding at Thistlecombe church, Wren is
+flower girl, Pip carries rings on cushion, Joss gives toast at
+hall.
+
+# Cooking rota
+
+Mon Joss cooks, Wed Maren cooks, Fri Uncle Ravi makes curry, Sun everyone
+cooks together. Next Wed Pip helps with dal, Wren lays cutlery, nobody leaves
+pans.
+
+# Petting farm
+
+Wren held one baby goat at petting farm near Brook End, stroked two lambs,
+gave carrots to one grey donkey, then rinsed at tap.
+
+# Pet passport
+
+Tabby needs one pet passport before ferry to France in May; vet signs pet
+passport at Mill Lane surgery once rabies jab done. Carrier in loft.
+
+# Snow day
+
+Pip, Wren sledged down Gorse Hill on blue plastic tray until dusk, then warmed
+toes by fire with soup, mittens drying on fireguard.
+
+# Winter notices
+
+No sledging near frozen pond. Grit tub by gate; salt path at seven when frost
+forecast. Spare scarves under stairs.
+
+# Hill walk
+
+Hill walk with Ramblers: hill path climbs from stile, hill top has trig point,
+wide views over three valleys, cairn, bench.
+"""
+
+FILES["laptop/notes/weekend-jobs.md"] = """\
+# Scooter
+
+Wren kept wobbling on purple scooter along towpath, so Joss held handlebar
+until she found balance; by Sunday she glided beyond lock
+gates.
+
+# Bedroom
+
+Pip must tidy bedroom every Sunday: clothes in drawers, toys on shelf, bed
+made, floor clear, curtains drawn. Maren checks.
+
+# Porridge
+
+Joss makes porridge on cold Sundays: oats, milk, pinch of salt, golden syrup;
+keep stirring pan with wooden spoon so nothing sticks.
+
+# Oats jar
+
+Porridge oats live in tall tin jar on top shelf; porridge bowls stack below;
+porridge spoon hangs by cooker.
+
+# Patio
+
+Maren asked Pip to scrub patio slabs with stiff brush, warm soapy water, then
+rinse with hose; moss comes off with old knife.
+
+# Video call
+
+Uncle Ravi juggled three oranges on Sunday video call from Leeds, dropped one,
+laughed, then juggled four lemons.
+
+# Bread
+
+Maren kneaded dough on wooden board until smooth, left it under damp
+cloth, then shaped two round loaves, set in oven at noon.
+
+# Pizza Sunday
+
+Pizza dough rests in fridge; roll dough thin, spread passata, add
+cheese; spare dough goes in freezer.
+
+# Pool
+
+Pip can dive off side now, arms over head, toes pointed; lifeguard says deep
+end only.
+
+# Canoe on Ashby Mere
+
+Joss, Pip paddled red canoe across Ashby Mere to island, ate
+crisps, then paddled home against wind.
+
+# Paddling pool
+
+Paddling pool stays in shed until June; pump in blue bag, repair patches in
+tin.
+
+# Boat shed
+
+Boat shed holds two kayaks, one canoe on wall rack, canoe trolley, canoe
+cover; key on nail by door.
+"""
+
+FILES["school/year2-blog.md"] = """\
+# Sack race
+
+Wren hopped down grass track in hessian sack, tumbled twice near finish
+flag, then hopped on again, third of eight runners. Ms Lune gave every runner
+gold sticker; Kavin came first, Isla second.
+
+# Jumble stall
+
+Year 2 filled one sack with odd socks, one sack with woolly hats, one sack with
+jigsaws, one sack with soft toys. Stall runs from noon by gym doors; Mrs Oduya
+keeps float.
+
+# Parade
+
+Kavin was drumming at front of harvest parade, Isla shook tambourine, rest of
+Year 2 marched behind with ribbons on sticks, twice round playground, waving
+at parents.
+
+# Nature walk
+
+Year 2 walked to Hollow Woods; each child drew one quick sketch of oak leaf,
+acorn, beech nut in pencil. Mr Quarrie pinned best ones.
+
+# Capsule
+
+Year 2 are burying one locked tin under willow tree by gate, with drawings,
+one poem, one coin each; nobody may dig before 2036.
+"""

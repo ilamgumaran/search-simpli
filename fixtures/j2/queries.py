@@ -1,6 +1,6 @@
 """The judged queries of J2 (S5-T1): seven slices plus named negatives, and the
 held-out title (S5-T2), misspelling (S5-T3), morphology, accent and Tamil (S5-T4)
-slices.
+and verb-form (S5-T5) slices.
 
 A row is (path, anchor, grade, note). The generator turns each anchor into a line
 range of the file it names:
@@ -36,6 +36,7 @@ SLICE_MINIMUMS = {
     "morphology-heldout": 12,
     "accent-heldout": 10,
     "tamil-heldout": 10,
+    "verbform-heldout": 14,
 }
 
 QUERIES: list[dict] = []
@@ -830,3 +831,104 @@ q("negatives", "tahn1", "படம் கண்காட்சி? (a picture ex
 q("negatives", "tahn2", "வேலை நேரம்? (working hours?)", "வேலை நேரம்", K, [
     ("home/tamil/tamil-jottings.md", "§Work", 0, "a lot of work, no hours"),
 ], of="tamil-heldout")
+
+# ---------------------------------------------------- verbform-heldout (19) --
+# S5-T5, ruling 4: verb forms held out from the -ing/-ed rule S5-T5 measures,
+# written and judged before any code of that rule existed on either surface and
+# before any run of these queries through a candidate. New files only
+# (content.VERBFORM_FILES). kind names what the row measures:
+#   "verb"  the answer holds only another form of the query's verb, and no file
+#           holds the query form or a plural of it: forms = [(query form, the
+#           form in the answer)], base = the verb's base, direction = which way
+#           the forms go, feature = "doubled" (a doubled final consonant),
+#           "dropped e" (a base e dropped before -ing, or only d added),
+#           "-ied" (y to ied), or None;
+#   "guard" the query word ends in -ing or -ed and the answer holds it; what is
+#           left when the ending (and a doubled consonant) is taken off is
+#           another word, held by the one grade-0 row and not the query word
+#           there: guard = (the query word, the look-alike);
+#   "held"  the typed word is held by a grade-0 row and the answer holds another
+#           form of it: held = (the typed word, the form in the answer).
+# The generator asserts each of these facts, the mix (at least 8 verb rows with
+# every direction pair and each feature, 4 guards, 2 held rows), that every row
+# is in one of the new files, and that no query word, form or base is a query
+# word or form of the morphology or morphology-heldout slices.
+
+q("verbform-heldout", "vh01", "Who was hopping in the sack race?", "sack hopping", K, [
+    ("school/year2-blog.md", "§Sack race", 2, "Wren hopped down the track in a sack"),
+    ("school/year2-blog.md", "§Jumble stall", 0, "sack four times, no race"),
+], kind="verb", forms=[("hopping", "hopped")], base="hop", direction="-ing->-ed", feature="doubled")
+q("verbform-heldout", "vh02", "Who wobbled on the scooter?", "wobbled", K, [
+    ("laptop/notes/weekend-jobs.md", "§Scooter", 2, "Wren kept wobbling"),
+], kind="verb", forms=[("wobbled", "wobbling")], base="wobble", direction="-ed->-ing", feature="dropped e")
+q("verbform-heldout", "vh03", "Has Pip tidied the bedroom?", "tidied", K, [
+    ("laptop/notes/weekend-jobs.md", "§Bedroom", 2, "Pip must tidy the bedroom every Sunday"),
+], kind="verb", forms=[("tidied", "tidy")], base="tidy", direction="-ed->base", feature="-ied")
+q("verbform-heldout", "vh04", "How do you stir the porridge?", "stir porridge", K, [
+    ("laptop/notes/weekend-jobs.md", "§Porridge", 2, "keep stirring the pan with a wooden spoon"),
+    ("laptop/notes/weekend-jobs.md", "§Oats jar", 0, "porridge three times, no stirring"),
+], kind="verb", forms=[("stir", "stirring")], base="stir", direction="base->-ing", feature="doubled")
+q("verbform-heldout", "vh05", "Who scrubbed the patio?", "scrubbed", K, [
+    ("laptop/notes/weekend-jobs.md", "§Patio", 2, "Maren asked Pip to scrub the patio"),
+], kind="verb", forms=[("scrubbed", "scrub")], base="scrub", direction="-ed->base", feature="doubled")
+q("verbform-heldout", "vh06", "Who was juggling on the call?", "juggling", K, [
+    ("laptop/notes/weekend-jobs.md", "§Video call", 2, "Uncle Ravi juggled oranges"),
+], kind="verb", forms=[("juggling", "juggled")], base="juggle", direction="-ing->-ed", feature="dropped e")
+q("verbform-heldout", "vh07", "What has Year 2 buried?", "buried", K, [
+    ("school/year2-blog.md", "§Capsule", 2, "burying a locked tin under the willow"),
+], kind="verb", forms=[("buried", "burying")], base="bury", direction="-ed->-ing", feature="-ied")
+q("verbform-heldout", "vh08", "Where did the rain drip in?", "drip", K, [
+    ("home/family-log.md", "§Leak in porch", 2, "rain dripped through the porch roof"),
+], kind="verb", forms=[("drip", "dripped")], base="drip", direction="base->-ed", feature="doubled")
+q("verbform-heldout", "vh09", "How long do you knead the dough?", "knead dough", K, [
+    ("laptop/notes/weekend-jobs.md", "§Bread", 2, "Maren kneaded the dough until smooth"),
+    ("laptop/notes/weekend-jobs.md", "§Pizza Sunday", 0, "dough three times, no kneading"),
+], kind="verb", forms=[("knead", "kneaded")], base="knead", direction="base->-ed", feature=None)
+q("verbform-heldout", "vh10", "Who went sketching in the woods?", "sketching", K, [
+    ("school/year2-blog.md", "§Nature walk", 2, "one quick sketch of an oak leaf each"),
+], kind="verb", forms=[("sketching", "sketch")], base="sketch", direction="-ing->base", feature=None)
+q("verbform-heldout", "vh11", "Who drummed in the parade?", "drummed", K, [
+    ("school/year2-blog.md", "§Parade", 2, "Kavin was drumming at the front"),
+], kind="verb", forms=[("drummed", "drumming")], base="drum", direction="-ed->-ing", feature="doubled")
+q("verbform-heldout", "vh12", "Can Pip do diving at the pool now?", "diving", K, [
+    ("laptop/notes/weekend-jobs.md", "§Pool", 2, "Pip can dive off the side now"),
+], kind="verb", forms=[("diving", "dive")], base="dive", direction="-ing->base", feature="dropped e")
+q("verbform-heldout", "vg1", "When did Uncle Ravi buy herring?", "herring", K, [
+    ("home/family-log.md", "§Harbour", 2, "fresh herring at the harbour wall"),
+    ("home/family-log.md", "§Gran", 0, "her six times: herring less -ing and one r"),
+], kind="guard", forms=[], guard=("herring", "her"))
+q("verbform-heldout", "vg2", "When is the Brownies outing?", "outing", K, [
+    ("home/family-log.md", "§Brownies outing", 2, "Sunday, coach at nine"),
+    ("home/family-log.md", "§Cat flap", 0, "out twice: outing less -ing"),
+], kind="guard", forms=[], guard=("outing", "out"))
+q("verbform-heldout", "vg3", "What did Pip paste in the scrapbook?", "pasted", K, [
+    ("home/family-log.md", "§Postcards", 2, "Pip pasted postcards, pansies, a feather"),
+    ("home/family-log.md", "§Bus stop", 0, "past four times: pasted less -ed"),
+], kind="guard", forms=[], guard=("pasted", "past"))
+q("verbform-heldout", "vg4", "Where is Auntie Mira's wedding?", "wedding", K, [
+    ("home/family-log.md", "§Cousin wedding", 2, "at Thistlecombe church in June"),
+    ("home/family-log.md", "§Cooking rota", 0, "Wed twice: wedding less -ing and one d"),
+], kind="guard", forms=[], guard=("wedding", "wed"))
+q("verbform-heldout", "vg5", "Where is the petting farm?", "petting", K, [
+    ("home/family-log.md", "§Petting farm", 2, "near Brook End"),
+    ("home/family-log.md", "§Pet passport", 0, "pet twice: petting less -ing and one t"),
+], kind="guard", forms=[], guard=("petting", "pet"))
+q("verbform-heldout", "vt1", "When did we go sledging on the hill?", "sledging hill", K, [
+    ("home/family-log.md", "§Snow day", 2, "Pip and Wren sledged down Gorse Hill"),
+    ("home/family-log.md", "§Winter notices", 0, "no sledging near the pond"),
+    ("home/family-log.md", "§Hill walk", 0, "hill four times, a walk"),
+], kind="held", forms=[], held=("sledging", "sledged"))
+q("verbform-heldout", "vt2", "When did Joss and Pip go paddling in the canoe?", "paddling canoe", K, [
+    ("laptop/notes/weekend-jobs.md", "§Canoe on Ashby Mere", 2, "paddled the red canoe across the mere"),
+    ("laptop/notes/weekend-jobs.md", "§Paddling pool", 0, "the paddling pool in the shed"),
+    ("laptop/notes/weekend-jobs.md", "§Boat shed", 0, "canoe three times, in the shed"),
+], kind="held", forms=[], held=("paddling", "paddled"))
+
+q("negatives", "vhn1", "Is there a diving board?", "diving board", K, [
+    ("laptop/notes/weekend-jobs.md", "§Pool", 0, "dive off the side, no board"),
+    ("laptop/notes/weekend-jobs.md", "§Bread", 0, "a wooden board for bread"),
+], of="verbform-heldout")
+q("negatives", "vhn2", "Is there a tidying rota?", "tidying rota", K, [
+    ("laptop/notes/weekend-jobs.md", "§Bedroom", 0, "tidy the bedroom, no rota"),
+    ("home/family-log.md", "§Cooking rota", 0, "a cooking rota, no tidying"),
+], of="verbform-heldout")
