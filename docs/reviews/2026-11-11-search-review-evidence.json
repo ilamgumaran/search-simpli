@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-11 UTC",
+  "reviewedMain": "f2d6f6c6b71f276737fd01d08a72d433da6bccbe",
+  "python": "3.12.14",
+  "hostUnicode": "15.0.0",
+  "scope": "documentation review; no runtime or contract change",
+  "requirementsExit": 0,
+  "referenceBaseline": {
+    "command": "SEARCH_SIMPLI_NO_ZIG=1 python3 -m unittest discover -s tests",
+    "testsRun": 318,
+    "skipped": 49,
+    "result": "OK",
+    "nativeRebuilt": false,
+    "libraryOverride": "unset",
+    "searchdOverride": "unset"
+  },
+  "probeSetupAttempts": [
+    {
+      "attempt": 1,
+      "setup": "PYTHONPATH=src with repository root as first import location",
+      "outcome": "ModuleNotFoundError: root compatibility package shadowed src; not a search defect"
+    },
+    {
+      "attempt": 2,
+      "setup": "src inserted first in sys.path, matching repository tests",
+      "outcome": "helper imported and probes completed"
+    }
+  ],
+  "verbFormHelperProbe": [
+    {
+      "queryHelperInput": "hopping",
+      "membership": {
+        "hopes": true,
+        "hoped": true
+      },
+      "candidateCount": 17
+    },
+    {
+      "queryHelperInput": "evening",
+      "membership": {
+        "even": true
+      },
+      "candidateCount": 14
+    },
+    {
+      "queryHelperInput": "hop",
+      "membership": {
+        "hopes": false
+      },
+      "candidateCount": 0
+    }
+  ],
+  "limits": [
+    "Helper candidates are filtered by scope/dictionary and frequency rules before ranking.",
+    "These probes do not demonstrate a judged relevance regression.",
+    "Native/FFI/Dart/platform suites were not rerun for this docs-only review.",
+    "Selected golden regeneration tests skip when host Unicode differs from pinned Unicode 13.0.0."
+  ],
+  "logs": {
+    "search-review-nov11-requirements.log": "3aa9e1b1c08cb04d35aabb5fed57cfb708bf99f2762e18d3c7333cc85c508179",
+    "search-review-nov11-python.log": "b3f530de014a4c501b08f09d240818e843833ec1792f0ef168a6f4e28be67ca8"
+  }
+}
