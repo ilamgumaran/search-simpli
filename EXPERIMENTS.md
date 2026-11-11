@@ -721,3 +721,31 @@ regular verb forms J2 judges, at no control cost. Details: [S5-T5](docs/tasks/S5
 [fold-groups-v2](docs/fold-groups-v2.md). Status: verified and merged 2026-11-10 (the verifier's own runs reproduced
 every J2 cell on both surfaces, the plants and the natives; its timing rounds: first query after an open −0.021 to
 +0.049 ms, warm queries with no form −0.009 to +0.002 ms, `hashing` +0.034 / +0.035 ms).
+
+## 2026-11-11 — Current-source review and implementation TODOs (documentation only)
+
+**Question:** After S5-T5, which remaining search improvements have a concrete
+source/fixture basis and a bounded implementation path? Reviewed main `f2d6f6c`;
+claim #24 covers the review only. No matching rule or benchmark baseline changed.
+
+**Setup:** Read the live queue, current Zig/Python paths, CI and contracts, with
+independent retrieval and lifecycle reviews. Requirements validation passes.
+Dependency-free Python: 318 tests run, OK with 49 skips; native execution disabled
+and library/searchd overrides unset. Python 3.12.14 uses Unicode 15.0.0, so the
+pinned-Unicode-13 regeneration guards skip. No new native/platform result claimed.
+
+**Observation:** The verb-form helper can propose `hopes`/`hoped` for `hopping`
+and `even` for `evening`; the three-letter query `hop` generates no forms. The
+first scratch import failed because the root compatibility package shadowed
+`src`; inserting `src` first, as the tests do, completed the probe. Scope and
+frequency filtering still apply after generation; this is not a demonstrated
+judged relevance regression. Existing queue items already cover that risk,
+prefix-score parity and `both` overhead; new proposals include a no-skip Unicode
+freshness job and an explicit host-extraction/citation contract.
+
+**Conclusion and limits:** Document R01–R12 with dependencies, implementation
+stages and exit checks; recommend validation gates and reference parity before
+ranking changes. No proposal is accepted, implemented or approved by this review.
+Prior timing/J2 values are cited from existing reports, not remeasured here.
+[TODOs](docs/reviews/2026-11-11-search-improvement-todos.md) and
+[scope/probes/log hashes](docs/reviews/2026-11-11-search-review-evidence.json).

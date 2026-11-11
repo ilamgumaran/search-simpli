@@ -25,6 +25,7 @@ The journey directory is deliberately thin. These remain authoritative:
 | Exact current implementation state + resume commands | [`PROJECT-STATE.md`](../../PROJECT-STATE.md) |
 | What was tried, what failed, what it proved | [`EXPERIMENTS.md`](../../EXPERIMENTS.md) |
 | The shared human + agent backlog | [`IMPROVEMENT-BOARD.md`](../../IMPROVEMENT-BOARD.md) |
+| November 11 review and staged implementation TODOs (proposals only) | [`2026-11-11 review`](../reviews/2026-11-11-search-improvement-todos.md) |
 | Every requirement in one place + conflicts | [`docs/requirements/`](../requirements/README.md) |
 | How a new capability enters the system | [`docs/capability-process.md`](../capability-process.md) |
 | Required behavior in detail | [`docs/recreation/specification.md`](../recreation/specification.md) |

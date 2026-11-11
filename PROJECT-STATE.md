@@ -9,6 +9,12 @@ Project: **Search Simpli** (`search-simpli`)
 > and the evolution record. This file remains authoritative for *exact current
 > behavior and commands*.
 
+**11 Nov documentation review (source `f2d6f6c`):**
+[Search improvement TODOs](docs/reviews/2026-11-11-search-improvement-todos.md)
+and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
+record proposals and their validation steps. They are not accepted capabilities
+or implementation tasks; current search behavior and native artifacts are unchanged.
+
 ## Verb forms: a query word is also searched as its `-ing` and `-ed` forms that the files hold (S5-T5, 2026-11-09; verified and merged 2026-11-10)
 
 **Verified and merged 2026-11-10** ([Verdict](docs/tasks/S5-T5.md)); the verifier's own runs gave every J2 cell below on
