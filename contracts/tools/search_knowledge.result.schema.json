@@ -114,8 +114,8 @@
           "description": "Fuzzy policy id (contract 2.4.0): present whenever the lexical channel ran under content or both. A query word of 5 or more Latin code points that no chunk in scope and no visible file's name holds is also searched as up to 3 dictionary words within 1 edit (5 code points) or 2 edits (6 or more) sharing its first letter (fuzzy-v1, docs/fuzzy-v1.md)."
         },
         "fold_policy_id": {
-          "const": "fold-groups-v2",
-          "description": "Fold policy id (contract 2.5.0; fold-groups-v2 since 2.6.0): present whenever the lexical channel ran under content or both. A query word is also searched as the words of the files in scope and the visible file names that share its fold key: case and compatibility forms folded, Latin accents dropped, an English plural or one of seven Tamil suffixes taken off (fold-groups-v1, docs/fold-groups-v1.md). Contract 2.6.0 (fold-groups-v2, docs/fold-groups-v2.md) adds its -ing and -ed verb forms (paint, painted, painting; hop, hopped, hoping; tidy, tidied): a word no chunk in scope and no visible file name holds is searched as the forms they hold; a word they hold is also searched as its forms no more common than itself, at half weight. Misspelling tolerance (fuzzy-v1) runs only on the words that have no such group."
+          "const": "fold-groups-v3",
+          "description": "Fold policy id (contract 2.5.0; fold-groups-v2 since 2.6.0, fold-groups-v3 since 2.7.0): present whenever the lexical channel ran under content or both. A query word is also searched as the words of the files in scope and the visible file names that share its fold key: case and compatibility forms folded, Latin accents dropped, an English plural or one of seven Tamil suffixes taken off (fold-groups-v1, docs/fold-groups-v1.md). Contract 2.6.0 (fold-groups-v2, docs/fold-groups-v2.md) adds its -ing and -ed verb forms (paint, painted, painting; hop, hopped, hopping; tidy, tidied): a word no chunk in scope and no visible file name holds is searched as the forms they hold; a word they hold is also searched as its forms no more common than itself, at half weight. Contract 2.7.0 (fold-groups-v3, docs/fold-groups-v3.md) leaves out the forms of another word: for a short word that doubles its last letter (hop, car), its -ed, -ing and -es without the doubling (hoped, hoping, hopes are hope's); and for hoping or caring, the word hop or car. Misspelling tolerance (fuzzy-v1, unchanged in 2.7.0) runs only on the words that have no such group."
         }
       },
       "additionalProperties": false,
@@ -506,7 +506,7 @@
           },
           "members": {
             "type": "array",
-            "description": "Contract 2.5.0, query_term_grouped only: the words also searched for term because they share its fold key or, since 2.6.0, are among its -ing and -ed verb forms (fold-groups-v2), in the group's order, term left out.",
+            "description": "Contract 2.5.0, query_term_grouped only: the words also searched for term because they share its fold key or, since 2.6.0, are among its -ing and -ed verb forms (fold-groups-v2; since 2.7.0 not those of another word, fold-groups-v3), in the group's order, term left out.",
             "items": {
               "type": "string"
             },

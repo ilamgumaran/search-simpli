@@ -1,6 +1,7 @@
 """The judged queries of J2 (S5-T1): seven slices plus named negatives, and the
 held-out title (S5-T2), misspelling (S5-T3), morphology, accent and Tamil (S5-T4)
-and verb-form (S5-T5) slices.
+and verb-form (S5-T5) slices, and S5-T8's verbform-cross and precision-control
+slices with its two sets of negatives (negatives-tuning, negatives-heldout).
 
 A row is (path, anchor, grade, note). The generator turns each anchor into a line
 range of the file it names:
@@ -37,7 +38,14 @@ SLICE_MINIMUMS = {
     "accent-heldout": 10,
     "tamil-heldout": 10,
     "verbform-heldout": 14,
+    "verbform-cross": 6,
+    "precision-control": 8,
+    "misspelling-short": 12,
+    "misspelling-opening": 25,
 }
+# S5-T8 ruling 1: the two named sets of negatives, at least this many each (and at
+# least 30 together).
+NEGATIVE_SET_MINIMUMS = {"negatives-tuning": 15, "negatives-heldout": 15}
 
 QUERIES: list[dict] = []
 
@@ -932,3 +940,325 @@ q("negatives", "vhn2", "Is there a tidying rota?", "tidying rota", K, [
     ("laptop/notes/weekend-jobs.md", "§Bedroom", 0, "tidy the bedroom, no rota"),
     ("home/family-log.md", "§Cooking rota", 0, "a cooking rota, no tidying"),
 ], of="verbform-heldout")
+
+# ----------------------------------------------------- S5-T8 (ruling 1) --
+# Written and judged before any code of S5-T8's candidate rules (W, Wb, F, X)
+# existed, and recorded with the engine of the day in the same commit. The new
+# files are content.S5T8_FILES. No query word of these rows, other than a stop word
+# (generate.STOP_WORDS), is a query word of an earlier slice or shares its
+# fold-groups-v1 key with one (generate.py asserts it).
+
+# verbform-cross (review R05): opposing hop/hope, evening/even and tap/tape
+# documents, one answer per file (six files), judged on both sides. kind "cross":
+# cross = (the typed word, the form of its own word the answer holds, a form of
+# another word that R generates from the typed word and the grade-0 row holds);
+# held says whether a file holds the typed word itself.
+
+q("verbform-cross", "x01", "How did Clover get round her run?", "hops", K, [
+    ("home/clover.md", "§Clover", 2, "Clover hopped round run"),
+    ("laptop/snow.md", "§Snow", 0, "hopes and hoped: forms of hope, not hop"),
+    ("school/year2-blog.md", "§Sack race", 0, "hopped in a sack race, not Clover"),
+], kind="cross", cross=("hops", "hopped", "hopes"), held=False)
+q("verbform-cross", "x02", "What is Wren hoping for this winter?", "hoping", K, [
+    ("laptop/snow.md", "§Snow", 2, "Wren hopes snow comes"),
+    ("home/clover.md", "§Clover", 0, "hopped: a form of hop, not hope"),
+    ("school/year2-blog.md", "§Sack race", 0, "hopped: a form of hop, not hope"),
+], kind="cross", cross=("hoping", "hopes", "hopped"), held=False)
+q("verbform-cross", "x03", "What happens on chess evenings?", "evenings", K, [
+    ("laptop/chess.md", "§Chess ladder", 2, "games each Monday evening"),
+    ("school/counters.md", "§Counters", 0, "even piles: even is not a form of evening"),
+], kind="cross", cross=("evenings", "evening", "even"), held=False)
+q("verbform-cross", "x04", "Which piles of counters are even?", "even", K, [
+    ("school/counters.md", "§Counters", 2, "even piles go left"),
+    ("laptop/chess.md", "§Chess ladder", 0, "evening: not a form of even"),
+], kind="cross", cross=("even", "even", "evening"), held=True)
+q("verbform-cross", "x05", "Who was tapping the pipe joints?", "tapping", K, [
+    ("home/plumbing.md", "§Pipe joints", 2, "Joss tapped pipe joints"),
+    ("home/parcels.md", "§Parcels", 0, "taped and tapes: forms of tape, not tap"),
+], kind="cross", cross=("tapping", "tapped", "taped"), held=False)
+q("verbform-cross", "x06", "Who was taping the parcels?", "taping", K, [
+    ("home/parcels.md", "§Parcels", 2, "Pip taped each parcel"),
+    ("home/plumbing.md", "§Pipe joints", 0, "tapped and taps: forms of tap, not tape"),
+], kind="cross", cross=("taping", "taped", "tapped"), held=False)
+
+# precision-control: answers a too-eager precision rule would lose. kind
+# "stop-title": the answer is the file whose name holds the question's words, at
+# least one of them a stop word (generate.STOP_WORDS), and its body holds none of the
+# other words; "near": the answer is reached only through a near spelling (typo =
+# typed, meant, transposition); "verb": the answer holds only another verb form
+# (forms = [(query form, the form in the answer)]) and no file holds the query form.
+
+q("precision-control", "pc01", "Where is the this-and-that drawer list?", "this and that", K, [
+    ("home/this-and-that.md", "*", 2, "the file named this and that"),
+], kind="stop-title")
+q("precision-control", "pc02", "What was on at the end of the pier?", "end of the pier", K, [
+    ("home/end-of-the-pier.md", "*", 2, "the file named end of the pier"),
+], kind="stop-title")
+q("precision-control", "pc03", "What is the Owl and the Moon book about?", "owl and the moon", K, [
+    ("home/owl-and-the-moon.md", "*", 2, "the file named owl and the moon"),
+], kind="stop-title")
+q("precision-control", "pc04", "Where are my flowers?", "my flowers", K, [
+    ("home/my-flowers.md", "*", 2, "the file named my flowers"),
+], kind="stop-title")
+q("precision-control", "pc05", "What is on the stationary order?", "stationary", K, [
+    ("laptop/errands.md", "§Stationery", 2, "the stationery order"),
+], kind="near", typo=("stationary", "stationery", False))
+q("precision-control", "pc06", "What does the trampolene need?", "trampolene", K, [
+    ("laptop/errands.md", "§Trampoline net", 2, "a new net"),
+], kind="near", typo=("trampolene", "trampoline", False))
+q("precision-control", "pc07", "Where are the sissors?", "sissors", K, [
+    ("laptop/errands.md", "§Classroom trays", 2, "scissors in each tray"),
+], kind="near", typo=("sissors", "scissors", False))
+q("precision-control", "pc08", "Who was oiling the gate hinges?", "oiling", K, [
+    ("laptop/errands.md", "§Visit", 2, "Grandad oiled squeaky gate hinges"),
+], kind="verb", forms=[("oiling", "oiled")])
+q("precision-control", "pc09", "Who chopped the soup vegetables?", "chopped", K, [
+    ("laptop/errands.md", "§Soup", 2, "Joss was chopping onions"),
+], kind="verb", forms=[("chopped", "chopping")])
+q("precision-control", "pc10", "Who was sprinkling seeds on the rolls?", "sprinkling", K, [
+    ("laptop/errands.md", "§Rolls", 2, "sprinkled sesame seeds"),
+], kind="verb", forms=[("sprinkling", "sprinkled")])
+
+# negatives-tuning and negatives-heldout: questions nothing answers, in two sets.
+# A rule may be shaped on negatives-tuning; negatives-heldout is not run through
+# any candidate rule until every candidate is declared (S5-T8 ruling 1). kind:
+#   "stop-name"  a stop word that a file name holds, with words no file holds
+#                (stop = that stop word);
+#   "near-word"  one correctly spelt word no file holds, with near spellings that
+#                files hold (fuzzy-v1's reach);
+#   "near-topic" every word is held, the topic is not;
+#   "cross-form" a word no file holds whose verb-form remainder is another word a
+#                file holds (cross = (typed word, the other word));
+#   "tamil"      a Tamil question, one word held;
+#   "accent"     a question word with an accent that no file holds;
+#   "half-held"  two words, one held, the topic not.
+# `of` names the slice whose rule the negative probes.
+
+for _set, _rows in (
+    ("negatives-tuning", [
+        ("nt01", "Is there a story about the dragon?", "the dragon", "stop-name", "precision-control",
+         [("home/pets/biscuit-the-dog.md", "*", 0, "the in its name"), ("home/weekend/sale-in-the-field.md", "*", 0, "the in its name")],
+         {"stop": "the"}),
+        ("nt02", "Where is my rocket?", "my rocket", "stop-name", "precision-control",
+         [("home/my-flowers.md", "*", 0, "my in its name")], {"stop": "my"}),
+        ("nt03", "Who is king of the jungle?", "king of the jungle", "stop-name", "precision-control",
+         [("home/end-of-the-pier.md", "*", 0, "of and the in its name")], {"stop": "of"}),
+        ("nt04", "Are we going skiing?", "skiing", "near-word", "misspelling",
+         [("school/german-club.md", "=Frühling means spring", 0, "spring, a spelling neighbour")], {}),
+        ("nt05", "Any sailing lessons this summer?", "sailing", "near-word", "misspelling",
+         [("home/money/pocket-money.md", "=## What they are saving for", 0, "saving, a spelling neighbour")], {}),
+        ("nt06", "Is there a curling match?", "curling", "near-word", "misspelling",
+         [("laptop/notes/jottings.md", "=curving round chair legs", 0, "curving, a spelling neighbour")], {}),
+        ("nt07", "Is the radiator leaking?", "radiator leak", "near-topic", "control",
+         [("home/family-log.md", "§Leak in porch", 0, "a porch roof leak; a mat on the radiator")], {}),
+        ("nt08", "Does the hutch roof need fixing?", "hutch roof", "near-topic", "control",
+         [("home/clover.md", "§Clover", 0, "a hutch, no roof"), ("home/roof-and-heating.md", "*", 0, "the house roof")], {}),
+        ("nt09", "Who is caring for Nana?", "caring", "cross-form", "verbform-cross",
+         [("laptop/notes/car-garage.md", "*", 0, "car: caring less -ing")], {"cross": ("caring", "car")}),
+        ("nt10", "Are there biting midges at camp?", "biting midges", "cross-form", "verbform-cross",
+         [("school/reading-log-pip.md", "=a bit naive", 0, "bit: a little, not to bite")], {"cross": ("biting", "bit")}),
+        ("nt11", "When is the frogs' mating season?", "mating season", "cross-form", "verbform-cross",
+         [("home/family-log.md", "§Leak in porch", 0, "mat: mating less -ing")], {"cross": ("mating", "mat")}),
+        ("nt12", "மழை குடை எங்கே? (where is the rain umbrella?)", "மழை குடை", "tamil", "tamil",
+         [("school/tamil/tamil-class.md", "=ஒன்று மழை பற்றியது", 0, "a song about rain")], {}),
+        ("nt13", "திருவிழா பட்டாசு? (festival fireworks?)", "திருவிழா பட்டாசு", "tamil", "tamil",
+         [("home/tamil/tamil-jottings.md", "=திருவிழா அன்று", 0, "the festival, no fireworks")], {}),
+        ("nt14", "Is there a piñata for the party?", "piñata", "accent", "accent",
+         [("home/birthday-party-wren.md", "*", 0, "a party with no piñata")], {}),
+        ("nt15", "A soufflé for pudding?", "soufflé", "accent", "accent",
+         [("home/recipes/pancakes.md", "*", 0, "a recipe, not a soufflé")], {}),
+        ("nt16", "Is there a porch swing?", "porch swing", "half-held", "control",
+         [("home/family-log.md", "§Leak in porch", 0, "a porch, no swing")], {}),
+        ("nt17", "Is there a straw maze at the farm?", "straw maze", "half-held", "control",
+         [("home/clover.md", "§Clover", 0, "a straw bale, no maze")], {}),
+    ]),
+    ("negatives-heldout", [
+        ("nh01", "Is there a book about the wizard?", "the wizard", "stop-name", "precision-control",
+         [("home/pets/biscuit-the-dog.md", "*", 0, "the in its name"), ("home/owl-and-the-moon.md", "*", 0, "the in its name")],
+         {"stop": "the"}),
+        ("nh02", "Where is my hamster?", "my hamster", "stop-name", "precision-control",
+         [("home/my-flowers.md", "*", 0, "my in its name")], {"stop": "my"}),
+        ("nh03", "Have we got Land of Giants?", "land of giants", "stop-name", "precision-control",
+         [("home/end-of-the-pier.md", "*", 0, "of in its name")], {"stop": "of"}),
+        ("nh04", "Who taught Pip sewing?", "sewing", "near-word", "misspelling",
+         [("laptop/budget-autumn.md", "=## Saving", 0, "saving, a spelling neighbour")], {}),
+        ("nh05", "When are we golfing?", "golfing", "near-word", "misspelling",
+         [("school/noticeboard.md", "=she kept going", 0, "going, a spelling neighbour")], {}),
+        ("nh06", "Any surfing at the beach?", "surfing", "near-word", "misspelling",
+         [("home/money/pocket-money.md", "=sorting the recycling", 0, "sorting, a spelling neighbour")], {}),
+        ("nh07", "Do we have goat cheese?", "goat cheese", "near-topic", "control",
+         [("home/family-log.md", "§Petting farm", 0, "a baby goat"), ("laptop/notes/weekend-jobs.md", "§Pizza Sunday", 0, "cheese on pizza")], {}),
+        ("nh08", "When does the harbour ferry run?", "harbour ferry", "near-topic", "control",
+         [("home/family-log.md", "§Harbour", 0, "herring at the harbour"), ("home/family-log.md", "§Pet passport", 0, "a ferry to France")], {}),
+        ("nh09", "Who is hating the rain?", "hating", "cross-form", "verbform-cross",
+         [("home/holiday/seaside-packing.md", "=sunscreen and hats", 0, "hats, not hating")], {"cross": ("hating", "hat")}),
+        ("nh10", "Is the cat shedding fur?", "shedding fur", "cross-form", "verbform-cross",
+         [("laptop/notes/weekend-jobs.md", "=# Boat shed", 0, "a garden shed")], {"cross": ("shedding", "shed")}),
+        ("nh11", "Have we got canned tomatoes?", "canned", "cross-form", "verbform-cross",
+         [("laptop/kids-questions.md", "=so we can look them up", 0, "can: is able to")], {"cross": ("canned", "can")}),
+        ("nh12", "நிலா விண்கலம்? (a spaceship to the moon?)", "நிலா விண்கலம்", "tamil", "tamil",
+         [("school/tamil/tamil-class.md", "=நிலா பற்றியது", 0, "a song about the moon")], {}),
+        ("nh13", "குரங்கு தோப்பு? (a monkey grove?)", "குரங்கு தோப்பு", "tamil", "tamil",
+         [("laptop/tamil/tamil-stories.md", "=ஒரு குரங்கு மரத்தில்", 0, "a monkey in a tree, no grove")], {}),
+        ("nh14", "Do we have jalapeño peppers?", "jalapeño", "accent", "accent",
+         [("laptop/recipes-to-try.txt", "*", 0, "recipes, no jalapeño")], {}),
+        ("nh15", "Who is Auntie Mira's fiancé?", "fiancé", "accent", "accent",
+         [("home/family-log.md", "=ferry to France", 0, "France, a spelling neighbour")], {}),
+        ("nh16", "Are the ladder rungs safe?", "ladder rungs", "half-held", "control",
+         [("laptop/chess.md", "§Chess ladder", 0, "a chess ladder, no rungs")], {}),
+        ("nh17", "Who won the kite competition?", "kite competition", "half-held", "control",
+         [("home/holiday/seaside-packing.md", "*", 0, "a kite to pack")], {}),
+    ]),
+):
+    for _id, _question, _query, _kind, _of, _rows_, _facts in _rows:
+        q(_set, _id, _question, _query, K, _rows_, of=_of, kind=_kind, **_facts)
+
+# ------------------------------------- S5-T8 Phase 1c: misspelling-short --
+# Ruling 3 of the Phase 1 rulings: typed words of 6 and 7 code points two edits from
+# the meant word when a swap of two neighbours counts two (Levenshtein), at least
+# five of them one swapped adjacent pair, the rest a dropped and an added letter or
+# two wrong letters; and negatives where a correctly spelt 6 or 7 code point word no
+# file holds has a near word. Written and judged, and recorded with the engine of
+# the day, before F, F7, Ft and the builder's variant are declared and before any of
+# them runs these queries. Existing files only. typo = (as typed, the word meant,
+# is it one adjacent transposition); kind is generate.SHORT_KINDS's.
+
+for _id, _question, _query, _typo, _kind, _rows_ in (
+    ("ms01", "What is on at the leisure centre?", "center", ("center", "centre", True), "swap",
+     [("home/calendar-november.md", "=leisure centre", 2, "Ada's party at the leisure centre")]),
+    ("ms02", "What is in the autumn budget?", "bugdet", ("bugdet", "budget", True), "swap",
+     [("laptop/budget-autumn.md", "*", 2, "the budget file"),
+      ("home/family-log.md", "§Leak in porch", 0, "bucket, a spelling neighbour")]),
+    ("ms03", "Are apples on the shopping list?", "appels", ("appels", "apples", True), "swap",
+     [("home/shopping-list.md", "=- apples", 2, "apples on the list"),
+      ("home/garden-diary.md", "§January", 0, "windfall apples, not shopping")]),
+    ("ms04", "What goes on the volcano poster?", "diagarm", ("diagarm", "diagram", True), "swap",
+     [("school/volcano-project.md", "§Poster checklist", 2, "a labelled diagram")]),
+    ("ms05", "Where do unnamed lost coats go?", "chairty", ("chairty", "charity", True), "swap",
+     [("school/newsletter-autumn.md", "§Lost property", 2, "to the charity shop")]),
+    ("ms06", "What happens to the cat flap on bonfire evening?", "bonfrie", ("bonfrie", "bonfire", True), "swap",
+     [("home/family-log.md", "§Cat flap", 2, "lock the flap on bonfire evening")]),
+    ("ms07", "What caught the rain in the porch?", "bukett", ("bukett", "bucket", False), "drop and add",
+     [("home/family-log.md", "§Leak in porch", 2, "one blue bucket"),
+      ("home/holiday/seaside-packing.md", "=buckets and spades", 0, "buckets to pack, not the leak")]),
+    ("ms08", "Which French phrase means already seen?", "allredy", ("allredy", "already", False), "drop and add",
+     [("school/noticeboard.md", "§Tasting", 2, "French, meaning already seen")]),
+    ("ms09", "Where do families watch the swim gala?", "galerry", ("galerry", "gallery", False), "two wrong letters",
+     [("school/noticeboard.md", "§Swim gala results", 2, "the viewing gallery")]),
+    ("ms10", "When did we see the doctor?", "dokter", ("dokter", "doctor", False), "two wrong letters",
+     [("home/health/doctor-visits.md", "*", 2, "the doctor visits")]),
+    ("ms11", "What does Wren need for the Brownies outing?", "jakkit", ("jakkit", "jacket", False), "two wrong letters",
+     [("home/family-log.md", "§Brownies outing", 2, "a waterproof jacket")]),
+    ("ms12", "Which day is chicken for lunch?", "chikkin", ("chikkin", "chicken", False), "two wrong letters",
+     [("school/lunch-menu.md", "§Tuesday", 2, "roast chicken on Tuesday")]),
+    ("ms13", "How long is recorder practice?", "fivtean", ("fivtean", "fifteen", False), "two wrong letters",
+     [("home/music/recorder-practice.md", "§Every day", 2, "fifteen minutes")]),
+):
+    q("misspelling-short", _id, _question, _query, K, _rows_, typo=_typo, kind=_kind)
+
+for _id, _question, _query, _rows_ in (
+    ("msn1", "Do we have a parrot?", "parrot",
+     [("school/maths-homework.md", "=a part of a whole", 0, "part, a spelling neighbour")]),
+    ("msn2", "Did we see a walrus?", "walrus",
+     [("home/weekend-plans.md", "§Walks", 0, "walks, a spelling neighbour")]),
+    ("msn3", "Is there a tractor ride?", "tractor",
+     [("laptop/log/homework-tracker.txt", "=Homework tracker", 0, "tracker, a spelling neighbour")]),
+    ("msn4", "Did anyone see a beaver?", "beaver",
+     [("school/noticeboard.md", "=squash in beakers", 0, "beakers, a spelling neighbour")]),
+):
+    q("negatives-short", _id, _question, _query, K, _rows_, of="misspelling-short", kind="near-word")
+
+# ---------------------------------- S5-T8 re-ruling: misspelling-opening --
+# The re-ruling after the verifier's measurement (orchestrator, 13 Nov), item 3: the
+# typed words S5-T8's verifier wrote for ruling 2 of the rulings on the Report, each
+# as the short question it ran (the query, verbatim), and as its answer every file
+# whose text holds the meant word (the verifier's measure counts the file). Sixteen
+# keep the first letter and miss the second; nine miss the first letter, which
+# fuzzy-v1 never reaches: their zero is a measured gap, not a regression. Written by
+# someone who had not seen the rule's design; the bar the next fuzzy task must not
+# lower. typo = (as typed, the word meant); kind is generate.OPENING_KINDS's.
+
+for _id, _question, _query, _typo, _kind, _files in (
+    ("mo01", "What phonics is there this week?", "fonics this week", ("fonics", "phonics"), "first letter",
+     ["school/class-notes-wren.md", "laptop/log/homework-tracker.txt"]),
+    ("mo02", "Which story is told in rhyming words?", "riming words", ("riming", "rhyming"), "second letter",
+     ["home/owl-and-the-moon.md"]),
+    ("mo03", "When are the quizzes?", "when are the kwizzes", ("kwizzes", "quizzes"), "first letter",
+     ["school/noticeboard.md"]),
+    ("mo04", "Who wanted kebabs?", "who wanted kabobs", ("kabobs", "kebabs"), "second letter",
+     ["home/birthday-party-wren.md"]),
+    ("mo05", "Did we buy celery?", "did we buy salery", ("salery", "celery"), "first letter",
+     ["laptop/errands.md"]),
+    ("mo06", "Which day is chicken for lunch?", "which day is cikken", ("cikken", "chicken"), "second letter",
+     ["school/lunch-menu.md"]),
+    ("mo07", "Where is the cushion?", "where is the kushon", ("kushon", "cushion"), "first letter",
+     ["home/family-log.md"]),
+    ("mo08", "What needs fixing on the scooter?", "fix the skootur", ("skootur", "scooter"), "second letter",
+     ["laptop/notes/weekend-jobs.md"]),
+    ("mo09", "Who has the whistle?", "who has the wistel", ("wistel", "whistle"), "second letter",
+     ["laptop/notes/jottings.md", "school/noticeboard.md"]),
+    ("mo10", "Where are the kayaks for the river?", "cayacs on the river", ("cayacs", "kayaks"), "first letter",
+     ["laptop/notes/weekend-jobs.md"]),
+    ("mo11", "What was knitted?", "what was nittid", ("nittid", "knitted"), "first letter",
+     ["home/household.md"]),
+    ("mo12", "When are we at the leisure centre?", "when does the senter open", ("senter", "centre"),
+     "first letter", ["home/calendar-november.md"]),
+    ("mo13", "Which lunch has ketchup with chips?", "catchup with chips", ("catchup", "ketchup"), "first letter",
+     ["school/lunch-menu.md"]),
+    ("mo14", "What was squeaky?", "the skweaky door", ("skweaky", "squeaky"), "second letter",
+     ["laptop/errands.md"]),
+    ("mo15", "Who made custard?", "who made kustad", ("kustad", "custard"), "first letter",
+     ["home/household.md", "school/noticeboard.md"]),
+    ("mo16", "What happens in the next chapter?", "read the next captur", ("captur", "chapter"), "second letter",
+     ["laptop/notes/bedtime-stories.md"]),
+    ("mo17", "When is the plumber coming?", "when is the pulmer coming", ("pulmer", "plumber"), "second letter",
+     ["home/plumbing.md"]),
+    ("mo18", "Where are my glasses?", "where are my galses", ("galses", "glasses"), "second letter",
+     ["home/health/doctor-visits.md", "laptop/notes/jottings.md"]),
+    ("mo19", "Who made the crumble?", "who made the cumbel", ("cumbel", "crumble"), "second letter",
+     ["home/household.md"]),
+    ("mo20", "Which spanner was used under the sink?", "which sapner size", ("sapner", "spanner"), "second letter",
+     ["home/plumbing.md"]),
+    ("mo21", "Where is there squash?", "who plays skwash", ("skwash", "squash"), "second letter",
+     ["laptop/chess.md", "school/noticeboard.md"]),
+    ("mo22", "Was something knitted?", "something kittid", ("kittid", "knitted"), "second letter",
+     ["home/household.md"]),
+    ("mo23", "Which scales come first at recorder practice?", "how many skailes", ("skailes", "scales"),
+     "second letter", ["home/music/recorder-practice.md"]),
+    ("mo24", "Where is the canoe trolley?", "the torley wheel", ("torley", "trolley"), "second letter",
+     ["laptop/notes/weekend-jobs.md"]),
+    ("mo25", "What are the dinosaur skeletons made of?", "palstr cast", ("palstr", "plaster"), "second letter",
+     ["school/dinosaur-topic.md"]),
+):
+    q("misspelling-opening", _id, _question, _query, K,
+      [(path, "*", 2, f"a file holding {_typo[1]}") for path in _files], typo=_typo, kind=_kind)
+
+# Verb forms of the negatives' words that the files hold (R's forms, `verb_forms.forms`,
+# by exact bytes): "same" when the form is of the question's own word, "cross" when
+# it is of another word. The measure of what misleads (fixtures/j2/README.md) reads
+# these; generate.py asserts that every form R can reach in the files is judged.
+VERB_FORM_JUDGMENTS: dict[str, dict[str, str]] = {
+    # Earlier negatives (S5-T1, S5-T5): plurals and tenses of the question's own word.
+    "lessons": {"lesson": "same"},
+    "painting": {"paint": "same", "painted": "same"},
+    "recipe": {"recipes": "same"},
+    "letter": {"letters": "same"},
+    # A curriculum vitae; the files' resume is "to begin again" (fold-groups-v1 also joins it).
+    "résumé": {"resume": "cross"},
+    "plans": {"planned": "same"},
+    "photos": {"photo": "same"},
+    "costume": {"costumes": "same"},
+    "diving": {"dive": "same"},
+    "tidying": {"tidy": "same"},
+    # S5-T8's negatives.
+    "leak": {"leaked": "same"},
+    "caring": {"car": "cross"},
+    "biting": {"bit": "cross", "bite": "same"},
+    "mating": {"mat": "cross", "mats": "cross"},
+    "swing": {"swings": "same"},
+    "goat": {"goats": "same"},
+    "hating": {"hat": "cross", "hats": "cross", "hates": "same"},
+    # The files' shed is a garden shed; their can is "is able to".
+    "shedding": {"shed": "cross"},
+    "canned": {"can": "cross"},
+}

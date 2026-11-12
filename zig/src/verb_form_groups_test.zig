@@ -42,9 +42,13 @@ const Corpus = struct {
 
 /// The corpus with its dictionary sorted bytewise (as HYBLEX02 is).
 fn makeCorpus(a: std.mem.Allocator) !Corpus {
-    const token_lists = try a.alloc([][]const u8, docs.len);
-    for (docs, token_lists) |doc, *tokens_out| tokens_out.* = try analyzer_v2.tokenize(a, doc.text);
-    var index = try lexical_build.build(a, &docs, token_lists);
+    return makeCorpusOf(a, &docs);
+}
+
+fn makeCorpusOf(a: std.mem.Allocator, documents: []const hybrid.Document) !Corpus {
+    const token_lists = try a.alloc([][]const u8, documents.len);
+    for (documents, token_lists) |doc, *tokens_out| tokens_out.* = try analyzer_v2.tokenize(a, doc.text);
+    var index = try lexical_build.build(a, documents, token_lists);
     const terms = try a.dupe(postings.TermEntry, index.terms);
     std.mem.sort(postings.TermEntry, terms, {}, struct {
         fn less(_: void, x: postings.TermEntry, y: postings.TermEntry) bool {
@@ -53,9 +57,9 @@ fn makeCorpus(a: std.mem.Allocator) !Corpus {
     }.less);
     index.terms = terms;
     index.sorted_terms = true;
-    const derived = try title_field.derive(a, a, &docs, &roots);
+    const derived = try title_field.derive(a, a, documents, &roots);
     return .{
-        .engine = .{ .generation = 1, .analyzer_id = analyzer_v2.analyzer_id, .embedding_model_id = "", .vector_dimensions = 0, .documents = &docs, .lexical_index = index, .roots = &roots },
+        .engine = .{ .generation = 1, .analyzer_id = analyzer_v2.analyzer_id, .embedding_model_id = "", .vector_dimensions = 0, .documents = documents, .lexical_index = index, .roots = &roots },
         .field = derived.field,
     };
 }
@@ -198,4 +202,26 @@ test "R: fold off ranks as before; a word R does not apply to ranks as with fold
             try std.testing.expectEqual(q2.lexical_score, p.lexical_score);
         }
     }
+}
+
+const v3_docs = [_]hybrid.Document{
+    .{ .id = "h1", .text = "we hoped for sun", .path = "r-home/home/sun.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "h2", .text = "the rabbit hopped away", .path = "r-home/home/rabbit.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "h3", .text = "a hop and a skip", .path = "r-home/home/skip.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "c1", .text = "the car park", .path = "r-home/home/park.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "c2", .text = "we care a lot", .path = "r-home/home/lot.md", .start_line = 1, .end_line = 1 },
+};
+
+test "fold-groups-v3: only R's eligible forms; the forms of another word are left out" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const corpus = try makeCorpusOf(a, &v3_docs);
+    // hopping (no file holds it): hop and hopped (df 1 each, by bytes),
+    // never hope's hoped.
+    try expectWeighted(a, &corpus, .{}, "hopping", &.{ "hop", "hopped" }, &.{ 1.0, 1.0 });
+    // hoping: hope's forms (hoped), never the base hop nor its hopped.
+    try expectWeighted(a, &corpus, .{}, "hoping", &.{"hoped"}, &.{1.0});
+    // caring: care, never car.
+    try expectWeighted(a, &corpus, .{}, "caring", &.{"care"}, &.{1.0});
 }

@@ -12,7 +12,8 @@
     "hit_match": "a hit matches a row when root_id and path are equal and the line ranges overlap; a hit takes the highest-grade unmatched row it overlaps and each row is matched at most once",
     "modes": "knowledge = search_knowledge (lexical, top 10, search_field content and both); find:words, find:phrase, find:prefix = find in that mode, first page of 10",
     "negatives": "an empty answer set; rows name the distractors; reported as hit count, top hit and whether it is a named distractor",
-    "checks": "asserted by generate.py with the analyzer-v2 simple case fold"
+    "checks": "asserted by generate.py with the analyzer-v2 simple case fold",
+    "misleading": "S5-T8: for a negative, each of its first 5 hits is labelled by what brought it (README, What counts as misleading); stop_words and verb_form_judgments are the labels' inputs"
   },
   "slices": {
     "control": 20,
@@ -28,7 +29,14 @@
     "morphology-heldout": 12,
     "accent-heldout": 10,
     "tamil-heldout": 10,
-    "verbform-heldout": 14
+    "verbform-heldout": 14,
+    "verbform-cross": 6,
+    "precision-control": 8,
+    "negatives-tuning": 15,
+    "negatives-heldout": 15,
+    "misspelling-short": 12,
+    "negatives-short": 3,
+    "misspelling-opening": 25
   },
   "counts": {
     "control": 23,
@@ -44,7 +52,14 @@
     "morphology-heldout": 14,
     "accent-heldout": 11,
     "tamil-heldout": 13,
-    "verbform-heldout": 19
+    "verbform-heldout": 19,
+    "verbform-cross": 6,
+    "precision-control": 10,
+    "negatives-tuning": 17,
+    "negatives-heldout": 17,
+    "misspelling-short": 13,
+    "negatives-short": 4,
+    "misspelling-opening": 25
   },
   "files": [
     {
@@ -70,10 +85,24 @@
     },
     {
       "root_id": "home",
+      "path": "clover.md",
+      "bytes": 199,
+      "lines": 5,
+      "sha256": "027aebeced50bb020aec43cca338fedeb49e4ac3a90593e5e70ede96801fcd9d"
+    },
+    {
+      "root_id": "home",
       "path": "days-out/seals.md",
       "bytes": 293,
       "lines": 6,
       "sha256": "c241b35c826a3bddcb09fb84a61c3ab4bfc7c351d6b92531c9ce7f4556c1b8b9"
+    },
+    {
+      "root_id": "home",
+      "path": "end-of-the-pier.md",
+      "bytes": 170,
+      "lines": 4,
+      "sha256": "6aa8a3e3b4dc9c5b2813d9f523926bde4cd432b83b4fd040f49687de7e408634"
     },
     {
       "root_id": "home",
@@ -140,6 +169,27 @@
     },
     {
       "root_id": "home",
+      "path": "my-flowers.md",
+      "bytes": 155,
+      "lines": 4,
+      "sha256": "f0025f350e6be0c08127b262dae1cad1d5d694004e8f6e37fdcf223ac5643160"
+    },
+    {
+      "root_id": "home",
+      "path": "owl-and-the-moon.md",
+      "bytes": 186,
+      "lines": 5,
+      "sha256": "8a825f0b0da7867fae1027bc89f0d556f2a8094df672b5b25096ddfe7b6503ea"
+    },
+    {
+      "root_id": "home",
+      "path": "parcels.md",
+      "bytes": 149,
+      "lines": 4,
+      "sha256": "b76e613c2ea212781002bdc87d0e3a2d923c15028d05a25b2b417848bab9bb35"
+    },
+    {
+      "root_id": "home",
       "path": "pets/biscuit-the-dog.md",
       "bytes": 485,
       "lines": 23,
@@ -158,6 +208,13 @@
       "bytes": 148,
       "lines": 7,
       "sha256": "c7da170257e1a0352271cad17c6898ced19f79ade9165c5cd6d9ddf2d4dccf24"
+    },
+    {
+      "root_id": "home",
+      "path": "plumbing.md",
+      "bytes": 160,
+      "lines": 4,
+      "sha256": "23a06b72a7dd20e67f5844870fe3d931fc0abf7e503be17e886a5ecd72a5d690"
     },
     {
       "root_id": "home",
@@ -210,6 +267,13 @@
     },
     {
       "root_id": "home",
+      "path": "this-and-that.md",
+      "bytes": 154,
+      "lines": 4,
+      "sha256": "dd92466c7a2251ce72b3e43bd44998466d181a6e36724143d095b8f07015c24d"
+    },
+    {
+      "root_id": "home",
       "path": "weekend-plans.md",
       "bytes": 358,
       "lines": 15,
@@ -238,6 +302,13 @@
     },
     {
       "root_id": "laptop",
+      "path": "chess.md",
+      "bytes": 193,
+      "lines": 5,
+      "sha256": "9d8ac31c7e5be0a2542f3b195ce375b7357295d76522b52b537e6cb9cc210e63"
+    },
+    {
+      "root_id": "laptop",
       "path": "club-timetable.md",
       "bytes": 579,
       "lines": 28,
@@ -256,6 +327,13 @@
       "bytes": 388,
       "lines": 16,
       "sha256": "1af2ce1162401c7d413823c193c0ad12cd1a23240ccafca806b15a4eaeb138f8"
+    },
+    {
+      "root_id": "laptop",
+      "path": "errands.md",
+      "bytes": 870,
+      "lines": 29,
+      "sha256": "a298519be32cf4ef39e29c7ffab4392ff25f12bdee304cc01aa9037ef2e41fd2"
     },
     {
       "root_id": "laptop",
@@ -371,6 +449,13 @@
     },
     {
       "root_id": "laptop",
+      "path": "snow.md",
+      "bytes": 168,
+      "lines": 4,
+      "sha256": "ee6eb71c29aa0afcfb286a37a5272d3382b5aeccd0f813156e71be15e78b82bf"
+    },
+    {
+      "root_id": "laptop",
       "path": "tamil/tamil-stories.md",
       "bytes": 1084,
       "lines": 23,
@@ -424,6 +509,13 @@
       "bytes": 304,
       "lines": 9,
       "sha256": "c693501f20d3bbd3d411c80e8b6310fbcae8581422b1cc8b97ae1121ee7cf8ed"
+    },
+    {
+      "root_id": "school",
+      "path": "counters.md",
+      "bytes": 183,
+      "lines": 5,
+      "sha256": "2eead4dc47f9cbc29fdf5c89acda39bb737098ab6ae17d1d9600fb3bd299efae"
     },
     {
       "root_id": "school",
@@ -9033,6 +9125,3605 @@
           ]
         }
       ]
+    },
+    {
+      "slice": "verbform-cross",
+      "id": "x01",
+      "question": "How did Clover get round her run?",
+      "query": "hops",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "clover.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Clover"
+          ],
+          "note": "Clover hopped round run"
+        },
+        {
+          "root_id": "laptop",
+          "path": "snow.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "section_path": [
+            "Snow"
+          ],
+          "note": "hopes and hoped: forms of hope, not hop"
+        },
+        {
+          "root_id": "school",
+          "path": "year2-blog.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Sack race"
+          ],
+          "note": "hopped in a sack race, not Clover"
+        }
+      ],
+      "kind": "cross",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "cross form: the answer holds the typed word's own form and not the other word's; a grade-0 row holds a form of another word that R generates from the typed word",
+          "typed": "hops",
+          "own": "hopped",
+          "cross": "hopes",
+          "held": false,
+          "kind": "cross"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-cross",
+      "id": "x02",
+      "question": "What is Wren hoping for this winter?",
+      "query": "hoping",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "snow.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "section_path": [
+            "Snow"
+          ],
+          "note": "Wren hopes snow comes"
+        },
+        {
+          "root_id": "home",
+          "path": "clover.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Clover"
+          ],
+          "note": "hopped: a form of hop, not hope"
+        },
+        {
+          "root_id": "school",
+          "path": "year2-blog.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Sack race"
+          ],
+          "note": "hopped: a form of hop, not hope"
+        }
+      ],
+      "kind": "cross",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "cross form: the answer holds the typed word's own form and not the other word's; a grade-0 row holds a form of another word that R generates from the typed word",
+          "typed": "hoping",
+          "own": "hopes",
+          "cross": "hopped",
+          "held": false,
+          "kind": "cross"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-cross",
+      "id": "x03",
+      "question": "What happens on chess evenings?",
+      "query": "evenings",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "chess.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Chess ladder"
+          ],
+          "note": "games each Monday evening"
+        },
+        {
+          "root_id": "school",
+          "path": "counters.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Counters"
+          ],
+          "note": "even piles: even is not a form of evening"
+        }
+      ],
+      "kind": "cross",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "cross form: the answer holds the typed word's own form and not the other word's; a grade-0 row holds a form of another word that R generates from the typed word",
+          "typed": "evenings",
+          "own": "evening",
+          "cross": "even",
+          "held": false,
+          "kind": "cross"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-cross",
+      "id": "x04",
+      "question": "Which piles of counters are even?",
+      "query": "even",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "counters.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Counters"
+          ],
+          "note": "even piles go left"
+        },
+        {
+          "root_id": "laptop",
+          "path": "chess.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Chess ladder"
+          ],
+          "note": "evening: not a form of even"
+        }
+      ],
+      "kind": "cross",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "cross form: the answer holds the typed word's own form and not the other word's; a grade-0 row holds a form of another word that R generates from the typed word",
+          "typed": "even",
+          "own": "even",
+          "cross": "evening",
+          "held": true,
+          "kind": "cross"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-cross",
+      "id": "x05",
+      "question": "Who was tapping the pipe joints?",
+      "query": "tapping",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "plumbing.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "section_path": [
+            "Pipe joints"
+          ],
+          "note": "Joss tapped pipe joints"
+        },
+        {
+          "root_id": "home",
+          "path": "parcels.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "section_path": [
+            "Parcels"
+          ],
+          "note": "taped and tapes: forms of tape, not tap"
+        }
+      ],
+      "kind": "cross",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "cross form: the answer holds the typed word's own form and not the other word's; a grade-0 row holds a form of another word that R generates from the typed word",
+          "typed": "tapping",
+          "own": "tapped",
+          "cross": "taped",
+          "held": false,
+          "kind": "cross"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "verbform-cross",
+      "id": "x06",
+      "question": "Who was taping the parcels?",
+      "query": "taping",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "parcels.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "section_path": [
+            "Parcels"
+          ],
+          "note": "Pip taped each parcel"
+        },
+        {
+          "root_id": "home",
+          "path": "plumbing.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "section_path": [
+            "Pipe joints"
+          ],
+          "note": "tapped and taps: forms of tap, not tape"
+        }
+      ],
+      "kind": "cross",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "cross form: the answer holds the typed word's own form and not the other word's; a grade-0 row holds a form of another word that R generates from the typed word",
+          "typed": "taping",
+          "own": "taped",
+          "cross": "tapped",
+          "held": false,
+          "kind": "cross"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc01",
+      "question": "Where is the this-and-that drawer list?",
+      "query": "this and that",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "this-and-that.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "note": "the file named this and that"
+        }
+      ],
+      "kind": "stop-title",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "stop-word title: the query's stop words and its other words are in the file name; the other words are not in its body",
+          "stop_words": [
+            "this",
+            "and",
+            "that"
+          ],
+          "other_words": [],
+          "title": [
+            "this",
+            "and",
+            "that"
+          ],
+          "kind": "stop-title"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc02",
+      "question": "What was on at the end of the pier?",
+      "query": "end of the pier",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "end-of-the-pier.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "note": "the file named end of the pier"
+        }
+      ],
+      "kind": "stop-title",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "stop-word title: the query's stop words and its other words are in the file name; the other words are not in its body",
+          "stop_words": [
+            "of",
+            "the"
+          ],
+          "other_words": [
+            "end",
+            "pier"
+          ],
+          "title": [
+            "end",
+            "of",
+            "the",
+            "pier"
+          ],
+          "kind": "stop-title"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc03",
+      "question": "What is the Owl and the Moon book about?",
+      "query": "owl and the moon",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "owl-and-the-moon.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "note": "the file named owl and the moon"
+        }
+      ],
+      "kind": "stop-title",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "stop-word title: the query's stop words and its other words are in the file name; the other words are not in its body",
+          "stop_words": [
+            "and",
+            "the"
+          ],
+          "other_words": [
+            "owl",
+            "moon"
+          ],
+          "title": [
+            "owl",
+            "and",
+            "the",
+            "moon"
+          ],
+          "kind": "stop-title"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc04",
+      "question": "Where are my flowers?",
+      "query": "my flowers",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "my-flowers.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "note": "the file named my flowers"
+        }
+      ],
+      "kind": "stop-title",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "stop-word title: the query's stop words and its other words are in the file name; the other words are not in its body",
+          "stop_words": [
+            "my"
+          ],
+          "other_words": [
+            "flowers"
+          ],
+          "title": [
+            "my",
+            "flowers"
+          ],
+          "kind": "stop-title"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc05",
+      "question": "What is on the stationary order?",
+      "query": "stationary",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "section_path": [
+            "Stationery"
+          ],
+          "note": "the stationery order"
+        }
+      ],
+      "kind": "near",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "near: the typed word is in no file; the answer holds the meant word, in fuzzy-v1's reach",
+          "typed": "stationary",
+          "meant": "stationery",
+          "distance": 1,
+          "typed_code_points": 10,
+          "meant_df": 1,
+          "kind": "near"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc06",
+      "question": "What does the trampolene need?",
+      "query": "trampolene",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 6,
+          "end_line": 9,
+          "grade": 2,
+          "section_path": [
+            "Trampoline net"
+          ],
+          "note": "a new net"
+        }
+      ],
+      "kind": "near",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "near: the typed word is in no file; the answer holds the meant word, in fuzzy-v1's reach",
+          "typed": "trampolene",
+          "meant": "trampoline",
+          "distance": 1,
+          "typed_code_points": 10,
+          "meant_df": 1,
+          "kind": "near"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc07",
+      "question": "Where are the sissors?",
+      "query": "sissors",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 11,
+          "end_line": 14,
+          "grade": 2,
+          "section_path": [
+            "Classroom trays"
+          ],
+          "note": "scissors in each tray"
+        }
+      ],
+      "kind": "near",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "near: the typed word is in no file; the answer holds the meant word, in fuzzy-v1's reach",
+          "typed": "sissors",
+          "meant": "scissors",
+          "distance": 1,
+          "typed_code_points": 7,
+          "meant_df": 1,
+          "kind": "near"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc08",
+      "question": "Who was oiling the gate hinges?",
+      "query": "oiling",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 16,
+          "end_line": 19,
+          "grade": 2,
+          "section_path": [
+            "Visit"
+          ],
+          "note": "Grandad oiled squeaky gate hinges"
+        }
+      ],
+      "kind": "verb",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb: no file holds the query form or a fold-groups-v1 form of it; the answer holds a verb form R generates from it",
+          "query_form": "oiling",
+          "file_form": "oiled",
+          "kind": "verb"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc09",
+      "question": "Who chopped the soup vegetables?",
+      "query": "chopped",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 21,
+          "end_line": 24,
+          "grade": 2,
+          "section_path": [
+            "Soup"
+          ],
+          "note": "Joss was chopping onions"
+        }
+      ],
+      "kind": "verb",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb: no file holds the query form or a fold-groups-v1 form of it; the answer holds a verb form R generates from it",
+          "query_form": "chopped",
+          "file_form": "chopping",
+          "kind": "verb"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "precision-control",
+      "id": "pc10",
+      "question": "Who was sprinkling seeds on the rolls?",
+      "query": "sprinkling",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 26,
+          "end_line": 29,
+          "grade": 2,
+          "section_path": [
+            "Rolls"
+          ],
+          "note": "sprinkled sesame seeds"
+        }
+      ],
+      "kind": "verb",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "verb: no file holds the query form or a fold-groups-v1 form of it; the answer holds a verb form R generates from it",
+          "query_form": "sprinkling",
+          "file_form": "sprinkled",
+          "kind": "verb"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt01",
+      "question": "Is there a story about the dragon?",
+      "query": "the dragon",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "pets/biscuit-the-dog.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 0,
+          "note": "the in its name"
+        },
+        {
+          "root_id": "home",
+          "path": "weekend/sale-in-the-field.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "note": "the in its name"
+        }
+      ],
+      "negative": true,
+      "negative_of": "precision-control",
+      "kind": "stop-name",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (stop-name): a stop word of the query is in a file name; no file holds the other words",
+          "held": [],
+          "stop": "the"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt02",
+      "question": "Where is my rocket?",
+      "query": "my rocket",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "my-flowers.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "note": "my in its name"
+        }
+      ],
+      "negative": true,
+      "negative_of": "precision-control",
+      "kind": "stop-name",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (stop-name): a stop word of the query is in a file name; no file holds the other words",
+          "held": [],
+          "stop": "my"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt03",
+      "question": "Who is king of the jungle?",
+      "query": "king of the jungle",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "end-of-the-pier.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "note": "of and the in its name"
+        }
+      ],
+      "negative": true,
+      "negative_of": "precision-control",
+      "kind": "stop-name",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (stop-name): a stop word of the query is in a file name; no file holds the other words",
+          "held": [],
+          "stop": "of"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt04",
+      "question": "Are we going skiing?",
+      "query": "skiing",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "german-club.md",
+          "start_line": 7,
+          "end_line": 7,
+          "grade": 0,
+          "note": "spring, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "saving",
+            "skin",
+            "skipping",
+            "spring",
+            "string"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt05",
+      "question": "Any sailing lessons this summer?",
+      "query": "sailing",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "money/pocket-money.md",
+          "start_line": 13,
+          "end_line": 13,
+          "grade": 0,
+          "note": "saving, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "saving",
+            "selling"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt06",
+      "question": "Is there a curling match?",
+      "query": "curling",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 20,
+          "end_line": 20,
+          "grade": 0,
+          "note": "curving, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "cooling",
+            "curving",
+            "cycling"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt07",
+      "question": "Is the radiator leaking?",
+      "query": "radiator leak",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Leak in porch"
+          ],
+          "note": "a porch roof leak; a mat on the radiator"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "kind": "near-topic",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-topic): every word is held; the topic is not",
+          "held": [
+            "radiator",
+            "leak"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt08",
+      "question": "Does the hutch roof need fixing?",
+      "query": "hutch roof",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "clover.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Clover"
+          ],
+          "note": "a hutch, no roof"
+        },
+        {
+          "root_id": "home",
+          "path": "roof-and-heating.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "note": "the house roof"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "kind": "near-topic",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-topic): every word is held; the topic is not",
+          "held": [
+            "hutch",
+            "roof"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt09",
+      "question": "Who is caring for Nana?",
+      "query": "caring",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/car-garage.md",
+          "start_line": 1,
+          "end_line": 11,
+          "grade": 0,
+          "note": "car: caring less -ing"
+        }
+      ],
+      "negative": true,
+      "negative_of": "verbform-cross",
+      "kind": "cross-form",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (cross-form): a word no file holds; R generates another word a file holds, judged a form of another word",
+          "held": [],
+          "typed": "caring",
+          "other": "car"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt10",
+      "question": "Are there biting midges at camp?",
+      "query": "biting midges",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "reading-log-pip.md",
+          "start_line": 15,
+          "end_line": 15,
+          "grade": 0,
+          "note": "bit: a little, not to bite"
+        }
+      ],
+      "negative": true,
+      "negative_of": "verbform-cross",
+      "kind": "cross-form",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (cross-form): a word no file holds; R generates another word a file holds, judged a form of another word",
+          "held": [],
+          "typed": "biting",
+          "other": "bit"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt11",
+      "question": "When is the frogs' mating season?",
+      "query": "mating season",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Leak in porch"
+          ],
+          "note": "mat: mating less -ing"
+        }
+      ],
+      "negative": true,
+      "negative_of": "verbform-cross",
+      "kind": "cross-form",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (cross-form): a word no file holds; R generates another word a file holds, judged a form of another word",
+          "held": [],
+          "typed": "mating",
+          "other": "mat"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt12",
+      "question": "மழை குடை எங்கே? (where is the rain umbrella?)",
+      "query": "மழை குடை",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 23,
+          "end_line": 23,
+          "grade": 0,
+          "note": "a song about rain"
+        }
+      ],
+      "negative": true,
+      "negative_of": "tamil",
+      "kind": "tamil",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (tamil): a Tamil question; a word or a fold-groups-v1 form of it is held",
+          "held": [
+            "மழை"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt13",
+      "question": "திருவிழா பட்டாசு? (festival fireworks?)",
+      "query": "திருவிழா பட்டாசு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "tamil/tamil-jottings.md",
+          "start_line": 16,
+          "end_line": 16,
+          "grade": 0,
+          "note": "the festival, no fireworks"
+        }
+      ],
+      "negative": true,
+      "negative_of": "tamil",
+      "kind": "tamil",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (tamil): a Tamil question; a word or a fold-groups-v1 form of it is held",
+          "held": [
+            "திருவிழா"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt14",
+      "question": "Is there a piñata for the party?",
+      "query": "piñata",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 0,
+          "note": "a party with no piñata"
+        }
+      ],
+      "negative": true,
+      "negative_of": "accent",
+      "kind": "accent",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (accent): an accented word no file holds",
+          "held": []
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt15",
+      "question": "A soufflé for pudding?",
+      "query": "soufflé",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "recipes/pancakes.md",
+          "start_line": 1,
+          "end_line": 17,
+          "grade": 0,
+          "note": "a recipe, not a soufflé"
+        }
+      ],
+      "negative": true,
+      "negative_of": "accent",
+      "kind": "accent",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (accent): an accented word no file holds",
+          "held": []
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt16",
+      "question": "Is there a porch swing?",
+      "query": "porch swing",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Leak in porch"
+          ],
+          "note": "a porch, no swing"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "kind": "half-held",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (half-held): two words, one held",
+          "held": [
+            "porch"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-tuning",
+      "id": "nt17",
+      "question": "Is there a straw maze at the farm?",
+      "query": "straw maze",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "clover.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Clover"
+          ],
+          "note": "a straw bale, no maze"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "kind": "half-held",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (half-held): two words, one held",
+          "held": [
+            "straw"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh01",
+      "question": "Is there a book about the wizard?",
+      "query": "the wizard",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "pets/biscuit-the-dog.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 0,
+          "note": "the in its name"
+        },
+        {
+          "root_id": "home",
+          "path": "owl-and-the-moon.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "note": "the in its name"
+        }
+      ],
+      "negative": true,
+      "negative_of": "precision-control",
+      "kind": "stop-name",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (stop-name): a stop word of the query is in a file name; no file holds the other words",
+          "held": [],
+          "stop": "the"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh02",
+      "question": "Where is my hamster?",
+      "query": "my hamster",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "my-flowers.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "note": "my in its name"
+        }
+      ],
+      "negative": true,
+      "negative_of": "precision-control",
+      "kind": "stop-name",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (stop-name): a stop word of the query is in a file name; no file holds the other words",
+          "held": [],
+          "stop": "my"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh03",
+      "question": "Have we got Land of Giants?",
+      "query": "land of giants",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "end-of-the-pier.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 0,
+          "note": "of in its name"
+        }
+      ],
+      "negative": true,
+      "negative_of": "precision-control",
+      "kind": "stop-name",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (stop-name): a stop word of the query is in a file name; no file holds the other words",
+          "held": [],
+          "stop": "of"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh04",
+      "question": "Who taught Pip sewing?",
+      "query": "sewing",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "budget-autumn.md",
+          "start_line": 12,
+          "end_line": 12,
+          "grade": 0,
+          "note": "saving, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "saving",
+            "selling",
+            "setting",
+            "spring",
+            "string",
+            "swings"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh05",
+      "question": "When are we golfing?",
+      "query": "golfing",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 49,
+          "end_line": 49,
+          "grade": 0,
+          "note": "going, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "going"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh06",
+      "question": "Any surfing at the beach?",
+      "query": "surfing",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "money/pocket-money.md",
+          "start_line": 10,
+          "end_line": 10,
+          "grade": 0,
+          "note": "sorting, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "sorting",
+            "spring",
+            "string"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh07",
+      "question": "Do we have goat cheese?",
+      "query": "goat cheese",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 54,
+          "end_line": 57,
+          "grade": 0,
+          "section_path": [
+            "Petting farm"
+          ],
+          "note": "a baby goat"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 37,
+          "end_line": 40,
+          "grade": 0,
+          "section_path": [
+            "Pizza Sunday"
+          ],
+          "note": "cheese on pizza"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "kind": "near-topic",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-topic): every word is held; the topic is not",
+          "held": [
+            "goat",
+            "cheese"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh08",
+      "question": "When does the harbour ferry run?",
+      "query": "harbour ferry",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 7,
+          "end_line": 11,
+          "grade": 0,
+          "section_path": [
+            "Harbour"
+          ],
+          "note": "herring at the harbour"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 59,
+          "end_line": 62,
+          "grade": 0,
+          "section_path": [
+            "Pet passport"
+          ],
+          "note": "a ferry to France"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "kind": "near-topic",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-topic): every word is held; the topic is not",
+          "held": [
+            "harbour",
+            "ferry"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh09",
+      "question": "Who is hating the rain?",
+      "query": "hating",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "holiday/seaside-packing.md",
+          "start_line": 5,
+          "end_line": 5,
+          "grade": 0,
+          "note": "hats, not hating"
+        }
+      ],
+      "negative": true,
+      "negative_of": "verbform-cross",
+      "kind": "cross-form",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (cross-form): a word no file holds; R generates another word a file holds, judged a form of another word",
+          "held": [],
+          "typed": "hating",
+          "other": "hat"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh10",
+      "question": "Is the cat shedding fur?",
+      "query": "shedding fur",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 57,
+          "end_line": 57,
+          "grade": 0,
+          "note": "a garden shed"
+        }
+      ],
+      "negative": true,
+      "negative_of": "verbform-cross",
+      "kind": "cross-form",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (cross-form): a word no file holds; R generates another word a file holds, judged a form of another word",
+          "held": [],
+          "typed": "shedding",
+          "other": "shed"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh11",
+      "question": "Have we got canned tomatoes?",
+      "query": "canned",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "kids-questions.md",
+          "start_line": 3,
+          "end_line": 3,
+          "grade": 0,
+          "note": "can: is able to"
+        }
+      ],
+      "negative": true,
+      "negative_of": "verbform-cross",
+      "kind": "cross-form",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (cross-form): a word no file holds; R generates another word a file holds, judged a form of another word",
+          "held": [],
+          "typed": "canned",
+          "other": "can"
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh12",
+      "question": "நிலா விண்கலம்? (a spaceship to the moon?)",
+      "query": "நிலா விண்கலம்",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "tamil/tamil-class.md",
+          "start_line": 23,
+          "end_line": 23,
+          "grade": 0,
+          "note": "a song about the moon"
+        }
+      ],
+      "negative": true,
+      "negative_of": "tamil",
+      "kind": "tamil",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (tamil): a Tamil question; a word or a fold-groups-v1 form of it is held",
+          "held": [
+            "நிலா"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh13",
+      "question": "குரங்கு தோப்பு? (a monkey grove?)",
+      "query": "குரங்கு தோப்பு",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "tamil/tamil-stories.md",
+          "start_line": 15,
+          "end_line": 15,
+          "grade": 0,
+          "note": "a monkey in a tree, no grove"
+        }
+      ],
+      "negative": true,
+      "negative_of": "tamil",
+      "kind": "tamil",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (tamil): a Tamil question; a word or a fold-groups-v1 form of it is held",
+          "held": [
+            "குரங்கு"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh14",
+      "question": "Do we have jalapeño peppers?",
+      "query": "jalapeño",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "recipes-to-try.txt",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 0,
+          "note": "recipes, no jalapeño"
+        }
+      ],
+      "negative": true,
+      "negative_of": "accent",
+      "kind": "accent",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (accent): an accented word no file holds",
+          "held": []
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh15",
+      "question": "Who is Auntie Mira's fiancé?",
+      "query": "fiancé",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 61,
+          "end_line": 61,
+          "grade": 0,
+          "note": "France, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "accent",
+      "kind": "accent",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (accent): an accented word no file holds",
+          "held": []
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh16",
+      "question": "Are the ladder rungs safe?",
+      "query": "ladder rungs",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "chess.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Chess ladder"
+          ],
+          "note": "a chess ladder, no rungs"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "kind": "half-held",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (half-held): two words, one held",
+          "held": [
+            "ladder"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-heldout",
+      "id": "nh17",
+      "question": "Who won the kite competition?",
+      "query": "kite competition",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "holiday/seaside-packing.md",
+          "start_line": 1,
+          "end_line": 9,
+          "grade": 0,
+          "note": "a kite to pack"
+        }
+      ],
+      "negative": true,
+      "negative_of": "control",
+      "kind": "half-held",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (half-held): two words, one held",
+          "held": [
+            "kite"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms01",
+      "question": "What is on at the leisure centre?",
+      "query": "center",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 3,
+          "end_line": 3,
+          "grade": 2,
+          "note": "Ada's party at the leisure centre"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "center",
+          "meant": "centre",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms02",
+      "question": "What is in the autumn budget?",
+      "query": "bugdet",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "budget-autumn.md",
+          "start_line": 1,
+          "end_line": 14,
+          "grade": 2,
+          "note": "the budget file"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Leak in porch"
+          ],
+          "note": "bucket, a spelling neighbour"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "bugdet",
+          "meant": "budget",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms03",
+      "question": "Are apples on the shopping list?",
+      "query": "appels",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "shopping-list.md",
+          "start_line": 7,
+          "end_line": 7,
+          "grade": 2,
+          "note": "apples on the list"
+        },
+        {
+          "root_id": "home",
+          "path": "garden-diary.md",
+          "start_line": 5,
+          "end_line": 36,
+          "grade": 0,
+          "section_path": [
+            "Garden diary",
+            "January"
+          ],
+          "note": "windfall apples, not shopping"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "appels",
+          "meant": "apples",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 6,
+          "meant_df": 2
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms04",
+      "question": "What goes on the volcano poster?",
+      "query": "diagarm",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "volcano-project.md",
+          "start_line": 17,
+          "end_line": 21,
+          "grade": 2,
+          "section_path": [
+            "Volcano project",
+            "Poster checklist"
+          ],
+          "note": "a labelled diagram"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "diagarm",
+          "meant": "diagram",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms05",
+      "question": "Where do unnamed lost coats go?",
+      "query": "chairty",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 44,
+          "end_line": 47,
+          "grade": 2,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Lost property"
+          ],
+          "note": "to the charity shop"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "chairty",
+          "meant": "charity",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms06",
+      "question": "What happens to the cat flap on bonfire evening?",
+      "query": "bonfrie",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 25,
+          "end_line": 29,
+          "grade": 2,
+          "section_path": [
+            "Cat flap"
+          ],
+          "note": "lock the flap on bonfire evening"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "bonfrie",
+          "meant": "bonfire",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms07",
+      "question": "What caught the rain in the porch?",
+      "query": "bukett",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Leak in porch"
+          ],
+          "note": "one blue bucket"
+        },
+        {
+          "root_id": "home",
+          "path": "holiday/seaside-packing.md",
+          "start_line": 6,
+          "end_line": 6,
+          "grade": 0,
+          "note": "buckets to pack, not the leak"
+        }
+      ],
+      "transposition": false,
+      "kind": "drop and add",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "bukett",
+          "meant": "bucket",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "drop and add",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms08",
+      "question": "Which French phrase means already seen?",
+      "query": "allredy",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 16,
+          "end_line": 21,
+          "grade": 2,
+          "section_path": [
+            "Tasting"
+          ],
+          "note": "French, meaning already seen"
+        }
+      ],
+      "transposition": false,
+      "kind": "drop and add",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "allredy",
+          "meant": "already",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "drop and add",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms09",
+      "question": "Where do families watch the swim gala?",
+      "query": "galerry",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 46,
+          "end_line": 51,
+          "grade": 2,
+          "section_path": [
+            "Swim gala results"
+          ],
+          "note": "the viewing gallery"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "galerry",
+          "meant": "gallery",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms10",
+      "question": "When did we see the doctor?",
+      "query": "dokter",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "health/doctor-visits.md",
+          "start_line": 1,
+          "end_line": 9,
+          "grade": 2,
+          "note": "the doctor visits"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "dokter",
+          "meant": "doctor",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms11",
+      "question": "What does Wren need for the Brownies outing?",
+      "query": "jakkit",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 19,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "Brownies outing"
+          ],
+          "note": "a waterproof jacket"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "jakkit",
+          "meant": "jacket",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms12",
+      "question": "Which day is chicken for lunch?",
+      "query": "chikkin",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "School lunch menu",
+            "Tuesday"
+          ],
+          "note": "roast chicken on Tuesday"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "chikkin",
+          "meant": "chicken",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms13",
+      "question": "How long is recorder practice?",
+      "query": "fivtean",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "music/recorder-practice.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Recorder",
+            "Every day"
+          ],
+          "note": "fifteen minutes"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "fivtean",
+          "meant": "fifteen",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-short",
+      "id": "msn1",
+      "question": "Do we have a parrot?",
+      "query": "parrot",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "maths-homework.md",
+          "start_line": 11,
+          "end_line": 11,
+          "grade": 0,
+          "note": "part, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-short",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "part"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-short",
+      "id": "msn2",
+      "question": "Did we see a walrus?",
+      "query": "walrus",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "weekend-plans.md",
+          "start_line": 13,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Weekend plans",
+            "Walks"
+          ],
+          "note": "walks, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-short",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "walks"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-short",
+      "id": "msn3",
+      "question": "Is there a tractor ride?",
+      "query": "tractor",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 1,
+          "end_line": 1,
+          "grade": 0,
+          "note": "tracker, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-short",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "tracker"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-short",
+      "id": "msn4",
+      "question": "Did anyone see a beaver?",
+      "query": "beaver",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 42,
+          "end_line": 42,
+          "grade": 0,
+          "note": "beakers, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-short",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "beakers"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo01",
+      "question": "What phonics is there this week?",
+      "query": "fonics this week",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-notes-wren.md",
+          "start_line": 1,
+          "end_line": 20,
+          "grade": 2,
+          "note": "a file holding phonics"
+        },
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 1,
+          "end_line": 141,
+          "grade": 2,
+          "note": "a file holding phonics"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "fonics",
+          "meant": "phonics",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo02",
+      "question": "Which story is told in rhyming words?",
+      "query": "riming words",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "owl-and-the-moon.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "note": "a file holding rhyming"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "riming",
+          "meant": "rhyming",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo03",
+      "question": "When are the quizzes?",
+      "query": "when are the kwizzes",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 51,
+          "grade": 2,
+          "note": "a file holding quizzes"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kwizzes",
+          "meant": "quizzes",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo04",
+      "question": "Who wanted kebabs?",
+      "query": "who wanted kabobs",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 2,
+          "note": "a file holding kebabs"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kabobs",
+          "meant": "kebabs",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo05",
+      "question": "Did we buy celery?",
+      "query": "did we buy salery",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 1,
+          "end_line": 29,
+          "grade": 2,
+          "note": "a file holding celery"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "salery",
+          "meant": "celery",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo06",
+      "question": "Which day is chicken for lunch?",
+      "query": "which day is cikken",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 2,
+          "note": "a file holding chicken"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "cikken",
+          "meant": "chicken",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo07",
+      "question": "Where is the cushion?",
+      "query": "where is the kushon",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 77,
+          "grade": 2,
+          "note": "a file holding cushion"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kushon",
+          "meant": "cushion",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo08",
+      "question": "What needs fixing on the scooter?",
+      "query": "fix the skootur",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 1,
+          "end_line": 60,
+          "grade": 2,
+          "note": "a file holding scooter"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "skootur",
+          "meant": "scooter",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo09",
+      "question": "Who has the whistle?",
+      "query": "who has the wistel",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 1,
+          "end_line": 45,
+          "grade": 2,
+          "note": "a file holding whistle"
+        },
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 51,
+          "grade": 2,
+          "note": "a file holding whistle"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "wistel",
+          "meant": "whistle",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo10",
+      "question": "Where are the kayaks for the river?",
+      "query": "cayacs on the river",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 1,
+          "end_line": 60,
+          "grade": 2,
+          "note": "a file holding kayaks"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "cayacs",
+          "meant": "kayaks",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo11",
+      "question": "What was knitted?",
+      "query": "what was nittid",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 2,
+          "note": "a file holding knitted"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "nittid",
+          "meant": "knitted",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo12",
+      "question": "When are we at the leisure centre?",
+      "query": "when does the senter open",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 2,
+          "note": "a file holding centre"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "senter",
+          "meant": "centre",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo13",
+      "question": "Which lunch has ketchup with chips?",
+      "query": "catchup with chips",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 2,
+          "note": "a file holding ketchup"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "catchup",
+          "meant": "ketchup",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo14",
+      "question": "What was squeaky?",
+      "query": "the skweaky door",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 1,
+          "end_line": 29,
+          "grade": 2,
+          "note": "a file holding squeaky"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "skweaky",
+          "meant": "squeaky",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo15",
+      "question": "Who made custard?",
+      "query": "who made kustad",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 2,
+          "note": "a file holding custard"
+        },
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 51,
+          "grade": 2,
+          "note": "a file holding custard"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kustad",
+          "meant": "custard",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo16",
+      "question": "What happens in the next chapter?",
+      "query": "read the next captur",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/bedtime-stories.md",
+          "start_line": 1,
+          "end_line": 25,
+          "grade": 2,
+          "note": "a file holding chapter"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "captur",
+          "meant": "chapter",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo17",
+      "question": "When is the plumber coming?",
+      "query": "when is the pulmer coming",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "plumbing.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "note": "a file holding plumber"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "pulmer",
+          "meant": "plumber",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo18",
+      "question": "Where are my glasses?",
+      "query": "where are my galses",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "health/doctor-visits.md",
+          "start_line": 1,
+          "end_line": 9,
+          "grade": 2,
+          "note": "a file holding glasses"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 1,
+          "end_line": 45,
+          "grade": 2,
+          "note": "a file holding glasses"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "galses",
+          "meant": "glasses",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo19",
+      "question": "Who made the crumble?",
+      "query": "who made the cumbel",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 2,
+          "note": "a file holding crumble"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "cumbel",
+          "meant": "crumble",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo20",
+      "question": "Which spanner was used under the sink?",
+      "query": "which sapner size",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "plumbing.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "note": "a file holding spanner"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "sapner",
+          "meant": "spanner",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo21",
+      "question": "Where is there squash?",
+      "query": "who plays skwash",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "chess.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "note": "a file holding squash"
+        },
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 51,
+          "grade": 2,
+          "note": "a file holding squash"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "skwash",
+          "meant": "squash",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo22",
+      "question": "Was something knitted?",
+      "query": "something kittid",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 2,
+          "note": "a file holding knitted"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kittid",
+          "meant": "knitted",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo23",
+      "question": "Which scales come first at recorder practice?",
+      "query": "how many skailes",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "music/recorder-practice.md",
+          "start_line": 1,
+          "end_line": 15,
+          "grade": 2,
+          "note": "a file holding scales"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "skailes",
+          "meant": "scales",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo24",
+      "question": "Where is the canoe trolley?",
+      "query": "the torley wheel",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 1,
+          "end_line": 60,
+          "grade": 2,
+          "note": "a file holding trolley"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "torley",
+          "meant": "trolley",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo25",
+      "question": "What are the dinosaur skeletons made of?",
+      "query": "palstr cast",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "dinosaur-topic.md",
+          "start_line": 1,
+          "end_line": 25,
+          "grade": 2,
+          "note": "a file holding plaster"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "palstr",
+          "meant": "plaster",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
     }
-  ]
+  ],
+  "stop_words": [
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "but",
+    "by",
+    "for",
+    "if",
+    "in",
+    "into",
+    "is",
+    "it",
+    "no",
+    "not",
+    "of",
+    "on",
+    "or",
+    "such",
+    "that",
+    "the",
+    "their",
+    "then",
+    "there",
+    "these",
+    "they",
+    "this",
+    "to",
+    "was",
+    "will",
+    "with",
+    "my"
+  ],
+  "verb_form_judgments": {
+    "biting": {
+      "bit": "cross",
+      "bite": "same"
+    },
+    "canned": {
+      "can": "cross"
+    },
+    "caring": {
+      "car": "cross"
+    },
+    "costume": {
+      "costumes": "same"
+    },
+    "diving": {
+      "dive": "same"
+    },
+    "goat": {
+      "goats": "same"
+    },
+    "hating": {
+      "hat": "cross",
+      "hates": "same",
+      "hats": "cross"
+    },
+    "leak": {
+      "leaked": "same"
+    },
+    "lessons": {
+      "lesson": "same"
+    },
+    "letter": {
+      "letters": "same"
+    },
+    "mating": {
+      "mat": "cross",
+      "mats": "cross"
+    },
+    "painting": {
+      "paint": "same",
+      "painted": "same"
+    },
+    "photos": {
+      "photo": "same"
+    },
+    "plans": {
+      "planned": "same"
+    },
+    "recipe": {
+      "recipes": "same"
+    },
+    "résumé": {
+      "resume": "cross"
+    },
+    "shedding": {
+      "shed": "cross"
+    },
+    "swing": {
+      "swings": "same"
+    },
+    "tidying": {
+      "tidy": "same"
+    }
+  }
 }

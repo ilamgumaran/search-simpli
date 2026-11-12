@@ -21,7 +21,17 @@ BOM = b"\xef\xbb\xbf"
 SLICE_MINIMUMS = {"control": 20, "misspelling": 15, "morphology": 12, "accent": 6, "tamil": 10,
                   "title": 10, "phrase": 8, "title-heldout": 6, "misspelling-heldout": 10,
                   "morphology-heldout": 12, "accent-heldout": 10, "tamil-heldout": 10,
-                  "verbform-heldout": 14}
+                  "verbform-heldout": 14, "verbform-cross": 6, "precision-control": 8,
+                  "misspelling-short": 12, "misspelling-opening": 25}
+# The S5-T8 re-ruling, item 3: misspelling-opening is the verifier's rows as they were
+# run, and the verifier wrote no negative for it.
+NO_NEGATIVES = {"misspelling-opening"}
+# S5-T8 ruling 1: two negative sets of at least 15, at least 30 in all.
+NEGATIVE_SET_MINIMUMS = {"negatives-tuning": 15, "negatives-heldout": 15}
+NEGATIVE_KINDS = {"stop-name", "near-word", "near-topic", "cross-form", "tamil", "accent", "half-held"}
+LUCENE_STOP_WORDS = {"a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into", "is", "it",
+                     "no", "not", "of", "on", "or", "such", "that", "the", "their", "then", "there", "these", "they",
+                     "this", "to", "was", "will", "with"}
 
 
 def pack_files() -> dict[str, bytes]:
@@ -101,6 +111,8 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
         for name, minimum in SLICE_MINIMUMS.items():
             self.assertGreaterEqual(sum(1 for q in queries if q["slice"] == name), minimum, name)
+            if name in NO_NEGATIVES:
+                continue
             self.assertGreaterEqual(sum(1 for q in queries if q.get("negative_of") == name), 2, f"negatives of {name}")
         self.assertGreaterEqual(sum(1 for q in queries if q.get("transposition")), 5)
         self.assertGreaterEqual(sum(1 for q in queries if q.get("only_form")), 3)
@@ -205,6 +217,92 @@ class InventoryTests(unittest.TestCase):
             lead = {"verb": "verb form", "guard": "guard", "held": "held"}[q["kind"]]
             self.assertTrue(any(c["check"].startswith(lead) for c in q["checks"]), q["id"])
 
+    def test_s5t8_negative_sets(self):
+        """S5-T8 ruling 1: at least 30 new negatives in two sets of at least 15, each
+        set covering every kind; no new negative's word but a stop word reuses an
+        earlier slice's query word."""
+        queries = self.judgments["queries"]
+        for name, minimum in NEGATIVE_SET_MINIMUMS.items():
+            held = [q for q in queries if q["slice"] == name]
+            self.assertGreaterEqual(len(held), minimum, name)
+            self.assertTrue(all(q.get("negative") and q["mode"] == "knowledge" for q in held), name)
+            self.assertEqual({q["kind"] for q in held}, NEGATIVE_KINDS, name)
+        self.assertGreaterEqual(sum(1 for q in queries if q["slice"] in NEGATIVE_SET_MINIMUMS), 30)
+        for q in queries:
+            if q["slice"] in NEGATIVE_SET_MINIMUMS or q["slice"] in ("verbform-cross", "precision-control"):
+                self.assertTrue(any(c["check"].startswith("new words") for c in q["checks"]), q["id"])
+
+    def test_s5t8_graded_slices(self):
+        """S5-T8 ruling 1: R05's opposing hop/hope and evening/even rows judged on both
+        sides, answers in at least six files; precision-control holds stop-word
+        titles, near spellings and verb forms."""
+        queries = self.judgments["queries"]
+        cross = [q for q in queries if q["slice"] == "verbform-cross"]
+        files = {(r["root_id"], r["path"]) for q in cross for r in q["expected"] if r["grade"] == 2}
+        self.assertGreaterEqual(len(files), 6)
+        typed = {c["typed"]: c["cross"] for q in cross for c in q["checks"] if "cross" in c}
+        self.assertTrue({"hops", "hoping"} <= set(typed))
+        self.assertTrue({"evenings", "even"} <= set(typed))
+        for q in cross:
+            self.assertIn(0, [r["grade"] for r in q["expected"]], q["id"])
+        kinds = {}
+        for q in queries:
+            if q["slice"] == "precision-control":
+                kinds[q["kind"]] = kinds.get(q["kind"], 0) + 1
+        self.assertEqual(set(kinds), {"stop-title", "near", "verb"})
+        self.assertGreaterEqual(sum(kinds.values()), 8)
+
+    def test_s5t8_measure_inputs(self):
+        """The measure of what misleads (README): Lucene's 33 stop words and `my`;
+        every verb form judged same or cross."""
+        self.assertEqual(set(self.judgments["stop_words"]), LUCENE_STOP_WORDS | {"my"})
+        self.assertEqual(len(self.judgments["stop_words"]), 34)
+        verdicts = {v for forms in self.judgments["verb_form_judgments"].values() for v in forms.values()}
+        self.assertEqual(verdicts, {"same", "cross"})
+
+    def test_s5t8_short_typo_slice(self):
+        """S5-T8 Phase 1c (ruling 3 of the Phase 1 rulings): at least 12 typed words of 6
+        and 7 code points, Levenshtein 2 from the meant word, at least 5 a swapped
+        adjacent pair, the rest a dropped and an added letter or two wrong letters; at
+        least 3 negatives of a correctly spelt 6 or 7 code point word with a near word."""
+        queries = self.judgments["queries"]
+        short = [q for q in queries if q["slice"] == "misspelling-short"]
+        self.assertGreaterEqual(len(short), 12)
+        facts = [next(c for c in q["checks"] if "levenshtein" in c) for q in short]
+        self.assertTrue(all(c["levenshtein"] == 2 for c in facts))
+        self.assertEqual({c["typed_code_points"] for c in facts}, {6, 7})
+        self.assertGreaterEqual(sum(1 for q in short if q["kind"] == "swap" and q["transposition"]), 5)
+        self.assertLessEqual({q["kind"] for q in short}, {"swap", "drop and add", "two wrong letters"})
+        self.assertTrue(all(q["kind"] != "swap" or c["distance"] == 1 for q, c in zip(short, facts)))
+        negatives = [q for q in queries if q["slice"] == "negatives-short"]
+        self.assertGreaterEqual(len(negatives), 3)
+        for q in negatives:
+            self.assertEqual((q["kind"], q["negative_of"]), ("near-word", "misspelling-short"), q["id"])
+            self.assertIn(len(q["query"]), (6, 7), q["id"])
+            self.assertTrue(next(c for c in q["checks"] if "near" in c)["near"], q["id"])
+        for q in short + negatives:
+            self.assertTrue(any(c["check"].startswith("new words") for c in q["checks"]), q["id"])
+
+    def test_s5t8_opening_typo_slice(self):
+        """The S5-T8 re-ruling, item 3: the verifier's 25 typed words of 6 and 7 code
+        points, two edits from the meant word with no fixture word one edit away; 16
+        keep the first letter and miss the second, 9 miss the first; each answer row is
+        a whole file holding the meant word, and every such file is one."""
+        opening = [q for q in self.judgments["queries"] if q["slice"] == "misspelling-opening"]
+        self.assertEqual(len(opening), 25)
+        facts = [next(c for c in q["checks"] if "typed" in c) for q in opening]
+        self.assertTrue(all(c["distance"] == 2 and c["typed_code_points"] in (6, 7) for c in facts))
+        self.assertEqual(sum(1 for q in opening if q["kind"] == "second letter"), 16)
+        self.assertEqual(sum(1 for q in opening if q["kind"] == "first letter"), 9)
+        for q, c in zip(opening, facts):
+            self.assertIn(c["typed"], q["query"].split(), q["id"])
+            if q["kind"] == "second letter":
+                self.assertEqual(c["typed"][0], c["meant"][0], q["id"])
+                self.assertNotEqual(c["typed"][1], c["meant"][1], q["id"])
+            else:
+                self.assertNotEqual(c["typed"][0], c["meant"][0], q["id"])
+            self.assertTrue(all(r["grade"] == 2 and r["start_line"] == 1 for r in q["expected"]), q["id"])
+            self.assertFalse(q.get("negative"), q["id"])
 
     def test_rows(self):
         lines = {f"{f['root_id']}/{f['path']}": f["lines"] for f in self.judgments["files"]}
@@ -311,6 +409,53 @@ class CheckTests(unittest.TestCase):
         files = dict(self.generator.build_files())
         files["home/family-log.md"] += "\nGran found one dinosaur bone.\n".encode("utf-8")
         problems = self.generator.new_file_hygiene(self.generator.Corpus(files))
+        self.assertTrue(any("dinosaur" in p for p in problems), problems)
+
+    def broken_because(self, qid: str, reason: str, **change) -> None:
+        spec = copy.deepcopy(self.specs[qid])
+        spec.update(change)
+        with self.assertRaises(SystemExit) as caught:
+            self.generator.build_query(self.corpus, spec)
+        self.assertIn(reason, str(caught.exception))
+
+    def test_s5t8_query_must_not_reuse_an_earlier_word(self):
+        self.broken_because("nh02", "earlier slice", query="my puppy")
+
+    def test_s5t8_cross_form_must_be_held_and_judged(self):
+        self.broken("nh11", cross=("canned", "cans"))
+        self.broken("x05", cross=("tapping", "tapped", "tape"))
+
+    def test_s5t8_stop_title_needs_the_stop_word_in_the_name(self):
+        self.broken("pc04", query="our flowers")
+
+    def test_s5t8_near_negative_needs_a_neighbour(self):
+        self.broken("nt05", query="hiking")
+
+    def test_s5t8_short_typo_must_be_two_levenshtein_edits_of_6_or_7(self):
+        self.broken_because("ms01", "Levenshtein", query="centra", typo=("centra", "centre", False))
+        self.broken_because("ms10", "6 or 7 code points", query="dokterrs", typo=("dokterrs", "doctor", False))
+        self.broken_because("ms09", "declared drop and add", kind="drop and add")
+
+    def test_s5t8_opening_typo_must_be_two_edits_with_no_one_edit_route(self):
+        self.broken_because("mo02", "distance", query="rhymin words", typo=("rhymin", "rhyming"))
+        self.broken_because("mo04", "declared first letter", kind="first letter")
+        self.broken_because("mo17", "the answer files", rows=[("home/household.md", "*", 2, "not the plumber")])
+        self.broken_because("mo25", "one edit from", query="plastac cast", typo=("plastac", "plaster"))
+
+    def test_s5t8_every_reachable_verb_form_is_judged(self):
+        judgments = self.generator.queries.VERB_FORM_JUDGMENTS
+        saved = judgments.pop("goat")
+        try:
+            with self.assertRaises(SystemExit) as caught:
+                self.generator.build_judgments(self.corpus)
+        finally:
+            judgments["goat"] = saved
+        self.assertIn("goat->goats", str(caught.exception))
+
+    def test_s5t8_files_must_keep_out_of_earlier_query_words(self):
+        files = dict(self.generator.build_files())
+        files["home/clover.md"] += "\nOne dinosaur bone in the hutch.\n".encode("utf-8")
+        problems = self.generator.s5t8_file_hygiene(self.generator.Corpus(files))
         self.assertTrue(any("dinosaur" in p for p in problems), problems)
 
     def test_phrase_distractor_must_hold_the_words_apart(self):

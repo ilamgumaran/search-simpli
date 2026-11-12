@@ -141,6 +141,19 @@ class CandidateTests(unittest.TestCase):
     def test_no_candidate_means_no_group(self):
         self.assertEqual(_fuzzy_groups(["zzzzzz"], Counter({"apple": 1}), set()), {})
 
+    def test_a_second_letter_typo_of_a_short_word_reaches_the_word(self):
+        """The S5-T8 re-ruling (fuzzy-v2 rejected): a typed word of 6 or 7 code points
+        two edits from a held word whose second letter differs still reaches it, as
+        J2's misspelling-opening slice asks; a first-letter typo reaches nothing (a
+        measured gap: the candidates share the typed word's first code point)."""
+        df = Counter({"chicken": 2, "scooter": 1, "plumber": 1, "custard": 2, "system": 9, "sisters": 1})
+        self.assertEqual(_fuzzy_groups(["cikken"], df, set()), {"cikken": (("chicken", 0.5),)})
+        self.assertEqual(_fuzzy_groups(["skootur"], df, set()), {"skootur": (("scooter", 0.5),)})
+        self.assertEqual(_fuzzy_groups(["pulmer"], df, set()), {"pulmer": (("plumber", 0.5),)})
+        self.assertEqual(_fuzzy_groups(["sistems"], df, set()),
+                         {"sistems": (("sisters", 1.0), ("system", 0.5))})
+        self.assertEqual(_fuzzy_groups(["kustad"], df, set()), {})
+
 
 class ScoringTests(unittest.TestCase):
     def test_no_group_is_the_arithmetic_before_bit_for_bit(self):

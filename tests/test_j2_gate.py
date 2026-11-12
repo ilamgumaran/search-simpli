@@ -172,7 +172,7 @@ class PythonReferenceTests(unittest.TestCase):
         """S5-T6 (review R02): the reference's report names its source and policy ids."""
         engine = self.results["engine"]
         self.assertTrue(engine["commit"])
-        self.assertEqual(engine["policies"]["fold_policy_id"], "fold-groups-v2")
+        self.assertEqual(engine["policies"]["fold_policy_id"], "fold-groups-v3")
         self.assertEqual(engine["policies"]["chunkers"], ["line-window-v1", "md-section-v1"])
 
     def test_planted_regression_fails_the_gate(self):

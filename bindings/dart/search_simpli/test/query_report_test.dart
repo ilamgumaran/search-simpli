@@ -42,6 +42,18 @@ const String _interchangeVerbs =
     '"text":"secret dancers","vector":[],"required_labels":["tenant:x"]}'
     ']}';
 
+/// Contract 2.7.0 (S5-T8): fold-groups-v3; fuzzy-v1 unchanged.
+const String _interchangeV3 =
+    '{"format_version":1,"generation":1,"analyzer_id":"analyzer-v2",'
+    '"embedding_model_id":"none","documents":['
+    '{"id":"a","path":"public/a.md","start_line":1,"end_line":1,'
+    '"text":"we hoped for sun","vector":[],"required_labels":[]},'
+    '{"id":"b","path":"public/b.md","start_line":1,"end_line":1,'
+    '"text":"the rabbit hopped away","vector":[],"required_labels":[]},'
+    '{"id":"c","path":"public/c.md","start_line":1,"end_line":1,'
+    '"text":"the heating system","vector":[],"required_labels":[]}'
+    ']}';
+
 void main() {
   late Directory dir;
   late SearchSimpli engine;
@@ -384,7 +396,7 @@ void main() {
         topK: 5,
         mode: RetrievalMode.lexical,
       );
-      expect(result.retrieval.foldPolicyId, 'fold-groups-v2');
+      expect(result.retrieval.foldPolicyId, 'fold-groups-v3');
       // A record compares a list by identity: the members are joined.
       expect(
         result.warnings!.map((w) => (w.code, w.term, w.members?.join(','))),
@@ -414,7 +426,7 @@ void main() {
     test('a word with no other form keeps its old report', () {
       final result = v2.query('museum', topK: 5, mode: RetrievalMode.lexical);
       expect(result.warnings, isEmpty);
-      expect(result.retrieval.foldPolicyId, 'fold-groups-v2');
+      expect(result.retrieval.foldPolicyId, 'fold-groups-v3');
     });
   });
 
@@ -435,7 +447,7 @@ void main() {
 
     test('a verb form no file holds is unmatched, then grouped with the forms the files hold', () {
       final result = verbs.query('danced', topK: 5, mode: RetrievalMode.lexical);
-      expect(result.retrieval.foldPolicyId, 'fold-groups-v2');
+      expect(result.retrieval.foldPolicyId, 'fold-groups-v3');
       expect(
         result.warnings!.map((w) => (w.code, w.term, w.members?.join(','))),
         [
@@ -453,6 +465,50 @@ void main() {
         [(SearchWarningCode.queryTermGrouped, 'painting', 'painted')],
       );
       expect(result.results.map((r) => r.citation.path), ['public/c.md', 'public/b.md']);
+    });
+  });
+
+  group('contract 2.7.0: fold-groups-v3 on an analyzer-v2 index, fuzzy-v1 unchanged', () {
+    late Directory v3Dir;
+    late SearchSimpli v3;
+
+    setUp(() {
+      v3Dir = Directory.systemTemp.createTempSync('ss-dart-v3-');
+      importSnapshotJson(v3Dir.path, _interchangeV3);
+      v3 = SearchSimpli.open(v3Dir.path);
+    });
+
+    tearDown(() {
+      v3.close();
+      v3Dir.deleteSync(recursive: true);
+    });
+
+    test('hopping is grouped with hopped, not with hope\'s hoped', () {
+      final result = v3.query('hopping', topK: 5, mode: RetrievalMode.lexical);
+      expect(result.retrieval.foldPolicyId, 'fold-groups-v3');
+      expect(
+        result.warnings!.map((w) => (w.code, w.term, w.members?.join(','))),
+        [
+          (SearchWarningCode.queryTermUnmatched, 'hopping', null),
+          (SearchWarningCode.queryTermGrouped, 'hopping', 'hopped'),
+        ],
+      );
+      expect(result.results.map((r) => r.citation.path), ['public/b.md']);
+    });
+
+    test('a short misspelling two edits away with another opening is still expanded', () {
+      // sistems is 7 code points; system is two edits away and opens sy, not
+      // si: fuzzy-v1 searches it (the S5-T8 re-ruling kept fuzzy-v1).
+      final result = v3.query('sistems', topK: 5, mode: RetrievalMode.lexical);
+      expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v1');
+      expect(
+        result.warnings!.map((w) => (w.code, w.term, w.expansions?.join(','))),
+        [
+          (SearchWarningCode.queryTermUnmatched, 'sistems', null),
+          (SearchWarningCode.queryTermExpanded, 'sistems', 'system'),
+        ],
+      );
+      expect(result.results.map((r) => r.citation.path), ['public/c.md']);
     });
   });
 }

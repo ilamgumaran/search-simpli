@@ -1756,3 +1756,129 @@ acorn, beech nut in pencil. Mr Quarrie pinned best ones.
 Year 2 are burying one locked tin under willow tree by gate, with drawings,
 one poem, one coin each; nobody may dig before 2036.
 """
+
+# Files added by S5-T8 (ruling 1, Phase 1a) for the verbform-cross and
+# precision-control slices and the negatives-tuning and negatives-heldout sets,
+# written and judged, and recorded with the engine of the day, before any code
+# of the task's candidate rules existed. Like S5-T5's, they keep out of every word
+# an earlier J2 query searches, of the fold-groups-v1 keys and verb forms of those
+# words and of fuzzy-v1's reach from them (generate.py asserts it), with two named
+# exceptions: the stop words a file name holds on purpose (`STOP_WORDS_IN_NAMES`,
+# which the stop-word rows need), and the hop/hope forms review R05 asks for,
+# which are verb forms of the earlier query word `hopping` (`HYGIENE_EXEMPT`).
+
+S5T8_FILES = (
+    "home/clover.md", "laptop/snow.md", "laptop/chess.md",
+    "school/counters.md", "home/parcels.md", "home/plumbing.md",
+    "home/this-and-that.md", "home/end-of-the-pier.md", "home/owl-and-the-moon.md",
+    "home/my-flowers.md", "laptop/errands.md",
+)
+STOP_WORDS_IN_NAMES = ("and", "of", "the", "my")
+HYGIENE_EXEMPT = {"hopping": ("hopped", "hopes", "hoped")}
+
+FILES["home/clover.md"] = """\
+# Clover
+
+Clover hopped onto straw bale twice at dawn, then hopped round run until carrot
+tops came; Wren counted laps on stopwatch while Joss swept hutch floor, refilled
+water bottle, hung hay net.
+"""
+
+FILES["laptop/snow.md"] = """\
+# Snow
+
+Wren hopes snow comes before Christmas, mittens warming on radiator; Pip hoped
+last winter too, but only frost came, so both built frost castles on porch step.
+"""
+
+FILES["laptop/chess.md"] = """\
+# Chess ladder
+
+Ladder games run each Monday evening in village hall; evening begins with blitz
+rounds, finishes with prizes, orange squash, ladder moves pinned on corkboard;
+Joss keeps score.
+"""
+
+FILES["school/counters.md"] = """\
+# Counters
+
+Year 2 sort counters into piles: even piles go left, odd piles go right; nine
+stays odd, ten stays even, Kavin checks each pile twice, Wren draws dots beside
+each answer.
+"""
+
+FILES["home/parcels.md"] = """\
+# Parcels
+
+Pip taped each parcel twice before posting, wrote labels in silver pen; spare
+tapes live in hall drawer beside ribbon reels, bubble wrap.
+"""
+
+FILES["home/plumbing.md"] = """\
+# Pipe joints
+
+Joss tapped pipe joints under sink with spanner, tightened washers, wiped
+spills; both taps squeak now, so plumber comes Monday with new valves.
+"""
+
+FILES["home/this-and-that.md"] = """\
+# Odds drawer
+
+String, spare keys, fuses, candle stubs, rubber bands, odd buttons, broken
+torch, bottle opener, two batteries, old receipts nobody needs.
+"""
+
+FILES["home/end-of-the-pier.md"] = """\
+# Seaside show
+
+Variety show: juggler, ventriloquist, brass band, magician with doves; seats
+near railings; Maren took flask, rugs, spare jumpers; show ran until sunset.
+"""
+
+FILES["home/owl-and-the-moon.md"] = """\
+# Picture story
+
+Rhyming story: lonely barn bird befriends pale lamp in sky, flies over dark woods,
+rooftops, sleeping cows; Wren borrowed it twice, Ms Lune shares it aloud each
+Monday.
+"""
+
+FILES["home/my-flowers.md"] = """\
+# Pressing
+
+Daisies, buttercups, one cornflower, violets between blotting sheets under
+encyclopaedia; Wren sticks each one onto card, month written below.
+"""
+
+FILES["laptop/errands.md"] = """\
+# Stationery
+
+Stationery order: rulers, pencils, rubbers, sharpeners, highlighters, geometry
+set, plastic wallets; collect from post office counter on Monday.
+
+# Trampoline net
+
+Trampoline needs new net: measure poles, order zip panel, keep children off
+until fixed; one child on it at once, shoes off, net zipped shut.
+
+# Classroom trays
+
+Each classroom tray holds scissors, ruler, pencils, glue stick, sticker sheet,
+whiteboard pen, cloth; Ms Lune checks trays on Monday.
+
+# Visit
+
+Grandad visited on Sunday, stayed until dusk, oiled squeaky gate hinges, showed
+Wren card tricks, told stories about his old allotment.
+
+# Soup
+
+Joss was chopping onions, leeks, swede, celery, parsnips; soup simmered all
+afternoon on low heat, served with crusty bread.
+
+# Rolls
+
+Maren baked twelve rolls, brushed each with milk, sprinkled sesame seeds, left
+them cooling on wire rack.
+"""
+

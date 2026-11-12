@@ -874,3 +874,52 @@ Parity was on the agents' requests, not the judged query set. Performance was no
 maintainer to move. Six findings are 03-next rows. Details: [S5-T10](docs/tasks/S5-T10.md),
 [record](docs/evidence/s5-t10/README.md). Status: verified and merged 2026-11-12 (the verifier re-ran the checks, the
 agent-log summaries and the parity replay on its own `searchd`; the Verdict is in the task file).
+
+## 2026-11-12 — Fewer misleading hits for questions the files do not answer (S5-T8, reviews R05 and R06)
+
+**Hypothesis:** Three narrow query-side rules, each measured alone on unanswerable questions judged before any rule
+existed, can lower the share of such questions whose first hit misleads without costing an answerable question its
+rank: stop words out of the title part (W) or the body (Wb), a floor for fuzzy-v1's two-edit words (F), and leaving
+the verb forms of another word out of R (X).
+
+**Setup:** J2 from `004ba85`, then `main` merged; invented content only. Phase 1a: two negative sets of 17
+(`negatives-tuning`, `negatives-heldout`), `verbform-cross` (6 rows, review R05), `precision-control` (10 rows) and a
+written definition of a misleading hit (stop, near or cross), all recorded with the engine before S5-T8. Phase 1b: W,
+Wb, F, F7, X and six combinations declared, then run on all 248 queries (Python reference). Phase 1c (ruling 3): a
+held-out `misspelling-short` slice (13 typed words of 6 or 7 code points two edits from the meant word, six swaps) and
+`negatives-short` (4), recorded first; F, F7, Ft and the builder's Fp2 declared before their run; a decision rule
+fixed in advance by the orchestrator. Phase 2: X and Fp2 in Zig, `searchd` ReleaseSmall and the reference on all 265
+queries. Re-ruling (13 Nov, after the verifier's measurement): a held-out `misspelling-opening` slice (25 rows, the
+verifier's 16 second-letter and 9 first-letter typos, written by the verifier, not the builder), Fp2 removed, X alone
+on all 290 queries. Python 3.9.6, Zig 0.16.0, macOS arm64.
+
+**Observation:** W left the misleading-first share of `negatives-heldout` at 0.588. Wb moved it most but cost the
+`mixed` pack two rank-1 answers (0.650 → 0.550). X alone: 0.588 → 0.529, `verbform-cross` 0.667 → 1.000. F (two edits
+only from 8 code points) cut the share to 0.353 alone but lost six of `misspelling-short`'s thirteen rank-1 answers;
+F7 lost two; Ft equals F (fuzzy-v1's distance already counts a swap as one edit). Fp2 (below 8 code points a two-edit
+word must share the first two code points) kept `misspelling-short` at 0.923 and, with X, took the share to 0.353 and
+the mean top-5 hits 3.176 → 2.294 (`content`), 3.059 → 2.176 (`both`); the rule chose it. The verifier then wrote 16
+second-letter typos two edits from a 6 or 7 letter word: 13 found their file first under fuzzy-v1, none under Fp2. On
+the `misspelling-opening` slice Fp2 measured success@1 0.040 and MRR@10 0.063 against fuzzy-v1's 0.120 and 0.214
+(`content`). Shipped after the re-ruling as fold-groups-v3 alone (contracts 2.7.0, fuzzy-v1 unchanged): `searchd`
+equals the reference on every cell; against `main` only `verbform-cross` moves; `misspelling-short` (0.923) and
+`misspelling-opening` (0.120) equal `main`; the older packs are identical per query; `negatives-heldout`'s
+misleading-first share 0.588 → 0.529, mean top-5 hits 3.176 → 2.941 (`content`), 3.059 → 2.824 (`both`). On the 10k
+timing corpus the first `content` query after an open moves −0.077 to −0.017 ms (the noise reaches +0.043 ms) and a
+warm query with no group at most +0.010 ms (six interleaved rounds, a second build of the library before as the noise
+reference).
+
+**Did not prove:** The definition of misleading was written after two exploratory runs of the engine as it was, and
+ten held-out rows were run through it to name their distractors: the held-out set was unseen by every candidate, not
+by the person writing the definition. Fp2 was the builder's own variant, declared before the slice's run by the person
+who wrote the slice, and no row of the slice erred in its first two letters; that flaw is why Fp2 was rejected. No
+real-user negatives; the share is a rate on 17 invented questions. The cause of Wb's two `mixed` losses is inferred,
+not traced.
+
+**Conclusion:** One narrow rule (X) gains measured precision with no answer lost on J2 or the older packs; a
+fuzzy floor that looked free on a slice its author wrote lost second-letter typos on a slice written by someone else,
+and stays a 03-next row with `misspelling-opening` as its bar; stop words stay a 03-next row with their numbers.
+Details: [S5-T8](docs/tasks/S5-T8.md), [fold-groups-v3](docs/fold-groups-v3.md), the rejected
+[fuzzy-v2](docs/tasks/S5-T8-prototype.md). Status: re-ruled before its merge; verified and merged
+(the verifier reproduced the head's J2 cells against `main`, the negatives, the natives and the bounds, and the
+prefix rule planted on the head fails the gate through `misspelling-opening`).

@@ -138,6 +138,16 @@
  * more common than the word when they do. retrieval.fold_policy_id is
  * "fold-groups-v2"; the forms are listed in the query_term_grouped
  * warning's "members". */
+
+/* Contract 2.7.0 (S5-T8) changes one policy, with no request field, no
+ * warning code, no result field and no signature or index format change;
+ * an index written before it answers under the new policy with no
+ * rebuild. fold-groups-v3 (docs/fold-groups-v3.md) leaves out the verb
+ * forms of another word: for a short word that doubles its last letter
+ * (hop, car), its -ed, -ing and -es without the doubling (hoped, hoping,
+ * hopes are hope's); and for hoping or caring, the word hop or car.
+ * retrieval.fold_policy_id is "fold-groups-v3"; retrieval.fuzzy_policy_id
+ * stays "fuzzy-v1". */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 
@@ -166,7 +176,7 @@ typedef struct ss_handle ss_handle;
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "2.6.0". The returned pointer is static storage owned by the library:
+ * "2.7.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);
@@ -347,8 +357,9 @@ char *ss_status(ss_handle *handle);
  *                 query_term_grouped         (2.5.0) the word was also
  *                     searched as "members", the words that share its
  *                     fold key (fold-groups-v1) or, since 2.6.0, its -ing
- *                     and -ed verb forms (fold-groups-v2), in the group's
- *                     order, the
+ *                     and -ed verb forms (fold-groups-v2; since 2.7.0 not
+ *                     those of another word, fold-groups-v3), in the
+ *                     group's order, the
  *                     word itself left out, each held by a chunk or a file
  *                     name in scope (never only by hidden ones). "term" is
  *                     the typed word, as above. A word with a group is not

@@ -1328,8 +1328,13 @@ def fuzzy_expansions(index: dict, query: str, *, path_prefix: str | None = None,
 # held, a form joins at VERB_FORM_HELD_WEIGHT only if its key df is no higher than the
 # term's own (key df over the visible chunks: a prefix narrows membership, not
 # statistics), so a held word's group never takes a df above the word's own through R.
+#
+# fold-groups-v3 (S5-T8, docs/fold-groups-v3.md) takes only R's eligible forms
+# (`verb_forms.eligible_forms`): not a doubling-shape base's undoubled -ed, -ing and
+# -es (hop: hoped, hoping, hopes are hope's), and not a doubling-shape remainder of
+# an undoubled -ing or -ed (caring: not car). Everything else is fold-groups-v2's.
 
-FOLD_POLICY_ID = "fold-groups-v2"
+FOLD_POLICY_ID = "fold-groups-v3"
 VERB_FORM_HELD_WEIGHT = 0.5
 VERB_FORM_UNHELD_WEIGHT = 1.0
 
@@ -1339,7 +1344,7 @@ def _fold_groups(terms: Iterable[str], members_by_key: dict[str, set[str]], key_
                  held: set[str] | None = None) -> dict[str, tuple[tuple[str, float], ...]]:
     """{term: ((member, weight), ...)} in the group's order. With `vocabulary` (the
     in-scope body terms and the visible title terms under the prefix) R's forms join
-    as fold-groups-v2 says; `held` is the set of terms a chunk in scope or a visible
+    as fold-groups-v3 says; `held` is the set of terms a chunk in scope or a visible
     title holds. Without `vocabulary` the groups are fold-groups-v1's."""
     from . import analyzer_v3, verb_forms
     groups: dict[str, tuple[tuple[str, float], ...]] = {}
@@ -1349,7 +1354,7 @@ def _fold_groups(terms: Iterable[str], members_by_key: dict[str, set[str]], key_
         if vocabulary is not None:
             is_held = held is not None and term in held
             own = key_df.get(term, 0)
-            for form in verb_forms.forms(term):
+            for form in verb_forms.eligible_forms(term):
                 if form in weights or form not in vocabulary:
                     continue
                 if is_held:

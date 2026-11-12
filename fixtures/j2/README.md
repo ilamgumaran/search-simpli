@@ -5,9 +5,12 @@ Year 5, Wren in Year 2, Paati their grandmother, Biscuit the dog), Thistlecombe
 Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone numbers
 are from the ranges set aside for drama.
 
-J2 says where keyword search loses. It holds 198 queries in seven slices,
+J2 says where keyword search loses. It holds 290 queries in seven slices,
 a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3), held-out
-morphology, accent and Tamil slices (S5-T4), a held-out verb-form slice (S5-T5) and named negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
+morphology, accent and Tamil slices (S5-T4), a held-out verb-form slice (S5-T5),
+a cross-word verb-form slice and a precision-control slice (S5-T8) and named
+negatives in three sets (S5-T8 adds a tuning set and a held-out set), graded 0 to
+2, over three roots. Its numbers are the baseline later
 search tasks are judged against (`fixtures/j2/baseline.json`,
 `scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
 
@@ -26,9 +29,9 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 
 | Root | Files |
 | --- | --- |
-| `school/` | 29 |
-| `home/` | 25 |
-| `laptop/` | 23 |
+| `school/` | 30 |
+| `home/` | 32 |
+| `laptop/` | 26 |
 
 | File | Why |
 | --- | --- |
@@ -65,6 +68,51 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 | accent-heldout | 11 | 10 | accent, width and compatibility forms held out from S5-T4; short words, a merge guard |
 | tamil-heldout | 13 | 10 | Tamil inflections held out from S5-T4's suffix list, each rule once, three guards |
 | verbform-heldout | 19 | 14 | -ing/-ed/base forms held out from S5-T5's rule; doubled, dropped e, -ied; look-alike guards; held typed words |
+| verbform-cross | 6 | 6 | a word whose verb forms (R) reach another word's form; the answer holds its own form (hop and hope, even and evening, tap and tape); judged both sides |
+| precision-control | 10 | 8 | what a precision rule must keep at rank 1: stop words in a file name, near spellings, verb forms |
+| negatives-tuning | 17 | 15 | S5-T8's negatives for tuning: a stop word in a file name, a near word, a near topic, a cross-word form, Tamil, accent, one word of two held |
+| negatives-heldout | 17 | 15 | the same kinds, held out from S5-T8's candidates until each is declared |
+| misspelling-short | 13 | 12 | S5-T8 Phase 1c, held out: typed words of 6 or 7 code points two Levenshtein edits off (a swapped pair, a dropped and an added letter, two wrong letters) |
+| negatives-short | 4 | 3 | correctly spelt 6 or 7 code point words no file holds, with a near word |
+| misspelling-opening | 25 | 25 | held out, written by S5-T8's verifier: typed words of 6 or 7 code points two edits off in the first or second letter, asked as short questions; the answer is every file holding the meant word |
+
+## What counts as misleading (S5-T8)
+
+Written before any S5-T8 run; `scripts/j2_negatives.py` computes it from a J2
+results file. It reads negatives only: the queries of `negatives`,
+`negatives-tuning` and `negatives-heldout`, which no file answers.
+
+Each of a negative's first five hits is labelled by what brought it. A hit's words
+are the body words of its cited range and the title words of its file (the folders
+below the root, then the stem). For each query word, the hit's words it matches
+through the query's groups (the Python reference's `core._query_groups` for that
+query, so a rule under test is reflected) are labelled:
+
+- **real**: the query word itself, or a word with its fold-groups-v1 key
+  (`analyzer_v3.key`), or a verb form of it (`verb_forms.forms`) judged `same` in
+  `judgments.json` → `verb_form_judgments`;
+- **cross**: a verb form of it judged `cross` there (a form of another word: hop
+  and hope, even and evening);
+- **near**: a word fuzzy-v1 gave it (a spelling neighbour);
+- **stop**: the query word is a stop word (the list below), whatever it matches.
+
+A hit takes the first label of real, cross, near, stop that any of its matches
+has; a hit with no match is labelled `other` (reported; none is expected). A hit
+labelled stop, near or cross is **misleading**: it is there by a stop word alone,
+a spelling neighbour or another word's form. A real-word hit holds a word of the
+question, so it is counted apart, not as misleading.
+
+The measure, per set, surface and variant (content, both):
+
+- the mean top-5 hit count: the mean over the set's queries of the hits returned,
+  at most five;
+- the share of queries whose first hit is misleading;
+- the mean misleading hits and, apart, the mean real-word hits in the first five.
+
+No score threshold is defined: a hit counts whatever its score.
+
+The stop words are Lucene's 33 English stop words and `my` (S5-T8 ruling 1 names
+it among the common words in file names): `a`, `an`, `and`, `are`, `as`, `at`, `be`, `but`, `by`, `for`, `if`, `in`, `into`, `is`, `it`, `no`, `not`, `of`, `on`, `or`, `such`, `that`, `the`, `their`, `then`, `there`, `these`, `they`, `this`, `to`, `was`, `will`, `with`, `my`.
 
 ## Queries
 
@@ -270,3 +318,95 @@ Grade-2 rows only; `judgments.json` holds every row with its note.
 | vt2 | verbform-heldout | knowledge | `paddling canoe` | `laptop/notes/weekend-jobs.md` 47-50 |
 | vhn1 | negatives | knowledge | `diving board` | none |
 | vhn2 | negatives | knowledge | `tidying rota` | none |
+| x01 | verbform-cross | knowledge | `hops` | `home/clover.md` 1-5 |
+| x02 | verbform-cross | knowledge | `hoping` | `laptop/snow.md` 1-4 |
+| x03 | verbform-cross | knowledge | `evenings` | `laptop/chess.md` 1-5 |
+| x04 | verbform-cross | knowledge | `even` | `school/counters.md` 1-5 |
+| x05 | verbform-cross | knowledge | `tapping` | `home/plumbing.md` 1-4 |
+| x06 | verbform-cross | knowledge | `taping` | `home/parcels.md` 1-4 |
+| pc01 | precision-control | knowledge | `this and that` | `home/this-and-that.md` 1-4 |
+| pc02 | precision-control | knowledge | `end of the pier` | `home/end-of-the-pier.md` 1-4 |
+| pc03 | precision-control | knowledge | `owl and the moon` | `home/owl-and-the-moon.md` 1-5 |
+| pc04 | precision-control | knowledge | `my flowers` | `home/my-flowers.md` 1-4 |
+| pc05 | precision-control | knowledge | `stationary` | `laptop/errands.md` 1-4 |
+| pc06 | precision-control | knowledge | `trampolene` | `laptop/errands.md` 6-9 |
+| pc07 | precision-control | knowledge | `sissors` | `laptop/errands.md` 11-14 |
+| pc08 | precision-control | knowledge | `oiling` | `laptop/errands.md` 16-19 |
+| pc09 | precision-control | knowledge | `chopped` | `laptop/errands.md` 21-24 |
+| pc10 | precision-control | knowledge | `sprinkling` | `laptop/errands.md` 26-29 |
+| nt01 | negatives-tuning | knowledge | `the dragon` | none |
+| nt02 | negatives-tuning | knowledge | `my rocket` | none |
+| nt03 | negatives-tuning | knowledge | `king of the jungle` | none |
+| nt04 | negatives-tuning | knowledge | `skiing` | none |
+| nt05 | negatives-tuning | knowledge | `sailing` | none |
+| nt06 | negatives-tuning | knowledge | `curling` | none |
+| nt07 | negatives-tuning | knowledge | `radiator leak` | none |
+| nt08 | negatives-tuning | knowledge | `hutch roof` | none |
+| nt09 | negatives-tuning | knowledge | `caring` | none |
+| nt10 | negatives-tuning | knowledge | `biting midges` | none |
+| nt11 | negatives-tuning | knowledge | `mating season` | none |
+| nt12 | negatives-tuning | knowledge | `மழை குடை` | none |
+| nt13 | negatives-tuning | knowledge | `திருவிழா பட்டாசு` | none |
+| nt14 | negatives-tuning | knowledge | `piñata` | none |
+| nt15 | negatives-tuning | knowledge | `soufflé` | none |
+| nt16 | negatives-tuning | knowledge | `porch swing` | none |
+| nt17 | negatives-tuning | knowledge | `straw maze` | none |
+| nh01 | negatives-heldout | knowledge | `the wizard` | none |
+| nh02 | negatives-heldout | knowledge | `my hamster` | none |
+| nh03 | negatives-heldout | knowledge | `land of giants` | none |
+| nh04 | negatives-heldout | knowledge | `sewing` | none |
+| nh05 | negatives-heldout | knowledge | `golfing` | none |
+| nh06 | negatives-heldout | knowledge | `surfing` | none |
+| nh07 | negatives-heldout | knowledge | `goat cheese` | none |
+| nh08 | negatives-heldout | knowledge | `harbour ferry` | none |
+| nh09 | negatives-heldout | knowledge | `hating` | none |
+| nh10 | negatives-heldout | knowledge | `shedding fur` | none |
+| nh11 | negatives-heldout | knowledge | `canned` | none |
+| nh12 | negatives-heldout | knowledge | `நிலா விண்கலம்` | none |
+| nh13 | negatives-heldout | knowledge | `குரங்கு தோப்பு` | none |
+| nh14 | negatives-heldout | knowledge | `jalapeño` | none |
+| nh15 | negatives-heldout | knowledge | `fiancé` | none |
+| nh16 | negatives-heldout | knowledge | `ladder rungs` | none |
+| nh17 | negatives-heldout | knowledge | `kite competition` | none |
+| ms01 | misspelling-short | knowledge | `center` | `home/calendar-november.md` 3-3 |
+| ms02 | misspelling-short | knowledge | `bugdet` | `laptop/budget-autumn.md` 1-14 |
+| ms03 | misspelling-short | knowledge | `appels` | `home/shopping-list.md` 7-7 |
+| ms04 | misspelling-short | knowledge | `diagarm` | `school/volcano-project.md` 17-21 |
+| ms05 | misspelling-short | knowledge | `chairty` | `school/newsletter-autumn.md` 44-47 |
+| ms06 | misspelling-short | knowledge | `bonfrie` | `home/family-log.md` 25-29 |
+| ms07 | misspelling-short | knowledge | `bukett` | `home/family-log.md` 1-5 |
+| ms08 | misspelling-short | knowledge | `allredy` | `school/noticeboard.md` 16-21 |
+| ms09 | misspelling-short | knowledge | `galerry` | `school/noticeboard.md` 46-51 |
+| ms10 | misspelling-short | knowledge | `dokter` | `home/health/doctor-visits.md` 1-9 |
+| ms11 | misspelling-short | knowledge | `jakkit` | `home/family-log.md` 19-23 |
+| ms12 | misspelling-short | knowledge | `chikkin` | `school/lunch-menu.md` 9-11 |
+| ms13 | misspelling-short | knowledge | `fivtean` | `home/music/recorder-practice.md` 3-6 |
+| msn1 | negatives-short | knowledge | `parrot` | none |
+| msn2 | negatives-short | knowledge | `walrus` | none |
+| msn3 | negatives-short | knowledge | `tractor` | none |
+| msn4 | negatives-short | knowledge | `beaver` | none |
+| mo01 | misspelling-opening | knowledge | `fonics this week` | `school/class-notes-wren.md` 1-20; `laptop/log/homework-tracker.txt` 1-141 |
+| mo02 | misspelling-opening | knowledge | `riming words` | `home/owl-and-the-moon.md` 1-5 |
+| mo03 | misspelling-opening | knowledge | `when are the kwizzes` | `school/noticeboard.md` 1-51 |
+| mo04 | misspelling-opening | knowledge | `who wanted kabobs` | `home/birthday-party-wren.md` 1-23 |
+| mo05 | misspelling-opening | knowledge | `did we buy salery` | `laptop/errands.md` 1-29 |
+| mo06 | misspelling-opening | knowledge | `which day is cikken` | `school/lunch-menu.md` 1-23 |
+| mo07 | misspelling-opening | knowledge | `where is the kushon` | `home/family-log.md` 1-77 |
+| mo08 | misspelling-opening | knowledge | `fix the skootur` | `laptop/notes/weekend-jobs.md` 1-60 |
+| mo09 | misspelling-opening | knowledge | `who has the wistel` | `laptop/notes/jottings.md` 1-45; `school/noticeboard.md` 1-51 |
+| mo10 | misspelling-opening | knowledge | `cayacs on the river` | `laptop/notes/weekend-jobs.md` 1-60 |
+| mo11 | misspelling-opening | knowledge | `what was nittid` | `home/household.md` 1-35 |
+| mo12 | misspelling-opening | knowledge | `when does the senter open` | `home/calendar-november.md` 1-7 |
+| mo13 | misspelling-opening | knowledge | `catchup with chips` | `school/lunch-menu.md` 1-23 |
+| mo14 | misspelling-opening | knowledge | `the skweaky door` | `laptop/errands.md` 1-29 |
+| mo15 | misspelling-opening | knowledge | `who made kustad` | `home/household.md` 1-35; `school/noticeboard.md` 1-51 |
+| mo16 | misspelling-opening | knowledge | `read the next captur` | `laptop/notes/bedtime-stories.md` 1-25 |
+| mo17 | misspelling-opening | knowledge | `when is the pulmer coming` | `home/plumbing.md` 1-4 |
+| mo18 | misspelling-opening | knowledge | `where are my galses` | `home/health/doctor-visits.md` 1-9; `laptop/notes/jottings.md` 1-45 |
+| mo19 | misspelling-opening | knowledge | `who made the cumbel` | `home/household.md` 1-35 |
+| mo20 | misspelling-opening | knowledge | `which sapner size` | `home/plumbing.md` 1-4 |
+| mo21 | misspelling-opening | knowledge | `who plays skwash` | `laptop/chess.md` 1-5; `school/noticeboard.md` 1-51 |
+| mo22 | misspelling-opening | knowledge | `something kittid` | `home/household.md` 1-35 |
+| mo23 | misspelling-opening | knowledge | `how many skailes` | `home/music/recorder-practice.md` 1-15 |
+| mo24 | misspelling-opening | knowledge | `the torley wheel` | `laptop/notes/weekend-jobs.md` 1-60 |
+| mo25 | misspelling-opening | knowledge | `palstr cast` | `school/dinosaur-topic.md` 1-25 |

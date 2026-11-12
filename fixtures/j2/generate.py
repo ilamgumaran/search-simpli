@@ -32,7 +32,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent.parent))
 
-from src.search_platform import analyzer_v3  # noqa: E402
+from src.search_platform import analyzer_v3, verb_forms  # noqa: E402
 from src.search_platform.core import _filename_tokenize, file_chunks  # noqa: E402
 
 
@@ -52,7 +52,42 @@ ROOTS = ("school", "home", "laptop")
 BOM = b"\xef\xbb\xbf"
 SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "negatives",
           "title-heldout", "misspelling-heldout", "morphology-heldout", "accent-heldout", "tamil-heldout",
-          "verbform-heldout")
+          "verbform-heldout", "verbform-cross", "precision-control", "negatives-tuning", "negatives-heldout",
+          "misspelling-short", "negatives-short", "misspelling-opening")
+# S5-T8: the slices and sets it adds, and the slices whose queries are negatives.
+# The short-typo slice and its negatives (Phase 1c, ruling 3 of the Phase 1 rulings)
+# came after the others, and keep out of their query words too.
+SHORT_SLICES = ("misspelling-short", "negatives-short")
+# The re-ruling after the verifier's measurement (13 Nov): misspelling-opening holds
+# the verifier's own typed words, as the short questions it ran. Its questions are
+# taken verbatim, so the new-words check does not apply to them.
+OPENING_SLICES = ("misspelling-opening",)
+S5T8_SLICES = ("verbform-cross", "precision-control", "negatives-tuning", "negatives-heldout") + SHORT_SLICES \
+    + OPENING_SLICES
+NEGATIVE_SLICES = ("negatives", "negatives-tuning", "negatives-heldout", "negatives-short")
+# S5-T8 ruling 1: the stop words of the measure of what misleads (README, "What
+# counts as misleading"): Lucene's 33 English stop words, and `my`, which the
+# ruling names among the common words in file names.
+STOP_WORDS = ("a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into", "is", "it",
+              "no", "not", "of", "on", "or", "such", "that", "the", "their", "then", "there", "these", "they",
+              "this", "to", "was", "will", "with", "my")
+NEGATIVE_KINDS = ("stop-name", "near-word", "near-topic", "cross-form", "tamil", "accent", "half-held")
+PRECISION_KINDS = ("stop-title", "near", "verb")
+VERBFORM_CROSS_ANSWER_FILES = 6
+# S5-T8 Phase 1c (ruling 3 of the Phase 1 rulings): misspelling-short's typed words
+# are 6 or 7 code points, two edits from the meant word when a swap of two
+# neighbours counts two (Levenshtein), the length kept; at least this many are one
+# swapped adjacent pair, the rest a dropped and an added letter or two wrong
+# letters; and at least this many negatives-short rows.
+SHORT_KINDS = ("swap", "drop and add", "two wrong letters")
+SHORT_MIN_SWAPS = 5
+SHORT_MIN_NEGATIVES = 3
+# misspelling-opening (the re-ruling, item 3): typed words of 6 or 7 code points, two
+# edits (optimal string alignment) from the meant word, with no word of the fixture
+# one edit away, and the edit in the first letter or, the first letter kept, in the
+# second; at least this many of each.
+OPENING_KINDS = ("second letter", "first letter")
+OPENING_MINIMUMS = {"second letter": 16, "first letter": 9}
 # S5-T3, ruling 7 of its plan: the edits the held-out misspelling slice must hold,
 # at least this many rows of each (a distance-2 row needs a meant word of 8 or more
 # code points; "name" is a word only the answer's file or folder name holds;
@@ -122,6 +157,12 @@ class Corpus:
         for path in files:
             for token in set(toks("\n".join(self.lines[path]))):
                 self.vocabulary[token] = self.vocabulary.get(token, 0) + 1
+        # S5-T8: the title field's words (every folder below the root, then the stem).
+        self.titles: dict[str, list[str]] = {}
+        for path in files:
+            rel = PurePosixPath(path.split("/", 1)[1])
+            self.titles[path] = [t for part in rel.parent.parts for t in toks(part)] + toks(rel.stem)
+        self.title_vocabulary = {t for words in self.titles.values() for t in words}
 
     def df(self, token: str) -> int:
         return self.vocabulary.get(token, 0)
@@ -201,6 +242,37 @@ def edit_kind(typed: str, meant: str) -> str:
     return {-1: "deletion", 1: "insertion", 0: "substitution"}[len(typed) - len(meant)]
 
 
+def levenshtein(a: str, b: str) -> int:
+    """Insertions, deletions and substitutions only: a swap of two neighbours costs 2."""
+    before = list(range(len(b) + 1))
+    for i in range(1, len(a) + 1):
+        now = [i] + [0] * len(b)
+        for j in range(1, len(b) + 1):
+            now[j] = min(before[j] + 1, now[j - 1] + 1, before[j - 1] + (a[i - 1] != b[j - 1]))
+        before = now
+    return before[-1]
+
+
+def short_kind(typed: str, meant: str) -> str:
+    """misspelling-short's edit: one swapped adjacent pair; two wrong letters (two
+    positions differ); or a dropped and an added letter (the same length, more
+    positions differ, two edits)."""
+    if is_one_swap(typed, meant):
+        return "swap"
+    if len(typed) != len(meant) or levenshtein(typed, meant) != 2:
+        return f"length {len(typed)}/{len(meant)}, Levenshtein {levenshtein(typed, meant)}"
+    differ = sum(1 for x, y in zip(typed, meant) if x != y)
+    return "two wrong letters" if differ == 2 else "drop and add"
+
+
+def opening_kind(typed: str, meant: str) -> str:
+    """misspelling-opening's edit position: the first letter differs, or the first
+    letter is the same and the second differs."""
+    if typed[:1] != meant[:1]:
+        return "first letter"
+    return "second letter" if typed[1:2] != meant[1:2] else "after the second letter"
+
+
 def contains_run(seq: list[str], want: list[str]) -> bool:
     return any(seq[i:i + len(want)] == want for i in range(len(seq) - len(want) + 1))
 
@@ -234,6 +306,11 @@ def misspelling_slice_words() -> set[str]:
     return {word for spec in queries.QUERIES if spec["slice"] == "misspelling" for word in spec["typo"][:2]}
 
 
+def misspelling_heldout_words() -> set[str]:
+    """Every typed and every meant word of the misspelling-heldout slice (mh01-mh12)."""
+    return {word for spec in queries.QUERIES if spec["slice"] == "misspelling-heldout" for word in spec["typo"][:2]}
+
+
 def heldout_words(slice_name: str) -> set[str]:
     """Every query word and every form or fold word of an S5-T1 slice: S5-T4's
     held-out rows of the matching slice use none."""
@@ -252,12 +329,14 @@ def heldout_words(slice_name: str) -> set[str]:
 
 
 def new_file_hygiene(corpus: Corpus) -> list[str]:
-    """S5-T5's new files keep out of every earlier slice's query words and of their
+    """S5-T5's new files keep out of every earlier slice's query words (the slices
+    S5-T8 adds came later and are left out) and of their
     fold-groups-v1 forms (the keys `analyzer_v3.key` gives), in body and path, so
     that adding them moves no earlier row by a word they hold."""
     earlier: set[str] = set()
     for spec in queries.QUERIES:
-        if spec["slice"] != "verbform-heldout" and spec.get("of") != "verbform-heldout":
+        if spec["slice"] != "verbform-heldout" and spec.get("of") != "verbform-heldout" \
+                and spec["slice"] not in S5T8_SLICES:
             earlier.update(toks(spec["query"].rstrip("*")))
     keys = {analyzer_v3.key(w): w for w in earlier}
     problems = []
@@ -270,6 +349,70 @@ def new_file_hygiene(corpus: Corpus) -> list[str]:
             elif analyzer_v3.key(word) in keys:
                 problems.append(f"{path} holds {word}, a fold-groups-v1 form of {keys[analyzer_v3.key(word)]}")
     return problems
+
+
+def earlier_query_words() -> set[str]:
+    """Every query word of a slice before S5-T8 (the stop words included)."""
+    words: set[str] = set()
+    for spec in queries.QUERIES:
+        if spec["slice"] not in S5T8_SLICES:
+            words.update(toks(spec["query"].rstrip("*")))
+    return words
+
+
+def fuzzy_reach(typed: str, candidate: str) -> bool:
+    """fuzzy-v1's candidate test, without the dictionary: the same first code point,
+    and an optimal-string-alignment distance of at most 1 (5 code points) or 2 (6 or
+    more). The script test is left out: every word it is used on here is Latin."""
+    k = 2 if len(typed) >= 6 else (1 if len(typed) == 5 else 0)
+    return bool(k) and typed[:1] == candidate[:1] and abs(len(typed) - len(candidate)) <= k \
+        and 1 <= osa_distance(typed, candidate) <= k
+
+
+def s5t8_file_hygiene(corpus: Corpus) -> list[str]:
+    """S5-T8's new files keep out of every earlier query word (stop words in file names
+    excepted: content.STOP_WORDS_IN_NAMES), of its fold-groups-v1 key, of its verb
+    forms (R, `verb_forms.forms`; content.HYGIENE_EXEMPT names the hop/hope forms
+    review R05 asks for) and, for an earlier query word no earlier file holds, of
+    fuzzy-v1's reach from it."""
+    earlier = earlier_query_words()
+    keys = {analyzer_v3.key(w): w for w in earlier}
+    earlier_paths = [p for p in corpus.files if p not in content.S5T8_FILES]
+    earlier_vocabulary: set[str] = set()
+    for path in earlier_paths:
+        rel = PurePosixPath(path.split("/", 1)[1])
+        earlier_vocabulary |= set(toks("\n".join(corpus.lines[path])))
+        earlier_vocabulary |= {t for part in rel.parent.parts for t in toks(part)} | set(toks(rel.stem))
+    forms = {}
+    for w in sorted(earlier):
+        for f in verb_forms.forms(w):
+            if f not in content.HYGIENE_EXEMPT.get(w, ()):
+                forms.setdefault(f, w)
+    unheld = sorted(w for w in earlier if w not in earlier_vocabulary)
+    problems = []
+    for path in content.S5T8_FILES:
+        rel = PurePosixPath(path.split("/", 1)[1])
+        body = set(toks("\n".join(corpus.lines[path])))
+        name = {t for part in rel.parent.parts for t in toks(part)} | set(toks(rel.stem))
+        for word in sorted(body | name):
+            if word in content.STOP_WORDS_IN_NAMES and word in name and word not in body:
+                continue
+            if word in earlier:
+                problems.append(f"{path} holds {word}, an earlier query word")
+            elif analyzer_v3.key(word) in keys:
+                problems.append(f"{path} holds {word}, a fold-groups-v1 form of {keys[analyzer_v3.key(word)]}")
+            elif word in forms:
+                problems.append(f"{path} holds {word}, a verb form of {forms[word]}")
+            else:
+                near = [w for w in unheld if fuzzy_reach(w, word)]
+                if near:
+                    problems.append(f"{path} holds {word}, in fuzzy-v1's reach of {near}")
+    return problems
+
+
+def held_anywhere(corpus: Corpus, word: str) -> bool:
+    """A body word of some file, or a title word (folders and stem) of some file."""
+    return corpus.df(word) > 0 or word in corpus.title_vocabulary
 
 
 def strip_marks(word: str) -> str:
@@ -296,7 +439,7 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
         expected.append(row)
     graded = [r for r in expected if r["grade"] >= 1]
     answers = [r for r in expected if r["grade"] == 2]
-    negative = spec["slice"] == "negatives"
+    negative = spec["slice"] in NEGATIVE_SLICES
     need(spec["mode"] in MODES, f"mode {spec['mode']}")
     need(bool(answers) != negative, "graded queries have a grade-2 row; negatives have none with grade 1 or more")
 
@@ -349,6 +492,47 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
             reused = sorted({typed, meant} & misspelling_slice_words())
             need(not reused, f"held out: {reused} is a typed or meant word of the misspelling slice")
             checks.append({"check": "held out: no typed or meant word is a typed or meant word of the misspelling slice"})
+    elif s == "misspelling-short":
+        typed, meant, swap = spec["typo"]
+        kind = spec["kind"]
+        need(kind in SHORT_KINDS, f"kind {kind}")
+        need(typed in query_tokens, f"{typed} is a query word")
+        need(not held_anywhere(corpus, typed), f"{typed} occurs in no file or file name")
+        need(len(typed) in (6, 7), f"{typed} is 6 or 7 code points ({len(typed)})")
+        need(levenshtein(typed, meant) == 2, f"{typed}->{meant} Levenshtein {levenshtein(typed, meant)}, need 2")
+        need(short_kind(typed, meant) == kind, f"{typed}->{meant} is {short_kind(typed, meant)}, declared {kind}")
+        need(is_one_swap(typed, meant) == swap, f"{typed}->{meant} transposition flag {swap}")
+        need(meant in first, f"{meant} is in the answer")
+        reused = sorted({typed, meant} & (misspelling_slice_words() | misspelling_heldout_words()))
+        need(not reused, f"held out: {reused} is a typed or meant word of the misspelling or misspelling-heldout slice")
+        checks.append({"check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant "
+                                "word; the kind; the meant word in the answer; no typed or meant word of the "
+                                "misspelling or misspelling-heldout slice",
+                       "typed": typed, "meant": meant, "levenshtein": 2, "distance": osa_distance(typed, meant),
+                       "transposition": swap, "kind": kind, "typed_code_points": len(typed),
+                       "meant_df": corpus.df(meant)})
+    elif s == "misspelling-opening":
+        typed, meant = spec["typo"]
+        kind = spec["kind"]
+        need(kind in OPENING_KINDS, f"kind {kind}")
+        need(typed in query_tokens, f"{typed} is a query word")
+        need(not held_anywhere(corpus, typed), f"{typed} occurs in no file or file name")
+        need(len(typed) in (6, 7), f"{typed} is 6 or 7 code points ({len(typed)})")
+        need(osa_distance(typed, meant) == 2, f"{typed}->{meant} distance {osa_distance(typed, meant)}, need 2")
+        held = set(corpus.vocabulary) | corpus.title_vocabulary
+        near = sorted(w for w in held if abs(len(w) - len(typed)) <= 1 and osa_distance(typed, w) == 1)
+        need(not near, f"{typed} is one edit from {near}")
+        need(opening_kind(typed, meant) == kind, f"{typed}->{meant} is {opening_kind(typed, meant)}, declared {kind}")
+        holders = sorted(p for p in corpus.files if meant in toks("\n".join(corpus.lines[p])))
+        named = sorted(f"{r['root_id']}/{r['path']}" for r in answers)
+        need(holders == named, f"the answer files {named} are the files holding {meant} {holders}")
+        need(all((r["start_line"], r["end_line"]) == (1, len(corpus.lines[f"{r['root_id']}/{r['path']}"]))
+                 for r in answers), "each answer row is its whole file")
+        checks.append({"check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant "
+                                "word and no fixture word one edit away; the edit in the first letter, or in the "
+                                "second with the first kept; the answer rows are the files holding the meant word",
+                       "typed": typed, "meant": meant, "distance": 2, "levenshtein": levenshtein(typed, meant),
+                       "kind": kind, "typed_code_points": len(typed), "meant_df": corpus.df(meant)})
     elif s in ("morphology", "tamil") and "forms" in spec:
         for query_form, file_form in spec["forms"]:
             need(query_form in query_tokens, f"{query_form} is a query word")
@@ -569,6 +753,105 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
         checks.append({"check": "adjacent in one row, present but apart in the other",
                        "adjacent_grade": expected[spec["adjacent"]]["grade"],
                        "apart_grade": expected[spec["apart"]]["grade"]})
+    elif s == "verbform-cross":
+        typed, own, cross = spec["cross"]
+        zero = [r for r in expected if r["grade"] == 0]
+        need(spec["kind"] == "cross", f"kind {spec['kind']}")
+        need(query_tokens == [typed], f"the query is the one word {typed}")
+        need(held_anywhere(corpus, typed) == spec["held"], f"{typed} held: {spec['held']}")
+        need(own in first and (own == typed or own in verb_forms.forms(typed)
+                               or analyzer_v3.key(own) == analyzer_v3.key(typed)),
+             f"{own}, the typed word or a form of it, is in the answer")
+        need(spec["held"] or typed not in first, f"{typed} is absent from the answer")
+        need(cross in verb_forms.forms(typed), f"R generates {cross} from {typed}")
+        need(cross not in first, f"{cross} is absent from the answer")
+        need(any(cross in corpus.range_tokens(z) and own not in corpus.range_tokens(z) for z in zero),
+             f"a grade-0 row holds {cross} and not {own}")
+        checks.append({"check": "cross form: the answer holds the typed word's own form and not the other word's; "
+                                "a grade-0 row holds a form of another word that R generates from the typed word",
+                       "typed": typed, "own": own, "cross": cross, "held": spec["held"], "kind": spec["kind"]})
+    elif s == "precision-control":
+        kind = spec["kind"]
+        need(kind in PRECISION_KINDS, f"kind {kind}")
+        if kind == "stop-title":
+            target = answers[0]
+            title = corpus.titles[f"{target['root_id']}/{target['path']}"]
+            body = corpus.range_tokens(target)
+            stops = [t for t in query_tokens if t in STOP_WORDS]
+            others = [t for t in query_tokens if t not in STOP_WORDS]
+            need(target["start_line"] == 1 and target["end_line"] == len(corpus.lines[f"{target['root_id']}/{target['path']}"]),
+                 "the answer is the whole file")
+            need(bool(stops) and all(t in title for t in stops), f"a stop word of the query is in the file name ({stops})")
+            need(all(t in title and t not in body for t in others), f"{others} are in the file name and not in its body")
+            checks.append({"check": "stop-word title: the query's stop words and its other words are in the file name; "
+                                    "the other words are not in its body",
+                           "stop_words": stops, "other_words": others, "title": title, "kind": kind})
+        elif kind == "near":
+            typed, meant, swap = spec["typo"]
+            need(typed in query_tokens and not held_anywhere(corpus, typed), f"{typed} is a query word no file holds")
+            need(meant in first, f"{meant} is in the answer")
+            need(fuzzy_reach(typed, meant), f"{meant} is in fuzzy-v1's reach of {typed}")
+            need(is_one_swap(typed, meant) == swap, f"{typed}->{meant} transposition flag {swap}")
+            checks.append({"check": "near: the typed word is in no file; the answer holds the meant word, in fuzzy-v1's reach",
+                           "typed": typed, "meant": meant, "distance": osa_distance(typed, meant),
+                           "typed_code_points": len(typed), "meant_df": corpus.df(meant), "kind": kind})
+        else:
+            query_form, file_form = spec["forms"][0]
+            need(query_form in query_tokens and not held_anywhere(corpus, query_form), f"{query_form} is a query word no file holds")
+            need(file_form in first, f"{file_form} is in the answer")
+            need(file_form in verb_forms.forms(query_form), f"R generates {file_form} from {query_form}")
+            same_key = sorted(w for w in set(corpus.vocabulary) | corpus.title_vocabulary
+                              if analyzer_v3.key(w) == analyzer_v3.key(query_form))
+            need(not same_key, f"no file holds a fold-groups-v1 form of {query_form} ({same_key})")
+            checks.append({"check": "verb: no file holds the query form or a fold-groups-v1 form of it; the answer holds a "
+                                    "verb form R generates from it",
+                           "query_form": query_form, "file_form": file_form, "kind": kind})
+    elif s in ("negatives-tuning", "negatives-heldout", "negatives-short"):
+        kind = spec["kind"]
+        need(kind in NEGATIVE_KINDS, f"kind {kind}")
+        if s == "negatives-short":
+            need(kind == "near-word", "a negatives-short row is a near word")
+            need(all(len(t) in (6, 7) for t in query_tokens), "a word of 6 or 7 code points")
+        words = [t for t in query_tokens if t not in STOP_WORDS]
+        held = [t for t in words if held_anywhere(corpus, t)]
+        facts = {}
+        if kind == "stop-name":
+            stop = spec["stop"]
+            need(stop in query_tokens and stop in STOP_WORDS, f"{stop} is a stop word of the query")
+            need(stop in corpus.title_vocabulary, f"{stop} is in a file name")
+            need(not held, f"no file holds {held}")
+            facts = {"stop": stop}
+        elif kind == "near-word":
+            need(len(words) == 1 and not held, "one word, which no file holds")
+            near = sorted(w for w in set(corpus.vocabulary) | corpus.title_vocabulary if fuzzy_reach(words[0], w))
+            need(bool(near), f"a file holds a word in fuzzy-v1's reach of {words[0]}")
+            facts = {"near": near}
+        elif kind == "near-topic":
+            need(len(words) >= 2 and held == words, "every word is held")
+        elif kind == "cross-form":
+            typed, other = spec["cross"]
+            need(typed in words and not held_anywhere(corpus, typed), f"{typed} is a query word no file holds")
+            need(other in verb_forms.forms(typed) and held_anywhere(corpus, other),
+                 f"R generates {other} from {typed} and a file holds it")
+            need(queries.VERB_FORM_JUDGMENTS.get(typed, {}).get(other) == "cross", f"{other} is judged a form of another word")
+            facts = {"typed": typed, "other": other}
+        elif kind == "tamil":
+            need(all(any("\u0b80" <= c <= "\u0bff" for c in t) for t in words), "Tamil words")
+            keys = {analyzer_v3.key(w) for w in set(corpus.vocabulary) | corpus.title_vocabulary}
+            need(any(analyzer_v3.key(t) in keys for t in words), "a word, or a fold-groups-v1 form of it, is held")
+        elif kind == "accent":
+            marked = [t for t in words if not t.isascii()]
+            need(bool(marked) and not any(held_anywhere(corpus, t) for t in marked), "an accented word no file holds")
+        elif kind == "half-held":
+            need(len(words) == 2 and len(held) == 1, "two words, one held")
+        checks.append({"check": f"negative ({kind}): " + {
+            "stop-name": "a stop word of the query is in a file name; no file holds the other words",
+            "near-word": "one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+            "near-topic": "every word is held; the topic is not",
+            "cross-form": "a word no file holds; R generates another word a file holds, judged a form of another word",
+            "tamil": "a Tamil question; a word or a fold-groups-v1 form of it is held",
+            "accent": "an accented word no file holds",
+            "half-held": "two words, one held"}[kind], "held": held, **facts})
     elif s == "negatives":
         present = [t for t in query_tokens if corpus.df(t) > 0]
         need(bool(present), "at least one query word occurs in the corpus")
@@ -576,6 +859,21 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
                        "present": present})
     elif s != "control":
         raise SystemExit(f"{qid}: unknown slice {s}")
+
+    if s in S5T8_SLICES and s not in OPENING_SLICES:
+        earlier = earlier_query_words()
+        earlier_keys = {analyzer_v3.key(w) for w in earlier if w not in STOP_WORDS}
+        reused = sorted(t for t in query_tokens if t not in STOP_WORDS
+                        and (t in earlier or analyzer_v3.key(t) in earlier_keys))
+        need(not reused, f"{reused} is a query word of an earlier slice, or shares its fold-groups-v1 key")
+        if s in SHORT_SLICES:
+            first_s5t8 = {t for spec_ in queries.QUERIES if spec_["slice"] in S5T8_SLICES
+                          and spec_["slice"] not in SHORT_SLICES + OPENING_SLICES
+                          for t in toks(spec_["query"].rstrip("*"))}
+            reused = sorted(t for t in query_tokens if t not in STOP_WORDS and t in first_s5t8)
+            need(not reused, f"{reused} is a query word of an earlier S5-T8 slice")
+        checks.append({"check": "new words: no query word but a stop word is a query word of an earlier slice or shares "
+                                "its fold-groups-v1 key"})
 
     item = {"slice": s, "id": qid, "question": spec["question"], "query": spec["query"], "mode": spec["mode"],
             "expected": expected}
@@ -586,11 +884,15 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
         item["transposition"] = spec["typo"][2]
     if s == "misspelling-heldout":
         item["edit"] = spec["edit"]
+    if s == "misspelling-short":
+        item["transposition"] = spec["typo"][2]
     if s == "morphology":
         item["only_form"] = bool(spec.get("only_form"))
     if s == "tamil" and "guard" in spec:
         item["guard"] = spec["guard_kind"]
     if s in ("morphology-heldout", "accent-heldout"):
+        item["kind"] = spec["kind"]
+    if s in S5T8_SLICES:
         item["kind"] = spec["kind"]
     if s == "verbform-heldout":
         item["kind"] = spec["kind"]
@@ -608,6 +910,27 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
     return item
 
 
+def verb_form_judgments(corpus: Corpus, items: list[dict]) -> dict[str, dict[str, str]]:
+    """S5-T8: every verb form R gives a negative's query word that a file holds (body
+    or name), judged in queries.VERB_FORM_JUDGMENTS as "same" (of the question's own
+    word) or "cross" (of another word). Every reachable form must be judged, and only
+    those: the measure of what misleads needs a verdict for any form a rule can add."""
+    need: dict[str, dict[str, str]] = {}
+    for item in items:
+        if not item.get("negative"):
+            continue
+        for word in toks(item["query"]):
+            held = [f for f in verb_forms.forms(word) if held_anywhere(corpus, f)]
+            if held:
+                need[word] = {f: queries.VERB_FORM_JUDGMENTS.get(word, {}).get(f) for f in held}
+    missing = sorted(f"{w}->{f}" for w, forms in need.items() for f, v in forms.items() if v not in ("same", "cross"))
+    extra = sorted(f"{w}->{f}" for w, forms in queries.VERB_FORM_JUDGMENTS.items() for f in forms
+                   if f not in need.get(w, {}))
+    if missing or extra:
+        raise SystemExit(f"verb form judgments: unjudged {missing}; judged but not reachable {extra}")
+    return {w: dict(sorted(need[w].items())) for w in sorted(need)}
+
+
 def build_judgments(corpus: Corpus) -> dict:
     seen = set()
     items = []
@@ -620,7 +943,9 @@ def build_judgments(corpus: Corpus) -> dict:
     for name, minimum in queries.SLICE_MINIMUMS.items():
         if counts[name] < minimum:
             raise SystemExit(f"slice {name}: {counts[name]} queries, minimum {minimum}")
-    for name in queries.SLICE_MINIMUMS:
+    # misspelling-opening is the verifier's rows as they were run, and the verifier
+    # wrote no negative for it (the re-ruling, item 3).
+    for name in (n for n in queries.SLICE_MINIMUMS if n not in OPENING_SLICES):
         if not any(i.get("negative_of") == name for i in items):
             raise SystemExit(f"slice {name} has no negative")
     held = [next(c for c in i["checks"] if "edit" in c) for i in items if i["slice"] == "misspelling-heldout"]
@@ -668,6 +993,36 @@ def build_judgments(corpus: Corpus) -> dict:
     hygiene = new_file_hygiene(corpus)
     if hygiene:
         raise SystemExit("verbform-heldout files: " + "; ".join(hygiene))
+    hygiene = s5t8_file_hygiene(corpus)
+    if hygiene:
+        raise SystemExit("S5-T8 files: " + "; ".join(hygiene))
+    for name, minimum in queries.NEGATIVE_SET_MINIMUMS.items():
+        if counts[name] < minimum:
+            raise SystemExit(f"{name}: {counts[name]} queries, minimum {minimum}")
+        for kind in NEGATIVE_KINDS:
+            if not any(i["slice"] == name and i["kind"] == kind for i in items):
+                raise SystemExit(f"{name}: no negative of the kind {kind}")
+    if sum(queries.NEGATIVE_SET_MINIMUMS.get(n, 0) and counts[n] for n in queries.NEGATIVE_SET_MINIMUMS) < 30:
+        raise SystemExit("fewer than 30 negatives in S5-T8's two sets")
+    for kind in PRECISION_KINDS:
+        if not any(i["slice"] == "precision-control" and i["kind"] == kind for i in items):
+            raise SystemExit(f"precision-control: no row of the kind {kind}")
+    cross_files = {(r["root_id"], r["path"]) for i in items if i["slice"] == "verbform-cross"
+                   for r in i["expected"] if r["grade"] == 2}
+    if len(cross_files) < VERBFORM_CROSS_ANSWER_FILES:
+        raise SystemExit(f"verbform-cross: answers in {len(cross_files)} files, minimum {VERBFORM_CROSS_ANSWER_FILES}")
+    short = [i for i in items if i["slice"] == "misspelling-short"]
+    if sum(1 for i in short if i["kind"] == "swap") < SHORT_MIN_SWAPS:
+        raise SystemExit(f"misspelling-short: fewer than {SHORT_MIN_SWAPS} swapped pairs")
+    if {len(c["typed"]) for i in short for c in i["checks"] if "levenshtein" in c} != {6, 7}:
+        raise SystemExit("misspelling-short: typed words of 6 and of 7 code points both needed")
+    opening = [i for i in items if i["slice"] == "misspelling-opening"]
+    for kind, minimum in OPENING_MINIMUMS.items():
+        if sum(1 for i in opening if i["kind"] == kind) < minimum:
+            raise SystemExit(f"misspelling-opening: fewer than {minimum} rows of kind {kind}")
+    if counts["negatives-short"] < SHORT_MIN_NEGATIVES:
+        raise SystemExit(f"negatives-short: {counts['negatives-short']} queries, minimum {SHORT_MIN_NEGATIVES}")
+    judged = verb_form_judgments(corpus, items)
     if sum(1 for i in items if i.get("transposition")) < 5:
         raise SystemExit("fewer than 5 transpositions")
     if sum(1 for i in items if i.get("only_form")) < 3:
@@ -683,13 +1038,18 @@ def build_judgments(corpus: Corpus) -> dict:
             "modes": "knowledge = search_knowledge (lexical, top 10, search_field content and both); find:words, find:phrase, find:prefix = find in that mode, first page of 10",
             "negatives": "an empty answer set; rows name the distractors; reported as hit count, top hit and whether it is a named distractor",
             "checks": "asserted by generate.py with the analyzer-v2 simple case fold",
+            "misleading": "S5-T8: for a negative, each of its first 5 hits is labelled by what brought it (README, What counts as misleading); stop_words and verb_form_judgments are the labels' inputs",
         },
-        "slices": {name: queries.SLICE_MINIMUMS.get(name, 0) for name in SLICES},
+        "slices": {name: queries.SLICE_MINIMUMS.get(name, queries.NEGATIVE_SET_MINIMUMS.get(
+            name, SHORT_MIN_NEGATIVES if name == "negatives-short" else 0)) for name in SLICES},
         "counts": counts,
         "files": [{"root_id": p.split("/", 1)[0], "path": p.split("/", 1)[1], "bytes": len(d),
                    "lines": len(corpus.lines[p]), "sha256": hashlib.sha256(d).hexdigest()}
                   for p, d in corpus.files.items()],
         "queries": items,
+        # S5-T8: what the measure of what misleads reads (README, "What counts as misleading").
+        "stop_words": list(STOP_WORDS),
+        "verb_form_judgments": judged,
     }
 
 
@@ -705,7 +1065,10 @@ are from the ranges set aside for drama.
 
 J2 says where keyword search loses. It holds {total} queries in seven slices,
 a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3), held-out
-morphology, accent and Tamil slices (S5-T4), a held-out verb-form slice (S5-T5) and named negatives, graded 0 to 2, over three roots. Its numbers are the baseline later
+morphology, accent and Tamil slices (S5-T4), a held-out verb-form slice (S5-T5),
+a cross-word verb-form slice and a precision-control slice (S5-T8) and named
+negatives in three sets (S5-T8 adds a tuning set and a held-out set), graded 0 to
+2, over three roots. Its numbers are the baseline later
 search tasks are judged against (`fixtures/j2/baseline.json`,
 `scripts/j2_gate.py`); see `docs/evaluation.md`, section J2.
 
@@ -735,6 +1098,44 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 | Slice | Queries | Minimum | What it holds |
 | --- | ---: | ---: | --- |
 {slices}
+
+## What counts as misleading (S5-T8)
+
+Written before any S5-T8 run; `scripts/j2_negatives.py` computes it from a J2
+results file. It reads negatives only: the queries of `negatives`,
+`negatives-tuning` and `negatives-heldout`, which no file answers.
+
+Each of a negative's first five hits is labelled by what brought it. A hit's words
+are the body words of its cited range and the title words of its file (the folders
+below the root, then the stem). For each query word, the hit's words it matches
+through the query's groups (the Python reference's `core._query_groups` for that
+query, so a rule under test is reflected) are labelled:
+
+- **real**: the query word itself, or a word with its fold-groups-v1 key
+  (`analyzer_v3.key`), or a verb form of it (`verb_forms.forms`) judged `same` in
+  `judgments.json` → `verb_form_judgments`;
+- **cross**: a verb form of it judged `cross` there (a form of another word: hop
+  and hope, even and evening);
+- **near**: a word fuzzy-v1 gave it (a spelling neighbour);
+- **stop**: the query word is a stop word (the list below), whatever it matches.
+
+A hit takes the first label of real, cross, near, stop that any of its matches
+has; a hit with no match is labelled `other` (reported; none is expected). A hit
+labelled stop, near or cross is **misleading**: it is there by a stop word alone,
+a spelling neighbour or another word's form. A real-word hit holds a word of the
+question, so it is counted apart, not as misleading.
+
+The measure, per set, surface and variant (content, both):
+
+- the mean top-5 hit count: the mean over the set's queries of the hits returned,
+  at most five;
+- the share of queries whose first hit is misleading;
+- the mean misleading hits and, apart, the mean real-word hits in the first five.
+
+No score threshold is defined: a hit counts whatever its score.
+
+The stop words are Lucene's 33 English stop words and `my` (S5-T8 ruling 1 names
+it among the common words in file names): {stop_words}.
 
 ## Queries
 
@@ -777,6 +1178,13 @@ SLICE_TEXT = {
     "accent-heldout": "accent, width and compatibility forms held out from S5-T4; short words, a merge guard",
     "tamil-heldout": "Tamil inflections held out from S5-T4's suffix list, each rule once, three guards",
     "verbform-heldout": "-ing/-ed/base forms held out from S5-T5's rule; doubled, dropped e, -ied; look-alike guards; held typed words",
+    "verbform-cross": "a word whose verb forms (R) reach another word's form; the answer holds its own form (hop and hope, even and evening, tap and tape); judged both sides",
+    "precision-control": "what a precision rule must keep at rank 1: stop words in a file name, near spellings, verb forms",
+    "negatives-tuning": "S5-T8's negatives for tuning: a stop word in a file name, a near word, a near topic, a cross-word form, Tamil, accent, one word of two held",
+    "negatives-heldout": "the same kinds, held out from S5-T8's candidates until each is declared",
+    "misspelling-short": "S5-T8 Phase 1c, held out: typed words of 6 or 7 code points two Levenshtein edits off (a swapped pair, a dropped and an added letter, two wrong letters)",
+    "negatives-short": "correctly spelt 6 or 7 code point words no file holds, with a near word",
+    "misspelling-opening": "held out, written by S5-T8's verifier: typed words of 6 or 7 code points two edits off in the first or second letter, asked as short questions; the answer is every file holding the meant word",
 }
 
 
@@ -793,7 +1201,9 @@ def render_readme(files: dict[str, bytes], judgments: dict) -> str:
     total = len(judgments["queries"])
     for path, _ in SPECIAL:
         assert path in files, path
-    return README_HEAD.format(total=total, roots=roots, special=special, slices=slices, queries="\n".join(rows))
+    stop_words = ", ".join(f"`{w}`" for w in judgments["stop_words"])
+    return README_HEAD.format(total=total, roots=roots, special=special, slices=slices, queries="\n".join(rows),
+                              stop_words=stop_words)
 
 
 def write_tree(out: Path) -> None:

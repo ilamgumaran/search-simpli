@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-12 (S5-T10, a real agent answers through `searchd mcp` on the J2 snapshot, review R11; evidence only; verified and merged)
+Last updated: 2026-11-13 (S5-T8 re-ruled before its merge: fold-groups-v3 alone, fuzzy-v1 unchanged, reviews R05 and R06; contracts 2.7.0, Dart 0.8.0; verified and merged 2026-11-12 EST)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,39 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## Fewer misleading hits for unanswerable questions: fold-groups-v3 (S5-T8, reviews R05 and R06; re-ruled before its merge; verified and merged)
+
+Verified and merged: the verifier judged the reworked head from its own builds (J2 against `main`: only `x02` and `x05` move; `negatives-heldout` 0.588 → 0.529; natives `cmp`-equal; the rejected prefix rule, planted on the head, fails the gate through `misspelling-opening`). Before the rework the verifier measured what the Phase 2 fuzzy floor (fuzzy-v2, Fp2) gave up: of 16 second-letter typos
+two edits from a 6 or 7 letter word, 13 found their file first under fuzzy-v1 and none under fuzzy-v2. The
+orchestrator's re-ruling ([task](docs/tasks/S5-T8.md), "Re-ruling after the verifier's measurement") withdrew fuzzy-v2;
+fold-groups-v3 ships alone and misspelling tolerance stays [fuzzy-v1](docs/fuzzy-v1.md). Fp2's measurements are kept as
+a rejected candidate in [the prototype record](docs/tasks/S5-T8-prototype.md). Query side only: no index format, writer
+or analyzer change; an index written before answers under the new policy with no rebuild. `find` and the `filename`
+field are unchanged.
+
+**fold-groups-v3** ([docs/fold-groups-v3.md](docs/fold-groups-v3.md)): a word's verb forms are R's eligible forms only.
+A base of the doubling shape (one vowel group, ending consonant, vowel, consonant, the last not `w`/`x`/`y`) loses its
+undoubled `-ed`, `-ing` and (unless it ends `s`, `x`, `z`, `ch`, `sh`) `-es`, which are b + `e`'s; when the word is
+r + `ing` or r + `ed` with r of that shape, the base r is left out (`hoping` is not `hop`'s). The Zig engine
+(`verb_forms.eligibleForms`) and the Python mirror (`verb_forms.eligible_forms`) are held equal by
+`fixtures/verb-forms-golden.json` (2,978 terms listed with forms and eligible forms, 16,214 off, a digest over 49,471
+terms). `fixtures/fuzzy-golden.json` names `fuzzy-v1` (120 of 292 queries expanded) and is what `main`'s reference
+writes over this fixture.
+
+**The contract.** Contracts **2.7.0**: `retrieval.fold_policy_id` is `"fold-groups-v3"`; `retrieval.fuzzy_policy_id`
+stays `"fuzzy-v1"`; no new warning code, field or request option. Dart **0.8.0**. Natives: macOS 953,848 B, Android
+`arm64-v8a` 916,304 B, iOS framework binary 918,576 B; `native/SOURCE-SHA256`
+`8ea110b0c09692c93e66b4f3e78f5f932670770aaf87125fe96d22cb4d28da4b`.
+
+**J2 (290 queries), `searchd` and the reference equal on every cell:** against `main` (`68e77da`) on the same fixture
+only `verbform-cross` moves, 0.667 → 1.000 success@1 under `content` and `both` (`x02` 3 → 1, `x05` 2 → 1); every
+other slice and the overall are unchanged. `misspelling-short` (13 held-out two-edit typos of 6 and 7 letters) stays at
+0.923. `misspelling-opening` (25 rows added by the re-ruling: the verifier's 16 second-letter and 9 first-letter typos,
+two edits from a 6 or 7 letter word with no one-edit route) is the bar for any later fuzzy floor: success@1 0.120,
+MRR@10 0.214 (`content`) and 0.219 (`both`), equal to `main`. `negatives-heldout` misleading-first share 0.588 → 0.529,
+mean top-5 hits 3.176 → 2.941 (`content`) and 3.059 → 2.824 (`both`). The older packs are identical per query. Stop
+words (W, Wb) and a fuzzy floor were measured and not shipped (03-next).
 
 ## A real agent answers through `searchd mcp` (S5-T10, review R11, 2026-11-12; verified and merged 2026-11-12)
 

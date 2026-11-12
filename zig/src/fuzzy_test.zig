@@ -221,6 +221,33 @@ test "scan: the first-letter range, the order (distance, key df, bytes) and N = 
     }
 }
 
+const opening_docs = [_]hybrid.Document{
+    .{ .id = "o1", .text = "roast chicken on tuesday", .path = "r-home/home/lunch.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "o2", .text = "the purple scooter", .path = "r-home/home/jobs.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "o3", .text = "the plumber comes monday", .path = "r-home/home/pipes.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "o4", .text = "crumble with custard", .path = "r-home/home/food.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "o5", .text = "the heating system", .path = "r-home/home/heat.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "o6", .text = "my sisters", .path = "r-home/home/family.md", .start_line = 1, .end_line = 1 },
+};
+
+test "fuzzy-v1 kept (S5-T8 re-ruling): a second-letter typo of a short word reaches the word; a first-letter typo reaches nothing" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    for ([_]bool{ true, false }) |sorted| {
+        const corpus = if (sorted) try sortedCorpus(a, &opening_docs) else try makeCorpus(a, &opening_docs);
+        const ctx = context(&corpus, .{});
+        // J2's misspelling-opening rows: two edits, the second letter wrong.
+        try expectMembers(a, ctx, "cikken", &.{"chicken"});
+        try expectMembers(a, ctx, "skootur", &.{"scooter"});
+        try expectMembers(a, ctx, "pulmer", &.{"plumber"});
+        // The distance-2 word of another two-letter opening stays beside the near one.
+        try expectMembers(a, ctx, "sistems", &.{ "sisters", "system" });
+        // A first-letter typo: no candidate shares its first code point.
+        try expectMembers(a, ctx, "kustad", &.{});
+    }
+}
+
 test "scan: a title-only candidate at key df 1, after a body word at a higher df" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();

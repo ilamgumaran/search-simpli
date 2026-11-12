@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.8.0 (S5-T8; contract 2.7.0; minor: ranking change)
+
+Fewer misleading verb-form hits (`fold-groups-v3`,
+`docs/fold-groups-v3.md`). Code written for 0.7.x compiles and behaves the
+same against 0.8.0, but a query no longer finds the verb forms of another
+word. Misspelling tolerance is unchanged (`fuzzy-v1`).
+
+- **Contracts 2.7.0** (`contracts/CONTRACTS_VERSION`). As before the
+  package accepts exactly its own contract version: a 2.6.0 library is
+  refused at `open` with `ContractsVersionMismatchException`, and the
+  natives move with the package.
+- **Verb forms of another word are left out.** For a short word that
+  doubles its last letter (`hop`, `car`), its `-ed`, `-ing` and `-es`
+  without the doubling are not searched (`hoped`, `hoping`, `hopes` are
+  `hope`'s); and `hoping` or `caring` is not searched as `hop` or `car`.
+- **The report.** `SearchRetrieval.foldPolicyId` is `"fold-groups-v3"`;
+  `SearchRetrieval.fuzzyPolicyId` stays `"fuzzy-v1"`. There is no new
+  warning code and no new field.
+- **No index format change.** Nothing is stored in the index; every index
+  a 0.7.x library wrote opens and answers under the new policy with no
+  rebuild. No C ABI signature changed.
+
 ## 0.7.0 (S5-T5; contract 2.6.0; minor: ranking change)
 
 Verb forms in the word-form groups (`fold-groups-v2`,
