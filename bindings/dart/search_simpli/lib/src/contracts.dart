@@ -230,21 +230,25 @@ class SearchRetrieval {
   /// and under `filename`.
   final String? titlePolicyId;
 
-  /// `retrieval.fuzzy_policy_id` (contract 2.4.0, `"fuzzy-v1"`): present
-  /// whenever the lexical channel ran under `content` or `both` on an
-  /// `analyzer-v2` index, so a query word no file holds was also searched as
-  /// its nearest spellings (`docs/fuzzy-v1.md`). Null on a 2.3.0 result, in
-  /// `vector` mode and under `filename`.
+  /// `retrieval.fuzzy_policy_id` (contract 2.4.0; `"fuzzy-v2"` since
+  /// 2.7.0): present whenever the lexical channel ran under `content` or
+  /// `both` on an `analyzer-v2` index, so a query word no file holds was also
+  /// searched as its nearest spellings (`docs/fuzzy-v1.md`); since 2.7.0, a
+  /// spelling two edits away is dropped when the word has fewer than 8 code
+  /// points and the two do not share their first two letters
+  /// (`docs/fuzzy-v2.md`). Null on a 2.3.0 result, in `vector` mode and
+  /// under `filename`.
   final String? fuzzyPolicyId;
 
   /// `retrieval.fold_policy_id` (contract 2.5.0; `"fold-groups-v2"` since
-  /// 2.6.0): present whenever the lexical channel ran under `content` or
+  /// 2.6.0, `"fold-groups-v3"` since 2.7.0): present whenever the lexical channel ran under `content` or
   /// `both` on an `analyzer-v2` index, so a query word was also searched as
   /// the words that share its fold key: accents, case and compatibility
   /// forms, an English plural, seven Tamil suffixes (`docs/fold-groups-v1.md`);
   /// and, since 2.6.0, as its `-ing` and `-ed` verb forms the files hold
-  /// (`docs/fold-groups-v2.md`). Null on a 2.4.0 result, in `vector` mode and
-  /// under `filename`.
+  /// (`docs/fold-groups-v2.md`), since 2.7.0 not those of another word
+  /// (`hoping` is not `hop`'s; `docs/fold-groups-v3.md`). Null on a 2.4.0
+  /// result, in `vector` mode and under `filename`.
   final String? foldPolicyId;
 
   const SearchRetrieval({

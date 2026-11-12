@@ -217,12 +217,13 @@ class SearchSimpliBindings {
   /// query_term_grouped         (2.5.0) the word was also
   /// searched as "members", the words that share its
   /// fold key (fold-groups-v1) or, since 2.6.0, its -ing
-  /// and -ed verb forms (fold-groups-v2), in the group's
-  /// order, the
+  /// and -ed verb forms (fold-groups-v2; since 2.7.0 not
+  /// those of another word, fold-groups-v3), in the
+  /// group's order, the
   /// word itself left out, each held by a chunk or a file
   /// name in scope (never only by hidden ones). "term" is
   /// the typed word, as above. A word with a group is not
-  /// expanded by fuzzy-v1.
+  /// expanded by fuzzy-v1 (fuzzy-v2 since 2.7.0).
   /// query_empty_after_analysis the query has no searchable
   /// terms (empty, punctuation, unknown script for the
   /// analyzer). Lexical and hybrid modes only.
