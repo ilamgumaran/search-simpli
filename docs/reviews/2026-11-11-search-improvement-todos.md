@@ -106,6 +106,15 @@ Do not overwrite the baseline or enlarge the allow-list to conceal a regression.
 
 ## R03 — Fix content-mode reference scoring under a path prefix
 
+**Landed (S5-T7, [task](../tasks/S5-T7.md), commit `127b84a` on `task/S5-T7`; verified and
+merged to `main` 12 Nov 2026 at `da7ddf2`):**
+the reference's `content` body scoring takes its statistics from the visible
+chunks and narrows only the candidates by the prefix; grouped terms' df included.
+`tests/test_prefix_statistics.py` holds the plain and grouped fixtures (inside the
+prefix, outside it but visible, a hidden label) and compares raw scores and ranks
+with `searchd`; `filename`/`both` are unchanged guards. The engine did not change.
+The section below is the review as written.
+
 **Evidence:** in [core.search](../../src/search_platform/core.py), around lines
 1628–1641, Python narrows chunks by prefix before `_bm25_scores`. Zig
 [Engine.queryTraced](../../zig/src/engine.zig), around lines 257–273, deliberately

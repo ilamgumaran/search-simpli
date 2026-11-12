@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-10 (S5-T5, verb forms at query time, `fold-groups-v2`, contracts 2.6.0; verified and merged)
+Last updated: 2026-11-12 (S5-T7, the reference scores `content` under a path prefix as the engine does, review R03; Python reference and tests only; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -35,6 +35,20 @@ no contract or binding change, no app pin; `fixtures/j2/baseline.json` and `fixt
 - **Annotations.** Each new step reports what failed as workflow annotations (at most 30 a step; GitHub keeps 10 of
   each level a step, so the tenth of a level says how many more the log holds), which the unauthenticated check-runs
   API returns; job logs need a sign-in.
+
+## The reference scores `content` under a path prefix as the engine does (S5-T7, review R03, 2026-11-12; verified and merged 2026-11-12)
+
+**Verified and merged 2026-11-12** ([Verdict](docs/tasks/S5-T7.md)); the verifier's own `searchd` ReleaseSmall build
+and runs reproduced every number below. Built on `task/S5-T7` ([task and Report](docs/tasks/S5-T7.md)); Python reference and tests only, so no native,
+contract, Dart or app pin change. `core.search`'s `content` body BM25 (`_bm25_scores(..., statistics=visible)`) now
+takes N, the average length and every document frequency over the chunks the caller may see (roots and labels),
+and the path prefix narrows only the candidates, as `Engine.queryTraced` has since S3-T3. A grouped term (fuzzy-v1,
+fold-groups-v2) scores at the largest visible df among the members some candidate holds (`Group.bodyFrequency`).
+Before, the reference took all three statistics over the chunks under the prefix: on the new fixture its raw scores
+were 0.12–1.29 away from `searchd`'s and one rank order differed; now the largest difference is 1.07e-07 (tolerance
+1e-4 · max(1, |reference|)). `filename` and `both` keep their prefix-scoped body and file-name statistics, unchanged.
+No prefix, no change: J2's every run (per-hit scores included) is identical before and after on the reference, and
+the gate passes on both surfaces. `FolderIndex.search` (review R04) passes no prefix and is untouched.
 
 ## Verb forms: a query word is also searched as its `-ing` and `-ed` forms that the files hold (S5-T5, 2026-11-09; verified and merged 2026-11-10)
 
