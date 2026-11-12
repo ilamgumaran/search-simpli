@@ -40,6 +40,7 @@ SLICE_MINIMUMS = {
     "verbform-heldout": 14,
     "verbform-cross": 6,
     "precision-control": 8,
+    "misspelling-short": 12,
 }
 # S5-T8 ruling 1: the two named sets of negatives, at least this many each (and at
 # least 30 together).
@@ -1110,6 +1111,61 @@ for _set, _rows in (
 ):
     for _id, _question, _query, _kind, _of, _rows_, _facts in _rows:
         q(_set, _id, _question, _query, K, _rows_, of=_of, kind=_kind, **_facts)
+
+# ------------------------------------- S5-T8 Phase 1c: misspelling-short --
+# Ruling 3 of the Phase 1 rulings: typed words of 6 and 7 code points two edits from
+# the meant word when a swap of two neighbours counts two (Levenshtein), at least
+# five of them one swapped adjacent pair, the rest a dropped and an added letter or
+# two wrong letters; and negatives where a correctly spelt 6 or 7 code point word no
+# file holds has a near word. Written and judged, and recorded with the engine of
+# the day, before F, F7, Ft and the builder's variant are declared and before any of
+# them runs these queries. Existing files only. typo = (as typed, the word meant,
+# is it one adjacent transposition); kind is generate.SHORT_KINDS's.
+
+for _id, _question, _query, _typo, _kind, _rows_ in (
+    ("ms01", "What is on at the leisure centre?", "center", ("center", "centre", True), "swap",
+     [("home/calendar-november.md", "=leisure centre", 2, "Ada's party at the leisure centre")]),
+    ("ms02", "What is in the autumn budget?", "bugdet", ("bugdet", "budget", True), "swap",
+     [("laptop/budget-autumn.md", "*", 2, "the budget file"),
+      ("home/family-log.md", "§Leak in porch", 0, "bucket, a spelling neighbour")]),
+    ("ms03", "Are apples on the shopping list?", "appels", ("appels", "apples", True), "swap",
+     [("home/shopping-list.md", "=- apples", 2, "apples on the list"),
+      ("home/garden-diary.md", "§January", 0, "windfall apples, not shopping")]),
+    ("ms04", "What goes on the volcano poster?", "diagarm", ("diagarm", "diagram", True), "swap",
+     [("school/volcano-project.md", "§Poster checklist", 2, "a labelled diagram")]),
+    ("ms05", "Where do unnamed lost coats go?", "chairty", ("chairty", "charity", True), "swap",
+     [("school/newsletter-autumn.md", "§Lost property", 2, "to the charity shop")]),
+    ("ms06", "What happens to the cat flap on bonfire evening?", "bonfrie", ("bonfrie", "bonfire", True), "swap",
+     [("home/family-log.md", "§Cat flap", 2, "lock the flap on bonfire evening")]),
+    ("ms07", "What caught the rain in the porch?", "bukett", ("bukett", "bucket", False), "drop and add",
+     [("home/family-log.md", "§Leak in porch", 2, "one blue bucket"),
+      ("home/holiday/seaside-packing.md", "=buckets and spades", 0, "buckets to pack, not the leak")]),
+    ("ms08", "Which French phrase means already seen?", "allredy", ("allredy", "already", False), "drop and add",
+     [("school/noticeboard.md", "§Tasting", 2, "French, meaning already seen")]),
+    ("ms09", "Where do families watch the swim gala?", "galerry", ("galerry", "gallery", False), "two wrong letters",
+     [("school/noticeboard.md", "§Swim gala results", 2, "the viewing gallery")]),
+    ("ms10", "When did we see the doctor?", "dokter", ("dokter", "doctor", False), "two wrong letters",
+     [("home/health/doctor-visits.md", "*", 2, "the doctor visits")]),
+    ("ms11", "What does Wren need for the Brownies outing?", "jakkit", ("jakkit", "jacket", False), "two wrong letters",
+     [("home/family-log.md", "§Brownies outing", 2, "a waterproof jacket")]),
+    ("ms12", "Which day is chicken for lunch?", "chikkin", ("chikkin", "chicken", False), "two wrong letters",
+     [("school/lunch-menu.md", "§Tuesday", 2, "roast chicken on Tuesday")]),
+    ("ms13", "How long is recorder practice?", "fivtean", ("fivtean", "fifteen", False), "two wrong letters",
+     [("home/music/recorder-practice.md", "§Every day", 2, "fifteen minutes")]),
+):
+    q("misspelling-short", _id, _question, _query, K, _rows_, typo=_typo, kind=_kind)
+
+for _id, _question, _query, _rows_ in (
+    ("msn1", "Do we have a parrot?", "parrot",
+     [("school/maths-homework.md", "=a part of a whole", 0, "part, a spelling neighbour")]),
+    ("msn2", "Did we see a walrus?", "walrus",
+     [("home/weekend-plans.md", "§Walks", 0, "walks, a spelling neighbour")]),
+    ("msn3", "Is there a tractor ride?", "tractor",
+     [("laptop/log/homework-tracker.txt", "=Homework tracker", 0, "tracker, a spelling neighbour")]),
+    ("msn4", "Did anyone see a beaver?", "beaver",
+     [("school/noticeboard.md", "=squash in beakers", 0, "beakers, a spelling neighbour")]),
+):
+    q("negatives-short", _id, _question, _query, K, _rows_, of="misspelling-short", kind="near-word")
 
 # Verb forms of the negatives' words that the files hold (R's forms, `verb_forms.forms`,
 # by exact bytes): "same" when the form is of the question's own word, "cross" when

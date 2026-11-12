@@ -21,7 +21,8 @@ BOM = b"\xef\xbb\xbf"
 SLICE_MINIMUMS = {"control": 20, "misspelling": 15, "morphology": 12, "accent": 6, "tamil": 10,
                   "title": 10, "phrase": 8, "title-heldout": 6, "misspelling-heldout": 10,
                   "morphology-heldout": 12, "accent-heldout": 10, "tamil-heldout": 10,
-                  "verbform-heldout": 14, "verbform-cross": 6, "precision-control": 8}
+                  "verbform-heldout": 14, "verbform-cross": 6, "precision-control": 8,
+                  "misspelling-short": 12}
 # S5-T8 ruling 1: two negative sets of at least 15, at least 30 in all.
 NEGATIVE_SET_MINIMUMS = {"negatives-tuning": 15, "negatives-heldout": 15}
 NEGATIVE_KINDS = {"stop-name", "near-word", "near-topic", "cross-form", "tamil", "accent", "half-held"}
@@ -254,6 +255,29 @@ class InventoryTests(unittest.TestCase):
         verdicts = {v for forms in self.judgments["verb_form_judgments"].values() for v in forms.values()}
         self.assertEqual(verdicts, {"same", "cross"})
 
+    def test_s5t8_short_typo_slice(self):
+        """S5-T8 Phase 1c (ruling 3 of the Phase 1 rulings): at least 12 typed words of 6
+        and 7 code points, Levenshtein 2 from the meant word, at least 5 a swapped
+        adjacent pair, the rest a dropped and an added letter or two wrong letters; at
+        least 3 negatives of a correctly spelt 6 or 7 code point word with a near word."""
+        queries = self.judgments["queries"]
+        short = [q for q in queries if q["slice"] == "misspelling-short"]
+        self.assertGreaterEqual(len(short), 12)
+        facts = [next(c for c in q["checks"] if "levenshtein" in c) for q in short]
+        self.assertTrue(all(c["levenshtein"] == 2 for c in facts))
+        self.assertEqual({c["typed_code_points"] for c in facts}, {6, 7})
+        self.assertGreaterEqual(sum(1 for q in short if q["kind"] == "swap" and q["transposition"]), 5)
+        self.assertLessEqual({q["kind"] for q in short}, {"swap", "drop and add", "two wrong letters"})
+        self.assertTrue(all(q["kind"] != "swap" or c["distance"] == 1 for q, c in zip(short, facts)))
+        negatives = [q for q in queries if q["slice"] == "negatives-short"]
+        self.assertGreaterEqual(len(negatives), 3)
+        for q in negatives:
+            self.assertEqual((q["kind"], q["negative_of"]), ("near-word", "misspelling-short"), q["id"])
+            self.assertIn(len(q["query"]), (6, 7), q["id"])
+            self.assertTrue(next(c for c in q["checks"] if "near" in c)["near"], q["id"])
+        for q in short + negatives:
+            self.assertTrue(any(c["check"].startswith("new words") for c in q["checks"]), q["id"])
+
     def test_rows(self):
         lines = {f"{f['root_id']}/{f['path']}": f["lines"] for f in self.judgments["files"]}
         modes = {"knowledge", "find:words", "find:phrase", "find:prefix"}
@@ -380,6 +404,11 @@ class CheckTests(unittest.TestCase):
 
     def test_s5t8_near_negative_needs_a_neighbour(self):
         self.broken("nt05", query="hiking")
+
+    def test_s5t8_short_typo_must_be_two_levenshtein_edits_of_6_or_7(self):
+        self.broken_because("ms01", "Levenshtein", query="centra", typo=("centra", "centre", False))
+        self.broken_because("ms10", "6 or 7 code points", query="dokterrs", typo=("dokterrs", "doctor", False))
+        self.broken_because("ms09", "declared drop and add", kind="drop and add")
 
     def test_s5t8_every_reachable_verb_form_is_judged(self):
         judgments = self.generator.queries.VERB_FORM_JUDGMENTS

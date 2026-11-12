@@ -5,7 +5,7 @@ Year 5, Wren in Year 2, Paati their grandmother, Biscuit the dog), Thistlecombe
 Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone numbers
 are from the ranges set aside for drama.
 
-J2 says where keyword search loses. It holds 248 queries in seven slices,
+J2 says where keyword search loses. It holds 265 queries in seven slices,
 a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3), held-out
 morphology, accent and Tamil slices (S5-T4), a held-out verb-form slice (S5-T5),
 a cross-word verb-form slice and a precision-control slice (S5-T8) and named
@@ -72,6 +72,8 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 | precision-control | 10 | 8 | what a precision rule must keep at rank 1: stop words in a file name, near spellings, verb forms |
 | negatives-tuning | 17 | 15 | S5-T8's negatives for tuning: a stop word in a file name, a near word, a near topic, a cross-word form, Tamil, accent, one word of two held |
 | negatives-heldout | 17 | 15 | the same kinds, held out from S5-T8's candidates until each is declared |
+| misspelling-short | 13 | 12 | S5-T8 Phase 1c, held out: typed words of 6 or 7 code points two Levenshtein edits off (a swapped pair, a dropped and an added letter, two wrong letters) |
+| negatives-short | 4 | 3 | correctly spelt 6 or 7 code point words no file holds, with a near word |
 
 ## What counts as misleading (S5-T8)
 
@@ -365,3 +367,20 @@ Grade-2 rows only; `judgments.json` holds every row with its note.
 | nh15 | negatives-heldout | knowledge | `fiancé` | none |
 | nh16 | negatives-heldout | knowledge | `ladder rungs` | none |
 | nh17 | negatives-heldout | knowledge | `kite competition` | none |
+| ms01 | misspelling-short | knowledge | `center` | `home/calendar-november.md` 3-3 |
+| ms02 | misspelling-short | knowledge | `bugdet` | `laptop/budget-autumn.md` 1-14 |
+| ms03 | misspelling-short | knowledge | `appels` | `home/shopping-list.md` 7-7 |
+| ms04 | misspelling-short | knowledge | `diagarm` | `school/volcano-project.md` 17-21 |
+| ms05 | misspelling-short | knowledge | `chairty` | `school/newsletter-autumn.md` 44-47 |
+| ms06 | misspelling-short | knowledge | `bonfrie` | `home/family-log.md` 25-29 |
+| ms07 | misspelling-short | knowledge | `bukett` | `home/family-log.md` 1-5 |
+| ms08 | misspelling-short | knowledge | `allredy` | `school/noticeboard.md` 16-21 |
+| ms09 | misspelling-short | knowledge | `galerry` | `school/noticeboard.md` 46-51 |
+| ms10 | misspelling-short | knowledge | `dokter` | `home/health/doctor-visits.md` 1-9 |
+| ms11 | misspelling-short | knowledge | `jakkit` | `home/family-log.md` 19-23 |
+| ms12 | misspelling-short | knowledge | `chikkin` | `school/lunch-menu.md` 9-11 |
+| ms13 | misspelling-short | knowledge | `fivtean` | `home/music/recorder-practice.md` 3-6 |
+| msn1 | negatives-short | knowledge | `parrot` | none |
+| msn2 | negatives-short | knowledge | `walrus` | none |
+| msn3 | negatives-short | knowledge | `tractor` | none |
+| msn4 | negatives-short | knowledge | `beaver` | none |

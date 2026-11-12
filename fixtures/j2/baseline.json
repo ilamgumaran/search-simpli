@@ -1,25 +1,25 @@
 {
   "schema": "j2-baseline-v1",
-  "judgments_sha256": "97885a2cfe66cd513ac8093d44f80c5c1e9aad7fb6d6784802dc80902f339bb2",
+  "judgments_sha256": "36d77724f3bd20c163a5157342716731a4800ecaf16f531f0e6d54853e631b2c",
   "engine_commit": "004ba854a4124c355f14cd90c67f9f62de40c4db",
-  "run_commit": "004ba854a4124c355f14cd90c67f9f62de40c4db",
+  "run_commit": "78eeb34eb57fe178eb3c8c4f4480f4124b66319d",
   "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
   "recorded": "2026-11-12",
   "load": {
     "before": [
-      1.42,
-      2.01,
-      2.32
+      0.72,
+      1.14,
+      1.51
     ],
     "after": [
-      1.42,
-      2.01,
-      2.32
+      0.72,
+      1.14,
+      1.51
     ],
     "top_sample": [
-      "Processes: 962 total, 2 running, 960 sleeping, 4007 threads",
-      "Load Avg: 1.42, 2.01, 2.32",
-      "CPU usage: 3.9% user, 1.19% sys, 95.71% idle"
+      "Processes: 964 total, 2 running, 962 sleeping, 3981 threads",
+      "Load Avg: 0.72, 1.14, 1.51",
+      "CPU usage: 2.3% user, 0.99% sys, 96.97% idle"
     ]
   },
   "top_k": 10,
@@ -29,7 +29,7 @@
         "sha256": "d0e32d3802b8e6fef0807030f13f1f1192112168c6cab5faf52791599b579eae",
         "size": 1078952,
         "optimize": "ReleaseSmall",
-        "zig": null
+        "zig": "0.16.0"
       },
       "runs": {
         "content": {
@@ -137,6 +137,13 @@
               "success_at_1": 1.0,
               "mrr_at_10": 1.0,
               "ndcg_at_10": 1.0,
+              "recall_at_5": 1.0
+            },
+            "misspelling-short": {
+              "n": 13,
+              "success_at_1": 0.923077,
+              "mrr_at_10": 0.961538,
+              "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
             }
           },
@@ -335,7 +342,20 @@
             "pc07": 1,
             "pc08": 1,
             "pc09": 1,
-            "pc10": 1
+            "pc10": 1,
+            "ms01": 1,
+            "ms02": 1,
+            "ms03": 1,
+            "ms04": 1,
+            "ms05": 1,
+            "ms06": 1,
+            "ms07": 2,
+            "ms08": 1,
+            "ms09": 1,
+            "ms10": 1,
+            "ms11": 1,
+            "ms12": 1,
+            "ms13": 1
           },
           "slice_of": {
             "c01": "control",
@@ -585,7 +605,24 @@
             "nh14": "negatives-heldout",
             "nh15": "negatives-heldout",
             "nh16": "negatives-heldout",
-            "nh17": "negatives-heldout"
+            "nh17": "negatives-heldout",
+            "ms01": "misspelling-short",
+            "ms02": "misspelling-short",
+            "ms03": "misspelling-short",
+            "ms04": "misspelling-short",
+            "ms05": "misspelling-short",
+            "ms06": "misspelling-short",
+            "ms07": "misspelling-short",
+            "ms08": "misspelling-short",
+            "ms09": "misspelling-short",
+            "ms10": "misspelling-short",
+            "ms11": "misspelling-short",
+            "ms12": "misspelling-short",
+            "ms13": "misspelling-short",
+            "msn1": "negatives-short",
+            "msn2": "negatives-short",
+            "msn3": "negatives-short",
+            "msn4": "negatives-short"
           },
           "negatives": {
             "cn1": {
@@ -1232,6 +1269,50 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "msn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "school",
+                "path": "science-homework.md",
+                "start_line": 6,
+                "end_line": 10
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "msn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend-plans.md",
+                "start_line": 13,
+                "end_line": 15
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn3": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "log/homework-tracker.txt",
+                "start_line": 1,
+                "end_line": 42
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn4": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "noticeboard.md",
+                "start_line": 37,
+                "end_line": 45
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         },
@@ -1340,6 +1421,13 @@
               "success_at_1": 1.0,
               "mrr_at_10": 1.0,
               "ndcg_at_10": 1.0,
+              "recall_at_5": 1.0
+            },
+            "misspelling-short": {
+              "n": 13,
+              "success_at_1": 0.923077,
+              "mrr_at_10": 0.961538,
+              "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
             }
           },
@@ -1538,7 +1626,20 @@
             "pc07": 1,
             "pc08": 1,
             "pc09": 1,
-            "pc10": 1
+            "pc10": 1,
+            "ms01": 1,
+            "ms02": 1,
+            "ms03": 1,
+            "ms04": 1,
+            "ms05": 1,
+            "ms06": 1,
+            "ms07": 2,
+            "ms08": 1,
+            "ms09": 1,
+            "ms10": 1,
+            "ms11": 1,
+            "ms12": 1,
+            "ms13": 1
           },
           "slice_of": {
             "c01": "control",
@@ -1788,7 +1889,24 @@
             "nh14": "negatives-heldout",
             "nh15": "negatives-heldout",
             "nh16": "negatives-heldout",
-            "nh17": "negatives-heldout"
+            "nh17": "negatives-heldout",
+            "ms01": "misspelling-short",
+            "ms02": "misspelling-short",
+            "ms03": "misspelling-short",
+            "ms04": "misspelling-short",
+            "ms05": "misspelling-short",
+            "ms06": "misspelling-short",
+            "ms07": "misspelling-short",
+            "ms08": "misspelling-short",
+            "ms09": "misspelling-short",
+            "ms10": "misspelling-short",
+            "ms11": "misspelling-short",
+            "ms12": "misspelling-short",
+            "ms13": "misspelling-short",
+            "msn1": "negatives-short",
+            "msn2": "negatives-short",
+            "msn3": "negatives-short",
+            "msn4": "negatives-short"
           },
           "negatives": {
             "cn1": {
@@ -2432,6 +2550,50 @@
                 "path": "holiday/seaside-packing.md",
                 "start_line": 1,
                 "end_line": 9
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "school",
+                "path": "science-homework.md",
+                "start_line": 6,
+                "end_line": 10
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "msn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend-plans.md",
+                "start_line": 13,
+                "end_line": 15
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn3": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "log/homework-tracker.txt",
+                "start_line": 1,
+                "end_line": 42
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn4": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "noticeboard.md",
+                "start_line": 37,
+                "end_line": 45
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
@@ -2550,6 +2712,13 @@
               "mrr_at_10": 1.0,
               "ndcg_at_10": 1.0,
               "recall_at_5": 1.0
+            },
+            "misspelling-short": {
+              "n": 13,
+              "success_at_1": 0.923077,
+              "mrr_at_10": 0.961538,
+              "ndcg_at_10": 0.97161,
+              "recall_at_5": 1.0
             }
           },
           "overall": {
@@ -2747,7 +2916,20 @@
             "pc07": 1,
             "pc08": 1,
             "pc09": 1,
-            "pc10": 1
+            "pc10": 1,
+            "ms01": 1,
+            "ms02": 1,
+            "ms03": 1,
+            "ms04": 1,
+            "ms05": 1,
+            "ms06": 1,
+            "ms07": 2,
+            "ms08": 1,
+            "ms09": 1,
+            "ms10": 1,
+            "ms11": 1,
+            "ms12": 1,
+            "ms13": 1
           },
           "slice_of": {
             "c01": "control",
@@ -2997,7 +3179,24 @@
             "nh14": "negatives-heldout",
             "nh15": "negatives-heldout",
             "nh16": "negatives-heldout",
-            "nh17": "negatives-heldout"
+            "nh17": "negatives-heldout",
+            "ms01": "misspelling-short",
+            "ms02": "misspelling-short",
+            "ms03": "misspelling-short",
+            "ms04": "misspelling-short",
+            "ms05": "misspelling-short",
+            "ms06": "misspelling-short",
+            "ms07": "misspelling-short",
+            "ms08": "misspelling-short",
+            "ms09": "misspelling-short",
+            "ms10": "misspelling-short",
+            "ms11": "misspelling-short",
+            "ms12": "misspelling-short",
+            "ms13": "misspelling-short",
+            "msn1": "negatives-short",
+            "msn2": "negatives-short",
+            "msn3": "negatives-short",
+            "msn4": "negatives-short"
           },
           "negatives": {
             "cn1": {
@@ -3644,6 +3843,50 @@
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
+            },
+            "msn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "school",
+                "path": "science-homework.md",
+                "start_line": 6,
+                "end_line": 10
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "msn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend-plans.md",
+                "start_line": 13,
+                "end_line": 15
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn3": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "log/homework-tracker.txt",
+                "start_line": 1,
+                "end_line": 42
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn4": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "noticeboard.md",
+                "start_line": 37,
+                "end_line": 45
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             }
           }
         },
@@ -3752,6 +3995,13 @@
               "success_at_1": 1.0,
               "mrr_at_10": 1.0,
               "ndcg_at_10": 1.0,
+              "recall_at_5": 1.0
+            },
+            "misspelling-short": {
+              "n": 13,
+              "success_at_1": 0.923077,
+              "mrr_at_10": 0.961538,
+              "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
             }
           },
@@ -3950,7 +4200,20 @@
             "pc07": 1,
             "pc08": 1,
             "pc09": 1,
-            "pc10": 1
+            "pc10": 1,
+            "ms01": 1,
+            "ms02": 1,
+            "ms03": 1,
+            "ms04": 1,
+            "ms05": 1,
+            "ms06": 1,
+            "ms07": 2,
+            "ms08": 1,
+            "ms09": 1,
+            "ms10": 1,
+            "ms11": 1,
+            "ms12": 1,
+            "ms13": 1
           },
           "slice_of": {
             "c01": "control",
@@ -4200,7 +4463,24 @@
             "nh14": "negatives-heldout",
             "nh15": "negatives-heldout",
             "nh16": "negatives-heldout",
-            "nh17": "negatives-heldout"
+            "nh17": "negatives-heldout",
+            "ms01": "misspelling-short",
+            "ms02": "misspelling-short",
+            "ms03": "misspelling-short",
+            "ms04": "misspelling-short",
+            "ms05": "misspelling-short",
+            "ms06": "misspelling-short",
+            "ms07": "misspelling-short",
+            "ms08": "misspelling-short",
+            "ms09": "misspelling-short",
+            "ms10": "misspelling-short",
+            "ms11": "misspelling-short",
+            "ms12": "misspelling-short",
+            "ms13": "misspelling-short",
+            "msn1": "negatives-short",
+            "msn2": "negatives-short",
+            "msn3": "negatives-short",
+            "msn4": "negatives-short"
           },
           "negatives": {
             "cn1": {
@@ -4844,6 +5124,50 @@
                 "path": "holiday/seaside-packing.md",
                 "start_line": 1,
                 "end_line": 9
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn1": {
+              "returned": 2,
+              "top_hit": {
+                "root_id": "school",
+                "path": "science-homework.md",
+                "start_line": 6,
+                "end_line": 10
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
+            },
+            "msn2": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "weekend-plans.md",
+                "start_line": 13,
+                "end_line": 15
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn3": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "laptop",
+                "path": "log/homework-tracker.txt",
+                "start_line": 1,
+                "end_line": 42
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
+            },
+            "msn4": {
+              "returned": 1,
+              "top_hit": {
+                "root_id": "school",
+                "path": "noticeboard.md",
+                "start_line": 37,
+                "end_line": 45
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": true
@@ -5333,6 +5657,129 @@
           }
         }
       }
+    },
+    {
+      "task": "S5-T8 Phase 1c",
+      "slices": [
+        "misspelling-short",
+        "negatives-short"
+      ],
+      "queries": [
+        "ms01",
+        "ms02",
+        "ms03",
+        "ms04",
+        "ms05",
+        "ms06",
+        "ms07",
+        "ms08",
+        "ms09",
+        "ms10",
+        "ms11",
+        "ms12",
+        "ms13",
+        "msn1",
+        "msn2",
+        "msn3",
+        "msn4"
+      ],
+      "why": "S5-T8 ruling 3 of the Phase 1 rulings (Phase 1c): a held-out slice of short typos (6 and 7 code points, two Levenshtein edits, at least five a swapped adjacent pair) and negatives of correctly spelt 6 or 7 code point words with near words, judged and recorded with today's engine before F, F7, Ft and the builder's variant are declared and before any of them runs these queries",
+      "judgments_sha256_before": "97885a2cfe66cd513ac8093d44f80c5c1e9aad7fb6d6784802dc80902f339bb2",
+      "recorded": "2026-11-12",
+      "engine_commit": "004ba854a4124c355f14cd90c67f9f62de40c4db",
+      "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
+      "searchd_binary": {
+        "sha256": "d0e32d3802b8e6fef0807030f13f1f1192112168c6cab5faf52791599b579eae",
+        "size": 1078952,
+        "optimize": "ReleaseSmall",
+        "zig": "0.16.0"
+      },
+      "python_version": "3.9.6",
+      "hashseed": "0",
+      "load": {
+        "before": [
+          0.72,
+          1.14,
+          1.51
+        ],
+        "after": [
+          0.72,
+          1.14,
+          1.51
+        ],
+        "top_sample": [
+          "Processes: 964 total, 2 running, 962 sleeping, 3981 threads",
+          "Load Avg: 0.72, 1.14, 1.51",
+          "CPU usage: 2.3% user, 0.99% sys, 96.97% idle"
+        ]
+      },
+      "earlier_cells_unchanged": true,
+      "misleading": {
+        "searchd": {
+          "content": {
+            "negatives-short": {
+              "first_hit_labels": {
+                "near": 4
+              },
+              "mean_misleading_top5": 1.25,
+              "mean_real_top5": 0.0,
+              "mean_top5": 1.25,
+              "misleading_first_share": 1.0,
+              "n": 4,
+              "top5_labels": {
+                "near": 5
+              }
+            }
+          },
+          "both": {
+            "negatives-short": {
+              "first_hit_labels": {
+                "near": 4
+              },
+              "mean_misleading_top5": 1.25,
+              "mean_real_top5": 0.0,
+              "mean_top5": 1.25,
+              "misleading_first_share": 1.0,
+              "n": 4,
+              "top5_labels": {
+                "near": 5
+              }
+            }
+          }
+        },
+        "python-reference": {
+          "content": {
+            "negatives-short": {
+              "first_hit_labels": {
+                "near": 4
+              },
+              "mean_misleading_top5": 1.25,
+              "mean_real_top5": 0.0,
+              "mean_top5": 1.25,
+              "misleading_first_share": 1.0,
+              "n": 4,
+              "top5_labels": {
+                "near": 5
+              }
+            }
+          },
+          "both": {
+            "negatives-short": {
+              "first_hit_labels": {
+                "near": 4
+              },
+              "mean_misleading_top5": 1.25,
+              "mean_real_top5": 0.0,
+              "mean_top5": 1.25,
+              "misleading_first_share": 1.0,
+              "n": 4,
+              "top5_labels": {
+                "near": 5
+              }
+            }
+          }
+        }
+      }
     }
   ],
   "replaces": [
@@ -5415,6 +5862,14 @@
       "judgments_sha256": "5142497646e4bbb309e61ff67f20d57d67418e49c7ded6438e4df802e09fb0bc",
       "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
       "why": "S5-T8 ruling 1 (Phase 1a, the measure): the graded slices verbform-cross (x01-x06, review R05's hop/hope, evening/even and tap/tape rows judged on both sides) and precision-control (pc01-pc10), and the negative sets negatives-tuning (nt01-nt17) and negatives-heldout (nh01-nh17), added with eleven new invented files and judged and recorded with today's engine before any S5-T8 rule exists; engine unchanged (searchd ReleaseSmall); every earlier cell (536 per surface) unchanged on both surfaces"
+    },
+    {
+      "engine_commit": "004ba854a4124c355f14cd90c67f9f62de40c4db",
+      "run_commit": "004ba854a4124c355f14cd90c67f9f62de40c4db",
+      "recorded": "2026-11-12",
+      "judgments_sha256": "97885a2cfe66cd513ac8093d44f80c5c1e9aad7fb6d6784802dc80902f339bb2",
+      "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
+      "why": "S5-T8 Phase 1c (ruling 3 of the Phase 1 rulings): the held-out slice misspelling-short (ms01-ms13, typed words of 6 and 7 code points two Levenshtein edits from the meant word, six of them one swapped adjacent pair) and negatives-short (msn1-msn4), judged and recorded with today's engine before F, F7, Ft and the builder's variant are declared; engine unchanged (searchd ReleaseSmall); every earlier cell unchanged on both surfaces"
     }
   ]
 }

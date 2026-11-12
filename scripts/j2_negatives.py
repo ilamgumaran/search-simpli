@@ -41,7 +41,7 @@ from relevance_smoke import J2_TOP_K, J2_VARIANTS, PACKS, j2_judgments_sha256  #
 from src.search_platform import analyzer_v3, verb_forms  # noqa: E402
 
 PACK = PACKS["j2"]
-NEGATIVE_SETS = ("negatives", "negatives-tuning", "negatives-heldout")
+NEGATIVE_SETS = ("negatives", "negatives-tuning", "negatives-heldout", "negatives-short")
 TOP = 5
 LABELS = ("real", "cross", "near", "stop", "other")
 MISLEADING = ("cross", "near", "stop")

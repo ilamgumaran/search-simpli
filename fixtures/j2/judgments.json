@@ -33,7 +33,9 @@
     "verbform-cross": 6,
     "precision-control": 8,
     "negatives-tuning": 15,
-    "negatives-heldout": 15
+    "negatives-heldout": 15,
+    "misspelling-short": 12,
+    "negatives-short": 3
   },
   "counts": {
     "control": 23,
@@ -53,7 +55,9 @@
     "verbform-cross": 6,
     "precision-control": 10,
     "negatives-tuning": 17,
-    "negatives-heldout": 17
+    "negatives-heldout": 17,
+    "misspelling-short": 13,
+    "negatives-short": 4
   },
   "files": [
     {
@@ -11047,6 +11051,706 @@
           "check": "negative (half-held): two words, one held",
           "held": [
             "kite"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms01",
+      "question": "What is on at the leisure centre?",
+      "query": "center",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 3,
+          "end_line": 3,
+          "grade": 2,
+          "note": "Ada's party at the leisure centre"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "center",
+          "meant": "centre",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms02",
+      "question": "What is in the autumn budget?",
+      "query": "bugdet",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "budget-autumn.md",
+          "start_line": 1,
+          "end_line": 14,
+          "grade": 2,
+          "note": "the budget file"
+        },
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 0,
+          "section_path": [
+            "Leak in porch"
+          ],
+          "note": "bucket, a spelling neighbour"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "bugdet",
+          "meant": "budget",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms03",
+      "question": "Are apples on the shopping list?",
+      "query": "appels",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "shopping-list.md",
+          "start_line": 7,
+          "end_line": 7,
+          "grade": 2,
+          "note": "apples on the list"
+        },
+        {
+          "root_id": "home",
+          "path": "garden-diary.md",
+          "start_line": 5,
+          "end_line": 36,
+          "grade": 0,
+          "section_path": [
+            "Garden diary",
+            "January"
+          ],
+          "note": "windfall apples, not shopping"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "appels",
+          "meant": "apples",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 6,
+          "meant_df": 2
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms04",
+      "question": "What goes on the volcano poster?",
+      "query": "diagarm",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "volcano-project.md",
+          "start_line": 17,
+          "end_line": 21,
+          "grade": 2,
+          "section_path": [
+            "Volcano project",
+            "Poster checklist"
+          ],
+          "note": "a labelled diagram"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "diagarm",
+          "meant": "diagram",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms05",
+      "question": "Where do unnamed lost coats go?",
+      "query": "chairty",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "newsletter-autumn.md",
+          "start_line": 44,
+          "end_line": 47,
+          "grade": 2,
+          "section_path": [
+            "Thistlecombe Primary autumn newsletter",
+            "Lost property"
+          ],
+          "note": "to the charity shop"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "chairty",
+          "meant": "charity",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms06",
+      "question": "What happens to the cat flap on bonfire evening?",
+      "query": "bonfrie",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 25,
+          "end_line": 29,
+          "grade": 2,
+          "section_path": [
+            "Cat flap"
+          ],
+          "note": "lock the flap on bonfire evening"
+        }
+      ],
+      "transposition": true,
+      "kind": "swap",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "bonfrie",
+          "meant": "bonfire",
+          "levenshtein": 2,
+          "distance": 1,
+          "transposition": true,
+          "kind": "swap",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms07",
+      "question": "What caught the rain in the porch?",
+      "query": "bukett",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "section_path": [
+            "Leak in porch"
+          ],
+          "note": "one blue bucket"
+        },
+        {
+          "root_id": "home",
+          "path": "holiday/seaside-packing.md",
+          "start_line": 6,
+          "end_line": 6,
+          "grade": 0,
+          "note": "buckets to pack, not the leak"
+        }
+      ],
+      "transposition": false,
+      "kind": "drop and add",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "bukett",
+          "meant": "bucket",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "drop and add",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms08",
+      "question": "Which French phrase means already seen?",
+      "query": "allredy",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 16,
+          "end_line": 21,
+          "grade": 2,
+          "section_path": [
+            "Tasting"
+          ],
+          "note": "French, meaning already seen"
+        }
+      ],
+      "transposition": false,
+      "kind": "drop and add",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "allredy",
+          "meant": "already",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "drop and add",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms09",
+      "question": "Where do families watch the swim gala?",
+      "query": "galerry",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 46,
+          "end_line": 51,
+          "grade": 2,
+          "section_path": [
+            "Swim gala results"
+          ],
+          "note": "the viewing gallery"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "galerry",
+          "meant": "gallery",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms10",
+      "question": "When did we see the doctor?",
+      "query": "dokter",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "health/doctor-visits.md",
+          "start_line": 1,
+          "end_line": 9,
+          "grade": 2,
+          "note": "the doctor visits"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "dokter",
+          "meant": "doctor",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms11",
+      "question": "What does Wren need for the Brownies outing?",
+      "query": "jakkit",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 19,
+          "end_line": 23,
+          "grade": 2,
+          "section_path": [
+            "Brownies outing"
+          ],
+          "note": "a waterproof jacket"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "jakkit",
+          "meant": "jacket",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 6,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms12",
+      "question": "Which day is chicken for lunch?",
+      "query": "chikkin",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 9,
+          "end_line": 11,
+          "grade": 2,
+          "section_path": [
+            "School lunch menu",
+            "Tuesday"
+          ],
+          "note": "roast chicken on Tuesday"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "chikkin",
+          "meant": "chicken",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-short",
+      "id": "ms13",
+      "question": "How long is recorder practice?",
+      "query": "fivtean",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "music/recorder-practice.md",
+          "start_line": 3,
+          "end_line": 6,
+          "grade": 2,
+          "section_path": [
+            "Recorder",
+            "Every day"
+          ],
+          "note": "fifteen minutes"
+        }
+      ],
+      "transposition": false,
+      "kind": "two wrong letters",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "short typo: 6 or 7 code points, in no file or file name; Levenshtein 2 to the meant word; the kind; the meant word in the answer; no typed or meant word of the misspelling or misspelling-heldout slice",
+          "typed": "fivtean",
+          "meant": "fifteen",
+          "levenshtein": 2,
+          "distance": 2,
+          "transposition": false,
+          "kind": "two wrong letters",
+          "typed_code_points": 7,
+          "meant_df": 1
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-short",
+      "id": "msn1",
+      "question": "Do we have a parrot?",
+      "query": "parrot",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "maths-homework.md",
+          "start_line": 11,
+          "end_line": 11,
+          "grade": 0,
+          "note": "part, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-short",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "part"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-short",
+      "id": "msn2",
+      "question": "Did we see a walrus?",
+      "query": "walrus",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "weekend-plans.md",
+          "start_line": 13,
+          "end_line": 15,
+          "grade": 0,
+          "section_path": [
+            "Weekend plans",
+            "Walks"
+          ],
+          "note": "walks, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-short",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "walks"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-short",
+      "id": "msn3",
+      "question": "Is there a tractor ride?",
+      "query": "tractor",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 1,
+          "end_line": 1,
+          "grade": 0,
+          "note": "tracker, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-short",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "tracker"
+          ]
+        },
+        {
+          "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "negatives-short",
+      "id": "msn4",
+      "question": "Did anyone see a beaver?",
+      "query": "beaver",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 42,
+          "end_line": 42,
+          "grade": 0,
+          "note": "beakers, a spelling neighbour"
+        }
+      ],
+      "negative": true,
+      "negative_of": "misspelling-short",
+      "kind": "near-word",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "negative (near-word): one correctly spelt word no file holds; files hold words in fuzzy-v1's reach",
+          "held": [],
+          "near": [
+            "beakers"
           ]
         },
         {
