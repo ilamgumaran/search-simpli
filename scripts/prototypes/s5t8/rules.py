@@ -86,11 +86,19 @@ def make_wb():
 
 # ------------------------------------------------------------------- F --
 
-def make_f(d2_min: int | None = None, df_floor: int | None = None, d2_df_floor: int | None = None):
+def make_f(d2_min: int | None = None, df_floor: int | None = None, d2_df_floor: int | None = None,
+           swap_one: bool = False, prefix2_below: bool = False):
     """F: fuzzy-v1 with a floor. `d2_min`: a distance-2 near word only for a typed
     word of at least this many code points (fuzzy-v1: 6). `df_floor`: a near word
     is kept only when its key df (the visible chunks; 1 for a title-only word) is at
-    least this. `d2_df_floor`: the same floor, for distance-2 near words only."""
+    least this. `d2_df_floor`: the same floor, for distance-2 near words only.
+
+    Phase 1c: `swap_one` (Ft) takes the floor's edit count from the optimal string
+    alignment distance recomputed here, in which one swapped adjacent pair is one
+    edit, instead of from the member's weight (fuzzy-v1's own distance is that
+    alignment already, so Ft keeps exactly what F keeps). `prefix2_below` (Fp2): a
+    distance-2 near word of a typed word shorter than `d2_min` is kept when it
+    starts with the typed word's first two code points, instead of being dropped."""
     inner = ORIGINAL["_fuzzy_groups"]
 
     def fuzzy_groups(terms, body_df, title_vocabulary, key_df=None, title_candidates=None):
@@ -101,9 +109,12 @@ def make_f(d2_min: int | None = None, df_floor: int | None = None, d2_df_floor: 
             kept = []
             for member, weight in members:
                 distance = 1 if weight == core.FUZZY_WEIGHTS[1] else 2
+                if swap_one:
+                    distance = core._osa_within(term, member, 2)
                 df = kdf.get(member, 0) or 1
                 if d2_min is not None and distance == 2 and len(term) < d2_min:
-                    continue
+                    if not (prefix2_below and member[:2] == term[:2]):
+                        continue
                 if df_floor is not None and df < df_floor:
                     continue
                 if d2_df_floor is not None and distance == 2 and df < d2_df_floor:
@@ -252,6 +263,9 @@ CANDIDATES = {
     "Fdf2": {"_fuzzy_groups": lambda: make_f(df_floor=2)},
     "Fd2df2": {"_fuzzy_groups": lambda: make_f(d2_df_floor=2)},
     "X": {"_fold_groups": make_x},
+    # Phase 1c (ruling 3 of the Phase 1 rulings), declared in the record before their run.
+    "Ft": {"_fuzzy_groups": lambda: make_f(d2_min=8, swap_one=True)},
+    "Fp2": {"_fuzzy_groups": lambda: make_f(d2_min=8, prefix2_below=True)},
 }
 
 

@@ -218,6 +218,9 @@ def bars(results: dict, name: str, j: dict) -> dict:
                 if b < a - 1e-9:
                     lower.append(f"{variant} {slc} {k} {a:.3f} -> {b:.3f}")
     out["c"] = {"rank1_lost": lost, "guarded_lower": lower}
+    # Phase 1c's decision rule: no rank-1 answer of misspelling-short lost against today.
+    out["short_rank1_lost"] = [x for x in lost if "(misspelling-short)" in x]
+    out["short_pass"] = not out["short_rank1_lost"]
     out["c_pass"] = not lost and not lower
     d = {}
     for variant in VARIANTS:

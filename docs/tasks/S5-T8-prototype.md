@@ -80,6 +80,24 @@ python3 scripts/gen_timing_corpus.py SCRATCH/timing10k 10000
 PYTHONHASHSEED=0 python3 scripts/prototypes/s5t8/cost.py SCRATCH/timing10k
 ```
 
+## Phase 1c: the F variants, as declared (ruling 3 of the Phase 1 rulings)
+
+Declared in the commit that adds this section, after `f453d14` (the slice `misspelling-short`, `ms01`–`ms13`, and `negatives-short`, `msn1`–`msn4`, recorded with today's engine) and before any F variant has run a row of either. Each is run alone and with X, over all 265 queries.
+
+- **F** and **F7**: as declared at `e8276fe` (above).
+- **Ft**: F, except that the floor's edit count is the optimal-string-alignment distance recomputed for the pair, in which one swapped adjacent pair is one edit. fuzzy-v1's own distance is that alignment (`docs/fuzzy-v1.md`, "The distance"; `core._osa_within`), so a near word one swap away is already at distance 1, weighted 1.0, and kept by F: **Ft keeps exactly the near words F keeps** on every query, by construction. It is declared and run as ruled; the decision rule's tie goes to the simpler rule.
+- **Fp2** (the builder's one more): F, except that a typed word of 6 or 7 code points keeps a distance-2 near word when the near word starts with the typed word's first two code points. Distance-1 near words, the trigger, the order, the cap and the weights are fuzzy-v1's; a typed word of 8 or more code points is fuzzy-v1's.
+  - **A limit, stated before the run.** Fp2 was chosen, and noted in the progress file, before any `misspelling-short` row was written. The rows were then written by the same builder to ruling 3's description and none of the 13 typed words errs in its first two code points.
+  - So the slice cannot show what Fp2 costs on a typo of the second letter. A swap is distance 1 and never reaches Fp2's test, so the limit bears on the seven two-edit rows.
+
+**The decision rule, as ruled.** Among the variants that meet (a)–(c), lose no rank-1 answer on `misspelling-short` against today's engine, and lower (d) on `negatives-heldout` together with X, the one with the lowest misleading-first share ships with X. A tie goes to the simpler rule. If none qualifies, X ships alone.
+
+Run:
+
+```
+PYTHONHASHSEED=0 python3 scripts/prototypes/s5t8/proto_s5t8.py --candidates X F F7 Ft Fp2 F+X F7+X Ft+X Fp2+X
+```
+
 ## Results (the full grid, after `e8276fe`)
 
 **The baseline reproduces.** `today` (core's own functions) and `rewrite` (`_fold_groups` rewritten with R unchanged) each equal all 656 cells of both surfaces of `fixtures/j2/baseline.json`, and every old pack.
