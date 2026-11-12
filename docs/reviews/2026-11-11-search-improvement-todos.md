@@ -179,8 +179,8 @@ scope cases; preserve explicit legacy expectations if that mode is retained.
 
 ## R05 — Measure cross-word verb matches before changing R
 
-**Verified and merged (S5-T8, [task and Verdict](../tasks/S5-T8.md), 12 Nov
-2026):** steps 1–3. `verbform-cross` (six rows, hop/hope, evening/even,
+**S5-T8 ([task](../tasks/S5-T8.md); re-ruled 13 Nov 2026 before its merge,
+this rule still ships):** steps 1–3. `verbform-cross` (six rows, hop/hope, evening/even,
 tap/tape, answers in six files) was judged and recorded before any rule; a
 narrow eligibility rule, [fold-groups-v3](../fold-groups-v3.md), was prototyped
 in Python beside the cap and the membership rule and ported to Zig (golden
@@ -213,24 +213,26 @@ approval before shipping changed matching semantics; keep a rollback comparison.
 
 ## R06 — Treat unanswerable queries as a precision target
 
-**Verified and merged (S5-T8, [task and Verdict](../tasks/S5-T8.md), 12 Nov
+**S5-T8, re-ruled before its merge ([task](../tasks/S5-T8.md), 13 Nov
 2026):** steps 1–3 on invented content (no real-user examples). Two
 negative sets of 17 (tuning, and a held-out set no candidate ran before every
 candidate was declared), `negatives-short` and a `precision-control` slice;
 "misleading" defined in `fixtures/j2/README.md` before any candidate ran (after
 two exploratory runs of the engine as it was, a stated limit). Stop words in the
 title part (W) did not move the measure and do not ship; out of the body (Wb)
-they cost two `mixed` rank-1 answers and do not ship. A fuzzy floor ships as
-[fuzzy-v2](../fuzzy-v2.md), chosen by a rule fixed in advance on a new
-short-typo slice: `negatives-heldout`'s misleading-first share 0.588 → 0.353
-with fold-groups-v3, the typo, morphology and control slices unchanged. `find`
-and the `filename` field are unchanged. No score threshold, no
-answer-confidence value and no abstention default was introduced. The verifier
-reproduced these numbers from its own builds and measured what fuzzy-v2 gives
-up, outside J2: of 16 typos it wrote, two edits from a 6 or 7 letter word with
-an edit in the second letter, 13 found the meant file at rank 1 under fuzzy-v1
-and none under fuzzy-v2 ([fuzzy-v2](../fuzzy-v2.md), "What it gives up"; a
-03-next row asks for such rows as a held-out slice).
+they cost two `mixed` rank-1 answers and do not ship. A fuzzy floor (Fp2,
+fuzzy-v2) was chosen by a rule fixed in advance on a short-typo slice the
+builder wrote, then withdrawn: of 16 typos the verifier wrote, two edits from a
+6 or 7 letter word with an edit in the second letter, 13 found the meant file
+at rank 1 under fuzzy-v1 and none under Fp2 (kept as a rejected candidate in
+[the prototype record](../tasks/S5-T8-prototype.md)). Those typos and 9
+first-letter ones are now J2's `misspelling-opening` slice, the bar for any
+later floor. What ships is [fold-groups-v3](../fold-groups-v3.md) alone, with
+fuzzy-v1 unchanged: `negatives-heldout`'s misleading-first share 0.588 → 0.529,
+mean top-5 hits 3.176 → 2.941 (`content`); against `main` only `verbform-cross`
+moves (0.667 → 1.000). `find` and the `filename` field are unchanged. No score
+threshold, no answer-confidence value and no abstention default was
+introduced.
 
 **Evidence:** the live queue records `on2` (`painting the fence`) returning ten
 hits; S5-T5 now reaches a model file through `paint`. It also records near-word

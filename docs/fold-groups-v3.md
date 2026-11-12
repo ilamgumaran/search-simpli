@@ -45,12 +45,14 @@ left out, first seen first. They are a subset of R's forms. Each is then a
 member, or not, by fold-groups-v2's own test and weights. One shape test per
 base is all the rule adds.
 
-What it changes on J2 (all 265 queries): `biting` loses `bit`; `caring` loses
+What it changes on J2 (the 265 queries before `misspelling-opening`): `biting` loses `bit`; `caring` loses
 `car`; `hating` loses `hat` and `hats`; `hoping` loses `hopped`; `hopping` and
 `hops` lose `hopes` and `hoped`; `mating` loses `mat` and `mats`; `taping`
 loses `tap`, `taps` and `tapped`; `tapping` loses `tapes` and `taped`. Once its
 cross forms are gone, a word with no group left (`caring`, `mating`) goes to
-misspelling tolerance, which is [fuzzy-v2](fuzzy-v2.md) since the same task.
+misspelling tolerance, which stays [fuzzy-v1](fuzzy-v1.md) (fuzzy-v2 was
+built by the same task and rejected: [the prototype
+record](tasks/S5-T8-prototype.md)).
 
 ## What it measured
 
@@ -63,10 +65,11 @@ J2 on `searchd` and the Python reference, which agree on every cell:
   unchanged; the S5-T6 gate passes with the allow-list untouched; the older
   packs (relevance-smoke, knowledge, mixed, tamil, semantic, family-folder)
   are identical per query.
-- `negatives-heldout`, the share of questions whose first hit misleads, under
-  X alone (the Phase 1 prototype): 0.588 → 0.529. With fuzzy-v2 beside it
-  (what ships): 0.588 → 0.353, mean top-5 hits 3.176 → 2.294 (`content`) and
-  3.059 → 2.176 (`both`).
+- `negatives-heldout`, the share of questions whose first hit misleads: 0.588
+  → 0.529, mean top-5 hits 3.176 → 2.941 (`content`) and 3.059 → 2.824
+  (`both`), as the Phase 1 prototype measured X alone. (fuzzy-v2 beside it
+  took the share to 0.353 and was rejected: [the prototype
+  record](tasks/S5-T8-prototype.md).)
 
 ## What the caller sees
 
@@ -96,14 +99,15 @@ J2 on `searchd` and the Python reference, which agree on every cell:
 
 Measured on the 10k timing corpus, `ReleaseSmall`, six interleaved rounds
 against the S5-T5 library, with a second build of it as the noise reference
-([S5-T8's Report](tasks/S5-T8.md)), together with fuzzy-v2:
+([S5-T8's Report](tasks/S5-T8.md), as amended after the re-ruling: the
+rule alone, fuzzy-v1 unchanged):
 
-- **The first `content` query after an open:** −0.015 to +0.023 ms (median per
+- **The first `content` query after an open:** −0.077 to −0.017 ms (median per
   round; `hybrid retrieval`, `system`, `hashing`, `opratin`, with and without
   the filename channel).
-- **A warm query with no group and no near word:** at most +0.008 ms under
-  `content` and +0.006 ms under `both`.
-- **`hashing`** (grouped with `hash` through R): +0.001 ms `content`, +0.002 ms
+- **A warm query with no group and no near word:** at most +0.004 ms under
+  `content` and +0.010 ms under `both`.
+- **`hashing`** (grouped with `hash` through R): +0.000 ms `content`, +0.000 ms
   `both`.
 - **Memory:** nothing is kept. The eligible forms are computed on the stack
   beside R's; the key map is fold-groups-v1's (64 bytes on NFR-13's 10k
