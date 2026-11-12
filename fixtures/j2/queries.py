@@ -41,6 +41,7 @@ SLICE_MINIMUMS = {
     "verbform-cross": 6,
     "precision-control": 8,
     "misspelling-short": 12,
+    "misspelling-opening": 25,
 }
 # S5-T8 ruling 1: the two named sets of negatives, at least this many each (and at
 # least 30 together).
@@ -1166,6 +1167,71 @@ for _id, _question, _query, _rows_ in (
      [("school/noticeboard.md", "=squash in beakers", 0, "beakers, a spelling neighbour")]),
 ):
     q("negatives-short", _id, _question, _query, K, _rows_, of="misspelling-short", kind="near-word")
+
+# ---------------------------------- S5-T8 re-ruling: misspelling-opening --
+# The re-ruling after the verifier's measurement (orchestrator, 13 Nov), item 3: the
+# typed words S5-T8's verifier wrote for ruling 2 of the rulings on the Report, each
+# as the short question it ran (the query, verbatim), and as its answer every file
+# whose text holds the meant word (the verifier's measure counts the file). Sixteen
+# keep the first letter and miss the second; nine miss the first letter, which
+# fuzzy-v1 never reaches: their zero is a measured gap, not a regression. Written by
+# someone who had not seen the rule's design; the bar the next fuzzy task must not
+# lower. typo = (as typed, the word meant); kind is generate.OPENING_KINDS's.
+
+for _id, _question, _query, _typo, _kind, _files in (
+    ("mo01", "What phonics is there this week?", "fonics this week", ("fonics", "phonics"), "first letter",
+     ["school/class-notes-wren.md", "laptop/log/homework-tracker.txt"]),
+    ("mo02", "Which story is told in rhyming words?", "riming words", ("riming", "rhyming"), "second letter",
+     ["home/owl-and-the-moon.md"]),
+    ("mo03", "When are the quizzes?", "when are the kwizzes", ("kwizzes", "quizzes"), "first letter",
+     ["school/noticeboard.md"]),
+    ("mo04", "Who wanted kebabs?", "who wanted kabobs", ("kabobs", "kebabs"), "second letter",
+     ["home/birthday-party-wren.md"]),
+    ("mo05", "Did we buy celery?", "did we buy salery", ("salery", "celery"), "first letter",
+     ["laptop/errands.md"]),
+    ("mo06", "Which day is chicken for lunch?", "which day is cikken", ("cikken", "chicken"), "second letter",
+     ["school/lunch-menu.md"]),
+    ("mo07", "Where is the cushion?", "where is the kushon", ("kushon", "cushion"), "first letter",
+     ["home/family-log.md"]),
+    ("mo08", "What needs fixing on the scooter?", "fix the skootur", ("skootur", "scooter"), "second letter",
+     ["laptop/notes/weekend-jobs.md"]),
+    ("mo09", "Who has the whistle?", "who has the wistel", ("wistel", "whistle"), "second letter",
+     ["laptop/notes/jottings.md", "school/noticeboard.md"]),
+    ("mo10", "Where are the kayaks for the river?", "cayacs on the river", ("cayacs", "kayaks"), "first letter",
+     ["laptop/notes/weekend-jobs.md"]),
+    ("mo11", "What was knitted?", "what was nittid", ("nittid", "knitted"), "first letter",
+     ["home/household.md"]),
+    ("mo12", "When are we at the leisure centre?", "when does the senter open", ("senter", "centre"),
+     "first letter", ["home/calendar-november.md"]),
+    ("mo13", "Which lunch has ketchup with chips?", "catchup with chips", ("catchup", "ketchup"), "first letter",
+     ["school/lunch-menu.md"]),
+    ("mo14", "What was squeaky?", "the skweaky door", ("skweaky", "squeaky"), "second letter",
+     ["laptop/errands.md"]),
+    ("mo15", "Who made custard?", "who made kustad", ("kustad", "custard"), "first letter",
+     ["home/household.md", "school/noticeboard.md"]),
+    ("mo16", "What happens in the next chapter?", "read the next captur", ("captur", "chapter"), "second letter",
+     ["laptop/notes/bedtime-stories.md"]),
+    ("mo17", "When is the plumber coming?", "when is the pulmer coming", ("pulmer", "plumber"), "second letter",
+     ["home/plumbing.md"]),
+    ("mo18", "Where are my glasses?", "where are my galses", ("galses", "glasses"), "second letter",
+     ["home/health/doctor-visits.md", "laptop/notes/jottings.md"]),
+    ("mo19", "Who made the crumble?", "who made the cumbel", ("cumbel", "crumble"), "second letter",
+     ["home/household.md"]),
+    ("mo20", "Which spanner was used under the sink?", "which sapner size", ("sapner", "spanner"), "second letter",
+     ["home/plumbing.md"]),
+    ("mo21", "Where is there squash?", "who plays skwash", ("skwash", "squash"), "second letter",
+     ["laptop/chess.md", "school/noticeboard.md"]),
+    ("mo22", "Was something knitted?", "something kittid", ("kittid", "knitted"), "second letter",
+     ["home/household.md"]),
+    ("mo23", "Which scales come first at recorder practice?", "how many skailes", ("skailes", "scales"),
+     "second letter", ["home/music/recorder-practice.md"]),
+    ("mo24", "Where is the canoe trolley?", "the torley wheel", ("torley", "trolley"), "second letter",
+     ["laptop/notes/weekend-jobs.md"]),
+    ("mo25", "What are the dinosaur skeletons made of?", "palstr cast", ("palstr", "plaster"), "second letter",
+     ["school/dinosaur-topic.md"]),
+):
+    q("misspelling-opening", _id, _question, _query, K,
+      [(path, "*", 2, f"a file holding {_typo[1]}") for path in _files], typo=_typo, kind=_kind)
 
 # Verb forms of the negatives' words that the files hold (R's forms, `verb_forms.forms`,
 # by exact bytes): "same" when the form is of the question's own word, "cross" when

@@ -53,12 +53,17 @@ BOM = b"\xef\xbb\xbf"
 SLICES = ("control", "misspelling", "morphology", "accent", "tamil", "title", "phrase", "negatives",
           "title-heldout", "misspelling-heldout", "morphology-heldout", "accent-heldout", "tamil-heldout",
           "verbform-heldout", "verbform-cross", "precision-control", "negatives-tuning", "negatives-heldout",
-          "misspelling-short", "negatives-short")
+          "misspelling-short", "negatives-short", "misspelling-opening")
 # S5-T8: the slices and sets it adds, and the slices whose queries are negatives.
 # The short-typo slice and its negatives (Phase 1c, ruling 3 of the Phase 1 rulings)
 # came after the others, and keep out of their query words too.
 SHORT_SLICES = ("misspelling-short", "negatives-short")
-S5T8_SLICES = ("verbform-cross", "precision-control", "negatives-tuning", "negatives-heldout") + SHORT_SLICES
+# The re-ruling after the verifier's measurement (13 Nov): misspelling-opening holds
+# the verifier's own typed words, as the short questions it ran. Its questions are
+# taken verbatim, so the new-words check does not apply to them.
+OPENING_SLICES = ("misspelling-opening",)
+S5T8_SLICES = ("verbform-cross", "precision-control", "negatives-tuning", "negatives-heldout") + SHORT_SLICES \
+    + OPENING_SLICES
 NEGATIVE_SLICES = ("negatives", "negatives-tuning", "negatives-heldout", "negatives-short")
 # S5-T8 ruling 1: the stop words of the measure of what misleads (README, "What
 # counts as misleading"): Lucene's 33 English stop words, and `my`, which the
@@ -77,6 +82,12 @@ VERBFORM_CROSS_ANSWER_FILES = 6
 SHORT_KINDS = ("swap", "drop and add", "two wrong letters")
 SHORT_MIN_SWAPS = 5
 SHORT_MIN_NEGATIVES = 3
+# misspelling-opening (the re-ruling, item 3): typed words of 6 or 7 code points, two
+# edits (optimal string alignment) from the meant word, with no word of the fixture
+# one edit away, and the edit in the first letter or, the first letter kept, in the
+# second; at least this many of each.
+OPENING_KINDS = ("second letter", "first letter")
+OPENING_MINIMUMS = {"second letter": 16, "first letter": 9}
 # S5-T3, ruling 7 of its plan: the edits the held-out misspelling slice must hold,
 # at least this many rows of each (a distance-2 row needs a meant word of 8 or more
 # code points; "name" is a word only the answer's file or folder name holds;
@@ -252,6 +263,14 @@ def short_kind(typed: str, meant: str) -> str:
         return f"length {len(typed)}/{len(meant)}, Levenshtein {levenshtein(typed, meant)}"
     differ = sum(1 for x, y in zip(typed, meant) if x != y)
     return "two wrong letters" if differ == 2 else "drop and add"
+
+
+def opening_kind(typed: str, meant: str) -> str:
+    """misspelling-opening's edit position: the first letter differs, or the first
+    letter is the same and the second differs."""
+    if typed[:1] != meant[:1]:
+        return "first letter"
+    return "second letter" if typed[1:2] != meant[1:2] else "after the second letter"
 
 
 def contains_run(seq: list[str], want: list[str]) -> bool:
@@ -492,6 +511,28 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
                        "typed": typed, "meant": meant, "levenshtein": 2, "distance": osa_distance(typed, meant),
                        "transposition": swap, "kind": kind, "typed_code_points": len(typed),
                        "meant_df": corpus.df(meant)})
+    elif s == "misspelling-opening":
+        typed, meant = spec["typo"]
+        kind = spec["kind"]
+        need(kind in OPENING_KINDS, f"kind {kind}")
+        need(typed in query_tokens, f"{typed} is a query word")
+        need(not held_anywhere(corpus, typed), f"{typed} occurs in no file or file name")
+        need(len(typed) in (6, 7), f"{typed} is 6 or 7 code points ({len(typed)})")
+        need(osa_distance(typed, meant) == 2, f"{typed}->{meant} distance {osa_distance(typed, meant)}, need 2")
+        held = set(corpus.vocabulary) | corpus.title_vocabulary
+        near = sorted(w for w in held if abs(len(w) - len(typed)) <= 1 and osa_distance(typed, w) == 1)
+        need(not near, f"{typed} is one edit from {near}")
+        need(opening_kind(typed, meant) == kind, f"{typed}->{meant} is {opening_kind(typed, meant)}, declared {kind}")
+        holders = sorted(p for p in corpus.files if meant in toks("\n".join(corpus.lines[p])))
+        named = sorted(f"{r['root_id']}/{r['path']}" for r in answers)
+        need(holders == named, f"the answer files {named} are the files holding {meant} {holders}")
+        need(all((r["start_line"], r["end_line"]) == (1, len(corpus.lines[f"{r['root_id']}/{r['path']}"]))
+                 for r in answers), "each answer row is its whole file")
+        checks.append({"check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant "
+                                "word and no fixture word one edit away; the edit in the first letter, or in the "
+                                "second with the first kept; the answer rows are the files holding the meant word",
+                       "typed": typed, "meant": meant, "distance": 2, "levenshtein": levenshtein(typed, meant),
+                       "kind": kind, "typed_code_points": len(typed), "meant_df": corpus.df(meant)})
     elif s in ("morphology", "tamil") and "forms" in spec:
         for query_form, file_form in spec["forms"]:
             need(query_form in query_tokens, f"{query_form} is a query word")
@@ -819,14 +860,15 @@ def build_query(corpus: Corpus, spec: dict) -> dict:
     elif s != "control":
         raise SystemExit(f"{qid}: unknown slice {s}")
 
-    if s in S5T8_SLICES:
+    if s in S5T8_SLICES and s not in OPENING_SLICES:
         earlier = earlier_query_words()
         earlier_keys = {analyzer_v3.key(w) for w in earlier if w not in STOP_WORDS}
         reused = sorted(t for t in query_tokens if t not in STOP_WORDS
                         and (t in earlier or analyzer_v3.key(t) in earlier_keys))
         need(not reused, f"{reused} is a query word of an earlier slice, or shares its fold-groups-v1 key")
         if s in SHORT_SLICES:
-            first_s5t8 = {t for spec_ in queries.QUERIES if spec_["slice"] in S5T8_SLICES and spec_["slice"] not in SHORT_SLICES
+            first_s5t8 = {t for spec_ in queries.QUERIES if spec_["slice"] in S5T8_SLICES
+                          and spec_["slice"] not in SHORT_SLICES + OPENING_SLICES
                           for t in toks(spec_["query"].rstrip("*"))}
             reused = sorted(t for t in query_tokens if t not in STOP_WORDS and t in first_s5t8)
             need(not reused, f"{reused} is a query word of an earlier S5-T8 slice")
@@ -901,7 +943,9 @@ def build_judgments(corpus: Corpus) -> dict:
     for name, minimum in queries.SLICE_MINIMUMS.items():
         if counts[name] < minimum:
             raise SystemExit(f"slice {name}: {counts[name]} queries, minimum {minimum}")
-    for name in queries.SLICE_MINIMUMS:
+    # misspelling-opening is the verifier's rows as they were run, and the verifier
+    # wrote no negative for it (the re-ruling, item 3).
+    for name in (n for n in queries.SLICE_MINIMUMS if n not in OPENING_SLICES):
         if not any(i.get("negative_of") == name for i in items):
             raise SystemExit(f"slice {name} has no negative")
     held = [next(c for c in i["checks"] if "edit" in c) for i in items if i["slice"] == "misspelling-heldout"]
@@ -972,6 +1016,10 @@ def build_judgments(corpus: Corpus) -> dict:
         raise SystemExit(f"misspelling-short: fewer than {SHORT_MIN_SWAPS} swapped pairs")
     if {len(c["typed"]) for i in short for c in i["checks"] if "levenshtein" in c} != {6, 7}:
         raise SystemExit("misspelling-short: typed words of 6 and of 7 code points both needed")
+    opening = [i for i in items if i["slice"] == "misspelling-opening"]
+    for kind, minimum in OPENING_MINIMUMS.items():
+        if sum(1 for i in opening if i["kind"] == kind) < minimum:
+            raise SystemExit(f"misspelling-opening: fewer than {minimum} rows of kind {kind}")
     if counts["negatives-short"] < SHORT_MIN_NEGATIVES:
         raise SystemExit(f"negatives-short: {counts['negatives-short']} queries, minimum {SHORT_MIN_NEGATIVES}")
     judged = verb_form_judgments(corpus, items)
@@ -1136,6 +1184,7 @@ SLICE_TEXT = {
     "negatives-heldout": "the same kinds, held out from S5-T8's candidates until each is declared",
     "misspelling-short": "S5-T8 Phase 1c, held out: typed words of 6 or 7 code points two Levenshtein edits off (a swapped pair, a dropped and an added letter, two wrong letters)",
     "negatives-short": "correctly spelt 6 or 7 code point words no file holds, with a near word",
+    "misspelling-opening": "held out, written by S5-T8's verifier: typed words of 6 or 7 code points two edits off in the first or second letter, asked as short questions; the answer is every file holding the meant word",
 }
 
 

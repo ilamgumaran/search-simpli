@@ -5,7 +5,7 @@ Year 5, Wren in Year 2, Paati their grandmother, Biscuit the dog), Thistlecombe
 Primary, Mill Lane, Hollow Woods. No real person, place or product. Phone numbers
 are from the ranges set aside for drama.
 
-J2 says where keyword search loses. It holds 265 queries in seven slices,
+J2 says where keyword search loses. It holds 290 queries in seven slices,
 a held-out title slice (S5-T2), a held-out misspelling slice (S5-T3), held-out
 morphology, accent and Tamil slices (S5-T4), a held-out verb-form slice (S5-T5),
 a cross-word verb-form slice and a precision-control slice (S5-T8) and named
@@ -74,6 +74,7 @@ Run it: `python3 scripts/relevance_smoke.py --pack j2` (the Python reference) an
 | negatives-heldout | 17 | 15 | the same kinds, held out from S5-T8's candidates until each is declared |
 | misspelling-short | 13 | 12 | S5-T8 Phase 1c, held out: typed words of 6 or 7 code points two Levenshtein edits off (a swapped pair, a dropped and an added letter, two wrong letters) |
 | negatives-short | 4 | 3 | correctly spelt 6 or 7 code point words no file holds, with a near word |
+| misspelling-opening | 25 | 25 | held out, written by S5-T8's verifier: typed words of 6 or 7 code points two edits off in the first or second letter, asked as short questions; the answer is every file holding the meant word |
 
 ## What counts as misleading (S5-T8)
 
@@ -384,3 +385,28 @@ Grade-2 rows only; `judgments.json` holds every row with its note.
 | msn2 | negatives-short | knowledge | `walrus` | none |
 | msn3 | negatives-short | knowledge | `tractor` | none |
 | msn4 | negatives-short | knowledge | `beaver` | none |
+| mo01 | misspelling-opening | knowledge | `fonics this week` | `school/class-notes-wren.md` 1-20; `laptop/log/homework-tracker.txt` 1-141 |
+| mo02 | misspelling-opening | knowledge | `riming words` | `home/owl-and-the-moon.md` 1-5 |
+| mo03 | misspelling-opening | knowledge | `when are the kwizzes` | `school/noticeboard.md` 1-51 |
+| mo04 | misspelling-opening | knowledge | `who wanted kabobs` | `home/birthday-party-wren.md` 1-23 |
+| mo05 | misspelling-opening | knowledge | `did we buy salery` | `laptop/errands.md` 1-29 |
+| mo06 | misspelling-opening | knowledge | `which day is cikken` | `school/lunch-menu.md` 1-23 |
+| mo07 | misspelling-opening | knowledge | `where is the kushon` | `home/family-log.md` 1-77 |
+| mo08 | misspelling-opening | knowledge | `fix the skootur` | `laptop/notes/weekend-jobs.md` 1-60 |
+| mo09 | misspelling-opening | knowledge | `who has the wistel` | `laptop/notes/jottings.md` 1-45; `school/noticeboard.md` 1-51 |
+| mo10 | misspelling-opening | knowledge | `cayacs on the river` | `laptop/notes/weekend-jobs.md` 1-60 |
+| mo11 | misspelling-opening | knowledge | `what was nittid` | `home/household.md` 1-35 |
+| mo12 | misspelling-opening | knowledge | `when does the senter open` | `home/calendar-november.md` 1-7 |
+| mo13 | misspelling-opening | knowledge | `catchup with chips` | `school/lunch-menu.md` 1-23 |
+| mo14 | misspelling-opening | knowledge | `the skweaky door` | `laptop/errands.md` 1-29 |
+| mo15 | misspelling-opening | knowledge | `who made kustad` | `home/household.md` 1-35; `school/noticeboard.md` 1-51 |
+| mo16 | misspelling-opening | knowledge | `read the next captur` | `laptop/notes/bedtime-stories.md` 1-25 |
+| mo17 | misspelling-opening | knowledge | `when is the pulmer coming` | `home/plumbing.md` 1-4 |
+| mo18 | misspelling-opening | knowledge | `where are my galses` | `home/health/doctor-visits.md` 1-9; `laptop/notes/jottings.md` 1-45 |
+| mo19 | misspelling-opening | knowledge | `who made the cumbel` | `home/household.md` 1-35 |
+| mo20 | misspelling-opening | knowledge | `which sapner size` | `home/plumbing.md` 1-4 |
+| mo21 | misspelling-opening | knowledge | `who plays skwash` | `laptop/chess.md` 1-5; `school/noticeboard.md` 1-51 |
+| mo22 | misspelling-opening | knowledge | `something kittid` | `home/household.md` 1-35 |
+| mo23 | misspelling-opening | knowledge | `how many skailes` | `home/music/recorder-practice.md` 1-15 |
+| mo24 | misspelling-opening | knowledge | `the torley wheel` | `laptop/notes/weekend-jobs.md` 1-60 |
+| mo25 | misspelling-opening | knowledge | `palstr cast` | `school/dinosaur-topic.md` 1-25 |

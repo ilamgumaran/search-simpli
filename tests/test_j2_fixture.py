@@ -22,7 +22,10 @@ SLICE_MINIMUMS = {"control": 20, "misspelling": 15, "morphology": 12, "accent": 
                   "title": 10, "phrase": 8, "title-heldout": 6, "misspelling-heldout": 10,
                   "morphology-heldout": 12, "accent-heldout": 10, "tamil-heldout": 10,
                   "verbform-heldout": 14, "verbform-cross": 6, "precision-control": 8,
-                  "misspelling-short": 12}
+                  "misspelling-short": 12, "misspelling-opening": 25}
+# The S5-T8 re-ruling, item 3: misspelling-opening is the verifier's rows as they were
+# run, and the verifier wrote no negative for it.
+NO_NEGATIVES = {"misspelling-opening"}
 # S5-T8 ruling 1: two negative sets of at least 15, at least 30 in all.
 NEGATIVE_SET_MINIMUMS = {"negatives-tuning": 15, "negatives-heldout": 15}
 NEGATIVE_KINDS = {"stop-name", "near-word", "near-topic", "cross-form", "tamil", "accent", "half-held"}
@@ -108,6 +111,8 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
         for name, minimum in SLICE_MINIMUMS.items():
             self.assertGreaterEqual(sum(1 for q in queries if q["slice"] == name), minimum, name)
+            if name in NO_NEGATIVES:
+                continue
             self.assertGreaterEqual(sum(1 for q in queries if q.get("negative_of") == name), 2, f"negatives of {name}")
         self.assertGreaterEqual(sum(1 for q in queries if q.get("transposition")), 5)
         self.assertGreaterEqual(sum(1 for q in queries if q.get("only_form")), 3)
@@ -278,6 +283,27 @@ class InventoryTests(unittest.TestCase):
         for q in short + negatives:
             self.assertTrue(any(c["check"].startswith("new words") for c in q["checks"]), q["id"])
 
+    def test_s5t8_opening_typo_slice(self):
+        """The S5-T8 re-ruling, item 3: the verifier's 25 typed words of 6 and 7 code
+        points, two edits from the meant word with no fixture word one edit away; 16
+        keep the first letter and miss the second, 9 miss the first; each answer row is
+        a whole file holding the meant word, and every such file is one."""
+        opening = [q for q in self.judgments["queries"] if q["slice"] == "misspelling-opening"]
+        self.assertEqual(len(opening), 25)
+        facts = [next(c for c in q["checks"] if "typed" in c) for q in opening]
+        self.assertTrue(all(c["distance"] == 2 and c["typed_code_points"] in (6, 7) for c in facts))
+        self.assertEqual(sum(1 for q in opening if q["kind"] == "second letter"), 16)
+        self.assertEqual(sum(1 for q in opening if q["kind"] == "first letter"), 9)
+        for q, c in zip(opening, facts):
+            self.assertIn(c["typed"], q["query"].split(), q["id"])
+            if q["kind"] == "second letter":
+                self.assertEqual(c["typed"][0], c["meant"][0], q["id"])
+                self.assertNotEqual(c["typed"][1], c["meant"][1], q["id"])
+            else:
+                self.assertNotEqual(c["typed"][0], c["meant"][0], q["id"])
+            self.assertTrue(all(r["grade"] == 2 and r["start_line"] == 1 for r in q["expected"]), q["id"])
+            self.assertFalse(q.get("negative"), q["id"])
+
     def test_rows(self):
         lines = {f"{f['root_id']}/{f['path']}": f["lines"] for f in self.judgments["files"]}
         modes = {"knowledge", "find:words", "find:phrase", "find:prefix"}
@@ -409,6 +435,12 @@ class CheckTests(unittest.TestCase):
         self.broken_because("ms01", "Levenshtein", query="centra", typo=("centra", "centre", False))
         self.broken_because("ms10", "6 or 7 code points", query="dokterrs", typo=("dokterrs", "doctor", False))
         self.broken_because("ms09", "declared drop and add", kind="drop and add")
+
+    def test_s5t8_opening_typo_must_be_two_edits_with_no_one_edit_route(self):
+        self.broken_because("mo02", "distance", query="rhymin words", typo=("rhymin", "rhyming"))
+        self.broken_because("mo04", "declared first letter", kind="first letter")
+        self.broken_because("mo17", "the answer files", rows=[("home/household.md", "*", 2, "not the plumber")])
+        self.broken_because("mo25", "one edit from", query="plastac cast", typo=("plastac", "plaster"))
 
     def test_s5t8_every_reachable_verb_form_is_judged(self):
         judgments = self.generator.queries.VERB_FORM_JUDGMENTS

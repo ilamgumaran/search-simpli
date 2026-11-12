@@ -35,7 +35,8 @@
     "negatives-tuning": 15,
     "negatives-heldout": 15,
     "misspelling-short": 12,
-    "negatives-short": 3
+    "negatives-short": 3,
+    "misspelling-opening": 25
   },
   "counts": {
     "control": 23,
@@ -57,7 +58,8 @@
     "negatives-tuning": 17,
     "negatives-heldout": 17,
     "misspelling-short": 13,
-    "negatives-short": 4
+    "negatives-short": 4,
+    "misspelling-opening": 25
   },
   "files": [
     {
@@ -11755,6 +11757,871 @@
         },
         {
           "check": "new words: no query word but a stop word is a query word of an earlier slice or shares its fold-groups-v1 key"
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo01",
+      "question": "What phonics is there this week?",
+      "query": "fonics this week",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "class-notes-wren.md",
+          "start_line": 1,
+          "end_line": 20,
+          "grade": 2,
+          "note": "a file holding phonics"
+        },
+        {
+          "root_id": "laptop",
+          "path": "log/homework-tracker.txt",
+          "start_line": 1,
+          "end_line": 141,
+          "grade": 2,
+          "note": "a file holding phonics"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "fonics",
+          "meant": "phonics",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo02",
+      "question": "Which story is told in rhyming words?",
+      "query": "riming words",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "owl-and-the-moon.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "note": "a file holding rhyming"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "riming",
+          "meant": "rhyming",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo03",
+      "question": "When are the quizzes?",
+      "query": "when are the kwizzes",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 51,
+          "grade": 2,
+          "note": "a file holding quizzes"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kwizzes",
+          "meant": "quizzes",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo04",
+      "question": "Who wanted kebabs?",
+      "query": "who wanted kabobs",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "birthday-party-wren.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 2,
+          "note": "a file holding kebabs"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kabobs",
+          "meant": "kebabs",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo05",
+      "question": "Did we buy celery?",
+      "query": "did we buy salery",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 1,
+          "end_line": 29,
+          "grade": 2,
+          "note": "a file holding celery"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "salery",
+          "meant": "celery",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo06",
+      "question": "Which day is chicken for lunch?",
+      "query": "which day is cikken",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 2,
+          "note": "a file holding chicken"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "cikken",
+          "meant": "chicken",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo07",
+      "question": "Where is the cushion?",
+      "query": "where is the kushon",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "family-log.md",
+          "start_line": 1,
+          "end_line": 77,
+          "grade": 2,
+          "note": "a file holding cushion"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kushon",
+          "meant": "cushion",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo08",
+      "question": "What needs fixing on the scooter?",
+      "query": "fix the skootur",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 1,
+          "end_line": 60,
+          "grade": 2,
+          "note": "a file holding scooter"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "skootur",
+          "meant": "scooter",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo09",
+      "question": "Who has the whistle?",
+      "query": "who has the wistel",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 1,
+          "end_line": 45,
+          "grade": 2,
+          "note": "a file holding whistle"
+        },
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 51,
+          "grade": 2,
+          "note": "a file holding whistle"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "wistel",
+          "meant": "whistle",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo10",
+      "question": "Where are the kayaks for the river?",
+      "query": "cayacs on the river",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 1,
+          "end_line": 60,
+          "grade": 2,
+          "note": "a file holding kayaks"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "cayacs",
+          "meant": "kayaks",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo11",
+      "question": "What was knitted?",
+      "query": "what was nittid",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 2,
+          "note": "a file holding knitted"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "nittid",
+          "meant": "knitted",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo12",
+      "question": "When are we at the leisure centre?",
+      "query": "when does the senter open",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "calendar-november.md",
+          "start_line": 1,
+          "end_line": 7,
+          "grade": 2,
+          "note": "a file holding centre"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "senter",
+          "meant": "centre",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo13",
+      "question": "Which lunch has ketchup with chips?",
+      "query": "catchup with chips",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "lunch-menu.md",
+          "start_line": 1,
+          "end_line": 23,
+          "grade": 2,
+          "note": "a file holding ketchup"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "catchup",
+          "meant": "ketchup",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo14",
+      "question": "What was squeaky?",
+      "query": "the skweaky door",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "errands.md",
+          "start_line": 1,
+          "end_line": 29,
+          "grade": 2,
+          "note": "a file holding squeaky"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "skweaky",
+          "meant": "squeaky",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo15",
+      "question": "Who made custard?",
+      "query": "who made kustad",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 2,
+          "note": "a file holding custard"
+        },
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 51,
+          "grade": 2,
+          "note": "a file holding custard"
+        }
+      ],
+      "kind": "first letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kustad",
+          "meant": "custard",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "first letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo16",
+      "question": "What happens in the next chapter?",
+      "query": "read the next captur",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/bedtime-stories.md",
+          "start_line": 1,
+          "end_line": 25,
+          "grade": 2,
+          "note": "a file holding chapter"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "captur",
+          "meant": "chapter",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo17",
+      "question": "When is the plumber coming?",
+      "query": "when is the pulmer coming",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "plumbing.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "note": "a file holding plumber"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "pulmer",
+          "meant": "plumber",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo18",
+      "question": "Where are my glasses?",
+      "query": "where are my galses",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "health/doctor-visits.md",
+          "start_line": 1,
+          "end_line": 9,
+          "grade": 2,
+          "note": "a file holding glasses"
+        },
+        {
+          "root_id": "laptop",
+          "path": "notes/jottings.md",
+          "start_line": 1,
+          "end_line": 45,
+          "grade": 2,
+          "note": "a file holding glasses"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "galses",
+          "meant": "glasses",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo19",
+      "question": "Who made the crumble?",
+      "query": "who made the cumbel",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 2,
+          "note": "a file holding crumble"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "cumbel",
+          "meant": "crumble",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo20",
+      "question": "Which spanner was used under the sink?",
+      "query": "which sapner size",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "plumbing.md",
+          "start_line": 1,
+          "end_line": 4,
+          "grade": 2,
+          "note": "a file holding spanner"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "sapner",
+          "meant": "spanner",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo21",
+      "question": "Where is there squash?",
+      "query": "who plays skwash",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "chess.md",
+          "start_line": 1,
+          "end_line": 5,
+          "grade": 2,
+          "note": "a file holding squash"
+        },
+        {
+          "root_id": "school",
+          "path": "noticeboard.md",
+          "start_line": 1,
+          "end_line": 51,
+          "grade": 2,
+          "note": "a file holding squash"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "skwash",
+          "meant": "squash",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 2
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo22",
+      "question": "Was something knitted?",
+      "query": "something kittid",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "household.md",
+          "start_line": 1,
+          "end_line": 35,
+          "grade": 2,
+          "note": "a file holding knitted"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "kittid",
+          "meant": "knitted",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo23",
+      "question": "Which scales come first at recorder practice?",
+      "query": "how many skailes",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "home",
+          "path": "music/recorder-practice.md",
+          "start_line": 1,
+          "end_line": 15,
+          "grade": 2,
+          "note": "a file holding scales"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "skailes",
+          "meant": "scales",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 7,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo24",
+      "question": "Where is the canoe trolley?",
+      "query": "the torley wheel",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "laptop",
+          "path": "notes/weekend-jobs.md",
+          "start_line": 1,
+          "end_line": 60,
+          "grade": 2,
+          "note": "a file holding trolley"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "torley",
+          "meant": "trolley",
+          "distance": 2,
+          "levenshtein": 2,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
+        }
+      ]
+    },
+    {
+      "slice": "misspelling-opening",
+      "id": "mo25",
+      "question": "What are the dinosaur skeletons made of?",
+      "query": "palstr cast",
+      "mode": "knowledge",
+      "expected": [
+        {
+          "root_id": "school",
+          "path": "dinosaur-topic.md",
+          "start_line": 1,
+          "end_line": 25,
+          "grade": 2,
+          "note": "a file holding plaster"
+        }
+      ],
+      "kind": "second letter",
+      "checks": [
+        {
+          "check": "no chunk overlaps a grade-2 row and a grade-0 row"
+        },
+        {
+          "check": "opening typo: 6 or 7 code points, in no file or file name; distance 2 to the meant word and no fixture word one edit away; the edit in the first letter, or in the second with the first kept; the answer rows are the files holding the meant word",
+          "typed": "palstr",
+          "meant": "plaster",
+          "distance": 2,
+          "levenshtein": 3,
+          "kind": "second letter",
+          "typed_code_points": 6,
+          "meant_df": 1
         }
       ]
     }
