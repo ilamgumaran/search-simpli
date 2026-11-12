@@ -71,6 +71,67 @@ fold-groups-v3:
   word's first two letters.
 - The older packs are identical per query.
 
+## What it gives up
+
+Measured by the S5-T8 verifier before the merge (ruling 2 of the rulings on
+the Report), on typed words written by the verifier, who had not designed the
+rule: each two edits (optimal string alignment) from a word a J2 file holds,
+with one of the edits in the first two letters and no word of the fixture one
+edit away, and not itself a word of the fixture. They ran in a scratch copy of
+the fixture, never committed to J2, through `searchd` `ReleaseSmall` built from
+`main` at `68e77da` (fuzzy-v1, fold-groups-v2) and from the S5-T8 branch. The
+rank is the first rank of a file holding the meant word in the top 10, for the
+typed word alone, under `content` and `both` (equal for every word).
+
+**The edit in the second letter (16 words):** 13 reach the meant file at rank
+1 before (15 in the top 10); **none** reaches it at rank 1 after (1 in the top
+10, through another word).
+
+| Typed | Meant | Answer file | Before | After |
+|---|---|---|---:|---:|
+| `riming` | rhyming | `home/owl-and-the-moon.md` | 1 | - |
+| `kabobs` | kebabs | `home/birthday-party-wren.md` | 1 | - |
+| `cikken` | chicken | `school/lunch-menu.md` | 1 | - |
+| `skootur` | scooter | `laptop/notes/weekend-jobs.md` | 1 | - |
+| `skweaky` | squeaky | `laptop/errands.md` | 1 | - |
+| `captur` | chapter | `laptop/notes/bedtime-stories.md` | 1 | - |
+| `pulmer` | plumber | `home/plumbing.md` | 1 | - |
+| `cumbel` | crumble | `home/household.md` | 1 | - |
+| `sapner` | spanner | `home/plumbing.md` | 1 | - |
+| `skwash` | squash | `laptop/chess.md`, `school/noticeboard.md` | 1 | - |
+| `kittid` | knitted | `home/household.md` | 1 | - |
+| `skailes` | scales | `home/music/recorder-practice.md` | 1 | - |
+| `torley` | trolley | `laptop/notes/weekend-jobs.md` | 1 | - |
+| `wistel` | whistle | `laptop/notes/jottings.md`, `school/noticeboard.md` | 8 | - |
+| `galses` | glasses | `home/health/doctor-visits.md`, `laptop/notes/jottings.md` | 8 | 6 |
+| `palstr` | plaster | `school/dinosaur-topic.md` | - | - |
+
+`-` is not in the top 10. `galses`'s file at rank 6 after is reached through
+another kept word of the same opening, not `glasses` (**inferred** from the
+distances: `games` and `gates` are two edits and share `ga`; JSON-RPC carries
+no expansion warning). `palstr` misses before as well: fuzzy-v1's three kept
+words were nearer or commoner (`past`, `pasta`, `paste` share `pa`).
+
+Each word was also asked as a short question (`riming words`, `who wanted
+kabobs`, `when is the pulmer coming`, ...). Before, 10 of the 16 questions put
+the meant file in the top 10 (2 at rank 1); after, 1 does (`which day is
+cikken`, rank 3 before and after, reached through `day`).
+
+**The edit in the first letter (9 more words, written first):** `fonics`,
+`kwizzes`, `salery`, `kushon`, `cayacs`, `nittid`, `senter`, `catchup`,
+`kustad` reach nothing alone, before or after. fuzzy-v1 already compares only
+dictionary words that start with the typed word's first code point, so a
+first-letter slip was never caught and fuzzy-v2 gives up nothing there. (As
+questions, `fonics this week` and `catchup with chips` find the meant file at
+ranks 4 and 1 both times, through their other words.)
+
+So the price of the rule, on these words, is the second-letter case: a 6 or 7
+letter typo whose second letter is wrong (`sq` typed `sk`, a dropped `h`, `l`
+or `r`, two letters swapped across the second position) and that needs two
+edits no longer finds its word. It
+gates nothing; the rule's own decision stands, and a 03-next row asks for such
+rows as a held-out slice in the next fuzzy task.
+
 ## What the caller sees
 
 - `retrieval.fuzzy_policy_id` is `"fuzzy-v2"` wherever it was `"fuzzy-v1"`.
@@ -90,7 +151,9 @@ fold-groups-v3:
   the person who wrote the slice. None of the 13 typed words errs in its first
   two code points.
 - **A second-letter typo** two edits from a 6 or 7 letter word is what the rule
-  gives up: `sistems` no longer finds `system`. J2 does not measure it.
+  gives up: `sistems` no longer finds `system`. J2 does not measure it; the
+  verifier's 16 words above (not in J2) measure it once: 13 at rank 1 before,
+  none after.
 - The `ß` residual of fuzzy-v1 stands.
 
 ## Cost

@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-12 (S5-T8, fold-groups-v3 and fuzzy-v2, reviews R05 and R06; contracts 2.7.0, Dart 0.8.0; built on `task/S5-T8`, awaiting verification)
+Last updated: 2026-11-12 (S5-T8, fold-groups-v3 and fuzzy-v2, reviews R05 and R06; contracts 2.7.0, Dart 0.8.0; verified and merged 2026-11-12)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,9 +15,12 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## Fewer misleading hits for unanswerable questions: fold-groups-v3 and fuzzy-v2 (S5-T8, reviews R05 and R06, 2026-11-12; built, awaiting verification)
+## Fewer misleading hits for unanswerable questions: fold-groups-v3 and fuzzy-v2 (S5-T8, reviews R05 and R06, 2026-11-12; verified and merged)
 
-Built on `task/S5-T8` ([task and Report](docs/tasks/S5-T8.md)). Query side only: no index format, writer or analyzer
+Verified and merged 2026-11-12 ([task, Report and Verdict](docs/tasks/S5-T8.md)): the verifier reproduced J2, the
+negatives' measure, the goldens, the natives (`cmp`-equal), five plants and the bounds from its own builds; of 16
+second-letter typos two edits from a short word it wrote, 13 found their file first under fuzzy-v1 and none under
+fuzzy-v2 ([docs/fuzzy-v2.md](docs/fuzzy-v2.md), "What it gives up"). Query side only: no index format, writer or analyzer
 change; an index written before answers under the new policies with no rebuild. `find` and the `filename` field are
 unchanged.
 

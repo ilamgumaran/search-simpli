@@ -911,5 +911,6 @@ not traced.
 
 **Conclusion:** Measured precision gains from two narrow rules with no answer lost on J2 or the older packs; stop
 words stay a 03-next row with their numbers. Details: [S5-T8](docs/tasks/S5-T8.md),
-[fold-groups-v3](docs/fold-groups-v3.md), [fuzzy-v2](docs/fuzzy-v2.md). Status: built on `task/S5-T8`, awaiting
-verification.
+[fold-groups-v3](docs/fold-groups-v3.md), [fuzzy-v2](docs/fuzzy-v2.md). Status: verified and merged
+2026-11-12 (the verifier reproduced every J2 cell, the negatives' measure, the natives and the bounds from its own
+builds, and measured what fuzzy-v2 gives up: 13 of 16 second-letter typos at rank 1 before, none after).

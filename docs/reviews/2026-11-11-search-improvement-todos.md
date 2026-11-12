@@ -179,8 +179,8 @@ scope cases; preserve explicit legacy expectations if that mode is retained.
 
 ## R05 — Measure cross-word verb matches before changing R
 
-**Built (S5-T8, [task](../tasks/S5-T8.md), branch `task/S5-T8`; awaiting
-verification):** steps 1–3. `verbform-cross` (six rows, hop/hope, evening/even,
+**Verified and merged (S5-T8, [task and Verdict](../tasks/S5-T8.md), 12 Nov
+2026):** steps 1–3. `verbform-cross` (six rows, hop/hope, evening/even,
 tap/tape, answers in six files) was judged and recorded before any rule; a
 narrow eligibility rule, [fold-groups-v3](../fold-groups-v3.md), was prototyped
 in Python beside the cap and the membership rule and ported to Zig (golden
@@ -213,8 +213,8 @@ approval before shipping changed matching semantics; keep a rollback comparison.
 
 ## R06 — Treat unanswerable queries as a precision target
 
-**Built (S5-T8, [task](../tasks/S5-T8.md), branch `task/S5-T8`; awaiting
-verification):** steps 1–3 on invented content (no real-user examples). Two
+**Verified and merged (S5-T8, [task and Verdict](../tasks/S5-T8.md), 12 Nov
+2026):** steps 1–3 on invented content (no real-user examples). Two
 negative sets of 17 (tuning, and a held-out set no candidate ran before every
 candidate was declared), `negatives-short` and a `precision-control` slice;
 "misleading" defined in `fixtures/j2/README.md` before any candidate ran (after
@@ -225,7 +225,12 @@ they cost two `mixed` rank-1 answers and do not ship. A fuzzy floor ships as
 short-typo slice: `negatives-heldout`'s misleading-first share 0.588 → 0.353
 with fold-groups-v3, the typo, morphology and control slices unchanged. `find`
 and the `filename` field are unchanged. No score threshold, no
-answer-confidence value and no abstention default was introduced.
+answer-confidence value and no abstention default was introduced. The verifier
+reproduced these numbers from its own builds and measured what fuzzy-v2 gives
+up, outside J2: of 16 typos it wrote, two edits from a 6 or 7 letter word with
+an edit in the second letter, 13 found the meant file at rank 1 under fuzzy-v1
+and none under fuzzy-v2 ([fuzzy-v2](../fuzzy-v2.md), "What it gives up"; a
+03-next row asks for such rows as a held-out slice).
 
 **Evidence:** the live queue records `on2` (`painting the fence`) returning ten
 hits; S5-T5 now reaches a model file through `paint`. It also records near-word
