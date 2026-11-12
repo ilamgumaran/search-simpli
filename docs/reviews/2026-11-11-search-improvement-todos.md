@@ -345,7 +345,7 @@ answers, wrong sources, negative cases and scope failures. Retrieval policy IDs
 already exist; JSON-RPC not forwarding expansion warnings is current documented
 behavior, not a reason to claim all result explanations are absent.
 
-**Measured (S5-T10, 12 Nov 2026; built, awaiting rulings and verification):**
+**Measured (S5-T10, 12 Nov 2026; verified and merged 12 Nov 2026, [Verdict](../tasks/S5-T10.md)):**
 [S5-T10](../tasks/S5-T10.md) froze 30 questions over the J2 snapshot covering:
 - filename recall;
 - cited content;
@@ -358,12 +358,16 @@ Ten Claude Sonnet 5.5 sessions answered the set twice, each through a command-li
 `searchd mcp --roots school,home`. The transcripts, the source, binary and policy identifiers, and the generations are
 kept under `docs/evidence/s5-t10/`.
 
-Both runs, read: 19 supported, 0 unsupported, 0 wrong source, 11 negatives handled. Machine:
+Scope: the server returned no hidden content in any of the 154 calls (0 scope failures). One agent answer holds five
+words that also stand in a hidden file: an agent-text coincidence, explained (the orchestrator's ruling 1; its condition
+checked by the verifier from the transcript). Both runs, read: supported 19 and 19 by evidence, 19 and 17 by the skill's
+read-before-quoting rule (both stated, neither called the result); 0 wrong source; 11 negatives handled. Machine:
 - 0 hidden-root markers in the server's results;
-- 154 of 154 tool calls equal to `searchd serve`.
+- 154 of 154 tool calls equal to `searchd serve` (reproduced by the verifier on its own `ReleaseSmall` build).
 
-One coincidental five-word match in an agent's own text awaits a ruling. Not measured here: performance, and the parity
-line on the judged query set; the replay used the agents' own requests. There was no consumer, so no pin or contract
+Isolation was by instruction: the agents had a shell. A run with the server as the agent's only tool is a 03-next row
+and what a maintainer should ask for before *Validated*. Not measured here: performance, and the parity line on the
+judged query set; the replay used the agents' own requests. There was no consumer, so no pin or contract
 adoption. CAP-13 stays *Diagnostic*; the Report states what a maintainer would need to decide.
 
 ## R12 — Keep the queue and entry points truthful

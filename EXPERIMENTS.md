@@ -853,9 +853,12 @@ nothing of the old, after a refresh.
 **Observed:**
 - Both runs, read: 19 supported, 0 unsupported, 0 wrong source, 11 negatives handled, 0 not handled. Every cited file was
   the expected one, inside its generation, and no key fact was missing (machine).
-- Scope (machine): 0 hidden-root markers in the server's results, 0 scope-widening arguments, 0 `apply_changes`. One
-  five-word run in run 2's agent text matched the hidden root by coincidence (read as a false positive; it is in the
-  task's Report).
+- Scope (machine): 0 hidden-root markers in the server's results, 0 scope-widening arguments, 0 `apply_changes`: 0
+  scope failures. One five-word run in run 2's agent text also stands in a hidden file: an agent-text coincidence,
+  explained (every word came from visible results, and no result carries a line of the hidden file; the verifier
+  checked it from the transcript).
+- Supported by the skill's process rule (a read of the file preceded the quotation): 19 in run 1 and 17 in run 2 (f1
+  and f4 quoted search results). Both readings are stated; neither is called the result.
 - The 154 tool calls equal `searchd serve`'s results, with 0 citation and 0 freshness misses.
 - Between the runs: 30 of 30 tasks gave the same verdict and cited file, 28 the same lines, 18 the same tool sequence.
 - Breaches of the skill's rules, while the answer still held (read): 3 in run 1 and 6 in run 2. They include quoting a
@@ -869,4 +872,5 @@ Parity was on the agents' requests, not the judged query set. Performance was no
 
 **Conclusion:** Evidence for CAP-13's *Validated* line, recorded and not acted on: the status stays *Diagnostic* for a
 maintainer to move. Six findings are 03-next rows. Details: [S5-T10](docs/tasks/S5-T10.md),
-[record](docs/evidence/s5-t10/README.md). Status: built, awaiting the orchestrator's rulings and verification.
+[record](docs/evidence/s5-t10/README.md). Status: verified and merged 2026-11-12 (the verifier re-ran the checks, the
+agent-log summaries and the parity replay on its own `searchd`; the Verdict is in the task file).
