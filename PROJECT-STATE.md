@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-10 (S5-T5, verb forms at query time, `fold-groups-v2`, contracts 2.6.0; verified and merged)
+Last updated: 2026-11-12 (S5-T7, the reference scores `content` under a path prefix as the engine does, review R03; Python reference and tests only; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,9 +15,10 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## The reference scores `content` under a path prefix as the engine does (S5-T7, review R03, 2026-11-12; built, awaiting verification)
+## The reference scores `content` under a path prefix as the engine does (S5-T7, review R03, 2026-11-12; verified and merged 2026-11-12)
 
-Built on `task/S5-T7` ([task and Report](docs/tasks/S5-T7.md)); Python reference and tests only, so no native,
+**Verified and merged 2026-11-12** ([Verdict](docs/tasks/S5-T7.md)); the verifier's own `searchd` ReleaseSmall build
+and runs reproduced every number below. Built on `task/S5-T7` ([task and Report](docs/tasks/S5-T7.md)); Python reference and tests only, so no native,
 contract, Dart or app pin change. `core.search`'s `content` body BM25 (`_bm25_scores(..., statistics=visible)`) now
 takes N, the average length and every document frequency over the chunks the caller may see (roots and labels),
 and the path prefix narrows only the candidates, as `Engine.queryTraced` has since S3-T3. A grouped term (fuzzy-v1,

@@ -777,4 +777,5 @@ the old narrowing put back, the held-member filter removed) each fail the new te
 
 **Conclusion:** The reference now states the engine's rule: a prefix narrows the candidates, roots and labels the
 statistics. The reference can be compared with the engine by score under a prefix, not only by order. Details:
-[S5-T7](docs/tasks/S5-T7.md). Status: built, awaiting verification.
+[S5-T7](docs/tasks/S5-T7.md). Status: verified and merged 2026-11-12 (the verifier's own runs reproduced every number
+above; its own sweep of 2,316 cases on two fixtures, in the task's Verdict, agrees too).
