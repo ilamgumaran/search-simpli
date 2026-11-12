@@ -42,7 +42,7 @@ const String _interchangeVerbs =
     '"text":"secret dancers","vector":[],"required_labels":["tenant:x"]}'
     ']}';
 
-/// Contract 2.7.0 (S5-T8): fold-groups-v3 and fuzzy-v2.
+/// Contract 2.7.0 (S5-T8): fold-groups-v3; fuzzy-v1 unchanged.
 const String _interchangeV3 =
     '{"format_version":1,"generation":1,"analyzer_id":"analyzer-v2",'
     '"embedding_model_id":"none","documents":['
@@ -331,7 +331,7 @@ void main() {
         topK: 5,
         mode: RetrievalMode.lexical,
       );
-      expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v2');
+      expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v1');
       // A record compares a list by identity: the expansions are joined.
       expect(
         result.warnings!.map((w) => (w.code, w.term, w.expansions?.join(','))),
@@ -365,7 +365,7 @@ void main() {
         result.warnings!.map((w) => w.code),
         [SearchWarningCode.queryTermGrouped],
       );
-      expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v2');
+      expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v1');
     });
   });
 
@@ -468,7 +468,7 @@ void main() {
     });
   });
 
-  group('contract 2.7.0: fold-groups-v3 and fuzzy-v2 on an analyzer-v2 index', () {
+  group('contract 2.7.0: fold-groups-v3 on an analyzer-v2 index, fuzzy-v1 unchanged', () {
     late Directory v3Dir;
     late SearchSimpli v3;
 
@@ -496,15 +496,19 @@ void main() {
       expect(result.results.map((r) => r.citation.path), ['public/b.md']);
     });
 
-    test('a short misspelling two edits away with another opening is not expanded', () {
-      // sistems is 7 code points; system is two edits away and opens sy, not si.
+    test('a short misspelling two edits away with another opening is still expanded', () {
+      // sistems is 7 code points; system is two edits away and opens sy, not
+      // si: fuzzy-v1 searches it (the S5-T8 re-ruling kept fuzzy-v1).
       final result = v3.query('sistems', topK: 5, mode: RetrievalMode.lexical);
-      expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v2');
+      expect(result.retrieval.fuzzyPolicyId, 'fuzzy-v1');
       expect(
-        result.warnings!.map((w) => (w.code, w.term)),
-        [(SearchWarningCode.queryTermUnmatched, 'sistems')],
+        result.warnings!.map((w) => (w.code, w.term, w.expansions?.join(','))),
+        [
+          (SearchWarningCode.queryTermUnmatched, 'sistems', null),
+          (SearchWarningCode.queryTermExpanded, 'sistems', 'system'),
+        ],
       );
-      expect(result.results, isEmpty);
+      expect(result.results.map((r) => r.citation.path), ['public/c.md']);
     });
   });
 }

@@ -139,18 +139,15 @@
  * "fold-groups-v2"; the forms are listed in the query_term_grouped
  * warning's "members". */
 
-/* Contract 2.7.0 (S5-T8) changes two policies, with no request field, no
+/* Contract 2.7.0 (S5-T8) changes one policy, with no request field, no
  * warning code, no result field and no signature or index format change;
- * an index written before it answers under the new policies with no
+ * an index written before it answers under the new policy with no
  * rebuild. fold-groups-v3 (docs/fold-groups-v3.md) leaves out the verb
  * forms of another word: for a short word that doubles its last letter
  * (hop, car), its -ed, -ing and -es without the doubling (hoped, hoping,
  * hopes are hope's); and for hoping or caring, the word hop or car.
- * fuzzy-v2 (docs/fuzzy-v2.md): of fuzzy-v1's up to 3 words, one 2 edits
- * away is dropped when the query word has fewer than 8 code points and the
- * two do not share their first two letters; no other word takes its place.
- * retrieval.fold_policy_id is "fold-groups-v3" and retrieval.fuzzy_policy_id
- * "fuzzy-v2". */
+ * retrieval.fold_policy_id is "fold-groups-v3"; retrieval.fuzzy_policy_id
+ * stays "fuzzy-v1". */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 
@@ -366,7 +363,7 @@ char *ss_status(ss_handle *handle);
  *                     word itself left out, each held by a chunk or a file
  *                     name in scope (never only by hidden ones). "term" is
  *                     the typed word, as above. A word with a group is not
- *                     expanded by fuzzy-v1 (fuzzy-v2 since 2.7.0).
+ *                     expanded by fuzzy-v1.
  *                 query_empty_after_analysis the query has no searchable
  *                     terms (empty, punctuation, unknown script for the
  *                     analyzer). Lexical and hybrid modes only.

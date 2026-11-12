@@ -61,8 +61,7 @@ tolerance ([fuzzy-v1](docs/fuzzy-v1.md): `retrieval.fuzzy_policy_id` and the
 `query_term_grouped` warning); contract 2.6.0 (S5-T5) adds `-ing`/`-ed` verb
 forms to those groups ([fold-groups-v2](docs/fold-groups-v2.md)); contract
 2.7.0 (S5-T8) leaves out the verb forms of another word
-([fold-groups-v3](docs/fold-groups-v3.md)) and a short misspelling's far
-spellings of another opening ([fuzzy-v2](docs/fuzzy-v2.md)), and the
+([fold-groups-v3](docs/fold-groups-v3.md)), and the
 bundled macOS/Android/iOS arm64 libraries are rebuilt from that source. Physical-device validation remains pending.
 [CAP-16](docs/requirements/cap-16-directory-filename-search.md) and its
 [format contract](docs/filename-field-format-v1.md) describe the design.
