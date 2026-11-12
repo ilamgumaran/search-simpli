@@ -345,7 +345,7 @@ answers, wrong sources, negative cases and scope failures. Retrieval policy IDs
 already exist; JSON-RPC not forwarding expansion warnings is current documented
 behavior, not a reason to claim all result explanations are absent.
 
-**Measured (S5-T10, 12 Nov 2026; verified and merged 12 Nov 2026, [Verdict](../tasks/S5-T10.md)):**
+**Measured (S5-T10, 12 Nov 2026; verified and merged 12 Nov 2026 at `2cbdb1d`, [Verdict](../tasks/S5-T10.md)):**
 [S5-T10](../tasks/S5-T10.md) froze 30 questions over the J2 snapshot covering:
 - filename recall;
 - cited content;
