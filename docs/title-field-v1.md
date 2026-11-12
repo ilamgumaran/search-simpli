@@ -116,5 +116,6 @@ drains its matches first. Both give the same results (a test drives both).
   half its BM25 (`p06` 1 → 2 under `content`). Left to S5-T3 (03-next).
 - **The root's display label** (the app's Shared-folder name) is not a word;
   a 03-next row asks for a J2 row first.
-- **`FolderIndex.search`** (the Python folder lifecycle runner) keeps the
-  ranking before S5-T2; `core.search` is the reference (03-next).
+- **`FolderIndex.search`** (the Python folder lifecycle runner) kept the
+  ranking before S5-T2; since S5-T9 (review R04) it ranks through
+  `core.search` and carries the title part.
