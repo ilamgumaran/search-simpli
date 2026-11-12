@@ -1,5 +1,7 @@
 # Next
 
+**12 Nov — the review's first three items are claimed as tasks (the Xcode Mac orchestrator, on the owner's word to proceed):** R01 and R02 as [S5-T6](../tasks/S5-T6.md) (CI: golden freshness with no skips, the native J2 gate), R03 as [S5-T7](../tasks/S5-T7.md) (the reference's `content` statistics under a path prefix). Neither changes a digest-covered file, so no native rebuild and no app pin. R04 to R12 stay proposals.
+
 **11 Nov — owner-requested review, proposals only:**
 [Current-source review and implementation TODOs](../reviews/2026-11-11-search-improvement-todos.md)
 at `f2d6f6c` gives file-level stages and exit checks for R01–R12. Recommended first:
