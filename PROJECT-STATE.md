@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-12 (S5-T9, the folder lifecycle helper ranks through the shared reference, review R04; Python helper and tests only; verified and merged)
+Last updated: 2026-11-12 (S5-T10, a real agent answers through `searchd mcp` on the J2 snapshot, review R11; evidence only; built, awaiting rulings and verification)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,20 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## A real agent answers through `searchd mcp` (S5-T10, review R11, 2026-11-12; built, awaiting rulings and verification)
+
+Built on `task/S5-T10` ([task and Report](docs/tasks/S5-T10.md), [record](docs/evidence/s5-t10/README.md)). Evidence
+only: no engine, contract, skill, binding, fixture or CI change, and no native rebuild or app pin.
+
+- **What ran.** Ten Claude Sonnet 5.5 agent sessions answered 30 frozen questions about J2 in two runs. Each used only a
+  command-line MCP client that starts `searchd mcp <index> --roots school,home` per call; the third root, `laptop`,
+  was hidden. Both runs, read: 19 supported, 0 unsupported, 0 wrong source, 11 negatives handled.
+- **Machine checks.** 0 hidden-root markers in the server's results. 154 of 154 tool calls equal `searchd serve`.
+  Freshness held at generations 2 and 3.
+- **Open for the orchestrator.** One coincidental five-word match in an agent's own text is reported at the top of the
+  Report for a ruling.
+- **CAP-13 status.** It stays *Diagnostic*. The Report says what a maintainer would need to decide for *Validated*.
 
 ## The folder lifecycle helper ranks through the reference (S5-T9, review R04, 2026-11-12; verified and merged 2026-11-12)
 

@@ -345,6 +345,27 @@ answers, wrong sources, negative cases and scope failures. Retrieval policy IDs
 already exist; JSON-RPC not forwarding expansion warnings is current documented
 behavior, not a reason to claim all result explanations are absent.
 
+**Measured (S5-T10, 12 Nov 2026; built, awaiting rulings and verification):**
+[S5-T10](../tasks/S5-T10.md) froze 30 questions over the J2 snapshot covering:
+- filename recall;
+- cited content;
+- name with content;
+- no answer;
+- an answer only in a hidden root;
+- after a refresh with edits, moves and deletes.
+
+Ten Claude Sonnet 5.5 sessions answered the set twice, each through a command-line MCP client that starts
+`searchd mcp --roots school,home`. The transcripts, the source, binary and policy identifiers, and the generations are
+kept under `docs/evidence/s5-t10/`.
+
+Both runs, read: 19 supported, 0 unsupported, 0 wrong source, 11 negatives handled. Machine:
+- 0 hidden-root markers in the server's results;
+- 154 of 154 tool calls equal to `searchd serve`.
+
+One coincidental five-word match in an agent's own text awaits a ruling. Not measured here: performance, and the parity
+line on the judged query set; the replay used the agents' own requests. There was no consumer, so no pin or contract
+adoption. CAP-13 stays *Diagnostic*; the Report states what a maintainer would need to decide.
+
 ## R12 — Keep the queue and entry points truthful
 
 **Evidence:** the active DS-00 section of [IMPROVEMENT-BOARD.md](../../IMPROVEMENT-BOARD.md)
