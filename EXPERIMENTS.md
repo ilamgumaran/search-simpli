@@ -832,3 +832,45 @@ the helper: both surfaces unchanged, the gate passes.
 **Conclusion:** One ranking in the reference: the lifecycle helper cannot select an older ranker, and a lifecycle
 fixture compares with the engine by score. Details: [S5-T9](docs/tasks/S5-T9.md). Status: verified and merged
 2026-11-12 (the verifier's own comparative runs, plants and packs, in the task's Verdict).
+
+## 2026-11-12 — A real agent answers through `searchd mcp` (S5-T10, review R11)
+
+**Hypothesis:** An agent given only `searchd mcp`'s read tools (default mode, the principal fixed on the command line)
+and the folder-knowledge skill text answers a person's questions from the right file and cites it. It says it found
+nothing when the folders hold no answer or hold it only in a root it may not see. It answers from the new text, and
+nothing of the old, after a refresh.
+
+**Setup:**
+- Main `80095df`; `searchd` `ReleaseSmall` (1,078,952 B); J2's three roots indexed with the file-name channel, the agent
+  scoped to `school,home` and `laptop` hidden (generation 2; 3 after the refresh).
+- 30 frozen questions, five each of: a file by name, a cited passage, a name locating a passage, no answer, an answer
+  only in the hidden root, and after the refresh (two edits, two moves, two deletes).
+- Ten Claude Sonnet 5.5 (`claude-sonnet-5-5`) agent sessions, two runs of five batches. Each was given the skill text,
+  six questions and a command-line MCP client that starts the server per call and keeps a hash-chained transcript.
+- Machine checks from the transcripts. Every tool call was replayed through `searchd serve`. The builder read every
+  answer against the files.
+
+**Observed:**
+- Both runs, read: 19 supported, 0 unsupported, 0 wrong source, 11 negatives handled, 0 not handled. Every cited file was
+  the expected one, inside its generation, and no key fact was missing (machine).
+- Scope (machine): 0 hidden-root markers in the server's results, 0 scope-widening arguments, 0 `apply_changes`: 0
+  scope failures. One five-word run in run 2's agent text also stands in a hidden file: an agent-text coincidence,
+  explained (every word came from visible results, and no result carries a line of the hidden file; the verifier
+  checked it from the transcript).
+- Supported by the skill's process rule (a read of the file preceded the quotation): 19 in run 1 and 17 in run 2 (f1
+  and f4 quoted search results). Both readings are stated; neither is called the result.
+- The 154 tool calls equal `searchd serve`'s results, with 0 citation and 0 freshness misses.
+- Between the runs: 30 of 30 tasks gave the same verdict and cited file, 28 the same lines, 18 the same tool sequence.
+- Breaches of the skill's rules, while the answer still held (read): 3 in run 1 and 6 in run 2. They include quoting a
+  name-only match's first passage (a5, both runs) and quoting search results without a read-back (run 2 f1, f4).
+- One call was refused for the field `root` that the skill's step 3 names (run2-b4 #9).
+
+**Limits:** Invented content, one model, 60 answers. Isolation was by instruction: the agent had a shell through which
+it ran the client, and its runtime attached its own context; the runtime's log shows no command other than the client
+and filters on its output. The builder wrote and read the questions. The hidden-marker check is a text heuristic.
+Parity was on the agents' requests, not the judged query set. Performance was not measured.
+
+**Conclusion:** Evidence for CAP-13's *Validated* line, recorded and not acted on: the status stays *Diagnostic* for a
+maintainer to move. Six findings are 03-next rows. Details: [S5-T10](docs/tasks/S5-T10.md),
+[record](docs/evidence/s5-t10/README.md). Status: verified and merged 2026-11-12 (the verifier re-ran the checks, the
+agent-log summaries and the parity replay on its own `searchd`; the Verdict is in the task file).

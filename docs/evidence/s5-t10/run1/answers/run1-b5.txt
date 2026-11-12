@@ -1,0 +1,45 @@
+Model: Sonnet 5.5 (claude-sonnet-5-5)
+
+### Q1
+Answer: Paati's phone number is 01632 960418 [1].
+Sources:
+[1] home/contacts/family-phone-book.txt · lines 1–7
+Cited file: home/contacts/family-phone-book.txt
+Cited lines: 1-7
+Tool calls: index_status, search_knowledge, read_span
+
+### Q2
+Answer: I found no matching indexed passages in the selected folders. (I tried the words "boiler model number" and "boiler" with search_knowledge, including a file-name search, and `find` with "boiler" in words mode.)
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find, search_knowledge
+
+### Q3
+Answer: Wren's bedtime is half past seven and Pip's is half past eight. The text says: "Wren at half past seven, Pip at half past eight. Books in bed are fine." [1]
+Sources:
+[1] home/house-rules.md › House rules › Bedtime · lines 8–11
+Cited file: home/house-rules.md
+Cited lines: 8-11
+Tool calls: search_knowledge, read_span
+
+### Q4
+Answer: I found no matching indexed passages in the selected folders. (I tried "German club Straße" with search_knowledge, `find` for "Straße" and a file-name search for "German club". A "German corner" section does list other German words, such as Tor, Pfeife, Mannschaft, Spieler and Trainer, but it doesn't mention Straße. That section is in school/noticeboard.md, lines 23–29.)
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find, search_knowledge
+
+### Q5
+Answer: The winter drinks recipes are in home/recipes/cosy-drinks.md [1]. The hot chocolate uses a pint of milk. The text says: "Hot chocolate for four: warm a pint of milk in a pan, whisk in three spoons of cocoa and two of sugar, and pour it into mugs before it boils." [1]
+Sources:
+[1] home/recipes/cosy-drinks.md › Winter drinks › Hot chocolate · lines 3–7
+Cited file: home/recipes/cosy-drinks.md
+Cited lines: 3-7
+Tool calls: search_knowledge, read_span
+
+### Q6
+Answer: On Friday the school lunch is "Jacket potatoes with beans. Apple crumble." [1]
+Sources:
+[1] school/lunch-menu.md › School lunch menu › Friday · lines 21–23
+Cited file: school/lunch-menu.md
+Cited lines: 21-23
+Tool calls: search_knowledge, outline, read_span

@@ -1,0 +1,34 @@
+You are answering a person's questions about their folders of notes. You have exactly one way to see those folders: a command-line MCP client, which you run with the Bash tool. Use nothing else on this machine: do not read, list or search any file or folder yourself, do not open the client's source, do not run any other command or tool, and do not use the web. If the instructions below mention files or scripts, you do not have them; the client is your only access. Everything you say about the folders must come from what the client prints. There is no one to ask: work through all six questions on your own.
+
+The client (run each command exactly in this form):
+
+    cd __AGENT_DIR__ && python3 mcp_call.py <label> tools
+        lists the MCP server's tools (names, descriptions, input schemas) and the server's instructions.
+
+    cd __AGENT_DIR__ && python3 mcp_call.py <label> call <tool> '<json arguments>'
+        calls one tool with a JSON object of arguments and prints the tool's result.
+
+<label> is the question the call is for, Q1 to Q6. Tag every call with the question you are working on.
+
+Your instructions for answering from the folders are this skill, given here verbatim:
+
+----- skill text begins -----
+__SKILL__
+----- skill text ends -----
+
+The questions (each is a separate question from the same person):
+
+__QUESTIONS__
+
+When you have finished all six, reply with exactly the following and nothing else. The Answer may run over several lines; in each section the three lines after it come last.
+
+Model: <your model name and version, as you know them>
+
+### Q1
+Answer: <your answer to the person, written as the skill says (with [n] markers and the source list), or the skill's sentence for when nothing comes back>
+Cited file: <root/path of the file your answer rests on, or "not found">
+Cited lines: <start-end of the lines you cite, or "none">
+Tool calls: <the tools you called for this question, in order>
+
+### Q2
+(the same four fields, and so on to Q6)

@@ -1,0 +1,43 @@
+Model: Sonnet 5.5 (claude-sonnet-5-5)
+
+### Q1
+Answer: I found no matching indexed passages in the selected folders. I tried `search_knowledge` for "Pip reading band" and `find` for "band" and "reading band". The only passage that named Pip's reading was her reading log, and it lists three books with no band. The other "band" hit was the school band concert.
+Cited file: not found
+Cited lines: none
+Tool calls: index_status, search_knowledge, read_span, find, find
+
+### Q2
+Answer: The children need wellies, a waterproof coat and a packed lunch [1]. The trip is on Tuesday 18 November [1].
+Sources:
+[1] school/letters/letter-home-oct.txt · lines 6–10
+Cited file: school/letters/letter-home-oct.txt
+Cited lines: 6-10
+Tool calls: search_knowledge, read_span
+
+### Q3
+Answer: I found no matching indexed passages in the selected folders. I tried `search_knowledge` for "music exam" and `find` for "exam" and "music". The only exam found is a Tamil exam (தமிழ் தேர்வு). The "music" hits only mention the music room. None of them mention a music exam date.
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find, find
+
+### Q4
+Answer: The file is `home/tamil/பாட்டி-கடிதங்கள்.md` [1]. Its file name matched both Tamil words. Its first passage is the heading "Paati's letters", then "Letters from Paati, copied out by Maren." I read this only from the search result, because the match was on the name alone. I did not open the file with `read_span`.
+Sources:
+[1] home/tamil/பாட்டி-கடிதங்கள்.md › Paati's letters · lines 1–4 (file-name match)
+Cited file: home/tamil/பாட்டி-கடிதங்கள்.md
+Cited lines: 1-4
+Tool calls: search_knowledge
+
+### Q5
+Answer: I found no matching indexed passages in the selected folders. I tried `search_knowledge` for "Uncle Ravi juggle video call" and `find` for "juggl*". The passages that came back mention Uncle Ravi cooking curry and buying herring, and neither mentions juggling or a video call.
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find
+
+### Q6
+Answer: They should measure the shoot every two days, in millimetres [1]. The homework says to "measure the height of the shoot with a ruler and write it in the table in millimetres" [1].
+Sources:
+[1] school/science-homework.md › Bean diary › Measuring · lines 16–22
+Cited file: school/science-homework.md
+Cited lines: 16-22
+Tool calls: search_knowledge, read_span

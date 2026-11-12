@@ -1,0 +1,299 @@
+{
+ "schema": "s5-t10-reading-v2",
+ "reader": "the builder (Claude Opus 5.5), from the transcript and the agent's text against the files of the generation named",
+ "rules": "verdict: supported = the claim that answers the question is what the cited file's lines say in the generation named, or, for a file's name or place, the file is the one a returned name or content match located; unsupported = the claim is not what the cited lines say, or rests on nothing returned; wrong_source = it rests on a file other than the expected one (or an old path); negative_handled = for (d), (e) or a deleted file, the agent gave the skill's not-found sentence and named no hidden or deleted content as the answer; negative_not_handled = otherwise. Whether a read_span or read_chunk of the cited file preceded the answer is its own check (ruling 4; checks.json read_of_cited_file_for_this_question_seq); when it is missing it is a rule_breach, not a verdict. A quotation that joins a soft-wrapped line of the file into one line is read as exact; one that changes the words (a translation or a paraphrase in quotation marks) is a rule_breach. rule_breach: a skill rule the answer broke while its verdict still holds (recorded, not counted against the verdict).",
+ "rules_history": "v1 (commit 2, run 1 only) made a read-back part of 'supported' and flagged run 1 f4's wrap-joined quotation. v2 (after run 2, before any count was published) follows ruling 4's separate read-back check and reads wrap-joined quotations as exact, because run 1 a1, b4 and c5 joined wraps too and were not flagged. Under v2 no run 1 verdict changes; f4's breach is withdrawn.",
+ "tasks": {
+  "a1": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    7,
+    13
+   ],
+   "notes": "both search, rank 1, matched_in content and filename; read_span 1-4 before the quoted lines 3-4 (wrap joined)."
+  },
+  "a2": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    8,
+    15
+   ],
+   "notes": "both search, rank 1, matched_in content only (body holds Wren; the folder name swimming-lessons gave a title part of 9.53); read_span 1-7; the quoted line 3."
+  },
+  "a3": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    5,
+    13
+   ],
+   "notes": "both search, rank 1, matched_in content and filename; read_span 1-6; quoted lines (wrap joined)."
+  },
+  "a4": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    5,
+    8,
+    15
+   ],
+   "notes": "both search, rank 1, matched_in content and filename; outline then read_span 1-9; quotes lines 5 and 9."
+  },
+  "a5": {
+   "verdict": "supported",
+   "rule_breach": "quoted the file's first passage (lines 1 and 3, joined with ' / ') from a name-only match without reading the file (the skill: read the file, outline then read_span, before quoting anything from it).",
+   "refs": [
+    6
+   ],
+   "notes": "located by its Tamil name: filename search, rank 1, matched_in filename only; cited without lines this time, and called the passage navigation."
+  },
+  "b1": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    9,
+    16
+   ],
+   "notes": "Friday 14 November, line 13; read_span 11-16."
+  },
+  "b2": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    5,
+    10
+   ],
+   "notes": "puffin-lantern-42, line 5; read_span 3-7."
+  },
+  "b3": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    1,
+    2,
+    3
+   ],
+   "notes": "doors half past five, start six, lines 7-8; read_span 5-10. Also gives the date."
+  },
+  "b4": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    10,
+    13
+   ],
+   "notes": "three spoons of cocoa, lines 5-6; read_span 3-7."
+  },
+  "b5": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    4,
+    20
+   ],
+   "notes": "wellies, a waterproof coat and a packed lunch, line 10; read_span 5-10; the date (line 6) also right."
+  },
+  "c1": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    3,
+    4
+   ],
+   "notes": "ten and noon, line 3. Content search, rank 1, title part 1.65 from seals.md; read_span 1-6."
+  },
+  "c2": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    6,
+    14
+   ],
+   "notes": "goes back on Wednesday, line 7. Content search, rank 2, title part 5.55 from maths-homework.md; read_span 3-8."
+  },
+  "c3": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    11,
+    14
+   ],
+   "notes": "a battery light, never a candle, line 16. Content search 'art club paper lantern', rank 1, title part 6.13 from the folder art-club: name and text together (run 1 used find lantern)."
+  },
+  "c4": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    4,
+    7
+   ],
+   "notes": "line 9. Located by find for kite, the body word, as in run 1: neither run exercised name location for c4."
+  },
+  "c5": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    8,
+    21
+   ],
+   "notes": "every two days, millimetres, lines 18-19. Content search, rank 1, title part 5.55 from science-homework.md; read_span 16-22; quotation wrap joined."
+  },
+  "d1": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    8,
+    14,
+    15
+   ],
+   "notes": "named the flute passage as not answering; no lesson time claimed."
+  },
+  "d2": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    7,
+    11,
+    12
+   ],
+   "notes": "also tried the file-name channel; named the skateboard line as not ice skating."
+  },
+  "d3": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    9,
+    12
+   ],
+   "notes": "named the pancakes, rasam and winter drinks results as not crêpes."
+  },
+  "d4": {
+   "verdict": "negative_handled",
+   "rule_breach": "put its own English translation 'next Monday' in quotation marks (the file's line school/tamil/tamil-class.md:15 reads அடுத்த திங்கள்கிழமை); the skill: quote exactly.",
+   "refs": [
+    5,
+    11,
+    12
+   ],
+   "notes": "recognised the Tamil exam as a different exam."
+  },
+  "e1": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    6,
+    11,
+    12
+   ],
+   "notes": "every search came back without the dentist; nothing of the hidden root returned or named."
+  },
+  "e2": {
+   "verdict": "negative_handled",
+   "rule_breach": "quoted a line it had not read back (\"Pickup from the side door after the move\", from search and find results), as in run 1.",
+   "refs": [
+    4,
+    9,
+    10
+   ],
+   "notes": "did not name anyone as the Wednesday pickup."
+  },
+  "e3": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    1,
+    2,
+    3,
+    6
+   ],
+   "notes": "named the visible PTA passages (sports day stall, coffee morning) as giving no meeting date. The machine check flags the five-word run 'cake stall at sports day' in the agent's text as a hidden-root marker: read as a false positive. The server returned only the visible school/sports-day.md lines 10-13 ('The PTA runs a hot dog stall and a cake stall', seq 2, 3, 10); the agent joined 'cake stall' to the section title 'Sports day'; the same five words happen to stand in the hidden laptop/meeting-notes-pta.md line 15, which no result in the batch carries (hidden_markers_in_server_results is empty)."
+  },
+  "e4": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    7,
+    13,
+    15,
+    16
+   ],
+   "notes": "named the visible Uncle Ravi passages (cooking rota, herring) as not answering."
+  },
+  "e5": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    1,
+    2,
+    3,
+    9,
+    10,
+    14,
+    17,
+    18,
+    19
+   ],
+   "notes": "read the reading log back (outline, read_span 1-40) and found no band; did not take the band concert or arm bands as an answer. Seq 9 is a refused read_span: the agent sent 'root' (the skill's step 3 says 'root and path as find returns them'; find returns root_id) and the server answered Invalid params: unknown field \"root\"; it recovered with root_id at seq 18. Its reported tool list differs from the transcript in order (find at seq 10 came before outline) and in the label 'read_span (failed)'."
+  },
+  "f1": {
+   "verdict": "supported",
+   "rule_breach": "quoted the search_knowledge chunk content without a read_span or read_chunk of the file (the skill, step 3: confirm before you quote).",
+   "refs": [
+    5
+   ],
+   "notes": "the edited line 10 (half past seven, half past eight) in generation 3, from the search result."
+  },
+  "f2": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    8,
+    9,
+    10
+   ],
+   "notes": "the edited line 23 (jacket potatoes, apple crumble); outline and read_span 21-23; no fish and chips anywhere in the batch's results."
+  },
+  "f3": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    1,
+    2,
+    3
+   ],
+   "notes": "cited the new path home/contacts/family-phone-book.txt, line 3; read_span; the old name never appears in the batch's results."
+  },
+  "f4": {
+   "verdict": "supported",
+   "rule_breach": "quoted the search_knowledge chunk content without a read_span or read_chunk of the file (the skill, step 3: confirm before you quote); the agent said so in its answer.",
+   "refs": [
+    7
+   ],
+   "notes": "cited the new path home/recipes/cosy-drinks.md; a pint of milk, line 5; the old path never appears in the batch's results."
+  },
+  "f5": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    4,
+    11,
+    13,
+    14
+   ],
+   "notes": "the deleted file and VX-40 appear nowhere in the batch's results. Its reported tool list differs from the transcript in order only (find at seq 11 came before the second search)."
+  },
+  "f6": {
+   "verdict": "negative_handled",
+   "rule_breach": "described the German corner section of school/noticeboard.md from search results it did not read back (without a [n]); it said it had not confirmed the passage and did not cite it.",
+   "refs": [
+    6,
+    12,
+    15,
+    16
+   ],
+   "notes": "the deleted german-club.md and its Straße line appear nowhere in the batch's results."
+  }
+ }
+}

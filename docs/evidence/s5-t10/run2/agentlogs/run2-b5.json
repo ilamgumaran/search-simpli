@@ -1,0 +1,131 @@
+{
+ "log_sha256": "61c39d1088310ebaf4df306ab4c147c7524e3e387bc9bb148b4823db575c940a",
+ "models_reported_by_runtime": [
+  "claude-sonnet-5-5"
+ ],
+ "first_prompt_equals_brief": true,
+ "tools_used": {
+  "Bash": 13
+ },
+ "only_bash_used": true,
+ "bash_commands": [
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q1 call index_status '{}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q1 call search_knowledge '{\"query\":\"Paati phone number\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q1 call read_span '{\"root_id\":\"home\",\"path\":\"contacts/family-phone-book.txt\",\"start_line\":1,\"end_line\":7}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q2 call search_knowledge '{\"query\":\"boiler model number\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q3 call search_knowledge '{\"query\":\"bedtime Wren and Pip\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q4 call search_knowledge '{\"query\":\"German club Straße\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q5 call search_knowledge '{\"query\":\"winter drinks hot chocolate milk\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q6 call search_knowledge '{\"query\":\"school lunch Friday\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q6 call outline '{\"root_id\":\"school\",\"path\":\"lunch-menu.md\"}'; python3 mcp_call.py Q6 call read_span '{\"root_id\":\"school\",\"path\":\"lunch-menu.md\",\"start_line\":1,\"end_line\":40}'",
+   "parts": [
+    "cd",
+    "client call",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q2 call find '{\"query\":\"boiler\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q4 call find '{\"query\":\"Straße\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q2 call search_knowledge '{\"query\":\"boiler\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}' | head -c 2500; echo; python3 mcp_call.py Q2 call find '{\"query\":\"heating\"}' | head -c 1500",
+   "parts": [
+    "cd",
+    "client call | output trimmed",
+    "echo",
+    "client call | output trimmed"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b5 && python3 mcp_call.py Q4 call search_knowledge '{\"query\":\"German club\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}' | head -c 3500; echo; python3 mcp_call.py Q4 call find '{\"query\":\"Strasse\"}' | head -c 1500",
+   "parts": [
+    "cd",
+    "client call | output trimmed",
+    "echo",
+    "client call | output trimmed"
+   ]
+  }
+ ],
+ "client_calls": 16,
+ "client_calls_with_output_trimmed": 4,
+ "client_calls_piped_to_other_filter": [],
+ "shell_parts_other_than_cd_and_client_calls": [
+  "echo"
+ ],
+ "every_command_is_cd_and_client_calls_only": false,
+ "runtime_attachment_kinds": {
+  "agent_listing_delta": 1,
+  "credential_org": 1,
+  "date": 1,
+  "deferred_tools_delta": 1,
+  "environment": 1,
+  "hook_success": 27,
+  "instructions": 1,
+  "mcp_instructions_delta": 1,
+  "model": 1,
+  "prompt_snapshot": 2,
+  "remote_session_change": 1,
+  "session_context": 1,
+  "skill_listing": 1
+ }
+}

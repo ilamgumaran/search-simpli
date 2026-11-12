@@ -1,0 +1,32 @@
+{
+ "batches": {
+  "b1": {
+   "tool_calls": 15,
+   "equal": 15,
+   "server_exit": 0
+  },
+  "b2": {
+   "tool_calls": 15,
+   "equal": 15,
+   "server_exit": 0
+  },
+  "b3": {
+   "tool_calls": 15,
+   "equal": 15,
+   "server_exit": 0
+  },
+  "b4": {
+   "tool_calls": 19,
+   "equal": 19,
+   "server_exit": 0
+  },
+  "b5": {
+   "tool_calls": 16,
+   "equal": 16,
+   "server_exit": 0
+  }
+ },
+ "mismatches": [],
+ "citation_misses": [],
+ "freshness_misses": []
+}
