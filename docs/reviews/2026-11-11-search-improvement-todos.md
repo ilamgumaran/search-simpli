@@ -145,7 +145,7 @@ desired, is a separate design decision; this ticket does not retune the ranker.
 ## R04 — Resolve the lifecycle reference's older ranking
 
 **Landed (S5-T9, [task](../tasks/S5-T9.md), commit `a17c7f2` on `task/S5-T9`; verified and
-merged to `main` 12 Nov 2026 by the `--no-ff` merge of `task/S5-T9`):** the helper models current retrieval (step 2). `FolderIndex.search`
+merged to `main` 12 Nov 2026 at `937da55`, the `--no-ff` merge of `task/S5-T9`):** the helper models current retrieval (step 2). `FolderIndex.search`
 hands its authorized snapshot (the visible chunks of the roots named, and those
 roots' ids) to `core.search` (lexical), so the title field, fuzzy-v1 and the fold
 groups reach it and no second copy of the ranking remains. `roots`,
