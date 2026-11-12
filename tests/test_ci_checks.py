@@ -83,8 +83,9 @@ class UnicodeGoldenJudgementTests(unittest.TestCase):
         self.assertEqual(problems, 1)
         self.assertTrue(lines[0].startswith("::error title=stale%3A fixtures/one.json::"), lines[0])
         self.assertIn("fixtures/one.json differs (fake)", lines[0])
-        problems, lines = self.judge(ran, failed={"tests.m.A.test_guard": "Traceback\nAssertionError: sets differ"})
-        self.assertIn("src/table.py: AssertionError: sets differ", lines[0])
+        problems, lines = self.judge(ran, failed={"tests.m.A.test_guard": "Traceback\nAssertionError: sets differ\nItems: 879\nmore\n879"})
+        self.assertTrue(lines[0].startswith("::error title=guard failed%3A src/table.py::"), lines[0])
+        self.assertIn("failed: AssertionError: sets differ Items: 879 more", lines[0])
 
     def test_first_differences(self):
         rows = ci_unicode_goldens.first_differences("a\nb\nc\n", "a\nB\nc\nd\n")

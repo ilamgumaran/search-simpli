@@ -125,6 +125,15 @@ def describe_stale(path: str, generator: list[str]) -> str:
             + " || ".join(rows))
 
 
+def assertion(trace: str) -> str:
+    """The assertion's own line of a traceback (its first line), or the last line."""
+    lines = trace.strip().splitlines()
+    first = next((i for i, line in enumerate(lines) if line.startswith("AssertionError")), None)
+    if first is None:
+        return lines[-1] if lines else "failed"
+    return " ".join(line.strip() for line in lines[first:first + 3])
+
+
 class Recorder(unittest.TextTestResult):
     """A verbose text result that also keeps every test id it ran."""
 
@@ -154,8 +163,10 @@ def judge(ran: list[str], skipped: dict[str, str], failed: dict[str, str], expec
         problems += 1
         if test_id in expected:
             path, generator = expected[test_id]
-            detail = describe(path, generator) if generator else f"{path}: {trace.strip().splitlines()[-1]}"
-            notes.add("error", f"stale: {path}", f"{test_id} failed. {detail}")
+            if generator:
+                notes.add("error", f"stale: {path}", f"{test_id} failed. {describe(path, generator)}")
+            else:
+                notes.add("error", f"guard failed: {path}", f"{test_id} failed: {clip(assertion(trace))}")
         else:
             last = trace.strip().splitlines()[-1] if trace.strip() else "failed"
             notes.add("error", f"failed: {test_id.rsplit('.', 1)[-1]}", f"{test_id}: {clip(last)}")
