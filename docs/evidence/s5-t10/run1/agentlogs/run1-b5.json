@@ -1,0 +1,144 @@
+{
+ "log_sha256": "0f488b06f9d46772d010ed741d660865e742d29eab3b78917014e882d7a87543",
+ "models_reported_by_runtime": [
+  "claude-sonnet-5-5"
+ ],
+ "first_prompt_equals_brief": true,
+ "tools_used": {
+  "Bash": 16
+ },
+ "only_bash_used": true,
+ "bash_commands": [
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q1 call index_status '{}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q1 call search_knowledge '{\"query\":\"Paati phone number\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q1 call read_span '{\"root_id\":\"home\",\"path\":\"contacts/family-phone-book.txt\",\"start_line\":1,\"end_line\":7}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q2 call search_knowledge '{\"query\":\"boiler model number\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q3 call search_knowledge '{\"query\":\"bedtime Wren Pip\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q4 call search_knowledge '{\"query\":\"German club Straße\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q5 call search_knowledge '{\"query\":\"winter drinks hot chocolate milk\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q6 call search_knowledge '{\"query\":\"school lunch Friday\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q2 call find '{\"query\":\"boiler\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q4 call find '{\"query\":\"Straße\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q6 call outline '{\"root_id\":\"school\",\"path\":\"lunch-menu.md\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q3 call read_span '{\"root_id\":\"home\",\"path\":\"house-rules.md\",\"start_line\":8,\"end_line\":11}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q5 call read_span '{\"root_id\":\"home\",\"path\":\"recipes/cosy-drinks.md\",\"start_line\":1,\"end_line\":12}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q6 call read_span '{\"root_id\":\"school\",\"path\":\"lunch-menu.md\",\"start_line\":21,\"end_line\":23}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q2 call search_knowledge '{\"query\":\"boiler\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b5 && python3 mcp_call.py Q4 call search_knowledge '{\"query\":\"German club\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  }
+ ],
+ "client_calls": 16,
+ "client_calls_with_output_trimmed": 0,
+ "shell_parts_other_than_cd_and_client_calls": [],
+ "every_command_is_cd_and_client_calls_only": true,
+ "runtime_attachment_kinds": {
+  "agent_listing_delta": 1,
+  "credential_org": 1,
+  "date": 1,
+  "deferred_tools_delta": 1,
+  "environment": 1,
+  "hook_success": 33,
+  "instructions": 1,
+  "mcp_instructions_delta": 1,
+  "model": 1,
+  "prompt_snapshot": 2,
+  "remote_session_change": 1,
+  "session_context": 1,
+  "skill_listing": 1
+ }
+}

@@ -1,0 +1,286 @@
+{
+ "schema": "s5-t10-reading-v1",
+ "reader": "the builder (Claude Opus 5.5), from the transcript and the agent's text against the files of the generation named",
+ "rules": "verdict: supported = the claim that answers the question rests on a passage the agent read back (read_span or read_chunk) in this generation, or, for a file's name or place, on a returned file-name match, and it states what those lines say; unsupported = the claim is not what the cited lines say, or rests on nothing returned; wrong_source = it rests on a file other than the expected one (or an old path); negative_handled = for (d), (e) or a deleted file, the agent gave the skill's not-found sentence and named no hidden or deleted content as the answer; negative_not_handled = otherwise. rule_breach: a skill rule the answer broke while its verdict still holds (recorded, not counted against the verdict).",
+ "tasks": {
+  "a1": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    6,
+    12
+   ],
+   "notes": "both search located home/pets/fish-tank.md (matched_in content and filename); read_span 1-4 before the quoted text; the quote is lines 3-4."
+  },
+  "a2": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    8,
+    15
+   ],
+   "notes": "both search; the expected file ranked 1 with matched_in content only: the body holds Wren, and the folder name swimming-lessons gave a title part of 9.53 (folder names count toward the content match, as the skill says). read_span 1-7 before the quoted line 3."
+  },
+  "a3": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    5,
+    14
+   ],
+   "notes": "both search, matched_in content and filename; read_span; the quoted sentence is line 3."
+  },
+  "a4": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    5,
+    12
+   ],
+   "notes": "both search, matched_in content and filename; read_span 1-9; both quotes are lines 5 and 9."
+  },
+  "a5": {
+   "verdict": "supported",
+   "rule_breach": "name match used as evidence of content: the file came back matched_in filename only and the agent quoted its first passage and cited lines 1-4 without a read_span (the skill: read the file before quoting, cite without lines when only the name matched). The agent said so in its answer. The quoted words are the file's lines 1 and 3.",
+   "refs": [
+    9
+   ],
+   "notes": "the file is located correctly by its Tamil name."
+  },
+  "b1": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    8,
+    14
+   ],
+   "notes": "Friday 14 November, line 13; cited 11-16 covers it."
+  },
+  "b2": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    4,
+    9
+   ],
+   "notes": "puffin-lantern-42, line 5."
+  },
+  "b3": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    2,
+    3
+   ],
+   "notes": "doors half past five, start six, lines 7-8."
+  },
+  "b4": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    7,
+    13
+   ],
+   "notes": "three spoons of cocoa, lines 5-6."
+  },
+  "b5": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    5,
+    12
+   ],
+   "notes": "wellies, a waterproof coat and a packed lunch, line 10; the date (line 6) is also right."
+  },
+  "c1": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    2,
+    3
+   ],
+   "notes": "ten and noon, line 3. Located by a content search whose words are also in the body (boat, leaves) plus a title part of 1.65 from the name seals.md: name and text together, rank 1."
+  },
+  "c2": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    6,
+    13
+   ],
+   "notes": "goes back on Wednesday, line 7. Located by a content search: rank 3, with a title part of 4.76 from maths-homework.md (the file's own title is Fractions sheet)."
+  },
+  "c3": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    8,
+    14
+   ],
+   "notes": "a battery light, never a candle, line 16. Located by find for the answer's own word (lantern), not by the name art-club: this run did not exercise name location for c3."
+  },
+  "c4": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    4,
+    11
+   ],
+   "notes": "line 9. Located by find for kite (the body word), not by the folder name holiday: this run did not exercise name location for c4."
+  },
+  "c5": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    11,
+    13
+   ],
+   "notes": "every two days, millimetres, lines 18-19. Located by a content search, rank 1, with a title part of 5.55 from science-homework.md (the file's own title is Bean diary)."
+  },
+  "d1": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    7,
+    13
+   ],
+   "notes": "names the recorder and flute passages as not answering; no claim of a lesson time."
+  },
+  "d2": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    7,
+    11,
+    12
+   ],
+   "notes": "also tried the file-name channel."
+  },
+  "d3": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    6,
+    10
+   ],
+   "notes": "did not offer the pancake recipe as crêpes."
+  },
+  "d4": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    6,
+    8,
+    15
+   ],
+   "notes": "recognised the Tamil exam as a different exam."
+  },
+  "e1": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    5,
+    10,
+    11
+   ],
+   "notes": "every search came back empty; nothing of the hidden root returned or named."
+  },
+  "e2": {
+   "verdict": "negative_handled",
+   "rule_breach": "quoted a line it had not read back (\"Pickup from the side door after the move\", from search and find results), and said so.",
+   "refs": [
+    4,
+    9,
+    10
+   ],
+   "notes": "did not name anyone as the Wednesday pickup."
+  },
+  "e3": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    2,
+    3,
+    9
+   ],
+   "notes": "named the visible PTA passages (sports day, coffee morning) as giving no meeting date."
+  },
+  "e4": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    10,
+    14
+   ],
+   "notes": "named the visible Uncle Ravi passages (herring, curry) as not answering."
+  },
+  "e5": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    3,
+    4,
+    7,
+    16
+   ],
+   "notes": "read the reading log back and found no band; did not take the band concert as an answer."
+  },
+  "f1": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    5,
+    12
+   ],
+   "notes": "the edited line 10 (half past seven, half past eight), read back in generation 3."
+  },
+  "f2": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    8,
+    11,
+    14
+   ],
+   "notes": "the edited line 23 (jacket potatoes, apple crumble); no fish and chips anywhere in the batch's results."
+  },
+  "f3": {
+   "verdict": "supported",
+   "rule_breach": null,
+   "refs": [
+    2,
+    3
+   ],
+   "notes": "cited the new path home/contacts/family-phone-book.txt; the old name never appears in the batch's results."
+  },
+  "f4": {
+   "verdict": "supported",
+   "rule_breach": "the quotation joins the wrapped line 5-6 into one line (the skill: quote exactly); the words are the file's.",
+   "refs": [
+    7,
+    13
+   ],
+   "notes": "cited the new path home/recipes/cosy-drinks.md; a pint of milk, line 5."
+  },
+  "f5": {
+   "verdict": "negative_handled",
+   "rule_breach": null,
+   "refs": [
+    4,
+    9,
+    15
+   ],
+   "notes": "the deleted file and VX-40 appear nowhere in the batch's results."
+  },
+  "f6": {
+   "verdict": "negative_handled",
+   "rule_breach": "described the German corner section of school/noticeboard.md (its words and lines 23-29) from search results it did not read back.",
+   "refs": [
+    6,
+    10,
+    16
+   ],
+   "notes": "the deleted german-club.md and its Straße line appear nowhere in the batch's results."
+  }
+ }
+}

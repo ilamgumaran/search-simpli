@@ -391,6 +391,8 @@ def cmd_check(run_dir: Path, corpus: Path, out: Path) -> int:
                 "tool_errors": [c["seq"] for c in mine if "tool_error" in c or "protocol_error" in c],
                 "cited_file": cited, "cited_lines": ans.get("cited_lines", ""),
                 "agent_tool_calls_reported": ans.get("tool_calls", ""),
+                "reported_tools_equal_transcript": ([x.strip(" `.") for x in ans.get("tool_calls", "").split(",") if x.strip()]
+                                                    == [c["tool"] for c in mine if c["tool"] != "tools/list"]),
                 "said_not_found": not_found,
                 "not_found_sentence": NOT_FOUND in norm(text),
                 "read_of_cited_file_for_this_question_seq": reads,
