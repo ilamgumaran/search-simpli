@@ -101,6 +101,10 @@ def main(argv: list = None) -> int:
     for command in commands:
         kinds = [classify(part, cd_part, client, trim) for part in shell_parts(command)]
         split.append({"command": scrub(command), "parts": [scrub(k) for k in kinds]})
+    # A client call whose output is piped to a filter other than head is still
+    # one call of the client (one transcript entry); it is counted and named.
+    piped = [k for c in split for k in c["parts"]
+             if k.startswith("client call | ") and k != "client call | output trimmed"]
     others = sorted({k for c in split for k in c["parts"]
                      if k not in ("cd", "client call", "client call | output trimmed")})
     summary = {
@@ -110,9 +114,9 @@ def main(argv: list = None) -> int:
         "tools_used": {name: tools.count(name) for name in sorted(set(tools))},
         "only_bash_used": set(tools) <= {"Bash"},
         "bash_commands": split,
-        "client_calls": sum(c["parts"].count("client call") + c["parts"].count("client call | output trimmed")
-                            for c in split),
+        "client_calls": sum(1 for c in split for k in c["parts"] if k.startswith("client call")),
         "client_calls_with_output_trimmed": sum(c["parts"].count("client call | output trimmed") for c in split),
+        "client_calls_piped_to_other_filter": piped,
         "shell_parts_other_than_cd_and_client_calls": others,
         "every_command_is_cd_and_client_calls_only": not others,
         "runtime_attachment_kinds": {k: attachments.count(k) for k in sorted(set(attachments))},
@@ -121,6 +125,7 @@ def main(argv: list = None) -> int:
     args.out.write_text(json.dumps(summary, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps({k: summary[k] for k in ("models_reported_by_runtime", "first_prompt_equals_brief", "tools_used",
                                               "client_calls", "client_calls_with_output_trimmed",
+                                              "client_calls_piped_to_other_filter",
                                               "shell_parts_other_than_cd_and_client_calls", "runtime_attachment_kinds")}))
     return 0
 

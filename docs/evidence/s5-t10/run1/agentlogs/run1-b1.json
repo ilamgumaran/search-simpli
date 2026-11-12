@@ -80,6 +80,7 @@
  ],
  "client_calls": 14,
  "client_calls_with_output_trimmed": 0,
+ "client_calls_piped_to_other_filter": [],
  "shell_parts_other_than_cd_and_client_calls": [],
  "every_command_is_cd_and_client_calls_only": true,
  "runtime_attachment_kinds": {

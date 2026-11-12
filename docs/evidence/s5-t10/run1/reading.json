@@ -1,7 +1,7 @@
 {
- "schema": "s5-t10-reading-v1",
+ "schema": "s5-t10-reading-v2",
  "reader": "the builder (Claude Opus 5.5), from the transcript and the agent's text against the files of the generation named",
- "rules": "verdict: supported = the claim that answers the question rests on a passage the agent read back (read_span or read_chunk) in this generation, or, for a file's name or place, on a returned file-name match, and it states what those lines say; unsupported = the claim is not what the cited lines say, or rests on nothing returned; wrong_source = it rests on a file other than the expected one (or an old path); negative_handled = for (d), (e) or a deleted file, the agent gave the skill's not-found sentence and named no hidden or deleted content as the answer; negative_not_handled = otherwise. rule_breach: a skill rule the answer broke while its verdict still holds (recorded, not counted against the verdict).",
+ "rules": "verdict: supported = the claim that answers the question is what the cited file's lines say in the generation named, or, for a file's name or place, the file is the one a returned name or content match located; unsupported = the claim is not what the cited lines say, or rests on nothing returned; wrong_source = it rests on a file other than the expected one (or an old path); negative_handled = for (d), (e) or a deleted file, the agent gave the skill's not-found sentence and named no hidden or deleted content as the answer; negative_not_handled = otherwise. Whether a read_span or read_chunk of the cited file preceded the answer is its own check (ruling 4; checks.json read_of_cited_file_for_this_question_seq); when it is missing it is a rule_breach, not a verdict. A quotation that joins a soft-wrapped line of the file into one line is read as exact; one that changes the words (a translation or a paraphrase in quotation marks) is a rule_breach. rule_breach: a skill rule the answer broke while its verdict still holds (recorded, not counted against the verdict).",
  "tasks": {
   "a1": {
    "verdict": "supported",
@@ -255,12 +255,12 @@
   },
   "f4": {
    "verdict": "supported",
-   "rule_breach": "the quotation joins the wrapped line 5-6 into one line (the skill: quote exactly); the words are the file's.",
+   "rule_breach": null,
    "refs": [
     7,
     13
    ],
-   "notes": "cited the new path home/recipes/cosy-drinks.md; a pint of milk, line 5."
+   "notes": "cited the new path home/recipes/cosy-drinks.md; a pint of milk, line 5. Its quotation joins the soft-wrapped lines 5-6 (read as exact under v2; v1 had flagged it)."
   },
   "f5": {
    "verdict": "negative_handled",
@@ -282,5 +282,6 @@
    ],
    "notes": "the deleted german-club.md and its Straße line appear nowhere in the batch's results."
   }
- }
+ },
+ "rules_history": "v1 (commit 2, run 1 only) made a read-back part of 'supported' and flagged run 1 f4's wrap-joined quotation. v2 (after run 2, before any count was published) follows ruling 4's separate read-back check and reads wrap-joined quotations as exact, because run 1 a1, b4 and c5 joined wraps too and were not flagged. Under v2 no run 1 verdict changes; f4's breach is withdrawn."
 }

@@ -1,0 +1,49 @@
+Model: Sonnet 5.5 (claude-sonnet-5-5)
+
+### Q1
+Answer: I found no matching indexed passages in the selected folders. The only PTA mentions I found are a hot dog and cake stall at sports day and a Monday coffee morning on the PTA flyer. Neither gives a PTA meeting date. I tried `search_knowledge` on "next PTA meeting", then `find` on "PTA" and on "meeting".
+Cited file: not found
+Cited lines: none
+Tool calls: index_status, search_knowledge, find, find
+
+### Q2
+Answer: Yes. The seaside packing list includes "a kite" [1].
+
+Sources:
+[1] home/holiday/seaside-packing.md › Seaside · lines 1–9
+Cited file: home/holiday/seaside-packing.md
+Cited lines: 1-9
+Tool calls: find, read_span
+
+### Q3
+Answer: The doctor visits are in home/health/doctor-visits.md [1]. It has a section for Wren ("Ear check in October; all clear. Next check in the spring.") and one for Pip ("Eye test in September; glasses for reading only.") [1].
+
+Sources:
+[1] home/health/doctor-visits.md › Doctor visits · lines 1–9
+Cited file: home/health/doctor-visits.md
+Cited lines: 1-9
+Tool calls: search_knowledge, outline, read_span
+
+### Q4
+Answer: I found no matching indexed passages in the selected folders. I tried `search_knowledge` on "crêpes recipe" and `find` on "crepes". The results were the pancakes, rasam and winter drinks files, none of which mention crêpes.
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find
+
+### Q5
+Answer: Three spoons of cocoa, with two of sugar, go into a pint of milk. That makes hot chocolate for four [1].
+
+Sources:
+[1] home/recipes/winter-drinks.md › Winter drinks › Hot chocolate · lines 3–7
+Cited file: home/recipes/winter-drinks.md
+Cited lines: 3-7
+Tool calls: search_knowledge, read_span
+
+### Q6
+Answer: A battery light goes inside the paper lantern, "never a candle" [1].
+
+Sources:
+[1] school/art-club/autumn-projects.md › Autumn projects › Paper lantern · lines 14–16
+Cited file: school/art-club/autumn-projects.md
+Cited lines: 14-16
+Tool calls: search_knowledge, read_span

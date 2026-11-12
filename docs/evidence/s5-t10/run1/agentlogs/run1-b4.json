@@ -64,6 +64,7 @@
  ],
  "client_calls": 16,
  "client_calls_with_output_trimmed": 8,
+ "client_calls_piped_to_other_filter": [],
  "shell_parts_other_than_cd_and_client_calls": [
   "echo"
  ],
