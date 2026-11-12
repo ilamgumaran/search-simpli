@@ -266,7 +266,8 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: |
-          set -uo pipefail
+          # The runner's bash runs with -e; the gate's exit 1 is the expected outcome here.
+          set +e -uo pipefail
           python3 scripts/ci_j2_native.py plant "$RUNNER_TEMP/j2-native/searchd.json" \
             --output "$RUNNER_TEMP/j2-native/planted.json" || exit 1
           python3 scripts/j2_gate.py "$RUNNER_TEMP/j2-native/planted.json" > "$RUNNER_TEMP/j2-native/planted-gate.txt"
