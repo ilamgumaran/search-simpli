@@ -179,6 +179,16 @@ scope cases; preserve explicit legacy expectations if that mode is retained.
 
 ## R05 — Measure cross-word verb matches before changing R
 
+**Built (S5-T8, [task](../tasks/S5-T8.md), branch `task/S5-T8`; awaiting
+verification):** steps 1–3. `verbform-cross` (six rows, hop/hope, evening/even,
+tap/tape, answers in six files) was judged and recorded before any rule; a
+narrow eligibility rule, [fold-groups-v3](../fold-groups-v3.md), was prototyped
+in Python beside the cap and the membership rule and ported to Zig (golden
+equal). `verbform-cross` 0.667 → 1.000 success@1 under `content` and `both`,
+`c22` and every control row at rank 1, contracts 2.7.0; with the rule removed
+(a plant) `x02` and `x05` fall back to ranks 3 and 2. `evening` → `even` and the
+doubled held remainders (`shedding`, `canned`) stay as named residuals.
+
 **Evidence:** S5-T5 is shipped and improves its judged verb-form slice. A direct
 probe of [verb_forms.forms](../../src/search_platform/verb_forms.py) finds
 `hopping` can generate `hopes`/`hoped`, and `evening` can generate `even`.
@@ -202,6 +212,20 @@ without an unexplained control regression. Decide policy/contract versioning and
 approval before shipping changed matching semantics; keep a rollback comparison.
 
 ## R06 — Treat unanswerable queries as a precision target
+
+**Built (S5-T8, [task](../tasks/S5-T8.md), branch `task/S5-T8`; awaiting
+verification):** steps 1–3 on invented content (no real-user examples). Two
+negative sets of 17 (tuning, and a held-out set no candidate ran before every
+candidate was declared), `negatives-short` and a `precision-control` slice;
+"misleading" defined in `fixtures/j2/README.md` before any candidate ran (after
+two exploratory runs of the engine as it was, a stated limit). Stop words in the
+title part (W) did not move the measure and do not ship; out of the body (Wb)
+they cost two `mixed` rank-1 answers and do not ship. A fuzzy floor ships as
+[fuzzy-v2](../fuzzy-v2.md), chosen by a rule fixed in advance on a new
+short-typo slice: `negatives-heldout`'s misleading-first share 0.588 → 0.353
+with fold-groups-v3, the typo, morphology and control slices unchanged. `find`
+and the `filename` field are unchanged. No score threshold, no
+answer-confidence value and no abstention default was introduced.
 
 **Evidence:** the live queue records `on2` (`painting the fence`) returning ten
 hits; S5-T5 now reaches a model file through `paint`. It also records near-word

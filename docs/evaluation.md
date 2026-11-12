@@ -487,3 +487,38 @@ the Python reference equal on every number):
 `hoping` finds `laptop/snow.md` at rank 3 behind the hop rows, and `tapping`
 finds the plumbing file at rank 2 behind the taped parcels. `precision-control`
 is 1.000 (1.000).
+
+### S5-T8: fold-groups-v3 and fuzzy-v2 (Phase 1c and Phase 2)
+
+Phase 1c added **`misspelling-short`** (13 held-out rows, beside the overall:
+typed words of 6 and 7 code points two Levenshtein edits from the meant word,
+six of them a swap of neighbours) and **`negatives-short`** (4 rows: a
+correctly spelt 6 or 7 letter word no file holds beside a near word), recorded
+with the engine before S5-T8 (success@1 0.923, MRR@10 0.962; `ms07` at rank 2;
+every first hit of `negatives-short` a near word). No earlier cell moved, and
+the pack is 265 queries. Four floors for fuzzy-v1 were declared before they
+ran it, and the decision rule fixed by the orchestrator chose
+[fuzzy-v2](fuzzy-v2.md) (the table is there and in the task).
+
+What ships ([fold-groups-v3](fold-groups-v3.md) and fuzzy-v2, contracts
+2.7.0) on `searchd` (ReleaseSmall) and the Python reference, equal on every
+cell: `verbform-cross` 0.667 → 1.000 success@1 and 0.806 → 1.000 MRR@10 under
+both variants (`x02` 3 → 1, `x05` 2 → 1, the only first grade-2 ranks that
+move); every other slice, `control`, `precision-control`, `misspelling-short`
+and the held-out slices among them, unchanged; the gate passes with the
+allow-list untouched; the older packs identical per query. The negatives
+(mean top-5 hits / misleading first):
+
+| Set | n | content, before → after | both, before → after |
+|---|---:|---|---|
+| negatives (S5-T1 to S5-T5) | 26 | 3.808 / 0.000 → 3.692 / 0.000 | 3.500 / 0.000 → 3.385 / 0.000 |
+| negatives-tuning | 17 | 3.059 / 0.471 → 2.471 / 0.412 | 2.765 / 0.471 → 2.176 / 0.412 |
+| negatives-heldout | 17 | 3.176 / 0.588 → 2.294 / 0.353 | 3.059 / 0.588 → 2.176 / 0.353 |
+| negatives-short | 4 | 1.250 / 1.000 → 1.250 / 1.000 | 1.250 / 1.000 → 1.250 / 1.000 |
+
+The mean real hits in the top 5 do not move in any set. Of the earlier
+negatives, `pn1` returns 7 → 2 hits (`content`); of the new ones `nt04`
+`skiing`, `nh04` `sewing`, `nh06` `surfing` and `nh15` `fiancé` now return
+nothing. `nh01`–`nh03` (a stop word's body hits), `nh10` `shedding fur` and
+`nh11` `canned` stay as named residuals. The baseline is re-recorded at
+S5-T8 in its own commit.

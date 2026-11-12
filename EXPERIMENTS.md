@@ -832,3 +832,42 @@ the helper: both surfaces unchanged, the gate passes.
 **Conclusion:** One ranking in the reference: the lifecycle helper cannot select an older ranker, and a lifecycle
 fixture compares with the engine by score. Details: [S5-T9](docs/tasks/S5-T9.md). Status: verified and merged
 2026-11-12 (the verifier's own comparative runs, plants and packs, in the task's Verdict).
+
+## 2026-11-12 — Fewer misleading hits for questions the files do not answer (S5-T8, reviews R05 and R06)
+
+**Hypothesis:** Three narrow query-side rules, each measured alone on unanswerable questions judged before any rule
+existed, can lower the share of such questions whose first hit misleads without costing an answerable question its
+rank: stop words out of the title part (W) or the body (Wb), a floor for fuzzy-v1's two-edit words (F), and leaving
+the verb forms of another word out of R (X).
+
+**Setup:** J2 from `004ba85`, then `main` merged; invented content only. Phase 1a: two negative sets of 17
+(`negatives-tuning`, `negatives-heldout`), `verbform-cross` (6 rows, review R05), `precision-control` (10 rows) and a
+written definition of a misleading hit (stop, near or cross), all recorded with the engine before S5-T8. Phase 1b: W,
+Wb, F, F7, X and six combinations declared, then run on all 248 queries (Python reference). Phase 1c (ruling 3): a
+held-out `misspelling-short` slice (13 typed words of 6 or 7 code points two edits from the meant word, six swaps) and
+`negatives-short` (4), recorded first; F, F7, Ft and the builder's Fp2 declared before their run; a decision rule
+fixed in advance by the orchestrator. Phase 2: X and Fp2 in Zig, `searchd` ReleaseSmall and the reference on all 265
+queries. Python 3.9.6, Zig 0.16.0, macOS arm64.
+
+**Observation:** W left the misleading-first share of `negatives-heldout` at 0.588. Wb moved it most but cost the
+`mixed` pack two rank-1 answers (0.650 → 0.550). X alone: 0.588 → 0.529, `verbform-cross` 0.667 → 1.000. F (two edits
+only from 8 code points) cut the share to 0.353 alone but lost six of `misspelling-short`'s thirteen rank-1 answers;
+F7 lost two; Ft equals F (fuzzy-v1's distance already counts a swap as one edit). Fp2 (below 8 code points a two-edit
+word must share the first two code points) kept `misspelling-short` at 0.923 and, with X, took the share to 0.353 and
+the mean top-5 hits 3.176 → 2.294 (`content`), 3.059 → 2.176 (`both`); the rule chose it. Shipped as fold-groups-v3
+and fuzzy-v2 (contracts 2.7.0): `searchd` equals the reference on every cell; no answerable slice moves except
+`verbform-cross`; the older packs are identical per query; the real hits in the top 5 do not move. On the 10k timing
+corpus the first `content` query moves −0.015 to +0.023 ms and a warm query with no group at most +0.008 ms (six
+interleaved rounds, a second build of the library before as the noise reference).
+
+**Did not prove:** The definition of misleading was written after two exploratory runs of the engine as it was, and
+ten held-out rows were run through it to name their distractors: the held-out set was unseen by every candidate, not
+by the person writing the definition. Fp2 was the builder's own variant, declared before the slice's run by the person
+who wrote the slice, and no row of the slice errs in its first two letters; `sistems` no longer finds `system`. No
+real-user negatives; the share is a rate on 17 invented questions. The cause of Wb's two `mixed` losses is inferred,
+not traced.
+
+**Conclusion:** Measured precision gains from two narrow rules with no answer lost on J2 or the older packs; stop
+words stay a 03-next row with their numbers. Details: [S5-T8](docs/tasks/S5-T8.md),
+[fold-groups-v3](docs/fold-groups-v3.md), [fuzzy-v2](docs/fuzzy-v2.md). Status: built on `task/S5-T8`, awaiting
+verification.

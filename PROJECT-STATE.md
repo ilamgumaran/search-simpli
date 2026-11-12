@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-12 (S5-T9, the folder lifecycle helper ranks through the shared reference, review R04; Python helper and tests only; verified and merged)
+Last updated: 2026-11-12 (S5-T8, fold-groups-v3 and fuzzy-v2, reviews R05 and R06; contracts 2.7.0, Dart 0.8.0; built on `task/S5-T8`, awaiting verification)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,35 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## Fewer misleading hits for unanswerable questions: fold-groups-v3 and fuzzy-v2 (S5-T8, reviews R05 and R06, 2026-11-12; built, awaiting verification)
+
+Built on `task/S5-T8` ([task and Report](docs/tasks/S5-T8.md)). Query side only: no index format, writer or analyzer
+change; an index written before answers under the new policies with no rebuild. `find` and the `filename` field are
+unchanged.
+
+**fold-groups-v3** ([docs/fold-groups-v3.md](docs/fold-groups-v3.md)): a word's verb forms are R's eligible forms only.
+A base of the doubling shape (one vowel group, ending consonant, vowel, consonant, the last not `w`/`x`/`y`) loses its
+undoubled `-ed`, `-ing` and (unless it ends `s`, `x`, `z`, `ch`, `sh`) `-es`, which are b + `e`'s; when the word is
+r + `ing` or r + `ed` with r of that shape, the base r is left out (`hoping` is not `hop`'s). The Zig engine
+(`verb_forms.eligibleForms`) and the Python mirror (`verb_forms.eligible_forms`) are held equal by
+`fixtures/verb-forms-golden.json` (2,978 terms listed with forms and eligible forms, 16,214 off, a digest over 49,471
+terms).
+
+**fuzzy-v2** ([docs/fuzzy-v2.md](docs/fuzzy-v2.md)): of fuzzy-v1's up to 3 words, a two-edit word is dropped when the
+typed word has fewer than 8 code points and their first two code points differ; nothing replaces it.
+`fixtures/fuzzy-golden.json` names `fuzzy-v2` (89 of 267 queries expanded).
+
+**The contract.** Contracts **2.7.0**: `retrieval.fold_policy_id` is `"fold-groups-v3"` and `retrieval.fuzzy_policy_id`
+`"fuzzy-v2"`; no new warning code, field or request option. Dart **0.8.0**. Natives: macOS 953,960 B, Android
+`arm64-v8a` 916,480 B, iOS framework binary 918,616 B (+160 / +736 / +80 B over 0.7.0); `native/SOURCE-SHA256`
+`cf963567864e72ac368b666608a42566b98e99e0d474080ddf2d2d925ae8f5e6`.
+
+**J2 (265 queries), `searchd` and the reference equal on every cell:** `verbform-cross` 0.667 → 1.000 success@1 under
+`content` and `both` (`x02` 3 → 1, `x05` 2 → 1); every other slice unchanged, `misspelling-short` (13 held-out
+two-edit typos of 6 and 7 letters, added by S5-T8) at 0.923; `negatives-heldout` misleading-first share 0.588 →
+0.353, mean top-5 hits 3.176 → 2.294 (`content`) and 3.059 → 2.176 (`both`). The older packs are identical per
+query. Stop words (W, Wb) were measured and not shipped (03-next).
 
 ## The folder lifecycle helper ranks through the reference (S5-T9, review R04, 2026-11-12; verified and merged 2026-11-12)
 

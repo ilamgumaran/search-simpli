@@ -119,6 +119,19 @@ class GroupTests(unittest.TestCase):
             # fold off: fuzzy-v1 alone, as before
             self.assertNotIn(("dancing", 1.0), _query_groups(chunks, chunks, ["danced"], (), fold="").get("danced", ()))
 
+    def test_fold_groups_v3_searches_only_the_eligible_forms(self):
+        """S5-T8: the forms of another word are not searched (the engine's test in
+        verb_form_groups_test.zig, on the same files)."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write(root, {"sun.md": "We hoped for sun.", "rabbit.md": "The rabbit hopped away.",
+                         "skip.md": "A hop and a skip.", "park.md": "The car park.", "lot.md": "We care a lot."})
+            chunks = build_index(root)["chunks"]
+            groups = _query_groups(chunks, chunks, ["hopping", "hoping", "caring"], (), fold="FAST")
+            self.assertEqual(groups["hopping"], (("hop", 1.0), ("hopped", 1.0)))
+            self.assertEqual(groups["hoping"], (("hoped", 1.0),))
+            self.assertEqual(groups["caring"], (("care", 1.0),))
+
     def test_a_held_word_takes_a_form_at_half_only_under_its_own_df(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

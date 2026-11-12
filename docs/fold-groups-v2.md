@@ -1,6 +1,10 @@
 # Word-form groups v2 (`fold-groups-v2`)
 
-Status: shipped by [S5-T5](tasks/S5-T5.md), contracts 2.6.0. Query side only:
+Status: shipped by [S5-T5](tasks/S5-T5.md), contracts 2.6.0; succeeded by
+[fold-groups-v3](fold-groups-v3.md) (S5-T8, contracts 2.7.0), which keeps
+everything below and searches only R's eligible forms, leaving out the forms
+of another word (the residual "Forms of another word" below). This page stays
+v2's record. Query side only:
 no index format, writer or analyzer change, and an index written before S5-T5
 groups its words the same way. fold-groups-v2 is
 [fold-groups-v1](fold-groups-v1.md) (its key K, its key map, its order and
