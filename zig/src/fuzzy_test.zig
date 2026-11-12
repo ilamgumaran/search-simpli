@@ -221,6 +221,41 @@ test "scan: the first-letter range, the order (distance, key df, bytes) and N = 
     }
 }
 
+const fuzzy_v2_docs = [_]hybrid.Document{
+    .{ .id = "s1", .text = "the heating system", .path = "r-home/home/heat.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "s2", .text = "my sisters", .path = "r-home/home/family.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "x1", .text = "bxkers boker", .path = "r-home/home/one.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "x2", .text = "bxkers boker bakxrz baxery", .path = "r-home/home/two.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "x3", .text = "bxkers", .path = "r-home/home/three.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "e1", .text = "éxolezz écolaxz", .path = "r-home/home/four.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "z1", .text = "systemzy", .path = "r-home/home/five.md", .start_line = 1, .end_line = 1 },
+};
+
+test "fuzzy-v2: a distance-2 word of another two-letter opening is dropped below 8 code points, with no replacement" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    for ([_]bool{ true, false }) |sorted| {
+        const corpus = if (sorted) try sortedCorpus(a, &fuzzy_v2_docs) else try makeCorpus(a, &fuzzy_v2_docs);
+        const ctx = context(&corpus, .{});
+        // sistems (7): system (2 edits, sy) is dropped; sisters (1 edit) stays.
+        try expectMembers(a, ctx, "sistems", &.{"sisters"});
+        // 8 code points: the rule does not apply.
+        try expectMembers(a, ctx, "sistemzz", &.{"systemzy"});
+        // bxkers (df 3) and boker (df 2) are the first two kept and dropped;
+        // baxery, fourth by bytes, does not take their place.
+        try expectMembers(a, ctx, "bakerx", &.{"bakxrz"});
+        // Code points, not bytes; a distance-1 word is never dropped.
+        try expectMembers(a, ctx, "écolezz", &.{ "éxolezz", "écolaxz" });
+    }
+    try std.testing.expect(fuzzy.prefixRuleKeeps("sistems", 7, "sisters", 2));
+    try std.testing.expect(!fuzzy.prefixRuleKeeps("sistems", 7, "system", 2));
+    try std.testing.expect(fuzzy.prefixRuleKeeps("sistems", 7, "system", 1));
+    try std.testing.expect(fuzzy.prefixRuleKeeps("sistemsx", 8, "systemsx", 2));
+    try std.testing.expect(!fuzzy.prefixRuleKeeps("écolezz", 7, "éxolezz", 2));
+    try std.testing.expect(fuzzy.prefixRuleKeeps("écolezz", 7, "écolaxz", 2));
+}
+
 test "scan: a title-only candidate at key df 1, after a body word at a higher df" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
