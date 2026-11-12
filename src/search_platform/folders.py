@@ -12,8 +12,9 @@ in one batch become moves, paired by sorted path, with `ambiguous_moves`;
 
 Search, status and listings take a scope (roots named, default all, and the
 trusted caller's `principal_labels`); a root's `required_labels` add to each
-file's. BM25 statistics are computed over the visible scope, so a hidden
-file is indistinguishable from an absent one in every payload.
+file's. Search hands the visible scope to `core.search`, the shared reference
+ranker (S5-T9), whose statistics are that scope, so a hidden file is
+indistinguishable from an absent one in every payload.
 
 Standard library only (INV-06).
 """
@@ -33,12 +34,12 @@ from typing import Iterable
 
 from .core import (
     ReadError,
-    _bm25_scores,
     _chunk_id,
     chunker_for_path,
     file_chunks,
     outline_bytes,
     read_span_bytes,
+    search,
     tokenize,
 )
 
@@ -642,27 +643,41 @@ class FolderIndex:
 
     def search(self, query: str, *, roots: Iterable[str] | None = None, principal_labels: Iterable[str] = (),
                top_k: int = 5, conjunctive: bool = False) -> list[dict]:
-        """BM25 over the visible scope (statistics included). `conjunctive`
-        keeps only chunks holding every query term (the lifecycle runner's
-        `words` filter; S3-T2 owns the real `find` modes). S5-T2: this keeps
-        the ranking before the title field (`docs/title-field-v1.md`);
-        `core.search` is the reference that carries it."""
+        """The current `content` ranking over the visible scope (S5-T9, review R04):
+        the authorized snapshot (the chunks of the roots named, default all, whose
+        labels the caller holds, and those roots' ids) goes to the shared reference
+        ranker, `core.search` (lexical; the title field, fuzzy-v1 and the fold
+        groups as the engine). The snapshot is the statistics, as in the engine:
+        a hidden file is indistinguishable from an absent one. `score` is the
+        chunk's lexical score (`ranking.lexical.score`: BM25 plus its file's title
+        part when it received one). `conjunctive` keeps only chunks holding every
+        query term as typed (the lifecycle runner's `words` filter; S3-T2 owns the
+        real `find` modes), in the same order. A `top_k` below 1 returns nothing."""
         terms = tokenize(query)
-        if not terms:
+        if not terms or top_k < 1:
             return []
-        chunks = self.visible_chunks(roots=roots, principal_labels=principal_labels)
-        scores = _bm25_scores(chunks, terms)
+        held = set(principal_labels)
+        chunks = self.visible_chunks(roots=roots, principal_labels=held)
+        if not chunks:
+            return []
+        snapshot = {"chunks": chunks, "roots": sorted(self._allowed(roots, held))}
+        # Conjunctive filters after ranking, so it ranks every scored chunk first.
+        wanted = len(chunks) if conjunctive else top_k
+        hits = search(snapshot, query, top_k=wanted, candidate_k=wanted, retrieval_mode="lexical",
+                      principal_labels=sorted(held))
         by_id = {c["id"]: c for c in chunks}
-        if conjunctive:
-            scores = {i: s for i, s in scores.items() if all(t in by_id[i]["terms"] for t in set(terms))}
-        ordered = sorted(((i, s) for i, s in scores.items() if s > 0), key=lambda item: (-item[1], item[0]))[:top_k]
         results = []
-        for identifier, score in ordered:
-            chunk = by_id[identifier]
+        for hit in hits:
+            chunk = by_id[hit["chunk_id"]]
+            if conjunctive and not all(t in chunk["terms"] for t in set(terms)):
+                continue
             entry = self.files[chunk["path"]]
-            results.append({"chunk_id": identifier, "root_id": entry["root_id"], "path": entry["path"],
+            results.append({"chunk_id": hit["chunk_id"], "root_id": entry["root_id"], "path": entry["path"],
                             "start_line": chunk["start_line"], "end_line": chunk["end_line"],
-                            "section_path": chunk["section_path"], "score": score, "content": chunk["text"]})
+                            "section_path": chunk["section_path"], "score": hit["ranking"]["lexical"]["score"],
+                            "content": chunk["text"]})
+            if len(results) == top_k:
+                break
         return results
 
     def read_chunk(self, chunk_id: str, *, roots: Iterable[str] | None = None, principal_labels: Iterable[str] = ()) -> dict | None:
