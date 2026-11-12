@@ -1,5 +1,5 @@
 {
- "policy_id": "fuzzy-v1",
+ "policy_id": "fuzzy-v2",
  "title_policy_id": "title-field-v1",
  "roots": [
   "school",
@@ -11959,7 +11959,6 @@
    "expansions": {
     "freind": [
      "friend",
-     "find",
      "fried"
     ]
    },
@@ -11967,11 +11966,6 @@
     {
      "id": "4079d3b89da5a8c76971",
      "lexical": 2.289034447815113,
-     "title": null
-    },
-    {
-     "id": "415c333ff4b9ac81e24e",
-     "lexical": 2.390135600093037,
      "title": null
     },
     {
@@ -15435,17 +15429,8 @@
    "id": "an2",
    "kind": "j2",
    "query": "résumé letter",
-   "expansions": {
-    "résumé": [
-     "resume"
-    ]
-   },
+   "expansions": {},
    "chunks": [
-    {
-     "id": "967986bf0e74a323e19d",
-     "lexical": 3.5740718549903434,
-     "title": null
-    },
     {
      "id": "d15b1d84ece4252b4b99",
      "lexical": 7.232003942712749,
@@ -15594,34 +15579,8 @@
    "id": "pn1",
    "kind": "j2",
    "query": "ice skating",
-   "expansions": {
-    "skating": [
-     "saving",
-     "setting",
-     "sorting"
-    ]
-   },
+   "expansions": {},
    "chunks": [
-    {
-     "id": "0e6bb52d535be6cfd77d",
-     "lexical": 2.7396094319626783,
-     "title": null
-    },
-    {
-     "id": "2de2ffaab12ad468559f",
-     "lexical": 3.11384662887803,
-     "title": null
-    },
-    {
-     "id": "4d7611fefcd6b5a2523d",
-     "lexical": 3.0609614148539936,
-     "title": null
-    },
-    {
-     "id": "528a58aea328f5169948",
-     "lexical": 2.8689092183746028,
-     "title": null
-    },
     {
      "id": "c31eb309d3861c05226f",
      "lexical": 4.745440220396639,
@@ -15630,11 +15589,6 @@
     {
      "id": "e5dc43db55f2fb56e1d1",
      "lexical": 7.180599156188735,
-     "title": null
-    },
-    {
-     "id": "f04e65586d0c78f5b7ea",
-     "lexical": 3.342117230033422,
      "title": null
     }
    ]
@@ -15962,8 +15916,7 @@
    "query": "holiday photos",
    "expansions": {
     "photos": [
-     "photo",
-     "pots"
+     "photo"
     ]
    },
    "chunks": [
@@ -15990,11 +15943,6 @@
     {
      "id": "f04e65586d0c78f5b7ea",
      "lexical": 6.684234460066844,
-     "title": null
-    },
-    {
-     "id": "f12a79ae90587c31a72e",
-     "lexical": 4.279909817639534,
      "title": null
     }
    ]
@@ -18315,25 +18263,13 @@
    "query": "peaches",
    "expansions": {
     "peaches": [
-     "patches",
-     "peach",
-     "pinches"
+     "peach"
     ]
    },
    "chunks": [
     {
-     "id": "a75867d5917ce15ee627",
-     "lexical": 2.903011833520688,
-     "title": null
-    },
-    {
      "id": "c24f7f2d31672f9ed447",
      "lexical": 1.8730773178348283,
-     "title": null
-    },
-    {
-     "id": "e673a9a497f88fad3c78",
-     "lexical": 3.352644141895743,
      "title": null
     }
    ]
@@ -18451,75 +18387,13 @@
    "query": "gloves",
    "expansions": {
     "gloves": [
-     "glove",
-     "goes",
-     "gives"
+     "glove"
     ]
    },
    "chunks": [
     {
-     "id": "043cd25fb56a2b218e54",
-     "lexical": 2.0203529804026834,
-     "title": null
-    },
-    {
-     "id": "4d7611fefcd6b5a2523d",
-     "lexical": 2.2573372851061673,
-     "title": null
-    },
-    {
-     "id": "52900960b644b2f7f823",
-     "lexical": 1.6488012321220533,
-     "title": null
-    },
-    {
-     "id": "6d060439c1cdb0ce3f89",
-     "lexical": 1.0796289223854407,
-     "title": null
-    },
-    {
-     "id": "7b613854b1d9cde5127d",
-     "lexical": 2.1157064296188417,
-     "title": null
-    },
-    {
-     "id": "8cd6e20693850755342f",
-     "lexical": 0.812271578133416,
-     "title": null
-    },
-    {
-     "id": "ab2cf3cceb0030bf2090",
-     "lexical": 1.8281061467097155,
-     "title": null
-    },
-    {
-     "id": "acd15161c75abcf174fd",
-     "lexical": 1.1947237326966225,
-     "title": null
-    },
-    {
-     "id": "ced0df3fb16f5647b5de",
-     "lexical": 1.3372863436687452,
-     "title": null
-    },
-    {
-     "id": "d60130a5be3f748af7c2",
-     "lexical": 1.669266931357417,
-     "title": null
-    },
-    {
-     "id": "e46e2c3c4850814c53b3",
-     "lexical": 1.8281061467097155,
-     "title": null
-    },
-    {
-     "id": "f73320f666557943e7f1",
-     "lexical": 1.48494815627219,
-     "title": null
-    },
-    {
      "id": "f87c371f4ccac1b81a49",
-     "lexical": 2.3274183352323767,
+     "lexical": 3.7461546356696567,
      "title": null
     }
    ]
@@ -19110,20 +18984,11 @@
    "id": "vh01",
    "kind": "j2",
    "query": "sack hopping",
-   "expansions": {
-    "hopping": [
-     "helping"
-    ]
-   },
+   "expansions": {},
    "chunks": [
     {
      "id": "13a8d13267a65cee02ab",
      "lexical": 6.576530815589333,
-     "title": null
-    },
-    {
-     "id": "30d5b67eb56feb4d79e9",
-     "lexical": 3.301508800118051,
      "title": null
     },
     {
@@ -19146,8 +19011,7 @@
    "query": "tidied",
    "expansions": {
     "tidied": [
-     "tied",
-     "tried"
+     "tied"
     ]
    },
    "chunks": [
@@ -19204,11 +19068,6 @@
     {
      "id": "991cef50eb9e28fb77ce",
      "lexical": 0.45150208167272154,
-     "title": null
-    },
-    {
-     "id": "9bae6a22cfeefda3ff1b",
-     "lexical": 1.532114271088583,
      "title": null
     },
     {
@@ -19307,22 +19166,10 @@
    "query": "diving",
    "expansions": {
     "diving": [
-     "divide",
-     "doing",
-     "drying"
+     "divide"
     ]
    },
    "chunks": [
-    {
-     "id": "0d8e8ab0f7045b29c4c0",
-     "lexical": 2.755208408596377,
-     "title": null
-    },
-    {
-     "id": "39010e49b2252c8282a2",
-     "lexical": 2.98302414472119,
-     "title": null
-    },
     {
      "id": "9a51b3652c704d5b52a3",
      "lexical": 2.1740816795792695,
@@ -19447,17 +19294,10 @@
    "query": "diving board",
    "expansions": {
     "diving": [
-     "divide",
-     "doing",
-     "drying"
+     "divide"
     ]
    },
    "chunks": [
-    {
-     "id": "0d8e8ab0f7045b29c4c0",
-     "lexical": 2.755208408596377,
-     "title": null
-    },
     {
      "id": "12108217e9deb2019cdc",
      "lexical": 4.275976761645367,
@@ -19466,11 +19306,6 @@
     {
      "id": "1dfb587c2a6ce8dce38b",
      "lexical": 3.6429283178888703,
-     "title": null
-    },
-    {
-     "id": "39010e49b2252c8282a2",
-     "lexical": 2.98302414472119,
      "title": null
     },
     {
@@ -19524,18 +19359,8 @@
    "id": "x02",
    "kind": "j2",
    "query": "hoping",
-   "expansions": {
-    "hoping": [
-     "helping"
-    ]
-   },
-   "chunks": [
-    {
-     "id": "30d5b67eb56feb4d79e9",
-     "lexical": 3.301508800118051,
-     "title": null
-    }
-   ]
+   "expansions": {},
+   "chunks": []
   },
   {
    "id": "x03",
@@ -19696,7 +19521,6 @@
    "query": "taping",
    "expansions": {
     "taping": [
-     "thing",
      "talking",
      "tasting"
     ]
@@ -19704,22 +19528,12 @@
    "chunks": [
     {
      "id": "3f114b3012e479e74346",
-     "lexical": 2.6997026213557693,
-     "title": null
-    },
-    {
-     "id": "8cd6e20693850755342f",
-     "lexical": 1.1832367939580077,
-     "title": null
-    },
-    {
-     "id": "c2914c6f76efa06b3eb3",
-     "lexical": 3.081951603540362,
+     "lexical": 2.98302414472119,
      "title": null
     },
     {
      "id": "e2ef671aba8a4779a24e",
-     "lexical": 3.0103523400216416,
+     "lexical": 3.326275139849599,
      "title": null
     }
    ]
@@ -21961,40 +21775,15 @@
    "id": "pc08",
    "kind": "j2",
    "query": "oiling",
-   "expansions": {
-    "oiling": [
-     "outing"
-    ]
-   },
-   "chunks": [
-    {
-     "id": "8c596fc5e82e7e1145be",
-     "lexical": 3.727197068491903,
-     "title": null
-    }
-   ]
+   "expansions": {},
+   "chunks": []
   },
   {
    "id": "pc09",
    "kind": "j2",
    "query": "chopped",
-   "expansions": {
-    "chopped": [
-     "copied"
-    ]
-   },
-   "chunks": [
-    {
-     "id": "251942c739f7da2592c9",
-     "lexical": 2.007926184005514,
-     "title": null
-    },
-    {
-     "id": "645b7f3161d4be6f6799",
-     "lexical": 3.4031882827109787,
-     "title": null
-    }
-   ]
+   "expansions": {},
+   "chunks": []
   },
   {
    "id": "pc10",
@@ -23617,75 +23406,8 @@
    "id": "nt04",
    "kind": "j2",
    "query": "skiing",
-   "expansions": {
-    "skiing": [
-     "spring",
-     "saving",
-     "string"
-    ]
-   },
-   "chunks": [
-    {
-     "id": "274ffcbbcb89b6c3fc27",
-     "lexical": 2.0900335535362933,
-     "title": null
-    },
-    {
-     "id": "2de2ffaab12ad468559f",
-     "lexical": 2.5900870511451815,
-     "title": null
-    },
-    {
-     "id": "2f2b0b63375c4a78f980",
-     "lexical": 2.245069897446495,
-     "title": null
-    },
-    {
-     "id": "3cf5e9ea308d00fae743",
-     "lexical": 1.4101930962331974,
-     "title": null
-    },
-    {
-     "id": "4d7611fefcd6b5a2523d",
-     "lexical": 2.5460973097204236,
-     "title": null
-    },
-    {
-     "id": "503fb3a39801f4db3560",
-     "lexical": 3.059672296155088,
-     "title": null
-    },
-    {
-     "id": "a1d90cf2eaca0b6ca39c",
-     "lexical": 1.4935016291315064,
-     "title": null
-    },
-    {
-     "id": "acd15161c75abcf174fd",
-     "lexical": 1.3475535542465233,
-     "title": null
-    },
-    {
-     "id": "ad1fc5c76db41cfe0c45",
-     "lexical": 2.546603043285505,
-     "title": null
-    },
-    {
-     "id": "ba00ea0d5cb95703eb70",
-     "lexical": 3.0908451176594616,
-     "title": null
-    },
-    {
-     "id": "dae6049a6703a2392f6d",
-     "lexical": 2.1805231279681734,
-     "title": null
-    },
-    {
-     "id": "f04e65586d0c78f5b7ea",
-     "lexical": 2.779961761969568,
-     "title": null
-    }
-   ]
+   "expansions": {},
+   "chunks": []
   },
   {
    "id": "nt05",
@@ -23693,8 +23415,7 @@
    "query": "sailing",
    "expansions": {
     "sailing": [
-     "saving",
-     "selling"
+     "saving"
     ]
    },
    "chunks": [
@@ -23706,11 +23427,6 @@
     {
      "id": "4d7611fefcd6b5a2523d",
      "lexical": 3.0609614148539936,
-     "title": null
-    },
-    {
-     "id": "b152c948a57f0f8e7462",
-     "lexical": 1.9082444166055579,
      "title": null
     },
     {
@@ -23726,25 +23442,13 @@
    "query": "curling",
    "expansions": {
     "curling": [
-     "curving",
-     "cooling",
-     "cycling"
+     "curving"
     ]
    },
    "chunks": [
     {
-     "id": "37770a8cd7da838f2c1b",
-     "lexical": 3.301508800118051,
-     "title": null
-    },
-    {
      "id": "57d2c2ee8f428454c83f",
      "lexical": 4.0625405720556325,
-     "title": null
-    },
-    {
-     "id": "869de1bb3a1930951dd1",
-     "lexical": 2.2186489135230585,
      "title": null
     }
    ]
@@ -23862,16 +23566,10 @@
    "expansions": {
     "caring": [
      "camping",
-     "cairn",
-     "curving"
+     "cairn"
     ]
    },
    "chunks": [
-    {
-     "id": "57d2c2ee8f428454c83f",
-     "lexical": 1.8383443947564586,
-     "title": null
-    },
     {
      "id": "8e72c3ace31a4737d5bf",
      "lexical": 8.14355198853725,
@@ -23894,88 +23592,14 @@
    "kind": "j2",
    "query": "biting midges",
    "expansions": {
-    "biting": [
-     "bring",
-     "baking"
-    ],
     "midges": [
      "miles"
     ]
    },
    "chunks": [
     {
-     "id": "19d9d1347268e39400ed",
-     "lexical": 2.0309607614937306,
-     "title": null
-    },
-    {
-     "id": "6d060439c1cdb0ce3f89",
-     "lexical": 1.0526883910856875,
-     "title": null
-    },
-    {
-     "id": "7e646b04cf612644eb8c",
-     "lexical": 1.4166093710498529,
-     "title": null
-    },
-    {
      "id": "869de1bb3a1930951dd1",
      "lexical": 2.2186489135230585,
-     "title": null
-    },
-    {
-     "id": "8cd6e20693850755342f",
-     "lexical": 0.792002551043763,
-     "title": null
-    },
-    {
-     "id": "acd15161c75abcf174fd",
-     "lexical": 1.1649111818767024,
-     "title": null
-    },
-    {
-     "id": "b152c948a57f0f8e7462",
-     "lexical": 1.3721384156807033,
-     "title": null
-    },
-    {
-     "id": "b15d3c64171b5c65e218",
-     "lexical": 2.0309607614937306,
-     "title": null
-    },
-    {
-     "id": "bb5a72e6b480b3640d35",
-     "lexical": 2.129928819501135,
-     "title": null
-    },
-    {
-     "id": "c2914c6f76efa06b3eb3",
-     "lexical": 2.0629121277004585,
-     "title": null
-    },
-    {
-     "id": "ca4817ed1cfd54a0f5c9",
-     "lexical": 1.9699380817495178,
-     "title": null
-    },
-    {
-     "id": "cb0b54dd26b9f3771a75",
-     "lexical": 2.239036332474473,
-     "title": null
-    },
-    {
-     "id": "d896bee1437fafb85841",
-     "lexical": 1.9999840552640802,
-     "title": null
-    },
-    {
-     "id": "e7a2b77a3ac8bd07cff0",
-     "lexical": 1.9999840552640802,
-     "title": null
-    },
-    {
-     "id": "f1dfb62cd8c016e19fce",
-     "lexical": 2.4940526418805056,
      "title": null
     }
    ]
@@ -23987,16 +23611,10 @@
    "expansions": {
     "mating": [
      "main",
-     "meeting",
      "mains"
     ]
    },
    "chunks": [
-    {
-     "id": "16a558219021ec144090",
-     "lexical": 3.2889185588668064,
-     "title": null
-    },
     {
      "id": "224be6c10b6adf804f69",
      "lexical": 2.5925207087567985,
@@ -24006,11 +23624,6 @@
      "id": "8cd6e20693850755342f",
      "lexical": 1.1832367939580077,
      "title": null
-    },
-    {
-     "id": "ab58c2d714d58e735920",
-     "lexical": 6.21441835892761,
-     "title": 2.340099286927768
     },
     {
      "id": "fa133b36057a413cc1fc",
@@ -24854,11 +24467,7 @@
    "id": "nh03",
    "kind": "j2",
    "query": "land of giants",
-   "expansions": {
-    "giants": [
-     "goats"
-    ]
-   },
+   "expansions": {},
    "chunks": [
     {
      "id": "03141402ba95b8c2ed1c",
@@ -24908,11 +24517,6 @@
     {
      "id": "2a886c1a1e61051e77ba",
      "lexical": 1.7722207462652184,
-     "title": null
-    },
-    {
-     "id": "37a81c56977df6530b49",
-     "lexical": 3.0675720358203273,
      "title": null
     },
     {
@@ -25126,75 +24730,8 @@
    "id": "nh04",
    "kind": "j2",
    "query": "sewing",
-   "expansions": {
-    "sewing": [
-     "spring",
-     "saving",
-     "string"
-    ]
-   },
-   "chunks": [
-    {
-     "id": "274ffcbbcb89b6c3fc27",
-     "lexical": 2.0900335535362933,
-     "title": null
-    },
-    {
-     "id": "2de2ffaab12ad468559f",
-     "lexical": 2.5900870511451815,
-     "title": null
-    },
-    {
-     "id": "2f2b0b63375c4a78f980",
-     "lexical": 2.245069897446495,
-     "title": null
-    },
-    {
-     "id": "3cf5e9ea308d00fae743",
-     "lexical": 1.4101930962331974,
-     "title": null
-    },
-    {
-     "id": "4d7611fefcd6b5a2523d",
-     "lexical": 2.5460973097204236,
-     "title": null
-    },
-    {
-     "id": "503fb3a39801f4db3560",
-     "lexical": 3.059672296155088,
-     "title": null
-    },
-    {
-     "id": "a1d90cf2eaca0b6ca39c",
-     "lexical": 1.4935016291315064,
-     "title": null
-    },
-    {
-     "id": "acd15161c75abcf174fd",
-     "lexical": 1.3475535542465233,
-     "title": null
-    },
-    {
-     "id": "ad1fc5c76db41cfe0c45",
-     "lexical": 2.546603043285505,
-     "title": null
-    },
-    {
-     "id": "ba00ea0d5cb95703eb70",
-     "lexical": 3.0908451176594616,
-     "title": null
-    },
-    {
-     "id": "dae6049a6703a2392f6d",
-     "lexical": 2.1805231279681734,
-     "title": null
-    },
-    {
-     "id": "f04e65586d0c78f5b7ea",
-     "lexical": 2.779961761969568,
-     "title": null
-    }
-   ]
+   "expansions": {},
+   "chunks": []
   },
   {
    "id": "nh05",
@@ -25217,65 +24754,8 @@
    "id": "nh06",
    "kind": "j2",
    "query": "surfing",
-   "expansions": {
-    "surfing": [
-     "spring",
-     "string",
-     "sorting"
-    ]
-   },
-   "chunks": [
-    {
-     "id": "0e6bb52d535be6cfd77d",
-     "lexical": 2.2787978216764264,
-     "title": null
-    },
-    {
-     "id": "274ffcbbcb89b6c3fc27",
-     "lexical": 2.0900335535362933,
-     "title": null
-    },
-    {
-     "id": "2f2b0b63375c4a78f980",
-     "lexical": 2.245069897446495,
-     "title": null
-    },
-    {
-     "id": "3cf5e9ea308d00fae743",
-     "lexical": 1.4101930962331974,
-     "title": null
-    },
-    {
-     "id": "503fb3a39801f4db3560",
-     "lexical": 3.059672296155088,
-     "title": null
-    },
-    {
-     "id": "a1d90cf2eaca0b6ca39c",
-     "lexical": 1.4935016291315064,
-     "title": null
-    },
-    {
-     "id": "acd15161c75abcf174fd",
-     "lexical": 1.3475535542465233,
-     "title": null
-    },
-    {
-     "id": "ad1fc5c76db41cfe0c45",
-     "lexical": 2.546603043285505,
-     "title": null
-    },
-    {
-     "id": "ba00ea0d5cb95703eb70",
-     "lexical": 3.0908451176594616,
-     "title": null
-    },
-    {
-     "id": "dae6049a6703a2392f6d",
-     "lexical": 2.1805231279681734,
-     "title": null
-    }
-   ]
+   "expansions": {},
+   "chunks": []
   },
   {
    "id": "nh07",
@@ -25428,18 +24908,8 @@
    "id": "nh15",
    "kind": "j2",
    "query": "fiancé",
-   "expansions": {
-    "fiancé": [
-     "france"
-    ]
-   },
-   "chunks": [
-    {
-     "id": "628820ae4f3c63e1c7eb",
-     "lexical": 2.8645939774016638,
-     "title": null
-    }
-   ]
+   "expansions": {},
+   "chunks": []
   },
   {
    "id": "nh16",
@@ -25544,35 +25014,13 @@
    "query": "center",
    "expansions": {
     "center": [
-     "centre",
-     "counter",
-     "crater"
+     "centre"
     ]
    },
    "chunks": [
     {
      "id": "7e646b04cf612644eb8c",
-     "lexical": 3.9401810953247685,
-     "title": null
-    },
-    {
-     "id": "7ebb5dae20aa64ff21d5",
-     "lexical": 1.7955130160736485,
-     "title": null
-    },
-    {
-     "id": "9a51b3652c704d5b52a3",
-     "lexical": 1.8315804840487442,
-     "title": null
-    },
-    {
-     "id": "bc325856090d23997594",
-     "lexical": 2.7396094319626783,
-     "title": null
-    },
-    {
-     "id": "df18fe3b73766810f617",
-     "lexical": 2.7813946196269987,
+     "lexical": 4.676985591500865,
      "title": null
     }
    ]
@@ -25607,7 +25055,6 @@
    "expansions": {
     "appels": [
      "apples",
-     "ampel",
      "apple"
     ]
    },
@@ -25665,11 +25112,6 @@
     {
      "id": "991cef50eb9e28fb77ce",
      "lexical": 0.9030041633454431,
-     "title": null
-    },
-    {
-     "id": "b4cf6f26496b8dfae39a",
-     "lexical": 2.186146995010735,
      "title": null
     },
     {

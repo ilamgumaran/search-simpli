@@ -1,5 +1,6 @@
 """S5-T5: R, the verb-form rule of fold-groups-v2 (`verb_forms.py`), and its groups in
-the reference (`core._query_groups`; docs/fold-groups-v2.md). Invented content only."""
+the reference (`core._query_groups`; docs/fold-groups-v2.md); S5-T8: fold-groups-v3's
+eligible forms (docs/fold-groups-v3.md). Invented content only."""
 
 import sys
 import tempfile
@@ -64,9 +65,49 @@ class RuleTests(unittest.TestCase):
         self.assertLessEqual(len(forms), 19)
 
 
+class EligibleTests(unittest.TestCase):
+    """S5-T8 (fold-groups-v3): R's forms less those of another word."""
+
+    def test_the_doubling_shape(self):
+        for b in ("hop", "tap", "car", "bit", "bus", "whiz", "ship"):
+            self.assertTrue(r.doubling_shape(b), b)
+        for b in ("box", "row", "play", "visit", "oil", "even", "at", "hope", "quiz"):
+            self.assertFalse(r.doubling_shape(b), b)
+
+    def test_rule_i_a_doubling_base_loses_its_undoubled_forms(self):
+        forms = r.eligible_forms("hopping")
+        for gone in ("hoped", "hoping", "hopes"):
+            self.assertIn(gone, r.forms("hopping"))
+            self.assertNotIn(gone, forms)
+        self.assertIn("hops", forms)
+        self.assertIn("hopped", forms)
+        # -es stays after s, x, z, ch or sh.
+        self.assertIn("whizes", r.eligible_forms("whiz"))
+        self.assertNotIn("whized", r.eligible_forms("whiz"))
+        self.assertNotIn("hopes", r.eligible_forms("hop" + "s"))
+
+    def test_rule_ii_the_remainder_of_a_single_letter_ending_is_left_out(self):
+        self.assertNotIn("hop", r.eligible_forms("hoping"))
+        self.assertIn("hope", r.eligible_forms("hoping"))
+        self.assertNotIn("car", r.eligible_forms("caring"))
+        self.assertIn("care", r.eligible_forms("caring"))
+        self.assertIn("visit", r.eligible_forms("visiting"))
+
+    def test_eligible_forms_are_a_subset_of_r_without_repeats(self):
+        # A subset, not R's order: a left-out base (hop of hoping) moves the forms it
+        # shared with a later base (hopes, hoped) to that base's place.
+        for term in ("hopping", "hoping", "tapping", "taping", "dancing", "tidied", "evening", "Painting", "x²"):
+            forms, kept = r.forms(term), r.eligible_forms(term)
+            self.assertLessEqual(set(kept), set(forms), term)
+            self.assertEqual(len(kept), len(set(kept)), term)
+            self.assertNotIn(term, kept, term)  # the term as typed, as R leaves it out
+        self.assertEqual(r.eligible_forms("hoping"), ["hopings", "hopinges", "hopinged", "hopinging", "hope",
+                                                      "hopes", "hopees", "hopeed", "hopeing", "hoped"])
+
+
 class GroupTests(unittest.TestCase):
     def test_policy(self):
-        self.assertEqual(FOLD_POLICY_ID, "fold-groups-v2")
+        self.assertEqual(FOLD_POLICY_ID, "fold-groups-v3")
 
     def test_a_word_no_file_holds_takes_its_forms_at_one_and_no_fuzzy(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -21,6 +21,14 @@
 //! forms of t are the relatives of every base, t itself left out, first seen
 //! first: one exact lookup each.
 //!
+//! fold-groups-v3 (S5-T8, docs/fold-groups-v3.md) searches only R's eligible
+//! forms (`eligibleForms`): R's forms less those of another word. A base b
+//! has the doubling shape (`doublingShape`) when it has one vowel group (a, e,
+//! i, o, u; y a consonant) and ends consonant, vowel, consonant, the last not
+//! w, x or y. Then (i) for a base of the doubling shape, b + ed, b + ing and
+//! (unless b ends s, x, z, ch or sh) b + es are left out; (ii) when p is
+//! r + ing or r + ed with r of the doubling shape, the base r is left out.
+//!
 //! Everything here is on the stack: at most `max_bases` bases and `max_forms`
 //! forms of at most `max_len` bytes. The Python mirror is
 //! `src/search_platform/verb_forms.py`; `verb_forms_test.zig` checks this file
@@ -108,19 +116,24 @@ fn remainderBases(r: []const u8, out: *Words) void {
     }
 }
 
+/// p = S(u), written into `buf`.
+fn plural(u: []const u8, buf: *[max_len]u8) []const u8 {
+    const stem = fold.stemPlural(u);
+    @memcpy(buf[0..stem.len], u[0..stem.len]);
+    var len = stem.len;
+    if (stem.y) {
+        buf[len] = 'y';
+        len += 1;
+    }
+    return buf[0..len];
+}
+
 /// The bases of the word `u` (`applies(u)` holds), in order, without repeats.
 pub fn bases(u: []const u8, out: *Words) void {
     std.debug.assert(applies(u));
     out.len = 0;
-    const stem = fold.stemPlural(u);
     var p_buf: [max_len]u8 = undefined;
-    @memcpy(p_buf[0..stem.len], u[0..stem.len]);
-    var p_len = stem.len;
-    if (stem.y) {
-        p_buf[p_len] = 'y';
-        p_len += 1;
-    }
-    const p = p_buf[0..p_len];
+    const p = plural(u, &p_buf);
     out.add(&.{p}, "");
     if (std.mem.endsWith(u8, p, "ing")) remainderBases(p[0 .. p.len - 3], out);
     if (std.mem.endsWith(u8, p, "ed")) remainderBases(p[0 .. p.len - 2], out);
@@ -159,6 +172,65 @@ pub fn forms(u: []const u8, term: []const u8, out: *Words) void {
     for (0..b.len) |i| appendRelatives(b.get(i), term, out);
 }
 
+fn vowelGroups(word: []const u8) usize {
+    var groups: usize = 0;
+    var inside = false;
+    for (word) |c| {
+        const v = vowel(c);
+        if (v and !inside) groups += 1;
+        inside = v;
+    }
+    return groups;
+}
+
+/// fold-groups-v3: one vowel group, ending consonant, vowel, consonant, the
+/// last not w, x or y.
+pub fn doublingShape(b: []const u8) bool {
+    const n = b.len;
+    if (n < 3) return false;
+    const last = b[n - 1];
+    return consonant(last) and last != 'w' and last != 'x' and last != 'y' and vowel(b[n - 2]) and
+        consonant(b[n - 3]) and vowelGroups(b) == 1;
+}
+
+fn esKept(b: []const u8) bool {
+    const last = b[b.len - 1];
+    return last == 's' or last == 'x' or last == 'z' or std.mem.endsWith(u8, b, "ch") or std.mem.endsWith(u8, b, "sh");
+}
+
+/// Whether r = p less `suffix` is a left-out base (rule (ii)).
+fn leftOut(p: []const u8, suffix: []const u8, base: []const u8) bool {
+    return std.mem.endsWith(u8, p, suffix) and base.len == p.len - suffix.len and
+        std.mem.eql(u8, base, p[0 .. p.len - suffix.len]) and doublingShape(base);
+}
+
+/// fold-groups-v3's forms of a term whose word is `u`: R's forms less those
+/// of another word (rules (i) and (ii)), the term itself left out, first
+/// seen first.
+pub fn eligibleForms(u: []const u8, term: []const u8, out: *Words) void {
+    var b = Words{};
+    bases(u, &b);
+    var p_buf: [max_len]u8 = undefined;
+    const p = plural(u, &p_buf);
+    out.len = 0;
+    for (0..b.len) |i| {
+        const base = b.get(i);
+        if (leftOut(p, "ing", base) or leftOut(p, "ed", base)) continue;
+        var rel = Words{};
+        appendRelatives(base, term, &rel);
+        const doubling = doublingShape(base);
+        for (0..rel.len) |j| {
+            const form = rel.get(j);
+            if (doubling and form.len > base.len and std.mem.startsWith(u8, form, base)) {
+                const tail = form[base.len..];
+                if (std.mem.eql(u8, tail, "ed") or std.mem.eql(u8, tail, "ing")) continue;
+                if (std.mem.eql(u8, tail, "es") and !esKept(base)) continue;
+            }
+            out.add(&.{form}, term);
+        }
+    }
+}
+
 test "bases and forms of a few words" {
     var out = Words{};
     bases("hopping", &out);
@@ -183,4 +255,24 @@ test "the largest word fits the buffers" {
     // -ied base, each with every relative.
     forms("bab" ** 15 ++ "bied", "x", &out);
     try std.testing.expect(out.len <= max_forms);
+}
+
+test "eligible forms: the doubling shape and its left-out forms" {
+    try std.testing.expect(doublingShape("hop"));
+    try std.testing.expect(doublingShape("car"));
+    try std.testing.expect(!doublingShape("box"));
+    try std.testing.expect(!doublingShape("row"));
+    try std.testing.expect(!doublingShape("visit"));
+    try std.testing.expect(!doublingShape("oil"));
+    var out = Words{};
+    // hopping: the base hop keeps hops but not hoped, hoping, hopes (hope's).
+    eligibleForms("hopping", "hopping", &out);
+    const hopping = [_][]const u8{ "hoppings", "hoppinges", "hoppinged", "hoppinging", "hopp", "hopps", "hoppes", "hopped", "hoppe", "hoppees", "hoppeed", "hoppeing", "hop", "hops" };
+    try std.testing.expectEqual(hopping.len, out.len);
+    for (hopping, 0..) |w, i| try std.testing.expectEqualStrings(w, out.get(i));
+    // hoping: rule (ii) leaves the base hop out; hope stays.
+    eligibleForms("hoping", "hoping", &out);
+    const hoping = [_][]const u8{ "hopings", "hopinges", "hopinged", "hopinging", "hope", "hopes", "hopees", "hopeed", "hopeing", "hoped" };
+    try std.testing.expectEqual(hoping.len, out.len);
+    for (hoping, 0..) |w, i| try std.testing.expectEqualStrings(w, out.get(i));
 }

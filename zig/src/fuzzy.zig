@@ -8,6 +8,12 @@
 //! code points; ordered by (distance, key df descending, UTF-8 bytes) and
 //! cut to `max_expansions`. Each kept word weighs `weightOf(distance)`.
 //!
+//! S5-T8: `fuzzy-v2` (`docs/fuzzy-v2.md`, ruling 3 of `docs/tasks/S5-T8.md`)
+//! then drops, from those kept, a distance-2 word when the typed word has
+//! fewer than `prefix_rule_below` code points and the word's first
+//! `prefix_code_points` code points differ from the typed word's. Nothing
+//! from beyond the cut takes a dropped word's place.
+//!
 //! The scan reads the sorted body dictionary (HYBLEX02, bytewise) and the
 //! title field's sorted term table in place: the terms sharing the first
 //! code point are one contiguous range of each. A letter-count lower bound
@@ -26,10 +32,27 @@ const postings = @import("postings.zig");
 const scope = @import("scope.zig");
 const title_field = @import("title_field.zig");
 
-pub const policy_id = "fuzzy-v1";
+pub const policy_id = "fuzzy-v2";
 pub const min_code_points = 5;
 pub const distance_2_min_code_points = 6;
 pub const max_expansions = 3;
+/// fuzzy-v2: below this many code points a distance-2 word must share the
+/// typed word's first `prefix_code_points` code points.
+pub const prefix_rule_below = 8;
+pub const prefix_code_points = 2;
+
+/// fuzzy-v2's rule for one kept word of a typed word of `n` code points.
+/// UTF-8 is prefix-free, so the first two code points agree exactly when
+/// the bytes of the typed word's first two open the candidate.
+pub fn prefixRuleKeeps(typed: []const u8, n: usize, candidate: []const u8, distance: u8) bool {
+    if (distance == 1 or n >= prefix_rule_below) return true;
+    var end: usize = 0;
+    var i: usize = 0;
+    while (i < prefix_code_points and end < typed.len) : (i += 1) {
+        end += std.unicode.utf8ByteSequenceLength(typed[end]) catch return false;
+    }
+    return end <= typed.len and std.mem.startsWith(u8, candidate, typed[0..end]);
+}
 
 /// 1.0 at distance 1, 0.5 at distance 2.
 pub fn weightOf(distance: u8) f32 {
@@ -331,7 +354,15 @@ pub fn scan(allocator: std.mem.Allocator, context: Context, typed: []const u8) !
             kept.offer(.{ .term = bytes, .distance = d, .weight = weightOf(d), .key_df = 1, .body = null });
         }
     }
-    return allocator.dupe(Member, kept.items[0..kept.len]);
+    // fuzzy-v2: the prefix rule on the kept words, with no replacement.
+    var out: [max_expansions]Member = undefined;
+    var len: usize = 0;
+    for (kept.items[0..kept.len]) |member| {
+        if (!prefixRuleKeeps(typed, n, member.term, member.distance)) continue;
+        out[len] = member;
+        len += 1;
+    }
+    return allocator.dupe(Member, out[0..len]);
 }
 
 /// The query's groups, one scan per distinct triggering term in query

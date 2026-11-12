@@ -1,7 +1,8 @@
 //! K, the key function of `fold-groups-v1` (S5-T4, docs/tasks/S5-T4.md rulings
 //! 2-5 of the plan and ruling 10's query side), the key map built on it, and
 //! the query side of `fold-groups-v2` (S5-T5: the key-mates and R's verb
-//! forms, `verb_forms.zig`).
+//! forms, `verb_forms.zig`), now `fold-groups-v3` (S5-T8: R's eligible forms
+//! only).
 //!
 //! K maps one analyzer-v2 term (or a raw token: F folds both the same way) to
 //! zero or more pieces through four parts, in order:
@@ -38,8 +39,10 @@ const tables = @import("unicode_tables.zig");
 const title_field = @import("title_field.zig");
 const verb_forms = @import("verb_forms.zig");
 
-/// The query side's policy (`retrieval.fold_policy_id`, contract 2.6.0).
-pub const policy_id = "fold-groups-v2";
+/// The query side's policy (`retrieval.fold_policy_id`, contract 2.7.0):
+/// fold-groups-v3 is fold-groups-v2 with R's eligible forms only
+/// (`verb_forms.eligibleForms`, S5-T8).
+pub const policy_id = "fold-groups-v3";
 /// K's policy: fold-groups-v2 keeps fold-groups-v1's key unchanged
 /// (`fixtures/analyzer-v3-golden.json` names it).
 pub const key_policy_id = "fold-groups-v1";
@@ -766,7 +769,8 @@ fn listed(members: []const fuzzy.Member, bytes: []const u8) bool {
     return false;
 }
 
-/// fold-groups-v2 (S5-T5 Phase 1 ruling 1): R's forms of `token` that the
+/// fold-groups-v2 (S5-T5 Phase 1 ruling 1), with fold-groups-v3's eligible
+/// forms (S5-T8): R's eligible forms of `token` that the
 /// request can use and that are not already members, appended to `members`.
 /// A token no chunk in scope and no visible title holds takes them at 1.0; a
 /// held token takes one at 0.5 only when its key df is no higher than the
@@ -774,7 +778,7 @@ fn listed(members: []const fuzzy.Member, bytes: []const u8) bool {
 fn appendVerbForms(allocator: std.mem.Allocator, context: fuzzy.Context, keyer: *Keyer, word: *std.ArrayList(u8), token: []const u8, members: *std.ArrayList(fuzzy.Member)) !void {
     const u = (try keyer.appendWord(token, word)) orelse return;
     var found = verb_forms.Words{};
-    verb_forms.forms(u, token, &found);
+    verb_forms.eligibleForms(u, token, &found);
     var held: ?Held = null;
     for (0..found.len) |i| {
         const form = found.get(i);

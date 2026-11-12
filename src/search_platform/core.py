@@ -1185,12 +1185,21 @@ def _title_scores(visible_chunks: list[dict], query: str, root_ids: tuple[str, .
 # descending, UTF-8 bytes), key df the in-scope body df or 1 for a title-only term;
 # the first FUZZY_MAX_EXPANSIONS kept, weighted by FUZZY_WEIGHTS. The Zig engine
 # implements the same rule (zig/src/fuzzy.zig).
+#
+# fuzzy-v2 (S5-T8, docs/fuzzy-v2.md): of those first FUZZY_MAX_EXPANSIONS, a word at
+# distance 2 from a typed word shorter than FUZZY_PREFIX_RULE_BELOW code points is
+# kept only when it starts with the typed word's first FUZZY_PREFIX_CODE_POINTS code
+# points (skiing no longer reaches spring, saving, string; dokter still reaches
+# doctor). The candidates, their order and the cap are fuzzy-v1's; a kept word is
+# not replaced by the next one.
 
-FUZZY_POLICY_ID = "fuzzy-v1"
+FUZZY_POLICY_ID = "fuzzy-v2"
 FUZZY_MIN_CODE_POINTS = 5
 FUZZY_DISTANCE_2_MIN_CODE_POINTS = 6
 FUZZY_MAX_EXPANSIONS = 3
 FUZZY_WEIGHTS = {1: 1.0, 2: 0.5}
+FUZZY_PREFIX_RULE_BELOW = 8
+FUZZY_PREFIX_CODE_POINTS = 2
 # A digit 0-9 or a Latin letter, by code point range (not by Unicode name).
 FUZZY_LATIN_RANGES = ((0x30, 0x39), (0x61, 0x7A), (0xDF, 0xF6), (0xF8, 0xFF), (0x100, 0x24F), (0x1E00, 0x1EFF))
 
@@ -1267,9 +1276,11 @@ def _fuzzy_groups(terms: Iterable[str], body_df: Counter, title_vocabulary: set[
             if distance:
                 found.append((distance, -key_df, candidate.encode("utf-8"), candidate))
         found.sort()
-        if found:
-            groups[term] = tuple((candidate, FUZZY_WEIGHTS[distance])
-                                 for distance, _, _, candidate in found[:FUZZY_MAX_EXPANSIONS])
+        kept = [(distance, candidate) for distance, _, _, candidate in found[:FUZZY_MAX_EXPANSIONS]
+                if distance == 1 or len(term) >= FUZZY_PREFIX_RULE_BELOW
+                or candidate[:FUZZY_PREFIX_CODE_POINTS] == term[:FUZZY_PREFIX_CODE_POINTS]]
+        if kept:
+            groups[term] = tuple((candidate, FUZZY_WEIGHTS[distance]) for distance, candidate in kept)
     return groups
 
 
@@ -1328,8 +1339,13 @@ def fuzzy_expansions(index: dict, query: str, *, path_prefix: str | None = None,
 # held, a form joins at VERB_FORM_HELD_WEIGHT only if its key df is no higher than the
 # term's own (key df over the visible chunks: a prefix narrows membership, not
 # statistics), so a held word's group never takes a df above the word's own through R.
+#
+# fold-groups-v3 (S5-T8, docs/fold-groups-v3.md) takes only R's eligible forms
+# (`verb_forms.eligible_forms`): not a doubling-shape base's undoubled -ed, -ing and
+# -es (hop: hoped, hoping, hopes are hope's), and not a doubling-shape remainder of
+# an undoubled -ing or -ed (caring: not car). Everything else is fold-groups-v2's.
 
-FOLD_POLICY_ID = "fold-groups-v2"
+FOLD_POLICY_ID = "fold-groups-v3"
 VERB_FORM_HELD_WEIGHT = 0.5
 VERB_FORM_UNHELD_WEIGHT = 1.0
 
@@ -1339,7 +1355,7 @@ def _fold_groups(terms: Iterable[str], members_by_key: dict[str, set[str]], key_
                  held: set[str] | None = None) -> dict[str, tuple[tuple[str, float], ...]]:
     """{term: ((member, weight), ...)} in the group's order. With `vocabulary` (the
     in-scope body terms and the visible title terms under the prefix) R's forms join
-    as fold-groups-v2 says; `held` is the set of terms a chunk in scope or a visible
+    as fold-groups-v3 says; `held` is the set of terms a chunk in scope or a visible
     title holds. Without `vocabulary` the groups are fold-groups-v1's."""
     from . import analyzer_v3, verb_forms
     groups: dict[str, tuple[tuple[str, float], ...]] = {}
@@ -1349,7 +1365,7 @@ def _fold_groups(terms: Iterable[str], members_by_key: dict[str, set[str]], key_
         if vocabulary is not None:
             is_held = held is not None and term in held
             own = key_df.get(term, 0)
-            for form in verb_forms.forms(term):
+            for form in verb_forms.eligible_forms(term):
                 if form in weights or form not in vocabulary:
                     continue
                 if is_held:

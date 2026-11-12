@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Generate R's cross-language golden (S5-T5, fold-groups-v2, docs/tasks/S5-T5.md
-Phase 1 ruling 7; docs/fold-groups-v2.md).
+Phase 1 ruling 7; docs/fold-groups-v2.md), with the forms fold-groups-v3 takes (S5-T8,
+docs/fold-groups-v3.md: `verb_forms.eligible_forms`).
 
 R (`src/search_platform/verb_forms.py`) is written for every term K's golden lists
 (`fixtures/analyzer-v3-golden.json`: J2's three roots, `fixtures/family-folder`, the
 10k timing corpus, the fold table's code points and K's traps), and for R's own
 traps.
 
-For every term, in UTF-8 byte order, one line `term TAB bases TAB forms LF` (the
-bases and the forms each joined by one space, empty when R does not apply) is
-hashed into `digest.sha256`; `digest` also counts the terms, those R applies to and
-the forms (R's exact lookups). The terms of J2, the family folder and R's traps are
-also listed in full: `listed` holds each one R applies to with its bases and forms,
+For every term, in UTF-8 byte order, one line `term TAB bases TAB forms TAB eligible
+LF` (the bases, R's forms and the eligible forms each joined by one space, empty when
+R does not apply) is hashed into `digest.sha256`; `digest` also counts the terms,
+those R applies to, the forms (R's exact lookups) and the eligible forms. The terms of
+J2, the family folder and R's traps are also listed in full: `listed` holds each one R
+applies to with its bases, forms and eligible forms,
 `off` each one it does not. `zig/src/verb_forms_test.zig` computes R on every term
 (K's golden's and the traps) and must equal both, byte for byte. Regenerate K's
 golden first when it is stale.
@@ -38,6 +40,10 @@ TRAPS = [
     "string", "spring", "king", "ring", "feed", "need", "bleed", "red", "bed", "shed", "sled",
     "flying", "trying", "spying", "rhythm", "fizzing", "spelling", "missed", "buzzed", "rolled",
     "dancing", "cycled", "shopping", "knitting", "swimming", "planned", "stirring", "dripped",
+    # fold-groups-v3's eligibility (S5-T8): the doubling shape (one vowel group, ending
+    # consonant, vowel, consonant, not w, x, y), -es kept after s, x, z, ch, sh
+    "hops", "caring", "taping", "tapping", "hating", "biting", "mating", "evening", "even",
+    "shedding", "canned", "boxing", "rowing", "bussing", "visiting", "oiling", "quizzed", "ship",
     # -ied (five letters at least) and the consonant-y relatives
     "tidied", "buried", "cried", "died", "lied", "tied", "studied", "carried", "tidy", "play",
     "played", "enjoy", "stay",
@@ -88,23 +94,24 @@ def main() -> None:
     sets["traps"] = set(TRAPS)
     every = sets["k-golden"] | sets["traps"]
     digest = hashlib.sha256()
-    applies = lookups = 0
+    applies = lookups = eligible = 0
     for term in utf8_sorted(every):
-        bases, forms = r.bases(term), r.forms(term)
+        bases, forms, kept = r.bases(term), r.forms(term), r.eligible_forms(term)
         applies += 1 if bases else 0
         lookups += len(forms)
-        digest.update(f"{term}\t{' '.join(bases)}\t{' '.join(forms)}\n".encode("utf-8"))
+        eligible += len(kept)
+        digest.update(f"{term}\t{' '.join(bases)}\t{' '.join(forms)}\t{' '.join(kept)}\n".encode("utf-8"))
     shown = sets["j2"] | sets["family-folder"] | sets["traps"]
     listed, off = [], []
     for term in utf8_sorted(shown):
         bases = r.bases(term)
         if bases:
-            listed.append([term, bases, r.forms(term)])
+            listed.append([term, bases, r.forms(term), r.eligible_forms(term)])
         else:
             off.append(term)
     lines = ["{",
-             '  "policy": "fold-groups-v2",',
-             '  "rule": "R (docs/fold-groups-v2.md; docs/tasks/S5-T5-prototype.md, R restated)",',
+             '  "policy": "fold-groups-v3",',
+             '  "rule": "R (docs/fold-groups-v2.md; docs/tasks/S5-T5-prototype.md, R restated) and the forms fold-groups-v3 takes (docs/fold-groups-v3.md)",',
              f'  "unicode": {json.dumps(v3.UNICODE_VERSION)},',
              '  "generator": "scripts/gen_verb_forms_golden.py",',
              '  "sets": {']
@@ -114,7 +121,7 @@ def main() -> None:
         lines.append(f"    {json.dumps(name)}: {json.dumps(describe(sets[name]))}{comma}")
     lines.append("  },")
     lines.append(f'  "digest": {{"terms": {len(every)}, "applies": {applies}, "lookups": {lookups}, '
-                 f'"sha256": "{digest.hexdigest()}"}},')
+                 f'"eligible": {eligible}, "sha256": "{digest.hexdigest()}"}},')
     lines.append(f'  "count": {{"listed": {len(listed)}, "off": {len(off)}}},')
     lines.append('  "listed": [')
     lines.extend(f"    {json.dumps(row, ensure_ascii=False)}{',' if i + 1 < len(listed) else ''}"
