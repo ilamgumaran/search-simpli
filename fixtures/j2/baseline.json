@@ -1,33 +1,33 @@
 {
   "schema": "j2-baseline-v1",
-  "judgments_sha256": "36d77724f3bd20c163a5157342716731a4800ecaf16f531f0e6d54853e631b2c",
-  "engine_commit": "d3c04712ed8dea99a95322ac9247a7ec42bbb666",
-  "run_commit": "e2cceffb840a5cdbf2d693bfdfde8d079fab19ec",
-  "natives_digest": "cf963567864e72ac368b666608a42566b98e99e0d474080ddf2d2d925ae8f5e6",
+  "judgments_sha256": "2a15330a2dab47878ba20db62d353780bcc009f1c6e8bc59f841548fc648dfe1",
+  "engine_commit": "2f1e27424fa6dedf0077dc9e538e8744eeca6094",
+  "run_commit": "2f1e27424fa6dedf0077dc9e538e8744eeca6094",
+  "natives_digest": "8ea110b0c09692c93e66b4f3e78f5f932670770aaf87125fe96d22cb4d28da4b",
   "recorded": "2026-11-12",
   "load": {
     "before": [
-      1.51,
-      1.93,
-      2.04
+      1.22,
+      1.52,
+      1.87
     ],
     "after": [
-      1.55,
-      1.93,
-      2.03
+      1.22,
+      1.52,
+      1.87
     ],
     "top_sample": [
-      "Processes: 949 total, 3 running, 946 sleeping, 3979 threads",
-      "Load Avg: 1.55, 1.93, 2.03",
-      "CPU usage: 1.64% user, 1.14% sys, 97.20% idle"
+      "Processes: 968 total, 2 running, 966 sleeping, 4036 threads",
+      "Load Avg: 1.22, 1.52, 1.87",
+      "CPU usage: 2.53% user, 1.39% sys, 96.7% idle"
     ]
   },
   "top_k": 10,
   "surfaces": {
     "searchd": {
       "binary": {
-        "sha256": "f9f5184178e8cbb93913d4cf774dcb93cf057a9b6509fcc965263958efca1487",
-        "size": 1095400,
+        "sha256": "8b1f65c1d797924085eaa04da45ee1e49e15994174defd3327d000273008a4b3",
+        "size": 1095320,
         "optimize": "ReleaseSmall",
         "zig": "0.16.0"
       },
@@ -145,6 +145,13 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "misspelling-opening": {
+              "n": 25,
+              "success_at_1": 0.12,
+              "mrr_at_10": 0.213667,
+              "ndcg_at_10": 0.272205,
+              "recall_at_5": 0.34
             }
           },
           "overall": {
@@ -355,7 +362,32 @@
             "ms10": 1,
             "ms11": 1,
             "ms12": 1,
-            "ms13": 1
+            "ms13": 1,
+            "mo01": 4,
+            "mo02": 10,
+            "mo03": null,
+            "mo04": 5,
+            "mo05": null,
+            "mo06": 3,
+            "mo07": null,
+            "mo08": 1,
+            "mo09": null,
+            "mo10": null,
+            "mo11": null,
+            "mo12": null,
+            "mo13": 1,
+            "mo14": null,
+            "mo15": null,
+            "mo16": null,
+            "mo17": 2,
+            "mo18": null,
+            "mo19": null,
+            "mo20": 3,
+            "mo21": 8,
+            "mo22": 1,
+            "mo23": 6,
+            "mo24": 3,
+            "mo25": null
           },
           "slice_of": {
             "c01": "control",
@@ -622,7 +654,32 @@
             "msn1": "negatives-short",
             "msn2": "negatives-short",
             "msn3": "negatives-short",
-            "msn4": "negatives-short"
+            "msn4": "negatives-short",
+            "mo01": "misspelling-opening",
+            "mo02": "misspelling-opening",
+            "mo03": "misspelling-opening",
+            "mo04": "misspelling-opening",
+            "mo05": "misspelling-opening",
+            "mo06": "misspelling-opening",
+            "mo07": "misspelling-opening",
+            "mo08": "misspelling-opening",
+            "mo09": "misspelling-opening",
+            "mo10": "misspelling-opening",
+            "mo11": "misspelling-opening",
+            "mo12": "misspelling-opening",
+            "mo13": "misspelling-opening",
+            "mo14": "misspelling-opening",
+            "mo15": "misspelling-opening",
+            "mo16": "misspelling-opening",
+            "mo17": "misspelling-opening",
+            "mo18": "misspelling-opening",
+            "mo19": "misspelling-opening",
+            "mo20": "misspelling-opening",
+            "mo21": "misspelling-opening",
+            "mo22": "misspelling-opening",
+            "mo23": "misspelling-opening",
+            "mo24": "misspelling-opening",
+            "mo25": "misspelling-opening"
           },
           "negatives": {
             "cn1": {
@@ -758,7 +815,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 2,
+              "returned": 7,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -945,13 +1002,18 @@
               "top_is_named_distractor": true
             },
             "nt04": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             },
             "nt05": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -962,7 +1024,7 @@
               "top_is_named_distractor": false
             },
             "nt06": {
-              "returned": 1,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/jottings.md",
@@ -995,7 +1057,7 @@
               "top_is_named_distractor": true
             },
             "nt09": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "packing-lists/camping.md",
@@ -1017,12 +1079,12 @@
               "top_is_named_distractor": false
             },
             "nt11": {
-              "returned": 3,
+              "returned": 5,
               "top_hit": {
-                "root_id": "school",
-                "path": "reading-log-pip.md",
-                "start_line": 3,
-                "end_line": 7
+                "root_id": "laptop",
+                "path": "meeting-notes-pta.md",
+                "start_line": 1,
+                "end_line": 2
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -1117,10 +1179,15 @@
               "top_is_named_distractor": false
             },
             "nh04": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             },
             "nh05": {
               "returned": 1,
@@ -1134,10 +1201,15 @@
               "top_is_named_distractor": true
             },
             "nh06": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             },
             "nh07": {
               "returned": 3,
@@ -1223,10 +1295,15 @@
               "top_is_named_distractor": null
             },
             "nh15": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "family-log.md",
+                "start_line": 59,
+                "end_line": 63
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             },
             "nh16": {
               "returned": 10,
@@ -1409,6 +1486,13 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "misspelling-opening": {
+              "n": 25,
+              "success_at_1": 0.12,
+              "mrr_at_10": 0.219048,
+              "ndcg_at_10": 0.27752,
+              "recall_at_5": 0.34
             }
           },
           "overall": {
@@ -1619,7 +1703,32 @@
             "ms10": 1,
             "ms11": 1,
             "ms12": 1,
-            "ms13": 1
+            "ms13": 1,
+            "mo01": 4,
+            "mo02": 7,
+            "mo03": null,
+            "mo04": 4,
+            "mo05": null,
+            "mo06": 3,
+            "mo07": null,
+            "mo08": 1,
+            "mo09": null,
+            "mo10": null,
+            "mo11": null,
+            "mo12": null,
+            "mo13": 1,
+            "mo14": null,
+            "mo15": null,
+            "mo16": null,
+            "mo17": 2,
+            "mo18": null,
+            "mo19": null,
+            "mo20": 3,
+            "mo21": 6,
+            "mo22": 1,
+            "mo23": 6,
+            "mo24": 3,
+            "mo25": null
           },
           "slice_of": {
             "c01": "control",
@@ -1886,7 +1995,32 @@
             "msn1": "negatives-short",
             "msn2": "negatives-short",
             "msn3": "negatives-short",
-            "msn4": "negatives-short"
+            "msn4": "negatives-short",
+            "mo01": "misspelling-opening",
+            "mo02": "misspelling-opening",
+            "mo03": "misspelling-opening",
+            "mo04": "misspelling-opening",
+            "mo05": "misspelling-opening",
+            "mo06": "misspelling-opening",
+            "mo07": "misspelling-opening",
+            "mo08": "misspelling-opening",
+            "mo09": "misspelling-opening",
+            "mo10": "misspelling-opening",
+            "mo11": "misspelling-opening",
+            "mo12": "misspelling-opening",
+            "mo13": "misspelling-opening",
+            "mo14": "misspelling-opening",
+            "mo15": "misspelling-opening",
+            "mo16": "misspelling-opening",
+            "mo17": "misspelling-opening",
+            "mo18": "misspelling-opening",
+            "mo19": "misspelling-opening",
+            "mo20": "misspelling-opening",
+            "mo21": "misspelling-opening",
+            "mo22": "misspelling-opening",
+            "mo23": "misspelling-opening",
+            "mo24": "misspelling-opening",
+            "mo25": "misspelling-opening"
           },
           "negatives": {
             "cn1": {
@@ -2022,7 +2156,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 2,
+              "returned": 5,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -2209,13 +2343,18 @@
               "top_is_named_distractor": true
             },
             "nt04": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             },
             "nt05": {
-              "returned": 2,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -2226,7 +2365,7 @@
               "top_is_named_distractor": false
             },
             "nt06": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/jottings.md",
@@ -2259,7 +2398,7 @@
               "top_is_named_distractor": true
             },
             "nt09": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "packing-lists/camping.md",
@@ -2281,12 +2420,12 @@
               "top_is_named_distractor": false
             },
             "nt11": {
-              "returned": 2,
+              "returned": 3,
               "top_hit": {
-                "root_id": "school",
-                "path": "reading-log-pip.md",
-                "start_line": 3,
-                "end_line": 7
+                "root_id": "laptop",
+                "path": "meeting-notes-pta.md",
+                "start_line": 1,
+                "end_line": 2
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -2381,10 +2520,15 @@
               "top_is_named_distractor": false
             },
             "nh04": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             },
             "nh05": {
               "returned": 1,
@@ -2398,10 +2542,15 @@
               "top_is_named_distractor": true
             },
             "nh06": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             },
             "nh07": {
               "returned": 3,
@@ -2487,10 +2636,15 @@
               "top_is_named_distractor": null
             },
             "nh15": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "family-log.md",
+                "start_line": 59,
+                "end_line": 63
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             },
             "nh16": {
               "returned": 10,
@@ -2564,7 +2718,7 @@
     },
     "python-reference": {
       "python_version": "3.9.6",
-      "hashseed": null,
+      "hashseed": "0",
       "runs": {
         "content": {
           "slices": {
@@ -2679,6 +2833,13 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "misspelling-opening": {
+              "n": 25,
+              "success_at_1": 0.12,
+              "mrr_at_10": 0.213667,
+              "ndcg_at_10": 0.272205,
+              "recall_at_5": 0.34
             }
           },
           "overall": {
@@ -2889,7 +3050,32 @@
             "ms10": 1,
             "ms11": 1,
             "ms12": 1,
-            "ms13": 1
+            "ms13": 1,
+            "mo01": 4,
+            "mo02": 10,
+            "mo03": null,
+            "mo04": 5,
+            "mo05": null,
+            "mo06": 3,
+            "mo07": null,
+            "mo08": 1,
+            "mo09": null,
+            "mo10": null,
+            "mo11": null,
+            "mo12": null,
+            "mo13": 1,
+            "mo14": null,
+            "mo15": null,
+            "mo16": null,
+            "mo17": 2,
+            "mo18": null,
+            "mo19": null,
+            "mo20": 3,
+            "mo21": 8,
+            "mo22": 1,
+            "mo23": 6,
+            "mo24": 3,
+            "mo25": null
           },
           "slice_of": {
             "c01": "control",
@@ -3156,7 +3342,32 @@
             "msn1": "negatives-short",
             "msn2": "negatives-short",
             "msn3": "negatives-short",
-            "msn4": "negatives-short"
+            "msn4": "negatives-short",
+            "mo01": "misspelling-opening",
+            "mo02": "misspelling-opening",
+            "mo03": "misspelling-opening",
+            "mo04": "misspelling-opening",
+            "mo05": "misspelling-opening",
+            "mo06": "misspelling-opening",
+            "mo07": "misspelling-opening",
+            "mo08": "misspelling-opening",
+            "mo09": "misspelling-opening",
+            "mo10": "misspelling-opening",
+            "mo11": "misspelling-opening",
+            "mo12": "misspelling-opening",
+            "mo13": "misspelling-opening",
+            "mo14": "misspelling-opening",
+            "mo15": "misspelling-opening",
+            "mo16": "misspelling-opening",
+            "mo17": "misspelling-opening",
+            "mo18": "misspelling-opening",
+            "mo19": "misspelling-opening",
+            "mo20": "misspelling-opening",
+            "mo21": "misspelling-opening",
+            "mo22": "misspelling-opening",
+            "mo23": "misspelling-opening",
+            "mo24": "misspelling-opening",
+            "mo25": "misspelling-opening"
           },
           "negatives": {
             "cn1": {
@@ -3292,7 +3503,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 2,
+              "returned": 7,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -3479,13 +3690,18 @@
               "top_is_named_distractor": true
             },
             "nt04": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             },
             "nt05": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -3496,7 +3712,7 @@
               "top_is_named_distractor": false
             },
             "nt06": {
-              "returned": 1,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/jottings.md",
@@ -3529,7 +3745,7 @@
               "top_is_named_distractor": true
             },
             "nt09": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "packing-lists/camping.md",
@@ -3551,12 +3767,12 @@
               "top_is_named_distractor": false
             },
             "nt11": {
-              "returned": 3,
+              "returned": 5,
               "top_hit": {
-                "root_id": "school",
-                "path": "reading-log-pip.md",
-                "start_line": 3,
-                "end_line": 7
+                "root_id": "laptop",
+                "path": "meeting-notes-pta.md",
+                "start_line": 1,
+                "end_line": 2
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -3651,10 +3867,15 @@
               "top_is_named_distractor": false
             },
             "nh04": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             },
             "nh05": {
               "returned": 1,
@@ -3668,10 +3889,15 @@
               "top_is_named_distractor": true
             },
             "nh06": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             },
             "nh07": {
               "returned": 3,
@@ -3757,10 +3983,15 @@
               "top_is_named_distractor": null
             },
             "nh15": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "family-log.md",
+                "start_line": 59,
+                "end_line": 63
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             },
             "nh16": {
               "returned": 10,
@@ -3943,6 +4174,13 @@
               "mrr_at_10": 0.961538,
               "ndcg_at_10": 0.97161,
               "recall_at_5": 1.0
+            },
+            "misspelling-opening": {
+              "n": 25,
+              "success_at_1": 0.12,
+              "mrr_at_10": 0.219048,
+              "ndcg_at_10": 0.27752,
+              "recall_at_5": 0.34
             }
           },
           "overall": {
@@ -4153,7 +4391,32 @@
             "ms10": 1,
             "ms11": 1,
             "ms12": 1,
-            "ms13": 1
+            "ms13": 1,
+            "mo01": 4,
+            "mo02": 7,
+            "mo03": null,
+            "mo04": 4,
+            "mo05": null,
+            "mo06": 3,
+            "mo07": null,
+            "mo08": 1,
+            "mo09": null,
+            "mo10": null,
+            "mo11": null,
+            "mo12": null,
+            "mo13": 1,
+            "mo14": null,
+            "mo15": null,
+            "mo16": null,
+            "mo17": 2,
+            "mo18": null,
+            "mo19": null,
+            "mo20": 3,
+            "mo21": 6,
+            "mo22": 1,
+            "mo23": 6,
+            "mo24": 3,
+            "mo25": null
           },
           "slice_of": {
             "c01": "control",
@@ -4420,7 +4683,32 @@
             "msn1": "negatives-short",
             "msn2": "negatives-short",
             "msn3": "negatives-short",
-            "msn4": "negatives-short"
+            "msn4": "negatives-short",
+            "mo01": "misspelling-opening",
+            "mo02": "misspelling-opening",
+            "mo03": "misspelling-opening",
+            "mo04": "misspelling-opening",
+            "mo05": "misspelling-opening",
+            "mo06": "misspelling-opening",
+            "mo07": "misspelling-opening",
+            "mo08": "misspelling-opening",
+            "mo09": "misspelling-opening",
+            "mo10": "misspelling-opening",
+            "mo11": "misspelling-opening",
+            "mo12": "misspelling-opening",
+            "mo13": "misspelling-opening",
+            "mo14": "misspelling-opening",
+            "mo15": "misspelling-opening",
+            "mo16": "misspelling-opening",
+            "mo17": "misspelling-opening",
+            "mo18": "misspelling-opening",
+            "mo19": "misspelling-opening",
+            "mo20": "misspelling-opening",
+            "mo21": "misspelling-opening",
+            "mo22": "misspelling-opening",
+            "mo23": "misspelling-opening",
+            "mo24": "misspelling-opening",
+            "mo25": "misspelling-opening"
           },
           "negatives": {
             "cn1": {
@@ -4556,7 +4844,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 2,
+              "returned": 5,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -4743,13 +5031,18 @@
               "top_is_named_distractor": true
             },
             "nt04": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             },
             "nt05": {
-              "returned": 2,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -4760,7 +5053,7 @@
               "top_is_named_distractor": false
             },
             "nt06": {
-              "returned": 1,
+              "returned": 2,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/jottings.md",
@@ -4793,7 +5086,7 @@
               "top_is_named_distractor": true
             },
             "nt09": {
-              "returned": 3,
+              "returned": 4,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "packing-lists/camping.md",
@@ -4815,12 +5108,12 @@
               "top_is_named_distractor": false
             },
             "nt11": {
-              "returned": 2,
+              "returned": 3,
               "top_hit": {
-                "root_id": "school",
-                "path": "reading-log-pip.md",
-                "start_line": 3,
-                "end_line": 7
+                "root_id": "laptop",
+                "path": "meeting-notes-pta.md",
+                "start_line": 1,
+                "end_line": 2
               },
               "top_hit_grade": 0,
               "top_is_named_distractor": false
@@ -4915,10 +5208,15 @@
               "top_is_named_distractor": false
             },
             "nh04": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             },
             "nh05": {
               "returned": 1,
@@ -4932,10 +5230,15 @@
               "top_is_named_distractor": true
             },
             "nh06": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 10,
+              "top_hit": {
+                "root_id": "school",
+                "path": "german-club.md",
+                "start_line": 5,
+                "end_line": 8
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": false
             },
             "nh07": {
               "returned": 3,
@@ -5021,10 +5324,15 @@
               "top_is_named_distractor": null
             },
             "nh15": {
-              "returned": 0,
-              "top_hit": null,
-              "top_hit_grade": null,
-              "top_is_named_distractor": null
+              "returned": 1,
+              "top_hit": {
+                "root_id": "home",
+                "path": "family-log.md",
+                "start_line": 59,
+                "end_line": 63
+              },
+              "top_hit_grade": 0,
+              "top_is_named_distractor": true
             },
             "nh16": {
               "returned": 10,
@@ -5700,6 +6008,78 @@
           }
         }
       }
+    },
+    {
+      "task": "S5-T8 re-ruling",
+      "slice": "misspelling-opening",
+      "queries": [
+        "mo01",
+        "mo02",
+        "mo03",
+        "mo04",
+        "mo05",
+        "mo06",
+        "mo07",
+        "mo08",
+        "mo09",
+        "mo10",
+        "mo11",
+        "mo12",
+        "mo13",
+        "mo14",
+        "mo15",
+        "mo16",
+        "mo17",
+        "mo18",
+        "mo19",
+        "mo20",
+        "mo21",
+        "mo22",
+        "mo23",
+        "mo24",
+        "mo25"
+      ],
+      "why": "The S5-T8 re-ruling after the verifier's measurement (13 Nov), item 3: the verifier's 16 second-letter and 9 first-letter typed words of 6 and 7 code points, each as the short question it ran, with every file holding the meant word as the answer; written by someone who had not seen the rule's design; recorded with the engine that ships (fold-groups-v3, fuzzy-v1); the first-letter rows record a measured gap, not a regression; the bar the next fuzzy task must not lower",
+      "judgments_sha256_before": "36d77724f3bd20c163a5157342716731a4800ecaf16f531f0e6d54853e631b2c",
+      "recorded": "2026-11-12",
+      "engine_commit": "2f1e27424fa6dedf0077dc9e538e8744eeca6094",
+      "natives_digest": "8ea110b0c09692c93e66b4f3e78f5f932670770aaf87125fe96d22cb4d28da4b",
+      "searchd_binary": {
+        "sha256": "8b1f65c1d797924085eaa04da45ee1e49e15994174defd3327d000273008a4b3",
+        "size": 1095320,
+        "optimize": "ReleaseSmall",
+        "zig": "0.16.0"
+      },
+      "python_version": "3.9.6",
+      "hashseed": "0",
+      "earlier_cells_unchanged": true,
+      "engine_before_this_task": {
+        "engine_commit": "68e77da",
+        "searchd_binary": {
+          "sha256": "d0e32d3802b8e6fef0807030f13f1f1192112168c6cab5faf52791599b579eae",
+          "size": 1078952,
+          "optimize": "ReleaseSmall",
+          "zig": "0.16.0"
+        },
+        "first_grade2_ranks_equal": true,
+        "slice_cells_equal": true,
+        "slice": {
+          "content": {
+            "n": 25,
+            "success_at_1": 0.12,
+            "mrr_at_10": 0.213667,
+            "ndcg_at_10": 0.272205,
+            "recall_at_5": 0.34
+          },
+          "both": {
+            "n": 25,
+            "success_at_1": 0.12,
+            "mrr_at_10": 0.219048,
+            "ndcg_at_10": 0.27752,
+            "recall_at_5": 0.34
+          }
+        }
+      }
     }
   ],
   "replaces": [
@@ -5798,6 +6178,14 @@
       "judgments_sha256": "36d77724f3bd20c163a5157342716731a4800ecaf16f531f0e6d54853e631b2c",
       "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
       "why": "S5-T8 Phase 2: fold-groups-v3 (verb forms of another word left out) and fuzzy-v2 (a two-edit word of another two-code-point opening dropped below 8 code points) change the ranking by design; the gate passed on both surfaces against the Phase 1c baseline with the allow-list untouched (verbform-cross 0.667 to 1.000, every other slice unchanged), so the baseline is re-recorded at the S5-T8 engine (searchd ReleaseSmall, zig 0.16.0)"
+    },
+    {
+      "engine_commit": "d3c04712ed8dea99a95322ac9247a7ec42bbb666",
+      "run_commit": "e2cceffb840a5cdbf2d693bfdfde8d079fab19ec",
+      "recorded": "2026-11-12",
+      "judgments_sha256": "36d77724f3bd20c163a5157342716731a4800ecaf16f531f0e6d54853e631b2c",
+      "natives_digest": "cf963567864e72ac368b666608a42566b98e99e0d474080ddf2d2d925ae8f5e6",
+      "why": "S5-T8 re-ruling after the verifier's measurement (13 Nov): fuzzy-v2 does not ship and fold-groups-v3 ships alone (fuzzy-v1 unchanged), and J2 gains the held-out slice misspelling-opening (mo01-mo25, the verifier's typed words as the short questions it ran); re-recorded on both surfaces at the X-alone engine (searchd ReleaseSmall, zig 0.16.0): against main (68e77da) only x02 and x05 move (verbform-cross 0.667 to 1.000); misspelling-short and misspelling-opening equal the engine before this task"
     }
   ]
 }

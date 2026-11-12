@@ -227,7 +227,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/ci_j2_native.py run --searchd "$RUNNER_TEMP/release/bin/searchd" \
-            --expect-queries 265 --output "$RUNNER_TEMP/j2-native/searchd.json"
+            --expect-queries 290 --output "$RUNNER_TEMP/j2-native/searchd.json"
 
       - name: J2 native cells against the macOS arm64 baseline (information)
         env:

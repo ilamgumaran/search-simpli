@@ -179,7 +179,7 @@ pull request:
 | Surface | Where | What runs | What fails it |
 | --- | --- | --- | --- |
 | Python reference | `checks` (Python 3.11, no Zig) | `relevance_smoke.py --pack j2`, then `j2_gate.py` | the gate's rules (a), (b), (c) |
-| `searchd` | `native-linux-release` (Linux x86_64, the job's own `ReleaseSmall` build) | `scripts/ci_j2_native.py run`, `differences`, then `j2_gate.py --annotate` | a run that is not whole and native (the pack is not 265 queries, a query has no record in `content` or `both`, the surface is not `searchd`, the binary is not the job's), or the gate's rules |
+| `searchd` | `native-linux-release` (Linux x86_64, the job's own `ReleaseSmall` build) | `scripts/ci_j2_native.py run`, `differences`, then `j2_gate.py --annotate` | a run that is not whole and native (the pack is not 290 queries, a query has no record in `content` or `both`, the surface is not `searchd`, the binary is not the job's), or the gate's rules |
 | the gate itself | `native-linux-release` | `ci_j2_native.py plant` on the real native run, then `j2_gate.py` | the gate *passing* the planted run (every graded query's grade-2 answer removed, scored again with the same code) |
 
 The native run names the binary (SHA-256, size, optimize mode, Zig version), its
