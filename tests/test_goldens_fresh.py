@@ -7,7 +7,11 @@ output compared byte for byte, in the pattern of `test_analyzer_v3.py`'s table c
 None of the four generators needs the Zig library today; a generator marked as
 needing it is skipped under `SEARCH_SIMPLI_NO_ZIG=1`. The goldens depend on the
 interpreter's Unicode tables (the tokenizer reads `unicodedata`), so the check is
-skipped on any other Unicode version, as the analyzer-v3 golden's check is."""
+skipped on any other Unicode version, as the analyzer-v3 golden's check is.
+
+S5-T6 (review R01): CI's `unicode-13-goldens` job runs these checks on Python 3.9
+(Unicode 13.0.0) through `scripts/ci_unicode_goldens.py`, which counts them by name
+and fails on a skip, so the 3.11 jobs' skip no longer leaves them unrun."""
 
 import os
 import subprocess
