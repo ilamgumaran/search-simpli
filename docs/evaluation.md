@@ -179,7 +179,7 @@ pull request:
 | Surface | Where | What runs | What fails it |
 | --- | --- | --- | --- |
 | Python reference | `checks` (Python 3.11, no Zig) | `relevance_smoke.py --pack j2`, then `j2_gate.py` | the gate's rules (a), (b), (c) |
-| `searchd` | `native-linux-release` (Linux x86_64, the job's own `ReleaseSmall` build) | `scripts/ci_j2_native.py run`, `differences`, then `j2_gate.py --annotate` | a run that is not whole and native (the pack is not 198 queries, a query has no record in `content` or `both`, the surface is not `searchd`, the binary is not the job's), or the gate's rules |
+| `searchd` | `native-linux-release` (Linux x86_64, the job's own `ReleaseSmall` build) | `scripts/ci_j2_native.py run`, `differences`, then `j2_gate.py --annotate` | a run that is not whole and native (the pack is not 248 queries, a query has no record in `content` or `both`, the surface is not `searchd`, the binary is not the job's), or the gate's rules |
 | the gate itself | `native-linux-release` | `ci_j2_native.py plant` on the real native run, then `j2_gate.py` | the gate *passing* the planted run (every graded query's grade-2 answer removed, scored again with the same code) |
 
 The native run names the binary (SHA-256, size, optimize mode, Zig version), its
@@ -448,3 +448,42 @@ The negative `on2` (`painting the fence`) now tops `projects/pip-planet-model.md
 through `paint` (recorded, not gated: S5-T5 ruling 5). The older packs do not
 move (Python reference: every pack's metrics and per-query ranks equal
 fold-groups-v1's). The baseline is re-recorded at S5-T5 in its own commit.
+
+### S5-T8: what misleads (Phase 1a)
+
+[S5-T8](tasks/S5-T8.md) measures the hits J2's negatives return before it
+tries any rule against them. J2 gained eleven invented files (four whose names
+hold a stop word: `this-and-that`, `end-of-the-pier`, `owl-and-the-moon`,
+`my-flowers`) and four sets, judged and recorded with today's engine before
+any S5-T8 rule existed: **`verbform-cross`** (6 rows, review R05: a typed word
+whose verb forms reach another word's form, judged on both sides: `hops` and
+`hoping` against hop/hope, `evenings` and `even` against evening/even, `tapping`
+and `taping` against tap/tape; answers in six files), **`precision-control`**
+(10 rows a precision rule must keep at rank 1: four stop-word file names, three
+near spellings, three verb forms), and two negative sets of 17,
+**`negatives-tuning`** and **`negatives-heldout`**, each with a stop word in a
+file name, a correctly spelt word no file holds beside near words, a near
+topic, a cross-word verb form, Tamil, accented words and two words with one
+held. No new query word but a stop word is a query word of an earlier slice
+(asserted), and the new files hold no earlier query word, fold-groups-v1 form,
+verb form or fuzzy-v1 neighbour of one (asserted, two named exceptions). Every
+earlier cell (536 per surface) is unchanged on both surfaces, and the Python
+reference equals `searchd` on all 2,240 per-query cells. The two graded slices
+sit beside the overall, not in it.
+
+`fixtures/j2/README.md` ("What counts as misleading") defines the measure and
+`scripts/j2_negatives.py` computes it: each of a negative's first five hits is
+labelled real, cross (another word's verb form), near (a fuzzy-v1 neighbour) or
+stop (a stop word alone) by the query's groups. Today (`searchd` ReleaseSmall,
+the Python reference equal on every number):
+
+| Set | n | content: mean top-5 hits | content: misleading first | both: mean top-5 hits | both: misleading first |
+|---|---:|---:|---:|---:|---:|
+| negatives (S5-T1 to S5-T5) | 26 | 3.808 | 0.000 | 3.500 | 0.000 |
+| negatives-tuning | 17 | 3.059 | 0.471 | 2.765 | 0.471 |
+| negatives-heldout | 17 | 3.176 | 0.588 | 3.059 | 0.588 |
+
+`verbform-cross` is 0.806 (0.667) under both variants (MRR@10, success@1):
+`hoping` finds `laptop/snow.md` at rank 3 behind the hop rows, and `tapping`
+finds the plumbing file at rank 2 behind the taped parcels. `precision-control`
+is 1.000 (1.000).
