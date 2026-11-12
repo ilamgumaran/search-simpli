@@ -920,5 +920,6 @@ not traced.
 fuzzy floor that looked free on a slice its author wrote lost second-letter typos on a slice written by someone else,
 and stays a 03-next row with `misspelling-opening` as its bar; stop words stay a 03-next row with their numbers.
 Details: [S5-T8](docs/tasks/S5-T8.md), [fold-groups-v3](docs/fold-groups-v3.md), the rejected
-[fuzzy-v2](docs/tasks/S5-T8-prototype.md). Status: re-ruled 13 Nov before its merge; the amended Phase 2 Report awaits
-verification.
+[fuzzy-v2](docs/tasks/S5-T8-prototype.md). Status: re-ruled before its merge; verified and merged
+(the verifier reproduced the head's J2 cells against `main`, the negatives, the natives and the bounds, and the
+prefix rule planted on the head fails the gate through `misspelling-opening`).

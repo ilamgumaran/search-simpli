@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-13 (S5-T8 re-ruled before its merge: fold-groups-v3 alone, fuzzy-v1 unchanged, reviews R05 and R06; contracts 2.7.0, Dart 0.8.0; amended Report awaiting verification)
+Last updated: 2026-11-13 (S5-T8 re-ruled before its merge: fold-groups-v3 alone, fuzzy-v1 unchanged, reviews R05 and R06; contracts 2.7.0, Dart 0.8.0; verified and merged 2026-11-12 EST)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,9 +15,9 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## Fewer misleading hits for unanswerable questions: fold-groups-v3 (S5-T8, reviews R05 and R06; re-ruled 13 Nov 2026, amended Report awaiting verification)
+## Fewer misleading hits for unanswerable questions: fold-groups-v3 (S5-T8, reviews R05 and R06; re-ruled before its merge; verified and merged)
 
-Not yet merged. The verifier measured what the Phase 2 fuzzy floor (fuzzy-v2, Fp2) gave up: of 16 second-letter typos
+Verified and merged: the verifier judged the reworked head from its own builds (J2 against `main`: only `x02` and `x05` move; `negatives-heldout` 0.588 → 0.529; natives `cmp`-equal; the rejected prefix rule, planted on the head, fails the gate through `misspelling-opening`). Before the rework the verifier measured what the Phase 2 fuzzy floor (fuzzy-v2, Fp2) gave up: of 16 second-letter typos
 two edits from a 6 or 7 letter word, 13 found their file first under fuzzy-v1 and none under fuzzy-v2. The
 orchestrator's re-ruling ([task](docs/tasks/S5-T8.md), "Re-ruling after the verifier's measurement") withdrew fuzzy-v2;
 fold-groups-v3 ships alone and misspelling tolerance stays [fuzzy-v1](docs/fuzzy-v1.md). Fp2's measurements are kept as
