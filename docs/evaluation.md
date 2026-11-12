@@ -172,6 +172,43 @@ allow-list is a file the task that moves a judgment commits beside it. CI runs
 the Python reference through the gate in the Zig-less `checks` job with
 `PYTHONHASHSEED=0`; the `searchd` numbers are recorded on macOS arm64.
 
+**How J2 is gated on each surface (S5-T6, review R01 and R02).** One baseline,
+two surfaces, both in CI on every push to `main` and to `task/**` and on every
+pull request:
+
+| Surface | Where | What runs | What fails it |
+| --- | --- | --- | --- |
+| Python reference | `checks` (Python 3.11, no Zig) | `relevance_smoke.py --pack j2`, then `j2_gate.py` | the gate's rules (a), (b), (c) |
+| `searchd` | `native-linux-release` (Linux x86_64, the job's own `ReleaseSmall` build) | `scripts/ci_j2_native.py run`, `differences`, then `j2_gate.py --annotate` | a run that is not whole and native (the pack is not 198 queries, a query has no record in `content` or `both`, the surface is not `searchd`, the binary is not the job's), or the gate's rules |
+| the gate itself | `native-linux-release` | `ci_j2_native.py plant` on the real native run, then `j2_gate.py` | the gate *passing* the planted run (every graded query's grade-2 answer removed, scored again with the same code) |
+
+The native run names the binary (SHA-256, size, optimize mode, Zig version), its
+source commit, the natives digest and the policy ids it ran under (`analyzer_id`,
+`chunkers`, `filename_policy_id`, `title_policy_id`, `fuzzy_policy_id`,
+`fold_policy_id`); the reference's report names its commit, Python and the same
+policy ids. `differences` lists, as warnings, every baseline cell the x86_64 run
+moved (first grade-2 ranks with the query's top 10 and scores, slice metrics,
+negatives); it never fails the job, the gate decides. At S5-T6 it listed none:
+x86_64 equals the macOS arm64 baseline on every cell the baseline holds. The
+baseline holds no per-hit scores, so scores are not compared across platforms
+here; the Zig tests that read the BM25, title and fuzzy goldens compare the
+engine's scores with the reference's within their stated tolerances, and they run
+on Linux x86_64 in both native jobs (`zig build test`, Debug and `ReleaseSmall`). Each check reports its failures as workflow
+annotations (`::error`, at most 30 a step; GitHub keeps 10 of each level a step,
+so the tenth of a level says how many more the log holds), which the public
+check-runs API returns without a sign-in; when a step fails the run files are kept as the
+`j2-native-reports` artifact.
+
+**The goldens behind both surfaces** are generated with Unicode 13.0.0. CI's
+`unicode-13-goldens` job runs their regeneration checks on Python 3.9 (Unicode
+13.0.0; the job asserts it) through `scripts/ci_unicode_goldens.py`, which counts
+nine checks by name and fails on a skip: the `_fold.py`, `_marks.py` and
+`zig/src/unicode_tables.zig` tables, the marks guard, and the analyzer-v3, title,
+BM25, fuzzy and verb-forms goldens. The three table checks compare every byte but
+the generating Python's patch version in their header (the runner's 3.9 is not
+the Mac's 3.9.6; `tests/unicode_tables_header.py`). The 3.11 jobs still skip
+these checks; this job is where they run.
+
 **Where the surfaces may differ.** Only three reasons are accepted, and
 `j2_run.py --compare A B` names one for every query whose first grade-2 rank or
 top 10 differs: the analyzer (the Python reference folds case fully for body

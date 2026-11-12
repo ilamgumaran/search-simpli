@@ -749,3 +749,25 @@ ranking changes. No proposal is accepted, implemented or approved by this review
 Prior timing/J2 values are cited from existing reports, not remeasured here.
 [TODOs](docs/reviews/2026-11-11-search-improvement-todos.md) and
 [scope/probes/log hashes](docs/reviews/2026-11-11-search-review-evidence.json).
+
+## 2026-11-12 — J2 and the goldens on Linux x86_64 (S5-T6)
+
+**Question:** Do the Unicode-13 goldens regenerate byte for byte, and does J2 through `searchd` give the baseline's
+cells, on CI's Linux x86_64 runners rather than on the macOS arm64 Mac where they were recorded?
+
+**Setup:** GitHub Actions `ubuntu-24.04`. Goldens: `actions/setup-python` `3.9` (3.9.25, Unicode 13.0.0; 3.9.6 has
+no build for this image), `scripts/ci_unicode_goldens.py`. J2: the job's own `ReleaseSmall` `searchd` (Zig 0.16.0,
+1,143,520 B), `scripts/ci_j2_native.py`, against `fixtures/j2/baseline.json` (recorded 2026-11-09 on macOS arm64).
+
+**Observation:** The analyzer-v3, title, BM25, fuzzy and verb-forms goldens regenerate byte for byte on x86_64, floats
+included; the marks guard holds. The three Unicode table files differ in one line only, the header's
+`using Python 3.9.6's` against `3.9.25's` (run 43270687834). J2: 198 queries in both modes; every first grade-2 rank
+(172 graded queries × 2), slice metric and negative equals the macOS arm64 baseline, `m13` and the tied rows included
+(run 43274101141); the gate passes.
+
+**Did not prove:** Per-hit scores are not compared across platforms (the baseline holds ranks and metrics, not
+scores); the Zig golden tests compare the engine's scores with the reference's on Linux. ARM Linux and Android were
+not run.
+
+**Conclusion:** One baseline serves both platforms; no per-platform rule. The table checks normalise the interpreter
+patch version and compare every other byte. Details: [S5-T6](docs/tasks/S5-T6.md).
