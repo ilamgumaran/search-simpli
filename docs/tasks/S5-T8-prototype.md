@@ -98,6 +98,13 @@ Run:
 PYTHONHASHSEED=0 python3 scripts/prototypes/s5t8/proto_s5t8.py --candidates X F F7 Ft Fp2 F+X F7+X Ft+X Fp2+X
 ```
 
+**Phase 1c results** (after `7f72d5a`; the table, the rule applied and the choice are in the task file's "Phase 1c"):
+- `today` and `rewrite` equal all 700 cells of both surfaces of the baseline.
+- F, F7 and Ft fail the gate and bar (c) on `misspelling-short`; Ft equals F on every cell.
+- Fp2 alone and Fp2+X lose no rank-1 answer anywhere and leave every old pack identical: `PYTHONHASHSEED=0 python3 scripts/prototypes/s5t8/proto_s5t8_packs.py Fp2 Fp2+X`.
+- On the 10k corpus (`cost.py`), Fp2 keeps `opratin` → `operating` and drops `sistems` → `system` (`si`/`sy`), the second-letter case it gives up.
+- **Fp2+X ships** by the rule.
+
 ## Results (the full grid, after `e8276fe`)
 
 **The baseline reproduces.** `today` (core's own functions) and `rewrite` (`_fold_groups` rewritten with R unchanged) each equal all 656 cells of both surfaces of `fixtures/j2/baseline.json`, and every old pack.
