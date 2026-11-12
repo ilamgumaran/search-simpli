@@ -180,6 +180,13 @@ index in `searchd`, chunk id in Python), and f32 against f64 near-ties. At the
 baseline: `a06`, `a07`, `a09` by the analyzer (`a07` and `a09` are rank 1 in Python
 and not found by `searchd`); `c06`, `c07`, `c10`, `c12`, `c14`, `c21`, `o04`, `o08` by tie
 order below the answer (no first grade-2 rank moves); nothing unexplained.
+A path prefix is not a fourth reason (J2 uses none; S5-T7): under one, both
+surfaces score `content` with BM25's count, average length and document
+frequencies (a group's shared df too) over the chunks the caller may see (roots
+and labels) and let the prefix narrow only the candidates, while the body and
+file-name channels of `filename` and `both` take theirs over the chunks and files
+under the prefix and the title part, in every mode, over the visible files
+(`tests/test_prefix_statistics.py` holds both surfaces to it).
 
 **The baseline** (6 Nov 2026, engine `6ef4c3b`, `searchd` ReleaseSmall; MRR@10,
 with success@1 in brackets):
