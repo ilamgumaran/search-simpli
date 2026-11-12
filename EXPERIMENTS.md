@@ -749,3 +749,33 @@ ranking changes. No proposal is accepted, implemented or approved by this review
 Prior timing/J2 values are cited from existing reports, not remeasured here.
 [TODOs](docs/reviews/2026-11-11-search-improvement-todos.md) and
 [scope/probes/log hashes](docs/reviews/2026-11-11-search-review-evidence.json).
+
+## 2026-11-12 — The reference's statistics under a path prefix (S5-T7, review R03)
+
+**Hypothesis:** The Python reference's `content` scores under a path prefix differ from the engine's only because the
+reference takes BM25's N, average length and document frequencies over the chunks under the prefix, where the engine
+takes them over the chunks the caller may see (roots and labels); taking them as the engine does makes the raw scores
+agree within the conformance tolerance and changes nothing without a prefix.
+
+**Setup:** Main `f8640e2`; the reference change only (`src/search_platform/core.py`), no engine file. An invented
+fixture (`tests/test_prefix_statistics.py`): roots `notes` and `attic` (label `adults`), prefix `notes/pond/` with three
+files, five visible files outside it, three hidden ones. Twelve `content` cases (plain, fuzzy-v1, fold-groups-v2; with
+and without the label; a prefix over the hidden root; no prefix) and five `both`/`filename` guards, against a BM25
+written out in the test and against `searchd` ReleaseSmall over `serve`. Python 3.9.6, Zig 0.16.0, macOS arm64.
+
+**Observation:** Before, the prefixed `content` cases differed from `searchd` by 0.12 to 1.29 in raw score and one
+case (`heron frog`) ranked its first two files the other way; after, every case has the same hits in the same order
+and the largest difference is 1.07e-07 (tolerance 1e-4 · max(1, |reference|)). A grouped word's shared df counts
+only members some candidate holds: without that, `newts` (whose key-mate `newt` is a title word under the prefix held
+in bodies only outside it) scores 1.100 against the engine's 1.539. `both` and `filename` match `searchd` before and
+after (≤ 7.4e-08). J2 (no prefix): every run identical before and after on the reference, per-hit scores included; the
+gate passes on both surfaces with every cell unchanged. Plants (prefix filter removed, a hidden root in the statistics,
+the old narrowing put back, the held-member filter removed) each fail the new tests.
+
+**Did not prove:** No real folder or judged prefixed query: the fixture is small and built for the difference.
+`FolderIndex.search` (R04) still keeps the ranking before S5-T2; this change does not reach it.
+
+**Conclusion:** The reference now states the engine's rule: a prefix narrows the candidates, roots and labels the
+statistics. The reference can be compared with the engine by score under a prefix, not only by order. Details:
+[S5-T7](docs/tasks/S5-T7.md). Status: verified and merged 2026-11-12 (the verifier's own runs reproduced every number
+above; its own sweep of 2,316 cases on two fixtures, in the task's Verdict, agrees too).

@@ -969,19 +969,29 @@ def load_index(path: Path) -> dict:
 
 
 def _bm25_scores(chunks: list[dict], query_terms: list[str],
-                 groups: dict[str, tuple[tuple[str, float], ...]] | None = None) -> dict[str, float]:
-    """BM25 over `chunks` (their own document frequencies and average length).
+                 groups: dict[str, tuple[tuple[str, float], ...]] | None = None,
+                 statistics: list[dict] | None = None) -> dict[str, float]:
+    """BM25 of `chunks`, the candidates, over `statistics`' count, average length
+    and document frequencies (default `chunks` themselves).
+
+    S5-T7 (review R03): `search`'s `content` body passes the chunks the caller may
+    see (roots and labels) as `statistics` and the chunks under the path prefix as
+    `chunks`, as the engine does (`Engine.queryTraced`): a prefix narrows the
+    candidates, not the statistics. A label-hidden chunk is in neither.
 
     `groups` (fuzzy-v1, S5-T3) maps a query term to the expansions it is searched
     as, each with its weight: in each chunk the term then contributes the best
     member's weight * BM25, every member at one shared document frequency (the
-    largest of theirs). A query with no group runs the arithmetic of before S5-T3."""
+    largest of theirs among the members some candidate holds: the engine's
+    `Group.bodyFrequency`). A query with no group runs the arithmetic of before S5-T3."""
     if not chunks or not query_terms:
         return {}
+    population = chunks if statistics is None else statistics
     document_frequency: Counter[str] = Counter()
-    for chunk in chunks:
+    for chunk in population:
         document_frequency.update(chunk["terms"].keys())
-    average_length = sum(chunk["length"] for chunk in chunks) / len(chunks)
+    count = len(population)
+    average_length = sum(chunk["length"] for chunk in population) / count
     scores: dict[str, float] = defaultdict(float)
     k1, b = 1.2, 0.75
     active = {term: groups[term] for term in set(query_terms) if term in groups} if groups else {}
@@ -992,11 +1002,19 @@ def _bm25_scores(chunks: list[dict], query_terms: list[str],
                 if not frequency:
                     continue
                 df = document_frequency[term]
-                idf = math.log(1.0 + (len(chunks) - df + 0.5) / (df + 0.5))
+                idf = math.log(1.0 + (count - df + 0.5) / (df + 0.5))
                 denominator = frequency + k1 * (1.0 - b + b * chunk["length"] / average_length)
                 scores[chunk["id"]] += idf * (frequency * (k1 + 1.0) / denominator)
         return dict(scores)
-    shared = {term: max(document_frequency.get(member, 0) for member, _ in members) for term, members in active.items()}
+    # A member no candidate holds adds nothing to the shared df (with `statistics`
+    # wider than `chunks` it may hold a df there; over `chunks` alone its df is 0).
+    held: set[str] = set()
+    if statistics is not None:
+        for chunk in chunks:
+            held.update(chunk["terms"].keys())
+    shared = {term: max((document_frequency.get(member, 0) for member, _ in members
+                         if statistics is None or member in held), default=0)
+              for term, members in active.items()}
     for chunk in chunks:
         for term in sorted(set(query_terms)):
             members = active.get(term)
@@ -1005,7 +1023,7 @@ def _bm25_scores(chunks: list[dict], query_terms: list[str],
                 if not frequency:
                     continue
                 df = document_frequency[term]
-                idf = math.log(1.0 + (len(chunks) - df + 0.5) / (df + 0.5))
+                idf = math.log(1.0 + (count - df + 0.5) / (df + 0.5))
                 denominator = frequency + k1 * (1.0 - b + b * chunk["length"] / average_length)
                 scores[chunk["id"]] += idf * (frequency * (k1 + 1.0) / denominator)
                 continue
@@ -1015,7 +1033,7 @@ def _bm25_scores(chunks: list[dict], query_terms: list[str],
                 frequency = chunk["terms"].get(member, 0)
                 if not frequency:
                     continue
-                idf = math.log(1.0 + (len(chunks) - df + 0.5) / (df + 0.5))
+                idf = math.log(1.0 + (count - df + 0.5) / (df + 0.5))
                 denominator = frequency + k1 * (1.0 - b + b * chunk["length"] / average_length)
                 part = weight * idf * (frequency * (k1 + 1.0) / denominator)
                 if best is None or part > best:
@@ -1633,7 +1651,10 @@ def search(
     groups = (_query_groups(chunks, visible, query_terms + _filename_tokenize(query), root_ids, path_prefix,
                             fold=fold, fuzzy=fuzzy)
               if retrieval_mode != "vector" else {})
-    lexical_scores = _bm25_scores(chunks, query_terms, groups) if retrieval_mode != "vector" else {}
+    # S5-T7 (review R03): the statistics are the visible chunks (roots and labels);
+    # the path prefix narrows the candidates only, as in the engine. `filename` and
+    # `both` keep their own prefix-scoped statistics (`_search_filename_fields`).
+    lexical_scores = _bm25_scores(chunks, query_terms, groups, statistics=visible) if retrieval_mode != "vector" else {}
     received: dict[str, float] = {}
     if retrieval_mode != "vector":
         # S5-T2: the title part joins the lexical channel before it is ranked or cut.
