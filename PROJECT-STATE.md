@@ -44,6 +44,25 @@ two-edit typos of 6 and 7 letters, added by S5-T8) at 0.923; `negatives-heldout`
 0.353, mean top-5 hits 3.176 → 2.294 (`content`) and 3.059 → 2.176 (`both`). The older packs are identical per
 query. Stop words (W, Wb) were measured and not shipped (03-next).
 
+## A real agent answers through `searchd mcp` (S5-T10, review R11, 2026-11-12; verified and merged 2026-11-12)
+
+**Verified and merged 2026-11-12** ([task, Report and Verdict](docs/tasks/S5-T10.md),
+[record](docs/evidence/s5-t10/README.md)); the verifier re-ran the checks, the agent-log summaries and the parity
+replay on its own `ReleaseSmall` `searchd` and reproduced every committed record. Evidence only: no engine, contract,
+skill, binding, fixture or CI change, and no native rebuild or app pin.
+
+- **What ran.** Ten Claude Sonnet 5.5 agent sessions answered 30 frozen questions about J2 in two runs. Each used only a
+  command-line MCP client that starts `searchd mcp <index> --roots school,home` per call; the third root, `laptop`,
+  was hidden.
+- **Scope.** The server returned no hidden content in any of the 154 calls: 0 scope failures. One agent answer holds
+  five words that also stand in a hidden file: an agent-text coincidence, explained (ruling 1's condition met).
+- **Counts (read).** Supported 19 and 19 by evidence, 19 and 17 by the skill's read-before-quoting rule (ruling 2: both
+  stated, neither called the result); 0 wrong source; 11 negatives handled in each run.
+- **Machine checks.** 154 of 154 tool calls equal `searchd serve`. Freshness held at generations 2 and 3.
+- **Limit.** Isolation was by instruction: the agents had a shell (ruling 3). A run with the server as the agent's only
+  tool is a 03-next row and what a maintainer should ask for before *Validated*.
+- **CAP-13 status.** It stays *Diagnostic*. The Report says what a maintainer would need to decide for *Validated*.
+
 ## The folder lifecycle helper ranks through the reference (S5-T9, review R04, 2026-11-12; verified and merged 2026-11-12)
 
 **Verified and merged 2026-11-12** ([Verdict](docs/tasks/S5-T9.md)); the verifier's own `ReleaseSmall` `searchd`,

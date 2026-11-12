@@ -1,0 +1,138 @@
+{
+ "log_sha256": "33d31d389b0609186cd74c91725ae3880741c66dfda81e5a0c47e84d37cf3e02",
+ "models_reported_by_runtime": [
+  "claude-sonnet-5-5"
+ ],
+ "first_prompt_equals_brief": true,
+ "tools_used": {
+  "Bash": 15
+ },
+ "only_bash_used": true,
+ "bash_commands": [
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q1 call index_status '{}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q1 call search_knowledge '{\"query\":\"next PTA meeting\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q1 call find '{\"query\":\"PTA\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q2 call find '{\"query\":\"kite\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q3 call search_knowledge '{\"query\":\"doctor visits\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q1 call find '{\"query\":\"meeting\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q2 call read_span '{\"root_id\":\"home\",\"path\":\"holiday/seaside-packing.md\",\"start_line\":1,\"end_line\":9}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q3 call outline '{\"root_id\":\"home\",\"path\":\"health/doctor-visits.md\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q4 call search_knowledge '{\"query\":\"crêpes recipe\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q5 call search_knowledge '{\"query\":\"cocoa hot chocolate\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q6 call search_knowledge '{\"query\":\"art club paper lantern\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q4 call find '{\"query\":\"crepes\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q5 call read_span '{\"root_id\":\"home\",\"path\":\"recipes/winter-drinks.md\",\"start_line\":3,\"end_line\":7}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q6 call read_span '{\"root_id\":\"school\",\"path\":\"art-club/autumn-projects.md\",\"start_line\":14,\"end_line\":16}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b3 && python3 mcp_call.py Q3 call read_span '{\"root_id\":\"home\",\"path\":\"health/doctor-visits.md\",\"start_line\":1,\"end_line\":9}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  }
+ ],
+ "client_calls": 15,
+ "client_calls_with_output_trimmed": 0,
+ "client_calls_piped_to_other_filter": [],
+ "shell_parts_other_than_cd_and_client_calls": [],
+ "every_command_is_cd_and_client_calls_only": true,
+ "runtime_attachment_kinds": {
+  "agent_listing_delta": 1,
+  "credential_org": 1,
+  "date": 1,
+  "deferred_tools_delta": 1,
+  "environment": 1,
+  "hook_success": 31,
+  "instructions": 1,
+  "mcp_instructions_delta": 1,
+  "model": 1,
+  "prompt_snapshot": 2,
+  "remote_session_change": 1,
+  "session_context": 1,
+  "skill_listing": 1
+ }
+}

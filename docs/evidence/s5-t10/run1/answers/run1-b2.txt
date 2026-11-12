@@ -1,0 +1,47 @@
+Model: Sonnet 5.5 (claude-sonnet-5-5)
+
+### Q1
+Answer: The play is on Thursday 11 December. Doors open at half past five and the play starts at six [1].
+Sources:
+[1] school/school-play.md › School play › The evening · lines 5–10
+Cited file: school/school-play.md
+Cited lines: 5-10
+Tool calls: index_status, search_knowledge, read_span
+
+### Q2
+Answer: I found no matching indexed passages in the selected folders. I tried a search on "Wednesday pickup who collects from school", plus find with "pickup" and "pick*". The only pickup mention is a note that says "Pickup from the side door after the move" [1]. It does not say who does it or on which day.
+Sources:
+[1] school/notes-from-phone.txt · lines 1–5 (seen in search and find results; not re-read with read_span)
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find, find
+
+### Q3
+Answer: The pocket money file is home/money/pocket-money.md [1]. It begins "Pip gets three pounds each Saturday and Wren gets two."
+Sources:
+[1] home/money/pocket-money.md › Saving jar · lines 1–6
+Cited file: home/money/pocket-money.md
+Cited lines: 1-6
+Tool calls: search_knowledge, read_span
+
+### Q4
+Answer: Pip's maths homework (the fractions sheet) goes back on Wednesday: "It goes back on Wednesday." [1]
+Sources:
+[1] school/maths-homework.md › Fractions sheet › This week · lines 3–8
+Cited file: school/maths-homework.md
+Cited lines: 3-8
+Tool calls: search_knowledge, read_span
+
+### Q5
+Answer: I found no matching indexed passages in the selected folders. I tried a search on "ice skating session time", find with "skating", and a file-name and content search for "skating". None returned anything about an ice skating session.
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find, search_knowledge
+
+### Q6
+Answer: The file for Wren's swimming lessons this term is school/swimming-lessons/autumn-term.md [1]. It says "Wren's group goes to Brook Street pool on Tuesday afternoons."
+Sources:
+[1] school/swimming-lessons/autumn-term.md › Autumn term · lines 1–7
+Cited file: school/swimming-lessons/autumn-term.md
+Cited lines: 1-7
+Tool calls: search_knowledge, read_span

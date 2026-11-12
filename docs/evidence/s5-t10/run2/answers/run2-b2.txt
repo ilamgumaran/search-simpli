@@ -1,0 +1,45 @@
+Model: Sonnet 5.5 (claude-sonnet-5-5)
+
+### Q1
+Answer: The play is on Thursday 11 December. "Doors open at half past five and the play will start at six" [1]. So the doors open at 5:30 and the play starts at 6:00.
+Sources:
+[1] school/school-play.md › School play › The evening · lines 5–10
+Cited file: school/school-play.md
+Cited lines: 5-10
+Tool calls: index_status, search_knowledge, read_span
+
+### Q2
+Answer: I found no matching indexed passages in the selected folders. I searched for Wednesday school pickup, a prefix search on "pick", and a question about who collects the children on Wednesday. None gave a Wednesday pickup person. The only pickup mention was "Pickup from the side door after the move", which names no person and no day.
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find, search_knowledge
+
+### Q3
+Answer: The pocket money notes are in home/money/pocket-money.md. Its text starts "Pip gets three pounds each Saturday and Wren gets two. Half goes in the saving jar on the kitchen shelf and half can be spent." [1]
+Sources:
+[1] home/money/pocket-money.md › Saving jar · lines 1–6
+Cited file: home/money/pocket-money.md
+Cited lines: 1-6
+Tool calls: search_knowledge, read_span
+
+### Q4
+Answer: Pip's maths sheet this week is on fractions, and "It goes back on Wednesday." [1]
+Sources:
+[1] school/maths-homework.md › Fractions sheet › This week · lines 3–8
+Cited file: school/maths-homework.md
+Cited lines: 3-8
+Tool calls: search_knowledge, read_span
+
+### Q5
+Answer: I found no matching indexed passages in the selected folders. I searched "ice skating session time", a prefix search on "skat*", and "skating" against content and file names. The only near match was a skateboard in a pocket-money list, which is not an ice skating session.
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find, search_knowledge
+
+### Q6
+Answer: The file is school/swimming-lessons/autumn-term.md. It begins "Wren's group goes to Brook Street pool on Tuesday afternoons." [1]
+Sources:
+[1] school/swimming-lessons/autumn-term.md › Autumn term · lines 1–7
+Cited file: school/swimming-lessons/autumn-term.md
+Cited lines: 1-7
+Tool calls: search_knowledge, read_span

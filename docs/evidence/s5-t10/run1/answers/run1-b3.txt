@@ -1,0 +1,49 @@
+Model: Sonnet 5.5 (claude-sonnet-5-5)
+
+### Q1
+Answer: I found no matching indexed passages in the selected folders. The PTA appears only in a sports-day food-stall note and a coffee-morning flyer, and neither gives a date for a PTA meeting. I tried `search_knowledge` with "next PTA meeting", then `find` for "PTA" and for "meeting".
+Cited file: not found
+Cited lines: none
+Tool calls: index_status, search_knowledge, find, find
+
+### Q2
+Answer: Yes. The seaside packing list for the long weekend includes "a kite" [1].
+
+Sources:
+[1] home/holiday/seaside-packing.md › Seaside · lines 1–9
+Cited file: home/holiday/seaside-packing.md
+Cited lines: 1-9
+Tool calls: find, read_span
+
+### Q3
+Answer: The doctor visits are in the file home/health/doctor-visits.md [1]. It has sections for Wren ("Ear check in October; all clear. Next check in the spring.") and Pip ("Eye test in September; glasses for reading only.") [1].
+
+Sources:
+[1] home/health/doctor-visits.md › Doctor visits · lines 1–9
+Cited file: home/health/doctor-visits.md
+Cited lines: 1-9
+Tool calls: search_knowledge, read_span
+
+### Q4
+Answer: I found no matching indexed passages in the selected folders. I tried `find` for "crêpes" and a `search_knowledge` query for "crepes" on both content and file names. The only result was a supper note about smørrebrød, which is not a crêpe recipe.
+Cited file: not found
+Cited lines: none
+Tool calls: find, search_knowledge
+
+### Q5
+Answer: The hot chocolate for four uses "three spoons of cocoa and two of sugar", whisked into a pint of warm milk [1].
+
+Sources:
+[1] home/recipes/winter-drinks.md › Winter drinks › Hot chocolate · lines 3–7
+Cited file: home/recipes/winter-drinks.md
+Cited lines: 3-7
+Tool calls: find, read_span
+
+### Q6
+Answer: A battery light goes inside the paper lantern, "never a candle" [1].
+
+Sources:
+[1] school/art-club/autumn-projects.md › Autumn projects › Paper lantern · lines 14–16
+Cited file: school/art-club/autumn-projects.md
+Cited lines: 14-16
+Tool calls: find, read_span

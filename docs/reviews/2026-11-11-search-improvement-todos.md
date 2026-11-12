@@ -369,6 +369,31 @@ answers, wrong sources, negative cases and scope failures. Retrieval policy IDs
 already exist; JSON-RPC not forwarding expansion warnings is current documented
 behavior, not a reason to claim all result explanations are absent.
 
+**Measured (S5-T10, 12 Nov 2026; verified and merged 12 Nov 2026 at `2cbdb1d`, [Verdict](../tasks/S5-T10.md)):**
+[S5-T10](../tasks/S5-T10.md) froze 30 questions over the J2 snapshot covering:
+- filename recall;
+- cited content;
+- name with content;
+- no answer;
+- an answer only in a hidden root;
+- after a refresh with edits, moves and deletes.
+
+Ten Claude Sonnet 5.5 sessions answered the set twice, each through a command-line MCP client that starts
+`searchd mcp --roots school,home`. The transcripts, the source, binary and policy identifiers, and the generations are
+kept under `docs/evidence/s5-t10/`.
+
+Scope: the server returned no hidden content in any of the 154 calls (0 scope failures). One agent answer holds five
+words that also stand in a hidden file: an agent-text coincidence, explained (the orchestrator's ruling 1; its condition
+checked by the verifier from the transcript). Both runs, read: supported 19 and 19 by evidence, 19 and 17 by the skill's
+read-before-quoting rule (both stated, neither called the result); 0 wrong source; 11 negatives handled. Machine:
+- 0 hidden-root markers in the server's results;
+- 154 of 154 tool calls equal to `searchd serve` (reproduced by the verifier on its own `ReleaseSmall` build).
+
+Isolation was by instruction: the agents had a shell. A run with the server as the agent's only tool is a 03-next row
+and what a maintainer should ask for before *Validated*. Not measured here: performance, and the parity line on the
+judged query set; the replay used the agents' own requests. There was no consumer, so no pin or contract
+adoption. CAP-13 stays *Diagnostic*; the Report states what a maintainer would need to decide.
+
 ## R12 — Keep the queue and entry points truthful
 
 **Evidence:** the active DS-00 section of [IMPROVEMENT-BOARD.md](../../IMPROVEMENT-BOARD.md)

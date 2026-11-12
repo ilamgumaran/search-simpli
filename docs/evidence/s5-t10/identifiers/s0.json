@@ -1,0 +1,168 @@
+{
+ "source_commit": "80095dfefe3cb0b2df0466b0d4092d624d97e753",
+ "binary": {
+  "sha256": "d0e32d3802b8e6fef0807030f13f1f1192112168c6cab5faf52791599b579eae",
+  "size": 1078952
+ },
+ "tasks_sha256": "9db734a66d01b56b378ed78083b9cb257a96feb8c0778378f81e44404ebf04ee",
+ "unscoped_index_status": {
+  "ready": true,
+  "generation": 2,
+  "analyzer_id": "analyzer-v2",
+  "embedding_model_id": "none",
+  "vector_dimensions": 0,
+  "documents": 308,
+  "terms": 2151,
+  "postings": 7134,
+  "files": 77,
+  "pending": 0,
+  "truncated": false,
+  "roots": [
+   {
+    "root_id": "r-legacy",
+    "label": "folder",
+    "kind": "local",
+    "files": 0,
+    "documents": 0,
+    "pending": 0
+   },
+   {
+    "root_id": "school",
+    "label": "school",
+    "kind": "host",
+    "files": 29,
+    "documents": 119,
+    "pending": 0
+   },
+   {
+    "root_id": "home",
+    "label": "home",
+    "kind": "host",
+    "files": 25,
+    "documents": 103,
+    "pending": 0
+   },
+   {
+    "root_id": "laptop",
+    "label": "laptop",
+    "kind": "host",
+    "files": 23,
+    "documents": 86,
+    "pending": 0
+   }
+  ],
+  "pending_paths": [],
+  "has_source": true,
+  "has_positions": true,
+  "chunkers": [
+   "line-window-v1",
+   "md-section-v1"
+  ],
+  "source": "unverified",
+  "filename_policy_id": "filename-field-v1"
+ },
+ "policies": {
+  "analyzer_id": "analyzer-v2",
+  "chunkers": [
+   "line-window-v1",
+   "md-section-v1"
+  ],
+  "filename_policy_id": "filename-field-v1",
+  "title_policy_id": "title-field-v1",
+  "fuzzy_policy_id": "fuzzy-v1",
+  "fold_policy_id": "fold-groups-v2",
+  "content_retrieval": {
+   "filename_policy_id": null,
+   "title_policy_id": "title-field-v1",
+   "fuzzy_policy_id": "fuzzy-v1",
+   "fold_policy_id": "fold-groups-v2"
+  }
+ },
+ "agent_view": {
+  "initialize": {
+   "protocolVersion": "2025-11-25",
+   "serverInfo": {
+    "name": "search-simpli",
+    "title": "Search Simpli",
+    "version": "2.6.0"
+   }
+  },
+  "index_status": {
+   "ready": true,
+   "generation": 2,
+   "analyzer_id": "analyzer-v2",
+   "embedding_model_id": "none",
+   "vector_dimensions": 0,
+   "documents": 222,
+   "terms": 1779,
+   "postings": 5503,
+   "files": 54,
+   "pending": 0,
+   "truncated": false,
+   "roots": [
+    {
+     "root_id": "school",
+     "label": "school",
+     "kind": "host",
+     "files": 29,
+     "documents": 119,
+     "pending": 0
+    },
+    {
+     "root_id": "home",
+     "label": "home",
+     "kind": "host",
+     "files": 25,
+     "documents": 103,
+     "pending": 0
+    }
+   ],
+   "pending_paths": [],
+   "has_source": true,
+   "has_positions": true,
+   "chunkers": [
+    "line-window-v1",
+    "md-section-v1"
+   ],
+   "source": "unverified",
+   "filename_policy_id": "filename-field-v1"
+  },
+  "tools": [
+   "search_knowledge",
+   "read_chunk",
+   "list_sources",
+   "index_status",
+   "find",
+   "outline",
+   "read_span",
+   "list_files"
+  ],
+  "tools_list_sha256": "c94b82fc633bd6c577dc03582c2c0b099a5c531dd097b296fa13b7582bd58522"
+ },
+ "apply_report": {
+  "generation": 2,
+  "analyzer_id": "analyzer-v2",
+  "added": 77,
+  "changed": 0,
+  "removed": 0,
+  "moved": 0,
+  "pending": 0,
+  "unchanged": 0,
+  "too_large": 0,
+  "too_large_paths": [],
+  "unreadable": 0,
+  "unreadable_paths": [],
+  "rejected": [],
+  "conflicts": [],
+  "ambiguous_moves": [],
+  "roots_removed": 0,
+  "budget_exhausted": 0,
+  "budget_exhausted_paths": [],
+  "bytes_read": 63891,
+  "ms": 12,
+  "documents": 308,
+  "terms": 2151,
+  "postings": 7134
+ },
+ "corpus_files": 77
+}

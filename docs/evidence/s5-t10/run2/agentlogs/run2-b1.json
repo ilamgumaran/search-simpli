@@ -1,0 +1,79 @@
+{
+ "log_sha256": "4d3e3b0c8d77dd19ca2e380b1d280025d6646549e2c9427b0bfe17c37ff0688b",
+ "models_reported_by_runtime": [
+  "claude-sonnet-5-5"
+ ],
+ "first_prompt_equals_brief": true,
+ "tools_used": {
+  "Bash": 5
+ },
+ "only_bash_used": true,
+ "bash_commands": [
+  {
+   "command": "cd <scratch>/work/agents/run2-b1 && python3 mcp_call.py Q1 tools",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b1 && python3 mcp_call.py Q1 call index_status '{}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b1 && python3 mcp_call.py Q1 call search_knowledge '{\"query\":\"seals boat leaves time back\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b1 && python3 mcp_call.py Q1 call read_span '{\"root_id\":\"home\",\"path\":\"days-out/seals.md\",\"start_line\":1,\"end_line\":6}'\npython3 mcp_call.py Q2 call search_knowledge '{\"query\":\"wifi password home\"}'\npython3 mcp_call.py Q3 call search_knowledge '{\"query\":\"next dentist appointment\"}'\npython3 mcp_call.py Q4 call search_knowledge '{\"query\":\"fish tank\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'\npython3 mcp_call.py Q5 call search_knowledge '{\"query\":\"Pip piano lessons\"}'\npython3 mcp_call.py Q6 call search_knowledge '{\"query\":\"Pip volcano project due\"}'",
+   "parts": [
+    "cd",
+    "client call",
+    "client call",
+    "client call",
+    "client call",
+    "client call",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run2-b1 && python3 mcp_call.py Q2 call read_span '{\"root_id\":\"home\",\"path\":\"fridge-notes.md\",\"start_line\":3,\"end_line\":7}'\npython3 mcp_call.py Q3 call find '{\"query\":\"dentist\"}'\npython3 mcp_call.py Q3 call search_knowledge '{\"query\":\"dentist\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'\npython3 mcp_call.py Q4 call read_span '{\"root_id\":\"home\",\"path\":\"pets/fish-tank.md\",\"start_line\":1,\"end_line\":4}'\npython3 mcp_call.py Q5 call find '{\"query\":\"piano\"}'\npython3 mcp_call.py Q5 call search_knowledge '{\"query\":\"piano\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'\npython3 mcp_call.py Q6 call read_span '{\"root_id\":\"school\",\"path\":\"volcano-project.md\",\"start_line\":11,\"end_line\":16}'",
+   "parts": [
+    "cd",
+    "client call",
+    "client call",
+    "client call",
+    "client call",
+    "client call",
+    "client call",
+    "client call"
+   ]
+  }
+ ],
+ "client_calls": 16,
+ "client_calls_with_output_trimmed": 0,
+ "client_calls_piped_to_other_filter": [],
+ "shell_parts_other_than_cd_and_client_calls": [],
+ "every_command_is_cd_and_client_calls_only": true,
+ "runtime_attachment_kinds": {
+  "agent_listing_delta": 1,
+  "credential_org": 1,
+  "date": 1,
+  "deferred_tools_delta": 1,
+  "environment": 1,
+  "hook_success": 11,
+  "instructions": 1,
+  "mcp_instructions_delta": 1,
+  "model": 1,
+  "prompt_snapshot": 2,
+  "remote_session_change": 1,
+  "session_context": 1,
+  "skill_listing": 1
+ }
+}

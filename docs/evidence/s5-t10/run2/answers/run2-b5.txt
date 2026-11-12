@@ -1,0 +1,49 @@
+Model: Sonnet 5.5 (claude-sonnet-5-5)
+
+### Q1
+Answer: Paati's phone number is 01632 960418 [1]. It is in the family phone book file.
+
+Sources:
+[1] home/contacts/family-phone-book.txt · lines 1–7 ("Paati's phone number: 01632 960418")
+Cited file: home/contacts/family-phone-book.txt
+Cited lines: 1-7
+Tool calls: index_status, search_knowledge, read_span
+
+### Q2
+Answer: I found no matching indexed passages in the selected folders. I tried search_knowledge ("boiler model number", then "boiler" with search_field both), and find on "boiler" and "heating". None returned a passage about a boiler.
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, search_knowledge, find, find
+
+### Q3
+Answer: Wren's bedtime is half past seven, and Pip's is half past eight [1]. The passage adds: "Books in bed are fine."
+
+Sources:
+[1] home/house-rules.md › House rules › Bedtime · lines 8–11 ("Wren at half past seven, Pip at half past eight.")
+Cited file: home/house-rules.md
+Cited lines: 8-11
+Tool calls: search_knowledge
+
+### Q4
+Answer: I found no matching indexed passages in the selected folders. I tried search_knowledge ("German club Straße", then "German club" with search_field both) and find on "Straße" and "Strasse". The only German vocabulary I saw was a "German corner" note in school/noticeboard.md. It lists Tor, Pfeife, Mannschaft, Spieler and Trainer, but not Straße. I did not confirm that passage with read_span, so I'm not citing it.
+Cited file: not found
+Cited lines: none
+Tool calls: search_knowledge, find, search_knowledge, find
+
+### Q5
+Answer: The winter drinks recipes are in the file home/recipes/cosy-drinks.md. It is titled "Winter drinks", and its Hot chocolate section says: "Hot chocolate for four: warm a pint of milk in a pan, whisk in three spoons of cocoa and two of sugar, and pour it into mugs before it boils." [1] So the milk is a pint, for four servings. This comes from the search result text. I did not run a separate read_span or read_chunk on it.
+
+Sources:
+[1] home/recipes/cosy-drinks.md › Winter drinks › Hot chocolate · lines 3–7
+Cited file: home/recipes/cosy-drinks.md
+Cited lines: 3-7
+Tool calls: search_knowledge
+
+### Q6
+Answer: On Friday the school lunch is "Jacket potatoes with beans. Apple crumble." [1] The menu also says "A vegetarian choice is served every day." and "The menu changes every term."
+
+Sources:
+[1] school/lunch-menu.md › School lunch menu › Friday · lines 21–23
+Cited file: school/lunch-menu.md
+Cited lines: 21-23
+Tool calls: search_knowledge, outline, read_span

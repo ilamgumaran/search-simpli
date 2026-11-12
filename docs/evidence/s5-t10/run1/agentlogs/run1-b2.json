@@ -1,0 +1,114 @@
+{
+ "log_sha256": "11ca527bf6745b9106aceec314573a05354fad6f3b8586837f19a2c18072f4d5",
+ "models_reported_by_runtime": [
+  "claude-sonnet-5-5"
+ ],
+ "first_prompt_equals_brief": true,
+ "tools_used": {
+  "Bash": 11
+ },
+ "only_bash_used": true,
+ "bash_commands": [
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q1 call index_status '{}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q1 call search_knowledge '{\"query\":\"school play start time doors open\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q1 call read_span '{\"root_id\":\"school\",\"path\":\"school-play.md\",\"start_line\":5,\"end_line\":10}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q2 call search_knowledge '{\"query\":\"Wednesday pickup who collects from school\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q3 call search_knowledge '{\"query\":\"pocket money notes\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q4 call search_knowledge '{\"query\":\"Pip maths homework hand in back by\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q5 call search_knowledge '{\"query\":\"ice skating session time\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q6 call search_knowledge '{\"query\":\"Wren swimming lessons\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'",
+   "parts": [
+    "cd",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q2 call find '{\"query\":\"pickup\"}'; python3 mcp_call.py Q2 call find '{\"query\":\"pick*\"}'",
+   "parts": [
+    "cd",
+    "client call",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q5 call find '{\"query\":\"skating\"}'; python3 mcp_call.py Q5 call search_knowledge '{\"query\":\"skating\",\"search_field\":\"both\",\"retrieval_mode\":\"lexical\"}'",
+   "parts": [
+    "cd",
+    "client call",
+    "client call"
+   ]
+  },
+  {
+   "command": "cd <scratch>/work/agents/run1-b2 && python3 mcp_call.py Q4 call read_span '{\"root_id\":\"school\",\"path\":\"maths-homework.md\",\"start_line\":3,\"end_line\":8}'; python3 mcp_call.py Q3 call read_span '{\"root_id\":\"home\",\"path\":\"money/pocket-money.md\",\"start_line\":1,\"end_line\":6}'; python3 mcp_call.py Q6 call read_span '{\"root_id\":\"school\",\"path\":\"swimming-lessons/autumn-term.md\",\"start_line\":1,\"end_line\":7}'",
+   "parts": [
+    "cd",
+    "client call",
+    "client call",
+    "client call"
+   ]
+  }
+ ],
+ "client_calls": 15,
+ "client_calls_with_output_trimmed": 0,
+ "client_calls_piped_to_other_filter": [],
+ "shell_parts_other_than_cd_and_client_calls": [],
+ "every_command_is_cd_and_client_calls_only": true,
+ "runtime_attachment_kinds": {
+  "agent_listing_delta": 1,
+  "credential_org": 1,
+  "date": 1,
+  "deferred_tools_delta": 1,
+  "environment": 1,
+  "hook_success": 23,
+  "instructions": 1,
+  "mcp_instructions_delta": 1,
+  "model": 1,
+  "prompt_snapshot": 2,
+  "remote_session_change": 1,
+  "session_context": 1,
+  "skill_listing": 1
+ }
+}
