@@ -1,33 +1,33 @@
 {
   "schema": "j2-baseline-v1",
   "judgments_sha256": "36d77724f3bd20c163a5157342716731a4800ecaf16f531f0e6d54853e631b2c",
-  "engine_commit": "004ba854a4124c355f14cd90c67f9f62de40c4db",
-  "run_commit": "78eeb34eb57fe178eb3c8c4f4480f4124b66319d",
-  "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
+  "engine_commit": "d3c04712ed8dea99a95322ac9247a7ec42bbb666",
+  "run_commit": "e2cceffb840a5cdbf2d693bfdfde8d079fab19ec",
+  "natives_digest": "cf963567864e72ac368b666608a42566b98e99e0d474080ddf2d2d925ae8f5e6",
   "recorded": "2026-11-12",
   "load": {
     "before": [
-      0.72,
-      1.14,
-      1.51
+      1.51,
+      1.93,
+      2.04
     ],
     "after": [
-      0.72,
-      1.14,
-      1.51
+      1.55,
+      1.93,
+      2.03
     ],
     "top_sample": [
-      "Processes: 964 total, 2 running, 962 sleeping, 3981 threads",
-      "Load Avg: 0.72, 1.14, 1.51",
-      "CPU usage: 2.3% user, 0.99% sys, 96.97% idle"
+      "Processes: 949 total, 3 running, 946 sleeping, 3979 threads",
+      "Load Avg: 1.55, 1.93, 2.03",
+      "CPU usage: 1.64% user, 1.14% sys, 97.20% idle"
     ]
   },
   "top_k": 10,
   "surfaces": {
     "searchd": {
       "binary": {
-        "sha256": "d0e32d3802b8e6fef0807030f13f1f1192112168c6cab5faf52791599b579eae",
-        "size": 1078952,
+        "sha256": "f9f5184178e8cbb93913d4cf774dcb93cf057a9b6509fcc965263958efca1487",
+        "size": 1095400,
         "optimize": "ReleaseSmall",
         "zig": "0.16.0"
       },
@@ -127,9 +127,9 @@
             },
             "verbform-cross": {
               "n": 6,
-              "success_at_1": 0.666667,
-              "mrr_at_10": 0.805556,
-              "ndcg_at_10": 0.855155,
+              "success_at_1": 1.0,
+              "mrr_at_10": 1.0,
+              "ndcg_at_10": 1.0,
               "recall_at_5": 1.0
             },
             "precision-control": {
@@ -328,10 +328,10 @@
             "vt1": 2,
             "vt2": 1,
             "x01": 1,
-            "x02": 3,
+            "x02": 1,
             "x03": 1,
             "x04": 1,
-            "x05": 2,
+            "x05": 1,
             "x06": 1,
             "pc01": 1,
             "pc02": 1,
@@ -758,7 +758,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 7,
+              "returned": 2,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -945,18 +945,13 @@
               "top_is_named_distractor": true
             },
             "nt04": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nt05": {
-              "returned": 4,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -967,7 +962,7 @@
               "top_is_named_distractor": false
             },
             "nt06": {
-              "returned": 3,
+              "returned": 1,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/jottings.md",
@@ -1000,18 +995,18 @@
               "top_is_named_distractor": true
             },
             "nt09": {
-              "returned": 10,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
-                "path": "notes/car-garage.md",
+                "path": "packing-lists/camping.md",
                 "start_line": 1,
-                "end_line": 2
+                "end_line": 4
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nt10": {
-              "returned": 3,
+              "returned": 2,
               "top_hit": {
                 "root_id": "home",
                 "path": "family-log.md",
@@ -1022,15 +1017,15 @@
               "top_is_named_distractor": false
             },
             "nt11": {
-              "returned": 2,
+              "returned": 3,
               "top_hit": {
-                "root_id": "home",
-                "path": "family-log.md",
-                "start_line": 1,
-                "end_line": 6
+                "root_id": "school",
+                "path": "reading-log-pip.md",
+                "start_line": 3,
+                "end_line": 7
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nt12": {
               "returned": 1,
@@ -1122,15 +1117,10 @@
               "top_is_named_distractor": false
             },
             "nh04": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": false
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh05": {
               "returned": 1,
@@ -1144,15 +1134,10 @@
               "top_is_named_distractor": true
             },
             "nh06": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": false
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh07": {
               "returned": 3,
@@ -1177,15 +1162,15 @@
               "top_is_named_distractor": true
             },
             "nh09": {
-              "returned": 9,
+              "returned": 1,
               "top_hit": {
-                "root_id": "home",
-                "path": "holiday/seaside-packing.md",
-                "start_line": 1,
-                "end_line": 9
+                "root_id": "laptop",
+                "path": "notes/bedtime-stories.md",
+                "start_line": 7,
+                "end_line": 12
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nh10": {
               "returned": 10,
@@ -1238,15 +1223,10 @@
               "top_is_named_distractor": null
             },
             "nh15": {
-              "returned": 1,
-              "top_hit": {
-                "root_id": "home",
-                "path": "family-log.md",
-                "start_line": 59,
-                "end_line": 63
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh16": {
               "returned": 10,
@@ -1411,9 +1391,9 @@
             },
             "verbform-cross": {
               "n": 6,
-              "success_at_1": 0.666667,
-              "mrr_at_10": 0.805556,
-              "ndcg_at_10": 0.855155,
+              "success_at_1": 1.0,
+              "mrr_at_10": 1.0,
+              "ndcg_at_10": 1.0,
               "recall_at_5": 1.0
             },
             "precision-control": {
@@ -1612,10 +1592,10 @@
             "vt1": null,
             "vt2": 1,
             "x01": 1,
-            "x02": 3,
+            "x02": 1,
             "x03": 1,
             "x04": 1,
-            "x05": 2,
+            "x05": 1,
             "x06": 1,
             "pc01": 1,
             "pc02": 1,
@@ -2042,7 +2022,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 5,
+              "returned": 2,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -2229,18 +2209,13 @@
               "top_is_named_distractor": true
             },
             "nt04": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nt05": {
-              "returned": 3,
+              "returned": 2,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -2251,7 +2226,7 @@
               "top_is_named_distractor": false
             },
             "nt06": {
-              "returned": 2,
+              "returned": 1,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/jottings.md",
@@ -2284,18 +2259,18 @@
               "top_is_named_distractor": true
             },
             "nt09": {
-              "returned": 9,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
-                "path": "notes/car-garage.md",
+                "path": "packing-lists/camping.md",
                 "start_line": 1,
-                "end_line": 2
+                "end_line": 4
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nt10": {
-              "returned": 3,
+              "returned": 2,
               "top_hit": {
                 "root_id": "home",
                 "path": "family-log.md",
@@ -2308,13 +2283,13 @@
             "nt11": {
               "returned": 2,
               "top_hit": {
-                "root_id": "home",
-                "path": "family-log.md",
-                "start_line": 1,
-                "end_line": 6
+                "root_id": "school",
+                "path": "reading-log-pip.md",
+                "start_line": 3,
+                "end_line": 7
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nt12": {
               "returned": 1,
@@ -2406,15 +2381,10 @@
               "top_is_named_distractor": false
             },
             "nh04": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": false
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh05": {
               "returned": 1,
@@ -2428,15 +2398,10 @@
               "top_is_named_distractor": true
             },
             "nh06": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": false
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh07": {
               "returned": 3,
@@ -2461,15 +2426,15 @@
               "top_is_named_distractor": true
             },
             "nh09": {
-              "returned": 8,
+              "returned": 1,
               "top_hit": {
-                "root_id": "home",
-                "path": "holiday/seaside-packing.md",
-                "start_line": 1,
-                "end_line": 9
+                "root_id": "laptop",
+                "path": "notes/bedtime-stories.md",
+                "start_line": 7,
+                "end_line": 12
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nh10": {
               "returned": 4,
@@ -2522,15 +2487,10 @@
               "top_is_named_distractor": null
             },
             "nh15": {
-              "returned": 1,
-              "top_hit": {
-                "root_id": "home",
-                "path": "family-log.md",
-                "start_line": 59,
-                "end_line": 63
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh16": {
               "returned": 10,
@@ -2604,7 +2564,7 @@
     },
     "python-reference": {
       "python_version": "3.9.6",
-      "hashseed": "0",
+      "hashseed": null,
       "runs": {
         "content": {
           "slices": {
@@ -2701,9 +2661,9 @@
             },
             "verbform-cross": {
               "n": 6,
-              "success_at_1": 0.666667,
-              "mrr_at_10": 0.805556,
-              "ndcg_at_10": 0.855155,
+              "success_at_1": 1.0,
+              "mrr_at_10": 1.0,
+              "ndcg_at_10": 1.0,
               "recall_at_5": 1.0
             },
             "precision-control": {
@@ -2902,10 +2862,10 @@
             "vt1": 2,
             "vt2": 1,
             "x01": 1,
-            "x02": 3,
+            "x02": 1,
             "x03": 1,
             "x04": 1,
-            "x05": 2,
+            "x05": 1,
             "x06": 1,
             "pc01": 1,
             "pc02": 1,
@@ -3332,7 +3292,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 7,
+              "returned": 2,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -3519,18 +3479,13 @@
               "top_is_named_distractor": true
             },
             "nt04": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nt05": {
-              "returned": 4,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -3541,7 +3496,7 @@
               "top_is_named_distractor": false
             },
             "nt06": {
-              "returned": 3,
+              "returned": 1,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/jottings.md",
@@ -3574,18 +3529,18 @@
               "top_is_named_distractor": true
             },
             "nt09": {
-              "returned": 10,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
-                "path": "notes/car-garage.md",
+                "path": "packing-lists/camping.md",
                 "start_line": 1,
-                "end_line": 2
+                "end_line": 4
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nt10": {
-              "returned": 3,
+              "returned": 2,
               "top_hit": {
                 "root_id": "home",
                 "path": "family-log.md",
@@ -3596,15 +3551,15 @@
               "top_is_named_distractor": false
             },
             "nt11": {
-              "returned": 2,
+              "returned": 3,
               "top_hit": {
-                "root_id": "home",
-                "path": "family-log.md",
-                "start_line": 1,
-                "end_line": 6
+                "root_id": "school",
+                "path": "reading-log-pip.md",
+                "start_line": 3,
+                "end_line": 7
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nt12": {
               "returned": 1,
@@ -3696,15 +3651,10 @@
               "top_is_named_distractor": false
             },
             "nh04": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": false
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh05": {
               "returned": 1,
@@ -3718,15 +3668,10 @@
               "top_is_named_distractor": true
             },
             "nh06": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": false
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh07": {
               "returned": 3,
@@ -3751,15 +3696,15 @@
               "top_is_named_distractor": true
             },
             "nh09": {
-              "returned": 9,
+              "returned": 1,
               "top_hit": {
-                "root_id": "home",
-                "path": "holiday/seaside-packing.md",
-                "start_line": 1,
-                "end_line": 9
+                "root_id": "laptop",
+                "path": "notes/bedtime-stories.md",
+                "start_line": 7,
+                "end_line": 12
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nh10": {
               "returned": 10,
@@ -3812,15 +3757,10 @@
               "top_is_named_distractor": null
             },
             "nh15": {
-              "returned": 1,
-              "top_hit": {
-                "root_id": "home",
-                "path": "family-log.md",
-                "start_line": 59,
-                "end_line": 63
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh16": {
               "returned": 10,
@@ -3985,9 +3925,9 @@
             },
             "verbform-cross": {
               "n": 6,
-              "success_at_1": 0.666667,
-              "mrr_at_10": 0.805556,
-              "ndcg_at_10": 0.855155,
+              "success_at_1": 1.0,
+              "mrr_at_10": 1.0,
+              "ndcg_at_10": 1.0,
               "recall_at_5": 1.0
             },
             "precision-control": {
@@ -4186,10 +4126,10 @@
             "vt1": null,
             "vt2": 1,
             "x01": 1,
-            "x02": 3,
+            "x02": 1,
             "x03": 1,
             "x04": 1,
-            "x05": 2,
+            "x05": 1,
             "x06": 1,
             "pc01": 1,
             "pc02": 1,
@@ -4616,7 +4556,7 @@
               "top_is_named_distractor": false
             },
             "pn1": {
-              "returned": 5,
+              "returned": 2,
               "top_hit": {
                 "root_id": "home",
                 "path": "birthday-party-wren.md",
@@ -4803,18 +4743,13 @@
               "top_is_named_distractor": true
             },
             "nt04": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nt05": {
-              "returned": 3,
+              "returned": 2,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "budget-autumn.md",
@@ -4825,7 +4760,7 @@
               "top_is_named_distractor": false
             },
             "nt06": {
-              "returned": 2,
+              "returned": 1,
               "top_hit": {
                 "root_id": "laptop",
                 "path": "notes/jottings.md",
@@ -4858,18 +4793,18 @@
               "top_is_named_distractor": true
             },
             "nt09": {
-              "returned": 9,
+              "returned": 3,
               "top_hit": {
                 "root_id": "laptop",
-                "path": "notes/car-garage.md",
+                "path": "packing-lists/camping.md",
                 "start_line": 1,
-                "end_line": 2
+                "end_line": 4
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nt10": {
-              "returned": 3,
+              "returned": 2,
               "top_hit": {
                 "root_id": "home",
                 "path": "family-log.md",
@@ -4882,13 +4817,13 @@
             "nt11": {
               "returned": 2,
               "top_hit": {
-                "root_id": "home",
-                "path": "family-log.md",
-                "start_line": 1,
-                "end_line": 6
+                "root_id": "school",
+                "path": "reading-log-pip.md",
+                "start_line": 3,
+                "end_line": 7
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nt12": {
               "returned": 1,
@@ -4980,15 +4915,10 @@
               "top_is_named_distractor": false
             },
             "nh04": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": false
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh05": {
               "returned": 1,
@@ -5002,15 +4932,10 @@
               "top_is_named_distractor": true
             },
             "nh06": {
-              "returned": 10,
-              "top_hit": {
-                "root_id": "school",
-                "path": "german-club.md",
-                "start_line": 5,
-                "end_line": 8
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": false
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh07": {
               "returned": 3,
@@ -5035,15 +4960,15 @@
               "top_is_named_distractor": true
             },
             "nh09": {
-              "returned": 8,
+              "returned": 1,
               "top_hit": {
-                "root_id": "home",
-                "path": "holiday/seaside-packing.md",
-                "start_line": 1,
-                "end_line": 9
+                "root_id": "laptop",
+                "path": "notes/bedtime-stories.md",
+                "start_line": 7,
+                "end_line": 12
               },
               "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "top_is_named_distractor": false
             },
             "nh10": {
               "returned": 4,
@@ -5096,15 +5021,10 @@
               "top_is_named_distractor": null
             },
             "nh15": {
-              "returned": 1,
-              "top_hit": {
-                "root_id": "home",
-                "path": "family-log.md",
-                "start_line": 59,
-                "end_line": 63
-              },
-              "top_hit_grade": 0,
-              "top_is_named_distractor": true
+              "returned": 0,
+              "top_hit": null,
+              "top_hit_grade": null,
+              "top_is_named_distractor": null
             },
             "nh16": {
               "returned": 10,
@@ -5870,6 +5790,14 @@
       "judgments_sha256": "97885a2cfe66cd513ac8093d44f80c5c1e9aad7fb6d6784802dc80902f339bb2",
       "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
       "why": "S5-T8 Phase 1c (ruling 3 of the Phase 1 rulings): the held-out slice misspelling-short (ms01-ms13, typed words of 6 and 7 code points two Levenshtein edits from the meant word, six of them one swapped adjacent pair) and negatives-short (msn1-msn4), judged and recorded with today's engine before F, F7, Ft and the builder's variant are declared; engine unchanged (searchd ReleaseSmall); every earlier cell unchanged on both surfaces"
+    },
+    {
+      "engine_commit": "004ba854a4124c355f14cd90c67f9f62de40c4db",
+      "run_commit": "78eeb34eb57fe178eb3c8c4f4480f4124b66319d",
+      "recorded": "2026-11-12",
+      "judgments_sha256": "36d77724f3bd20c163a5157342716731a4800ecaf16f531f0e6d54853e631b2c",
+      "natives_digest": "cb7e1ae8b3c32c86ef3f3cffcd74a9343b9af2738b6cf7edc5607825d95c2e0b",
+      "why": "S5-T8 Phase 2: fold-groups-v3 (verb forms of another word left out) and fuzzy-v2 (a two-edit word of another two-code-point opening dropped below 8 code points) change the ranking by design; the gate passed on both surfaces against the Phase 1c baseline with the allow-list untouched (verbform-cross 0.667 to 1.000, every other slice unchanged), so the baseline is re-recorded at the S5-T8 engine (searchd ReleaseSmall, zig 0.16.0)"
     }
   ]
 }
