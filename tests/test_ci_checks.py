@@ -28,18 +28,32 @@ class AnnotationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ci_annotations.line("debug", "t", "m")
 
-    def test_bound_keeps_limit_lines_and_names_the_rest(self):
-        notes = ci_annotations.Annotations(limit=30)
-        for i in range(45):
-            notes.add("warning" if i < 40 else "error", f"row {i}", "m")
+    def test_the_tenth_of_a_level_names_the_rest(self):
+        """GitHub keeps 10 of each level a step (observed in S5-T6's plant run)."""
+        notes = ci_annotations.Annotations()
+        for i in range(355):
+            notes.add("error", f"row {i}", "m")
+        for i in range(3):
+            notes.add("notice", f"note {i}", "m")
         lines = notes.lines()
-        self.assertEqual(len(lines), 30)
-        self.assertTrue(lines[28].startswith("::warning title=row 28::"))
-        self.assertTrue(lines[29].startswith("::error title=16 more not annotated::"), lines[29])
+        self.assertEqual(len(lines), 13)
+        self.assertTrue(lines[8].startswith("::error title=row 8::"))
+        self.assertTrue(lines[9].startswith("::error title=346 more not annotated::346 more error rows"), lines[9])
+        self.assertIn("the job log lists all 355", lines[9])
+        self.assertEqual(sum(1 for line in lines if line.startswith("::notice")), 3)
         out = io.StringIO()
         notes.flush(out)
-        self.assertEqual(out.getvalue().count("\n"), 30)
+        self.assertEqual(out.getvalue().count("\n"), 13)
         self.assertEqual(notes.items, [])
+
+    def test_the_overall_bound_of_30(self):
+        notes = ci_annotations.Annotations(limit=30, per_level=20)
+        for i in range(45):
+            notes.add("warning" if i < 25 else "error", f"row {i}", "m")
+        lines = notes.lines()
+        self.assertEqual(len(lines), 30)
+        self.assertTrue(lines[19].startswith("::warning title=6 more not annotated::"), lines[19])
+        self.assertTrue(lines[29].startswith("::error title=11 more not annotated::"), lines[29])
 
     def test_under_the_bound_everything_is_kept(self):
         notes = ci_annotations.Annotations(limit=3)
