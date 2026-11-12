@@ -263,11 +263,15 @@ class PrefixRuleTests(unittest.TestCase):
             self.assertEqual(sorted(r["citation"]["path"] for r in rpc["results"]),
                              ["kitchen/b/one.md", "kitchen/b/two.md"])
             reference = search(build_index(folder), "bakex", retrieval_mode="lexical", path_prefix="kitchen/b/")
-            # The same hits in the same order. The scores differ by the reference's
-            # prefix-narrowed BM25 statistics, a difference older than S5-T3 (a plain
-            # prefixed "bakes" differs the same way), so only the order is compared.
+            # The same hits in the same order, and since S5-T7 (review R03) the same
+            # raw scores: the reference too keeps the statistics over the roots and
+            # labels and narrows only the candidates by the prefix
+            # (tests/test_prefix_statistics.py, the tolerance of zig/src/fuzzy_test.zig).
             self.assertEqual([r["citation"]["path"] for r in rpc["results"]],
                              [r["citation"]["path"] for r in reference])
+            for got, want in zip(rpc["results"], reference):
+                got, want = got["ranking"]["lexical"]["score"], want["ranking"]["lexical"]["score"]
+                self.assertLessEqual(abs(got - want), 1e-4 * max(1.0, abs(want)), (got, want))
 
 
 class J2Tests(unittest.TestCase):
