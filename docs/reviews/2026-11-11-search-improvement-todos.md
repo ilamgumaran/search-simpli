@@ -180,7 +180,7 @@ scope cases; preserve explicit legacy expectations if that mode is retained.
 ## R05 — Measure cross-word verb matches before changing R
 
 **S5-T8 ([task](../tasks/S5-T8.md); re-ruled 13 Nov 2026 before its merge,
-this rule still ships; verified and merged):** steps 1–3. `verbform-cross` (six rows, hop/hope, evening/even,
+this rule still ships; verified and merged at `e43b0b2`):** steps 1–3. `verbform-cross` (six rows, hop/hope, evening/even,
 tap/tape, answers in six files) was judged and recorded before any rule; a
 narrow eligibility rule, [fold-groups-v3](../fold-groups-v3.md), was prototyped
 in Python beside the cap and the membership rule and ported to Zig (golden
@@ -213,7 +213,7 @@ approval before shipping changed matching semantics; keep a rollback comparison.
 
 ## R06 — Treat unanswerable queries as a precision target
 
-**S5-T8, re-ruled before its merge, then verified and merged ([task](../tasks/S5-T8.md), 13 Nov
+**S5-T8, re-ruled before its merge, then verified and merged at `e43b0b2` ([task](../tasks/S5-T8.md), 13 Nov
 2026):** steps 1–3 on invented content (no real-user examples). Two
 negative sets of 17 (tuning, and a held-out set no candidate ran before every
 candidate was declared), `negatives-short` and a `precision-control` slice;
