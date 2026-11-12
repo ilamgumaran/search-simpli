@@ -3,7 +3,8 @@ name: checks
 on:
   pull_request:
   push:
-    branches: [main]
+    # S5-T6 ruling 6: a task branch is checked before it merges.
+    branches: [main, "task/**"]
 
 jobs:
   checks:
