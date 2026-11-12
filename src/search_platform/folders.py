@@ -652,7 +652,10 @@ class FolderIndex:
         chunk's lexical score (`ranking.lexical.score`: BM25 plus its file's title
         part when it received one). `conjunctive` keeps only chunks holding every
         query term as typed (the lifecycle runner's `words` filter; S3-T2 owns the
-        real `find` modes), in the same order. A `top_k` below 1 returns nothing."""
+        real `find` modes), in the same order: the test runs after the ranking, so a
+        chunk only a fold group, fuzzy-v1 or a title part reaches does not pass it,
+        and a misspelt word under `conjunctive` therefore returns nothing. A `top_k`
+        below 1 returns nothing."""
         terms = tokenize(query)
         if not terms or top_k < 1:
             return []

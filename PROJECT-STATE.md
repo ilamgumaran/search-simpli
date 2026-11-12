@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-12 (S5-T6, CI that cannot pass by skipping: Unicode golden freshness and the native J2 gate, review R01 and R02; CI and tests only; verified and merged)
+Last updated: 2026-11-12 (S5-T9, the folder lifecycle helper ranks through the shared reference, review R04; Python helper and tests only; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,7 +15,10 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## The folder lifecycle helper ranks through the reference (S5-T9, review R04, 2026-11-12; built, awaiting verification)
+## The folder lifecycle helper ranks through the reference (S5-T9, review R04, 2026-11-12; verified and merged 2026-11-12)
+
+**Verified and merged 2026-11-12** ([Verdict](docs/tasks/S5-T9.md)); the verifier's own `ReleaseSmall` `searchd`,
+comparative cases, plants and pack runs (mixed, semantic and Tamil-absent included) agree with the Report.
 
 Built on `task/S5-T9` ([task and Report](docs/tasks/S5-T9.md)); Python helper and tests only (`folders.py`, a new
 test file): no `core.py`, native, contract, Dart or app pin change. `FolderIndex.search` no longer keeps its own BM25

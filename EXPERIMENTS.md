@@ -830,5 +830,5 @@ the helper: both surfaces unchanged, the gate passes.
 `lentils` gains a third chunk and `robot rover motors` across all roots one hit); no caller asks for that today.
 
 **Conclusion:** One ranking in the reference: the lifecycle helper cannot select an older ranker, and a lifecycle
-fixture compares with the engine by score. Details: [S5-T9](docs/tasks/S5-T9.md). Status: built, awaiting
-verification.
+fixture compares with the engine by score. Details: [S5-T9](docs/tasks/S5-T9.md). Status: verified and merged
+2026-11-12 (the verifier's own comparative runs, plants and packs, in the task's Verdict).
