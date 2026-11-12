@@ -135,9 +135,78 @@ class GateRuleTests(unittest.TestCase):
             self.assertEqual(j2_gate.main([str(self.dir / "missing.json")]), 2)
 
 
+    def test_annotate_names_each_failure(self):
+        """S5-T6 ruling 6: --annotate prints each failure as a workflow annotation."""
+        (self.dir / "run.json").write_text(json.dumps(self.with_rank("c1", 2)))
+        (self.dir / "base.json").write_text(json.dumps(baseline()))
+        out = io.StringIO()
+        with redirect_stdout(out), redirect_stderr(io.StringIO()):
+            code = j2_gate.main([str(self.dir / "run.json"), "--baseline", str(self.dir / "base.json"), "--annotate"])
+        self.assertEqual(code, 1)
+        lines = [line for line in out.getvalue().splitlines() if line.startswith("::")]
+        self.assertEqual(lines, ["::error title=J2 gate python-reference content::(b) control c1 lost rank 1 (now 2)"])
+        code, out = self.gate(self.with_rank("c1", 2))
+        self.assertNotIn("::error", out)
+
+
+_native_spec = importlib.util.spec_from_file_location("ci_j2_native", REPO / "scripts" / "ci_j2_native.py")
+ci_j2_native = importlib.util.module_from_spec(_native_spec)
+_native_spec.loader.exec_module(ci_j2_native)
+
+
 class PythonReferenceTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.results = run_j2_pack()
+
+    def gate_file(self, results: dict) -> tuple[int, str]:
+        with tempfile.TemporaryDirectory() as scratch:
+            path = Path(scratch) / "j2.json"
+            path.write_text(json.dumps(results, ensure_ascii=False))
+            out = io.StringIO()
+            with redirect_stdout(out):
+                code = j2_gate.main([str(path)])
+        return code, out.getvalue()
+
+    def test_reference_report_names_its_policies(self):
+        """S5-T6 (review R02): the reference's report names its source and policy ids."""
+        engine = self.results["engine"]
+        self.assertTrue(engine["commit"])
+        self.assertEqual(engine["policies"]["fold_policy_id"], "fold-groups-v2")
+        self.assertEqual(engine["policies"]["chunkers"], ["line-window-v1", "md-section-v1"])
+
+    def test_planted_regression_fails_the_gate(self):
+        """S5-T6 ruling 5, on the reference's run (CI does the same on the native run):
+        the unchanged lists scored again reproduce the run, and the planted run fails."""
+        planted = ci_j2_native.plant(self.results)
+        self.assertNotEqual(planted["runs"], self.results["runs"])
+        code, out = self.gate_file(planted)
+        self.assertEqual(code, 1, out)
+        self.assertIn("(b) control c01 lost rank 1", out)
+        self.assertIn("(a) slice control", out)
+        tampered = copy.deepcopy(self.results)
+        tampered["runs"]["content"]["queries"]["c01"]["first_grade2_rank"] = 5
+        with self.assertRaises(ci_j2_native.Usage):
+            ci_j2_native.plant(tampered)
+
+    def test_differences_lists_a_moved_row(self):
+        # The baseline's searchd cells replaced by this run's own: no row differs, then one.
+        base = json.loads((REPO / "fixtures" / "j2" / "baseline.json").read_text(encoding="utf-8"))
+        base["surfaces"]["searchd"]["runs"] = {
+            variant: {"slices": run["slices"], "negatives": run["negatives"],
+                      "first_grade2_rank": {q: r["first_grade2_rank"] for q, r in run["queries"].items()
+                                            if "first_grade2_rank" in r}}
+            for variant, run in self.results["runs"].items()}
+        moved = copy.deepcopy(self.results)
+        rows = ci_j2_native.differences(moved, base)
+        self.assertEqual(rows, [])
+        record = moved["runs"]["both"]["queries"]["m13"]
+        record["first_grade2_rank"] = 2
+        rows = ci_j2_native.differences(moved, base)
+        self.assertEqual([title for title, _ in rows], ["J2 x86_64 vs baseline: both m13"])
+
     def test_python_reference_passes_the_committed_baseline(self):
-        results = run_j2_pack()
+        results = self.results
         with tempfile.TemporaryDirectory() as scratch:
             path = Path(scratch) / "j2.json"
             path.write_text(json.dumps(results, ensure_ascii=False))

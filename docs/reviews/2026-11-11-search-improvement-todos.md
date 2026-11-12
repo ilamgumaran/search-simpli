@@ -51,6 +51,10 @@ index-wide normalization or adaptive ranking without a named failing target.
 
 ## R01 — Make Unicode golden freshness a real CI check
 
+**Landed by [S5-T6](../tasks/S5-T6.md)** (12 Nov 2026, branch `task/S5-T6`; the job in
+`73fba35`, the header normalisation in `b4f9da5`; verified and merged to `main` 12 Nov 2026 as
+the `--no-ff` merge of `task/S5-T6`, Verdict in the task): CI's `unicode-13-goldens` job, Python 3.9, nine checks counted by name, a skip fails.
+
 **Evidence:** [.github/workflows/checks.yml](../../.github/workflows/checks.yml)
 uses Python 3.11. [test_goldens_fresh.py](../../tests/test_goldens_fresh.py)
 skips regeneration when the interpreter's Unicode differs from the pinned
@@ -73,6 +77,11 @@ restore it and prove every required check executes and passes. No native ranking
 index format or shipped library change is needed for a CI-only solution.
 
 ## R02 — Run the native J2 relevance gate in CI
+
+**Landed by [S5-T6](../tasks/S5-T6.md)** (12 Nov 2026, branch `task/S5-T6`; the steps in
+`d37c91e` and `633f9a5`; verified and merged to `main` 12 Nov 2026 as the `--no-ff` merge of
+`task/S5-T6`, Verdict in the task): `native-linux-release`
+runs J2 through its `ReleaseSmall` `searchd` and the gate; x86_64 equals the macOS arm64 baseline.
 
 **Evidence:** CI runs the J2 command through the Python reference. Native jobs
 run engine, ABI and Python/process tests, but do not directly run the complete

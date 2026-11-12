@@ -3,7 +3,8 @@ name: checks
 on:
   pull_request:
   push:
-    branches: [main]
+    # S5-T6 ruling 6: a task branch is checked before it merges.
+    branches: [main, "task/**"]
 
 jobs:
   checks:
@@ -54,6 +55,37 @@ jobs:
             echo "Trailing whitespace found (see above)."; exit 1
           fi
           echo "No trailing whitespace."
+
+  # S5-T6 (review R01): the analyzer's tables and every golden the Python reference
+  # writes are generated with Unicode 13.0.0, so their regeneration checks skip on
+  # the 3.11 jobs above (Unicode 14.0.0). Here they run on Python 3.9 (Unicode
+  # 13.0.0), counted by name: a skip, a missing check or a stale file fails the job,
+  # and each failure is a workflow annotation naming the file.
+  unicode-13-goldens:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.9 (Unicode 13.0.0)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: The interpreter's Unicode is the tables' (13.0.0)
+        run: python3 scripts/ci_unicode_goldens.py --check-version
+
+      # No Zig here: no generator or check in this job uses it (orchestrator ruling 2
+      # on the interim Report). A generator that comes to need it fails this job
+      # (SEARCH_SIMPLI_NO_ZIG is unset, so it is not skipped) until Zig is installed.
+      - name: Golden and Unicode table regeneration (no skips allowed)
+        run: >-
+          env -u SEARCH_SIMPLI_LIBRARY_PATH -u SEARCH_SIMPLI_NO_ZIG
+          python3 scripts/ci_unicode_goldens.py
 
   native-linux:
     runs-on: ubuntu-24.04
@@ -181,6 +213,61 @@ jobs:
           set -euo pipefail
           zig build -Doptimize=ReleaseSmall -j2 --prefix "$RUNNER_TEMP/release"
           test -x "$RUNNER_TEMP/release/bin/searchd"
+
+      # S5-T6 (review R02): J2 through this job's ReleaseSmall searchd, in content
+      # and both, every query of the pack (the count is asserted; no skip, no
+      # fallback to the Python reference), then the gate against the committed
+      # baseline. The baseline's searchd cells were recorded on macOS arm64; the
+      # differences step lists, as warnings, every cell where this x86_64 run moved.
+      - name: J2 through the ReleaseSmall searchd (content and both, no skips)
+        shell: bash
+        env:
+          PYTHONHASHSEED: "0"
+          PYTHONIOENCODING: utf-8
+        run: |
+          set -euo pipefail
+          python3 scripts/ci_j2_native.py run --searchd "$RUNNER_TEMP/release/bin/searchd" \
+            --expect-queries 198 --output "$RUNNER_TEMP/j2-native/searchd.json"
+
+      - name: J2 native cells against the macOS arm64 baseline (information)
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python3 scripts/ci_j2_native.py differences "$RUNNER_TEMP/j2-native/searchd.json"
+
+      - name: J2 gate on the native run
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python3 scripts/j2_gate.py "$RUNNER_TEMP/j2-native/searchd.json" --annotate
+
+      # S5-T6 ruling 5: the same gate must fail a deliberately worse native result
+      # (every graded query's answer removed from the real run, scored again).
+      - name: J2 gate fails a planted ranking regression
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          # The runner's bash runs with -e; the gate's exit 1 is the expected outcome here.
+          set +e -uo pipefail
+          python3 scripts/ci_j2_native.py plant "$RUNNER_TEMP/j2-native/searchd.json" \
+            --output "$RUNNER_TEMP/j2-native/planted.json" || exit 1
+          python3 scripts/j2_gate.py "$RUNNER_TEMP/j2-native/planted.json" > "$RUNNER_TEMP/j2-native/planted-gate.txt"
+          code=$?
+          tail -n 5 "$RUNNER_TEMP/j2-native/planted-gate.txt"
+          failures=$(grep -c '^FAIL ' "$RUNNER_TEMP/j2-native/planted-gate.txt" || true)
+          controls=$(grep -c '^FAIL .*(b) control' "$RUNNER_TEMP/j2-native/planted-gate.txt" || true)
+          if [ "$code" -ne 1 ] || [ "$controls" -eq 0 ]; then
+            echo "::error title=planted regression not caught::the gate exited $code on the planted run with $controls control failures"
+            exit 1
+          fi
+          echo "::notice title=planted regression caught::the gate failed the planted native run (exit 1; $failures failures, $controls of them control rank-1 losses)"
+
+      - name: Keep the J2 per-query reports when a step failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: j2-native-reports
+          path: ${{ runner.temp }}/j2-native/
+          if-no-files-found: ignore
 
       # The suites find the binary through SEARCHD_BINARY (tests/test_folder_surfaces.py
       # build_searchd, tests/test_cli_process.py); without it they build a Debug one.

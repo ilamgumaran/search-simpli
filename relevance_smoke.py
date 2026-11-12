@@ -588,6 +588,17 @@ def j2_load() -> list[float] | None:
         return None
 
 
+def j2_reference_policies(fold: str) -> dict:
+    """S5-T6 (review R02): the policy ids the Python reference ran J2 under, named
+    as `searchd` names them (`index_status` and `retrieval`)."""
+    from src.search_platform import core as reference
+    return {"analyzer_id": reference.FILENAME_ANALYZER_ID,
+            "chunkers": sorted({reference.CHUNKER_ID, reference.MD_CHUNKER_ID}),
+            "filename_policy_id": reference.FILENAME_POLICY_ID, "title_policy_id": reference.TITLE_POLICY_ID,
+            "fuzzy_policy_id": reference.FUZZY_POLICY_ID,
+            "fold_policy_id": reference.FOLD_POLICY_ID if fold else None}
+
+
 def run_j2_pack(fold: str = "FAST") -> dict:
     """J2 through the Python reference: one union index of the three roots with the
     file-name channel on; knowledge rows lexical, top 10, `content` and `both`;
@@ -632,7 +643,8 @@ def run_j2_pack(fold: str = "FAST") -> dict:
         "surface": "python-reference",
         "judgments_sha256": j2_judgments_sha256(pack_dir),
         "engine": {"commit": j2_git_head(), "python_version": platform.python_version(),
-                   "hashseed": os.environ.get("PYTHONHASHSEED"), **({"fold": fold} if fold else {})},
+                   "hashseed": os.environ.get("PYTHONHASHSEED"), **({"fold": fold} if fold else {}),
+                   "policies": j2_reference_policies(fold)},
         "load": j2_load(),
         "top_k": J2_TOP_K,
         "runs": runs,

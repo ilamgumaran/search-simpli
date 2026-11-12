@@ -2,6 +2,7 @@
 the same table in `zig/src/analyzer_v2.zig`; the BM25 and chunk goldens make
 the two agree on every fixture)."""
 
+import subprocess
 import sys
 import unicodedata
 import unittest
@@ -11,6 +12,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from search_platform import core  # noqa: E402
 from search_platform._marks import MARK_RANGES  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from unicode_tables_header import same_table  # noqa: E402
 
 
 class TokenizeTests(unittest.TestCase):
@@ -55,6 +59,18 @@ class TokenizeTests(unittest.TestCase):
             cp for cp in range(0x110000) if unicodedata.category(chr(cp)) in ("Mn", "Mc")
         }
         self.assertEqual(marks, expected)
+
+    def test_marks_module_regenerates_byte_for_byte(self):
+        """S5-T6: src/search_platform/_marks.py is what its generator writes today."""
+        if unicodedata.unidata_version != "13.0.0":
+            self.skipTest("table generated with Unicode 13.0.0")
+        root = Path(__file__).resolve().parents[1]
+        fresh = subprocess.run([sys.executable, str(root / "scripts" / "gen_unicode_tables.py"), "--python-marks"],
+                               cwd=str(root), capture_output=True, text=True, check=True, timeout=300).stdout
+        committed = (root / "src" / "search_platform" / "_marks.py").read_text(encoding="utf-8")
+        # Every byte but the generating Python's patch version (tests/unicode_tables_header.py).
+        self.assertTrue(same_table(fresh, committed), "src/search_platform/_marks.py is stale: run python3 "
+                        "scripts/gen_unicode_tables.py --python-marks > src/search_platform/_marks.py")
 
 
 if __name__ == "__main__":

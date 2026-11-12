@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-12 (S5-T7, the reference scores `content` under a path prefix as the engine does, review R03; Python reference and tests only; verified and merged)
+Last updated: 2026-11-12 (S5-T6, CI that cannot pass by skipping: Unicode golden freshness and the native J2 gate, review R01 and R02; CI and tests only; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,29 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## CI that cannot pass by skipping: Unicode golden freshness and the native J2 gate (S5-T6, 2026-11-12; verified and merged 2026-11-12)
+
+**Verified and merged 2026-11-12** ([Verdict](docs/tasks/S5-T6.md)); the verifier's own runs of both scripts, its own
+plants and its reads of the cited CI runs agree with the Report, and the branch run on the merge of `main` was green.
+[Report](docs/tasks/S5-T6.md); review items R01 and R02. CI and tests only: no digest-covered file, no native rebuild,
+no contract or binding change, no app pin; `fixtures/j2/baseline.json` and `fixtures/j2/allow.json` unchanged.
+
+- **The push trigger** includes `task/**`, so a task branch is checked before it merges.
+- **`unicode-13-goldens`** (Python 3.9 through `actions/setup-python`; Unicode 13.0.0, asserted in its own step; no
+  Zig, none of its generators uses it): `scripts/ci_unicode_goldens.py` runs `tests.test_goldens_fresh`,
+  `tests.test_analyzer_v3` and `tests.test_tokenize` whole, counts nine checks by name (the `_fold.py`, `_marks.py` and
+  `zig/src/unicode_tables.zig` tables, the marks guard, the analyzer-v3, title, BM25, fuzzy and verb-forms goldens) and
+  fails on a missing check, any skip or a failure, each annotated with the stale file and its first differing lines.
+  The three table checks ignore only the generating Python's patch version in their header
+  (`tests/unicode_tables_header.py`; the runner's 3.9 is 3.9.25, the files say 3.9.6).
+- **`native-linux-release`** runs J2 through the `ReleaseSmall` `searchd` it builds (`scripts/ci_j2_native.py run`: 198
+  queries, `content` and `both`, no skip, the binary, commit and policy ids named), lists every cell that differs from
+  the macOS arm64 baseline (none on x86_64 at S5-T6), gates it (`j2_gate.py --annotate`) and checks that the same gate
+  fails a planted regression (every graded answer removed from the real run).
+- **Annotations.** Each new step reports what failed as workflow annotations (at most 30 a step; GitHub keeps 10 of
+  each level a step, so the tenth of a level says how many more the log holds), which the unauthenticated check-runs
+  API returns; job logs need a sign-in.
 
 ## The reference scores `content` under a path prefix as the engine does (S5-T7, review R03, 2026-11-12; verified and merged 2026-11-12)
 
@@ -339,7 +362,8 @@ excluded); (b) a control query at rank 1 in that variant's baseline loses rank 1
 by more than 3 (not in the top 10 counts as 11; a `null` baseline cannot worsen) unless the run's allow-list (a file the task
 that moves a judgment commits beside it) names it. Exit 2 on a usage error, a judgments sha256 mismatch or a missing
 surface, variant, slice or query; otherwise it prints each slice's deltas and exits 0. CI's `checks` job (Python 3.11)
-runs the Python reference through it against the committed baseline (`PYTHONHASHSEED=0`). The pack is frozen: a later
+runs the Python reference through it against the committed baseline (`PYTHONHASHSEED=0`). Since S5-T6, `native-linux-release` also runs
+`searchd` (Linux x86_64, `ReleaseSmall`) through it (`docs/evaluation.md`, "How J2 is gated on each surface"). The pack is frozen: a later
 change to a judgment is a reviewed commit that says why, with the baseline update, named in that task's Report.
 
 **What it says, for S5:** keyword search answers in the file's own words and little else: misspelling, morphology,

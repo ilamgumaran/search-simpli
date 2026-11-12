@@ -14,6 +14,9 @@ sys.path.insert(0, str(ROOT / "src"))
 from search_platform import analyzer_v3 as v3  # noqa: E402
 from search_platform._fold import FOLD, UNICODE_VERSION  # noqa: E402
 
+sys.path.insert(0, str(ROOT / "tests"))
+from unicode_tables_header import same_table  # noqa: E402
+
 
 def K(token: str, parts: str = "FAST") -> list[str]:
     return list(v3.key_terms(token, parts))
@@ -25,7 +28,10 @@ class FoldTableTests(unittest.TestCase):
             self.skipTest("table generated with Unicode " + UNICODE_VERSION)
         fresh = subprocess.run([sys.executable, str(ROOT / "scripts" / "gen_unicode_tables.py"), "--python-fold"],
                                capture_output=True, text=True, check=True).stdout
-        self.assertEqual(fresh, (ROOT / "src" / "search_platform" / "_fold.py").read_text(encoding="utf-8"))
+        # S5-T6: every byte but the generating Python's patch version (tests/unicode_tables_header.py).
+        self.assertTrue(same_table(fresh, (ROOT / "src" / "search_platform" / "_fold.py").read_text(encoding="utf-8")),
+                        "src/search_platform/_fold.py is stale: run python3 scripts/gen_unicode_tables.py "
+                        "--python-fold > src/search_platform/_fold.py")
 
     def test_zig_tables_regenerate_byte_for_byte(self):
         """zig/src/unicode_tables.zig, fold table included, is what the generator writes."""
@@ -33,7 +39,9 @@ class FoldTableTests(unittest.TestCase):
             self.skipTest("table generated with Unicode " + UNICODE_VERSION)
         fresh = subprocess.run([sys.executable, str(ROOT / "scripts" / "gen_unicode_tables.py")],
                                capture_output=True, text=True, check=True).stdout
-        self.assertEqual(fresh, (ROOT / "zig" / "src" / "unicode_tables.zig").read_text(encoding="utf-8"))
+        self.assertTrue(same_table(fresh, (ROOT / "zig" / "src" / "unicode_tables.zig").read_text(encoding="utf-8")),
+                        "zig/src/unicode_tables.zig is stale: run python3 scripts/gen_unicode_tables.py "
+                        "> zig/src/unicode_tables.zig")
 
     def test_table_counts(self):
         self.assertEqual(len(FOLD), 6158)
