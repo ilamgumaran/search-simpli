@@ -234,6 +234,60 @@ jobs:
           zig build -Doptimize=ReleaseSmall -j2 --prefix "$RUNNER_TEMP/release"
           test -x "$RUNNER_TEMP/release/bin/searchd"
 
+      # S5-T6 (review R02): J2 through this job's ReleaseSmall searchd, in content
+      # and both, every query of the pack (the count is asserted; no skip, no
+      # fallback to the Python reference), then the gate against the committed
+      # baseline. The baseline's searchd cells were recorded on macOS arm64; the
+      # differences step lists, as warnings, every cell where this x86_64 run moved.
+      - name: J2 through the ReleaseSmall searchd (content and both, no skips)
+        shell: bash
+        env:
+          PYTHONHASHSEED: "0"
+          PYTHONIOENCODING: utf-8
+        run: |
+          set -euo pipefail
+          python3 scripts/ci_j2_native.py run --searchd "$RUNNER_TEMP/release/bin/searchd" \
+            --expect-queries 198 --output "$RUNNER_TEMP/j2-native/searchd.json"
+
+      - name: J2 native cells against the macOS arm64 baseline (information)
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python3 scripts/ci_j2_native.py differences "$RUNNER_TEMP/j2-native/searchd.json"
+
+      - name: J2 gate on the native run
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python3 scripts/j2_gate.py "$RUNNER_TEMP/j2-native/searchd.json" --annotate
+
+      # S5-T6 ruling 5: the same gate must fail a deliberately worse native result
+      # (every graded query's answer removed from the real run, scored again).
+      - name: J2 gate fails a planted ranking regression
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          set -uo pipefail
+          python3 scripts/ci_j2_native.py plant "$RUNNER_TEMP/j2-native/searchd.json" \
+            --output "$RUNNER_TEMP/j2-native/planted.json" || exit 1
+          python3 scripts/j2_gate.py "$RUNNER_TEMP/j2-native/planted.json" > "$RUNNER_TEMP/j2-native/planted-gate.txt"
+          code=$?
+          tail -n 5 "$RUNNER_TEMP/j2-native/planted-gate.txt"
+          failures=$(grep -c '^FAIL ' "$RUNNER_TEMP/j2-native/planted-gate.txt" || true)
+          controls=$(grep -c '^FAIL .*(b) control' "$RUNNER_TEMP/j2-native/planted-gate.txt" || true)
+          if [ "$code" -ne 1 ] || [ "$controls" -eq 0 ]; then
+            echo "::error title=planted regression not caught::the gate exited $code on the planted run with $controls control failures"
+            exit 1
+          fi
+          echo "::notice title=planted regression caught::the gate failed the planted native run (exit 1; $failures failures, $controls of them control rank-1 losses)"
+
+      - name: Keep the J2 per-query reports when a step failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: j2-native-reports
+          path: ${{ runner.temp }}/j2-native/
+          if-no-files-found: ignore
+
       # The suites find the binary through SEARCHD_BINARY (tests/test_folder_surfaces.py
       # build_searchd, tests/test_cli_process.py); without it they build a Debug one.
       - name: Python behavioral tests against the ReleaseSmall searchd

@@ -60,6 +60,8 @@ PACK = PACKS["j2"]
 BASELINE_SCHEMA = "j2-baseline-v1"
 NATIVE = ROOT / "bindings" / "dart" / "search_simpli" / "native"
 CALL_TIMEOUT_S = 60
+# The `retrieval` ids a `both` query reports; the last three must equal `content`'s.
+POLICY_KEYS = ("filename_policy_id", "title_policy_id", "fuzzy_policy_id", "fold_policy_id")
 
 
 def sha256_file(path: Path) -> str:
@@ -171,6 +173,15 @@ def run_searchd(binary: Path, scratch: Path, optimize: str | None) -> dict:
                                                 "roots": roots, "search_field": "both"})
         if not probe["retrieval"].get("filename_policy_id"):
             raise SystemExit("j2_run: the index has no file-name channel")
+        # S5-T6 (review R02): the report names the policies the binary ran under.
+        content_probe = serve.call("search_knowledge", {"query": "j2", "top_k": 1, "retrieval_mode": "lexical",
+                                                        "roots": roots, "search_field": "content"})
+        policies = {"analyzer_id": status.get("analyzer_id"), "chunkers": status.get("chunkers"),
+                    **{k: probe["retrieval"].get(k) for k in POLICY_KEYS}}
+        for key in POLICY_KEYS[1:]:
+            if content_probe["retrieval"].get(key) != policies[key]:
+                raise SystemExit(f"j2_run: {key} differs between content and both: "
+                                 f"{content_probe['retrieval'].get(key)} / {policies[key]}")
 
         def strip_root(root_id: str, path: str) -> str:
             return path[len(root_id) + 1:] if path.startswith(root_id + "/") else path
@@ -204,7 +215,8 @@ def run_searchd(binary: Path, scratch: Path, optimize: str | None) -> dict:
                    "binary": {"sha256": sha256_file(binary), "size": binary.stat().st_size,
                               "optimize": optimize or "unknown", "zig": zig_version()},
                    "index": {"roots": status["roots"], "documents": status["documents"],
-                             "filename_policy_id": probe["retrieval"]["filename_policy_id"]}},
+                             "filename_policy_id": probe["retrieval"]["filename_policy_id"]},
+                   "policies": policies},
         "load": {"before": load_before, "after": j2_load(), "top_sample": sample},
         "top_k": J2_TOP_K,
         "runs": runs,

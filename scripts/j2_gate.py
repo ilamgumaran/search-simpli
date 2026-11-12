@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The J2 regression gate (S5-T1): compare a run with the committed baseline.
 
-  j2_gate.py RUN.json [--baseline fixtures/j2/baseline.json] [--allow ALLOW.json]
+  j2_gate.py RUN.json [--baseline fixtures/j2/baseline.json] [--allow ALLOW.json] [--annotate]
 
 RUN.json is a results file from `relevance_smoke.py --pack j2` (the Python
 reference) or `scripts/j2_run.py` (searchd). It is compared with the same
@@ -25,6 +25,10 @@ The allow-list is a file the task that moves a judgment commits beside it:
 {"task": "S5-Tn", "queries": [{"id": "m04", "why": "..."}]}. An absent file is
 an empty list. fixtures/j2/allow.json is read when it exists and --allow is
 not given.
+
+--annotate (S5-T6, CI) also prints each failure, and a usage error, as a GitHub
+workflow annotation (`::error title=...::`, scripts/ci_annotations.py), so a
+reader of the check-runs API sees which rows failed without the job log.
 """
 
 from __future__ import annotations
@@ -35,6 +39,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(Path(__file__).resolve().parent))
+
+from ci_annotations import Annotations  # noqa: E402
+
 BASELINE = ROOT / "fixtures" / "j2" / "baseline.json"
 ALLOW = ROOT / "fixtures" / "j2" / "allow.json"
 MRR_DROP = 0.02
@@ -120,7 +128,7 @@ def judge(run: dict, base: dict, allow: dict[str, str]) -> tuple[list[str], list
     return failures, lines
 
 
-def gate(run_path: Path, baseline_path: Path, allow_path: Path | None) -> int:
+def gate(run_path: Path, baseline_path: Path, allow_path: Path | None, notes: Annotations | None = None) -> int:
     run = load(run_path, "run")
     baseline = load(baseline_path, "baseline")
     if run.get("schema") != "j2-results-v1" or baseline.get("schema") != "j2-baseline-v1":
@@ -145,6 +153,9 @@ def gate(run_path: Path, baseline_path: Path, allow_path: Path | None) -> int:
         failures += [f"{variant}: {f}" for f in found]
     for failure in failures:
         print(f"FAIL {failure}")
+        if notes is not None:
+            variant, _, rule = failure.partition(": ")
+            notes.add("error", f"J2 gate {surface} {variant}", rule)
     print(f"J2 gate: {'FAIL' if failures else 'pass'}")
     return 1 if failures else 0
 
@@ -154,15 +165,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("run", type=Path)
     parser.add_argument("--baseline", type=Path, default=BASELINE)
     parser.add_argument("--allow", type=Path)
+    parser.add_argument("--annotate", action="store_true", help="also print failures as workflow annotations")
     try:
         args = parser.parse_args(argv)
     except SystemExit as exc:
         return 2 if exc.code else 0
+    notes = Annotations() if args.annotate else None
     try:
-        return gate(args.run, args.baseline, args.allow)
+        return gate(args.run, args.baseline, args.allow, notes)
     except Usage as exc:
         print(f"j2_gate: {exc}", file=sys.stderr)
+        if notes is not None:
+            notes.add("error", "J2 gate usage error", str(exc))
         return 2
+    finally:
+        if notes is not None:
+            sys.stdout.flush()
+            notes.flush()
 
 
 if __name__ == "__main__":
