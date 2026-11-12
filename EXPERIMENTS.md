@@ -800,4 +800,5 @@ scores); the Zig golden tests compare the engine's scores with the reference's o
 not run.
 
 **Conclusion:** One baseline serves both platforms; no per-platform rule. The table checks normalise the interpreter
-patch version and compare every other byte. Details: [S5-T6](docs/tasks/S5-T6.md).
+patch version and compare every other byte. Details: [S5-T6](docs/tasks/S5-T6.md). Status: verified and merged
+2026-11-12 (the verifier's own `ReleaseSmall` run and plants, and its reads of the cited runs, in the task's Verdict).

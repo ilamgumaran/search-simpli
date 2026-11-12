@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-12 (S5-T7, the reference scores `content` under a path prefix as the engine does, review R03; Python reference and tests only; verified and merged)
+Last updated: 2026-11-12 (S5-T6, CI that cannot pass by skipping: Unicode golden freshness and the native J2 gate, review R01 and R02; CI and tests only; verified and merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,8 +15,10 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## CI that cannot pass by skipping: Unicode golden freshness and the native J2 gate (S5-T6, 2026-11-12; built, verification pending)
+## CI that cannot pass by skipping: Unicode golden freshness and the native J2 gate (S5-T6, 2026-11-12; verified and merged 2026-11-12)
 
+**Verified and merged 2026-11-12** ([Verdict](docs/tasks/S5-T6.md)); the verifier's own runs of both scripts, its own
+plants and its reads of the cited CI runs agree with the Report, and the branch run on the merge of `main` was green.
 [Report](docs/tasks/S5-T6.md); review items R01 and R02. CI and tests only: no digest-covered file, no native rebuild,
 no contract or binding change, no app pin; `fixtures/j2/baseline.json` and `fixtures/j2/allow.json` unchanged.
 
