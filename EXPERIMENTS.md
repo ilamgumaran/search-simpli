@@ -802,3 +802,33 @@ not run.
 **Conclusion:** One baseline serves both platforms; no per-platform rule. The table checks normalise the interpreter
 patch version and compare every other byte. Details: [S5-T6](docs/tasks/S5-T6.md). Status: verified and merged
 2026-11-12 (the verifier's own `ReleaseSmall` run and plants, and its reads of the cited runs, in the task's Verdict).
+
+## 2026-11-12 — The folder lifecycle helper through the shared ranker (S5-T9, review R04)
+
+**Hypothesis:** `FolderIndex.search` can drop its own BM25 (the ranking before S5-T2) and hand its authorized snapshot
+to `core.search`, and then agrees with `searchd` through an update, a rename and a delete, while every caller that
+used the old ranking keeps its outcomes, because the lifecycle runner checks hit sets under `conjunctive`, which a
+ranking does not change.
+
+**Setup:** Main `004ba85`; `src/search_platform/folders.py` only (no `core.py`, no engine file). An invented folder
+(`tests/test_folder_ranking.py`): roots `garden` and `kitchen`, eight files, one behind the label `adults`; four
+states (start, an update, a rename, a delete), eight cases each (a title question, the title of the renamed file, a
+misspelt word, a verb form, a plural, the scope with the label held and not, one root named). The helper fed by
+`apply_changes`, `core.search` over `build_index` of each state's files, and `searchd` ReleaseSmall fed the same
+`apply` requests, over `serve`. Python 3.9.6, Zig 0.16.0, macOS arm64.
+
+**Observation:** Before, 20 of the 32 cases gave other hits or another order than `searchd` (`cucumbr` found
+nothing; `planting` missed `planted`; `onion` missed `onions`; `seed cucumber` put the file named for the words
+fourth, not first) and 7 kept the order with scores up to 8.25 away (the title part); 5 agreed, the cases where no
+title part or group applies. After, all 32 equal `core.search` exactly and `searchd` in hits and order, largest
+difference 1.58e-06 (93 hits). The family-folder pack's report is identical; its lifecycle `find` hit sets are the
+same and in the same order, one score higher (`firefly` 12.24 → 19.16, its file is named for it). J2 does not reach
+the helper: both surfaces unchanged, the gate passes.
+
+**Did not prove:** No judged pack ranks through the helper, so this shows agreement, not a relevance gain. Without
+`conjunctive` the helper now also returns chunks that only a group or a title part reaches (in the family folder,
+`lentils` gains a third chunk and `robot rover motors` across all roots one hit); no caller asks for that today.
+
+**Conclusion:** One ranking in the reference: the lifecycle helper cannot select an older ranker, and a lifecycle
+fixture compares with the engine by score. Details: [S5-T9](docs/tasks/S5-T9.md). Status: built, awaiting
+verification.

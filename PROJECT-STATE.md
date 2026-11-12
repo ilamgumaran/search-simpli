@@ -15,6 +15,21 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
+## The folder lifecycle helper ranks through the reference (S5-T9, review R04, 2026-11-12; built, awaiting verification)
+
+Built on `task/S5-T9` ([task and Report](docs/tasks/S5-T9.md)); Python helper and tests only (`folders.py`, a new
+test file): no `core.py`, native, contract, Dart or app pin change. `FolderIndex.search` no longer keeps its own BM25
+from before the title field: it hands its authorized snapshot (the visible chunks of the roots named and those roots'
+ids; labels as the caller holds them) to `core.search`, lexical, so the title field, fuzzy-v1 and fold-groups-v2
+reach it and the snapshot is the statistics, as in the engine. `roots`, `principal_labels`, `conjunctive` (the chunks
+holding every query word as typed, now in the current rank order), `top_k` and the result fields are kept; `score` is
+the chunk's `ranking.lexical.score` (BM25 plus the title part it received); no path-prefix parameter.
+`tests/test_folder_ranking.py` feeds an invented folder (two roots, one labelled file) through an update, a rename
+and a delete and compares the helper with `core.search` (equal) and with `searchd` ReleaseSmall (same hits, same
+order, largest difference 1.58e-06; tolerance 1e-4 · max(1, |reference|)) on a title question, a misspelt word, a
+verb form, a plural and the scope. The family-folder pack (its three lifecycle scenarios run through the helper)
+gives an identical report; J2 does not use the helper and is unchanged on both surfaces.
+
 ## CI that cannot pass by skipping: Unicode golden freshness and the native J2 gate (S5-T6, 2026-11-12; verified and merged 2026-11-12)
 
 **Verified and merged 2026-11-12** ([Verdict](docs/tasks/S5-T6.md)); the verifier's own runs of both scripts, its own
