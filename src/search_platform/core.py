@@ -1185,21 +1185,12 @@ def _title_scores(visible_chunks: list[dict], query: str, root_ids: tuple[str, .
 # descending, UTF-8 bytes), key df the in-scope body df or 1 for a title-only term;
 # the first FUZZY_MAX_EXPANSIONS kept, weighted by FUZZY_WEIGHTS. The Zig engine
 # implements the same rule (zig/src/fuzzy.zig).
-#
-# fuzzy-v2 (S5-T8, docs/fuzzy-v2.md): of those first FUZZY_MAX_EXPANSIONS, a word at
-# distance 2 from a typed word shorter than FUZZY_PREFIX_RULE_BELOW code points is
-# kept only when it starts with the typed word's first FUZZY_PREFIX_CODE_POINTS code
-# points (skiing no longer reaches spring, saving, string; dokter still reaches
-# doctor). The candidates, their order and the cap are fuzzy-v1's; a kept word is
-# not replaced by the next one.
 
-FUZZY_POLICY_ID = "fuzzy-v2"
+FUZZY_POLICY_ID = "fuzzy-v1"
 FUZZY_MIN_CODE_POINTS = 5
 FUZZY_DISTANCE_2_MIN_CODE_POINTS = 6
 FUZZY_MAX_EXPANSIONS = 3
 FUZZY_WEIGHTS = {1: 1.0, 2: 0.5}
-FUZZY_PREFIX_RULE_BELOW = 8
-FUZZY_PREFIX_CODE_POINTS = 2
 # A digit 0-9 or a Latin letter, by code point range (not by Unicode name).
 FUZZY_LATIN_RANGES = ((0x30, 0x39), (0x61, 0x7A), (0xDF, 0xF6), (0xF8, 0xFF), (0x100, 0x24F), (0x1E00, 0x1EFF))
 
@@ -1276,11 +1267,9 @@ def _fuzzy_groups(terms: Iterable[str], body_df: Counter, title_vocabulary: set[
             if distance:
                 found.append((distance, -key_df, candidate.encode("utf-8"), candidate))
         found.sort()
-        kept = [(distance, candidate) for distance, _, _, candidate in found[:FUZZY_MAX_EXPANSIONS]
-                if distance == 1 or len(term) >= FUZZY_PREFIX_RULE_BELOW
-                or candidate[:FUZZY_PREFIX_CODE_POINTS] == term[:FUZZY_PREFIX_CODE_POINTS]]
-        if kept:
-            groups[term] = tuple((candidate, FUZZY_WEIGHTS[distance]) for distance, candidate in kept)
+        if found:
+            groups[term] = tuple((candidate, FUZZY_WEIGHTS[distance])
+                                 for distance, _, _, candidate in found[:FUZZY_MAX_EXPANSIONS])
     return groups
 
 

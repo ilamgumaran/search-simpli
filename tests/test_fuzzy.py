@@ -1,4 +1,4 @@
-"""S5-T3: misspelling tolerance (`fuzzy-v1`, `fuzzy-v2` since S5-T8) in the Python reference.
+"""S5-T3: misspelling tolerance (`fuzzy-v1`) in the Python reference.
 
 A query term that no chunk in scope holds and no visible file's title field holds,
 all Latin script and at least 5 code points long, is also searched as at most 3
@@ -141,23 +141,18 @@ class CandidateTests(unittest.TestCase):
     def test_no_candidate_means_no_group(self):
         self.assertEqual(_fuzzy_groups(["zzzzzz"], Counter({"apple": 1}), set()), {})
 
-    def test_fuzzy_v2_drops_a_far_word_of_another_opening_below_eight_code_points(self):
-        """S5-T8 (fuzzy-v2): of the three kept, a distance-2 word is dropped when the
-        typed word has fewer than 8 code points and their first two code points differ;
-        nothing from beyond the cut takes its place."""
-        self.assertEqual(_fuzzy_groups(["sistems"], Counter({"system": 9, "sisters": 1}), set()),
-                         {"sistems": (("sisters", 1.0),)})
-        self.assertEqual(_fuzzy_groups(["sistemz"], Counter({"systemy": 9}), set()), {})
-        # 8 code points: the rule does not apply.
-        self.assertEqual(_fuzzy_groups(["sistemzz"], Counter({"systemzy": 9}), set()),
-                         {"sistemzz": (("systemzy", 0.5),)})
-        # bxkers and boker are cut; baxery, fourth, does not replace them.
-        df = Counter({"bxkers": 9, "boker": 8, "bakxrz": 1, "baxery": 1})
-        self.assertEqual(_fuzzy_groups(["bakerx"], df, set()), {"bakerx": (("bakxrz", 0.5),)})
-        # Code points, not bytes; a distance-1 word is never dropped.
-        df = Counter({"écolaxz": 1, "éxolezz": 3})
-        self.assertEqual(_fuzzy_groups(["écolezz"], df, set()),
-                         {"écolezz": (("éxolezz", 1.0), ("écolaxz", 0.5))})
+    def test_a_second_letter_typo_of_a_short_word_reaches_the_word(self):
+        """The S5-T8 re-ruling (fuzzy-v2 rejected): a typed word of 6 or 7 code points
+        two edits from a held word whose second letter differs still reaches it, as
+        J2's misspelling-opening slice asks; a first-letter typo reaches nothing (a
+        measured gap: the candidates share the typed word's first code point)."""
+        df = Counter({"chicken": 2, "scooter": 1, "plumber": 1, "custard": 2, "system": 9, "sisters": 1})
+        self.assertEqual(_fuzzy_groups(["cikken"], df, set()), {"cikken": (("chicken", 0.5),)})
+        self.assertEqual(_fuzzy_groups(["skootur"], df, set()), {"skootur": (("scooter", 0.5),)})
+        self.assertEqual(_fuzzy_groups(["pulmer"], df, set()), {"pulmer": (("plumber", 0.5),)})
+        self.assertEqual(_fuzzy_groups(["sistems"], df, set()),
+                         {"sistems": (("sisters", 1.0), ("system", 0.5))})
+        self.assertEqual(_fuzzy_groups(["kustad"], df, set()), {})
 
 
 class ScoringTests(unittest.TestCase):
@@ -232,7 +227,7 @@ class SearchTests(unittest.TestCase):
             self.assertEqual(search(index, "helth", retrieval_mode="lexical", search_field="filename"), [])
 
     def test_the_policy_id(self):
-        self.assertEqual(FUZZY_POLICY_ID, "fuzzy-v2")
+        self.assertEqual(FUZZY_POLICY_ID, "fuzzy-v1")
 
 
 # Ruling 8 (S5-T3 Phase 2): a path prefix narrows membership, not statistics.
