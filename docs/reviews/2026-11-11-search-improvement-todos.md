@@ -98,7 +98,8 @@ Do not overwrite the baseline or enlarge the allow-list to conceal a regression.
 
 ## R03 — Fix content-mode reference scoring under a path prefix
 
-**Landed (S5-T7, [task](../tasks/S5-T7.md), commit `127b84a` on `task/S5-T7`):**
+**Landed (S5-T7, [task](../tasks/S5-T7.md), commit `127b84a` on `task/S5-T7`; verified and
+merged to `main` 12 Nov 2026 at `da7ddf2`):**
 the reference's `content` body scoring takes its statistics from the visible
 chunks and narrows only the candidates by the prefix; grouped terms' df included.
 `tests/test_prefix_statistics.py` holds the plain and grouped fixtures (inside the
