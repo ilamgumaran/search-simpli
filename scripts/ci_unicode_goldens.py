@@ -34,9 +34,11 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "tests"))
 
 from ci_annotations import Annotations  # noqa: E402
 from search_platform._fold import UNICODE_VERSION  # noqa: E402
+from unicode_tables_header import normalise  # noqa: E402
 
 MODULES = ("tests.test_goldens_fresh", "tests.test_analyzer_v3", "tests.test_tokenize")
 
@@ -63,6 +65,9 @@ EXPECTED = {
         ("fixtures/verb-forms-golden.json", ["scripts/gen_verb_forms_golden.py"]),
 }
 
+# The three tables whose checks compare every byte but the generating Python's patch
+# version (tests/unicode_tables_header.py; orchestrator ruling 1 on the interim Report).
+TABLES = ("src/search_platform/_fold.py", "src/search_platform/_marks.py", "zig/src/unicode_tables.zig")
 DIFF_LINES = 4
 CLIP = 160
 
@@ -110,6 +115,8 @@ def describe_stale(path: str, generator: list[str]) -> str:
     except (OSError, subprocess.SubprocessError) as exc:
         return f"{path}: the generator could not be run again for the difference ({exc})"
     committed = (ROOT / path).read_text(encoding="utf-8")
+    if path in TABLES:
+        fresh, committed = normalise(fresh), normalise(committed)
     if fresh == committed:
         return f"{path}: the regenerated text equals the committed file on the second run (the test failed on another assertion)"
     rows = first_differences(committed, fresh)

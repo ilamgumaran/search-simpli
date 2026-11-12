@@ -79,29 +79,9 @@ jobs:
       - name: The interpreter's Unicode is the tables' (13.0.0)
         run: python3 scripts/ci_unicode_goldens.py --check-version
 
-      # No generator needs Zig today (tests/test_goldens_fresh.py marks each); it is
-      # installed as native-linux installs it so one marked as needing it runs here.
-      - name: Install pinned Zig 0.16.0
-        shell: bash
-        run: |
-          set -euo pipefail
-          archive="$RUNNER_TEMP/zig-x86_64-linux-0.16.0.tar.xz"
-          archive_url="https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz"
-          expected_sha256="70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
-
-          curl --fail --show-error --location --silent \
-            --connect-timeout 20 --max-time 180 \
-            --retry 3 --retry-delay 2 --retry-max-time 240 \
-            "$archive_url" --output "$archive"
-
-          printf '%s  %s\n' "$expected_sha256" "$archive" | sha256sum --check --status
-          tar -xf "$archive" -C "$RUNNER_TEMP"
-          zig_dir="$RUNNER_TEMP/zig-x86_64-linux-0.16.0"
-          test -x "$zig_dir/zig"
-          test "$("$zig_dir/zig" version)" = "0.16.0"
-          echo "$zig_dir" >> "$GITHUB_PATH"
-          echo "ZIG_GLOBAL_CACHE_DIR=$RUNNER_TEMP/zig-cache" >> "$GITHUB_ENV"
-
+      # No Zig here: no generator or check in this job uses it (orchestrator ruling 2
+      # on the interim Report). A generator that comes to need it fails this job
+      # (SEARCH_SIMPLI_NO_ZIG is unset, so it is not skipped) until Zig is installed.
       - name: Golden and Unicode table regeneration (no skips allowed)
         run: >-
           env -u SEARCH_SIMPLI_LIBRARY_PATH -u SEARCH_SIMPLI_NO_ZIG

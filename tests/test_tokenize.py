@@ -13,6 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from search_platform import core  # noqa: E402
 from search_platform._marks import MARK_RANGES  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from unicode_tables_header import same_table  # noqa: E402
+
 
 class TokenizeTests(unittest.TestCase):
     def test_tamil_words_stay_whole(self):
@@ -65,7 +68,8 @@ class TokenizeTests(unittest.TestCase):
         fresh = subprocess.run([sys.executable, str(root / "scripts" / "gen_unicode_tables.py"), "--python-marks"],
                                cwd=str(root), capture_output=True, text=True, check=True, timeout=300).stdout
         committed = (root / "src" / "search_platform" / "_marks.py").read_text(encoding="utf-8")
-        self.assertTrue(fresh == committed, "src/search_platform/_marks.py is stale: run python3 "
+        # Every byte but the generating Python's patch version (tests/unicode_tables_header.py).
+        self.assertTrue(same_table(fresh, committed), "src/search_platform/_marks.py is stale: run python3 "
                         "scripts/gen_unicode_tables.py --python-marks > src/search_platform/_marks.py")
 
 

@@ -15,6 +15,9 @@ sys.path.insert(0, str(REPO / "scripts"))
 import ci_annotations  # noqa: E402
 import ci_unicode_goldens  # noqa: E402
 
+sys.path.insert(0, str(REPO / "tests"))
+import unicode_tables_header  # noqa: E402
+
 
 class AnnotationTests(unittest.TestCase):
     def test_escaping(self):
@@ -106,6 +109,37 @@ class UnicodeGoldenJudgementTests(unittest.TestCase):
             self.assertTrue((REPO / path).is_file(), path)
             if generator:
                 self.assertTrue((REPO / generator[0]).is_file(), generator[0])
+
+
+class TableHeaderNormalisationTests(unittest.TestCase):
+    """Orchestrator ruling 1 on the interim Report: the three table checks ignore the
+    generating Python's patch version and nothing else."""
+
+    def test_only_the_patch_version_is_ignored(self):
+        for path in ci_unicode_goldens.TABLES:
+            committed = (REPO / path).read_text(encoding="utf-8")
+            found = list(unicode_tables_header.HEADER_VERSION.finditer(committed))
+            self.assertEqual(len(found), 1, path)
+            start, end = found[0].end("lead"), found[0].end()
+            self.assertEqual(committed[start:end], "3.9.6", path)
+            later = committed[:start] + "3.9.25" + committed[end:]
+            self.assertTrue(unicode_tables_header.same_table(later, committed), path)
+            want = unicode_tables_header.normalise(committed)
+            # Every position of the header (the version digits included) and one in
+            # 499 of the rest, and the last: a one-character change must be seen.
+            positions = sorted(set(range(min(800, len(committed)))) | set(range(800, len(committed), 499))
+                               | {len(committed) - 1})
+            for p in positions:
+                other = "a" if committed[p] != "a" else "b"
+                changed = committed[:p] + other + committed[p + 1:]
+                self.assertNotEqual(unicode_tables_header.normalise(changed), want, (path, p))
+
+    def test_at_most_one_occurrence_is_normalised(self):
+        line = "Produced by scripts/gen_unicode_tables.py --python-fold using Python 3.9.6's\n"
+        text = line + line
+        self.assertEqual(unicode_tables_header.normalise(text).count("X.Y.Z"), 1)
+        self.assertFalse(unicode_tables_header.same_table(line + line.replace("3.9.6", "3.9.7"), text))
+        self.assertFalse(unicode_tables_header.same_table(" " + line, line))
 
 
 if __name__ == "__main__":
