@@ -144,6 +144,19 @@ desired, is a separate design decision; this ticket does not retune the ranker.
 
 ## R04 — Resolve the lifecycle reference's older ranking
 
+**Landed (S5-T9, [task](../tasks/S5-T9.md), commit `a17c7f2` on `task/S5-T9`; verified and
+merged to `main` 12 Nov 2026 at `937da55`, the `--no-ff` merge of `task/S5-T9`):** the helper models current retrieval (step 2). `FolderIndex.search`
+hands its authorized snapshot (the visible chunks of the roots named, and those
+roots' ids) to `core.search` (lexical), so the title field, fuzzy-v1 and the fold
+groups reach it and no second copy of the ranking remains. `roots`,
+`principal_labels`, `conjunctive`, `top_k` and the result fields are kept; `score`
+is the chunk's `ranking.lexical.score`; no path-prefix parameter; `core.py` is
+unchanged. `tests/test_folder_ranking.py` compares the helper with `core.search`
+and with `searchd` through an update, a rename and a delete on title, typo,
+verb-form, plural and scope cases. No caller depended on the old ranking: the
+lifecycle pack's `find` steps check hit sets under `conjunctive` and did not move.
+The section below is the review as written.
+
 **Evidence:** [FolderIndex.search](../../src/search_platform/folders.py), around
 lines 643–666, explicitly retains pre-title-field BM25. It does not perform the
 current title/fold/fuzzy path in `core.search`. This is documented legacy behavior,
