@@ -87,7 +87,9 @@ Contract version is 2.2.0 and Dart package 0.3.0; consumers must repin.
 Native freshness requires real platform rebuilding; never stamp stale binaries current.
 Index options add optional boolean `filename_index` (omitted: a new
 directory is plain, an existing one keeps its setting); CLI spells it
-`--filename-index`. Python opt-in snapshot version 2 contains filename-index
+`--filename-index` (on `index`, and since S5-T11 on `apply`, where it is taken
+for a directory with no index only: a no-op on a channel index, refused with
+exit 2 on a plain one). Python opt-in snapshot version 2 contains filename-index
 metadata; body-only stays version 1. Import payload v2 adds required
 `filename_policy_id: "filename-field-v1"`; v1 remains unchanged. Import derives
 and validates filename records from body documents, not caller-supplied postings.

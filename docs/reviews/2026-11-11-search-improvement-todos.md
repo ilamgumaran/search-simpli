@@ -288,6 +288,17 @@ map compaction needs its own measured target before adding cache machinery.
 
 ## R08 — One operation for a fresh multi-root filename index
 
+**S5-T11 ([task](../tasks/S5-T11.md); landed: verified and merged to `main` 13 Nov 2026):** steps 1–3.
+`searchd apply <dir> --changes <file> --filename-index` is the CLI spelling of
+the core's existing `filename_index` (no request, wire or contract field): a
+directory with no index gets exactly the requested roots at its first
+generation with the channel on; an index with the channel takes the flag as a
+no-op; one without it is refused (exit 2, nothing written, no migration). No
+placeholder root. Process and Zig tests cover empty roots, labels, a repeat,
+the flag twice and both crash points of a first write. `scripts/j2_run.py`
+builds its index in one step; every J2 cell is unchanged and the gate is clean
+without a re-recorded baseline. Within CAP-16's approval (CAP-16 §14).
+
 **Evidence:** [cli.zig](../../zig/src/cli.zig)'s `apply` parser has no
 `--filename-index` option. [j2_run.py](../../scripts/j2_run.py), around lines
 156–168, creates an empty `r-legacy` index before adding its intended roots.

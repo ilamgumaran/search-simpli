@@ -522,6 +522,23 @@ after a successful call the server reopens the index, so the next request
 reads the new generation. Dart: `SearchSimpli.applyChanges(dir, changes,
 options:)`, static.
 
+**S5-T11 amendment (review R08): `searchd apply … --filename-index`.** The
+CLI spelling of `opts_json.filename_index: true` (`apply.Options`), for one
+operation that creates a multi-root index with the file-name channel on. On a
+directory with no `MANIFEST` (empty or missing) it publishes exactly the
+request's roots, with the filename catalog and lexical sections, at the next
+free generation (1 in an empty directory); `filename` and `both` queries
+answer at once, and no `r-legacy` root is made. On an index that has the
+channel it is a no-op (the call is the call without it, so a repeated
+command is safe). On an index without the channel it is refused after its `MANIFEST`
+is read and before the previous generation is read or any index file is
+written (only `WRITER.LOCK`, the writer lease, is created if absent): one stderr line naming `--filename-index` and
+the reason, exit 2; the generation does not move and the index answers as
+before (switching the setting needs a new directory, as for `index`). Without
+the flag nothing changes: a fresh directory is plain, an existing one keeps
+its setting. No change-file field, contract, format or ABI change; `serve` and
+`mcp` writers keep the directory's setting.
+
 ## 7. Scope, labels and statistics
 
 A request's **scope** = the roots named (default all) ∩ the caller's trusted

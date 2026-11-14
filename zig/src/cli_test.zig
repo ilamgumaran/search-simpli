@@ -332,3 +332,182 @@ test "S3-T4: --json prints exactly the operation's JSON; text output and refusal
     try std.testing.expectEqual(@as(u8, 1), try cli.runApply(io, a, .{ .path = index, .changes = changes, .expect_generation = 2 }, &out.writer, &err.writer));
     try std.testing.expect(std.mem.indexOf(u8, err.written(), "differs from the request's expect_generation") != null);
 }
+
+// === S5-T11 (review R08): apply --filename-index =============================
+
+test "S5-T11: --filename-index parses on apply only; twice is once; index's is unchanged" {
+    var buffer: [512]u8 = undefined;
+    try std.testing.expect(!cli.parseArgs(&.{ "apply", "d", "--changes", "c" }, &buffer).apply.filename_index);
+    try std.testing.expect(cli.parseArgs(&.{ "apply", "d", "--filename-index", "--changes", "c" }, &buffer).apply.filename_index);
+    const twice = cli.parseArgs(&.{ "apply", "d", "--changes", "c", "--filename-index", "--json", "--filename-index" }, &buffer).apply;
+    try std.testing.expect(twice.filename_index and twice.json);
+    try std.testing.expectEqualStrings("c", twice.changes);
+    try std.testing.expectEqual(@as(?bool, true), cli.parseArgs(&.{ "index", "f", "--out", "o", "--filename-index" }, &buffer).index.options.caps.filename_index);
+    try std.testing.expectEqual(@as(?bool, null), cli.parseArgs(&.{ "index", "f", "--out", "o" }, &buffer).index.options.caps.filename_index);
+    try expectUsage(&.{ "apply", "d", "--filename-index" }, &.{"--changes <file>"});
+    try expectUsage(&.{ "find", "d", "q", "--filename-index" }, &.{ "unknown flag for find", "'--filename-index'" });
+    try expectUsage(&.{ "query", "d", "q", "--filename-index" }, &.{ "unknown flag for query", "'--filename-index'" });
+    try expectUsage(&.{ "evidence", "d", "q", "--filename-index" }, &.{ "unknown flag for evidence", "'--filename-index'" });
+    try expectUsage(&.{ "roots", "d", "--filename-index" }, &.{"unknown flag for roots"});
+    try expectUsage(&.{ "list-files", "d", "--filename-index" }, &.{"unknown flag for list-files"});
+    try expectUsage(&.{ "outline", "d", "r", "p", "--filename-index" }, &.{"unknown flag for outline"});
+    try expectUsage(&.{ "read-span", "d", "r", "p", "1", "1", "--filename-index" }, &.{"unknown flag for read-span"});
+    try expectUsage(&.{ "serve", "d", "--filename-index" }, &.{"unknown flag for serve"});
+    try expectUsage(&.{ "mcp", "d", "--filename-index" }, &.{"unknown flag for mcp"});
+    try expectUsage(&.{ "import-json", "d", "f", "--filename-index" }, &.{"unexpected argument for import-json"});
+    try std.testing.expect(std.mem.indexOf(u8, cli.usage_text, "[--allow-file-reads] [--filename-index] [--json]") != null);
+}
+
+const s5t11_request = "{\"roots\":[{\"root_id\":\"school\",\"kind\":\"host\"},{\"root_id\":\"attic\",\"kind\":\"host\"}],\"changes\":[{\"op\":\"add\",\"root_id\":\"school\",\"path\":\"tide-table.md\",\"content_base64\":\"IyBXZWVrCgp0aWRlIHRhYmxlCg==\"}]}";
+
+const S5T11 = struct {
+    arena_state: std.heap.ArenaAllocator,
+    tmp: std.testing.TmpDir,
+    changes: []const u8 = "",
+
+    fn init() !*S5T11 {
+        const self = try std.testing.allocator.create(S5T11);
+        self.* = .{ .arena_state = std.heap.ArenaAllocator.init(std.testing.allocator), .tmp = std.testing.tmpDir(.{ .iterate = true }) };
+        try self.tmp.dir.writeFile(std.testing.io, .{ .sub_path = "changes.json", .data = s5t11_request });
+        self.changes = try self.path("changes.json");
+        return self;
+    }
+
+    fn deinit(self: *S5T11) void {
+        self.tmp.cleanup();
+        self.arena_state.deinit();
+        std.testing.allocator.destroy(self);
+    }
+
+    fn path(self: *S5T11, name: []const u8) ![]const u8 {
+        return std.fmt.allocPrint(self.arena_state.allocator(), ".zig-cache/tmp/{s}/{s}", .{ self.tmp.sub_path, name });
+    }
+
+    /// `runApply`'s status, stdout and stderr.
+    fn apply(self: *S5T11, index: []const u8, filename_index: bool) !struct { status: u8, out: []const u8, err: []const u8 } {
+        const a = self.arena_state.allocator();
+        var out: std.Io.Writer.Allocating = .init(a);
+        var err: std.Io.Writer.Allocating = .init(a);
+        const status = try cli.runApply(std.testing.io, a, .{ .path = index, .changes = self.changes, .filename_index = filename_index }, &out.writer, &err.writer);
+        return .{ .status = status, .out = out.written(), .err = err.written() };
+    }
+
+    fn roots(self: *S5T11, index: []const u8) ![]const u8 {
+        const a = self.arena_state.allocator();
+        var out: std.Io.Writer.Allocating = .init(a);
+        var err: std.Io.Writer.Allocating = .init(a);
+        try std.testing.expectEqual(@as(u8, 0), try cli.runRoots(std.testing.io, a, .{ .path = index }, &out.writer, &err.writer));
+        return out.written();
+    }
+
+    fn engine(self: *S5T11, index: []const u8) !@import("engine.zig").Engine {
+        return (try cli.openService(self.arena_state.allocator(), std.testing.io, index)).engine;
+    }
+
+    /// Every file of the index directory, name and bytes, in name order.
+    fn files(self: *S5T11, index_name: []const u8) ![]const u8 {
+        const a = self.arena_state.allocator();
+        const io = std.testing.io;
+        var dir = try self.tmp.dir.openDir(io, index_name, .{ .iterate = true });
+        defer dir.close(io);
+        var names: std.ArrayList([]const u8) = .empty;
+        var it = dir.iterate();
+        while (try it.next(io)) |entry| if (entry.kind == .file) try names.append(a, try a.dupe(u8, entry.name));
+        std.mem.sort([]const u8, names.items, {}, struct {
+            fn less(_: void, x: []const u8, y: []const u8) bool {
+                return std.mem.lessThan(u8, x, y);
+            }
+        }.less);
+        var all: std.Io.Writer.Allocating = .init(a);
+        for (names.items) |name| {
+            try all.writer.print("{s}\n", .{name});
+            try all.writer.writeAll(try dir.readFileAlloc(io, name, a, .unlimited));
+        }
+        return all.written();
+    }
+};
+
+test "S5-T11: a fresh apply with --filename-index publishes only the requested roots with the channel" {
+    const f = try S5T11.init();
+    defer f.deinit();
+    const index = try f.path("fresh");
+    const applied = try f.apply(index, true);
+    try std.testing.expectEqual(@as(u8, 0), applied.status);
+    try std.testing.expect(std.mem.startsWith(u8, applied.out, "applied: generation=1 added=1 "));
+    const engine = try f.engine(index);
+    try std.testing.expectEqual(@as(u64, 1), engine.generation);
+    try std.testing.expect(engine.filename_index_enabled);
+    try std.testing.expectEqualStrings("school  school  host  files=1 documents=1 pending=0\nattic  attic  host  files=0 documents=0 pending=0\n", try f.roots(index));
+    // filename, both and content answer at once.
+    const a = f.arena_state.allocator();
+    for ([_]@import("filename_field.zig").Field{ .filename, .both, .content }) |field| {
+        var out: std.Io.Writer.Allocating = .init(a);
+        try cli.runQuery(std.testing.io, a, index, "tide", .{ .search_field = field, .json = true }, &out.writer);
+        try std.testing.expect(std.mem.indexOf(u8, out.written(), "tide-table.md") != null);
+    }
+}
+
+test "S5-T11: without the flag a fresh apply stays plain, as before" {
+    const f = try S5T11.init();
+    defer f.deinit();
+    const index = try f.path("plain");
+    try std.testing.expectEqual(@as(u8, 0), (try f.apply(index, false)).status);
+    const engine = try f.engine(index);
+    try std.testing.expectEqual(@as(u64, 1), engine.generation);
+    try std.testing.expect(!engine.filename_index_enabled);
+}
+
+test "S5-T11: an index with the channel takes the flag as a no-op; a repeat is safe" {
+    const f = try S5T11.init();
+    defer f.deinit();
+    const index = try f.path("repeat");
+    try std.testing.expectEqual(@as(u8, 0), (try f.apply(index, true)).status);
+    const again = try f.apply(index, true);
+    try std.testing.expectEqual(@as(u8, 0), again.status);
+    try std.testing.expect(std.mem.startsWith(u8, again.out, "applied: generation=2 added=0 changed=0 removed=0 moved=0 pending=0 unchanged=1 "));
+    const without = try f.apply(index, false);
+    try std.testing.expect(std.mem.startsWith(u8, without.out, "applied: generation=3 added=0 changed=0 removed=0 moved=0 pending=0 unchanged=1 "));
+    try std.testing.expect((try f.engine(index)).filename_index_enabled);
+}
+
+test "S5-T11: an index without the channel refuses the flag: exit 2, one line, nothing written" {
+    const f = try S5T11.init();
+    defer f.deinit();
+    const index = try f.path("plain");
+    try std.testing.expectEqual(@as(u8, 0), (try f.apply(index, false)).status);
+    const before = try f.files("plain");
+    const refused = try f.apply(index, true);
+    try std.testing.expectEqual(cli.usage_exit_status, refused.status);
+    try std.testing.expectEqualStrings("", refused.out);
+    try std.testing.expectEqual(@as(usize, 1), std.mem.count(u8, refused.err, "\n"));
+    try std.testing.expect(std.mem.startsWith(u8, refused.err, "searchd: invalid value for apply --filename-index: "));
+    try std.testing.expect(std.mem.indexOf(u8, refused.err, "has no file-name channel") != null);
+    try std.testing.expectEqualStrings(before, try f.files("plain"));
+    const engine = try f.engine(index);
+    try std.testing.expectEqual(@as(u64, 1), engine.generation);
+    try std.testing.expect(!engine.filename_index_enabled);
+}
+
+test "S5-T11: a crash after the fresh one-step publish leaves the complete first generation with the channel" {
+    // The S3-T3 recovery method (`fail_after_publish`: the MANIFEST is
+    // published, INDEX-STATE.json is not written) on the options `runApply`
+    // passes for the flag.
+    const f = try S5T11.init();
+    defer f.deinit();
+    const a = f.arena_state.allocator();
+    const io = std.testing.io;
+    var dir = try f.tmp.dir.createDirPathOpen(io, "crash", .{ .open_options = .{ .iterate = true } });
+    defer dir.close(io);
+    try std.testing.expectError(error.SimulatedCrash, @import("apply.zig").applyChanges(a, io, dir, s5t11_request, .{ .filename_index = true, .fail_after_publish = true }));
+    const index = try f.path("crash");
+    const crashed = try f.engine(index);
+    try std.testing.expectEqual(@as(u64, 1), crashed.generation);
+    try std.testing.expect(crashed.filename_index_enabled);
+    try std.testing.expectEqualStrings("school  school  host  files=1 documents=1 pending=0\nattic  attic  host  files=0 documents=0 pending=0\n", try f.roots(index));
+    // The retry, with or without the flag, sees generation 1 and keeps the channel.
+    const retry = try f.apply(index, true);
+    try std.testing.expect(std.mem.startsWith(u8, retry.out, "applied: generation=2 added=0 changed=0 removed=0 moved=0 pending=0 unchanged=1 "));
+    const plain = try f.apply(index, false);
+    try std.testing.expect(std.mem.startsWith(u8, plain.out, "applied: generation=3 "));
+    try std.testing.expect((try f.engine(index)).filename_index_enabled);
+}

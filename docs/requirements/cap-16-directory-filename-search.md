@@ -231,3 +231,22 @@ actual terms in displayed text regardless of channel truncation; `matched_in`
 continues to describe ranking contributions. Human CLI output uses the same two
 sections. Legacy content-only JSON remains byte-compatible. See the
 [implementation handoff](../tasks/directory-filename-implementation.md).
+
+## 14. `searchd apply --filename-index` (S5-T11, review R08, 2026-11-13)
+
+An additive CLI option, no new FR/NFR/CON id. The opt-in setting of §3 ("Index,
+refresh and compatibility") gains its CLI spelling on `apply`, where the core
+(`apply.Options.filename_index`), the C ABI (`ss_apply_changes` `opts_json`) and
+Dart (`ApplyChangesOptions.filenameIndex`) already carried it: on a directory
+with no index, one `apply` publishes exactly the requested roots with the channel
+on; on an index with the channel it is a no-op; on one without it is refused
+(exit 2, nothing written), so switching the setting still needs a new directory.
+No change-file field, wire field, contract, format or ABI change. Within §12's
+approval (the setting and its CLI spelling, `filename-field-format-v1.md`); no
+new step-6b approval is recorded or claimed, and the status is unchanged.
+
+Validation: [S5-T11](../tasks/S5-T11.md) Report. `tests/test_apply_filename_index.py`
+(10 process tests: the four cases, empty roots, labels, repeat, the flag twice,
+the flag on no other subcommand, the two crash points of a first write);
+`zig/src/cli_test.zig` "S5-T11: …" (6 tests, including `fail_after_publish` on the
+fresh one-step path); J2 built in one step, every cell unchanged.

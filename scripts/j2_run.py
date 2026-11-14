@@ -7,12 +7,11 @@
   j2_run.py (--searchd PATH | --build) --write-baseline fixtures/j2/baseline.json
             [--python-output PY.json] [--output RUN.json] [--why TEXT]
 
-The index is built the way the app builds one, through the shipped CLI: an
-empty folder is indexed with the file-name channel on (`searchd index EMPTY
---filename-index`), then `searchd apply` adds the three roots (school, home,
-laptop; kind host) with every file as `content_base64`. `apply` cannot turn the
-file-name channel on for a new directory, so this two-step bootstrap leaves an
-empty `r-legacy` root beside the three; every request names the three roots.
+The index is built the way the app builds one, through the shipped CLI, in one
+step (S5-T11): `searchd apply IDX --changes CHANGES --filename-index` publishes
+the three roots (school, home, laptop; kind host), every file as
+`content_base64`, with the file-name channel on, and nothing else (no
+`r-legacy` root). Every request names the three roots.
 One `searchd serve` process answers every query on stdio and is closed at the
 end. Knowledge rows run `search_knowledge` (lexical, top 10) once with
 `search_field: content` and once with `both`; find rows run `find` once, first
@@ -156,18 +155,16 @@ def run_searchd(binary: Path, scratch: Path, optimize: str | None) -> dict:
     expected_files = {r: sum(1 for f in judgments["files"] if f["root_id"] == r) for r in roots}
     load_before, sample = j2_load(), top_sample()
     work = Path(tempfile.mkdtemp(prefix="j2-index-", dir=scratch))
-    (work / "empty").mkdir()
     (work / "changes.json").write_text(json.dumps(changes_request(judgments)), encoding="utf-8")
-    for cmd in ([str(binary), "index", str(work / "empty"), "--out", str(work / "idx"), "--filename-index"],
-                [str(binary), "apply", str(work / "idx"), "--changes", str(work / "changes.json")]):
-        done = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        if done.returncode != 0:
-            raise SystemExit(f"j2_run: {cmd[1]} failed:\n{done.stdout}\n{done.stderr}")
+    cmd = [str(binary), "apply", str(work / "idx"), "--changes", str(work / "changes.json"), "--filename-index"]
+    done = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    if done.returncode != 0:
+        raise SystemExit(f"j2_run: apply failed:\n{done.stdout}\n{done.stderr}")
     serve = Serve(binary, work / "idx")
     try:
         status = serve.call("index_status", {})
         have = {r["root_id"]: r["files"] for r in status["roots"]}
-        if {r: have.get(r) for r in roots} != expected_files or have.get("r-legacy", 0) != 0 or set(have) - set(roots) - {"r-legacy"}:
+        if have != expected_files:
             raise SystemExit(f"j2_run: unexpected roots in the index: {have}")
         probe = serve.call("search_knowledge", {"query": "j2", "top_k": 1, "retrieval_mode": "lexical",
                                                 "roots": roots, "search_field": "both"})

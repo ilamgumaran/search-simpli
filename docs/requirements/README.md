@@ -149,7 +149,7 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-13 | MCP adapter binds FR-07 operations, injects trusted principal, forbids caller vectors, parity with direct surface | CAP-13 | Diagnostic · implemented (S3-T6: [task](../tasks/S3-T6.md)) |
 | FR-14 | First-class retrieval-derived support/confidence signal in the evidence response; low-support flagging; never generative | CAP-14 (changes FR-06) | Proposed |
 | FR-15 | Structure-aware chunking on syntactic units for supported languages, deterministic identity, deterministic line-window fallback | CAP-15 (changes FR-02) | Proposed |
-| FR-16 | Opt-in filename/combined lexical search, real passage anchors, explicit origin, isolation, deterministic ranking and versioned refresh/migration | CAP-16 | Diagnostic · implemented (PR #21, integrated by S4-T2: [task](../tasks/S4-T2.md)) |
+| FR-16 | Opt-in filename/combined lexical search, real passage anchors, explicit origin, isolation, deterministic ranking and versioned refresh/migration | CAP-16 | Diagnostic · implemented (PR #21, integrated by S4-T2: [task](../tasks/S4-T2.md); `apply --filename-index` for a fresh index by S5-T11: [task](../tasks/S5-T11.md), CAP-16 §14) |
 
 | FR-17 | Positional phrase/prefix/words finding with original-text offsets | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
 | FR-18 | Markdown structure and recorded chunker identity | CAP-19 | Diagnostic · implemented (S3-T1: [task](../tasks/S3-T1.md)) |
