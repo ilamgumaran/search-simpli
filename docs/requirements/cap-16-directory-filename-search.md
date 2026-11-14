@@ -248,5 +248,5 @@ new step-6b approval is recorded or claimed, and the status is unchanged.
 Validation: [S5-T11](../tasks/S5-T11.md) Report. `tests/test_apply_filename_index.py`
 (10 process tests: the four cases, empty roots, labels, repeat, the flag twice,
 the flag on no other subcommand, the two crash points of a first write);
-`zig/src/cli_test.zig` "S5-T11: …" (5 tests, including `fail_after_publish` on the
+`zig/src/cli_test.zig` "S5-T11: …" (6 tests, including `fail_after_publish` on the
 fresh one-step path); J2 built in one step, every cell unchanged.

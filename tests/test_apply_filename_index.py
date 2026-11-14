@@ -215,6 +215,20 @@ class ApplyFilenameIndexTests(unittest.TestCase):
         self.assertEqual(flagged, plain)
         self.assertEqual((flagged["generation"], flagged["changed"]), (2, 1))
         self.assert_channel(with_flag, 2)
+        # A channel index under analyzer-v1 (only `index` makes one): `apply`
+        # (always analyzer-v2) refuses it with or without the flag, the same way.
+        folder, v1 = self.tmp / "folder", self.tmp / "v1"
+        folder.mkdir()
+        (folder / "tide-table.md").write_text(TIDE, encoding="utf-8")
+        self.assertEqual(self.searchd("index", folder, "--out", v1, "--analyzer", "v1", "--filename-index").returncode, 0)
+        before = snapshot(v1)
+        refusals = [self.searchd("apply", v1, "--changes", self.changes(change), *flags)
+                    for flags in (("--filename-index",), ())]
+        self.assertEqual([(r.returncode, r.stdout, r.stderr.splitlines()[:1]) for r in refusals][0],
+                         [(r.returncode, r.stdout, r.stderr.splitlines()[:1]) for r in refusals][1])
+        self.assertEqual(refusals[0].returncode, 1)
+        self.assertIn("AnalyzerMismatch", refusals[0].stderr)
+        self.assertEqual(snapshot(v1), before)
 
     def test_existing_index_without_the_channel_is_refused_and_untouched(self) -> None:
         index = self.tmp / "plain-index"
