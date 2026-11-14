@@ -1,0 +1,435 @@
+{
+ "queries": 306,
+ "plain": {
+  "requests": 14688,
+  "differ": 0,
+  "errors": 0,
+  "differ_examples": [],
+  "error_examples": [],
+  "by_kind": {
+   "none/anon/content": [
+    306,
+    0
+   ],
+   "none/anon/both": [
+    306,
+    0
+   ],
+   "none/anon/filename": [
+    306,
+    0
+   ],
+   "none/anon/find-words": [
+    306,
+    0
+   ],
+   "none/anon/find-phrase": [
+    306,
+    0
+   ],
+   "none/anon/find-prefix": [
+    306,
+    0
+   ],
+   "none/label/content": [
+    306,
+    0
+   ],
+   "none/label/both": [
+    306,
+    0
+   ],
+   "none/label/filename": [
+    306,
+    0
+   ],
+   "none/label/find-words": [
+    306,
+    0
+   ],
+   "none/label/find-phrase": [
+    306,
+    0
+   ],
+   "none/label/find-prefix": [
+    306,
+    0
+   ],
+   "all/anon/content": [
+    306,
+    0
+   ],
+   "all/anon/both": [
+    306,
+    0
+   ],
+   "all/anon/filename": [
+    306,
+    0
+   ],
+   "all/anon/find-words": [
+    306,
+    0
+   ],
+   "all/anon/find-phrase": [
+    306,
+    0
+   ],
+   "all/anon/find-prefix": [
+    306,
+    0
+   ],
+   "all/label/content": [
+    306,
+    0
+   ],
+   "all/label/both": [
+    306,
+    0
+   ],
+   "all/label/filename": [
+    306,
+    0
+   ],
+   "all/label/find-words": [
+    306,
+    0
+   ],
+   "all/label/find-phrase": [
+    306,
+    0
+   ],
+   "all/label/find-prefix": [
+    306,
+    0
+   ],
+   "two/anon/content": [
+    306,
+    0
+   ],
+   "two/anon/both": [
+    306,
+    0
+   ],
+   "two/anon/filename": [
+    306,
+    0
+   ],
+   "two/anon/find-words": [
+    306,
+    0
+   ],
+   "two/anon/find-phrase": [
+    306,
+    0
+   ],
+   "two/anon/find-prefix": [
+    306,
+    0
+   ],
+   "two/label/content": [
+    306,
+    0
+   ],
+   "two/label/both": [
+    306,
+    0
+   ],
+   "two/label/filename": [
+    306,
+    0
+   ],
+   "two/label/find-words": [
+    306,
+    0
+   ],
+   "two/label/find-phrase": [
+    306,
+    0
+   ],
+   "two/label/find-prefix": [
+    306,
+    0
+   ],
+   "one/anon/content": [
+    306,
+    0
+   ],
+   "one/anon/both": [
+    306,
+    0
+   ],
+   "one/anon/filename": [
+    306,
+    0
+   ],
+   "one/anon/find-words": [
+    306,
+    0
+   ],
+   "one/anon/find-phrase": [
+    306,
+    0
+   ],
+   "one/anon/find-prefix": [
+    306,
+    0
+   ],
+   "one/label/content": [
+    306,
+    0
+   ],
+   "one/label/both": [
+    306,
+    0
+   ],
+   "one/label/filename": [
+    306,
+    0
+   ],
+   "one/label/find-words": [
+    306,
+    0
+   ],
+   "one/label/find-phrase": [
+    306,
+    0
+   ],
+   "one/label/find-prefix": [
+    306,
+    0
+   ]
+  }
+ },
+ "labelled": {
+  "requests": 14688,
+  "differ": 4,
+  "errors": 0,
+  "differ_examples": [
+   [
+    "painting the fence",
+    "none",
+    "label",
+    "both"
+   ],
+   [
+    "painting the fence",
+    "all",
+    "label",
+    "both"
+   ],
+   [
+    "painting",
+    "none",
+    "label",
+    "both"
+   ],
+   [
+    "painting",
+    "all",
+    "label",
+    "both"
+   ]
+  ],
+  "error_examples": [],
+  "by_kind": {
+   "none/anon/content": [
+    306,
+    0
+   ],
+   "none/anon/both": [
+    306,
+    0
+   ],
+   "none/anon/filename": [
+    306,
+    0
+   ],
+   "none/anon/find-words": [
+    306,
+    0
+   ],
+   "none/anon/find-phrase": [
+    306,
+    0
+   ],
+   "none/anon/find-prefix": [
+    306,
+    0
+   ],
+   "none/label/content": [
+    306,
+    0
+   ],
+   "none/label/both": [
+    306,
+    2
+   ],
+   "none/label/filename": [
+    306,
+    0
+   ],
+   "none/label/find-words": [
+    306,
+    0
+   ],
+   "none/label/find-phrase": [
+    306,
+    0
+   ],
+   "none/label/find-prefix": [
+    306,
+    0
+   ],
+   "all/anon/content": [
+    306,
+    0
+   ],
+   "all/anon/both": [
+    306,
+    0
+   ],
+   "all/anon/filename": [
+    306,
+    0
+   ],
+   "all/anon/find-words": [
+    306,
+    0
+   ],
+   "all/anon/find-phrase": [
+    306,
+    0
+   ],
+   "all/anon/find-prefix": [
+    306,
+    0
+   ],
+   "all/label/content": [
+    306,
+    0
+   ],
+   "all/label/both": [
+    306,
+    2
+   ],
+   "all/label/filename": [
+    306,
+    0
+   ],
+   "all/label/find-words": [
+    306,
+    0
+   ],
+   "all/label/find-phrase": [
+    306,
+    0
+   ],
+   "all/label/find-prefix": [
+    306,
+    0
+   ],
+   "two/anon/content": [
+    306,
+    0
+   ],
+   "two/anon/both": [
+    306,
+    0
+   ],
+   "two/anon/filename": [
+    306,
+    0
+   ],
+   "two/anon/find-words": [
+    306,
+    0
+   ],
+   "two/anon/find-phrase": [
+    306,
+    0
+   ],
+   "two/anon/find-prefix": [
+    306,
+    0
+   ],
+   "two/label/content": [
+    306,
+    0
+   ],
+   "two/label/both": [
+    306,
+    0
+   ],
+   "two/label/filename": [
+    306,
+    0
+   ],
+   "two/label/find-words": [
+    306,
+    0
+   ],
+   "two/label/find-phrase": [
+    306,
+    0
+   ],
+   "two/label/find-prefix": [
+    306,
+    0
+   ],
+   "one/anon/content": [
+    306,
+    0
+   ],
+   "one/anon/both": [
+    306,
+    0
+   ],
+   "one/anon/filename": [
+    306,
+    0
+   ],
+   "one/anon/find-words": [
+    306,
+    0
+   ],
+   "one/anon/find-phrase": [
+    306,
+    0
+   ],
+   "one/anon/find-prefix": [
+    306,
+    0
+   ],
+   "one/label/content": [
+    306,
+    0
+   ],
+   "one/label/both": [
+    306,
+    0
+   ],
+   "one/label/filename": [
+    306,
+    0
+   ],
+   "one/label/find-words": [
+    306,
+    0
+   ],
+   "one/label/find-phrase": [
+    306,
+    0
+   ],
+   "one/label/find-prefix": [
+    306,
+    0
+   ]
+  }
+ },
+ "leaks": [],
+ "found_with_label": {
+  "cases": 64,
+  "found": 62
+ }
+}

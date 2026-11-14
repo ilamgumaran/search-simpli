@@ -1,0 +1,43 @@
+Visible-collection walks (WALK) and documentFrequency calls (DF term) per query, one call each, through instrumented ReleaseSmall copies of c674a9c (main) and 1769214 (head): one std.debug.print per walk and per call. both = one-root snapshot, unscoped; *-scoped = two-root snapshot, roots [r-left]. Not timed.
+both-scoped | bazecha | main | DF bazecha x1; WALK x1; 
+both-scoped | bazecha | head | 
+both-scoped | system | main | DF system x1; DF systems x1; WALK x1; 
+both-scoped | system | head | DF system x1; DF systems x1; WALK x1; 
+both-scoped | hashing | main | DF hash x1; DF hashing x2; WALK x1; 
+both-scoped | hashing | head | DF hash x1; DF hashing x2; WALK x1; 
+both-scoped | consensus | main | DF consensus x1; WALK x1; 
+both-scoped | consensus | head | 
+both-scoped | scheduler | main | DF schedulers x1; WALK x1; 
+both-scoped | scheduler | head | DF schedulers x1; WALK x1; 
+both-scoped | garbaje | main | DF garbage x1; WALK x1; 
+both-scoped | garbaje | head | DF garbage x1; WALK x1; 
+both-scoped | hash | main | DF hash x2; DF hashing x1; WALK x1; 
+both-scoped | hash | head | DF hash x1; DF hashing x1; WALK x1; 
+both | bazecha | main | WALK x1; 
+both | bazecha | head | 
+both | system | main | WALK x1; 
+both | system | head | 
+both | hashing | main | WALK x1; 
+both | hashing | head | 
+both | consensus | main | WALK x1; 
+both | consensus | head | 
+both | scheduler | main | WALK x1; 
+both | scheduler | head | 
+both | garbaje | main | WALK x1; 
+both | garbaje | head | 
+both | hash | main | WALK x1; 
+both | hash | head | 
+content-scoped | bazecha | main | DF bazecha x2; WALK x1; 
+content-scoped | bazecha | head | DF bazecha x1; WALK x1; 
+content-scoped | system | main | DF system x2; DF systems x1; WALK x1; 
+content-scoped | system | head | DF system x2; DF systems x1; WALK x1; 
+content-scoped | hashing | main | DF hash x1; DF hashing x3; WALK x1; 
+content-scoped | hashing | head | DF hash x1; DF hashing x3; WALK x1; 
+content-scoped | consensus | main | DF consensus x2; WALK x1; 
+content-scoped | consensus | head | DF consensus x1; WALK x1; 
+content-scoped | scheduler | main | DF schedulers x1; WALK x1; 
+content-scoped | scheduler | head | DF schedulers x1; WALK x1; 
+content-scoped | garbaje | main | DF garbage x1; WALK x1; 
+content-scoped | garbaje | head | DF garbage x1; WALK x1; 
+content-scoped | hash | main | DF hash x3; DF hashing x1; WALK x1; 
+content-scoped | hash | head | DF hash x2; DF hashing x1; WALK x1; 

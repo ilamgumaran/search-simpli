@@ -1,0 +1,22 @@
+--- main/zig/src/engine.zig	2026-11-13 23:57:40
++++ proto/zig/src/engine.zig	2026-11-14 08:25:35
+@@ -402,8 +402,17 @@
+             for (tokens) |token| allocator.free(token);
+             allocator.free(tokens);
+         }
+-        var view = try scope.visibleCollection(allocator, engine.lexical_index, engine.documents, engine.statistics, engine.labeled_documents, options.visible_roots, options.principal_labels);
+-        defer if (view) |*v| v.deinit(allocator);
++        // S5-T12 Phase 1 PROTOTYPE (not shipped): the groups first without
++        // the view (whether a group exists does not read the view: only the
++        // members' key df does); no group, no view. With a group, the view
++        // is built as before, and the groups are computed again with it
++        // only when it hides something.
++        const precheck = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = null, .options = options }, tokens, options);
++        const merged = try fold.merge(allocator, precheck.folded, precheck.expanded);
++        const found = merged orelse return null;
++        var view = (try scope.visibleCollection(allocator, engine.lexical_index, engine.documents, engine.statistics, engine.labeled_documents, options.visible_roots, options.principal_labels)) orelse return found;
++        defer view.deinit(allocator);
++        found.deinit(allocator);
+         const computed = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens, options);
+         return fold.merge(allocator, computed.folded, computed.expanded);
+     }

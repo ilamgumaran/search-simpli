@@ -1,0 +1,77 @@
+--- base-main/zig/src/scope.zig	2026-11-13 23:57:40
++++ ctl2/zig/src/scope.zig	2026-11-14 10:33:14
+@@ -264,7 +264,10 @@
+     mask: ?hybrid.RootMask,
+     labels: []const []const u8,
+ ) !?View {
+-    if (mask == null and labeled_documents != null and !labeled_documents.?) return null;
++    if (labeled_documents != null and !labeled_documents.?) {
++        if (mask == null) return null;
++        if (mask.?.spareEvery(documents.len)) return null;
++    }
+     var count: u64 = 0;
+     var total: u64 = 0;
+     var visible_groups: []bool = &.{};
+@@ -529,6 +532,8 @@
+     skipped: []const manifest.PendingEntry = &.{},
+     chunkers: []const manifest.ChunkerEntry = &.{},
+     document_roots: []const u16,
++    /// Control C2: set at build, read only by `mask`'s never-true condition.
++    every_document_spare: bool = false,
+     has_positions: bool = false,
+     /// The manifest binds a source section.
+     source_bound: bool = false,
+@@ -545,7 +550,11 @@
+         const roots: []const manifest.RootEntry = if (meta) |m| m.roots else &legacy_roots;
+         const documents = loads.documents;
+         const document_roots = try allocator.alloc(u16, documents.len);
+-        for (documents, document_roots) |document, *root| root.* = rootOfPath(roots, document.path) orelse no_root;
++        var every_document_spare = true;
++        for (documents, document_roots) |document, *root| {
++            root.* = rootOfPath(roots, document.path) orelse no_root;
++            if (root.* == no_root) every_document_spare = false;
++        }
+         loads.document_roots = document_roots;
+         loads.root_count = roots.len;
+         return .{
+@@ -555,6 +564,7 @@
+             .skipped = if (meta) |m| m.skipped else &.{},
+             .chunkers = if (meta) |m| m.chunkers else &.{},
+             .document_roots = document_roots,
++            .every_document_spare = every_document_spare,
+             .loads = loads,
+         };
+     }
+@@ -798,7 +808,7 @@
+ 
+     /// The root mask for `request` (`allowed` from `allowedRoots`).
+     pub fn mask(folder: Folder, allowed: []const bool) hybrid.RootMask {
+-        return .{ .document_roots = folder.document_roots, .allowed = allowed };
++        return .{ .document_roots = folder.document_roots, .allowed = allowed, .spare = folder.every_document_spare and allowed.len == folder.roots.len + 1 };
+     }
+ 
+     /// The ordinal of the root `root_id` when `request` may see it.
+--- base-main/zig/src/hybrid.zig	2026-11-13 23:57:40
++++ ctl2/zig/src/hybrid.zig	2026-11-14 10:33:14
+@@ -65,12 +65,21 @@
+ pub const RootMask = struct {
+     document_roots: []const u16,
+     allowed: []const bool,
++    /// Verifier placement control C2 (not shipped): never set true.
++    spare: bool = false,
+ 
+     pub fn allows(mask: RootMask, document_index: usize) bool {
+         if (document_index >= mask.document_roots.len) return false;
+         const root = mask.document_roots[document_index];
+         return root < mask.allowed.len and mask.allowed[root];
+     }
++
++    /// Control C2: false unless `spare` (never set).
++    pub fn spareEvery(mask: RootMask, document_count: usize) bool {
++        if (!mask.spare or mask.document_roots.len < document_count) return false;
++        for (mask.allowed) |allowed| if (!allowed) return false;
++        return true;
++    }
+ };
+ 
+ /// Whether document `document_index` is inside the request's scope: its root

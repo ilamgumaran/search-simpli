@@ -1,0 +1,11 @@
+--- engine-104d7cd.zig	2026-11-14 09:42:32
++++ pfb/tree/zig/src/engine.zig	2026-11-14 09:33:19
+@@ -405,7 +405,7 @@
+         // S5-T12: the view only feeds the members' key df, so it is built at
+         // the first key df read (`scope.LazyView`), at most once: a query
+         // whose words form no group reads none, and walks nothing.
+-        var lazy = scope.LazyView{ .allocator = allocator, .index = engine.lexical_index, .documents = engine.documents, .statistics = engine.statistics, .labeled_documents = engine.labeled_documents, .mask = options.visible_roots, .labels = options.principal_labels };
++        var lazy = scope.LazyView{ .allocator = allocator, .index = engine.lexical_index, .documents = engine.documents, .statistics = engine.statistics, .labeled_documents = engine.labeled_documents, .mask = null, .labels = options.principal_labels }; // PLANT P2: wrong scope
+         defer lazy.deinit();
+         const computed = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .lazy = &lazy, .options = options }, tokens, options);
+         return fold.merge(allocator, computed.folded, computed.expanded);

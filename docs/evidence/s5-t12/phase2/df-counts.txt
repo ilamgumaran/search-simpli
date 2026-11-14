@@ -1,0 +1,73 @@
+documentFrequency calls per query (instrumented ReleaseSmall builds: cntm = c674a9c, cnt2 = 8536159, cnt2b = 104d7cd's engine; one std.debug.print per call), one call each, the two-root snapshot, roots [r-left] unless the workload is both (one root, unscoped)
+both-scoped | bazecha | cntm | bazecha x1; 
+both-scoped | bazecha | cnt2 | 
+both-scoped | bazecha | cnt2b | 
+both-scoped | benico | cntm | benico x1; 
+both-scoped | benico | cnt2 | 
+both-scoped | benico | cnt2b | 
+both-scoped | system | cntm | system x1; systems x1; 
+both-scoped | system | cnt2 | system x1; systems x1; 
+both-scoped | system | cnt2b | system x1; systems x1; 
+both-scoped | hashing | cntm | hash x1; hashing x2; 
+both-scoped | hashing | cnt2 | hash x2; hashing x2; 
+both-scoped | hashing | cnt2b | hash x1; hashing x2; 
+both-scoped | hybrid retrieval | cntm | hybrid x1; retrieval x1; 
+both-scoped | hybrid retrieval | cnt2 | 
+both-scoped | hybrid retrieval | cnt2b | 
+both-scoped | retrieval hybrid | cntm | hybrid x1; retrieval x1; 
+both-scoped | retrieval hybrid | cnt2 | 
+both-scoped | retrieval hybrid | cnt2b | 
+both-scoped | system systems | cntm | system x2; systems x2; 
+both-scoped | system systems | cnt2 | system x2; systems x2; 
+both-scoped | system systems | cnt2b | system x2; systems x2; 
+both-scoped | systems system | cntm | system x2; systems x2; 
+both-scoped | systems system | cnt2 | system x2; systems x2; 
+both-scoped | systems system | cnt2b | system x2; systems x2; 
+content-scoped | bazecha | cntm | bazecha x2; 
+content-scoped | bazecha | cnt2 | bazecha x1; 
+content-scoped | bazecha | cnt2b | bazecha x1; 
+content-scoped | benico | cntm | benico x2; 
+content-scoped | benico | cnt2 | benico x1; 
+content-scoped | benico | cnt2b | benico x1; 
+content-scoped | system | cntm | system x2; systems x1; 
+content-scoped | system | cnt2 | system x2; systems x1; 
+content-scoped | system | cnt2b | system x2; systems x1; 
+content-scoped | hashing | cntm | hash x1; hashing x3; 
+content-scoped | hashing | cnt2 | hash x2; hashing x3; 
+content-scoped | hashing | cnt2b | hash x1; hashing x3; 
+content-scoped | hybrid retrieval | cntm | hybrid x2; retrieval x2; 
+content-scoped | hybrid retrieval | cnt2 | hybrid x1; retrieval x1; 
+content-scoped | hybrid retrieval | cnt2b | hybrid x1; retrieval x1; 
+content-scoped | retrieval hybrid | cntm | hybrid x2; retrieval x2; 
+content-scoped | retrieval hybrid | cnt2 | hybrid x1; retrieval x1; 
+content-scoped | retrieval hybrid | cnt2b | hybrid x1; retrieval x1; 
+content-scoped | system systems | cntm | system x3; systems x3; 
+content-scoped | system systems | cnt2 | system x3; systems x3; 
+content-scoped | system systems | cnt2b | system x3; systems x3; 
+content-scoped | systems system | cntm | system x3; systems x3; 
+content-scoped | systems system | cnt2 | system x3; systems x3; 
+content-scoped | systems system | cnt2b | system x3; systems x3; 
+both | bazecha | cntm | 
+both | bazecha | cnt2 | 
+both | bazecha | cnt2b | 
+both | benico | cntm | 
+both | benico | cnt2 | 
+both | benico | cnt2b | 
+both | system | cntm | 
+both | system | cnt2 | 
+both | system | cnt2b | 
+both | hashing | cntm | 
+both | hashing | cnt2 | 
+both | hashing | cnt2b | 
+both | hybrid retrieval | cntm | 
+both | hybrid retrieval | cnt2 | 
+both | hybrid retrieval | cnt2b | 
+both | retrieval hybrid | cntm | 
+both | retrieval hybrid | cnt2 | 
+both | retrieval hybrid | cnt2b | 
+both | system systems | cntm | 
+both | system systems | cnt2 | 
+both | system systems | cnt2b | 
+both | systems system | cntm | 
+both | systems system | cnt2 | 
+both | systems system | cnt2b | 

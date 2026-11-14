@@ -1,0 +1,8 @@
+NFR-13 peak lines, ReleaseSmall with SEARCH_SIMPLI_NFR13_SCALE=1: c674a9c (447/447) against 5f02074 (449/449), same Mac and session; every differing number (head - main, B). Every other number on every line is equal.
++8 find: S4-T1 NFR-13 family-folder under a 67108864 B cap
++262 find: S4-T1 NFR-13 10k generated under a 67108864 B cap
++262 find: S4-T1 NFR-13 10k filename and lazy tables under a 67108864 B cap
++262 find: S4-T8 NFR-13 scale 15000 files
++262 find: S4-T9 NFR-13 scale 15000 files
++262 find: S4-T8 NFR-13 scale 20000 files
++262 find: S4-T9 NFR-13 scale 20000 files

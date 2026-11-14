@@ -1,0 +1,18 @@
+--- ctl2/zig/src/scope.zig	2026-11-14 10:33:14
++++ cnt-ctl2/zig/src/scope.zig	2026-11-14 10:34:41
+@@ -268,6 +268,7 @@
+         if (mask == null) return null;
+         if (mask.?.spareEvery(documents.len)) return null;
+     }
++    std.debug.print("WALK\n", .{});
+     var count: u64 = 0;
+     var total: u64 = 0;
+     var visible_groups: []bool = &.{};
+@@ -327,6 +328,7 @@
+ 
+ /// `entry`'s document frequency within the view's scope.
+ pub fn documentFrequency(view: View, index: postings.Index, documents: []const hybrid.Document, entry: postings.TermEntry) u32 {
++    std.debug.print("DF {s}\n", .{entry.term});
+     const list = index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
+     if (view.statistics) |stats| {
+         if (termIndex(index, entry)) |term_index| {

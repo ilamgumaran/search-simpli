@@ -1,0 +1,15 @@
+P1, the eager build put back (on 104d7cd, full git archive, own caches):
+error: 'both_view_test.test.the lazy view: under a scope that hides a root, a both query walks once when its words form a group and not at all when they form none' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 441/451 tests passed (9 skipped, 1 failed)
+
+P2, the lazy view built from the wrong scope (on 104d7cd, full git archive, own caches):
+error: 'both_view_test.test.the lazy view: under a scope that hides a root, a both query walks once when its words form a group and not at all when they form none' failed:
+error: 'both_view_test.test.the lazy view is the request's: key df order and verb-form admission as the content path's view gives them' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 440/451 tests passed (9 skipped, 2 failed)
+
+P3 (on 8536159):
+error: 'apply_test.test.S3-T3: a hidden label domain inside one root is indistinguishable from absent in every payload' failed:
+error: 'apply_test.test.S3-T3: a root with more than 64 label sets counts exactly and scores like the visible corpus' failed:
+error: 'both_view_test.test.the check: no walk exactly when no record is labelled and the mask allows every root of every document; the walk's answer in every case' failed:
+error: 'both_view_test.test.the check through the engine: an unscoped both or content query with every root allowed walks nothing' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 438/451 tests passed (9 skipped, 4 failed)

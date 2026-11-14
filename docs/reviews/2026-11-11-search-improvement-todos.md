@@ -260,6 +260,15 @@ abstention threshold before the negative corpus and capability gates exist.
 
 ## R07 — Reduce measured `both` overhead
 
+**S5-T12 ([task](../tasks/S5-T12.md); landed, part 1 only: verified and merged to `main` 14 Nov 2026):** steps 1
+and 3 (measured on `main` first: the walk `both` discarded is the cost), and the overhead R07 names.
+`scope.visibleCollection` no longer walks when no record carries a label and the mask allows every root of every
+document (`RootMask.allowsEvery`), which is every `both` query on a folder without labels with every root asked
+for: −0.030 to −0.033 ms on the 10k timing corpus, beyond the noise band of two placement controls in both of the
+verifier's runs. Under a scope that hides something nothing changes. The lazy view of step 2 (part 2) failed the
+noise rule fixed before it was measured, did not ship, and is a 03-next row; `filename_field.zig`'s profile stays open on the S5-T4 row.
+Groups, warnings, scores, ties and visibility are byte-identical (29,376 `searchd` requests, J2, goldens).
+
 **Evidence:** [Engine.bothGroups](../../zig/src/engine.zig), around lines
 397–408, builds `scope.visibleCollection` before knowing whether expansion needs
 it. The queue records a no-trigger `bazecha` cost of roughly 0.053–0.059 →

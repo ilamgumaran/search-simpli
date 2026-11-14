@@ -1,0 +1,5 @@
+compare searchd (main.json) with searchd (head.json)
+search_field content: 0 queries differ
+  none
+search_field both: 0 queries differ
+  none

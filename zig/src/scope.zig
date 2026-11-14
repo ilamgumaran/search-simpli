@@ -251,10 +251,20 @@ fn documentVisible(documents: []const hybrid.Document, document_index: usize, ma
     return hybrid.isAuthorized(documents[document_index].required_labels, labels);
 }
 
+/// S5-T12: how many times `visibleCollection` walked the documents or the
+/// statistics groups (counted in test builds only, for the regression tests
+/// of `both_view_test.zig`; always 0 otherwise).
+pub var visible_walks: usize = 0;
+
 /// The visible scope's collection statistics, or null when every document is
 /// visible (the caller then uses the index's own values, bit for bit).
 /// `labeled_documents == false` (no record carries a label) with no root
-/// mask is known to hide nothing without looking at any document.
+/// mask is known to hide nothing without looking at any document. S5-T12:
+/// so is `labeled_documents == false` with a mask that allows every root of
+/// every document (`RootMask.allowsEvery`): each document is then allowed by
+/// the mask and authorized (it requires no label), so the walk below would
+/// count every document and return null. In every other case the walk runs
+/// as before (and may still return null).
 pub fn visibleCollection(
     allocator: std.mem.Allocator,
     index: postings.Index,
@@ -264,7 +274,11 @@ pub fn visibleCollection(
     mask: ?hybrid.RootMask,
     labels: []const []const u8,
 ) !?View {
-    if (mask == null and labeled_documents != null and !labeled_documents.?) return null;
+    if (labeled_documents != null and !labeled_documents.?) {
+        if (mask == null) return null;
+        if (mask.?.allowsEvery(documents.len)) return null;
+    }
+    if (@import("builtin").is_test) visible_walks += 1;
     var count: u64 = 0;
     var total: u64 = 0;
     var visible_groups: []bool = &.{};
@@ -529,6 +543,9 @@ pub const Folder = struct {
     skipped: []const manifest.PendingEntry = &.{},
     chunkers: []const manifest.ChunkerEntry = &.{},
     document_roots: []const u16,
+    /// S5-T12: every document's path is in one of `roots` (no entry of
+    /// `document_roots` is `no_root`), as `build` found; false when not known.
+    every_document_rooted: bool = false,
     has_positions: bool = false,
     /// The manifest binds a source section.
     source_bound: bool = false,
@@ -545,7 +562,11 @@ pub const Folder = struct {
         const roots: []const manifest.RootEntry = if (meta) |m| m.roots else &legacy_roots;
         const documents = loads.documents;
         const document_roots = try allocator.alloc(u16, documents.len);
-        for (documents, document_roots) |document, *root| root.* = rootOfPath(roots, document.path) orelse no_root;
+        var every_document_rooted = true;
+        for (documents, document_roots) |document, *root| {
+            root.* = rootOfPath(roots, document.path) orelse no_root;
+            if (root.* == no_root) every_document_rooted = false;
+        }
         loads.document_roots = document_roots;
         loads.root_count = roots.len;
         return .{
@@ -555,6 +576,7 @@ pub const Folder = struct {
             .skipped = if (meta) |m| m.skipped else &.{},
             .chunkers = if (meta) |m| m.chunkers else &.{},
             .document_roots = document_roots,
+            .every_document_rooted = every_document_rooted,
             .loads = loads,
         };
     }
@@ -798,7 +820,7 @@ pub const Folder = struct {
 
     /// The root mask for `request` (`allowed` from `allowedRoots`).
     pub fn mask(folder: Folder, allowed: []const bool) hybrid.RootMask {
-        return .{ .document_roots = folder.document_roots, .allowed = allowed };
+        return .{ .document_roots = folder.document_roots, .allowed = allowed, .rooted = folder.every_document_rooted and allowed.len == folder.roots.len };
     }
 
     /// The ordinal of the root `root_id` when `request` may see it.

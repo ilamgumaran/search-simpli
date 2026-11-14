@@ -65,11 +65,25 @@ pub const SearchOptions = struct {
 pub const RootMask = struct {
     document_roots: []const u16,
     allowed: []const bool,
+    /// S5-T12: every entry of `document_roots` is known to be below
+    /// `allowed.len` (`scope.Folder.mask` sets it; false = not known, and
+    /// `allowsEvery` then answers false).
+    rooted: bool = false,
 
     pub fn allows(mask: RootMask, document_index: usize) bool {
         if (document_index >= mask.document_roots.len) return false;
         const root = mask.document_roots[document_index];
         return root < mask.allowed.len and mask.allowed[root];
+    }
+
+    /// S5-T12: true only when `allows(i)` holds for every `i <
+    /// document_count`, established without reading `document_roots`: the
+    /// mask covers that many documents, each one's root is known to be in
+    /// range (`rooted`), and every root is allowed. False says nothing.
+    pub fn allowsEvery(mask: RootMask, document_count: usize) bool {
+        if (!mask.rooted or mask.document_roots.len < document_count) return false;
+        for (mask.allowed) |allowed| if (!allowed) return false;
+        return true;
     }
 };
 

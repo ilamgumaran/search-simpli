@@ -1,0 +1,11 @@
+--- a/zig/src/hybrid.zig	2026-11-14 08:53:19
++++ zig/src/hybrid.zig	2026-11-14 10:27:50
+@@ -81,7 +81,7 @@
+     /// mask covers that many documents, each one's root is known to be in
+     /// range (`rooted`), and every root is allowed. False says nothing.
+     pub fn allowsEvery(mask: RootMask, document_count: usize) bool {
+-        if (!mask.rooted or mask.document_roots.len < document_count) return false;
++        if (mask.document_roots.len < document_count) return false; // PLANT R1: `rooted` ignored
+         for (mask.allowed) |allowed| if (!allowed) return false;
+         return true;
+     }

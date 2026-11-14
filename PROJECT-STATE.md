@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-13 (S5-T11, `searchd apply --filename-index` creates a fresh multi-root index with the file-name channel in one operation, review R08; CLI only, contracts 2.7.0 and Dart 0.8.0 unchanged; verified and merged 2026-11-13 EST as `1fde599`)
+Last updated: 2026-11-14 (S5-T12, `both` no longer walks the scope when nothing can be hidden, review R07; part 1 alone after the re-ruling (the lazy view failed the fixed noise rule and was reverted); engine only, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; verified and merged 2026-11-14 EST)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,32 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## `both` skips the scope walk when nothing can be hidden (S5-T12, review R07, 2026-11-14; part 1 alone after the re-ruling; verified and merged)
+
+**Verified and merged 14 Nov, part 1 alone** (the second [Verdict](docs/tasks/S5-T12.md), PASS on `865d060` by item 3 of the re-ruling): no cell exceeds the noise band of `main2` and two placement controls the verifier wrote, in either of two ten-round runs; every unscoped `both` query −0.030 to −0.033 ms beyond the band in both. Equivalence 29,376 requests 0 differ, J2 and goldens unchanged, plants caught, natives `cmp`-equal, CI green. The rule was changed after the first Verdict failed; the re-ruling names that to the maintainer.
+
+**Verifier, 14 Nov:** FAIL for part 2 ([Verdict](docs/tasks/S5-T12.md)), not merged. The rule of the Phase 2 rulings (slower when shipped − `main` exceeds the run's largest noise median, in both of two runs) flags the verifier's held-out `scheduler` under `both-scoped`: +0.0039 and +0.0031 ms, against +0.0022 and +0.0019. The counted work there is equal to `main`'s (one walk, one df read). Part 1 alone is flagged by the same rule on `both-scoped` `system`. Behaviour identical (29,376 requests, J2, goldens), natives `cmp`-equal, suites and CI green. The fallback is the orchestrator's to rule.
+
+**Re-ruling and rework, 14 Nov:** part 2 does not ship. The builder reverted it (`1cd1591` reverts `104d7cd`, `edca128`
+reverts `8536159`), so the engine is part 1's (`a17c415`) byte for byte. The verifier re-measures part 1 with placement
+controls under the rule of the re-ruling. [Task, Report and evidence](docs/tasks/S5-T12.md) (`docs/evidence/s5-t12/`).
+Engine only (`hybrid.zig`, `scope.zig`); no policy id, contract, C ABI, Dart API or format change; contracts 2.7.0 and
+Dart 0.8.0 unchanged. The natives are rebuilt, so the app needs a pin to carry it.
+
+- **The check.** `scope.visibleCollection` returns "everything visible" without walking the chunks when the index has
+  no labelled record and the mask allows every root of every document (`RootMask.allowsEvery`; `Folder.mask` marks a
+  mask whose every document has a root). In every other case the walk runs as before. `both_view_test.zig` holds the
+  check to the walk's answer, including a labelled record under an all-roots mask, a mask that hides one root, a
+  document in no root and a short mask, and counts the walks through the engine: 0 when nothing can be hidden, 1 per
+  `both` or `content` query under a hiding mask, a labelled record or a record in no root.
+- **Under a hiding scope nothing changes:** `both` builds the view on every query, as before. The lazy view and its
+  measurements are a 03-next row.
+- **Measured** (the builder's Phase 2 runs, 10k timing corpus, `ReleaseSmall`): every unscoped `both` query −0.031 to
+  −0.034 ms with part 1 alone. Behaviour identical: every answer byte-identical, J2 unchanged on both surfaces, goldens
+  byte-identical, 3,480 `searchd` requests equal to `main`'s.
+- **Natives:** macOS 954,120 B, Android 916,928 B, iOS framework binary 918,664 B; `native/SOURCE-SHA256`
+  `7bb71531…`.
 
 ## One `apply` creates a fresh multi-root index with the file-name channel (S5-T11, review R08, 2026-11-13; verified and merged)
 

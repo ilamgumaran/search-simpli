@@ -923,3 +923,44 @@ Details: [S5-T8](docs/tasks/S5-T8.md), [fold-groups-v3](docs/fold-groups-v3.md),
 [fuzzy-v2](docs/tasks/S5-T8-prototype.md). Status: re-ruled before its merge; verified and merged
 (the verifier reproduced the head's J2 cells against `main`, the negatives, the natives and the bounds, and the
 prefix rule planted on the head fails the gate through `misspelling-opening`).
+
+## 2026-11-14 — The scope view `both` threw away (S5-T12, review R07)
+
+**Hypothesis:** Every `both` query pays for a visible-collection walk whose answer it then discards, because `ss_query`
+always passes a root mask under `both` and the walk is the only way `scope.visibleCollection` learns that nothing is
+hidden. A check that needs no walk (no record carries a label and the mask allows every root of every document), and
+under a scope that does hide something a view built only when a key df is read, remove that cost and change no answer.
+
+**Setup:** Main `c674a9c`; engine files `hybrid.zig`, `scope.zig`, `fuzzy.zig`, `fold.zig`, `engine.zig` and a new
+`both_view_test.zig`. The 10k timing corpus (`gen_timing_corpus.py`, invented content) as one root with the file-name
+channel, and as two roots (`r-left`, `r-right`) for a mask that hides one. `ReleaseSmall` libraries, each from its own
+`git archive` with its own Zig caches; Phase 1's ctypes bench (20 warm-ups, the p50 of 300 calls, `top_k` 10,
+lexical); eight rounds with the libraries rotated; S4-T18's load gate before every start; a second build of `main` for
+the noise. Zig 0.16.0, macOS arm64. Raw data: `docs/evidence/s5-t12/`.
+
+**Observation:** Phase 1: skipping the walk when no word triggers saves 0.0281 ms on `bazecha`, and every `both` query
+pays about the same. Phase 2, two acceptance runs: every unscoped `both` query −0.029 to −0.034 ms (`bazecha` 0.1389 →
+0.1089), every root allowed on the two-root index the same, a scoped `both` query with no group −0.028 to −0.033;
+scoped grouped `both` +0.0005 to +0.0036 and `content` −0.0012 to +0.0030, against noise medians of −0.0017 to +0.0018
+and per-round noise within ±0.0087. The first lazy view (`8536159`) made the scoped grouped queries +0.005 to +0.008
+slower than the check alone and was rejected; the shipped one (`104d7cd`) reads exactly the key dfs `main` reads
+(counted per query). An extra line that does the same work (`part2e`) moved queries by +0.004 to +0.016 ms, so code
+placement moves these figures by about the size of the grouped cells' excursions. Every answer is byte-identical;
+J2 unchanged on both surfaces; 3,480 `searchd` requests identical; a labelled file is never cited without its label.
+
+**Did not prove:** No phone measurement. The grouped scoped cells sit at the edge of the noise: whether a +0.002 to
++0.003 ms excursion on one run is the change or the layout is not separable with a same-binary noise build. `filename_field`'s
+touched-chunk cost for a frequent group ((b), about 0.01–0.02 ms by subtraction) was not built or profiled.
+
+**Conclusion (amended after the re-ruling, 14 Nov):** The walk is skipped whenever nothing can be hidden (part 1,
+`a17c415`), which removes the overhead R07 names from every unscoped `both` query. The lazy view for a scope that does
+hide something (part 2) failed the noise rule fixed before the verifier measured: its held-out `scheduler` under a
+hiding mask was +0.0039 and +0.0031 ms against top noise medians of +0.0022 and +0.0019, with equal counted work. Part 2
+was reverted (`1cd1591`, `edca128`) and is a 03-next row, with the verifier's test gap (a lazy view built without the
+caller's labels passes every Zig test). A same-binary noise build measures process noise, not code placement, so the
+re-measurement of part 1 uses placement controls the verifier writes. Details: [S5-T12](docs/tasks/S5-T12.md). Status:
+the verifier's Verdict was FAIL for part 2 by the rule fixed before it measured (`both-scoped` `scheduler` above the
+top noise median in both runs; part 1 alone flagged on `both-scoped` `system`), not merged; part 1 alone reworked, then
+verified and merged 14 Nov (the second Verdict, PASS on `865d060`: no cell above the band of `main2` and two placement
+controls in either of two ten-round runs; the unscoped saving −0.030 to −0.033 ms beyond it in both); R07 landed, part 1
+only.
