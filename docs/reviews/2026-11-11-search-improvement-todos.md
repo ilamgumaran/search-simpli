@@ -288,7 +288,7 @@ map compaction needs its own measured target before adding cache machinery.
 
 ## R08 — One operation for a fresh multi-root filename index
 
-**S5-T11 ([task](../tasks/S5-T11.md); landed: verified and merged to `main` 13 Nov 2026):** steps 1–3.
+**S5-T11 ([task](../tasks/S5-T11.md); landed: verified and merged to `main` 13 Nov 2026 as `1fde599`):** steps 1–3.
 `searchd apply <dir> --changes <file> --filename-index` is the CLI spelling of
 the core's existing `filename_index` (no request, wire or contract field): a
 directory with no index gets exactly the requested roots at its first

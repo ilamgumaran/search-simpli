@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-13 (S5-T11, `searchd apply --filename-index` creates a fresh multi-root index with the file-name channel in one operation, review R08; CLI only, contracts 2.7.0 and Dart 0.8.0 unchanged; verified and merged 2026-11-13 EST)
+Last updated: 2026-11-13 (S5-T11, `searchd apply --filename-index` creates a fresh multi-root index with the file-name channel in one operation, review R08; CLI only, contracts 2.7.0 and Dart 0.8.0 unchanged; verified and merged 2026-11-13 EST as `1fde599`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -17,7 +17,7 @@ or implementation tasks; current search behavior and native artifacts are unchan
 
 ## One `apply` creates a fresh multi-root index with the file-name channel (S5-T11, review R08, 2026-11-13; verified and merged)
 
-Verified and merged 13 Nov ([task, Report and Verdicts](docs/tasks/S5-T11.md)): the verifier's first Verdict failed one new
+Verified and merged 13 Nov as `1fde599` ([task, Report and Verdicts](docs/tasks/S5-T11.md)): the verifier's first Verdict failed one new
 process test that compared the report's wall-clock `ms` (CI red); after the rework (that comparison only) the test passed
 60 of 60 runs in each build mode, both Python suites 423 OK, CI green. Every case, both crash points (by `SIGKILL`), the
 byte identity with `main`'s binary without the flag, the J2 equivalence and both plants were reproduced by the verifier. CLI only: `zig/src/cli.zig`; no engine, format,
