@@ -730,12 +730,16 @@ fn member(context: fuzzy.Context, candidate: Numbered) ?fuzzy.Member {
 }
 
 /// A group's members as `compute` collects them, each with the body entry
-/// its key df is read from (`member`), until the group is kept.
+/// its key df is read from (`member`), until the group is kept; a verb form
+/// whose df was read to compare it with a held word's keeps that df, so no
+/// key df is read twice.
 const Collected = struct {
     members: std.ArrayList(fuzzy.Member) = .empty,
-    sources: std.ArrayList(?postings.TermEntry) = .empty,
+    sources: std.ArrayList(Source) = .empty,
 
-    fn append(collected: *Collected, allocator: std.mem.Allocator, m: fuzzy.Member, source: ?postings.TermEntry) !void {
+    const Source = struct { entry: ?postings.TermEntry, key_df: ?u32 = null };
+
+    fn append(collected: *Collected, allocator: std.mem.Allocator, m: fuzzy.Member, source: Source) !void {
         try collected.members.append(allocator, m);
         try collected.sources.append(allocator, source);
     }
@@ -752,7 +756,7 @@ const Collected = struct {
 
     /// Each member's key df (`member`'s rule), for a kept group.
     fn keyFrequencies(collected: *Collected, context: fuzzy.Context) !void {
-        for (collected.members.items, collected.sources.items) |*m, source| m.key_df = try keyFrequencyOf(context, source);
+        for (collected.members.items, collected.sources.items) |*m, source| m.key_df = source.key_df orelse try keyFrequencyOf(context, source.entry);
     }
 };
 
@@ -819,14 +823,16 @@ fn appendVerbForms(allocator: std.mem.Allocator, context: fuzzy.Context, keyer: 
         if (listed(collected.members.items, candidate.bytes)) continue;
         var m = member(context, candidate) orelse continue;
         if (held == null) held = heldOf(context, token);
+        var source = Collected.Source{ .entry = candidate.body };
         if (held.?.held) {
             if (held.?.key_df == null) held.?.key_df = try keyFrequencyOf(context, held.?.entry);
-            if (try keyFrequencyOf(context, candidate.body) > held.?.key_df.?) continue;
+            source.key_df = try keyFrequencyOf(context, candidate.body);
+            if (source.key_df.? > held.?.key_df.?) continue;
             m.weight = verb_form_held_weight;
         } else {
             m.weight = verb_form_unheld_weight;
         }
-        try collected.append(allocator, m, candidate.body);
+        try collected.append(allocator, m, source);
     }
 }
 
@@ -873,12 +879,12 @@ pub fn compute(allocator: std.mem.Allocator, context: fuzzy.Context, map: *const
         if (self) |candidate| {
             kk.clearRetainingCapacity();
             try keyer.appendKey(candidate.bytes, &kk);
-            if (std.mem.eql(u8, kk.items, k.items)) if (member(context, candidate)) |m| try collected.append(allocator, m, candidate.body);
+            if (std.mem.eql(u8, kk.items, k.items)) if (member(context, candidate)) |m| try collected.append(allocator, m, .{ .entry = candidate.body });
         }
         const r = map.range(k.items);
         for (map.term_of[r.start..r.end]) |i| {
             const candidate = numbered(context, map, i);
-            if (member(context, candidate)) |m| try collected.append(allocator, m, candidate.body);
+            if (member(context, candidate)) |m| try collected.append(allocator, m, .{ .entry = candidate.body });
         }
         try appendVerbForms(allocator, context, &keyer, &word, token, &collected);
         const members = collected.members.items;
