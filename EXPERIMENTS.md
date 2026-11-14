@@ -952,7 +952,13 @@ J2 unchanged on both surfaces; 3,480 `searchd` requests identical; a labelled fi
 +0.003 ms excursion on one run is the change or the layout is not separable with a same-binary noise build. `filename_field`'s
 touched-chunk cost for a frequent group ((b), about 0.01–0.02 ms by subtraction) was not built or profiled.
 
-**Conclusion:** The walk is now skipped whenever nothing can be hidden, and built at most once, on demand, when
-something can. Details: [S5-T12](docs/tasks/S5-T12.md). Status: built; the verifier's Verdict is FAIL for part 2 by the rule fixed before it measured
-(`both-scoped` `scheduler` above the top noise median in both runs; part 1 alone flagged on `both-scoped` `system`), not
-merged; R07 not landed.
+**Conclusion (amended after the re-ruling, 14 Nov):** The walk is skipped whenever nothing can be hidden (part 1,
+`a17c415`), which removes the overhead R07 names from every unscoped `both` query. The lazy view for a scope that does
+hide something (part 2) failed the noise rule fixed before the verifier measured: its held-out `scheduler` under a
+hiding mask was +0.0039 and +0.0031 ms against top noise medians of +0.0022 and +0.0019, with equal counted work. Part 2
+was reverted (`1cd1591`, `edca128`) and is a 03-next row, with the verifier's test gap (a lazy view built without the
+caller's labels passes every Zig test). A same-binary noise build measures process noise, not code placement, so the
+re-measurement of part 1 uses placement controls the verifier writes. Details: [S5-T12](docs/tasks/S5-T12.md). Status:
+the verifier's Verdict was FAIL for part 2 by the rule fixed before it measured (`both-scoped` `scheduler` above the
+top noise median in both runs; part 1 alone flagged on `both-scoped` `system`), not merged; part 1 alone reworked and
+awaiting re-verification; R07 not landed.
