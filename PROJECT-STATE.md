@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-13 (S5-T11, `searchd apply --filename-index` creates a fresh multi-root index with the file-name channel in one operation, review R08; CLI only, contracts 2.7.0 and Dart 0.8.0 unchanged; verified and merged 2026-11-13 EST as `1fde599`)
+Last updated: 2026-11-14 (S5-T12, `both` no longer walks the scope when nothing can be hidden and builds the view lazily when something can, review R07; engine only, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; built, awaiting verification)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,28 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## `both` skips the scope walk when nothing can be hidden (S5-T12, review R07, 2026-11-14; built, awaiting verification)
+
+[Task, Report and evidence](docs/tasks/S5-T12.md) (`docs/evidence/s5-t12/`). Engine only (`hybrid.zig`, `scope.zig`,
+`fuzzy.zig`, `fold.zig`, `engine.zig`); no policy id, contract, C ABI, Dart API or format change; contracts 2.7.0 and
+Dart 0.8.0 unchanged. The natives are rebuilt, so the app needs a pin to carry it.
+
+- **The check.** `scope.visibleCollection` returns "everything visible" without walking the chunks when the index has
+  no labelled record and the mask allows every root of every document (`RootMask.allowsEvery`; `Folder.mask` marks a
+  mask whose every document has a root). In every other case the walk runs as before. `both_view_test.zig` holds the
+  check to the walk's answer, including a labelled record under an all-roots mask, a mask that hides one root, a
+  document in no root and a short mask.
+- **The lazy view.** `Engine.bothGroups` passes a `scope.LazyView`: the view is built at the first key df read (a kept
+  group, or a verb form compared with a held word), at most once per query. `fold.compute` reads a member's key df only
+  once its group is kept and reuses a compared one. A test counts the walks: none for an unscoped `both` or `content`
+  query, none for a scoped one with no group, one for a scoped grouped one.
+- **Measured** (10k timing corpus, `ReleaseSmall`, two runs of eight rotated rounds under the load gate): every
+  unscoped `both` query −0.029 to −0.034 ms; a scoped `both` query with no group −0.028 to −0.033 ms; the grouped
+  scoped and `content` queries within +0.0036 ms (noise medians −0.0017 to +0.0018). Every answer byte-identical,
+  J2 unchanged on both surfaces, goldens byte-identical.
+- **Natives:** macOS 953,688 B, Android 919,184 B, iOS framework binary 934,808 B; `native/SOURCE-SHA256`
+  `6e0aa601…`.
 
 ## One `apply` creates a fresh multi-root index with the file-name channel (S5-T11, review R08, 2026-11-13; verified and merged)
 
