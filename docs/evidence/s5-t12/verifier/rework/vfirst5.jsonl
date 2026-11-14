@@ -1,0 +1,700 @@
+{"variant": "main", "round": 1, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.311958000000004, "min_ms": 4.167208000000006, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-filename", "query": "system", "p50_ms": 4.310374999999977, "min_ms": 4.184666999999975, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.2295420000000306, "min_ms": 4.16987499999999, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.19312500000002, "min_ms": 4.153666, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.237500000000005, "min_ms": 4.1449159999999985, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.20733299999998, "min_ms": 4.119375000000147, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.225334000000025, "min_ms": 4.162707999999959, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.333625000000008, "min_ms": 4.115332999999999, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-plain", "query": "system", "p50_ms": 4.327875000000036, "min_ms": 4.202082999999968, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.306124999999994, "min_ms": 4.186416999999998, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.262917000000033, "min_ms": 4.159875000000035, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.255415999999901, "min_ms": 4.163541999999909, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.321125000000148, "min_ms": 4.1919169999999895, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 1, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.256625000000014, "min_ms": 4.147709000000166, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.3713340000000045, "min_ms": 4.162791000000027, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-filename", "query": "system", "p50_ms": 4.380208999999969, "min_ms": 4.186000000000023, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.310874999999936, "min_ms": 4.163582999999971, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.223084000000044, "min_ms": 4.145041000000016, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.305166999999943, "min_ms": 4.1606659999999795, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.248500000000099, "min_ms": 4.148374999999982, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.2993339999999325, "min_ms": 4.101249999999945, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.319415999999992, "min_ms": 4.2247909999999775, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-plain", "query": "system", "p50_ms": 4.309958000000003, "min_ms": 4.138334000000022, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.321208000000021, "min_ms": 4.210708999999979, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.307458999999958, "min_ms": 4.129082999999922, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.333417000000006, "min_ms": 4.17433300000003, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.330582999999999, "min_ms": 4.185666000000143, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 1, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.273457999999897, "min_ms": 4.153624999999828, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.330958999999996, "min_ms": 4.212207999999995, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-filename", "query": "system", "p50_ms": 4.507625000000015, "min_ms": 4.311832999999988, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.601292000000035, "min_ms": 4.201708000000027, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.305750000000108, "min_ms": 4.186542000000015, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.252374999999975, "min_ms": 4.199875000000075, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.274500000000181, "min_ms": 4.208499999999837, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.27637500000011, "min_ms": 4.201958000000117, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.344792000000014, "min_ms": 4.221124999999992, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-plain", "query": "system", "p50_ms": 4.282750000000002, "min_ms": 4.229832999999989, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.273707999999987, "min_ms": 4.1815419999999826, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.251958, "min_ms": 4.1421249999999965, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.2587910000000395, "min_ms": 4.170541999999999, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.257416999999819, "min_ms": 4.093166999999953, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 1, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.256124999999944, "min_ms": 4.165709000000017, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.212250000000001, "min_ms": 4.106167000000021, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-filename", "query": "system", "p50_ms": 4.285958000000035, "min_ms": 4.1725830000000075, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.2387910000000195, "min_ms": 4.134749999999965, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.2183750000001075, "min_ms": 4.112166999999944, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.170624999999983, "min_ms": 4.098500000000005, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.18491700000001, "min_ms": 4.078959000000104, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.197624999999983, "min_ms": 4.0860420000001785, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.295416999999996, "min_ms": 4.210874999999975, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-plain", "query": "system", "p50_ms": 4.244791999999997, "min_ms": 4.197374999999948, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.219792, "min_ms": 4.111332999999995, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.213707999999983, "min_ms": 4.085541999999998, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.203124999999974, "min_ms": 4.0919999999999845, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.213416999999886, "min_ms": 4.11808300000005, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 1, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.204292000000054, "min_ms": 4.12316700000015, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.482083999999997, "min_ms": 4.214165999999992, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-filename", "query": "system", "p50_ms": 4.327250000000005, "min_ms": 4.237250000000026, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.277207999999977, "min_ms": 4.207083000000001, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.276916999999991, "min_ms": 4.125999999999963, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.234207999999962, "min_ms": 4.166584000000029, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.2685829999999925, "min_ms": 4.216374999999939, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.296875000000089, "min_ms": 4.19362500000009, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.355625000000002, "min_ms": 4.230541000000004, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-plain", "query": "system", "p50_ms": 4.350750000000014, "min_ms": 4.236041999999996, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.329000000000027, "min_ms": 4.2257919999999505, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.299374999999994, "min_ms": 4.231874999999996, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.343750000000091, "min_ms": 4.185333999999985, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.300041999999893, "min_ms": 4.219958999999829, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 1, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.302374999999969, "min_ms": 4.227832999999848, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.4949159999999875, "min_ms": 4.204125000000003, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-filename", "query": "system", "p50_ms": 4.270667000000006, "min_ms": 4.222666000000041, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.273709000000014, "min_ms": 4.211291999999922, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.256791999999954, "min_ms": 4.114292000000019, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.2252090000000075, "min_ms": 4.132208000000026, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.309125000000025, "min_ms": 4.197042000000151, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.264417000000131, "min_ms": 4.130707999999927, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.367041999999987, "min_ms": 4.1480419999999905, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-plain", "query": "system", "p50_ms": 4.341207999999986, "min_ms": 4.230041999999989, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.270959000000019, "min_ms": 4.204666999999995, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.304792000000002, "min_ms": 4.1406659999999595, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.294291999999977, "min_ms": 4.151124999999922, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.295457999999974, "min_ms": 4.123458000000024, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 2, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.302707999999988, "min_ms": 4.147458000000048, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.332749999999996, "min_ms": 4.2195839999999984, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-filename", "query": "system", "p50_ms": 4.292458999999971, "min_ms": 4.219957999999996, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.266291999999949, "min_ms": 4.2075839999999864, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.21654199999999, "min_ms": 4.144125000000054, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.242791999999995, "min_ms": 4.146749999999977, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.258084000000051, "min_ms": 4.17349999999983, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.270666000000034, "min_ms": 4.105291000000122, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.322375000000017, "min_ms": 4.136541999999993, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-plain", "query": "system", "p50_ms": 4.297292000000008, "min_ms": 4.2323329999999775, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.319000000000017, "min_ms": 4.214875000000062, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.265708000000035, "min_ms": 4.147416000000015, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.249375, "min_ms": 4.170958000000002, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.273583000000025, "min_ms": 4.161958000000077, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 2, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.246750000000077, "min_ms": 4.174416999999986, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.376958999999999, "min_ms": 4.180500000000004, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-filename", "query": "system", "p50_ms": 4.277208000000032, "min_ms": 4.137500000000016, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.230624999999987, "min_ms": 4.132042000000058, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.211500000000035, "min_ms": 4.116416999999983, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.208082999999974, "min_ms": 4.120542000000005, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.245250000000089, "min_ms": 4.078165999999994, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.206874999999943, "min_ms": 4.085791000000061, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.260082999999998, "min_ms": 4.108207999999988, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-plain", "query": "system", "p50_ms": 4.295833000000027, "min_ms": 4.168916999999994, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.210166999999987, "min_ms": 4.144541000000002, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.1977920000000335, "min_ms": 4.07687499999998, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.259750000000007, "min_ms": 4.102791999999966, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.147499999999971, "min_ms": 4.072875000000087, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 2, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.220459000000121, "min_ms": 4.099499999999923, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.496791999999999, "min_ms": 4.201291999999995, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-filename", "query": "system", "p50_ms": 4.32674999999999, "min_ms": 4.252666000000016, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.324084000000006, "min_ms": 4.243500000000067, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.358332999999992, "min_ms": 4.207249999999996, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.542999999999964, "min_ms": 4.200208000000094, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.5818749999999575, "min_ms": 4.298208000000026, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.320207999999992, "min_ms": 4.18150000000006, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.3869159999999905, "min_ms": 4.2101250000000086, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-plain", "query": "system", "p50_ms": 4.320875000000002, "min_ms": 4.26504099999997, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.27791700000002, "min_ms": 4.184500000000035, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.247000000000001, "min_ms": 4.160374999999994, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.330708000000016, "min_ms": 4.192167000000024, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.294625000000107, "min_ms": 4.134958999999938, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 2, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.268375000000102, "min_ms": 4.124999999999934, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.23912500000001, "min_ms": 4.106875000000009, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-filename", "query": "system", "p50_ms": 4.323500000000036, "min_ms": 4.200999999999954, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.245959000000021, "min_ms": 4.169666000000016, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.212415999999997, "min_ms": 4.14166699999996, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.231833999999934, "min_ms": 4.155125000000037, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.207708000000032, "min_ms": 4.100749999999986, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.257583000000009, "min_ms": 4.118542000000058, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.274709000000016, "min_ms": 4.183582999999991, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-plain", "query": "system", "p50_ms": 4.274333999999991, "min_ms": 4.2187080000000154, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.256417000000012, "min_ms": 4.181125000000008, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.295292000000006, "min_ms": 4.126541999999955, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.273250000000006, "min_ms": 4.168500000000019, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.225416000000148, "min_ms": 4.138540999999996, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 2, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.244750000000019, "min_ms": 4.151666000000054, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.3132089999999845, "min_ms": 4.1514589999999965, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-filename", "query": "system", "p50_ms": 4.302833000000006, "min_ms": 4.188957999999965, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.327250000000005, "min_ms": 4.200166000000005, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.244499999999984, "min_ms": 4.206374999999984, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.276791999999974, "min_ms": 4.193250000000037, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.298957999999908, "min_ms": 4.209791000000074, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.2393339999999835, "min_ms": 4.184957999999961, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.387500000000016, "min_ms": 4.188541999999989, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-plain", "query": "system", "p50_ms": 4.317750000000009, "min_ms": 4.207542000000009, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.252458000000015, "min_ms": 4.190415999999974, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.292292000000031, "min_ms": 4.156416999999912, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.295292000000006, "min_ms": 4.161167000000021, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.263166000000096, "min_ms": 4.162833999999949, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 3, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.267792000000048, "min_ms": 4.126416999999938, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.293249999999999, "min_ms": 4.183332999999983, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-filename", "query": "system", "p50_ms": 4.254083000000019, "min_ms": 4.16679200000003, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.256750000000031, "min_ms": 4.169084000000045, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.192499999999932, "min_ms": 4.091958000000062, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.1943750000000835, "min_ms": 4.12970800000001, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.180707999999811, "min_ms": 4.094792000000069, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.196749999999971, "min_ms": 4.112792000000143, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.323125000000011, "min_ms": 4.179916000000006, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-plain", "query": "system", "p50_ms": 4.551000000000027, "min_ms": 4.180500000000004, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.572291000000006, "min_ms": 4.155583000000074, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.541624999999994, "min_ms": 4.199165999999921, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.234583000000014, "min_ms": 4.099167000000015, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.271291999999871, "min_ms": 4.129958000000045, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 3, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.257500000000025, "min_ms": 4.169124999999996, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.35487499999998, "min_ms": 4.2363749999999865, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-filename", "query": "system", "p50_ms": 4.313708999999999, "min_ms": 4.226542, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.322874999999948, "min_ms": 4.171709000000023, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.273666000000009, "min_ms": 4.191708999999988, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.279833999999982, "min_ms": 4.1400000000000325, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.258917000000029, "min_ms": 4.129458000000197, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.2571660000001454, "min_ms": 4.149624999999935, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.339333000000001, "min_ms": 4.209958000000014, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-plain", "query": "system", "p50_ms": 4.343582999999985, "min_ms": 4.278541999999969, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.354041000000031, "min_ms": 4.2584580000000205, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.4144580000000655, "min_ms": 4.233666999999941, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.5978749999999735, "min_ms": 4.199665999999991, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.325374999999854, "min_ms": 4.194416000000034, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 3, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.282166000000087, "min_ms": 4.145833999999793, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.366874999999992, "min_ms": 4.1990410000000145, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-filename", "query": "system", "p50_ms": 4.330875000000011, "min_ms": 4.199708999999996, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.325165999999991, "min_ms": 4.26604199999997, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.299041999999975, "min_ms": 4.224624999999982, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.29537499999999, "min_ms": 4.188083000000065, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.428249999999911, "min_ms": 4.291790999999989, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.546542000000153, "min_ms": 4.322040999999999, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.445625000000009, "min_ms": 4.249084000000014, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-plain", "query": "system", "p50_ms": 4.385709000000015, "min_ms": 4.211041999999998, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.33641600000001, "min_ms": 4.223458000000013, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.335834000000038, "min_ms": 4.18987500000001, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.283041999999959, "min_ms": 4.16354200000002, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.295166000000017, "min_ms": 4.15308400000014, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 3, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.254541999999972, "min_ms": 4.114541999999943, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.37441600000002, "min_ms": 4.166792000000003, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-filename", "query": "system", "p50_ms": 4.297125000000013, "min_ms": 4.223916999999994, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.246833999999922, "min_ms": 4.165625000000006, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.244083999999981, "min_ms": 4.172749999999947, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.254625000000067, "min_ms": 4.158417000000081, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.266750000000097, "min_ms": 4.167417000000007, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.240916999999955, "min_ms": 4.147541999999893, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.449874999999992, "min_ms": 4.177666999999996, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-plain", "query": "system", "p50_ms": 4.561250000000017, "min_ms": 4.327000000000025, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.66483300000009, "min_ms": 4.367958999999977, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.343374999999927, "min_ms": 4.202332999999947, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.286915999999974, "min_ms": 4.170082999999991, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.269665999999894, "min_ms": 4.161332999999878, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 3, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.304207999999976, "min_ms": 4.1694589999998755, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.322584000000004, "min_ms": 4.169374999999976, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-filename", "query": "system", "p50_ms": 4.313665999999994, "min_ms": 4.198250000000014, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.2402499999999455, "min_ms": 4.181457999999971, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.194750000000025, "min_ms": 4.130750000000072, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.159499999999983, "min_ms": 4.086582999999977, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.196666999999987, "min_ms": 4.106625000000141, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.16662500000009, "min_ms": 4.079707999999904, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.250166999999999, "min_ms": 4.136333999999992, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-plain", "query": "system", "p50_ms": 4.495957999999966, "min_ms": 4.200833000000015, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.51058400000004, "min_ms": 4.187834000000001, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.244334000000016, "min_ms": 4.173708999999914, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.199457999999989, "min_ms": 4.097042000000051, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.21399999999994, "min_ms": 4.079665999999982, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 4, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.201624999999876, "min_ms": 4.093833000000213, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.3412090000000125, "min_ms": 4.146417000000014, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-filename", "query": "system", "p50_ms": 4.2852919999999965, "min_ms": 4.15987499999998, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.290250000000051, "min_ms": 4.154249999999915, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.314542000000032, "min_ms": 4.136625000000005, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.307625000000037, "min_ms": 4.165749999999968, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.293999999999798, "min_ms": 4.1427910000000345, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.279374999999863, "min_ms": 4.135582999999832, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.3453340000000065, "min_ms": 4.225832999999998, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-plain", "query": "system", "p50_ms": 4.370625000000016, "min_ms": 4.273833000000005, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.367208000000011, "min_ms": 4.309000000000007, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.343415999999989, "min_ms": 4.263125000000034, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.29024999999994, "min_ms": 4.105040999999976, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.332082999999987, "min_ms": 4.221415999999811, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 4, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.300667000000091, "min_ms": 4.211500000000035, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.380834, "min_ms": 4.196458999999986, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-filename", "query": "system", "p50_ms": 4.360083000000015, "min_ms": 4.251124999999966, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.323791000000021, "min_ms": 4.231833000000074, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.275499999999988, "min_ms": 4.220707999999962, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.285292000000052, "min_ms": 4.128334000000011, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.281709000000022, "min_ms": 4.177292000000055, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.261082999999832, "min_ms": 4.16699999999981, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.356083000000011, "min_ms": 4.240542, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-plain", "query": "system", "p50_ms": 4.378875000000004, "min_ms": 4.293082999999975, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.372457999999968, "min_ms": 4.306791999999948, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.331166999999914, "min_ms": 4.1937920000000295, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.301624999999976, "min_ms": 4.207500000000031, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.297082999999979, "min_ms": 4.2480000000000295, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 4, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.323166999999906, "min_ms": 4.2304579999998815, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.334000000000005, "min_ms": 4.20583300000002, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-filename", "query": "system", "p50_ms": 4.34229199999997, "min_ms": 4.203249999999992, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.303374999999998, "min_ms": 4.179874999999999, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.35041699999994, "min_ms": 4.130332999999986, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.266500000000062, "min_ms": 4.171582999999979, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.296209000000051, "min_ms": 4.116958000000004, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.248624999999784, "min_ms": 4.164374999999998, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.522790999999998, "min_ms": 4.349791999999991, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-plain", "query": "system", "p50_ms": 4.443833000000009, "min_ms": 4.271790999999969, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.4129159999999885, "min_ms": 4.251875000000016, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.406291999999978, "min_ms": 4.249375, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.3042500000000095, "min_ms": 4.174249999999935, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.33470800000002, "min_ms": 4.219165999999941, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 4, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.373667000000081, "min_ms": 4.217458000000063, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.333208000000005, "min_ms": 4.193333999999993, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-filename", "query": "system", "p50_ms": 4.305708000000019, "min_ms": 4.252750000000027, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.260791999999958, "min_ms": 4.200333999999972, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.3035840000000825, "min_ms": 4.152749999999927, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.25074999999997, "min_ms": 4.177957999999982, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.246042000000005, "min_ms": 4.197292000000075, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.292625000000161, "min_ms": 4.1739999999999, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.3723330000000065, "min_ms": 4.193957999999998, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-plain", "query": "system", "p50_ms": 4.332417000000005, "min_ms": 4.253958000000003, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.370166999999981, "min_ms": 4.226667000000017, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.276624999999923, "min_ms": 4.145832999999932, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.296167000000017, "min_ms": 4.198166000000003, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.320084000000168, "min_ms": 4.097958000000013, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 4, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.310542000000028, "min_ms": 4.187084000000008, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.308416000000009, "min_ms": 4.206624999999992, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-filename", "query": "system", "p50_ms": 4.361916999999993, "min_ms": 4.2612919999999725, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.307874999999961, "min_ms": 4.2301249999999735, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.326166999999992, "min_ms": 4.19775, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.2977920000000225, "min_ms": 4.21929199999993, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.309624999999984, "min_ms": 4.158584000000021, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.317499999999974, "min_ms": 4.235875, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.377999999999993, "min_ms": 4.23575000000001, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-plain", "query": "system", "p50_ms": 4.368832999999961, "min_ms": 4.2540000000000076, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.353625000000028, "min_ms": 4.269624999999944, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.320292000000059, "min_ms": 4.206041999999965, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.35862500000006, "min_ms": 4.221875000000042, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.284624999999931, "min_ms": 4.2003330000000005, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 5, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.301875000000122, "min_ms": 4.222084000000015, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.379750000000016, "min_ms": 4.185333000000013, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-filename", "query": "system", "p50_ms": 4.321832999999997, "min_ms": 4.201375000000008, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.276166999999997, "min_ms": 4.200708000000053, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.253457999999988, "min_ms": 4.083249999999983, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.234583999999986, "min_ms": 4.05770900000002, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.263167000000068, "min_ms": 4.168584000000086, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.271332999999933, "min_ms": 4.132416000000028, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.392959000000002, "min_ms": 4.211916999999995, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-plain", "query": "system", "p50_ms": 4.332374999999999, "min_ms": 4.2264579999999885, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.388041999999981, "min_ms": 4.201875000000022, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.293624999999968, "min_ms": 4.149917000000003, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.317958000000011, "min_ms": 4.162333000000018, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.271625000000001, "min_ms": 4.12266700000008, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 5, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.319249999999997, "min_ms": 4.199249999999877, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.31562499999999, "min_ms": 4.150291, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-filename", "query": "system", "p50_ms": 4.319542000000009, "min_ms": 4.208207999999991, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.3292090000000005, "min_ms": 4.249124999999965, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.285374999999925, "min_ms": 4.207458999999969, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.324709000000038, "min_ms": 4.17637500000001, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.307041999999983, "min_ms": 4.197291999999964, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.308166000000169, "min_ms": 4.155416999999995, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.3321249999999925, "min_ms": 4.208791999999989, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-plain", "query": "system", "p50_ms": 4.361458000000012, "min_ms": 4.279833000000011, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.364667000000044, "min_ms": 4.18908400000001, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.324500000000064, "min_ms": 4.200082999999966, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.2781250000000215, "min_ms": 4.1966659999999045, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.272416999999917, "min_ms": 4.181875000000002, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 5, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.310250000000071, "min_ms": 4.194667000000152, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.323458000000002, "min_ms": 4.181875000000002, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-filename", "query": "system", "p50_ms": 4.299790999999997, "min_ms": 4.233207999999989, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.319083000000001, "min_ms": 4.15816699999999, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.306958000000027, "min_ms": 4.1383750000000274, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.288375000000011, "min_ms": 4.160124999999959, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.2880000000000695, "min_ms": 4.1932089999999755, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.3282500000001445, "min_ms": 4.192416999999837, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.2684580000000025, "min_ms": 4.174707999999999, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-plain", "query": "system", "p50_ms": 4.333207999999978, "min_ms": 4.249541000000024, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.3360000000000065, "min_ms": 4.235042000000022, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.290791999999932, "min_ms": 4.1374589999999545, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.268125000000067, "min_ms": 4.1787080000000865, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.275542000000021, "min_ms": 4.196333000000108, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 5, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.289999999999905, "min_ms": 4.16166699999998, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.2570839999999945, "min_ms": 4.136124999999991, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-filename", "query": "system", "p50_ms": 4.286834000000017, "min_ms": 4.203417000000043, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.262667000000054, "min_ms": 4.131541999999988, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.221208000000032, "min_ms": 4.110709000000101, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.172708999999997, "min_ms": 4.084083000000072, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.202999999999957, "min_ms": 4.084375000000029, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.205749999999897, "min_ms": 4.104207999999998, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.346665999999999, "min_ms": 4.172166000000005, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-plain", "query": "system", "p50_ms": 4.385499999999986, "min_ms": 4.251625000000036, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.337458000000016, "min_ms": 4.221499999999989, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.3024580000000645, "min_ms": 4.112666000000043, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.268166999999989, "min_ms": 4.237999999999964, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.291833999999994, "min_ms": 4.202333000000058, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 5, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.29758399999991, "min_ms": 4.2027909999999835, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.288166999999995, "min_ms": 4.153249999999997, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-filename", "query": "system", "p50_ms": 4.282042000000041, "min_ms": 4.178957999999955, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.338291999999965, "min_ms": 4.176958000000064, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.296708000000038, "min_ms": 4.181959000000068, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.311625000000041, "min_ms": 4.178374999999956, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.264208000000047, "min_ms": 4.143000000000008, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.246874999999983, "min_ms": 4.147166999999952, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.401083, "min_ms": 4.231624999999989, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-plain", "query": "system", "p50_ms": 4.372583000000013, "min_ms": 4.270500000000011, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.330208999999973, "min_ms": 4.200124999999999, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.260291000000027, "min_ms": 4.162333000000018, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.268166999999989, "min_ms": 4.186583000000077, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.29470799999998, "min_ms": 4.17654199999995, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 6, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.2246660000000436, "min_ms": 4.1537920000001005, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.324207999999996, "min_ms": 4.110333999999993, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-filename", "query": "system", "p50_ms": 4.309750000000001, "min_ms": 4.208708999999978, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.340042000000044, "min_ms": 4.262749999999982, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.315457999999994, "min_ms": 4.206083999999999, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.291582999999988, "min_ms": 4.118666999999965, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.312209000000067, "min_ms": 4.129084000000005, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.2682499999999735, "min_ms": 4.121542000000034, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.291709000000004, "min_ms": 4.15512500000001, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-plain", "query": "system", "p50_ms": 4.318082999999973, "min_ms": 4.211582999999964, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.317291999999973, "min_ms": 4.178374999999956, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.232832999999991, "min_ms": 4.09020800000004, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.36204200000001, "min_ms": 4.169416000000092, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.272207999999944, "min_ms": 4.166542000000106, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 6, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.261582999999902, "min_ms": 4.177917000000031, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.3565, "min_ms": 4.189874999999995, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-filename", "query": "system", "p50_ms": 4.303374999999998, "min_ms": 4.171958000000031, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.323207999999967, "min_ms": 4.172791999999981, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.29725000000003, "min_ms": 4.160666999999951, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.274792000000027, "min_ms": 4.194291999999988, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.2577909999999, "min_ms": 4.172292000000022, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.25074999999997, "min_ms": 4.159250000000059, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.310625000000012, "min_ms": 4.166749999999997, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-plain", "query": "system", "p50_ms": 4.343374999999982, "min_ms": 4.253375000000004, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.343457999999966, "min_ms": 4.191915999999907, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.3042500000000095, "min_ms": 4.181415999999993, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.256875000000049, "min_ms": 4.170040999999958, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.274041999999811, "min_ms": 4.198625000000122, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 6, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.28854199999984, "min_ms": 4.155750000000014, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.252041999999998, "min_ms": 4.10012500000001, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-filename", "query": "system", "p50_ms": 4.245667000000008, "min_ms": 4.155708000000008, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.241625000000027, "min_ms": 4.135582999999999, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.158541000000016, "min_ms": 4.097958999999984, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.198416000000038, "min_ms": 4.070333000000037, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.239749999999876, "min_ms": 4.153417000000159, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.209375000000071, "min_ms": 4.110416999999922, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.320083000000002, "min_ms": 4.105583999999995, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-plain", "query": "system", "p50_ms": 4.284791999999982, "min_ms": 4.170874999999991, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.271834000000085, "min_ms": 4.084874999999988, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.212875000000005, "min_ms": 4.131875000000007, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.215458000000005, "min_ms": 4.0753340000000415, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.230417000000042, "min_ms": 4.086583000000088, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 6, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.199292000000021, "min_ms": 4.102625000000026, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.500291999999989, "min_ms": 4.224667000000015, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-filename", "query": "system", "p50_ms": 4.3776249999999965, "min_ms": 4.2759170000000175, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.337915999999997, "min_ms": 4.226209000000036, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.33283299999998, "min_ms": 4.2119999999999935, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.322249999999972, "min_ms": 4.214332999999959, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.31554199999995, "min_ms": 4.241082999999923, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.372749999999925, "min_ms": 4.216208999999971, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.391208000000008, "min_ms": 4.191417000000003, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-plain", "query": "system", "p50_ms": 4.394999999999982, "min_ms": 4.276374999999999, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.40258299999996, "min_ms": 4.184041999999999, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.3082500000000135, "min_ms": 4.1240000000000165, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.296625000000054, "min_ms": 4.217417000000001, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.383500000000096, "min_ms": 4.2665409999997905, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 6, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.34716699999993, "min_ms": 4.2239170000000215, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.625792000000003, "min_ms": 4.364167000000002, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-filename", "query": "system", "p50_ms": 4.6384579999999564, "min_ms": 4.298458000000005, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.59900000000002, "min_ms": 4.392249999999986, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.499875000000042, "min_ms": 4.31879199999996, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.418250000000068, "min_ms": 4.273458000000008, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.351875000000005, "min_ms": 4.251125000000133, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.3224580000000845, "min_ms": 4.223291999999823, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.4405409999999925, "min_ms": 4.246749999999993, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-plain", "query": "system", "p50_ms": 4.369584000000037, "min_ms": 4.302666999999982, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.368499999999997, "min_ms": 4.307791000000005, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.336500000000076, "min_ms": 4.222624999999924, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.277999999999893, "min_ms": 4.220333999999992, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.3510839999998385, "min_ms": 4.196124999999995, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 7, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.352291000000008, "min_ms": 4.196625000000065, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.304165999999999, "min_ms": 4.246374999999997, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-filename", "query": "system", "p50_ms": 4.351749999999988, "min_ms": 4.22229099999999, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.346666999999971, "min_ms": 4.221917000000075, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.258999999999902, "min_ms": 4.172625000000041, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.312249999999906, "min_ms": 4.136499999999987, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.34004099999985, "min_ms": 4.18408299999995, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.501625000000065, "min_ms": 4.292375000000126, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.556415999999993, "min_ms": 4.375041999999995, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-plain", "query": "system", "p50_ms": 4.399708000000002, "min_ms": 4.284791999999982, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.334999999999978, "min_ms": 4.270250000000031, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.332500000000072, "min_ms": 4.160457999999978, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.33725000000007, "min_ms": 4.133291000000039, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.32241599999994, "min_ms": 4.203291000000053, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 7, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.375624999999994, "min_ms": 4.2024579999999645, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.451583000000009, "min_ms": 4.227500000000023, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-filename", "query": "system", "p50_ms": 4.347042000000023, "min_ms": 4.185417000000024, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.319249999999997, "min_ms": 4.125749999999984, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.353999999999969, "min_ms": 4.083291000000044, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.301749999999993, "min_ms": 4.180708000000033, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.2959999999998555, "min_ms": 4.213374999999964, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.31091699999997, "min_ms": 4.175583000000094, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.339625, "min_ms": 4.145167000000005, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-plain", "query": "system", "p50_ms": 4.302707999999988, "min_ms": 4.191084000000012, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.271666000000007, "min_ms": 4.207457999999997, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.267416999999996, "min_ms": 4.16216700000005, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.445582999999975, "min_ms": 4.198916999999969, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.497583000000027, "min_ms": 4.178082999999999, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 7, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.35366699999995, "min_ms": 4.124707999999977, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.381500000000011, "min_ms": 4.179167000000011, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-filename", "query": "system", "p50_ms": 4.406041999999999, "min_ms": 4.23129099999997, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.347541999999982, "min_ms": 4.237999999999964, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.293916999999925, "min_ms": 4.19312500000002, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.330374999999997, "min_ms": 4.193957999999998, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.294583000000074, "min_ms": 4.195625000000036, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.305540999999913, "min_ms": 4.198040999999986, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.431624999999995, "min_ms": 4.242415999999999, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-plain", "query": "system", "p50_ms": 4.329917000000016, "min_ms": 4.233749999999981, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.344291999999972, "min_ms": 4.19891700000008, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.2522500000000685, "min_ms": 4.17841699999999, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.249957999999943, "min_ms": 4.185875000000006, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.343792000000013, "min_ms": 4.167040999999871, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 7, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.290874999999916, "min_ms": 4.170833000000096, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.382541000000018, "min_ms": 4.221749999999997, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-filename", "query": "system", "p50_ms": 4.281291999999992, "min_ms": 4.170583000000006, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.2720000000000535, "min_ms": 4.1897920000000255, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.295582999999992, "min_ms": 4.0995840000001005, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.257833999999905, "min_ms": 4.155583000000074, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.260708999999974, "min_ms": 4.178833999999965, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.2473339999999915, "min_ms": 4.1461249999998895, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.484415999999991, "min_ms": 4.270667000000006, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-plain", "query": "system", "p50_ms": 4.480499999999998, "min_ms": 4.361457999999985, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.402875000000028, "min_ms": 4.325166999999963, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.389666000000014, "min_ms": 4.1823750000000715, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.374041000000051, "min_ms": 4.210959000000014, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.358624999999949, "min_ms": 4.188875000000092, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 7, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.417416999999979, "min_ms": 4.253416999999926, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.375083000000002, "min_ms": 4.1964579999999865, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-filename", "query": "system", "p50_ms": 4.407125000000011, "min_ms": 4.213166999999962, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.371791000000014, "min_ms": 4.255624999999985, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.283750000000031, "min_ms": 4.173875000000105, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.295000000000049, "min_ms": 4.168542000000053, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.310208000000149, "min_ms": 4.199750000000169, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.30475000000019, "min_ms": 4.1802500000001075, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.4375420000000165, "min_ms": 4.161625000000003, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-plain", "query": "system", "p50_ms": 4.326750000000046, "min_ms": 4.218459000000008, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.310291999999993, "min_ms": 4.187374999999993, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.266416999999967, "min_ms": 4.128458000000057, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.294750000000014, "min_ms": 4.135333000000019, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.300791999999998, "min_ms": 4.2236669999999865, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 8, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.298375000000076, "min_ms": 4.1449159999999985, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.245125000000016, "min_ms": 4.155084000000003, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-filename", "query": "system", "p50_ms": 4.341917000000029, "min_ms": 4.184041, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.2412090000000235, "min_ms": 4.115458999999988, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.164417000000031, "min_ms": 4.0756670000000605, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.313041000000073, "min_ms": 4.120459000000021, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.297957999999991, "min_ms": 4.208333999999869, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.435165999999935, "min_ms": 4.20116699999995, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.34754200000001, "min_ms": 4.150374999999984, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-plain", "query": "system", "p50_ms": 4.305124999999965, "min_ms": 4.256291000000023, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.343709000000029, "min_ms": 4.165042000000008, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.288333999999949, "min_ms": 4.225208000000036, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.414417000000004, "min_ms": 4.190166999999967, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.520957999999853, "min_ms": 4.26837499999988, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 8, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.407709000000093, "min_ms": 4.157749999999849, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.508290999999998, "min_ms": 4.240167000000017, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-filename", "query": "system", "p50_ms": 4.376833000000024, "min_ms": 4.2159170000000135, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.34562500000002, "min_ms": 4.148125000000058, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.323084000000033, "min_ms": 4.190291000000013, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.2944579999999455, "min_ms": 4.196207999999979, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.334624999999925, "min_ms": 4.188459000000089, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.34233400000017, "min_ms": 4.1935419999998835, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.46070799999998, "min_ms": 4.211708000000009, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-plain", "query": "system", "p50_ms": 4.36904199999999, "min_ms": 4.299875000000009, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.3861250000000185, "min_ms": 4.263707999999977, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.374416999999964, "min_ms": 4.251624999999981, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.36291600000005, "min_ms": 4.237208000000048, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.361166999999999, "min_ms": 4.255832999999987, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 8, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.326708000000012, "min_ms": 4.2184579999999805, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.4354590000000025, "min_ms": 4.23979200000002, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-filename", "query": "system", "p50_ms": 4.409207999999998, "min_ms": 4.261750000000008, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.3125830000000365, "min_ms": 4.2117500000000145, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.407041, "min_ms": 4.278749999999998, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.520707999999929, "min_ms": 4.215540999999989, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.398542000000116, "min_ms": 4.206000000000043, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.413959000000078, "min_ms": 4.283832999999904, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.425499999999999, "min_ms": 4.225458000000016, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-plain", "query": "system", "p50_ms": 4.352042000000001, "min_ms": 4.233292, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.411500000000013, "min_ms": 4.266708000000008, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.330291000000042, "min_ms": 4.196666999999987, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.33624999999993, "min_ms": 4.219042000000006, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.273250000000006, "min_ms": 4.18595799999999, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 8, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.287959000000008, "min_ms": 4.189166999999827, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.402166000000013, "min_ms": 4.156999999999994, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-filename", "query": "system", "p50_ms": 4.328957999999994, "min_ms": 4.248167000000025, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.371166999999954, "min_ms": 4.227083000000076, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.299542000000045, "min_ms": 4.113166000000001, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.300709000000014, "min_ms": 4.100875000000004, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.283207999999927, "min_ms": 4.211709000000008, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.505582999999813, "min_ms": 4.166541999999884, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.612249999999984, "min_ms": 4.4107910000000246, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-plain", "query": "system", "p50_ms": 4.465125000000015, "min_ms": 4.2230409999999825, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.360750000000024, "min_ms": 4.242209000000052, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.359375000000054, "min_ms": 4.195957999999944, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.347250000000025, "min_ms": 4.190084000000094, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.309165999999864, "min_ms": 4.1602499999999765, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 8, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.34050000000008, "min_ms": 4.25520800000001, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.413084000000012, "min_ms": 4.154416000000022, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-filename", "query": "system", "p50_ms": 4.367041999999987, "min_ms": 4.227957999999976, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.354332999999988, "min_ms": 4.2117500000000145, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.311625000000041, "min_ms": 4.165832999999952, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.2726659999999805, "min_ms": 4.1120000000000045, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.526416000000033, "min_ms": 4.1359169999999335, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.549707999999875, "min_ms": 4.26083399999988, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.422707999999997, "min_ms": 4.132333000000016, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-plain", "query": "system", "p50_ms": 4.35483400000003, "min_ms": 4.170583000000006, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.274624999999976, "min_ms": 4.171749999999919, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.200749999999975, "min_ms": 4.11570799999994, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.254042000000013, "min_ms": 4.150082999999971, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.25724999999999, "min_ms": 4.108416000000004, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 9, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.25295800000014, "min_ms": 4.111915999999827, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.4185830000000035, "min_ms": 4.254584000000006, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-filename", "query": "system", "p50_ms": 4.3616669999999855, "min_ms": 4.305125000000021, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.418916999999967, "min_ms": 4.2372090000000195, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.356625000000003, "min_ms": 4.236208000000019, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.318040999999995, "min_ms": 4.259082999999997, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.347207999999991, "min_ms": 4.2353339999998685, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.355959000000187, "min_ms": 4.269749999999961, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.423708999999998, "min_ms": 4.250792000000003, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-plain", "query": "system", "p50_ms": 4.37633300000001, "min_ms": 4.291875000000001, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.349208000000049, "min_ms": 4.282041000000014, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.355582999999941, "min_ms": 4.261583999999985, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.347875000000001, "min_ms": 4.19124999999998, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.600458000000085, "min_ms": 4.2599170000001685, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 9, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.5178750000001155, "min_ms": 4.278916999999938, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.2842499999999895, "min_ms": 4.145833999999987, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-filename", "query": "system", "p50_ms": 4.269957999999963, "min_ms": 4.209083000000002, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.294624999999996, "min_ms": 4.19895800000003, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.26937500000002, "min_ms": 4.155208000000021, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.250959000000054, "min_ms": 4.162042000000032, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.270333999999987, "min_ms": 4.181709000000033, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.267958000000016, "min_ms": 4.146165999999951, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.3718749999999975, "min_ms": 4.162959000000022, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-plain", "query": "system", "p50_ms": 4.269083000000007, "min_ms": 4.213500000000037, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.270832999999974, "min_ms": 4.138875000000097, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.269958999999934, "min_ms": 4.175915999999891, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.225916999999968, "min_ms": 4.160459000000061, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.247000000000112, "min_ms": 4.1559170000000645, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 9, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.269417000000164, "min_ms": 4.0787079999999865, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.293833000000024, "min_ms": 4.182208999999992, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-filename", "query": "system", "p50_ms": 4.350167000000016, "min_ms": 4.181333999999981, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.327625000000001, "min_ms": 4.157332999999985, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.319791000000017, "min_ms": 4.126917000000008, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.291582999999988, "min_ms": 4.169959000000056, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.347915999999952, "min_ms": 4.181916000000063, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.354957999999964, "min_ms": 4.15262499999991, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.380374999999992, "min_ms": 4.175208000000014, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-plain", "query": "system", "p50_ms": 4.353042000000029, "min_ms": 4.212875000000005, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.349249999999971, "min_ms": 4.17774999999998, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.421290999999994, "min_ms": 4.245082999999927, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.2944579999999455, "min_ms": 4.197917000000051, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.305292000000183, "min_ms": 4.14779200000015, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 9, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.2759999999999465, "min_ms": 4.230417000000042, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.341125000000002, "min_ms": 4.126000000000019, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-filename", "query": "system", "p50_ms": 4.370541000000006, "min_ms": 4.191540999999965, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.305042000000037, "min_ms": 4.172375000000006, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.337291999999993, "min_ms": 4.166875000000014, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.355707999999958, "min_ms": 4.152166000000013, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.3384580000001005, "min_ms": 4.236083999999973, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.313708000000194, "min_ms": 4.2119999999998825, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.408624999999999, "min_ms": 4.183459000000001, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-plain", "query": "system", "p50_ms": 4.39829199999997, "min_ms": 4.29537499999999, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.349166999999987, "min_ms": 4.219874999999984, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.359500000000072, "min_ms": 4.169833999999928, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.313999999999929, "min_ms": 4.194459000000039, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.324833000000083, "min_ms": 4.214166999999991, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 9, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.345916999999977, "min_ms": 4.166208000000005, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.378916999999982, "min_ms": 4.2125829999999915, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-filename", "query": "system", "p50_ms": 4.339374999999979, "min_ms": 4.241207999999997, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.315875000000025, "min_ms": 4.240790999999966, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.263958000000012, "min_ms": 4.146166999999923, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.298374999999965, "min_ms": 4.108291999999958, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.281957999999975, "min_ms": 4.1363329999999365, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.19737500000017, "min_ms": 4.1457090000001084, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.4132089999999735, "min_ms": 4.195000000000004, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-plain", "query": "system", "p50_ms": 4.383958000000021, "min_ms": 4.245540999999964, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.411457999999979, "min_ms": 4.292041000000024, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.356542000000019, "min_ms": 4.237292000000004, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.343416999999961, "min_ms": 4.2298749999999385, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.362165999999945, "min_ms": 4.258165999999952, "answer_sha256": "", "warnings": []}
+{"variant": "head2", "round": 10, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.3790839999999776, "min_ms": 4.1987910000000905, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.401665999999999, "min_ms": 4.204666999999995, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-filename", "query": "system", "p50_ms": 4.462000000000021, "min_ms": 4.2484159999999775, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.531833000000041, "min_ms": 4.252749999999972, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.445041999999955, "min_ms": 4.246791999999999, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.38974999999997, "min_ms": 4.248124999999936, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.260708000000002, "min_ms": 4.186666000000061, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.3541249999998755, "min_ms": 4.165375000000138, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.439292000000012, "min_ms": 4.140875000000016, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-plain", "query": "system", "p50_ms": 4.389750000000026, "min_ms": 4.196833999999983, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.397417000000015, "min_ms": 4.1454590000000735, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.304584, "min_ms": 4.191749999999939, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.280125000000079, "min_ms": 4.172292000000022, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.278875000000015, "min_ms": 4.175374999999981, "answer_sha256": "", "warnings": []}
+{"variant": "main", "round": 10, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.314415999999932, "min_ms": 4.111749999999859, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.552082999999985, "min_ms": 4.274707999999988, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-filename", "query": "system", "p50_ms": 4.375333000000037, "min_ms": 4.249333999999994, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.337334000000026, "min_ms": 4.209750000000012, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.307249999999985, "min_ms": 4.1784580000000515, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.302000000000028, "min_ms": 4.191124999999962, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.298750000000018, "min_ms": 4.165875000000208, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.319791999999989, "min_ms": 4.196832999999955, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.387124999999992, "min_ms": 4.178833999999992, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-plain", "query": "system", "p50_ms": 4.393041999999986, "min_ms": 4.21629200000001, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.4012089999999615, "min_ms": 4.2304579999999925, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.345582999999986, "min_ms": 4.194374999999972, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.372291000000028, "min_ms": 4.140499999999991, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.3535420000000435, "min_ms": 4.2497919999999745, "answer_sha256": "", "warnings": []}
+{"variant": "main2", "round": 10, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.3224580000000845, "min_ms": 4.179541999999925, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.686999999999997, "min_ms": 4.296458000000003, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-filename", "query": "system", "p50_ms": 4.4528330000000444, "min_ms": 4.325165999999991, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.362707999999937, "min_ms": 4.219332999999992, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.319416000000076, "min_ms": 4.204708000000057, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.3920000000000625, "min_ms": 4.281583000000033, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.401749999999982, "min_ms": 4.191499999999904, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.380542000000043, "min_ms": 4.166834000000064, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.368749999999977, "min_ms": 4.227583000000007, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-plain", "query": "system", "p50_ms": 4.408165999999991, "min_ms": 4.305707999999964, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.359584000000027, "min_ms": 4.191415999999948, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.324792000000022, "min_ms": 4.172124999999971, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.343290999999971, "min_ms": 4.193875000000014, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.317042000000049, "min_ms": 4.245666999999953, "answer_sha256": "", "warnings": []}
+{"variant": "ctl1", "round": 10, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.294583000000074, "min_ms": 4.212416999999968, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-filename", "query": "hybrid retrieval", "p50_ms": 4.611166999999999, "min_ms": 4.307832999999983, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-filename", "query": "system", "p50_ms": 4.473665999999987, "min_ms": 4.28895800000001, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-filename", "query": "hashing", "p50_ms": 4.379207999999968, "min_ms": 4.237374999999988, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-filename", "query": "opratin", "p50_ms": 4.384416000000058, "min_ms": 4.216790999999942, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-filename", "query": "consensus", "p50_ms": 4.371708000000085, "min_ms": 4.203624999999933, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-filename", "query": "scheduler", "p50_ms": 4.3283330000001285, "min_ms": 4.212291999999951, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-filename", "query": "garbaje", "p50_ms": 4.297958999999851, "min_ms": 4.173208000000095, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-plain", "query": "hybrid retrieval", "p50_ms": 4.379375000000019, "min_ms": 4.130416999999998, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-plain", "query": "system", "p50_ms": 4.327707999999985, "min_ms": 4.219458000000009, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-plain", "query": "hashing", "p50_ms": 4.322332999999956, "min_ms": 4.210875000000003, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-plain", "query": "opratin", "p50_ms": 4.298083000000008, "min_ms": 4.176415999999961, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-plain", "query": "consensus", "p50_ms": 4.296958999999934, "min_ms": 4.139290999999989, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-plain", "query": "scheduler", "p50_ms": 4.327709000000013, "min_ms": 4.135333000000019, "answer_sha256": "", "warnings": []}
+{"variant": "ctl2", "round": 10, "field": "first-content-plain", "query": "garbaje", "p50_ms": 4.302374999999969, "min_ms": 4.1430839999998526, "answer_sha256": "", "warnings": []}

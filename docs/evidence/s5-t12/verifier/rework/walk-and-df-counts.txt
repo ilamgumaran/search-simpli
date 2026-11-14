@@ -1,0 +1,60 @@
+content | bazecha | main:  | ctl1:  | ctl2:  | head: 
+content | benico | main:  | ctl1:  | ctl2:  | head: 
+content | system | main:  | ctl1:  | ctl2:  | head: 
+content | hashing | main:  | ctl1:  | ctl2:  | head: 
+content | hybrid retrieval | main:  | ctl1:  | ctl2:  | head: 
+content | retrieval hybrid | main:  | ctl1:  | ctl2:  | head: 
+content | system systems | main:  | ctl1:  | ctl2:  | head: 
+content | systems system | main:  | ctl1:  | ctl2:  | head: 
+content | consensus | main:  | ctl1:  | ctl2:  | head: 
+content | scheduler | main:  | ctl1:  | ctl2:  | head: 
+content | garbaje | main:  | ctl1:  | ctl2:  | head: 
+content | hash | main:  | ctl1:  | ctl2:  | head: 
+both | bazecha | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | benico | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | system | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | hashing | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | hybrid retrieval | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | retrieval hybrid | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | system systems | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | systems system | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | consensus | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | scheduler | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | garbaje | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both | hash | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | bazecha | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | benico | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | system | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | hashing | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | hybrid retrieval | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | retrieval hybrid | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | system systems | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | systems system | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | consensus | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | scheduler | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | garbaje | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+both-all | hash | main: WALK x1;  | ctl1: WALK x1;  | ctl2: WALK x1;  | head: 
+content-scoped | bazecha | main: DF bazecha x2; WALK x1;  | ctl1: DF bazecha x2; WALK x1;  | ctl2: DF bazecha x2; WALK x1;  | head: DF bazecha x2; WALK x1; 
+content-scoped | benico | main: DF benico x2; WALK x1;  | ctl1: DF benico x2; WALK x1;  | ctl2: DF benico x2; WALK x1;  | head: DF benico x2; WALK x1; 
+content-scoped | system | main: DF system x2; DF systems x1; WALK x1;  | ctl1: DF system x2; DF systems x1; WALK x1;  | ctl2: DF system x2; DF systems x1; WALK x1;  | head: DF system x2; DF systems x1; WALK x1; 
+content-scoped | hashing | main: DF hash x1; DF hashing x3; WALK x1;  | ctl1: DF hash x1; DF hashing x3; WALK x1;  | ctl2: DF hash x1; DF hashing x3; WALK x1;  | head: DF hash x1; DF hashing x3; WALK x1; 
+content-scoped | hybrid retrieval | main: DF hybrid x2; DF retrieval x2; WALK x1;  | ctl1: DF hybrid x2; DF retrieval x2; WALK x1;  | ctl2: DF hybrid x2; DF retrieval x2; WALK x1;  | head: DF hybrid x2; DF retrieval x2; WALK x1; 
+content-scoped | retrieval hybrid | main: DF hybrid x2; DF retrieval x2; WALK x1;  | ctl1: DF hybrid x2; DF retrieval x2; WALK x1;  | ctl2: DF hybrid x2; DF retrieval x2; WALK x1;  | head: DF hybrid x2; DF retrieval x2; WALK x1; 
+content-scoped | system systems | main: DF system x3; DF systems x3; WALK x1;  | ctl1: DF system x3; DF systems x3; WALK x1;  | ctl2: DF system x3; DF systems x3; WALK x1;  | head: DF system x3; DF systems x3; WALK x1; 
+content-scoped | systems system | main: DF system x3; DF systems x3; WALK x1;  | ctl1: DF system x3; DF systems x3; WALK x1;  | ctl2: DF system x3; DF systems x3; WALK x1;  | head: DF system x3; DF systems x3; WALK x1; 
+content-scoped | consensus | main: DF consensus x2; WALK x1;  | ctl1: DF consensus x2; WALK x1;  | ctl2: DF consensus x2; WALK x1;  | head: DF consensus x2; WALK x1; 
+content-scoped | scheduler | main: DF schedulers x1; WALK x1;  | ctl1: DF schedulers x1; WALK x1;  | ctl2: DF schedulers x1; WALK x1;  | head: DF schedulers x1; WALK x1; 
+content-scoped | garbaje | main: DF garbage x1; WALK x1;  | ctl1: DF garbage x1; WALK x1;  | ctl2: DF garbage x1; WALK x1;  | head: DF garbage x1; WALK x1; 
+content-scoped | hash | main: DF hash x3; DF hashing x1; WALK x1;  | ctl1: DF hash x3; DF hashing x1; WALK x1;  | ctl2: DF hash x3; DF hashing x1; WALK x1;  | head: DF hash x3; DF hashing x1; WALK x1; 
+both-scoped | bazecha | main: DF bazecha x1; WALK x1;  | ctl1: DF bazecha x1; WALK x1;  | ctl2: DF bazecha x1; WALK x1;  | head: DF bazecha x1; WALK x1; 
+both-scoped | benico | main: DF benico x1; WALK x1;  | ctl1: DF benico x1; WALK x1;  | ctl2: DF benico x1; WALK x1;  | head: DF benico x1; WALK x1; 
+both-scoped | system | main: DF system x1; DF systems x1; WALK x1;  | ctl1: DF system x1; DF systems x1; WALK x1;  | ctl2: DF system x1; DF systems x1; WALK x1;  | head: DF system x1; DF systems x1; WALK x1; 
+both-scoped | hashing | main: DF hash x1; DF hashing x2; WALK x1;  | ctl1: DF hash x1; DF hashing x2; WALK x1;  | ctl2: DF hash x1; DF hashing x2; WALK x1;  | head: DF hash x1; DF hashing x2; WALK x1; 
+both-scoped | hybrid retrieval | main: DF hybrid x1; DF retrieval x1; WALK x1;  | ctl1: DF hybrid x1; DF retrieval x1; WALK x1;  | ctl2: DF hybrid x1; DF retrieval x1; WALK x1;  | head: DF hybrid x1; DF retrieval x1; WALK x1; 
+both-scoped | retrieval hybrid | main: DF hybrid x1; DF retrieval x1; WALK x1;  | ctl1: DF hybrid x1; DF retrieval x1; WALK x1;  | ctl2: DF hybrid x1; DF retrieval x1; WALK x1;  | head: DF hybrid x1; DF retrieval x1; WALK x1; 
+both-scoped | system systems | main: DF system x2; DF systems x2; WALK x1;  | ctl1: DF system x2; DF systems x2; WALK x1;  | ctl2: DF system x2; DF systems x2; WALK x1;  | head: DF system x2; DF systems x2; WALK x1; 
+both-scoped | systems system | main: DF system x2; DF systems x2; WALK x1;  | ctl1: DF system x2; DF systems x2; WALK x1;  | ctl2: DF system x2; DF systems x2; WALK x1;  | head: DF system x2; DF systems x2; WALK x1; 
+both-scoped | consensus | main: DF consensus x1; WALK x1;  | ctl1: DF consensus x1; WALK x1;  | ctl2: DF consensus x1; WALK x1;  | head: DF consensus x1; WALK x1; 
+both-scoped | scheduler | main: DF schedulers x1; WALK x1;  | ctl1: DF schedulers x1; WALK x1;  | ctl2: DF schedulers x1; WALK x1;  | head: DF schedulers x1; WALK x1; 
+both-scoped | garbaje | main: DF garbage x1; WALK x1;  | ctl1: DF garbage x1; WALK x1;  | ctl2: DF garbage x1; WALK x1;  | head: DF garbage x1; WALK x1; 
+both-scoped | hash | main: DF hash x2; DF hashing x1; WALK x1;  | ctl1: DF hash x2; DF hashing x1; WALK x1;  | ctl2: DF hash x2; DF hashing x1; WALK x1;  | head: DF hash x2; DF hashing x1; WALK x1; 

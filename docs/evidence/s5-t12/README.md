@@ -109,3 +109,21 @@ timing**: the verifier measures. Builds from `git archive 5f02074` with their ow
 | `rework/j2-gate-searchd.txt`, `rework/j2-gate-reference.txt`, `rework/j2-compare-main-head.txt` | `j2_gate.py` on the head's `searchd` run and on the Python reference: every row +0.000, gate pass; `j2_run.py --compare` against `main`'s run: 0 queries differ under either field. |
 | `rework/nfr13-deltas.txt` | Every NFR-13 peak number that differs from `main`'s in the same session: `find` +8 and +262 B only. |
 | `rework/plants.txt`, `rework/plant-r1-rooted-ignored.diff`, `rework/plant-r2-labels-ignored.diff` | Two plants on part 1's check, each failing the reshaped counter test and the condition test (R2 also the two S3-T3 privacy tests). |
+
+# Verifier, the reworked head (`verifier/rework/`)
+
+The S5-T12 verifier's record for the second Verdict, on `865d060` (part 1 alone), measured under item 3 of the
+re-ruling. Every library is a `git archive` build with its own empty Zig caches, `ReleaseSmall`. See the second Verdict
+in the task.
+
+| File | What it is |
+| --- | --- |
+| `verifier/rework/vrun5a.jsonl`, `verifier/rework/vrun5b.jsonl` | The two timing runs: 10 rounds (five libraries, each in each position twice) x (`main`, `main2`, `ctl1`, `ctl2`, `head2` = `865d060`) x 60 (workload, query) rows: the five workloads and the twelve queries of the first Verdict. Every start passed the gate. |
+| `verifier/rework/vrun5a-summary.txt`, `verifier/rework/vrun5b-summary.txt` | `harness/vsum5.py RUN`, verbatim: each workload's band (the largest absolute median over its cells of `main2`, `ctl1` and `ctl2` against `main`), each control's own largest median, every cell against the band, and the unscoped saving check. |
+| `verifier/rework/vfirst5.jsonl`, `verifier/rework/vfirst5-summary.txt` | The first `content` query after an open: 10 rounds, the same five libraries, 15 fresh handles per query, the filename-indexed and the plain snapshot (`harness/vrunfirst5.sh`, `harness/vfsum5.py`). |
+| `verifier/rework/walk-and-df-counts.txt` | Walks and key df reads per (workload, query) through instrumented copies of `c674a9c`, `ctl1`, `ctl2` and `865d060` (`harness/vcount.py`; the instrumentation is `harness/count-instrument-*.diff`, one `std.debug.print` before the walk and one in `documentFrequency`). |
+| `verifier/rework/gates.txt` | Every gate check of the re-measurement (one refusal on load before any timed start, then only passes). |
+| `verifier/rework/equivalence-main-head.json` | `harness/vequiv.py` (the first Verdict's) with `main`'s and `865d060`'s `searchd`. |
+| `verifier/rework/harness/control-ctl1.diff`, `verifier/rework/harness/control-ctl2.diff` | The two placement controls, written by the verifier on `c674a9c`: C1 a never-true branch holding duplicate walk loops in `scope.zig`; C2 part 1's footprint (a `RootMask` flag and method, the folder's flag computed in `build`, the same check in `visibleCollection`) with a condition that is never true. |
+| `verifier/rework/j2-gate-searchd.txt`, `verifier/rework/j2-gate-reference.txt`, `verifier/rework/j2-compare-main-head.txt` | `j2_gate.py` on the head's `searchd` run and on the Python reference (every row +0.000, pass), and `j2_run.py --compare` against the first Verdict's `main` run (0 queries differ under either field). |
+| `verifier/rework/oldrule-crosscheck.txt` | `harness/voldrule.py`: a cross-check only, the old rule ("Rulings on Phase 2" item 2, the run's largest `main2` − `main` median) applied to the two runs. One cell is above it in both, `both-scoped` `retrieval hybrid`, with work identical to `main`'s. |

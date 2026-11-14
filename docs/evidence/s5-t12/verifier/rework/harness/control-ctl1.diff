@@ -1,0 +1,47 @@
+--- base-main/zig/src/scope.zig	2026-11-13 23:57:40
++++ ctl1/zig/src/scope.zig	2026-11-14 10:34:22
+@@ -251,6 +251,9 @@
+     return hybrid.isAuthorized(documents[document_index].required_labels, labels);
+ }
+ 
++/// Verifier placement control C1 (test builds only).
++pub var control_walks: usize = 0;
++
+ /// The visible scope's collection statistics, or null when every document is
+ /// visible (the caller then uses the index's own values, bit for bit).
+ /// `labeled_documents == false` (no record carries a label) with no root
+@@ -265,6 +268,34 @@
+     labels: []const []const u8,
+ ) !?View {
+     if (mask == null and labeled_documents != null and !labeled_documents.?) return null;
++    // Verifier placement control C1 (not shipped): never true, since a
++    // request's root flags number at most the folder's roots (u16 ordinals).
++    if (labeled_documents != null and !labeled_documents.?) {
++        if (mask) |m| if (m.allowed.len > 65536 and m.document_roots.len >= documents.len) {
++            var c: u64 = 0;
++            var tot: u64 = 0;
++            if (statistics) |stats| {
++                for (stats.groups, 0..) |group, gi| if (stats.groupVisible(gi, mask, labels)) {
++                    c += group.documents;
++                    tot += group.total_length;
++                };
++                for (stats.exact_documents) |di| if (documentVisible(documents, di, mask, labels)) {
++                    c += 1;
++                    tot += index.document_lengths[di];
++                };
++                if (c == documents.len) return null;
++                return error.OutOfMemory;
++            }
++            for (documents, 0..) |d, i| if (d.required_labels.len == 0 and m.allows(i) and hybrid.isAuthorized(d.required_labels, labels)) {
++                c += 1;
++                tot += index.document_lengths[i];
++            };
++            if (c == documents.len) return null;
++            const avg: f32 = if (c == 0) 0 else @as(f32, @floatFromInt(tot)) / @as(f32, @floatFromInt(c));
++            return .{ .collection = .{ .document_count = @intCast(c), .average_document_length = avg }, .statistics = statistics, .mask = mask, .labels = labels };
++        };
++    }
++    if (@import("builtin").is_test) control_walks += 1;
+     var count: u64 = 0;
+     var total: u64 = 0;
+     var visible_groups: []bool = &.{};
