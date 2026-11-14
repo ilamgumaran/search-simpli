@@ -206,6 +206,9 @@ pub const Context = struct {
     documents: []const hybrid.Document,
     title: ?*const title_field.Field = null,
     view: ?scope.View = null,
+    /// S5-T12: with no `view`, the view built at the first key df read
+    /// (`scope.LazyView`, at most once per query); null: none.
+    lazy: ?*scope.LazyView = null,
     options: hybrid.SearchOptions,
 
     pub fn heldInScope(context: Context, entry: postings.TermEntry) bool {
@@ -214,8 +217,10 @@ pub const Context = struct {
         return false;
     }
 
-    pub fn keyFrequency(context: Context, entry: postings.TermEntry) u32 {
-        return if (context.view) |view| scope.documentFrequency(view, context.index, context.documents, entry) else entry.document_frequency;
+    pub fn keyFrequency(context: Context, entry: postings.TermEntry) !u32 {
+        if (context.view) |view| return scope.documentFrequency(view, context.index, context.documents, entry);
+        if (context.lazy) |lazy| if (try lazy.get()) |view| return scope.documentFrequency(view, context.index, context.documents, entry);
+        return entry.document_frequency;
     }
 
     /// A visible file's title holds `term` (roots and labels; `under_prefix`
@@ -312,7 +317,7 @@ pub fn scan(allocator: std.mem.Allocator, context: Context, typed: []const u8) !
         const d = osa(typed_cps, cps, k, rows);
         if (d == 0 or d > k) continue;
         if (!context.heldInScope(entry)) continue;
-        kept.offer(.{ .term = entry.term, .distance = d, .weight = weightOf(d), .key_df = context.keyFrequency(entry), .body = entry });
+        kept.offer(.{ .term = entry.term, .distance = d, .weight = weightOf(d), .key_df = try context.keyFrequency(entry), .body = entry });
     }
     if (context.title) |field| {
         const tlo = titleLowerBound(field, first);

@@ -191,3 +191,97 @@ test "the check through the engine: an unscoped both or content query with every
     options.visible_roots = labelled_folder.mask(&.{ true, true });
     try std.testing.expect(try walksOf(a, labelled, "shelf", .content, options) == 1);
 }
+
+// ------------------------------------------- part (a)2: the lazy view --
+
+/// Root r-a and r-b hold the same words in different numbers, so a key df
+/// over r-a alone orders and admits members differently from the whole
+/// index: `café` is the more common spelling overall and ties with `cafe`
+/// in r-a; `painting` is more common than `paint` overall (so it is no
+/// verb-form member of a held `paint`) and not in r-a (so it is one).
+const skewed_docs = [_]hybrid.Document{
+    .{ .id = "a1", .text = "cafe by the paint shop", .path = "r-a/one.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "a2", .text = "café painting", .path = "r-a/two.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "a3", .text = "a quiet shelf", .path = "r-a/three.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "b1", .text = "café painting paint", .path = "r-b/one.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "b2", .text = "café painting", .path = "r-b/two.md", .start_line = 1, .end_line = 1 },
+    .{ .id = "b3", .text = "café corner", .path = "r-b/three.md", .start_line = 1, .end_line = 1 },
+};
+
+/// The members (term, key df) `both` gives `query`'s first group, or none.
+fn bothMembers(a: std.mem.Allocator, engine: engine_module.Engine, query: []const u8, options: hybrid.SearchOptions) ![]const @import("fuzzy.zig").Member {
+    const groups = (try engine.bothGroups(a, query, options)) orelse return &.{};
+    return groups.items[0].members;
+}
+
+/// The members the `content` path (its view built eagerly, for BM25)
+/// names for `query`'s first group, the typed word left out, or none.
+fn contentMembers(a: std.mem.Allocator, engine: engine_module.Engine, query: []const u8, options: hybrid.SearchOptions) ![]const []const u8 {
+    var trace = hybrid.Trace{ .allocator = a, .io = std.testing.io };
+    _ = try engine.queryTraced(a, query, &.{}, try a.alloc(hybrid.Result, engine.documents.len), options, &trace);
+    if (trace.grouped.items.len == 0) return &.{};
+    return trace.grouped.items[0].members;
+}
+
+fn expectMembers(members: []const @import("fuzzy.zig").Member, typed: []const u8, expected: []const []const u8) !void {
+    var named = std.ArrayList([]const u8).empty;
+    defer named.deinit(std.testing.allocator);
+    for (members) |m| if (!std.mem.eql(u8, m.term, typed)) try named.append(std.testing.allocator, m.term);
+    try std.testing.expectEqual(expected.len, named.items.len);
+    for (named.items, expected) |got, want| try std.testing.expectEqualStrings(want, got);
+}
+
+test "the lazy view: under a scope that hides a root, a both query walks once when its words form a group and not at all when they form none" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const folder = try folderOf(a, &plain_docs, try indexOf(a, &plain_docs));
+    const engine = try bothEngine(a, &plain_docs);
+    var options = hybrid.SearchOptions{ .top_k = 4, .candidate_k = 4, .retrieval_mode = .lexical };
+    options.visible_roots = folder.mask(&.{ true, false });
+    // `shelf` and `toys` are held and form no group (`toys` keys to `toy`,
+    // which no chunk holds); `zebra` is held nowhere and has no near word.
+    for ([_][]const u8{ "shelf", "toys", "zebra", "shelf toys" }) |q| {
+        try std.testing.expectEqual(@as(usize, 0), try walksOf(a, engine, q, .both, options));
+    }
+    // `box` is grouped with `boxes` in r-a: one walk for the query, however
+    // many members or words read a key df.
+    try std.testing.expectEqual(@as(usize, 1), try walksOf(a, engine, "box", .both, options));
+    try std.testing.expectEqual(@as(usize, 1), try walksOf(a, engine, "box boxes shelf", .both, options));
+    // The content path still builds its view for BM25, once.
+    try std.testing.expectEqual(@as(usize, 1), try walksOf(a, engine, "shelf", .content, options));
+}
+
+test "the lazy view is the request's: key df order and verb-form admission as the content path's view gives them" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const folder = try folderOf(a, &skewed_docs, try indexOf(a, &skewed_docs));
+    const engine = try bothEngine(a, &skewed_docs);
+    var scoped = hybrid.SearchOptions{ .top_k = 6, .candidate_k = 6, .retrieval_mode = .lexical };
+    scoped.visible_roots = folder.mask(&.{ true, false });
+    var unscoped = scoped;
+    unscoped.visible_roots = folder.mask(&.{ true, true });
+
+    // Over the whole index café (df 4) comes before cafe (df 1); in r-a they
+    // tie at 1 and order by bytes.
+    try expectMembers(try bothMembers(a, engine, "cafes", unscoped), "cafes", &.{ "café", "cafe" });
+    try expectMembers(try bothMembers(a, engine, "cafes", scoped), "cafes", &.{ "cafe", "café" });
+    for ([_]hybrid.SearchOptions{ scoped, unscoped }) |options| {
+        const both = try bothMembers(a, engine, "cafes", options);
+        const content = try contentMembers(a, engine, "cafes", options);
+        try expectMembers(both, "cafes", content);
+    }
+    for (try bothMembers(a, engine, "cafes", scoped)) |m| try std.testing.expectEqual(@as(u32, 1), m.key_df);
+
+    // A held `paint` takes `painting` at half weight only when the form is
+    // no more common: not over the whole index (3 against 2), yes in r-a
+    // (1 against 1). Whether the group exists reads the view.
+    try std.testing.expectEqual(@as(usize, 0), (try bothMembers(a, engine, "paint", unscoped)).len);
+    const painted = try bothMembers(a, engine, "paint", scoped);
+    try expectMembers(painted, "paint", &.{"painting"});
+    try expectMembers(painted, "paint", try contentMembers(a, engine, "paint", scoped));
+    try std.testing.expectEqual(@as(usize, 0), (try contentMembers(a, engine, "paint", unscoped)).len);
+    try std.testing.expectEqual(@as(usize, 1), try walksOf(a, engine, "paint", .both, scoped));
+    try std.testing.expectEqual(@as(usize, 0), try walksOf(a, engine, "paint", .both, unscoped));
+}

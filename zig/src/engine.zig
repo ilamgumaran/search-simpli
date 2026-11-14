@@ -402,9 +402,12 @@ pub const Engine = struct {
             for (tokens) |token| allocator.free(token);
             allocator.free(tokens);
         }
-        var view = try scope.visibleCollection(allocator, engine.lexical_index, engine.documents, engine.statistics, engine.labeled_documents, options.visible_roots, options.principal_labels);
-        defer if (view) |*v| v.deinit(allocator);
-        const computed = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens, options);
+        // S5-T12: the view only feeds the members' key df, so it is built at
+        // the first key df read (`scope.LazyView`), at most once: a query
+        // whose words form no group reads none, and walks nothing.
+        var lazy = scope.LazyView{ .allocator = allocator, .index = engine.lexical_index, .documents = engine.documents, .statistics = engine.statistics, .labeled_documents = engine.labeled_documents, .mask = options.visible_roots, .labels = options.principal_labels };
+        defer lazy.deinit();
+        const computed = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .lazy = &lazy, .options = options }, tokens, options);
         return fold.merge(allocator, computed.folded, computed.expanded);
     }
 

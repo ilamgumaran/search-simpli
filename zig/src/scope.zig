@@ -320,6 +320,34 @@ pub fn visibleCollection(
     };
 }
 
+/// S5-T12: a request's view (`visibleCollection`), built at its first use
+/// and at most once: `get` builds it the first time and returns the same
+/// answer after. Free with `deinit`.
+pub const LazyView = struct {
+    allocator: std.mem.Allocator,
+    index: postings.Index,
+    documents: []const hybrid.Document,
+    statistics: ?*const Statistics,
+    labeled_documents: ?bool,
+    mask: ?hybrid.RootMask,
+    labels: []const []const u8,
+    built: bool = false,
+    view: ?View = null,
+
+    pub fn get(lazy: *LazyView) !?View {
+        if (!lazy.built) {
+            lazy.view = try visibleCollection(lazy.allocator, lazy.index, lazy.documents, lazy.statistics, lazy.labeled_documents, lazy.mask, lazy.labels);
+            lazy.built = true;
+        }
+        return lazy.view;
+    }
+
+    pub fn deinit(lazy: *LazyView) void {
+        if (lazy.view) |*v| v.deinit(lazy.allocator);
+        lazy.view = null;
+    }
+};
+
 /// The position of `entry` in `index.terms` (postings are laid out in term
 /// order, so `postings_start` is strictly increasing), or null.
 pub fn termIndex(index: postings.Index, entry: postings.TermEntry) ?usize {

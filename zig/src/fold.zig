@@ -716,16 +716,48 @@ fn numbered(context: fuzzy.Context, map: *const KeyMap, i: u32) Numbered {
 /// member; otherwise a term a visible title under the prefix holds is a
 /// title member (no body postings). The order's key df is the term's body df
 /// over the roots and labels (a prefix does not narrow it), 0 for a term the
-/// body does not hold.
+/// body does not hold. S5-T12: it is read from `candidate.body` by
+/// `keyFrequencies` once the group is kept (here it is 0), so a group that is
+/// not kept reads no key df and builds no view.
 fn member(context: fuzzy.Context, candidate: Numbered) ?fuzzy.Member {
-    const key_df: u32 = if (candidate.body) |entry| context.keyFrequency(entry) else 0;
     if (candidate.body) |entry| if (context.heldInScope(entry)) {
-        return .{ .term = entry.term, .distance = 0, .weight = 1, .key_df = key_df, .body = entry };
+        return .{ .term = entry.term, .distance = 0, .weight = 1, .key_df = 0, .body = entry };
     };
     const field = context.title orelse return null;
     const term = field.lookup(candidate.bytes) orelse return null;
     if (!context.titleHeld(field, term, true)) return null;
-    return .{ .term = field.termBytes(term), .distance = 0, .weight = 1, .key_df = key_df, .body = null };
+    return .{ .term = field.termBytes(term), .distance = 0, .weight = 1, .key_df = 0, .body = null };
+}
+
+/// A group's members as `compute` collects them, each with the body entry
+/// its key df is read from (`member`), until the group is kept.
+const Collected = struct {
+    members: std.ArrayList(fuzzy.Member) = .empty,
+    sources: std.ArrayList(?postings.TermEntry) = .empty,
+
+    fn append(collected: *Collected, allocator: std.mem.Allocator, m: fuzzy.Member, source: ?postings.TermEntry) !void {
+        try collected.members.append(allocator, m);
+        try collected.sources.append(allocator, source);
+    }
+
+    fn clear(collected: *Collected) void {
+        collected.members.clearRetainingCapacity();
+        collected.sources.clearRetainingCapacity();
+    }
+
+    fn deinit(collected: *Collected, allocator: std.mem.Allocator) void {
+        collected.members.deinit(allocator);
+        collected.sources.deinit(allocator);
+    }
+
+    /// Each member's key df (`member`'s rule), for a kept group.
+    fn keyFrequencies(collected: *Collected, context: fuzzy.Context) !void {
+        for (collected.members.items, collected.sources.items) |*m, source| m.key_df = try keyFrequencyOf(context, source);
+    }
+};
+
+fn keyFrequencyOf(context: fuzzy.Context, source: ?postings.TermEntry) !u32 {
+    return if (source) |entry| context.keyFrequency(entry) else 0;
 }
 
 /// The group order: the typed term first, then key df descending, then bytes.
@@ -747,15 +779,16 @@ fn exact(context: fuzzy.Context, bytes: []const u8) ?Numbered {
 }
 
 /// Whether a chunk in scope or a visible title holds `token` (fuzzy-v1's
-/// trigger without its length and script), and the token's own key df (0
-/// when the body does not hold it).
-const Held = struct { held: bool, key_df: u32 };
+/// trigger without its length and script), and the body entry of the
+/// token's own key df (none: 0 when the body does not hold it). S5-T12: the
+/// df is read only when a form needs comparing (`appendVerbForms`).
+const Held = struct { held: bool, entry: ?postings.TermEntry, key_df: ?u32 = null };
 
 fn heldOf(context: fuzzy.Context, token: []const u8) Held {
-    var out = Held{ .held = false, .key_df = 0 };
+    var out = Held{ .held = false, .entry = null };
     if (postings.lookupExact(context.index, token)) |i| {
         const entry = context.index.terms[i];
-        out.key_df = context.keyFrequency(entry);
+        out.entry = entry;
         if (context.heldInScope(entry)) out.held = true;
     }
     if (!out.held) if (context.title) |field| if (field.lookup(token)) |t| {
@@ -775,7 +808,7 @@ fn listed(members: []const fuzzy.Member, bytes: []const u8) bool {
 /// A token no chunk in scope and no visible title holds takes them at 1.0; a
 /// held token takes one at 0.5 only when its key df is no higher than the
 /// token's own, so the group's df never rises above the token's through R.
-fn appendVerbForms(allocator: std.mem.Allocator, context: fuzzy.Context, keyer: *Keyer, word: *std.ArrayList(u8), token: []const u8, members: *std.ArrayList(fuzzy.Member)) !void {
+fn appendVerbForms(allocator: std.mem.Allocator, context: fuzzy.Context, keyer: *Keyer, word: *std.ArrayList(u8), token: []const u8, collected: *Collected) !void {
     const u = (try keyer.appendWord(token, word)) orelse return;
     var found = verb_forms.Words{};
     verb_forms.eligibleForms(u, token, &found);
@@ -783,16 +816,17 @@ fn appendVerbForms(allocator: std.mem.Allocator, context: fuzzy.Context, keyer: 
     for (0..found.len) |i| {
         const form = found.get(i);
         const candidate = exact(context, form) orelse continue;
-        if (listed(members.items, candidate.bytes)) continue;
+        if (listed(collected.members.items, candidate.bytes)) continue;
         var m = member(context, candidate) orelse continue;
         if (held == null) held = heldOf(context, token);
         if (held.?.held) {
-            if (m.key_df > held.?.key_df) continue;
+            if (held.?.key_df == null) held.?.key_df = try keyFrequencyOf(context, held.?.entry);
+            if (try keyFrequencyOf(context, candidate.body) > held.?.key_df.?) continue;
             m.weight = verb_form_held_weight;
         } else {
             m.weight = verb_form_unheld_weight;
         }
-        try members.append(allocator, m);
+        try collected.append(allocator, m, candidate.body);
     }
 }
 
@@ -812,8 +846,8 @@ pub fn compute(allocator: std.mem.Allocator, context: fuzzy.Context, map: *const
     defer kk.deinit(allocator);
     var word = std.ArrayList(u8).empty;
     defer word.deinit(allocator);
-    var members = std.ArrayList(fuzzy.Member).empty;
-    defer members.deinit(allocator);
+    var collected = Collected{};
+    defer collected.deinit(allocator);
     var items = std.ArrayList(fuzzy.Group).empty;
     errdefer {
         for (items.items) |g| {
@@ -831,7 +865,7 @@ pub fn compute(allocator: std.mem.Allocator, context: fuzzy.Context, map: *const
         if (repeated) continue;
         k.clearRetainingCapacity();
         try keyer.appendKey(token, &k);
-        members.clearRetainingCapacity();
+        collected.clear();
         // The term equal to the key, when its own key is itself.
         const self: ?Numbered = if (postings.lookupExact(context.index, k.items)) |i|
             .{ .body = context.index.terms[i], .bytes = context.index.terms[i].term }
@@ -839,15 +873,20 @@ pub fn compute(allocator: std.mem.Allocator, context: fuzzy.Context, map: *const
         if (self) |candidate| {
             kk.clearRetainingCapacity();
             try keyer.appendKey(candidate.bytes, &kk);
-            if (std.mem.eql(u8, kk.items, k.items)) if (member(context, candidate)) |m| try members.append(allocator, m);
+            if (std.mem.eql(u8, kk.items, k.items)) if (member(context, candidate)) |m| try collected.append(allocator, m, candidate.body);
         }
         const r = map.range(k.items);
-        for (map.term_of[r.start..r.end]) |i| if (member(context, numbered(context, map, i))) |m| try members.append(allocator, m);
-        try appendVerbForms(allocator, context, &keyer, &word, token, &members);
-        if (members.items.len == 0) continue;
-        if (members.items.len == 1 and std.mem.eql(u8, members.items[0].term, token)) continue;
-        std.sort.heap(fuzzy.Member, members.items, token, memberBefore);
-        const owned = try allocator.dupe(fuzzy.Member, members.items);
+        for (map.term_of[r.start..r.end]) |i| {
+            const candidate = numbered(context, map, i);
+            if (member(context, candidate)) |m| try collected.append(allocator, m, candidate.body);
+        }
+        try appendVerbForms(allocator, context, &keyer, &word, token, &collected);
+        const members = collected.members.items;
+        if (members.len == 0) continue;
+        if (members.len == 1 and std.mem.eql(u8, members[0].term, token)) continue;
+        try collected.keyFrequencies(context);
+        std.sort.heap(fuzzy.Member, members, token, memberBefore);
+        const owned = try allocator.dupe(fuzzy.Member, members);
         errdefer allocator.free(owned);
         const typed = try allocator.dupe(u8, token);
         errdefer allocator.free(typed);
