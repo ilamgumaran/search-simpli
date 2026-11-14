@@ -145,9 +145,10 @@ query word that occurs; and no chunk overlaps a grade-2 and a grade-0 row of one
 query.
 
 **Two surfaces, two variants.** `scripts/j2_run.py` indexes J2 through the
-shipped `searchd` (`index EMPTY --filename-index`, then `apply` with three host
-roots: `apply` cannot turn the file-name channel on for a new directory, so the
-index also holds an empty `r-legacy` root; every request names the three roots)
+shipped `searchd` in one step since S5-T11 (`apply IDX --changes CHANGES
+--filename-index`: the three host roots with the file-name channel on and no
+other root; until S5-T11 an `index EMPTY --filename-index` first left an empty
+`r-legacy` root beside them; every request names the three roots)
 and `python3 scripts/relevance_smoke.py --pack j2` runs the Python reference.
 Knowledge rows run `search_knowledge` (lexical, top 10) twice, with
 `search_field: content` (the primary number, the one later bars are written
