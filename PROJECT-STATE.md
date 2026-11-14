@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-13 (S5-T8 re-ruled before its merge: fold-groups-v3 alone, fuzzy-v1 unchanged, reviews R05 and R06; contracts 2.7.0, Dart 0.8.0; verified and merged 2026-11-12 EST)
+Last updated: 2026-11-13 (S5-T11, `searchd apply --filename-index` creates a fresh multi-root index with the file-name channel in one operation, review R08; CLI only, contracts 2.7.0 and Dart 0.8.0 unchanged; built, awaiting rulings and verification)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,25 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## One `apply` creates a fresh multi-root index with the file-name channel (S5-T11, review R08, 2026-11-13; built, awaiting rulings and verification)
+
+Built on `task/S5-T11` ([task and Report](docs/tasks/S5-T11.md)). CLI only: `zig/src/cli.zig`; no engine, format,
+contract, C ABI or Dart API change; contracts 2.7.0 and Dart 0.8.0 unchanged.
+
+- **The flag.** `searchd apply <dir> --changes <file> --filename-index` sets the core's `filename_index` (what
+  `ss_apply_changes`'s `opts_json` already took). A directory with no index (empty or missing) gets exactly the
+  requested roots with the filename sections, at generation 1 in an empty directory; `filename` and `both` answer at
+  once; no `r-legacy` root. An index with the channel: the call is the call without the flag. An index without it:
+  one stderr line naming the flag and the reason, exit 2, every file byte-identical, the generation unchanged. Without
+  the flag a fresh `apply` is byte for byte as before.
+- **J2.** `scripts/j2_run.py` builds its index in one `apply --filename-index`; its root check takes exactly the three
+  roots. Every J2 cell is unchanged (0 queries differ in either variant; 0 rows differ from the baseline; gate pass),
+  and all 857 J2 requests (`content`, `filename`, `both`, `find`, `index_status`) answer identically on the one-step and
+  the two-step index once the generation number and the empty `r-legacy` row are taken out.
+- **Natives.** Rebuilt twice with fresh caches: every library's bytes unchanged; `native/SOURCE-SHA256` re-stamped
+  (`03435a90…`) because `cli.zig` is a digest input. **For the consumer app:** no pin needed for behaviour; the next
+  pin carries the new digest.
 
 ## Fewer misleading hits for unanswerable questions: fold-groups-v3 (S5-T8, reviews R05 and R06; re-ruled before its merge; verified and merged)
 
