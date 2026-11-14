@@ -39,3 +39,45 @@ its own empty global and local Zig caches (macOS arm64 dylib):
 Build the four libraries as above into `<scratch>/<name>/zig/zig-out/lib/aarch64-macos/`, the index into
 `<scratch>/idx10k-fn`, copy `harness/*` into `<scratch>`, then `<scratch>/run.sh <run name>` and
 `python3 -I <scratch>/summarize.py <scratch>/<run name>.jsonl`.
+
+# Phase 2: the shipped change measured (`phase2/`)
+
+The raw record of S5-T12 Phase 2: (a) in two parts, the check (`a17c415`) and the lazy view (`8536159`, then
+`104d7cd`). Every timed start passed the gate; `gates.txt` above now holds every check of both phases.
+
+| File | What it is |
+| --- | --- |
+| `phase2/p2acc1.jsonl`, `phase2/p2acc2.jsonl` | **The acceptance runs.** 8 rounds x (`main`, `main2`, `part1`, `final`) x 40 (workload, query) rows. `p2acc2` is the one repeat the coordinator's rule allows: `p2acc1` ran with `mediaanalysisd` (a macOS process) at up to 117 % of a core, and one cell (`both-scoped` `system`) spread over 0.337–0.352 ms for every library. Both runs are reported. |
+| `phase2/p2acc1-summary.txt`, `phase2/p2acc2-summary.txt` | `harness/summarize3.py RUN main main2 part1 final`, then `RUN part1 final`, verbatim. |
+| `phase2/p2run3.jsonl`, `phase2/p2run3-summary.txt` | The first complete run, of `8536159` as `part2`: it found the scoped grouped `both` queries +0.005–0.008 ms slower than `part1`. That build is **a rejected attempt**, kept as the record. |
+| `phase2/p2inv1.jsonl`, `phase2/p2inv1-summary.txt` | The attribution run: `part1`, `part2` (`8536159`), `part2b` (`part2` with `harness/part2b.py`, which became `104d7cd`) and `part2e` (`part2` with the view built first, as `main` does: an investigation build). |
+| `phase2/p2run1.jsonl`, `phase2/p2run2.jsonl` | Two runs refused at their first start (5-minute load 4.29 and 4.02, from my own builds and plant suites). Nothing timed. |
+| `phase2/firstq1.jsonl`, `phase2/firstq1-summary.txt` | S5-T8's bound "the first `content` query after an open ≤ +0.10 ms": 6 rounds x (`main`, `main2`, `final`), 15 fresh handles per query, the median. Filename-indexed snapshot only. |
+| `phase2/df-counts.txt` | How many key df reads (`scope.documentFrequency` calls) each query makes, from instrumented copies of `c674a9c` (`cntm`), `8536159` (`cnt2`) and `104d7cd` (`cnt2b`): one `std.debug.print` per call, one call per query. Not timed. |
+| `phase2/equivalence-final.json` | `harness/equivalence.py` with `main`'s and `final`'s `searchd`: 3,480 requests, 0 differ, 0 errors; the hidden-label file 60 cases, 0 leaks, and 26 of 26 found with the label. |
+| `phase2/j2-gate-searchd.txt`, `phase2/j2-gate-reference.txt`, `phase2/j2-compare-main-final.txt` | `scripts/j2_gate.py` on `final`'s `searchd` run and on the Python reference (`scripts/relevance_smoke.py --pack j2 --top-k 10`): every row +0.000, gate pass; `j2_run.py --compare` of `main`'s and `final`'s runs: 0 queries differ under either field. |
+| `phase2/plants.txt` | The plant suites' failing tests and summaries. |
+| `phase2/harness/` | `bench2.py` (Phase 1's bench over five workloads), `run2p.sh` (the rounds; `VARIANTS` names the four libraries), `summarize2.py`, `summarize3.py`, `two_roots.py` (the two-root changes file), `equivalence.py`, `count_df.py`, `part2b.py`, `firstq.py`, `runfirst.sh`, and the three plant diffs. |
+
+## The libraries
+
+All `ReleaseSmall`, `zig build lib` with Zig 0.16.0, each from its own `git archive` copy with its own empty global
+and local Zig caches (macOS arm64 dylib):
+
+| Library | Source | Bytes | sha256 |
+| --- | --- | ---: | --- |
+| `main`, `main2` | `c674a9c`, two copies | 953,848 | `848fe876…a09e7a8` (identical: process noise only) |
+| `part1` | `a17c415` (the check alone) | 954,120 | `fa462d65…f0ea0d6` |
+| `part2` | `8536159` (the check and the first lazy view): rejected | 953,800 | `351940a6…abe7c0d` |
+| `part2e` | `8536159` plus `_ = try lazy.get();` after `defer lazy.deinit();` in `bothGroups`: investigation only | 954,008 | `4fd06fa5…0bd454ba` |
+| `part2b`, `final` | `8536159` plus `harness/part2b.py`; `final` from `104d7cd`, byte-identical | 953,688 | `1e44b57b…33cd557e7` |
+
+`final`'s `searchd` (`zig build -Doptimize=ReleaseSmall`) is 1,095,960 B.
+
+## The workloads
+
+`bench2.py` runs Phase 1's eight queries over five workloads: `content` and `both` on Phase 1's one-root snapshot
+(`idx10k-fn`); `both-all` on a two-root snapshot with every root allowed; `content-scoped` and `both-scoped` on it with
+`"roots": ["r-left"]`. The two-root snapshot: `harness/two_roots.py <corpus> <changes.json>` (groups 00–49 in `r-left`,
+50–99 in `r-right`, no labels), then `main`'s `searchd apply <dir> --changes <changes.json> --filename-index`: 10,000
+files, 19,959 chunks, `r-left` 10,000 chunks, `r-right` 9,959. The mask hides `r-right`.

@@ -1,0 +1,68 @@
+{
+ "requests": 3480,
+ "errors": 0,
+ "differ": 0,
+ "differ_examples": [],
+ "by_kind": {
+  "all/content": [
+   290,
+   0
+  ],
+  "all/both": [
+   290,
+   0
+  ],
+  "all/filename": [
+   290,
+   0
+  ],
+  "all/find-words": [
+   290,
+   0
+  ],
+  "all/find-phrase": [
+   290,
+   0
+  ],
+  "all/find-prefix": [
+   290,
+   0
+  ],
+  "two/content": [
+   290,
+   0
+  ],
+  "two/both": [
+   290,
+   0
+  ],
+  "two/filename": [
+   290,
+   0
+  ],
+  "two/find-words": [
+   290,
+   0
+  ],
+  "two/find-phrase": [
+   290,
+   0
+  ],
+  "two/find-prefix": [
+   290,
+   0
+  ]
+ },
+ "hidden_file": {
+  "path": "home/notes/zarvelo-plans.md",
+  "required_labels": [
+   "adults"
+  ],
+  "cases": 60,
+  "leaks": [],
+  "with_label": {
+   "found": 26,
+   "missed": []
+  }
+ }
+}

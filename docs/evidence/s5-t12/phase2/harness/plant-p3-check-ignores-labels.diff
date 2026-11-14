@@ -1,0 +1,12 @@
+--- scope-8536159.zig	2026-11-14 09:42:32
++++ plant3/tree/zig/src/scope.zig	2026-11-14 09:01:43
+@@ -276,8 +276,8 @@
+ ) !?View {
+     if (labeled_documents != null and !labeled_documents.?) {
+         if (mask == null) return null;
+-        if (mask.?.allowsEvery(documents.len)) return null;
+     }
++    if (mask != null and mask.?.allowsEvery(documents.len)) return null; // PLANT P3: labels ignored
+     if (@import("builtin").is_test) visible_walks += 1;
+     var count: u64 = 0;
+     var total: u64 = 0;
