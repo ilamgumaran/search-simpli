@@ -12,6 +12,7 @@
 //! snapshots; `runQuery`/`runEvidence` below use it, and so does
 //! `Service.searchKnowledge` (`service.zig`) -- which means `searchd serve`,
 //! stdio and `--http` alike, is analyzer-aware too, not just this CLI path.
+const apply_module = @import("apply.zig");
 const filename_field = @import("filename_field.zig");
 const filename_response = @import("filename_response.zig");
 const std = @import("std");
@@ -122,13 +123,19 @@ pub const usage_text =
         \\                       path (page size 1-1000, default 100).
         \\  roots <dir> [--json] the roots and their file counts.
         \\  apply <dir> --changes <file> [--expect-generation N]
-        \\                       [--allow-file-reads] [--json]
+        \\                       [--allow-file-reads] [--filename-index] [--json]
         \\                       publish one new generation from host-fed
         \\                       changes (docs/folder-knowledge-
         \\                       implementation.md section 6); prints a
         \\                       summary, or the full report with --json.
         \\                       `file` changes are read only with
-        \\                       --allow-file-reads.
+        \\                       --allow-file-reads. --filename-index on a
+        \\                       directory with no index creates it with the
+        \\                       file-name channel on (filename and both
+        \\                       queries), with only the requested roots; an
+        \\                       index that has the channel is applied to as
+        \\                       without the flag; an index without it is
+        \\                       refused (exit 2, nothing written).
         \\                       find, outline, read-span, list-files and
         \\                       roots print text, or with --json the same
         \\                       JSON the C ABI and `serve` return.
@@ -236,7 +243,17 @@ pub const ListFilesArgs = struct {
     json: bool = false,
 };
 pub const RootsArgs = struct { path: []const u8, json: bool = false };
-pub const ApplyArgs = struct { path: []const u8, changes: []const u8, expect_generation: ?u64 = null, allow_file_reads: bool = false, json: bool = false };
+pub const ApplyArgs = struct {
+    path: []const u8,
+    changes: []const u8,
+    expect_generation: ?u64 = null,
+    allow_file_reads: bool = false,
+    json: bool = false,
+    /// S5-T11 (review R08): `--filename-index`. A directory with no index is
+    /// created with the file-name channel on; an index that has it is applied
+    /// to as without the flag; an index without it is refused (exit 2).
+    filename_index: bool = false,
+};
 pub const IndexArgs = struct { folder: []const u8, out: []const u8, options: IndexOptions };
 pub const QueryArgs = struct { path: []const u8, text: []const u8, options: QueryOptions };
 
@@ -602,6 +619,8 @@ fn parseInner(p: *Parser) error{Usage}!Command {
                     return p.usage("invalid value for", "--expect-generation", value, " (expected a non-negative whole number)");
             } else if (std.mem.eql(u8, flag, "--allow-file-reads")) {
                 args.allow_file_reads = true;
+            } else if (std.mem.eql(u8, flag, "--filename-index")) {
+                args.filename_index = true;
             } else if (std.mem.eql(u8, flag, "--json")) {
                 args.json = true;
             } else return p.usage("unknown flag for", "apply", flag, " (see searchd --help)");
@@ -1196,7 +1215,26 @@ pub fn runApply(io: std.Io, allocator: std.mem.Allocator, args: ApplyArgs, outpu
     }
     var dir = try cwd.createDirPathOpen(io, args.path, .{ .open_options = .{ .iterate = true } });
     defer dir.close(io);
-    const result = try ops.applyChanges(arena, io, dir, request_json, .{ .allow_file_reads = args.allow_file_reads });
+    // S5-T11: `--filename-index` is the core's `filename_index: true` (what
+    // `ss_apply_changes`'s `opts_json` sets); without it `null`, as before.
+    const options: apply_module.Options = .{
+        .allow_file_reads = args.allow_file_reads,
+        .filename_index = if (args.filename_index) true else null,
+    };
+    const result = ops.applyChanges(arena, io, dir, request_json, options) catch |err| switch (err) {
+        // The index exists without the channel: refused under the writer
+        // lease before anything is read or written; a usage-class line.
+        error.FilenameSettingMismatch => if (args.filename_index) {
+            try errors.writeAll("searchd: invalid value for apply --filename-index: the index in '");
+            for (args.path) |byte| try errors.writeByte(if (byte < 0x20 or byte == 0x7f) '?' else byte);
+            try errors.writeAll("' has no file-name channel, and apply does not add one to an existing index (build a new directory)\n");
+            return usage_exit_status;
+        } else return err,
+        // A channel index under another analyzer: refused as without the
+        // flag (the CLI applies with analyzer-v2 only).
+        error.FilenameMigrationRequiresNewDirectory => return if (args.filename_index) error.AnalyzerMismatch else err,
+        else => return err,
+    };
     return finish(arena, result, args.json, output, errors, printApply);
 }
 
