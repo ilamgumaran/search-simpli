@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-14 (S5-T12, `both` no longer walks the scope when nothing can be hidden, review R07; part 1 alone after the re-ruling (the lazy view failed the fixed noise rule and was reverted); engine only, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; verified and merged 2026-11-14 EST)
+Last updated: 2026-11-14 (S5-T12, `both` no longer walks the scope when nothing can be hidden, review R07; part 1 alone after the re-ruling (the lazy view failed the fixed noise rule and was reverted); engine only, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; verified and merged 2026-11-14 EST as `5a101b4`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -17,7 +17,7 @@ or implementation tasks; current search behavior and native artifacts are unchan
 
 ## `both` skips the scope walk when nothing can be hidden (S5-T12, review R07, 2026-11-14; part 1 alone after the re-ruling; verified and merged)
 
-**Verified and merged 14 Nov, part 1 alone** (the second [Verdict](docs/tasks/S5-T12.md), PASS on `865d060` by item 3 of the re-ruling): no cell exceeds the noise band of `main2` and two placement controls the verifier wrote, in either of two ten-round runs; every unscoped `both` query −0.030 to −0.033 ms beyond the band in both. Equivalence 29,376 requests 0 differ, J2 and goldens unchanged, plants caught, natives `cmp`-equal, CI green. The rule was changed after the first Verdict failed; the re-ruling names that to the maintainer.
+**Verified and merged 14 Nov as `5a101b4`, part 1 alone** (the second [Verdict](docs/tasks/S5-T12.md), PASS on `865d060` by item 3 of the re-ruling): no cell exceeds the noise band of `main2` and two placement controls the verifier wrote, in either of two ten-round runs; every unscoped `both` query −0.030 to −0.033 ms beyond the band in both. Equivalence 29,376 requests 0 differ, J2 and goldens unchanged, plants caught, natives `cmp`-equal, CI green. The rule was changed after the first Verdict failed; the re-ruling names that to the maintainer.
 
 **Verifier, 14 Nov:** FAIL for part 2 ([Verdict](docs/tasks/S5-T12.md)), not merged. The rule of the Phase 2 rulings (slower when shipped − `main` exceeds the run's largest noise median, in both of two runs) flags the verifier's held-out `scheduler` under `both-scoped`: +0.0039 and +0.0031 ms, against +0.0022 and +0.0019. The counted work there is equal to `main`'s (one walk, one df read). Part 1 alone is flagged by the same rule on `both-scoped` `system`. Behaviour identical (29,376 requests, J2, goldens), natives `cmp`-equal, suites and CI green. The fallback is the orchestrator's to rule.
 

@@ -260,7 +260,7 @@ abstention threshold before the negative corpus and capability gates exist.
 
 ## R07 — Reduce measured `both` overhead
 
-**S5-T12 ([task](../tasks/S5-T12.md); landed, part 1 only: verified and merged to `main` 14 Nov 2026):** steps 1
+**S5-T12 ([task](../tasks/S5-T12.md); landed, part 1 only: verified and merged to `main` 14 Nov 2026 as `5a101b4`):** steps 1
 and 3 (measured on `main` first: the walk `both` discarded is the cost), and the overhead R07 names.
 `scope.visibleCollection` no longer walks when no record carries a label and the mask allows every root of every
 document (`RootMask.allowsEvery`), which is every `both` query on a folder without labels with every root asked

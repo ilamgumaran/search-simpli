@@ -961,6 +961,6 @@ caller's labels passes every Zig test). A same-binary noise build measures proce
 re-measurement of part 1 uses placement controls the verifier writes. Details: [S5-T12](docs/tasks/S5-T12.md). Status:
 the verifier's Verdict was FAIL for part 2 by the rule fixed before it measured (`both-scoped` `scheduler` above the
 top noise median in both runs; part 1 alone flagged on `both-scoped` `system`), not merged; part 1 alone reworked, then
-verified and merged 14 Nov (the second Verdict, PASS on `865d060`: no cell above the band of `main2` and two placement
+verified and merged 14 Nov as `5a101b4` (the second Verdict, PASS on `865d060`: no cell above the band of `main2` and two placement
 controls in either of two ten-round runs; the unscoped saving −0.030 to −0.033 ms beyond it in both); R07 landed, part 1
 only.
