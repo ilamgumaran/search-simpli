@@ -97,3 +97,15 @@ harness. Nothing here was taken from the builder's scratch. See the Verdict in t
 | `verifier/equivalence-main-head.json` | `harness/vequiv.py` with `main`'s and the head's `searchd`: 29,376 requests, 0 differ, 0 errors, 0 leaks of the hidden files. |
 | `verifier/equivalence-main-plant-labels.json` | The same against plant P2b (the lazy view without the principal's labels): 4 differ, which no Zig test catches. |
 | `verifier/harness/` | `vbench.py` (Phase 2's `bench2.py` with the held-out queries added), `vrun.sh`, `vsum.py`, `vfirst.py`, `vrunfirst.sh`, `vequiv.py`, `probe.py`, and `verify_check_test.zig` (the verifier's check-against-walk cases, run in a scratch copy, not shipped). `gate.sh` is `harness/gate.sh`. |
+
+# Rework after the re-ruling (`rework/`)
+
+The builder's record of the rework (part 1 alone, head `5f02074`: the engine is `a17c415`'s byte for byte). **No
+timing**: the verifier measures. Builds from `git archive 5f02074` with their own empty Zig caches.
+
+| File | What it is |
+| --- | --- |
+| `rework/equivalence-part1.json` | `phase2/harness/equivalence.py` with `main`'s and the head's `searchd` (`ReleaseSmall`, 1,095,880 B): 3,480 requests, 0 differ, 0 errors; the hidden-label file 60 cases, 0 leaks, 26 of 26 found with the label. |
+| `rework/j2-gate-searchd.txt`, `rework/j2-gate-reference.txt`, `rework/j2-compare-main-head.txt` | `j2_gate.py` on the head's `searchd` run and on the Python reference: every row +0.000, gate pass; `j2_run.py --compare` against `main`'s run: 0 queries differ under either field. |
+| `rework/nfr13-deltas.txt` | Every NFR-13 peak number that differs from `main`'s in the same session: `find` +8 and +262 B only. |
+| `rework/plants.txt`, `rework/plant-r1-rooted-ignored.diff`, `rework/plant-r2-labels-ignored.diff` | Two plants on part 1's check, each failing the reshaped counter test and the condition test (R2 also the two S3-T3 privacy tests). |

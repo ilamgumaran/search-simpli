@@ -1,0 +1,11 @@
+R1, the check with `rooted` ignored (on 5f02074, full git archive, own caches, Debug):
+error: 'both_view_test.test.the check: no walk exactly when no record is labelled and the mask allows every root of every document; the walk's answer in every case' failed:
+error: 'both_view_test.test.the counter through the engine: no walk when nothing can be hidden, one walk under any hiding scope or label' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 438/449 tests passed (9 skipped, 2 failed)
+
+R2, the check with labels ignored (on 5f02074, full git archive, own caches, Debug):
+error: 'apply_test.test.S3-T3: a hidden label domain inside one root is indistinguishable from absent in every payload' failed:
+error: 'apply_test.test.S3-T3: a root with more than 64 label sets counts exactly and scores like the visible corpus' failed:
+error: 'both_view_test.test.the check: no walk exactly when no record is labelled and the mask allows every root of every document; the walk's answer in every case' failed:
+error: 'both_view_test.test.the counter through the engine: no walk when nothing can be hidden, one walk under any hiding scope or label' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 436/449 tests passed (9 skipped, 4 failed)

@@ -1,0 +1,12 @@
+--- a/zig/src/scope.zig	2026-11-14 10:21:52
++++ b/zig/src/scope.zig	2026-11-14 10:27:50
+@@ -276,8 +276,8 @@
+ ) !?View {
+     if (labeled_documents != null and !labeled_documents.?) {
+         if (mask == null) return null;
+-        if (mask.?.allowsEvery(documents.len)) return null;
+     }
++    if (mask != null and mask.?.allowsEvery(documents.len)) return null; // PLANT R2: labels ignored
+     if (@import("builtin").is_test) visible_walks += 1;
+     var count: u64 = 0;
+     var total: u64 = 0;
