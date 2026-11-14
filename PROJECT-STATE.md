@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-14 (S5-T12, `both` no longer walks the scope when nothing can be hidden and builds the view lazily when something can, review R07; engine only, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; built, awaiting verification)
+Last updated: 2026-11-14 (S5-T12, `both` no longer walks the scope when nothing can be hidden and builds the view lazily when something can, review R07; engine only, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; verifier's Verdict FAIL for part 2 on 2026-11-14, not merged)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,7 +15,9 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## `both` skips the scope walk when nothing can be hidden (S5-T12, review R07, 2026-11-14; built, awaiting verification)
+## `both` skips the scope walk when nothing can be hidden (S5-T12, review R07, 2026-11-14; verifier FAIL for part 2, not merged)
+
+**Verifier, 14 Nov:** FAIL for part 2 ([Verdict](docs/tasks/S5-T12.md)), not merged. The rule of the Phase 2 rulings (slower when shipped − `main` exceeds the run's largest noise median, in both of two runs) flags the verifier's held-out `scheduler` under `both-scoped`: +0.0039 and +0.0031 ms, against +0.0022 and +0.0019. The counted work there is equal to `main`'s (one walk, one df read). Part 1 alone is flagged by the same rule on `both-scoped` `system`. Behaviour identical (29,376 requests, J2, goldens), natives `cmp`-equal, suites and CI green. The fallback is the orchestrator's to rule.
 
 [Task, Report and evidence](docs/tasks/S5-T12.md) (`docs/evidence/s5-t12/`). Engine only (`hybrid.zig`, `scope.zig`,
 `fuzzy.zig`, `fold.zig`, `engine.zig`); no policy id, contract, C ABI, Dart API or format change; contracts 2.7.0 and

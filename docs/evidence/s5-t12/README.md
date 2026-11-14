@@ -81,3 +81,19 @@ and local Zig caches (macOS arm64 dylib):
 `"roots": ["r-left"]`. The two-root snapshot: `harness/two_roots.py <corpus> <changes.json>` (groups 00–49 in `r-left`,
 50–99 in `r-right`, no labels), then `main`'s `searchd apply <dir> --changes <changes.json> --filename-index`: 10,000
 files, 19,959 chunks, `r-left` 10,000 chunks, `r-right` 9,959. The mask hides `r-right`.
+
+# Verifier (`verifier/`)
+
+The S5-T12 verifier's own record, from its own builds (each a `git archive` with its own empty Zig caches), index and
+harness. Nothing here was taken from the builder's scratch. See the Verdict in the task.
+
+| File | What it is |
+| --- | --- |
+| `verifier/vrun1.jsonl`, `verifier/vrun2.jsonl` | The two timing runs: 8 rounds x (`main`, `main2`, `part1` = `a17c415`, `head` = `1769214`) x 60 (workload, query) rows, the builder's five workloads and eight queries plus the verifier's four held-out queries (`consensus`, `scheduler`, `garbaje`, `hash`). Every start passed the gate. |
+| `verifier/vrun1-summary.txt`, `verifier/vrun2-summary.txt` | `harness/vsum.py RUN`, verbatim: per cell the differences against `main` and the rule of "Rulings on Phase 2" item 2 applied (`ABOVE` = `head` − `main` exceeds the run's largest noise median). |
+| `verifier/vfirst1.jsonl`, `verifier/vfirst1-summary.txt` | The first `content` query after an open: 8 rounds, the same four libraries, 15 fresh handles per query, the filename-indexed and the plain snapshot. |
+| `verifier/gates.txt` | Every gate check of the verifier (three refusals before any timed start, then 96 passes). |
+| `verifier/walk-and-df-counts.txt` | Walks and key df reads per query, from instrumented copies of `c674a9c` and `1769214`. |
+| `verifier/equivalence-main-head.json` | `harness/vequiv.py` with `main`'s and the head's `searchd`: 29,376 requests, 0 differ, 0 errors, 0 leaks of the hidden files. |
+| `verifier/equivalence-main-plant-labels.json` | The same against plant P2b (the lazy view without the principal's labels): 4 differ, which no Zig test catches. |
+| `verifier/harness/` | `vbench.py` (Phase 2's `bench2.py` with the held-out queries added), `vrun.sh`, `vsum.py`, `vfirst.py`, `vrunfirst.sh`, `vequiv.py`, `probe.py`, and `verify_check_test.zig` (the verifier's check-against-walk cases, run in a scratch copy, not shipped). `gate.sh` is `harness/gate.sh`. |

@@ -953,5 +953,6 @@ J2 unchanged on both surfaces; 3,480 `searchd` requests identical; a labelled fi
 touched-chunk cost for a frequent group ((b), about 0.01–0.02 ms by subtraction) was not built or profiled.
 
 **Conclusion:** The walk is now skipped whenever nothing can be hidden, and built at most once, on demand, when
-something can. Details: [S5-T12](docs/tasks/S5-T12.md). Status: built; awaiting the verifier (R07 is marked landed by
-the verifier).
+something can. Details: [S5-T12](docs/tasks/S5-T12.md). Status: built; the verifier's Verdict is FAIL for part 2 by the rule fixed before it measured
+(`both-scoped` `scheduler` above the top noise median in both runs; part 1 alone flagged on `both-scoped` `system`), not
+merged; R07 not landed.
