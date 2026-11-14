@@ -212,7 +212,9 @@ class ApplyFilenameIndexTests(unittest.TestCase):
         change = {"changes": [add("school", "tide-table.md", TIDE + "\nFerry times, edited.\n")]}
         flagged = self.apply(with_flag, change, "--filename-index")
         plain = self.apply(without, change)
-        self.assertEqual(flagged, plain)
+        # `ms` is the call's wall-clock time; every other field must match.
+        self.assertIn("ms", flagged)
+        self.assertEqual({k: v for k, v in flagged.items() if k != "ms"}, {k: v for k, v in plain.items() if k != "ms"})
         self.assertEqual((flagged["generation"], flagged["changed"]), (2, 1))
         self.assert_channel(with_flag, 2)
         # A channel index under analyzer-v1 (only `index` makes one): `apply`
