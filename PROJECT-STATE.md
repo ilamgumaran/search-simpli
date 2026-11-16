@@ -15,7 +15,7 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## Host-supplied vectors drafted as a capability (S6-T6, plan item E, 2026-11-16; Proposed, verified and merged)
+## Host-supplied vectors drafted as a capability (S6-T6, plan item E, 2026-11-16; Proposed; verified, merge pending a green CI run)
 
 Documents only: [CAP-21](docs/requirements/cap-21-host-supplied-vectors.md), **Proposed, not approved**: the host runs the
 embedding model; after `apply` publishes lexically, the host lists chunks without a vector and attaches vectors by chunk
