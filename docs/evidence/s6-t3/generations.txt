@@ -1,0 +1,16 @@
+# S6-T3: directory size over one-file updates (16 Nov 2026, main 7cd2c16, searchd ReleaseSmall, macOS arm64)
+# Corpus: a copy of `python3 scripts/gen_timing_corpus.py <dir> 10000`. Two index directories, each
+# `searchd index <corpus> --out <idx> --filename-index`, then five times: append the line
+# "An added line for update N." to group-0N/doc-00N00.md, then
+#   searchd index <corpus> --out <nokeep> --update
+#   searchd index <corpus> --out <keep2> --update --keep-generations 2
+# Size = sum of the sizes of every file in the directory (find -type f, stat).
+after              nokeep_bytes  nokeep_files  keep2_bytes  keep2_files
+first_index        32281645      9             32281645     9
+update_1           64562727      15            64562727     15
+update_2           96843957      21            64563102     15
+update_3           129125335     27            64563398     15
+update_4           161406861     33            64563694     15
+update_5           193688535     39            64563990     15
+# keep2 after update 5 holds generations 5 and 6: documents, lexical, source, state, filenames,
+# filename-lexical for each, plus MANIFEST, INDEX-STATE.json, WRITER.LOCK.

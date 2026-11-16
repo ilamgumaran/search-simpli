@@ -1,0 +1,218 @@
+{
+ "index": "tamil-1k-fn",
+ "total_bytes": 9521760,
+ "candidates": {
+  "A chunk text as source spans": {
+   "documents_before": 3479918,
+   "chunks_spanned": 1963,
+   "chunks_inline": 0,
+   "A1 text replaced by a u32 span offset": 239994,
+   "A2 + path dropped (from the source table)": 198771,
+   "A3 + chunk id as 10 raw bytes": 179141,
+   "A4 + fixed fields as varints": 115068,
+   "saved_A1": 3239924,
+   "saved_A1_to_A4": 3364850,
+   "round_trip": "every spanned chunk's text rebuilt from the source equals the stored text"
+  },
+  "A' source keeps only bytes no chunk holds": {
+   "documents_after_record_coding (path dropped, raw ids, varint fields)": 3359918,
+   "documents_saved_by_record_coding": 120000,
+   "source_before": 3352565,
+   "source_after": 112641,
+   "saved": 3239924,
+   "files_rebuilt_from_chunks": 1000,
+   "files_kept_whole": 0,
+   "gap_bytes": 2926,
+   "whole_file_bytes": 0,
+   "chunk_offsets": 7852,
+   "round_trip": "every rebuilt file's sha256 equals the source table's"
+  },
+  "B source text block-compressed": {
+   "text_before": 3250702,
+   "deflate": [
+    {
+     "block_bytes": 16384,
+     "level": 6,
+     "blocks": 199,
+     "compressed": 629850,
+     "block_table": 1592,
+     "section_text_after": 631442,
+     "compress_ms": 89.6,
+     "decompress_ms_all": 2.3,
+     "decompress_us_per_block": 11.6
+    },
+    {
+     "block_bytes": 65536,
+     "level": 6,
+     "blocks": 50,
+     "compressed": 577023,
+     "block_table": 400,
+     "section_text_after": 577423,
+     "compress_ms": 106.6,
+     "decompress_ms_all": 2.0,
+     "decompress_us_per_block": 39.4
+    },
+    {
+     "block_bytes": 262144,
+     "level": 6,
+     "blocks": 13,
+     "compressed": 561086,
+     "block_table": 104,
+     "section_text_after": 561190,
+     "compress_ms": 109.3,
+     "decompress_ms_all": 1.6,
+     "decompress_us_per_block": 126.6
+    },
+    {
+     "block_bytes": 65536,
+     "level": 1,
+     "blocks": 50,
+     "compressed": 909846,
+     "block_table": 400,
+     "section_text_after": 910246,
+     "compress_ms": 17.0,
+     "decompress_ms_all": 2.7,
+     "decompress_us_per_block": 54.9
+    },
+    {
+     "block_bytes": 65536,
+     "level": 9,
+     "blocks": 50,
+     "compressed": 546461,
+     "block_table": 400,
+     "section_text_after": 546861,
+     "compress_ms": 575.1,
+     "decompress_ms_all": 2.2,
+     "decompress_us_per_block": 43.0
+    }
+   ],
+   "per_file": {
+    "per_file_level": 6,
+    "compressed": 790331,
+    "file_table_extra": 8000,
+    "section_text_after": 798331
+   },
+   "file_aligned_64k": {
+    "block_bytes": 65536,
+    "level": 6,
+    "blocks": 52,
+    "compressed": 577322,
+    "block_table": 416,
+    "section_text_after": 577738
+   },
+   "file_aligned_16k": {
+    "block_bytes": 16384,
+    "level": 6,
+    "blocks": 224,
+    "compressed": 636233,
+    "block_table": 1792,
+    "section_text_after": 638025
+   },
+   "lz4_style_64k": {
+    "compressed": 1320517,
+    "block_table": 400,
+    "section_text_after": 1320917,
+    "python_seconds": 0.6
+   }
+  },
+  "C lexical coding": {
+   "lexical_before": 2464201,
+   "C1 dictionary: front-coded terms + df varint (start, count derived)": {
+    "before": 1107243,
+    "after": 260224,
+    "saved": 847019,
+    "without front coding (length + bytes + df varints)": 632075
+   },
+   "C2 postings: document gap varint + tf varint": {
+    "before": 949704,
+    "after": 302121,
+    "saved": 647583,
+    "gap_varint_bytes": 183408,
+    "tf_varint_bytes": 118713
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 949704,
+    "after": 203874,
+    "saved": 745830
+   },
+   "C3 document lengths as varints": {
+    "before": 7852,
+    "after": 1963,
+    "saved": 5889
+   },
+   "C5 offsets section left out (highlights re-tokenized from the hit text)": {
+    "before": 268832,
+    "saved": 268832
+   },
+   "C6 positions and offsets both left out (no phrase find)": {
+    "before": 399322,
+    "saved": 399322
+   },
+   "deflate of each part (reference: what redundancy is left)": {
+    "postings": 220950,
+    "positions": 104391,
+    "offsets": 71547
+   },
+   "C5b offsets kept, one byte per token (separator and length nibbles)": {
+    "before": 268832,
+    "after": 132453,
+    "saved": 136379
+   },
+   "C1+C2b+C3 saved": 1598738,
+   "C1+C2b+C3+C5 saved": 1867570
+  },
+  "F2 filename lexical section, same coding": {
+   "lexical_before": 49091,
+   "C1 dictionary: front-coded terms + df varint (start, count derived)": {
+    "before": 29027,
+    "after": 4119,
+    "saved": 24908,
+    "without front coding (length + bytes + df varints)": 7006
+   },
+   "C2 postings: document gap varint + tf varint": {
+    "before": 16000,
+    "after": 4872,
+    "saved": 11128,
+    "gap_varint_bytes": 2872,
+    "tf_varint_bytes": 2000
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 16000,
+    "after": 2936,
+    "saved": 13064
+   },
+   "C3 document lengths as varints": {
+    "before": 4000,
+    "after": 1000,
+    "saved": 3000
+   },
+   "C5 offsets section left out (highlights re-tokenized from the hit text)": {
+    "before": 0,
+    "saved": 0
+   },
+   "C6 positions and offsets both left out (no phrase find)": {
+    "before": 0,
+    "saved": 0
+   },
+   "deflate of each part (reference: what redundancy is left)": {
+    "postings": 1506,
+    "positions": 0,
+    "offsets": 0
+   },
+   "C1+C2b+C3 saved": 40972,
+   "C1+C2b+C3+C5 saved": 40972
+  },
+  "D state refers to the source table": {
+   "state_before": 97159,
+   "files_shared": 1000,
+   "files": 1000,
+   "saved (sha256 + path + size per shared file)": 61000,
+   "deflate of the whole state section (reference)": 40245
+  },
+  "F filename catalog without derivable bytes": {
+   "catalog_before": 78036,
+   "saved (stem text and copied chunk ids)": 29000,
+   "note": "a catalog record could be (body anchor ordinal) only; paths, stems, ids, lines and labels are the anchor chunk's"
+  }
+ }
+}

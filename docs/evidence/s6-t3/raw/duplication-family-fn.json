@@ -1,0 +1,38 @@
+{
+ "index": "family-fn",
+ "total_bytes": 5621585,
+ "chunk_text_bytes": 1427521,
+ "source_text_bytes": 1237342,
+ "chunks": 1063,
+ "chunks_found_in_source": 1060,
+ "chunk_text_bytes_found_in_source": 1427407,
+ "chunk_text_bytes_not_found": 114,
+ "distinct_file_bytes_covered_by_chunks": 1236301,
+ "chunk_overlap_bytes": 191106,
+ "source_bytes_not_in_any_chunk": 1041,
+ "paths": {
+  "documents (one per chunk)": 19305,
+  "distinct paths in documents": 939,
+  "source file table": 953,
+  "state": 953
+ },
+ "state_repeats": {
+  "sha256 also in source table (32 B per file)": 1472,
+  "paths also in source table": 953,
+  "size also source text_length (8 B per file)": 368,
+  "chunks count also derivable from documents (4 B per file)": 184,
+  "chunker also in documents chunker_index (4 B per file)": 184,
+  "files whose state sha256 equals the source table's": 46
+ },
+ "filename_catalog_repeats": {
+  "paths": 939,
+  "chunk ids copied from body anchors": 900,
+  "stems (record text, derivable from paths)": 486,
+  "records": 45
+ },
+ "dictionary_redundant": {
+  "posting count equals df (u64 per term)": 140096,
+  "posting start equals running sum of counts (u64 per term)": 140096
+ },
+ "section_paths_bytes": 4194
+}

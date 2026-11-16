@@ -41,6 +41,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 - [Why Zig and where it belongs](decisions/0001-zig-engine-boundary.md)
 - [Ground-up PPMI semantics](cooccurrence-semantics.md)
 - [Measured scale behavior](scale-benchmark.md)
+- [Index size: where the bytes go and what to change](index-size.md) (S6-T3, plan item D1)
 - [Product-search relevance benchmark and smoke gate](relevance-benchmark.md)
 - [Proposed E-01A real-folder judgment-pack workflow](requirements/cap-11-e01a-judgment-packs.md)
 

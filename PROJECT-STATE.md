@@ -15,6 +15,33 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
+## Index size: where the bytes go and what to change (S6-T3, plan item D1, 2026-11-16; verified and ruled on)
+
+**Verified 16 Nov, PASS on `e1c9c46`** ([Verdict](docs/tasks/S6-T3.md)): every corpus, section and part size reproduced to the byte with a
+fresh `ReleaseSmall` `searchd`; the verifier's own parser and re-encoders (with decode round trips) give the same savings
+for A′, C1, C2b, C3, C5b, D and F2 on prose and timing 10k; timings not rerun (load above 4.0). **Ruled the same day**
+([`docs/index-size.md`](docs/index-size.md#rulings-16-nov-2026)): D2 in four steps, one format version each (lexical v3 with
+F2; A′ with record coding and the path once in the source table; C5b offsets, positions mandatory; D and F); block
+compression revisited after them; a separate D2-5 makes `searchd index` and `searchd apply` keep two generations by
+default.
+
+Measurement and design only: no format, engine source, contract or binding change; the native digest is
+unchanged. [`docs/index-size.md`](docs/index-size.md), raw tables in `docs/evidence/s6-t3/`.
+
+- **Today**, one generation, file-name channel on: the index is 4.44 times the 10k timing corpus (32,281,645 B,
+  the plan's figure reproduced to the byte), 4.05 times 10k English prose (new generator
+  `scripts/gen_prose_corpus.py`), 2.66 times 10k Tamil, 3.78 times the repository's fixtures.
+- **Where:** the text twice (chunk text in `documents`, file bytes in `source`), fixed 8-byte postings
+  (25 % of the whole index on both the timing and the prose corpus) and per-token highlight offsets.
+  `scripts/index_size_budget.py` splits every file into parts that sum to its size.
+- **Generations:** with `keep_generations` unset (the CLI's and the binding's default) every one-file update
+  adds a full generation (+32.3 MB at 10k timing); the consumer app passes 2, so it holds two.
+- **Recommended for D2, in order:** lexical v3 (varint postings, front-coded dictionary), the text once with the
+  chunks keeping it and the source keeping only the rest, the highlight offsets at one byte per token, state and
+  catalog without repeats. Projected from measured re-encodings: 1.97 (timing 10k), 1.82 (prose 10k), 1.27 (Tamil
+  10k), 1.71 (fixtures); about 0.15 lower on timing and prose if the offsets are left out, at a measured `find`
+  cost. The six questions were ruled the same day (above). 03-next rows D2-1 to D2-5.
+
 ## A front door for contributors and the layer check (S6-T1, objective plan A and B1, 2026-11-16; verified and merged)
 
 **Verified and merged 16 Nov as `59d048e`** ([second Verdict](docs/tasks/S6-T1.md), PASS on `64db476`). The first Verdict failed `69352f2`: imports split over lines, written with a space or through `../src/` passed the checker. The rework reads each file as Zig tokens and resolves every target; the verifier's thirteen plants against it are all caught or correctly ignored, and CI is green.
