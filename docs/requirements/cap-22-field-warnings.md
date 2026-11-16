@@ -2,10 +2,10 @@
 
 Status: Implemented (S6-T5), awaiting verification · built by [S6-T5](../tasks/S6-T5.md) (objective 3, item G of the [objective plan](../plans/2026-11-16-objective-plan.md)). Not Validated
 
-The number: CAP-21 is free on `main` at `1c15b19`, but the unmerged S6-T6
-draft (`task/S6-T6`) claims it, with the next four functional requirement
-numbers and the next non-functional one, so this record takes CAP-22 and
-FR-31.
+The number: CAP-21 was free on `main` at `1c15b19`, but the S6-T6 draft
+(`task/S6-T6`, since merged as `02e20f8`) claimed it, with the next four
+functional requirement numbers and the next non-functional one, so this
+record takes CAP-22 and FR-31.
 
 ## 1. Proposal
 
