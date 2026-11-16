@@ -16,6 +16,8 @@ Raw rows behind the Phase 1 Report in [`docs/tasks/S6-T4.md`](../../tasks/S6-T4.
 | `queries/` | the query sets (`bench.py queries` / `j2queries`) |
 | `summary.md` | `summarize.py run3.jsonl run4.jsonl` |
 | `old-library-on-v3.txt` | Phase 2, ruling 4: `searchd` and `libsearch_simpli.dylib` built from `98c4a2b` (ReleaseSmall) on a copy of `tests/fixtures/index-v3-s6t4/`: every command and `ss_open` refuse it with `UnsupportedFlags` |
+| `same-answers.txt` | Phase 2, ruling 3: `same_answers.py` over J2, `fixtures/`, the family-folder pack and the three 10k corpora (main's library on v2 against this branch's on v3, and this branch's on v2), then the J2 native run and gate |
+| `plants.txt` | Phase 2, ruling 5: the three plants, each in its own scratch copy and caches, and the test summary each gave |
 
 Variants: `today` and `today-b` (`main`'s library on the v2 index, two processes); `eager-v3`; `lazy-nocache`
 (`SS_PROTO_CACHE_BYTES=0`), `lazy-1mib` (1,048,576), `lazy-keep` (no budget), `lazy-all`

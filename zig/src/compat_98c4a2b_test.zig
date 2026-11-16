@@ -377,3 +377,58 @@ test "S6-T4 ruling 3: two terms sharing 300 bytes go through the analyzer, the w
         try std.testing.expect(std.mem.indexOf(u8, found, case[2]) == null);
     }
 }
+
+/// `dir`'s manifest rewritten with `lexical_v3` set to `value` (its own
+/// checksum recomputed, so only the flag-against-section rule can refuse it).
+fn rewriteLexicalFlag(a: std.mem.Allocator, dir: std.Io.Dir, value: bool) !manifest.Manifest {
+    var metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    metadata.lexical_v3 = value;
+    const bytes = try manifest.encode(metadata, try a.alloc(u8, 4096));
+    try dir.writeFile(io, .{ .sub_path = publication.current_manifest_file, .data = bytes });
+    return metadata;
+}
+
+test "S6-T4 ruling 4: manifest bit 5 and the lexical sections must agree (a v3 section without the flag, a v2 one with it, a v1 file-name section under it)" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    for ([_][]const u8{ "v3-unflagged", "v2-flagged", "mixed" }) |name| try tmp.dir.createDir(io, name, .default_dir);
+    // HYBLEX03 sections under a manifest without bit 5.
+    var unflagged = try tmp.dir.openDir(io, "v3-unflagged", .{ .iterate = true });
+    defer unflagged.close(io);
+    try copyFixture(a, fixture_v3, unflagged);
+    _ = try rewriteLexicalFlag(a, unflagged, false);
+    try std.testing.expectError(error.InvalidLexicalSection, snapshot_open.open(a, io, unflagged));
+    try std.testing.expectError(error.InvalidLexicalSection, snapshot_open.openScoped(a, io, unflagged));
+    // HYBLEX02/HYBLEX01 sections under a manifest with bit 5.
+    var flagged = try tmp.dir.openDir(io, "v2-flagged", .{ .iterate = true });
+    defer flagged.close(io);
+    try copyFixture(a, fixture_v2, flagged);
+    _ = try rewriteLexicalFlag(a, flagged, true);
+    try std.testing.expectError(error.InvalidLexicalSection, snapshot_open.open(a, io, flagged));
+    try std.testing.expectError(error.InvalidLexicalSection, snapshot_open.openScoped(a, io, flagged));
+    // A v3 content section with bit 5, but the file-name section is the
+    // 98c4a2b one (`HYBLEX01`, its length and checksum recorded).
+    var mixed = try tmp.dir.openDir(io, "mixed", .{ .iterate = true });
+    defer mixed.close(io);
+    try copyFixture(a, fixture_v3, mixed);
+    var v2 = try std.Io.Dir.cwd().openDir(io, fixture_v2, .{});
+    defer v2.close(io);
+    const old_names = try v2.readFileAlloc(io, "filename-lexical-1.hyblex", a, .unlimited);
+    try mixed.writeFile(io, .{ .sub_path = "filename-lexical-1.hyblex", .data = old_names });
+    var metadata = try manifest.decode(try mixed.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    metadata.filename.?.lexical_bytes = old_names.len;
+    metadata.filename.?.lexical_checksum = (try lexical_segment.inspect(old_names)).checksum;
+    try mixed.writeFile(io, .{ .sub_path = publication.current_manifest_file, .data = try manifest.encode(metadata, try a.alloc(u8, 4096)) });
+    const catalog = try mixed.readFileAlloc(io, metadata.filename.?.catalog_file, a, .unlimited);
+    try std.testing.expectError(error.InvalidFilenameLexicalSection, manifest.validateFilenameSections(metadata, catalog, old_names));
+    // The eager open (it loads the file-name sections) refuses it; the
+    // scoped open refuses it at the first file-name query, which loads them.
+    try std.testing.expectError(error.InvalidFilenameLexicalSection, snapshot_open.open(a, io, mixed));
+    if (snapshot_open.openScoped(a, io, mixed)) |opened| {
+        defer opened.folder.close();
+        try std.testing.expectError(error.InvalidFilenameLexicalSection, opened.engine.queryFields(a, "garden", .filename, .{ .top_k = 3, .retrieval_mode = .lexical }));
+    } else |err| try std.testing.expectEqual(error.InvalidFilenameLexicalSection, err);
+}

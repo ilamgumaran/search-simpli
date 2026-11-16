@@ -1,0 +1,64 @@
+# S6-T4 Phase 2, ruling 3: same answers, v2 by main (98c4a2b) against v3 by this branch.
+# scripts/prototypes/s6t4/same_answers.py; libraries ReleaseSmall (aarch64-macos); every index built with
+# --filename-index (J2 by `searchd apply` of the pack's changes, three roots). Query sets: q/<corpus>.json
+# (bench.py queries / j2queries; fixtures and family-folder add the J2 query strings and finds).
+# A refusal compares as its ss_last_error text (read_span of an empty file).
+
+## main's library on the v2 index vs this branch's library on the v3 index
+j2: same: 1679 vs 1679 answers: evidence 644 (differ 0, refused 0), find 7 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 88 (differ 0, refused 0), query 849 (differ 0, refused 0), read_span 88 (differ 0, refused 1), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+fixtures: same: 2078 vs 2078 answers: evidence 695 (differ 0, refused 0), find 22 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 232 (differ 0, refused 0), query 894 (differ 0, refused 0), read_span 232 (differ 0, refused 3), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+family-folder: same: 1408 vs 1408 answers: evidence 402 (differ 0, refused 0), find 17 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 46 (differ 0, refused 0), query 894 (differ 0, refused 0), read_span 46 (differ 0, refused 1), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+timing-10k: same: 20102 vs 20102 answers: evidence 31 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+prose-10k: same: 20101 vs 20101 answers: evidence 30 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+tamil-10k: same: 20088 vs 20088 answers: evidence 15 (differ 0, refused 0), find 16 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+
+## this branch's library on the v2 index (a v2 index read by the new reader) vs main's on the same v2 index
+j2: same: 1679 vs 1679 answers: evidence 644 (differ 0, refused 0), find 7 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 88 (differ 0, refused 0), query 849 (differ 0, refused 0), read_span 88 (differ 0, refused 1), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+fixtures: same: 2078 vs 2078 answers: evidence 695 (differ 0, refused 0), find 22 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 232 (differ 0, refused 0), query 894 (differ 0, refused 0), read_span 232 (differ 0, refused 3), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+timing-10k: same: 20102 vs 20102 answers: evidence 31 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+tamil-10k: same: 20088 vs 20088 answers: evidence 15 (differ 0, refused 0), find 16 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+
+## J2 gate: scripts/ci_j2_native.py run (this branch's ReleaseSmall searchd, 290 queries, content and both) then j2_gate.py
+J2 gate: searchd run searchd.json against the baseline of 2026-11-12 (engine 2f1e27424); allow-list ah11
+  search_field content: pass
+    slice          n            success_at_1               mrr_at_10              ndcg_at_10             recall_at_5
+    control       23   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   0.998 ->  0.998 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling   16   0.562 ->  0.562 (+0.000)   0.859 ->  0.859 (+0.000)   0.767 ->  0.767 (+0.000)   0.844 ->  0.844 (+0.000)
+    morphology    13   0.692 ->  0.692 (+0.000)   0.808 ->  0.808 (+0.000)   0.855 ->  0.855 (+0.000)   0.923 ->  0.923 (+0.000)
+    accent         9   0.778 ->  0.778 (+0.000)   0.846 ->  0.846 (+0.000)   0.881 ->  0.881 (+0.000)   0.889 ->  0.889 (+0.000)
+    tamil         13   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    title         11   0.909 ->  0.909 (+0.000)   0.955 ->  0.955 (+0.000)   0.966 ->  0.966 (+0.000)   1.000 ->  1.000 (+0.000)
+    phrase        10   0.800 ->  0.800 (+0.000)   0.900 ->  0.900 (+0.000)   0.926 ->  0.926 (+0.000)   1.000 ->  1.000 (+0.000)
+    title-heldout   8   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-heldout  12   0.917 ->  0.917 (+0.000)   0.958 ->  0.958 (+0.000)   0.969 ->  0.969 (+0.000)   1.000 ->  1.000 (+0.000)
+    morphology-heldout  14   0.714 ->  0.714 (+0.000)   0.833 ->  0.833 (+0.000)   0.876 ->  0.876 (+0.000)   1.000 ->  1.000 (+0.000)
+    accent-heldout  11   0.909 ->  0.909 (+0.000)   0.955 ->  0.955 (+0.000)   0.966 ->  0.966 (+0.000)   1.000 ->  1.000 (+0.000)
+    tamil-heldout  13   0.923 ->  0.923 (+0.000)   0.962 ->  0.962 (+0.000)   0.972 ->  0.972 (+0.000)   1.000 ->  1.000 (+0.000)
+    verbform-heldout  19   0.947 ->  0.947 (+0.000)   0.974 ->  0.974 (+0.000)   0.981 ->  0.981 (+0.000)   1.000 ->  1.000 (+0.000)
+    verbform-cross   6   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    precision-control  10   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-short  13   0.923 ->  0.923 (+0.000)   0.962 ->  0.962 (+0.000)   0.972 ->  0.972 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-opening  25   0.120 ->  0.120 (+0.000)   0.214 ->  0.214 (+0.000)   0.272 ->  0.272 (+0.000)   0.340 ->  0.340 (+0.000)
+  search_field both: pass
+    slice          n            success_at_1               mrr_at_10              ndcg_at_10             recall_at_5
+    control       23   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling   16   0.562 ->  0.562 (+0.000)   0.844 ->  0.844 (+0.000)   0.660 ->  0.660 (+0.000)   0.719 ->  0.719 (+0.000)
+    morphology    13   0.692 ->  0.692 (+0.000)   0.795 ->  0.795 (+0.000)   0.828 ->  0.828 (+0.000)   0.923 ->  0.923 (+0.000)
+    accent         9   0.778 ->  0.778 (+0.000)   0.847 ->  0.847 (+0.000)   0.883 ->  0.883 (+0.000)   0.889 ->  0.889 (+0.000)
+    tamil         13   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    title         11   0.909 ->  0.909 (+0.000)   0.955 ->  0.955 (+0.000)   0.966 ->  0.966 (+0.000)   1.000 ->  1.000 (+0.000)
+    phrase        10   0.800 ->  0.800 (+0.000)   0.900 ->  0.900 (+0.000)   0.926 ->  0.926 (+0.000)   1.000 ->  1.000 (+0.000)
+    title-heldout   8   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-heldout  12   0.917 ->  0.917 (+0.000)   0.958 ->  0.958 (+0.000)   0.969 ->  0.969 (+0.000)   1.000 ->  1.000 (+0.000)
+    morphology-heldout  14   0.714 ->  0.714 (+0.000)   0.857 ->  0.857 (+0.000)   0.895 ->  0.895 (+0.000)   1.000 ->  1.000 (+0.000)
+    accent-heldout  11   0.909 ->  0.909 (+0.000)   0.909 ->  0.909 (+0.000)   0.909 ->  0.909 (+0.000)   0.909 ->  0.909 (+0.000)
+    tamil-heldout  13   0.923 ->  0.923 (+0.000)   0.962 ->  0.962 (+0.000)   0.972 ->  0.972 (+0.000)   1.000 ->  1.000 (+0.000)
+    verbform-heldout  19   0.947 ->  0.947 (+0.000)   0.947 ->  0.947 (+0.000)   0.947 ->  0.947 (+0.000)   0.947 ->  0.947 (+0.000)
+    verbform-cross   6   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    precision-control  10   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-short  13   0.923 ->  0.923 (+0.000)   0.962 ->  0.962 (+0.000)   0.972 ->  0.972 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-opening  25   0.120 ->  0.120 (+0.000)   0.219 ->  0.219 (+0.000)   0.278 ->  0.278 (+0.000)   0.340 ->  0.340 (+0.000)
+J2 gate: pass
+
+J2 native against the baseline's searchd cells (recorded 2026-11-12, binary 8b1f65c1d797): 0 rows differ
+::notice title=J2 x86_64 vs baseline::no row differs: every first grade-2 rank (452 over both variants), slice metric and negative equals the macOS arm64 baseline

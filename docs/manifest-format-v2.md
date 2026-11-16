@@ -1,9 +1,11 @@
-# Generation manifest format v2 (minor version 2.2)
+# Generation manifest format v2 (minor version 2.3)
 
 Status: implemented in `zig/src/manifest.zig` (S3-T1; v2.1 flag bit 2 since
 S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1); v2.2 flag bits 3 and 4
 since S4-T2, see [v2.2 filename sections](#v22-filename-sections-s4-t2-cap-16)
-and [v2.2 recovery state](#v22-recovery-state-section-s4-t2)). Magic: `HYBMAN02`.
+and [v2.2 recovery state](#v22-recovery-state-section-s4-t2); v2.3 flag bit 5
+since S6-T4, see [v2.3 lexical sections v3](#v23-lexical-sections-v3-s6-t4)).
+Magic: `HYBMAN02`.
 Written by `searchd index` / `ss_index_folder` (`zig/src/indexer.zig`).
 `import-json` still writes [v1](manifest-format-v1.md), and every reader opens
 both. Design: [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §1.
@@ -19,7 +21,7 @@ generation (CAP-19 FR-18, CFT-09).
 |---:|---:|---|---|
 | 0 | 8 | magic `HYBMAN02` | v2 (v1: `HYBMAN01`) |
 | 8 | 2 | version `2` | |
-| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2), bit 4 `state_section` (v2.2); other bits must be zero | v2 (v1: zero) |
+| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2), bit 4 `state_section` (v2.2), bit 5 `lexical_v3` (v2.3); other bits must be zero | v2 (v1: zero) |
 | 12 | 8 | generation number (nonzero) | v1 |
 | 20 | 4 | shared document count | v1 |
 | 24 | 4 | vector dimensions | v1 |
@@ -323,3 +325,43 @@ directory: keep a copy of the index directory from before the upgrade, or
 rebuild with the older library into a fresh directory. A v2.2 reader opens
 every older generation (no bit 4: the precedence above starts at
 `INDEX-STATE.json`).
+
+## v2.3: lexical sections v3 (S6-T4)
+
+Bit 5 of the flags, `lexical_v3`, says that every lexical section the manifest
+binds is [`HYBLEX03`](lexical-segment-format-v3.md) (gap-coded postings, a
+front-coded dictionary, varint document lengths): the content section and,
+with bit 3, the file-name section. Every folder writer since S6-T4
+(`searchd index`, `searchd search`'s in-memory build, `ss_index_folder`,
+`apply_changes`) sets it. The header layout, the magic, the version number `2`
+and every other flag are unchanged; the recorded lexical length and checksum
+are the `HYBLEX03` file's.
+
+Rules (`manifest.validateSnapshotHeaders`, `filename_field.validateFilenameSections`):
+- with bit 5 every bound lexical section must be `HYBLEX03`; without it none
+  may be (a `HYBLEX03` section under a manifest without bit 5, or an older
+  section under one with it, is refused: `InvalidLexicalSection` for the
+  content section, `InvalidFilenameLexicalSection` for the file-name one);
+- a v1 manifest (`import-json`) never sets it: `import-json` keeps writing
+  `HYBLEX01`, byte for byte as before.
+
+Upgrade. A reader since v2.3 opens every older generation unchanged
+(`HYBLEX01` and `HYBLEX02` keep their readers). The first publish over an
+older directory (an update, `apply_changes`) writes v3: the content section is
+re-encoded from the decoded one, and the file-name section, which a publish
+otherwise carries byte for byte, is rebuilt once from the catalog (no
+conversion path; the cost is stated in the task Report,
+[`docs/tasks/S6-T4.md`](tasks/S6-T4.md)). From then on it is carried as
+before. `tests/fixtures/index-98c4a2b/` (written at 98c4a2b, the last commit
+before v3) is opened, compared with a fresh v3 index answer for answer, and
+updated to v3 by `zig/src/compat_98c4a2b_test.zig`.
+
+**Compatibility and rollback (one way).** A reader before v2.3 (98c4a2b and
+earlier) refuses a v2.3 manifest on bit 5 with `UnsupportedFlags`, before it
+reads any section: measured on 98c4a2b's own `searchd` (every command,
+`index --update` included) and `ss_open`
+([`docs/evidence/s6-t4/old-library-on-v3.txt`](evidence/s6-t4/old-library-on-v3.txt)).
+After the first publish under a v2.3 library, an older library cannot open
+the directory and must rebuild it from the files into a fresh directory.
+Index directories are never shared between devices running different library
+versions.

@@ -538,6 +538,8 @@ pub fn loadBytes(allocator: std.mem.Allocator, catalog_encoded: []const u8, lexi
         else => error.InvalidFilenameLexicalSection,
     };
     if (!metadata.xxh3_sections and (catalog.checksum_kind != .fnv1a64 or lexical.checksum_kind != .fnv1a64)) return error.InvalidFilenameCatalog;
+    // S6-T4: `HYBLEX03` exactly under manifest bit 5 (v2.3).
+    if ((lexical.version == lexical_segment.version_v3) != metadata.lexical_v3) return error.InvalidFilenameLexicalSection;
     if (catalog.checksum != f.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
     if (lexical.checksum != f.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
     if (catalog.document_count != f.file_count or lexical.document_count != f.file_count) return error.FilenameCountMismatch;
