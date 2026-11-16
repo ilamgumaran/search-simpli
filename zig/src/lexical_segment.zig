@@ -12,6 +12,22 @@ pub const header_length: usize = 64;
 pub const magic_v2 = "HYBLEX02";
 pub const version_v2: u16 = 2;
 pub const header_length_v2: usize = 80;
+/// S6-T4 (`docs/lexical-segment-format-v3.md`): `HYBLEX03`, what the folder
+/// writers publish. Varint document lengths, a front-coded dictionary
+/// (shared prefix, suffix, df, the term's coded postings length), postings
+/// as `(gap << 1) | (tf == 1)` varints with a tf varint when tf > 1;
+/// sections 4 and 5 byte for byte `HYBLEX02`'s. 88-byte header: v2's 80
+/// with the decoded term text length before the checksum. Decoded whole at
+/// open into the same arrays as v1 and v2 (the S6-T4 ruling on Phase 1).
+pub const magic_v3 = "HYBLEX03";
+pub const version_v3: u16 = 3;
+pub const header_length_v3: usize = 88;
+/// v3 flags bit 1: sections 4 and 5 present (the content section).
+pub const flag_positions_v3: u16 = 2;
+/// v3: the longest shared prefix a dictionary entry records. A writer caps
+/// longer common prefixes here (the suffix carries the rest); a reader
+/// refuses more. It bounds the decoded term text by the section's size.
+pub const max_shared_v3: usize = 255;
 const term_record_length: usize = 24;
 const posting_record_length: usize = 8;
 
@@ -78,9 +94,17 @@ pub const Header = struct {
     checksum: u64,
     /// S4-T1: header flags bit 0 (`checksum.flag_xxh3`).
     checksum_kind: checksum.Kind = .fnv1a64,
+    /// v3: flags bit 1.
+    positions_flag: bool = false,
+    /// v3: the decoded dictionary's term bytes.
+    term_text_bytes: usize = 0,
 
     pub fn hasPositions(header: Header) bool {
-        return header.version == version_v2;
+        return header.version == version_v2 or (header.version == version_v3 and header.positions_flag);
+    }
+
+    pub fn length(header: Header) usize {
+        return headerLength(header.version);
     }
 };
 
@@ -212,7 +236,26 @@ fn writeSized(index: postings.Index, sized: Sizes, output: []u8) []u8 {
     return output[0..required];
 }
 
+pub fn headerLength(found_version: u16) usize {
+    return switch (found_version) {
+        version_v3 => header_length_v3,
+        version_v2 => header_length_v2,
+        else => header_length,
+    };
+}
+
+/// The header length of the section `encoded` (by its magic), for readers
+/// of the stored checksum; 0 when it is too short or unknown.
+pub fn headerLengthOfBytes(encoded: []const u8) usize {
+    if (encoded.len < 8) return 0;
+    if (std.mem.eql(u8, encoded[0..8], magic_v3)) return header_length_v3;
+    if (std.mem.eql(u8, encoded[0..8], magic_v2)) return header_length_v2;
+    if (std.mem.eql(u8, encoded[0..8], magic)) return header_length;
+    return 0;
+}
+
 pub fn inspect(encoded: []const u8) DecodeError!Header {
+    if (encoded.len >= 8 and std.mem.eql(u8, encoded[0..8], magic_v3)) return inspectV3(encoded);
     var cursor = Cursor{ .bytes = encoded };
     const found_magic = try cursor.take(magic.len);
     const v2 = std.mem.eql(u8, found_magic, magic_v2);
@@ -289,6 +332,14 @@ pub const DecodeOptions = struct {
     /// S4-T1: the header `inspect` already returned for these bytes (its
     /// checksum computed then), so it is not computed a second time.
     inspected: ?Header = null,
+    /// S6-T4 (v3): where the front-coded dictionary's terms are written, at
+    /// least the header's `term_text_bytes` long. Without it a v3 decode
+    /// allocates exactly that from `term_text_allocator` once the header is
+    /// inspected (checksum and bounds first); without either it is
+    /// `TermCapacityTooSmall`. v1 and v2 terms are slices of the section and
+    /// use neither.
+    term_text: ?[]u8 = null,
+    term_text_allocator: ?std.mem.Allocator = null,
 };
 
 pub fn decodeWith(
@@ -299,6 +350,7 @@ pub fn decodeWith(
     options: DecodeOptions,
 ) DecodeError!postings.Index {
     const header = options.inspected orelse try inspect(encoded);
+    if (header.version == version_v3) return decodeV3(encoded, header, term_output, posting_output, document_length_output, options);
     if (term_output.len < header.term_count) return error.TermCapacityTooSmall;
     if (posting_output.len < header.posting_count) return error.PostingCapacityTooSmall;
     if (document_length_output.len < header.document_count) return error.DocumentLengthCapacityTooSmall;
@@ -1056,4 +1108,525 @@ test "S4-T12 ruling 3: a positional index claiming sorted but descending is Unso
         const owned = try encodeAlloc(std.testing.allocator, ruling3Index(&storage, &.{ "alpha", "beta", "gamma" }, claimed));
         std.testing.allocator.free(owned);
     }
+}
+
+
+// ===================================================================== v3 ==
+
+fn inspectV3(encoded: []const u8) DecodeError!Header {
+    var cursor = Cursor{ .bytes = encoded, .offset = magic_v3.len };
+    if (try cursor.readU16() != version_v3) return error.UnsupportedVersion;
+    const flags = try cursor.readU16();
+    // Bit 0 (XXH3-64) is required, bit 1 names sections 4 and 5.
+    if (flags & ~(checksum.flag_xxh3 | flag_positions_v3) != 0 or flags & checksum.flag_xxh3 == 0) return error.UnsupportedFlags;
+    const document_count = try castToUsize(try cursor.readU32());
+    const term_count = try castToUsize(try cursor.readU32());
+    const posting_count = try castToUsize(try cursor.readU64());
+    const average_document_length: f32 = @bitCast(try cursor.readU32());
+    if (!std.math.isFinite(average_document_length) or average_document_length < 0) return error.InvalidAverageDocumentLength;
+    const document_lengths_bytes = try castToUsize(try cursor.readU64());
+    const dictionary_bytes = try castToUsize(try cursor.readU64());
+    const postings_bytes = try castToUsize(try cursor.readU64());
+    const positions_bytes = try castToUsize(try cursor.readU64());
+    const offsets_bytes = try castToUsize(try cursor.readU64());
+    const term_text_bytes = try castToUsize(try cursor.readU64());
+    const expected_checksum = try cursor.readU64();
+    std.debug.assert(cursor.offset == header_length_v3);
+    var expected_total = try decodeCheckedAdd(header_length_v3, document_lengths_bytes);
+    expected_total = try decodeCheckedAdd(expected_total, dictionary_bytes);
+    expected_total = try decodeCheckedAdd(expected_total, postings_bytes);
+    expected_total = try decodeCheckedAdd(expected_total, positions_bytes);
+    expected_total = try decodeCheckedAdd(expected_total, offsets_bytes);
+    if (encoded.len < expected_total) return error.Truncated;
+    if (encoded.len > expected_total) return error.TrailingData;
+    const actual_checksum = checksum.compute(.xxh3_64, encoded[0 .. header_length_v3 - 8], encoded[header_length_v3..]);
+    if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
+    const positions_flag = flags & flag_positions_v3 != 0;
+    // Bounds every count implies: a varint is 1 to 5 bytes, a posting at
+    // least one byte, a term at least one byte of text and four of entry.
+    if (!positions_flag and (positions_bytes != 0 or offsets_bytes != 0)) return error.InvalidSectionLength;
+    if (document_count > std.math.maxInt(u32) / 2) return error.InvalidSectionLength;
+    if (document_lengths_bytes < document_count or document_lengths_bytes > try decodeCheckedMultiply(document_count, 5)) return error.InvalidSectionLength;
+    if (postings_bytes < posting_count or term_text_bytes < term_count or dictionary_bytes < try decodeCheckedMultiply(term_count, 5)) return error.InvalidSectionLength;
+    if (posting_count < term_count) return error.InvalidSectionLength;
+    // The shared-prefix cap bounds the decoded text by the section: every
+    // term is at most `max_shared_v3` bytes from its predecessor plus its
+    // suffix, which is in the dictionary.
+    if (term_text_bytes > try decodeCheckedAdd(try decodeCheckedMultiply(term_count, max_shared_v3), dictionary_bytes)) return error.InvalidSectionLength;
+    return .{
+        .version = version_v3,
+        .document_count = document_count,
+        .term_count = term_count,
+        .posting_count = posting_count,
+        .average_document_length = average_document_length,
+        .document_lengths_bytes = document_lengths_bytes,
+        .dictionary_bytes = dictionary_bytes,
+        .postings_bytes = postings_bytes,
+        .positions_bytes = positions_bytes,
+        .offsets_bytes = offsets_bytes,
+        .checksum = expected_checksum,
+        .checksum_kind = .xxh3_64,
+        .positions_flag = positions_flag,
+        .term_text_bytes = term_text_bytes,
+    };
+}
+
+fn decodeV3(
+    encoded: []const u8,
+    header: Header,
+    term_output: []postings.TermEntry,
+    posting_output: []postings.Posting,
+    document_length_output: []u32,
+    options: DecodeOptions,
+) DecodeError!postings.Index {
+    if (term_output.len < header.term_count) return error.TermCapacityTooSmall;
+    if (posting_output.len < header.posting_count) return error.PostingCapacityTooSmall;
+    if (document_length_output.len < header.document_count) return error.DocumentLengthCapacityTooSmall;
+    const term_text = options.term_text orelse if (options.term_text_allocator) |a| try a.alloc(u8, header.term_text_bytes) else return error.TermCapacityTooSmall;
+    if (term_text.len < header.term_text_bytes) return error.TermCapacityTooSmall;
+    const document_count: u32 = @intCast(header.document_count);
+
+    var payload = Cursor{ .bytes = encoded, .offset = header_length_v3 };
+    const document_length_bytes = try payload.take(header.document_lengths_bytes);
+    const dictionary_bytes = try payload.take(header.dictionary_bytes);
+    const posting_bytes = try payload.take(header.postings_bytes);
+    const positions_bytes = try payload.take(header.positions_bytes);
+    const offsets_bytes = try payload.take(header.offsets_bytes);
+    if (payload.offset != encoded.len) return error.TrailingData;
+
+    // Section 1: one varint per document.
+    var at: usize = 0;
+    for (document_length_output[0..header.document_count]) |*length| {
+        length.* = postings.readVarint(document_length_bytes, &at) orelse return error.InvalidSectionLength;
+    }
+    if (at != document_length_bytes.len) return error.InvalidSectionLength;
+
+    // Sections 2 and 3: front-coded terms in strictly increasing byte order,
+    // each followed by its list.
+    at = 0;
+    var text_at: usize = 0;
+    var previous: []const u8 = &.{};
+    var posting_start: usize = 0;
+    var coded_start: usize = 0;
+    for (term_output[0..header.term_count], 0..) |*entry, term_index| {
+        const shared = postings.readVarint(dictionary_bytes, &at) orelse return error.InvalidTerm;
+        const suffix_length = postings.readVarint(dictionary_bytes, &at) orelse return error.InvalidTerm;
+        if (shared > previous.len or shared > max_shared_v3 or suffix_length == 0) return error.InvalidTerm;
+        if (dictionary_bytes.len - at < suffix_length) return error.InvalidTerm;
+        const suffix = dictionary_bytes[at..][0..suffix_length];
+        at += suffix_length;
+        const term_length = @as(usize, shared) + suffix_length;
+        if (header.term_text_bytes - text_at < term_length) return error.InvalidSectionLength;
+        const term = term_text[text_at..][0..term_length];
+        std.mem.copyForwards(u8, term[0..shared], previous[0..shared]);
+        @memcpy(term[shared..], suffix);
+        text_at += term_length;
+        // Strictly after the previous term, and `shared` its whole common
+        // prefix unless capped: below the cap and the previous length, the
+        // next byte must rise; at the cap, the whole terms are compared.
+        if (term_index != 0) {
+            if (shared < previous.len and shared < max_shared_v3) {
+                if (suffix[0] <= previous[shared]) return error.UnsortedTerms;
+            } else if (shared == max_shared_v3 and shared < previous.len) {
+                if (std.mem.order(u8, previous, term) != .lt) return error.UnsortedTerms;
+            }
+        }
+        const document_frequency = postings.readVarint(dictionary_bytes, &at) orelse return error.InvalidTerm;
+        const coded_length = postings.readVarint(dictionary_bytes, &at) orelse return error.InvalidTerm;
+        if (document_frequency == 0 or document_frequency > document_count) return error.DocumentFrequencyMismatch;
+        if (coded_length < document_frequency) return error.InvalidPostingRange;
+        if (header.posting_count - posting_start < document_frequency) return error.InvalidPostingRange;
+        if (posting_bytes.len - coded_start < coded_length) return error.InvalidPostingRange;
+        entry.* = .{
+            .term = term,
+            .document_frequency = document_frequency,
+            .postings_start = posting_start,
+            .postings_length = document_frequency,
+        };
+        postings.decodeList(posting_bytes[coded_start..][0..coded_length], document_frequency, document_count, posting_output[posting_start..][0..document_frequency]) catch return error.InvalidPosting;
+        posting_start += document_frequency;
+        coded_start += coded_length;
+        previous = term;
+    }
+    if (at != dictionary_bytes.len or text_at != header.term_text_bytes) return error.InvalidSectionLength;
+    if (posting_start != header.posting_count or coded_start != posting_bytes.len) return error.InvalidPostingRange;
+
+    const index = postings.Index{
+        .terms = term_output[0..header.term_count],
+        .postings = posting_output[0..header.posting_count],
+        .document_lengths = document_length_output[0..header.document_count],
+        .average_document_length = header.average_document_length,
+        .positions = if (header.positions_flag) .{ .positions = positions_bytes, .offsets = offsets_bytes } else null,
+        .sorted_terms = true,
+    };
+    if (header.positions_flag and options.validate_positions) try validatePositions(index.terms, index.postings, index.document_lengths, index.positions.?);
+    return index;
+}
+
+const ByteList = std.ArrayList(u8);
+
+/// Write `index` as `HYBLEX03` (positions when it carries them). Needs a
+/// strictly sorted dictionary with term ranges contiguous in dictionary
+/// order, every df >= 1 and fewer than 2^31 documents.
+pub fn encodeV3Alloc(allocator: std.mem.Allocator, index: postings.Index) EncodeError![]u8 {
+    return encodeV3AllocMarked(allocator, index, NoMarks{});
+}
+
+pub fn encodeV3AllocMarked(allocator: std.mem.Allocator, index: postings.Index, marks: anytype) EncodeError![]u8 {
+    try validateIndexMarked(index, marks);
+    if (index.document_lengths.len > std.math.maxInt(u32) / 2) return error.CountOverflow;
+    var expected_start: usize = 0;
+    for (index.terms, 0..) |entry, i| {
+        if (i != 0 and std.mem.order(u8, index.terms[i - 1].term, entry.term) != .lt) return error.UnsortedTerms;
+        if (entry.postings_start != expected_start or entry.postings_length == 0) return error.UnsortedTerms;
+        expected_start += entry.postings_length;
+    }
+    if (expected_start != index.postings.len) return error.UnsortedTerms;
+
+    var lengths = ByteList.empty;
+    defer lengths.deinit(allocator);
+    try lengths.ensureTotalCapacity(allocator, index.document_lengths.len + 16);
+    for (index.document_lengths) |length| try postings.appendVarint(&lengths, allocator, length);
+
+    var coded = ByteList.empty;
+    defer coded.deinit(allocator);
+    try coded.ensureTotalCapacity(allocator, index.postings.len * 2 + 16);
+    var dictionary = ByteList.empty;
+    defer dictionary.deinit(allocator);
+    try dictionary.ensureTotalCapacity(allocator, index.terms.len * 8 + 16);
+    var previous: []const u8 = &.{};
+    var term_text: usize = 0;
+    for (index.terms) |entry| {
+        const before = coded.items.len;
+        var last: u32 = 0;
+        for (index.postings[entry.postings_start..][0..entry.postings_length], 0..) |posting, k| {
+            const delta: u32 = if (k == 0) posting.document_index else posting.document_index - last;
+            last = posting.document_index;
+            const one: u32 = @intFromBool(posting.term_frequency == 1);
+            try postings.appendVarint(&coded, allocator, (delta << 1) | one);
+            if (one == 0) try postings.appendVarint(&coded, allocator, posting.term_frequency);
+        }
+        // The common prefix, capped at `max_shared_v3` (the suffix then
+        // carries the rest of the term; nothing is truncated).
+        var shared: usize = 0;
+        const limit = @min(previous.len, entry.term.len, max_shared_v3);
+        while (shared < limit and previous[shared] == entry.term[shared]) shared += 1;
+        try postings.appendVarint(&dictionary, allocator, @intCast(shared));
+        try postings.appendVarint(&dictionary, allocator, @intCast(entry.term.len - shared));
+        try dictionary.appendSlice(allocator, entry.term[shared..]);
+        try postings.appendVarint(&dictionary, allocator, entry.document_frequency);
+        try postings.appendVarint(&dictionary, allocator, @intCast(coded.items.len - before));
+        term_text += entry.term.len;
+        previous = entry.term;
+    }
+    const positions_len = if (index.positions) |p| p.positions.len else 0;
+    const offsets_len = if (index.positions) |p| p.offsets.len else 0;
+    var total = header_length_v3;
+    total = try checkedAdd(total, lengths.items.len);
+    total = try checkedAdd(total, dictionary.items.len);
+    total = try checkedAdd(total, coded.items.len);
+    total = try checkedAdd(total, positions_len);
+    total = try checkedAdd(total, offsets_len);
+    const output = try allocator.alloc(u8, total);
+    @memcpy(output[0..8], magic_v3);
+    var o: usize = 8;
+    writeU16(output, &o, version_v3);
+    writeU16(output, &o, checksum.flag_xxh3 | (if (index.positions != null) flag_positions_v3 else 0));
+    writeU32(output, &o, @intCast(index.document_lengths.len));
+    writeU32(output, &o, @intCast(index.terms.len));
+    writeU64(output, &o, @intCast(index.postings.len));
+    writeU32(output, &o, @bitCast(index.average_document_length));
+    writeU64(output, &o, @intCast(lengths.items.len));
+    writeU64(output, &o, @intCast(dictionary.items.len));
+    writeU64(output, &o, @intCast(coded.items.len));
+    writeU64(output, &o, @intCast(positions_len));
+    writeU64(output, &o, @intCast(offsets_len));
+    writeU64(output, &o, @intCast(term_text));
+    const checksum_at = o;
+    writeU64(output, &o, 0);
+    std.debug.assert(o == header_length_v3);
+    for ([_][]const u8{ lengths.items, dictionary.items, coded.items }) |part| {
+        @memcpy(output[o..][0..part.len], part);
+        o += part.len;
+    }
+    if (index.positions) |p| {
+        @memcpy(output[o..][0..p.positions.len], p.positions);
+        o += p.positions.len;
+        @memcpy(output[o..][0..p.offsets.len], p.offsets);
+        o += p.offsets.len;
+    }
+    std.debug.assert(o == total);
+    var c = checksum_at;
+    writeU64(output, &c, checksum.compute(.xxh3_64, output[0..checksum_at], output[header_length_v3..]));
+    return output;
+}
+
+/// `index` (a `lexical_build.build` index: first-seen dictionary order) with
+/// its dictionary sorted by bytes and its postings term-major in that order,
+/// for the v3 writer. Term bytes are not copied.
+pub fn sortedForV3(allocator: std.mem.Allocator, index: postings.Index) !postings.Index {
+    if (index.sorted_terms) return index;
+    const order = try allocator.alloc(u32, index.terms.len);
+    defer allocator.free(order);
+    for (order, 0..) |*slot, i| slot.* = @intCast(i);
+    std.mem.sort(u32, order, index.terms, struct {
+        fn less(terms: []const postings.TermEntry, a: u32, b: u32) bool {
+            return std.mem.order(u8, terms[a].term, terms[b].term) == .lt;
+        }
+    }.less);
+    const terms = try allocator.alloc(postings.TermEntry, index.terms.len);
+    const values = try allocator.alloc(postings.Posting, index.postings.len);
+    var at: usize = 0;
+    for (order, terms) |old, *entry| {
+        const source = index.terms[old];
+        @memcpy(values[at..][0..source.postings_length], index.postings[source.postings_start..][0..source.postings_length]);
+        entry.* = .{ .term = source.term, .document_frequency = source.document_frequency, .postings_start = at, .postings_length = source.postings_length };
+        at += source.postings_length;
+    }
+    var out = index;
+    out.terms = terms;
+    out.postings = values;
+    out.sorted_terms = true;
+    return out;
+}
+
+// ============================================================ v3 tests ==
+
+fn v3Fixture(arena: std.mem.Allocator) !postings.Index {
+    // Three documents; "alpha" in 0 (tf 1) and 2 (tf 3), "alps" in 1,
+    // "beta" in all three: gaps, tf 1 and tf > 1, a shared prefix.
+    const terms = try arena.alloc(postings.TermEntry, 3);
+    terms[0] = .{ .term = "alpha", .document_frequency = 2, .postings_start = 0, .postings_length = 2 };
+    terms[1] = .{ .term = "alps", .document_frequency = 1, .postings_start = 2, .postings_length = 1 };
+    terms[2] = .{ .term = "beta", .document_frequency = 3, .postings_start = 3, .postings_length = 3 };
+    const values = try arena.dupe(postings.Posting, &.{
+        .{ .document_index = 0, .term_frequency = 1 }, .{ .document_index = 2, .term_frequency = 3 },
+        .{ .document_index = 1, .term_frequency = 1 },
+        .{ .document_index = 0, .term_frequency = 1 }, .{ .document_index = 1, .term_frequency = 2 }, .{ .document_index = 2, .term_frequency = 1 },
+    });
+    const lengths = try arena.dupe(u32, &.{ 2, 3, 5 });
+    return .{ .terms = terms, .postings = values, .document_lengths = lengths, .average_document_length = 10.0 / 3.0, .sorted_terms = true };
+}
+
+fn rechecksumV3(encoded: []u8) void {
+    var offset: usize = header_length_v3 - 8;
+    writeU64(encoded, &offset, checksum.compute(.xxh3_64, encoded[0 .. header_length_v3 - 8], encoded[header_length_v3..]));
+}
+
+const V3Buffers = struct {
+    terms: [64]postings.TermEntry = undefined,
+    values: [64]postings.Posting = undefined,
+    lengths: [16]u32 = undefined,
+    text: [1024]u8 = undefined,
+};
+
+fn decodeV3Test(encoded: []const u8, buffers: *V3Buffers) DecodeError!postings.Index {
+    const header = try inspect(encoded);
+    if (header.term_text_bytes > buffers.text.len or header.term_count > buffers.terms.len or header.posting_count > buffers.values.len or header.document_count > buffers.lengths.len) return error.TermCapacityTooSmall;
+    return decodeWith(encoded, &buffers.terms, &buffers.values, &buffers.lengths, .{ .inspected = header, .term_text = &buffers.text });
+}
+
+test "S6-T4: HYBLEX03 round trip, with and without positions" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    for ([_]postings.Index{ try v3Fixture(arena), try positionalFixture(arena) }) |index| {
+        const encoded = try encodeV3Alloc(arena, index);
+        try std.testing.expectEqualStrings(magic_v3, encoded[0..8]);
+        var buffers: V3Buffers = .{};
+        const decoded = try decodeV3Test(encoded, &buffers);
+        try std.testing.expectEqual(index.positions != null, decoded.positions != null);
+        try std.testing.expectEqualSlices(u32, index.document_lengths, decoded.document_lengths);
+        try std.testing.expectEqualSlices(postings.Posting, index.postings, decoded.postings);
+        try std.testing.expectEqual(index.terms.len, decoded.terms.len);
+        for (index.terms, decoded.terms) |a, b| {
+            try std.testing.expectEqualStrings(a.term, b.term);
+            try std.testing.expectEqual(a.document_frequency, b.document_frequency);
+            try std.testing.expectEqual(a.postings_start, b.postings_start);
+        }
+        if (index.positions) |p| {
+            try std.testing.expectEqualSlices(u8, p.positions, decoded.positions.?.positions);
+            try validatePositionSections(decoded);
+        }
+    }
+}
+
+test "S6-T4: HYBLEX03 damage is refused (checksum, truncation, zero gap, prefix, counts)" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const good = try encodeV3Alloc(arena, try v3Fixture(arena));
+    const header = try inspect(good);
+    var buffers: V3Buffers = .{};
+    const dictionary_at = header_length_v3 + header.document_lengths_bytes;
+    const postings_at = dictionary_at + header.dictionary_bytes;
+
+    // A flipped payload byte without a new checksum.
+    var bytes = try arena.dupe(u8, good);
+    bytes[postings_at] ^= 1;
+    try std.testing.expectError(error.ChecksumMismatch, decodeV3Test(bytes, &buffers));
+    // Truncated and extended.
+    try std.testing.expectError(error.Truncated, decodeV3Test(good[0 .. good.len - 1], &buffers));
+    try std.testing.expectError(error.Truncated, decodeV3Test(good[0..40], &buffers));
+    // "alpha": postings (0<<1|1) then (2<<1|0) tf 3; make the second gap 0.
+    bytes = try arena.dupe(u8, good);
+    try std.testing.expectEqual(@as(u8, 1), bytes[postings_at]);
+    try std.testing.expectEqual(@as(u8, 4), bytes[postings_at + 1]);
+    bytes[postings_at + 1] = 0;
+    rechecksumV3(bytes);
+    try std.testing.expectError(error.InvalidPosting, decodeV3Test(bytes, &buffers));
+    // A document past the count: gap 3 from document 0.
+    bytes = try arena.dupe(u8, good);
+    bytes[postings_at + 1] = 6;
+    rechecksumV3(bytes);
+    try std.testing.expectError(error.InvalidPosting, decodeV3Test(bytes, &buffers));
+    // tf 1 stored explicitly (low bit 0, then tf varint 1).
+    bytes = try arena.dupe(u8, good);
+    bytes[postings_at + 2] = 1;
+    rechecksumV3(bytes);
+    try std.testing.expectError(error.InvalidPosting, decodeV3Test(bytes, &buffers));
+    // "alps" shares 3 bytes with "alpha"; claim 6 (longer than "alpha").
+    bytes = try arena.dupe(u8, good);
+    const second_entry = dictionary_at + 2 + 5 + 2;
+    try std.testing.expectEqual(@as(u8, 3), bytes[second_entry]);
+    bytes[second_entry] = 6;
+    rechecksumV3(bytes);
+    try std.testing.expectError(error.InvalidTerm, decodeV3Test(bytes, &buffers));
+    // Claim 2 shared bytes: "al" + "s" < "alpha", out of order.
+    bytes = try arena.dupe(u8, good);
+    bytes[second_entry] = 2;
+    rechecksumV3(bytes);
+    try std.testing.expect(std.meta.isError(decodeV3Test(bytes, &buffers)));
+    // A posting count too large, a term count too large.
+    bytes = try arena.dupe(u8, good);
+    bytes[20] += 1;
+    rechecksumV3(bytes);
+    try std.testing.expect(std.meta.isError(decodeV3Test(bytes, &buffers)));
+    bytes = try arena.dupe(u8, good);
+    bytes[16] += 1;
+    rechecksumV3(bytes);
+    try std.testing.expect(std.meta.isError(decodeV3Test(bytes, &buffers)));
+    // An unknown flag, and the XXH3 flag cleared.
+    bytes = try arena.dupe(u8, good);
+    bytes[10] |= 4;
+    rechecksumV3(bytes);
+    try std.testing.expectError(error.UnsupportedFlags, decodeV3Test(bytes, &buffers));
+    bytes[10] = 0;
+    rechecksumV3(bytes);
+    try std.testing.expectError(error.UnsupportedFlags, decodeV3Test(bytes, &buffers));
+}
+
+test "S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var refused: usize = 0;
+    var accepted: usize = 0;
+    var unsealed: usize = 0;
+    for ([_]postings.Index{ try v3Fixture(arena), try positionalFixture(arena), try sharedPrefixFixture(arena, 300) }) |index| {
+        const good = try encodeV3Alloc(arena, index);
+        const bytes = try arena.dupe(u8, good);
+        for (0..good.len) |at| {
+            for ([_]u8{ 0x01, 0x02, 0x10, 0x80, 0xff }) |mask| {
+                @memcpy(bytes, good);
+                bytes[at] ^= mask;
+                var buffers: V3Buffers = .{};
+                // Without a new checksum every flip is refused.
+                if (decodeV3Test(bytes, &buffers)) |_| unsealed += 1 else |_| {}
+                if (at >= header_length_v3 - 8 and at < header_length_v3) continue;
+                rechecksumV3(bytes);
+                if (decodeV3Test(bytes, &buffers)) |decoded| {
+                    // An accepted flip is another well-formed section (a
+                    // changed tf, letter or length): it re-encodes to exactly
+                    // these bytes, so nothing was read that is not there.
+                    if (decoded.positions != null) validatePositionSections(decoded) catch {};
+                    try std.testing.expectEqualSlices(u8, bytes, try encodeV3Alloc(arena, decoded));
+                    accepted += 1;
+                } else |_| refused += 1;
+            }
+        }
+    }
+    try std.testing.expectEqual(@as(usize, 0), unsealed);
+    try std.testing.expect(refused > 0 and accepted > 0);
+}
+
+/// Two terms that share `shared` bytes ("x" repeated, then "a" and "b"),
+/// each in its own document.
+fn sharedPrefixFixture(arena: std.mem.Allocator, shared: usize) !postings.Index {
+    const first = try arena.alloc(u8, shared + 1);
+    @memset(first, 'x');
+    first[shared] = 'a';
+    const second = try arena.dupe(u8, first);
+    second[shared] = 'b';
+    const terms = try arena.alloc(postings.TermEntry, 2);
+    terms[0] = .{ .term = first, .document_frequency = 1, .postings_start = 0, .postings_length = 1 };
+    terms[1] = .{ .term = second, .document_frequency = 1, .postings_start = 1, .postings_length = 1 };
+    const values = try arena.dupe(postings.Posting, &.{ .{ .document_index = 0, .term_frequency = 1 }, .{ .document_index = 1, .term_frequency = 1 } });
+    return .{ .terms = terms, .postings = values, .document_lengths = try arena.dupe(u32, &.{ 1, 1 }), .average_document_length = 1, .sorted_terms = true };
+}
+
+test "S6-T4 ruling 3: the writer caps a shared prefix at 255 bytes and never truncates a term" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    for ([_]usize{ 254, 255, 256, 300 }) |shared| {
+        const index = try sharedPrefixFixture(arena, shared);
+        const encoded = try encodeV3Alloc(arena, index);
+        const header = try inspect(encoded);
+        try std.testing.expectEqual(@as(usize, 2 * (shared + 1)), header.term_text_bytes);
+        // The second entry: `shared` capped at 255, the suffix the rest.
+        const dictionary = encoded[header_length_v3 + header.document_lengths_bytes ..][0..header.dictionary_bytes];
+        var at: usize = 0;
+        _ = postings.readVarint(dictionary, &at);
+        const first_suffix = postings.readVarint(dictionary, &at).?;
+        at += first_suffix + 2;
+        try std.testing.expectEqual(@as(u32, @intCast(@min(shared, max_shared_v3))), postings.readVarint(dictionary, &at).?);
+        try std.testing.expectEqual(@as(u32, @intCast(shared + 1 - @min(shared, max_shared_v3))), postings.readVarint(dictionary, &at).?);
+        var buffers: V3Buffers = .{};
+        const decoded = try decodeV3Test(encoded, &buffers);
+        for (index.terms, decoded.terms) |a, b| try std.testing.expectEqualStrings(a.term, b.term);
+        try std.testing.expectEqualSlices(postings.Posting, index.postings, decoded.postings);
+    }
+}
+
+test "S6-T4 ruling 3: the reader refuses a shared length above 255 or above the previous term's length" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // Two terms sharing 300 bytes: the second entry says shared 255 (varint
+    // FF 01) and a 46-byte suffix. Rewrite it as shared 256 (80 02) with the
+    // 45-byte suffix that makes the same term, so only the cap is broken.
+    const good = try encodeV3Alloc(arena, try sharedPrefixFixture(arena, 300));
+    const header = try inspect(good);
+    const dictionary_at = header_length_v3 + header.document_lengths_bytes;
+    // The first entry: shared 0, suffix length 301 (AD 02), 301 bytes, df,
+    // list bytes.
+    const second = dictionary_at + 1 + 2 + 301 + 2;
+    try std.testing.expectEqualSlices(u8, &.{ 0xff, 0x01, 46 }, good[second..][0..3]);
+    var bytes = try arena.alloc(u8, good.len - 1);
+    @memcpy(bytes[0..second], good[0..second]);
+    bytes[second] = 0x80;
+    bytes[second + 1] = 0x02;
+    bytes[second + 2] = 45;
+    @memcpy(bytes[second + 3 ..], good[second + 4 ..]);
+    var offset: usize = 40;
+    writeU64(bytes, &offset, header.dictionary_bytes - 1);
+    rechecksumV3(bytes);
+    var buffers: V3Buffers = .{};
+    try std.testing.expectError(error.InvalidTerm, decodeV3Test(bytes, &buffers));
+    // Shared 255 is still fine with the same bytes otherwise.
+    try std.testing.expect(!std.meta.isError(decodeV3Test(good, &buffers)));
+    // Shared longer than the previous term (301 bytes): 302.
+    bytes = try arena.dupe(u8, good);
+    bytes[second] = 0xae; // 302 = 0xAE 0x02
+    bytes[second + 1] = 0x02;
+    rechecksumV3(bytes);
+    try std.testing.expectError(error.InvalidTerm, decodeV3Test(bytes, &buffers));
+    // A header claiming more term text than the cap allows is refused
+    // before anything is allocated or decoded.
+    bytes = try arena.dupe(u8, good);
+    offset = 72;
+    writeU64(bytes, &offset, 2 * max_shared_v3 + header.dictionary_bytes + 1);
+    rechecksumV3(bytes);
+    try std.testing.expectError(error.InvalidSectionLength, inspect(bytes));
 }

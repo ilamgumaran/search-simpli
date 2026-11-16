@@ -22,6 +22,7 @@ const engine_module = @import("engine.zig");
 const hybrid = @import("hybrid.zig");
 const indexer = @import("indexer.zig");
 const manifest = @import("manifest.zig");
+const lexical_segment = @import("lexical_segment.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
 const scope = @import("scope.zig");
@@ -685,17 +686,22 @@ pub const OpenParts = struct {
     term_count: usize = 0,
     posting_count: usize = 0,
     vector_dimensions: usize = 0,
+    /// S6-T4: a `HYBLEX03` section's decoded term text (its header's
+    /// `term_text_bytes`; 0 for v1 and v2, whose terms are slices of the
+    /// section).
+    term_text: usize = 0,
 
     /// S4-T9 ruling 3, the formula bar: the manifest's bytes, the two
     /// sections the open reads and the tables decoded from them (from the
-    /// manifest's counts and the struct sizes), plus 1 MiB.
+    /// manifest's counts and the struct sizes, and since S6-T4 the term
+    /// text a v3 section decodes), plus 1 MiB.
     pub fn bar(parts: OpenParts) usize {
         return parts.manifest_bytes + parts.documents_section + parts.lexical_section + parts.tableBytes() + bar_slack_bytes;
     }
 
     pub fn tableBytes(parts: OpenParts) usize {
         return parts.document_count * @sizeOf(hybrid.Document) + parts.document_count * parts.vector_dimensions * @sizeOf(f32) +
-            parts.term_count * @sizeOf(postings.TermEntry) + parts.posting_count * @sizeOf(postings.Posting) + parts.document_count * @sizeOf(u32);
+            parts.term_count * @sizeOf(postings.TermEntry) + parts.posting_count * @sizeOf(postings.Posting) + parts.document_count * @sizeOf(u32) + parts.term_text;
     }
 };
 
@@ -762,6 +768,7 @@ fn attributeOpen(dir: std.Io.Dir) !OpenParts {
     parts.term_count = metadata.term_count;
     parts.posting_count = metadata.posting_count;
     parts.vector_dimensions = metadata.vector_dimensions;
+    parts.term_text = (try lexical_segment.inspect(snapshot.lexical_encoded)).term_text_bytes;
 
     const Slice = struct {
         fn of(comptime T: type, bytes: engine_module.OpenBlockBytes, offset: usize, count: usize) []T {
@@ -777,7 +784,7 @@ fn attributeOpen(dir: std.Io.Dir) !OpenParts {
         Slice.of(postings.TermEntry, block, layout.terms, metadata.term_count),
         Slice.of(postings.Posting, block, layout.postings, metadata.posting_count),
         Slice.of(u32, block, layout.document_lengths, metadata.document_count),
-        .{ .validate_positions = false },
+        .{ .validate_positions = false, .term_text_allocator = allocator },
     );
     Mark.at(&parts, &counting_blocks, &counting_arena, &capped, .decode, &last_requested, &last_held);
     blocks.free(manifest_read);

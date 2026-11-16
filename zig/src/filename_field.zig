@@ -184,7 +184,9 @@ pub fn carryLexical(bytes: []const u8, metadata: manifest.FilenameMetadata, cata
     if (bytes.len != metadata.lexical_bytes) return null;
     const header = lexical_segment.inspect(bytes) catch return null;
     if (header.checksum != metadata.lexical_checksum) return null;
-    if (header.hasPositions() or header.checksum_kind != .fnv1a64) return null;
+    // S6-T4: only a `HYBLEX03` section is carried; any older one (the
+    // `HYBLEX01` sections before v2.3) is rebuilt once, as v3.
+    if (header.hasPositions() or header.version != lexical_segment.version_v3) return null;
     if (header.document_count != catalog_len or metadata.file_count != catalog_len) return null;
     if (header.term_count != metadata.term_count or header.posting_count != metadata.posting_count) return null;
     return .{ .header = header, .checksum = metadata.lexical_checksum, .file_count = metadata.file_count, .term_count = metadata.term_count, .posting_count = metadata.posting_count };
@@ -209,13 +211,14 @@ pub fn buildFromCatalog(allocator: std.mem.Allocator, docs: []hybrid.Document, a
     const token_lists = try allocator.alloc([][]const u8, docs.len);
     for (docs, 0..) |doc, j| token_lists[j] = try tokenize(allocator, analyzer_id, doc.text);
     marks.mark("tokenize");
-    const lexical_index = try lexical_build.build(allocator, docs, token_lists);
+    // S6-T4: `HYBLEX03` needs the dictionary sorted by bytes.
+    const lexical_index = try lexical_segment.sortedForV3(allocator, try lexical_build.build(allocator, docs, token_lists));
     marks.mark("lexical_build");
     const catalog_len = try segment.encodedLength(docs);
     const catalog_buffer = try allocator.alloc(u8, catalog_len);
     const catalog = try segment.encode(docs, catalog_buffer);
     marks.mark("encode_catalog");
-    const lexical = try lexical_segment.encodeAlloc(allocator, lexical_index);
+    const lexical = try lexical_segment.encodeV3Alloc(allocator, lexical_index);
     marks.mark("encode_lexical");
     return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = docs, .decoded_lexical = lexical_index };
 }
@@ -279,8 +282,9 @@ fn validateCarried(allocator: std.mem.Allocator, built: Built, carried: CarriedL
 }
 
 fn storedLexicalChecksum(bytes: []const u8) u64 {
-    if (bytes.len < lexical_segment.header_length) return 0;
-    return std.mem.readInt(u64, bytes[lexical_segment.header_length - 8 ..][0..8], .little);
+    const length = lexical_segment.headerLengthOfBytes(bytes);
+    if (length == 0 or bytes.len < length) return 0;
+    return std.mem.readInt(u64, bytes[length - 8 ..][0..8], .little);
 }
 
 pub fn validate(allocator: std.mem.Allocator, body_documents: []const hybrid.Document, catalog_encoded: []const u8, lexical_encoded: []const u8, analyzer_id: []const u8) !void {
@@ -324,7 +328,9 @@ pub fn validateDecoded(allocator: std.mem.Allocator, decoded: Decoded, analyzer_
         while (it.next()) |entry| {
             const ti = decoded.filenameTerm(entry.key_ptr.*) orelse return error.FilenameLexicalMismatch;
             if (!seen[ti]) {
-                if (ti != next_term) return error.FilenameLexicalMismatch;
+                // A first-seen (`HYBLEX01`) dictionary lists terms in the
+                // order the catalog first uses them; a v3 one is sorted.
+                if (!lexical.sorted_terms and ti != next_term) return error.FilenameLexicalMismatch;
                 next_term += 1;
                 seen[ti] = true;
             }
@@ -420,7 +426,10 @@ pub const Decoded = struct {
 pub fn loadReservation(metadata: manifest.Manifest) usize {
     const f = metadata.filename orelse return 0;
     const slack = 64;
-    var total: usize = f.catalog_bytes + f.lexical_bytes + 6 * slack;
+    // S6-T4: + the decoded term text of a `HYBLEX03` section, which is
+    // not in the section's bytes; the section's length bounds it in every
+    // measured index (a larger one falls back to the arena, as below).
+    var total: usize = f.catalog_bytes + (if (metadata.lexical_v3) 2 * f.lexical_bytes else f.lexical_bytes) + 6 * slack;
     total += f.file_count * (@sizeOf(hybrid.Document) + @sizeOf(u32) + @sizeOf(usize));
     total += metadata.document_count * @sizeOf(u32);
     total += f.term_count * (@sizeOf(postings.TermEntry) + @sizeOf(u32));
@@ -439,7 +448,7 @@ fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Docum
     const lex_terms = try allocator.alloc(postings.TermEntry, lh.term_count);
     const lex_posts = try allocator.alloc(postings.Posting, lh.posting_count);
     const lex_lengths = try allocator.alloc(u32, lh.document_count);
-    const lexical = try lexical_segment.decodeWith(lexical_encoded, lex_terms, lex_posts, lex_lengths, .{ .inspected = lh });
+    const lexical = try lexical_segment.decodeWith(lexical_encoded, lex_terms, lex_posts, lex_lengths, .{ .inspected = lh, .term_text_allocator = allocator });
     if (lexical.document_lengths.len != catalog.len) return error.FilenameCatalogMismatch;
     for (catalog, 0..) |doc, i| {
         if (!validPath(doc.path) or doc.vector.len != 0 or !std.mem.eql(u8, doc.text, stem(doc.path))) return error.FilenameCatalogMismatch;
@@ -472,7 +481,9 @@ fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Docum
     }
     const term_order = try allocator.alloc(u32, lexical.terms.len);
     for (term_order, 0..) |*slot, i| slot.* = @intCast(i);
-    std.mem.sort(u32, term_order, lexical.terms, struct {
+    // A `HYBLEX03` dictionary is already strictly sorted (its decoder
+    // checks it); a first-seen `HYBLEX01` one is sorted here.
+    if (!lexical.sorted_terms) std.mem.sort(u32, term_order, lexical.terms, struct {
         fn less(terms: []const postings.TermEntry, a: u32, b: u32) bool {
             return std.mem.order(u8, terms[a].term, terms[b].term) == .lt;
         }

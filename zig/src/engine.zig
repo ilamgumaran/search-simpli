@@ -90,6 +90,9 @@ pub const Engine = struct {
         /// and offsets (`lexical_segment.DecodeOptions`); the caller then
         /// validates them before their first use (`scope.Folder`).
         validate_positions: bool = true,
+        /// S6-T4: where a `HYBLEX03` dictionary's decoded terms are
+        /// allocated (`lexical_segment.DecodeOptions.term_text_allocator`).
+        term_text_allocator: ?std.mem.Allocator = null,
     };
 
     /// `open`, computing each section's checksum once (S4-T1): the manifest
@@ -110,7 +113,7 @@ pub const Engine = struct {
             term_output,
             posting_output,
             document_length_output,
-            .{ .validate_positions = options.validate_positions, .inspected = headers.lexical },
+            .{ .validate_positions = options.validate_positions, .inspected = headers.lexical, .term_text_allocator = options.term_text_allocator },
         );
         if (documents.len != lexical_index.document_lengths.len) return error.DocumentCountMismatch;
         var labeled = false;

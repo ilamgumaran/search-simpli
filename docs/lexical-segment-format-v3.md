@@ -1,12 +1,15 @@
-# Immutable lexical segment format v3 (`HYBLEX03`) — DRAFT
+# Immutable lexical segment format v3 (`HYBLEX03`)
 
-Status: **draft, S6-T4 Phase 1** (16 Nov 2026). Not implemented in
-`zig/src/`; a prototype of this layout lives in a scratch copy of the engine
-(its changed files are kept under `scripts/prototypes/s6t4/`). The
-orchestrator rules on the decode strategy and the Phase 2 bars before any
-engine code. Companion to [`lexical-segment-format-v2.md`](lexical-segment-format-v2.md)
-and [`index-size.md`](index-size.md) (candidates C1, C2b, C3 and F2, which
-this format builds).
+Status: **implemented** in `zig/src/lexical_segment.zig` (S6-T4, 16 Nov
+2026; designed and measured in its Phase 1, built in Phase 2 after the
+orchestrator's ruling). Every folder writer (`searchd index`, `searchd
+apply`, `searchd search`'s in-memory build, `ss_index_folder`,
+`ss_apply_changes`) writes it for both lexical sections, under
+[manifest v2.3](manifest-format-v2.md#v23-lexical-sections-v3-s6-t4). Every
+reader reads `HYBLEX01`, `HYBLEX02` and `HYBLEX03`. Companion to
+[`lexical-segment-format-v2.md`](lexical-segment-format-v2.md) and
+[`index-size.md`](index-size.md) (candidates C1, C2b, C3 and F2, which this
+format builds).
 
 V3 keeps v2's five sections in the same order and recodes the first three:
 document lengths as varints (C3), the dictionary front-coded (C1), and each
@@ -68,8 +71,10 @@ bytes plus its suffix, so the term text is at most 255 × term count +
 dictionary bytes), which lets the reader check the header's term-text bytes
 before allocating them; without it a section of a few kilobytes could ask for
 gigabytes of term text and still pass every other rule. (No term in the
-measured corpora shares more than 29 bytes, so the cap changes no byte there;
-the S6-T4 prototype does not apply it.)
+measured corpora shares more than 29 bytes, so the cap changes no byte there.
+The analyzers set no term-length limit — a token is a maximal run of letters
+and digits — so longer shared prefixes can occur; a test indexes two terms
+sharing 300 bytes.)
 
 Order and canonical form in one check: when `shared` is less than both the
 previous term's length and 255, the suffix's first byte must be greater than
@@ -87,8 +92,9 @@ contiguous term ranges. `list bytes` costs one or two bytes a term (measured:
 24,114 B of the timing corpus's 5,396,552 B section; 6,252 of prose's
 13,244,927; 21,632 of Tamil's 5,555,692; 10,002 to 12,936 of the file-name
 sections' 92,952 to 146,333). It lets a reader find a term's list without decoding
-the lists before it, which only a lazy reader needs; an eager reader
-checks it. Whether to keep it is a ruling (see the Report's open questions).
+the lists before it, which only a lazy reader needs; today's reader is eager
+and checks it. It is kept (the S6-T4 ruling) so that a later lazy reader
+needs no format change.
 
 ## Section 3: postings
 
@@ -145,12 +151,13 @@ a partial index:
    `HYBLEX03` (both lexical sections); `has_positions` equal to flags bit 1
    on the content section.
 
-Steps 1–5 run at open whatever the decode strategy. Step 6 runs at open when
-the lists are decoded at open; a reader that decodes lists later must either
-run it at open as a decode-and-discard walk or fail the first operation that
-decodes a damaged list with `SS_ERR_CORRUPT_SNAPSHOT`, as positions do today
-(S4-T1: a damaged positions section fails the first `ss_find`). Step 7 is
-lazy today (the first `ss_find`) and stays so.
+The reader decodes everything at open (the S6-T4 ruling: strategy (i)), so
+steps 1–6 run at `ss_open`, into the same arrays a v1 or v2 section decodes
+to; only the decoded term text is new (one block of `term text bytes`,
+allocated after step 3). Step 7 is lazy, as for v2 (the first `ss_find`,
+S4-T1). A later reader that decodes lists at first use must either run step
+6 at open as a decode-and-discard walk or fail the first operation that
+decodes a damaged list with `SS_ERR_CORRUPT_SNAPSHOT`.
 
 ### A damaged or truncated section
 
@@ -180,7 +187,9 @@ read and names it.
 - `searchd index` (full and `--update`) and `searchd apply` write v3 for both
   lexical sections. `import-json` keeps writing `HYBLEX01` under its v1
   manifest.
-- Every reader reads `HYBLEX01`, `HYBLEX02` and `HYBLEX03`. An update whose
+- Every reader reads `HYBLEX01`, `HYBLEX02` and `HYBLEX03`. A writer caps a
+  common prefix of more than 255 bytes at 255 (the suffix carries the rest;
+  no term is shortened or refused). An update whose
   previous generation is v2 decodes it as today and publishes v3: the content
   section's carried postings, positions and offsets are carried as they are;
   the file-name section is rebuilt once (as a `HYBLEX01` file-name section is
