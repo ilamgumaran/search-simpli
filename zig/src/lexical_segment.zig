@@ -1415,8 +1415,8 @@ fn rechecksumV3(encoded: []u8) void {
 
 const V3Buffers = struct {
     terms: [64]postings.TermEntry = undefined,
-    values: [64]postings.Posting = undefined,
-    lengths: [16]u32 = undefined,
+    values: [128]postings.Posting = undefined,
+    lengths: [128]u32 = undefined,
     text: [1024]u8 = undefined,
 };
 
@@ -1523,7 +1523,9 @@ test "S6-T4: flipping any byte of a small HYBLEX03 section never crashes the rea
     var refused: usize = 0;
     var accepted: usize = 0;
     var unsealed: usize = 0;
-    for ([_]postings.Index{ try v3Fixture(arena), try positionalFixture(arena), try sharedPrefixFixture(arena, 300) }) |index| {
+    // S6-T4 rework: the last two end in a list longer than its df (the
+    // verifier's P3 shape), so a flip of the last `list bytes` understates it.
+    for ([_]postings.Index{ try v3Fixture(arena), try positionalFixture(arena), try sharedPrefixFixture(arena, 300), try lastListSmallFixture(arena), try lastListPositionalFixture(arena) }) |index| {
         const good = try encodeV3Alloc(arena, index);
         const bytes = try arena.dupe(u8, good);
         for (0..good.len) |at| {
@@ -1549,6 +1551,172 @@ test "S6-T4: flipping any byte of a small HYBLEX03 section never crashes the rea
     try std.testing.expectEqual(@as(usize, 0), unsealed);
     try std.testing.expect(refused > 0 and accepted > 0);
     std.debug.print("S6-T4 byte flips: {d} resealed flips, {d} refused, {d} accepted (each re-encodes to its own bytes); every unsealed flip refused\n", .{ refused + accepted, refused, accepted });
+}
+
+// ---- S6-T4 rework: the last element of each section (the verifier's P3) --
+
+/// The verifier's P3 shape: the last term ("zzzz", df 2, one posting with
+/// tf 3) has a 3-byte list, so its `list bytes` can be one short and still
+/// not below its df.
+fn lastListSmallFixture(arena: std.mem.Allocator) !postings.Index {
+    const terms = try arena.alloc(postings.TermEntry, 2);
+    terms[0] = .{ .term = "alpha", .document_frequency = 1, .postings_start = 0, .postings_length = 1 };
+    terms[1] = .{ .term = "zzzz", .document_frequency = 2, .postings_start = 1, .postings_length = 2 };
+    const values = try arena.dupe(postings.Posting, &.{
+        .{ .document_index = 0, .term_frequency = 1 },
+        .{ .document_index = 0, .term_frequency = 1 }, .{ .document_index = 1, .term_frequency = 3 },
+    });
+    return .{ .terms = terms, .postings = values, .document_lengths = try arena.dupe(u32, &.{ 2, 3 }), .average_document_length = 2.5, .sorted_terms = true };
+}
+
+/// Every last element longer than one byte: 70 documents, the last one 400
+/// tokens long (a 2-byte varint ending section 1); the last term in every
+/// document with tf 2 (a 140-byte list, so the last dictionary entry ends in
+/// a 2-byte `list bytes`, 0x8C 0x01).
+fn lastListLargeFixture(arena: std.mem.Allocator) !postings.Index {
+    const documents = 70;
+    const terms = try arena.alloc(postings.TermEntry, 2);
+    terms[0] = .{ .term = "alpha", .document_frequency = 1, .postings_start = 0, .postings_length = 1 };
+    terms[1] = .{ .term = "zzzz", .document_frequency = documents, .postings_start = 1, .postings_length = documents };
+    const values = try arena.alloc(postings.Posting, documents + 1);
+    values[0] = .{ .document_index = 0, .term_frequency = 1 };
+    for (values[1..], 0..) |*posting, d| posting.* = .{ .document_index = @intCast(d), .term_frequency = 2 };
+    const lengths = try arena.alloc(u32, documents);
+    @memset(lengths, 3);
+    lengths[documents - 1] = 400;
+    return .{ .terms = terms, .postings = values, .document_lengths = lengths, .average_document_length = (69.0 * 3.0 + 400.0) / 70.0, .sorted_terms = true };
+}
+
+/// A content section (positions and offsets) whose last term, "zebra", has
+/// tf 2 and tf 3: a 4-byte list for df 2.
+fn lastListPositionalFixture(arena: std.mem.Allocator) !postings.Index {
+    const analyzer_v2 = @import("analyzer_v2.zig");
+    const hybrid = @import("hybrid.zig");
+    const lexical_build = @import("lexical_build.zig");
+    const documents = [_]hybrid.Document{
+        .{ .id = "a", .text = "alpha zebra zebra" },
+        .{ .id = "b", .text = "zebra beta zebra zebra" },
+    };
+    var lists: [documents.len][]const @import("analysis.zig").PositionedToken = undefined;
+    for (documents, 0..) |document, i| lists[i] = try analyzer_v2.tokenizePositioned(arena, document.text);
+    return sortedForV3(arena, try lexical_build.buildPositional(arena, &documents, &lists));
+}
+
+/// What to change in an encoded `HYBLEX03` section: the last term's `list
+/// bytes` (re-encoded as a varint), and bytes added at or cut from the end of
+/// sections 1, 2 and 3. Every header length and the checksum follow, so only
+/// the rule under test is broken.
+const V3Edit = struct {
+    last_list_delta: i64 = 0,
+    lengths_extra: usize = 0,
+    lengths_cut: usize = 0,
+    dictionary_extra: usize = 0,
+    dictionary_cut: usize = 0,
+    postings_extra: usize = 0,
+};
+
+fn editV3(arena: std.mem.Allocator, good: []const u8, edit: V3Edit) ![]u8 {
+    const header = try inspect(good);
+    var at: usize = header_length_v3;
+    const lengths = good[at..][0..header.document_lengths_bytes];
+    at += lengths.len;
+    const dictionary = good[at..][0..header.dictionary_bytes];
+    at += dictionary.len;
+    const coded = good[at..][0..header.postings_bytes];
+    at += coded.len;
+    const rest = good[at..];
+
+    // Walk the dictionary to the last entry's `list bytes`.
+    var walk: usize = 0;
+    var last_at: usize = 0;
+    var last_value: u32 = 0;
+    for (0..header.term_count) |_| {
+        _ = postings.readVarint(dictionary, &walk).?;
+        const suffix = postings.readVarint(dictionary, &walk).?;
+        walk += suffix;
+        _ = postings.readVarint(dictionary, &walk).?;
+        last_at = walk;
+        last_value = postings.readVarint(dictionary, &walk).?;
+    }
+    std.debug.assert(walk == dictionary.len);
+    var new_dictionary = ByteList.empty;
+    try new_dictionary.appendSlice(arena, dictionary[0..last_at]);
+    try postings.appendVarint(&new_dictionary, arena, @intCast(@as(i64, last_value) + edit.last_list_delta));
+    try new_dictionary.appendNTimes(arena, 0, edit.dictionary_extra);
+    new_dictionary.items.len -= edit.dictionary_cut;
+
+    var out = ByteList.empty;
+    try out.appendSlice(arena, good[0..header_length_v3]);
+    try out.appendSlice(arena, lengths[0 .. lengths.len - edit.lengths_cut]);
+    try out.appendNTimes(arena, 1, edit.lengths_extra);
+    try out.appendSlice(arena, new_dictionary.items);
+    try out.appendSlice(arena, coded);
+    try out.appendNTimes(arena, 1, edit.postings_extra);
+    try out.appendSlice(arena, rest);
+    var offset: usize = 32;
+    writeU64(out.items, &offset, @intCast(lengths.len - edit.lengths_cut + edit.lengths_extra));
+    writeU64(out.items, &offset, @intCast(new_dictionary.items.len));
+    writeU64(out.items, &offset, @intCast(coded.len + edit.postings_extra));
+    rechecksumV3(out.items);
+    return out.items;
+}
+
+test "S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const fixtures = [_]postings.Index{ try lastListSmallFixture(arena), try lastListLargeFixture(arena), try lastListPositionalFixture(arena) };
+    for (fixtures) |index| {
+        const good = try encodeV3Alloc(arena, index);
+        var buffers: V3Buffers = .{};
+        // The shape under test: the last term's list is longer than its df.
+        const last = index.terms[index.terms.len - 1];
+        const decoded = try decodeV3Test(good, &buffers);
+        try std.testing.expectEqualSlices(postings.Posting, index.postings, decoded.postings);
+        try std.testing.expectEqualSlices(u32, index.document_lengths, decoded.document_lengths);
+        try std.testing.expectEqualStrings(last.term, decoded.terms[decoded.terms.len - 1].term);
+        try std.testing.expectEqualSlices(u8, good, try editV3(arena, good, .{}));
+        try std.testing.expect(try lastListBytes(good) > last.document_frequency);
+
+        // The last term's `list bytes` one short (still not below its df):
+        // its list cannot hold its df postings.
+        try std.testing.expectError(error.InvalidPosting, decodeV3Test(try editV3(arena, good, .{ .last_list_delta = -1 }), &buffers));
+        // One long, with a byte added to section 3 so the sums agree: the
+        // list has a byte left over.
+        try std.testing.expectError(error.InvalidPosting, decodeV3Test(try editV3(arena, good, .{ .last_list_delta = 1, .postings_extra = 1 }), &buffers));
+        // One long without that byte: past the end of section 3.
+        try std.testing.expectError(error.InvalidPostingRange, decodeV3Test(try editV3(arena, good, .{ .last_list_delta = 1 }), &buffers));
+        // A byte in section 3 after the last list that no term claims.
+        try std.testing.expectError(error.InvalidPostingRange, decodeV3Test(try editV3(arena, good, .{ .postings_extra = 1 }), &buffers));
+        // A byte after the last dictionary entry; the last entry cut short.
+        try std.testing.expectError(error.InvalidSectionLength, decodeV3Test(try editV3(arena, good, .{ .dictionary_extra = 1 }), &buffers));
+        try std.testing.expectError(error.InvalidTerm, decodeV3Test(try editV3(arena, good, .{ .dictionary_cut = 1 }), &buffers));
+        // A byte after the last document length; the last one cut short.
+        try std.testing.expectError(error.InvalidSectionLength, decodeV3Test(try editV3(arena, good, .{ .lengths_extra = 1 }), &buffers));
+        try std.testing.expectError(error.InvalidSectionLength, decodeV3Test(try editV3(arena, good, .{ .lengths_cut = 1 }), &buffers));
+    }
+    // The large fixture's last elements are multi-byte varints, so the cuts
+    // above split a varint rather than drop a whole one.
+    const large = try encodeV3Alloc(arena, fixtures[1]);
+    const header = try inspect(large);
+    try std.testing.expectEqualSlices(u8, &.{ 0x90, 0x03 }, large[header_length_v3 + header.document_lengths_bytes - 2 ..][0..2]);
+    try std.testing.expectEqualSlices(u8, &.{ 0x8c, 0x01 }, large[header_length_v3 + header.document_lengths_bytes + header.dictionary_bytes - 2 ..][0..2]);
+}
+
+/// The last term's `list bytes` as written.
+fn lastListBytes(good: []const u8) !u32 {
+    const header = try inspect(good);
+    const dictionary = good[header_length_v3 + header.document_lengths_bytes ..][0..header.dictionary_bytes];
+    var walk: usize = 0;
+    var value: u32 = 0;
+    for (0..header.term_count) |_| {
+        _ = postings.readVarint(dictionary, &walk).?;
+        const suffix = postings.readVarint(dictionary, &walk).?;
+        walk += suffix;
+        _ = postings.readVarint(dictionary, &walk).?;
+        value = postings.readVarint(dictionary, &walk).?;
+    }
+    return value;
 }
 
 /// Two terms that share `shared` bytes ("x" repeated, then "a" and "b"),

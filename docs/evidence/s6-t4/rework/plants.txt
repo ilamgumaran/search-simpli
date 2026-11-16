@@ -1,0 +1,58 @@
+# S6-T4 rework: plants against the last element of each v3 section
+
+Each plant in its own copy of this branch's source (git archive of a8713df
+plus the rework diff), with its own ZIG_GLOBAL_CACHE_DIR and
+ZIG_LOCAL_CACHE_DIR; Debug `zig build test --summary all`. The plants are
+`scripts/prototypes/s6t4/rework_plants.py ROOT NAME`:
+
+- P3 (the verifier's): the last term's list decoded from the rest of
+  section 3 (`posting_bytes[coded_start..]`), and the end check
+  `coded_start != posting_bytes.len` removed.
+- L1: section 1's end check (`at != document_length_bytes.len`) removed.
+- L2: section 2's end check (`at != dictionary_bytes.len`) removed.
+- L3: the last document length read from the rest of the payload past
+  section 1, and section 1's end check removed (P3's shape for section 1).
+- base: no plant (the same copy procedure).
+
+New tests: `lexical_segment.zig` "S6-T4 rework: the last list, the last
+dictionary entry and the last document length are held to their sections";
+the byte-flip test with two more sections whose last list is longer than its
+df; `filename_field_test.zig` "S6-T4 rework: a file-name section whose last
+list is longer than its df is held to its list bytes".
+
+## P3
+Build Summary: 7/9 steps succeeded (1 failed); 460/472 tests passed (9 skipped, 3 failed)
+error: 'lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader' failed:
+error: 'lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections' failed:
+error: 'filename_field_test.test.S6-T4 rework: a file-name section whose last list is longer than its df is held to its list bytes' failed:
+
+## L1
+Build Summary: 7/9 steps succeeded (1 failed); 462/472 tests passed (9 skipped, 1 failed)
+error: 'lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections' failed:
+
+## L2
+Build Summary: 7/9 steps succeeded (1 failed); 462/472 tests passed (9 skipped, 1 failed)
+error: 'lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections' failed:
+
+## L3
+Build Summary: 7/9 steps succeeded (1 failed); 461/472 tests passed (9 skipped, 2 failed)
+error: 'lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader' failed:
+error: 'lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections' failed:
+
+## base
+Build Summary: 9/9 steps succeeded; 463/472 tests passed (9 skipped)
+
+
+# The same plants on the suite before the rework (git archive of a8713df, own caches)
+
+## old-L1
+Build Summary: 9/9 steps succeeded; 461/470 tests passed (9 skipped)
+
+## old-L2
+Build Summary: 9/9 steps succeeded; 461/470 tests passed (9 skipped)
+
+## old-L3
+Build Summary: 7/9 steps succeeded (1 failed); 460/470 tests passed (9 skipped, 1 failed)
+error: 'lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader' failed:
+
+(P3 on 57b10b7: the Verdict, 461 of 470 passed.)
