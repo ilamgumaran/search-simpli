@@ -550,10 +550,19 @@ pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, b
 /// bounded top `candidate_k` (`rankChannels`) instead of sorting every
 /// candidate; its first `candidate_k` are the full sort's.
 pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) ![]Hit {
+    return queryDecodedTraced(allocator, body_docs, body_index, decoded, analyzer_id, query_text, field, options, null);
+}
+
+/// `queryDecoded` that also fills `trace` (S6-T5, `ss_query`'s warnings)
+/// from the query's own tokens (`traceTokens`). With `trace == null` it is
+/// exactly `queryDecoded`.
+pub fn queryDecodedTraced(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions, trace: ?*hybrid.Trace) ![]Hit {
     if (field == .content) return error.ContentQueryUseLegacy;
     if (options.retrieval_mode != .lexical) return error.InvalidRetrievalMode;
     if (options.candidate_k < options.top_k) return error.CandidateDepthTooSmall;
-    const scored = try scoreQuery(allocator, body_docs, body_index, decoded, analyzer_id, query_text, field, options);
+    const qt = try tokenize(allocator, analyzer_id, query_text);
+    if (trace) |t| try traceTokens(allocator, body_docs, body_index, decoded, analyzer_id, query_text, qt, field, options, t);
+    const scored = try scoreTokens(allocator, body_docs, body_index, decoded, qt, field, options);
     const ranked = try rankChannels(allocator, body_docs, decoded, scored, field, options.candidate_k);
     if (field == .both) if (options.title) |title| return merge(allocator, body_docs, decoded, scored, ranked, title, query_text, options);
     return fuse(allocator, body_docs, ranked, field, options);
@@ -586,7 +595,11 @@ pub fn visibleNameHolds(decoded: Decoded, term: []const u8, options: hybrid.Sear
 ///   a visible name, and its expansion is never left unreported.
 /// - `filename`: a term is unmatched when no visible file name holds it.
 ///   The channel is never expanded or grouped, so nothing else is noted.
-pub fn traceTerms(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions, trace: *hybrid.Trace) !void {
+///
+/// `query_tokens` are the channel's own tokens of `query_text`
+/// (`tokenize`), read once by `queryDecodedTraced` for the scoring and
+/// for this.
+fn traceTokens(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, query_tokens: []const []const u8, field: Field, options: hybrid.SearchOptions, trace: *hybrid.Trace) !void {
     std.debug.assert(field != .content);
     trace.scope_documents = body_docs;
     trace.scope_prefix = options.path_prefix;
@@ -594,12 +607,8 @@ pub fn traceTerms(allocator: std.mem.Allocator, body_docs: []const hybrid.Docume
     trace.scope_roots = options.visible_roots;
     if (field == .both) {
         if (std.mem.eql(u8, analyzer_id, analyzer_v2.analyzer_id)) {
-            const tokens = try analyzer_v2.tokenize(allocator, query_text);
-            defer {
-                for (tokens) |token| allocator.free(token);
-                allocator.free(tokens);
-            }
-            allocator.free(try lexical_build.resolveTokensTraced(allocator, body_index, tokens, trace, true));
+            // `tokenize` is `analyzer_v2.tokenize` for this analyzer.
+            allocator.free(try lexical_build.resolveTokensTraced(allocator, body_index, query_tokens, trace, true));
         } else {
             allocator.free(try postings.resolveQueryTraced(allocator, body_index, query_text, trace, true));
         }
@@ -615,13 +624,8 @@ pub fn traceTerms(allocator: std.mem.Allocator, body_docs: []const hybrid.Docume
         trace.unmatched.shrinkRetainingCapacity(kept);
         return;
     }
-    const tokens = try tokenize(allocator, analyzer_id, query_text);
-    defer {
-        for (tokens) |token| allocator.free(token);
-        allocator.free(tokens);
-    }
-    for (tokens, 0..) |token, i| {
-        const repeated = for (tokens[0..i]) |earlier| {
+    for (query_tokens, 0..) |token, i| {
+        const repeated = for (query_tokens[0..i]) |earlier| {
             if (std.mem.eql(u8, earlier, token)) break true;
         } else false;
         if (repeated) continue;
@@ -724,9 +728,14 @@ const Scored = struct {
 /// (scoped queries only), then each distinct query term's postings in
 /// each field.
 fn scoreQuery(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) !Scored {
+    return scoreTokens(allocator, body_docs, body_index, decoded, try tokenize(allocator, analyzer_id, query_text), field, options);
+}
+
+/// `scoreQuery` on the query's tokens (`tokenize`), so that
+/// `queryDecodedTraced` reads them once for the scoring and the trace.
+fn scoreTokens(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, qt: []const []const u8, field: Field, options: hybrid.SearchOptions) !Scored {
     const catalog = decoded.catalog;
     const lexical = decoded.lexical;
-    const qt = try tokenize(allocator, analyzer_id, query_text);
     const scoped = maskHides(decoded, options.visible_roots) or options.path_prefix != null or decoded.labeled;
 
     // The visible set's size and average length, per field.

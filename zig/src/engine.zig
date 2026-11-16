@@ -147,7 +147,7 @@ pub const Engine = struct {
     /// warnings): under `content` as `queryTraced` does; under `both` the
     /// groups it searched and `content`'s unmatched terms less those a
     /// visible file name holds; under `filename` the terms no visible file
-    /// name holds (`filename_field.traceTerms`). With `trace == null` it is
+    /// name holds (`filename_field.queryDecodedTraced`). With `trace == null` it is
     /// exactly `queryFields`.
     pub fn queryFieldsTraced(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, field: filename_field.Field, options: hybrid.SearchOptions, trace: ?*hybrid.Trace) ![]filename_field.Hit {
         if (field == .content) {
@@ -173,13 +173,9 @@ pub const Engine = struct {
             const groups = try engine.bothGroups(allocator, query_text, titled_options, trace);
             defer if (groups) |g| g.deinit(allocator);
             if (groups) |*g| titled_options.fuzzy_groups = g;
-            const hits = try filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options);
-            if (trace) |t| try filename_field.traceTerms(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options, t);
-            return hits;
+            return filename_field.queryDecodedTraced(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options, trace);
         }
-        const hits = try filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options);
-        if (trace) |t| try filename_field.traceTerms(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options, t);
-        return hits;
+        return filename_field.queryDecodedTraced(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options, trace);
     }
 
     pub fn query(
