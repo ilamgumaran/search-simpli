@@ -561,11 +561,16 @@ pub fn queryDecodedTraced(allocator: std.mem.Allocator, body_docs: []const hybri
     if (options.retrieval_mode != .lexical) return error.InvalidRetrievalMode;
     if (options.candidate_k < options.top_k) return error.CandidateDepthTooSmall;
     const qt = try tokenize(allocator, analyzer_id, query_text);
-    if (trace) |t| try traceTokens(allocator, body_docs, body_index, decoded, analyzer_id, query_text, qt, field, options, t);
     const scored = try scoreTokens(allocator, body_docs, body_index, decoded, qt, field, options);
     const ranked = try rankChannels(allocator, body_docs, decoded, scored, field, options.candidate_k);
-    if (field == .both) if (options.title) |title| return merge(allocator, body_docs, decoded, scored, ranked, title, query_text, options);
-    return fuse(allocator, body_docs, ranked, field, options);
+    const hits = if (field == .both and options.title != null)
+        try merge(allocator, body_docs, decoded, scored, ranked, options.title.?, query_text, options)
+    else
+        try fuse(allocator, body_docs, ranked, field, options);
+    // After the answer, so that the scoring's allocations are made as
+    // before (S6-T5 §8).
+    if (trace) |t| try traceTokens(allocator, body_docs, body_index, decoded, analyzer_id, query_text, qt, field, options, t);
+    return hits;
 }
 
 /// S6-T5: whether a file name the file-name channel would search holds
@@ -597,8 +602,8 @@ pub fn visibleNameHolds(decoded: Decoded, term: []const u8, options: hybrid.Sear
 ///   The channel is never expanded or grouped, so nothing else is noted.
 ///
 /// `query_tokens` are the channel's own tokens of `query_text`
-/// (`tokenize`), read once by `queryDecodedTraced` for the scoring and
-/// for this.
+/// (`tokenize`), read once by `queryDecodedTraced` for the scoring and,
+/// after it, for this.
 fn traceTokens(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, query_tokens: []const []const u8, field: Field, options: hybrid.SearchOptions, trace: *hybrid.Trace) !void {
     std.debug.assert(field != .content);
     trace.scope_documents = body_docs;
