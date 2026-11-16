@@ -4,7 +4,7 @@
 
 The [objective plan](../plans/2026-11-16-objective-plan.md) sets the order; the rows
 below stay the detailed queue. **A** contributor documents (README front door,
-`CONTRIBUTING.md`, roadmap; [S6-T1](../tasks/S6-T1.md)) · **B** the core apart from the
+`CONTRIBUTING.md`, roadmap; [S6-T1](../tasks/S6-T1.md), merged as `59d048e`) · **B** the core apart from the
 interfaces: B1 the layer check ([S6-T1](../tasks/S6-T1.md), [layers](../layers.md)), B2
 the files moved into `core/`, `ops/`, `interfaces/` with the core as its own module, B3 a
 small public core API · **C** search a folder directly ([S6-T2](../tasks/S6-T2.md)) ·

@@ -35,7 +35,7 @@ text), one run each, so the timings are indications and the byte counts are exac
 
 | Objective | State | Evidence |
 | --- | --- | --- |
-| 1. Light | **Met.** One static binary under 1 MiB; arm64 libraries 916,928–954,120 B; no dependencies. | `bindings/dart/search_simpli/native/` |
+| 1. Light | **Met.** One binary, `searchd`, of 1,095,880 B (`ReleaseSmall`, macOS arm64, measured by S6-T1; not fully static: it links `libSystem` on macOS); arm64 libraries 916,928–954,120 B; no third-party dependencies. | `bindings/dart/search_simpli/native/` |
 | 1. Search files directly | **Gap.** Every query needs a published index directory first. There is no command that takes a folder and a query. | `zig/src/cli.zig` commands |
 | 1. Semantic matches | **Partial.** The engine scores vectors and fuses by rank, but only for snapshots imported from the Python reference. A folder indexed by `searchd` is lexical only. | [roadmap](../roadmap.md) Phase 1 |
 | 2. Index read | **Met at 10k files.** A whole `searchd query` process on the 10,000-file index takes about 0.02 s; warm queries are 0.1–0.2 ms. | this review; `docs/evidence/s5-t12/` |

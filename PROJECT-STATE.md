@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-16 (S6-T1, a front door for contributors and the layer boundary checked in CI, objective plan items A and B1; documents, one checker, its tests and one CI step; no file under `zig/`, `contracts/`, `bindings/` or `src/` changed, natives and contracts 2.7.0 unchanged; built, awaiting verification)
+Last updated: 2026-11-16 (S6-T1, a front door for contributors and the layer boundary checked in CI, objective plan items A and B1; documents, one checker, its tests and one CI step; no file under `zig/`, `contracts/`, `bindings/` or `src/` changed, natives and contracts 2.7.0 unchanged; verified and merged 2026-11-16 as `59d048e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,7 +15,9 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## A front door for contributors and the layer check (S6-T1, objective plan A and B1, 2026-11-16; built, awaiting verification)
+## A front door for contributors and the layer check (S6-T1, objective plan A and B1, 2026-11-16; verified and merged)
+
+**Verified and merged 16 Nov as `59d048e`** ([second Verdict](docs/tasks/S6-T1.md), PASS on `64db476`). The first Verdict failed `69352f2`: imports split over lines, written with a space or through `../src/` passed the checker. The rework reads each file as Zig tokens and resolves every target; the verifier's thirteen plants against it are all caught or correctly ignored, and CI is green.
 
 [Task and Report](docs/tasks/S6-T1.md). Documents, one checker and one CI step; no file under `zig/`,
 `contracts/`, `bindings/` or `src/` changed, so the native digest (`7bb71531…`) and contracts 2.7.0 are as before.
@@ -36,8 +38,8 @@ or implementation tasks; current search behavior and native artifacts are unchan
   [CONTRIBUTING.md](CONTRIBUTING.md) gives the toolchain, the suites' commands, the task-file rule, the evidence
   and privacy rules, capability documents and the native digest. The roadmap points to the plan; `docs/README.md`
   and 03-next name the new documents and the plan's order.
-- **Measured here:** `searchd` built `ReleaseSmall` on macOS arm64 is 1,095,880 B (the plan says under 1 MiB;
-  it is 1.05 MiB); the build took 10.59 s with empty Zig caches.
+- **Measured here:** `searchd` built `ReleaseSmall` on macOS arm64 is 1,095,880 B (1.05 MiB; the plan's "under
+  1 MiB" is corrected to this); the build took 10.59 s with empty Zig caches.
 
 ## `both` skips the scope walk when nothing can be hidden (S5-T12, review R07, 2026-11-14; part 1 alone after the re-ruling; verified and merged)
 
