@@ -1,0 +1,10 @@
+--- <vscratch>/plants2/base/src/zig/src/lexical_segment.zig	2026-11-16 15:46:54
++++ <vscratch>/plants2/Q1/src/zig/src/lexical_segment.zig	2026-11-16 15:57:40
+@@ -496,7 +496,6 @@
+             if (token_length == 0 or start + token_length > std.math.maxInt(u32)) return error.InvalidPositions;
+         }
+     }
+-    if (at != sections.offsets.len) return error.InvalidPositions;
+ }
+ 
+ fn validateIndex(index: postings.Index) EncodeError!void {
