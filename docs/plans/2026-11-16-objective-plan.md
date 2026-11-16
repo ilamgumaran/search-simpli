@@ -125,6 +125,13 @@ automatically past that size.
    text once (chunk records refer to the source section), tighter position
    coding, block-compressed text, an option to leave positions out. Ends with a
    recommendation and a target ratio.
+   **Done 16 Nov 2026** ([S6-T3](../tasks/S6-T3.md), merged as `1884dea`):
+   [`docs/index-size.md`](../index-size.md). Ruled order for D2, one format
+   version per step: (1) lexical v3 (C2b, C1, C3, and the file-name lexical
+   section); (2) text once by A′ with record coding; (3) offsets at one byte
+   per token (C5b); (4) state and catalog without repeats (D, F). Block
+   compression is revisited after them; D2-5 changes the CLI's
+   `keep_generations` default (03-next).
 2. **D2 onward:** the chosen changes, one format version at a time, each with a
    reader for the previous version, a migration note and before/after numbers
    for size, open, query and one-file update.
