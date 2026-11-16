@@ -55,7 +55,7 @@ PYTHONHASHSEED=0 python3 scripts/relevance_smoke.py --pack j2 --output .search/j
 python3 scripts/j2_gate.py .search/j2.json
 ```
 
-(397 Python tests, 42 of them skipped because they need Zig.)
+(408 Python tests, 42 of them skipped because they need Zig.)
 
 **Zig engine and C ABI** (the `native-linux` job):
 
@@ -64,7 +64,7 @@ cd zig
 zig build test --summary all        # 440 of 449 passed, 9 skipped
 zig build test-abi --summary all    # abi_test: 24/24 checks passed
 cd ..
-env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests -v   # 445 tests
+env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests -v   # 456 tests
 ```
 
 The Python suite builds a Debug `searchd` itself when it finds Zig on `PATH`.

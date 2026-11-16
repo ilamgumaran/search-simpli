@@ -34,7 +34,8 @@ python3 scripts/check_layers.py
 - **Interfaces** import core and operations files. An interface importing another
   interface fails the check unless the pair is listed as allowed (below).
 - **Tests, benchmarks and tools** (`*_test.zig`, `*_bench.zig`, `root.zig`,
-  `nfc_dump.zig`) may import anything; no assigned file may import them.
+  `nfc_dump.zig`) may import any file of `zig/src/` and any listed module, but each
+  import must resolve; no assigned file may import them.
 - **Bindings** sit outside `zig/src/`. The Dart package (`bindings/dart/search_simpli/`)
   calls the C ABI through `dart:ffi`, generated from `zig/include/search_simpli.h`;
   it never sees a Zig file. A later binding (JavaScript over WebAssembly, Swift,
