@@ -15,6 +15,7 @@ Raw rows behind the Phase 1 Report in [`docs/tasks/S6-T4.md`](../../tasks/S6-T4.
 | `sizes/` | `sizes.py` per corpus: every section's bytes in both formats |
 | `queries/` | the query sets (`bench.py queries` / `j2queries`) |
 | `summary.md` | `summarize.py run3.jsonl run4.jsonl` |
+| `old-library-on-v3.txt` | Phase 2, ruling 4: `searchd` and `libsearch_simpli.dylib` built from `98c4a2b` (ReleaseSmall) on a copy of `tests/fixtures/index-v3-s6t4/`: every command and `ss_open` refuse it with `UnsupportedFlags` |
 
 Variants: `today` and `today-b` (`main`'s library on the v2 index, two processes); `eager-v3`; `lazy-nocache`
 (`SS_PROTO_CACHE_BYTES=0`), `lazy-1mib` (1,048,576), `lazy-keep` (no budget), `lazy-all`
