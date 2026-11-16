@@ -653,6 +653,30 @@ def lexical_coding(lex: dict, lb: "Budget") -> dict:
             "offsets": deflate_size(lex["offsets"]) if offsets_before else 0,
         },
     }
+    if offsets_before:
+        # C5b: the offsets kept, one byte per token when it can: the
+        # codepoints between the previous token's end and this token's start
+        # (zigzag, so an overlap stays representable) and the length, as two
+        # nibbles; a nibble of 15 escapes to a varint after the byte. The
+        # token count per document as a varint.
+        region = lex["offsets"]
+        p = 0
+        packed = 0
+        for _ in range(len(lex["doc_lengths"])):
+            (count,) = struct.unpack_from("<I", region, p)
+            p += 4
+            packed += vlen(count)
+            start = end = 0
+            for _ in range(count):
+                gap, p = read_varint(region, p)
+                length, p = read_varint(region, p)
+                start += gap
+                sep = start - end
+                zz = (sep << 1) if sep >= 0 else ((-sep << 1) - 1)
+                packed += 1 + (vlen(zz) if zz >= 15 else 0) + (vlen(length) if length >= 15 else 0)
+                end = start + length
+        out["C5b offsets kept, one byte per token (separator and length nibbles)"] = {
+            "before": offsets_before, "after": packed, "saved": offsets_before - packed}
     c_saved = (dict_before - front) + (postings_before - folded) + (lengths_before - lengths_v)
     out["C1+C2b+C3 saved"] = c_saved
     out["C1+C2b+C3+C5 saved"] = c_saved + offsets_before
@@ -705,6 +729,64 @@ def cmd_candidates(index: Path, lz4: bool) -> dict:
             "A4 + fixed fields as varints": a4,
             "saved_A1": docs_budget.size - a1, "saved_A1_to_A4": docs_budget.size - a4,
             "round_trip": "every spanned chunk's text rebuilt from the source equals the stored text",
+        }
+
+    # A'. The inverse: the source section keeps only the bytes no chunk
+    # holds, plus a u32 byte offset per chunk; read_span rebuilds a file from
+    # its chunks' text (resident in the documents section) and those gaps.
+    if src:
+        located = locate_chunks(loaded)
+        per_file = {}
+        broken = set()
+        for r, loc in zip(records, located):
+            if r["src"] == 0xFFFFFFFF:
+                continue
+            if loc is None:
+                broken.add(r["src"])
+            else:
+                per_file.setdefault(loc[0], []).append((loc[1], r["text"]))
+        text = src["text"]
+        gap_bytes = whole_bytes = files_whole = rebuilt_files = 0
+        for i, f in enumerate(src["files"]):
+            body = text[f["toff"]:f["toff"] + f["tlen"]]
+            if i in broken or i not in per_file:
+                whole_bytes += f["tlen"]
+                files_whole += 1
+                continue
+            covered = bytearray(f["tlen"])
+            rebuilt = bytearray(f["tlen"])
+            for at, chunk in per_file[i]:
+                rebuilt[at:at + len(chunk)] = chunk
+                covered[at:at + len(chunk)] = b"\x01" * len(chunk)
+            gaps = [k for k, c in enumerate(covered) if not c]
+            for k in gaps:
+                rebuilt[k] = body[k]
+            gap_bytes += len(gaps)
+            if hashlib.sha256(bytes(rebuilt)).digest() != f["sha"]:
+                raise SystemExit(f"A' round trip failed for file {i}")
+            rebuilt_files += 1
+        spanned = sum(1 for loc in located if loc is not None)
+        source_bytes = loaded["files"][next(k for k in loaded["files"] if k.startswith("source-"))].size
+        after = source_bytes - len(text) + gap_bytes + whole_bytes + 4 * spanned
+        # The record coding that goes with it: per-chunk path dropped (the
+        # source table's, by source_doc_index), chunk id as 10 raw bytes,
+        # the fixed fields as varints (no span offset: it is in the source).
+        path_saved = sum(len(r["path"]) for r in records if r["src"] != 0xFFFFFFFF and r["src"] < len(src["files"]))
+        fixed_varint = 0
+        for r in records:
+            dropped = r["src"] != 0xFFFFFFFF and r["src"] < len(src["files"])
+            fields = [len(r["id"]) // 2, 0 if dropped else len(r["path"]), len(r["text"]), r["vec"],
+                      r["start"], r["end"] - r["start"], r["lab_len"], r["chunker"], r["depth"],
+                      r["heading"], r["src"] if r["src"] != 0xFFFFFFFF else 0, r["sp_len"]]
+            fixed_varint += sum(vlen(v) for v in fields)
+        records_after = docs_budget.size - path_saved - 10 * n - 44 * n + fixed_varint
+        cand["A' source keeps only bytes no chunk holds"] = {
+            "documents_after_record_coding (path dropped, raw ids, varint fields)": records_after,
+            "documents_saved_by_record_coding": docs_budget.size - records_after,
+            "source_before": source_bytes, "source_after": after, "saved": source_bytes - after,
+            "files_rebuilt_from_chunks": rebuilt_files, "files_kept_whole": files_whole,
+            "gap_bytes": gap_bytes, "whole_file_bytes": whole_bytes, "chunk_offsets": 4 * spanned,
+            "round_trip": "every rebuilt file's sha256 equals the source table's",
         }
 
     # B. Source text block-compressed.
@@ -923,8 +1005,8 @@ def cmd_tables(raw: Path) -> str:
                      f"{_n(sum(dr.values()))} | {_n(d['section_paths_bytes'])} |")
 
     lines += ["", "## 6. Candidates: bytes saved, measured on prototype re-encodings (file-name channel on)", "",
-              "| Corpus | A1 text as spans | A1-A4 records | B source deflate 64 KiB | C1 dictionary | C2b postings | C3 lengths | C5 offsets out | C6 positions + offsets out | D state | F catalog | F2 file-name lexical |",
-              "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+              "| Corpus | A1 text as spans | A1-A4 records | A' source residual | A' record coding | B source deflate 64 KiB | C1 dictionary | C2b postings | C3 lengths | C5 offsets out | C5b offsets one byte per token | C6 positions + offsets out | D state | F catalog | F2 file-name lexical |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for corpus, r in rows.items():
         c = r["c"]
         a = c["A chunk text as source spans"]
@@ -934,11 +1016,14 @@ def cmd_tables(raw: Path) -> str:
         f2 = c.get("F2 filename lexical section, same coding", {}).get("C1+C2b+C3 saved", 0)
         lines.append(" | ".join([
             f"| {corpus}", _n(a["saved_A1"]), _n(a["saved_A1_to_A4"]),
+            _n(c["A' source keeps only bytes no chunk holds"]["saved"]),
+            _n(c["A' source keeps only bytes no chunk holds"]["documents_saved_by_record_coding"]),
             _n(bsec["text_before"] - d64["section_text_after"]),
             _n(l["C1 dictionary: front-coded terms + df varint (start, count derived)"]["saved"]),
             _n(l["C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint"]["saved"]),
             _n(l["C3 document lengths as varints"]["saved"]),
             _n(l["C5 offsets section left out (highlights re-tokenized from the hit text)"]["saved"]),
+            _n(l["C5b offsets kept, one byte per token (separator and length nibbles)"]["saved"]),
             _n(l["C6 positions and offsets both left out (no phrase find)"]["saved"]),
             _n(c["D state refers to the source table"]["saved (sha256 + path + size per shared file)"]),
             _n(c["F filename catalog without derivable bytes"]["saved (stem text and copied chunk ids)"]),
@@ -954,10 +1039,10 @@ def cmd_tables(raw: Path) -> str:
                      f"{_n(bsec['per_file']['section_text_after'])} | {_n(bsec['file_aligned_16k']['section_text_after'])} | "
                      f"{_n(bsec['file_aligned_64k']['section_text_after'])} | {_n(bsec['lz4_style_64k']['section_text_after'])} |")
 
-    lines += ["", "## 7. Projection: the recommended steps applied in order (measured savings, summed)", "",
+    lines += ["", "## 7. Projection: text once in the source, chunks as spans (A), then compressed (B)", "",
               "Each step's saving is its measured re-encoding above; the steps touch different bytes, so they add.",
               "Ratio = index bytes / corpus bytes.", "",
-              "| Corpus | Today | 1. lexical coding (C1, C2b, C3) | 2. + chunk spans (A1-A4) | 3. + offsets out (C5) | 4. + state, catalog (D, F, F2) | 5. + source deflate 64 KiB (B) |",
+              "| Corpus | Today | 1. lexical coding (C1, C2b, C3) | 2. + chunk spans (A1-A4) | 3. + offsets one byte per token (C5b) | 4. + state, catalog (D, F, F2) | 5. + source deflate 64 KiB (B) |",
               "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for channel in ("off", "on"):
         for corpus, r in rows.items():
@@ -969,13 +1054,34 @@ def cmd_tables(raw: Path) -> str:
             steps = [total]
             steps.append(steps[-1] - l["C1+C2b+C3 saved"])
             steps.append(steps[-1] - c["A chunk text as source spans"]["saved_A1_to_A4"])
-            steps.append(steps[-1] - l["C5 offsets section left out (highlights re-tokenized from the hit text)"]["saved"])
+            steps.append(steps[-1] - l["C5b offsets kept, one byte per token (separator and length nibbles)"]["saved"])
             four = c["D state refers to the source table"]["saved (sha256 + path + size per shared file)"]
             if channel == "on":
                 four += (c["F filename catalog without derivable bytes"]["saved (stem text and copied chunk ids)"]
                          + c["F2 filename lexical section, same coding"]["C1+C2b+C3 saved"])
             steps.append(steps[-1] - four)
             steps.append(steps[-1] - (bsec["text_before"] - d64["section_text_after"]))
+            cells = [f"{_n(v)} ({_r(v / r['corpus'])})" for v in steps]
+            lines.append(f"| {corpus} (channel {channel}) | " + " | ".join(cells) + " |")
+    lines += ["", "## 8. Projection, the other order: text stays in the chunks, the source keeps the rest (A')", "",
+              "| Corpus | Today | 1. lexical coding (C1, C2b, C3) | 2. + source residual and record coding (A') | 3. + offsets one byte per token (C5b) | 4. + state, catalog (D, F, F2) | 4 with the offsets left out instead (C5) |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for channel in ("off", "on"):
+        for corpus, r in rows.items():
+            c = r["c"]
+            l = c["C lexical coding"]
+            ap = c["A' source keeps only bytes no chunk holds"]
+            total = (r["bf"] if channel == "on" else r["b"])["total_bytes"]
+            steps = [total]
+            steps.append(steps[-1] - l["C1+C2b+C3 saved"])
+            steps.append(steps[-1] - ap["saved"] - ap["documents_saved_by_record_coding"])
+            steps.append(steps[-1] - l["C5b offsets kept, one byte per token (separator and length nibbles)"]["saved"])
+            four = c["D state refers to the source table"]["saved (sha256 + path + size per shared file)"]
+            if channel == "on":
+                four += (c["F filename catalog without derivable bytes"]["saved (stem text and copied chunk ids)"]
+                         + c["F2 filename lexical section, same coding"]["C1+C2b+C3 saved"])
+            steps.append(steps[-1] - four)
+            steps.append(steps[-1] - (l["C5 offsets section left out (highlights re-tokenized from the hit text)"]["saved"] - l["C5b offsets kept, one byte per token (separator and length nibbles)"]["saved"]))
             cells = [f"{_n(v)} ({_r(v / r['corpus'])})" for v in steps]
             lines.append(f"| {corpus} (channel {channel}) | " + " | ".join(cells) + " |")
     return "\n".join(lines) + "\n"

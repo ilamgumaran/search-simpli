@@ -14,6 +14,19 @@
    "saved_A1_to_A4": 1486569,
    "round_trip": "every spanned chunk's text rebuilt from the source equals the stored text"
   },
+  "A' source keeps only bytes no chunk holds": {
+   "documents_after_record_coding (path dropped, raw ids, varint fields)": 1456972,
+   "documents_saved_by_record_coding": 62116,
+   "source_before": 1260950,
+   "source_after": 28904,
+   "saved": 1232046,
+   "files_rebuilt_from_chunks": 44,
+   "files_kept_whole": 2,
+   "gap_bytes": 855,
+   "whole_file_bytes": 201,
+   "chunk_offsets": 4240,
+   "round_trip": "every rebuilt file's sha256 equals the source table's"
+  },
   "B source text block-compressed": {
    "text_before": 1237342,
    "deflate": [
@@ -24,9 +37,9 @@
      "compressed": 487794,
      "block_table": 608,
      "section_text_after": 488402,
-     "compress_ms": 19.2,
-     "decompress_ms_all": 1.3,
-     "decompress_us_per_block": 17.3
+     "compress_ms": 20.0,
+     "decompress_ms_all": 1.4,
+     "decompress_us_per_block": 18.4
     },
     {
      "block_bytes": 65536,
@@ -35,9 +48,9 @@
      "compressed": 452492,
      "block_table": 152,
      "section_text_after": 452644,
-     "compress_ms": 28.6,
-     "decompress_ms_all": 1.2,
-     "decompress_us_per_block": 63.4
+     "compress_ms": 30.0,
+     "decompress_ms_all": 1.3,
+     "decompress_us_per_block": 66.0
     },
     {
      "block_bytes": 262144,
@@ -46,9 +59,9 @@
      "compressed": 437305,
      "block_table": 40,
      "section_text_after": 437345,
-     "compress_ms": 32.4,
+     "compress_ms": 33.0,
      "decompress_ms_all": 1.0,
-     "decompress_us_per_block": 204.0
+     "decompress_us_per_block": 208.7
     },
     {
      "block_bytes": 65536,
@@ -59,7 +72,7 @@
      "section_text_after": 492319,
      "compress_ms": 6.2,
      "decompress_ms_all": 1.1,
-     "decompress_us_per_block": 59.5
+     "decompress_us_per_block": 59.8
     },
     {
      "block_bytes": 65536,
@@ -68,9 +81,9 @@
      "compressed": 452570,
      "block_table": 152,
      "section_text_after": 452722,
-     "compress_ms": 31.5,
+     "compress_ms": 31.6,
      "decompress_ms_all": 1.2,
-     "decompress_us_per_block": 62.9
+     "decompress_us_per_block": 63.1
     }
    ],
    "per_file": {
@@ -139,6 +152,11 @@
     "postings": 228358,
     "positions": 237119,
     "offsets": 62958
+   },
+   "C5b offsets kept, one byte per token (separator and length nibbles)": {
+    "before": 467096,
+    "after": 234732,
+    "saved": 232364
    },
    "C1+C2b+C3 saved": 1719730,
    "C1+C2b+C3+C5 saved": 2186826

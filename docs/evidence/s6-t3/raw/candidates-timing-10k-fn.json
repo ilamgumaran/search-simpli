@@ -14,6 +14,19 @@
    "saved_A1_to_A4": 8427136,
    "round_trip": "every spanned chunk's text rebuilt from the source equals the stored text"
   },
+  "A' source keeps only bytes no chunk holds": {
+   "documents_after_record_coding (path dropped, raw ids, varint fields)": 8056002,
+   "documents_saved_by_record_coding": 1217773,
+   "source_before": 8279041,
+   "source_after": 1119596,
+   "saved": 7159445,
+   "files_rebuilt_from_chunks": 10000,
+   "files_kept_whole": 0,
+   "gap_bytes": 29918,
+   "whole_file_bytes": 0,
+   "chunk_offsets": 79836,
+   "round_trip": "every rebuilt file's sha256 equals the source table's"
+  },
   "B source text block-compressed": {
    "text_before": 7269199,
    "deflate": [
@@ -24,9 +37,9 @@
      "compressed": 3073154,
      "block_table": 3552,
      "section_text_after": 3076706,
-     "compress_ms": 193.0,
-     "decompress_ms_all": 8.5,
-     "decompress_us_per_block": 19.2
+     "compress_ms": 206.1,
+     "decompress_ms_all": 9.2,
+     "decompress_us_per_block": 20.7
     },
     {
      "block_bytes": 65536,
@@ -35,9 +48,9 @@
      "compressed": 2873089,
      "block_table": 888,
      "section_text_after": 2873977,
-     "compress_ms": 246.4,
-     "decompress_ms_all": 7.8,
-     "decompress_us_per_block": 70.7
+     "compress_ms": 265.2,
+     "decompress_ms_all": 8.4,
+     "decompress_us_per_block": 75.7
     },
     {
      "block_bytes": 262144,
@@ -46,9 +59,9 @@
      "compressed": 2782170,
      "block_table": 224,
      "section_text_after": 2782394,
-     "compress_ms": 264.4,
-     "decompress_ms_all": 6.7,
-     "decompress_us_per_block": 239.9
+     "compress_ms": 283.4,
+     "decompress_ms_all": 7.2,
+     "decompress_us_per_block": 257.9
     },
     {
      "block_bytes": 65536,
@@ -57,9 +70,9 @@
      "compressed": 3322080,
      "block_table": 888,
      "section_text_after": 3322968,
-     "compress_ms": 42.2,
-     "decompress_ms_all": 7.5,
-     "decompress_us_per_block": 67.9
+     "compress_ms": 45.2,
+     "decompress_ms_all": 8.0,
+     "decompress_us_per_block": 72.5
     },
     {
      "block_bytes": 65536,
@@ -68,9 +81,9 @@
      "compressed": 2851854,
      "block_table": 888,
      "section_text_after": 2852742,
-     "compress_ms": 607.8,
-     "decompress_ms_all": 7.8,
-     "decompress_us_per_block": 70.7
+     "compress_ms": 652.2,
+     "decompress_ms_all": 8.4,
+     "decompress_us_per_block": 75.7
     }
    ],
    "per_file": {
@@ -99,7 +112,7 @@
     "compressed": 4661757,
     "block_table": 888,
     "section_text_after": 4662645,
-    "python_seconds": 1.3
+    "python_seconds": 1.4
    }
   },
   "C lexical coding": {
@@ -139,6 +152,11 @@
     "postings": 2262867,
     "positions": 841148,
     "offsets": 599548
+   },
+   "C5b offsets kept, one byte per token (separator and length nibbles)": {
+    "before": 2351372,
+    "after": 1155727,
+    "saved": 1195645
    },
    "C1+C2b+C3 saved": 7116266,
    "C1+C2b+C3+C5 saved": 9467638

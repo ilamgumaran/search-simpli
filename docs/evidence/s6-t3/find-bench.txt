@@ -1,0 +1,29 @@
+# S6-T3: zig/src/find_bench.zig built ReleaseSmall (zig build-exe -O ReleaseSmall zig/src/find_bench.zig), macOS arm64, 16 Nov 2026.
+# Modes: knowledge (warm content query, top 10), find words/phrase with the offsets section, and *-recompute (highlights re-tokenized from the hit text, as without the offsets section).
+# Microseconds; three repetitions of 200 timed queries each after 5 warm-ups. 'open' is the one open of the index.
+# load before: 2.20 3.54 3.94
+== timing-10k-fn
+generation 1, 19959 chunks, 24057 terms, 1023806 postings; documents section 9273775 B; source section 8279041 B; open 18.9 ms
+lexical section 12487753 B: version 2, header 80, lengths 79836, dictionary 730249, postings 8190448, positions 1135768, offsets 2351372
+knowledge: p50 559.1 p95 711.4 | p50 555.3 p95 707.0 | p50 554.3 p95 696.4 | mean hits 10.0
+words: p50 7.3 p95 228.2 | p50 6.3 p95 213.5 | p50 6.2 p95 210.8 | mean hits 144.6
+words-recompute: p50 37.1 p95 320.5 | p50 37.2 p95 318.0 | p50 37.6 p95 323.0 | mean hits 144.6
+phrase: p50 22.3 p95 965.0 | p50 20.4 p95 910.0 | p50 20.3 p95 919.6 | mean hits 1.2
+phrase-recompute: p50 28.3 p95 953.8 | p50 29.0 p95 949.4 | p50 28.6 p95 951.0 | mean hits 1.2
+== prose-10k-fn
+generation 1, 18766 chunks, 3115 terms, 2238541 postings; documents section 20071912 B; source section 18529034 B; open 44.2 ms
+lexical section 28358524 B: version 2, header 80, lengths 75064, dictionary 94733, postings 17908328, positions 3831325, offsets 6448994
+knowledge: p50 559.6 p95 711.1 | p50 558.2 p95 704.7 | p50 560.0 p95 701.2 | mean hits 10.0
+words: p50 240.8 p95 2324.0 | p50 236.5 p95 2145.5 | p50 239.1 p95 2153.8 | mean hits 1115.0
+words-recompute: p50 698.1 p95 7305.4 | p50 693.5 p95 7304.4 | p50 683.6 p95 7286.9 | mean hits 1115.0
+phrase: p50 188.8 p95 3123.5 | p50 190.9 p95 3098.2 | p50 191.5 p95 3099.1 | mean hits 4.2
+phrase-recompute: p50 212.8 p95 3209.4 | p50 210.5 p95 3194.3 | p50 210.9 p95 3176.3 | mean hits 4.2
+== tamil-10k-fn
+generation 1, 19946 chunks, 21600 terms, 1019062 postings; documents section 30037019 B; source section 28718235 B; open 23.5 ms
+lexical section 12835061 B: version 2, header 80, lengths 79784, dictionary 1107243, postings 8152496, positions 1138558, offsets 2356900
+knowledge: p50 8909.3 p95 9106.7 | p50 8915.0 p95 9126.3 | p50 8867.7 p95 9097.9 | mean hits 10.0
+words: p50 71.0 p95 1549.0 | p50 67.8 p95 1541.8 | p50 66.8 p95 1531.0 | mean hits 940.5
+words-recompute: p50 903.0 p95 2356.7 | p50 909.3 p95 2387.3 | p50 903.8 p95 2318.1 | mean hits 940.5
+phrase: p50 22.1 p95 75.7 | p50 19.5 p95 73.3 | p50 19.1 p95 71.2 | mean hits 1.0
+phrase-recompute: p50 65.1 p95 121.2 | p50 65.5 p95 122.7 | p50 65.9 p95 122.8 | mean hits 1.0
+# load after: 2.24 3.50 3.92

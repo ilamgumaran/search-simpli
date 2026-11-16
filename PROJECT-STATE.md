@@ -15,6 +15,25 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
+## Index size: where the bytes go and what to change (S6-T3, plan item D1, 2026-11-16; built, awaiting verification)
+
+Measurement and design only: no format, engine source, contract or binding change; the native digest is
+unchanged. [`docs/index-size.md`](docs/index-size.md), raw tables in `docs/evidence/s6-t3/`.
+
+- **Today**, one generation, file-name channel on: the index is 4.44 times the 10k timing corpus (32,281,645 B,
+  the plan's figure reproduced to the byte), 4.05 times 10k English prose (new generator
+  `scripts/gen_prose_corpus.py`), 2.66 times 10k Tamil, 3.78 times the repository's fixtures.
+- **Where:** the text twice (chunk text in `documents`, file bytes in `source`), fixed 8-byte postings
+  (25 % of the whole index on both the timing and the prose corpus) and per-token highlight offsets.
+  `scripts/index_size_budget.py` splits every file into parts that sum to its size.
+- **Generations:** with `keep_generations` unset (the CLI's and the binding's default) every one-file update
+  adds a full generation (+32.3 MB at 10k timing); the consumer app passes 2, so it holds two.
+- **Recommended for D2, in order:** lexical v3 (varint postings, front-coded dictionary), the text once with the
+  chunks keeping it and the source keeping only the rest, the highlight offsets at one byte per token, state and
+  catalog without repeats. Projected from measured re-encodings: 1.97 (timing 10k), 1.82 (prose 10k), 1.27 (Tamil
+  10k), 1.71 (fixtures); about 0.15 lower on timing and prose if the offsets are left out, at a measured `find`
+  cost. Six questions need a ruling before D2 is filed (the document's last section). 03-next rows D2-1 to D2-4.
+
 ## `both` skips the scope walk when nothing can be hidden (S5-T12, review R07, 2026-11-14; part 1 alone after the re-ruling; verified and merged)
 
 **Verified and merged 14 Nov as `5a101b4`, part 1 alone** (the second [Verdict](docs/tasks/S5-T12.md), PASS on `865d060` by item 3 of the re-ruling): no cell exceeds the noise band of `main2` and two placement controls the verifier wrote, in either of two ten-round runs; every unscoped `both` query −0.030 to −0.033 ms beyond the band in both. Equivalence 29,376 requests 0 differ, J2 and goldens unchanged, plants caught, natives `cmp`-equal, CI green. The rule was changed after the first Verdict failed; the re-ruling names that to the maintainer.
