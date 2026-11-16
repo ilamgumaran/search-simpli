@@ -28,6 +28,8 @@ Usage:
       [--json OUT]
   python3 -I scripts/direct_search_crossover.py --prose <dir> [--prose-files N]
       writes the invented ordinary-prose folder used for the prose row and exits.
+  python3 -I scripts/direct_search_crossover.py --table <json>
+      prints a --json result as the Markdown table of docs/direct-search.md.
 """
 import argparse
 import json
@@ -137,6 +139,25 @@ def measure(searchd: str, work: Path, name: str, folder: Path, query: str, field
     }
 
 
+def print_table(results: list) -> None:
+    """Wall time in ms (median, range) and peak memory in MiB (median) per way."""
+    print("| Folder | Files | Bytes | Load (5 min) | `search` ms | `index`+`query` ms | `query` ms | "
+          "`search` MiB | `index`+`query` MiB | `query` MiB |")
+    print("| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+    for row in results:
+        ways = row["ways"]
+
+        def ms(way):
+            wall = ways[way]["wall_s"]
+            return f"{wall['median'] * 1000:.1f} ({wall['min'] * 1000:.1f}–{wall['max'] * 1000:.1f})"
+
+        def mib(way):
+            return f"{ways[way]['peak_rss_bytes']['median'] / 1048576:.1f}"
+
+        print(f"| {row['folder']} | {row['files']:,} | {row['bytes']:,} | {row['load_before']:.2f} → {row['load_after']:.2f} | "
+              f"{ms('search')} | {ms('index+q')} | {ms('query')} | {mib('search')} | {mib('index+q')} | {mib('query')} |")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--searchd")
@@ -149,7 +170,11 @@ def main() -> int:
     parser.add_argument("--json", type=Path)
     parser.add_argument("--prose", type=Path)
     parser.add_argument("--prose-files", type=int, default=2000)
+    parser.add_argument("--table", type=Path, help="print a --json result as a Markdown table and exit")
     args = parser.parse_args()
+    if args.table:
+        print_table(json.loads(args.table.read_text(encoding="utf-8")))
+        return 0
     if args.prose:
         write_prose(args.prose, args.prose_files)
         print(f"wrote {args.prose_files} prose files")
