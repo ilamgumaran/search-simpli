@@ -20,6 +20,11 @@ jobs:
       - name: Validate requirements register
         run: python3 scripts/check_requirements.py
 
+      # S6-T1: core, operations and interfaces of zig/src import one way only
+      # (docs/layers.md); the document's file table is generated from the checker.
+      - name: Layer boundary of zig/src
+        run: python3 scripts/check_layers.py
+
       - name: Python behavioral tests (dependency-free base)
         env:
           # This runner has no Zig on purpose; tests/test_cli_process.py skips only on this flag.
