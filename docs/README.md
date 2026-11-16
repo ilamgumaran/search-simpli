@@ -50,6 +50,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 - [Local LLM/agent tool protocol](tool-protocol.md)
 - [Tool schemas for the nine folder-knowledge tools](tool-schemas.md)
 - [MCP server (`searchd mcp`)](mcp-server.md)
+- [Searching a folder directly (`searchd search`), and when to build an index](direct-search.md)
 - [Zig JSON-RPC service](zig-rpc-service.md)
 - [Python-to-Zig bridge](python-zig-bridge.md)
 - [Query embedding gateway](query-embedding-gateway.md)

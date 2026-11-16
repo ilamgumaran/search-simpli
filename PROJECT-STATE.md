@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-16 (S6-T1, a front door for contributors and the layer boundary checked in CI, objective plan items A and B1; documents, one checker, its tests and one CI step; no file under `zig/`, `contracts/`, `bindings/` or `src/` changed, natives and contracts 2.7.0 unchanged; verified and merged 2026-11-16 as `59d048e`)
+Last updated: 2026-11-16 (S6-T2, `searchd search <folder> "<query>"`: a folder searched directly, with no index directory; built in memory, writes nothing; CLI and core, no format, contract, C ABI or Dart change, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; built, awaiting verification)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,6 +15,33 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
+## A folder searched directly: `searchd search <folder> "<query>"` (S6-T2, objective plan item C, 2026-11-16; built, awaiting verification)
+
+Built on `task/S6-T2` ([task and Report](docs/tasks/S6-T2.md), [CAP-20](docs/requirements/cap-20-direct-folder-search.md),
+[direct-search](docs/direct-search.md)); a different agent verifies and merges. No format, wire, contract, C ABI or Dart
+API change; contracts 2.7.0 and Dart 0.8.0 unchanged; every other command's output byte for byte as before.
+
+- **The command.** `searchd search <folder> "<query>" [--top-k N] [--json] [--evidence] [--search-field
+  content|filename|both] [--max-file-bytes N] [--max-total-bytes N]` walks and reads the folder by `index`'s rules,
+  builds generation 1 with the file-name channel in memory, answers with `query`'s (or, with `--evidence`,
+  `evidence`'s) code and exits. Its stdout is byte for byte that of `index <folder> --out X --filename-index` then
+  `query X` / `query X --json` / `evidence X` (tested on all 290 J2 queries × 3 fields × 3 forms, the whole
+  `fixtures/` folder and a folder of the walk's rules and caps). Nothing is written anywhere (tested: the folder tree
+  with sizes and modification times, its parent, the working directory and an empty `TMPDIR`). Usage errors (missing
+  folder, not a folder, empty query) are exit 2 with one stderr line; an empty folder answers nothing, exit 0. Files
+  the caps leave out are counted on one stderr line.
+- **The core change** (behaviour-neutral, the inventory in the Report): `apply.buildDetached` (the build without the
+  lease and publish), `indexer.buildFolderDetached`, `snapshot_open.openDetached`/`openScopedDetached` (the same opens
+  over sections in memory), `filename_field.loadBytes`, `scope.Loads` holding section bytes.
+- **When to build an index instead.** Measured (macOS arm64, `ReleaseSmall`, five runs, medians, 5-minute load 3.6–3.9; [direct-search](docs/direct-search.md)):
+  one `search` answers within 100 ms up to about 1,000 files / 0.9 MB of the timing corpus (83 ms; 2,000 files 143 ms) and
+  within 1 s up to about 10,000 files / 7.3 MB (624 ms; 20,000 files 1.25 s); it costs the same as `index` plus one
+  `query` (within 5 % from 1,000 files), while a `query` on an existing index is 5–50 ms. So: `search` for a one-off
+  question over a few thousand files; an index for a larger folder or a second question. No caching.
+- **Natives.** Rebuilt with fresh caches; every library's bytes changed (the library reaches the changed core files):
+  macOS 954,088 B (was 954,120), Android 919,840 B (916,928), iOS framework binary 935,256 B (918,664);
+  `native/SOURCE-SHA256` `2a129f2c…`. Nothing a binding can call or see changed. **For the consumer app:** no pin
+  needed for behaviour; the next pin carries the new digest.
 ## A front door for contributors and the layer check (S6-T1, objective plan A and B1, 2026-11-16; verified and merged)
 
 **Verified and merged 16 Nov as `59d048e`** ([second Verdict](docs/tasks/S6-T1.md), PASS on `64db476`). The first Verdict failed `69352f2`: imports split over lines, written with a space or through `../src/` passed the checker. The rework reads each file as Zig tokens and resolves every target; the verifier's thirteen plants against it are all caught or correctly ignored, and CI is green.
