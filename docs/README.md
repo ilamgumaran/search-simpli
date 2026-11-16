@@ -8,6 +8,9 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 |---|---|
 | **Start or resume a session (CLI or web)** | [**The journey**](journey/README.md) |
 | **See the current order of work (objective plan, 16 Nov 2026)** | [Objective plan](plans/2026-11-16-objective-plan.md) |
+| **Contribute: build, run the suites, propose a change** | [Contributor guide](../CONTRIBUTING.md) |
+| See how the Zig code is divided: core, operations, interfaces | [Layers](layers.md) (checked by `scripts/check_layers.py`) |
+| Read what the root README said up to 16 Nov 2026 | [Status history](status-history.md) |
 | Understand the vision, principles, and objective | [Vision](journey/01-vision.md) |
 | Know how we work (evidence, governance, protocol) | [Approach](journey/02-approach.md) |
 | Find the next task and current blockers | [Next](journey/03-next.md) |
@@ -43,6 +46,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 
 ## Interfaces and safety
 
+- [Layers: the core and the interfaces](layers.md)
 - [Local LLM/agent tool protocol](tool-protocol.md)
 - [Tool schemas for the nine folder-knowledge tools](tool-schemas.md)
 - [MCP server (`searchd mcp`)](mcp-server.md)

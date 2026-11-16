@@ -19,7 +19,7 @@ misspelling expansion, fold groups and the newly merged verb forms: contracts
 `find` remains exact by contract. PDF/Office/OCR require extraction outside the
 native folder crawler. A filename match locates a file; cited passages must still
 support an answer. Hybrid/embedding experiments remain separate from the default
-lexical path. See [current usage](../../README.md#search-filenames-and-document-contents)
+lexical path. See [current usage](../status-history.md#search-filenames-and-document-contents)
 and [current state](../../PROJECT-STATE.md).
 
 ## Recommended order

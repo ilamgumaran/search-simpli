@@ -1,5 +1,13 @@
 # Experiment-driven roadmap
 
+> **16 Nov 2026:** the current order of work is the
+> [objective plan](plans/2026-11-16-objective-plan.md) (items A–G: contributor
+> documents, the core apart from the interfaces, searching a folder directly, a
+> smaller index, semantic matches for a `searchd`-built index, the web, the LLM
+> follow-ups). The phases below remain the experiment-driven frame; their Progress
+> paragraphs were checked against `main` at `efbdd0e` by S6-T1 and corrected only
+> where a statement had become false.
+
 Each phase ends with evidence that justifies the next complexity increase.
 
 The [2026-10 search quality review](search-quality-plan-2026-10.md) and its
@@ -36,7 +44,7 @@ Progress: the text-only query gateway, exact trained-model fingerprinting, fail-
 - Import the Python reference index or replay the same document/chunk contract.
 - Golden-test Zig results against the Python reference on the judged corpus.
 
-Progress: the Zig engine has immutable document/vector, lexical, position, source and recovery-state sections, atomic publication, writer locking, reader-safe generation retention, Unicode analysis and cited evidence. JSON-RPC and MCP expose scoped search, find, outline, exact source reads, listing and status. S3/S4 add roots, visible-scope statistics, optional filename retrieval, lazy loads and verified 10k memory/update diagnostics. PPMI and neural snapshots work through the text-only gateway. See [S4-T2](tasks/S4-T2.md) for current formats, compatibility and measured Mac budgets. Physical-phone acceptance, persisted 384-dimensional and concurrent-query baselines, authenticated identity and representative relevance remain before broader scale claims. Compression/pruning, HTTP and distributed machinery still need measurements that justify them.
+Progress: the Zig engine has immutable document/vector, lexical, position, source and recovery-state sections, atomic publication, writer locking, reader-safe generation retention, Unicode analysis and cited evidence. JSON-RPC and MCP expose scoped search, find, outline, exact source reads, listing and status. S3/S4 add roots, visible-scope statistics, optional filename retrieval, lazy loads and verified 10k memory/update diagnostics. PPMI and neural snapshots work through the text-only gateway. See [S4-T2](tasks/S4-T2.md) for current formats, compatibility and measured Mac budgets. Physical-phone acceptance, persisted 384-dimensional and concurrent-query baselines, authenticated identity and representative relevance remain before broader scale claims. JSON-RPC also runs over a loopback-only HTTP transport (`searchd serve --http`). Disk use is now measured: the index is 4.44 times its corpus at 10,000 generated files, and a smaller index is item D of the [objective plan](plans/2026-11-16-objective-plan.md#disk-use-measured). Pruning, a network-facing server and distributed machinery still need measurements that justify them.
 
 Exit check: crash-safe build/open/query cycle, correct deletions, reproducible results, and an explicit latency/size baseline.
 

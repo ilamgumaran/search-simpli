@@ -342,8 +342,8 @@ a full index through `apply_changes` 0.33 s / 144 MB peak.
 ## The Python path: `search.py index --incremental-from`
 
 Separate, older system for the Python vector/embedding pipeline — still
-real and still runs (see the root [README](../README.md)'s "Reuse unchanged
-extraction and vectors" example), but not the same code, and not what
+real and still runs (see the "Reuse unchanged extraction and vectors" example
+in the former root README, now [docs/status-history.md](status-history.md)), but not the same code, and not what
 `searchd`/`ss_index_folder` use.
 
 ```sh
