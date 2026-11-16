@@ -1,0 +1,67 @@
+S6-T4 second rework: where the head's few hundred nanoseconds go (an investigation, not a bar run)
+====================================================================================================
+
+Libraries (all `zig build lib -Doptimize=ReleaseSmall`, aarch64-macos):
+  main      98c4a2b                                   954,088 B
+  head      b01b70b's library code (cmp-equal to the committed macOS native)  971,304 B
+  main2     main's source, its own build (the first Verdict's control): main's bytes
+  ctl1/ctl2 main plus the Phase 2 placement controls (phase2/control-ctl*.diff)
+  head+ctl1 head plus control-ctl1.diff (head-ctl1.diff: its second hunk re-placed at the
+            same statement, which has moved in the head)                 991,240 B
+  head+ctl2 head plus control-ctl2.diff (head-ctl2.diff, applies unchanged)  988,600 B
+The controls add code that is never run (an inert branch on a 2^60-byte section);
+they change where the linker and the machine outliner put everything else.
+
+Probe: scripts/prototypes/s6t4/qloop.c, Tamil 10k written as v2 by main, query
+`hashing`, field `content`, top 10 lexical; median of N single calls in microseconds,
+one fresh process each. Every process gated (gate.sh; 5-minute load 1.6-2.7, check
+lock absent).
+
+1. Same index (v2), library varied: head is slower than main; v3 is not needed for it.
+   300,000 calls, two rounds:   main 3.4167 / 3.5000   head 3.7500 / 3.7500
+                                head+ctl1 3.4583 / 3.4167   head+ctl2 3.4583 / 3.7500
+   100,000 calls, six processes each:
+     main       3.5833 3.4583 3.4583 3.4167 3.5833 3.5417
+     head       3.7500 3.7500 3.7917 3.7917 3.7917 3.7917
+     head+ctl1  3.3750 3.4167 3.4583 3.5000 3.4583 3.4167
+     head+ctl2  3.4583 3.7500 3.4583 3.4167 3.4583 3.5000
+     main2      3.3750 3.5000 3.5000 3.5000 3.6667 3.4583
+     ctl1       3.3333 3.4167 3.3750 3.4583 3.4167 3.4167
+   head is the only build slow in every process; adding code that never runs to the
+   head (ctl1) removes the cost, and ctl2 removes it in five of six processes.
+
+2. Where the time goes (xctrace Time Profiler, qloop looping 6 s on each library,
+   1 ms samples; main 5,648 samples, 5,175 in the library; head 5,634 and 5,211).
+   Leaf addresses matched between the two binaries by instruction bytes:
+     a byte-compare function of 18 instructions, the same in both (by its code,
+     std.mem.order on byte slices: the compare under term lookup's binary search)
+         main 0.354 us/query   head 0.435 us/query   +0.08
+     one 24-byte machine-outlined helper, the same bytes in both (the outliner
+     numbers it _196 in main and _180 in head)                           +0.014 net
+     a region at 0x7b300 in main, 0x7e088 in head (the same code, moved 0x2d88)
+                                                                         +0.10
+     a region at 0x1c654 in main, 0x1e8ac in head (moved 0x2258)         +0.035
+     smaller regions, each under +0.03, the rest
+   The binaries are stripped, so regions other than the compare are named by
+   address only; I did not identify them further.
+   System libraries (malloc, platform, kernel): within +-0.007 us/query.
+   No single function holds the cost: the same instructions, moved, run slower in
+   several places at once.
+
+3. Where std.mem.order's byte loop sits (the start of its 6-instruction loop):
+     main       0x2e4fc  (mod 64 = 60)     fast
+     main2      0x2e4fc  (mod 64 = 60)     fast
+     ctl1       0x2e514  (mod 64 = 20)     fast
+     ctl2       0x2e4ec  (mod 64 = 44)     (not timed in this probe)
+     head       0x303c8  (mod 64 =  8)     slow
+     head+ctl1  0x303d4  (mod 64 = 20)     fast
+     head+ctl2  0x303b4  (mod 64 = 52)     fast in five of six
+   One loop's offset does not predict the outcome by itself (see 2: the cost is
+   spread); the placement of the hot code as a whole does.
+
+4. The format, the same library: v3 - v2 on head and on head+ctl1 (placement.txt):
+   warm cells median +0.04 us (head) and +0.00 us (head+ctl1).
+
+Zig 0.16 has no switch for function or loop alignment (`zig build-lib --help`:
+none), and the linker's placement is not set by this task's source in any way a
+reviewer could state other than "the code is laid out differently".

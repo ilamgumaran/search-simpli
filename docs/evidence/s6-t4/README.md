@@ -28,6 +28,9 @@ Raw rows behind the Phase 1 Report in [`docs/tasks/S6-T4.md`](../../tasks/S6-T4.
 | `rework/plants.txt` | the rework (after the first Verdict): plants P3 (the verifier's), L1, L2, L3 against the last element of each v3 section, on the reworked suite and on the suite before it |
 | `rework/find-path.txt` | the rework, item 2: what differs on the find path between v2 and v3 after open, why the three cells' sign follows the run number, and the format alone (`find_cells.py`) |
 | `rework/format-ab.jsonl`, `rework/format-ab-gates.txt` | `format_ab.sh`: this branch's library on the v2 and the v3 index of timing-10k and tamil-10k, ABBA, four rounds; an investigation, not a bar run |
+| `rework2/plants-q1.txt` | the second rework: the verifier's plant Q1 (section 5's end check removed) against the new Q1 test and byte-flip section |
+| `rework2/profile.txt` | the second rework: the head's warm-query cost on the same v2 index, where the time goes (Time Profiler), and where the byte-compare loop sits in each build |
+| `rework2/placement-*.jsonl`, `rework2/gates.txt`, `rework2/head-ctl1.diff`, `rework2/head-ctl2.diff` | `placement.sh` (`placement_cells.py` summarises): `main`, the head and the head with each placement control, on v2 and v3, three rounds per 10k corpus; an investigation, not a bar run |
 
 Variants: `today` and `today-b` (`main`'s library on the v2 index, two processes); `eager-v3`; `lazy-nocache`
 (`SS_PROTO_CACHE_BYTES=0`), `lazy-1mib` (1,048,576), `lazy-keep` (no budget), `lazy-all`
