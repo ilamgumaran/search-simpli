@@ -277,10 +277,21 @@ fn queryImpl(
         if (mode != .lexical or options.retrieval_mode == null) return error.FilenameSearchRequiresLexical;
         var query_options = hybrid.SearchOptions{ .top_k = top_k, .candidate_k = candidate_k, .retrieval_mode = .lexical, .path_prefix = options.path_prefix, .principal_labels = options.principal_labels };
         if (h.service().folder) |folder| query_options.visible_roots = folder.mask(try folder.allowedRoots(arena.allocator(), .{ .roots = options.roots, .principal_labels = options.principal_labels }));
-        const hits = try h.engine.queryFields(arena.allocator(), query_text, field, query_options);
+        // S6-T5: the warnings `content` gives, decided for the field
+        // (`Engine.queryFieldsTraced`); a vector is never used here.
+        var field_trace = hybrid.Trace{ .allocator = arena.allocator(), .io = io() };
+        const hits = try h.engine.queryFieldsTraced(arena.allocator(), query_text, field, query_options, &field_trace);
         var output: std.Io.Writer.Allocating = .init(allocator);
         defer output.deinit();
-        try @import("filename_response.zig").writeAbiEvidence(&output.writer, arena.allocator(), h.engine, query_text, field, query_options, hits);
+        try @import("filename_response.zig").writeAbiEvidence(&output.writer, arena.allocator(), h.engine, query_text, field, query_options, hits, .{
+            .trace = &field_trace,
+            .mode = .lexical,
+            .analyzer_id = h.engine.analyzer_id,
+            .top_k = top_k,
+            .candidate_k = candidate_k,
+            .path_prefix = options.path_prefix,
+            .vector_ignored = if (query_vector.len != 0) .lexical_mode else null,
+        });
         return (try output.toOwnedSliceSentinel(0)).ptr;
     }
     const effective_vector: []const f32 = if (mode == .lexical or h.engine.vector_dimensions == 0)

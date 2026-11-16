@@ -128,7 +128,7 @@ fn depthCut(json: *std.json.Stringify, channel: []const u8, offered: usize, extr
     try warning(json, "candidate_depth_cut", message, null);
 }
 
-fn hasWarnings(extras: Extras) bool {
+pub fn hasWarnings(extras: Extras) bool {
     const trace = extras.trace;
     if (extras.vector_ignored != null) return true;
     if (extras.mode != .vector) {
@@ -139,7 +139,7 @@ fn hasWarnings(extras: Extras) bool {
     return false;
 }
 
-fn writeWarnings(json: *std.json.Stringify, extras: Extras) !void {
+pub fn writeWarnings(json: *std.json.Stringify, extras: Extras) !void {
     const trace = extras.trace;
     if (extras.mode != .vector) {
         if (trace.unique_terms == 0) {

@@ -140,12 +140,22 @@ pub const Engine = struct {
     }
 
     pub fn queryFields(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, field: filename_field.Field, options: hybrid.SearchOptions) ![]filename_field.Hit {
+        return engine.queryFieldsTraced(allocator, query_text, field, options, null);
+    }
+
+    /// `queryFields` that also fills `trace` (S6-T5, for `ss_query`'s
+    /// warnings): under `content` as `queryTraced` does; under `both` the
+    /// groups it searched and `content`'s unmatched terms less those a
+    /// visible file name holds; under `filename` the terms no visible file
+    /// name holds (`filename_field.traceTerms`). With `trace == null` it is
+    /// exactly `queryFields`.
+    pub fn queryFieldsTraced(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, field: filename_field.Field, options: hybrid.SearchOptions, trace: ?*hybrid.Trace) ![]filename_field.Hit {
         if (field == .content) {
             var titled_options = options;
             if (titled_options.title == null and options.retrieval_mode != .vector) if (engine.folder) |folder| {
                 titled_options.title = try folder.titleField();
             };
-            const results = try engine.queryTokenized(allocator, query_text, &.{}, try allocator.alloc(hybrid.Result, @min(options.top_k, engine.documents.len)), titled_options);
+            const results = try engine.queryTraced(allocator, query_text, &.{}, try allocator.alloc(hybrid.Result, @min(options.top_k, engine.documents.len)), titled_options, trace);
             const hits = try allocator.alloc(filename_field.Hit, results.len);
             for (results, hits) |r, *h| h.* = .{ .document_index = r.document_index, .body_score = r.lexical_score, .body_rank = r.lexical_rank, .fused_score = r.fused_score, .title_score = r.title_score };
             return hits;
@@ -160,12 +170,16 @@ pub const Engine = struct {
         // S5-T3: one scan per triggering term, shared by the body scoring
         // and the title part; the filename channel is never expanded.
         if (field == .both) {
-            const groups = try engine.bothGroups(allocator, query_text, titled_options);
+            const groups = try engine.bothGroups(allocator, query_text, titled_options, trace);
             defer if (groups) |g| g.deinit(allocator);
             if (groups) |*g| titled_options.fuzzy_groups = g;
-            return filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options);
+            const hits = try filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options);
+            if (trace) |t| try filename_field.traceTerms(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options, t);
+            return hits;
         }
-        return filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options);
+        const hits = try filename_field.queryDecoded(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options);
+        if (trace) |t| try filename_field.traceTerms(allocator, engine.documents, engine.lexical_index, decoded, engine.analyzer_id, query_text, field, titled_options, t);
+        return hits;
     }
 
     pub fn query(
@@ -394,7 +408,9 @@ pub const Engine = struct {
     /// S5-T3: the fuzzy-v1 groups of a `both` query (the body scoring and
     /// the title part share them), or null. Statistics as `queryTraced`
     /// takes them: roots and labels narrow the key df, a prefix does not.
-    pub fn bothGroups(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, options: hybrid.SearchOptions) !?fuzzy.Groups {
+    /// S6-T5: with a `trace`, each fold group and each fuzzy-v1 group is
+    /// noted in it before they merge, as `queryTraced` notes them.
+    pub fn bothGroups(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, options: hybrid.SearchOptions, trace: ?*hybrid.Trace) !?fuzzy.Groups {
         if (!(options.fuzzy or options.fold) or options.retrieval_mode == .vector) return null;
         if (!std.mem.eql(u8, engine.analyzer_id, analyzer_v2.analyzer_id)) return null;
         const tokens = try analyzer_v2.tokenize(allocator, query_text);
@@ -405,6 +421,10 @@ pub const Engine = struct {
         var view = try scope.visibleCollection(allocator, engine.lexical_index, engine.documents, engine.statistics, engine.labeled_documents, options.visible_roots, options.principal_labels);
         defer if (view) |*v| v.deinit(allocator);
         const computed = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens, options);
+        if (trace) |t| {
+            if (computed.folded) |g| try noteGrouped(t, g);
+            if (computed.expanded) |g| try noteExpanded(t, g);
+        }
         return fold.merge(allocator, computed.folded, computed.expanded);
     }
 

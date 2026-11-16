@@ -62,6 +62,7 @@ pub const compat_292cb568_test = @import("compat_292cb568_test.zig");
 pub const nfr13_arena_test = @import("nfr13_arena_test.zig");
 pub const reload_test = @import("reload_test.zig");
 pub const both_view_test = @import("both_view_test.zig");
+pub const field_warnings_test = @import("field_warnings_test.zig");
 
 pub const Bm25Parameters = scoring.Bm25Parameters;
 pub const bm25Contribution = scoring.bm25Contribution;
@@ -147,6 +148,7 @@ test "load every engine module test suite" {
     _ = nfr13_arena_test;
     _ = reload_test;
     _ = both_view_test;
+    _ = field_warnings_test;
     _ = query_utf8_test;
     _ = filename_field_test;
     _ = title_field_test;

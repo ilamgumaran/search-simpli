@@ -559,6 +559,77 @@ pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Docu
     return fuse(allocator, body_docs, ranked, field, options);
 }
 
+/// S6-T5: whether a file name the file-name channel would search holds
+/// `term` (an analysed query term): the term is in the file-name dictionary
+/// and one of its files is in scope for `options` (roots, path prefix,
+/// labels: `hybrid.inScope` at the file's anchor chunk, as `scoreQuery`
+/// decides visibility). A name only hidden files hold answers false, as an
+/// absent word does.
+pub fn visibleNameHolds(decoded: Decoded, term: []const u8, options: hybrid.SearchOptions) bool {
+    const ti = decoded.filenameTerm(term) orelse return false;
+    const entry = decoded.lexical.terms[ti];
+    for (decoded.lexical.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |p| {
+        if (inScope(decoded.catalog[p.document_index], decoded.anchors[p.document_index], options)) return true;
+    }
+    return false;
+}
+
+/// S6-T5: fill `trace` (`ss_query`'s warnings, `report.zig`) for a `both`
+/// or `filename` query. The terms are `content`'s: the same analysed
+/// spelling, each distinct term once, in query order.
+///
+/// - `both`: `content`'s own resolver records the unique terms and the
+///   terms no chunk in scope holds; a term a visible file name holds
+///   (`visibleNameHolds`) is then not unmatched. A term with an expansion
+///   (noted by `Engine.bothGroups`) stays unmatched: fuzzy-v1 only expands
+///   a word no visible title holds, so with a title field no such term has
+///   a visible name, and its expansion is never left unreported.
+/// - `filename`: a term is unmatched when no visible file name holds it.
+///   The channel is never expanded or grouped, so nothing else is noted.
+pub fn traceTerms(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions, trace: *hybrid.Trace) !void {
+    std.debug.assert(field != .content);
+    trace.scope_documents = body_docs;
+    trace.scope_prefix = options.path_prefix;
+    trace.scope_labels = options.principal_labels;
+    trace.scope_roots = options.visible_roots;
+    if (field == .both) {
+        if (std.mem.eql(u8, analyzer_id, analyzer_v2.analyzer_id)) {
+            const tokens = try analyzer_v2.tokenize(allocator, query_text);
+            defer {
+                for (tokens) |token| allocator.free(token);
+                allocator.free(tokens);
+            }
+            allocator.free(try lexical_build.resolveTokensTraced(allocator, body_index, tokens, trace, true));
+        } else {
+            allocator.free(try postings.resolveQueryTraced(allocator, body_index, query_text, trace, true));
+        }
+        var kept: usize = 0;
+        for (trace.unmatched.items) |item| {
+            const expanded = for (trace.expanded.items) |e| {
+                if (std.mem.eql(u8, e.term, item.term)) break true;
+            } else false;
+            if (!expanded and visibleNameHolds(decoded, item.term, options)) continue;
+            trace.unmatched.items[kept] = item;
+            kept += 1;
+        }
+        trace.unmatched.shrinkRetainingCapacity(kept);
+        return;
+    }
+    const tokens = try tokenize(allocator, analyzer_id, query_text);
+    defer {
+        for (tokens) |token| allocator.free(token);
+        allocator.free(tokens);
+    }
+    for (tokens, 0..) |token, i| {
+        const repeated = for (tokens[0..i]) |earlier| {
+            if (std.mem.eql(u8, earlier, token)) break true;
+        } else false;
+        if (repeated) continue;
+        trace.unique_terms += 1;
+        if (!visibleNameHolds(decoded, token, options)) try postings.noteUnmatched(trace, token, false);
+    }
+}
+
 /// One file of the S5-T2 merge: its cited chunk and merged score.
 const Merged = struct { chunk: u32, score: f32 };
 
