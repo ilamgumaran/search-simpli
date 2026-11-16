@@ -34,7 +34,8 @@ and the maintainer has not read it. Nothing here is built.
 
 Statements about today's code cite a file and a function and were checked against
 `main` at `1c15b19`. Statements marked *confirmed by running* were reproduced on
-a Debug build of that commit (S6-T6 Report). Numbers are *computed* from figures
+a Debug build of that commit (S6-T6 Report) and again on a `ReleaseSmall` build
+by the verifier (S6-T6 Verdict). Numbers are *computed* from figures
 recorded by earlier tasks, and say so.
 
 ## 1. Proposal
@@ -225,7 +226,7 @@ bite every existing caller the day one does (FR-30 below).
   holds them equal, including documents with no vector.
 
 *Confirmed by running:* on the A3 snapshot, a hybrid query with `[1,0]` returns
-the chunk without a vector at lexical rank 1 with `"vector":{"rank":null,"score":0}`,
+the chunk without a vector (it matched lexically) with `"vector":{"rank":null,"score":0}`,
 and nothing in the response says that one of the three chunks had no vector.
 
 ### A9. What S2-T13 enforces on values
@@ -271,8 +272,9 @@ The costs below use the timing 10k corpus (19,959 chunks, about 2 per file,
 [index-size](../index-size.md)) and a full generation of 32,281,645 B
 (recorded by S6-T3; every publish writes complete sections). "Vectors" means a
 384-dimensional `f32` set at full coverage in the section proposed in §D:
-30,659,519 B plus a header (computed). Bytes per publish with vectors:
-62,941,244 B (computed).
+30,659,519 B plus a header (computed; rows 30,657,024 B and the coverage bitmap
+2,495 B). Bytes per publish with vectors: 62,941,244 B (computed, assuming the
+section header of about 80 bytes proposed in §D).
 
 ### (a) Two-phase: lexical first, vectors after
 
@@ -348,6 +350,12 @@ The host reproduces the engine's chunker, computes chunk ids itself, embeds, and
 sends `vectors` keyed by chunk id inside the same `apply`. One publish.
 
 - **Calls:** 1; 1 publish; bytes as (b).
+- **One-file update:** the host chunks the changed file itself, embeds its
+  chunks (about 2) and sends their vectors with the change; the lexical update
+  waits for the model.
+- **Memory:** the engine holds the previous generation and the request's
+  vectors, as (b) without the callback; the host holds the file's chunks and its
+  model, outside the engine's build.
 - **What the host must carry:** a byte-exact port of `line-window-v1` and
   `md-section-v1` (CRLF, byte order marks, Setext headings, front matter, the
   1,600-character windows and 3-line overlap) in Dart, Swift, Kotlin or whatever
@@ -359,6 +367,7 @@ sends `vectors` keyed by chunk id inside the same `apply`. One publish.
   lands on the wrong chunk) but coverage drops to zero for changed files until
   the host ships a new port. This is the same gap that keeps CFT-09 blocked
   (chunker identity does not travel through the interface).
+- **Model change:** as (a): vectors under another identity are refused (§C).
 - **A variant, (c′):** the engine exposes its chunker as a pure call (bytes in,
   chunk ids and texts out) so the host does not port it, then sends vectors in
   the same `apply`. No lockstep problem, one publish, but the host chunks every
@@ -507,7 +516,7 @@ projection):
 | --- | ---: | ---: | ---: | ---: |
 | timing 10k | 30,657,024 B (4.22 × corpus; 95 % of today; 215 % of D2) | 61,314,048 B (8.43 ×) | 7,744,092 B (1.07 ×; 24 %; 54 %) | 15,408,348 B (2.12 ×) |
 | prose 10k | 28,824,576 B (1.67 ×; 41 %; 92 %) | 57,649,152 B (3.34 ×) | 7,281,208 B (0.42 ×; 10 %; 23 %) | 14,487,352 B (0.84 ×) |
-| Tamil 10k | 30,637,056 B (1.11 ×; 42 %; 87 %) | 61,274,112 B (2.21 ×) | 7,739,048 B (0.28 ×; 10 %; 22 %) | 15,398,312 B (0.56 ×) |
+| Tamil 10k | 30,637,056 B (1.11 ×; 41 %; 87 %) | 61,274,112 B (2.21 ×) | 7,739,048 B (0.28 ×; 10 %; 22 %) | 15,398,312 B (0.56 ×) |
 
 Index ÷ corpus with vectors added (computed): timing 10k today 4.44 → 8.66 with
 `f32` 384, 5.51 with `int8` 384; after D2 1.97 → 6.18 and 3.03. Prose 10k today
@@ -525,7 +534,8 @@ after D2's steps.
 **Memory, computed against the recorded open.** S4-T9 recorded the 10k open at
 33,567,893 B (on a corpus of the timing corpus's shape, not its bytes; assumed
 here to have about the timing corpus's 19,959 chunks). NFR-13's cap is
-67,108,864 B.
+67,108,864 B. The figures add the vector rows only (the section's bitmap and
+header, about 2.6 KB, are left out).
 
 | Vectors | Inline today (two copies in the open) | Proposed section, loaded once at the first vector query |
 | --- | ---: | ---: |
@@ -568,6 +578,34 @@ existing request is FR-30's: a default-mode request with no vector against an
 index with vectors used to be refused and would answer lexically with a warning.
 Today no `searchd`-built index has vectors, so only imported snapshots see that
 change.
+
+## F. What is measured before it is called done
+
+*Added by the S6-T6 verifier: the links above pointed at this section, which the
+draft did not have. It gathers what §B, §D and §9 already state.*
+
+- **What J2 has and lacks.** J2 (`fixtures/j2`, 290 judged queries over three
+  roots) measures where keyword search loses to spelling and word form: control,
+  misspelling, morphology, accent, Tamil, title, phrase and verb-form slices, a
+  precision-control slice and named negatives ([J2's README](../../fixtures/j2/README.md)).
+  It has **no** paraphrase or vocabulary-mismatch slice, and `scripts/j2_run.py`
+  asks `search_knowledge` for `lexical` only, so nothing in it can show a vector
+  helping. The only semantic evidence is the 20-query mixed diagnostic
+  ([evaluation](../evaluation.md)), which is diagnostic, not a gate. Needed: the
+  semantic slice of §9 step 0, and a hybrid run of J2's existing slices to show
+  that control and negatives do not move.
+- **Read cost:** hybrid query p50 and p95 at 10,000 files, 384 and 768
+  dimensions, against lexical on the same index (§9). Nothing here is timed.
+- **Write cost:** phase 1 and phase 2 time and bytes of a one-file update at 10k,
+  and an initial attach of every chunk (§B computes the bytes, not the time).
+- **Memory:** the open and the first vector query's peak at 10k and 15k files
+  under the NFR-13 allocator (§D computes the rows only).
+- **The bars a build task carries:** §9 (relevance threshold `pending`, set from
+  the tuning half; control success@1 stays 1.000; negatives within a `pending`
+  tolerance; lexical outputs byte-identical; identity refusals with plants; the
+  crash hook; hidden-versus-absent parity).
+- **Out of scope:** the dependency-free native provider (the PPMI baseline in the
+  engine), a later question (O-10).
 
 ## 3. Functional requirements (new or changed)
 
