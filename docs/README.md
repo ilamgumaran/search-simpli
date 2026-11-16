@@ -7,6 +7,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 | Need | Read |
 |---|---|
 | **Start or resume a session (CLI or web)** | [**The journey**](journey/README.md) |
+| **See the current order of work (objective plan, 16 Nov 2026)** | [Objective plan](plans/2026-11-16-objective-plan.md) |
 | Understand the vision, principles, and objective | [Vision](journey/01-vision.md) |
 | Know how we work (evidence, governance, protocol) | [Approach](journey/02-approach.md) |
 | Find the next task and current blockers | [Next](journey/03-next.md) |
