@@ -102,6 +102,23 @@ pub const usage_text =
         \\                       same query, always emitted as a JSON
         \\                       evidence envelope (citation + content +
         \\                       scores) intended for an LLM tool call.
+        \\  search <folder> "<query>" [--top-k N] [--json] [--evidence]
+        \\                       [--search-field content|filename|both]
+        \\                       [--max-file-bytes N] [--max-total-bytes N]
+        \\                       search a folder directly, with no index
+        \\                       directory: walk and read it by index's
+        \\                       rules (same files, analyzer, chunker and
+        \\                       caps), build the index in memory, answer,
+        \\                       and exit; nothing is written anywhere.
+        \\                       The answer is what `index <folder> --out X
+        \\                       --filename-index` then `query X` (or
+        \\                       `query X --json` with --json, `evidence X`
+        \\                       with --evidence) prints with the same
+        \\                       options. Every search reads the whole
+        \\                       folder again: past a few thousand files,
+        \\                       build an index (docs/direct-search.md).
+        \\                       A missing folder, a path that is not a
+        \\                       folder, or an empty query is a usage error.
         \\  find <dir> "<query>" [--mode words|phrase|prefix] [--roots a,b]
         \\                       [--page-size N] [--cursor C] [--json]
         \\                       the search box: every word (words), the
@@ -256,6 +273,16 @@ pub const ApplyArgs = struct {
 };
 pub const IndexArgs = struct { folder: []const u8, out: []const u8, options: IndexOptions };
 pub const QueryArgs = struct { path: []const u8, text: []const u8, options: QueryOptions };
+/// S6-T2: `searchd search <folder> "<query>"`.
+pub const SearchArgs = struct {
+    folder: []const u8,
+    text: []const u8,
+    options: QueryOptions = .{},
+    /// `--evidence`: answer as `evidence` does (else as `query`).
+    evidence: bool = false,
+    max_file_bytes: u64 = apply_module.default_max_file_bytes,
+    max_total_bytes: u64 = apply_module.default_max_total_bytes,
+};
 
 pub const Command = union(enum) {
     help,
@@ -268,6 +295,7 @@ pub const Command = union(enum) {
     index: IndexArgs,
     query: QueryArgs,
     evidence: QueryArgs,
+    search: SearchArgs,
     find: FindArgs,
     outline: OutlineArgs,
     read_span: ReadSpanArgs,
@@ -564,6 +592,7 @@ fn parseInner(p: *Parser) error{Usage}!Command {
         const args = QueryArgs{ .path = path, .text = text, .options = try parseQueryFlags(p, name) };
         return if (is_query) .{ .query = args } else .{ .evidence = args };
     }
+    if (std.mem.eql(u8, command, "search")) return parseSearch(p);
     if (std.mem.eql(u8, command, "find")) return parseFind(p);
     if (std.mem.eql(u8, command, "outline")) {
         var args = OutlineArgs{
@@ -629,6 +658,35 @@ fn parseInner(p: *Parser) error{Usage}!Command {
         return .{ .apply = args };
     }
     return p.usage("unknown command", "", command, "; try searchd --help");
+}
+
+/// S6-T2: `search <folder> "<query>"` and its flags (`query`'s, plus
+/// `--evidence` and `index`'s two byte caps).
+fn parseSearch(p: *Parser) error{Usage}!Command {
+    const folder = p.next() orelse return p.missingArgument("search", "<folder>");
+    const text = p.next() orelse return p.missingArgument("search", "\"<query>\"");
+    if (!std.unicode.utf8ValidateSlice(text))
+        return p.usage("invalid value for", "query text", null, " (not valid UTF-8)");
+    if (std.mem.trim(u8, text, " \t\r\n").len == 0)
+        return p.usage("invalid value for", "search \"<query>\"", null, " (the query is empty)");
+    var args = SearchArgs{ .folder = folder, .text = text };
+    while (p.next()) |flag| {
+        if (std.mem.eql(u8, flag, "--search-field")) {
+            const value = p.next() orelse return p.missingArgument("search", "--search-field");
+            args.options.search_field = std.meta.stringToEnum(filename_field.Field, value) orelse return p.usage("invalid value for", "--search-field", value, " (expected content, filename or both)");
+        } else if (std.mem.eql(u8, flag, "--json")) {
+            args.options.json = true;
+        } else if (std.mem.eql(u8, flag, "--top-k")) {
+            args.options.top_k = try p.positive("--top-k");
+        } else if (std.mem.eql(u8, flag, "--evidence")) {
+            args.evidence = true;
+        } else if (std.mem.eql(u8, flag, "--max-file-bytes")) {
+            args.max_file_bytes = try p.byteCount("--max-file-bytes");
+        } else if (std.mem.eql(u8, flag, "--max-total-bytes")) {
+            args.max_total_bytes = try p.byteCount("--max-total-bytes");
+        } else return p.usage("unknown flag for", "search", flag, " (see searchd --help)");
+    }
+    return .{ .search = args };
 }
 
 fn parseFind(p: *Parser) error{Usage}!Command {
@@ -845,6 +903,18 @@ pub fn runQuery(
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
     const engine = if (options.search_field != .content) (try snapshot_open.openScoped(arena, io, dir)).engine else try snapshot_open.open(arena, io, dir);
+    return answerQuery(arena, engine, query_text, options, output);
+}
+
+/// `query`'s answer over an opened generation (S6-T2: `search` answers
+/// with it over the generation it built in memory).
+pub fn answerQuery(
+    arena: std.mem.Allocator,
+    engine: engine_module.Engine,
+    query_text: []const u8,
+    options: QueryOptions,
+    output: *std.Io.Writer,
+) !void {
     if (options.search_field != .content) {
         const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
         const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);
@@ -905,6 +975,17 @@ pub fn runEvidence(
     var dir = try std.Io.Dir.cwd().openDir(io, path, .{});
     defer dir.close(io);
     const engine = if (options.search_field != .content) (try snapshot_open.openScoped(arena, io, dir)).engine else try snapshot_open.open(arena, io, dir);
+    return answerEvidence(arena, engine, query_text, options, output);
+}
+
+/// `evidence`'s answer over an opened generation (S6-T2, as `answerQuery`).
+pub fn answerEvidence(
+    arena: std.mem.Allocator,
+    engine: engine_module.Engine,
+    query_text: []const u8,
+    options: QueryOptions,
+    output: *std.Io.Writer,
+) !void {
     if (options.search_field != .content) {
         const query_options = hybrid.SearchOptions{ .top_k = options.top_k, .candidate_k = @max(options.top_k, 100), .retrieval_mode = .lexical };
         const hits = try engine.queryFields(arena, query_text, options.search_field, query_options);
@@ -944,6 +1025,77 @@ pub fn runEvidence(
     try json.endArray();
     try json.endObject();
     try output.writeByte('\n');
+}
+
+// === S6-T2: search a folder directly ========================================
+
+/// The detached build of `search`: the generation `index <folder> --out X`
+/// would publish into an empty `X` (generation 1, analyzer v2, the default
+/// chunker sizes, the caps given), built in memory and opened there the way
+/// `query`/`evidence` open `X` for `field` (the eager open for `content`, the
+/// scoped open for `filename` and `both`). The file-name channel is built
+/// only for `filename` and `both`; a content answer never reads it.
+pub const Searched = struct {
+    engine: engine_module.Engine,
+    report: indexer.IncrementalReport,
+};
+
+pub fn buildAndOpen(arena: std.mem.Allocator, io: std.Io, root: std.Io.Dir, args: SearchArgs) !Searched {
+    const search_field = args.options.search_field;
+    const caps = indexer.Caps{
+        .filename_index = if (search_field != .content) true else null,
+        .max_file_bytes = args.max_file_bytes,
+        .max_total_bytes = args.max_total_bytes,
+    };
+    const detached = try indexer.buildFolderDetached(arena, io, root, .v2, chunker.default_max_chars, chunker.default_overlap_lines, caps);
+    const built = detached.sections;
+    const sections = snapshot_open.Sections{
+        .manifest = built.manifest,
+        .documents = built.documents,
+        .lexical = built.lexical,
+        .source = built.source,
+        .catalog = built.catalog,
+        .filename_lexical = built.filename_lexical,
+    };
+    const engine = if (search_field != .content) (try snapshot_open.openScopedDetached(arena, io, sections)).engine else try snapshot_open.openDetached(arena, io, sections);
+    return .{ .engine = engine, .report = detached.report };
+}
+
+/// `searchd search <folder> "<query>"`: walk, build and open in memory,
+/// answer with `query`'s or `evidence`'s code, exit. Nothing is written.
+/// A missing folder or a path that is not a folder is a usage error (one
+/// stderr line, status 2); files the caps or a failed read left out are
+/// counted on one stderr line after the answer.
+pub fn runSearchFolder(io: std.Io, allocator: std.mem.Allocator, args: SearchArgs, output: *std.Io.Writer, errors: *std.Io.Writer) !u8 {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var root = std.Io.Dir.cwd().openDir(io, args.folder, .{ .iterate = true }) catch |err| switch (err) {
+        error.FileNotFound => return searchFolderUsage(errors, args.folder, "no such folder"),
+        error.NotDir => return searchFolderUsage(errors, args.folder, "not a folder"),
+        else => return err,
+    };
+    defer root.close(io);
+    const searched = try buildAndOpen(arena, io, root, args);
+    if (args.evidence) {
+        try answerEvidence(arena, searched.engine, args.text, args.options, output);
+    } else {
+        try answerQuery(arena, searched.engine, args.text, args.options, output);
+    }
+    const report = searched.report;
+    if (report.too_large + report.unreadable + report.budget_exhausted > 0) {
+        try errors.print("searchd: search: {d} files not searched (too_large={d} unreadable={d} budget_exhausted={d})\n", .{
+            report.too_large + report.unreadable + report.budget_exhausted, report.too_large, report.unreadable, report.budget_exhausted,
+        });
+    }
+    return 0;
+}
+
+fn searchFolderUsage(errors: *std.Io.Writer, folder: []const u8, comptime why: []const u8) !u8 {
+    try errors.writeAll("searchd: invalid value for search <folder>: '");
+    for (folder) |byte| try errors.writeByte(if (byte < 0x20 or byte == 0x7f) '?' else byte);
+    try errors.writeAll("' (" ++ why ++ ")\n");
+    return usage_exit_status;
 }
 
 // === S3-T4: find, outline, read-span, list-files, roots, apply ==============

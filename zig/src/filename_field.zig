@@ -508,6 +508,16 @@ pub fn load(allocator: std.mem.Allocator, io: std.Io, catalog_file: std.Io.File,
     const lexical_encoded = buffer[f.catalog_bytes..];
     if (try catalog_file.readPositionalAll(io, catalog_encoded, 0) != f.catalog_bytes) return error.FilenameCatalogSizeMismatch;
     if (try lexical_file.readPositionalAll(io, lexical_encoded, 0) != f.lexical_bytes) return error.FilenameLexicalSizeMismatch;
+    return loadBytes(allocator, catalog_encoded, lexical_encoded, metadata, body_docs, body_index);
+}
+
+/// S6-T2: `load`'s checks and decode over the two sections' bytes, held in
+/// memory (`searchd search` builds them there); the decoded tables point
+/// into them, so they must outlive the result.
+pub fn loadBytes(allocator: std.mem.Allocator, catalog_encoded: []const u8, lexical_encoded: []const u8, metadata: manifest.Manifest, body_docs: []const hybrid.Document, body_index: postings.Index) !Decoded {
+    const f = metadata.filename orelse return error.FilenameIndexUnavailable;
+    if (catalog_encoded.len != f.catalog_bytes) return error.FilenameCatalogSizeMismatch;
+    if (lexical_encoded.len != f.lexical_bytes) return error.FilenameLexicalSizeMismatch;
     const catalog = segment.inspect(catalog_encoded) catch |err| return switch (err) {
         error.ChecksumMismatch => error.FilenameCatalogChecksumMismatch,
         else => error.InvalidFilenameCatalog,
