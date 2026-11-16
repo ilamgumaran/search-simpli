@@ -25,6 +25,9 @@ Raw rows behind the Phase 1 Report in [`docs/tasks/S6-T4.md`](../../tasks/S6-T4.
 | `phase2/discarded-run1-partial-load.jsonl` | the three rows of the first attempt at run 1, stopped by a refused gate; not used |
 | `phase2/sizes/*.json` | every index file's bytes, v2 by `main` and v3 by this branch, per corpus |
 | `phase2/control-ctl1.diff`, `phase2/control-ctl2.diff` | the two placement controls, as diffs against 98c4a2b |
+| `rework/plants.txt` | the rework (after the first Verdict): plants P3 (the verifier's), L1, L2, L3 against the last element of each v3 section, on the reworked suite and on the suite before it |
+| `rework/find-path.txt` | the rework, item 2: what differs on the find path between v2 and v3 after open, why the three cells' sign follows the run number, and the format alone (`find_cells.py`) |
+| `rework/format-ab.jsonl`, `rework/format-ab-gates.txt` | `format_ab.sh`: this branch's library on the v2 and the v3 index of timing-10k and tamil-10k, ABBA, four rounds; an investigation, not a bar run |
 
 Variants: `today` and `today-b` (`main`'s library on the v2 index, two processes); `eager-v3`; `lazy-nocache`
 (`SS_PROTO_CACHE_BYTES=0`), `lazy-1mib` (1,048,576), `lazy-keep` (no budget), `lazy-all`
