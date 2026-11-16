@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.8.1 (S6-T4; contract 2.7.0; patch: index format, one way)
+
+A smaller index: both lexical sections are written in lexical format v3
+(`docs/lexical-segment-format-v3.md`) under manifest v2.3 (flag bit 5,
+`docs/manifest-format-v2.md`). No API change: the same calls, JSON fields,
+error codes and C ABI; contracts stay 2.7.0; every answer is the same.
+
+- **Smaller and faster to open.** Measured on 10,000-file corpora: the index
+  is 23 % smaller on generated notes, 22 % on English prose, 10 % on Tamil;
+  `open` 17–26 % faster; 7–15 MB less memory after `open`. Queries, `find`
+  and updates take the same time.
+- **Migration, one way.** This library opens every index an older one wrote.
+  The first publish under it (an update, `applyChanges`, `indexFolder`) rewrites
+  the index in the new format. **After that first publish, an older library
+  cannot open the index** (`open` throws `SearchSimpliException`, its
+  message `ss_open: UnsupportedFlags`) **and must rebuild it from the files** into a fresh
+  directory. **An index directory is never shared between devices running
+  different library versions.** To be able to roll back, keep a copy of the
+  index directory from before the upgrade, or rebuild with the older
+  library.
+- **The first publish costs a little more, once.** It rebuilds the file-name
+  section: measured +8.5 to +18.8 ms (+4.8 % to +8.3 %) on a one-file update
+  of the 10,000-file corpora; later publishes cost what they did.
+- **`importSnapshotJson` is unchanged** (it writes the older format, byte for
+  byte as 0.8.0).
+- **Natives rebuilt:** macOS 971,304 B (0.8.0: 954,088), Android 932,864 B
+  (919,840), iOS framework binary 935,584 B (935,256).
+
 ## 0.8.0 (S5-T8; contract 2.7.0; minor: ranking change)
 
 Fewer misleading verb-form hits (`fold-groups-v3`,

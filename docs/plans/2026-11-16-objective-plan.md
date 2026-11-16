@@ -70,6 +70,11 @@ The text is stored twice (chunks and source), each copy larger than the corpus.
 The timing corpus has an unusually large vocabulary, which inflates the lexical
 section; ordinary prose must be measured before a target is fixed.
 
+**After D2 step 1** (lexical v3, [S6-T4](../tasks/S6-T4.md), 16 Nov 2026): the
+same 10,000-file index is 24,793,305 B, **3.41** times its corpus;
+`lexical-1.hyblex` 5,396,552 B and `filename-lexical-1.hyblex` 92,952 B, every
+other section unchanged ([`docs/index-size.md`](../index-size.md#landed)).
+
 ## The work, in order
 
 Each item becomes one or more task files under `docs/tasks/` (series **S6**),
@@ -145,6 +150,11 @@ whether to keep one is the maintainer's decision (03-next).
 2. **D2 onward:** the chosen changes, one format version at a time, each with a
    reader for the previous version, a migration note and before/after numbers
    for size, open, query and one-file update.
+   **Step 1, lexical v3, built 16 Nov 2026** ([S6-T4](../tasks/S6-T4.md)):
+   both lexical sections `HYBLEX03` under manifest v2.3; the index 22–24 %
+   smaller on the timing and prose corpora (10 % on Tamil), the open 17–26 %
+   faster, every answer unchanged; one way for a consumer (an older library
+   cannot open an index after its first v3 publish). Steps 2–4 follow.
 3. **Delta sections** for writes (already filed in 03-next) follow D2, since both
    touch the section formats.
 

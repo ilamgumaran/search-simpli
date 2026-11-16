@@ -1548,6 +1548,7 @@ test "S6-T4: flipping any byte of a small HYBLEX03 section never crashes the rea
     }
     try std.testing.expectEqual(@as(usize, 0), unsealed);
     try std.testing.expect(refused > 0 and accepted > 0);
+    std.debug.print("S6-T4 byte flips: {d} resealed flips, {d} refused, {d} accepted (each re-encodes to its own bytes); every unsealed flip refused\n", .{ refused + accepted, refused, accepted });
 }
 
 /// Two terms that share `shared` bytes ("x" repeated, then "a" and "b"),

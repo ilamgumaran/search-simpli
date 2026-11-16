@@ -1,0 +1,67 @@
+{
+ "corpus": "family-folder",
+ "lexical": {
+  "v2": {
+   "magic": "HYBLEX02",
+   "header": 80,
+   "documents": 1063,
+   "terms": 17512,
+   "postings": 190608,
+   "lengths": 4252,
+   "dictionary": 509282,
+   "postings_bytes": 1524864,
+   "positions": 324030,
+   "offsets": 467096,
+   "file_bytes": 2829604
+  },
+  "v3": {
+   "magic": "HYBLEX03",
+   "header": 88,
+   "documents": 1063,
+   "terms": 17512,
+   "postings": 190608,
+   "lengths": 1969,
+   "dictionary": 94749,
+   "postings_bytes": 240079,
+   "positions": 324030,
+   "offsets": 467096,
+   "term_text": 88994,
+   "file_bytes": 1128011,
+   "pbytes_field": 18114
+  }
+ },
+ "filename-lexical": {
+  "v2": {
+   "magic": "HYBLEX01",
+   "header": 64,
+   "documents": 45,
+   "terms": 65,
+   "postings": 77,
+   "lengths": 180,
+   "dictionary": 1955,
+   "postings_bytes": 616,
+   "positions": 0,
+   "offsets": 0,
+   "file_bytes": 2815,
+   "front_coded_text_first_seen": 514,
+   "front_coded_text_sorted": 455
+  },
+  "v3": {
+   "magic": "HYBLEX03",
+   "header": 88,
+   "documents": 45,
+   "terms": 65,
+   "postings": 77,
+   "lengths": 45,
+   "dictionary": 585,
+   "postings_bytes": 77,
+   "positions": 0,
+   "offsets": 0,
+   "term_text": 395,
+   "file_bytes": 795,
+   "pbytes_field": 65
+  }
+ },
+ "index_bytes_v2": 5621585,
+ "index_bytes_v3": 3917972
+}

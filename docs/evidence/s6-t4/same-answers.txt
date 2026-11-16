@@ -62,3 +62,14 @@ J2 gate: pass
 
 J2 native against the baseline's searchd cells (recorded 2026-11-12, binary 8b1f65c1d797): 0 rows differ
 ::notice title=J2 x86_64 vs baseline::no row differs: every first grade-2 rank (452 over both variants), slice metric and negative equals the macOS arm64 baseline
+
+## The placement controls and the second main build answer as main (Phase 2)
+
+main (98c4a2b) on v2 against ctl1, ctl2 and main2 (mainb), each on the same v2 index:
+
+j2 ctl1: same: 1679 vs 1679 answers: evidence 644 (differ 0, refused 0), find 7 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 88 (differ 0, refused 0), query 849 (differ 0, refused 0), read_span 88 (differ 0, refused 1), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+j2 ctl2: same: 1679 vs 1679 answers: evidence 644 (differ 0, refused 0), find 7 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 88 (differ 0, refused 0), query 849 (differ 0, refused 0), read_span 88 (differ 0, refused 1), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+j2 mainb: same: 1679 vs 1679 answers: evidence 644 (differ 0, refused 0), find 7 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 88 (differ 0, refused 0), query 849 (differ 0, refused 0), read_span 88 (differ 0, refused 1), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+timing-10k ctl1: same: 20102 vs 20102 answers: evidence 31 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+timing-10k ctl2: same: 20102 vs 20102 answers: evidence 31 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)
+timing-10k mainb: same: 20102 vs 20102 answers: evidence 31 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0)

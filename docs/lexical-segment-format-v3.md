@@ -185,8 +185,11 @@ read and names it.
 ## Writers and readers
 
 - `searchd index` (full and `--update`) and `searchd apply` write v3 for both
-  lexical sections. `import-json` keeps writing `HYBLEX01` under its v1
-  manifest.
+  lexical sections. `import-json` writes what it wrote before v3, byte for
+  byte: `HYBLEX01` under its v1 manifest, and with the file-name channel both
+  lexical sections `HYBLEX01` under a v2 manifest without bit 5
+  (`filename_field.buildV1`; `tests/fixtures/import-filename-98c4a2b/` is
+  98c4a2b's output, and `zig/src/compat_98c4a2b_test.zig` checks the bytes).
 - Every reader reads `HYBLEX01`, `HYBLEX02` and `HYBLEX03`. A writer caps a
   common prefix of more than 255 bytes at 255 (the suffix carries the rest;
   no term is shortened or refused). An update whose
