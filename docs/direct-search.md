@@ -45,7 +45,11 @@ generation 1, as a fresh `index` is, even the `index.generation` field in the
 - A missing folder, a path that is not a folder, an empty (or whitespace-only)
   query, an unknown flag or a bad value is a usage error: exit 2, one stderr
   line, nothing on stdout. Any other failure (for example a folder you may not
-  read) is exit 1.
+  read) is exit 1. A flag given twice takes its last value, as for `query`.
+- **The one difference from `query`:** `query <index> ""` (or a query of only
+  white space) is accepted there, exit 0, a header line and no results; `search`
+  refuses it as a usage error (exit 2), since it would read and build the whole
+  folder to match nothing.
 - An empty folder, or one with no supported file, answers with no results and
   exit 0, exactly as an empty index does.
 
@@ -108,12 +112,16 @@ The same over the timing corpus with `--search-field both` (no prose row):
 
 What the numbers say:
 
-- **Within 100 ms:** up to about **1,000 files / 0.9 MB of text** (83 ms;
-  2,000 files / 1.6 MB take 143 ms).
-- **Within 1 s:** up to about **10,000 files / 7.3 MB** (624 ms; 20,000 files /
-  14.4 MB take 1.25 s; by linear interpolation the line is near 16,000 files or
-  11–12 MB). The time grows about linearly with the folder: roughly 60 ms per
-  1,000 files of this corpus.
+- **Within 100 ms:** up to about **1,000 files / 0.9 MB of text** (83 ms,
+  peak memory 24 MiB; 2,000 files / 1.6 MB take 143 ms).
+- **Within 1 s:** up to about **10,000 files / 7.3 MB** (624 ms, peak memory
+  **149 MiB**; 20,000 files / 14.4 MB take 1.25 s and 287 MiB; by linear
+  interpolation the line is near 16,000 files or 11–12 MB). The time grows
+  about linearly with the folder: roughly 60 ms per 1,000 files of this corpus.
+- **Rerun by the verifier** (same Mac, its own `ReleaseSmall` build and timing
+  script, five interleaved runs, 5-minute load 3.74 → 3.70): 1,000 files
+  79.5 ms (78.1–81.1), 23.6 MiB; 10,000 files 599.3 ms (591.5–602.2),
+  149.0 MiB ([S6-T2 Verdict](tasks/S6-T2.md#verdict-verifier-fills-in)).
 - **Cost per byte depends on the text.** The prose folder (2,000 files,
   3.4 MB) took 248 ms, less than the 5,000-file corpus folder of similar size
   (3.7 MB, 322 ms); it has fewer, longer files and a far smaller vocabulary,
