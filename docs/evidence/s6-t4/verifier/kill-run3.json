@@ -1,0 +1,455 @@
+{
+ "summary": {
+  "update_ms": 211.9,
+  "trials": 30,
+  "killed": 16,
+  "v2": 14,
+  "v3": 16,
+  "neither": 0,
+  "inconsistent": 0
+ },
+ "results": [
+  {
+   "trial": 0,
+   "delay_ms": 185.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 1,
+   "delay_ms": 186.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 2,
+   "delay_ms": 187.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 3,
+   "delay_ms": 188.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 4,
+   "delay_ms": 189.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 5,
+   "delay_ms": 190.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 6,
+   "delay_ms": 191.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 7,
+   "delay_ms": 192.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 8,
+   "delay_ms": 193.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 9,
+   "delay_ms": 194.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 10,
+   "delay_ms": 195.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 11,
+   "delay_ms": 196.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 2,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": true
+   }
+  },
+  {
+   "trial": 12,
+   "delay_ms": 197.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 3,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": false
+   }
+  },
+  {
+   "trial": 13,
+   "delay_ms": 198.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 14,
+   "delay_ms": 199.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 3,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": false
+   }
+  },
+  {
+   "trial": 15,
+   "delay_ms": 200.5,
+   "killed": true,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 3,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": false
+   }
+  },
+  {
+   "trial": 16,
+   "delay_ms": 201.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 17,
+   "delay_ms": 202.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 18,
+   "delay_ms": 203.5,
+   "killed": true,
+   "generation": 1,
+   "flag5": false,
+   "lexical": "HYBLEX02",
+   "filename": "HYBLEX01",
+   "answers": "v2",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 3,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": false
+   }
+  },
+  {
+   "trial": 19,
+   "delay_ms": 204.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 20,
+   "delay_ms": 205.5,
+   "killed": true,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true,
+   "after_next_update": {
+    "generation": 3,
+    "flag5": true,
+    "lexical": "HYBLEX03",
+    "filename": "HYBLEX03",
+    "answers_v3": false
+   }
+  },
+  {
+   "trial": 21,
+   "delay_ms": 206.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 22,
+   "delay_ms": 207.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 23,
+   "delay_ms": 208.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 24,
+   "delay_ms": 209.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 25,
+   "delay_ms": 210.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 26,
+   "delay_ms": 211.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 27,
+   "delay_ms": 212.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 28,
+   "delay_ms": 213.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  },
+  {
+   "trial": 29,
+   "delay_ms": 214.5,
+   "killed": false,
+   "generation": 2,
+   "flag5": true,
+   "lexical": "HYBLEX03",
+   "filename": "HYBLEX03",
+   "answers": "v3",
+   "flag_and_sections_agree": true
+  }
+ ]
+}
