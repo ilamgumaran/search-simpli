@@ -35,6 +35,7 @@ pub const apply = @import("apply.zig");
 pub const ops = @import("ops.zig");
 pub const mcp = @import("mcp.zig");
 pub const cli_test = @import("cli_test.zig");
+pub const direct_search_test = @import("direct_search_test.zig");
 pub const chunker_golden_test = @import("chunker_test.zig");
 pub const chunker_md_golden_test = @import("chunker_md_test.zig");
 pub const source_fixture_test = @import("source_fixture_test.zig");
@@ -157,4 +158,5 @@ test "load every engine module test suite" {
     _ = fold_groups_test;
     _ = filename_complexity_test;
     _ = cli_test;
+    _ = direct_search_test;
 }
