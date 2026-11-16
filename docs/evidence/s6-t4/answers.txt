@@ -1,0 +1,30 @@
+S6-T4 Phase 1: answer hashes (sha256 of each ss_query / ss_find JSON, and ss_status) against main's library on the v2 index.
+Variant = library-index. Lazy knobs as in run.sh: lazy = keep everything, lazy0 = no cache, lazyall = all lists at first use, lazychecked = every list checked at open.
+timing-10k	eager-v3	55 answers	0 differ
+timing-10k	lazy-v3	55 answers	0 differ
+timing-10k	lazy0-v3	55 answers	0 differ
+timing-10k	lazyall-v3	55 answers	0 differ
+timing-10k	lazychecked-v3	55 answers	0 differ
+timing-10k	eager-v2	55 answers	0 differ
+timing-10k	lazy-v2	55 answers	0 differ
+prose-10k	eager-v3	55 answers	0 differ
+prose-10k	lazy-v3	55 answers	0 differ
+prose-10k	lazy0-v3	55 answers	0 differ
+prose-10k	lazyall-v3	55 answers	0 differ
+prose-10k	lazychecked-v3	55 answers	0 differ
+prose-10k	eager-v2	55 answers	0 differ
+prose-10k	lazy-v2	55 answers	0 differ
+tamil-10k	eager-v3	56 answers	0 differ
+tamil-10k	lazy-v3	56 answers	0 differ
+tamil-10k	lazy0-v3	56 answers	0 differ
+tamil-10k	lazyall-v3	56 answers	0 differ
+tamil-10k	lazychecked-v3	56 answers	0 differ
+tamil-10k	eager-v2	56 answers	0 differ
+tamil-10k	lazy-v2	56 answers	0 differ
+j2	eager-v3	574 answers	0 differ
+j2	lazy-v3	574 answers	0 differ
+j2	lazy0-v3	574 answers	0 differ
+j2	lazyall-v3	574 answers	0 differ
+j2	lazychecked-v3	574 answers	0 differ
+j2	eager-v2	574 answers	0 differ
+j2	lazy-v2	574 answers	0 differ

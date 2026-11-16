@@ -1,0 +1,67 @@
+{
+ "corpus": "j2",
+ "lexical": {
+  "v2": {
+   "magic": "HYBLEX02",
+   "header": 80,
+   "documents": 324,
+   "terms": 2267,
+   "postings": 7494,
+   "lengths": 1296,
+   "dictionary": 71301,
+   "postings_bytes": 59952,
+   "positions": 11415,
+   "offsets": 22634,
+   "file_bytes": 166678
+  },
+  "v3": {
+   "magic": "HYBLEX03",
+   "header": 88,
+   "documents": 324,
+   "terms": 2267,
+   "postings": 7494,
+   "lengths": 340,
+   "dictionary": 18116,
+   "postings_bytes": 11007,
+   "positions": 11415,
+   "offsets": 22634,
+   "term_text": 16893,
+   "file_bytes": 63600,
+   "pbytes_field": 2271
+  }
+ },
+ "filename-lexical": {
+  "v2": {
+   "magic": "HYBLEX01",
+   "header": 64,
+   "documents": 87,
+   "terms": 135,
+   "postings": 178,
+   "lengths": 348,
+   "dictionary": 4022,
+   "postings_bytes": 1424,
+   "positions": 0,
+   "offsets": 0,
+   "file_bytes": 5858,
+   "front_coded_text_first_seen": 1029,
+   "front_coded_text_sorted": 862
+  },
+  "v3": {
+   "magic": "HYBLEX03",
+   "header": 88,
+   "documents": 87,
+   "terms": 135,
+   "postings": 178,
+   "lengths": 87,
+   "dictionary": 1132,
+   "postings_bytes": 207,
+   "positions": 0,
+   "offsets": 0,
+   "term_text": 782,
+   "file_bytes": 1514,
+   "pbytes_field": 135
+  }
+ },
+ "index_bytes_v2": 367659,
+ "index_bytes_v3": 260237
+}

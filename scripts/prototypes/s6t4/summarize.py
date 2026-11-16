@@ -82,7 +82,7 @@ def main() -> int:
                 continue
             base = cells(found["today"])
             loads = [r["load_before"][1] for r in found.values()] + [r["load_after"][1] for r in found.values()]
-            print(f"Run {index}: 5-minute load {min(loads):.2f}–{max(loads):.2f}.")
+            print(f"`{Path(sys.argv[index]).stem}`: 5-minute load {min(loads):.2f}–{max(loads):.2f}.")
             for variant in ORDER[1:]:
                 if variant not in found:
                     continue

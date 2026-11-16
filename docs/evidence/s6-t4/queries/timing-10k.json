@@ -1,0 +1,60 @@
+{
+ "corpus": "timing-10k",
+ "files": 10000,
+ "queries": [
+  "bazecha",
+  "benico",
+  "system",
+  "hashing",
+  "hybrid retrieval",
+  "retrieval hybrid",
+  "system systems",
+  "systems system",
+  "from",
+  "were",
+  "badamo",
+  "belohu",
+  "from badamo",
+  "were belohu",
+  "doc 00000"
+ ],
+ "finds": [
+  {
+   "query": "from",
+   "mode": "words"
+  },
+  {
+   "query": "badamo",
+   "mode": "words"
+  },
+  {
+   "query": "from badamo",
+   "mode": "words"
+  },
+  {
+   "query": "doc 00000",
+   "mode": "words"
+  },
+  {
+   "query": "barigo bejoju becoco",
+   "mode": "phrase"
+  },
+  {
+   "query": "bahuki begeno bakucu",
+   "mode": "phrase"
+  },
+  {
+   "query": "with befewho with",
+   "mode": "phrase"
+  },
+  {
+   "query": "bada*",
+   "mode": "prefix"
+  },
+  {
+   "query": "belo*",
+   "mode": "prefix"
+  }
+ ],
+ "roots": null
+}

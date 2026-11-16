@@ -966,7 +966,7 @@ diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/manifest
          if (document_header.checksum_kind != .fnv1a64) return error.InvalidDocumentSection;
 diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/postings.zig proto/zig/src/postings.zig
 --- main/zig/src/postings.zig	2026-11-16 10:27:53
-+++ proto/zig/src/postings.zig	2026-11-16 11:09:31
++++ proto/zig/src/postings.zig	2026-11-16 11:19:40
 @@ -3,6 +3,9 @@
  const scoring = @import("scoring.zig");
  const segment = @import("segment.zig");
@@ -1220,7 +1220,7 @@ diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/postings
  
 -    fn postingsOf(scorer: *const SparseScorer, entry: TermEntry) []const Posting {
 -        return scorer.index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
-+    const cached_lists = 16;
++    const cached_lists = 128;
 +
 +    inline fn postingsOf(scorer: *const SparseScorer, term_index: usize, entry: TermEntry) []const Posting {
 +        if (comptime lex_lazy) if (term_index < cached_lists) return scorer.lists[term_index];

@@ -68,7 +68,8 @@ bytes plus its suffix, so the term text is at most 255 × term count +
 dictionary bytes), which lets the reader check the header's term-text bytes
 before allocating them; without it a section of a few kilobytes could ask for
 gigabytes of term text and still pass every other rule. (No term in the
-measured corpora shares more than 255 bytes; the cap costs nothing there.)
+measured corpora shares more than 29 bytes, so the cap changes no byte there;
+the S6-T4 prototype does not apply it.)
 
 Order and canonical form in one check: when `shared` is less than both the
 previous term's length and 255, the suffix's first byte must be greater than
@@ -77,16 +78,15 @@ pairs and a `shared` shorter than the true common prefix. `shared` equal to
 the previous length makes the term a strict extension of it, which is
 ascending. `shared` equal to 255 and shorter than the previous term (only
 terms of over 255 bytes) compares the rest of the two terms bytewise, which
-must be ascending. The
-decoded term — the previous term's first `shared` bytes then the suffix — is
+must be ascending. The decoded term — the previous term's first `shared` bytes then the suffix — is
 not checked for UTF-8, as v2's are not.
 
 Term *i*'s list starts in section 3 where term *i − 1*'s ends (the first at
 0); its postings are numbered from the sum of the earlier dfs, as v2's
 contiguous term ranges. `list bytes` costs one or two bytes a term (measured:
 24,114 B of the timing corpus's 5,396,552 B section; 6,252 of prose's
-13,244,927; 21,632 of Tamil's 5,555,692; 10,002 of each file-name section's
-92,952 to 146,333). It lets a reader find a term's list without decoding
+13,244,927; 21,632 of Tamil's 5,555,692; 10,002 to 12,936 of the file-name
+sections' 92,952 to 146,333). It lets a reader find a term's list without decoding
 the lists before it, which only a lazy reader needs; an eager reader
 checks it. Whether to keep it is a ruling (see the Report's open questions).
 
