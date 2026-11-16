@@ -2,7 +2,7 @@
 
 **Status:** measurement and design, [S6-T3](tasks/S6-T3.md) (plan item D1 of the
 [objective plan](plans/2026-11-16-objective-plan.md)). No format and no engine
-source changed. Measured on `main` at `7cd2c16` (engine sources as `efbdd0e`),
+source changed; verified 16 Nov 2026 and ruled on ([Rulings](#rulings-16-nov-2026)). Measured on `main` at `7cd2c16` (engine sources as `efbdd0e`),
 macOS arm64, Zig 0.16.0, `searchd` built `ReleaseSmall`, 16 Nov 2026. Byte
 counts are exact and independent of load; every timing names its load.
 Raw tables: [`docs/evidence/s6-t3/`](evidence/s6-t3/README.md).
@@ -34,13 +34,15 @@ Raw tables: [`docs/evidence/s6-t3/`](evidence/s6-t3/README.md).
   10k), 1.82 (prose 10k), 1.27 (Tamil 10k), 1.71 (fixtures), 1.91 (family
   folder)**, summed from measured prototype re-encodings. None of the four
   changes what a query, `find` or `read_span` answers.
-- **Not recommended for D2 without a ruling:** leaving the offsets out (to
-  1.81 timing, 1.63 prose, but `find` words measured 0.03–0.84 ms slower at the
-  median, up to 5 ms at p95), block compression of the text (to 1.35 timing,
-  1.18 prose, but chunk text then comes from the compressed source at every
-  query hit, measured at 0.37 ms per 64 KiB block with the standard library's
-  decoder), positions left out by default, and a changed `keep_generations`
-  default.
+- **Not taken in D2 (ruled 16 Nov 2026, [below](#rulings-16-nov-2026)):**
+  leaving the offsets out (to 1.81 timing, 1.63 prose, but `find` words
+  measured 0.03–0.84 ms slower at the median, up to 5 ms at p95), block
+  compression of the text (to 1.35 timing, 1.18 prose, but chunk text then
+  comes from the compressed source at every query hit, measured at 0.37 ms per
+  64 KiB block with the standard library's decoder; revisited after steps 1–4
+  land), and positions left out. The `keep_generations` default of
+  `searchd index` and `searchd apply` changes to two in a separate task
+  (D2-5).
 
 ## How it was measured
 
@@ -371,15 +373,17 @@ A′ the source holds almost nothing.
   (prose). `find` already has the code that re-tokenizes a hit's text for its
   highlights (`find.zig` `spans`, `recompute_offsets`, used for `HYBLEX01`).
   Measured cost with `find_bench` (warm, in process, `ReleaseSmall`, 5-minute
-  load 3.54 before and 3.50 after; three repetitions of 200 queries, the
-  repetitions agree within 5 %):
+  load 3.54 before and 3.50 after; three repetitions of 200 queries, each
+  cell the median of the three; the repetitions agree within 10 % except
+  the two smallest medians, timing words 6.2–7.3 µs and Tamil phrase
+  19.1–22.1 µs, which spread 16–18 %):
 
   | `find` median (p95), µs | timing-10k | prose-10k | tamil-10k |
   | --- | ---: | ---: | ---: |
   | words, offsets read | 6.3 (213) | 239 (2,154) | 68 (1,542) |
-  | words, re-tokenized | 37 (320) | 694 (7,305) | 904 (2,357) |
-  | phrase, offsets read | 20 (919) | 191 (3,099) | 20 (73) |
-  | phrase, re-tokenized | 29 (951) | 211 (3,194) | 66 (122) |
+  | words, re-tokenized | 37 (320) | 694 (7,304) | 904 (2,357) |
+  | phrase, offsets read | 20 (920) | 191 (3,099) | 20 (73) |
+  | phrase, re-tokenized | 29 (951) | 211 (3,194) | 66 (123) |
 
   So `find` words gets 0.03 ms (timing) to 0.84 ms (Tamil) slower at the
   median and up to 5.2 ms slower at p95 (prose, 1,115 hits on average; which
@@ -520,7 +524,7 @@ prose-10k 30,583,247 (1.77), tamil-10k 34,634,968 (1.25), fixtures 7,901,396
 (1.70), family 2,365,980 (1.91); every row is in
 [`tables.md`](evidence/s6-t3/tables.md) §8.
 
-**The alternative that needs a ruling** (A then B: text once in the source as
+**The alternative, not taken now (ruling 2)** (A then B: text once in the source as
 spans, then compressed), channel on, after the same lexical, C5b offsets, state
 and catalog steps: timing-10k 9,840,211 (1.35), prose-10k 20,361,833 (1.18),
 tamil-10k 12,403,068 (0.45, low-entropy invented text), fixtures 3,715,177
@@ -528,26 +532,35 @@ tamil-10k 12,403,068 (0.45, low-entropy invented text), fixtures 3,715,177
 
 ## Recommendation for D2
 
-In order, one format version at a time, each with a reader for the previous
-version and before/after numbers for size, open, query and one-file update (the
-plan's D2 rule):
+The order below is the one ruled on 16 Nov 2026 ([Rulings](#rulings-16-nov-2026)).
+One format version per step, each with a reader for the previous version, a
+migration note, and before/after numbers for size, open, warm query, `find`,
+`read_span` and one-file update (ruling 6):
 
-1. **Lexical v3: C2b postings, C1 dictionary, C3 lengths**, the same coding for
-   the file-name lexical section (F2). Largest saving for the least change: no
+1. **Lexical v3: C2b postings, C1 dictionary, C3 lengths**, and the same coding
+   for the file-name lexical section (F2). Largest saving for the least change: no
    reader above the decode changes. Saves 22 % (timing 10k), 22 % (prose 10k),
-   10 % (Tamil 10k) of today's index. Cost measured: +2.2 ms (timing) to
+   10 % (Tamil 10k) of today's index without F2 (23 %, 22 %, 10 % with it; the
+   projection table above counts F2 in its column 4, so its columns 1–3 move by
+   F2 while the totals after step 4 do not). Cost measured: +2.2 ms (timing) to
    +5.5 ms (prose) of posting decode in the open.
 2. **Text once, A′: the source section keeps only what no chunk holds**, with
-   the record coding (path once, raw ids, varint fields). Saves about one corpus
-   size. The query path does not change; `read_span` and `outline` rebuild a
-   file from resident chunk text.
-3. **The offsets at one byte per token** (C5b), in the same lexical version as
-   step 1 if D2 can take both at once. Halves the offsets section and keeps
-   `find` as it is. Leaving the offsets out instead (C5) saves as much again but
-   costs `find` words up to 0.84 ms at the median and 5.2 ms at p95 (measured
-   above); that is ruling 3.
+   the record coding (raw ids, varint fields, and the path once: in the source
+   section's file table, other sections referring to a file by its ordinal
+   there, ruling 5). Saves about one corpus size. The query path does not
+   change; `read_span` and `outline` rebuild a file from resident chunk text.
+   With the path in the source table the open reads that table (about 0.9 MB
+   at 10k files, the line maps aside), which this step measures.
+3. **The offsets at one byte per token** (C5b), so `find` is unchanged; its
+   decode cost is measured in that step's task. Positions stay mandatory (C6
+   not taken) and the offsets are kept (C5 not taken).
 4. **State and catalog stop repeating** (D, F): writer-side and lazy-load
    readers only.
+
+Then, separately: **D2-5**, `searchd index` and `searchd apply` default to
+keeping two generations, with an explicit option to keep all (ruling 4), and
+**block compression (B)**, revisited after steps 1–4 land with its own
+measurement of `read_span`, query latency and library size (ruling 2).
 
 **Target ratios** (one generation, channel on; the evidence is the projection
 above, each a sum of measured re-encodings; each target sits 2–6 % above its
@@ -566,7 +579,35 @@ lower on the timing and prose corpora (projection 1.81–1.82 timing, 1.63–1.6
 prose). With `keep_generations: 2`, as the app runs it, the directory is twice
 these.
 
-## What needs a ruling before D2 is filed
+## Rulings (16 Nov 2026)
+
+The orchestrator ruled on the builder's six questions (kept after the rulings) on 16 Nov 2026
+([S6-T3](tasks/S6-T3.md), *Rulings on the Report*):
+
+1. **A′, not A.** The source section keeps only the bytes no chunk holds; the
+   query path is unchanged.
+2. **Block compression (B) is not taken now.** It is revisited, with its own
+   measurement of `read_span`, query latency and library size, after steps 1–4
+   land.
+3. **The offsets at one byte per token (C5b)**, so `find` is unchanged; its
+   decode cost is measured in that step's task. Positions stay mandatory (C6
+   not taken).
+4. **`keep_generations`:** the CLI's unset default (nothing pruned; five
+   one-file updates left 193,688,535 B) is a trap for a new user. A separate
+   task, D2-5, makes `searchd index` and `searchd apply` default to keeping two
+   generations, with an explicit option to keep all; the C ABI and Dart
+   defaults do not change in that task. It goes through the capability process
+   as a behaviour change.
+5. **The single copy of each path** lives in the source section's file table;
+   other sections refer to a file by its ordinal there.
+6. **One format version per step**, each with a reader for the previous
+   version, a migration note and before/after numbers for size, open, warm
+   query, `find`, `read_span` and one-file update.
+
+The order of D2 is the four steps of [the recommendation](#recommendation-for-d2),
+with the targets above.
+
+### The questions as the builder put them
 
 1. **A′ or A.** A′ keeps the query path and resident memory as they are and
    rebuilds files for `read_span`; A shrinks what the open reads and what stays

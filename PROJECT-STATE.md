@@ -15,7 +15,15 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## Index size: where the bytes go and what to change (S6-T3, plan item D1, 2026-11-16; built, awaiting verification)
+## Index size: where the bytes go and what to change (S6-T3, plan item D1, 2026-11-16; verified and ruled on)
+
+**Verified 16 Nov, PASS on `e1c9c46`** ([Verdict](docs/tasks/S6-T3.md)): every corpus, section and part size reproduced to the byte with a
+fresh `ReleaseSmall` `searchd`; the verifier's own parser and re-encoders (with decode round trips) give the same savings
+for A′, C1, C2b, C3, C5b, D and F2 on prose and timing 10k; timings not rerun (load above 4.0). **Ruled the same day**
+([`docs/index-size.md`](docs/index-size.md#rulings-16-nov-2026)): D2 in four steps, one format version each (lexical v3 with
+F2; A′ with record coding and the path once in the source table; C5b offsets, positions mandatory; D and F); block
+compression revisited after them; a separate D2-5 makes `searchd index` and `searchd apply` keep two generations by
+default.
 
 Measurement and design only: no format, engine source, contract or binding change; the native digest is
 unchanged. [`docs/index-size.md`](docs/index-size.md), raw tables in `docs/evidence/s6-t3/`.
