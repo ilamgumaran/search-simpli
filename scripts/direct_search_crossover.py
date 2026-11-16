@@ -187,12 +187,17 @@ def main() -> int:
         if not ok:
             print(f"refused: 5-minute load {before:.2f} (needs < 4.0) or lock {args.lock} present", file=sys.stderr)
             return 3
+        started = time.strftime("%Y-%m-%d %H:%M:%S")
         row = measure(args.searchd, args.work, name, Path(path), args.query, args.field, args.runs)
+        # Wall-clock bounds of the folder's runs, to check against `pmset -g log`
+        # for a sleep inside them (perf_counter does not count sleep, but a run
+        # that straddles one is disturbed and is rerun).
+        row["started"], row["ended"] = started, time.strftime("%Y-%m-%d %H:%M:%S")
         row["load_before"] = before
         row["load_after"] = os.getloadavg()[1]
         results.append(row)
         ways = row["ways"]
-        print(f"{name:>10} {row['files']:>6} files {row['bytes'] / 1e6:7.1f} MB  load {before:.2f}->{row['load_after']:.2f}  "
+        print(f"{row['started'][11:]}-{row['ended'][11:]} {name:>8} {row['files']:>6} files {row['bytes'] / 1e6:7.1f} MB  load {before:.2f}->{row['load_after']:.2f}  "
               + "  ".join(f"{way} {ways[way]['wall_s']['median'] * 1000:8.1f} ms "
                           f"[{ways[way]['wall_s']['min'] * 1000:.1f}-{ways[way]['wall_s']['max'] * 1000:.1f}] "
                           f"{ways[way]['peak_rss_bytes']['median'] / 1048576:6.1f} MiB" for way in ways), flush=True)
