@@ -1029,12 +1029,12 @@ pub fn answerEvidence(
 
 // === S6-T2: search a folder directly ========================================
 
-/// The detached build of `search`: the generation `index <folder> --out X`
-/// would publish into an empty `X` (generation 1, analyzer v2, the default
-/// chunker sizes, the caps given), built in memory and opened there the way
-/// `query`/`evidence` open `X` for `field` (the eager open for `content`, the
-/// scoped open for `filename` and `both`). The file-name channel is built
-/// only for `filename` and `both`; a content answer never reads it.
+/// The detached build of `search`: the generation `index <folder> --out X
+/// --filename-index` would publish into an empty `X` (generation 1, analyzer
+/// v2, the default chunker sizes, the file-name channel, the caps given),
+/// built in memory and opened there the way `query`/`evidence` open `X` for
+/// the field (the eager open for `content`, the scoped open for `filename`
+/// and `both`).
 pub const Searched = struct {
     engine: engine_module.Engine,
     report: indexer.IncrementalReport,
@@ -1043,7 +1043,7 @@ pub const Searched = struct {
 pub fn buildAndOpen(arena: std.mem.Allocator, io: std.Io, root: std.Io.Dir, args: SearchArgs) !Searched {
     const search_field = args.options.search_field;
     const caps = indexer.Caps{
-        .filename_index = if (search_field != .content) true else null,
+        .filename_index = true,
         .max_file_bytes = args.max_file_bytes,
         .max_total_bytes = args.max_total_bytes,
     };
