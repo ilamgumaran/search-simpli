@@ -86,8 +86,11 @@ FR-31.
 ## 5. Contracts touched (CON)
 
 - New or changed schemas under `contracts/`: none. CON-01's `warnings` text
-  already has no field exception, so the schema is untouched; the header gains
-  a "Contract 2.8.0" paragraph (comments only, no declaration).
+  and the C header's describe the warnings with no field exception, so both are
+  untouched (S6-T5 ruling 5); this record, the Dart CHANGELOG and the policy
+  documents carry the 2.8.0 note. The header has no "Contract 2.8.0"
+  paragraph, unlike 2.2.0 to 2.7.0: whether to add one (comments only) is an
+  open question in the S6-T5 Report.
 - Backward-compatibility plan: contracts 2.7.0 → **2.8.0** and Dart 0.8.0 →
   **0.9.0**, the rule of every earlier observable change of `ss_query`'s output
   (S5-T2 to S5-T8): a minor contract version, and a minor Dart version because

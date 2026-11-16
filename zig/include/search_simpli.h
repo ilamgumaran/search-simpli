@@ -148,20 +148,6 @@
  * hopes are hope's); and for hoping or caring, the word hop or car.
  * retrieval.fold_policy_id is "fold-groups-v3"; retrieval.fuzzy_policy_id
  * stays "fuzzy-v1". */
-
-/* Contract 2.8.0 (S6-T5) fills ss_query()'s "warnings" under
- * search_field "both" and "filename", which were always empty, with no
- * request field, no warning code, no result field and no signature or
- * index format change; search_field "content" answers exactly as before.
- * Under "both" the warnings are the ones "content" gives for the same
- * request, except that a word is query_term_unmatched only when neither a
- * chunk in scope nor a visible file name holds it; its query_term_expanded
- * and query_term_grouped report the groups "both" searched. Under
- * "filename" the only term warning is query_term_unmatched, for a word no
- * visible file name holds: file names are never expanded or grouped. A
- * word only hidden files or names hold is reported as an absent word is.
- * query_empty_after_analysis and vector_ignored follow the same rules as
- * under "content" (docs/requirements/cap-22-field-warnings.md). */
 #ifndef SEARCH_SIMPLI_H
 #define SEARCH_SIMPLI_H
 
@@ -190,7 +176,7 @@ typedef struct ss_handle ss_handle;
 
 /*
  * The engine contract/build version (contracts/CONTRACTS_VERSION), e.g.
- * "2.8.0". The returned pointer is static storage owned by the library:
+ * "2.7.0". The returned pointer is static storage owned by the library:
  * never pass it to ss_free(). Cannot fail.
  */
 const char *ss_version(void);
