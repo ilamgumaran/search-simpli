@@ -86,11 +86,15 @@ arithmetic of before S5-T3 bit for bit.
 
 - `retrieval.fuzzy_policy_id` is `"fuzzy-v1"` whenever the lexical channel
   ran under `content` or `both` on an analyzer-v2 index.
-- In `ss_query`'s report (and `searchd query`), the typed word keeps its
+- In `ss_query`'s report, the typed word keeps its
   `query_term_unmatched` warning, followed by a `query_term_expanded`
   warning: `term` the typed word, `expansions` the words searched, best
-  first, `message` "also searched: …". JSON-RPC `search_knowledge` results
-  carry no warnings (the schema's rule since contract 1.2.0).
+  first, `message` "also searched: …". Since contract 2.8.0 (S6-T5,
+  [CAP-22](requirements/cap-22-field-warnings.md)) this holds under `both`
+  too, for the groups `both` searched; under `filename` nothing is expanded,
+  so no `query_term_expanded` appears. JSON-RPC `search_knowledge` results,
+  MCP and the `searchd` commands (`query`, `evidence`, `search`) carry no
+  warnings (the schema's rule since contract 1.2.0).
 
 ## Cost
 

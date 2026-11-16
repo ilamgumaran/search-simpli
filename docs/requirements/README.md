@@ -106,6 +106,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-16 | [Directory filename retrieval](cap-16-directory-filename-search.md) | UC-006, UC-001, UC-002, UC-003 | FR-16 | Diagnostic · implemented (PR #21, integrated by S4-T2: [task](../tasks/S4-T2.md)) |
 | CAP-19 | [Folder knowledge: exact finding, structure, roots, host-fed changes, tools, MCP](cap-19-folder-knowledge.md) | UC-007, UC-001, UC-004 | FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, NFR-10, NFR-11, NFR-12, NFR-13, NFR-14 | Diagnostic · implemented (S3-T1 to S3-T7, 2026-10-31; [plan](../plans/folder-knowledge-plan.md); NFR-13 Diagnostic · implemented by S4-T1's 64 MiB arena-cap test) |
 | CAP-20 | [Direct folder search: a query over a folder with no index directory](cap-20-direct-folder-search.md) | UC-006, UC-001, UC-002 | FR-26, NFR-15 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md), merged as `06f8c2e`; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
+| CAP-22 | [Query warnings under every search field](cap-22-field-warnings.md) | UC-006, UC-007, UC-002 | FR-31 | Implemented (S6-T5: [task](../tasks/S6-T5.md); awaiting verification; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
@@ -162,6 +163,7 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-24 | Opt-in MCP extension with semantic parity and authorized writes | CAP-19 | Diagnostic · implemented (S3-T6: `searchd mcp`; realizes CAP-13; [task](../tasks/S3-T6.md)) |
 | FR-25 | Scoped retrieval metadata; empty is not proof of absence | CAP-19 | Diagnostic · implemented (S3-T2, S3-T3, S3-T6: [T2](../tasks/S3-T2.md), [T3](../tasks/S3-T3.md), [T6](../tasks/S3-T6.md)) |
 | FR-26 | `searchd search <folder> "<query>"`: answers as `index --filename-index` then `query`/`evidence`, writes nothing | CAP-20 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md)) |
+| FR-31 | `ss_query` warnings under `both` and `filename`: `content`'s, less a word a visible file name holds; hidden reported as absent | CAP-22 | Implemented (S6-T5: [task](../tasks/S6-T5.md), awaiting verification) |
 
 ## Non-functional requirements (NFR)
 

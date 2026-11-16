@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.9.0 (S6-T5; contract 2.8.0; minor: additive report entries)
+
+Warnings under every search field (`docs/requirements/cap-22-field-warnings.md`).
+Code written for 0.8.x compiles and behaves the same against 0.9.0; a query
+with `searchField: both` or `searchField: filename` now fills
+`SearchKnowledgeResult.warnings`, which was always empty for them.
+
+- **Contracts 2.8.0** (`contracts/CONTRACTS_VERSION`). As before the
+  package accepts exactly its own contract version: a 2.7.0 library is
+  refused at `open` with `ContractsVersionMismatchException`, and the
+  natives move with the package.
+- **`both`.** The warnings `content` gives for the same request, in the
+  same order and words, except that a word a visible file's name holds is
+  not `queryTermUnmatched`. `queryTermExpanded` and `queryTermGrouped`
+  name the words `both` searched.
+- **`filename`.** Only `queryTermUnmatched`, for a word no visible file
+  name holds: file names are never expanded or grouped, so no other term
+  warning can appear.
+- **The label wall.** A word only hidden files or names hold is reported
+  exactly as an absent word.
+- **Unchanged:** `content` answers, every warning code and field, the C ABI
+  signatures and the index format (no rebuild).
+
 ## 0.8.0 (S5-T8; contract 2.7.0; minor: ranking change)
 
 Fewer misleading verb-form hits (`fold-groups-v3`,

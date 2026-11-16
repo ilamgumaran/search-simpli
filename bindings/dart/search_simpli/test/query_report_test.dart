@@ -511,4 +511,67 @@ void main() {
       expect(result.results.map((r) => r.citation.path), ['public/c.md']);
     });
   });
+
+  group('contract 2.8.0: warnings under search_field both and filename', () {
+    late Directory folder;
+    late Directory out;
+    late SearchSimpli named;
+
+    setUp(() {
+      folder = Directory.systemTemp.createTempSync('ss-dart-fields-src-');
+      out = Directory.systemTemp.createTempSync('ss-dart-fields-out-');
+      Directory('${folder.path}/garden').createSync();
+      File('${folder.path}/dinosaur-trip.md')
+          .writeAsStringSync('# Trip\n\nthe dinosaur museum had bones\n');
+      File('${folder.path}/garden/bean-diary.md')
+          .writeAsStringSync('# Beans\n\ntomatoes and beans grew tall\n');
+      SearchSimpli.indexFolder(
+        out.path,
+        folder.path,
+        options: const IndexFolderOptions(filenameIndex: true),
+      );
+      named = SearchSimpli.open(out.path);
+    });
+
+    tearDown(() {
+      named.close();
+      out.deleteSync(recursive: true);
+      folder.deleteSync(recursive: true);
+    });
+
+    List<(SearchWarningCode, String?)> codes(SearchField field) => named
+        .query('dinosuar qqzzxx tomato diary',
+            topK: 5, mode: RetrievalMode.lexical, searchField: field)
+        .warnings!
+        .map((w) => (w.code, w.term))
+        .toList();
+
+    test('both: content\'s warnings, less a word a visible file name holds', () {
+      final content = named.query('dinosuar qqzzxx tomato diary',
+          topK: 5, mode: RetrievalMode.lexical);
+      expect(content.warnings!.map((w) => (w.code, w.term)), [
+        (SearchWarningCode.queryTermUnmatched, 'dinosuar'),
+        (SearchWarningCode.queryTermExpanded, 'dinosuar'),
+        (SearchWarningCode.queryTermUnmatched, 'qqzzxx'),
+        (SearchWarningCode.queryTermUnmatched, 'tomato'),
+        (SearchWarningCode.queryTermGrouped, 'tomato'),
+        (SearchWarningCode.queryTermUnmatched, 'diary'),
+      ]);
+      expect(codes(SearchField.both), [
+        (SearchWarningCode.queryTermUnmatched, 'dinosuar'),
+        (SearchWarningCode.queryTermExpanded, 'dinosuar'),
+        (SearchWarningCode.queryTermUnmatched, 'qqzzxx'),
+        (SearchWarningCode.queryTermUnmatched, 'tomato'),
+        (SearchWarningCode.queryTermGrouped, 'tomato'),
+      ]);
+    });
+
+    test('filename: only query_term_unmatched, for a word no file name holds', () {
+      expect(codes(SearchField.filename), [
+        (SearchWarningCode.queryTermUnmatched, 'dinosuar'),
+        (SearchWarningCode.queryTermUnmatched, 'qqzzxx'),
+        (SearchWarningCode.queryTermUnmatched, 'tomato'),
+      ]);
+    });
+  });
 }

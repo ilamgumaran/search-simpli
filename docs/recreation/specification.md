@@ -248,3 +248,4 @@ Status `Diagnostic · implemented` means built and verified on the invented fami
 |---|---|---|---|
 | FR-26 | `searchd search <folder> "<query>"`: the same answers as `index --filename-index` then `query`/`evidence`, with no index directory, writing nothing | [CAP-20](../requirements/cap-20-direct-folder-search.md) | Implemented and verified (S6-T2) |
 | NFR-15 | Direct search creates no file or directory anywhere; its cost against the index path is measured, not assumed | [CAP-20](../requirements/cap-20-direct-folder-search.md) | Implemented and verified (S6-T2) |
+| FR-31 | `ss_query` computes `warnings` under `search_field` `both` (`content`'s, except that a word a visible file name holds is not unmatched) and `filename` (`query_term_unmatched` only, for a word no visible file name holds); a word only hidden files hold is reported as an absent word | [CAP-22](../requirements/cap-22-field-warnings.md) | Implemented (S6-T5) |
