@@ -1551,6 +1551,22 @@ test "S6-T4: flipping any byte of a small HYBLEX03 section never crashes the rea
     try std.testing.expectEqual(@as(usize, 0), unsealed);
     try std.testing.expect(refused > 0 and accepted > 0);
     std.debug.print("S6-T4 byte flips: {d} resealed flips, {d} refused, {d} accepted (each re-encodes to its own bytes); every unsealed flip refused\n", .{ refused + accepted, refused, accepted });
+
+    // S6-T4 second rework (Q1): one byte left over after the last document's
+    // offsets, sealed into section 5's length and the checksum, is refused
+    // whatever its value.
+    var leftover: usize = 0;
+    for ([_]postings.Index{ try positionalFixture(arena), try lastListPositionalFixture(arena) }) |index| {
+        const extra = try editV3(arena, try encodeV3Alloc(arena, index), .{ .offsets_extra = 1 });
+        for ([_]u8{ 0x00, 0x01, 0x02, 0x10, 0x7f, 0x80, 0xff }) |value| {
+            extra[extra.len - 1] = value;
+            rechecksumV3(extra);
+            var buffers: V3Buffers = .{};
+            try std.testing.expectError(error.InvalidPositions, decodeV3Test(extra, &buffers));
+            leftover += 1;
+        }
+    }
+    std.debug.print("S6-T4 byte flips: {d} sections with a byte after the last offsets, all refused\n", .{leftover});
 }
 
 // ---- S6-T4 rework: the last element of each section (the verifier's P3) --
@@ -1613,6 +1629,8 @@ const V3Edit = struct {
     dictionary_extra: usize = 0,
     dictionary_cut: usize = 0,
     postings_extra: usize = 0,
+    /// Bytes appended after section 5 (the last section of a positional one).
+    offsets_extra: usize = 0,
 };
 
 fn editV3(arena: std.mem.Allocator, good: []const u8, edit: V3Edit) ![]u8 {
@@ -1653,10 +1671,16 @@ fn editV3(arena: std.mem.Allocator, good: []const u8, edit: V3Edit) ![]u8 {
     try out.appendSlice(arena, coded);
     try out.appendNTimes(arena, 1, edit.postings_extra);
     try out.appendSlice(arena, rest);
+    try out.appendNTimes(arena, 0, edit.offsets_extra);
     var offset: usize = 32;
     writeU64(out.items, &offset, @intCast(lengths.len - edit.lengths_cut + edit.lengths_extra));
     writeU64(out.items, &offset, @intCast(new_dictionary.items.len));
     writeU64(out.items, &offset, @intCast(coded.len + edit.postings_extra));
+    if (edit.offsets_extra != 0) {
+        std.debug.assert(header.positions_flag);
+        offset = 64;
+        writeU64(out.items, &offset, @intCast(header.offsets_bytes + edit.offsets_extra));
+    }
     rechecksumV3(out.items);
     return out.items;
 }
@@ -1701,6 +1725,41 @@ test "S6-T4 rework: the last list, the last dictionary entry and the last docume
     const header = try inspect(large);
     try std.testing.expectEqualSlices(u8, &.{ 0x90, 0x03 }, large[header_length_v3 + header.document_lengths_bytes - 2 ..][0..2]);
     try std.testing.expectEqualSlices(u8, &.{ 0x8c, 0x01 }, large[header_length_v3 + header.document_lengths_bytes + header.dictionary_bytes - 2 ..][0..2]);
+}
+
+test "S6-T4 second rework (Q1): a byte left over after the last document's offsets is refused, v2 and v3, at open and lazily" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    for ([_]postings.Index{ try positionalFixture(arena), try lastListPositionalFixture(arena) }) |index| {
+        // v3: section 5 is the last section, so the byte is the file's last.
+        const good = try encodeV3Alloc(arena, index);
+        const extra = try editV3(arena, good, .{ .offsets_extra = 1 });
+        const header = try inspect(extra);
+        try std.testing.expectEqual((try inspect(good)).offsets_bytes + 1, header.offsets_bytes);
+        var buffers: V3Buffers = .{};
+        _ = try decodeV3Test(good, &buffers);
+        try std.testing.expectError(error.InvalidPositions, decodeV3Test(extra, &buffers));
+        // The lazy path (`validate_positions = false` at open, checked at the
+        // first `find`) refuses it the same way.
+        const lazy = try decodeWith(extra, &buffers.terms, &buffers.values, &buffers.lengths, .{ .inspected = header, .term_text = &buffers.text, .validate_positions = false });
+        try std.testing.expectError(error.InvalidPositions, validatePositionSections(lazy));
+
+        // v2 (HYBLEX02), whose rule this is: the same byte, header and
+        // checksum rewritten.
+        var v2 = std.ArrayList(u8).empty;
+        try v2.appendSlice(arena, try encodeAlloc(arena, index));
+        try std.testing.expectEqualStrings(magic_v2, v2.items[0..8]);
+        const v2_offsets = (try inspect(v2.items)).offsets_bytes;
+        try v2.append(arena, 0);
+        var at: usize = 64;
+        writeU64(v2.items, &at, @intCast(v2_offsets + 1));
+        rechecksum(v2.items);
+        var terms: [64]postings.TermEntry = undefined;
+        var values: [128]postings.Posting = undefined;
+        var lengths: [128]u32 = undefined;
+        try std.testing.expectError(error.InvalidPositions, decodeWith(v2.items, &terms, &values, &lengths, .{}));
+    }
 }
 
 /// The last term's `list bytes` as written.

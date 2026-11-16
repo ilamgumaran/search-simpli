@@ -38,7 +38,7 @@ Built on `task/S6-T4` ([task, Report and bars](docs/tasks/S6-T4.md),
   before it refuses the index (`UnsupportedFlags` at open, measured on 98c4a2b's own `searchd` and dylib) and
   must rebuild from the files. Indexes are never shared between devices on different library versions.
 - **Versions.** Contracts 2.7.0, C header and tool schemas unchanged; Dart 0.8.1 (patch, CHANGELOG migration
-  note); natives rebuilt (`native/SOURCE-SHA256` `2b100586…`): macOS 971,304 B (+17,216), Android 932,864 B
+  note); natives rebuilt (`native/SOURCE-SHA256` `f56d7d9e…`): macOS 971,304 B (+17,216), Android 932,864 B
   (+13,024), iOS framework binary 935,584 B (+328). App: pin bump row in 03-next (one way).
 - **Filed:** 03-next D2-1b, a lazy lexical reader, with Phase 1's numbers.
 
