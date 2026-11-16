@@ -106,6 +106,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-16 | [Directory filename retrieval](cap-16-directory-filename-search.md) | UC-006, UC-001, UC-002, UC-003 | FR-16 | Diagnostic · implemented (PR #21, integrated by S4-T2: [task](../tasks/S4-T2.md)) |
 | CAP-19 | [Folder knowledge: exact finding, structure, roots, host-fed changes, tools, MCP](cap-19-folder-knowledge.md) | UC-007, UC-001, UC-004 | FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, NFR-10, NFR-11, NFR-12, NFR-13, NFR-14 | Diagnostic · implemented (S3-T1 to S3-T7, 2026-10-31; [plan](../plans/folder-knowledge-plan.md); NFR-13 Diagnostic · implemented by S4-T1's 64 MiB arena-cap test) |
 | CAP-20 | [Direct folder search: a query over a folder with no index directory](cap-20-direct-folder-search.md) | UC-006, UC-001, UC-002 | FR-26, NFR-15 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md), merged as `06f8c2e`; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
+| CAP-21 | [Host-supplied vectors for a `searchd`-built index](cap-21-host-supplied-vectors.md) | UC-001, UC-007, UC-002 | FR-27, FR-28, FR-29, FR-30, NFR-16 | Proposed (S6-T6: [task](../tasks/S6-T6.md); pending maintainer approval; blocked on a J2 semantic slice, CFT-24) |
 | CAP-22 | [Query warnings under every search field](cap-22-field-warnings.md) | UC-006, UC-007, UC-002 | FR-31 | Implemented (S6-T5: [task](../tasks/S6-T5.md); awaiting verification; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
@@ -163,6 +164,10 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-24 | Opt-in MCP extension with semantic parity and authorized writes | CAP-19 | Diagnostic · implemented (S3-T6: `searchd mcp`; realizes CAP-13; [task](../tasks/S3-T6.md)) |
 | FR-25 | Scoped retrieval metadata; empty is not proof of absence | CAP-19 | Diagnostic · implemented (S3-T2, S3-T3, S3-T6: [T2](../tasks/S3-T2.md), [T3](../tasks/S3-T3.md), [T6](../tasks/S3-T6.md)) |
 | FR-26 | `searchd search <folder> "<query>"`: answers as `index --filename-index` then `query`/`evidence`, writes nothing | CAP-20 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md)) |
+| FR-27 | A writer-capable host attaches vectors by chunk id under one identity, publishing one generation; `apply` carries vectors and writes the identity | CAP-21 | Proposed (S6-T6) |
+| FR-28 | `list_unembedded`: chunks without a vector, paged, generation-bound, within the caller's scope | CAP-21 | Proposed (S6-T6) |
+| FR-29 | One embedding identity per generation, named and checked on every query vector and attach; model change is a migration | CAP-21 | Proposed (S6-T6) |
+| FR-30 | Hybrid with no query vector answers lexically with a warning; vector coverage reported over the visible scope | CAP-21 | Proposed (S6-T6) |
 | FR-31 | `ss_query` warnings under `both` and `filename`: `content`'s, less a word a visible file name holds; hidden reported as absent | CAP-22 | Implemented (S6-T5: [task](../tasks/S6-T5.md), awaiting verification) |
 
 ## Non-functional requirements (NFR)
@@ -190,6 +195,7 @@ until promoted.
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Diagnostic · implemented (S4-T1: [task](../tasks/S4-T1.md)) |
 | NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic · implemented (S3-T6: `zig/src/mcp.zig` Zig only, `tests/mcp_client.py` standard library; [task](../tasks/S3-T6.md)) |
 | NFR-15 | Direct search creates no file or directory anywhere; its cost against the index path is measured, not assumed | CAP-20 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md)) |
+| NFR-16 | Vectors in their own versioned section, loaded only by vector queries; lexical answers and memory unchanged; vector costs measured before promotion | CAP-21 | Proposed (S6-T6) |
 
 ## Contracts (CON)
 
@@ -253,8 +259,13 @@ section is the point of the whole register.
 | CFT-21 | CAP-19 ↔ INV-02/07 / FR-02 | Normalized chunk text cannot supply byte-exact source reads. | Retain versioned checksummed source bytes and line mappings atomically; legacy missing-source indexes return explicit capacity errors. | Resolved (design) |
 | CFT-22 | CAP-19 ↔ CAP-13 / FR-13 | Nine tools and byte parity contradict four read tools and semantic parity. | Preserve CAP-13 baseline; CAP-19 opt-in extension uses semantic payload parity, trusted context and separately authorized writes. | Resolved (design) |
 | CFT-23 | CAP-19 ↔ INV-01 / CAP-14 | Empty retrieval was presented as proof that no answer exists. | Scope empty to returned hits/page; report corpus completeness; use retrieval-limited language without answerability guarantees. | Resolved (design) |
+| CFT-24 | CAP-21 ↔ INV-09 | A vector section, two operations and an identity check before judged evidence that host vectors help on this engine. | Blocked until a J2 semantic slice, measured through the import path, shows hybrid beating lexical on its held-out half with no control loss. See CAP-21 §8. | Blocked |
+| CFT-25 | CAP-21 ↔ CAP-13 / FR-13 | MCP takes no vector, so its default search is refused on an index with vectors. | MCP stays text-only; a vector-less hybrid request answers lexically with a warning (FR-30). | Resolved (design) |
+| CFT-26 | CAP-21 ↔ INV-04 | The engine checks only dimensions, so host vectors could meet query vectors of another model. | One identity per generation, named and checked on every query vector and attach; model change by migration (FR-29). | Resolved (design) |
+| CFT-27 | CAP-21 ↔ NFR-13 | 384-d `f32` vectors at 10k files compute to the 64 MiB cap once loaded. | Vector section loaded only by vector queries; the vector query's bound and `int8` decided on measurement. | Resolved (scope) |
+| CFT-28 | CAP-21 ↔ NFR-12 / FR-20 | Two-phase writes two generations per embedding round, each larger. | `apply` without vectors unchanged; attach write cost measured; batching, D2-5 and delta sections bound it. | Resolved (scope) |
 
-New conflicts append as `CFT-24`, … Record the conflict even if you resolve it
+New conflicts append as `CFT-29`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability
