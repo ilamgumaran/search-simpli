@@ -1,0 +1,153 @@
+{
+ "index": "fixtures-fn",
+ "total_bytes": 17499412,
+ "files": [
+  {
+   "file": "INDEX-STATE.json",
+   "bytes": 94,
+   "parts": {
+    "whole file": 94
+   },
+   "counts": {}
+  },
+  {
+   "file": "MANIFEST",
+   "bytes": 1062,
+   "parts": {
+    "whole file": 1062
+   },
+   "counts": {}
+  },
+  {
+   "file": "WRITER.LOCK",
+   "bytes": 0,
+   "parts": {
+    "whole file": 0
+   },
+   "counts": {}
+  },
+  {
+   "file": "documents-1.hybseg",
+   "bytes": 5597148,
+   "parts": {
+    "header": 36,
+    "record lengths (id, path, text, vector, labels, section path: 6 x u32)": 98016,
+    "record lines (start, end, heading: 3 x u32)": 49008,
+    "record chunker index and section depth (2 x u16)": 16336,
+    "record source_doc_index (u32)": 16336,
+    "chunk ids (20 hex)": 81680,
+    "paths": 96926,
+    "chunk text": 5225049,
+    "required labels": 0,
+    "vectors": 0,
+    "section paths (heading texts)": 13761
+   },
+   "counts": {
+    "record_version": 4,
+    "records": 4084,
+    "vector_dimensions": 0
+   }
+  },
+  {
+   "file": "filename-lexical-1.hyblex",
+   "bytes": 12567,
+   "parts": {
+    "header": 64,
+    "1 document lengths (u32 each)": 912,
+    "2 dictionary: term length + df (2 x u32)": 2192,
+    "2 dictionary: posting start + count (2 x u64)": 4384,
+    "2 dictionary: term bytes": 1623,
+    "3 postings: document index (u32)": 1696,
+    "3 postings: term frequency (u32)": 1696
+   },
+   "counts": {
+    "documents": 228,
+    "terms": 274,
+    "postings": 424,
+    "tokens": 424,
+    "term_bytes": 1623
+   }
+  },
+  {
+   "file": "filenames-1.hybseg",
+   "bytes": 20566,
+   "parts": {
+    "header": 36,
+    "record lengths (id, path, text, vector, labels: 5 x u32)": 4560,
+    "record lines (start, end: 2 x u32)": 1824,
+    "chunk ids (20 hex)": 4560,
+    "paths": 6897,
+    "chunk text": 2689,
+    "required labels": 0,
+    "vectors": 0,
+    "section paths (heading texts)": 0
+   },
+   "counts": {
+    "record_version": 3,
+    "records": 228,
+    "vector_dimensions": 0
+   }
+  },
+  {
+   "file": "lexical-1.hyblex",
+   "bytes": 7021709,
+   "parts": {
+    "header": 80,
+    "1 document lengths (u32 each)": 16336,
+    "2 dictionary: term length + df (2 x u32)": 544592,
+    "2 dictionary: posting start + count (2 x u64)": 1089184,
+    "2 dictionary: term bytes": 452466,
+    "3 postings: document index (u32)": 1519496,
+    "3 postings: term frequency (u32)": 1519496,
+    "4 positions: first ordinal per posting (varint)": 480780,
+    "4 positions: later ordinal gaps (varints)": 213928,
+    "5 offsets: token count per document (u32)": 16336,
+    "5 offsets: start gap varints": 584511,
+    "5 offsets: length varints": 584504
+   },
+   "counts": {
+    "documents": 4084,
+    "terms": 68074,
+    "postings": 379874,
+    "tokens": 584504,
+    "term_bytes": 452466
+   }
+  },
+  {
+   "file": "source-1.hybsrc",
+   "bytes": 4821461,
+   "parts": {
+    "header": 48,
+    "file table: offsets, lengths, line count (u32 + 3 x u64 + u32)": 7424,
+    "file table: sha256 (32 bytes)": 7424,
+    "file table: encoding + reserved (4 bytes)": 928,
+    "file table: paths": 6996,
+    "line maps (varints)": 163464,
+    "text (original file bytes)": 4635177
+   },
+   "counts": {
+    "files": 232,
+    "lines": 160417
+   }
+  },
+  {
+   "file": "state-1.hybstate",
+   "bytes": 24805,
+   "parts": {
+    "header": 32,
+    "payload header": 40,
+    "string table": 81,
+    "roots (24 bytes each)": 24,
+    "file records: sha256 (32 bytes)": 7424,
+    "file records: root, flags, size, mtime, chunks, chunker, labels, lengths (44 bytes)": 10208,
+    "label references": 0,
+    "paths (and moved_from)": 6996
+   },
+   "counts": {
+    "files": 232,
+    "strings": 6,
+    "roots": 1
+   }
+  }
+ ]
+}

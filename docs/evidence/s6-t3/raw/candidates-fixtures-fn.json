@@ -1,0 +1,138 @@
+{
+ "index": "fixtures-fn",
+ "total_bytes": 17499412,
+ "candidates": {
+  "A chunk text as source spans": {
+   "documents_before": 5597148,
+   "chunks_spanned": 4071,
+   "chunks_inline": 13,
+   "A1 text replaced by a u32 span offset": 389208,
+   "A2 + path dropped (from the source table)": 292621,
+   "A3 + chunk id as 10 raw bytes": 251781,
+   "A4 + fixed fields as varints": 124387,
+   "saved_A1": 5207940,
+   "saved_A1_to_A4": 5472761,
+   "round_trip": "every spanned chunk's text rebuilt from the source equals the stored text"
+  },
+  "B source text block-compressed": {
+   "text_before": 4635177,
+   "deflate": [
+    {
+     "block_bytes": 16384,
+     "level": 6,
+     "blocks": 283,
+     "compressed": 1114981,
+     "block_table": 2264,
+     "section_text_after": 1117245,
+     "compress_ms": 46.8,
+     "decompress_ms_all": 3.6,
+     "decompress_us_per_block": 12.7
+    },
+    {
+     "block_bytes": 65536,
+     "level": 6,
+     "blocks": 71,
+     "compressed": 1029100,
+     "block_table": 568,
+     "section_text_after": 1029668,
+     "compress_ms": 57.5,
+     "decompress_ms_all": 2.9,
+     "decompress_us_per_block": 41.1
+    },
+    {
+     "block_bytes": 262144,
+     "level": 6,
+     "blocks": 18,
+     "compressed": 996760,
+     "block_table": 144,
+     "section_text_after": 996904,
+     "compress_ms": 62.6,
+     "decompress_ms_all": 2.5,
+     "decompress_us_per_block": 140.6
+    },
+    {
+     "block_bytes": 65536,
+     "level": 1,
+     "blocks": 71,
+     "compressed": 1165065,
+     "block_table": 568,
+     "section_text_after": 1165633,
+     "compress_ms": 15.4,
+     "decompress_ms_all": 3.2,
+     "decompress_us_per_block": 44.5
+    },
+    {
+     "block_bytes": 65536,
+     "level": 9,
+     "blocks": 71,
+     "compressed": 1020688,
+     "block_table": 568,
+     "section_text_after": 1021256,
+     "compress_ms": 169.2,
+     "decompress_ms_all": 2.9,
+     "decompress_us_per_block": 40.3
+    }
+   ],
+   "per_file": {
+    "per_file_level": 6,
+    "compressed": 1003981,
+    "file_table_extra": 1856,
+    "section_text_after": 1005837
+   },
+   "lz4_style_64k": {
+    "compressed": 1619295,
+    "block_table": 568,
+    "section_text_after": 1619863,
+    "python_seconds": 0.6
+   }
+  },
+  "C lexical coding": {
+   "lexical_before": 7021709,
+   "C1 dictionary: front-coded terms + df varint (start, count derived)": {
+    "before": 2086242,
+    "after": 347641,
+    "saved": 1738601,
+    "without front coding (length + bytes + df varints)": 589331
+   },
+   "C2 postings: document gap varint + tf varint": {
+    "before": 3038992,
+    "after": 864273,
+    "saved": 2174719,
+    "gap_varint_bytes": 484399,
+    "tf_varint_bytes": 379874
+   },
+   "C3 document lengths as varints": {
+    "before": 16336,
+    "after": 6063,
+    "saved": 10273
+   },
+   "C5 offsets section left out (highlights re-tokenized from the hit text)": {
+    "before": 1185351,
+    "saved": 1185351
+   },
+   "C6 positions and offsets both left out (no phrase find)": {
+    "before": 1880059,
+    "saved": 1880059
+   },
+   "deflate of each part (reference: what redundancy is left)": {
+    "postings": 453302,
+    "positions": 470365,
+    "offsets": 152930
+   },
+   "C1+C2+C3 saved": 3923593,
+   "C1+C2+C3+C5 saved": 5108944
+  },
+  "D state refers to the source table": {
+   "state_before": 24805,
+   "files_shared": 232,
+   "files": 232,
+   "saved (sha256 + path + size per shared file)": 16276,
+   "deflate of the whole state section (reference)": 12003
+  },
+  "F filename catalog without derivable bytes": {
+   "catalog_before": 20566,
+   "saved (stem text and copied chunk ids)": 7249,
+   "note": "a catalog record could be (body anchor ordinal) only; paths, stems, ids, lines and labels are the anchor chunk's"
+  }
+ }
+}

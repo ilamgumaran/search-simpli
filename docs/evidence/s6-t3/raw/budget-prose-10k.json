@@ -1,0 +1,113 @@
+{
+ "index": "prose-10k",
+ "total_bytes": 68047830,
+ "files": [
+  {
+   "file": "INDEX-STATE.json",
+   "bytes": 94,
+   "parts": {
+    "whole file": 94
+   },
+   "counts": {}
+  },
+  {
+   "file": "MANIFEST",
+   "bytes": 576,
+   "parts": {
+    "whole file": 576
+   },
+   "counts": {}
+  },
+  {
+   "file": "WRITER.LOCK",
+   "bytes": 0,
+   "parts": {
+    "whole file": 0
+   },
+   "counts": {}
+  },
+  {
+   "file": "documents-1.hybseg",
+   "bytes": 20071912,
+   "parts": {
+    "header": 36,
+    "record lengths (id, path, text, vector, labels, section path: 6 x u32)": 450384,
+    "record lines (start, end, heading: 3 x u32)": 225192,
+    "record chunker index and section depth (2 x u16)": 75064,
+    "record source_doc_index (u32)": 75064,
+    "chunk ids (20 hex)": 375320,
+    "paths": 615294,
+    "chunk text": 17818611,
+    "required labels": 0,
+    "vectors": 0,
+    "section paths (heading texts)": 436947
+   },
+   "counts": {
+    "record_version": 4,
+    "records": 18766,
+    "vector_dimensions": 0
+   }
+  },
+  {
+   "file": "lexical-1.hyblex",
+   "bytes": 28358524,
+   "parts": {
+    "header": 80,
+    "1 document lengths (u32 each)": 75064,
+    "2 dictionary: term length + df (2 x u32)": 24920,
+    "2 dictionary: posting start + count (2 x u64)": 49840,
+    "2 dictionary: term bytes": 19973,
+    "3 postings: document index (u32)": 8954164,
+    "3 postings: term frequency (u32)": 8954164,
+    "4 positions: first ordinal per posting (varint)": 2833310,
+    "4 positions: later ordinal gaps (varints)": 998015,
+    "5 offsets: token count per document (u32)": 75064,
+    "5 offsets: start gap varints": 3186965,
+    "5 offsets: length varints": 3186965
+   },
+   "counts": {
+    "documents": 18766,
+    "terms": 3115,
+    "postings": 2238541,
+    "tokens": 3186965,
+    "term_bytes": 19973
+   }
+  },
+  {
+   "file": "source-1.hybsrc",
+   "bytes": 18529034,
+   "parts": {
+    "header": 48,
+    "file table: offsets, lengths, line count (u32 + 3 x u64 + u32)": 320000,
+    "file table: sha256 (32 bytes)": 320000,
+    "file table: encoding + reserved (4 bytes)": 40000,
+    "file table: paths": 327531,
+    "line maps (varints)": 277431,
+    "text (original file bytes)": 17244024
+   },
+   "counts": {
+    "files": 10000,
+    "lines": 247206
+   }
+  },
+  {
+   "file": "state-1.hybstate",
+   "bytes": 1087690,
+   "parts": {
+    "header": 32,
+    "payload header": 40,
+    "string table": 63,
+    "roots (24 bytes each)": 24,
+    "file records: sha256 (32 bytes)": 320000,
+    "file records: root, flags, size, mtime, chunks, chunker, labels, lengths (44 bytes)": 440000,
+    "label references": 0,
+    "paths (and moved_from)": 327531
+   },
+   "counts": {
+    "files": 10000,
+    "strings": 5,
+    "roots": 1
+   }
+  }
+ ]
+}

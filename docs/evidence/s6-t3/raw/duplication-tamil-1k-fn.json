@@ -1,0 +1,38 @@
+{
+ "index": "tamil-1k-fn",
+ "total_bytes": 9521760,
+ "chunk_text_bytes": 3247776,
+ "source_text_bytes": 3250702,
+ "chunks": 1963,
+ "chunks_found_in_source": 1963,
+ "chunk_text_bytes_found_in_source": 3247776,
+ "chunk_text_bytes_not_found": 0,
+ "distinct_file_bytes_covered_by_chunks": 3247776,
+ "chunk_overlap_bytes": 0,
+ "source_bytes_not_in_any_chunk": 2926,
+ "paths": {
+  "documents (one per chunk)": 41223,
+  "distinct paths in documents": 21000,
+  "source file table": 21000,
+  "state": 21000
+ },
+ "state_repeats": {
+  "sha256 also in source table (32 B per file)": 32000,
+  "paths also in source table": 21000,
+  "size also source text_length (8 B per file)": 8000,
+  "chunks count also derivable from documents (4 B per file)": 4000,
+  "chunker also in documents chunker_index (4 B per file)": 4000,
+  "files whose state sha256 equals the source table's": 1000
+ },
+ "filename_catalog_repeats": {
+  "paths": 21000,
+  "chunk ids copied from body anchors": 20000,
+  "stems (record text, derivable from paths)": 9000,
+  "records": 1000
+ },
+ "dictionary_redundant": {
+  "posting count equals df (u64 per term)": 172800,
+  "posting start equals running sum of counts (u64 per term)": 172800
+ },
+ "section_paths_bytes": 65251
+}
