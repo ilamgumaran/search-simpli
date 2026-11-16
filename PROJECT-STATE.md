@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-14 (S5-T12, `both` no longer walks the scope when nothing can be hidden, review R07; part 1 alone after the re-ruling (the lazy view failed the fixed noise rule and was reverted); engine only, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; verified and merged 2026-11-14 EST as `5a101b4`)
+Last updated: 2026-11-16 (S6-T1, a front door for contributors and the layer boundary checked in CI, objective plan items A and B1; documents, one checker, its tests and one CI step; no file under `zig/`, `contracts/`, `bindings/` or `src/` changed, natives and contracts 2.7.0 unchanged; verified and merged 2026-11-16 as `59d048e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,32 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## A front door for contributors and the layer check (S6-T1, objective plan A and B1, 2026-11-16; verified and merged)
+
+**Verified and merged 16 Nov as `59d048e`** ([second Verdict](docs/tasks/S6-T1.md), PASS on `64db476`). The first Verdict failed `69352f2`: imports split over lines, written with a space or through `../src/` passed the checker. The rework reads each file as Zig tokens and resolves every target; the verifier's thirteen plants against it are all caught or correctly ignored, and CI is green.
+
+[Task and Report](docs/tasks/S6-T1.md). Documents, one checker and one CI step; no file under `zig/`,
+`contracts/`, `bindings/` or `src/` changed, so the native digest (`7bb71531…`) and contracts 2.7.0 are as before.
+
+- **Layers.** [docs/layers.md](docs/layers.md) assigns all 43 non-test, non-benchmark files of `zig/src/`:
+  34 core, 4 operations (`service.zig`, `ops.zig`, `report.zig`, `filename_response.zig`), 5 interfaces
+  (`abi.zig`, `cli.zig`, `main.zig`, `mcp.zig`, `rpc.zig`); `root.zig` and `nfc_dump.zig` are exempt by name,
+  `*_test.zig` and `*_bench.zig` by pattern. No core file imports operations or an interface, and no operations
+  file imports an interface. Six imports between interfaces are allowed: `main.zig` → `cli.zig`, `rpc.zig`,
+  `mcp.zig` (the executable's entry, by design) and three as debt, `mcp.zig` → `cli.zig`, `mcp.zig` → `rpc.zig`,
+  `abi.zig` → `rpc.zig` (the plan named only the first; a 03-next row removes them).
+- **The check.** `python3 scripts/check_layers.py` fails, naming file and line, on an import against the
+  direction, an import between interfaces not allowed, an unassigned or vanished file, a stale allowed pair, and
+  a `docs/layers.md` table that differs from the script's (`--write-doc` regenerates it). It runs in the `checks`
+  job and through `tests/test_check_layers.py`.
+- **Documents.** `README.md` is a front door (what it is, a five-minute start, interfaces, layers, measured and
+  missing); its previous text is kept unchanged in wording in [docs/status-history.md](docs/status-history.md).
+  [CONTRIBUTING.md](CONTRIBUTING.md) gives the toolchain, the suites' commands, the task-file rule, the evidence
+  and privacy rules, capability documents and the native digest. The roadmap points to the plan; `docs/README.md`
+  and 03-next name the new documents and the plan's order.
+- **Measured here:** `searchd` built `ReleaseSmall` on macOS arm64 is 1,095,880 B (1.05 MiB; the plan's "under
+  1 MiB" is corrected to this); the build took 10.59 s with empty Zig caches.
 
 ## `both` skips the scope walk when nothing can be hidden (S5-T12, review R07, 2026-11-14; part 1 alone after the re-ruling; verified and merged)
 
