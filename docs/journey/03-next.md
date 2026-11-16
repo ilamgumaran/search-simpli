@@ -382,6 +382,7 @@ at the same time. E-01A is the safe intake half of exactly that.
 | **CFT-03** — CAP-12 interaction ledger vs INV-09 | The "capture is cheap and reversible" claim is unmeasured | Measure Stage-1 capture overhead, then a maintainer confirms INV-09 compliance |
 | **CFT-09** — CAP-15 durable path vs INV-04 | `CON-03` and the Zig manifest/`index_status` do not carry a chunker id/version | Add a versioned chunker-identity field through interchange → manifest/status, with a migration plan. Until then CAP-15 is **Python-only** |
 | **CAP-14 threshold** | No negative-bearing judged corpus | E-01 + E-02 |
+| **CAP-21 — host-supplied vectors for a `searchd`-built index (plan item E; drafted by S6-T6)** | Proposed, not approved; CFT-24 (INV-09): J2 has no semantic slice, and the only evidence that vectors help is the 20-query mixed diagnostic. Its open decisions O-1 to O-10 (two-phase attach, separate vector section, identity on every query vector, lexical fallback for a hybrid request with no vector) await the maintainer | The maintainer rules on [CAP-21](../requirements/cap-21-host-supplied-vectors.md) §11; then a task authors the J2 semantic slice and measures hybrid against lexical through the existing import path (CAP-21 §9 step 0); only a pass there files the build. D2-5 first, since two-phase doubles the generations an update leaves |
 
 ## Open loose end
 

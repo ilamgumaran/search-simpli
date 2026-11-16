@@ -157,6 +157,8 @@ embedding boundary and INV rules). The engine does not run a model. A
 dependency-free native provider (the PPMI baseline) is considered only after the
 host-supplied path is measured on a judged set. Capability document first.
 
+Drafted by S6-T6 as [CAP-21](../requirements/cap-21-host-supplied-vectors.md) (Proposed, pending approval; two-phase attach recommended; blocked on a J2 semantic slice).
+
 ### F. Web (objective 4)
 
 A `wasm32` build of the core with an in-memory index and a small JavaScript
