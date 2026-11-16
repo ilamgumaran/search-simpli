@@ -208,17 +208,31 @@ pub fn buildCarried(allocator: std.mem.Allocator, catalog_documents: []hybrid.Do
 /// The full build from a catalog `group` returned: every stem tokenized,
 /// the filename lexical index built, both sections encoded.
 pub fn buildFromCatalog(allocator: std.mem.Allocator, docs: []hybrid.Document, analyzer_id: []const u8, marks: anytype) !Built {
+    return buildFromCatalogAs(allocator, docs, analyzer_id, marks, .v3);
+}
+
+/// S6-T4: `import-json`'s file-name sections. Its manifest never sets bit 5
+/// (`lexical_v3`), so its file-name lexical section stays `HYBLEX01` in
+/// first-seen order, byte for byte as before v3.
+pub fn buildV1(allocator: std.mem.Allocator, documents: []const hybrid.Document, analyzer_id: []const u8) !Built {
+    return buildFromCatalogAs(allocator, try group(allocator, documents), analyzer_id, NoMarks{}, .v1);
+}
+
+const LexicalFormat = enum { v1, v3 };
+
+fn buildFromCatalogAs(allocator: std.mem.Allocator, docs: []hybrid.Document, analyzer_id: []const u8, marks: anytype, comptime format: LexicalFormat) !Built {
     const token_lists = try allocator.alloc([][]const u8, docs.len);
     for (docs, 0..) |doc, j| token_lists[j] = try tokenize(allocator, analyzer_id, doc.text);
     marks.mark("tokenize");
+    const built_index = try lexical_build.build(allocator, docs, token_lists);
     // S6-T4: `HYBLEX03` needs the dictionary sorted by bytes.
-    const lexical_index = try lexical_segment.sortedForV3(allocator, try lexical_build.build(allocator, docs, token_lists));
+    const lexical_index = if (format == .v3) try lexical_segment.sortedForV3(allocator, built_index) else built_index;
     marks.mark("lexical_build");
     const catalog_len = try segment.encodedLength(docs);
     const catalog_buffer = try allocator.alloc(u8, catalog_len);
     const catalog = try segment.encode(docs, catalog_buffer);
     marks.mark("encode_catalog");
-    const lexical = try lexical_segment.encodeV3Alloc(allocator, lexical_index);
+    const lexical = if (format == .v3) try lexical_segment.encodeV3Alloc(allocator, lexical_index) else try lexical_segment.encodeAlloc(allocator, lexical_index);
     marks.mark("encode_lexical");
     return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = docs, .decoded_lexical = lexical_index };
 }

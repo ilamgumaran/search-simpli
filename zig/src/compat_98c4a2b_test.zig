@@ -432,3 +432,25 @@ test "S6-T4 ruling 4: manifest bit 5 and the lexical sections must agree (a v3 s
         try std.testing.expectError(error.InvalidFilenameLexicalSection, opened.engine.queryFields(a, "garden", .filename, .{ .top_k = 3, .retrieval_mode = .lexical }));
     } else |err| try std.testing.expectEqual(error.InvalidFilenameLexicalSection, err);
 }
+
+test "S6-T4: import-json with the file-name channel writes what 98c4a2b wrote (manifest without bit 5, HYBLEX01 sections), byte for byte" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const imported_98c4a2b = "../tests/fixtures/import-filename-98c4a2b";
+    var want = try std.Io.Dir.cwd().openDir(io, imported_98c4a2b, .{});
+    defer want.close(io);
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    _ = try @import("importer.zig").importJson(tmp.dir, io, a, try want.readFileAlloc(io, "interchange.json", a, .unlimited));
+    for ([_][]const u8{ "MANIFEST", "documents-1.hybseg", "lexical-1.hyblex", "filenames-1.hybseg", "filename-lexical-1.hyblex" }) |name| {
+        try std.testing.expectEqualSlices(u8, try want.readFileAlloc(io, name, a, .unlimited), try tmp.dir.readFileAlloc(io, name, a, .unlimited));
+    }
+    const metadata = try manifest.decode(try tmp.dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    try std.testing.expect(!metadata.lexical_v3 and metadata.filename != null);
+    try std.testing.expectEqualStrings(lexical_segment.magic, try magicOf(a, tmp.dir, metadata.filename.?.lexical_file));
+    // It opens and answers a file-name query under this library.
+    const opened = try snapshot_open.openScoped(a, io, tmp.dir);
+    defer opened.folder.close();
+    try std.testing.expect((try opened.engine.queryFields(a, "budget", .filename, .{ .top_k = 3, .retrieval_mode = .lexical })).len > 0);
+}
