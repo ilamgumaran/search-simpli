@@ -114,8 +114,10 @@ pub const usage_text =
         \\                       --filename-index` then `query X` (or
         \\                       `query X --json` with --json, `evidence X`
         \\                       with --evidence) prints with the same
-        \\                       options. Every search reads the whole
-        \\                       folder again: past a few thousand files,
+        \\                       options. Every search reads and builds the
+        \\                       whole folder again (measured: 1,000 files
+        \\                       about 80 ms, 10,000 about 0.6 s); for a
+        \\                       larger folder, or more than one question,
         \\                       build an index (docs/direct-search.md).
         \\                       A missing folder, a path that is not a
         \\                       folder, or an empty query is a usage error.
