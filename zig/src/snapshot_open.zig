@@ -34,18 +34,55 @@ pub const Allocators = struct {
 /// (and the decoded `Engine`) are allocated from `allocator`; the intended
 /// use is a one-shot CLI command or test with an arena, discarded wholesale.
 pub fn open(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !engine.Engine {
-    const loaded = try loadEngine(.one(allocator), io, dir, .{});
+    return openFrom(allocator, io, .{ .dir = dir });
+}
+
+/// S6-T2: a generation's sections held in memory, never published
+/// (`searchd search`: `apply.buildDetached`'s `Built`). The opens below read
+/// them where `open` and `openScoped` read a directory's files; the decoded
+/// engine points into them, so they must outlive it.
+pub const Sections = struct {
+    manifest: []const u8,
+    documents: []const u8,
+    lexical: []const u8,
+    source: ?[]const u8 = null,
+    catalog: ?[]const u8 = null,
+    filename_lexical: ?[]const u8 = null,
+};
+
+/// Where an open reads the generation: a directory's current generation, or
+/// sections in memory (S6-T2).
+const From = union(enum) {
+    dir: std.Io.Dir,
+    memory: Sections,
+};
+
+/// S6-T2: `open` over sections in memory (the same checks, decode and
+/// eager loads; nothing is read from disk).
+pub fn openDetached(allocator: std.mem.Allocator, io: std.Io, sections: Sections) !engine.Engine {
+    return openFrom(allocator, io, .{ .memory = sections });
+}
+
+fn openFrom(allocator: std.mem.Allocator, io: std.Io, from: From) !engine.Engine {
+    const loaded = try loadEngine(.one(allocator), io, from, .{});
     var opened = loaded.engine;
     if (loaded.metadata.meta.len != 0) opened.roots = (try manifest.parseMeta(allocator, loaded.metadata.meta)).roots;
     // The one-shot open is eager: it also loads the filename sections now
     // (`openScoped` defers them to the first filename query, S4-T2 R4).
-    if (loaded.metadata.filename) |f| {
-        const catalog_file = try dir.openFile(io, f.catalog_file, .{});
-        defer catalog_file.close(io);
-        const lexical_file = try dir.openFile(io, f.lexical_file, .{});
-        defer lexical_file.close(io);
-        opened.filename_decoded = try filename_field.load(allocator, io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index);
-    }
+    if (loaded.metadata.filename) |f| switch (from) {
+        .dir => |dir| {
+            const catalog_file = try dir.openFile(io, f.catalog_file, .{});
+            defer catalog_file.close(io);
+            const lexical_file = try dir.openFile(io, f.lexical_file, .{});
+            defer lexical_file.close(io);
+            opened.filename_decoded = try filename_field.load(allocator, io, catalog_file, lexical_file, loaded.metadata, opened.documents, opened.lexical_index);
+        },
+        .memory => |sections| {
+            const catalog = sections.catalog orelse return error.FileNotFound;
+            const lexical = sections.filename_lexical orelse return error.FileNotFound;
+            opened.filename_decoded = try filename_field.loadBytes(allocator, catalog, lexical, loaded.metadata, opened.documents, opened.lexical_index);
+        },
+    };
     // S3-T2: one pass over sections 4 and 5, so `find` reads only its own
     // terms' ordinals and its hits' offsets.
     if (opened.lexical_index.positions != null) opened.position_tables = try postings.buildPositionTables(allocator, opened.lexical_index);
@@ -120,7 +157,11 @@ pub const OpenBlock = struct {
 /// that (`docs/tasks/S4-T8.md`). The manifest is read once into a buffer of
 /// its own (its counts size the block), then copied into the block and
 /// decoded from there; that buffer is freed before the open returns.
-fn loadEngine(allocators: Allocators, io: std.Io, dir: std.Io.Dir, options: engine.Engine.OpenOptions) !Loaded {
+fn loadEngine(allocators: Allocators, io: std.Io, from: From, options: engine.Engine.OpenOptions) !Loaded {
+    const dir = switch (from) {
+        .dir => |dir| dir,
+        .memory => |sections| return loadEngineMemory(allocators, sections, options),
+    };
     const blocks = allocators.blocks;
     var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
     const manifest_stat = try manifest_file.stat(io);
@@ -154,7 +195,38 @@ fn loadEngine(allocators: Allocators, io: std.Io, dir: std.Io.Dir, options: engi
     // source-reading operations (`read_span`, `outline`) answer `CAPACITY`
     // (`openSource` reports why). A writer still treats it as a missing
     // section and heals it (`index --update`, `apply_changes`).
+    return decodeLoaded(block, layout, snapshot, options);
+}
 
+/// S6-T2: `loadEngine` over sections in memory: the manifest is copied into
+/// the block as from its file, and the documents and lexical sections are
+/// used in place, so the block holds the decoded tables and the manifest
+/// (`OpenBlock`'s layout with the two section areas empty). Then the same
+/// checks and decode (`decodeLoaded`).
+fn loadEngineMemory(allocators: Allocators, sections: Sections, options: engine.Engine.OpenOptions) !Loaded {
+    var tables_only = try manifest.decode(sections.manifest);
+    tables_only.documents_bytes = 0;
+    tables_only.lexical_bytes = 0;
+    const layout = try OpenBlock.of(tables_only, sections.manifest.len);
+    const block = try allocators.blocks.alignedAlloc(u8, .fromByteUnits(engine.open_block_alignment), layout.total);
+    errdefer allocators.blocks.free(block);
+    const manifest_encoded = block[layout.manifest..][0..sections.manifest.len];
+    @memcpy(manifest_encoded, sections.manifest);
+    // The section lengths are checked against the manifest by `openWith`
+    // (`manifest.validateSnapshotHeaders`). `LoadedSnapshot` holds mutable
+    // slices, but `openWith` only reads them (its checks and both decoders
+    // take `[]const u8`), so the sections are used in place, not copied.
+    return decodeLoaded(block, layout, .{
+        .metadata = try manifest.decode(manifest_encoded),
+        .manifest_encoded = manifest_encoded,
+        .documents_encoded = @constCast(sections.documents),
+        .lexical_encoded = @constCast(sections.lexical),
+    }, options);
+}
+
+/// The decode both loads share: `Engine.openWith` into the block's tables.
+fn decodeLoaded(block: engine.OpenBlockBytes, layout: OpenBlock, snapshot: publication.LoadedSnapshot, options: engine.Engine.OpenOptions) !Loaded {
+    const metadata = snapshot.metadata;
     const vector_count = metadata.document_count * metadata.vector_dimensions; // checked by `OpenBlock.of`
     var opened = try engine.Engine.openWith(
         snapshot,
@@ -234,8 +306,19 @@ pub fn openScoped(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Sc
 /// `gpa`) and the rest from `allocators.arena`. The owner calls `close`
 /// before it releases the arena.
 pub fn openScopedWith(allocators: Allocators, io: std.Io, dir: std.Io.Dir) !Scoped {
+    return openScopedFrom(allocators, io, .{ .dir = dir });
+}
+
+/// S6-T2: `openScoped` over sections in memory: the same checks, decode and
+/// scope data; the source and filename sections are checked and decoded
+/// from their bytes at their first use, as from their files.
+pub fn openScopedDetached(allocator: std.mem.Allocator, io: std.Io, sections: Sections) !Scoped {
+    return openScopedFrom(.one(allocator), io, .{ .memory = sections });
+}
+
+fn openScopedFrom(allocators: Allocators, io: std.Io, from: From) !Scoped {
     const allocator = allocators.arena;
-    const loaded = try loadEngine(allocators, io, dir, .{ .validate_positions = false });
+    const loaded = try loadEngine(allocators, io, from, .{ .validate_positions = false });
     errdefer allocators.blocks.free(loaded.engine.open_block.?);
     var opened_engine = loaded.engine;
     const metadata = loaded.metadata;
@@ -252,15 +335,22 @@ pub fn openScopedWith(allocators: Allocators, io: std.Io, dir: std.Io.Dir) !Scop
         .source_checksum = metadata.source_checksum,
         .xxh3_sections = metadata.xxh3_sections,
     };
-    if (metadata.hasSource()) {
-        if (dir.openFile(io, metadata.source_file, .{})) |file| {
+    if (metadata.hasSource()) switch (from) {
+        .dir => |dir| if (dir.openFile(io, metadata.source_file, .{})) |file| {
             loads.source_file = file;
         } else |err| {
             // A lost file is known now: the source is unavailable from the
             // start, exactly as a failed load would leave it.
             loads.source_error = @errorName(err);
             loads.source_done.store(true, .release);
-        }
+        },
+        // S6-T2: the bytes, checked at the first use as the file's would be.
+        .memory => |sections| if (sections.source) |bytes| {
+            loads.source_memory = bytes;
+        } else {
+            loads.source_error = "FileNotFound";
+            loads.source_done.store(true, .release);
+        },
     } else {
         loads.source_done.store(true, .release);
     }
@@ -268,17 +358,26 @@ pub fn openScopedWith(allocators: Allocators, io: std.Io, dir: std.Io.Dir) !Scop
     // S4-T2 R4: the filename sections' files, opened (not read) like the
     // source section's, so the first filename query reads this generation's
     // own bytes even after a writer pruned them.
-    if (metadata.filename) |f| {
-        loads.filename_manifest = metadata;
-        loads.filename_catalog_file = dir.openFile(io, f.catalog_file, .{}) catch |err| blk: {
-            loads.filename_error = err;
-            break :blk null;
-        };
-        if (loads.filename_error == null) loads.filename_lexical_file = dir.openFile(io, f.lexical_file, .{}) catch |err| blk: {
-            loads.filename_error = err;
-            break :blk null;
-        };
-    }
+    if (metadata.filename) |f| switch (from) {
+        .dir => |dir| {
+            loads.filename_manifest = metadata;
+            loads.filename_catalog_file = dir.openFile(io, f.catalog_file, .{}) catch |err| blk: {
+                loads.filename_error = err;
+                break :blk null;
+            };
+            if (loads.filename_error == null) loads.filename_lexical_file = dir.openFile(io, f.lexical_file, .{}) catch |err| blk: {
+                loads.filename_error = err;
+                break :blk null;
+            };
+        },
+        .memory => |sections| {
+            loads.filename_manifest = metadata;
+            if (sections.catalog != null and sections.filename_lexical != null) {
+                loads.filename_catalog_memory = sections.catalog;
+                loads.filename_lexical_memory = sections.filename_lexical;
+            } else loads.filename_error = error.FileNotFound;
+        },
+    };
     errdefer if (loads.filename_catalog_file) |file| file.close(io);
     errdefer if (loads.filename_lexical_file) |file| file.close(io);
     const folder = try allocator.create(scope.Folder);

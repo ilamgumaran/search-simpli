@@ -42,7 +42,9 @@ python3 search.py query .search/index.json "how does hybrid search combine resul
 
 On an Apple-silicon Mac the `ReleaseSmall` build took 10.6 s with an empty Zig cache
 (S6-T1, 16 Nov 2026). Point `index` at your own folder to search it; `--update` re-reads
-only changed files, and `--filename-index` adds search by file name.
+only changed files, and `--filename-index` adds search by file name. For a one-off question,
+`searchd search <folder> "<query>"` answers over the folder with no index at all
+([direct search](docs/direct-search.md)).
 
 ## Interfaces
 
@@ -53,6 +55,7 @@ compares them). "Run on" names where this repository's suites or recorded tasks 
 | Interface | Entry | Run on | Read |
 |---|---|---|---|
 | Command line | `searchd index`, `query`, `evidence`, `find`, `outline`, `read-span`, `list-files`, `apply` | macOS arm64; Linux x86_64 (CI) | `searchd --help`, [zig/README.md](zig/README.md) |
+| Command line, no index | `searchd search <folder> "<query>"`: built in memory, writes nothing, the same answers as `index` then `query` | macOS arm64; Linux x86_64 (CI) | [docs/direct-search.md](docs/direct-search.md) |
 | JSON-RPC over stdio | `searchd serve <dir>` | macOS arm64; Linux x86_64 (CI) | [docs/zig-rpc-service.md](docs/zig-rpc-service.md) |
 | JSON-RPC over loopback HTTP | `searchd serve <dir> --http 127.0.0.1:<port>` | macOS arm64, by hand ([S1-T1](docs/tasks/S1-T1.md)); no suite starts it | [docs/zig-rpc-service.md](docs/zig-rpc-service.md) |
 | MCP | `searchd mcp <dir>` | macOS arm64 (an agent run, [S5-T10](docs/tasks/S5-T10.md)); Linux x86_64 (CI) | [docs/mcp-server.md](docs/mcp-server.md) |
@@ -78,20 +81,22 @@ and says how to add an interface or a core feature; `scripts/check_layers.py` ch
 
 Measured, macOS arm64 unless stated (each number is linked to its record):
 
-- **Size.** `searchd` built `ReleaseSmall` is 1,095,880 B ([S6-T1](docs/tasks/S6-T1.md));
-  the shipped arm64 libraries are 916,928 B (Android) to 954,120 B (macOS)
+- **Size.** `searchd` built `ReleaseSmall` is 1,096,808 B ([S6-T2](docs/tasks/S6-T2.md));
+  the shipped arm64 libraries are 919,840 B (Android) to 954,088 B (macOS)
   ([`native/`](bindings/dart/search_simpli/native/)).
 - **Reading a 10,000-file index.** A whole `searchd query` process takes about 0.02 s;
   a warm query 0.1–0.2 ms ([objective plan](docs/plans/2026-11-16-objective-plan.md#where-the-engine-stands-against-it)).
+- **Searching a folder directly.** One `searchd search` answers within 100 ms up to about
+  1,000 files and within 1 s up to about 10,000 (149 MiB); past that, or for a second
+  question, build an index ([direct search](docs/direct-search.md#when-to-use-it-and-when-to-build-an-index)).
 - **Disk.** That index is 4.44 times its corpus, a generated one with a large vocabulary
   ([objective plan](docs/plans/2026-11-16-objective-plan.md#disk-use-measured)).
 - **Relevance.** J2, a judged fixture of 290 queries over invented files, runs in CI
   through the Python reference and a `ReleaseSmall` `searchd` against a committed baseline
   ([fixtures/j2/](fixtures/j2/README.md)). It is authored, not drawn from real use.
 
-Not there yet, each an item of the [objective plan](docs/plans/2026-11-16-objective-plan.md):
-searching a folder directly without building an index first
-([C](docs/plans/2026-11-16-objective-plan.md#c-search-a-folder-directly-objective-1));
+Not there yet, each an item of the [objective plan](docs/plans/2026-11-16-objective-plan.md)
+(searching a folder directly, item C, is there: [direct search](docs/direct-search.md)):
 a smaller index ([D](docs/plans/2026-11-16-objective-plan.md#d-a-smaller-index-objective-2));
 semantic matches for an index `searchd` built, which is lexical only today
 ([E](docs/plans/2026-11-16-objective-plan.md#e-semantic-matches-for-a-searchd-built-index-objective-1));

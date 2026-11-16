@@ -470,6 +470,15 @@ pub const Loads = struct {
     key_map: fold.KeyMap = undefined,
     key_map_loads: u32 = 0,
 
+    /// S6-T2 (`searchd search`, a generation built in memory and never
+    /// published): the source section's and the filename sections' bytes in
+    /// place of their files. The first use checks and decodes them as it
+    /// would the files' bytes. Last, after the fields the query paths read
+    /// (the S4-T10 note above).
+    source_memory: ?[]const u8 = null,
+    filename_catalog_memory: ?[]const u8 = null,
+    filename_lexical_memory: ?[]const u8 = null,
+
     fn lock(loads: *Loads) void {
         loads.mutex.lockUncancelable(loads.io);
     }
@@ -488,6 +497,7 @@ pub const Loads = struct {
 
     fn readSource(loads: *Loads) error{OutOfMemory}!?[]const u8 {
         if (loads.source_error) |name| return name; // the open could not open the file
+        if (loads.source_memory) |bytes| return loads.readSourceMemory(bytes);
         const file = loads.source_file orelse return null;
         const stat = file.stat(loads.io) catch |err| return @errorName(err);
         if (stat.size != loads.source_bytes) return "SourceSectionSizeMismatch";
@@ -511,6 +521,26 @@ pub const Loads = struct {
         loads.source_block = streamed.block;
         kept = true;
         return null;
+    }
+
+    /// S6-T2: `readSource`'s checks over the section's bytes in memory (a
+    /// resident section, as `snapshot_open.openSource` opens one).
+    fn readSourceMemory(loads: *Loads, bytes: []const u8) error{OutOfMemory}!?[]const u8 {
+        if (bytes.len != loads.source_bytes) return "SourceSectionSizeMismatch";
+        const section = source.openIndexed(loads.allocator, bytes) catch |err| switch (err) {
+            error.OutOfMemory => return error.OutOfMemory,
+            else => return @errorName(err),
+        };
+        if (section.checksum != loads.source_checksum) return "SourceSectionChecksumMismatch";
+        if (!loads.xxh3_sections and section.checksum_kind != .fnv1a64) return "InvalidSourceSection";
+        loads.source = section;
+        return null;
+    }
+
+    /// The filename sections, from their files or (S6-T2) their bytes.
+    fn loadFilename(loads: *Loads, allocator: std.mem.Allocator, metadata: manifest.Manifest) !filename_field.Decoded {
+        if (loads.filename_catalog_memory) |catalog| return filename_field.loadBytes(allocator, catalog, loads.filename_lexical_memory.?, metadata, loads.documents, loads.index);
+        return filename_field.load(allocator, loads.io, loads.filename_catalog_file.?, loads.filename_lexical_file.?, metadata, loads.documents, loads.index);
     }
 };
 
@@ -688,11 +718,11 @@ pub const Folder = struct {
                     var kept = false;
                     defer if (!kept) loads.blocks.free(block);
                     var fixed = std.heap.FixedBufferAllocator.init(block);
-                    const from_block = filename_field.load(fixed.allocator(), loads.io, loads.filename_catalog_file.?, loads.filename_lexical_file.?, metadata, loads.documents, loads.index);
+                    const from_block = loads.loadFilename(fixed.allocator(), metadata);
                     const result = if (from_block) |decoded| decoded else |err| switch (err) {
                         // Never expected (the size is computed from the same
                         // manifest); the handle's arena then.
-                        error.OutOfMemory => filename_field.load(loads.allocator, loads.io, loads.filename_catalog_file.?, loads.filename_lexical_file.?, metadata, loads.documents, loads.index),
+                        error.OutOfMemory => loads.loadFilename(loads.allocator, metadata),
                         else => from_block,
                     };
                     if (from_block) |_| {

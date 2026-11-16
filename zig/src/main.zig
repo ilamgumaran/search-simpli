@@ -77,6 +77,8 @@ pub fn main(init: std.process.Init) !void {
             };
             try stdout_writer.flush();
         },
+        // S6-T2: search a folder directly; 2 after a usage line.
+        .search => |a| try runFolderCommand(init, a, cli.runSearchFolder),
         // S3-T4: the folder-knowledge commands; 1 after a refusal's stderr line.
         .find => |a| try runFolderCommand(init, a, cli.runFind),
         .outline => |a| try runFolderCommand(init, a, cli.runOutline),

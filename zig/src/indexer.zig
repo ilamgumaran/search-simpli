@@ -187,13 +187,35 @@ fn walkAndApply(
     fresh: bool,
     generation: ?u64,
 ) !IncrementalReport {
+    const walked = try walkBatch(allocator, io, root, caps);
+    const outcome = try apply.applyBatch(allocator, io, out_dir, walked.batch(), walkOptions(analyzer, max_chars, overlap_lines, caps, fresh, generation));
+    return reportOf(allocator, outcome);
+}
+
+/// The batch `index` applies for a walk of `root`: one change per candidate
+/// file in the one root `r-legacy`.
+const Walked = struct {
+    roots: *const [1]apply.RootDecl,
+    changes: []const apply.Change,
+
+    fn batch(walked: Walked) apply.Batch {
+        return .{ .roots = walked.roots, .changes = walked.changes };
+    }
+};
+
+fn walkBatch(allocator: std.mem.Allocator, io: std.Io, root: std.Io.Dir, caps: Caps) !Walked {
     const paths = try collectCandidatePaths(allocator, io, root);
     const changes = try allocator.alloc(apply.Change, paths.len);
     for (paths, changes) |path, *change| {
         change.* = .{ .op = .change, .root_id = legacy_root_id, .path = path, .content = .{ .walk = .{ .dir = root, .sub_path = path } } };
     }
-    const roots = [_]apply.RootDecl{.{ .root_id = legacy_root_id, .label = "folder", .kind = "local", .retain_source = caps.retain_source }};
-    const outcome = try apply.applyBatch(allocator, io, out_dir, .{ .roots = &roots, .changes = changes }, .{
+    const roots = try allocator.create([1]apply.RootDecl);
+    roots.* = .{.{ .root_id = legacy_root_id, .label = "folder", .kind = "local", .retain_source = caps.retain_source }};
+    return .{ .roots = roots, .changes = changes };
+}
+
+fn walkOptions(analyzer: AnalyzerId, max_chars: usize, overlap_lines: usize, caps: Caps, fresh: bool, generation: ?u64) apply.Options {
+    return .{
         .analyzer = analyzer,
         .max_chars = max_chars,
         .overlap_lines = overlap_lines,
@@ -209,7 +231,36 @@ fn walkAndApply(
         .complete_root = legacy_root_id,
         .fresh = fresh,
         .generation = generation,
-    });
+    };
+}
+
+/// S6-T2 (`searchd search`): the generation `indexFolder` would publish for
+/// `root` into an empty directory (generation 1, the same walk, root,
+/// options and caps), built in memory and not published: nothing is
+/// written anywhere. The sections and the report live in `allocator` (an
+/// arena).
+pub fn buildFolderDetached(
+    allocator: std.mem.Allocator,
+    io: std.Io,
+    root: std.Io.Dir,
+    analyzer: AnalyzerId,
+    max_chars: usize,
+    overlap_lines: usize,
+    caps: Caps,
+) !Detached {
+    const walked = try walkBatch(allocator, io, root, caps);
+    return switch (try apply.buildDetached(allocator, io, walked.batch(), walkOptions(analyzer, max_chars, overlap_lines, caps, true, 1))) {
+        .ok => |detached| .{ .sections = detached.sections, .report = try reportOf(allocator, .{ .ok = detached.report }) },
+        .failed => error.ApplyRefused,
+    };
+}
+
+pub const Detached = struct {
+    sections: apply.Built,
+    report: IncrementalReport,
+};
+
+fn reportOf(allocator: std.mem.Allocator, outcome: apply.Outcome) !IncrementalReport {
     const report = switch (outcome) {
         .ok => |r| r,
         .failed => return error.ApplyRefused,
