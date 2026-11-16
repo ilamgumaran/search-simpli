@@ -24,9 +24,9 @@
      "compressed": 7760088,
      "block_table": 8424,
      "section_text_after": 7768512,
-     "compress_ms": 328.6,
-     "decompress_ms_all": 20.8,
-     "decompress_us_per_block": 19.8
+     "compress_ms": 314.6,
+     "decompress_ms_all": 20.7,
+     "decompress_us_per_block": 19.7
     },
     {
      "block_bytes": 65536,
@@ -35,9 +35,9 @@
      "compressed": 7009578,
      "block_table": 2112,
      "section_text_after": 7011690,
-     "compress_ms": 459.7,
-     "decompress_ms_all": 17.8,
-     "decompress_us_per_block": 67.5
+     "compress_ms": 447.3,
+     "decompress_ms_all": 17.6,
+     "decompress_us_per_block": 66.6
     },
     {
      "block_bytes": 262144,
@@ -46,9 +46,9 @@
      "compressed": 6703247,
      "block_table": 528,
      "section_text_after": 6703775,
-     "compress_ms": 506.9,
-     "decompress_ms_all": 14.6,
-     "decompress_us_per_block": 221.5
+     "compress_ms": 494.9,
+     "decompress_ms_all": 14.7,
+     "decompress_us_per_block": 222.3
     },
     {
      "block_bytes": 65536,
@@ -57,9 +57,9 @@
      "compressed": 8042557,
      "block_table": 2112,
      "section_text_after": 8044669,
-     "compress_ms": 103.1,
-     "decompress_ms_all": 18.0,
-     "decompress_us_per_block": 68.3
+     "compress_ms": 102.4,
+     "decompress_ms_all": 17.7,
+     "decompress_us_per_block": 67.1
     },
     {
      "block_bytes": 65536,
@@ -68,9 +68,9 @@
      "compressed": 6998403,
      "block_table": 2112,
      "section_text_after": 7000515,
-     "compress_ms": 570.9,
-     "decompress_ms_all": 19.7,
-     "decompress_us_per_block": 74.8
+     "compress_ms": 536.7,
+     "decompress_ms_all": 17.5,
+     "decompress_us_per_block": 66.5
     }
    ],
    "per_file": {
@@ -79,11 +79,27 @@
     "file_table_extra": 80000,
     "section_text_after": 9176370
    },
+   "file_aligned_64k": {
+    "block_bytes": 65536,
+    "level": 6,
+    "blocks": 272,
+    "compressed": 7021401,
+    "block_table": 2176,
+    "section_text_after": 7023577
+   },
+   "file_aligned_16k": {
+    "block_bytes": 16384,
+    "level": 6,
+    "blocks": 1206,
+    "compressed": 7834112,
+    "block_table": 9648,
+    "section_text_after": 7843760
+   },
    "lz4_style_64k": {
     "compressed": 10875407,
     "block_table": 2112,
     "section_text_after": 10877519,
-    "python_seconds": 2.5
+    "python_seconds": 3.1
    }
   },
   "C lexical coding": {
@@ -100,6 +116,11 @@
     "saved": 13323546,
     "gap_varint_bytes": 2346241,
     "tf_varint_bytes": 2238541
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 17908328,
+    "after": 2904077,
+    "saved": 15004251
    },
    "C3 document lengths as varints": {
     "before": 75064,
@@ -119,8 +140,49 @@
     "positions": 3308581,
     "offsets": 1955643
    },
-   "C1+C2+C3 saved": 13443053,
-   "C1+C2+C3+C5 saved": 19892047
+   "C1+C2b+C3 saved": 15123758,
+   "C1+C2b+C3+C5 saved": 21572752
+  },
+  "F2 filename lexical section, same coding": {
+   "lexical_before": 699297,
+   "C1 dictionary: front-coded terms + df varint (start, count derived)": {
+    "before": 378705,
+    "after": 98645,
+    "saved": 280060,
+    "without front coding (length + bytes + df varints)": 94619
+   },
+   "C2 postings: document gap varint + tf varint": {
+    "before": 280528,
+    "after": 98017,
+    "saved": 182511,
+    "gap_varint_bytes": 62951,
+    "tf_varint_bytes": 35066
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 280528,
+    "after": 67168,
+    "saved": 213360
+   },
+   "C3 document lengths as varints": {
+    "before": 40000,
+    "after": 10000,
+    "saved": 30000
+   },
+   "C5 offsets section left out (highlights re-tokenized from the hit text)": {
+    "before": 0,
+    "saved": 0
+   },
+   "C6 positions and offsets both left out (no phrase find)": {
+    "before": 0,
+    "saved": 0
+   },
+   "deflate of each part (reference: what redundancy is left)": {
+    "postings": 74232,
+    "positions": 0,
+    "offsets": 0
+   },
+   "C1+C2b+C3 saved": 523420,
+   "C1+C2b+C3+C5 saved": 523420
   },
   "D state refers to the source table": {
    "state_before": 1087690,

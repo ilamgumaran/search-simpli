@@ -24,9 +24,9 @@
      "compressed": 629850,
      "block_table": 1592,
      "section_text_after": 631442,
-     "compress_ms": 73.6,
+     "compress_ms": 78.6,
      "decompress_ms_all": 1.9,
-     "decompress_us_per_block": 9.5
+     "decompress_us_per_block": 9.7
     },
     {
      "block_bytes": 65536,
@@ -35,9 +35,9 @@
      "compressed": 577023,
      "block_table": 400,
      "section_text_after": 577423,
-     "compress_ms": 85.5,
+     "compress_ms": 88.5,
      "decompress_ms_all": 1.6,
-     "decompress_us_per_block": 32.5
+     "decompress_us_per_block": 32.3
     },
     {
      "block_bytes": 262144,
@@ -46,9 +46,9 @@
      "compressed": 561086,
      "block_table": 104,
      "section_text_after": 561190,
-     "compress_ms": 89.3,
-     "decompress_ms_all": 1.3,
-     "decompress_us_per_block": 100.3
+     "compress_ms": 93.0,
+     "decompress_ms_all": 1.4,
+     "decompress_us_per_block": 106.1
     },
     {
      "block_bytes": 65536,
@@ -57,9 +57,9 @@
      "compressed": 909846,
      "block_table": 400,
      "section_text_after": 910246,
-     "compress_ms": 14.1,
-     "decompress_ms_all": 2.2,
-     "decompress_us_per_block": 44.3
+     "compress_ms": 14.6,
+     "decompress_ms_all": 2.3,
+     "decompress_us_per_block": 45.7
     },
     {
      "block_bytes": 65536,
@@ -68,9 +68,9 @@
      "compressed": 546461,
      "block_table": 400,
      "section_text_after": 546861,
-     "compress_ms": 460.7,
+     "compress_ms": 477.1,
      "decompress_ms_all": 1.7,
-     "decompress_us_per_block": 33.7
+     "decompress_us_per_block": 33.3
     }
    ],
    "per_file": {
@@ -79,11 +79,27 @@
     "file_table_extra": 8000,
     "section_text_after": 798331
    },
+   "file_aligned_64k": {
+    "block_bytes": 65536,
+    "level": 6,
+    "blocks": 52,
+    "compressed": 577322,
+    "block_table": 416,
+    "section_text_after": 577738
+   },
+   "file_aligned_16k": {
+    "block_bytes": 16384,
+    "level": 6,
+    "blocks": 224,
+    "compressed": 636233,
+    "block_table": 1792,
+    "section_text_after": 638025
+   },
    "lz4_style_64k": {
     "compressed": 1320517,
     "block_table": 400,
     "section_text_after": 1320917,
-    "python_seconds": 0.4
+    "python_seconds": 0.5
    }
   },
   "C lexical coding": {
@@ -100,6 +116,11 @@
     "saved": 647583,
     "gap_varint_bytes": 183408,
     "tf_varint_bytes": 118713
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 949704,
+    "after": 203874,
+    "saved": 745830
    },
    "C3 document lengths as varints": {
     "before": 7852,
@@ -119,8 +140,49 @@
     "positions": 104391,
     "offsets": 71547
    },
-   "C1+C2+C3 saved": 1500491,
-   "C1+C2+C3+C5 saved": 1769323
+   "C1+C2b+C3 saved": 1598738,
+   "C1+C2b+C3+C5 saved": 1867570
+  },
+  "F2 filename lexical section, same coding": {
+   "lexical_before": 49091,
+   "C1 dictionary: front-coded terms + df varint (start, count derived)": {
+    "before": 29027,
+    "after": 4119,
+    "saved": 24908,
+    "without front coding (length + bytes + df varints)": 7006
+   },
+   "C2 postings: document gap varint + tf varint": {
+    "before": 16000,
+    "after": 4872,
+    "saved": 11128,
+    "gap_varint_bytes": 2872,
+    "tf_varint_bytes": 2000
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 16000,
+    "after": 2936,
+    "saved": 13064
+   },
+   "C3 document lengths as varints": {
+    "before": 4000,
+    "after": 1000,
+    "saved": 3000
+   },
+   "C5 offsets section left out (highlights re-tokenized from the hit text)": {
+    "before": 0,
+    "saved": 0
+   },
+   "C6 positions and offsets both left out (no phrase find)": {
+    "before": 0,
+    "saved": 0
+   },
+   "deflate of each part (reference: what redundancy is left)": {
+    "postings": 1506,
+    "positions": 0,
+    "offsets": 0
+   },
+   "C1+C2b+C3 saved": 40972,
+   "C1+C2b+C3+C5 saved": 40972
   },
   "D state refers to the source table": {
    "state_before": 97159,

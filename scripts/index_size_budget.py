@@ -15,6 +15,7 @@ Commands (each prints a JSON document; `--out FILE` writes it there too):
     python3 -I scripts/index_size_budget.py duplication INDEX_DIR [--out FILE]
     python3 -I scripts/index_size_budget.py candidates INDEX_DIR [--lz4] [--out FILE]
     python3 -I scripts/index_size_budget.py codec-blocks INDEX_DIR --blocks-dir DIR
+    python3 -I scripts/index_size_budget.py tables RAW_DIR [--out FILE]
 
 - `budget`: bytes per file and per part; counts (chunks, terms, postings,
   tokens, files).
@@ -556,9 +557,106 @@ def per_file_compress(src: dict, level: int) -> dict:
             "section_text_after": total + 8 * len(src["files"])}
 
 
+def file_aligned_compress(src: dict, block: int, level: int) -> dict:
+    """Raw deflate of blocks that hold whole files: consecutive files are
+    packed until the next would pass `block` bytes; a file larger than
+    `block` is cut into `block`-sized pieces of its own. A one-file update
+    then recompresses only the blocks of the changed file (and its packed
+    neighbours). Block table 8 B per block."""
+    text = src["text"]
+    pieces = []
+    current = 0
+    start = 0
+    for f in src["files"]:
+        if f["tlen"] > block:
+            if current:
+                pieces.append((start, current))
+            for at in range(0, f["tlen"], block):
+                pieces.append((f["toff"] + at, min(block, f["tlen"] - at)))
+            start, current = f["toff"] + f["tlen"], 0
+            continue
+        if current and current + f["tlen"] > block:
+            pieces.append((start, current))
+            start, current = f["toff"], 0
+        if not current:
+            start = f["toff"]
+        current += f["tlen"]
+    if current:
+        pieces.append((start, current))
+    if sum(n for _, n in pieces) != len(text):
+        raise SystemExit("file-aligned blocks do not cover the text")
+    total = 0
+    for at, n in pieces:
+        c = zlib.compressobj(level, zlib.DEFLATED, -15)
+        total += len(c.compress(text[at:at + n]) + c.flush())
+    return {"block_bytes": block, "level": level, "blocks": len(pieces), "compressed": total,
+            "block_table": 8 * len(pieces), "section_text_after": total + 8 * len(pieces)}
+
+
 def deflate_size(data: bytes) -> int:
     c = zlib.compressobj(6, zlib.DEFLATED, -15)
     return len(c.compress(bytes(data)) + c.flush())
+
+
+def lexical_coding(lex: dict, lb: "Budget") -> dict:
+    """C1-C6 on one lexical section: each re-encoding's bytes, counted."""
+    terms, dfs = lex["terms"], lex["dfs"]
+    front = 0
+    prev = b""
+    for t, df in zip(terms, dfs):
+        shared = 0
+        limit = min(len(prev), len(t))
+        while shared < limit and prev[shared] == t[shared]:
+            shared += 1
+        front += vlen(shared) + vlen(len(t) - shared) + (len(t) - shared) + vlen(df)
+        prev = t
+    dict_before = sum(v for k, v in lb.parts.items() if k.startswith("2 "))
+    plain_varint_dict = sum(vlen(len(t)) + len(t) + vlen(df) for t, df in zip(terms, dfs))
+    gaps = tf_v = folded = 0
+    start = 0
+    ids, tfs = lex["doc_ids"], lex["tfs"]
+    for df in dfs:
+        last = -1
+        for k in range(start, start + df):
+            d = ids[k]
+            gap = d - last - 1 if last >= 0 else d
+            gaps += vlen(gap)
+            last = d
+            tf = tfs[k]
+            tf_v += vlen(tf)
+            folded += vlen((gap << 1) | (1 if tf == 1 else 0)) + (0 if tf == 1 else vlen(tf))
+        start += df
+    postings_before = 8 * len(ids)
+    lengths_before = 4 * len(lex["doc_lengths"])
+    lengths_v = sum(vlen(x) for x in lex["doc_lengths"])
+    positions_before = len(lex["positions"])
+    offsets_before = len(lex["offsets"])
+    out = {
+        "lexical_before": lb.size,
+        "C1 dictionary: front-coded terms + df varint (start, count derived)": {
+            "before": dict_before, "after": front, "saved": dict_before - front,
+            "without front coding (length + bytes + df varints)": plain_varint_dict},
+        "C2 postings: document gap varint + tf varint": {
+            "before": postings_before, "after": gaps + tf_v, "saved": postings_before - gaps - tf_v,
+            "gap_varint_bytes": gaps, "tf_varint_bytes": tf_v},
+        "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+            "before": postings_before, "after": folded, "saved": postings_before - folded},
+        "C3 document lengths as varints": {"before": lengths_before, "after": lengths_v,
+                                            "saved": lengths_before - lengths_v},
+        "C5 offsets section left out (highlights re-tokenized from the hit text)": {
+            "before": offsets_before, "saved": offsets_before},
+        "C6 positions and offsets both left out (no phrase find)": {
+            "before": positions_before + offsets_before, "saved": positions_before + offsets_before},
+        "deflate of each part (reference: what redundancy is left)": {
+            "postings": deflate_size(lex["doc_ids"].tobytes()) + deflate_size(lex["tfs"].tobytes()),
+            "positions": deflate_size(lex["positions"]) if positions_before else 0,
+            "offsets": deflate_size(lex["offsets"]) if offsets_before else 0,
+        },
+    }
+    c_saved = (dict_before - front) + (postings_before - folded) + (lengths_before - lengths_v)
+    out["C1+C2b+C3 saved"] = c_saved
+    out["C1+C2b+C3+C5 saved"] = c_saved + offsets_before
+    return out
 
 
 def cmd_candidates(index: Path, lz4: bool) -> dict:
@@ -615,7 +713,9 @@ def cmd_candidates(index: Path, lz4: bool) -> dict:
         rows = [compress_blocks(text, block, 6) for block in (16384, 65536, 262144)]
         rows.append(compress_blocks(text, 65536, 1))
         rows.append(compress_blocks(text, 65536, 9))
-        b = {"text_before": len(text), "deflate": rows, "per_file": per_file_compress(src, 6)}
+        b = {"text_before": len(text), "deflate": rows, "per_file": per_file_compress(src, 6),
+             "file_aligned_64k": file_aligned_compress(src, 65536, 6),
+             "file_aligned_16k": file_aligned_compress(src, 16384, 6)}
         if lz4:
             started = time.perf_counter()
             lz = sum(lz4_block_size(text[at:at + 65536]) for at in range(0, len(text), 65536))
@@ -628,58 +728,10 @@ def cmd_candidates(index: Path, lz4: bool) -> dict:
     # C. Lexical coding.
     lex = loaded["lexical"]
     lb = loaded["files"][next(k for k in loaded["files"] if k.startswith("lexical-"))]
-    terms, dfs = lex["terms"], lex["dfs"]
-    front = 0
-    prev = b""
-    for t, df in zip(terms, dfs):
-        shared = 0
-        limit = min(len(prev), len(t))
-        while shared < limit and prev[shared] == t[shared]:
-            shared += 1
-        front += vlen(shared) + vlen(len(t) - shared) + (len(t) - shared) + vlen(df)
-        prev = t
-    dict_before = sum(v for k, v in lb.parts.items() if k.startswith("2 "))
-    plain_varint_dict = sum(vlen(len(t)) + len(t) + vlen(df) for t, df in zip(terms, dfs))
-    gaps = 0
-    tf_v = 0
-    start = 0
-    ids, tfs = lex["doc_ids"], lex["tfs"]
-    for df in dfs:
-        last = -1
-        for k in range(start, start + df):
-            d = ids[k]
-            gaps += vlen(d - last - 1) if last >= 0 else vlen(d)
-            last = d
-            tf_v += vlen(tfs[k])
-        start += df
-    postings_before = 8 * len(ids)
-    lengths_before = 4 * len(lex["doc_lengths"])
-    lengths_v = sum(vlen(x) for x in lex["doc_lengths"])
-    positions_before = len(lex["positions"])
-    offsets_before = len(lex["offsets"])
-    cand["C lexical coding"] = {
-        "lexical_before": lb.size,
-        "C1 dictionary: front-coded terms + df varint (start, count derived)": {
-            "before": dict_before, "after": front, "saved": dict_before - front,
-            "without front coding (length + bytes + df varints)": plain_varint_dict},
-        "C2 postings: document gap varint + tf varint": {
-            "before": postings_before, "after": gaps + tf_v, "saved": postings_before - gaps - tf_v,
-            "gap_varint_bytes": gaps, "tf_varint_bytes": tf_v},
-        "C3 document lengths as varints": {"before": lengths_before, "after": lengths_v,
-                                            "saved": lengths_before - lengths_v},
-        "C5 offsets section left out (highlights re-tokenized from the hit text)": {
-            "before": offsets_before, "saved": offsets_before},
-        "C6 positions and offsets both left out (no phrase find)": {
-            "before": positions_before + offsets_before, "saved": positions_before + offsets_before},
-        "deflate of each part (reference: what redundancy is left)": {
-            "postings": deflate_size(lex["doc_ids"].tobytes()) + deflate_size(lex["tfs"].tobytes()),
-            "positions": deflate_size(lex["positions"]) if positions_before else 0,
-            "offsets": deflate_size(lex["offsets"]) if offsets_before else 0,
-        },
-    }
-    c_saved = (dict_before - front) + (postings_before - gaps - tf_v) + (lengths_before - lengths_v)
-    cand["C lexical coding"]["C1+C2+C3 saved"] = c_saved
-    cand["C lexical coding"]["C1+C2+C3+C5 saved"] = c_saved + offsets_before
+    cand["C lexical coding"] = lexical_coding(lex, lb)
+    if "filename_lexical" in loaded:
+        fb = loaded["files"][next(k for k in loaded["files"] if k.startswith("filename-lexical-"))]
+        cand["F2 filename lexical section, same coding"] = lexical_coding(loaded["filename_lexical"], fb)
 
     # D. State that refers to the source table.
     state = loaded.get("state")
@@ -730,14 +782,209 @@ def cmd_codec_blocks(index: Path, out_dir: Path) -> dict:
         lz += len(z)
     (out_dir / "plain.bin").write_bytes(text)
     (out_dir / "blocks.bin").write_bytes(bytes(blob))
+    # postings.bin: u32 term count, u32 posting count, u32 document count,
+    # the df of every term (u32), today's 8-byte postings, then the same
+    # postings as C2b (per term: gap varint with tf == 1 in its low bit, a tf
+    # varint when tf > 1), for the Zig probe's open-time decode comparison.
+    lex = loaded["lexical"]
+    ids, tfs, dfs = lex["doc_ids"], lex["tfs"], lex["dfs"]
+    folded = bytearray()
+    at = 0
+    for df in dfs:
+        last = -1
+        for k in range(at, at + df):
+            gap = ids[k] - last - 1 if last >= 0 else ids[k]
+            last = ids[k]
+            put_varint(folded, (gap << 1) | (1 if tfs[k] == 1 else 0))
+            if tfs[k] != 1:
+                put_varint(folded, tfs[k])
+        at += df
+    fixed = bytearray()
+    for d, t in zip(ids, tfs):
+        fixed += struct.pack("<II", d, t)
+    head = struct.pack("<III", len(dfs), len(ids), len(lex["doc_lengths"]))
+    (out_dir / "postings.bin").write_bytes(head + struct.pack(f"<{len(dfs)}I", *dfs) + bytes(fixed) + bytes(folded))
     return {"index": index.name, "plain": len(text), "deflate": deflated, "lz4": lz,
-            "blocks": (len(text) + 65535) // 65536}
+            "blocks": (len(text) + 65535) // 65536, "postings_fixed": len(fixed),
+            "postings_c2b": len(folded)}
+
+
+CORPORA = ["timing-1k", "timing-10k", "prose-1k", "prose-10k", "tamil-1k", "tamil-10k", "fixtures", "family"]
+SECTION_ORDER = ["documents", "lexical", "source", "state", "filenames", "filename-lexical", "MANIFEST", "INDEX-STATE.json"]
+
+
+def _kind(name: str) -> str:
+    for kind in ("filename-lexical", "filenames", "documents", "lexical", "source", "state"):
+        if name.startswith(kind + "-"):
+            return kind
+    return name
+
+
+def _sections(budget: dict) -> dict:
+    out = {}
+    for f in budget["files"]:
+        if f["bytes"] or f["file"] != "WRITER.LOCK":
+            out[_kind(f["file"])] = out.get(_kind(f["file"]), 0) + f["bytes"]
+    out.pop("WRITER.LOCK", None)
+    return out
+
+
+def _n(value) -> str:
+    return f"{value:,}"
+
+
+def _r(value: float) -> str:
+    return f"{value:.2f}"
+
+
+def cmd_tables(raw: Path) -> str:
+    """The Markdown tables of docs/evidence/s6-t3/tables.md from the raw JSON."""
+    lines = []
+    load = lambda kind, corpus: json.loads((raw / f"{kind}-{corpus}.json").read_text(encoding="utf-8"))
+    rows = {}
+    for corpus in CORPORA:
+        b, bf = load("budget", corpus), load("budget", corpus + "-fn")
+        d, c = load("duplication", corpus + "-fn"), load("candidates", corpus + "-fn")
+        src = next(f for f in bf["files"] if _kind(f["file"]) == "source")
+        lex = next(f for f in bf["files"] if _kind(f["file"]) == "lexical")
+        rows[corpus] = {"b": b, "bf": bf, "d": d, "c": c["candidates"], "files": src["counts"]["files"],
+                        "corpus": src["parts"]["text (original file bytes)"], "lex": lex["counts"]}
+        plain, fn = _sections(b), _sections(bf)
+        for kind in ("documents", "lexical", "source", "state"):
+            if plain[kind] != fn[kind]:
+                raise SystemExit(f"{corpus}: {kind} differs with the file-name channel")
+
+    lines += ["## 1. Corpora", "",
+              "| Corpus | Files | Corpus bytes | Chunks | Distinct terms | Postings | Tokens |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for corpus, r in rows.items():
+        x = r["lex"]
+        lines.append(f"| {corpus} | {_n(r['files'])} | {_n(r['corpus'])} | {_n(x['documents'])} | "
+                     f"{_n(x['terms'])} | {_n(x['postings'])} | {_n(x['tokens'])} |")
+    lines += ["", "## 2. Index size against corpus size, one generation", "",
+              "| Corpus | Corpus bytes | Index bytes | Ratio | Index bytes with the file-name channel | Ratio |",
+              "| --- | ---: | ---: | ---: | ---: | ---: |"]
+    for corpus, r in rows.items():
+        t, tf = r["b"]["total_bytes"], r["bf"]["total_bytes"]
+        lines.append(f"| {corpus} | {_n(r['corpus'])} | {_n(t)} | {_r(t / r['corpus'])} | {_n(tf)} | "
+                     f"{_r(tf / r['corpus'])} |")
+    lines += ["", "## 3. Bytes per section file (file-name channel on)", "",
+              "| Corpus | " + " | ".join(SECTION_ORDER) + " | Total |",
+              "| --- | " + " | ".join("---:" for _ in SECTION_ORDER) + " | ---: |"]
+    for corpus, r in rows.items():
+        s = _sections(r["bf"])
+        lines.append(f"| {corpus} | " + " | ".join(_n(s.get(k, 0)) for k in SECTION_ORDER)
+                     + f" | {_n(r['bf']['total_bytes'])} |")
+    lines += ["", "Shares of the index:", "",
+              "| Corpus | " + " | ".join(SECTION_ORDER[:6]) + " |",
+              "| --- | " + " | ".join("---:" for _ in SECTION_ORDER[:6]) + " |"]
+    for corpus, r in rows.items():
+        s = _sections(r["bf"])
+        t = r["bf"]["total_bytes"]
+        lines.append(f"| {corpus} | " + " | ".join(f"{100 * s.get(k, 0) / t:.1f} %" for k in SECTION_ORDER[:6]) + " |")
+
+    lines += ["", "## 4. Inside each section (file-name channel on)", "",
+              "Every row's parts sum to the file's size (`index_size_budget.py budget` refuses otherwise).", ""]
+    for corpus, r in rows.items():
+        lines += [f"### {corpus}", "", "| File | Part | Bytes | Share of file | Share of index |",
+                  "| --- | --- | ---: | ---: | ---: |"]
+        t = r["bf"]["total_bytes"]
+        for f in sorted(r["bf"]["files"], key=lambda f: SECTION_ORDER.index(_kind(f["file"]))
+                        if _kind(f["file"]) in SECTION_ORDER else 99):
+            if f["file"] == "WRITER.LOCK":
+                continue
+            for part, nbytes in f["parts"].items():
+                share = f"{100 * nbytes / f['bytes']:.1f} %" if f["bytes"] else "-"
+                lines.append(f"| {f['file']} | {part} | {_n(nbytes)} | {share} | {100 * nbytes / t:.2f} % |")
+            lines.append(f"| {f['file']} | **total** | **{_n(f['bytes'])}** | 100 % | {100 * f['bytes'] / t:.2f} % |")
+        lines.append("")
+
+    lines += ["## 5. Text stored more than once (measured)", "",
+              "| Corpus | Corpus bytes | Chunk text | Source text | Chunks found as exact source spans | Chunk bytes not found | Chunk overlap bytes | Source bytes in no chunk |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for corpus, r in rows.items():
+        d = r["d"]
+        lines.append(f"| {corpus} | {_n(r['corpus'])} | {_n(d['chunk_text_bytes'])} | {_n(d['source_text_bytes'])} | "
+                     f"{_n(d['chunks_found_in_source'])} of {_n(d['chunks'])} | {_n(d['chunk_text_bytes_not_found'])} | "
+                     f"{_n(d['chunk_overlap_bytes'])} | {_n(d['source_bytes_not_in_any_chunk'])} |")
+    lines += ["", "Other fields held by more than one section (file-name channel on):", "",
+              "| Corpus | Paths in documents (per chunk) | Paths in source table | Paths in state | Paths in file-name catalog | sha256 in state and source (each) | Chunk ids copied into the catalog | Stems in the catalog | Dictionary count + start (derivable) | Section paths |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for corpus, r in rows.items():
+        d = r["d"]
+        st = d.get("state_repeats", {})
+        cat = d.get("filename_catalog_repeats", {})
+        dr = d["dictionary_redundant"]
+        lines.append(f"| {corpus} | {_n(d['paths']['documents (one per chunk)'])} | {_n(d['paths']['source file table'])} | "
+                     f"{_n(d['paths'].get('state', 0))} | {_n(cat.get('paths', 0))} | "
+                     f"{_n(st.get('sha256 also in source table (32 B per file)', 0))} | "
+                     f"{_n(cat.get('chunk ids copied from body anchors', 0))} | "
+                     f"{_n(cat.get('stems (record text, derivable from paths)', 0))} | "
+                     f"{_n(sum(dr.values()))} | {_n(d['section_paths_bytes'])} |")
+
+    lines += ["", "## 6. Candidates: bytes saved, measured on prototype re-encodings (file-name channel on)", "",
+              "| Corpus | A1 text as spans | A1-A4 records | B source deflate 64 KiB | C1 dictionary | C2b postings | C3 lengths | C5 offsets out | C6 positions + offsets out | D state | F catalog | F2 file-name lexical |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for corpus, r in rows.items():
+        c = r["c"]
+        a = c["A chunk text as source spans"]
+        bsec = c["B source text block-compressed"]
+        d64 = next(x for x in bsec["deflate"] if x["block_bytes"] == 65536 and x["level"] == 6)
+        l = c["C lexical coding"]
+        f2 = c.get("F2 filename lexical section, same coding", {}).get("C1+C2b+C3 saved", 0)
+        lines.append(" | ".join([
+            f"| {corpus}", _n(a["saved_A1"]), _n(a["saved_A1_to_A4"]),
+            _n(bsec["text_before"] - d64["section_text_after"]),
+            _n(l["C1 dictionary: front-coded terms + df varint (start, count derived)"]["saved"]),
+            _n(l["C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint"]["saved"]),
+            _n(l["C3 document lengths as varints"]["saved"]),
+            _n(l["C5 offsets section left out (highlights re-tokenized from the hit text)"]["saved"]),
+            _n(l["C6 positions and offsets both left out (no phrase find)"]["saved"]),
+            _n(c["D state refers to the source table"]["saved (sha256 + path + size per shared file)"]),
+            _n(c["F filename catalog without derivable bytes"]["saved (stem text and copied chunk ids)"]),
+            _n(f2)]) + " |")
+    lines += ["", "Source text area under each codec (bytes after, block table included):", "",
+              "| Corpus | Text | deflate 16 KiB L6 | deflate 64 KiB L1 | deflate 64 KiB L6 | deflate 64 KiB L9 | deflate 256 KiB L6 | deflate per file L6 | deflate file-aligned 16 KiB L6 | deflate file-aligned 64 KiB L6 | LZ4-style 64 KiB |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for corpus, r in rows.items():
+        bsec = r["c"]["B source text block-compressed"]
+        pick = lambda blk, lvl: next(x for x in bsec["deflate"] if x["block_bytes"] == blk and x["level"] == lvl)["section_text_after"]
+        lines.append(f"| {corpus} | {_n(bsec['text_before'])} | {_n(pick(16384, 6))} | {_n(pick(65536, 1))} | "
+                     f"{_n(pick(65536, 6))} | {_n(pick(65536, 9))} | {_n(pick(262144, 6))} | "
+                     f"{_n(bsec['per_file']['section_text_after'])} | {_n(bsec['file_aligned_16k']['section_text_after'])} | "
+                     f"{_n(bsec['file_aligned_64k']['section_text_after'])} | {_n(bsec['lz4_style_64k']['section_text_after'])} |")
+
+    lines += ["", "## 7. Projection: the recommended steps applied in order (measured savings, summed)", "",
+              "Each step's saving is its measured re-encoding above; the steps touch different bytes, so they add.",
+              "Ratio = index bytes / corpus bytes.", "",
+              "| Corpus | Today | 1. lexical coding (C1, C2b, C3) | 2. + chunk spans (A1-A4) | 3. + offsets out (C5) | 4. + state, catalog (D, F, F2) | 5. + source deflate 64 KiB (B) |",
+              "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for channel in ("off", "on"):
+        for corpus, r in rows.items():
+            c = r["c"]
+            l = c["C lexical coding"]
+            bsec = c["B source text block-compressed"]
+            d64 = next(x for x in bsec["deflate"] if x["block_bytes"] == 65536 and x["level"] == 6)
+            total = (r["bf"] if channel == "on" else r["b"])["total_bytes"]
+            steps = [total]
+            steps.append(steps[-1] - l["C1+C2b+C3 saved"])
+            steps.append(steps[-1] - c["A chunk text as source spans"]["saved_A1_to_A4"])
+            steps.append(steps[-1] - l["C5 offsets section left out (highlights re-tokenized from the hit text)"]["saved"])
+            four = c["D state refers to the source table"]["saved (sha256 + path + size per shared file)"]
+            if channel == "on":
+                four += (c["F filename catalog without derivable bytes"]["saved (stem text and copied chunk ids)"]
+                         + c["F2 filename lexical section, same coding"]["C1+C2b+C3 saved"])
+            steps.append(steps[-1] - four)
+            steps.append(steps[-1] - (bsec["text_before"] - d64["section_text_after"]))
+            cells = [f"{_n(v)} ({_r(v / r['corpus'])})" for v in steps]
+            lines.append(f"| {corpus} (channel {channel}) | " + " | ".join(cells) + " |")
+    return "\n".join(lines) + "\n"
 
 
 def main(argv: list) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=("budget", "duplication", "candidates", "codec-blocks"))
-    parser.add_argument("index", type=Path)
+    parser.add_argument("command", choices=("budget", "duplication", "candidates", "codec-blocks", "tables"))
+    parser.add_argument("index", type=Path, help="an index directory (tables: the raw JSON directory)")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--lz4", action="store_true")
     parser.add_argument("--blocks-dir", type=Path, help="codec-blocks: where to write")
@@ -748,8 +995,14 @@ def main(argv: list) -> int:
         result = cmd_duplication(args.index)
     elif args.command == "candidates":
         result = cmd_candidates(args.index, args.lz4)
-    else:
+    elif args.command == "codec-blocks":
         result = cmd_codec_blocks(args.index, args.blocks_dir)
+    else:
+        text = cmd_tables(args.index)
+        if args.out:
+            args.out.write_text(text, encoding="utf-8")
+        print(text, end="")
+        return 0
     text = json.dumps(result, indent=1, default=str)
     if args.out:
         args.out.write_text(text + "\n", encoding="utf-8")

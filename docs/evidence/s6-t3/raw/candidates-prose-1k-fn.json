@@ -24,9 +24,9 @@
      "compressed": 755602,
      "block_table": 824,
      "section_text_after": 756426,
-     "compress_ms": 31.9,
-     "decompress_ms_all": 2.1,
-     "decompress_us_per_block": 20.3
+     "compress_ms": 30.7,
+     "decompress_ms_all": 2.0,
+     "decompress_us_per_block": 19.7
     },
     {
      "block_bytes": 65536,
@@ -35,9 +35,9 @@
      "compressed": 682699,
      "block_table": 208,
      "section_text_after": 682907,
-     "compress_ms": 45.5,
+     "compress_ms": 43.5,
      "decompress_ms_all": 1.8,
-     "decompress_us_per_block": 68.2
+     "decompress_us_per_block": 67.4
     },
     {
      "block_bytes": 262144,
@@ -46,9 +46,9 @@
      "compressed": 653492,
      "block_table": 56,
      "section_text_after": 653548,
-     "compress_ms": 49.3,
-     "decompress_ms_all": 1.5,
-     "decompress_us_per_block": 209.8
+     "compress_ms": 48.7,
+     "decompress_ms_all": 1.4,
+     "decompress_us_per_block": 206.5
     },
     {
      "block_bytes": 65536,
@@ -57,9 +57,9 @@
      "compressed": 783356,
      "block_table": 208,
      "section_text_after": 783564,
-     "compress_ms": 10.2,
+     "compress_ms": 9.9,
      "decompress_ms_all": 1.8,
-     "decompress_us_per_block": 69.7
+     "decompress_us_per_block": 67.5
     },
     {
      "block_bytes": 65536,
@@ -68,9 +68,9 @@
      "compressed": 681550,
      "block_table": 208,
      "section_text_after": 681758,
-     "compress_ms": 54.2,
-     "decompress_ms_all": 1.8,
-     "decompress_us_per_block": 71.1
+     "compress_ms": 52.0,
+     "decompress_ms_all": 1.7,
+     "decompress_us_per_block": 66.4
     }
    ],
    "per_file": {
@@ -79,11 +79,27 @@
     "file_table_extra": 8000,
     "section_text_after": 897422
    },
+   "file_aligned_64k": {
+    "block_bytes": 65536,
+    "level": 6,
+    "blocks": 27,
+    "compressed": 684106,
+    "block_table": 216,
+    "section_text_after": 684322
+   },
+   "file_aligned_16k": {
+    "block_bytes": 16384,
+    "level": 6,
+    "blocks": 115,
+    "compressed": 761855,
+    "block_table": 920,
+    "section_text_after": 762775
+   },
    "lz4_style_64k": {
     "compressed": 1059056,
     "block_table": 208,
     "section_text_after": 1059264,
-    "python_seconds": 0.2
+    "python_seconds": 0.3
    }
   },
   "C lexical coding": {
@@ -100,6 +116,11 @@
     "saved": 1295010,
     "gap_varint_bytes": 227273,
     "tf_varint_bytes": 217469
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 1739752,
+    "after": 281458,
+    "saved": 1458294
    },
    "C3 document lengths as varints": {
     "before": 7276,
@@ -119,8 +140,49 @@
     "positions": 324977,
     "offsets": 190678
    },
-   "C1+C2+C3 saved": 1377782,
-   "C1+C2+C3+C5 saved": 2005144
+   "C1+C2b+C3 saved": 1541066,
+   "C1+C2b+C3+C5 saved": 2168428
+  },
+  "F2 filename lexical section, same coding": {
+   "lexical_before": 99053,
+   "C1 dictionary: front-coded terms + df varint (start, count derived)": {
+    "before": 66989,
+    "after": 18917,
+    "saved": 48072,
+    "without front coding (length + bytes + df varints)": 17357
+   },
+   "C2 postings: document gap varint + tf varint": {
+    "before": 28000,
+    "after": 9505,
+    "saved": 18495,
+    "gap_varint_bytes": 6005,
+    "tf_varint_bytes": 3500
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 28000,
+    "after": 6433,
+    "saved": 21567
+   },
+   "C3 document lengths as varints": {
+    "before": 4000,
+    "after": 1000,
+    "saved": 3000
+   },
+   "C5 offsets section left out (highlights re-tokenized from the hit text)": {
+    "before": 0,
+    "saved": 0
+   },
+   "C6 positions and offsets both left out (no phrase find)": {
+    "before": 0,
+    "saved": 0
+   },
+   "deflate of each part (reference: what redundancy is left)": {
+    "postings": 5151,
+    "positions": 0,
+    "offsets": 0
+   },
+   "C1+C2b+C3 saved": 72639,
+   "C1+C2b+C3+C5 saved": 72639
   },
   "D state refers to the source table": {
    "state_before": 108837,

@@ -1,0 +1,28 @@
+# S6-T3 Zig probes (scripts/prototypes/s6t3/), ReleaseSmall, macOS arm64, Zig 0.16.0, 16 Nov 2026
+# 5-minute load at start 4.03, at end 4.05 (1-minute 2.53 / 2.73); no check lock present
+# inputs: scripts/index_size_budget.py codec-blocks <index-fn> --blocks-dir <dir>; each line is one probe run
+== timing-10k
+flate_decode blocks=111 plain=7269199 best_ns=41394625 ns_per_block=372924
+lz4_decode blocks=111 plain=7269199 best_ns=10169542 ns_per_block=91617
+flate_both blocks=111 plain=7269199 zig_compressed=2901121 encode_ns=233251083 decode_ns=42580125
+lz4_both blocks=111 plain=7269199 zig_compressed=4789774 encode_ns=17238500 decode_ns=11227458
+postings=1023806 fixed_bytes=8190448 folded_bytes=1762758 fixed_best_ns=272875 folded_best_ns=2451875
+== prose-10k
+flate_decode blocks=264 plain=17244024 best_ns=99164833 ns_per_block=375624
+lz4_decode blocks=264 plain=17244024 best_ns=24727584 ns_per_block=93665
+flate_both blocks=264 plain=17244024 zig_compressed=7043990 encode_ns=478922000 decode_ns=100404375
+lz4_both blocks=264 plain=17244024 zig_compressed=11241517 encode_ns=43580292 decode_ns=27005084
+postings=2238541 fixed_bytes=17908328 folded_bytes=2904077 fixed_best_ns=601209 folded_best_ns=6094500
+== tamil-10k
+flate_decode blocks=423 plain=27708457 best_ns=69842042 ns_per_block=165111
+lz4_decode blocks=423 plain=27708457 best_ns=25174042 ns_per_block=59513
+flate_both blocks=423 plain=27708457 zig_compressed=5067448 encode_ns=438139583 decode_ns=75639041
+lz4_both blocks=423 plain=27708457 zig_compressed=11110991 encode_ns=35221125 decode_ns=24582625
+postings=1019062 fixed_bytes=8152496 folded_bytes=1757317 fixed_best_ns=273250 folded_best_ns=2540125
+
+# binary size, ReleaseSmall (file bytes / __TEXT segment bytes from size -m)
+base file=165928 TEXT=93992
+flate_decode file=183536 TEXT=105024
+flate_both file=200984 TEXT=116824
+lz4_decode file=166216 TEXT=95312
+lz4_both file=166360 TEXT=96160

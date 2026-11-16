@@ -24,9 +24,9 @@
      "compressed": 3073154,
      "block_table": 3552,
      "section_text_after": 3076706,
-     "compress_ms": 195.9,
-     "decompress_ms_all": 8.9,
-     "decompress_us_per_block": 20.1
+     "compress_ms": 193.0,
+     "decompress_ms_all": 8.5,
+     "decompress_us_per_block": 19.2
     },
     {
      "block_bytes": 65536,
@@ -35,9 +35,9 @@
      "compressed": 2873089,
      "block_table": 888,
      "section_text_after": 2873977,
-     "compress_ms": 248.9,
-     "decompress_ms_all": 7.9,
-     "decompress_us_per_block": 71.6
+     "compress_ms": 246.4,
+     "decompress_ms_all": 7.8,
+     "decompress_us_per_block": 70.7
     },
     {
      "block_bytes": 262144,
@@ -46,9 +46,9 @@
      "compressed": 2782170,
      "block_table": 224,
      "section_text_after": 2782394,
-     "compress_ms": 264.5,
-     "decompress_ms_all": 6.6,
-     "decompress_us_per_block": 235.3
+     "compress_ms": 264.4,
+     "decompress_ms_all": 6.7,
+     "decompress_us_per_block": 239.9
     },
     {
      "block_bytes": 65536,
@@ -57,9 +57,9 @@
      "compressed": 3322080,
      "block_table": 888,
      "section_text_after": 3322968,
-     "compress_ms": 42.1,
+     "compress_ms": 42.2,
      "decompress_ms_all": 7.5,
-     "decompress_us_per_block": 67.2
+     "decompress_us_per_block": 67.9
     },
     {
      "block_bytes": 65536,
@@ -68,9 +68,9 @@
      "compressed": 2851854,
      "block_table": 888,
      "section_text_after": 2852742,
-     "compress_ms": 606.5,
-     "decompress_ms_all": 7.9,
-     "decompress_us_per_block": 71.4
+     "compress_ms": 607.8,
+     "decompress_ms_all": 7.8,
+     "decompress_us_per_block": 70.7
     }
    ],
    "per_file": {
@@ -79,11 +79,27 @@
     "file_table_extra": 80000,
     "section_text_after": 3922392
    },
+   "file_aligned_64k": {
+    "block_bytes": 65536,
+    "level": 6,
+    "blocks": 112,
+    "compressed": 2874273,
+    "block_table": 896,
+    "section_text_after": 2875169
+   },
+   "file_aligned_16k": {
+    "block_bytes": 16384,
+    "level": 6,
+    "blocks": 457,
+    "compressed": 3078729,
+    "block_table": 3656,
+    "section_text_after": 3082385
+   },
    "lz4_style_64k": {
     "compressed": 4661757,
     "block_table": 888,
     "section_text_after": 4662645,
-    "python_seconds": 1.0
+    "python_seconds": 1.3
    }
   },
   "C lexical coding": {
@@ -100,6 +116,11 @@
     "saved": 5552159,
     "gap_varint_bytes": 1614483,
     "tf_varint_bytes": 1023806
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 8190448,
+    "after": 1762758,
+    "saved": 6427690
    },
    "C3 document lengths as varints": {
     "before": 79836,
@@ -119,8 +140,49 @@
     "positions": 841148,
     "offsets": 599548
    },
-   "C1+C2+C3 saved": 6240735,
-   "C1+C2+C3+C5 saved": 8592107
+   "C1+C2b+C3 saved": 7116266,
+   "C1+C2b+C3+C5 saved": 9467638
+  },
+  "F2 filename lexical section, same coding": {
+   "lexical_before": 490091,
+   "C1 dictionary: front-coded terms + df varint (start, count derived)": {
+    "before": 290027,
+    "after": 41118,
+    "saved": 248909,
+    "without front coding (length + bytes + df varints)": 70006
+   },
+   "C2 postings: document gap varint + tf varint": {
+    "before": 160000,
+    "after": 49872,
+    "saved": 110128,
+    "gap_varint_bytes": 29872,
+    "tf_varint_bytes": 20000
+   },
+   "C2b postings: gap varint with tf==1 folded into its low bit, else + tf varint": {
+    "before": 160000,
+    "after": 31744,
+    "saved": 128256
+   },
+   "C3 document lengths as varints": {
+    "before": 40000,
+    "after": 10000,
+    "saved": 30000
+   },
+   "C5 offsets section left out (highlights re-tokenized from the hit text)": {
+    "before": 0,
+    "saved": 0
+   },
+   "C6 positions and offsets both left out (no phrase find)": {
+    "before": 0,
+    "saved": 0
+   },
+   "deflate of each part (reference: what redundancy is left)": {
+    "postings": 27891,
+    "positions": 0,
+    "offsets": 0
+   },
+   "C1+C2b+C3 saved": 407165,
+   "C1+C2b+C3+C5 saved": 407165
   },
   "D state refers to the source table": {
    "state_before": 970159,
