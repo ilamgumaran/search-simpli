@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-16 (S6-T2, `searchd search <folder> "<query>"`: a folder searched directly, with no index directory; built in memory, writes nothing; CLI and core, no format, contract, C ABI or Dart change, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; verified and merged as `06f8c2e`; CAP-20 Implemented and verified)
+Last updated: 2026-11-16 (S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; built on `task/S6-T5`, awaiting verification. Before it: S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,24 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## Warnings under every search field (S6-T5, objective plan item G, 2026-11-16; built, awaiting verification)
+
+Built on `task/S6-T5` ([task and Report](docs/tasks/S6-T5.md), [CAP-22](docs/requirements/cap-22-field-warnings.md));
+a different agent verifies and merges. **Contracts 2.8.0, Dart 0.9.0**; no schema, header, request field, warning
+code, result field, signature or index format change.
+
+- **`ss_query` (and the Dart binding).** Under `search_field` `both` the `warnings` array, always `[]` before, now
+  holds the warnings `content` gives for the same request (codes, order, messages, `expansions`, `members`), except
+  that a word is `query_term_unmatched` only when neither a chunk in scope nor a visible file name holds it; the
+  `query_term_expanded` and `query_term_grouped` entries name the groups `both` searched. Under `filename` the only
+  term warning is `query_term_unmatched`, for a word no visible file name holds (file names are never expanded or
+  grouped). `query_empty_after_analysis` and `vector_ignored` as under `content`. A word only hidden files or names
+  hold is reported byte for byte as an absent word (tested under labels, roots and a path prefix).
+- **Unchanged:** every `content` answer (2,762 captured cases byte-identical), every `both` and `filename` byte
+  outside `warnings`, and every other surface: the CLI (`query`, `evidence`, `search`), JSON-RPC and MCP carry no
+  warnings in any field, as before.
+- **J2:** the gate passes without re-recording; native J2 0 rows differ.
 
 ## A folder searched directly: `searchd search <folder> "<query>"` (S6-T2, objective plan item C, 2026-11-16; verified and merged)
 
