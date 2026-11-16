@@ -711,16 +711,47 @@ pub fn applyChanges(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, r
         .ok => |p| p,
         .failed => |f| return .{ .failed = f },
     };
-    return applyParsed(allocator, io, dir, parsed, options);
+    return applyParsed(allocator, io, dir, parsed, options, null);
 }
 
 /// Apply an already parsed batch (`index_folder`'s walk has no deferred
 /// refusal).
 pub fn applyBatch(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, batch: Batch, options: Options) !Outcome {
-    return applyParsed(allocator, io, dir, .{ .batch = batch }, options);
+    return applyParsed(allocator, io, dir, .{ .batch = batch }, options, null);
 }
 
-fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed: Parsed, initial_options: Options) !Outcome {
+/// S6-T2: a generation built from `batch` in memory and not published.
+pub const Detached = struct {
+    report: Report,
+    sections: Built,
+};
+
+pub const DetachedOutcome = union(enum) {
+    ok: Detached,
+    failed: source.Failure,
+};
+
+/// S6-T2 (`searchd search`): build the generation `applyBatch` would
+/// publish from `batch` as a full rebuild (`options.fresh`) at
+/// `options.generation`, and return its encoded sections instead of
+/// publishing them. No directory is read or written: there is no lease, no
+/// previous generation, no `MANIFEST`, no `INDEX-STATE.json`. The sections
+/// are the bytes `applyBatch` with the same batch and options would write
+/// into an empty directory (`report.ms` aside). `allocator` should be an
+/// arena; the sections live in it.
+pub fn buildDetached(allocator: std.mem.Allocator, io: std.Io, batch: Batch, options: Options) !DetachedOutcome {
+    if (!options.fresh or options.generation == null or options.keep_generations != null) return error.DetachedNeedsFreshGeneration;
+    var sections: Built = undefined;
+    return switch (try applyParsed(allocator, io, null, .{ .batch = batch }, options, &sections)) {
+        .ok => |report| .{ .ok = .{ .report = report, .sections = sections } },
+        .failed => |f| .{ .failed = f },
+    };
+}
+
+/// `dir == null` only from `buildDetached` (a fresh build at a stated
+/// generation): every step that reads or writes the directory is skipped,
+/// and the built sections go to `detached` instead of being published.
+fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: ?std.Io.Dir, parsed: Parsed, initial_options: Options, detached: ?*Built) !Outcome {
     var options = initial_options;
     const started = nowNs(io);
     var stages = Stages.init(io);
@@ -728,10 +759,10 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     if (options.keep_generations) |count| if (count == 0) return error.InvalidKeepGenerations;
     // One writer: the lease is held from the generation check through the
     // publication, so no other writer can publish in between.
-    var lease = (try lifecycle.tryAcquireWriter(dir, io)) orelse return error.WriterBusy;
-    defer lease.release(io);
+    var lease: ?lifecycle.WriterLease = if (dir) |d| (try lifecycle.tryAcquireWriter(d, io)) orelse return error.WriterBusy else null;
+    defer if (lease) |*held| held.release(io);
 
-    const current = try generation_alloc.currentGeneration(allocator, io, dir);
+    const current = if (dir) |d| try generation_alloc.currentGeneration(allocator, io, d) else 0;
     if (parsed.batch.expect_generation) |expected| {
         if (expected != current) return .{ .failed = try failure(allocator, .invalid_argument, "stale: generation is {d}", .{current}) };
     }
@@ -740,10 +771,10 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     if (current != 0 and options.filename_index == null) {
         // S4-T2 R6: an omitted setting keeps the directory's, for a full
         // rebuild as for an update.
-        const current_meta = try manifest.decode(try readWhole(allocator, io, dir, publication.current_manifest_file));
+        const current_meta = try manifest.decode(try readWhole(allocator, io, dir.?, publication.current_manifest_file));
         options.filename_index = current_meta.filename != null;
     } else if (current != 0 and options.filename_index != null) {
-        const bytes = try readWhole(allocator, io, dir, publication.current_manifest_file);
+        const bytes = try readWhole(allocator, io, dir.?, publication.current_manifest_file);
         const current_meta = try manifest.decode(bytes);
         if ((current_meta.filename != null) != options.filename_index.?) {
             if (!options.fresh) return error.FilenameSettingMismatch;
@@ -762,11 +793,11 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
     var previous_filename: ?manifest.FilenameMetadata = null;
     stages.mark("setup");
     if (!options.fresh) {
-        const opened_previous: ?Previous = openPrevious(allocator, io, dir, &stages) catch |err| switch (err) {
+        const opened_previous: ?Previous = openPrevious(allocator, io, dir.?, &stages) catch |err| switch (err) {
             error.FileNotFound, error.AccessDenied, error.InputOutput => blk: {
-                const manifest_present = if (dir.statFile(io, publication.current_manifest_file, .{})) |_| true else |_| false;
+                const manifest_present = if (dir.?.statFile(io, publication.current_manifest_file, .{})) |_| true else |_| false;
                 if (!manifest_present) {
-                    const state_present = if (dir.statFile(io, incremental_state.state_file, .{})) |_| true else |_| false;
+                    const state_present = if (dir.?.statFile(io, incremental_state.state_file, .{})) |_| true else |_| false;
                     if (state_present) recovered = "missing_manifest";
                 } else recovered = "missing_section";
                 break :blk null;
@@ -791,7 +822,7 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
             if (previous_state_section) |bytes| previous_state = try incremental_state.decodeSection(allocator, bytes);
             if (previous_state) |state| {
                 if (state.generation != prev.generation or !std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) return error.InvalidState;
-            } else if (incremental_state.load(allocator, io, dir) catch null) |state| {
+            } else if (incremental_state.load(allocator, io, dir.?) catch null) |state| {
                 if (state.generation == prev.generation and std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) previous_state = state;
             }
         }
@@ -1183,25 +1214,28 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, parsed
 
     // --- build the generation -----------------------------------------
     stages.mark("changes");
-    const generation = options.generation orelse try generation_alloc.nextFreeGeneration(allocator, io, dir);
+    const generation = options.generation orelse try generation_alloc.nextFreeGeneration(allocator, io, dir.?);
     stages.mark("next_free_generation");
-    const carry_from: ?PreviousFilename = if (previous_filename) |sections| .{ .io = io, .dir = dir, .sections = sections } else null;
+    const carry_from: ?PreviousFilename = if (previous_filename) |sections| .{ .io = io, .dir = dir.?, .sections = sections } else null;
     const built = buildGeneration(allocator, &work, previous_engine, previous_meta, previous_source, carry_from, &previous_docs, options, generation, &stages) catch |err| switch (err) {
         error.TooManyLabels => return .{ .failed = try failure(allocator, .invalid_argument, "a file would require more than {d} labels (its root's and its own)", .{max_labels}) },
         else => return err,
     };
-    const prune = try lifecycle.publishLeasedKeepingWithExtras(allocator, dir, io, built.manifest, built.documents, built.lexical, built.source, built.catalog, built.filename_lexical, built.state, options.keep_generations);
-    stages.mark("publish");
-    if (options.fail_after_publish) return error.SimulatedCrash;
-    // Only after the generation is published (`docs/publication-recovery.md`).
-    // S4-T4 ruling 2: the generation binds its state (`state-N.hybstate`), so
-    // `INDEX-STATE.json` is a version 3 pointer to it, not a second copy.
-    try incremental_state.savePointer(io, dir, allocator, .{
-        .generation = generation,
-        .analyzer_id = options.analyzer.label(),
-        .state_file = built.state_file,
-    });
-    stages.mark("save_state");
+    var prune: lifecycle.PruneReport = .{};
+    if (dir) |d| {
+        prune = try lifecycle.publishLeasedKeepingWithExtras(allocator, d, io, built.manifest, built.documents, built.lexical, built.source, built.catalog, built.filename_lexical, built.state, options.keep_generations);
+        stages.mark("publish");
+        if (options.fail_after_publish) return error.SimulatedCrash;
+        // Only after the generation is published (`docs/publication-recovery.md`).
+        // S4-T4 ruling 2: the generation binds its state (`state-N.hybstate`), so
+        // `INDEX-STATE.json` is a version 3 pointer to it, not a second copy.
+        try incremental_state.savePointer(io, d, allocator, .{
+            .generation = generation,
+            .analyzer_id = options.analyzer.label(),
+            .state_file = built.state_file,
+        });
+        stages.mark("save_state");
+    } else detached.?.* = built;
 
     report.generation = generation;
     report.too_large_paths = try too_large.toOwnedSlice(allocator);
@@ -2405,7 +2439,7 @@ fn detectRenames(
 
 // --------------------------------------------------------- the generation ---
 
-const Built = struct {
+pub const Built = struct {
     catalog: ?[]const u8 = null,
     /// S4-T2 R3: the generation's recovery-state section (`state-N.hybstate`).
     state: []const u8,
