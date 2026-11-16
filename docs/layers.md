@@ -132,6 +132,15 @@ Imports between interfaces that are allowed (any other fails the check):
 | `mcp.zig` | `cli.zig` | debt | `cli.McpArgs`, the parsed `searchd mcp` arguments |
 | `mcp.zig` | `rpc.zig` | debt | `rpc.Generation` (open and reload) and `rpc.errorCodeOf` |
 
+Imports that are not files (any other name fails the check):
+
+| Module | Who may import it | What it is |
+|---|---|---|
+| `std` | any file | the Zig standard library |
+| `builtin` | any file | the compilation's target and options |
+| `build_options` | interfaces and exempt files | `contracts_version`, read from `contracts/CONTRACTS_VERSION` by `zig/build.zig` |
+| `tool_schemas` | interfaces and exempt files | the MCP tools' JSON schemas from `contracts/tools/`, read by `zig/build.zig` |
+
 Exempt from the direction rule (still accounted for):
 
 | File or pattern | Why |
@@ -158,9 +167,24 @@ the C ABI still needs its [capability document](capability-process.md) first.
 
 ## What the check reads, and what it does not
 
-It reads each file's `@import("….zig")` lines outside comments and string literals,
-resolves them relative to the importing file (so it keeps working when the files
-move into folders, plan item B2), and ignores imports that are not files (`std`,
-`builtin`, and the modules `zig/build.zig` supplies: `build_options`,
-`tool_schemas`). It does not see what `zig/build.zig` links together, and it does not
-judge the bindings or the Python reference.
+It reads every `.zig` file under `zig/src/` (dot folders included) as Zig tokens, so
+text in a comment (`//`, `///`, `//!`), a string, a character literal or a multiline
+`\\` string is never taken for code. An `@import` is found however it is laid out:
+across lines, with spaces before or inside the parentheses, with a trailing comma
+(`zig fmt`'s own layout), with escapes in its string. Each `.zig` target is resolved
+against the importing file's real directory, so `../src/ops.zig` from
+`zig/src/engine.zig` is `ops.zig` and keeps working when the files move into folders
+(plan item B2). A target that leaves `zig/src/`, or names no file there, fails; so does
+an unassigned file that is imported, and an import whose operand is not one string
+literal (`"o" ++ "ps.zig"`, a `const` holding the path, a multiline string): Zig itself
+refuses those, and the checker reports them rather than guess. Imports that are not
+files must be named in the "Imports that are not files" table above, and only the
+layers listed there may use them; an unknown name fails.
+
+What it cannot see: what `zig/build.zig` wires together (which module is the root of
+which artifact, and what a named module added with `addImport` or `addOptions`
+contains; a new one must be listed, but its contents are not read); `@embedFile` and
+`@cImport`, which bring in bytes or C declarations rather than Zig files; imports in
+files outside `zig/src/` (`zig/build.zig`, `zig/tests/`); and branches that are never
+compiled (an import under `if (false)` still counts, so the check errs on the strict
+side). It does not judge the bindings or the Python reference.
