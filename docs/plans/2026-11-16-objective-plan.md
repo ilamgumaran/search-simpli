@@ -36,7 +36,7 @@ text), one run each, so the timings are indications and the byte counts are exac
 | Objective | State | Evidence |
 | --- | --- | --- |
 | 1. Light | **Met.** One binary, `searchd`, of 1,095,880 B (`ReleaseSmall`, macOS arm64, measured by S6-T1; not fully static: it links `libSystem` on macOS); arm64 libraries 916,928–954,120 B; no third-party dependencies. | `bindings/dart/search_simpli/native/` |
-| 1. Search files directly | **Gap.** Every query needs a published index directory first. There is no command that takes a folder and a query. | `zig/src/cli.zig` commands |
+| 1. Search files directly | **Met since S6-T2** (16 Nov). `searchd search <folder> "<query>"` answers with no index directory, within 100 ms up to about 1,000 files and 1 s up to about 10,000. At `efbdd0e` it was a gap: every query needed a published index directory first. | [direct-search](../direct-search.md) |
 | 1. Semantic matches | **Partial.** The engine scores vectors and fuses by rank, but only for snapshots imported from the Python reference. A folder indexed by `searchd` is lexical only. | [roadmap](../roadmap.md) Phase 1 |
 | 2. Index read | **Met at 10k files.** A whole `searchd query` process on the 10,000-file index takes about 0.02 s; warm queries are 0.1–0.2 ms. | this review; `docs/evidence/s5-t12/` |
 | 2. Index write | **Met for small changes** (one changed file in the 10k index was about 46 ms, 66 ms with the file-name channel, at S4-T16), but every publish writes complete sections. Delta sections are filed, not built. | [03-next](../journey/03-next.md) |
@@ -116,6 +116,16 @@ indexed query, so a caller can move to an index without changing what it parses.
 The task measures at what folder size the direct search stops being the better
 choice and documents the number; a later step can keep a cache directory
 automatically past that size.
+
+**Done 16 Nov 2026** ([S6-T2](../tasks/S6-T2.md), merged as `06f8c2e`):
+[`docs/direct-search.md`](../direct-search.md). The answer is byte for byte
+`index --filename-index` then `query`/`evidence`; nothing is written. Measured
+on this Mac (`ReleaseSmall`, five runs, medians; builder and verifier agree):
+within **100 ms up to about 1,000 files** (83 ms builder, 79.5 ms verifier;
+24 MiB) and within **1 s up to about 10,000 files** (624 ms builder, 599 ms
+verifier; 149 MiB). One `search` costs about what `index` plus one `query`
+costs, so from the second question on an index wins. No cache was added;
+whether to keep one is the maintainer's decision (03-next).
 
 ### D. A smaller index (objective 2)
 

@@ -246,5 +246,5 @@ Status `Diagnostic · implemented` means built and verified on the invented fami
 
 | ID | Short text | Capability spec | Status |
 |---|---|---|---|
-| FR-26 | `searchd search <folder> "<query>"`: the same answers as `index --filename-index` then `query`/`evidence`, with no index directory, writing nothing | [CAP-20](../requirements/cap-20-direct-folder-search.md) | Diagnostic · implemented |
-| NFR-15 | Direct search creates no file or directory anywhere; its cost against the index path is measured, not assumed | [CAP-20](../requirements/cap-20-direct-folder-search.md) | Diagnostic · implemented |
+| FR-26 | `searchd search <folder> "<query>"`: the same answers as `index --filename-index` then `query`/`evidence`, with no index directory, writing nothing | [CAP-20](../requirements/cap-20-direct-folder-search.md) | Implemented and verified (S6-T2) |
+| NFR-15 | Direct search creates no file or directory anywhere; its cost against the index path is measured, not assumed | [CAP-20](../requirements/cap-20-direct-folder-search.md) | Implemented and verified (S6-T2) |

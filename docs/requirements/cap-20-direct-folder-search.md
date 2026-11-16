@@ -1,6 +1,6 @@
 # CAP-20 — Direct folder search
 
-Status: Diagnostic · implemented · built by [S6-T2](../tasks/S6-T2.md) (objective 1, item C of the [objective plan](../plans/2026-11-16-objective-plan.md)); the verifier's Verdict decides any later status
+Status: Implemented and verified (S6-T2) · built by [S6-T2](../tasks/S6-T2.md) (objective 1, item C of the [objective plan](../plans/2026-11-16-objective-plan.md)); [Verdict](../tasks/S6-T2.md#verdict-verifier-fills-in) PASS on `8036a9c`, merged as `06f8c2e` on 16 Nov 2026. Not Validated: §10 asks for representative user-derived folders, and the verification used fixtures and generated corpora only
 
 ## 1. Proposal
 

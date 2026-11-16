@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-16 (S6-T2, `searchd search <folder> "<query>"`: a folder searched directly, with no index directory; built in memory, writes nothing; CLI and core, no format, contract, C ABI or Dart change, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; built, awaiting verification)
+Last updated: 2026-11-16 (S6-T2, `searchd search <folder> "<query>"`: a folder searched directly, with no index directory; built in memory, writes nothing; CLI and core, no format, contract, C ABI or Dart change, contracts 2.7.0 and Dart 0.8.0 unchanged, natives rebuilt; verified and merged as `06f8c2e`; CAP-20 Implemented and verified)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,7 +15,14 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## A folder searched directly: `searchd search <folder> "<query>"` (S6-T2, objective plan item C, 2026-11-16; built, awaiting verification)
+## A folder searched directly: `searchd search <folder> "<query>"` (S6-T2, objective plan item C, 2026-11-16; verified and merged)
+
+**Verified and merged 16 Nov as `06f8c2e`** ([Verdict](docs/tasks/S6-T2.md#verdict-verifier-fills-in), PASS on `8036a9c`). The verifier's own harness: 5,823 of 5,823 `search` answers byte-equal to `index --filename-index` then
+`query`/`query --json`/`evidence` (J2, `fixtures/`, a 1,000-file corpus, a walk-rules folder with caps); nothing written
+(also under a sandbox denying every file write, and on a read-only folder); 762 existing commands and 120 index files
+identical to `main`'s build; native J2 0 rows differ; five plants of its own caught by the Zig and process tests;
+natives rebuilt byte-equal; crossover rerun 79.5 ms at 1,000 files, 599 ms and 149 MiB at 10,000. CAP-20:
+Implemented and verified, not Validated (no user-derived folder). App: pin bump row in 03-next (behaviour unchanged).
 
 Built on `task/S6-T2` ([task and Report](docs/tasks/S6-T2.md), [CAP-20](docs/requirements/cap-20-direct-folder-search.md),
 [direct-search](docs/direct-search.md)); a different agent verifies and merges. No format, wire, contract, C ABI or Dart

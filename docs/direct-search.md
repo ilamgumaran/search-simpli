@@ -1,6 +1,6 @@
 # Searching a folder directly (`searchd search`)
 
-Status: Diagnostic · implemented (S6-T2, [CAP-20](requirements/cap-20-direct-folder-search.md),
+Status: Implemented and verified (S6-T2, merged as `06f8c2e`, [CAP-20](requirements/cap-20-direct-folder-search.md),
 FR-26, NFR-15). Code: `zig/src/cli.zig` (`runSearchFolder`, `buildAndOpen`),
 `zig/src/indexer.zig` (`buildFolderDetached`), `zig/src/apply.zig`
 (`buildDetached`), `zig/src/snapshot_open.zig` (`openDetached`,
