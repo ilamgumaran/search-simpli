@@ -4,6 +4,12 @@ Status: implemented in `zig/src/source.zig` (S3-T1). Magic `HYBSRC01`, file
 `source-N.hybsrc`, bound to its generation by [manifest v2](manifest-format-v2.md).
 Design: [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §4.
 
+**Since S6-T7 (manifest v2.4)** a folder generation's source section is
+`HYBSRC02`, which keeps only the bytes no chunk holds and rebuilds each file
+from its chunks: [`documents-v5-source-v2-format.md`](documents-v5-source-v2-format.md).
+This library still reads `HYBSRC01` in any index an earlier one wrote; v2
+keeps v1's line maps, SHA-256 and `read_span`/`outline` answers exactly.
+
 Chunks are stripped and joined with LF, and `md-section-v1` leaves front matter
 out of the body, so a chunk cannot give back a file's bytes. The source section
 keeps one copy of every retained file's original bytes with a line map, so

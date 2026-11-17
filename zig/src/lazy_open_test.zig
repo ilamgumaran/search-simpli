@@ -148,7 +148,7 @@ test "S4-T1: the lazy open answers every operation exactly as the eager open did
     // line maps; every file's bytes, read per call, equal the eager copy's.
     try std.testing.expectEqualSlices(u8, section.encoded[0..lazy_section.encoded.len], lazy_section.encoded);
     try std.testing.expectEqual(section.encoded.len, lazy_section.encoded.len + lazy_section.text_length);
-    for (0..section.file_count) |index| try std.testing.expectEqualStrings(section.file(index).bytes, (try lazy_section.fileBytes(a, lazy_section.file(index))).ok);
+    for (0..section.file_count) |index| try std.testing.expectEqualStrings(try source.entryBytes(section, a, section.file(index)), (try lazy_section.fileBytes(a, lazy_section.file(index))).ok);
 }
 
 const Racer = struct {

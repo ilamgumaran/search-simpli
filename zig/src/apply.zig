@@ -42,6 +42,8 @@ const publication = @import("publication.zig");
 const scope = @import("scope.zig");
 const segment = @import("segment.zig");
 const source = @import("source.zig");
+const segment_v5 = @import("segment_v5.zig");
+const source_v2 = @import("source_v2.zig");
 
 pub const max_changes: usize = 10_000;
 pub const default_max_file_bytes: u64 = 10 * 1024 * 1024;
@@ -1292,6 +1294,8 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stage
     const lexical_encoded = try readWhole(allocator, io, dir, metadata.lexical_file);
     stages.sub("open_previous.lexical_read");
     var section: ?source.Section = null;
+    var source_header: ?source.Header = null;
+    var source_bytes: []const u8 = &.{};
     if (metadata.hasSource()) {
         const bytes = try readWhole(allocator, io, dir, metadata.source_file);
         stages.sub("open_previous.source_read");
@@ -1307,9 +1311,11 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stage
         const header = try source.inspect(bytes);
         if (header.checksum != metadata.source_checksum) return error.SourceSectionChecksumMismatch;
         if (!metadata.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
+        // S6-T7: `HYBSRC02` exactly under `flag_text_once`.
+        if ((header.format == 2) != metadata.text_once) return error.InvalidSourceSection;
         stages.sub("open_previous.source_checksum");
-        section = try source.openTable(allocator, bytes, header);
-        stages.sub("open_previous.source_open");
+        source_header = header;
+        source_bytes = bytes;
     }
     // S4-T2 R3: the bound recovery state. A wrong size, header or checksum
     // refuses the write (`StateSectionSizeMismatch`,
@@ -1327,15 +1333,22 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stage
     // that must equal the manifest's).
     if (documents_encoded.len != metadata.documents_bytes) return error.DocumentSectionSizeMismatch;
     if (lexical_encoded.len != metadata.lexical_bytes) return error.LexicalSectionSizeMismatch;
-    if (storedChecksum(documents_encoded, segment.header_length) != metadata.documents_checksum) return error.DocumentSectionChecksumMismatch;
+    if (storedChecksum(documents_encoded, documentsHeaderLength(documents_encoded)) != metadata.documents_checksum) return error.DocumentSectionChecksumMismatch;
     if (lexicalStoredChecksum(lexical_encoded) != metadata.lexical_checksum) return error.LexicalSectionChecksumMismatch;
     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch return error.IndexTooLarge;
     // S4-T13 ruling 1: `segment.decode` and `lexical_segment.decode` as
     // their parts (`inspect`, then the decode of the inspected bytes).
     const documents_header = try segment.inspect(documents_encoded);
     stages.sub("open_previous.documents_checksum");
-    const documents = try segment.decodeInspected(documents_encoded, documents_header, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count));
+    if ((documents_header.format_version == segment.version_v5) != metadata.text_once) return error.InvalidDocumentSection;
+    const documents = try segment.decodeInspectedWith(documents_encoded, documents_header, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count), allocator, metadata.hasSource());
     stages.sub("open_previous.documents_decode");
+    // S6-T7: the source section after the documents, which a `HYBSRC02`
+    // section is bound to.
+    if (source_header) |header| {
+        section = try source.openTableBound(allocator, source_bytes, header, .{ .documents_encoded = documents_encoded, .documents = documents });
+        stages.sub("open_previous.source_open");
+    }
     const lexical_header = try lexical_segment.inspect(lexical_encoded);
     stages.sub("open_previous.lexical_checksum");
     const lexical_index = try lexical_segment.decodeWith(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count), .{ .validate_positions = false, .inspected = lexical_header, .term_text_allocator = allocator });
@@ -1369,6 +1382,14 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stage
         .filename_index_enabled = metadata.filename != null,
         .labeled_documents = labeled,
     }, .metadata = metadata, .source = section, .state = state_bytes };
+}
+
+/// S6-T7: the documents section's header length by its version (record
+/// v5's is 56 bytes; v3 and v4's 36). The bytes' length was checked
+/// against the manifest's; `storedChecksum` bounds the read.
+fn documentsHeaderLength(encoded: []const u8) usize {
+    if (encoded.len >= 10 and std.mem.readInt(u16, encoded[8..10], .little) == segment.version_v5) return segment_v5.header_length;
+    return segment.header_length;
 }
 
 /// The checksum a section stores as the last eight bytes of its header
@@ -2646,6 +2667,14 @@ const SourceWalk = struct {
     }
 };
 
+/// S6-T7: whether `now` are the very records `before` were (each text the
+/// same bytes of the previous documents section, in order).
+fn sameChunks(now: []const hybrid.Document, before: []const hybrid.Document) bool {
+    if (now.len != before.len) return false;
+    for (now, before) |a, b| if (a.text.ptr != b.text.ptr or a.text.len != b.text.len) return false;
+    return true;
+}
+
 /// S4-T13 ruling 4: where the previous generation's filename sections are
 /// (its manifest's values), for the carried filename lexical section.
 const PreviousFilename = struct {
@@ -2738,20 +2767,37 @@ fn buildGeneration(
         // unchanged file the batch named).
         var bytes: ?[]const u8 = file.fresh orelse file.read;
         var carried_record: ?source.Carried = null;
+        // S6-T7: the previous `HYBSRC02` entry of these same bytes, whose
+        // record, map and residual run are copied when the chunks are the
+        // previous ones too (checked below, once they are appended).
+        var previous_v2: ?source.FileEntry = null;
+        var unread_v2 = false;
         if (file.fresh == null) if (file.prev_record) |pr| if (source_walk) |*walk| if (walk.find(pr, std.mem.eql(u8, pr, file.record))) |entry| {
+            const v2 = walk.section.v2 != null;
             if (bytes) |read| {
-                if (read.len == entry.bytes.len and std.mem.eql(u8, file.hash, &std.fmt.bytesToHex(entry.sha256, .lower)))
+                if (read.len == entry.text_length and std.mem.eql(u8, file.hash, &std.fmt.bytesToHex(entry.sha256, .lower))) {
                     carried_record = source.carriedRecord(entry, false) catch return error.InvalidSourceSection;
+                    if (v2) previous_v2 = entry;
+                }
+            } else if (v2) {
+                // Not read this run: the record is copied below when the
+                // chunks are the previous ones, else the bytes are rebuilt
+                // from the previous generation (`unread_v2`).
+                carried_record = source.carriedRecord(entry, true) catch return error.InvalidSourceSection;
+                previous_v2 = entry;
+                unread_v2 = true;
             } else {
                 bytes = entry.bytes;
                 carried_record = source.carriedRecord(entry, true) catch return error.InvalidSourceSection;
             }
         };
         var source_doc_index: u32 = hybrid.no_source_doc;
-        if (root.retain_source) if (bytes) |b| {
+        var retained_slot: ?usize = null;
+        if (root.retain_source and (bytes != null or unread_v2)) {
             source_doc_index = @intCast(retained.items.len);
-            try retained.append(allocator, .{ .path = file.record, .bytes = b, .carried = carried_record });
-        };
+            retained_slot = retained.items.len;
+            try retained.append(allocator, .{ .path = file.record, .bytes = bytes orelse &.{}, .carried = carried_record });
+        }
         const first_document = documents.items.len;
         var chunker_id: ?[]const u8 = file.chunker;
         if (file.fresh) |content| {
@@ -2814,6 +2860,26 @@ fn buildGeneration(
             };
         }
         const chunks = documents.items.len - first_document;
+        if (retained_slot) |slot| {
+            const input = &retained.items[slot];
+            input.first_chunk = @intCast(first_document);
+            input.chunk_count = @intCast(chunks);
+            // S6-T7: the previous record is copied only when this file's
+            // chunks are exactly the previous file's (the same texts, in
+            // order: their recipe would be the same).
+            if (previous_v2) |entry| {
+                if (sameChunks(documents.items[first_document..], entry.v2_chunks)) {
+                    input.carried_v2 = source_v2.carried(prev_source.?, entry) catch return error.InvalidSourceSection;
+                } else if (unread_v2) {
+                    // Rebuilt and SHA-256 checked; its map is carried as it
+                    // is (S4-T14: a reader checks it where it reads it).
+                    input.bytes = switch (try source_v2.rebuildChecked(prev_source.?, allocator, entry)) {
+                        .ok => |rebuilt| rebuilt,
+                        .failed => return error.InvalidSourceSection,
+                    };
+                }
+            }
+        }
         if (chunks == 0) try unchunked.append(allocator, .{ .root_id = file.root_id, .path = file.rel, .size = file.size, .required_labels = file.labels });
         try state_files.append(allocator, .{
             .root_id = file.root_id,
@@ -2833,7 +2899,12 @@ fn buildGeneration(
     const lexical_index = try buildPositionalMerged(allocator, if (prev) |engine| engine.lexical_index else null, sources.items, stages);
     stages.mark("build_lexical");
     // S4-T16 ruling 4(a): one validation walk, an exact buffer, the bytes.
-    const documents_encoded = try segment.encodeAllocV4(allocator, documents.items);
+    // S6-T7: record v5, its file table built from the records and the
+    // retained paths (a record v5 cannot code fails the publish:
+    // `error.RecordNotEncodableV5`).
+    const retained_paths = try allocator.alloc([]const u8, retained.items.len);
+    for (retained.items, retained_paths) |input, *path| path.* = input.path;
+    const documents_encoded = try segment_v5.encodeAlloc(allocator, documents.items, retained_paths);
     stages.sub("encode_sections.documents");
     // S4-T12 ruling 2: one `validateIndex` (its passes timed as inner parts),
     // the sizes, an exact buffer and the bytes, in one call.
@@ -2841,7 +2912,7 @@ fn buildGeneration(
     // generation is decoded as today and its successor written as v3).
     const lexical_encoded = try lexical_segment.encodeV3AllocMarked(allocator, lexical_index, LexicalMarks{ .stages = stages });
     stages.sub("encode_sections.lexical");
-    const source_encoded: ?[]const u8 = if (any_retain) try source.encodeMarked(allocator, retained.items, SourceMarks{ .stages = stages }) else null;
+    const source_encoded: ?[]const u8 = if (any_retain) try source_v2.encodeMarked(allocator, retained.items, documents.items, SourceMarks{ .stages = stages }) else null;
     stages.mark("encode_sections");
 
     var uses_markdown = false;
@@ -2878,7 +2949,7 @@ fn buildGeneration(
         pending.items,
         unchunked.items,
         skipped_list,
-        if (source_encoded != null) source.version else 0,
+        if (source_encoded != null) source_v2.version else 0,
     );
     // The exact mutation state is immutable generation data, not a mutable
     // post-publication cache: it preserves own labels, mtimes and hashes even
@@ -2904,9 +2975,11 @@ fn buildGeneration(
         .term_count = lexical_index.terms.len,
         .posting_count = lexical_index.postings.len,
         .documents_bytes = documents_encoded.len,
-        .documents_checksum = storedChecksum(documents_encoded, segment.header_length),
+        .documents_checksum = storedChecksum(documents_encoded, segment_v5.header_length),
         .lexical_bytes = lexical_encoded.len,
         .lexical_checksum = lexicalStoredChecksum(lexical_encoded),
+        // S6-T7: manifest v2.4, record v5 documents and `HYBSRC02`.
+        .text_once = true,
         .has_positions = lexical_index.positions != null,
         // S4-T1: record v4 documents (and `HYBLEX02`, `HYBSRC01`) carry
         // XXH3-64 checksums (`checksum.zig`, manifest v2.1).

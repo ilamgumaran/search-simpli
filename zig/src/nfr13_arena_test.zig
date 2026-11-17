@@ -690,18 +690,23 @@ pub const OpenParts = struct {
     /// `term_text_bytes`; 0 for v1 and v2, whose terms are slices of the
     /// section).
     term_text: usize = 0,
+    /// S6-T7: what a record v5 documents section decodes into the arena
+    /// (`segment_v5.decode`): its paths (`path_bytes`) and a 20-byte hex id
+    /// per record (at most); 0 for v4, whose fields are slices.
+    documents_text: usize = 0,
 
     /// S4-T9 ruling 3, the formula bar: the manifest's bytes, the two
     /// sections the open reads and the tables decoded from them (from the
     /// manifest's counts and the struct sizes, and since S6-T4 the term
-    /// text a v3 section decodes), plus 1 MiB.
+    /// text a v3 section decodes, and since S6-T7 the paths and ids a
+    /// record v5 section decodes), plus 1 MiB.
     pub fn bar(parts: OpenParts) usize {
         return parts.manifest_bytes + parts.documents_section + parts.lexical_section + parts.tableBytes() + bar_slack_bytes;
     }
 
     pub fn tableBytes(parts: OpenParts) usize {
         return parts.document_count * @sizeOf(hybrid.Document) + parts.document_count * parts.vector_dimensions * @sizeOf(f32) +
-            parts.term_count * @sizeOf(postings.TermEntry) + parts.posting_count * @sizeOf(postings.Posting) + parts.document_count * @sizeOf(u32) + parts.term_text;
+            parts.term_count * @sizeOf(postings.TermEntry) + parts.posting_count * @sizeOf(postings.Posting) + parts.document_count * @sizeOf(u32) + parts.term_text + parts.documents_text;
     }
 };
 
@@ -769,6 +774,8 @@ fn attributeOpen(dir: std.Io.Dir) !OpenParts {
     parts.posting_count = metadata.posting_count;
     parts.vector_dimensions = metadata.vector_dimensions;
     parts.term_text = (try lexical_segment.inspect(snapshot.lexical_encoded)).term_text_bytes;
+    const documents_header = try @import("segment.zig").inspect(snapshot.documents_encoded);
+    if (documents_header.format_version == @import("segment.zig").version_v5) parts.documents_text = documents_header.v5.path_bytes + 20 * documents_header.document_count;
 
     const Slice = struct {
         fn of(comptime T: type, bytes: engine_module.OpenBlockBytes, offset: usize, count: usize) []T {
@@ -784,7 +791,7 @@ fn attributeOpen(dir: std.Io.Dir) !OpenParts {
         Slice.of(postings.TermEntry, block, layout.terms, metadata.term_count),
         Slice.of(postings.Posting, block, layout.postings, metadata.posting_count),
         Slice.of(u32, block, layout.document_lengths, metadata.document_count),
-        .{ .validate_positions = false, .term_text_allocator = allocator },
+        .{ .validate_positions = false, .term_text_allocator = allocator, .documents_allocator = allocator },
     );
     Mark.at(&parts, &counting_blocks, &counting_arena, &capped, .decode, &last_requested, &last_held);
     blocks.free(manifest_read);

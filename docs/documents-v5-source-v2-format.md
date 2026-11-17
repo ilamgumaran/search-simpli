@@ -1,10 +1,14 @@
 # Text once: documents record v5 and source section v2
 
-**Status: proposal (S6-T7 Phase 1).** No library reads or writes this format
-yet. The prototype `scripts/prototypes/s6t7/text_once.py` writes it from an
-index `main` wrote, decodes it again by the rules below and rebuilds every
-file; `scripts/prototypes/s6t7/probe.zig` times the decode and the rebuild.
-Measured results are in `docs/tasks/S6-T7.md` (Report) and
+**Status: implemented (S6-T7 Phase 2).** `zig/src/segment_v5.zig` writes and
+reads the documents section, `zig/src/source_v2.zig` the source section; the
+folder writer (`apply.zig`) publishes them at every publish, manifest v2.4.
+The Phase 1 prototype `scripts/prototypes/s6t7/text_once.py` wrote the same
+bytes from an index `main` wrote: on the six corpora the library's sections
+equal the prototype's to the byte. Every validity rule below has a Zig test
+that breaks it with the checksum recomputed (`zig/src/text_once_test.zig`);
+the old formats' compatibility is in `zig/src/compat_s6t7_test.zig`.
+Measured results are in `docs/tasks/S6-T7.md` (Reports) and
 `docs/evidence/s6-t7/`.
 
 This is D2 step 2 of [`index-size.md`](index-size.md) (§ A′, rulings 1 and 5).
@@ -382,7 +386,9 @@ manifest, or v2 with the file-name channel), byte for byte. It never writes v5.
 **A record v5 cannot code.** When a folder writer meets a record it cannot
 code (an empty path, or line 0), the publish fails before anything is written:
 a writer bug, not a fallback. No folder generation has one: every folder
-record's path passes `validPath` and every chunker's start line is ≥ 1.
+record's path passes `validPath` and every chunker's start line is ≥ 1. The
+error is `RecordNotEncodableV5` (`segment_v5.encodeAlloc`, before the
+generation's first file is written).
 
 ## Validation
 
@@ -390,7 +396,8 @@ record's path passes `validPath` and every chunker's start line is ≥ 1.
 
 In this order. Any failure is the existing corruption error:
 `InvalidDocumentSection` at the manifest binding, `SS_ERR_CORRUPT_SNAPSHOT`
-through the C ABI, and the open fails. The names below are the prototype's.
+through the C ABI, and the open fails. The names below are the library's
+(`segment.DecodeError`).
 
 1. **Header.**
    - Length ≥ 56, else `Truncated`.

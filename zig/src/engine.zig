@@ -93,6 +93,11 @@ pub const Engine = struct {
         /// S6-T4: where a `HYBLEX03` dictionary's decoded terms are
         /// allocated (`lexical_segment.DecodeOptions.term_text_allocator`).
         term_text_allocator: ?std.mem.Allocator = null,
+        /// S6-T7: where a record v5 section's decoded paths and hex ids are
+        /// allocated (`segment.decodeInspectedWith`); a v5 section without
+        /// one is `error.DocumentsAllocatorRequired`. v4 records stay slices
+        /// of the section.
+        documents_allocator: ?std.mem.Allocator = null,
     };
 
     /// `open`, computing each section's checksum once (S4-T1): the manifest
@@ -107,7 +112,10 @@ pub const Engine = struct {
         options: OpenOptions,
     ) !Engine {
         const headers = try manifest.validateSnapshotHeaders(snapshot.metadata, snapshot.documents_encoded, snapshot.lexical_encoded);
-        const documents = try segment.decodeInspected(snapshot.documents_encoded, headers.documents, document_output, vector_output);
+        const documents = if (headers.documents.format_version == segment.version_v5)
+            try segment.decodeInspectedWith(snapshot.documents_encoded, headers.documents, document_output, vector_output, options.documents_allocator orelse return error.DocumentsAllocatorRequired, snapshot.metadata.hasSource())
+        else
+            try segment.decodeInspected(snapshot.documents_encoded, headers.documents, document_output, vector_output);
         const lexical_index = try lexical_segment.decodeWith(
             snapshot.lexical_encoded,
             term_output,

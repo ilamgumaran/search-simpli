@@ -1,12 +1,15 @@
 const checksum = @import("checksum.zig");
 const hybrid = @import("hybrid.zig");
 const std = @import("std");
+const segment_v5 = @import("segment_v5.zig");
 
 pub const magic = "HYBSEG01";
 /// Newest record version this module reads and writes (S3-T1: v4,
 /// `docs/segment-format-v4.md`). `encode` keeps writing v3 byte for byte
 /// (the importer and every pre-S3 writer); `encodeV4` writes v4.
 pub const version: u16 = 4;
+/// S6-T7: record v5 (`segment_v5.zig`), written by the folder writer.
+pub const version_v5: u16 = segment_v5.version;
 pub const legacy_version: u16 = 3;
 pub const minimum_supported_version: u16 = 1;
 const v3_fixed_length: usize = 28;
@@ -39,6 +42,11 @@ pub const DecodeError = error{
     InvalidRequiredLabels,
     InvalidSection,
     SizeOverflow,
+    /// S6-T7, record v5: the file table or a record breaks a rule of
+    /// `docs/documents-v5-source-v2-format.md`.
+    InvalidFileTable,
+    UnsortedPaths,
+    InvalidRecord,
 };
 
 pub const Header = struct {
@@ -49,6 +57,8 @@ pub const Header = struct {
     checksum: u64,
     /// S4-T1: header flags bit 0 (`checksum.flag_xxh3`); record v4 sets it.
     checksum_kind: checksum.Kind = .fnv1a64,
+    /// S6-T7: record v5's file-table and area lengths (zero before v5).
+    v5: segment_v5.Counts = .{},
 };
 
 /// Return the exact number of bytes required by encode (record v3).
@@ -198,6 +208,7 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
     const actual_magic = try cursor.take(magic.len);
     if (!std.mem.eql(u8, actual_magic, magic)) return error.BadMagic;
     const actual_version = try cursor.readU16();
+    if (actual_version == version_v5) return segment_v5.parseHeader(encoded);
     if (actual_version < minimum_supported_version or actual_version > version) return error.UnsupportedVersion;
     // Flags: bit 0 (S4-T1) selects XXH3-64; before S4-T1 the field was
     // written zero and not read, and any other bit is refused.
@@ -243,6 +254,7 @@ pub fn decodeInspected(
     document_output: []hybrid.Document,
     vector_output: []f32,
 ) DecodeError![]hybrid.Document {
+    if (header.format_version == version_v5) return error.UnsupportedVersion; // `decodeInspectedWith`
     if (document_output.len < header.document_count) return error.DocumentCapacityTooSmall;
 
     var cursor = Cursor{ .bytes = encoded, .offset = header_length };
@@ -304,6 +316,29 @@ pub fn decodeInspected(
     }
     if (cursor.offset != encoded.len) return error.TrailingData;
     return document_output[0..header.document_count];
+}
+
+/// S6-T7: `decodeInspected` for any version, record v5 included: its
+/// decoded paths and hex ids come from `allocator` (`segment_v5.decode`);
+/// `has_source` says whether the manifest binds a source section.
+pub fn decodeInspectedWith(
+    encoded: []const u8,
+    header: Header,
+    document_output: []hybrid.Document,
+    vector_output: []f32,
+    allocator: std.mem.Allocator,
+    has_source: bool,
+) (DecodeError || std.mem.Allocator.Error)![]hybrid.Document {
+    if (header.format_version == version_v5) return segment_v5.decode(encoded, header, document_output, vector_output, allocator, has_source);
+    return decodeInspected(encoded, header, document_output, vector_output);
+}
+
+pub fn validatePackedRequiredLabelsPub(labels: []const u8) error{InvalidRequiredLabels}!void {
+    return validatePackedRequiredLabels(labels);
+}
+
+pub fn validateSectionPub(depth: u16, heading_line: u32, start_line: u32, section_path: []const u8) error{InvalidSection}!void {
+    return validateSection(depth, heading_line, start_line, section_path);
 }
 
 fn vectorDimensions(documents: []const hybrid.Document) EncodeError!usize {

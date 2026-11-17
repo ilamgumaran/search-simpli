@@ -31,13 +31,13 @@ const queries = [_][]const u8{ "hedgehogs pond", "frogspawn", "garden", "family 
 const find_modes = [_][]const u8{ "words", "phrase", "prefix" };
 const read_files = [_][]const u8{ "garden.md", "tamil-notes.md", "bills.txt", "crlf-shopping.md" };
 
-fn copyFixture(a: std.mem.Allocator, from_path: []const u8, out: std.Io.Dir) !void {
+pub fn copyFixture(a: std.mem.Allocator, from_path: []const u8, out: std.Io.Dir) !void {
     var from = try std.Io.Dir.cwd().openDir(io, from_path, .{});
     defer from.close(io);
     for (files) |name| try out.writeFile(io, .{ .sub_path = name, .data = try from.readFileAlloc(io, name, a, .unlimited) });
 }
 
-fn tmpPath(a: std.mem.Allocator, tmp: std.testing.TmpDir, sub: []const u8) ![]const u8 {
+pub fn tmpPath(a: std.mem.Allocator, tmp: std.testing.TmpDir, sub: []const u8) ![]const u8 {
     return std.fmt.allocPrint(a, ".zig-cache/tmp/{s}/{s}", .{ tmp.sub_path, sub });
 }
 
@@ -61,7 +61,7 @@ fn okJson(result: ops.Result) ![]const u8 {
 /// Every answer the tests compare, one per line: `query` (text and JSON)
 /// and `evidence` on all three fields, `find` in its three modes, `outline`
 /// and `read_span` of four files, `list_files`, `roots` and `index_status`.
-fn answers(a: std.mem.Allocator, dir: std.Io.Dir) ![]const []const u8 {
+pub fn answers(a: std.mem.Allocator, dir: std.Io.Dir) ![]const []const u8 {
     var out = std.ArrayList([]const u8).empty;
     for ([_]filename_field.Field{ .content, .filename, .both }) |field| {
         const engine = if (field != .content) (try snapshot_open.openScoped(a, io, dir)).engine else try snapshot_open.open(a, io, dir);
@@ -119,7 +119,7 @@ fn withoutGeneration(a: std.mem.Allocator, text: []const u8) ![]const u8 {
 }
 
 /// Equal answers, the generation number aside (`withoutGeneration`).
-fn expectSameAnswers(want: []const []const u8, got: []const []const u8) !void {
+pub fn expectSameAnswers(want: []const []const u8, got: []const []const u8) !void {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const a = arena_state.allocator();
@@ -137,13 +137,13 @@ fn expectSameAnswers(want: []const []const u8, got: []const []const u8) !void {
 }
 
 /// A fresh index of `folder` written by this library (v3), at `sub`.
-fn freshIndex(a: std.mem.Allocator, tmp: std.testing.TmpDir, sub: []const u8) !std.Io.Dir {
+pub fn freshIndex(a: std.mem.Allocator, tmp: std.testing.TmpDir, sub: []const u8) !std.Io.Dir {
     var sink: std.Io.Writer.Allocating = .init(a);
     try cli.runIndex(io, a, folder, try tmpPath(a, tmp, sub), .{ .caps = .{ .filename_index = true } }, &sink.writer);
     return tmp.dir.openDir(io, sub, .{ .iterate = true });
 }
 
-fn magicOf(a: std.mem.Allocator, dir: std.Io.Dir, name: []const u8) ![]const u8 {
+pub fn magicOf(a: std.mem.Allocator, dir: std.Io.Dir, name: []const u8) ![]const u8 {
     return (try dir.readFileAlloc(io, name, a, .unlimited))[0..8];
 }
 
@@ -293,14 +293,18 @@ test "S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's f
     var v2 = try std.Io.Dir.cwd().openDir(io, fixture_v2, .{});
     defer v2.close(io);
     try std.testing.expect(!refusedBy98c4a2b(try v2.readFileAlloc(io, publication.current_manifest_file, a, .unlimited)));
-    // The committed v3 fixture is what this writer gives the same folder,
-    // byte for byte (so it stays the format's reference), and it reads.
+    // The committed v3 fixture's lexical, file-name and state sections are
+    // what this writer gives the same folder, byte for byte (so they stay
+    // the format's reference), and it reads. S6-T7: the documents and source
+    // sections are record v5 and `HYBSRC02` since manifest v2.4
+    // (`compat_s6t7_test.zig` holds that format's reference).
     var tmp = std.testing.tmpDir(.{ .iterate = true });
     defer tmp.cleanup();
     var fresh = try freshIndex(a, tmp, "fresh");
     defer fresh.close(io);
     for (files) |name| {
-        if (std.mem.eql(u8, name, "INDEX-STATE.json")) continue;
+        if (std.mem.eql(u8, name, "INDEX-STATE.json") or std.mem.eql(u8, name, "MANIFEST") or
+            std.mem.eql(u8, name, "documents-1.hybseg") or std.mem.eql(u8, name, "source-1.hybsrc")) continue;
         try std.testing.expectEqualSlices(u8, try committed.readFileAlloc(io, name, a, .unlimited), try fresh.readFileAlloc(io, name, a, .unlimited));
     }
     try std.testing.expect(refusedBy98c4a2b(try fresh.readFileAlloc(io, publication.current_manifest_file, a, .unlimited)));
