@@ -17,7 +17,7 @@ or implementation tasks; current search behavior and native artifacts are unchan
 
 ## Warnings under every search field (S6-T5, objective plan item G, 2026-11-16; merged on the maintainer's decision, 17 Nov)
 
-**Merged into `main` 17 Nov on the maintainer's decision, under the timing rule he set that day** ([task, Report and
+**Merged into `main` 17 Nov as `423b2e9` on the maintainer's decision, under the timing rule he set that day** ([task, Report and
 Verdicts](docs/tasks/S6-T5.md), [CAP-22](docs/requirements/cap-22-field-warnings.md)). Two FAIL Verdicts stand as the
 record of the timing measurement: under the rule then in force, on the second Verdict's five runs against `ce96916`,
 23 `both`/`filename` cells were beyond the stated prediction (large prose cells +11 to +30 µs) and two `find` cells
