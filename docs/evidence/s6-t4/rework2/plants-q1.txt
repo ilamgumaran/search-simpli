@@ -1,0 +1,21 @@
+S6-T4 second rework: the Q1 plant against the new tests
+=======================================================
+
+Two copies of this branch's tracked files with the new tests (git ls-files, before the
+commit that adds them), each with its own ZIG_GLOBAL_CACHE_DIR and ZIG_LOCAL_CACHE_DIR,
+Debug `zig build test --summary all`:
+
+  none                         464 of 473 passed, 9 skipped
+                               byte flips: 5,170 resealed, 2,982 refused, 2,188 accepted;
+                               14 sections with a byte after the last offsets, all refused
+  Q1 (the verifier's patch,    462 of 473 passed, 9 skipped, 2 failed: caught
+  verifier/second-pass/          - "S6-T4: flipping any byte of a small HYBLEX03 section
+  harness/Q1-verifier.patch,        never crashes the reader" (its new last section:
+  applied unchanged: section 5's    expected error.InvalidPositions, found a decoded index)
+  end check removed)             - "S6-T4 second rework (Q1): a byte left over after the
+                                    last document's offsets is refused, v2 and v3, at open
+                                    and lazily" (the same)
+
+The file-name section has no sections 4 and 5 (docs/lexical-segment-format-v3.md: the
+positions flag is set for the content section and "the file-name section must clear
+it"), so there is no file-name form of Q1.

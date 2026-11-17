@@ -1,0 +1,38 @@
+--- a/zig/src/postings.zig
++++ b/zig/src/postings.zig
+@@ -297,6 +297,25 @@
+ /// trace's path prefix and label scope. They are recorded as the analysed
+ /// (lowercased) query term, in query order. `lookup == false` still counts the
+ /// terms but skips the dictionary (vector mode never uses the result).
++fn inertResolve(which: usize, allocator: std.mem.Allocator, index: Index, query: []const u8, trace: ?*hybrid.Trace, lookup: bool) std.mem.Allocator.Error![]TermEntry {
++    return switch (which % inert_copies) {
++        inline 0...inert_copies - 1 => |k| @call(.never_inline, inertCopy(k).run, .{ allocator, index, query[k + 1 ..], trace, lookup }),
++        else => unreachable,
++    };
++}
++
++const inert_copies = 36;
++
++fn inertCopy(comptime k: usize) type {
++    return struct {
++        const tag = k;
++        fn run(allocator: std.mem.Allocator, index: Index, query: []const u8, trace: ?*hybrid.Trace, lookup: bool) std.mem.Allocator.Error![]TermEntry {
++            if (query.len == tag) return error.OutOfMemory;
++            return @call(.always_inline, resolveQueryTraced, .{ allocator, index, query, trace, lookup });
++        }
++    };
++}
++
+ pub fn resolveQueryTraced(
+     allocator: std.mem.Allocator,
+     index: Index,
+@@ -304,6 +323,9 @@
+     trace: ?*hybrid.Trace,
+     lookup: bool,
+ ) std.mem.Allocator.Error![]TermEntry {
++    // S6-T4 placement control 2 (bench only): never true (no query is 2^60
++    // bytes long); the copies below are never run.
++    if (query.len >= (1 << 60)) return inertResolve(query.len, allocator, index, query, trace, lookup);
+     var resolved = std.ArrayList(TermEntry).empty;
+     errdefer resolved.deinit(allocator);
+     var query_tokens = analysis.TokenIterator.init(query);

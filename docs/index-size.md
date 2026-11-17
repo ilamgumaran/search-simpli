@@ -34,6 +34,9 @@ Raw tables: [`docs/evidence/s6-t3/`](evidence/s6-t3/README.md).
   10k), 1.82 (prose 10k), 1.27 (Tamil 10k), 1.71 (fixtures), 1.91 (family
   folder)**, summed from measured prototype re-encodings. None of the four
   changes what a query, `find` or `read_span` answers.
+- **Step 1 has landed** ([below](#landed)): lexical v3, measured 3.41 (timing
+  10k), 3.14 (prose 10k), 2.39 (Tamil 10k), 2.88 (fixtures), 3.17 (family
+  folder) against the projection's 3.46, 3.17, 2.40, 2.87, 3.15.
 - **Not taken in D2 (ruled 16 Nov 2026, [below](#rulings-16-nov-2026)):**
   leaving the offsets out (to 1.81 timing, 1.63 prose, but `find` words
   measured 0.03–0.84 ms slower at the median, up to 5 ms at p95), block
@@ -43,6 +46,41 @@ Raw tables: [`docs/evidence/s6-t3/`](evidence/s6-t3/README.md).
   land), and positions left out. The `keep_generations` default of
   `searchd index` and `searchd apply` changes to two in a separate task
   (D2-5).
+
+## Landed
+
+**Step 1, lexical v3 (S6-T4, verified and merged 16 Nov 2026 on the
+maintainer's decision, the timing rule not passed).** Both lexical sections are
+[`HYBLEX03`](lexical-segment-format-v3.md) (C1, C2b, C3 and F2) under
+[manifest v2.3](manifest-format-v2.md#v23-lexical-sections-v3-s6-t4). Measured
+on indexes written by `searchd index --filename-index` (one generation,
+channel on, MANIFEST and `INDEX-STATE.json` included), against `main` at
+98c4a2b on the same files, and against the step 1 column of the
+[projection](#projection):
+
+| Corpus | Corpus bytes | Before (v2) | After (v3) | Change | Projected (step 1) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| timing-10k | 7,269,199 | 32,281,645 (4.44) | 24,793,305 (3.41) | −7,488,340 (−23.2 %) | 25,165,379 (3.46) |
+| prose-10k | 17,244,024 | 69,778,345 (4.05) | 54,111,784 (3.14) | −15,666,561 (−22.5 %) | 54,654,587 (3.17) |
+| tamil-10k | 27,708,457 | 73,831,391 (2.66) | 66,154,883 (2.39) | −7,676,508 (−10.4 %) | 66,529,355 (2.40) |
+| fixtures | 4,635,177 | 17,499,412 (3.78) | 13,359,895 (2.88) | −4,139,517 (−23.7 %) | 13,300,298 (2.87) |
+| family | 1,237,342 | 5,621,585 (4.54) | 3,917,972 (3.17) | −1,703,613 (−30.3 %) | 3,901,855 (3.15) |
+
+The 10k corpora come in under the projection (it summed re-encodings without
+the per-term `list bytes` field; the 255-byte prefix cap and the 88-byte
+header cost nothing measurable here), the two small fixtures 0.4 % over it.
+Every section is the Phase 1 prototype's to the byte. Nothing a query, `find`,
+`outline`, `read_span`, `list_files` or `index_status` answers changed (65,456
+answers compared). Open is 17–26 % faster, memory after open 7.1 MB (timing),
+15.1 MB (prose) and 6.9 MB (Tamil) lower. Warm query and `find` carry a
+small measured cost that does **not** pass the timing rule: on Tamil about
+0.1–0.3 µs on warm queries of 3–8 µs and +0.011 and +0.017 ms on two `find`
+requests of about 3 ms (the second Verdict's five runs); the builder traced it
+to where the added code moves the unchanged query code, and the maintainer
+accepted it on 16 Nov 2026 (S6-T4, "Maintainer's decision"). The one-file
+update is unchanged; the first update of a v2 index costs 5–8 % once. The numbers, bars and method are in the
+[S6-T4 Report](tasks/S6-T4.md) and `docs/evidence/s6-t4/phase2/`. Steps 2–4 are
+next (03-next D2-2 to D2-4).
 
 ## How it was measured
 

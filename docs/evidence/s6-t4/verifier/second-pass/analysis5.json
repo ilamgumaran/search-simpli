@@ -1,0 +1,1191 @@
+{
+ "fail_1": [
+  "tamil-10k | find words கீகசை",
+  "tamil-10k | find prefix டூகன*"
+ ],
+ "fail_2": [
+  "timing-10k | find words badamo",
+  "prose-10k | content system",
+  "prose-10k | content retrieval hybrid",
+  "prose-10k | filename have",
+  "prose-10k | find words across lengthy seeming 04276",
+  "tamil-10k | content bazecha",
+  "tamil-10k | content benico",
+  "tamil-10k | content system",
+  "tamil-10k | content hashing",
+  "tamil-10k | content hybrid retrieval",
+  "tamil-10k | content retrieval hybrid",
+  "tamil-10k | content system systems",
+  "tamil-10k | content systems system",
+  "tamil-10k | both hashing",
+  "tamil-10k | both hybrid retrieval",
+  "tamil-10k | both retrieval hybrid",
+  "tamil-10k | both systems system",
+  "tamil-10k | find words றூகுஞங்கள்"
+ ],
+ "near": [
+  {
+   "cell": "timing-10k | find words badamo",
+   "main_median": 0.0224,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0002,
+    0.0001,
+    0.0004,
+    0.0002
+   ],
+   "median_d": 0.0002,
+   "main2_minus_main": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0003,
+    -0.0
+   ],
+   "median_main2": 0.0001,
+   "above_band_runs": 4,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0004,
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0003
+   ]
+  },
+  {
+   "cell": "prose-10k | content system",
+   "main_median": 0.0763,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    -0.0005,
+    0.0003,
+    0.0015,
+    -0.0007
+   ],
+   "median_d": 0.0003,
+   "main2_minus_main": [
+    -0.0003,
+    -0.0002,
+    -0.0004,
+    0.0002,
+    -0.0001
+   ],
+   "median_main2": -0.0002,
+   "above_band_runs": 3,
+   "below_band_runs": 2,
+   "band_width": [
+    0.0005,
+    0.0003,
+    0.0004,
+    0.0002,
+    0.0006
+   ]
+  },
+  {
+   "cell": "prose-10k | content retrieval hybrid",
+   "main_median": 0.0167,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    -0.0001,
+    0.0075,
+    -0.0001,
+    0.0011
+   ],
+   "median_d": 0.0002,
+   "main2_minus_main": [
+    -0.0,
+    0.0001,
+    -0.0,
+    0.0002,
+    0.0005
+   ],
+   "median_main2": 0.0001,
+   "above_band_runs": 3,
+   "below_band_runs": 1,
+   "band_width": [
+    0.0001,
+    0.0006,
+    0.0006,
+    0.0003,
+    0.0006
+   ]
+  },
+  {
+   "cell": "prose-10k | filename have",
+   "main_median": 0.0025,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0,
+    0.0002,
+    0.0,
+    -0.0
+   ],
+   "median_d": 0.0,
+   "main2_minus_main": [
+    -0.0001,
+    0.0,
+    -0.0001,
+    0.0,
+    0.0
+   ],
+   "median_main2": 0.0,
+   "above_band_runs": 3,
+   "below_band_runs": 1,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "cell": "prose-10k | find words across lengthy seeming 04276",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    -0.0,
+    0.0003,
+    0.0,
+    0.0001
+   ],
+   "median_d": 0.0001,
+   "main2_minus_main": [
+    0.0,
+    -0.0,
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "median_main2": 0.0,
+   "above_band_runs": 3,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0,
+    0.0001,
+    0.0
+   ]
+  },
+  {
+   "cell": "prose-10k | find phrase you get bowls",
+   "main_median": 0.1114,
+   "T": 0.01,
+   "d": [
+    0.0096,
+    0.019,
+    0.0085,
+    -0.0015,
+    0.0168
+   ],
+   "median_d": 0.0096,
+   "main2_minus_main": [
+    0.0002,
+    -0.0003,
+    -0.0023,
+    0.0064,
+    -0.0061
+   ],
+   "median_main2": -0.0003,
+   "above_band_runs": 0,
+   "below_band_runs": 1,
+   "band_width": [
+    0.0158,
+    0.0287,
+    0.0188,
+    0.0247,
+    0.0268
+   ]
+  },
+  {
+   "cell": "prose-10k | find prefix with*",
+   "main_median": 8.4721,
+   "T": 0.0847,
+   "d": [
+    0.0605,
+    0.0926,
+    0.1357,
+    0.0626,
+    -0.1197
+   ],
+   "median_d": 0.0626,
+   "main2_minus_main": [
+    -0.0149,
+    0.1187,
+    -0.0154,
+    0.069,
+    0.0149
+   ],
+   "median_main2": 0.0149,
+   "above_band_runs": 2,
+   "below_band_runs": 1,
+   "band_width": [
+    0.0846,
+    0.1519,
+    0.0394,
+    0.1035,
+    0.0318
+   ]
+  },
+  {
+   "cell": "tamil-10k | content bazecha",
+   "main_median": 0.0033,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0001
+   ],
+   "median_d": 0.0001,
+   "main2_minus_main": [
+    -0.0,
+    0.0001,
+    0.0001,
+    -0.0,
+    -0.0
+   ],
+   "median_main2": -0.0,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0002,
+    0.0001,
+    0.0001
+   ]
+  },
+  {
+   "cell": "tamil-10k | content benico",
+   "main_median": 0.0033,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0001
+   ],
+   "median_d": 0.0001,
+   "main2_minus_main": [
+    0.0,
+    0.0,
+    0.0002,
+    0.0,
+    -0.0
+   ],
+   "median_main2": 0.0,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0002,
+    0.0,
+    0.0001
+   ]
+  },
+  {
+   "cell": "tamil-10k | content system",
+   "main_median": 0.0033,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0001
+   ],
+   "median_d": 0.0002,
+   "main2_minus_main": [
+    -0.0,
+    0.0001,
+    0.0001,
+    -0.0,
+    0.0
+   ],
+   "median_main2": 0.0,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "cell": "tamil-10k | content hashing",
+   "main_median": 0.0041,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "main2_minus_main": [
+    0.0,
+    0.0,
+    0.0001,
+    -0.0,
+    -0.0
+   ],
+   "median_main2": 0.0,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0001
+   ]
+  },
+  {
+   "cell": "tamil-10k | content hybrid retrieval",
+   "main_median": 0.0048,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "main2_minus_main": [
+    -0.0,
+    0.0,
+    0.0,
+    -0.0,
+    -0.0
+   ],
+   "median_main2": -0.0,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0002,
+    0.0001,
+    0.0,
+    0.0002,
+    0.0002
+   ]
+  },
+  {
+   "cell": "tamil-10k | content retrieval hybrid",
+   "main_median": 0.0049,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0001,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "main2_minus_main": [
+    0.0,
+    0.0,
+    0.0,
+    -0.0002,
+    -0.0001
+   ],
+   "median_main2": 0.0,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0001
+   ]
+  },
+  {
+   "cell": "tamil-10k | content system systems",
+   "main_median": 0.0056,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0002
+   ],
+   "median_d": 0.0002,
+   "main2_minus_main": [
+    -0.0,
+    0.0,
+    -0.0001,
+    0.0,
+    -0.0
+   ],
+   "median_main2": -0.0,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0001,
+    0.0002,
+    0.0001,
+    0.0001,
+    0.0002
+   ]
+  },
+  {
+   "cell": "tamil-10k | content systems system",
+   "main_median": 0.0057,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0002
+   ],
+   "median_d": 0.0003,
+   "main2_minus_main": [
+    -0.0,
+    0.0,
+    -0.0,
+    -0.0001,
+    0.0002
+   ],
+   "median_main2": -0.0,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0001,
+    0.0003,
+    0.0001,
+    0.0002,
+    0.0002
+   ]
+  },
+  {
+   "cell": "tamil-10k | both hashing",
+   "main_median": 0.0063,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0002,
+    0.0,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "main2_minus_main": [
+    0.0,
+    0.0001,
+    -0.0001,
+    -0.0003,
+    -0.0001
+   ],
+   "median_main2": -0.0001,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0004,
+    0.0001
+   ]
+  },
+  {
+   "cell": "tamil-10k | both hybrid retrieval",
+   "main_median": 0.0073,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0002,
+    0.0003,
+    0.0,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "main2_minus_main": [
+    0.0001,
+    -0.0,
+    -0.0002,
+    -0.0001,
+    -0.0002
+   ],
+   "median_main2": -0.0001,
+   "above_band_runs": 5,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0002,
+    0.0,
+    0.0003,
+    0.0004,
+    0.0003
+   ]
+  },
+  {
+   "cell": "tamil-10k | both retrieval hybrid",
+   "main_median": 0.0073,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0003,
+    0.0004,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "main2_minus_main": [
+    0.0002,
+    0.0,
+    -0.0001,
+    0.0,
+    -0.0001
+   ],
+   "median_main2": 0.0,
+   "above_band_runs": 4,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0005,
+    0.0001,
+    0.0003,
+    0.0003,
+    0.0003
+   ]
+  },
+  {
+   "cell": "tamil-10k | both systems system",
+   "main_median": 0.008,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0002,
+    0.0004,
+    0.0001,
+    0.0002
+   ],
+   "median_d": 0.0002,
+   "main2_minus_main": [
+    0.0001,
+    0.0,
+    0.0,
+    -0.0001,
+    -0.0
+   ],
+   "median_main2": 0.0,
+   "above_band_runs": 3,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0004,
+    0.0004,
+    0.0004,
+    0.0002,
+    0.0003
+   ]
+  },
+  {
+   "cell": "tamil-10k | both டூகனை",
+   "main_median": 0.7245,
+   "T": 0.01,
+   "d": [
+    0.0051,
+    0.0051,
+    -0.0044,
+    0.0068,
+    0.005
+   ],
+   "median_d": 0.0051,
+   "main2_minus_main": [
+    0.007,
+    0.0118,
+    0.0058,
+    0.004,
+    -0.0012
+   ],
+   "median_main2": 0.0058,
+   "above_band_runs": 0,
+   "below_band_runs": 0,
+   "band_width": [
+    0.019,
+    0.0171,
+    0.0147,
+    0.0117,
+    0.0089
+   ]
+  },
+  {
+   "cell": "tamil-10k | find words கீகசை",
+   "main_median": 2.9743,
+   "T": 0.01,
+   "d": [
+    0.0207,
+    0.0082,
+    0.0109,
+    0.0172,
+    0.0028
+   ],
+   "median_d": 0.0109,
+   "main2_minus_main": [
+    0.0013,
+    0.0025,
+    0.004,
+    0.0112,
+    -0.0014
+   ],
+   "median_main2": 0.0025,
+   "above_band_runs": 2,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0179,
+    0.02,
+    0.0151,
+    0.0132,
+    0.0127
+   ]
+  },
+  {
+   "cell": "tamil-10k | find words றூகுஞங்கள்",
+   "main_median": 0.0347,
+   "T": 0.01,
+   "d": [
+    0.001,
+    0.001,
+    -0.0005,
+    0.0001,
+    0.0007
+   ],
+   "median_d": 0.0007,
+   "main2_minus_main": [
+    0.0,
+    0.0009,
+    -0.0007,
+    -0.0009,
+    -0.0
+   ],
+   "median_main2": -0.0,
+   "above_band_runs": 3,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0016,
+    0.0009,
+    0.001,
+    0.0009,
+    0.0006
+   ]
+  },
+  {
+   "cell": "tamil-10k | find prefix டூகன*",
+   "main_median": 2.9854,
+   "T": 0.01,
+   "d": [
+    0.0203,
+    0.0094,
+    0.0025,
+    0.0178,
+    0.0168
+   ],
+   "median_d": 0.0168,
+   "main2_minus_main": [
+    0.0019,
+    0.0066,
+    0.0038,
+    0.014,
+    0.0114
+   ],
+   "median_main2": 0.0066,
+   "above_band_runs": 1,
+   "below_band_runs": 0,
+   "band_width": [
+    0.0297,
+    0.0318,
+    0.0148,
+    0.014,
+    0.0243
+   ]
+  }
+ ],
+ "worst": {
+  "timing-10k": [
+   {
+    "cell": "timing-10k | find words from",
+    "main_median": 3.0185,
+    "T": 0.01,
+    "d": [
+     0.0005,
+     0.0165,
+     0.0049,
+     0.0085,
+     -0.0007
+    ],
+    "median_d": 0.0049,
+    "main2_minus_main": [
+     -0.0001,
+     0.0128,
+     0.0029,
+     0.0179,
+     0.0022
+    ],
+    "median_main2": 0.0029,
+    "above_band_runs": 0,
+    "below_band_runs": 0,
+    "band_width": [
+     0.0214,
+     0.0198,
+     0.0249,
+     0.0179,
+     0.0278
+    ]
+   },
+   {
+    "cell": "timing-10k | content systems system",
+    "main_median": 0.1266,
+    "T": 0.01,
+    "d": [
+     0.0007,
+     -0.0013,
+     0.0013,
+     -0.0037,
+     0.0008
+    ],
+    "median_d": 0.0007,
+    "main2_minus_main": [
+     0.0013,
+     0.0001,
+     -0.0004,
+     -0.0032,
+     0.0004
+    ],
+    "median_main2": 0.0001,
+    "above_band_runs": 1,
+    "below_band_runs": 1,
+    "band_width": [
+     0.0018,
+     0.0023,
+     0.0013,
+     0.0032,
+     0.0021
+    ]
+   },
+   {
+    "cell": "timing-10k | both system systems",
+    "main_median": 0.251,
+    "T": 0.01,
+    "d": [
+     0.001,
+     -0.0007,
+     0.0024,
+     0.0004,
+     0.0005
+    ],
+    "median_d": 0.0005,
+    "main2_minus_main": [
+     0.0004,
+     -0.0013,
+     0.0015,
+     -0.0009,
+     0.0003
+    ],
+    "median_main2": 0.0003,
+    "above_band_runs": 2,
+    "below_band_runs": 0,
+    "band_width": [
+     0.0016,
+     0.0023,
+     0.0023,
+     0.024,
+     0.0027
+    ]
+   }
+  ],
+  "prose-10k": [
+   {
+    "cell": "prose-10k | find prefix with*",
+    "main_median": 8.4721,
+    "T": 0.0847,
+    "d": [
+     0.0605,
+     0.0926,
+     0.1357,
+     0.0626,
+     -0.1197
+    ],
+    "median_d": 0.0626,
+    "main2_minus_main": [
+     -0.0149,
+     0.1187,
+     -0.0154,
+     0.069,
+     0.0149
+    ],
+    "median_main2": 0.0149,
+    "above_band_runs": 2,
+    "below_band_runs": 1,
+    "band_width": [
+     0.0846,
+     0.1519,
+     0.0394,
+     0.1035,
+     0.0318
+    ]
+   },
+   {
+    "cell": "prose-10k | find phrase you get bowls",
+    "main_median": 0.1114,
+    "T": 0.01,
+    "d": [
+     0.0096,
+     0.019,
+     0.0085,
+     -0.0015,
+     0.0168
+    ],
+    "median_d": 0.0096,
+    "main2_minus_main": [
+     0.0002,
+     -0.0003,
+     -0.0023,
+     0.0064,
+     -0.0061
+    ],
+    "median_main2": -0.0003,
+    "above_band_runs": 0,
+    "below_band_runs": 1,
+    "band_width": [
+     0.0158,
+     0.0287,
+     0.0188,
+     0.0247,
+     0.0268
+    ]
+   },
+   {
+    "cell": "prose-10k | find phrase partly all rougher",
+    "main_median": 0.0253,
+    "T": 0.01,
+    "d": [
+     0.0129,
+     0.0008,
+     0.0042,
+     -0.0052,
+     0.0088
+    ],
+    "median_d": 0.0042,
+    "main2_minus_main": [
+     0.0002,
+     0.0029,
+     -0.0,
+     -0.0056,
+     0.003
+    ],
+    "median_main2": 0.0002,
+    "above_band_runs": 0,
+    "below_band_runs": 0,
+    "band_width": [
+     0.0243,
+     0.0243,
+     0.024,
+     0.0251,
+     0.0235
+    ]
+   }
+  ],
+  "tamil-10k": [
+   {
+    "cell": "tamil-10k | find prefix டூகன*",
+    "main_median": 2.9854,
+    "T": 0.01,
+    "d": [
+     0.0203,
+     0.0094,
+     0.0025,
+     0.0178,
+     0.0168
+    ],
+    "median_d": 0.0168,
+    "main2_minus_main": [
+     0.0019,
+     0.0066,
+     0.0038,
+     0.014,
+     0.0114
+    ],
+    "median_main2": 0.0066,
+    "above_band_runs": 1,
+    "below_band_runs": 0,
+    "band_width": [
+     0.0297,
+     0.0318,
+     0.0148,
+     0.014,
+     0.0243
+    ]
+   },
+   {
+    "cell": "tamil-10k | find words கீகசை",
+    "main_median": 2.9743,
+    "T": 0.01,
+    "d": [
+     0.0207,
+     0.0082,
+     0.0109,
+     0.0172,
+     0.0028
+    ],
+    "median_d": 0.0109,
+    "main2_minus_main": [
+     0.0013,
+     0.0025,
+     0.004,
+     0.0112,
+     -0.0014
+    ],
+    "median_main2": 0.0025,
+    "above_band_runs": 2,
+    "below_band_runs": 0,
+    "band_width": [
+     0.0179,
+     0.02,
+     0.0151,
+     0.0132,
+     0.0127
+    ]
+   },
+   {
+    "cell": "tamil-10k | both டூகனை",
+    "main_median": 0.7245,
+    "T": 0.01,
+    "d": [
+     0.0051,
+     0.0051,
+     -0.0044,
+     0.0068,
+     0.005
+    ],
+    "median_d": 0.0051,
+    "main2_minus_main": [
+     0.007,
+     0.0118,
+     0.0058,
+     0.004,
+     -0.0012
+    ],
+    "median_main2": 0.0058,
+    "above_band_runs": 0,
+    "below_band_runs": 0,
+    "band_width": [
+     0.019,
+     0.0171,
+     0.0147,
+     0.0117,
+     0.0089
+    ]
+   }
+  ]
+ },
+ "answers_equal": true,
+ "bars": {
+  "timing-10k": [
+   {
+    "open_pct": -24.2,
+    "first_find_pct": -2.2,
+    "mem_open_MB": [
+     33.4,
+     26.3
+    ],
+    "mem_q_MB": [
+     44.2,
+     37.2
+    ]
+   },
+   {
+    "open_pct": -23.7,
+    "first_find_pct": -0.8,
+    "mem_open_MB": [
+     33.4,
+     26.3
+    ],
+    "mem_q_MB": [
+     43.9,
+     37.2
+    ]
+   },
+   {
+    "open_pct": -24.4,
+    "first_find_pct": -2.2,
+    "mem_open_MB": [
+     33.4,
+     26.3
+    ],
+    "mem_q_MB": [
+     43.9,
+     37.2
+    ]
+   },
+   {
+    "open_pct": -24.7,
+    "first_find_pct": -1.9,
+    "mem_open_MB": [
+     33.4,
+     26.3
+    ],
+    "mem_q_MB": [
+     43.9,
+     37.3
+    ]
+   },
+   {
+    "open_pct": -24.1,
+    "first_find_pct": 4.8,
+    "mem_open_MB": [
+     33.4,
+     26.3
+    ],
+    "mem_q_MB": [
+     43.6,
+     37.0
+    ]
+   }
+  ],
+  "prose-10k": [
+   {
+    "open_pct": -18.1,
+    "first_find_pct": -1.4,
+    "mem_open_MB": [
+     68.9,
+     53.7
+    ],
+    "mem_q_MB": [
+     88.6,
+     71.9
+    ]
+   },
+   {
+    "open_pct": -18.3,
+    "first_find_pct": 4.1,
+    "mem_open_MB": [
+     68.8,
+     53.7
+    ],
+    "mem_q_MB": [
+     88.3,
+     71.8
+    ]
+   },
+   {
+    "open_pct": -18.3,
+    "first_find_pct": 0.2,
+    "mem_open_MB": [
+     68.8,
+     53.8
+    ],
+    "mem_q_MB": [
+     88.1,
+     72.1
+    ]
+   },
+   {
+    "open_pct": -19.0,
+    "first_find_pct": -4.5,
+    "mem_open_MB": [
+     68.8,
+     53.7
+    ],
+    "mem_q_MB": [
+     88.5,
+     71.8
+    ]
+   },
+   {
+    "open_pct": -19.1,
+    "first_find_pct": -0.6,
+    "mem_open_MB": [
+     68.8,
+     53.8
+    ],
+    "mem_q_MB": [
+     88.4,
+     72.0
+    ]
+   }
+  ],
+  "tamil-10k": [
+   {
+    "open_pct": -20.3,
+    "first_find_pct": -3.5,
+    "mem_open_MB": [
+     54.4,
+     47.5
+    ],
+    "mem_q_MB": [
+     66.5,
+     59.7
+    ]
+   },
+   {
+    "open_pct": -19.3,
+    "first_find_pct": -2.0,
+    "mem_open_MB": [
+     54.4,
+     47.5
+    ],
+    "mem_q_MB": [
+     66.7,
+     59.7
+    ]
+   },
+   {
+    "open_pct": -19.9,
+    "first_find_pct": -3.9,
+    "mem_open_MB": [
+     54.4,
+     47.5
+    ],
+    "mem_q_MB": [
+     66.6,
+     59.7
+    ]
+   },
+   {
+    "open_pct": -19.8,
+    "first_find_pct": 3.8,
+    "mem_open_MB": [
+     54.4,
+     47.5
+    ],
+    "mem_q_MB": [
+     66.3,
+     59.7
+    ]
+   },
+   {
+    "open_pct": -20.2,
+    "first_find_pct": -5.7,
+    "mem_open_MB": [
+     54.4,
+     47.5
+    ],
+    "mem_q_MB": [
+     66.4,
+     59.4
+    ]
+   }
+  ]
+ },
+ "counts": {
+  "timing-10k": 54,
+  "prose-10k": 54,
+  "tamil-10k": 55
+ },
+ "above3_any": 0
+}

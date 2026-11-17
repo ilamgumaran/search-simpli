@@ -1,0 +1,51 @@
+--- main98/src/zig/src/postings.zig	2026-11-16 11:15:43
++++ vctl2/src/zig/src/postings.zig	2026-11-16 13:58:46
+@@ -139,6 +139,9 @@
+ /// The dictionary index of exactly `term` (bytes): a binary search in a
+ /// sorted dictionary, else a scan.
+ pub fn lookupExact(index: Index, term: []const u8) ?usize {
++    // S6-T4 verifier placement control vctl2 (bench only): never true (no
++    // term is 2^50 bytes long); the copies below are never run.
++    if (term.len >= (1 << 50)) return inertLookup(term.len, index, term);
+     if (!index.sorted_terms) {
+         for (index.terms, 0..) |entry, i| {
+             if (std.mem.eql(u8, entry.term, term)) return i;
+@@ -150,6 +153,38 @@
+     return null;
+ }
+ 
++const vctl2_copies = 64;
++
++fn inertLookup(which: usize, index: Index, term: []const u8) ?usize {
++    return switch (which % vctl2_copies) {
++        inline 0...vctl2_copies - 1 => |k| @call(.never_inline, VctlCopy(k).run, .{ index, term[k + 1 ..] }),
++        else => unreachable,
++    };
++}
++
++fn VctlCopy(comptime k: usize) type {
++    return struct {
++        fn run(index: Index, term: []const u8) ?usize {
++            if (term.len == k) return null;
++            // A copy of the sorted lookup with a fold over the postings of
++            // the found term (never run).
++            var low: usize = 0;
++            var high: usize = index.terms.len;
++            while (low < high) {
++                const middle = low + (high - low) / 2;
++                if (std.mem.order(u8, index.terms[middle].term, term) == .lt) low = middle + 1 else high = middle;
++            }
++            if (low >= index.terms.len or !std.mem.eql(u8, index.terms[low].term, term)) return null;
++            const entry = index.terms[low];
++            var sum: u64 = k;
++            for (index.postings[entry.postings_start..][0..entry.postings_length]) |posting| {
++                sum +%= @as(u64, posting.term_frequency) *% (index.document_lengths[posting.document_index] +% k);
++            }
++            return if (sum == 0) null else low;
++        }
++    };
++}
++
+ /// The first dictionary index whose term is not less than `term` (bytes);
+ /// the dictionary must be sorted.
+ pub fn lowerBound(terms: []const TermEntry, term: []const u8) usize {

@@ -540,3 +540,59 @@ test "S4-T13 ruling 4: the carried lexical section with a rebuilt catalog is a f
         try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validateBuilt(a, moved, changed));
     }
 }
+
+/// S6-T4 rework: `section` (a `HYBLEX03` file-name section) with its last
+/// term's `list bytes` changed by `delta`, checksum recomputed.
+fn withLastListBytes(a: std.mem.Allocator, section: []const u8, delta: i64) ![]u8 {
+    const lexical_segment = @import("lexical_segment.zig");
+    const checksum = @import("checksum.zig");
+    const header = try lexical_segment.inspect(section);
+    const dictionary_at = lexical_segment.header_length_v3 + header.document_lengths_bytes;
+    const dictionary = section[dictionary_at..][0..header.dictionary_bytes];
+    var walk: usize = 0;
+    var last_at: usize = 0;
+    var value: u32 = 0;
+    for (0..header.term_count) |_| {
+        _ = postings.readVarint(dictionary, &walk).?;
+        const suffix = postings.readVarint(dictionary, &walk).?;
+        walk += suffix;
+        _ = postings.readVarint(dictionary, &walk).?;
+        last_at = walk;
+        value = postings.readVarint(dictionary, &walk).?;
+    }
+    // The tests keep the varint one byte wide, so no length moves.
+    std.debug.assert(walk == last_at + 1 and value + delta < 0x80);
+    const out = try a.dupe(u8, section);
+    out[dictionary_at + last_at] = @intCast(@as(i64, value) + delta);
+    std.mem.writeInt(u64, out[80..88], checksum.compute(.xxh3_64, out[0..80], out[lexical_segment.header_length_v3..]), .little);
+    return out;
+}
+
+test "S6-T4 rework: a file-name section whose last list is longer than its df is held to its list bytes" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    // "zz" is the last term of the section (by bytes): in two names, three
+    // times and twice, so its list (2 postings with tf) is 4 bytes for df 2.
+    const body = [_]hybrid.Document{
+        .{ .id = "n", .path = "notes/garden.md", .text = "body", .start_line = 1, .end_line = 1 },
+        .{ .id = "t", .path = "zz-zz-zz.md", .text = "body", .start_line = 1, .end_line = 1 },
+        .{ .id = "w", .path = "zz-zz.md", .text = "body", .start_line = 1, .end_line = 1 },
+    };
+    const built = try filename_field.build(a, &body, analyzer_v2.analyzer_id);
+    try std.testing.expectEqualStrings("HYBLEX03", built.lexical[0..8]);
+    const body_index = try makeBodyIndex(a, &body);
+    const decoded = try filename_field.decode(a, &body, body_index, built.catalog, built.lexical);
+    const terms = decoded.lexical.terms;
+    const last = terms[terms.len - 1];
+    try std.testing.expectEqualStrings("zz", last.term);
+    try std.testing.expectEqual(@as(u32, 2), last.document_frequency);
+    const zz = decoded.lexical.postings[last.postings_start..][0..2];
+    try std.testing.expectEqual(@as(u32, 3), zz[0].term_frequency);
+    try std.testing.expectEqual(@as(u32, 2), zz[1].term_frequency);
+    try filename_field.validateDecoded(a, decoded, analyzer_v2.analyzer_id);
+    // One short (3, still not below df 2): the list cannot hold its postings.
+    try std.testing.expectError(error.InvalidPosting, filename_field.decode(a, &body, body_index, built.catalog, try withLastListBytes(a, built.lexical, -1)));
+    // One long: past the end of section 3.
+    try std.testing.expectError(error.InvalidPostingRange, filename_field.decode(a, &body, body_index, built.catalog, try withLastListBytes(a, built.lexical, 1)));
+}

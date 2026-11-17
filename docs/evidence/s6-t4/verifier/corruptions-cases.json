@@ -1,0 +1,212 @@
+{
+ "content-control-reencoded": {
+  "from": "content",
+  "expect": "accepted",
+  "why": "unchanged re-encode (equals the input)"
+ },
+ "content-unterminated-last-varint": {
+  "from": "content",
+  "expect": "refused",
+  "why": "the last byte of section 3 has its continuation bit set: the last varint runs off its list"
+ },
+ "content-unterminated-last-length": {
+  "from": "content",
+  "expect": "refused",
+  "why": "the last byte of section 1 has its continuation bit set"
+ },
+ "content-gap-past-count": {
+  "from": "content",
+  "expect": "refused",
+  "why": "the last posting's document equals the document count"
+ },
+ "content-listbytes-shifted": {
+  "from": "content",
+  "expect": "refused",
+  "why": "term 0's list bytes +1 and term 1's -1 (their sum unchanged)"
+ },
+ "content-listbytes-moved": {
+  "from": "content",
+  "expect": "refused",
+  "why": "term 6's list bytes +1 and term 7's -1 (both still >= df; sum unchanged)"
+ },
+ "content-listbytes-last-short": {
+  "from": "content",
+  "expect": "refused",
+  "why": "the last term's list bytes one short of section 3's end (a byte left over)"
+ },
+ "content-listbytes-last-extra": {
+  "from": "content",
+  "expect": "refused",
+  "why": "the last list holds a byte after its df postings (list bytes counts it)"
+ },
+ "content-df-zero": {
+  "from": "content",
+  "expect": "refused",
+  "why": "a term with df 0 and list bytes 0"
+ },
+ "content-df-zero-existing": {
+  "from": "content",
+  "expect": "refused",
+  "why": "term 1's df written as 0, posting count reduced to match the dfs"
+ },
+ "content-unsorted-swap": {
+  "from": "content",
+  "expect": "refused",
+  "why": "terms 1 and 2 swapped"
+ },
+ "content-duplicate": {
+  "from": "content",
+  "expect": "refused",
+  "why": "term 2 written equal to term 1"
+ },
+ "content-shared-short": {
+  "from": "content",
+  "expect": "refused",
+  "why": "a shared length one shorter than the true common prefix"
+ },
+ "content-shared-past-previous": {
+  "from": "content",
+  "expect": "refused",
+  "why": "a shared length one above the previous term's length"
+ },
+ "content-termtext-short": {
+  "from": "content",
+  "expect": "refused",
+  "why": "header term-text bytes one short"
+ },
+ "content-termtext-long": {
+  "from": "content",
+  "expect": "refused",
+  "why": "header term-text bytes one long"
+ },
+ "content-tf1-explicit": {
+  "from": "content",
+  "expect": "refused",
+  "why": "term 0's postings each with the low bit clear and an explicit tf (some tf 1)"
+ },
+ "content-flag1-flipped": {
+  "from": "content",
+  "expect": "refused",
+  "why": "flags bit 1 flipped (positions sections dropped when it was set)"
+ },
+ "content-overlong-length-varint": {
+  "from": "content",
+  "expect": "either",
+  "why": "document 0's length as a two-byte (non-minimal) varint: not ruled out by the document"
+ },
+ "filename-control-reencoded": {
+  "from": "filename",
+  "expect": "accepted",
+  "why": "unchanged re-encode (equals the input)"
+ },
+ "filename-unterminated-last-varint": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "the last byte of section 3 has its continuation bit set: the last varint runs off its list"
+ },
+ "filename-unterminated-last-length": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "the last byte of section 1 has its continuation bit set"
+ },
+ "filename-gap-past-count": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "the last posting's document equals the document count"
+ },
+ "filename-listbytes-shifted": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "term 0's list bytes +1 and term 1's -1 (their sum unchanged)"
+ },
+ "filename-listbytes-last-short": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "the last term's list bytes one short of section 3's end (a byte left over)"
+ },
+ "filename-listbytes-last-extra": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "the last list holds a byte after its df postings (list bytes counts it)"
+ },
+ "filename-df-zero": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "a term with df 0 and list bytes 0"
+ },
+ "filename-df-zero-existing": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "term 1's df written as 0, posting count reduced to match the dfs"
+ },
+ "filename-unsorted-swap": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "terms 1 and 2 swapped"
+ },
+ "filename-duplicate": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "term 2 written equal to term 1"
+ },
+ "filename-shared-short": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "a shared length one shorter than the true common prefix"
+ },
+ "filename-shared-past-previous": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "a shared length one above the previous term's length"
+ },
+ "filename-termtext-short": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "header term-text bytes one short"
+ },
+ "filename-termtext-long": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "header term-text bytes one long"
+ },
+ "filename-tf1-explicit": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "term 0's postings each with the low bit clear and an explicit tf (some tf 1)"
+ },
+ "filename-flag1-flipped": {
+  "from": "filename",
+  "expect": "refused",
+  "why": "flags bit 1 flipped (positions sections dropped when it was set)"
+ },
+ "filename-overlong-length-varint": {
+  "from": "filename",
+  "expect": "either",
+  "why": "document 0's length as a two-byte (non-minimal) varint: not ruled out by the document"
+ },
+ "long-control": {
+  "from": "synthetic",
+  "expect": "accepted",
+  "why": "two terms sharing 300 bytes, shared written as the cap 255"
+ },
+ "long-shared-256": {
+  "from": "synthetic",
+  "expect": "refused",
+  "why": "shared 256 (above the cap), previous term 301 bytes"
+ },
+ "long-descending-at-cap": {
+  "from": "synthetic",
+  "expect": "refused",
+  "why": "two terms sharing 300 bytes in descending order, shared at the cap 255"
+ },
+ "long-equal-at-cap": {
+  "from": "synthetic",
+  "expect": "refused",
+  "why": "two equal 301-byte terms, shared at the cap 255"
+ },
+ "long-shared-254": {
+  "from": "synthetic",
+  "expect": "refused",
+  "why": "shared 254 where the common prefix is 300 (non-canonical, suffix byte equals the previous)"
+ }
+}

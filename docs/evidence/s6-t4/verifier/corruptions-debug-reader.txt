@@ -1,0 +1,42 @@
+VCORRUPT content-control-reencoded.hyblex accepted
+VCORRUPT content-df-zero-existing.hyblex refused DocumentFrequencyMismatch
+VCORRUPT content-df-zero.hyblex refused DocumentFrequencyMismatch
+VCORRUPT content-duplicate.hyblex refused InvalidTerm
+VCORRUPT content-flag1-flipped.hyblex accepted
+VCORRUPT content-gap-past-count.hyblex refused InvalidPosting
+VCORRUPT content-listbytes-last-extra.hyblex refused InvalidPosting
+VCORRUPT content-listbytes-last-short.hyblex refused InvalidPostingRange
+VCORRUPT content-listbytes-moved.hyblex refused InvalidPosting
+VCORRUPT content-listbytes-shifted.hyblex refused InvalidPosting
+VCORRUPT content-overlong-length-varint.hyblex accepted
+VCORRUPT content-shared-past-previous.hyblex refused InvalidTerm
+VCORRUPT content-shared-short.hyblex refused UnsortedTerms
+VCORRUPT content-termtext-long.hyblex refused InvalidSectionLength
+VCORRUPT content-termtext-short.hyblex refused InvalidSectionLength
+VCORRUPT content-tf1-explicit.hyblex refused InvalidPosting
+VCORRUPT content-unsorted-swap.hyblex refused UnsortedTerms
+VCORRUPT content-unterminated-last-length.hyblex refused InvalidSectionLength
+VCORRUPT content-unterminated-last-varint.hyblex refused InvalidPosting
+VCORRUPT filename-control-reencoded.hyblex accepted
+VCORRUPT filename-df-zero-existing.hyblex refused DocumentFrequencyMismatch
+VCORRUPT filename-df-zero.hyblex refused DocumentFrequencyMismatch
+VCORRUPT filename-duplicate.hyblex refused InvalidTerm
+VCORRUPT filename-flag1-flipped.hyblex refused InvalidPositions
+VCORRUPT filename-gap-past-count.hyblex refused InvalidPosting
+VCORRUPT filename-listbytes-last-extra.hyblex refused InvalidPosting
+VCORRUPT filename-listbytes-last-short.hyblex refused InvalidPostingRange
+VCORRUPT filename-listbytes-shifted.hyblex refused InvalidPosting
+VCORRUPT filename-overlong-length-varint.hyblex accepted
+VCORRUPT filename-shared-past-previous.hyblex refused InvalidTerm
+VCORRUPT filename-shared-short.hyblex refused UnsortedTerms
+VCORRUPT filename-termtext-long.hyblex refused InvalidSectionLength
+VCORRUPT filename-termtext-short.hyblex refused InvalidSectionLength
+VCORRUPT filename-tf1-explicit.hyblex refused InvalidPosting
+VCORRUPT filename-unsorted-swap.hyblex refused UnsortedTerms
+VCORRUPT filename-unterminated-last-length.hyblex refused InvalidSectionLength
+VCORRUPT filename-unterminated-last-varint.hyblex refused InvalidPosting
+VCORRUPT long-control.hyblex accepted
+VCORRUPT long-descending-at-cap.hyblex refused UnsortedTerms
+VCORRUPT long-equal-at-cap.hyblex refused UnsortedTerms
+VCORRUPT long-shared-254.hyblex refused UnsortedTerms
+VCORRUPT long-shared-256.hyblex refused InvalidTerm

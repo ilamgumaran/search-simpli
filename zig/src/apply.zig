@@ -1338,7 +1338,7 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stage
     stages.sub("open_previous.documents_decode");
     const lexical_header = try lexical_segment.inspect(lexical_encoded);
     stages.sub("open_previous.lexical_checksum");
-    const lexical_index = try lexical_segment.decodeWith(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count), .{ .validate_positions = false, .inspected = lexical_header });
+    const lexical_index = try lexical_segment.decodeWith(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count), .{ .validate_positions = false, .inspected = lexical_header, .term_text_allocator = allocator });
     // S4-T13 ruling 2: without the walk of sections 4 and 5 (the reader's
     // deferred setting since S4-T1). The bytes' XXH3-64 checksum has just
     // matched the stored value, and the stored value the manifest's, so a
@@ -1376,8 +1376,10 @@ fn openPrevious(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, stage
 /// the section verifies it against the bytes.
 fn lexicalStoredChecksum(encoded: []const u8) u64 {
     if (encoded.len < 8) return 0;
-    const v2 = std.mem.eql(u8, encoded[0..8], lexical_segment.magic_v2);
-    return storedChecksum(encoded, if (v2) lexical_segment.header_length_v2 else lexical_segment.header_length);
+    // S6-T4: the header length by magic (`HYBLEX03`'s is 88 bytes).
+    const length = lexical_segment.headerLengthOfBytes(encoded);
+    if (length == 0) return 0;
+    return storedChecksum(encoded, length);
 }
 
 fn storedChecksum(encoded: []const u8, header_length: usize) u64 {
@@ -2835,7 +2837,9 @@ fn buildGeneration(
     stages.sub("encode_sections.documents");
     // S4-T12 ruling 2: one `validateIndex` (its passes timed as inner parts),
     // the sizes, an exact buffer and the bytes, in one call.
-    const lexical_encoded = try lexical_segment.encodeAllocMarked(allocator, lexical_index, LexicalMarks{ .stages = stages });
+    // S6-T4: the folder writers publish `HYBLEX03` (a v2 previous
+    // generation is decoded as today and its successor written as v3).
+    const lexical_encoded = try lexical_segment.encodeV3AllocMarked(allocator, lexical_index, LexicalMarks{ .stages = stages });
     stages.sub("encode_sections.lexical");
     const source_encoded: ?[]const u8 = if (any_retain) try source.encodeMarked(allocator, retained.items, SourceMarks{ .stages = stages }) else null;
     stages.mark("encode_sections");
@@ -2907,6 +2911,8 @@ fn buildGeneration(
         // S4-T1: record v4 documents (and `HYBLEX02`, `HYBSRC01`) carry
         // XXH3-64 checksums (`checksum.zig`, manifest v2.1).
         .xxh3_sections = true,
+        // S6-T4: manifest v2.3, the lexical sections are `HYBLEX03`.
+        .lexical_v3 = true,
         .analyzer_id = options.analyzer.label(),
         .embedding_model_id = "none",
         .documents_file = documents_file,

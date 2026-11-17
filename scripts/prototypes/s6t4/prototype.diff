@@ -1,0 +1,1365 @@
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/build.zig proto/zig/build.zig
+--- main/zig/build.zig	2026-11-16 10:27:53
++++ proto/zig/build.zig	2026-11-16 10:53:47
+@@ -1,6 +1,9 @@
+ const std = @import("std");
+ 
++var lex_lazy_option: ?bool = null;
++
+ pub fn build(b: *std.Build) void {
++    lex_lazy_option = b.option(bool, "lex_lazy", "S6-T4 prototype: lazy postings");
+     const target = b.standardTargetOptions(.{});
+     const optimize = b.standardOptimizeOption(.{});
+ 
+@@ -19,6 +22,7 @@
+     // S3-T6: the MCP server's tool descriptors carry contracts/tools/ verbatim.
+     const tool_schema_options = toolSchemaOptions(b);
+     executable_module.addOptions("tool_schemas", tool_schema_options);
++    executable_module.addOptions("build_options", contractsVersionOptions(b));
+ 
+     const run_command = b.addRunArtifact(executable);
+     if (b.args) |args| run_command.addArgs(args);
+@@ -75,6 +79,8 @@
+     const trimmed = std.mem.trim(u8, raw, " \t\r\n");
+     const options = b.addOptions();
+     options.addOption([:0]const u8, "contracts_version", b.allocator.dupeZ(u8, trimmed) catch @panic("OOM"));
++    // S6-T4 prototype: lazy postings decode (strategy ii/iii) instead of eager (i).
++    options.addOption(bool, "lex_lazy", lex_lazy_option orelse false);
+     return options;
+ }
+ 
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/abi.zig proto/zig/src/abi.zig
+--- main/zig/src/abi.zig	2026-11-16 10:27:53
++++ proto/zig/src/abi.zig	2026-11-16 10:57:15
+@@ -148,6 +148,23 @@
+     return handle;
+ }
+ 
++/// S6-T4 prototype: drop the lazy postings cache when over its budget, at
++/// the start of an operation (single-threaded benches only).
++fn protoTrim(h: *Handle) void {
++    if (comptime @import("postings.zig").lex_lazy) if (h.engine.lexical_index.lazy) |l| l.trim();
++}
++
++/// S6-T4 prototype: the lazy decode's counters (0 when not lazy).
++pub export fn ss_proto_lazy_stats(handle: ?*Handle, decodes: *u64, cached_bytes: *u64) callconv(.c) void {
++    decodes.* = 0;
++    cached_bytes.* = 0;
++    const h = handle orelse return;
++    if (comptime @import("postings.zig").lex_lazy) if (h.engine.lexical_index.lazy) |l| {
++        decodes.* = l.decodes;
++        cached_bytes.* = l.cached_bytes;
++    };
++}
++
+ /// Free everything opened by `ss_open`. `NULL` is a safe no-op.
+ pub export fn ss_close(handle: ?*Handle) callconv(.c) void {
+     const h = handle orelse return;
+@@ -236,6 +253,7 @@
+     };
+     const vector: []const f32 = if (query_vector) |ptr| ptr[0..dims] else &.{};
+     const options_text = if (options_json) |ptr| std.mem.span(ptr) else "";
++    protoTrim(h);
+     return queryImpl(h, text, vector, top_k, options_text) catch |err| {
+         if (err == error.VectorNormNotFinite) {
+             setLastError("ss_query: invalid query vector: a component is not finite or the L2 norm overflows float32 (VectorNormNotFinite)", .{});
+@@ -429,6 +447,7 @@
+ pub export fn ss_find(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+     clearLastError();
+     const h = handle orelse return nullHandle("ss_find");
++    protoTrim(h);
+     return runOperation("ss_find", h, request_json, ops.find);
+ }
+ 
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/apply.zig proto/zig/src/apply.zig
+--- main/zig/src/apply.zig	2026-11-16 10:27:53
++++ proto/zig/src/apply.zig	2026-11-16 10:56:34
+@@ -1304,7 +1304,7 @@
+     stages.sub("open_previous.documents_decode");
+     const lexical_header = try lexical_segment.inspect(lexical_encoded);
+     stages.sub("open_previous.lexical_checksum");
+-    const lexical_index = try lexical_segment.decodeWith(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count), .{ .validate_positions = false, .inspected = lexical_header });
++    const lexical_index = try lexical_segment.decodeWith(lexical_encoded, try allocator.alloc(postings.TermEntry, metadata.term_count), try allocator.alloc(postings.Posting, metadata.posting_count), try allocator.alloc(u32, metadata.document_count), .{ .validate_positions = false, .inspected = lexical_header, .term_text = try allocator.alloc(u8, lexical_header.term_text_bytes) });
+     // S4-T13 ruling 2: without the walk of sections 4 and 5 (the reader's
+     // deferred setting since S4-T1). The bytes' XXH3-64 checksum has just
+     // matched the stored value, and the stored value the manifest's, so a
+@@ -1342,8 +1342,9 @@
+ /// the section verifies it against the bytes.
+ fn lexicalStoredChecksum(encoded: []const u8) u64 {
+     if (encoded.len < 8) return 0;
+-    const v2 = std.mem.eql(u8, encoded[0..8], lexical_segment.magic_v2);
+-    return storedChecksum(encoded, if (v2) lexical_segment.header_length_v2 else lexical_segment.header_length);
++    const length = lexical_segment.headerLengthOfBytes(encoded);
++    if (length == 0) return 0;
++    return storedChecksum(encoded, length);
+ }
+ 
+ fn storedChecksum(encoded: []const u8, header_length: usize) u64 {
+@@ -2801,7 +2802,8 @@
+     stages.sub("encode_sections.documents");
+     // S4-T12 ruling 2: one `validateIndex` (its passes timed as inner parts),
+     // the sizes, an exact buffer and the bytes, in one call.
+-    const lexical_encoded = try lexical_segment.encodeAllocMarked(allocator, lexical_index, LexicalMarks{ .stages = stages });
++    // S6-T4 prototype: the folder writers publish `HYBLEX03`.
++    const lexical_encoded = try lexical_segment.encodeV3AllocMarked(allocator, lexical_index, LexicalMarks{ .stages = stages });
+     stages.sub("encode_sections.lexical");
+     const source_encoded: ?[]const u8 = if (any_retain) try source.encodeMarked(allocator, retained.items, SourceMarks{ .stages = stages }) else null;
+     stages.mark("encode_sections");
+@@ -2873,6 +2875,7 @@
+         // S4-T1: record v4 documents (and `HYBLEX02`, `HYBSRC01`) carry
+         // XXH3-64 checksums (`checksum.zig`, manifest v2.1).
+         .xxh3_sections = true,
++        .lexical_v3 = true,
+         .analyzer_id = options.analyzer.label(),
+         .embedding_model_id = "none",
+         .documents_file = documents_file,
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/engine.zig proto/zig/src/engine.zig
+--- main/zig/src/engine.zig	2026-11-16 10:27:53
++++ proto/zig/src/engine.zig	2026-11-16 11:03:04
+@@ -90,6 +90,14 @@
+         /// and offsets (`lexical_segment.DecodeOptions`); the caller then
+         /// validates them before their first use (`scope.Folder`).
+         validate_positions: bool = true,
++        /// S6-T4 prototype: the v3 dictionary's term text buffer and the
++        /// lazy decode's allocators and knobs (`lexical_segment.DecodeOptions`).
++        term_text: ?[]u8 = null,
++        lazy: ?std.mem.Allocator = null,
++        lazy_lists: ?std.mem.Allocator = null,
++        lazy_all_at_once: bool = false,
++        lazy_budget: usize = std.math.maxInt(usize),
++        lazy_validate: bool = false,
+     };
+ 
+     /// `open`, computing each section's checksum once (S4-T1): the manifest
+@@ -110,7 +118,7 @@
+             term_output,
+             posting_output,
+             document_length_output,
+-            .{ .validate_positions = options.validate_positions, .inspected = headers.lexical },
++            .{ .validate_positions = options.validate_positions, .inspected = headers.lexical, .term_text = options.term_text, .lazy = options.lazy, .lazy_lists = options.lazy_lists, .lazy_all_at_once = options.lazy_all_at_once, .lazy_budget = options.lazy_budget, .lazy_validate = options.lazy_validate },
+         );
+         if (documents.len != lexical_index.document_lengths.len) return error.DocumentCountMismatch;
+         var labeled = false;
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/filename_field.zig proto/zig/src/filename_field.zig
+--- main/zig/src/filename_field.zig	2026-11-16 10:27:53
++++ proto/zig/src/filename_field.zig	2026-11-16 10:56:51
+@@ -184,7 +184,9 @@
+     if (bytes.len != metadata.lexical_bytes) return null;
+     const header = lexical_segment.inspect(bytes) catch return null;
+     if (header.checksum != metadata.lexical_checksum) return null;
+-    if (header.hasPositions() or header.checksum_kind != .fnv1a64) return null;
++    // S6-T4 prototype: only a `HYBLEX03` section is carried; a `HYBLEX01`
++    // one is rebuilt (once) as v3.
++    if (header.hasPositions() or header.version != lexical_segment.version_v3) return null;
+     if (header.document_count != catalog_len or metadata.file_count != catalog_len) return null;
+     if (header.term_count != metadata.term_count or header.posting_count != metadata.posting_count) return null;
+     return .{ .header = header, .checksum = metadata.lexical_checksum, .file_count = metadata.file_count, .term_count = metadata.term_count, .posting_count = metadata.posting_count };
+@@ -209,13 +211,14 @@
+     const token_lists = try allocator.alloc([][]const u8, docs.len);
+     for (docs, 0..) |doc, j| token_lists[j] = try tokenize(allocator, analyzer_id, doc.text);
+     marks.mark("tokenize");
+-    const lexical_index = try lexical_build.build(allocator, docs, token_lists);
++    // S6-T4 prototype: v3 needs the dictionary sorted by bytes.
++    const lexical_index = try lexical_segment.sortedForV3(allocator, try lexical_build.build(allocator, docs, token_lists));
+     marks.mark("lexical_build");
+     const catalog_len = try segment.encodedLength(docs);
+     const catalog_buffer = try allocator.alloc(u8, catalog_len);
+     const catalog = try segment.encode(docs, catalog_buffer);
+     marks.mark("encode_catalog");
+-    const lexical = try lexical_segment.encodeAlloc(allocator, lexical_index);
++    const lexical = try lexical_segment.encodeV3Alloc(allocator, lexical_index);
+     marks.mark("encode_lexical");
+     return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = docs, .decoded_lexical = lexical_index };
+ }
+@@ -279,8 +282,9 @@
+ }
+ 
+ fn storedLexicalChecksum(bytes: []const u8) u64 {
+-    if (bytes.len < lexical_segment.header_length) return 0;
+-    return std.mem.readInt(u64, bytes[lexical_segment.header_length - 8 ..][0..8], .little);
++    const length = lexical_segment.headerLengthOfBytes(bytes);
++    if (length == 0 or bytes.len < length) return 0;
++    return std.mem.readInt(u64, bytes[length - 8 ..][0..8], .little);
+ }
+ 
+ pub fn validate(allocator: std.mem.Allocator, body_documents: []const hybrid.Document, catalog_encoded: []const u8, lexical_encoded: []const u8, analyzer_id: []const u8) !void {
+@@ -324,7 +328,7 @@
+         while (it.next()) |entry| {
+             const ti = decoded.filenameTerm(entry.key_ptr.*) orelse return error.FilenameLexicalMismatch;
+             if (!seen[ti]) {
+-                if (ti != next_term) return error.FilenameLexicalMismatch;
++                if (!lexical.sorted_terms and ti != next_term) return error.FilenameLexicalMismatch;
+                 next_term += 1;
+                 seen[ti] = true;
+             }
+@@ -420,7 +424,8 @@
+ pub fn loadReservation(metadata: manifest.Manifest) usize {
+     const f = metadata.filename orelse return 0;
+     const slack = 64;
+-    var total: usize = f.catalog_bytes + f.lexical_bytes + 6 * slack;
++    // S6-T4 prototype: + the v3 term text (at most the section's bytes).
++    var total: usize = f.catalog_bytes + 2 * f.lexical_bytes + 6 * slack;
+     total += f.file_count * (@sizeOf(hybrid.Document) + @sizeOf(u32) + @sizeOf(usize));
+     total += metadata.document_count * @sizeOf(u32);
+     total += f.term_count * (@sizeOf(postings.TermEntry) + @sizeOf(u32));
+@@ -439,7 +444,7 @@
+     const lex_terms = try allocator.alloc(postings.TermEntry, lh.term_count);
+     const lex_posts = try allocator.alloc(postings.Posting, lh.posting_count);
+     const lex_lengths = try allocator.alloc(u32, lh.document_count);
+-    const lexical = try lexical_segment.decodeWith(lexical_encoded, lex_terms, lex_posts, lex_lengths, .{ .inspected = lh });
++    const lexical = try lexical_segment.decodeWith(lexical_encoded, lex_terms, lex_posts, lex_lengths, .{ .inspected = lh, .term_text = try allocator.alloc(u8, lh.term_text_bytes) });
+     if (lexical.document_lengths.len != catalog.len) return error.FilenameCatalogMismatch;
+     for (catalog, 0..) |doc, i| {
+         if (!validPath(doc.path) or doc.vector.len != 0 or !std.mem.eql(u8, doc.text, stem(doc.path))) return error.FilenameCatalogMismatch;
+@@ -472,7 +477,8 @@
+     }
+     const term_order = try allocator.alloc(u32, lexical.terms.len);
+     for (term_order, 0..) |*slot, i| slot.* = @intCast(i);
+-    std.mem.sort(u32, term_order, lexical.terms, struct {
++    // S6-T4 prototype: a v3 dictionary is already strictly sorted.
++    if (!lexical.sorted_terms) std.mem.sort(u32, term_order, lexical.terms, struct {
+         fn less(terms: []const postings.TermEntry, a: u32, b: u32) bool {
+             return std.mem.order(u8, terms[a].term, terms[b].term) == .lt;
+         }
+@@ -732,7 +738,7 @@
+         };
+         if (field == .both) if (postings.lookupExact(body_index, term)) |ti| {
+             const ent = body_index.terms[ti];
+-            const list = body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length];
++            const list = body_index.list(ent);
+             var df: u32 = 0;
+             if (body_visible) |visible| {
+                 for (list) |p| if (visible[p.document_index]) {
+@@ -768,7 +774,7 @@
+     var len: usize = 0;
+     var df: u32 = 0;
+     for (fuzzy_group.members) |member| if (member.body) |ent| {
+-        const list = body_index.postings[ent.postings_start .. ent.postings_start + ent.postings_length];
++        const list = body_index.list(ent);
+         var member_df: u32 = 0;
+         if (body_visible) |visible| {
+             for (list) |p| if (visible[p.document_index]) {
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/find.zig proto/zig/src/find.zig
+--- main/zig/src/find.zig	2026-11-16 10:27:53
++++ proto/zig/src/find.zig	2026-11-16 10:54:45
+@@ -292,7 +292,7 @@
+ pub fn termInScope(engine: *const engine_module.Engine, request: *const Request, term_index: usize) bool {
+     const index = engine.lexical_index;
+     const entry = index.terms[term_index];
+-    for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
++    for (index.list(entry)) |posting| {
+         if (documentInScope(engine, request, posting.document_index)) return true;
+     }
+     return false;
+@@ -385,7 +385,7 @@
+ 
+     fn postingsOf(context: *const Context, term_index: usize) []const postings.Posting {
+         const entry = context.index.terms[term_index];
+-        return context.index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
++        return context.index.list(entry);
+     }
+ 
+     fn visible(context: *const Context, document_index: usize) bool {
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/fuzzy.zig proto/zig/src/fuzzy.zig
+--- main/zig/src/fuzzy.zig	2026-11-16 10:27:53
++++ proto/zig/src/fuzzy.zig	2026-11-16 10:54:45
+@@ -209,7 +209,7 @@
+     options: hybrid.SearchOptions,
+ 
+     pub fn heldInScope(context: Context, entry: postings.TermEntry) bool {
+-        const list = context.index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
++        const list = context.index.list(entry);
+         for (list) |p| if (hybrid.inScope(context.documents[p.document_index], p.document_index, context.options)) return true;
+         return false;
+     }
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/lexical_build.zig proto/zig/src/lexical_build.zig
+--- main/zig/src/lexical_build.zig	2026-11-16 10:27:53
++++ proto/zig/src/lexical_build.zig	2026-11-16 10:54:45
+@@ -411,7 +411,7 @@
+ 
+         const term_index = postings.lookupExact(index, query_token) orelse continue;
+         const entry = index.terms[term_index];
+-        for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
++        for (index.list(entry)) |posting| {
+             const document_index: usize = posting.document_index;
+             scores[document_index] += scoring.bm25Contribution(
+                 @floatFromInt(posting.term_frequency),
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/lexical_segment.zig proto/zig/src/lexical_segment.zig
+--- main/zig/src/lexical_segment.zig	2026-11-16 10:27:53
++++ proto/zig/src/lexical_segment.zig	2026-11-16 11:06:25
+@@ -12,6 +12,17 @@
+ pub const magic_v2 = "HYBLEX02";
+ pub const version_v2: u16 = 2;
+ pub const header_length_v2: usize = 80;
++/// S6-T4 prototype (`docs/lexical-segment-format-v3.md` draft): `HYBLEX03`.
++/// Varint document lengths, a front-coded dictionary (shared prefix, suffix,
++/// df, the term's coded postings length), postings as `(delta << 1) | (tf ==
++/// 1)` varints with a tf varint when tf > 1; sections 4 and 5 as `HYBLEX02`.
++/// 88-byte header: v2's 80 with the decoded term text length before the
++/// checksum.
++pub const magic_v3 = "HYBLEX03";
++pub const version_v3: u16 = 3;
++pub const header_length_v3: usize = 88;
++/// v3 flags bit 1: sections 4 and 5 present (the content section).
++pub const flag_positions_v3: u16 = 2;
+ const term_record_length: usize = 24;
+ const posting_record_length: usize = 8;
+ 
+@@ -78,10 +89,18 @@
+     checksum: u64,
+     /// S4-T1: header flags bit 0 (`checksum.flag_xxh3`).
+     checksum_kind: checksum.Kind = .fnv1a64,
++    /// v3: flags bit 1.
++    positions_flag: bool = false,
++    /// v3: the decoded dictionary's term bytes.
++    term_text_bytes: usize = 0,
+ 
+     pub fn hasPositions(header: Header) bool {
+-        return header.version == version_v2;
++        return header.version == version_v2 or (header.version == version_v3 and header.positions_flag);
+     }
++
++    pub fn length(header: Header) usize {
++        return headerLength(header.version);
++    }
+ };
+ 
+ /// The section's length for `index`, after `validateIndex` (once).
+@@ -212,7 +231,26 @@
+     return output[0..required];
+ }
+ 
++pub fn headerLength(found_version: u16) usize {
++    return switch (found_version) {
++        version_v3 => header_length_v3,
++        version_v2 => header_length_v2,
++        else => header_length,
++    };
++}
++
++/// The header length of the section `encoded` (by its magic), for readers
++/// of the stored checksum; 0 when it is too short or unknown.
++pub fn headerLengthOfBytes(encoded: []const u8) usize {
++    if (encoded.len < 8) return 0;
++    if (std.mem.eql(u8, encoded[0..8], magic_v3)) return header_length_v3;
++    if (std.mem.eql(u8, encoded[0..8], magic_v2)) return header_length_v2;
++    if (std.mem.eql(u8, encoded[0..8], magic)) return header_length;
++    return 0;
++}
++
+ pub fn inspect(encoded: []const u8) DecodeError!Header {
++    if (encoded.len >= 8 and std.mem.eql(u8, encoded[0..8], magic_v3)) return inspectV3(encoded);
+     var cursor = Cursor{ .bytes = encoded };
+     const found_magic = try cursor.take(magic.len);
+     const v2 = std.mem.eql(u8, found_magic, magic_v2);
+@@ -289,6 +327,19 @@
+     /// S4-T1: the header `inspect` already returned for these bytes (its
+     /// checksum computed then), so it is not computed a second time.
+     inspected: ?Header = null,
++    /// S6-T4 (v3): where the front-coded dictionary's terms are written,
++    /// `term_text_bytes` long; v3 needs it.
++    term_text: ?[]u8 = null,
++    /// S6-T4 prototype (v3, a `lex_lazy` build): keep section 3 coded and
++    /// decode per term at first use; the allocator of the lazy tables (the
++    /// decoded lists come from `lazy_lists`).
++    lazy: ?std.mem.Allocator = null,
++    lazy_lists: ?std.mem.Allocator = null,
++    lazy_all_at_once: bool = false,
++    lazy_budget: usize = std.math.maxInt(usize),
++    /// Decode (and discard) every list at open, so a damaged list fails the
++    /// open as the eager reader's does.
++    lazy_validate: bool = false,
+ };
+ 
+ pub fn decodeWith(
+@@ -299,6 +350,7 @@
+     options: DecodeOptions,
+ ) DecodeError!postings.Index {
+     const header = options.inspected orelse try inspect(encoded);
++    if (header.version == version_v3) return decodeV3(encoded, header, term_output, posting_output, document_length_output, options);
+     if (term_output.len < header.term_count) return error.TermCapacityTooSmall;
+     if (posting_output.len < header.posting_count) return error.PostingCapacityTooSmall;
+     if (document_length_output.len < header.document_count) return error.DocumentLengthCapacityTooSmall;
+@@ -397,9 +449,37 @@
+ /// postings and document lengths. A no-op without positions.
+ pub fn validatePositionSections(index: postings.Index) DecodeError!void {
+     const sections = index.positions orelse return;
++    if (comptime postings.lex_lazy) if (index.lazy != null) return validatePositionsLazy(index, sections);
+     return validatePositions(index.terms, index.postings, index.document_lengths, sections);
+ }
+ 
++/// S6-T4 prototype: `validatePositions` over a lazy index, each term's
++/// list decoded into one scratch buffer (not cached).
++fn validatePositionsLazy(index: postings.Index, sections: postings.PositionSections) DecodeError!void {
++    const scratch = index.walkScratch(std.heap.smp_allocator) catch return error.OutOfMemory;
++    defer std.heap.smp_allocator.free(scratch);
++    var at: usize = 0;
++    for (index.terms) |entry| {
++        for (index.listInto(entry, scratch)) |posting| {
++            const length = index.document_lengths[posting.document_index];
++            var ordinal: u64 = 0;
++            for (0..posting.term_frequency) |k| {
++                const value = postings.readVarint(sections.positions, &at) orelse return error.InvalidPositions;
++                if (k == 0) {
++                    ordinal = value;
++                } else {
++                    if (value == 0) return error.InvalidPositions;
++                    ordinal += value;
++                }
++                if (ordinal >= length) return error.InvalidPositions;
++            }
++        }
++    }
++    if (at != sections.positions.len) return error.InvalidPositions;
++    if (index.lazy.?.failed) return error.InvalidPosting;
++    return validatePositions(&.{}, &.{}, index.document_lengths, .{ .positions = &.{}, .offsets = sections.offsets });
++}
++
+ /// The v2 rules of sections 4 and 5 (`docs/lexical-segment-format-v2.md`):
+ /// term ranges contiguous in dictionary order (posting order is term-major,
+ /// so a term's ordinals are one run of section 4); per posting exactly
+@@ -1056,4 +1136,464 @@
+         const owned = try encodeAlloc(std.testing.allocator, ruling3Index(&storage, &.{ "alpha", "beta", "gamma" }, claimed));
+         std.testing.allocator.free(owned);
+     }
++}
++
++
++// ===================================================================== v3 ==
++
++fn inspectV3(encoded: []const u8) DecodeError!Header {
++    var cursor = Cursor{ .bytes = encoded, .offset = magic_v3.len };
++    if (try cursor.readU16() != version_v3) return error.UnsupportedVersion;
++    const flags = try cursor.readU16();
++    // Bit 0 (XXH3-64) is required, bit 1 names sections 4 and 5.
++    if (flags & ~(checksum.flag_xxh3 | flag_positions_v3) != 0 or flags & checksum.flag_xxh3 == 0) return error.UnsupportedFlags;
++    const document_count = try castToUsize(try cursor.readU32());
++    const term_count = try castToUsize(try cursor.readU32());
++    const posting_count = try castToUsize(try cursor.readU64());
++    const average_document_length: f32 = @bitCast(try cursor.readU32());
++    if (!std.math.isFinite(average_document_length) or average_document_length < 0) return error.InvalidAverageDocumentLength;
++    const document_lengths_bytes = try castToUsize(try cursor.readU64());
++    const dictionary_bytes = try castToUsize(try cursor.readU64());
++    const postings_bytes = try castToUsize(try cursor.readU64());
++    const positions_bytes = try castToUsize(try cursor.readU64());
++    const offsets_bytes = try castToUsize(try cursor.readU64());
++    const term_text_bytes = try castToUsize(try cursor.readU64());
++    const expected_checksum = try cursor.readU64();
++    std.debug.assert(cursor.offset == header_length_v3);
++    var expected_total = try decodeCheckedAdd(header_length_v3, document_lengths_bytes);
++    expected_total = try decodeCheckedAdd(expected_total, dictionary_bytes);
++    expected_total = try decodeCheckedAdd(expected_total, postings_bytes);
++    expected_total = try decodeCheckedAdd(expected_total, positions_bytes);
++    expected_total = try decodeCheckedAdd(expected_total, offsets_bytes);
++    if (encoded.len < expected_total) return error.Truncated;
++    if (encoded.len > expected_total) return error.TrailingData;
++    const actual_checksum = checksum.compute(.xxh3_64, encoded[0 .. header_length_v3 - 8], encoded[header_length_v3..]);
++    if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
++    const positions_flag = flags & flag_positions_v3 != 0;
++    // Bounds every count implies: a varint is 1 to 5 bytes, a posting at
++    // least one byte, a term at least one byte of text and four of entry.
++    if (!positions_flag and (positions_bytes != 0 or offsets_bytes != 0)) return error.InvalidSectionLength;
++    if (document_count > std.math.maxInt(u32) / 2) return error.InvalidSectionLength;
++    if (document_lengths_bytes < document_count or document_lengths_bytes > try decodeCheckedMultiply(document_count, 5)) return error.InvalidSectionLength;
++    if (postings_bytes < posting_count or term_text_bytes < term_count or dictionary_bytes < try decodeCheckedMultiply(term_count, 5)) return error.InvalidSectionLength;
++    if (posting_count < term_count) return error.InvalidSectionLength;
++    return .{
++        .version = version_v3,
++        .document_count = document_count,
++        .term_count = term_count,
++        .posting_count = posting_count,
++        .average_document_length = average_document_length,
++        .document_lengths_bytes = document_lengths_bytes,
++        .dictionary_bytes = dictionary_bytes,
++        .postings_bytes = postings_bytes,
++        .positions_bytes = positions_bytes,
++        .offsets_bytes = offsets_bytes,
++        .checksum = expected_checksum,
++        .checksum_kind = .xxh3_64,
++        .positions_flag = positions_flag,
++        .term_text_bytes = term_text_bytes,
++    };
++}
++
++fn decodeV3(
++    encoded: []const u8,
++    header: Header,
++    term_output: []postings.TermEntry,
++    posting_output: []postings.Posting,
++    document_length_output: []u32,
++    options: DecodeOptions,
++) DecodeError!postings.Index {
++    if (term_output.len < header.term_count) return error.TermCapacityTooSmall;
++    if (document_length_output.len < header.document_count) return error.DocumentLengthCapacityTooSmall;
++    const lazy_allocator: ?std.mem.Allocator = if (comptime postings.lex_lazy) options.lazy else null;
++    if (lazy_allocator == null and posting_output.len < header.posting_count) return error.PostingCapacityTooSmall;
++    const term_text = options.term_text orelse return error.TermCapacityTooSmall;
++    if (term_text.len < header.term_text_bytes) return error.TermCapacityTooSmall;
++    const document_count: u32 = @intCast(header.document_count);
++
++    var payload = Cursor{ .bytes = encoded, .offset = header_length_v3 };
++    const document_length_bytes = try payload.take(header.document_lengths_bytes);
++    const dictionary_bytes = try payload.take(header.dictionary_bytes);
++    const posting_bytes = try payload.take(header.postings_bytes);
++    const positions_bytes = try payload.take(header.positions_bytes);
++    const offsets_bytes = try payload.take(header.offsets_bytes);
++    if (payload.offset != encoded.len) return error.TrailingData;
++
++    // Section 1: one varint per document.
++    var at: usize = 0;
++    for (document_length_output[0..header.document_count]) |*length| {
++        length.* = postings.readVarint(document_length_bytes, &at) orelse return error.InvalidSectionLength;
++    }
++    if (at != document_length_bytes.len) return error.InvalidSectionLength;
++
++    // Section 2: front-coded terms in strictly increasing byte order.
++    const starts: []usize = if (lazy_allocator) |a| try a.alloc(usize, header.term_count + 1) else &.{};
++    at = 0;
++    var text_at: usize = 0;
++    var previous: []const u8 = &.{};
++    var posting_start: usize = 0;
++    var coded_start: usize = 0;
++    for (term_output[0..header.term_count], 0..) |*entry, term_index| {
++        const shared = postings.readVarint(dictionary_bytes, &at) orelse return error.InvalidTerm;
++        const suffix_length = postings.readVarint(dictionary_bytes, &at) orelse return error.InvalidTerm;
++        if (shared > previous.len or suffix_length == 0) return error.InvalidTerm;
++        if (dictionary_bytes.len - at < suffix_length) return error.InvalidTerm;
++        const suffix = dictionary_bytes[at..][0..suffix_length];
++        at += suffix_length;
++        // Strictly after the previous term, with the longest shared prefix.
++        if (term_index != 0 and shared < previous.len and suffix[0] <= previous[shared]) return error.UnsortedTerms;
++        const term_length = @as(usize, shared) + suffix_length;
++        if (term_text.len - text_at < term_length or text_at + term_length > header.term_text_bytes) return error.InvalidSectionLength;
++        const term = term_text[text_at..][0..term_length];
++        std.mem.copyForwards(u8, term[0..shared], previous[0..shared]);
++        @memcpy(term[shared..], suffix);
++        text_at += term_length;
++        const document_frequency = postings.readVarint(dictionary_bytes, &at) orelse return error.InvalidTerm;
++        const coded_length = postings.readVarint(dictionary_bytes, &at) orelse return error.InvalidTerm;
++        if (document_frequency == 0 or document_frequency > document_count) return error.DocumentFrequencyMismatch;
++        if (coded_length < document_frequency) return error.InvalidPostingRange;
++        if (header.posting_count - posting_start < document_frequency) return error.InvalidPostingRange;
++        if (posting_bytes.len - coded_start < coded_length) return error.InvalidPostingRange;
++        if (lazy_allocator != null) starts[term_index] = coded_start;
++        entry.* = .{
++            .term = term,
++            .document_frequency = document_frequency,
++            .term_index = @intCast(term_index),
++            .postings_start = posting_start,
++            .postings_length = document_frequency,
++        };
++        if (lazy_allocator == null) {
++            postings.decodeList(posting_bytes[coded_start..][0..coded_length], document_frequency, document_count, posting_output[posting_start..][0..document_frequency]) catch return error.InvalidPosting;
++        }
++        posting_start += document_frequency;
++        coded_start += coded_length;
++        previous = term;
++    }
++    if (at != dictionary_bytes.len or text_at != header.term_text_bytes) return error.InvalidSectionLength;
++    if (posting_start != header.posting_count or coded_start != posting_bytes.len) return error.InvalidPostingRange;
++
++    const terms = term_output[0..header.term_count];
++    var index = postings.Index{
++        .terms = terms,
++        .postings = if (lazy_allocator == null) posting_output[0..header.posting_count] else &.{},
++        .document_lengths = document_length_output[0..header.document_count],
++        .average_document_length = header.average_document_length,
++        .positions = if (header.positions_flag) .{ .positions = positions_bytes, .offsets = offsets_bytes } else null,
++        .sorted_terms = true,
++    };
++    if (lazy_allocator) |a| {
++        starts[header.term_count] = coded_start;
++        const lazy = try a.create(postings.LazyPostings);
++        const slots = try a.alloc(std.atomic.Value(?[*]const postings.Posting), header.term_count);
++        for (slots) |*slot| slot.* = .init(null);
++        lazy.* = .{
++            .coded = posting_bytes,
++            .starts = starts,
++            .terms = terms,
++            .document_count = document_count,
++            .posting_count = header.posting_count,
++            .slots = slots,
++            .allocator = options.lazy_lists orelse a,
++            .all_at_once = options.lazy_all_at_once,
++            .budget = options.lazy_budget,
++        };
++        index.lazy = lazy;
++        if (options.lazy_validate) {
++            const scratch = index.walkScratch(std.heap.smp_allocator) catch return error.OutOfMemory;
++            defer std.heap.smp_allocator.free(scratch);
++            for (terms, 0..) |entry, i| {
++                postings.decodeList(posting_bytes[starts[i]..starts[i + 1]], entry.postings_length, document_count, scratch[0..entry.postings_length]) catch return error.InvalidPosting;
++            }
++        }
++        if (header.positions_flag and options.validate_positions) try validatePositionSections(index);
++    } else if (header.positions_flag and options.validate_positions) {
++        try validatePositions(terms, index.postings, index.document_lengths, index.positions.?);
++    }
++    return index;
++}
++
++/// The term text a v3 header names (0 for v1/v2), read without the
++/// checksum: for sizing the decode's buffer before `inspect`.
++pub fn peekTermTextBytes(encoded: []const u8) usize {
++    if (encoded.len < header_length_v3 or !std.mem.eql(u8, encoded[0..8], magic_v3)) return 0;
++    return std.mem.readInt(u64, encoded[72..80], .little);
++}
++
++const ByteList = std.ArrayList(u8);
++
++/// Write `index` as `HYBLEX03` (positions when it carries them). Needs a
++/// strictly sorted dictionary with term ranges contiguous in dictionary
++/// order, every df >= 1 and fewer than 2^31 documents.
++pub fn encodeV3Alloc(allocator: std.mem.Allocator, index: postings.Index) EncodeError![]u8 {
++    return encodeV3AllocMarked(allocator, index, NoMarks{});
++}
++
++pub fn encodeV3AllocMarked(allocator: std.mem.Allocator, index: postings.Index, marks: anytype) EncodeError![]u8 {
++    try validateIndexMarked(index, marks);
++    if (index.document_lengths.len > std.math.maxInt(u32) / 2) return error.CountOverflow;
++    var expected_start: usize = 0;
++    for (index.terms, 0..) |entry, i| {
++        if (i != 0 and std.mem.order(u8, index.terms[i - 1].term, entry.term) != .lt) return error.UnsortedTerms;
++        if (entry.postings_start != expected_start or entry.postings_length == 0) return error.UnsortedTerms;
++        expected_start += entry.postings_length;
++    }
++    if (expected_start != index.postings.len) return error.UnsortedTerms;
++
++    var lengths = ByteList.empty;
++    defer lengths.deinit(allocator);
++    try lengths.ensureTotalCapacity(allocator, index.document_lengths.len + 16);
++    for (index.document_lengths) |length| try postings.appendVarint(&lengths, allocator, length);
++
++    var coded = ByteList.empty;
++    defer coded.deinit(allocator);
++    try coded.ensureTotalCapacity(allocator, index.postings.len * 2 + 16);
++    var dictionary = ByteList.empty;
++    defer dictionary.deinit(allocator);
++    try dictionary.ensureTotalCapacity(allocator, index.terms.len * 8 + 16);
++    var previous: []const u8 = &.{};
++    var term_text: usize = 0;
++    for (index.terms) |entry| {
++        const before = coded.items.len;
++        var last: u32 = 0;
++        for (index.postings[entry.postings_start..][0..entry.postings_length], 0..) |posting, k| {
++            const delta: u32 = if (k == 0) posting.document_index else posting.document_index - last;
++            last = posting.document_index;
++            const one: u32 = @intFromBool(posting.term_frequency == 1);
++            try postings.appendVarint(&coded, allocator, (delta << 1) | one);
++            if (one == 0) try postings.appendVarint(&coded, allocator, posting.term_frequency);
++        }
++        var shared: usize = 0;
++        const limit = @min(previous.len, entry.term.len);
++        while (shared < limit and previous[shared] == entry.term[shared]) shared += 1;
++        try postings.appendVarint(&dictionary, allocator, @intCast(shared));
++        try postings.appendVarint(&dictionary, allocator, @intCast(entry.term.len - shared));
++        try dictionary.appendSlice(allocator, entry.term[shared..]);
++        try postings.appendVarint(&dictionary, allocator, entry.document_frequency);
++        try postings.appendVarint(&dictionary, allocator, @intCast(coded.items.len - before));
++        term_text += entry.term.len;
++        previous = entry.term;
++    }
++    const positions_len = if (index.positions) |p| p.positions.len else 0;
++    const offsets_len = if (index.positions) |p| p.offsets.len else 0;
++    var total = header_length_v3;
++    total = try checkedAdd(total, lengths.items.len);
++    total = try checkedAdd(total, dictionary.items.len);
++    total = try checkedAdd(total, coded.items.len);
++    total = try checkedAdd(total, positions_len);
++    total = try checkedAdd(total, offsets_len);
++    const output = try allocator.alloc(u8, total);
++    @memcpy(output[0..8], magic_v3);
++    var o: usize = 8;
++    writeU16(output, &o, version_v3);
++    writeU16(output, &o, checksum.flag_xxh3 | (if (index.positions != null) flag_positions_v3 else 0));
++    writeU32(output, &o, @intCast(index.document_lengths.len));
++    writeU32(output, &o, @intCast(index.terms.len));
++    writeU64(output, &o, @intCast(index.postings.len));
++    writeU32(output, &o, @bitCast(index.average_document_length));
++    writeU64(output, &o, @intCast(lengths.items.len));
++    writeU64(output, &o, @intCast(dictionary.items.len));
++    writeU64(output, &o, @intCast(coded.items.len));
++    writeU64(output, &o, @intCast(positions_len));
++    writeU64(output, &o, @intCast(offsets_len));
++    writeU64(output, &o, @intCast(term_text));
++    const checksum_at = o;
++    writeU64(output, &o, 0);
++    std.debug.assert(o == header_length_v3);
++    for ([_][]const u8{ lengths.items, dictionary.items, coded.items }) |part| {
++        @memcpy(output[o..][0..part.len], part);
++        o += part.len;
++    }
++    if (index.positions) |p| {
++        @memcpy(output[o..][0..p.positions.len], p.positions);
++        o += p.positions.len;
++        @memcpy(output[o..][0..p.offsets.len], p.offsets);
++        o += p.offsets.len;
++    }
++    std.debug.assert(o == total);
++    var c = checksum_at;
++    writeU64(output, &c, checksum.compute(.xxh3_64, output[0..checksum_at], output[header_length_v3..]));
++    return output;
++}
++
++/// `index` (a `lexical_build.build` index: first-seen dictionary order) with
++/// its dictionary sorted by bytes and its postings term-major in that order,
++/// for the v3 writer. Term bytes are not copied.
++pub fn sortedForV3(allocator: std.mem.Allocator, index: postings.Index) !postings.Index {
++    if (index.sorted_terms) return index;
++    const order = try allocator.alloc(u32, index.terms.len);
++    defer allocator.free(order);
++    for (order, 0..) |*slot, i| slot.* = @intCast(i);
++    std.mem.sort(u32, order, index.terms, struct {
++        fn less(terms: []const postings.TermEntry, a: u32, b: u32) bool {
++            return std.mem.order(u8, terms[a].term, terms[b].term) == .lt;
++        }
++    }.less);
++    const terms = try allocator.alloc(postings.TermEntry, index.terms.len);
++    const values = try allocator.alloc(postings.Posting, index.postings.len);
++    var at: usize = 0;
++    for (order, terms, 0..) |old, *entry, i| {
++        const source = index.terms[old];
++        @memcpy(values[at..][0..source.postings_length], index.postings[source.postings_start..][0..source.postings_length]);
++        entry.* = .{ .term = source.term, .document_frequency = source.document_frequency, .term_index = @intCast(i), .postings_start = at, .postings_length = source.postings_length };
++        at += source.postings_length;
++    }
++    var out = index;
++    out.terms = terms;
++    out.postings = values;
++    out.sorted_terms = true;
++    return out;
++}
++
++// ============================================================ v3 tests ==
++
++fn v3Fixture(arena: std.mem.Allocator) !postings.Index {
++    // Three documents; "alpha" in 0 (tf 1) and 2 (tf 3), "alps" in 1,
++    // "beta" in all three: gaps, tf 1 and tf > 1, a shared prefix.
++    const terms = try arena.alloc(postings.TermEntry, 3);
++    terms[0] = .{ .term = "alpha", .document_frequency = 2, .term_index = 0, .postings_start = 0, .postings_length = 2 };
++    terms[1] = .{ .term = "alps", .document_frequency = 1, .term_index = 1, .postings_start = 2, .postings_length = 1 };
++    terms[2] = .{ .term = "beta", .document_frequency = 3, .term_index = 2, .postings_start = 3, .postings_length = 3 };
++    const values = try arena.dupe(postings.Posting, &.{
++        .{ .document_index = 0, .term_frequency = 1 }, .{ .document_index = 2, .term_frequency = 3 },
++        .{ .document_index = 1, .term_frequency = 1 },
++        .{ .document_index = 0, .term_frequency = 1 }, .{ .document_index = 1, .term_frequency = 2 }, .{ .document_index = 2, .term_frequency = 1 },
++    });
++    const lengths = try arena.dupe(u32, &.{ 2, 3, 5 });
++    return .{ .terms = terms, .postings = values, .document_lengths = lengths, .average_document_length = 10.0 / 3.0, .sorted_terms = true };
++}
++
++fn rechecksumV3(encoded: []u8) void {
++    var offset: usize = header_length_v3 - 8;
++    writeU64(encoded, &offset, checksum.compute(.xxh3_64, encoded[0 .. header_length_v3 - 8], encoded[header_length_v3..]));
++}
++
++const V3Buffers = struct {
++    terms: [64]postings.TermEntry = undefined,
++    values: [64]postings.Posting = undefined,
++    lengths: [16]u32 = undefined,
++    text: [512]u8 = undefined,
++};
++
++fn decodeV3Test(encoded: []const u8, buffers: *V3Buffers) DecodeError!postings.Index {
++    const header = try inspect(encoded);
++    if (header.term_text_bytes > buffers.text.len or header.term_count > buffers.terms.len or header.posting_count > buffers.values.len or header.document_count > buffers.lengths.len) return error.TermCapacityTooSmall;
++    return decodeWith(encoded, &buffers.terms, &buffers.values, &buffers.lengths, .{ .inspected = header, .term_text = &buffers.text });
++}
++
++test "S6-T4 prototype: HYBLEX03 round trip, with and without positions" {
++    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
++    defer arena_state.deinit();
++    const arena = arena_state.allocator();
++    for ([_]postings.Index{ try v3Fixture(arena), try positionalFixture(arena) }) |index| {
++        const encoded = try encodeV3Alloc(arena, index);
++        try std.testing.expectEqualStrings(magic_v3, encoded[0..8]);
++        var buffers: V3Buffers = .{};
++        const decoded = try decodeV3Test(encoded, &buffers);
++        try std.testing.expectEqual(index.positions != null, decoded.positions != null);
++        try std.testing.expectEqualSlices(u32, index.document_lengths, decoded.document_lengths);
++        try std.testing.expectEqualSlices(postings.Posting, index.postings, decoded.postings);
++        try std.testing.expectEqual(index.terms.len, decoded.terms.len);
++        for (index.terms, decoded.terms) |a, b| {
++            try std.testing.expectEqualStrings(a.term, b.term);
++            try std.testing.expectEqual(a.document_frequency, b.document_frequency);
++            try std.testing.expectEqual(a.postings_start, b.postings_start);
++        }
++        if (index.positions) |p| {
++            try std.testing.expectEqualSlices(u8, p.positions, decoded.positions.?.positions);
++            try validatePositionSections(decoded);
++        }
++    }
++}
++
++test "S6-T4 prototype: HYBLEX03 damage is refused (checksum, truncation, zero gap, prefix, counts)" {
++    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
++    defer arena_state.deinit();
++    const arena = arena_state.allocator();
++    const good = try encodeV3Alloc(arena, try v3Fixture(arena));
++    const header = try inspect(good);
++    var buffers: V3Buffers = .{};
++    const dictionary_at = header_length_v3 + header.document_lengths_bytes;
++    const postings_at = dictionary_at + header.dictionary_bytes;
++
++    // A flipped payload byte without a new checksum.
++    var bytes = try arena.dupe(u8, good);
++    bytes[postings_at] ^= 1;
++    try std.testing.expectError(error.ChecksumMismatch, decodeV3Test(bytes, &buffers));
++    // Truncated and extended.
++    try std.testing.expectError(error.Truncated, decodeV3Test(good[0 .. good.len - 1], &buffers));
++    try std.testing.expectError(error.Truncated, decodeV3Test(good[0..40], &buffers));
++    // "alpha": postings (0<<1|1) then (2<<1|0) tf 3; make the second gap 0.
++    bytes = try arena.dupe(u8, good);
++    try std.testing.expectEqual(@as(u8, 1), bytes[postings_at]);
++    try std.testing.expectEqual(@as(u8, 4), bytes[postings_at + 1]);
++    bytes[postings_at + 1] = 0;
++    rechecksumV3(bytes);
++    try std.testing.expectError(error.InvalidPosting, decodeV3Test(bytes, &buffers));
++    // A document past the count: gap 3 from document 0.
++    bytes = try arena.dupe(u8, good);
++    bytes[postings_at + 1] = 6;
++    rechecksumV3(bytes);
++    try std.testing.expectError(error.InvalidPosting, decodeV3Test(bytes, &buffers));
++    // tf 1 stored explicitly (low bit 0, then tf varint 1).
++    bytes = try arena.dupe(u8, good);
++    bytes[postings_at + 2] = 1;
++    rechecksumV3(bytes);
++    try std.testing.expectError(error.InvalidPosting, decodeV3Test(bytes, &buffers));
++    // "alps" shares 3 bytes with "alpha"; claim 6 (longer than "alpha").
++    bytes = try arena.dupe(u8, good);
++    const second_entry = dictionary_at + 2 + 5 + 2;
++    try std.testing.expectEqual(@as(u8, 3), bytes[second_entry]);
++    bytes[second_entry] = 6;
++    rechecksumV3(bytes);
++    try std.testing.expectError(error.InvalidTerm, decodeV3Test(bytes, &buffers));
++    // Claim 2 shared bytes: "al" + "s" < "alpha", out of order.
++    bytes = try arena.dupe(u8, good);
++    bytes[second_entry] = 2;
++    rechecksumV3(bytes);
++    try std.testing.expect(std.meta.isError(decodeV3Test(bytes, &buffers)));
++    // A posting count too large, a term count too large.
++    bytes = try arena.dupe(u8, good);
++    bytes[20] += 1;
++    rechecksumV3(bytes);
++    try std.testing.expect(std.meta.isError(decodeV3Test(bytes, &buffers)));
++    bytes = try arena.dupe(u8, good);
++    bytes[16] += 1;
++    rechecksumV3(bytes);
++    try std.testing.expect(std.meta.isError(decodeV3Test(bytes, &buffers)));
++    // An unknown flag, and the XXH3 flag cleared.
++    bytes = try arena.dupe(u8, good);
++    bytes[10] |= 4;
++    rechecksumV3(bytes);
++    try std.testing.expectError(error.UnsupportedFlags, decodeV3Test(bytes, &buffers));
++    bytes[10] = 0;
++    rechecksumV3(bytes);
++    try std.testing.expectError(error.UnsupportedFlags, decodeV3Test(bytes, &buffers));
++}
++
++test "S6-T4 prototype: flipping any byte of a small HYBLEX03 section never crashes the reader" {
++    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
++    defer arena_state.deinit();
++    const arena = arena_state.allocator();
++    var refused: usize = 0;
++    var accepted: usize = 0;
++    for ([_]postings.Index{ try v3Fixture(arena), try positionalFixture(arena) }) |index| {
++        const good = try encodeV3Alloc(arena, index);
++        const bytes = try arena.dupe(u8, good);
++        for (0..good.len) |at| {
++            if (at >= header_length_v3 - 8 and at < header_length_v3) continue;
++            for ([_]u8{ 0x01, 0x02, 0x10, 0x80, 0xff }) |mask| {
++                @memcpy(bytes, good);
++                bytes[at] ^= mask;
++                rechecksumV3(bytes);
++                var buffers: V3Buffers = .{};
++                if (decodeV3Test(bytes, &buffers)) |decoded| {
++                    // Whatever is accepted is self-consistent.
++                    if (decoded.positions != null) validatePositionSections(decoded) catch {};
++                    accepted += 1;
++                } else |_| refused += 1;
++            }
++        }
++    }
++    try std.testing.expect(refused > 0);
++    std.debug.print("S6-T4 v3 byte flips: {d} refused, {d} accepted\n", .{ refused, accepted });
+ }
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/manifest.zig proto/zig/src/manifest.zig
+--- main/zig/src/manifest.zig	2026-11-16 10:27:53
++++ proto/zig/src/manifest.zig	2026-11-16 10:56:20
+@@ -45,7 +45,10 @@
+ pub const flag_state_section: u16 = 16;
+ pub const state_header_bytes: usize = 16;
+ /// Every v2 flag this reader knows; any other bit is `UnsupportedFlags`.
+-pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections | flag_state_section;
++/// S6-T4 prototype (v2.3): the lexical sections are `HYBLEX03`. Readers
++/// before it refuse the manifest on this bit (`UnsupportedFlags`).
++pub const flag_lexical_v3: u16 = 32;
++pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections | flag_state_section | flag_lexical_v3;
+ 
+ pub const StateMetadata = struct {
+     file: []const u8,
+@@ -89,6 +92,8 @@
+     /// v2.1 (S4-T1): `flag_xxh3_sections`; set by the writer exactly when
+     /// one of the bound sections' headers selects XXH3-64.
+     xxh3_sections: bool = false,
++    /// v2.3 (S6-T4 prototype): `flag_lexical_v3`.
++    lexical_v3: bool = false,
+     /// Empty when the generation binds no source section.
+     source_file: []const u8 = "",
+     source_bytes: usize = 0,
+@@ -162,7 +167,7 @@
+     const value = try sectionFields(generation, analyzer_id, embedding_model_id, documents_file, lexical_file, documents_encoded, lexical_encoded);
+     // S3-T2: a v1 manifest cannot say `has_positions`, so it cannot bind a
+     // `HYBLEX02` section (`createV2` can).
+-    if (value.has_positions) return error.UnsupportedVersion;
++    if (value.has_positions or value.lexical_v3) return error.UnsupportedVersion;
+     try validateFields(value);
+     return value;
+ }
+@@ -197,6 +202,7 @@
+         .lexical_file = lexical_file,
+         .has_positions = lexical_header.hasPositions(),
+         .xxh3_sections = document_header.checksum_kind == .xxh3_64 or lexical_header.checksum_kind == .xxh3_64,
++        .lexical_v3 = lexical_header.version == lexical_segment.version_v3,
+     };
+ }
+ 
+@@ -238,6 +244,7 @@
+     const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
+     const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
+     if (catalog.vector_dimensions != 0 or catalog.document_count != lexical.document_count) return error.FilenameCountMismatch;
++    if ((lexical.version == lexical_segment.version_v3) != base.lexical_v3) return error.InvalidFilenameLexicalSection;
+     var value = base;
+     value.format_version = version_v2;
+     if (catalog.checksum_kind == .xxh3_64 or lexical.checksum_kind == .xxh3_64) value.xxh3_sections = true;
+@@ -275,6 +282,7 @@
+     const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
+     const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
+     if (!value.xxh3_sections and (catalog.checksum_kind != .fnv1a64 or lexical.checksum_kind != .fnv1a64)) return error.InvalidFilenameCatalog;
++    if ((lexical.version == lexical_segment.version_v3) != value.lexical_v3) return error.InvalidFilenameLexicalSection;
+     if (catalog.checksum != filename.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
+     if (lexical.checksum != filename.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
+     if (catalog.document_count != filename.file_count or lexical.document_count != filename.file_count) return error.FilenameCountMismatch;
+@@ -365,6 +373,7 @@
+     if (value.hasSource()) flags |= flag_has_source;
+     if (value.has_positions) flags |= flag_has_positions;
+     if (value.xxh3_sections) flags |= flag_xxh3_sections;
++    if (value.lexical_v3) flags |= flag_lexical_v3;
+     if (value.filename != null) flags |= flag_filename_sections;
+     if (value.state != null) flags |= flag_state_section;
+ 
+@@ -503,6 +512,7 @@
+         .state = state,
+         .has_positions = flags & flag_has_positions != 0,
+         .xxh3_sections = flags & flag_xxh3_sections != 0,
++        .lexical_v3 = flags & flag_lexical_v3 != 0,
+         .source_file = source_file,
+         .source_bytes = source_bytes,
+         .source_checksum = source_checksum,
+@@ -603,6 +613,7 @@
+     if (lexical_header.posting_count != value.posting_count) return error.PostingCountMismatch;
+     // S3-T2: the flag and the section agree (`HYBLEX02` exactly when set).
+     if (lexical_header.hasPositions() != value.has_positions) return error.InvalidLexicalSection;
++    if ((lexical_header.version == lexical_segment.version_v3) != value.lexical_v3) return error.InvalidLexicalSection;
+     // S4-T1: an XXH3 section only under a manifest that says so.
+     if (!value.xxh3_sections) {
+         if (document_header.checksum_kind != .fnv1a64) return error.InvalidDocumentSection;
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/postings.zig proto/zig/src/postings.zig
+--- main/zig/src/postings.zig	2026-11-16 10:27:53
++++ proto/zig/src/postings.zig	2026-11-16 11:19:40
+@@ -3,6 +3,9 @@
+ const scoring = @import("scoring.zig");
+ const segment = @import("segment.zig");
+ const std = @import("std");
++const build_options = @import("build_options");
++/// S6-T4 prototype: a lazy postings decode (strategies ii and iii) when set.
++pub const lex_lazy = build_options.lex_lazy;
+ 
+ pub const Posting = struct {
+     document_index: u32,
+@@ -12,6 +15,10 @@
+ pub const TermEntry = struct {
+     term: []const u8,
+     document_frequency: u32,
++    /// S6-T4 prototype: the term's ordinal in its dictionary (set by the v3
++    /// decoder; the lazy reader's slot). Sits in the padding after
++    /// `document_frequency`, so the struct stays 40 bytes.
++    term_index: u32 = 0,
+     postings_start: usize,
+     postings_length: usize,
+ };
+@@ -28,8 +35,170 @@
+     /// True when `terms` is sorted by bytes (every `HYBLEX02` dictionary):
+     /// lookups binary-search and a prefix is one contiguous range.
+     sorted_terms: bool = false,
++    /// S6-T4 prototype: a `HYBLEX03` section decoded lazily; `postings` is
++    /// then empty and every list comes from `list`.
++    lazy: ?*LazyPostings = null,
++
++    /// The postings of `entry` (one of `index.terms`).
++    pub inline fn list(index: Index, entry: TermEntry) []const Posting {
++        if (comptime lex_lazy) {
++            if (index.lazy) |l| return l.get(entry.term_index);
++        }
++        return index.postings[entry.postings_start..][0..entry.postings_length];
++    }
++
++    /// `list`, but a lazy index decodes into `scratch` (at least the
++    /// term's df) without caching it: for walks over every term.
++    pub fn listInto(index: Index, entry: TermEntry, scratch: []Posting) []const Posting {
++        if (comptime lex_lazy) {
++            if (index.lazy) |l| {
++                if (l.slots[entry.term_index].load(.acquire)) |p| return p[0..entry.postings_length];
++                const i = entry.term_index;
++                decodeList(l.coded[l.starts[i]..l.starts[i + 1]], entry.postings_length, l.document_count, scratch[0..entry.postings_length]) catch {
++                    l.failed = true;
++                };
++                return scratch[0..entry.postings_length];
++            }
++        }
++        return index.postings[entry.postings_start..][0..entry.postings_length];
++    }
++
++    /// Scratch for `listInto` over every term: the largest df (empty when
++    /// not lazy). Owned by `allocator`.
++    pub fn walkScratch(index: Index, allocator: std.mem.Allocator) std.mem.Allocator.Error![]Posting {
++        if (comptime lex_lazy) {
++            if (index.lazy != null) {
++                var largest: usize = 0;
++                for (index.terms) |entry| largest = @max(largest, entry.postings_length);
++                return allocator.alloc(Posting, largest);
++            }
++        }
++        return &.{};
++    }
++
++    pub fn postingCount(index: Index) usize {
++        if (comptime lex_lazy) {
++            if (index.lazy) |l| return l.posting_count;
++        }
++        return index.postings.len;
++    }
+ };
+ 
++pub const ListError = error{InvalidPosting};
++
++/// S6-T4 (`HYBLEX03` section 3): one term's `df` postings from exactly
++/// `coded`: per posting a varint `(delta << 1) | (tf == 1)`, the delta the
++/// document index itself for the first posting and the difference from the
++/// previous one (>= 1) after it; when the low bit is clear a varint tf >= 2
++/// follows. Every document index below `document_count`.
++pub fn decodeList(coded: []const u8, df: usize, document_count: u32, out: []Posting) ListError!void {
++    var at: usize = 0;
++    var previous: u32 = 0;
++    for (out[0..df], 0..) |*posting, k| {
++        const value = readVarint(coded, &at) orelse return error.InvalidPosting;
++        const delta = value >> 1;
++        if (k != 0 and delta == 0) return error.InvalidPosting;
++        const document = std.math.add(u32, previous, delta) catch return error.InvalidPosting;
++        if (document >= document_count) return error.InvalidPosting;
++        var tf: u32 = 1;
++        if (value & 1 == 0) {
++            tf = readVarint(coded, &at) orelse return error.InvalidPosting;
++            if (tf < 2) return error.InvalidPosting;
++        }
++        posting.* = .{ .document_index = document, .term_frequency = tf };
++        previous = document;
++    }
++    if (at != coded.len) return error.InvalidPosting;
++}
++
++/// S6-T4 prototype (strategies ii and iii): the coded postings of a
++/// `HYBLEX03` section, decoded per term at first use (`all_at_once`: every
++/// term at the first use of any). Decoded lists are kept until `trim` finds
++/// more than `budget` bytes cached (then all are dropped). Single-writer
++/// spin lock; a published slot is read with one atomic load.
++pub const LazyPostings = struct {
++    coded: []const u8,
++    /// Per term, the byte offset of its list in `coded`; `terms.len + 1`.
++    starts: []const usize,
++    terms: []const TermEntry,
++    document_count: u32,
++    posting_count: usize,
++    slots: []std.atomic.Value(?[*]const Posting),
++    allocator: std.mem.Allocator,
++    lock: std.atomic.Value(bool) = .init(false),
++    allocations: std.ArrayList([]Posting) = .empty,
++    cached_bytes: usize = 0,
++    budget: usize = std.math.maxInt(usize),
++    all_at_once: bool = false,
++    decodes: usize = 0,
++    failed: bool = false,
++
++    pub fn get(self: *LazyPostings, term_index: u32) []const Posting {
++        const df = self.terms[term_index].postings_length;
++        if (self.slots[term_index].load(.acquire)) |p| return p[0..df];
++        return self.miss(term_index);
++    }
++
++    fn acquire(self: *LazyPostings) void {
++        while (self.lock.cmpxchgWeak(false, true, .acquire, .monotonic) != null) std.atomic.spinLoopHint();
++    }
++
++    fn release(self: *LazyPostings) void {
++        self.lock.store(false, .release);
++    }
++
++    fn miss(self: *LazyPostings, term_index: u32) []const Posting {
++        self.acquire();
++        defer self.release();
++        const df = self.terms[term_index].postings_length;
++        if (self.slots[term_index].load(.monotonic)) |p| return p[0..df];
++        if (self.all_at_once) {
++            const all = self.allocator.alloc(Posting, self.posting_count) catch return &.{};
++            self.allocations.append(self.allocator, all) catch {};
++            self.cached_bytes += all.len * @sizeOf(Posting);
++            for (self.terms, 0..) |entry, i| {
++                const out = all[entry.postings_start..][0..entry.postings_length];
++                decodeList(self.coded[self.starts[i]..self.starts[i + 1]], entry.postings_length, self.document_count, out) catch {
++                    self.failed = true;
++                };
++                self.decodes += 1;
++                self.slots[i].store(out.ptr, .release);
++            }
++            return all[self.terms[term_index].postings_start..][0..df];
++        }
++        const out = self.allocator.alloc(Posting, df) catch return &.{};
++        self.allocations.append(self.allocator, out) catch {};
++        self.cached_bytes += df * @sizeOf(Posting);
++        decodeList(self.coded[self.starts[term_index]..self.starts[term_index + 1]], df, self.document_count, out) catch {
++            self.failed = true;
++        };
++        self.decodes += 1;
++        self.slots[term_index].store(out.ptr, .release);
++        return out;
++    }
++
++    /// Drop every decoded list when more than `budget` bytes are cached.
++    /// Prototype only: called at the start of an operation, single-threaded.
++    pub fn trim(self: *LazyPostings) void {
++        if (self.cached_bytes <= self.budget) return;
++        self.release_all();
++    }
++
++    pub fn release_all(self: *LazyPostings) void {
++        self.acquire();
++        defer self.release();
++        for (self.slots) |*slot| slot.store(null, .monotonic);
++        for (self.allocations.items) |a| self.allocator.free(a);
++        self.allocations.clearRetainingCapacity();
++        self.cached_bytes = 0;
++    }
++
++    pub fn deinit(self: *LazyPostings) void {
++        self.release_all();
++        self.allocations.deinit(self.allocator);
++    }
++};
++
+ /// Section 4: for each posting in posting order, `term_frequency` unsigned
+ /// LEB128 varints, the term's token ordinals in the document, the first
+ /// absolute and every later one a gap >= 1. Section 5: for each document in
+@@ -105,10 +274,12 @@
+     const term_starts = try allocator.alloc(usize, index.terms.len);
+     errdefer allocator.free(term_starts);
+     var at: usize = 0;
++    const scratch = try index.walkScratch(allocator);
++    defer allocator.free(scratch);
+     for (index.terms, 0..) |entry, term_index| {
+         term_starts[term_index] = at;
+         var ordinals: usize = 0;
+-        for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| ordinals += posting.term_frequency;
++        for (index.listInto(entry, scratch)) |posting| ordinals += posting.term_frequency;
+         skipVarints(sections.positions, &at, ordinals);
+     }
+     const document_starts = try allocator.alloc(usize, index.document_lengths.len);
+@@ -269,7 +440,7 @@
+         if (!analysis.isFirstOccurrence(query, query_token)) continue;
+         const term_index = findTerm(index.terms, query_token.bytes) orelse continue;
+         const entry = index.terms[term_index];
+-        for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
++        for (index.list(entry)) |posting| {
+             const document_index: usize = posting.document_index;
+             scores[document_index] += scoring.bm25Contribution(
+                 @floatFromInt(posting.term_frequency),
+@@ -336,7 +507,7 @@
+ /// scope. Stops at the first such chunk, so an unscoped query reads one
+ /// posting per term.
+ pub fn hasInScopePosting(index: Index, entry: TermEntry, trace: *const hybrid.Trace) bool {
+-    const list = index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
++    const list = index.list(entry);
+     for (list) |posting| {
+         const document = trace.scope_documents[posting.document_index];
+         if (trace.scope_roots) |mask| if (!mask.allows(posting.document_index)) continue; // S3-T3
+@@ -368,6 +539,9 @@
+     index: Index,
+     terms: []const TermEntry,
+     cursors: []usize,
++    /// S6-T4 prototype (lazy): the first `cached_lists` terms' lists,
++    /// resolved once at `init` rather than at every posting.
++    lists: [cached_lists][]const Posting = undefined,
+     parameters: scoring.Bm25Parameters,
+     /// S3-T3: BM25 collection statistics over the caller's visible scope
+     /// (`scope.zig`); null = the whole index's.
+@@ -383,7 +557,11 @@
+     pub fn init(index: Index, terms: []const TermEntry, cursors: []usize, parameters: scoring.Bm25Parameters) SparseScorer {
+         std.debug.assert(cursors.len >= terms.len);
+         @memset(cursors[0..terms.len], 0);
+-        return .{ .index = index, .terms = terms, .cursors = cursors[0..terms.len], .parameters = parameters };
++        var scorer: SparseScorer = .{ .index = index, .terms = terms, .cursors = cursors[0..terms.len], .parameters = parameters };
++        if (comptime lex_lazy) for (terms[0..@min(terms.len, cached_lists)], 0..) |entry, i| {
++            scorer.lists[i] = index.list(entry);
++        };
++        return scorer;
+     }
+ 
+     fn contribution(scorer: *const SparseScorer, term_index: usize, entry: TermEntry, posting: Posting) f32 {
+@@ -403,14 +581,17 @@
+         );
+     }
+ 
+-    fn postingsOf(scorer: *const SparseScorer, entry: TermEntry) []const Posting {
+-        return scorer.index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
++    const cached_lists = 128;
++
++    inline fn postingsOf(scorer: *const SparseScorer, term_index: usize, entry: TermEntry) []const Posting {
++        if (comptime lex_lazy) if (term_index < cached_lists) return scorer.lists[term_index];
++        return scorer.index.list(entry);
+     }
+ 
+     pub fn next(scorer: *SparseScorer) ?hybrid.LexicalMatch {
+         var smallest: ?u32 = null;
+-        for (scorer.terms, scorer.cursors) |entry, cursor| {
+-            const list = scorer.postingsOf(entry);
++        for (scorer.terms, scorer.cursors, 0..) |entry, cursor, term_index| {
++            const list = scorer.postingsOf(term_index, entry);
+             if (cursor >= list.len) continue;
+             const candidate = list[cursor].document_index;
+             if (smallest == null or candidate < smallest.?) smallest = candidate;
+@@ -419,7 +600,7 @@
+         if (scorer.grouping) |grouping| return .{ .document_index = document_index, .score = scorer.groupedAt(grouping, document_index, true) };
+         var score: f32 = 0;
+         for (scorer.terms, scorer.cursors, 0..) |entry, *cursor, term_index| {
+-            const list = scorer.postingsOf(entry);
++            const list = scorer.postingsOf(term_index, entry);
+             if (cursor.* >= list.len or list[cursor.*].document_index != document_index) continue;
+             score += scorer.contribution(term_index, entry, list[cursor.*]);
+             cursor.* += 1;
+@@ -440,7 +621,7 @@
+                 score += best.?;
+                 best = null;
+             }
+-            const list = scorer.postingsOf(entry);
++            const list = scorer.postingsOf(term_index, entry);
+             const at: usize = if (advance) scorer.cursors[term_index] else lowerPosting(list, document_index);
+             if (at >= list.len or list[at].document_index != document_index) continue;
+             if (advance) scorer.cursors[term_index] += 1;
+@@ -472,7 +653,7 @@
+         if (scorer.grouping) |grouping| return @constCast(scorer).groupedAt(grouping, @intCast(document_index), false);
+         var score: f32 = 0;
+         for (scorer.terms, 0..) |entry, term_index| {
+-            const list = scorer.postingsOf(entry);
++            const list = scorer.postingsOf(term_index, entry);
+             var low: usize = 0;
+             var high: usize = list.len;
+             while (low < high) {
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/scope.zig proto/zig/src/scope.zig
+--- main/zig/src/scope.zig	2026-11-16 10:27:53
++++ proto/zig/src/scope.zig	2026-11-16 10:54:45
+@@ -206,8 +206,10 @@
+         const term_count = index.terms.len;
+         const frequencies = try allocator.alloc(u32, groups.items.len * term_count);
+         @memset(frequencies, 0);
++        const walk = try index.walkScratch(allocator);
++        defer allocator.free(walk);
+         for (index.terms, 0..) |entry, term_index| {
+-            for (index.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |posting| {
++            for (index.listInto(entry, walk)) |posting| {
+                 const group = document_groups[posting.document_index];
+                 if (group != exact) frequencies[@as(usize, group) * term_count + term_index] += 1;
+             }
+@@ -338,7 +340,7 @@
+ 
+ /// `entry`'s document frequency within the view's scope.
+ pub fn documentFrequency(view: View, index: postings.Index, documents: []const hybrid.Document, entry: postings.TermEntry) u32 {
+-    const list = index.postings[entry.postings_start .. entry.postings_start + entry.postings_length];
++    const list = index.list(entry);
+     if (view.statistics) |stats| {
+         if (termIndex(index, entry)) |term_index| {
+             var frequency: u32 = 0;
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/service.zig proto/zig/src/service.zig
+--- main/zig/src/service.zig	2026-11-16 10:27:53
++++ proto/zig/src/service.zig	2026-11-16 10:54:45
+@@ -217,7 +217,7 @@
+             .vector_dimensions = service.engine.vector_dimensions,
+             .documents = service.engine.documents.len,
+             .terms = service.engine.lexical_index.terms.len,
+-            .postings = service.engine.lexical_index.postings.len,
++            .postings = service.engine.lexical_index.postingCount(),
+         };
+     }
+ };
+@@ -440,7 +440,7 @@
+             }
+         } else {
+             terms = index.terms.len;
+-            posting_count = index.postings.len;
++            posting_count = index.postingCount();
+         }
+ 
+         var chunkers = std.ArrayList([]const u8).empty;
+diff -ru -x zcache -x zcache-test -x .zig-cache -x zig-out main/zig/src/snapshot_open.zig proto/zig/src/snapshot_open.zig
+--- main/zig/src/snapshot_open.zig	2026-11-16 10:27:53
++++ proto/zig/src/snapshot_open.zig	2026-11-16 11:03:04
+@@ -85,7 +85,8 @@
+         block.documents = try place(&size, hybrid.Document, metadata.document_count);
+         block.terms = try place(&size, postings.TermEntry, metadata.term_count);
+         block.vectors = try place(&size, f32, vector_count);
+-        block.postings = try place(&size, postings.Posting, metadata.posting_count);
++        // S6-T4 prototype: a lazy v3 open keeps no decoded postings array.
++        block.postings = try place(&size, postings.Posting, if (postings.lex_lazy and metadata.lexical_v3) 0 else metadata.posting_count);
+         block.document_lengths = try place(&size, u32, metadata.document_count);
+         block.manifest = try place(&size, u8, manifest_bytes);
+         block.documents_section = try place(&size, u8, metadata.documents_bytes);
+@@ -156,6 +157,16 @@
+     // section and heals it (`index --update`, `apply_changes`).
+ 
+     const vector_count = metadata.document_count * metadata.vector_dimensions; // checked by `OpenBlock.of`
++    var with_text = options;
++    const text_bytes = @import("lexical_segment.zig").peekTermTextBytes(snapshot.lexical_encoded);
++    if (text_bytes != 0) with_text.term_text = try allocators.arena.alloc(u8, text_bytes);
++    if (postings.lex_lazy and metadata.lexical_v3) {
++        with_text.lazy = allocators.arena;
++        with_text.lazy_lists = allocators.blocks;
++        with_text.lazy_all_at_once = protoEnv("SS_PROTO_LAZY_ALL") != null;
++        with_text.lazy_validate = protoEnv("SS_PROTO_LAZY_VALIDATE") != null;
++        if (protoEnv("SS_PROTO_CACHE_BYTES")) |text| with_text.lazy_budget = std.fmt.parseInt(usize, text, 10) catch std.math.maxInt(usize);
++    }
+     var opened = try engine.Engine.openWith(
+         snapshot,
+         OpenBlock.slice(hybrid.Document, block, layout.documents, metadata.document_count),
+@@ -163,7 +174,7 @@
+         OpenBlock.slice(postings.TermEntry, block, layout.terms, metadata.term_count),
+         OpenBlock.slice(postings.Posting, block, layout.postings, metadata.posting_count),
+         OpenBlock.slice(u32, block, layout.document_lengths, metadata.document_count),
+-        options,
++        with_text,
+     );
+     opened.open_block = block;
+ 
+@@ -294,7 +305,15 @@
+ /// sections' when a first use loaded them, `scope.Folder.releaseBlocks`,
+ /// then the open's), through the allocator the open was given. Nothing of the opened generation may be used afterwards;
+ /// the arena is the owner's to release after this.
++/// S6-T4 prototype knobs (a library linked with libc only).
++fn protoEnv(comptime name: [:0]const u8) ?[]const u8 {
++    if (comptime !@import("builtin").link_libc) return null;
++    const value = std.c.getenv(name) orelse return null;
++    return std.mem.span(value);
++}
++
+ pub fn close(opened_engine: engine.Engine, folder: *const scope.Folder) void {
++    if (comptime postings.lex_lazy) if (opened_engine.lexical_index.lazy) |l| l.deinit();
+     folder.close();
+     folder.releaseBlocks();
+     if (opened_engine.open_block) |block| folder.loads.blocks.free(block);

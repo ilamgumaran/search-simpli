@@ -45,7 +45,11 @@ pub const filename_header_bytes: usize = 48;
 pub const flag_state_section: u16 = 16;
 pub const state_header_bytes: usize = 16;
 /// Every v2 flag this reader knows; any other bit is `UnsupportedFlags`.
-pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections | flag_state_section;
+/// v2.3 (S6-T4): the lexical sections (content and file-name) are
+/// `HYBLEX03`. Readers before v2.3 refuse the manifest on this bit
+/// (`UnsupportedFlags`) before reading any section.
+pub const flag_lexical_v3: u16 = 32;
+pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections | flag_state_section | flag_lexical_v3;
 
 pub const StateMetadata = struct {
     file: []const u8,
@@ -89,6 +93,9 @@ pub const Manifest = struct {
     /// v2.1 (S4-T1): `flag_xxh3_sections`; set by the writer exactly when
     /// one of the bound sections' headers selects XXH3-64.
     xxh3_sections: bool = false,
+    /// v2.3 (S6-T4): `flag_lexical_v3`; set by the writer exactly when the
+    /// lexical sections are `HYBLEX03`.
+    lexical_v3: bool = false,
     /// Empty when the generation binds no source section.
     source_file: []const u8 = "",
     source_bytes: usize = 0,
@@ -162,7 +169,7 @@ pub fn create(
     const value = try sectionFields(generation, analyzer_id, embedding_model_id, documents_file, lexical_file, documents_encoded, lexical_encoded);
     // S3-T2: a v1 manifest cannot say `has_positions`, so it cannot bind a
     // `HYBLEX02` section (`createV2` can).
-    if (value.has_positions) return error.UnsupportedVersion;
+    if (value.has_positions or value.lexical_v3) return error.UnsupportedVersion;
     try validateFields(value);
     return value;
 }
@@ -197,6 +204,7 @@ fn sectionFields(
         .lexical_file = lexical_file,
         .has_positions = lexical_header.hasPositions(),
         .xxh3_sections = document_header.checksum_kind == .xxh3_64 or lexical_header.checksum_kind == .xxh3_64,
+        .lexical_v3 = lexical_header.version == lexical_segment.version_v3,
     };
 }
 
@@ -238,6 +246,7 @@ pub fn withFilename(
     const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
     const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
     if (catalog.vector_dimensions != 0 or catalog.document_count != lexical.document_count) return error.FilenameCountMismatch;
+    if ((lexical.version == lexical_segment.version_v3) != base.lexical_v3) return error.InvalidFilenameLexicalSection;
     var value = base;
     value.format_version = version_v2;
     if (catalog.checksum_kind == .xxh3_64 or lexical.checksum_kind == .xxh3_64) value.xxh3_sections = true;
@@ -275,6 +284,7 @@ pub fn validateFilenameSections(value: Manifest, catalog_encoded: []const u8, fi
     const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
     const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
     if (!value.xxh3_sections and (catalog.checksum_kind != .fnv1a64 or lexical.checksum_kind != .fnv1a64)) return error.InvalidFilenameCatalog;
+    if ((lexical.version == lexical_segment.version_v3) != value.lexical_v3) return error.InvalidFilenameLexicalSection;
     if (catalog.checksum != filename.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
     if (lexical.checksum != filename.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
     if (catalog.document_count != filename.file_count or lexical.document_count != filename.file_count) return error.FilenameCountMismatch;
@@ -365,6 +375,7 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
     if (value.hasSource()) flags |= flag_has_source;
     if (value.has_positions) flags |= flag_has_positions;
     if (value.xxh3_sections) flags |= flag_xxh3_sections;
+    if (value.lexical_v3) flags |= flag_lexical_v3;
     if (value.filename != null) flags |= flag_filename_sections;
     if (value.state != null) flags |= flag_state_section;
 
@@ -503,6 +514,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .state = state,
         .has_positions = flags & flag_has_positions != 0,
         .xxh3_sections = flags & flag_xxh3_sections != 0,
+        .lexical_v3 = flags & flag_lexical_v3 != 0,
         .source_file = source_file,
         .source_bytes = source_bytes,
         .source_checksum = source_checksum,
@@ -603,6 +615,7 @@ pub fn validateSnapshotHeaders(
     if (lexical_header.posting_count != value.posting_count) return error.PostingCountMismatch;
     // S3-T2: the flag and the section agree (`HYBLEX02` exactly when set).
     if (lexical_header.hasPositions() != value.has_positions) return error.InvalidLexicalSection;
+    if ((lexical_header.version == lexical_segment.version_v3) != value.lexical_v3) return error.InvalidLexicalSection;
     // S4-T1: an XXH3 section only under a manifest that says so.
     if (!value.xxh3_sections) {
         if (document_header.checksum_kind != .fnv1a64) return error.InvalidDocumentSection;
@@ -1468,14 +1481,15 @@ test "S4-T2 manifest v2.2: the checksum covers every filename header field and p
 }
 
 test "S4-T2 manifest v2.2: stray flag bits, duplicate names and missing filename names are refused" {
-    // Bits 0 to 4 are known (bit 4: the recovery-state section, below).
+    // Bits 0 to 5 are known (bit 4: the recovery-state section, below; bit
+    // 5: `HYBLEX03`, v2.3).
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     var fixture = try SnapshotFixture.init();
     var storage: [1024]u8 = undefined;
     const encoded = try encode(try filenameTestManifest(&fixture), &storage);
-    var bit: u4 = 5;
+    var bit: u4 = 6;
     while (true) : (bit += 1) {
         const copy = try arena.dupe(u8, encoded);
         std.mem.writeInt(u16, copy[10..12], std.mem.readInt(u16, copy[10..12], .little) | (@as(u16, 1) << bit), .little);

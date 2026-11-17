@@ -1,0 +1,10 @@
+# S6-T4 second verification: five run orders, fixed 16 Nov 2026 15:48, before any measurement.
+# A Latin square over the five libraries: each takes every position once.
+# H = head (v3 index), M = main, M2 = main2 (main's bytes), C1 = vctl1, C2 = vctl2 (both on v2 indexes).
+# head before main in runs 1 and 4, main before head in 2, 3 and 5; adjacent in 1, 3, 5; apart in 2 (one between) and 4 (two between).
+run1: head main main2 vctl1 vctl2
+run2: main vctl1 head vctl2 main2
+run3: vctl1 main2 vctl2 main head
+run4: vctl2 head vctl1 main2 main
+run5: main2 vctl2 main head vctl1
+# Within a run the corpora go timing-10k, prose-10k, tamil-10k, each in the run's order.

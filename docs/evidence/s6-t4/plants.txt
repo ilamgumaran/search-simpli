@@ -1,0 +1,21 @@
+# S6-T4 Phase 2, ruling 5: three plants, each in its own scratch copy of commit f2af283 (git archive),
+# each with its own Zig cache and global cache (--cache-dir, --global-cache-dir inside the copy),
+# `zig build test --summary all` (Debug). Every plant must fail tests.
+
+## plant 1: the tf-is-one low bit decoded the wrong way round
+zig/src/postings.zig:107 (decodeList): `if (value & 1 == 0) {` -> `if (value & 1 == 1) {`
+Build Summary: 7/9 steps succeeded (1 failed); 310/468 tests passed (9 skipped, 149 failed)
+failing tests include: lexical_segment.test.S6-T4: HYBLEX03 round trip, with and without positions;compat_98c4a2b_test.test.S6-T4 ruling 4: a 98c4a2b (v2) index opens and answers exactly as a fresh v3 index of the same folder;compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index;compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one
+
+## plant 2: the last term dropped by an off-by-one (writer)
+zig/src/lexical_segment.zig:1299 (encodeV3AllocMarked): `for (index.terms) |entry| {` -> `for (index.terms[0 .. index.terms.len - 1]) |entry| {`
+Build Summary: 7/9 steps succeeded (1 failed); 298/468 tests passed (9 skipped, 157 failed, 4 crashed)
+failing tests include: lexical_segment.test.S6-T4: HYBLEX03 round trip, with and without positions;compat_98c4a2b_test.test.S6-T4 ruling 4: a 98c4a2b (v2) index opens and answers exactly as a fresh v3 index of the same folder;compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index;compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one
+
+## plant 3: the v2 reader removed (every section that is not HYBLEX03 refused)
+zig/src/lexical_segment.zig:353 (decodeWith): `if (header.version != version_v3) return error.UnsupportedVersion;` inserted before the v3 dispatch
+Build Summary: 7/9 steps succeeded (1 failed); 409/468 tests passed (9 skipped, 50 failed)
+failing tests include: lexical_segment.test.HYBLEX02 round trip keeps positions, offsets and sorted terms (S3-T2);lexical_segment.test.HYBLEX02 corruption: checksum first, then every section 4/5 rule (S3-T2);compat_292cb568_test.test.S4-T1: an index written at 292cb568 opens and answers find, read_span, outline, list_files and search_knowledge;compat_292cb568_test.test.S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XXH3 sections, no filename sections) that reads the same;compat_292cb568_test.test.S5-T2: a 292cb568 index gets the title field by the derive, at its first content query and not at the open
+
+## the unplanted branch at the same commit, same command
+Build Summary: 9/9 steps succeeded; 459/468 tests passed (9 skipped)

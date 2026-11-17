@@ -1,0 +1,32 @@
+# S6-T4 ruling 4: the library at 98c4a2b (main before lexical v3) against a v3 index.
+# v3 = a copy of tests/fixtures/index-v3-s6t4 (manifest flag bit 5, HYBLEX03 sections).
+# searchd and libsearch_simpli.dylib built ReleaseSmall from `git archive 98c4a2b`.
+$ searchd(98c4a2b) query v3 hedgehogs
+error: UnsupportedFlags
+exit=1
+$ searchd(98c4a2b) query v3 garden --search-field both
+error: UnsupportedFlags
+exit=1
+$ searchd(98c4a2b) evidence v3 hedgehogs
+error: UnsupportedFlags
+exit=1
+$ searchd(98c4a2b) find v3 frogspawn
+error: UnsupportedFlags
+exit=1
+$ searchd(98c4a2b) outline v3 r-legacy garden.md
+error: UnsupportedFlags
+exit=1
+$ searchd(98c4a2b) read-span v3 r-legacy garden.md 1 2
+error: UnsupportedFlags
+exit=1
+$ searchd(98c4a2b) list-files v3
+error: UnsupportedFlags
+exit=1
+$ searchd(98c4a2b) roots v3
+error: UnsupportedFlags
+exit=1
+$ searchd(98c4a2b) index fixtures/family-folder/home --out v3 --update
+error: UnsupportedFlags
+exit=1
+$ ss_open (98c4a2b libsearch_simpli.dylib) on v3
+handle: None ss_last_error: ss_open: UnsupportedFlags

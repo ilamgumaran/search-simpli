@@ -1,0 +1,13 @@
+# vsame.py: A = main's searchd on main's v2 index, B = this branch's on its v3 index (brOnV2: B on main's v2 index; update-vs-fresh: both B, a v2 copy after one update against a fresh v3 index, which differ only in the generation number and the find cursor that carries it).
+# commands = CLI calls compared; differ = byte-unequal outputs (exit code, stdout, stderr).
+family: {"commands": 567, "differ": 0, "nonzero_exit": 0, "queries": 16, "finds": 16, "search_vs_index_query": {"pairs": 180, "differ": 0, "nonzero_exit": 0}}
+fixtures: {"commands": 627, "differ": 0, "nonzero_exit": 3, "queries": 18, "finds": 16, "search_vs_index_query": {"pairs": 180, "differ": 0, "nonzero_exit": 0}}
+j2-brOnV2: {"commands": 8399, "differ": 0, "nonzero_exit": 0, "queries": 306, "finds": 18}
+j2: {"commands": 8405, "differ": 0, "nonzero_exit": 0, "queries": 306, "finds": 18}
+prose-10k: {"commands": 604, "differ": 0, "nonzero_exit": 0, "queries": 17, "finds": 18}
+prose-1k: {"commands": 602, "differ": 0, "nonzero_exit": 0, "queries": 17, "finds": 18, "search_vs_index_query": {"pairs": 180, "differ": 0, "nonzero_exit": 0}}
+prose1k-brOnV2: {"commands": 602, "differ": 0, "nonzero_exit": 0, "queries": 17, "finds": 18}
+tamil-10k: {"commands": 637, "differ": 0, "nonzero_exit": 0, "queries": 19, "finds": 18}
+timing-10k: {"commands": 666, "differ": 0, "nonzero_exit": 0, "queries": 19, "finds": 18}
+timing-brOnV2: {"commands": 666, "differ": 0, "nonzero_exit": 0, "queries": 19, "finds": 18}
+update-vs-fresh: {"commands": 602, "differ": 288, "nonzero_exit": 0, "queries": 17, "finds": 18, "search_vs_index_query": {"pairs": 180, "differ": 0, "nonzero_exit": 0}}

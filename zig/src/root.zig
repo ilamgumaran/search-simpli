@@ -59,6 +59,7 @@ pub const nfc_timing_test = @import("nfc_timing_test.zig");
 pub const find_fixture_test = @import("find_fixture_test.zig");
 pub const lazy_open_test = @import("lazy_open_test.zig");
 pub const compat_292cb568_test = @import("compat_292cb568_test.zig");
+pub const compat_98c4a2b_test = @import("compat_98c4a2b_test.zig");
 pub const nfr13_arena_test = @import("nfr13_arena_test.zig");
 pub const reload_test = @import("reload_test.zig");
 pub const both_view_test = @import("both_view_test.zig");
@@ -144,6 +145,7 @@ test "load every engine module test suite" {
     _ = find_fixture_test;
     _ = lazy_open_test;
     _ = compat_292cb568_test;
+    _ = compat_98c4a2b_test;
     _ = nfr13_arena_test;
     _ = reload_test;
     _ = both_view_test;
