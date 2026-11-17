@@ -14,7 +14,7 @@
 //! - `open_v4`: `segment.inspect` (the XXH3-64 checksum) and
 //!   `segment.decodeInspected` of the v4 section, as `Engine.openWith` runs them;
 //! - `open_v5`: XXH3-64 over the v5 section and a v5 decode written from
-//!   `docs/source-and-documents-format-v1.md` (file table front-decoded into
+//!   `docs/documents-v5-source-v2-format.md` (file table front-decoded into
 //!   one path block, records into the same `hybrid.Document` array, raw ids
 //!   expanded to hex into one block); every field compared with the v4 decode;
 //! - `first_use_v1`: XXH3-64 over the v1 section, `source.inspect` and `source.openTable` (the

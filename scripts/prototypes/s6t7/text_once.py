@@ -3,7 +3,7 @@
 
 Re-encodes an index written by `main` (documents record v4 `HYBSEG01`,
 source `HYBSRC01`) into the layouts of
-`docs/source-and-documents-format-v1.md`, decodes the result again with a
+`docs/documents-v5-source-v2-format.md`, decodes the result again with a
 decoder written from that document (it shares no state with the encoder),
 rebuilds every retained file from its chunks and its residual bytes, and
 compares each rebuilt file with the original bytes and its SHA-256. Every

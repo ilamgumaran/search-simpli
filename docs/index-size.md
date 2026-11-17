@@ -585,10 +585,10 @@ migration note, and before/after numbers for size, open, warm query, `find`,
 2. **Text once, A′: the source section keeps only what no chunk holds**, with
    the record coding (raw ids, varint fields, and the path once: in the source
    section's file table, other sections referring to a file by its ordinal
-   there, ruling 5). Saves about one corpus size. The query path does not
-   change; `read_span` and `outline` rebuild a file from resident chunk text.
-   With the path in the source table the open reads that table (about 0.9 MB
-   at 10k files, the line maps aside), which this step measures.
+   there, ruling 5; corrected by S6-T7: the table is in the documents section
+   and the open reads no source byte). Saves about one corpus size. The query
+   path does not change; `read_span` and `outline` rebuild a file from
+   resident chunk text.
 3. **The offsets at one byte per token** (C5b), so `find` is unchanged; its
    decode cost is measured in that step's task. Positions stay mandatory (C6
    not taken) and the offsets are kept (C5 not taken).
@@ -637,7 +637,12 @@ The orchestrator ruled on the builder's six questions (kept after the rulings) o
    defaults do not change in that task. It goes through the capability process
    as a behaviour change.
 5. **The single copy of each path** lives in the source section's file table;
-   other sections refer to a file by its ordinal there.
+   other sections refer to a file by its ordinal there. *Corrected by the S6-T7
+   Phase 1 ruling (17 Nov 2026):* the file table lives in the **documents**
+   section ([`documents-v5-source-v2-format.md`](documents-v5-source-v2-format.md)).
+   The query path and the open must not depend on the source section, which
+   roots that do not retain source do not have, and a damaged source must not
+   break a query. The state, catalog and meta paths become ordinals in step 4.
 6. **One format version per step**, each with a reader for the previous
    version, a migration note and before/after numbers for size, open, warm
    query, `find`, `read_span` and one-file update.
