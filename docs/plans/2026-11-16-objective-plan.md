@@ -151,7 +151,7 @@ whether to keep one is the maintainer's decision (03-next).
    reader for the previous version, a migration note and before/after numbers
    for size, open, query and one-file update.
    **Step 1, lexical v3, done 16 Nov 2026** ([S6-T4](../tasks/S6-T4.md),
-   verified on `59f25e1` and merged into `main` on the maintainer's decision,
+   verified on `59f25e1` and merged into `main` as `f3e354e` on the maintainer's decision,
    with the timing rule not passed): both lexical sections `HYBLEX03` under
    manifest v2.3; the index 22–24 % smaller on the timing and prose corpora
    (10 % on Tamil), the open 17–26 % faster, every answer unchanged; on Tamil

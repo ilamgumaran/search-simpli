@@ -17,7 +17,7 @@ or implementation tasks; current search behavior and native artifacts are unchan
 
 ## Lexical format v3: a smaller lexical section (S6-T4, objective plan item D2 step 1, 2026-11-16; merged on the maintainer's decision, timing rule not passed)
 
-**Merged into `main` 16 Nov on the maintainer's decision, with the timing rule not passed** ([task, Report and
+**Merged into `main` 16 Nov as `f3e354e` on the maintainer's decision, with the timing rule not passed** ([task, Report and
 Verdicts](docs/tasks/S6-T4.md), [format](docs/lexical-segment-format-v3.md),
 [manifest v2.3](docs/manifest-format-v2.md#v23-lexical-sections-v3-s6-t4), [index size, Landed](docs/index-size.md#landed)).
 Two FAIL Verdicts stand as the record of the timing measurement: under the five-run rule two Tamil `find` cells fail
