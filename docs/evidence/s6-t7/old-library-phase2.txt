@@ -1,0 +1,68 @@
+# S6-T7 Phase 2, ruling 12: the library from main (ad71cfb; the same engine as a534678, docs-only commits
+# between) against an index this branch's library wrote (manifest v2.4, flag bit 6 text_once,
+# record v5 documents, HYBSRC02 source). Each call runs on its own copy of the index; the
+# copy's files are hashed (SHA-256) before and after.
+#
+# C ABI: the macOS dylib main ships (bindings/dart/search_simpli/native/macos-arm64/
+# libsearch_simpli.dylib at ad71cfb, sha256 d7c88bfe2f7ad48b62fd5cb68898cf31fb6acb3dd8e9372b05bf2dad69a618b1),
+# driven through ctypes. idx: fixtures/family-folder indexed by this branch's searchd
+# (--filename-index; 9 files, WRITER.LOCK included, as every published index has one).
+
+library libsearch_simpli.dylib (ad71cfb) ss_version 2.8.0
+ss_open: NULL; ss_last_error: 'ss_open: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+ss_index_folder (full): NULL; ss_last_error: 'ss_index_folder: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+ss_index_folder (update): NULL; ss_last_error: 'ss_index_folder: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+ss_apply_changes: NULL; ss_last_error: 'ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+ss_apply_changes (allow_file_reads): NULL; ss_last_error: 'ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+refused cleanly, index unchanged: True
+
+# The same calls on tests/fixtures/index-v5-s6t7, which has no WRITER.LOCK: every index file
+# is byte-identical afterwards; the three writer calls create the empty WRITER.LOCK (the
+# writer takes the lock before it reads the manifest, as it does on any directory).
+
+library libsearch_simpli.dylib (ad71cfb) ss_version 2.8.0
+ss_open: NULL; ss_last_error: 'ss_open: UnsupportedFlags'; files 8 -> 8, byte-identical: True
+ss_index_folder (full): NULL; ss_last_error: 'ss_index_folder: UnsupportedFlags'; files 8 -> 8, byte-identical: True
+ss_index_folder (update): NULL; ss_last_error: 'ss_index_folder: UnsupportedFlags'; files 8 -> 9, byte-identical: False
+  changed: [('WRITER.LOCK', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')]
+ss_apply_changes: NULL; ss_last_error: 'ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags'; files 8 -> 9, byte-identical: False
+  changed: [('WRITER.LOCK', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')]
+ss_apply_changes (allow_file_reads): NULL; ss_last_error: 'ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags'; files 8 -> 9, byte-identical: False
+  changed: [('WRITER.LOCK', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')]
+refused cleanly, index unchanged: False
+
+# CLI: searchd from main ad71cfb (ReleaseSmall, sha256 2da2607036a414b764c5e4ef8c960860af63e60ecbd9ed2fe36a48cb7dcc7f9e),
+# each command on its own copy of the same family index.
+
+$ searchd query idx picnic
+error: UnsupportedFlags
+exit 1
+(every file of idx byte-identical afterwards)
+$ searchd read-span idx r-legacy README.md 1 3
+error: UnsupportedFlags
+exit 1
+(every file of idx byte-identical afterwards)
+$ searchd outline idx r-legacy README.md
+error: UnsupportedFlags
+exit 1
+(every file of idx byte-identical afterwards)
+$ searchd list-files idx
+error: UnsupportedFlags
+exit 1
+(every file of idx byte-identical afterwards)
+$ searchd find idx picnic
+error: UnsupportedFlags
+exit 1
+(every file of idx byte-identical afterwards)
+$ searchd index S6-T7/fixtures/family-folder --out idx --update --filename-index
+error: UnsupportedFlags
+exit 1
+(every file of idx byte-identical afterwards)
+$ searchd index S6-T7/fixtures/family-folder --out idx --filename-index
+error: UnsupportedFlags
+exit 1
+(every file of idx byte-identical afterwards)
+$ searchd apply idx --changes shed.json
+error: UnsupportedFlags
+exit 1
+(every file of idx byte-identical afterwards)

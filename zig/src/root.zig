@@ -124,6 +124,8 @@ test "load every engine module test suite" {
     _ = chunker;
     _ = chunker_md;
     _ = source;
+    _ = segment_v5;
+    _ = source_v2;
     _ = state_section;
     _ = find;
     _ = analyzer_v2;
@@ -140,6 +142,7 @@ test "load every engine module test suite" {
     _ = chunker_golden_test;
     _ = chunker_md_golden_test;
     _ = source_fixture_test;
+    _ = text_once_test;
     _ = bm25_conformance_test;
     _ = incremental_indexing_test;
     _ = apply_test;
@@ -151,6 +154,7 @@ test "load every engine module test suite" {
     _ = lazy_open_test;
     _ = compat_292cb568_test;
     _ = compat_98c4a2b_test;
+    _ = compat_s6t7_test;
     _ = nfr13_arena_test;
     _ = reload_test;
     _ = both_view_test;

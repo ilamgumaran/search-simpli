@@ -727,6 +727,27 @@ test "S6-T7 ruling 11: every documents v5 rule, violated with the checksum recom
     std.debug.print("S6-T7 ruling 11: {d} documents v5 rules refused with their errors; an overlong varint accepted\n", .{refused_rules});
 }
 
+/// A read refused by the SHA-256 check, with v1's error and wording.
+fn expectShaRefused(result: source.BytesResult) !void {
+    switch (result) {
+        .failed => |failure| try std.testing.expectEqualStrings(source.unavailable_prefix ++ " (" ++ source.sha256_mismatch_name ++ ")", failure.message),
+        .ok => {
+            std.debug.print("S6-T7 every read: a changed file was returned, not refused by its SHA-256\n", .{});
+            return error.TestUnexpectedResult;
+        },
+    }
+}
+
+fn expectRead(result: source.BytesResult) !void {
+    switch (result) {
+        .ok => {},
+        .failed => |failure| {
+            std.debug.print("S6-T7 every read: an unchanged file refused: {s}\n", .{failure.message});
+            return error.TestUnexpectedResult;
+        },
+    }
+}
+
 fn fullPath(a: std.mem.Allocator, v: V5, index: usize) ![]const u8 {
     var path = std.ArrayList(u8).empty;
     for (v.entries[0 .. index + 1]) |e| {
@@ -876,8 +897,8 @@ test "S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recompute
             for (0..opened.file_count) |k| {
                 const result = try opened.fileBytes(a, opened.file(k));
                 if (k == whole_index) {
-                    try std.testing.expectEqualStrings(source.unavailable_prefix ++ " (" ++ source.sha256_mismatch_name ++ ")", result.failed.message);
-                } else _ = result.ok;
+                    try expectShaRefused(result);
+                } else try expectRead(result);
             }
         }
         refused_rules += 1;
@@ -897,8 +918,8 @@ test "S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recompute
         const changed = try docs.emit(a);
         const changed_bound = try boundOf(a, changed);
         const opened = try source.openIndexedBound(a, s.source, changed_bound);
-        try std.testing.expectEqualStrings(source.unavailable_prefix ++ " (" ++ source.sha256_mismatch_name ++ ")", (try opened.fileBytes(a, opened.find("c-no-final-newline.txt").?)).failed.message);
-        _ = (try opened.fileBytes(a, opened.find("d-bom.md").?)).ok;
+        try expectShaRefused(try opened.fileBytes(a, opened.find("c-no-final-newline.txt").?));
+        try expectRead(try opened.fileBytes(a, opened.find("d-bom.md").?));
         refused_rules += 1;
     }
     std.debug.print("S6-T7 ruling 11: {d} HYBSRC02 rules refused with their errors, resident and streamed (two of them at a read)\n", .{refused_rules});
