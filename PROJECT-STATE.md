@@ -42,6 +42,16 @@ Built on `task/S6-T4` ([task, Report and bars](docs/tasks/S6-T4.md),
   (+13,024), iOS framework binary 935,584 B (+328). App: pin bump row in 03-next (one way).
 - **Filed:** 03-next D2-1b, a lazy lexical reader, with Phase 1's numbers.
 
+## Host-supplied vectors drafted as a capability (S6-T6, plan item E, 2026-11-16; Proposed; verified, merge pending a green CI run)
+
+Documents only: [CAP-21](docs/requirements/cap-21-host-supplied-vectors.md), **Proposed, not approved**: the host runs the
+embedding model; after `apply` publishes lexically, the host lists chunks without a vector and attaches vectors by chunk
+id in a second publish, under one model identity per generation that every query vector names; vectors in their own
+lazily loaded section. Blocked (CFT-24, INV-09) on a J2 semantic slice measured through the import path. Nothing built;
+no engine, contract, binding or format change. The verifier reproduced the draft's claims on a `ReleaseSmall` build
+([Verdict](docs/tasks/S6-T6.md#verdict-verifier-fills-in)), including an existing defect now filed in 03-next: `apply`
+over a snapshot imported with vectors fails `VectorDimensionMismatch` and publishes nothing.
+
 ## A folder searched directly: `searchd search <folder> "<query>"` (S6-T2, objective plan item C, 2026-11-16; verified and merged)
 
 **Verified and merged 16 Nov as `06f8c2e`** ([Verdict](docs/tasks/S6-T2.md#verdict-verifier-fills-in), PASS on `8036a9c`). The verifier's own harness: 5,823 of 5,823 `search` answers byte-equal to `index --filename-index` then

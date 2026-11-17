@@ -248,3 +248,13 @@ Status `Diagnostic · implemented` means built and verified on the invented fami
 |---|---|---|---|
 | FR-26 | `searchd search <folder> "<query>"`: the same answers as `index --filename-index` then `query`/`evidence`, with no index directory, writing nothing | [CAP-20](../requirements/cap-20-direct-folder-search.md) | Implemented and verified (S6-T2) |
 | NFR-15 | Direct search creates no file or directory anywhere; its cost against the index path is measured, not assumed | [CAP-20](../requirements/cap-20-direct-folder-search.md) | Implemented and verified (S6-T2) |
+
+### CAP-21 — host-supplied vectors (S6-T6, proposed, not approved)
+
+| ID | Short text | Capability spec | Status |
+|---|---|---|---|
+| FR-27 | A writer-capable host attaches vectors by chunk id under one identity, publishing one generation; `apply` carries vectors and writes the identity | [CAP-21](../requirements/cap-21-host-supplied-vectors.md) | Proposed |
+| FR-28 | `list_unembedded`: chunks without a vector, paged, generation-bound, within the caller's scope | [CAP-21](../requirements/cap-21-host-supplied-vectors.md) | Proposed |
+| FR-29 | One embedding identity per generation, named and checked on every query vector and attach; model change is a migration | [CAP-21](../requirements/cap-21-host-supplied-vectors.md) | Proposed |
+| FR-30 | Hybrid with no query vector answers lexically with a warning; vector coverage reported over the visible scope | [CAP-21](../requirements/cap-21-host-supplied-vectors.md) | Proposed |
+| NFR-16 | Vectors in their own versioned section, loaded only by vector queries; lexical answers and memory unchanged; vector costs measured before promotion | [CAP-21](../requirements/cap-21-host-supplied-vectors.md) | Proposed |
