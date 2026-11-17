@@ -560,16 +560,17 @@ pub fn queryDecodedTraced(allocator: std.mem.Allocator, body_docs: []const hybri
     if (field == .content) return error.ContentQueryUseLegacy;
     if (options.retrieval_mode != .lexical) return error.InvalidRetrievalMode;
     if (options.candidate_k < options.top_k) return error.CandidateDepthTooSmall;
-    const qt = try tokenize(allocator, analyzer_id, query_text);
-    const scored = try scoreTokens(allocator, body_docs, body_index, decoded, qt, field, options);
+    const scored = try scoreQuery(allocator, body_docs, body_index, decoded, analyzer_id, query_text, field, options);
     const ranked = try rankChannels(allocator, body_docs, decoded, scored, field, options.candidate_k);
     const hits = if (field == .both and options.title != null)
         try merge(allocator, body_docs, decoded, scored, ranked, options.title.?, query_text, options)
     else
         try fuse(allocator, body_docs, ranked, field, options);
-    // After the answer, so that the scoring's allocations are made as
-    // before (S6-T5 §8).
-    if (trace) |t| try traceTokens(allocator, body_docs, body_index, decoded, analyzer_id, query_text, qt, field, options, t);
+    // After the answer, from the tokens `scoreQuery` read. `scoreQuery`
+    // is `main`'s, its tokens carried out in `Scored`: with the tokens
+    // passed in instead, queries whose words every file name holds
+    // (`doc 00000`) scored several microseconds slower (S6-T5 rework).
+    if (trace) |t| try traceTokens(allocator, body_docs, body_index, decoded, analyzer_id, query_text, scored.query_tokens, field, options, t);
     return hits;
 }
 
@@ -602,8 +603,8 @@ pub fn visibleNameHolds(decoded: Decoded, term: []const u8, options: hybrid.Sear
 ///   The channel is never expanded or grouped, so nothing else is noted.
 ///
 /// `query_tokens` are the channel's own tokens of `query_text`
-/// (`tokenize`), read once by `queryDecodedTraced` for the scoring and,
-/// after it, for this.
+/// (`tokenize`), read once by `scoreQuery` and handed out in
+/// `Scored.query_tokens`.
 fn traceTokens(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, query_tokens: []const []const u8, field: Field, options: hybrid.SearchOptions, trace: *hybrid.Trace) !void {
     std.debug.assert(field != .content);
     trace.scope_documents = body_docs;
@@ -727,20 +728,17 @@ const Scored = struct {
     fname_touched: []const u32,
     body_scores: []const f32 = &.{},
     body_touched: []const u32 = &.{},
+    /// S6-T5: the query's tokens, for the trace.
+    query_tokens: []const []const u8 = &.{},
 };
 
 /// The BM25 walks of a filename or both query: the visible set per field
 /// (scoped queries only), then each distinct query term's postings in
 /// each field.
 fn scoreQuery(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) !Scored {
-    return scoreTokens(allocator, body_docs, body_index, decoded, try tokenize(allocator, analyzer_id, query_text), field, options);
-}
-
-/// `scoreQuery` on the query's tokens (`tokenize`), so that
-/// `queryDecodedTraced` reads them once for the scoring and the trace.
-fn scoreTokens(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, qt: []const []const u8, field: Field, options: hybrid.SearchOptions) !Scored {
     const catalog = decoded.catalog;
     const lexical = decoded.lexical;
+    const qt = try tokenize(allocator, analyzer_id, query_text);
     const scoped = maskHides(decoded, options.visible_roots) or options.path_prefix != null or decoded.labeled;
 
     // The visible set's size and average length, per field.
@@ -844,7 +842,7 @@ fn scoreTokens(allocator: std.mem.Allocator, body_docs: []const hybrid.Document,
             }
         };
     }
-    return .{ .fname_scores = fname_scores, .fname_touched = fname_touched.items, .body_scores = body_scores, .body_touched = body_touched.items };
+    return .{ .fname_scores = fname_scores, .fname_touched = fname_touched.items, .body_scores = body_scores, .body_touched = body_touched.items, .query_tokens = qt };
 }
 
 fn scoreBodyGroup(allocator: std.mem.Allocator, body_index: postings.Index, fuzzy_group: fuzzy.Group, body_visible: ?[]const bool, body_avg: f32, body_n: u32, options: hybrid.SearchOptions, body_scores: []f32, body_seen: []bool, body_touched: *std.ArrayList(u32)) !void {
