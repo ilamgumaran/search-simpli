@@ -32,6 +32,10 @@ code, result field, signature or index format change.
   outside `warnings`, and every other surface: the CLI (`query`, `evidence`, `search`), JSON-RPC and MCP carry no
   warnings in any field, as before.
 - **J2:** the gate passes without re-recording; native J2 0 rows differ.
+- **Cost (builder's two runs per head, for information; the verifier's five decide):** on the three 10k corpora,
+  `filename` short requests +0.02 to +0.65 µs and `both` short requests up to +1.4 µs, as predicted; `content` no
+  cell at the threshold. Large `both`/`filename` cells (0.2–0.7 ms) varied by tens of µs between runs of one build,
+  as untouched `find` cells did ([Report §8](docs/tasks/S6-T5.md)).
 
 ## Host-supplied vectors drafted as a capability (S6-T6, plan item E, 2026-11-16; Proposed; verified, merge pending a green CI run)
 
