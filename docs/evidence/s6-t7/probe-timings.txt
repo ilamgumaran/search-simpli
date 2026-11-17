@@ -1,0 +1,50 @@
+# scripts/prototypes/s6t7/probe.zig, ReleaseSmall, Zig 0.16, on the six scratch indexes (main ad71cfb) and the prototype's v5/v2 sections.
+# Best of 15 rounds each, in memory (sections already read; no file I/O). Times in ns.
+# Load before: 1.51 1.63 1.99 (1, 5, 15 min); after: 1.59 1.64 1.99. .check.lock absent. 2026-11-17 08:59-09:00. pmset log: no sleep or dark wake in the span.
+# open_v4 = XXH3 + segment.inspect + decodeInspected (v4); open_v5 = XXH3 over v5 + the v5 decode (paths and hex ids materialised); every field compared.
+# first_use_v1 = XXH3 over v1 + source.inspect + openTable; first_use_v2 = XXH3 over v2 + the v2 record walk and map bounds.
+# v5_decode_keeping_files = a second full v5 decode that also fills the per-file array (informational).
+# file_v1 = copy the file's bytes + SHA-256; file_v2 = rebuild from chunks and residual + SHA-256 (per call, best of 15 rounds of 200-2000 calls).
+# An earlier run (08:53, 5-min load 2.50) gave open_v4 1,349,459 ns on timing-10k against 1,576,583 here: run-to-run spread of this size is noise.
+== timing-10k
+documents v4=9273775 v5=8028417 records=19959 files=10000 open_v4_ns=1576583 open_v5_ns=1328583
+source v1=8279041 v2=539719 first_use_v1_ns=1493542 first_use_v2_ns=182291 v5_decode_keeping_files_ns=626625
+file smallest bytes=179 chunks=1 whole=false residual=1 file_v1_ns=141 file_v2_ns=146
+file median bytes=718 chunks=2 whole=false residual=3 file_v1_ns=445 file_v2_ns=462
+file largest bytes=1655 chunks=3 whole=false residual=5 file_v1_ns=940 file_v2_ns=971
+rebuilt=10000 all equal to v1 bytes and sha256; sink=6002704840668026821
+== prose-10k
+documents v4=20071912 v5=18865516 records=18766 files=10000 open_v4_ns=1820208 open_v5_ns=1865334
+source v1=18529034 v2=820567 first_use_v1_ns=2851833 first_use_v2_ns=328500 v5_decode_keeping_files_ns=770125
+file smallest bytes=123 chunks=1 whole=false residual=1 file_v1_ns=117 file_v2_ns=122
+file median bytes=1126 chunks=1 whole=false residual=1 file_v1_ns=660 file_v2_ns=665
+file largest bytes=46812 chunks=45 whole=false residual=130 file_v1_ns=25199 file_v2_ns=25841
+rebuilt=10000 all equal to v1 bytes and sha256; sink=17187537668641766568
+== tamil-10k
+documents v4=30037019 v5=28792519 records=19946 files=10000 open_v4_ns=2378458 open_v5_ns=2279625
+source v1=28718235 v2=539616 first_use_v1_ns=3806541 first_use_v2_ns=179291 v5_decode_keeping_files_ns=611084
+file smallest bytes=682 chunks=1 whole=false residual=1 file_v1_ns=421 file_v2_ns=426
+file median bytes=2766 chunks=2 whole=false residual=3 file_v1_ns=1542 file_v2_ns=1560
+file largest bytes=6010 chunks=3 whole=false residual=5 file_v1_ns=3293 file_v2_ns=3324
+rebuilt=10000 all equal to v1 bytes and sha256; sink=15669308974793150599
+== fixtures
+documents v4=5597148 v5=5320833 records=4084 files=232 open_v4_ns=440291 open_v5_ns=395584
+source v1=4821461 v2=181663 first_use_v1_ns=580333 first_use_v2_ns=26292 v5_decode_keeping_files_ns=87417
+file smallest bytes=0 chunks=0 whole=true residual=0 file_v1_ns=44 file_v2_ns=45
+file median bytes=306 chunks=1 whole=false residual=1 file_v1_ns=218 file_v2_ns=219
+file largest bytes=1133158 chunks=848 whole=false residual=1 file_v1_ns=608720 file_v2_ns=620561
+rebuilt=232 all equal to v1 bytes and sha256; sink=17333642915832549811
+== family
+documents v4=1519088 v5=1452647 records=1063 files=46 open_v4_ns=120583 open_v5_ns=106125
+source v1=1260950 v2=24224 first_use_v1_ns=149625 first_use_v2_ns=4625 v5_decode_keeping_files_ns=21916
+file smallest bytes=0 chunks=0 whole=true residual=0 file_v1_ns=44 file_v2_ns=44
+file median bytes=271 chunks=6 whole=false residual=11 file_v1_ns=201 file_v2_ns=201
+file largest bytes=1133158 chunks=848 whole=false residual=1 file_v1_ns=609131 file_v2_ns=620725
+rebuilt=46 all equal to v1 bytes and sha256; sink=9178961098055780751
+== j2
+documents v4=101254 v5=80121 records=324 files=88 open_v4_ns=17708 open_v5_ns=13000
+source v1=76806 v2=6969 first_use_v1_ns=14292 first_use_v2_ns=1875 v5_decode_keeping_files_ns=8333
+file smallest bytes=0 chunks=0 whole=true residual=0 file_v1_ns=43 file_v2_ns=44
+file median bytes=321 chunks=3 whole=false residual=5 file_v1_ns=236 file_v2_ns=234
+file largest bytes=15584 chunks=13 whole=false residual=25 file_v1_ns=8418 file_v2_ns=8541
+rebuilt=88 all equal to v1 bytes and sha256; sink=11187795860153132375

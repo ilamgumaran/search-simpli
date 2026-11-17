@@ -1,0 +1,43 @@
+ok   intact: accepted
+ok   documents: magic: BadMagic
+ok   documents: version 4: UnsupportedVersion
+ok   documents: flags 0 (XXH3 required): UnsupportedFlags
+ok   documents: flags bit 1: UnsupportedFlags
+ok   documents: last byte cut: Truncated
+ok   documents: one byte after the records: TrailingData
+ok   file table: one byte after the last entry (table length +1): TrailingData
+ok   file table: one entry fewer (file count -1): TrailingData
+ok   file table: one entry more (file count +1): InvalidFileTable
+ok   file table: decoded path bytes +1: InvalidFileTable
+ok   file table: decoded path bytes -1: InvalidFileTable
+ok   file table: document count -1 (last file's chunks overrun): InvalidFileTable
+ok   file table: document count +1 (chunks fall short): InvalidFileTable
+ok   file table: last entry's suffix sorts before the previous path: UnsortedPaths
+ok   file table: first entry shares a prefix: InvalidFileTable
+ok   file table: last entry not retained: SourceFileCountMismatch
+ok   file table: retained with no source section: InvalidFileTable
+ok   records: one byte after the last record (records length +1): TrailingData
+ok   records: last record flags bit 3: UnsupportedFlags
+ok   records: last record start line 0: InvalidCitation
+ok   records: last record heading after its start: InvalidSection
+ok   records: last text byte of a rebuilt file's last chunk changed: SourceFileSha256Mismatch
+ok   source: magic v1: BadMagic
+ok   source: version 1: UnsupportedVersion
+ok   source: flags 0: UnsupportedFlags
+ok   source: last byte cut: Truncated
+ok   source: one byte after the residual area: TrailingData
+ok   source: file count +1: SourceFileCountMismatch
+ok   source records: one byte after the last record (records length +1): TrailingData
+ok   source records: last record flags bit 2: InvalidFileTable
+ok   source records: zero-chunk file not kept whole: InvalidFileTable
+ok   source records: chunk count differs from the documents': InvalidFileTable
+ok   source records: first recipe value an overlap at position 0: InvalidFileTable
+ok   source records: an overlap longer than the bytes emitted: InvalidFileTable
+ok   source records: last SHA-256 byte changed: SourceFileSha256Mismatch
+ok   source records: BOM flag set on a file without one: InvalidLineMap
+ok   line maps: one byte after the last map (maps length +1): InvalidLineMap
+ok   line maps: last map one varint short (maps length -1): InvalidLineMap
+ok   residual: one byte left over (residual length +1): InvalidFileTable
+ok   residual: last byte missing (residual length -1): InvalidFileTable
+ok   residual: a gap byte of the last rebuilt file changed: SourceFileSha256Mismatch
+42 cases, 0 failed

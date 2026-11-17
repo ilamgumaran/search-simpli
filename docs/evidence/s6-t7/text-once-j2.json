@@ -1,0 +1,98 @@
+{
+ "index": "j2",
+ "documents_v4": 101254,
+ "documents_v5": 80121,
+ "source_v1": 76806,
+ "source_v2": 6969,
+ "file_table_bytes": 1750,
+ "index_before": 260237,
+ "index_after": 169267,
+ "documents_parts": {
+  "header": 56,
+  "file table: shared and suffix length varints": 176,
+  "file table: path suffix bytes": 1486,
+  "file table: chunk count and retained varint": 88,
+  "record flags varint": 324,
+  "chunk ids (10 raw bytes)": 3240,
+  "chunk ids inline (length varint and bytes)": 0,
+  "text length varint": 485,
+  "start line varint": 332,
+  "line span varint": 324,
+  "chunker index varint": 324,
+  "section depth varint": 324,
+  "heading varint": 324,
+  "section path length varint": 313,
+  "labels (length varint and bytes)": 0,
+  "vectors": 0,
+  "chunk text": 66108,
+  "section paths (heading texts)": 6217
+ },
+ "source_parts": {
+  "header": 48,
+  "records: sha256": 2816,
+  "records: flags varint": 88,
+  "records: text length varint": 173,
+  "records: line count varint": 90,
+  "records: chunk count varint": 85,
+  "records: recipe varints": 322,
+  "line maps (v1's varints)": 2133,
+  "residual: gap bytes of rebuilt files": 689,
+  "residual: bytes of files kept whole": 525
+ },
+ "stats": {
+  "files": 88,
+  "retained": 88,
+  "rebuilt": 85,
+  "kept_whole": 3,
+  "zero_chunk_retained": 1,
+  "empty_files": 1,
+  "overlaps": 3,
+  "contained_chunks": 0,
+  "gaps_nonzero": 235,
+  "raw_ids": 324,
+  "inline_ids": 0,
+  "kept_whole_bytes": 525,
+  "gap_bytes": 689,
+  "max_recipe_varint": 271,
+  "hard_cases": {
+   "bom": {
+    "rebuilt": 1,
+    "kept_whole": 0
+   },
+   "no final newline": {
+    "rebuilt": 1,
+    "kept_whole": 0
+   },
+   "cr lf": {
+    "rebuilt": 0,
+    "kept_whole": 2
+   },
+   "lone cr": {
+    "rebuilt": 0,
+    "kept_whole": 0
+   },
+   "other line breaks (vt ff fs gs rs nel ls ps)": {
+    "rebuilt": 0,
+    "kept_whole": 0
+   },
+   "empty": {
+    "rebuilt": 0,
+    "kept_whole": 1
+   }
+  },
+  "kept_whole_reasons": {
+   "no chunk": 1,
+   "a chunk not an exact span": 2
+  }
+ },
+ "round_trip": {
+  "records": 324,
+  "record_fields_differing": 0,
+  "files_checked": 88,
+  "rebuilt_from_chunks": 85,
+  "kept_whole": 3,
+  "mismatches": 0,
+  "checks": "every file rebuilt and compared byte for byte with the v1 section's bytes, its SHA-256, BOM flag and line map; every v5 record field equals v4's"
+ },
+ "checksum": "not computed (written as zero; the decoder skips that one check)"
+}
