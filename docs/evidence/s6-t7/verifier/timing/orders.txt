@@ -1,0 +1,18 @@
+# S6-T7 verifier: five run orders, fixed 17 Nov 2026 11:47 before any timed run (the smoke tests at 11:46 were untimed checks of the scripts, not used).
+# A Latin square over the five libraries, L[i][j] = (2i + j) mod 5 over (main, head, main2, ctl1, ctl2): each library takes every position once.
+# main  = ad71cfb ReleaseSmall zig build lib, 971,064 B (= the committed native of ad71cfb), __text 569,296 B; opens main's index (record v4, HYBSRC01).
+# main2 = the same source built again in its own copy and caches (byte-identical); opens main's index.
+# head  = f99a7cc, 988,952 B (= the committed macos-arm64 native), __text 582,048 B (+12,752); opens the head's index (record v5, HYBSRC02).
+# ctl1  = ad71cfb + 155 never-run loops in postings.lookupExact (query path) behind term.len >= 2^50; 987,800 B, __text 582,252 B (+12,956).
+# ctl2  = ad71cfb + 155 never-run loops in segment.decodeInspected (open path) behind encoded.len >= 2^50; 987,432 B, __text 582,100 B (+12,804).
+# (head, main) positions: run1 (2,1), run2 (5,4), run3 (3,2), run4 (1,5), run5 (4,3).
+run1: main head main2 ctl1 ctl2
+run2: main2 ctl1 ctl2 main head
+run3: ctl2 main head main2 ctl1
+run4: head main2 ctl1 ctl2 main
+run5: ctl1 ctl2 main head main2
+# Within a run: phase q (S6-T4 bench.py bench: query, find, open, memory, first query/find) over timing-10k, prose-10k, tamil-10k;
+# phase r (rbench.py: open, memory after open, first and later read_span/outline) over the six corpora; each corpus in the run's order;
+# phase o (openx.py: the six pairs interleaved in one process, 200 rounds, seed 1000*run + corpus number 1..6, corpora j2 family fixtures timing prose tamil);
+# phase u (upd.py with each build's own searchd, the run's order, 3 trials) over timing-10k, prose-10k, tamil-10k, family.
+# Gate (S6-T4 gate.sh, unchanged) before every process; pmset -g log checked for a sleep inside each run afterwards.
