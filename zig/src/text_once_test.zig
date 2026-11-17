@@ -49,6 +49,9 @@ const ruling3 = [_]Kind{
     .{ .path = "f-blank.txt", .bytes = "   \n\n \t \n" },
     .{ .path = "g-controls.txt", .bytes = "one\x0Btwo\x0Cthree\xC2\x85four\xE2\x80\xA8five\xE2\x80\xA9six\nnext line\nlast\x1Cfile sep\n" },
     .{ .path = "h-blank-lines.md", .bytes = "# H\n\n\n\nafter three blank lines\n\n\n## H2\n\n\ntext\n" },
+    // A short chunk, then a long one (where an overlap of the bytes emitted
+    // so far plus one is still shorter than the chunk).
+    .{ .path = "i-short-then-long.md", .bytes = "# A\n\nx\n\n# B\n\n" ++ ("long section text " ** 20) ++ "\n" },
 };
 
 fn longFile(a: std.mem.Allocator, lines: usize, width: usize, last_width: usize) ![]u8 {
@@ -93,6 +96,18 @@ const Indexed = struct {
         const root = try tmp.dir.openDir(io, "root", .{ .iterate = true });
         const out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
         const files = try writeCorpus(a, root);
+        _ = try indexer.indexFolderIncremental(a, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+        return .{ .tmp = tmp, .root = root, .out = out, .files = files };
+    }
+
+    /// An index of exactly `files`.
+    fn initFiles(a: std.mem.Allocator, files: []const Kind) !Indexed {
+        var tmp = std.testing.tmpDir(.{ .iterate = true });
+        try tmp.dir.createDirPath(io, "root");
+        try tmp.dir.createDirPath(io, "out");
+        const root = try tmp.dir.openDir(io, "root", .{ .iterate = true });
+        const out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+        for (files) |kind| try root.writeFile(io, .{ .sub_path = kind.path, .data = kind.bytes });
         _ = try indexer.indexFolderIncremental(a, io, root, out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
         return .{ .tmp = tmp, .root = root, .out = out, .files = files };
     }
@@ -202,6 +217,73 @@ test "S6-T7 ruling 3: every kind of file is rebuilt to its exact bytes, with HYB
     for ([_][]const u8{ "a-crlf.md", "e-empty.txt", "f-blank.txt" }) |path| try std.testing.expect(resident.find(path).?.v2_whole);
     for ([_][]const u8{ "a-crlf-short.txt", "c-no-final-newline.txt", "d-bom.md", last_path, last_before }) |path| try std.testing.expect(!resident.find(path).?.v2_whole);
     std.debug.print("S6-T7 ruling 3: {d} files rebuilt exactly (resident and streamed); kept whole:{s}; {d} read_span ranges equal HYBSRC01's\n", .{ sorted.len, whole.items, spans });
+}
+
+/// Overlaps of 1 and 2 bytes and of the whole previous chunk
+/// (`line-window-v1`, 1,600 characters, 3 lines of overlap): a window ends
+/// on a short line after two blank ones, and the next window starts with
+/// that line; or a window starts on a blank line, so the next one, a line
+/// later, holds all of it.
+const overlaps = [_]Kind{
+    .{ .path = "k-overlap-1.txt", .bytes = ("p" ** 1590) ++ "\n\n\ny\n" ++ ("q" ** 1590) ++ "\ntail\n" },
+    .{ .path = "k-overlap-2.txt", .bytes = ("p" ** 1590) ++ "\n\n\nyy\n" ++ ("q" ** 1590) ++ "\ntail\n" },
+    .{ .path = "k-overlap-whole.txt", .bytes = "\nz\n" ++ ("w" ** 1595) ++ "\nw\nend line\n" },
+};
+
+test "S6-T7 Verdict finding 1: overlaps of 1 and 2 bytes and of the whole previous chunk are rebuilt exactly, through read_span and outline" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var indexed = try Indexed.initFiles(a, &overlaps);
+    defer indexed.deinit();
+    const s = try indexed.sections(a);
+    try std.testing.expect(s.metadata.text_once);
+    const bound = try boundOf(a, s.documents);
+    const resident = try source.openIndexedBound(a, s.source, bound);
+    var file = try indexed.out.openFile(io, s.metadata.source_file, .{});
+    defer file.close(io);
+    const streamed = (try source.openStreamedBound(a, a, io, file, s.source.len, bound)).section;
+    const raw = try Src.parse(a, s.source);
+    try std.testing.expectEqual(overlaps.len, raw.files.len);
+
+    // The recipes hold what this test is for (the files are in path order).
+    var one = false;
+    var two = false;
+    var whole = false;
+    for (overlaps, raw.files) |kind, f| {
+        const entry = resident.find(kind.path).?;
+        try std.testing.expect(!entry.v2_whole);
+        for (f.recipe, 0..) |v, i| {
+            if (v == 1) one = true;
+            if (v == 3) two = true;
+            if (i > 0 and v & 1 == 1 and (v + 1) / 2 == entry.v2_chunks[i - 1].text.len) whole = true;
+        }
+    }
+    try std.testing.expect(one and two and whole);
+
+    const inputs = try a.alloc(source.InputFile, overlaps.len);
+    for (overlaps, inputs) |kind, *input| input.* = .{ .path = kind.path, .bytes = kind.bytes };
+    const v1 = try source.openIndexed(a, try source.encode(a, inputs));
+    var spans: usize = 0;
+    for (overlaps) |kind| {
+        const entry = resident.find(kind.path).?;
+        for ([_]source.Section{ resident, streamed }) |section| {
+            try std.testing.expectEqualSlices(u8, kind.bytes, try source.entryBytes(section, a, section.find(kind.path).?));
+            // Every range of lines, with and without context.
+            var first: u32 = 1;
+            while (first <= entry.line_count) : (first += 1) {
+                var last: u32 = first;
+                while (last <= entry.line_count) : (last += 1) for ([_]u32{ 0, 1 }) |context| {
+                    const want = try source.readSpan(a, v1, kind.path, first, last, context);
+                    const got = try source.readSpan(a, section, kind.path, first, last, context);
+                    try expectSameSpan(a, want, got);
+                    spans += 1;
+                };
+            }
+            try std.testing.expectEqualStrings(try outlineJson(a, try source.outline(a, v1, kind.path)), try outlineJson(a, try source.outline(a, section, kind.path)));
+        }
+    }
+    std.debug.print("S6-T7 overlaps: recipe values 1 and 3 and an overlap of the whole previous chunk rebuilt exactly; {d} read_span ranges equal HYBSRC01's\n", .{spans});
 }
 
 fn expectSameSpan(a: std.mem.Allocator, want: source.SpanResult, got: source.SpanResult) !void {
@@ -517,6 +599,32 @@ fn expectSourceError(a: std.mem.Allocator, dir: std.Io.Dir, expected: anyerror, 
     }
 }
 
+/// The format document's walk of one recipe over its chunks' lengths, in
+/// the test: the end position and the gap bytes, or null where a position
+/// passes `length` or (with `overlap_rule`) an overlap k exceeds the bytes
+/// emitted so far.
+fn refWalk(recipe: []const u64, lengths: []const u64, length: u64, overlap_rule: bool) ?struct { end: u64, gaps: u64 } {
+    var pos: u64 = 0;
+    var gaps: u64 = 0;
+    for (recipe, lengths) |v, chunk_length| {
+        if (v & 1 == 0) {
+            gaps += v / 2;
+            pos += v / 2 + chunk_length;
+        } else {
+            const k = (v + 1) / 2;
+            if (overlap_rule and k > pos) return null;
+            if (k < chunk_length) pos += chunk_length - k;
+        }
+        if (pos > length) return null;
+    }
+    return .{ .end = pos, .gaps = gaps };
+}
+
+fn refResidual(recipe: []const u64, lengths: []const u64, length: u64, overlap_rule: bool) ?u64 {
+    const walked = refWalk(recipe, lengths, length, overlap_rule) orelse return null;
+    return walked.gaps + (length - walked.end);
+}
+
 fn varintBytes(value: u64) usize {
     return segment_v5.varintLength(value);
 }
@@ -589,6 +697,21 @@ test "S6-T7 ruling 11: every documents v5 rule, violated with the checksum recom
     v = try base.clone(a);
     v.entries[capped.?].shared = 256;
     try expectDocumentsError(a, error.InvalidFileTable, v, true, "shared 256");
+    {
+        // The cap on its own (S6-T7 Verdict, finding 3): the capped entry's
+        // two paths share more than 255 bytes, so `shared` 256 with the
+        // suffix one byte shorter decodes the same path, in order, with the
+        // same path bytes; only "shared at most 255" refuses it. The same
+        // entry at exactly 255 is the base, which decodes (above).
+        const e = base.entries[capped.?];
+        try std.testing.expect(std.mem.eql(u8, (try fullPath(a, base, capped.? - 1))[0..256], (try fullPath(a, base, capped.?))[0..256]));
+        v = try base.clone(a);
+        v.entries[capped.?].shared = 256;
+        v.entries[capped.?].suffix = e.suffix[1..];
+        v.entries[capped.?].suffix_length = e.suffix_length - 1;
+        try std.testing.expectEqualStrings(try fullPath(a, base, capped.?), try fullPath(a, v, capped.?));
+        try expectDocumentsError(a, error.InvalidFileTable, v, true, "shared 256 on a common prefix over 255, the path unchanged");
+    }
     v = try base.clone(a);
     v.entries[1].shared = v.entries[0].suffix_length + 1;
     try expectDocumentsError(a, error.InvalidFileTable, v, true, "shared past the previous path");
@@ -857,6 +980,46 @@ test "S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recompute
     x = try base.clone(a);
     x.files[x.files.len - 1].recipe[0] = 1;
     try expectSourceError(a, dir, error.InvalidFileTable, try x.emit(a), bound, "an overlap past what was emitted");
+    {
+        // The rule on its own (S6-T7 Verdict, finding 2): an overlap k one
+        // byte longer than the bytes emitted before a later chunk, with the
+        // record's length lowered so the residual total, every position
+        // bound and every other rule still hold. Only "k > pos" refuses it
+        // (the walk), before any read's SHA-256.
+        const section = try source.openIndexedBound(a, s.source, bound);
+        var placed: ?struct { file: usize, recipe: []u64, length: u64 } = null;
+        search: for (base.files, 0..) |f, n| {
+            if (f.flags & 2 != 0) continue;
+            const chunks = section.file(n).v2_chunks;
+            const lengths = try a.alloc(u64, chunks.len);
+            for (chunks, lengths) |chunk, *length| length.* = chunk.text.len;
+            const want = refResidual(f.recipe, lengths, f.length, true).?;
+            var pos: u64 = 0;
+            for (f.recipe, lengths, 0..) |value, length, i| {
+                if (i > 0 and pos + 1 < length) {
+                    const recipe = try a.dupe(u64, f.recipe);
+                    recipe[i] = 2 * (pos + 1) - 1;
+                    // Residual = gaps + length - end position: solve for length.
+                    const loose = refWalk(recipe, lengths, std.math.maxInt(u64), false).?;
+                    if (want + loose.end >= loose.gaps) {
+                        const new_length = want + loose.end - loose.gaps;
+                        if (refResidual(recipe, lengths, new_length, false)) |got| if (got == want and refResidual(recipe, lengths, new_length, true) == null) {
+                            placed = .{ .file = n, .recipe = recipe, .length = new_length };
+                            break :search;
+                        };
+                    }
+                }
+                if (value & 1 == 0) pos += value / 2 + length else {
+                    const k = (value + 1) / 2;
+                    if (k < length) pos += length - k;
+                }
+            }
+        }
+        x = try base.clone(a);
+        x.files[placed.?.file].recipe = placed.?.recipe;
+        x.files[placed.?.file].length = placed.?.length;
+        try expectSourceError(a, dir, error.InvalidFileTable, try x.emit(a), bound, "an overlap one byte past what was emitted, the residual total kept");
+    }
     x = try base.clone(a);
     x.files[x.files.len - 1].recipe[0] = 2 * (last.length + 1);
     try expectSourceError(a, dir, error.InvalidFileTable, try x.emit(a), bound, "a gap past the file's length");
