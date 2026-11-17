@@ -1,0 +1,389 @@
+169a170,557
+>     // verifier placement control (S6-T5): never true at run time
+>     if (term.len >= (@as(usize, 1) << 50)) {
+>         {
+>             var acc0: usize = 7;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[0] == term[0] +% 1) acc0 +%= i *% 3;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 2)], term[0..@min(term.len, 2)])) acc0 ^= i;
+>             }
+>             if (acc0 == 1000003) return acc0 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc1: usize = 8;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[1] == term[1] +% 2) acc1 +%= i *% 5;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 3)], term[0..@min(term.len, 3)])) acc1 ^= i;
+>             }
+>             if (acc1 == 1000004) return acc1 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc2: usize = 9;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[0] == term[2] +% 3) acc2 +%= i *% 7;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 4)], term[0..@min(term.len, 4)])) acc2 ^= i;
+>             }
+>             if (acc2 == 1000005) return acc2 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc3: usize = 10;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 4 and entry.term[1] == term[0] +% 4) acc3 +%= i *% 9;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 5)], term[0..@min(term.len, 5)])) acc3 ^= i;
+>             }
+>             if (acc3 == 1000006) return acc3 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc4: usize = 11;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 5 and entry.term[0] == term[1] +% 5) acc4 +%= i *% 11;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 6)], term[0..@min(term.len, 6)])) acc4 ^= i;
+>             }
+>             if (acc4 == 1000007) return acc4 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc5: usize = 12;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[1] == term[2] +% 6) acc5 +%= i *% 13;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 7)], term[0..@min(term.len, 7)])) acc5 ^= i;
+>             }
+>             if (acc5 == 1000008) return acc5 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc6: usize = 13;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[0] == term[0] +% 7) acc6 +%= i *% 15;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 8)], term[0..@min(term.len, 8)])) acc6 ^= i;
+>             }
+>             if (acc6 == 1000009) return acc6 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc7: usize = 14;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[1] == term[1] +% 8) acc7 +%= i *% 17;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 9)], term[0..@min(term.len, 9)])) acc7 ^= i;
+>             }
+>             if (acc7 == 1000010) return acc7 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc8: usize = 15;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 4 and entry.term[0] == term[2] +% 9) acc8 +%= i *% 19;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 10)], term[0..@min(term.len, 10)])) acc8 ^= i;
+>             }
+>             if (acc8 == 1000011) return acc8 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc9: usize = 16;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 5 and entry.term[1] == term[0] +% 10) acc9 +%= i *% 21;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 11)], term[0..@min(term.len, 11)])) acc9 ^= i;
+>             }
+>             if (acc9 == 1000012) return acc9 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc10: usize = 17;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[0] == term[1] +% 11) acc10 +%= i *% 23;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 12)], term[0..@min(term.len, 12)])) acc10 ^= i;
+>             }
+>             if (acc10 == 1000013) return acc10 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc11: usize = 18;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[1] == term[2] +% 12) acc11 +%= i *% 25;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 13)], term[0..@min(term.len, 13)])) acc11 ^= i;
+>             }
+>             if (acc11 == 1000014) return acc11 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc12: usize = 19;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[0] == term[0] +% 13) acc12 +%= i *% 27;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 14)], term[0..@min(term.len, 14)])) acc12 ^= i;
+>             }
+>             if (acc12 == 1000015) return acc12 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc13: usize = 20;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 4 and entry.term[1] == term[1] +% 14) acc13 +%= i *% 29;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 15)], term[0..@min(term.len, 15)])) acc13 ^= i;
+>             }
+>             if (acc13 == 1000016) return acc13 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc14: usize = 21;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 5 and entry.term[0] == term[2] +% 15) acc14 +%= i *% 31;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 16)], term[0..@min(term.len, 16)])) acc14 ^= i;
+>             }
+>             if (acc14 == 1000017) return acc14 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc15: usize = 22;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[1] == term[0] +% 16) acc15 +%= i *% 33;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 17)], term[0..@min(term.len, 17)])) acc15 ^= i;
+>             }
+>             if (acc15 == 1000018) return acc15 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc16: usize = 23;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[0] == term[1] +% 17) acc16 +%= i *% 35;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 18)], term[0..@min(term.len, 18)])) acc16 ^= i;
+>             }
+>             if (acc16 == 1000019) return acc16 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc17: usize = 24;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[1] == term[2] +% 18) acc17 +%= i *% 37;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 19)], term[0..@min(term.len, 19)])) acc17 ^= i;
+>             }
+>             if (acc17 == 1000020) return acc17 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc18: usize = 25;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 4 and entry.term[0] == term[0] +% 19) acc18 +%= i *% 39;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 20)], term[0..@min(term.len, 20)])) acc18 ^= i;
+>             }
+>             if (acc18 == 1000021) return acc18 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc19: usize = 26;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 5 and entry.term[1] == term[1] +% 20) acc19 +%= i *% 41;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 21)], term[0..@min(term.len, 21)])) acc19 ^= i;
+>             }
+>             if (acc19 == 1000022) return acc19 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc20: usize = 27;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[0] == term[2] +% 21) acc20 +%= i *% 43;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 22)], term[0..@min(term.len, 22)])) acc20 ^= i;
+>             }
+>             if (acc20 == 1000023) return acc20 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc21: usize = 28;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[1] == term[0] +% 22) acc21 +%= i *% 45;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 23)], term[0..@min(term.len, 23)])) acc21 ^= i;
+>             }
+>             if (acc21 == 1000024) return acc21 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc22: usize = 29;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[0] == term[1] +% 23) acc22 +%= i *% 47;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 24)], term[0..@min(term.len, 24)])) acc22 ^= i;
+>             }
+>             if (acc22 == 1000025) return acc22 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc23: usize = 30;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 4 and entry.term[1] == term[2] +% 24) acc23 +%= i *% 49;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 25)], term[0..@min(term.len, 25)])) acc23 ^= i;
+>             }
+>             if (acc23 == 1000026) return acc23 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc24: usize = 31;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 5 and entry.term[0] == term[0] +% 25) acc24 +%= i *% 51;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 26)], term[0..@min(term.len, 26)])) acc24 ^= i;
+>             }
+>             if (acc24 == 1000027) return acc24 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc25: usize = 32;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[1] == term[1] +% 26) acc25 +%= i *% 53;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 27)], term[0..@min(term.len, 27)])) acc25 ^= i;
+>             }
+>             if (acc25 == 1000028) return acc25 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc26: usize = 33;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[0] == term[2] +% 27) acc26 +%= i *% 55;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 28)], term[0..@min(term.len, 28)])) acc26 ^= i;
+>             }
+>             if (acc26 == 1000029) return acc26 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc27: usize = 34;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[1] == term[0] +% 28) acc27 +%= i *% 57;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 29)], term[0..@min(term.len, 29)])) acc27 ^= i;
+>             }
+>             if (acc27 == 1000030) return acc27 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc28: usize = 35;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 4 and entry.term[0] == term[1] +% 29) acc28 +%= i *% 59;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 30)], term[0..@min(term.len, 30)])) acc28 ^= i;
+>             }
+>             if (acc28 == 1000031) return acc28 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc29: usize = 36;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 5 and entry.term[1] == term[2] +% 30) acc29 +%= i *% 61;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 31)], term[0..@min(term.len, 31)])) acc29 ^= i;
+>             }
+>             if (acc29 == 1000032) return acc29 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc30: usize = 37;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[0] == term[0] +% 31) acc30 +%= i *% 63;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 32)], term[0..@min(term.len, 32)])) acc30 ^= i;
+>             }
+>             if (acc30 == 1000033) return acc30 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc31: usize = 38;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[1] == term[1] +% 32) acc31 +%= i *% 65;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 33)], term[0..@min(term.len, 33)])) acc31 ^= i;
+>             }
+>             if (acc31 == 1000034) return acc31 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc32: usize = 39;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[0] == term[2] +% 33) acc32 +%= i *% 67;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 34)], term[0..@min(term.len, 34)])) acc32 ^= i;
+>             }
+>             if (acc32 == 1000035) return acc32 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc33: usize = 40;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 4 and entry.term[1] == term[0] +% 34) acc33 +%= i *% 69;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 35)], term[0..@min(term.len, 35)])) acc33 ^= i;
+>             }
+>             if (acc33 == 1000036) return acc33 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc34: usize = 41;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 5 and entry.term[0] == term[1] +% 35) acc34 +%= i *% 71;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 36)], term[0..@min(term.len, 36)])) acc34 ^= i;
+>             }
+>             if (acc34 == 1000037) return acc34 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc35: usize = 42;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[1] == term[2] +% 36) acc35 +%= i *% 73;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 37)], term[0..@min(term.len, 37)])) acc35 ^= i;
+>             }
+>             if (acc35 == 1000038) return acc35 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc36: usize = 43;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[0] == term[0] +% 37) acc36 +%= i *% 75;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 38)], term[0..@min(term.len, 38)])) acc36 ^= i;
+>             }
+>             if (acc36 == 1000039) return acc36 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc37: usize = 44;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[1] == term[1] +% 38) acc37 +%= i *% 77;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 39)], term[0..@min(term.len, 39)])) acc37 ^= i;
+>             }
+>             if (acc37 == 1000040) return acc37 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc38: usize = 45;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 4 and entry.term[0] == term[2] +% 39) acc38 +%= i *% 79;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 40)], term[0..@min(term.len, 40)])) acc38 ^= i;
+>             }
+>             if (acc38 == 1000041) return acc38 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc39: usize = 46;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 5 and entry.term[1] == term[0] +% 40) acc39 +%= i *% 81;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 41)], term[0..@min(term.len, 41)])) acc39 ^= i;
+>             }
+>             if (acc39 == 1000042) return acc39 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc40: usize = 47;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[0] == term[1] +% 41) acc40 +%= i *% 83;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 42)], term[0..@min(term.len, 42)])) acc40 ^= i;
+>             }
+>             if (acc40 == 1000043) return acc40 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc41: usize = 48;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[1] == term[2] +% 42) acc41 +%= i *% 85;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 43)], term[0..@min(term.len, 43)])) acc41 ^= i;
+>             }
+>             if (acc41 == 1000044) return acc41 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc42: usize = 49;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[0] == term[0] +% 43) acc42 +%= i *% 87;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 44)], term[0..@min(term.len, 44)])) acc42 ^= i;
+>             }
+>             if (acc42 == 1000045) return acc42 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc43: usize = 50;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 4 and entry.term[1] == term[1] +% 44) acc43 +%= i *% 89;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 45)], term[0..@min(term.len, 45)])) acc43 ^= i;
+>             }
+>             if (acc43 == 1000046) return acc43 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc44: usize = 51;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 5 and entry.term[0] == term[2] +% 45) acc44 +%= i *% 91;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 46)], term[0..@min(term.len, 46)])) acc44 ^= i;
+>             }
+>             if (acc44 == 1000047) return acc44 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc45: usize = 52;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 1 and entry.term[1] == term[0] +% 46) acc45 +%= i *% 93;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 47)], term[0..@min(term.len, 47)])) acc45 ^= i;
+>             }
+>             if (acc45 == 1000048) return acc45 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc46: usize = 53;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 2 and entry.term[0] == term[1] +% 47) acc46 +%= i *% 95;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 48)], term[0..@min(term.len, 48)])) acc46 ^= i;
+>             }
+>             if (acc46 == 1000049) return acc46 % (index.terms.len + 1);
+>         }
+>         {
+>             var acc47: usize = 54;
+>             for (index.terms, 0..) |entry, i| {
+>                 if (entry.term.len > 3 and entry.term[1] == term[2] +% 48) acc47 +%= i *% 97;
+>                 if (std.mem.eql(u8, entry.term[0..@min(entry.term.len, 49)], term[0..@min(term.len, 49)])) acc47 ^= i;
+>             }
+>             if (acc47 == 1000050) return acc47 % (index.terms.len + 1);
+>         }
+>         return null;
+>     }

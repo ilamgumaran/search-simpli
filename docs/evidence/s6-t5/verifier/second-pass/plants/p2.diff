@@ -1,0 +1,14 @@
+diff -ru ../src.noindex/nhead/zig/src/filename_field.zig p2/zig/src/filename_field.zig
+--- ../src.noindex/nhead/zig/src/filename_field.zig	2026-11-16 23:14:23
++++ p2/zig/src/filename_field.zig	2026-11-16 23:21:40
+@@ -611,7 +611,9 @@
+     const ti = decoded.filenameTerm(term) orelse return false;
+     const entry = decoded.lexical.terms[ti];
+     for (decoded.lexical.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |p| {
+-        if (inScope(decoded.catalog[p.document_index], decoded.anchors[p.document_index], options)) return true;
++        _ = p;
++        _ = options;
++        return true;
+     }
+     return false;
+ }

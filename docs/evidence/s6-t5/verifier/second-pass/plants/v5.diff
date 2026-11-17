@@ -1,0 +1,12 @@
+diff -ru ../src.noindex/nhead/zig/src/filename_field.zig v5/zig/src/filename_field.zig
+--- ../src.noindex/nhead/zig/src/filename_field.zig	2026-11-16 23:14:23
++++ v5/zig/src/filename_field.zig	2026-11-16 23:17:24
+@@ -663,7 +663,7 @@
+         } else false;
+         if (repeated) continue;
+         trace.unique_terms += 1;
+-        if (!visibleNameHolds(decoded, token, options)) try postings.noteUnmatched(trace, token, false);
++        if (decoded.filenameTerm(token) == null) try postings.noteUnmatched(trace, token, false);
+     }
+ }
+ 

@@ -1,0 +1,14 @@
+# S6-T5 second verification: five run orders, fixed 16 Nov 2026 23:27 before any timing measurement of this pass.
+# A Latin square over the five libraries: each takes every position once.
+# nhead = task/S6-T5 3cf731a's library (cmp-equal to its committed macOS native); nmain = origin/main ce96916's
+# (cmp-equal to its committed native); nmain2 = the same bytes in its own file; nctl1 / nctl2 = ce96916 with an inert
+# never-taken branch in postings.lookupExact (14 / 48 never-run blocks; __text +1,508 / +4,636 B against head's +1,536 B).
+# (nhead, nmain) positions: run1 (2,4), run2 (4,1), run3 (1,3), run4 (5,2), run5 (3,5).
+run1: nctl1 nhead nmain2 nmain nctl2
+run2: nmain nctl2 nctl1 nhead nmain2
+run3: nhead nmain2 nmain nctl2 nctl1
+run4: nmain2 nmain nctl2 nctl1 nhead
+run5: nctl2 nctl1 nhead nmain2 nmain
+# Within a run the corpora go timing-10k, prose-10k, tamil-10k, each in the run's order.
+# All five libraries open the same index per corpus, lexical format v3 (HYBLEX03), built once by ce96916's
+# ReleaseSmall searchd (index --filename-index) into idx3.noindex/.

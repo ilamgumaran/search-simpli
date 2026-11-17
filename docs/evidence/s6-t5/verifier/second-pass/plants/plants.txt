@@ -1,0 +1,46 @@
+S6-T5 second verification plants: each in its own git-archive copy of 3cf731a (plants2.noindex/<name>), own empty --global-cache-dir and --cache-dir, Debug zig build test --summary all (runplant2.sh). At most two at a time.
+p2's first copy did not compile (mkplants.py left 'options' unused, as in the first pass, where it was fixed by hand); mkplants.py was fixed and p2 retaken in a fresh copy and cache. The uncompiled copy is not counted.
+== p1
+error: 'field_warnings_test.test.both: the warnings content gives, codes, order, wording and members unchanged'
+error: 'field_warnings_test.test.both: a word only a visible file name holds is not unmatched; a word only a folder holds still is'
+error: 'field_warnings_test.test.both and filename: query_empty_after_analysis and vector_ignored as under content'
+error: 'field_warnings_test.test.both and filename: a word only a hidden file or name holds gets an absent word's warnings, byte for byte'
+error: 'field_warnings_test.test.both: a group of three members and expansions of two words, in full and in order, as content gives them'
+error: 'field_warnings_test.test.both: with a visible file name holding one word, the other groups stay whole and the named word's group follows'
+Build Summary: 7/9 steps succeeded (1 failed); 466/481 tests passed (9 skipped, 6 failed)
+p1 exit 1 23:17:29-23:19:49
+== p2
+error: 'field_warnings_test.test.both and filename: a word only a hidden file or name holds gets an absent word's warnings, byte for byte'
+error: 'field_warnings_test.test.both: with a visible file name holding one word, the other groups stay whole and the named word's group follows'
+Build Summary: 7/9 steps succeeded (1 failed); 470/481 tests passed (9 skipped, 2 failed)
+p2 exit 1 23:21:40-23:24:04
+== p3
+error: 'field_warnings_test.test.both: a word only a visible file name holds is not unmatched; a word only a folder holds still is'
+error: 'field_warnings_test.test.both and filename: a word only a hidden file or name holds gets an absent word's warnings, byte for byte'
+error: 'field_warnings_test.test.both: with a visible file name holding one word, the other groups stay whole and the named word's group follows'
+Build Summary: 7/9 steps succeeded (1 failed); 469/481 tests passed (9 skipped, 3 failed)
+p3 exit 1 23:21:40-23:24:04
+== p4
+error: 'field_warnings_test.test.both: the warnings content gives, codes, order, wording and members unchanged'
+error: 'field_warnings_test.test.both: a group of three members and expansions of two words, in full and in order, as content gives them'
+error: 'field_warnings_test.test.both: with a visible file name holding one word, the other groups stay whole and the named word's group follows'
+Build Summary: 7/9 steps succeeded (1 failed); 469/481 tests passed (9 skipped, 3 failed)
+p4 exit 1 23:24:20-23:27:56
+== v5
+error: 'field_warnings_test.test.both and filename: a word only a hidden file or name holds gets an absent word's warnings, byte for byte'
+Build Summary: 7/9 steps succeeded (1 failed); 471/481 tests passed (9 skipped, 1 failed)
+v5 exit 1 23:24:20-23:27:56
+== v6
+error: 'field_warnings_test.test.both: a group of three members and expansions of two words, in full and in order, as content gives them'
+error: 'field_warnings_test.test.both: with a visible file name holding one word, the other groups stay whole and the named word's group follows'
+Build Summary: 7/9 steps succeeded (1 failed); 470/481 tests passed (9 skipped, 2 failed)
+v6 exit 1 23:28:06-23:31:22
+  Dart: ReleaseSmall library of the copy (971,064 B, not cmp-equal to the head's), dart test test/query_report_test.dart with SEARCH_SIMPLI_LIBRARY_PATH set for that one command: 00:00 +24 -1: Some tests failed. (fails 'both: members and expansions in full and in order, as content gives them')
+  verifier's battery (check1.py, v3 fixtures): problems {'both-model': 194, 'both-object-not-in-content': 196}
+== v7
+error: 'field_warnings_test.test.both: a group of three members and expansions of two words, in full and in order, as content gives them'
+error: 'field_warnings_test.test.both: with a visible file name holding one word, the other groups stay whole and the named word's group follows'
+Build Summary: 7/9 steps succeeded (1 failed); 470/481 tests passed (9 skipped, 2 failed)
+v7 exit 1 23:28:06-23:31:22
+  Dart: ReleaseSmall library of the copy (971,064 B, not cmp-equal to the head's), dart test test/query_report_test.dart with SEARCH_SIMPLI_LIBRARY_PATH set for that one command: 00:00 +24 -1: Some tests failed. (fails 'both: members and expansions in full and in order, as content gives them')
+  verifier's battery (check1.py, v3 fixtures): problems {'both-model': 240, 'both-object-not-in-content': 248}

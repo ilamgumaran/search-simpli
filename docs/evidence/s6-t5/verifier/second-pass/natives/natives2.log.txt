@@ -1,0 +1,7 @@
+Build Summary: 28/28 steps succeeded
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib (  971064 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  936032 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  935440 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (d4212f8f8b48aaf1d3b61c21173963ac3271bc5b8821c256d1769814063d607f)
+exit 0

@@ -1,0 +1,38 @@
+{
+ "versions": [
+  "2.8.0",
+  "2.7.0"
+ ],
+ "stats": {
+  "content-identical": 3020,
+  "both-checked": 3020,
+  "both-warnings": 7135,
+  "filename-checked": 3020,
+  "both-query_term_unmatched": 5279,
+  "filename-query_term_unmatched": 6227,
+  "both-differs-from-content": 919,
+  "both-query_term_expanded": 977,
+  "both-query_term_grouped": 868,
+  "both-query_empty_after_analysis": 8,
+  "filename-query_empty_after_analysis": 8,
+  "both-vector_ignored": 3,
+  "filename-vector_ignored": 3,
+  "f2-pairs-content": 615,
+  "f2-unmatched-content": 901,
+  "f2-expanded-content": 138,
+  "f2-grouped-content": 123,
+  "f2-pairs-both": 615,
+  "f2-unmatched-both": 901,
+  "f2-expanded-both": 138,
+  "f2-grouped-both": 123,
+  "f2-pairs-filename": 615,
+  "f2-unmatched-filename": 1104,
+  "f2-expanded-filename": 0,
+  "f2-grouped-filename": 0,
+  "f2bare-content": 415,
+  "f2bare-both": 415,
+  "f2bare-filename": 415
+ },
+ "problems": {},
+ "examples": {}
+}
