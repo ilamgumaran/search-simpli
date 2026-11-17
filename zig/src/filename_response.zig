@@ -2,6 +2,7 @@ const engine_module = @import("engine.zig");
 const filename_field = @import("filename_field.zig");
 const scope = @import("scope.zig");
 const hybrid = @import("hybrid.zig");
+const report = @import("report.zig");
 const std = @import("std");
 
 /// Serialize the result object shared by the new filename search modes in
@@ -18,12 +19,13 @@ pub fn writeEvidence(
     human_readable: bool,
 ) !void {
     if (human_readable) return writeHuman(output, allocator, engine, query, hits);
-    return writeEvidenceInternal(output, allocator, engine, query, field, options, hits, false);
+    return writeEvidenceInternal(output, allocator, engine, query, field, options, hits, null);
 }
 
 /// ABI form of the same result. The ABI contract appends `warnings` and
-/// `request` to every query result; filename diagnostics are not computed, so
-/// the warning list is always empty and scoped to this mode.
+/// `request` to every query result. S6-T5: the warnings are `report.zig`'s,
+/// written by its own code from the trace `Engine.queryFieldsTraced` filled
+/// (`extras.trace`), so their codes, order and wording are `content`'s.
 pub fn writeAbiEvidence(
     output: *std.Io.Writer,
     allocator: std.mem.Allocator,
@@ -32,8 +34,9 @@ pub fn writeAbiEvidence(
     field: filename_field.Field,
     options: hybrid.SearchOptions,
     hits: []const filename_field.Hit,
+    extras: report.Extras,
 ) !void {
-    return writeEvidenceInternal(output, allocator, engine, query, field, options, hits, true);
+    return writeEvidenceInternal(output, allocator, engine, query, field, options, hits, extras);
 }
 
 fn writeEvidenceInternal(
@@ -44,7 +47,7 @@ fn writeEvidenceInternal(
     field: filename_field.Field,
     options: hybrid.SearchOptions,
     hits: []const filename_field.Hit,
-    abi_report: bool,
+    abi_report: ?report.Extras,
 ) !void {
     const query_terms = try filename_field.tokenize(allocator, engine.analyzer_id, query);
     var json = std.json.Stringify{ .writer = output };
@@ -193,9 +196,10 @@ fn writeEvidenceInternal(
         .say_when_evidence_is_insufficient = true,
         .filename_matches_are_navigation = true,
     });
-    if (abi_report) {
+    if (abi_report) |extras| {
         try json.objectField("warnings");
         try json.beginArray();
+        if (report.hasWarnings(extras)) try report.writeWarnings(&json, extras);
         try json.endArray();
         try json.objectField("request");
         try json.write(.{

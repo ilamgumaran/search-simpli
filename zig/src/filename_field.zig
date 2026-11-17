@@ -577,13 +577,94 @@ pub fn query(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, b
 /// bounded top `candidate_k` (`rankChannels`) instead of sorting every
 /// candidate; its first `candidate_k` are the full sort's.
 pub fn queryDecoded(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions) ![]Hit {
+    return queryDecodedTraced(allocator, body_docs, body_index, decoded, analyzer_id, query_text, field, options, null);
+}
+
+/// `queryDecoded` that also fills `trace` (S6-T5, `ss_query`'s warnings)
+/// from the query's own tokens (`traceTokens`). With `trace == null` it is
+/// exactly `queryDecoded`.
+pub fn queryDecodedTraced(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, field: Field, options: hybrid.SearchOptions, trace: ?*hybrid.Trace) ![]Hit {
     if (field == .content) return error.ContentQueryUseLegacy;
     if (options.retrieval_mode != .lexical) return error.InvalidRetrievalMode;
     if (options.candidate_k < options.top_k) return error.CandidateDepthTooSmall;
     const scored = try scoreQuery(allocator, body_docs, body_index, decoded, analyzer_id, query_text, field, options);
     const ranked = try rankChannels(allocator, body_docs, decoded, scored, field, options.candidate_k);
-    if (field == .both) if (options.title) |title| return merge(allocator, body_docs, decoded, scored, ranked, title, query_text, options);
-    return fuse(allocator, body_docs, ranked, field, options);
+    const hits = if (field == .both and options.title != null)
+        try merge(allocator, body_docs, decoded, scored, ranked, options.title.?, query_text, options)
+    else
+        try fuse(allocator, body_docs, ranked, field, options);
+    // After the answer, from the tokens `scoreQuery` read. `scoreQuery`
+    // is `main`'s, its tokens carried out in `Scored`: with the tokens
+    // passed in instead, queries whose words every file name holds
+    // (`doc 00000`) scored several microseconds slower (S6-T5 rework).
+    if (trace) |t| try traceTokens(allocator, body_docs, body_index, decoded, analyzer_id, query_text, scored.query_tokens, field, options, t);
+    return hits;
+}
+
+/// S6-T5: whether a file name the file-name channel would search holds
+/// `term` (an analysed query term): the term is in the file-name dictionary
+/// and one of its files is in scope for `options` (roots, path prefix,
+/// labels: `hybrid.inScope` at the file's anchor chunk, as `scoreQuery`
+/// decides visibility). A name only hidden files hold answers false, as an
+/// absent word does.
+pub fn visibleNameHolds(decoded: Decoded, term: []const u8, options: hybrid.SearchOptions) bool {
+    const ti = decoded.filenameTerm(term) orelse return false;
+    const entry = decoded.lexical.terms[ti];
+    for (decoded.lexical.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |p| {
+        if (inScope(decoded.catalog[p.document_index], decoded.anchors[p.document_index], options)) return true;
+    }
+    return false;
+}
+
+/// S6-T5: fill `trace` (`ss_query`'s warnings, `report.zig`) for a `both`
+/// or `filename` query. The terms are `content`'s: the same analysed
+/// spelling, each distinct term once, in query order.
+///
+/// - `both`: `content`'s own resolver records the unique terms and the
+///   terms no chunk in scope holds; a term a visible file name holds
+///   (`visibleNameHolds`) is then not unmatched. A term with an expansion
+///   (noted by `Engine.bothGroups`) stays unmatched: fuzzy-v1 only expands
+///   a word no visible title holds, so with a title field no such term has
+///   a visible name, and its expansion is never left unreported.
+/// - `filename`: a term is unmatched when no visible file name holds it.
+///   The channel is never expanded or grouped, so nothing else is noted.
+///
+/// `query_tokens` are the channel's own tokens of `query_text`
+/// (`tokenize`), read once by `scoreQuery` and handed out in
+/// `Scored.query_tokens`.
+fn traceTokens(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, decoded: Decoded, analyzer_id: []const u8, query_text: []const u8, query_tokens: []const []const u8, field: Field, options: hybrid.SearchOptions, trace: *hybrid.Trace) !void {
+    std.debug.assert(field != .content);
+    trace.scope_documents = body_docs;
+    trace.scope_prefix = options.path_prefix;
+    trace.scope_labels = options.principal_labels;
+    trace.scope_roots = options.visible_roots;
+    if (field == .both) {
+        if (std.mem.eql(u8, analyzer_id, analyzer_v2.analyzer_id)) {
+            // `tokenize` is `analyzer_v2.tokenize` for this analyzer.
+            allocator.free(try lexical_build.resolveTokensTraced(allocator, body_index, query_tokens, trace, true));
+        } else {
+            allocator.free(try postings.resolveQueryTraced(allocator, body_index, query_text, trace, true));
+        }
+        var kept: usize = 0;
+        for (trace.unmatched.items) |item| {
+            const expanded = for (trace.expanded.items) |e| {
+                if (std.mem.eql(u8, e.term, item.term)) break true;
+            } else false;
+            if (!expanded and visibleNameHolds(decoded, item.term, options)) continue;
+            trace.unmatched.items[kept] = item;
+            kept += 1;
+        }
+        trace.unmatched.shrinkRetainingCapacity(kept);
+        return;
+    }
+    for (query_tokens, 0..) |token, i| {
+        const repeated = for (query_tokens[0..i]) |earlier| {
+            if (std.mem.eql(u8, earlier, token)) break true;
+        } else false;
+        if (repeated) continue;
+        trace.unique_terms += 1;
+        if (!visibleNameHolds(decoded, token, options)) try postings.noteUnmatched(trace, token, false);
+    }
 }
 
 /// One file of the S5-T2 merge: its cited chunk and merged score.
@@ -674,6 +755,8 @@ const Scored = struct {
     fname_touched: []const u32,
     body_scores: []const f32 = &.{},
     body_touched: []const u32 = &.{},
+    /// S6-T5: the query's tokens, for the trace.
+    query_tokens: []const []const u8 = &.{},
 };
 
 /// The BM25 walks of a filename or both query: the visible set per field
@@ -786,7 +869,7 @@ fn scoreQuery(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, 
             }
         };
     }
-    return .{ .fname_scores = fname_scores, .fname_touched = fname_touched.items, .body_scores = body_scores, .body_touched = body_touched.items };
+    return .{ .fname_scores = fname_scores, .fname_touched = fname_touched.items, .body_scores = body_scores, .body_touched = body_touched.items, .query_tokens = qt };
 }
 
 fn scoreBodyGroup(allocator: std.mem.Allocator, body_index: postings.Index, fuzzy_group: fuzzy.Group, body_visible: ?[]const bool, body_avg: f32, body_n: u32, options: hybrid.SearchOptions, body_scores: []f32, body_seen: []bool, body_touched: *std.ArrayList(u32)) !void {

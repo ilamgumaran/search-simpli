@@ -114,14 +114,17 @@ before S5-T4.
 
 - `retrieval.fold_policy_id` is `"fold-groups-v1"` whenever the lexical
   channel ran under `content` or `both` on an analyzer-v2 index.
-- In `ss_query`'s report (and `searchd query`), a grouped word gets a
+- In `ss_query`'s report, a grouped word gets a
   `query_term_grouped` warning: `term` the typed word, `members` the other
   words searched (t left out), best first, `message` "also searched as: …".
   An unmatched word's grouped warning follows its own `query_term_unmatched`;
   a grouped word the files hold has no other warning, and its grouped warning
-  follows all the unmatched words' warnings, in query order. JSON-RPC
-  `search_knowledge` results carry no warnings (the schema's rule since
-  contract 1.2.0).
+  follows all the unmatched words' warnings, in query order. Since contract
+  2.8.0 (S6-T5, [CAP-22](requirements/cap-22-field-warnings.md)) this holds
+  under `both` too, for the groups `both` searched; under `filename` nothing
+  is grouped, so no `query_term_grouped` appears. JSON-RPC
+  `search_knowledge` results, MCP and the `searchd` commands carry no
+  warnings (the schema's rule since contract 1.2.0).
 
 ## Cost
 

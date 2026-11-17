@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-16 (S6-T4, lexical format v3 for both lexical sections under manifest v2.3: the 10k-corpus indexes 10–23 % smaller, the open 17–26 % faster, every answer unchanged; one way for a consumer; contracts 2.7.0, Dart 0.8.1, natives rebuilt; built on `task/S6-T4`, not yet verified)
+Last updated: 2026-11-17 (S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,42 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## Warnings under every search field (S6-T5, objective plan item G, 2026-11-16; merged on the maintainer's decision, 17 Nov)
+
+**Merged into `main` 17 Nov on the maintainer's decision, under the timing rule he set that day** ([task, Report and
+Verdicts](docs/tasks/S6-T5.md), [CAP-22](docs/requirements/cap-22-field-warnings.md)). Two FAIL Verdicts stand as the
+record of the timing measurement: under the rule then in force, on the second Verdict's five runs against `ce96916`,
+23 `both`/`filename` cells were beyond the stated prediction (large prose cells +11 to +30 µs) and two `find` cells
+failed clause (1); never-run-code controls failed more cells (37 and 16 of 163) and the identical rebuild 2. The
+maintainer's rule of 17 Nov ([`ROLES.md`](docs/process/ROLES.md)): a cell fails only if the head is slower than
+`main` by T (the larger of 0.010 ms and 1 %) and by at least T more than the slowest control or identical rebuild;
+under it 0 of 163 cells fail. The rule was chosen after seeing this task's data. **Contracts 2.8.0, Dart 0.9.0**; no schema, request field, warning code,
+result field, signature or index format change; the C header gains comments only (the 2.8.0 paragraph).
+
+- **`ss_query` (and the Dart binding).** Under `search_field` `both` the `warnings` array, always `[]` before, now
+  holds the warnings `content` gives for the same request (codes, order, messages, `expansions`, `members`), except
+  that a word is `query_term_unmatched` only when neither a chunk in scope nor a visible file name holds it; the
+  `query_term_expanded` and `query_term_grouped` entries name the groups `both` searched. Under `filename` the only
+  term warning is `query_term_unmatched`, for a word no visible file name holds (file names are never expanded or
+  grouped). `query_empty_after_analysis` and `vector_ignored` as under `content`. A word only hidden files or names
+  hold is reported byte for byte as an absent word (tested under labels, roots and a path prefix).
+- **Unchanged:** every `content` answer (2,762 captured cases byte-identical), every `both` and `filename` byte
+  outside `warnings`, and every other surface: the CLI (`query`, `evidence`, `search`), JSON-RPC and MCP carry no
+  warnings in any field, as before.
+- **J2:** the gate passes without re-recording; native J2 0 rows differ.
+- **Cost (builder's two runs per head, for information; the verifier's five are in the Verdicts):** on the three 10k corpora,
+  `filename` short requests +0.02 to +0.65 µs and `both` short requests up to +1.4 µs, as predicted; `content` no
+  cell at the threshold. Large `both`/`filename` cells (0.2–0.7 ms) varied by tens of µs between runs of one build,
+  as untouched `find` cells did ([Report §8](docs/tasks/S6-T5.md)).
+- **Rework after the first Verdict (FAIL on `3056e65`):** tests for a three-member group and two-word expansions
+  under `both` (Zig and Dart), which the verifier's plant v6 and its twin fail; and the `both`/`filename` cost: the
+  trace itself is 0.1–0.5 µs per request, and the several µs beyond it came from a split of the unchanged scoring
+  function, now `main`'s source again ([rework report](docs/tasks/S6-T5.md)).
+- **Natives.** Rebuilt with empty caches after `main` (`ce96916`, S6-T4) was merged in: macOS 971,064 B (`main`:
+  971,304), Android 936,032 B (932,864), iOS framework binary 935,440 B (935,584); `native/SOURCE-SHA256`
+  `d4212f8f…`; `searchd` `ReleaseSmall` 1,114,936 B (1,114,984). **For the consumer app:**
+  the next pin takes Dart 0.9.0 (contract 2.8.0): `both`/`filename` warnings appear where the array was empty.
 
 ## Lexical format v3: a smaller lexical section (S6-T4, objective plan item D2 step 1, 2026-11-16; merged on the maintainer's decision, timing rule not passed)
 

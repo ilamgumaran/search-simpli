@@ -1,0 +1,11 @@
+diff -ru ../src.noindex/nhead/zig/src/engine.zig p4/zig/src/engine.zig
+--- ../src.noindex/nhead/zig/src/engine.zig	2026-11-16 23:14:23
++++ p4/zig/src/engine.zig	2026-11-16 23:17:24
+@@ -422,7 +422,6 @@
+         const computed = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens, options);
+         if (trace) |t| {
+             if (computed.folded) |g| try noteGrouped(t, g);
+-            if (computed.expanded) |g| try noteExpanded(t, g);
+         }
+         return fold.merge(allocator, computed.folded, computed.expanded);
+     }

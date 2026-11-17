@@ -1,0 +1,62 @@
+== prose-v3.jsonl
+cell | main µs | head-main | troff-main | head-troff
+content system | 75.9 | -1.00 | +0.17 | -1.17
+content system systems | 91.3 | -0.13 | +0.67 | -1.21
+content systems system | 91.7 | -0.25 | +0.58 | -1.17
+content the | 268.0 | -4.71 | +0.87 | -3.46
+content have | 183.7 | -2.33 | +1.29 | -3.62
+content within | 97.0 | -0.54 | +0.79 | -1.71
+content drink | 63.7 | +0.38 | +0.54 | -0.67
+content the within | 357.8 | -5.25 | +2.58 | -7.29
+content have drink | 302.1 | +0.00 | +3.00 | -4.25
+content across lengthy seeming 04276 | 216.1 | +1.96 | +3.37 | -0.42
+filename system | 273.1 | +25.96 | +6.71 | +19.25
+filename system systems | 279.5 | +24.25 | +5.75 | +16.67
+filename systems system | 279.4 | +25.54 | +7.12 | +20.42
+filename within | 308.8 | +27.88 | +7.04 | +22.92
+filename drink | 194.4 | +18.37 | +4.62 | +14.17
+filename the within | 309.6 | +26.21 | +10.46 | +17.08
+filename have drink | 197.7 | +17.33 | +4.08 | +13.21
+filename across lengthy seeming 04276 | 332.5 | +29.46 | +8.92 | +22.37
+both system | 348.0 | +20.00 | +2.75 | +16.33
+both hashing | 174.5 | +14.87 | +4.25 | +11.00
+both system systems | 367.3 | +18.75 | +4.87 | +13.88
+both systems system | 366.6 | +20.54 | +6.83 | +14.29
+both the | 502.3 | +13.71 | +5.62 | +6.96
+both have | 337.9 | +11.50 | +4.88 | +6.63
+both within | 435.4 | +27.83 | +4.54 | +23.08
+both drink | 357.6 | +26.17 | +6.42 | +21.04
+both the within | 647.7 | +22.17 | +7.75 | +14.29
+both have drink | 558.7 | +23.63 | +8.79 | +15.79
+both across lengthy seeming 04276 | 531.3 | +27.21 | +9.46 | +17.75
+== prose-v2.jsonl
+cell | main µs | head-main | troff-main | head-troff
+content system | 76.1 | -0.88 | +0.33 | -1.33
+content system systems | 91.2 | -0.38 | +0.58 | -0.42
+content systems system | 91.7 | +0.04 | +0.96 | -0.83
+content the | 270.9 | -3.21 | -1.21 | -3.21
+content have | 184.4 | -2.12 | +0.88 | -3.83
+content within | 97.9 | -1.42 | +0.17 | -1.83
+content drink | 63.7 | +0.00 | +0.83 | -0.71
+content the within | 359.5 | -3.92 | +0.75 | -4.37
+content have drink | 305.0 | -2.87 | +0.92 | -4.54
+content across lengthy seeming 04276 | 217.1 | +2.33 | +3.04 | -0.62
+filename system | 274.4 | +26.33 | +6.21 | +19.79
+filename system systems | 278.5 | +24.71 | +7.25 | +17.38
+filename systems system | 280.0 | +26.04 | +5.88 | +19.83
+filename within | 307.5 | +26.08 | +7.58 | +19.29
+filename drink | 194.8 | +19.71 | +4.54 | +14.92
+filename the within | 308.2 | +31.17 | +9.50 | +21.33
+filename have drink | 197.6 | +19.04 | +4.17 | +15.75
+filename across lengthy seeming 04276 | 334.3 | +30.83 | +7.96 | +23.04
+both system | 348.7 | +19.58 | +2.21 | +16.63
+both hashing | 174.9 | +15.04 | +3.92 | +10.33
+both system systems | 366.9 | +20.00 | +7.08 | +12.37
+both systems system | 368.5 | +17.92 | +5.96 | +12.13
+both the | 503.1 | +17.17 | +5.29 | +10.12
+both have | 337.7 | +12.88 | +4.62 | +7.42
+both within | 435.3 | +28.54 | +7.17 | +21.88
+both drink | 358.3 | +26.42 | +6.67 | +19.87
+both the within | 648.3 | +24.00 | +10.54 | +12.04
+both have drink | 559.4 | +23.67 | +11.29 | +16.33
+both across lengthy seeming 04276 | 531.4 | +27.21 | +11.83 | +14.58

@@ -1,0 +1,251 @@
+{
+"timing-10k|both bazecha": [],
+"timing-10k|both benico": [],
+"timing-10k|both system": [
+"query_term_grouped"
+],
+"timing-10k|both hashing": [
+"query_term_grouped"
+],
+"timing-10k|both hybrid retrieval": [],
+"timing-10k|both retrieval hybrid": [],
+"timing-10k|both system systems": [
+"query_term_grouped",
+"query_term_grouped"
+],
+"timing-10k|both systems system": [
+"query_term_grouped",
+"query_term_grouped"
+],
+"timing-10k|both from": [],
+"timing-10k|both were": [],
+"timing-10k|both badamo": [],
+"timing-10k|both belohu": [],
+"timing-10k|both from badamo": [],
+"timing-10k|both were belohu": [],
+"timing-10k|both doc 00000": [],
+"timing-10k|filename bazecha": [
+"query_term_unmatched"
+],
+"timing-10k|filename benico": [
+"query_term_unmatched"
+],
+"timing-10k|filename system": [
+"query_term_unmatched"
+],
+"timing-10k|filename hashing": [
+"query_term_unmatched"
+],
+"timing-10k|filename hybrid retrieval": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"timing-10k|filename retrieval hybrid": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"timing-10k|filename system systems": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"timing-10k|filename systems system": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"timing-10k|filename from": [
+"query_term_unmatched"
+],
+"timing-10k|filename were": [
+"query_term_unmatched"
+],
+"timing-10k|filename badamo": [
+"query_term_unmatched"
+],
+"timing-10k|filename belohu": [
+"query_term_unmatched"
+],
+"timing-10k|filename from badamo": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"timing-10k|filename were belohu": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"timing-10k|filename doc 00000": [],
+"prose-10k|both bazecha": [
+"query_term_unmatched"
+],
+"prose-10k|both benico": [
+"query_term_unmatched"
+],
+"prose-10k|both system": [
+"query_term_grouped"
+],
+"prose-10k|both hashing": [
+"query_term_unmatched",
+"query_term_expanded"
+],
+"prose-10k|both hybrid retrieval": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"prose-10k|both retrieval hybrid": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"prose-10k|both system systems": [
+"query_term_grouped",
+"query_term_grouped"
+],
+"prose-10k|both systems system": [
+"query_term_grouped",
+"query_term_grouped"
+],
+"prose-10k|both the": [],
+"prose-10k|both have": [],
+"prose-10k|both within": [],
+"prose-10k|both drink": [
+"query_term_grouped"
+],
+"prose-10k|both the within": [],
+"prose-10k|both have drink": [
+"query_term_grouped"
+],
+"prose-10k|both across lengthy seeming 04276": [
+"query_term_grouped"
+],
+"prose-10k|filename bazecha": [
+"query_term_unmatched"
+],
+"prose-10k|filename benico": [
+"query_term_unmatched"
+],
+"prose-10k|filename system": [],
+"prose-10k|filename hashing": [
+"query_term_unmatched"
+],
+"prose-10k|filename hybrid retrieval": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"prose-10k|filename retrieval hybrid": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"prose-10k|filename system systems": [],
+"prose-10k|filename systems system": [],
+"prose-10k|filename the": [
+"query_term_unmatched"
+],
+"prose-10k|filename have": [
+"query_term_unmatched"
+],
+"prose-10k|filename within": [],
+"prose-10k|filename drink": [],
+"prose-10k|filename the within": [
+"query_term_unmatched"
+],
+"prose-10k|filename have drink": [
+"query_term_unmatched"
+],
+"prose-10k|filename across lengthy seeming 04276": [],
+"tamil-10k|both bazecha": [
+"query_term_unmatched"
+],
+"tamil-10k|both benico": [
+"query_term_unmatched"
+],
+"tamil-10k|both system": [
+"query_term_unmatched"
+],
+"tamil-10k|both hashing": [
+"query_term_unmatched"
+],
+"tamil-10k|both hybrid retrieval": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|both retrieval hybrid": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|both system systems": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|both systems system": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|both கீகசை": [
+"query_term_grouped"
+],
+"tamil-10k|both டூகனை": [
+"query_term_grouped"
+],
+"tamil-10k|both றூகுஞங்கள்": [
+"query_term_grouped"
+],
+"tamil-10k|both சைகீளையில்": [
+"query_term_grouped"
+],
+"tamil-10k|both கீகசை றூகுஞங்கள்": [
+"query_term_grouped",
+"query_term_grouped"
+],
+"tamil-10k|both டூகனை சைகீளையில்": [
+"query_term_grouped",
+"query_term_grouped"
+],
+"tamil-10k|both doc 00000": [],
+"tamil-10k|filename bazecha": [
+"query_term_unmatched"
+],
+"tamil-10k|filename benico": [
+"query_term_unmatched"
+],
+"tamil-10k|filename system": [
+"query_term_unmatched"
+],
+"tamil-10k|filename hashing": [
+"query_term_unmatched"
+],
+"tamil-10k|filename hybrid retrieval": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|filename retrieval hybrid": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|filename system systems": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|filename systems system": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|filename கீகசை": [
+"query_term_unmatched"
+],
+"tamil-10k|filename டூகனை": [
+"query_term_unmatched"
+],
+"tamil-10k|filename றூகுஞங்கள்": [
+"query_term_unmatched"
+],
+"tamil-10k|filename சைகீளையில்": [
+"query_term_unmatched"
+],
+"tamil-10k|filename கீகசை றூகுஞங்கள்": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|filename டூகனை சைகீளையில்": [
+"query_term_unmatched",
+"query_term_unmatched"
+],
+"tamil-10k|filename doc 00000": []
+}

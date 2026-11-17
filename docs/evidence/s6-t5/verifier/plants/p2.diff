@@ -1,0 +1,14 @@
+diff -ru <vscratch>/plants.noindex/p0/zig/src/filename_field.zig <vscratch>/plants.noindex/p2/zig/src/filename_field.zig
+--- <vscratch>/plants.noindex/p0/zig/src/filename_field.zig	2026-11-16 19:52:49
++++ <vscratch>/plants.noindex/p2/zig/src/filename_field.zig	2026-11-16 20:17:03
+@@ -583,7 +583,9 @@
+     const ti = decoded.filenameTerm(term) orelse return false;
+     const entry = decoded.lexical.terms[ti];
+     for (decoded.lexical.postings[entry.postings_start .. entry.postings_start + entry.postings_length]) |p| {
+-        if (inScope(decoded.catalog[p.document_index], decoded.anchors[p.document_index], options)) return true;
++        _ = p;
++        _ = options;
++        return true;
+     }
+     return false;
+ }

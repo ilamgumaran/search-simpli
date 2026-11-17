@@ -1,0 +1,12 @@
+('both', 'identical') 4528
+('both', 'only-warnings') 2336
+('content', 'identical') 2762
+('filename', 'identical') 1544
+('filename', 'only-warnings') 5320
+('both', 'query_term_expanded') 544
+('both', 'query_term_grouped') 688
+('both', 'query_term_unmatched') 3360
+('filename', 'query_term_unmatched') 17008
+unexplained 0 []
+ceddfb48ae3bf8f49370168cac16f6c2c672a7d8e695045c7df12fbb849ae1e7  <vscratch>/capture.noindex/main.jsonl
+1a6af632e4439f119d61a6549dc5e917bbd68dcfe721b126b42cd38202922a0a  <vscratch>/capture.noindex/head.jsonl

@@ -1,0 +1,33 @@
+S6-T5 verifier plants: each in its own git-archive copy of 3056e65 (plants.noindex/<name>), own empty --global-cache-dir and --cache-dir, Debug zig build test --summary all.
+== p0
+Build Summary: 9/9 steps succeeded; 454/463 tests passed (9 skipped)
+p0 exit 0 20:14:33-20:16:54
+== p1
+error: 'field_warnings_test.test.both: the warnings content gives, codes, order, wording and members unchanged'
+error: 'field_warnings_test.test.both: a word only a visible file name holds is not unmatched; a word only a folder holds still is'
+error: 'field_warnings_test.test.both and filename: query_empty_after_analysis and vector_ignored as under content'
+error: 'field_warnings_test.test.both and filename: a word only a hidden file or name holds gets an absent word's warnings, byte for byte'
+Build Summary: 7/9 steps succeeded (1 failed); 450/463 tests passed (9 skipped, 4 failed)
+p1 exit 1 20:14:33-20:16:54
+== p2
+error: 'field_warnings_test.test.both and filename: a word only a hidden file or name holds gets an absent word's warnings, byte for byte'
+Build Summary: 7/9 steps succeeded (1 failed); 453/463 tests passed (9 skipped, 1 failed)
+p2 exit 1 20:17:03-20:36:42
+== p3
+error: 'field_warnings_test.test.both: a word only a visible file name holds is not unmatched; a word only a folder holds still is'
+error: 'field_warnings_test.test.both and filename: a word only a hidden file or name holds gets an absent word's warnings, byte for byte'
+Build Summary: 7/9 steps succeeded (1 failed); 452/463 tests passed (9 skipped, 2 failed)
+p3 exit 1 20:17:03-20:36:46
+== p4
+error: 'field_warnings_test.test.both: the warnings content gives, codes, order, wording and members unchanged'
+Build Summary: 7/9 steps succeeded (1 failed); 453/463 tests passed (9 skipped, 1 failed)
+p4 exit 1 20:17:03-20:36:46
+== v5
+error: 'field_warnings_test.test.both and filename: a word only a hidden file or name holds gets an absent word's warnings, byte for byte'
+Build Summary: 7/9 steps succeeded (1 failed); 453/463 tests passed (9 skipped, 1 failed)
+v5 exit 1 20:36:54-20:39:18
+== v6
+Build Summary: 9/9 steps succeeded; 454/463 tests passed (9 skipped)
+v6 exit 0 20:36:54-20:39:18
+== v6 beyond Zig: Dart dart test with SEARCH_SIMPLI_LIBRARY_PATH at a ReleaseSmall build of the v6 copy: 00:01 +96: All tests passed!
+== v6 against the verifier's battery (check1.py on the v6 library): problems both-model 194, both-object-not-in-content 196 (e.g. paint: members [painted] where content gives [painted, painting, paints])

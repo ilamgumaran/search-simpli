@@ -81,8 +81,8 @@ and says how to add an interface or a core feature; `scripts/check_layers.py` ch
 
 Measured, macOS arm64 unless stated (each number is linked to its record):
 
-- **Size.** `searchd` built `ReleaseSmall` is 1,114,984 B ([S6-T4](docs/tasks/S6-T4.md));
-  the shipped arm64 libraries are 932,864 B (Android) to 971,304 B (macOS)
+- **Size.** `searchd` built `ReleaseSmall` is 1,114,936 B ([S6-T5](docs/tasks/S6-T5.md));
+  the shipped arm64 libraries are 935,440 B (iOS) to 971,064 B (macOS)
   ([`native/`](bindings/dart/search_simpli/native/)).
 - **Reading a 10,000-file index.** A whole `searchd query` process takes about 0.02 s;
   a warm query 0.1–0.2 ms ([objective plan](docs/plans/2026-11-16-objective-plan.md#where-the-engine-stands-against-it)).

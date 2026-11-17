@@ -1,0 +1,20 @@
+S6-T5 second verification: the two index formats.
+
+Indexes, new format (lexical sections HYBLEX03): the three 10k corpora by ce96916's ReleaseSmall searchd
+(`index <corpus> --out <dir> --filename-index`); J2 by the same searchd (`apply <dir> --changes j2-changes.json
+--filename-index`); the behaviour fixtures f1, f2, f2bare by 3cf731a's library (beh1.py build).
+Indexes, old format (content HYBLEX02, file names HYBLEX01): the first pass's, written by 109bf11's binary and
+library (engine source 98c4a2b). Every old-format file hashed before and after this pass's runs: unchanged
+(opening an old index under either library rewrote nothing).
+
+surf.py (5,333 outputs per run; CLI query/evidence, JSON-RPC serve, MCP, ss_query, CLI search on folders):
+  nmain v3 vs nhead v3: content identical everywhere; ss_query both 273 / filename 308 differ only inside
+    `warnings` (main []); MCP serverInfo 2.7.0 -> 2.8.0 (5); everything else identical; no `warnings` key on any
+    other surface.
+  nmain v2 vs nhead v2: the same counts.
+  nhead v2 vs nhead v3: 5,333 of 5,333 identical.  nmain v2 vs nmain v3: 5,333 identical.
+  nhead v2 vs the first pass's head (3056e65) v2: 5,333 identical.  nmain v2 vs the first pass's main (109bf11):
+    5,333 identical.
+beh1.py battery (f1 9,291 answers, f2 3,690, f2bare 1,245):
+  check1.py nhead vs nmain, v3 fixtures: 0 problems; check1.py, v2 fixtures: 0 problems.
+  nhead's answers on v2 == on v3 == the first pass's head on v2 (whole JSON equal).

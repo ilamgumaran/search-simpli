@@ -77,7 +77,7 @@ wrote — see the [root README](../../../README.md) and
 
 - `SearchSimpli.open(String snapshotDir, {DynamicLibrary? library})` — opens
   a snapshot. Asserts the native library's `ss_version()` equals this
-  package's `CONTRACTS_VERSION` (`2.7.0`) and that it exports every 2.0.0
+  package's `CONTRACTS_VERSION` (`2.8.0`) and that it exports every 2.0.0
   function before touching `snapshotDir` at
   all; throws `ContractsVersionMismatchException` on a mismatch (an older
   library) and
@@ -99,7 +99,10 @@ wrote — see the [root README](../../../README.md) and
   (the options as used, defaults filled in) and, only with `profile: true`,
   `profile` (`tokenizeUs`, `scoreUs`, `rankUs`, `serializeUs`,
   `matchedChunks`). Query-term warnings are produced in lexical and hybrid
-  mode only.
+  mode only. Since contract 2.8.0 they are also produced under
+  `searchField: both` (the `content` warnings, except that a word a visible
+  file name holds is not unmatched) and `searchField: filename`
+  (`queryTermUnmatched` only, for a word no visible file name holds).
 - `engine.evidence(List<String> ids, {pathPrefix, principalLabels, roots})` →
   `List<EvidenceChunk>`, one entry per id, in order; an unknown or
   unauthorized id comes back as `EvidenceChunk(found: false)` rather than
