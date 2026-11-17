@@ -557,6 +557,15 @@ only change is bit 6 (`docs/evidence/s6-t7/old-library.txt`):
 - `index --update` and a full `index` into it exit 1;
 - every file of the directory is byte-identical afterwards.
 
+Phase 2 repeated it on indexes the new writer published, through the C ABI
+(`ss_open`, `ss_index_folder`, `ss_apply_changes`: each returns NULL or an
+error naming `UnsupportedFlags`) and the CLI, with every index file
+byte-identical afterwards
+([`docs/evidence/s6-t7/old-library-phase2.txt`](evidence/s6-t7/old-library-phase2.txt)).
+On a directory without a `WRITER.LOCK` (the committed fixture) the three
+writer calls create that empty lock file before they read the manifest, as
+they do on any directory; every published index already has one.
+
 Without the bit an old library would still refuse, but later and less
 clearly: the v5 section fails its length binding (`DocumentSectionSizeMismatch`,
 measured). The bit makes the refusal happen first and name itself.
@@ -634,5 +643,17 @@ On the six corpora S6-T4 used:
   - 0 mismatches.
 - **Record fields:** every field of every v5 record equal to v4's, 64,142
   records.
+
+The library (Phase 2), on the same six corpora:
+
+- **Sections:** documents and source equal the prototype's to the byte
+  (timing-10k: 8,028,417 B and 539,719 B); the index 34–45 % smaller than
+  `main`'s ([`index-size.md`](index-size.md#landed)).
+- **Rebuild:** `read_span` of every file, whole and over every pair of
+  adjacent lines, byte-identical to `main`'s, fresh and after one update
+  (`docs/evidence/s6-t7/phase2/same-answers-c-abi.txt`).
+- **Cost:** open within 1 % of `main`'s, the first `read_span` on a handle
+  42–76 % faster on the 10k corpora, a later `read_span` of a 1.1 MB file
+  about +2 % CPU (`docs/evidence/s6-t7/phase2/timing/`).
 
 Per-section bytes, timings and memory are in `docs/tasks/S6-T7.md`.

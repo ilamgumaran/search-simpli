@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-17 (S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-17 (S6-T7 built on `task/S6-T7`, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt; awaiting its Verdict, not merged. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,33 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## Text once: each file's text stored once (S6-T7, objective plan item D2 step 2, 2026-11-17; built, awaiting its Verdict)
+
+**Built on `task/S6-T7`, not merged** ([task and Report](docs/tasks/S6-T7.md),
+[format](docs/documents-v5-source-v2-format.md), [manifest v2.4](docs/manifest-format-v2.md#v24-text-once-s6-t7),
+[index size, Landed](docs/index-size.md#landed)). Every folder writer (`searchd index`,
+`ss_index_folder`, `apply_changes`) publishes the documents section as record v5 (a file table holding each
+path once, ids as raw bytes, varint fields) and the source section as `HYBSRC02` (only the bytes no chunk holds);
+`read_span` and `outline` rebuild a file from its chunks and check its SHA-256, and refuse a file that does not
+match. A file whose lines are not all LF-terminated, or with a chunk that is not an exact span of it, is kept whole.
+`import-json` is unchanged. **Contracts 2.8.0, Dart 0.9.1**; no API, schema, C header or answer change.
+
+- **Size** (one generation, channel on): timing-10k 24,793,305 → 15,808,625 B (2.17 times its corpus), prose-10k
+  54,111,784 → 35,196,921 (2.04), Tamil-10k 66,154,883 → 36,731,764 (1.33), fixtures 1.82, family 2.11, J2
+  169,267 B.
+- **Same answers:** C ABI, CLI, JSON-RPC, MCP and `searchd search` byte-identical to `main` on J2, the fixtures,
+  the family fixture and the three 10k corpora, fresh and after one update; `read_span` of every file, whole and
+  across every pair of adjacent lines, equal.
+- **Reads:** open within 1 % of `main`, memory after open 0.5–0.7 MB lower (10k), first `read_span` on a handle
+  42–76 % faster; a later `read_span`/`outline` of the 1.1 MB family log about +2 % CPU, other files the same or
+  less.
+- **One way (the second, after S6-T4):** the new library opens an index `main` wrote and answers the same; its first
+  publish writes the new format (that one-file update +1.7 % to +2.1 % on the 10k corpora, once; later ones 4–11 % faster). An older library refuses the new index with `UnsupportedFlags`
+  through `ss_open`, `ss_index_folder`, `ss_apply_changes` and the CLI, and leaves it byte-identical.
+- **Natives.** macOS 988,952 B (`main`: 971,064), Android 952,384 B (936,032), iOS framework binary 953,488 B
+  (935,440); `native/SOURCE-SHA256` `7be54587…`; `searchd` `ReleaseSmall` 1,132,312 B (1,114,936). **For the consumer app:**
+  the next pin takes Dart 0.9.1 (03-next pin row, both one-way notes).
 
 ## Warnings under every search field (S6-T5, objective plan item G, 2026-11-16; merged on the maintainer's decision, 17 Nov)
 

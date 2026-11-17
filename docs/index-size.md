@@ -37,6 +37,10 @@ Raw tables: [`docs/evidence/s6-t3/`](evidence/s6-t3/README.md).
 - **Step 1 has landed** ([below](#landed)): lexical v3, measured 3.41 (timing
   10k), 3.14 (prose 10k), 2.39 (Tamil 10k), 2.88 (fixtures), 3.17 (family
   folder) against the projection's 3.46, 3.17, 2.40, 2.87, 3.15.
+- **Step 2 is built, not yet verified** ([below](#landed); S6-T7): text once,
+  measured 2.17 (timing 10k), 2.04 (prose 10k), 1.33 (Tamil 10k), 1.82
+  (fixtures), 2.11 (family folder) against the projection's 2.31, 2.10, 1.36,
+  1.82, 2.11.
 - **Not taken in D2 (ruled 16 Nov 2026, [below](#rulings-16-nov-2026)):**
   leaving the offsets out (to 1.81 timing, 1.63 prose, but `find` words
   measured 0.03–0.84 ms slower at the median, up to 5 ms at p95), block
@@ -79,8 +83,37 @@ requests of about 3 ms (the second Verdict's five runs); the builder traced it
 to where the added code moves the unchanged query code, and the maintainer
 accepted it on 16 Nov 2026 (S6-T4, "Maintainer's decision"). The one-file
 update is unchanged; the first update of a v2 index costs 5–8 % once. The numbers, bars and method are in the
-[S6-T4 Report](tasks/S6-T4.md) and `docs/evidence/s6-t4/phase2/`. Steps 2–4 are
-next (03-next D2-2 to D2-4).
+[S6-T4 Report](tasks/S6-T4.md) and `docs/evidence/s6-t4/phase2/`.
+
+**Step 2, text once (S6-T7, built 17 Nov 2026; awaiting its Verdict).** The
+documents section is record v5 (a file table holding each path once, raw ids,
+varint fields) and the source section `HYBSRC02` (only the bytes no chunk
+holds; `read_span` and `outline` rebuild a file from its chunks and check its
+SHA-256), under [manifest v2.4](manifest-format-v2.md#v24-text-once-s6-t7);
+the format is [`documents-v5-source-v2-format.md`](documents-v5-source-v2-format.md).
+Measured the same way, against `main` at `ad71cfb` (step 1) on the same files,
+and against the step 2 column of the [projection](#projection):
+
+| Corpus | Corpus bytes | Before (step 1) | After (step 2) | Change | Projected (step 2) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| timing-10k | 7,269,199 | 24,793,305 (3.41) | 15,808,625 (2.17) | −8,984,680 (−36.2 %) | 16,788,161 (2.31) |
+| prose-10k | 17,244,024 | 54,111,784 (3.14) | 35,196,921 (2.04) | −18,914,863 (−35.0 %) | 36,271,159 (2.10) |
+| tamil-10k | 27,708,457 | 66,154,883 (2.39) | 36,731,764 (1.33) | −29,423,119 (−44.5 %) | 37,713,611 (1.36) |
+| fixtures | 4,635,177 | 13,359,895 (2.88) | 8,443,782 (1.82) | −4,916,113 (−36.8 %) | 8,425,002 (1.82) |
+| family | 1,237,342 | 3,917,972 (3.17) | 2,614,805 (2.11) | −1,303,167 (−33.3 %) | 2,607,693 (2.11) |
+
+J2's index: 260,237 → 169,267 B (−35.0 %). The documents and source sections
+are the S6-T7 Phase 1 prototype's to the byte on all six corpora (timing-10k:
+documents 8,028,417 B, source 539,719 B). The 10k corpora come in under the
+projection, which priced each source record at S6-T3's coding; the two small
+fixtures within 0.3 % of it. Answers are byte-identical to `main` on every
+surface, fresh and after one update; `read_span` over every file returns its
+exact bytes. Open time is within 1 % of `main`'s, memory after open 0.5–0.7 MB
+lower on the 10k corpora, and the first `read_span` on a handle 42–76 % faster;
+a later `read_span` of the 1.1 MB family log costs about 2 % more CPU (the
+rebuild), of the other files measured the same or less. The numbers, bars and
+method are in the [S6-T7 Report](tasks/S6-T7.md) and
+`docs/evidence/s6-t7/phase2/`. Steps 3 and 4 are next (03-next D2-3, D2-4).
 
 ## How it was measured
 

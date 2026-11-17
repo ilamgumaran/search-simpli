@@ -211,6 +211,13 @@ test "S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical 
     const fresh_metadata = try manifest.decode(try fresh.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
     try std.testing.expectEqualSlices(u8, try fresh.readFileAlloc(io, fresh_metadata.lexical_file, a, .unlimited), try old.readFileAlloc(io, metadata.lexical_file, a, .unlimited));
     try std.testing.expectEqualSlices(u8, try fresh.readFileAlloc(io, fresh_metadata.filename.?.lexical_file, a, .unlimited), try old.readFileAlloc(io, metadata.filename.?.lexical_file, a, .unlimited));
+    // S6-T7: the same first publish also takes the second one-way step (an
+    // index from before S6-T4 goes straight to manifest v2.4): record v5 and
+    // `HYBSRC02`, a fresh index's bytes.
+    try std.testing.expect(metadata.text_once);
+    try std.testing.expectEqualStrings("HYBSRC02", try magicOf(a, old, metadata.source_file));
+    try std.testing.expectEqualSlices(u8, try fresh.readFileAlloc(io, fresh_metadata.documents_file, a, .unlimited), try old.readFileAlloc(io, metadata.documents_file, a, .unlimited));
+    try std.testing.expectEqualSlices(u8, try fresh.readFileAlloc(io, fresh_metadata.source_file, a, .unlimited), try old.readFileAlloc(io, metadata.source_file, a, .unlimited));
     // A second update (a new file) publishes v3 again.
     const request =
         \\{"changes":[{"op":"add","root_id":"r-legacy","path":"shed.txt","content_base64":"VGhlIHNoZWQgbmVlZHMgYSBuZXcgbG9jay4K"}]}

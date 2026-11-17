@@ -1,0 +1,28 @@
+runs 2; 5-minute load 1.35-3.43
+## timing-10k: 57 cells; answers differ from main in 0; at T 1; beyond the controls by T 0
+   at T: first find: d +355.96 us, largest control +496.25 us
+   open         cells   1  median d  -44.250 us  range  -44.250 ..  -44.250 us  median  -0.81 %
+   first query  cells   1  median d -127.458 us  range -127.458 .. -127.458 us  median  -2.95 %
+   first find   cells   1  median d +355.958 us  range +355.958 .. +355.958 us  median  +3.67 %
+   content      cells  15  median d   -0.374 us  range   -4.041 ..   +0.646 us  median  -0.41 %
+   filename     cells  15  median d   -0.063 us  range   -4.813 ..   -0.041 us  median  -2.16 %
+   both         cells  15  median d   -7.791 us  range  -25.792 ..   -2.375 us  median  -3.79 %
+   find         cells   9  median d   -0.104 us  range -126.501 ..   +1.230 us  median  -2.37 %
+## prose-10k: 57 cells; answers differ from main in 0; at T 2; beyond the controls by T 1
+   at T: open: d +427.02 us, largest control +108.12 us
+   at T: find phrase you get bowls: d +12.17 us, largest control +5.15 us
+   open         cells   1  median d +427.021 us  range +427.021 .. +427.021 us  median  +3.63 %
+   first query  cells   1  median d  -30.000 us  range  -30.000 ..  -30.000 us  median  -0.62 %
+   first find   cells   1  median d  +14.563 us  range  +14.563 ..  +14.563 us  median  +0.04 %
+   content      cells  15  median d   -0.187 us  range   -3.687 ..   +3.708 us  median  -0.22 %
+   filename     cells  15  median d   -2.584 us  range  -21.916 ..   +0.187 us  median  -2.17 %
+   both         cells  15  median d  -15.625 us  range  -67.854 ..   +3.042 us  median  -5.46 %
+   find         cells   9  median d   -9.125 us  range -286.667 ..  +12.166 us  median  -0.78 %
+## tamil-10k: 58 cells; answers differ from main in 0; at T 0; beyond the controls by T 0
+   open         cells   1  median d   +1.187 us  range   +1.187 ..   +1.187 us  median  +0.02 %
+   first query  cells   1  median d -415.146 us  range -415.146 .. -415.146 us  median  -3.11 %
+   first find   cells   1  median d -334.605 us  range -334.605 .. -334.605 us  median  -3.31 %
+   content      cells  15  median d   -0.208 us  range   -9.333 ..   +0.021 us  median  -1.24 %
+   filename     cells  15  median d   -0.166 us  range  -16.667 ..   -0.104 us  median  -4.11 %
+   both         cells  15  median d   -0.125 us  range  -41.354 ..   +4.041 us  median  -1.60 %
+   find         cells  10  median d   -0.063 us  range -139.584 ..   +5.521 us  median  -0.09 %
