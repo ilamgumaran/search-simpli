@@ -5,6 +5,8 @@ m_X = five-run median of (X - main) for X in head, main2, ctl1, ctl2 (p50 per ru
 main's five-run median when that is 5 ms or more.
 (A) m_head >= T;  (B) (A) and m_head > max(m_main2, m_ctl1, m_ctl2);  (C) (A) and m_head > that max + T.
 Also per field: cells with m_main2 >= T, m_ctl1 >= T, m_ctl2 >= T.
+Added 17 Nov, the maintainer's rule of that day (chosen after seeing this data): T17 = max(0.010 ms, 1 % of main's
+five-run median); a cell fails iff m_head >= T17 and m_head - max(m_main2, m_ctl1, m_ctl2) >= T17.
     python3 control_relative.py run1.jsonl ... run5.jsonl > control-relative.md
 """
 import json
@@ -45,7 +47,12 @@ for corpus in runs[0]:
         A = m["head"] >= T
         out.append({"corpus": corpus, "cell": k, "field": k.split(" ", 1)[0], "main": main_med, "T": T, **m,
                     "A": A, "B": A and m["head"] > ctl_max, "C": A and m["head"] > ctl_max + T,
-                    "main2_T": m["main2"] >= T, "ctl1_T": m["ctl1"] >= T, "ctl2_T": m["ctl2"] >= T})
+                    "main2_T": m["main2"] >= T, "ctl1_T": m["ctl1"] >= T, "ctl2_T": m["ctl2"] >= T,
+                    "T17": max(0.010, 0.01 * main_med), "excess": m["head"] - ctl_max})
+        c = out[-1]
+        c["R1"] = m["head"] >= c["T17"]
+        c["R2"] = c["excess"] >= c["T17"]
+        c["F17"] = c["R1"] and c["R2"]
 
 us = lambda x: f"{x * 1000:+.2f}"
 print("# S6-T5 second pass: head against the controls' own medians\n")
@@ -78,3 +85,23 @@ for c in out:
     if c["main2_T"] or c["ctl1_T"] or c["ctl2_T"]:
         print(f"| {c['corpus']} | `{c['cell']}` | {c['main'] * 1000:.1f} | {c['T'] * 1000:.1f} | {us(c['head'])} | "
               f"{us(c['main2'])} | {us(c['ctl1'])} | {us(c['ctl2'])} |")
+
+print("\n## The maintainer's rule of 17 Nov 2026, applied to the same five runs\n")
+print("Chosen after seeing this data (recorded as such in `docs/tasks/S6-T5.md`). T17 = the larger of 0.010 ms and 1 %")
+print("of `main`'s five-run median for the cell. A cell fails only if m_head >= T17 AND m_head - max(m_main2, m_ctl1,")
+print("m_ctl2) >= T17. Every request, changed path or not.\n")
+print("| Field | Cells | m_head >= T17 | m_head - max(controls) >= T17 | both: fails | largest m_head - max(controls), µs (its T17) |")
+print("|---|---:|---:|---:|---:|---|")
+for f in FIELDS + ("all",):
+    cs = [c for c in out if f == "all" or c["field"] == f]
+    top = max(cs, key=lambda c: c["excess"])
+    print(f"| {'all' if f == 'all' else '`' + f + '`'} | {len(cs)} | {sum(c['R1'] for c in cs)} | {sum(c['R2'] for c in cs)} | "
+          f"{sum(c['F17'] for c in cs)} | {us(top['excess'])} ({top['T17'] * 1000:.1f}; {top['corpus']} `{top['cell']}`) |")
+print("\nCells meeting either half, µs:\n")
+print("| Corpus | Cell | `main` median | T17 | m_head | max(controls) | m_head - max(controls) | fails |")
+print("|---|---|---:|---:|---:|---:|---:|---|")
+for c in out:
+    if c["R1"] or c["R2"]:
+        print(f"| {c['corpus']} | `{c['cell']}` | {c['main'] * 1000:.1f} | {c['T17'] * 1000:.1f} | {us(c['head'])} | "
+              f"{us(c['head'] - c['excess'])} | {us(c['excess'])} | {'**yes**' if c['F17'] else 'no'} |")
+print(f"\n**Failing cells under the rule of 17 Nov: {sum(c['F17'] for c in out)} of {len(out)}.**")

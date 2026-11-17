@@ -107,7 +107,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-19 | [Folder knowledge: exact finding, structure, roots, host-fed changes, tools, MCP](cap-19-folder-knowledge.md) | UC-007, UC-001, UC-004 | FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, NFR-10, NFR-11, NFR-12, NFR-13, NFR-14 | Diagnostic · implemented (S3-T1 to S3-T7, 2026-10-31; [plan](../plans/folder-knowledge-plan.md); NFR-13 Diagnostic · implemented by S4-T1's 64 MiB arena-cap test) |
 | CAP-20 | [Direct folder search: a query over a folder with no index directory](cap-20-direct-folder-search.md) | UC-006, UC-001, UC-002 | FR-26, NFR-15 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md), merged as `06f8c2e`; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
 | CAP-21 | [Host-supplied vectors for a `searchd`-built index](cap-21-host-supplied-vectors.md) | UC-001, UC-007, UC-002 | FR-27, FR-28, FR-29, FR-30, NFR-16 | Proposed (S6-T6: [task](../tasks/S6-T6.md); pending maintainer approval; blocked on a J2 semantic slice, CFT-24) |
-| CAP-22 | [Query warnings under every search field](cap-22-field-warnings.md) | UC-006, UC-007, UC-002 | FR-31 | Implemented (S6-T5: [task](../tasks/S6-T5.md); awaiting verification; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
+| CAP-22 | [Query warnings under every search field](cap-22-field-warnings.md) | UC-006, UC-007, UC-002 | FR-31 | Implemented (S6-T5: [task](../tasks/S6-T5.md); merged on the maintainer's decision of 17 Nov 2026; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
@@ -168,7 +168,7 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-28 | `list_unembedded`: chunks without a vector, paged, generation-bound, within the caller's scope | CAP-21 | Proposed (S6-T6) |
 | FR-29 | One embedding identity per generation, named and checked on every query vector and attach; model change is a migration | CAP-21 | Proposed (S6-T6) |
 | FR-30 | Hybrid with no query vector answers lexically with a warning; vector coverage reported over the visible scope | CAP-21 | Proposed (S6-T6) |
-| FR-31 | `ss_query` warnings under `both` and `filename`: `content`'s, less a word a visible file name holds; hidden reported as absent | CAP-22 | Implemented (S6-T5: [task](../tasks/S6-T5.md), awaiting verification) |
+| FR-31 | `ss_query` warnings under `both` and `filename`: `content`'s, less a word a visible file name holds; hidden reported as absent | CAP-22 | Implemented (S6-T5: [task](../tasks/S6-T5.md), merged on the maintainer's decision of 17 Nov 2026) |
 
 ## Non-functional requirements (NFR)
 

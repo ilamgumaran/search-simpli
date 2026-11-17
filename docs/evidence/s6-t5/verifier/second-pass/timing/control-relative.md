@@ -73,3 +73,45 @@ Cells where a control or `main2` reaches T (the controls' own clause-(1) "failur
 | tamil-10k | `both கீகசை றூகுஞங்கள்` | 683.8 | 10.0 | -12.67 | +0.04 | +25.37 | -5.50 |
 | tamil-10k | `both டூகனை சைகீளையில்` | 688.5 | 10.0 | -12.58 | -0.21 | +23.79 | -9.29 |
 | tamil-10k | `both doc 00000` | 780.7 | 10.0 | +3.71 | +0.37 | +10.33 | -4.92 |
+
+## The maintainer's rule of 17 Nov 2026, applied to the same five runs
+
+Chosen after seeing this data (recorded as such in `docs/tasks/S6-T5.md`). T17 = the larger of 0.010 ms and 1 %
+of `main`'s five-run median for the cell. A cell fails only if m_head >= T17 AND m_head - max(m_main2, m_ctl1,
+m_ctl2) >= T17. Every request, changed path or not.
+
+| Field | Cells | m_head >= T17 | m_head - max(controls) >= T17 | both: fails | largest m_head - max(controls), µs (its T17) |
+|---|---:|---:|---:|---:|---|
+| `content` | 45 | 0 | 0 | 0 | +0.42 (10.0; prose-10k `content hybrid retrieval`) |
+| `find` | 28 | 0 | 0 | 0 | +18.37 (30.1; tamil-10k `find prefix டூகன*`) |
+| `filename` | 45 | 8 | 0 | 0 | +9.08 (10.0; prose-10k `filename systems system`) |
+| `both` | 45 | 13 | 0 | 0 | +2.46 (10.0; timing-10k `both bazecha`) |
+| all | 163 | 21 | 0 | 0 | +18.37 (30.1; tamil-10k `find prefix டூகன*`) |
+
+Cells meeting either half, µs:
+
+| Corpus | Cell | `main` median | T17 | m_head | max(controls) | m_head - max(controls) | fails |
+|---|---|---:|---:|---:|---:|---:|---|
+| timing-10k | `both badamo` | 102.2 | 10.0 | +10.25 | +9.04 | +1.21 | no |
+| timing-10k | `both belohu` | 102.2 | 10.0 | +10.50 | +8.54 | +1.96 | no |
+| prose-10k | `filename system` | 273.3 | 10.0 | +24.79 | +19.54 | +5.25 | no |
+| prose-10k | `filename system systems` | 278.4 | 10.0 | +26.42 | +19.08 | +7.33 | no |
+| prose-10k | `filename systems system` | 278.5 | 10.0 | +27.58 | +18.50 | +9.08 | no |
+| prose-10k | `filename within` | 307.3 | 10.0 | +26.13 | +23.33 | +2.79 | no |
+| prose-10k | `filename drink` | 195.0 | 10.0 | +19.79 | +12.87 | +6.92 | no |
+| prose-10k | `filename the within` | 309.0 | 10.0 | +28.75 | +22.75 | +6.00 | no |
+| prose-10k | `filename have drink` | 197.0 | 10.0 | +20.54 | +12.58 | +7.96 | no |
+| prose-10k | `filename across lengthy seeming 04276` | 333.1 | 10.0 | +30.04 | +25.50 | +4.54 | no |
+| prose-10k | `both system` | 347.7 | 10.0 | +21.04 | +36.46 | -15.42 | no |
+| prose-10k | `both hashing` | 175.0 | 10.0 | +14.25 | +15.83 | -1.58 | no |
+| prose-10k | `both system systems` | 366.0 | 10.0 | +19.92 | +36.38 | -16.46 | no |
+| prose-10k | `both systems system` | 367.4 | 10.0 | +20.29 | +36.21 | -15.92 | no |
+| prose-10k | `both the` | 500.5 | 10.0 | +14.50 | +45.42 | -30.92 | no |
+| prose-10k | `both have` | 337.5 | 10.0 | +11.12 | +35.42 | -24.29 | no |
+| prose-10k | `both within` | 433.9 | 10.0 | +28.92 | +49.71 | -20.79 | no |
+| prose-10k | `both drink` | 357.4 | 10.0 | +27.13 | +36.21 | -9.08 | no |
+| prose-10k | `both the within` | 646.0 | 10.0 | +24.00 | +59.62 | -35.63 | no |
+| prose-10k | `both have drink` | 557.5 | 10.0 | +24.12 | +53.83 | -29.71 | no |
+| prose-10k | `both across lengthy seeming 04276` | 530.5 | 10.0 | +27.92 | +53.00 | -25.08 | no |
+
+**Failing cells under the rule of 17 Nov: 0 of 163.**

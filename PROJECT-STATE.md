@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-16 (S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; built on `task/S6-T5` with `main` at `ce96916` merged in, awaiting verification. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-17 (S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,10 +15,16 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## Warnings under every search field (S6-T5, objective plan item G, 2026-11-16; built, awaiting verification)
+## Warnings under every search field (S6-T5, objective plan item G, 2026-11-16; merged on the maintainer's decision, 17 Nov)
 
-Built on `task/S6-T5` ([task and Report](docs/tasks/S6-T5.md), [CAP-22](docs/requirements/cap-22-field-warnings.md));
-a different agent verifies and merges. **Contracts 2.8.0, Dart 0.9.0**; no schema, request field, warning code,
+**Merged into `main` 17 Nov on the maintainer's decision, under the timing rule he set that day** ([task, Report and
+Verdicts](docs/tasks/S6-T5.md), [CAP-22](docs/requirements/cap-22-field-warnings.md)). Two FAIL Verdicts stand as the
+record of the timing measurement: under the rule then in force, on the second Verdict's five runs against `ce96916`,
+23 `both`/`filename` cells were beyond the stated prediction (large prose cells +11 to +30 µs) and two `find` cells
+failed clause (1); never-run-code controls failed more cells (37 and 16 of 163) and the identical rebuild 2. The
+maintainer's rule of 17 Nov ([`ROLES.md`](docs/process/ROLES.md)): a cell fails only if the head is slower than
+`main` by T (the larger of 0.010 ms and 1 %) and by at least T more than the slowest control or identical rebuild;
+under it 0 of 163 cells fail. The rule was chosen after seeing this task's data. **Contracts 2.8.0, Dart 0.9.0**; no schema, request field, warning code,
 result field, signature or index format change; the C header gains comments only (the 2.8.0 paragraph).
 
 - **`ss_query` (and the Dart binding).** Under `search_field` `both` the `warnings` array, always `[]` before, now
@@ -32,7 +38,7 @@ result field, signature or index format change; the C header gains comments only
   outside `warnings`, and every other surface: the CLI (`query`, `evidence`, `search`), JSON-RPC and MCP carry no
   warnings in any field, as before.
 - **J2:** the gate passes without re-recording; native J2 0 rows differ.
-- **Cost (builder's two runs per head, for information; the verifier's five decide):** on the three 10k corpora,
+- **Cost (builder's two runs per head, for information; the verifier's five are in the Verdicts):** on the three 10k corpora,
   `filename` short requests +0.02 to +0.65 µs and `both` short requests up to +1.4 µs, as predicted; `content` no
   cell at the threshold. Large `both`/`filename` cells (0.2–0.7 ms) varied by tens of µs between runs of one build,
   as untouched `find` cells did ([Report §8](docs/tasks/S6-T5.md)).
