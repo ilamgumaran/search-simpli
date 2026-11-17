@@ -1,0 +1,4 @@
+283c283
+<         const hits = try h.engine.queryFieldsTraced(arena.allocator(), query_text, field, query_options, &field_trace);
+---
+>         const hits = try h.engine.queryFieldsTraced(arena.allocator(), query_text, field, query_options, null); // verifier probe: no trace
