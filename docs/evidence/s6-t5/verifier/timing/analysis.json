@@ -1,0 +1,8987 @@
+{
+ "fail_1": [
+  "prose-10k | both across lengthy seeming 04276",
+  "prose-10k | find phrase you get bowls",
+  "tamil-10k | both doc 00000"
+ ],
+ "fail_2": [
+  "timing-10k | content benico",
+  "timing-10k | content badamo",
+  "timing-10k | content belohu",
+  "timing-10k | filename bazecha",
+  "timing-10k | filename benico",
+  "timing-10k | filename system",
+  "timing-10k | filename hashing",
+  "timing-10k | filename hybrid retrieval",
+  "timing-10k | filename retrieval hybrid",
+  "timing-10k | filename system systems",
+  "timing-10k | filename systems system",
+  "timing-10k | filename from",
+  "timing-10k | filename were",
+  "timing-10k | filename badamo",
+  "timing-10k | filename belohu",
+  "timing-10k | filename from badamo",
+  "timing-10k | filename were belohu",
+  "timing-10k | filename doc 00000",
+  "timing-10k | both retrieval hybrid",
+  "timing-10k | both from",
+  "timing-10k | both were",
+  "timing-10k | both from badamo",
+  "timing-10k | both were belohu",
+  "timing-10k | both doc 00000",
+  "timing-10k | find words from badamo",
+  "timing-10k | find phrase with befewho with",
+  "prose-10k | content bazecha",
+  "prose-10k | content benico",
+  "prose-10k | content hashing",
+  "prose-10k | filename bazecha",
+  "prose-10k | filename benico",
+  "prose-10k | filename hashing",
+  "prose-10k | filename hybrid retrieval",
+  "prose-10k | filename retrieval hybrid",
+  "prose-10k | filename system systems",
+  "prose-10k | filename the",
+  "prose-10k | filename have",
+  "prose-10k | filename the within",
+  "prose-10k | filename across lengthy seeming 04276",
+  "prose-10k | both bazecha",
+  "prose-10k | both benico",
+  "prose-10k | both system",
+  "prose-10k | both hashing",
+  "prose-10k | both retrieval hybrid",
+  "prose-10k | both system systems",
+  "prose-10k | both the",
+  "prose-10k | both have",
+  "prose-10k | both within",
+  "prose-10k | both across lengthy seeming 04276",
+  "prose-10k | find words across lengthy seeming 04276",
+  "prose-10k | find phrase you get bowls",
+  "prose-10k | find phrase partly all rougher",
+  "prose-10k | find prefix drin*",
+  "tamil-10k | content bazecha",
+  "tamil-10k | content benico",
+  "tamil-10k | content system",
+  "tamil-10k | content hashing",
+  "tamil-10k | content hybrid retrieval",
+  "tamil-10k | filename bazecha",
+  "tamil-10k | filename benico",
+  "tamil-10k | filename system",
+  "tamil-10k | filename hashing",
+  "tamil-10k | filename hybrid retrieval",
+  "tamil-10k | filename retrieval hybrid",
+  "tamil-10k | filename system systems",
+  "tamil-10k | filename systems system",
+  "tamil-10k | filename கீகசை",
+  "tamil-10k | filename டூகனை",
+  "tamil-10k | filename றூகுஞங்கள்",
+  "tamil-10k | filename சைகீளையில்",
+  "tamil-10k | filename கீகசை றூகுஞங்கள்",
+  "tamil-10k | filename டூகனை சைகீளையில்",
+  "tamil-10k | filename doc 00000",
+  "tamil-10k | both bazecha",
+  "tamil-10k | both benico",
+  "tamil-10k | both system",
+  "tamil-10k | both hashing",
+  "tamil-10k | both hybrid retrieval",
+  "tamil-10k | both retrieval hybrid",
+  "tamil-10k | both system systems",
+  "tamil-10k | both systems system",
+  "tamil-10k | both றூகுஞங்கள்",
+  "tamil-10k | both சைகீளையில்",
+  "tamil-10k | both doc 00000",
+  "tamil-10k | find words றூகுஞங்கள்",
+  "tamil-10k | find words கீகசை றூகுஞங்கள்",
+  "tamil-10k | find phrase கேடேயி குகடம் கிகசம்"
+ ],
+ "table": [
+  {
+   "corpus": "timing-10k",
+   "cell": "content benico",
+   "field": "content",
+   "main_median": 0.0118,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0001,
+    0.0002
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.17,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.08,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content badamo",
+   "field": "content",
+   "main_median": 0.0127,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0002,
+    0.0001,
+    0.0002,
+    0.0
+   ],
+   "median_d": 0.0001,
+   "median_d_us": 0.13,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0001,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0003,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content belohu",
+   "field": "content",
+   "main_median": 0.0125,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0
+   ],
+   "median_d": 0.0001,
+   "median_d_us": 0.13,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0001,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename bazecha",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0,
+    0.0001,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename benico",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename system",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0002,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename hashing",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename hybrid retrieval",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0003
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename retrieval hybrid",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.46,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename system systems",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename systems system",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": 0.0001,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.38,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename from",
+   "field": "filename",
+   "main_median": 0.0025,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename were",
+   "field": "filename",
+   "main_median": 0.0025,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0003,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename badamo",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0004,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename belohu",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename from badamo",
+   "field": "filename",
+   "main_median": 0.0029,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0004,
+    0.0004
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.42,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.33,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename were belohu",
+   "field": "filename",
+   "main_median": 0.0028,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0005,
+    0.0004
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.42,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.33,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename doc 00000",
+   "field": "filename",
+   "main_median": 0.2412,
+   "T": 0.01,
+   "d": [
+    0.0038,
+    0.0043,
+    0.0044,
+    0.0032,
+    0.0002
+   ],
+   "median_d": 0.0038,
+   "median_d_us": 3.83,
+   "median_main2": -0.0004,
+   "median_ctl1": 0.0026,
+   "median_ctl2": -0.0071,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0084,
+    0.0097,
+    0.0095,
+    0.009,
+    0.0085
+   ],
+   "median_excess_over_band_us": 0.79,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both retrieval hybrid",
+   "field": "both",
+   "main_median": 0.1565,
+   "T": 0.01,
+   "d": [
+    0.001,
+    0.001,
+    0.0005,
+    0.0005,
+    -0.0007
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": -0.0002,
+   "median_ctl1": -0.0005,
+   "median_ctl2": -0.0043,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0035,
+    0.0047,
+    0.0043,
+    0.0045,
+    0.0055
+   ],
+   "median_excess_over_band_us": 0.33,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both from",
+   "field": "both",
+   "main_median": 0.3063,
+   "T": 0.01,
+   "d": [
+    0.0009,
+    0.0005,
+    0.0013,
+    -0.001,
+    -0.002
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.54,
+   "median_main2": -0.0003,
+   "median_ctl1": -0.0008,
+   "median_ctl2": -0.0105,
+   "above_band_runs": 3,
+   "band_width": [
+    0.007,
+    0.0217,
+    0.0085,
+    0.0105,
+    0.0115
+   ],
+   "median_excess_over_band_us": 0.13,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both were",
+   "field": "both",
+   "main_median": 0.3082,
+   "T": 0.01,
+   "d": [
+    0.0006,
+    0.001,
+    0.001,
+    -0.0018,
+    -0.0003
+   ],
+   "median_d": 0.0006,
+   "median_d_us": 0.62,
+   "median_main2": -0.0005,
+   "median_ctl1": -0.001,
+   "median_ctl2": -0.0081,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0055,
+    0.0105,
+    0.0049,
+    0.0081,
+    0.0087
+   ],
+   "median_excess_over_band_us": 0.13,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both from badamo",
+   "field": "both",
+   "main_median": 0.3137,
+   "T": 0.01,
+   "d": [
+    0.0018,
+    0.0002,
+    0.005,
+    -0.0008,
+    -0.0014
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.25,
+   "median_main2": -0.0004,
+   "median_ctl1": -0.0006,
+   "median_ctl2": -0.0093,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0056,
+    0.0093,
+    0.0084,
+    0.0126,
+    0.0125
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both were belohu",
+   "field": "both",
+   "main_median": 0.3216,
+   "T": 0.01,
+   "d": [
+    0.0013,
+    0.0021,
+    0.0023,
+    -0.0017,
+    -0.001
+   ],
+   "median_d": 0.0013,
+   "median_d_us": 1.33,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0014,
+   "median_ctl2": -0.008,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0062,
+    0.0087,
+    0.008,
+    0.0105,
+    0.0119
+   ],
+   "median_excess_over_band_us": 0.58,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both doc 00000",
+   "field": "both",
+   "main_median": 0.3337,
+   "T": 0.01,
+   "d": [
+    0.0087,
+    0.0043,
+    0.0073,
+    -0.0003,
+    0.0017
+   ],
+   "median_d": 0.0043,
+   "median_d_us": 4.29,
+   "median_main2": -0.0002,
+   "median_ctl1": 0.0032,
+   "median_ctl2": -0.0093,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0075,
+    0.01,
+    0.0097,
+    0.0186,
+    0.0101
+   ],
+   "median_excess_over_band_us": 2.08,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find words from badamo",
+   "field": "find",
+   "main_median": 0.0386,
+   "T": 0.01,
+   "d": [
+    0.0025,
+    0.0021,
+    -0.0004,
+    0.0006,
+    0.0051
+   ],
+   "median_d": 0.0021,
+   "median_d_us": 2.08,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0027,
+   "median_ctl2": 0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0041,
+    0.0018,
+    0.004,
+    0.002,
+    0.0048
+   ],
+   "median_excess_over_band_us": 0.58,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find phrase with befewho with",
+   "field": "find",
+   "main_median": 0.0211,
+   "T": 0.01,
+   "d": [
+    0.0087,
+    0.0031,
+    0.005,
+    0.0043,
+    0.0032
+   ],
+   "median_d": 0.0043,
+   "median_d_us": 4.29,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0025,
+   "median_ctl2": -0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0012,
+    0.0032,
+    0.0059,
+    0.0009,
+    0.0025
+   ],
+   "median_excess_over_band_us": 3.17,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content bazecha",
+   "field": "content",
+   "main_median": 0.01,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0004,
+    0.0002,
+    0.0001,
+    0.0046
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.37,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0001,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0005,
+    0.0002,
+    0.0005,
+    0.0002,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content benico",
+   "field": "content",
+   "main_median": 0.011,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0008,
+    0.0002,
+    0.0004,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0004,
+   "median_ctl2": 0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0003,
+    0.0006,
+    0.0004,
+    0.0001,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.17,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content hashing",
+   "field": "content",
+   "main_median": 0.0275,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0005,
+    0.0004,
+    0.0001,
+    -0.0002
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.38,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0005,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0003,
+    0.0003,
+    0.001,
+    0.0006,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.08,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename bazecha",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0003,
+    0.0001,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename benico",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0005
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0003,
+    0.0,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename hashing",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0005,
+    0.0001,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename hybrid retrieval",
+   "field": "filename",
+   "main_median": 0.0031,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0006,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0004,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.46,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename retrieval hybrid",
+   "field": "filename",
+   "main_median": 0.0031,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0006,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0004,
+    0.0,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.5,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename system systems",
+   "field": "filename",
+   "main_median": 0.2885,
+   "T": 0.01,
+   "d": [
+    -0.0014,
+    0.0007,
+    0.0025,
+    0.012,
+    0.0036
+   ],
+   "median_d": 0.0025,
+   "median_d_us": 2.46,
+   "median_main2": 0.002,
+   "median_ctl1": -0.003,
+   "median_ctl2": -0.0163,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0163,
+    0.0142,
+    0.0156,
+    0.0181,
+    0.0194
+   ],
+   "median_excess_over_band_us": 0.5,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename the",
+   "field": "filename",
+   "main_median": 0.0025,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0004,
+    0.0001,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename have",
+   "field": "filename",
+   "main_median": 0.0025,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0004,
+    0.0001,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename the within",
+   "field": "filename",
+   "main_median": 0.3196,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0012,
+    -0.0013,
+    -0.003,
+    0.0413
+   ],
+   "median_d": 0.0,
+   "median_d_us": 0.04,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0075,
+   "median_ctl2": -0.0193,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0196,
+    0.0174,
+    0.0177,
+    0.0196,
+    0.0219
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename across lengthy seeming 04276",
+   "field": "filename",
+   "main_median": 0.3396,
+   "T": 0.01,
+   "d": [
+    0.0032,
+    0.0033,
+    0.0008,
+    -0.0022,
+    0.0363
+   ],
+   "median_d": 0.0032,
+   "median_d_us": 3.21,
+   "median_main2": 0.0013,
+   "median_ctl1": -0.0042,
+   "median_ctl2": -0.013,
+   "above_band_runs": 3,
+   "band_width": [
+    0.013,
+    0.0142,
+    0.014,
+    0.0166,
+    0.0166
+   ],
+   "median_excess_over_band_us": 0.37,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both bazecha",
+   "field": "both",
+   "main_median": 0.0121,
+   "T": 0.01,
+   "d": [
+    0.0006,
+    0.0005,
+    0.0,
+    0.0014,
+    0.0008
+   ],
+   "median_d": 0.0006,
+   "median_d_us": 0.58,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0002,
+   "median_ctl2": 0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0008,
+    0.0002,
+    0.0007,
+    0.0005,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both benico",
+   "field": "both",
+   "main_median": 0.0131,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0,
+    0.0011,
+    0.0002
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0002,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0007,
+    0.0004,
+    0.0001,
+    0.0005,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.08,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both system",
+   "field": "both",
+   "main_median": 0.356,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0028,
+    -0.0009,
+    -0.0016,
+    0.028
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.37,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0018,
+   "median_ctl2": -0.0146,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0146,
+    0.0158,
+    0.0139,
+    0.0176,
+    0.017
+   ],
+   "median_excess_over_band_us": 0.37,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both hashing",
+   "field": "both",
+   "main_median": 0.1815,
+   "T": 0.01,
+   "d": [
+    -0.0001,
+    0.002,
+    0.0012,
+    -0.0006,
+    0.0152
+   ],
+   "median_d": 0.0012,
+   "median_d_us": 1.25,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0005,
+   "median_ctl2": -0.008,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0096,
+    0.0066,
+    0.0071,
+    0.008,
+    0.0173
+   ],
+   "median_excess_over_band_us": 0.33,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both retrieval hybrid",
+   "field": "both",
+   "main_median": 0.0192,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0008,
+    0.0013,
+    0.0007,
+    0.0013
+   ],
+   "median_d": 0.0008,
+   "median_d_us": 0.79,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0005,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0006,
+    0.0007,
+    0.001,
+    0.0005,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both system systems",
+   "field": "both",
+   "main_median": 0.3745,
+   "T": 0.01,
+   "d": [
+    0.002,
+    0.005,
+    0.0001,
+    -0.0015,
+    0.0185
+   ],
+   "median_d": 0.002,
+   "median_d_us": 1.96,
+   "median_main2": 0.0013,
+   "median_ctl1": 0.0014,
+   "median_ctl2": -0.012,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0135,
+    0.0119,
+    0.0125,
+    0.0164,
+    0.0153
+   ],
+   "median_excess_over_band_us": 0.54,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both the",
+   "field": "both",
+   "main_median": 0.5035,
+   "T": 0.01,
+   "d": [
+    0.0047,
+    0.0055,
+    0.0034,
+    -0.0079,
+    0.0167
+   ],
+   "median_d": 0.0047,
+   "median_d_us": 4.67,
+   "median_main2": 0.0018,
+   "median_ctl1": -0.0002,
+   "median_ctl2": -0.0102,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0131,
+    0.0116,
+    0.008,
+    0.0176,
+    0.012
+   ],
+   "median_excess_over_band_us": 1.96,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both have",
+   "field": "both",
+   "main_median": 0.3411,
+   "T": 0.01,
+   "d": [
+    0.0047,
+    0.0032,
+    0.0011,
+    -0.0134,
+    0.015
+   ],
+   "median_d": 0.0032,
+   "median_d_us": 3.17,
+   "median_main2": 0.0011,
+   "median_ctl1": 0.001,
+   "median_ctl2": -0.0061,
+   "above_band_runs": 3,
+   "band_width": [
+    0.006,
+    0.0055,
+    0.0092,
+    0.0222,
+    0.008
+   ],
+   "median_excess_over_band_us": 1.79,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both within",
+   "field": "both",
+   "main_median": 0.4429,
+   "T": 0.01,
+   "d": [
+    0.0032,
+    0.002,
+    0.0003,
+    0.0009,
+    0.0166
+   ],
+   "median_d": 0.002,
+   "median_d_us": 2.04,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0008,
+   "median_ctl2": -0.0145,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0146,
+    0.0127,
+    0.0153,
+    0.0173,
+    0.0204
+   ],
+   "median_excess_over_band_us": 1.83,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both across lengthy seeming 04276",
+   "field": "both",
+   "main_median": 0.527,
+   "T": 0.01,
+   "d": [
+    0.013,
+    0.0077,
+    0.0181,
+    0.0076,
+    0.041
+   ],
+   "median_d": 0.013,
+   "median_d_us": 12.96,
+   "median_main2": 0.0036,
+   "median_ctl1": 0.0134,
+   "median_ctl2": -0.0057,
+   "above_band_runs": 3,
+   "band_width": [
+    0.049,
+    0.0157,
+    0.0195,
+    0.0124,
+    0.0164
+   ],
+   "median_excess_over_band_us": 1.21,
+   "fails": "(1)(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find words the",
+   "field": "find",
+   "main_median": 14.29,
+   "T": 0.1429,
+   "d": [
+    0.0708,
+    0.0512,
+    -0.0907,
+    0.1075,
+    0.2132
+   ],
+   "median_d": 0.0708,
+   "median_d_us": 70.83,
+   "median_main2": 0.0231,
+   "median_ctl1": 0.1122,
+   "median_ctl2": -0.0601,
+   "above_band_runs": 2,
+   "band_width": [
+    0.2882,
+    0.1455,
+    0.367,
+    0.1815,
+    0.1789
+   ],
+   "median_excess_over_band_us": -61.0,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find words within",
+   "field": "find",
+   "main_median": 1.28,
+   "T": 0.01,
+   "d": [
+    0.0068,
+    0.0077,
+    -0.0002,
+    0.0015,
+    0.0327
+   ],
+   "median_d": 0.0068,
+   "median_d_us": 6.75,
+   "median_main2": 0.0012,
+   "median_ctl1": -0.0058,
+   "median_ctl2": -0.0056,
+   "above_band_runs": 2,
+   "band_width": [
+    0.008,
+    0.0075,
+    0.0416,
+    0.0114,
+    0.0792
+   ],
+   "median_excess_over_band_us": -0.92,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find words across lengthy seeming 04276",
+   "field": "find",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0004
+   ],
+   "median_d": 0.0,
+   "median_d_us": 0.04,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0003,
+    0.0,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find phrase you get bowls",
+   "field": "find",
+   "main_median": 0.1072,
+   "T": 0.01,
+   "d": [
+    -0.0061,
+    -0.0033,
+    0.0224,
+    0.0145,
+    0.0244
+   ],
+   "median_d": 0.0145,
+   "median_d_us": 14.54,
+   "median_main2": 0.0105,
+   "median_ctl1": -0.0025,
+   "median_ctl2": 0.0056,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0157,
+    0.0118,
+    0.0129,
+    0.0131,
+    0.0129
+   ],
+   "median_excess_over_band_us": 4.0,
+   "fails": "(1)(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find phrase partly all rougher",
+   "field": "find",
+   "main_median": 0.0287,
+   "T": 0.01,
+   "d": [
+    0.0092,
+    0.0063,
+    -0.0015,
+    0.0125,
+    0.0103
+   ],
+   "median_d": 0.0092,
+   "median_d_us": 9.17,
+   "median_main2": 0.0001,
+   "median_ctl1": -0.0056,
+   "median_ctl2": -0.0003,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0093,
+    0.0038,
+    0.0087,
+    0.0064,
+    0.0027
+   ],
+   "median_excess_over_band_us": 6.42,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find phrase bottle and orchard",
+   "field": "find",
+   "main_median": 0.1151,
+   "T": 0.01,
+   "d": [
+    0.0066,
+    -0.0343,
+    0.0174,
+    -0.0057,
+    0.0137
+   ],
+   "median_d": 0.0066,
+   "median_d_us": 6.58,
+   "median_main2": -0.0016,
+   "median_ctl1": -0.0112,
+   "median_ctl2": -0.0036,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0275,
+    0.0367,
+    0.0278,
+    0.0289,
+    0.033
+   ],
+   "median_excess_over_band_us": -5.67,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find prefix with*",
+   "field": "find",
+   "main_median": 8.4723,
+   "T": 0.0847,
+   "d": [
+    0.0179,
+    0.01,
+    -0.0319,
+    0.0949,
+    0.3402
+   ],
+   "median_d": 0.0179,
+   "median_d_us": 17.88,
+   "median_main2": -0.015,
+   "median_ctl1": 0.0322,
+   "median_ctl2": -0.0119,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0364,
+    0.0361,
+    0.1281,
+    0.0432,
+    0.2375
+   ],
+   "median_excess_over_band_us": -2.79,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find prefix drin*",
+   "field": "find",
+   "main_median": 0.3876,
+   "T": 0.01,
+   "d": [
+    0.0033,
+    0.0125,
+    0.0001,
+    0.005,
+    0.0181
+   ],
+   "median_d": 0.005,
+   "median_d_us": 5.0,
+   "median_main2": 0.001,
+   "median_ctl1": -0.0007,
+   "median_ctl2": -0.0009,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0087,
+    0.0021,
+    0.0131,
+    0.0037,
+    0.0057
+   ],
+   "median_excess_over_band_us": 3.5,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content bazecha",
+   "field": "content",
+   "main_median": 0.0033,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.17,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0002,
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content benico",
+   "field": "content",
+   "main_median": 0.0033,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0005
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.17,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content system",
+   "field": "content",
+   "main_median": 0.0033,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0009
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.17,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0001,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content hashing",
+   "field": "content",
+   "main_median": 0.0041,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0003,
+    0.0007
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content hybrid retrieval",
+   "field": "content",
+   "main_median": 0.0049,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0004,
+    0.0004,
+    0.0003,
+    0.0004
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.37,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0003,
+    0.0004,
+    0.0004,
+    0.0003,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename bazecha",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0004
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename benico",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0005
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename system",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0004
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename hashing",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0001,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename hybrid retrieval",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0004
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0,
+    0.0001,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename retrieval hybrid",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.46,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename system systems",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename systems system",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0004,
+    0.0005,
+    0.0004,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0002,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.46,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename கீகசை",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0,
+    0.0002,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename டூகனை",
+   "field": "filename",
+   "main_median": 0.0029,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename றூகுஞங்கள்",
+   "field": "filename",
+   "main_median": 0.0046,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0001,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename சைகீளையில்",
+   "field": "filename",
+   "main_median": 0.0049,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename கீகசை றூகுஞங்கள்",
+   "field": "filename",
+   "main_median": 0.0061,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0004,
+    0.0005
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.42,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename டூகனை சைகீளையில்",
+   "field": "filename",
+   "main_median": 0.0064,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0005,
+    0.0005,
+    0.0004,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename doc 00000",
+   "field": "filename",
+   "main_median": 0.6874,
+   "T": 0.01,
+   "d": [
+    0.0061,
+    0.0121,
+    0.01,
+    0.0047,
+    0.0105
+   ],
+   "median_d": 0.01,
+   "median_d_us": 9.96,
+   "median_main2": -0.0012,
+   "median_ctl1": -0.0043,
+   "median_ctl2": -0.0019,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0068,
+    0.0077,
+    0.0043,
+    0.0076,
+    0.0058
+   ],
+   "median_excess_over_band_us": 6.13,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both bazecha",
+   "field": "both",
+   "main_median": 0.0058,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0003,
+    0.0003,
+    0.0002,
+    0.0005
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0002,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both benico",
+   "field": "both",
+   "main_median": 0.0056,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0004,
+    0.0003,
+    0.0002,
+    0.0005
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.37,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0002,
+    0.0001,
+    0.0001,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both system",
+   "field": "both",
+   "main_median": 0.0056,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0003,
+    0.0005,
+    0.0002,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both hashing",
+   "field": "both",
+   "main_median": 0.0064,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0007,
+    0.0005,
+    0.0007
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.54,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0002,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0004,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.37,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both hybrid retrieval",
+   "field": "both",
+   "main_median": 0.0073,
+   "T": 0.01,
+   "d": [
+    0.001,
+    0.0007,
+    0.001,
+    0.0008,
+    0.001
+   ],
+   "median_d": 0.001,
+   "median_d_us": 0.96,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0002,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0003,
+    0.0002,
+    0.0004,
+    0.0005,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.54,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both retrieval hybrid",
+   "field": "both",
+   "main_median": 0.0073,
+   "T": 0.01,
+   "d": [
+    0.001,
+    0.0008,
+    0.001,
+    0.0008,
+    0.001
+   ],
+   "median_d": 0.001,
+   "median_d_us": 0.96,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0003,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0004,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.54,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both system systems",
+   "field": "both",
+   "main_median": 0.008,
+   "T": 0.01,
+   "d": [
+    0.0007,
+    0.0008,
+    0.0008,
+    0.0008,
+    0.0008
+   ],
+   "median_d": 0.0008,
+   "median_d_us": 0.79,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0003,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0003,
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.54,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both systems system",
+   "field": "both",
+   "main_median": 0.008,
+   "T": 0.01,
+   "d": [
+    0.0007,
+    0.0008,
+    0.0008,
+    0.0008,
+    0.0009
+   ],
+   "median_d": 0.0008,
+   "median_d_us": 0.79,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0002,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0002,
+    0.0004,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.58,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both றூகுஞங்கள்",
+   "field": "both",
+   "main_median": 0.3838,
+   "T": 0.01,
+   "d": [
+    0.004,
+    0.0087,
+    0.0048,
+    0.0035,
+    0.0057
+   ],
+   "median_d": 0.0048,
+   "median_d_us": 4.79,
+   "median_main2": -0.0004,
+   "median_ctl1": -0.0035,
+   "median_ctl2": -0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0036,
+    0.0049,
+    0.0035,
+    0.0073,
+    0.0055
+   ],
+   "median_excess_over_band_us": 4.25,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both சைகீளையில்",
+   "field": "both",
+   "main_median": 0.3899,
+   "T": 0.01,
+   "d": [
+    0.0041,
+    0.0084,
+    0.0046,
+    0.0046,
+    0.0051
+   ],
+   "median_d": 0.0046,
+   "median_d_us": 4.58,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0035,
+   "median_ctl2": -0.0004,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0035,
+    0.0064,
+    0.0035,
+    0.0063,
+    0.0069
+   ],
+   "median_excess_over_band_us": 4.12,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both doc 00000",
+   "field": "both",
+   "main_median": 0.7767,
+   "T": 0.01,
+   "d": [
+    0.0108,
+    0.0152,
+    0.0112,
+    0.021,
+    0.0093
+   ],
+   "median_d": 0.0112,
+   "median_d_us": 11.21,
+   "median_main2": 0.0004,
+   "median_ctl1": -0.0033,
+   "median_ctl2": -0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0052,
+    0.0095,
+    0.0044,
+    0.0099,
+    0.0113
+   ],
+   "median_excess_over_band_us": 9.79,
+   "fails": "(1)(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find words றூகுஞங்கள்",
+   "field": "find",
+   "main_median": 0.0353,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0005,
+    0.0008,
+    0.0007,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.54,
+   "median_main2": -0.0003,
+   "median_ctl1": -0.0006,
+   "median_ctl2": 0.0005,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0009,
+    0.0012,
+    0.0009,
+    0.0008,
+    0.0012
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find words கீகசை றூகுஞங்கள்",
+   "field": "find",
+   "main_median": 0.05,
+   "T": 0.01,
+   "d": [
+    0.0012,
+    0.0035,
+    0.0045,
+    0.0005,
+    0.0044
+   ],
+   "median_d": 0.0035,
+   "median_d_us": 3.54,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0017,
+   "median_ctl2": 0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0018,
+    0.0033,
+    0.0019,
+    0.0018,
+    0.0033
+   ],
+   "median_excess_over_band_us": 3.54,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find phrase கேடேயி குகடம் கிகசம்",
+   "field": "find",
+   "main_median": 0.048,
+   "T": 0.01,
+   "d": [
+    0.0123,
+    0.0042,
+    0.0044,
+    0.006,
+    0.0125
+   ],
+   "median_d": 0.006,
+   "median_d_us": 6.0,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0042,
+   "median_ctl2": -0.0004,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0042,
+    0.0075,
+    0.0046,
+    0.0027,
+    0.0069
+   ],
+   "median_excess_over_band_us": 3.96,
+   "fails": "(2)"
+  }
+ ],
+ "per_field": {
+  "timing-10k content": {
+   "cells": 15,
+   "fail_1": 0,
+   "fail_2": 3,
+   "median_d_us": {
+    "min": -9.21,
+    "median": -1.54,
+    "max": 0.17
+   }
+  },
+  "timing-10k filename": {
+   "cells": 15,
+   "fail_1": 0,
+   "fail_2": 15,
+   "median_d_us": {
+    "min": 0.25,
+    "median": 0.33,
+    "max": 3.83
+   }
+  },
+  "timing-10k both": {
+   "cells": 15,
+   "fail_1": 0,
+   "fail_2": 6,
+   "median_d_us": {
+    "min": -5.33,
+    "median": 0.21,
+    "max": 4.29
+   }
+  },
+  "timing-10k find": {
+   "cells": 9,
+   "fail_1": 0,
+   "fail_2": 2,
+   "median_d_us": {
+    "min": -1.67,
+    "median": 0.04,
+    "max": 4.29
+   }
+  },
+  "prose-10k content": {
+   "cells": 15,
+   "fail_1": 0,
+   "fail_2": 3,
+   "median_d_us": {
+    "min": -12.0,
+    "median": -0.67,
+    "max": 0.83
+   }
+  },
+  "prose-10k filename": {
+   "cells": 15,
+   "fail_1": 0,
+   "fail_2": 10,
+   "median_d_us": {
+    "min": -5.37,
+    "median": 0.29,
+    "max": 3.21
+   }
+  },
+  "prose-10k both": {
+   "cells": 15,
+   "fail_1": 1,
+   "fail_2": 10,
+   "median_d_us": {
+    "min": -2.29,
+    "median": 1.25,
+    "max": 12.96
+   }
+  },
+  "prose-10k find": {
+   "cells": 9,
+   "fail_1": 1,
+   "fail_2": 4,
+   "median_d_us": {
+    "min": 0.04,
+    "median": 6.75,
+    "max": 70.83
+   }
+  },
+  "tamil-10k content": {
+   "cells": 15,
+   "fail_1": 0,
+   "fail_2": 5,
+   "median_d_us": {
+    "min": -8.67,
+    "median": 0.17,
+    "max": 0.37
+   }
+  },
+  "tamil-10k filename": {
+   "cells": 15,
+   "fail_1": 0,
+   "fail_2": 15,
+   "median_d_us": {
+    "min": 0.25,
+    "median": 0.29,
+    "max": 9.96
+   }
+  },
+  "tamil-10k both": {
+   "cells": 15,
+   "fail_1": 1,
+   "fail_2": 11,
+   "median_d_us": {
+    "min": -13.5,
+    "median": 0.54,
+    "max": 11.21
+   }
+  },
+  "tamil-10k find": {
+   "cells": 10,
+   "fail_1": 0,
+   "fail_2": 3,
+   "median_d_us": {
+    "min": -9.5,
+    "median": 0.02,
+    "max": 6.0
+   }
+  }
+ },
+ "hash_problems": [],
+ "head_hash_differs": 330,
+ "loads": [
+  [
+   1,
+   "timing-10k",
+   "main",
+   [
+    1.27,
+    3.73,
+    3.62
+   ],
+   [
+    1.27,
+    3.73,
+    3.62
+   ]
+  ],
+  [
+   1,
+   "timing-10k",
+   "main2",
+   [
+    1.25,
+    3.68,
+    3.6
+   ],
+   [
+    1.25,
+    3.68,
+    3.6
+   ]
+  ],
+  [
+   1,
+   "timing-10k",
+   "ctl1",
+   [
+    1.23,
+    3.64,
+    3.59
+   ],
+   [
+    1.21,
+    3.6,
+    3.57
+   ]
+  ],
+  [
+   1,
+   "timing-10k",
+   "ctl2",
+   [
+    1.21,
+    3.6,
+    3.57
+   ],
+   [
+    1.35,
+    3.59,
+    3.57
+   ]
+  ],
+  [
+   1,
+   "timing-10k",
+   "head",
+   [
+    1.23,
+    3.64,
+    3.59
+   ],
+   [
+    1.23,
+    3.64,
+    3.59
+   ]
+  ],
+  [
+   2,
+   "timing-10k",
+   "main",
+   [
+    1.49,
+    3.13,
+    3.4
+   ],
+   [
+    1.53,
+    3.11,
+    3.39
+   ]
+  ],
+  [
+   2,
+   "timing-10k",
+   "main2",
+   [
+    1.53,
+    3.11,
+    3.39
+   ],
+   [
+    1.53,
+    3.11,
+    3.39
+   ]
+  ],
+  [
+   2,
+   "timing-10k",
+   "ctl1",
+   [
+    1.53,
+    3.17,
+    3.41
+   ],
+   [
+    1.49,
+    3.13,
+    3.4
+   ]
+  ],
+  [
+   2,
+   "timing-10k",
+   "ctl2",
+   [
+    1.58,
+    3.21,
+    3.43
+   ],
+   [
+    1.53,
+    3.17,
+    3.41
+   ]
+  ],
+  [
+   2,
+   "timing-10k",
+   "head",
+   [
+    1.58,
+    3.21,
+    3.43
+   ],
+   [
+    1.58,
+    3.21,
+    3.43
+   ]
+  ],
+  [
+   3,
+   "timing-10k",
+   "main",
+   [
+    1.51,
+    2.75,
+    3.22
+   ],
+   [
+    1.47,
+    2.72,
+    3.21
+   ]
+  ],
+  [
+   3,
+   "timing-10k",
+   "main2",
+   [
+    1.47,
+    2.72,
+    3.21
+   ],
+   [
+    1.43,
+    2.69,
+    3.2
+   ]
+  ],
+  [
+   3,
+   "timing-10k",
+   "ctl1",
+   [
+    1.55,
+    2.78,
+    3.24
+   ],
+   [
+    1.51,
+    2.75,
+    3.22
+   ]
+  ],
+  [
+   3,
+   "timing-10k",
+   "ctl2",
+   [
+    1.43,
+    2.69,
+    3.2
+   ],
+   [
+    1.43,
+    2.69,
+    3.2
+   ]
+  ],
+  [
+   3,
+   "timing-10k",
+   "head",
+   [
+    1.4,
+    2.66,
+    3.18
+   ],
+   [
+    1.4,
+    2.66,
+    3.18
+   ]
+  ],
+  [
+   4,
+   "timing-10k",
+   "main",
+   [
+    1.3,
+    2.29,
+    2.98
+   ],
+   [
+    1.3,
+    2.29,
+    2.98
+   ]
+  ],
+  [
+   4,
+   "timing-10k",
+   "main2",
+   [
+    1.36,
+    2.28,
+    2.98
+   ],
+   [
+    1.36,
+    2.28,
+    2.98
+   ]
+  ],
+  [
+   4,
+   "timing-10k",
+   "ctl1",
+   [
+    1.25,
+    2.24,
+    2.96
+   ],
+   [
+    1.25,
+    2.24,
+    2.96
+   ]
+  ],
+  [
+   4,
+   "timing-10k",
+   "ctl2",
+   [
+    1.36,
+    2.33,
+    3.01
+   ],
+   [
+    1.33,
+    2.31,
+    2.99
+   ]
+  ],
+  [
+   4,
+   "timing-10k",
+   "head",
+   [
+    1.33,
+    2.31,
+    2.99
+   ],
+   [
+    1.3,
+    2.29,
+    2.98
+   ]
+  ],
+  [
+   5,
+   "timing-10k",
+   "main",
+   [
+    1.36,
+    2.04,
+    2.81
+   ],
+   [
+    1.36,
+    2.04,
+    2.81
+   ]
+  ],
+  [
+   5,
+   "timing-10k",
+   "main2",
+   [
+    1.41,
+    2.09,
+    2.85
+   ],
+   [
+    1.37,
+    2.08,
+    2.83
+   ]
+  ],
+  [
+   5,
+   "timing-10k",
+   "ctl1",
+   [
+    1.37,
+    2.08,
+    2.83
+   ],
+   [
+    1.34,
+    2.06,
+    2.82
+   ]
+  ],
+  [
+   5,
+   "timing-10k",
+   "ctl2",
+   [
+    1.34,
+    2.06,
+    2.82
+   ],
+   [
+    1.48,
+    2.07,
+    2.82
+   ]
+  ],
+  [
+   5,
+   "timing-10k",
+   "head",
+   [
+    1.48,
+    2.07,
+    2.82
+   ],
+   [
+    1.48,
+    2.07,
+    2.82
+   ]
+  ],
+  [
+   1,
+   "prose-10k",
+   "main",
+   [
+    1.35,
+    3.59,
+    3.57
+   ],
+   [
+    1.3,
+    3.5,
+    3.54
+   ]
+  ],
+  [
+   1,
+   "prose-10k",
+   "main2",
+   [
+    1.3,
+    3.5,
+    3.54
+   ],
+   [
+    2.4,
+    3.69,
+    3.6
+   ]
+  ],
+  [
+   1,
+   "prose-10k",
+   "ctl1",
+   [
+    2.11,
+    3.59,
+    3.57
+   ],
+   [
+    2.02,
+    3.52,
+    3.54
+   ]
+  ],
+  [
+   1,
+   "prose-10k",
+   "ctl2",
+   [
+    2.02,
+    3.52,
+    3.54
+   ],
+   [
+    2.01,
+    3.47,
+    3.52
+   ]
+  ],
+  [
+   1,
+   "prose-10k",
+   "head",
+   [
+    2.2,
+    3.63,
+    3.58
+   ],
+   [
+    2.11,
+    3.59,
+    3.57
+   ]
+  ],
+  [
+   2,
+   "prose-10k",
+   "main",
+   [
+    1.51,
+    2.96,
+    3.32
+   ],
+   [
+    1.47,
+    2.92,
+    3.31
+   ]
+  ],
+  [
+   2,
+   "prose-10k",
+   "main2",
+   [
+    1.43,
+    2.89,
+    3.29
+   ],
+   [
+    1.48,
+    2.88,
+    3.29
+   ]
+  ],
+  [
+   2,
+   "prose-10k",
+   "ctl1",
+   [
+    1.52,
+    3.01,
+    3.34
+   ],
+   [
+    1.51,
+    2.96,
+    3.32
+   ]
+  ],
+  [
+   2,
+   "prose-10k",
+   "ctl2",
+   [
+    1.52,
+    3.06,
+    3.37
+   ],
+   [
+    1.52,
+    3.01,
+    3.34
+   ]
+  ],
+  [
+   2,
+   "prose-10k",
+   "head",
+   [
+    1.57,
+    3.1,
+    3.38
+   ],
+   [
+    1.52,
+    3.06,
+    3.37
+   ]
+  ],
+  [
+   3,
+   "prose-10k",
+   "main",
+   [
+    1.33,
+    2.6,
+    3.16
+   ],
+   [
+    1.28,
+    2.55,
+    3.13
+   ]
+  ],
+  [
+   3,
+   "prose-10k",
+   "main2",
+   [
+    1.28,
+    2.55,
+    3.13
+   ],
+   [
+    1.24,
+    2.5,
+    3.11
+   ]
+  ],
+  [
+   3,
+   "prose-10k",
+   "ctl1",
+   [
+    1.36,
+    2.63,
+    3.17
+   ],
+   [
+    1.33,
+    2.6,
+    3.16
+   ]
+  ],
+  [
+   3,
+   "prose-10k",
+   "ctl2",
+   [
+    1.24,
+    2.5,
+    3.11
+   ],
+   [
+    1.22,
+    2.48,
+    3.09
+   ]
+  ],
+  [
+   3,
+   "prose-10k",
+   "head",
+   [
+    1.2,
+    2.45,
+    3.08
+   ],
+   [
+    1.19,
+    2.43,
+    3.07
+   ]
+  ],
+  [
+   4,
+   "prose-10k",
+   "main",
+   [
+    1.38,
+    2.21,
+    2.93
+   ],
+   [
+    1.59,
+    2.24,
+    2.94
+   ]
+  ],
+  [
+   4,
+   "prose-10k",
+   "main2",
+   [
+    1.54,
+    2.22,
+    2.92
+   ],
+   [
+    1.5,
+    2.2,
+    2.91
+   ]
+  ],
+  [
+   4,
+   "prose-10k",
+   "ctl1",
+   [
+    1.5,
+    2.2,
+    2.91
+   ],
+   [
+    1.5,
+    2.17,
+    2.9
+   ]
+  ],
+  [
+   4,
+   "prose-10k",
+   "ctl2",
+   [
+    1.25,
+    2.24,
+    2.96
+   ],
+   [
+    1.45,
+    2.25,
+    2.95
+   ]
+  ],
+  [
+   4,
+   "prose-10k",
+   "head",
+   [
+    1.45,
+    2.25,
+    2.95
+   ],
+   [
+    1.38,
+    2.21,
+    2.93
+   ]
+  ],
+  [
+   5,
+   "prose-10k",
+   "main",
+   [
+    1.8,
+    2.07,
+    2.79
+   ],
+   [
+    1.75,
+    2.05,
+    2.77
+   ]
+  ],
+  [
+   5,
+   "prose-10k",
+   "main2",
+   [
+    1.36,
+    2.04,
+    2.81
+   ],
+   [
+    1.38,
+    2.02,
+    2.79
+   ]
+  ],
+  [
+   5,
+   "prose-10k",
+   "ctl1",
+   [
+    1.38,
+    2.02,
+    2.79
+   ],
+   [
+    1.56,
+    2.04,
+    2.79
+   ]
+  ],
+  [
+   5,
+   "prose-10k",
+   "ctl2",
+   [
+    1.56,
+    2.04,
+    2.79
+   ],
+   [
+    1.51,
+    2.02,
+    2.78
+   ]
+  ],
+  [
+   5,
+   "prose-10k",
+   "head",
+   [
+    1.87,
+    2.08,
+    2.8
+   ],
+   [
+    1.8,
+    2.07,
+    2.79
+   ]
+  ],
+  [
+   1,
+   "tamil-10k",
+   "main",
+   [
+    2.01,
+    3.47,
+    3.52
+   ],
+   [
+    2.09,
+    3.46,
+    3.52
+   ]
+  ],
+  [
+   1,
+   "tamil-10k",
+   "main2",
+   [
+    2.09,
+    3.46,
+    3.52
+   ],
+   [
+    2.0,
+    3.42,
+    3.51
+   ]
+  ],
+  [
+   1,
+   "tamil-10k",
+   "ctl1",
+   [
+    1.92,
+    3.38,
+    3.49
+   ],
+   [
+    1.85,
+    3.34,
+    3.48
+   ]
+  ],
+  [
+   1,
+   "tamil-10k",
+   "ctl2",
+   [
+    1.85,
+    3.34,
+    3.48
+   ],
+   [
+    1.78,
+    3.3,
+    3.46
+   ]
+  ],
+  [
+   1,
+   "tamil-10k",
+   "head",
+   [
+    2.0,
+    3.42,
+    3.51
+   ],
+   [
+    1.92,
+    3.38,
+    3.49
+   ]
+  ],
+  [
+   2,
+   "tamil-10k",
+   "main",
+   [
+    1.37,
+    2.79,
+    3.25
+   ],
+   [
+    1.34,
+    2.76,
+    3.23
+   ]
+  ],
+  [
+   2,
+   "tamil-10k",
+   "main2",
+   [
+    1.34,
+    2.76,
+    3.23
+   ],
+   [
+    1.55,
+    2.78,
+    3.24
+   ]
+  ],
+  [
+   2,
+   "tamil-10k",
+   "ctl1",
+   [
+    1.4,
+    2.82,
+    3.26
+   ],
+   [
+    1.37,
+    2.79,
+    3.25
+   ]
+  ],
+  [
+   2,
+   "tamil-10k",
+   "ctl2",
+   [
+    1.44,
+    2.85,
+    3.27
+   ],
+   [
+    1.4,
+    2.82,
+    3.26
+   ]
+  ],
+  [
+   2,
+   "tamil-10k",
+   "head",
+   [
+    1.48,
+    2.88,
+    3.29
+   ],
+   [
+    1.44,
+    2.85,
+    3.27
+   ]
+  ],
+  [
+   3,
+   "tamil-10k",
+   "main",
+   [
+    1.17,
+    2.4,
+    3.06
+   ],
+   [
+    1.16,
+    2.38,
+    3.04
+   ]
+  ],
+  [
+   3,
+   "tamil-10k",
+   "main2",
+   [
+    1.16,
+    2.38,
+    3.04
+   ],
+   [
+    1.3,
+    2.39,
+    3.04
+   ]
+  ],
+  [
+   3,
+   "tamil-10k",
+   "ctl1",
+   [
+    1.19,
+    2.43,
+    3.07
+   ],
+   [
+    1.17,
+    2.4,
+    3.06
+   ]
+  ],
+  [
+   3,
+   "tamil-10k",
+   "ctl2",
+   [
+    1.3,
+    2.39,
+    3.04
+   ],
+   [
+    1.36,
+    2.38,
+    3.04
+   ]
+  ],
+  [
+   3,
+   "tamil-10k",
+   "head",
+   [
+    1.36,
+    2.38,
+    3.04
+   ],
+   [
+    1.33,
+    2.36,
+    3.03
+   ]
+  ],
+  [
+   4,
+   "tamil-10k",
+   "main",
+   [
+    1.42,
+    2.13,
+    2.87
+   ],
+   [
+    1.39,
+    2.12,
+    2.86
+   ]
+  ],
+  [
+   4,
+   "tamil-10k",
+   "main2",
+   [
+    1.39,
+    2.12,
+    2.86
+   ],
+   [
+    1.36,
+    2.1,
+    2.85
+   ]
+  ],
+  [
+   4,
+   "tamil-10k",
+   "ctl1",
+   [
+    1.36,
+    2.1,
+    2.85
+   ],
+   [
+    1.41,
+    2.09,
+    2.85
+   ]
+  ],
+  [
+   4,
+   "tamil-10k",
+   "ctl2",
+   [
+    1.5,
+    2.17,
+    2.9
+   ],
+   [
+    1.46,
+    2.15,
+    2.88
+   ]
+  ],
+  [
+   4,
+   "tamil-10k",
+   "head",
+   [
+    1.46,
+    2.15,
+    2.88
+   ],
+   [
+    1.42,
+    2.13,
+    2.87
+   ]
+  ],
+  [
+   5,
+   "tamil-10k",
+   "main",
+   [
+    2.05,
+    2.09,
+    2.77
+   ],
+   [
+    1.97,
+    2.07,
+    2.76
+   ]
+  ],
+  [
+   5,
+   "tamil-10k",
+   "main2",
+   [
+    1.75,
+    2.05,
+    2.77
+   ],
+   [
+    1.69,
+    2.03,
+    2.76
+   ]
+  ],
+  [
+   5,
+   "tamil-10k",
+   "ctl1",
+   [
+    1.69,
+    2.03,
+    2.76
+   ],
+   [
+    1.72,
+    2.03,
+    2.75
+   ]
+  ],
+  [
+   5,
+   "tamil-10k",
+   "ctl2",
+   [
+    1.72,
+    2.03,
+    2.75
+   ],
+   [
+    2.06,
+    2.09,
+    2.77
+   ]
+  ],
+  [
+   5,
+   "tamil-10k",
+   "head",
+   [
+    2.06,
+    2.09,
+    2.77
+   ],
+   [
+    2.05,
+    2.09,
+    2.77
+   ]
+  ]
+ ],
+ "all": [
+  {
+   "corpus": "timing-10k",
+   "cell": "content bazecha",
+   "field": "content",
+   "main_median": 0.0117,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0002,
+    0.0001,
+    0.0001,
+    0.0
+   ],
+   "median_d": 0.0001,
+   "median_d_us": 0.08,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0001,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content benico",
+   "field": "content",
+   "main_median": 0.0118,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0001,
+    0.0002
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.17,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.08,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content system",
+   "field": "content",
+   "main_median": 0.1012,
+   "T": 0.01,
+   "d": [
+    -0.0011,
+    -0.0015,
+    -0.0015,
+    -0.0027,
+    -0.0017
+   ],
+   "median_d": -0.0015,
+   "median_d_us": -1.5,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0003,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0014,
+    0.0001,
+    0.0013,
+    0.0013,
+    0.0012
+   ],
+   "median_excess_over_band_us": -2.21,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content hashing",
+   "field": "content",
+   "main_median": 0.0813,
+   "T": 0.01,
+   "d": [
+    -0.0012,
+    -0.0015,
+    -0.0015,
+    -0.0014,
+    -0.0017
+   ],
+   "median_d": -0.0015,
+   "median_d_us": -1.54,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0003,
+   "median_ctl2": 0.0001,
+   "above_band_runs": 0,
+   "band_width": [
+    0.002,
+    0.0004,
+    0.0006,
+    0.0007,
+    0.0014
+   ],
+   "median_excess_over_band_us": -1.92,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content hybrid retrieval",
+   "field": "content",
+   "main_median": 0.0522,
+   "T": 0.01,
+   "d": [
+    -0.0006,
+    -0.0003,
+    -0.0007,
+    -0.0014,
+    -0.0008
+   ],
+   "median_d": -0.0007,
+   "median_d_us": -0.67,
+   "median_main2": 0.0001,
+   "median_ctl1": -0.0001,
+   "median_ctl2": 0.0,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0004,
+    0.0001,
+    0.0004,
+    0.0007,
+    0.0009
+   ],
+   "median_excess_over_band_us": -0.83,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content retrieval hybrid",
+   "field": "content",
+   "main_median": 0.0523,
+   "T": 0.01,
+   "d": [
+    -0.0008,
+    -0.0012,
+    -0.0005,
+    -0.001,
+    -0.0005
+   ],
+   "median_d": -0.0008,
+   "median_d_us": -0.79,
+   "median_main2": 0.0001,
+   "median_ctl1": -0.0002,
+   "median_ctl2": -0.0003,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0004,
+    0.0005,
+    0.001,
+    0.0008,
+    0.001
+   ],
+   "median_excess_over_band_us": -0.96,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content system systems",
+   "field": "content",
+   "main_median": 0.1272,
+   "T": 0.01,
+   "d": [
+    -0.0041,
+    -0.0034,
+    -0.0042,
+    -0.0044,
+    -0.0055
+   ],
+   "median_d": -0.0042,
+   "median_d_us": -4.21,
+   "median_main2": -0.0003,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0016,
+    0.0001,
+    0.0011,
+    0.0017,
+    0.0022
+   ],
+   "median_excess_over_band_us": -5.29,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content systems system",
+   "field": "content",
+   "main_median": 0.1272,
+   "T": 0.01,
+   "d": [
+    -0.0053,
+    -0.0047,
+    -0.0049,
+    -0.0052,
+    -0.0072
+   ],
+   "median_d": -0.0052,
+   "median_d_us": -5.21,
+   "median_main2": -0.0008,
+   "median_ctl1": 0.0004,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 0,
+   "band_width": [
+    0.002,
+    0.0019,
+    0.0018,
+    0.0017,
+    0.0032
+   ],
+   "median_excess_over_band_us": -6.58,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content from",
+   "field": "content",
+   "main_median": 0.1591,
+   "T": 0.01,
+   "d": [
+    -0.0028,
+    -0.0057,
+    -0.0047,
+    -0.007,
+    -0.007
+   ],
+   "median_d": -0.0057,
+   "median_d_us": -5.75,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0013,
+   "median_ctl2": -0.0003,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0021,
+    0.0016,
+    0.0009,
+    0.002,
+    0.0024
+   ],
+   "median_excess_over_band_us": -6.0,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content were",
+   "field": "content",
+   "main_median": 0.1613,
+   "T": 0.01,
+   "d": [
+    -0.0055,
+    -0.0066,
+    -0.0051,
+    -0.007,
+    -0.0063
+   ],
+   "median_d": -0.0063,
+   "median_d_us": -6.33,
+   "median_main2": -0.0003,
+   "median_ctl1": -0.002,
+   "median_ctl2": -0.0008,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0021,
+    0.0022,
+    0.0018,
+    0.0025,
+    0.002
+   ],
+   "median_excess_over_band_us": -6.58,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content badamo",
+   "field": "content",
+   "main_median": 0.0127,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0002,
+    0.0001,
+    0.0002,
+    0.0
+   ],
+   "median_d": 0.0001,
+   "median_d_us": 0.13,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0001,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0003,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content belohu",
+   "field": "content",
+   "main_median": 0.0125,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0
+   ],
+   "median_d": 0.0001,
+   "median_d_us": 0.13,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0001,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content from badamo",
+   "field": "content",
+   "main_median": 0.1677,
+   "T": 0.01,
+   "d": [
+    -0.005,
+    -0.0059,
+    -0.0051,
+    -0.0072,
+    -0.0057
+   ],
+   "median_d": -0.0057,
+   "median_d_us": -5.71,
+   "median_main2": -0.0003,
+   "median_ctl1": -0.0003,
+   "median_ctl2": -0.0007,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0016,
+    0.0018,
+    0.001,
+    0.0022,
+    0.001
+   ],
+   "median_excess_over_band_us": -6.58,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content were belohu",
+   "field": "content",
+   "main_median": 0.1705,
+   "T": 0.01,
+   "d": [
+    -0.0048,
+    -0.0058,
+    -0.005,
+    -0.007,
+    -0.0054
+   ],
+   "median_d": -0.0054,
+   "median_d_us": -5.42,
+   "median_main2": -0.0007,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0006,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0018,
+    0.001,
+    0.0015,
+    0.0026,
+    0.0007
+   ],
+   "median_excess_over_band_us": -5.88,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "content doc 00000",
+   "field": "content",
+   "main_median": 0.1174,
+   "T": 0.01,
+   "d": [
+    -0.0107,
+    -0.0092,
+    -0.0066,
+    -0.0148,
+    -0.0078
+   ],
+   "median_d": -0.0092,
+   "median_d_us": -9.21,
+   "median_main2": -0.0023,
+   "median_ctl1": -0.0021,
+   "median_ctl2": 0.0008,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0043,
+    0.0019,
+    0.0018,
+    0.0083,
+    0.0033
+   ],
+   "median_excess_over_band_us": -10.04,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename bazecha",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0,
+    0.0001,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename benico",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename system",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0002,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename hashing",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename hybrid retrieval",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0003
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename retrieval hybrid",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.46,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename system systems",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename systems system",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": 0.0001,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.38,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename from",
+   "field": "filename",
+   "main_median": 0.0025,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename were",
+   "field": "filename",
+   "main_median": 0.0025,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0003,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename badamo",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0004,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename belohu",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename from badamo",
+   "field": "filename",
+   "main_median": 0.0029,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0004,
+    0.0004
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.42,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.33,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename were belohu",
+   "field": "filename",
+   "main_median": 0.0028,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0005,
+    0.0004
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.42,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.33,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "filename doc 00000",
+   "field": "filename",
+   "main_median": 0.2412,
+   "T": 0.01,
+   "d": [
+    0.0038,
+    0.0043,
+    0.0044,
+    0.0032,
+    0.0002
+   ],
+   "median_d": 0.0038,
+   "median_d_us": 3.83,
+   "median_main2": -0.0004,
+   "median_ctl1": 0.0026,
+   "median_ctl2": -0.0071,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0084,
+    0.0097,
+    0.0095,
+    0.009,
+    0.0085
+   ],
+   "median_excess_over_band_us": 0.79,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 0.6,
+   "within_prediction": false
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both bazecha",
+   "field": "both",
+   "main_median": 0.1092,
+   "T": 0.01,
+   "d": [
+    -0.0008,
+    0.0006,
+    -0.0016,
+    -0.0008,
+    -0.0006
+   ],
+   "median_d": -0.0008,
+   "median_d_us": -0.75,
+   "median_main2": -0.0002,
+   "median_ctl1": -0.0018,
+   "median_ctl2": -0.0056,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0047,
+    0.0063,
+    0.0069,
+    0.0056,
+    0.006
+   ],
+   "median_excess_over_band_us": -0.79,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both benico",
+   "field": "both",
+   "main_median": 0.1035,
+   "T": 0.01,
+   "d": [
+    -0.0004,
+    -0.0007,
+    -0.0004,
+    -0.0011,
+    -0.002
+   ],
+   "median_d": -0.0007,
+   "median_d_us": -0.71,
+   "median_main2": -0.0005,
+   "median_ctl1": -0.0022,
+   "median_ctl2": -0.0051,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0041,
+    0.0064,
+    0.0051,
+    0.0052,
+    0.0065
+   ],
+   "median_excess_over_band_us": -0.71,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both system",
+   "field": "both",
+   "main_median": 0.2162,
+   "T": 0.01,
+   "d": [
+    -0.0018,
+    0.0,
+    -0.0,
+    -0.0014,
+    -0.0007
+   ],
+   "median_d": -0.0007,
+   "median_d_us": -0.67,
+   "median_main2": 0.0004,
+   "median_ctl1": 0.001,
+   "median_ctl2": -0.0003,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0017,
+    0.0239,
+    0.0024,
+    0.001,
+    0.0024
+   ],
+   "median_excess_over_band_us": -1.92,
+   "fails": "no",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both hashing",
+   "field": "both",
+   "main_median": 0.1917,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0013,
+    0.0002,
+    0.0002,
+    0.0001
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.21,
+   "median_main2": -0.0001,
+   "median_ctl1": 0.0004,
+   "median_ctl2": -0.0035,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0039,
+    0.0188,
+    0.0037,
+    0.004,
+    0.0043
+   ],
+   "median_excess_over_band_us": -0.17,
+   "fails": "no",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both hybrid retrieval",
+   "field": "both",
+   "main_median": 0.1565,
+   "T": 0.01,
+   "d": [
+    -0.0003,
+    0.0015,
+    0.001,
+    0.0008,
+    -0.0007
+   ],
+   "median_d": 0.0008,
+   "median_d_us": 0.75,
+   "median_main2": 0.0003,
+   "median_ctl1": -0.0005,
+   "median_ctl2": -0.0047,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0047,
+    0.0201,
+    0.0053,
+    0.0043,
+    0.0094
+   ],
+   "median_excess_over_band_us": -0.29,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both retrieval hybrid",
+   "field": "both",
+   "main_median": 0.1565,
+   "T": 0.01,
+   "d": [
+    0.001,
+    0.001,
+    0.0005,
+    0.0005,
+    -0.0007
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": -0.0002,
+   "median_ctl1": -0.0005,
+   "median_ctl2": -0.0043,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0035,
+    0.0047,
+    0.0043,
+    0.0045,
+    0.0055
+   ],
+   "median_excess_over_band_us": 0.33,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both system systems",
+   "field": "both",
+   "main_median": 0.2518,
+   "T": 0.01,
+   "d": [
+    -0.0046,
+    -0.0029,
+    -0.0025,
+    -0.0057,
+    -0.0047
+   ],
+   "median_d": -0.0046,
+   "median_d_us": -4.63,
+   "median_main2": -0.0005,
+   "median_ctl1": 0.0009,
+   "median_ctl2": -0.0015,
+   "above_band_runs": 0,
+   "band_width": [
+    0.002,
+    0.0047,
+    0.0021,
+    0.0015,
+    0.0044
+   ],
+   "median_excess_over_band_us": -5.54,
+   "fails": "no",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both systems system",
+   "field": "both",
+   "main_median": 0.2518,
+   "T": 0.01,
+   "d": [
+    -0.0053,
+    -0.004,
+    -0.0039,
+    -0.0058,
+    -0.0058
+   ],
+   "median_d": -0.0053,
+   "median_d_us": -5.33,
+   "median_main2": -0.0009,
+   "median_ctl1": 0.0005,
+   "median_ctl2": -0.0015,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0015,
+    0.0056,
+    0.0009,
+    0.0036,
+    0.0022
+   ],
+   "median_excess_over_band_us": -5.75,
+   "fails": "no",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both from",
+   "field": "both",
+   "main_median": 0.3063,
+   "T": 0.01,
+   "d": [
+    0.0009,
+    0.0005,
+    0.0013,
+    -0.001,
+    -0.002
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.54,
+   "median_main2": -0.0003,
+   "median_ctl1": -0.0008,
+   "median_ctl2": -0.0105,
+   "above_band_runs": 3,
+   "band_width": [
+    0.007,
+    0.0217,
+    0.0085,
+    0.0105,
+    0.0115
+   ],
+   "median_excess_over_band_us": 0.13,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both were",
+   "field": "both",
+   "main_median": 0.3082,
+   "T": 0.01,
+   "d": [
+    0.0006,
+    0.001,
+    0.001,
+    -0.0018,
+    -0.0003
+   ],
+   "median_d": 0.0006,
+   "median_d_us": 0.62,
+   "median_main2": -0.0005,
+   "median_ctl1": -0.001,
+   "median_ctl2": -0.0081,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0055,
+    0.0105,
+    0.0049,
+    0.0081,
+    0.0087
+   ],
+   "median_excess_over_band_us": 0.13,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both badamo",
+   "field": "both",
+   "main_median": 0.1077,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    -0.001,
+    -0.0003,
+    -0.001,
+    -0.0001
+   ],
+   "median_d": -0.0003,
+   "median_d_us": -0.29,
+   "median_main2": -0.0003,
+   "median_ctl1": -0.0019,
+   "median_ctl2": -0.0056,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0027,
+    0.006,
+    0.0059,
+    0.0058,
+    0.0093
+   ],
+   "median_excess_over_band_us": -1.0,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both belohu",
+   "field": "both",
+   "main_median": 0.1076,
+   "T": 0.01,
+   "d": [
+    -0.0005,
+    -0.0004,
+    -0.0001,
+    -0.0005,
+    -0.0002
+   ],
+   "median_d": -0.0004,
+   "median_d_us": -0.37,
+   "median_main2": 0.0,
+   "median_ctl1": -0.001,
+   "median_ctl2": -0.0048,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0055,
+    0.005,
+    0.004,
+    0.0072,
+    0.0077
+   ],
+   "median_excess_over_band_us": -0.54,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both from badamo",
+   "field": "both",
+   "main_median": 0.3137,
+   "T": 0.01,
+   "d": [
+    0.0018,
+    0.0002,
+    0.005,
+    -0.0008,
+    -0.0014
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.25,
+   "median_main2": -0.0004,
+   "median_ctl1": -0.0006,
+   "median_ctl2": -0.0093,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0056,
+    0.0093,
+    0.0084,
+    0.0126,
+    0.0125
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both were belohu",
+   "field": "both",
+   "main_median": 0.3216,
+   "T": 0.01,
+   "d": [
+    0.0013,
+    0.0021,
+    0.0023,
+    -0.0017,
+    -0.001
+   ],
+   "median_d": 0.0013,
+   "median_d_us": 1.33,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0014,
+   "median_ctl2": -0.008,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0062,
+    0.0087,
+    0.008,
+    0.0105,
+    0.0119
+   ],
+   "median_excess_over_band_us": 0.58,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": false
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "both doc 00000",
+   "field": "both",
+   "main_median": 0.3337,
+   "T": 0.01,
+   "d": [
+    0.0087,
+    0.0043,
+    0.0073,
+    -0.0003,
+    0.0017
+   ],
+   "median_d": 0.0043,
+   "median_d_us": 4.29,
+   "median_main2": -0.0002,
+   "median_ctl1": 0.0032,
+   "median_ctl2": -0.0093,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0075,
+    0.01,
+    0.0097,
+    0.0186,
+    0.0101
+   ],
+   "median_excess_over_band_us": 2.08,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": false
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find words from",
+   "field": "find",
+   "main_median": 3.0218,
+   "T": 0.01,
+   "d": [
+    0.0137,
+    0.0266,
+    -0.0025,
+    -0.0004,
+    -0.023
+   ],
+   "median_d": -0.0004,
+   "median_d_us": -0.42,
+   "median_main2": 0.0142,
+   "median_ctl1": 0.0023,
+   "median_ctl2": -0.0207,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0238,
+    0.0215,
+    0.0232,
+    0.0354,
+    0.1032
+   ],
+   "median_excess_over_band_us": -3.13,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find words badamo",
+   "field": "find",
+   "main_median": 0.0224,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "median_d": 0.0,
+   "median_d_us": 0.04,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0003,
+    0.0017
+   ],
+   "median_excess_over_band_us": -0.0,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find words from badamo",
+   "field": "find",
+   "main_median": 0.0386,
+   "T": 0.01,
+   "d": [
+    0.0025,
+    0.0021,
+    -0.0004,
+    0.0006,
+    0.0051
+   ],
+   "median_d": 0.0021,
+   "median_d_us": 2.08,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0027,
+   "median_ctl2": 0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0041,
+    0.0018,
+    0.004,
+    0.002,
+    0.0048
+   ],
+   "median_excess_over_band_us": 0.58,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find words doc 00000",
+   "field": "find",
+   "main_median": 0.002,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0,
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "median_d": 0.0,
+   "median_d_us": 0.04,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0,
+    0.0002
+   ],
+   "median_excess_over_band_us": -0.04,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find phrase barigo bejoju becoco",
+   "field": "find",
+   "main_median": 0.0045,
+   "T": 0.01,
+   "d": [
+    -0.0,
+    0.0,
+    -0.0,
+    -0.0001,
+    0.0001
+   ],
+   "median_d": -0.0,
+   "median_d_us": -0.04,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0001,
+    0.0,
+    0.0004
+   ],
+   "median_excess_over_band_us": -0.04,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find phrase bahuki begeno bakucu",
+   "field": "find",
+   "main_median": 0.0044,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0,
+    -0.0,
+    -0.0,
+    0.0001
+   ],
+   "median_d": 0.0,
+   "median_d_us": 0.0,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0004
+   ],
+   "median_excess_over_band_us": -0.04,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find phrase with befewho with",
+   "field": "find",
+   "main_median": 0.0211,
+   "T": 0.01,
+   "d": [
+    0.0087,
+    0.0031,
+    0.005,
+    0.0043,
+    0.0032
+   ],
+   "median_d": 0.0043,
+   "median_d_us": 4.29,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0025,
+   "median_ctl2": -0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0012,
+    0.0032,
+    0.0059,
+    0.0009,
+    0.0025
+   ],
+   "median_excess_over_band_us": 3.17,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find prefix bada*",
+   "field": "find",
+   "main_median": 0.8007,
+   "T": 0.01,
+   "d": [
+    0.0072,
+    0.0034,
+    0.0032,
+    -0.0019,
+    -0.0049
+   ],
+   "median_d": 0.0032,
+   "median_d_us": 3.21,
+   "median_main2": 0.003,
+   "median_ctl1": -0.0025,
+   "median_ctl2": -0.0051,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0054,
+    0.0075,
+    0.0058,
+    0.0054,
+    0.044
+   ],
+   "median_excess_over_band_us": -0.46,
+   "fails": "no"
+  },
+  {
+   "corpus": "timing-10k",
+   "cell": "find prefix belo*",
+   "field": "find",
+   "main_median": 0.7993,
+   "T": 0.01,
+   "d": [
+    -0.0017,
+    -0.0001,
+    0.006,
+    -0.0023,
+    -0.0042
+   ],
+   "median_d": -0.0017,
+   "median_d_us": -1.67,
+   "median_main2": 0.0007,
+   "median_ctl1": -0.0024,
+   "median_ctl2": -0.0045,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0022,
+    0.0059,
+    0.007,
+    0.0048,
+    0.0405
+   ],
+   "median_excess_over_band_us": -2.67,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content bazecha",
+   "field": "content",
+   "main_median": 0.01,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0004,
+    0.0002,
+    0.0001,
+    0.0046
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.37,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0001,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0005,
+    0.0002,
+    0.0005,
+    0.0002,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content benico",
+   "field": "content",
+   "main_median": 0.011,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0008,
+    0.0002,
+    0.0004,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0004,
+   "median_ctl2": 0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0003,
+    0.0006,
+    0.0004,
+    0.0001,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.17,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content system",
+   "field": "content",
+   "main_median": 0.0759,
+   "T": 0.01,
+   "d": [
+    -0.0011,
+    -0.0009,
+    -0.0007,
+    -0.001,
+    -0.0009
+   ],
+   "median_d": -0.0009,
+   "median_d_us": -0.92,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0005,
+   "median_ctl2": -0.0004,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0009,
+    0.001,
+    0.001,
+    0.0013,
+    0.0008
+   ],
+   "median_excess_over_band_us": -1.42,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content hashing",
+   "field": "content",
+   "main_median": 0.0275,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0005,
+    0.0004,
+    0.0001,
+    -0.0002
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.38,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0005,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0003,
+    0.0003,
+    0.001,
+    0.0006,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.08,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content hybrid retrieval",
+   "field": "content",
+   "main_median": 0.0168,
+   "T": 0.01,
+   "d": [
+    -0.0004,
+    -0.0002,
+    0.0003,
+    -0.0004,
+    -0.0005
+   ],
+   "median_d": -0.0004,
+   "median_d_us": -0.37,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0001,
+   "median_ctl2": -0.0002,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0003,
+    0.0007,
+    0.0006,
+    0.0002,
+    0.0005
+   ],
+   "median_excess_over_band_us": -0.54,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content retrieval hybrid",
+   "field": "content",
+   "main_median": 0.0167,
+   "T": 0.01,
+   "d": [
+    -0.0003,
+    -0.0002,
+    0.0005,
+    -0.0005,
+    0.0009
+   ],
+   "median_d": -0.0002,
+   "median_d_us": -0.17,
+   "median_main2": -0.0001,
+   "median_ctl1": 0.0002,
+   "median_ctl2": -0.0005,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0007,
+    0.0007,
+    0.0006,
+    0.0005,
+    0.0002
+   ],
+   "median_excess_over_band_us": -0.33,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content system systems",
+   "field": "content",
+   "main_median": 0.0914,
+   "T": 0.01,
+   "d": [
+    -0.0005,
+    -0.0007,
+    -0.001,
+    -0.0003,
+    -0.0012
+   ],
+   "median_d": -0.0007,
+   "median_d_us": -0.67,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0008,
+   "median_ctl2": -0.0007,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0016,
+    0.0011,
+    0.0016,
+    0.0078,
+    0.0014
+   ],
+   "median_excess_over_band_us": -1.5,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content systems system",
+   "field": "content",
+   "main_median": 0.0918,
+   "T": 0.01,
+   "d": [
+    -0.0003,
+    -0.0008,
+    -0.0005,
+    -0.0005,
+    -0.0015
+   ],
+   "median_d": -0.0005,
+   "median_d_us": -0.54,
+   "median_main2": 0.0002,
+   "median_ctl1": 0.0005,
+   "median_ctl2": -0.0007,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0008,
+    0.001,
+    0.0017,
+    0.008,
+    0.0011
+   ],
+   "median_excess_over_band_us": -1.5,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content the",
+   "field": "content",
+   "main_median": 0.2642,
+   "T": 0.01,
+   "d": [
+    -0.0098,
+    -0.011,
+    -0.0099,
+    -0.0114,
+    -0.0128
+   ],
+   "median_d": -0.011,
+   "median_d_us": -11.04,
+   "median_main2": -0.0002,
+   "median_ctl1": -0.0015,
+   "median_ctl2": -0.0019,
+   "above_band_runs": 0,
+   "band_width": [
+    0.002,
+    0.0023,
+    0.0015,
+    0.0117,
+    0.0055
+   ],
+   "median_excess_over_band_us": -11.04,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content have",
+   "field": "content",
+   "main_median": 0.1804,
+   "T": 0.01,
+   "d": [
+    -0.0063,
+    -0.0067,
+    -0.0062,
+    -0.0063,
+    -0.008
+   ],
+   "median_d": -0.0063,
+   "median_d_us": -6.29,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0007,
+   "median_ctl2": -0.0006,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0012,
+    0.0034,
+    0.0008,
+    0.0031,
+    0.0033
+   ],
+   "median_excess_over_band_us": -8.04,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content within",
+   "field": "content",
+   "main_median": 0.0975,
+   "T": 0.01,
+   "d": [
+    -0.002,
+    -0.001,
+    -0.0018,
+    -0.0015,
+    -0.0024
+   ],
+   "median_d": -0.0018,
+   "median_d_us": -1.75,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0006,
+   "median_ctl2": -0.0008,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0015,
+    0.0011,
+    0.0016,
+    0.0048,
+    0.0016
+   ],
+   "median_excess_over_band_us": -2.67,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content drink",
+   "field": "content",
+   "main_median": 0.0646,
+   "T": 0.01,
+   "d": [
+    -0.0011,
+    -0.0005,
+    -0.0007,
+    -0.0011,
+    -0.0005
+   ],
+   "median_d": -0.0007,
+   "median_d_us": -0.71,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0002,
+   "median_ctl2": -0.0006,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0012,
+    0.0006,
+    0.001,
+    0.0037,
+    0.0005
+   ],
+   "median_excess_over_band_us": -1.12,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content the within",
+   "field": "content",
+   "main_median": 0.3501,
+   "T": 0.01,
+   "d": [
+    -0.0114,
+    -0.012,
+    -0.0113,
+    -0.0128,
+    -0.0153
+   ],
+   "median_d": -0.012,
+   "median_d_us": -12.0,
+   "median_main2": 0.0002,
+   "median_ctl1": 0.0026,
+   "median_ctl2": -0.0006,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0058,
+    0.0032,
+    0.0025,
+    0.0242,
+    0.004
+   ],
+   "median_excess_over_band_us": -15.25,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content have drink",
+   "field": "content",
+   "main_median": 0.2968,
+   "T": 0.01,
+   "d": [
+    -0.0023,
+    -0.0069,
+    -0.006,
+    -0.0012,
+    -0.0064
+   ],
+   "median_d": -0.006,
+   "median_d_us": -5.96,
+   "median_main2": -0.0013,
+   "median_ctl1": 0.0031,
+   "median_ctl2": -0.0013,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0059,
+    0.0044,
+    0.0046,
+    0.0102,
+    0.0065
+   ],
+   "median_excess_over_band_us": -7.54,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "content across lengthy seeming 04276",
+   "field": "content",
+   "main_median": 0.216,
+   "T": 0.01,
+   "d": [
+    0.0006,
+    0.0008,
+    0.0017,
+    0.0085,
+    -0.0012
+   ],
+   "median_d": 0.0008,
+   "median_d_us": 0.83,
+   "median_main2": -0.0018,
+   "median_ctl1": 0.0026,
+   "median_ctl2": 0.0008,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0038,
+    0.0032,
+    0.0028,
+    0.0055,
+    0.0039
+   ],
+   "median_excess_over_band_us": -1.25,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename bazecha",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0003,
+    0.0001,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename benico",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0005
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0003,
+    0.0,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename system",
+   "field": "filename",
+   "main_median": 0.2815,
+   "T": 0.01,
+   "d": [
+    -0.0003,
+    0.0019,
+    -0.004,
+    -0.0031,
+    0.0027
+   ],
+   "median_d": -0.0003,
+   "median_d_us": -0.33,
+   "median_main2": 0.0001,
+   "median_ctl1": -0.0053,
+   "median_ctl2": -0.0155,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0163,
+    0.0153,
+    0.0152,
+    0.0155,
+    0.0188
+   ],
+   "median_excess_over_band_us": -0.46,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 0.6,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename hashing",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0005,
+    0.0001,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename hybrid retrieval",
+   "field": "filename",
+   "main_median": 0.0031,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0006,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0004,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.46,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename retrieval hybrid",
+   "field": "filename",
+   "main_median": 0.0031,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0006,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0004,
+    0.0,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.5,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename system systems",
+   "field": "filename",
+   "main_median": 0.2885,
+   "T": 0.01,
+   "d": [
+    -0.0014,
+    0.0007,
+    0.0025,
+    0.012,
+    0.0036
+   ],
+   "median_d": 0.0025,
+   "median_d_us": 2.46,
+   "median_main2": 0.002,
+   "median_ctl1": -0.003,
+   "median_ctl2": -0.0163,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0163,
+    0.0142,
+    0.0156,
+    0.0181,
+    0.0194
+   ],
+   "median_excess_over_band_us": 0.5,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 0.6,
+   "within_prediction": false
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename systems system",
+   "field": "filename",
+   "main_median": 0.2904,
+   "T": 0.01,
+   "d": [
+    -0.0055,
+    0.0015,
+    -0.0054,
+    -0.0055,
+    -0.0021
+   ],
+   "median_d": -0.0054,
+   "median_d_us": -5.37,
+   "median_main2": 0.0016,
+   "median_ctl1": -0.0035,
+   "median_ctl2": -0.014,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0168,
+    0.0146,
+    0.0145,
+    0.0175,
+    0.0167
+   ],
+   "median_excess_over_band_us": -5.54,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 0.6,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename the",
+   "field": "filename",
+   "main_median": 0.0025,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0004,
+    0.0001,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename have",
+   "field": "filename",
+   "main_median": 0.0025,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0004,
+    0.0001,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename within",
+   "field": "filename",
+   "main_median": 0.3175,
+   "T": 0.01,
+   "d": [
+    -0.0021,
+    0.0005,
+    -0.0012,
+    -0.0013,
+    0.0386
+   ],
+   "median_d": -0.0012,
+   "median_d_us": -1.25,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0063,
+   "median_ctl2": -0.0178,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0178,
+    0.0177,
+    0.016,
+    0.019,
+    0.0193
+   ],
+   "median_excess_over_band_us": -1.58,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 0.6,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename drink",
+   "field": "filename",
+   "main_median": 0.2,
+   "T": 0.01,
+   "d": [
+    -0.0002,
+    0.0016,
+    -0.0007,
+    -0.0024,
+    0.0279
+   ],
+   "median_d": -0.0002,
+   "median_d_us": -0.17,
+   "median_main2": 0.0004,
+   "median_ctl1": -0.0042,
+   "median_ctl2": -0.0107,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0107,
+    0.0104,
+    0.0104,
+    0.0127,
+    0.012
+   ],
+   "median_excess_over_band_us": -0.17,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 0.6,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename the within",
+   "field": "filename",
+   "main_median": 0.3196,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0012,
+    -0.0013,
+    -0.003,
+    0.0413
+   ],
+   "median_d": 0.0,
+   "median_d_us": 0.04,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0075,
+   "median_ctl2": -0.0193,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0196,
+    0.0174,
+    0.0177,
+    0.0196,
+    0.0219
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename have drink",
+   "field": "filename",
+   "main_median": 0.2036,
+   "T": 0.01,
+   "d": [
+    -0.0008,
+    0.0004,
+    -0.0006,
+    -0.0008,
+    0.0251
+   ],
+   "median_d": -0.0006,
+   "median_d_us": -0.58,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0046,
+   "median_ctl2": -0.0117,
+   "above_band_runs": 2,
+   "band_width": [
+    0.012,
+    0.0113,
+    0.0115,
+    0.0125,
+    0.013
+   ],
+   "median_excess_over_band_us": -0.79,
+   "fails": "no",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "filename across lengthy seeming 04276",
+   "field": "filename",
+   "main_median": 0.3396,
+   "T": 0.01,
+   "d": [
+    0.0032,
+    0.0033,
+    0.0008,
+    -0.0022,
+    0.0363
+   ],
+   "median_d": 0.0032,
+   "median_d_us": 3.21,
+   "median_main2": 0.0013,
+   "median_ctl1": -0.0042,
+   "median_ctl2": -0.013,
+   "above_band_runs": 3,
+   "band_width": [
+    0.013,
+    0.0142,
+    0.014,
+    0.0166,
+    0.0166
+   ],
+   "median_excess_over_band_us": 0.37,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 0.6,
+   "within_prediction": false
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both bazecha",
+   "field": "both",
+   "main_median": 0.0121,
+   "T": 0.01,
+   "d": [
+    0.0006,
+    0.0005,
+    0.0,
+    0.0014,
+    0.0008
+   ],
+   "median_d": 0.0006,
+   "median_d_us": 0.58,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0002,
+   "median_ctl2": 0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0008,
+    0.0002,
+    0.0007,
+    0.0005,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both benico",
+   "field": "both",
+   "main_median": 0.0131,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0,
+    0.0011,
+    0.0002
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0002,
+   "median_ctl2": -0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0007,
+    0.0004,
+    0.0001,
+    0.0005,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.08,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both system",
+   "field": "both",
+   "main_median": 0.356,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0028,
+    -0.0009,
+    -0.0016,
+    0.028
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.37,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0018,
+   "median_ctl2": -0.0146,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0146,
+    0.0158,
+    0.0139,
+    0.0176,
+    0.017
+   ],
+   "median_excess_over_band_us": 0.37,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both hashing",
+   "field": "both",
+   "main_median": 0.1815,
+   "T": 0.01,
+   "d": [
+    -0.0001,
+    0.002,
+    0.0012,
+    -0.0006,
+    0.0152
+   ],
+   "median_d": 0.0012,
+   "median_d_us": 1.25,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0005,
+   "median_ctl2": -0.008,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0096,
+    0.0066,
+    0.0071,
+    0.008,
+    0.0173
+   ],
+   "median_excess_over_band_us": 0.33,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both hybrid retrieval",
+   "field": "both",
+   "main_median": 0.0193,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0001
+   ],
+   "median_d": 0.0001,
+   "median_d_us": 0.08,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0001,
+   "median_ctl2": -0.0002,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0006,
+    0.0004,
+    0.001,
+    0.0002,
+    0.0009
+   ],
+   "median_excess_over_band_us": -0.08,
+   "fails": "no",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both retrieval hybrid",
+   "field": "both",
+   "main_median": 0.0192,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0008,
+    0.0013,
+    0.0007,
+    0.0013
+   ],
+   "median_d": 0.0008,
+   "median_d_us": 0.79,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0005,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0006,
+    0.0007,
+    0.001,
+    0.0005,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both system systems",
+   "field": "both",
+   "main_median": 0.3745,
+   "T": 0.01,
+   "d": [
+    0.002,
+    0.005,
+    0.0001,
+    -0.0015,
+    0.0185
+   ],
+   "median_d": 0.002,
+   "median_d_us": 1.96,
+   "median_main2": 0.0013,
+   "median_ctl1": 0.0014,
+   "median_ctl2": -0.012,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0135,
+    0.0119,
+    0.0125,
+    0.0164,
+    0.0153
+   ],
+   "median_excess_over_band_us": 0.54,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": false
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both systems system",
+   "field": "both",
+   "main_median": 0.3758,
+   "T": 0.01,
+   "d": [
+    0.0016,
+    0.0043,
+    0.0008,
+    -0.0019,
+    0.0068
+   ],
+   "median_d": 0.0016,
+   "median_d_us": 1.58,
+   "median_main2": 0.0003,
+   "median_ctl1": 0.0022,
+   "median_ctl2": -0.0131,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0152,
+    0.0118,
+    0.0139,
+    0.0139,
+    0.0322
+   ],
+   "median_excess_over_band_us": -1.38,
+   "fails": "no",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": false
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both the",
+   "field": "both",
+   "main_median": 0.5035,
+   "T": 0.01,
+   "d": [
+    0.0047,
+    0.0055,
+    0.0034,
+    -0.0079,
+    0.0167
+   ],
+   "median_d": 0.0047,
+   "median_d_us": 4.67,
+   "median_main2": 0.0018,
+   "median_ctl1": -0.0002,
+   "median_ctl2": -0.0102,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0131,
+    0.0116,
+    0.008,
+    0.0176,
+    0.012
+   ],
+   "median_excess_over_band_us": 1.96,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": false
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both have",
+   "field": "both",
+   "main_median": 0.3411,
+   "T": 0.01,
+   "d": [
+    0.0047,
+    0.0032,
+    0.0011,
+    -0.0134,
+    0.015
+   ],
+   "median_d": 0.0032,
+   "median_d_us": 3.17,
+   "median_main2": 0.0011,
+   "median_ctl1": 0.001,
+   "median_ctl2": -0.0061,
+   "above_band_runs": 3,
+   "band_width": [
+    0.006,
+    0.0055,
+    0.0092,
+    0.0222,
+    0.008
+   ],
+   "median_excess_over_band_us": 1.79,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": false
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both within",
+   "field": "both",
+   "main_median": 0.4429,
+   "T": 0.01,
+   "d": [
+    0.0032,
+    0.002,
+    0.0003,
+    0.0009,
+    0.0166
+   ],
+   "median_d": 0.002,
+   "median_d_us": 2.04,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0008,
+   "median_ctl2": -0.0145,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0146,
+    0.0127,
+    0.0153,
+    0.0173,
+    0.0204
+   ],
+   "median_excess_over_band_us": 1.83,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": false
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both drink",
+   "field": "both",
+   "main_median": 0.3692,
+   "T": 0.01,
+   "d": [
+    -0.0023,
+    0.0004,
+    -0.0041,
+    -0.0074,
+    0.0181
+   ],
+   "median_d": -0.0023,
+   "median_d_us": -2.29,
+   "median_main2": 0.0008,
+   "median_ctl1": -0.0045,
+   "median_ctl2": -0.0149,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0149,
+    0.0143,
+    0.0162,
+    0.019,
+    0.0198
+   ],
+   "median_excess_over_band_us": -2.29,
+   "fails": "no",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both the within",
+   "field": "both",
+   "main_median": 0.6512,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    -0.0016,
+    -0.0026,
+    -0.0056,
+    0.0271
+   ],
+   "median_d": -0.0016,
+   "median_d_us": -1.58,
+   "median_main2": -0.0004,
+   "median_ctl1": -0.0001,
+   "median_ctl2": -0.0136,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0174,
+    0.0104,
+    0.0159,
+    0.0139,
+    0.0168
+   ],
+   "median_excess_over_band_us": -2.67,
+   "fails": "no",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both have drink",
+   "field": "both",
+   "main_median": 0.5636,
+   "T": 0.01,
+   "d": [
+    0.0029,
+    0.005,
+    -0.0009,
+    -0.0037,
+    0.0284
+   ],
+   "median_d": 0.0029,
+   "median_d_us": 2.92,
+   "median_main2": 0.0015,
+   "median_ctl1": -0.0012,
+   "median_ctl2": -0.0137,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0611,
+    0.0142,
+    0.0124,
+    0.0166,
+    0.018
+   ],
+   "median_excess_over_band_us": -3.71,
+   "fails": "no",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": false
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "both across lengthy seeming 04276",
+   "field": "both",
+   "main_median": 0.527,
+   "T": 0.01,
+   "d": [
+    0.013,
+    0.0077,
+    0.0181,
+    0.0076,
+    0.041
+   ],
+   "median_d": 0.013,
+   "median_d_us": 12.96,
+   "median_main2": 0.0036,
+   "median_ctl1": 0.0134,
+   "median_ctl2": -0.0057,
+   "above_band_runs": 3,
+   "band_width": [
+    0.049,
+    0.0157,
+    0.0195,
+    0.0124,
+    0.0164
+   ],
+   "median_excess_over_band_us": 1.21,
+   "fails": "(1)(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": false
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find words the",
+   "field": "find",
+   "main_median": 14.29,
+   "T": 0.1429,
+   "d": [
+    0.0708,
+    0.0512,
+    -0.0907,
+    0.1075,
+    0.2132
+   ],
+   "median_d": 0.0708,
+   "median_d_us": 70.83,
+   "median_main2": 0.0231,
+   "median_ctl1": 0.1122,
+   "median_ctl2": -0.0601,
+   "above_band_runs": 2,
+   "band_width": [
+    0.2882,
+    0.1455,
+    0.367,
+    0.1815,
+    0.1789
+   ],
+   "median_excess_over_band_us": -61.0,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find words within",
+   "field": "find",
+   "main_median": 1.28,
+   "T": 0.01,
+   "d": [
+    0.0068,
+    0.0077,
+    -0.0002,
+    0.0015,
+    0.0327
+   ],
+   "median_d": 0.0068,
+   "median_d_us": 6.75,
+   "median_main2": 0.0012,
+   "median_ctl1": -0.0058,
+   "median_ctl2": -0.0056,
+   "above_band_runs": 2,
+   "band_width": [
+    0.008,
+    0.0075,
+    0.0416,
+    0.0114,
+    0.0792
+   ],
+   "median_excess_over_band_us": -0.92,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find words the within",
+   "field": "find",
+   "main_median": 2.212,
+   "T": 0.01,
+   "d": [
+    0.0016,
+    -0.0082,
+    -0.0225,
+    0.0353,
+    0.0361
+   ],
+   "median_d": 0.0016,
+   "median_d_us": 1.58,
+   "median_main2": 0.0036,
+   "median_ctl1": 0.0047,
+   "median_ctl2": 0.0007,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0332,
+    0.0131,
+    0.0574,
+    0.0166,
+    0.0065
+   ],
+   "median_excess_over_band_us": -21.33,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find words across lengthy seeming 04276",
+   "field": "find",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0004
+   ],
+   "median_d": 0.0,
+   "median_d_us": 0.04,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0003,
+    0.0,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find phrase you get bowls",
+   "field": "find",
+   "main_median": 0.1072,
+   "T": 0.01,
+   "d": [
+    -0.0061,
+    -0.0033,
+    0.0224,
+    0.0145,
+    0.0244
+   ],
+   "median_d": 0.0145,
+   "median_d_us": 14.54,
+   "median_main2": 0.0105,
+   "median_ctl1": -0.0025,
+   "median_ctl2": 0.0056,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0157,
+    0.0118,
+    0.0129,
+    0.0131,
+    0.0129
+   ],
+   "median_excess_over_band_us": 4.0,
+   "fails": "(1)(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find phrase partly all rougher",
+   "field": "find",
+   "main_median": 0.0287,
+   "T": 0.01,
+   "d": [
+    0.0092,
+    0.0063,
+    -0.0015,
+    0.0125,
+    0.0103
+   ],
+   "median_d": 0.0092,
+   "median_d_us": 9.17,
+   "median_main2": 0.0001,
+   "median_ctl1": -0.0056,
+   "median_ctl2": -0.0003,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0093,
+    0.0038,
+    0.0087,
+    0.0064,
+    0.0027
+   ],
+   "median_excess_over_band_us": 6.42,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find phrase bottle and orchard",
+   "field": "find",
+   "main_median": 0.1151,
+   "T": 0.01,
+   "d": [
+    0.0066,
+    -0.0343,
+    0.0174,
+    -0.0057,
+    0.0137
+   ],
+   "median_d": 0.0066,
+   "median_d_us": 6.58,
+   "median_main2": -0.0016,
+   "median_ctl1": -0.0112,
+   "median_ctl2": -0.0036,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0275,
+    0.0367,
+    0.0278,
+    0.0289,
+    0.033
+   ],
+   "median_excess_over_band_us": -5.67,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find prefix with*",
+   "field": "find",
+   "main_median": 8.4723,
+   "T": 0.0847,
+   "d": [
+    0.0179,
+    0.01,
+    -0.0319,
+    0.0949,
+    0.3402
+   ],
+   "median_d": 0.0179,
+   "median_d_us": 17.88,
+   "median_main2": -0.015,
+   "median_ctl1": 0.0322,
+   "median_ctl2": -0.0119,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0364,
+    0.0361,
+    0.1281,
+    0.0432,
+    0.2375
+   ],
+   "median_excess_over_band_us": -2.79,
+   "fails": "no"
+  },
+  {
+   "corpus": "prose-10k",
+   "cell": "find prefix drin*",
+   "field": "find",
+   "main_median": 0.3876,
+   "T": 0.01,
+   "d": [
+    0.0033,
+    0.0125,
+    0.0001,
+    0.005,
+    0.0181
+   ],
+   "median_d": 0.005,
+   "median_d_us": 5.0,
+   "median_main2": 0.001,
+   "median_ctl1": -0.0007,
+   "median_ctl2": -0.0009,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0087,
+    0.0021,
+    0.0131,
+    0.0037,
+    0.0057
+   ],
+   "median_excess_over_band_us": 3.5,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content bazecha",
+   "field": "content",
+   "main_median": 0.0033,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.17,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0002,
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content benico",
+   "field": "content",
+   "main_median": 0.0033,
+   "T": 0.01,
+   "d": [
+    0.0,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0005
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.17,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content system",
+   "field": "content",
+   "main_median": 0.0033,
+   "T": 0.01,
+   "d": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0009
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.17,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0001,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0001,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content hashing",
+   "field": "content",
+   "main_median": 0.0041,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0003,
+    0.0007
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 4,
+   "band_width": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content hybrid retrieval",
+   "field": "content",
+   "main_median": 0.0049,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0004,
+    0.0004,
+    0.0003,
+    0.0004
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.37,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0003,
+    0.0004,
+    0.0004,
+    0.0003,
+    0.0004
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content retrieval hybrid",
+   "field": "content",
+   "main_median": 0.0049,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0002
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0004,
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0005
+   ],
+   "median_excess_over_band_us": -0.0,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content system systems",
+   "field": "content",
+   "main_median": 0.0056,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0002,
+    0.0002
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0003,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0004
+   ],
+   "median_excess_over_band_us": -0.04,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content systems system",
+   "field": "content",
+   "main_median": 0.0056,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0003,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_excess_over_band_us": -0.04,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content கீகசை",
+   "field": "content",
+   "main_median": 0.2307,
+   "T": 0.01,
+   "d": [
+    -0.0065,
+    -0.0014,
+    -0.0056,
+    -0.0039,
+    -0.0054
+   ],
+   "median_d": -0.0054,
+   "median_d_us": -5.37,
+   "median_main2": 0.0017,
+   "median_ctl1": -0.0004,
+   "median_ctl2": -0.0007,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0044,
+    0.0026,
+    0.0045,
+    0.003,
+    0.0051
+   ],
+   "median_excess_over_band_us": -6.42,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content டூகனை",
+   "field": "content",
+   "main_median": 0.2281,
+   "T": 0.01,
+   "d": [
+    -0.0022,
+    -0.0046,
+    -0.0064,
+    -0.0065,
+    -0.0019
+   ],
+   "median_d": -0.0046,
+   "median_d_us": -4.62,
+   "median_main2": 0.0014,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.001,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0019,
+    0.0031,
+    0.0007,
+    0.0027,
+    0.0027
+   ],
+   "median_excess_over_band_us": -6.0,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content றூகுஞங்கள்",
+   "field": "content",
+   "main_median": 0.031,
+   "T": 0.01,
+   "d": [
+    -0.0003,
+    0.0002,
+    0.0004,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.21,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0002,
+   "median_ctl2": 0.0,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0005,
+    0.0012,
+    0.0003,
+    0.0004,
+    0.0004
+   ],
+   "median_excess_over_band_us": -0.08,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content சைகீளையில்",
+   "field": "content",
+   "main_median": 0.0329,
+   "T": 0.01,
+   "d": [
+    -0.0002,
+    0.0006,
+    0.0005,
+    -0.0,
+    -0.0003
+   ],
+   "median_d": -0.0,
+   "median_d_us": -0.04,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0005,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0006,
+    0.0012,
+    0.0008,
+    0.0005,
+    0.0011
+   ],
+   "median_excess_over_band_us": -0.17,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content கீகசை றூகுஞங்கள்",
+   "field": "content",
+   "main_median": 0.2895,
+   "T": 0.01,
+   "d": [
+    -0.0019,
+    -0.0054,
+    -0.0057,
+    -0.0035,
+    -0.0029
+   ],
+   "median_d": -0.0035,
+   "median_d_us": -3.5,
+   "median_main2": -0.0023,
+   "median_ctl1": -0.0013,
+   "median_ctl2": -0.0024,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0032,
+    0.007,
+    0.0051,
+    0.0031,
+    0.0053
+   ],
+   "median_excess_over_band_us": -4.71,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content டூகனை சைகீளையில்",
+   "field": "content",
+   "main_median": 0.2995,
+   "T": 0.01,
+   "d": [
+    -0.0018,
+    0.0011,
+    -0.0068,
+    -0.0043,
+    -0.0024
+   ],
+   "median_d": -0.0024,
+   "median_d_us": -2.37,
+   "median_main2": -0.0004,
+   "median_ctl1": -0.0022,
+   "median_ctl2": -0.0012,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0045,
+    0.009,
+    0.004,
+    0.0035,
+    0.0015
+   ],
+   "median_excess_over_band_us": -4.04,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "content doc 00000",
+   "field": "content",
+   "main_median": 0.1296,
+   "T": 0.01,
+   "d": [
+    -0.0064,
+    -0.0078,
+    -0.0101,
+    -0.0099,
+    -0.0087
+   ],
+   "median_d": -0.0087,
+   "median_d_us": -8.67,
+   "median_main2": -0.0021,
+   "median_ctl1": -0.0019,
+   "median_ctl2": -0.0016,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0044,
+    0.0034,
+    0.0043,
+    0.0023,
+    0.0027
+   ],
+   "median_excess_over_band_us": -8.67,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename bazecha",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0004
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename benico",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0005
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename system",
+   "field": "filename",
+   "main_median": 0.0026,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0004
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.29,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename hashing",
+   "field": "filename",
+   "main_median": 0.0027,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0001,
+    0.0
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename hybrid retrieval",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0004
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0,
+    0.0001,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename retrieval hybrid",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.46,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename system systems",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0005,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0002,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename systems system",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0004,
+    0.0005,
+    0.0004,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0002,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.46,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename கீகசை",
+   "field": "filename",
+   "main_median": 0.003,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0,
+    0.0002,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename டூகனை",
+   "field": "filename",
+   "main_median": 0.0029,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename றூகுஞங்கள்",
+   "field": "filename",
+   "main_median": 0.0046,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0001,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename சைகீளையில்",
+   "field": "filename",
+   "main_median": 0.0049,
+   "T": 0.01,
+   "d": [
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0002,
+    0.0003
+   ],
+   "median_d": 0.0002,
+   "median_d_us": 0.25,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0,
+    0.0001,
+    0.0,
+    0.0001
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 0.8,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename கீகசை றூகுஞங்கள்",
+   "field": "filename",
+   "main_median": 0.0061,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0004,
+    0.0005
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.42,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0,
+    0.0,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename டூகனை சைகீளையில்",
+   "field": "filename",
+   "main_median": 0.0064,
+   "T": 0.01,
+   "d": [
+    0.0004,
+    0.0005,
+    0.0005,
+    0.0004,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.46,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0,
+   "median_ctl2": -0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0001,
+    0.0001,
+    0.0,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.42,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.0,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "filename doc 00000",
+   "field": "filename",
+   "main_median": 0.6874,
+   "T": 0.01,
+   "d": [
+    0.0061,
+    0.0121,
+    0.01,
+    0.0047,
+    0.0105
+   ],
+   "median_d": 0.01,
+   "median_d_us": 9.96,
+   "median_main2": -0.0012,
+   "median_ctl1": -0.0043,
+   "median_ctl2": -0.0019,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0068,
+    0.0077,
+    0.0043,
+    0.0076,
+    0.0058
+   ],
+   "median_excess_over_band_us": 6.13,
+   "fails": "(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 0.6,
+   "within_prediction": false
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both bazecha",
+   "field": "both",
+   "main_median": 0.0058,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0003,
+    0.0003,
+    0.0002,
+    0.0005
+   ],
+   "median_d": 0.0003,
+   "median_d_us": 0.33,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0002,
+    0.0,
+    0.0001,
+    0.0001,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both benico",
+   "field": "both",
+   "main_median": 0.0056,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0004,
+    0.0003,
+    0.0002,
+    0.0005
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.37,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0002,
+    0.0001,
+    0.0001,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.21,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both system",
+   "field": "both",
+   "main_median": 0.0056,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0003,
+    0.0005,
+    0.0002,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.5,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0001,
+    0.0002,
+    0.0002,
+    0.0001,
+    0.0002
+   ],
+   "median_excess_over_band_us": 0.29,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both hashing",
+   "field": "both",
+   "main_median": 0.0064,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    0.0005,
+    0.0007,
+    0.0005,
+    0.0007
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.54,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0002,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0003,
+    0.0002,
+    0.0003,
+    0.0004,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.37,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both hybrid retrieval",
+   "field": "both",
+   "main_median": 0.0073,
+   "T": 0.01,
+   "d": [
+    0.001,
+    0.0007,
+    0.001,
+    0.0008,
+    0.001
+   ],
+   "median_d": 0.001,
+   "median_d_us": 0.96,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0002,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0003,
+    0.0002,
+    0.0004,
+    0.0005,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.54,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both retrieval hybrid",
+   "field": "both",
+   "main_median": 0.0073,
+   "T": 0.01,
+   "d": [
+    0.001,
+    0.0008,
+    0.001,
+    0.0008,
+    0.001
+   ],
+   "median_d": 0.001,
+   "median_d_us": 0.96,
+   "median_main2": 0.0,
+   "median_ctl1": 0.0003,
+   "median_ctl2": 0.0003,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0003,
+    0.0003,
+    0.0004,
+    0.0004,
+    0.0005
+   ],
+   "median_excess_over_band_us": 0.54,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both system systems",
+   "field": "both",
+   "main_median": 0.008,
+   "T": 0.01,
+   "d": [
+    0.0007,
+    0.0008,
+    0.0008,
+    0.0008,
+    0.0008
+   ],
+   "median_d": 0.0008,
+   "median_d_us": 0.79,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0003,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0003,
+    0.0004,
+    0.0004,
+    0.0005,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.54,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both systems system",
+   "field": "both",
+   "main_median": 0.008,
+   "T": 0.01,
+   "d": [
+    0.0007,
+    0.0008,
+    0.0008,
+    0.0008,
+    0.0009
+   ],
+   "median_d": 0.0008,
+   "median_d_us": 0.79,
+   "median_main2": 0.0001,
+   "median_ctl1": 0.0002,
+   "median_ctl2": 0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0002,
+    0.0004,
+    0.0003,
+    0.0003,
+    0.0003
+   ],
+   "median_excess_over_band_us": 0.58,
+   "fails": "(2)",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both கீகசை",
+   "field": "both",
+   "main_median": 0.7293,
+   "T": 0.01,
+   "d": [
+    -0.0147,
+    -0.0107,
+    -0.0118,
+    -0.0257,
+    -0.01
+   ],
+   "median_d": -0.0118,
+   "median_d_us": -11.83,
+   "median_main2": 0.0016,
+   "median_ctl1": -0.0058,
+   "median_ctl2": -0.0028,
+   "above_band_runs": 0,
+   "band_width": [
+    0.007,
+    0.0125,
+    0.0069,
+    0.0243,
+    0.0058
+   ],
+   "median_excess_over_band_us": -14.67,
+   "fails": "no",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both டூகனை",
+   "field": "both",
+   "main_median": 0.7273,
+   "T": 0.01,
+   "d": [
+    -0.0142,
+    -0.0088,
+    -0.0122,
+    -0.0095,
+    -0.0096
+   ],
+   "median_d": -0.0096,
+   "median_d_us": -9.58,
+   "median_main2": -0.0003,
+   "median_ctl1": -0.0028,
+   "median_ctl2": 0.0008,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0047,
+    0.0091,
+    0.0052,
+    0.0173,
+    0.0035
+   ],
+   "median_excess_over_band_us": -14.58,
+   "fails": "no",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both றூகுஞங்கள்",
+   "field": "both",
+   "main_median": 0.3838,
+   "T": 0.01,
+   "d": [
+    0.004,
+    0.0087,
+    0.0048,
+    0.0035,
+    0.0057
+   ],
+   "median_d": 0.0048,
+   "median_d_us": 4.79,
+   "median_main2": -0.0004,
+   "median_ctl1": -0.0035,
+   "median_ctl2": -0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0036,
+    0.0049,
+    0.0035,
+    0.0073,
+    0.0055
+   ],
+   "median_excess_over_band_us": 4.25,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": false
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both சைகீளையில்",
+   "field": "both",
+   "main_median": 0.3899,
+   "T": 0.01,
+   "d": [
+    0.0041,
+    0.0084,
+    0.0046,
+    0.0046,
+    0.0051
+   ],
+   "median_d": 0.0046,
+   "median_d_us": 4.58,
+   "median_main2": 0.0,
+   "median_ctl1": -0.0035,
+   "median_ctl2": -0.0004,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0035,
+    0.0064,
+    0.0035,
+    0.0063,
+    0.0069
+   ],
+   "median_excess_over_band_us": 4.12,
+   "fails": "(2)",
+   "n_warnings": 1,
+   "predicted_top_us": 1.2,
+   "within_prediction": false
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both கீகசை றூகுஞங்கள்",
+   "field": "both",
+   "main_median": 0.6827,
+   "T": 0.01,
+   "d": [
+    -0.0162,
+    -0.008,
+    -0.0145,
+    -0.0135,
+    -0.0127
+   ],
+   "median_d": -0.0135,
+   "median_d_us": -13.5,
+   "median_main2": -0.0004,
+   "median_ctl1": -0.0042,
+   "median_ctl2": -0.0044,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0048,
+    0.0102,
+    0.0101,
+    0.0127,
+    0.0121
+   ],
+   "median_excess_over_band_us": -15.5,
+   "fails": "no",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both டூகனை சைகீளையில்",
+   "field": "both",
+   "main_median": 0.6868,
+   "T": 0.01,
+   "d": [
+    -0.0153,
+    -0.0073,
+    -0.0165,
+    -0.0026,
+    -0.0115
+   ],
+   "median_d": -0.0115,
+   "median_d_us": -11.46,
+   "median_main2": -0.0031,
+   "median_ctl1": -0.005,
+   "median_ctl2": -0.001,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0046,
+    0.012,
+    0.0118,
+    0.0128,
+    0.0105
+   ],
+   "median_excess_over_band_us": -15.42,
+   "fails": "no",
+   "n_warnings": 2,
+   "predicted_top_us": 1.4,
+   "within_prediction": true
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "both doc 00000",
+   "field": "both",
+   "main_median": 0.7767,
+   "T": 0.01,
+   "d": [
+    0.0108,
+    0.0152,
+    0.0112,
+    0.021,
+    0.0093
+   ],
+   "median_d": 0.0112,
+   "median_d_us": 11.21,
+   "median_main2": 0.0004,
+   "median_ctl1": -0.0033,
+   "median_ctl2": -0.0002,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0052,
+    0.0095,
+    0.0044,
+    0.0099,
+    0.0113
+   ],
+   "median_excess_over_band_us": 9.79,
+   "fails": "(1)(2)",
+   "n_warnings": 0,
+   "predicted_top_us": 1.0,
+   "within_prediction": false
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find words கீகசை",
+   "field": "find",
+   "main_median": 2.9736,
+   "T": 0.01,
+   "d": [
+    0.0135,
+    -0.0106,
+    0.002,
+    -0.034,
+    0.0
+   ],
+   "median_d": 0.0,
+   "median_d_us": 0.0,
+   "median_main2": -0.0055,
+   "median_ctl1": -0.014,
+   "median_ctl2": -0.0131,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0083,
+    0.0281,
+    0.014,
+    0.0447,
+    0.0246
+   ],
+   "median_excess_over_band_us": 0.0,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find words றூகுஞங்கள்",
+   "field": "find",
+   "main_median": 0.0353,
+   "T": 0.01,
+   "d": [
+    0.0003,
+    0.0005,
+    0.0008,
+    0.0007,
+    0.0005
+   ],
+   "median_d": 0.0005,
+   "median_d_us": 0.54,
+   "median_main2": -0.0003,
+   "median_ctl1": -0.0006,
+   "median_ctl2": 0.0005,
+   "above_band_runs": 3,
+   "band_width": [
+    0.0009,
+    0.0012,
+    0.0009,
+    0.0008,
+    0.0012
+   ],
+   "median_excess_over_band_us": 0.04,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find words கீகசை றூகுஞங்கள்",
+   "field": "find",
+   "main_median": 0.05,
+   "T": 0.01,
+   "d": [
+    0.0012,
+    0.0035,
+    0.0045,
+    0.0005,
+    0.0044
+   ],
+   "median_d": 0.0035,
+   "median_d_us": 3.54,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.0017,
+   "median_ctl2": 0.0001,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0018,
+    0.0033,
+    0.0019,
+    0.0018,
+    0.0033
+   ],
+   "median_excess_over_band_us": 3.54,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find words doc 00000",
+   "field": "find",
+   "main_median": 0.002,
+   "T": 0.01,
+   "d": [
+    -0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0001
+   ],
+   "median_d": 0.0,
+   "median_d_us": 0.04,
+   "median_main2": -0.0,
+   "median_ctl1": 0.0,
+   "median_ctl2": 0.0,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0,
+    0.0,
+    0.0,
+    0.0001,
+    0.0001
+   ],
+   "median_excess_over_band_us": -0.0,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find phrase கேடேயி குகடம் கிகசம்",
+   "field": "find",
+   "main_median": 0.048,
+   "T": 0.01,
+   "d": [
+    0.0123,
+    0.0042,
+    0.0044,
+    0.006,
+    0.0125
+   ],
+   "median_d": 0.006,
+   "median_d_us": 6.0,
+   "median_main2": 0.0002,
+   "median_ctl1": -0.0042,
+   "median_ctl2": -0.0004,
+   "above_band_runs": 5,
+   "band_width": [
+    0.0042,
+    0.0075,
+    0.0046,
+    0.0027,
+    0.0069
+   ],
+   "median_excess_over_band_us": 3.96,
+   "fails": "(2)"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find phrase டூகனை சேகணம் சூகஞம்",
+   "field": "find",
+   "main_median": 0.8746,
+   "T": 0.01,
+   "d": [
+    -0.0095,
+    -0.0126,
+    -0.0052,
+    -0.0125,
+    -0.0084
+   ],
+   "median_d": -0.0095,
+   "median_d_us": -9.5,
+   "median_main2": -0.0025,
+   "median_ctl1": -0.0089,
+   "median_ctl2": -0.0098,
+   "above_band_runs": 0,
+   "band_width": [
+    0.0186,
+    0.0085,
+    0.0143,
+    0.0365,
+    0.0177
+   ],
+   "median_excess_over_band_us": -9.5,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find phrase நூடைஞத்தின் சாகறம் லேசிதையின்",
+   "field": "find",
+   "main_median": 0.0088,
+   "T": 0.01,
+   "d": [
+    -0.0002,
+    -0.0001,
+    -0.0,
+    -0.0001,
+    0.0
+   ],
+   "median_d": -0.0001,
+   "median_d_us": -0.08,
+   "median_main2": -0.0,
+   "median_ctl1": -0.0002,
+   "median_ctl2": 0.0,
+   "above_band_runs": 1,
+   "band_width": [
+    0.0002,
+    0.0002,
+    0.0003,
+    0.0002,
+    0.0001
+   ],
+   "median_excess_over_band_us": -0.13,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find prefix டூகன*",
+   "field": "find",
+   "main_median": 2.9935,
+   "T": 0.01,
+   "d": [
+    0.021,
+    -0.0098,
+    0.0135,
+    -0.0095,
+    -0.0167
+   ],
+   "median_d": -0.0095,
+   "median_d_us": -9.5,
+   "median_main2": -0.0076,
+   "median_ctl1": -0.0156,
+   "median_ctl2": -0.014,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0077,
+    0.0337,
+    0.0156,
+    0.0159,
+    0.0303
+   ],
+   "median_excess_over_band_us": -9.5,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find prefix றூகு*",
+   "field": "find",
+   "main_median": 0.063,
+   "T": 0.01,
+   "d": [
+    0.0005,
+    -0.0004,
+    0.0004,
+    -0.0008,
+    -0.0012
+   ],
+   "median_d": -0.0004,
+   "median_d_us": -0.37,
+   "median_main2": 0.0001,
+   "median_ctl1": -0.0012,
+   "median_ctl2": -0.0005,
+   "above_band_runs": 2,
+   "band_width": [
+    0.0009,
+    0.0016,
+    0.0008,
+    0.0015,
+    0.0027
+   ],
+   "median_excess_over_band_us": -0.79,
+   "fails": "no"
+  },
+  {
+   "corpus": "tamil-10k",
+   "cell": "find prefix சைகீ*",
+   "field": "find",
+   "main_median": 0.067,
+   "T": 0.01,
+   "d": [
+    0.0007,
+    0.0004,
+    0.0006,
+    -0.0004,
+    0.0001
+   ],
+   "median_d": 0.0004,
+   "median_d_us": 0.42,
+   "median_main2": -0.0001,
+   "median_ctl1": -0.001,
+   "median_ctl2": -0.0004,
+   "above_band_runs": 2,
+   "band_width": [
+    0.001,
+    0.0021,
+    0.001,
+    0.0011,
+    0.002
+   ],
+   "median_excess_over_band_us": -0.29,
+   "fails": "no"
+  }
+ ]
+}

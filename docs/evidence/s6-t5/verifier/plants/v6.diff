@@ -1,0 +1,16 @@
+diff -ru <vscratch>/plants.noindex/p0/zig/src/engine.zig <vscratch>/plants.noindex/v6/zig/src/engine.zig
+--- <vscratch>/plants.noindex/p0/zig/src/engine.zig	2026-11-16 19:52:49
++++ <vscratch>/plants.noindex/v6/zig/src/engine.zig	2026-11-16 20:14:13
+@@ -418,7 +418,11 @@
+         defer if (view) |*v| v.deinit(allocator);
+         const computed = try engine.computeGroups(allocator, .{ .index = engine.lexical_index, .documents = engine.documents, .title = options.title, .view = view, .options = options }, tokens, options);
+         if (trace) |t| {
+-            if (computed.folded) |g| try noteGrouped(t, g);
++            if (computed.folded) |g| {
++                const before = t.grouped.items.len;
++                try noteGrouped(t, g);
++                for (t.grouped.items[before..]) |*item| item.members = item.members[0..@min(item.members.len, 1)];
++            }
+             if (computed.expanded) |g| try noteExpanded(t, g);
+         }
+         return fold.merge(allocator, computed.folded, computed.expanded);

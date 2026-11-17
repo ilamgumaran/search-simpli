@@ -1,0 +1,11 @@
+diff -ru <vscratch>/plants.noindex/p0/zig/src/filename_field.zig <vscratch>/plants.noindex/p3/zig/src/filename_field.zig
+--- <vscratch>/plants.noindex/p0/zig/src/filename_field.zig	2026-11-16 19:52:49
++++ <vscratch>/plants.noindex/p3/zig/src/filename_field.zig	2026-11-16 20:14:00
+@@ -617,6 +617,7 @@
+         } else {
+             allocator.free(try postings.resolveQueryTraced(allocator, body_index, query_text, trace, true));
+         }
++        if (trace.unique_terms != std.math.maxInt(usize)) return;
+         var kept: usize = 0;
+         for (trace.unmatched.items) |item| {
+             const expanded = for (trace.expanded.items) |e| {

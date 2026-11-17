@@ -1,0 +1,13 @@
+# S6-T5 verification: five run orders, fixed 16 Nov 2026 19:56 before any timing measurement.
+# A Latin square over the five libraries: each takes every position once.
+# head = the branch's library (3056e65), main = origin/main (109bf11), main2 = main's bytes in its own file,
+# ctl1 / ctl2 = main with an inert never-taken branch in postings.lookupExact (12 / 48 never-run blocks).
+# (head, main) positions: run1 (3,1) main first, one between; run2 (1,4) head first, two between;
+# run3 (5,2) main first, two between; run4 (2,3) head first, adjacent; run5 (4,5) head first, adjacent.
+run1: main main2 head ctl1 ctl2
+run2: head ctl2 ctl1 main main2
+run3: ctl1 main main2 ctl2 head
+run4: ctl2 head main main2 ctl1
+run5: main2 ctl1 ctl2 head main
+# Within a run the corpora go timing-10k, prose-10k, tamil-10k, each in the run's order.
+# All five libraries open the same index per corpus (built once by main's ReleaseSmall searchd, --filename-index).

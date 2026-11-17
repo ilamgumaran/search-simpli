@@ -1,0 +1,12 @@
+diff -ru <vscratch>/plants.noindex/p0/zig/src/filename_field.zig <vscratch>/plants.noindex/v5/zig/src/filename_field.zig
+--- <vscratch>/plants.noindex/p0/zig/src/filename_field.zig	2026-11-16 19:52:49
++++ <vscratch>/plants.noindex/v5/zig/src/filename_field.zig	2026-11-16 20:14:13
+@@ -635,7 +635,7 @@
+         } else false;
+         if (repeated) continue;
+         trace.unique_terms += 1;
+-        if (!visibleNameHolds(decoded, token, options)) try postings.noteUnmatched(trace, token, false);
++        if (decoded.filenameTerm(token) == null) try postings.noteUnmatched(trace, token, false);
+     }
+ }
+ 

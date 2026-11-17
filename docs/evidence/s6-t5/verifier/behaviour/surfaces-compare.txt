@@ -1,0 +1,25 @@
+cli-evidence	both	identical	336
+cli-evidence	content	identical	336
+cli-evidence	filename	identical	336
+cli-query-json	both	identical	336
+cli-query-json	content	identical	336
+cli-query-json	filename	identical	336
+cli-search--evidence	both	identical	48
+cli-search--evidence	content	identical	48
+cli-search--evidence	filename	identical	48
+cli-search--json	both	identical	48
+cli-search--json	content	identical	48
+cli-search--json	filename	identical	48
+jsonrpc	both	identical	336
+jsonrpc	content	identical	336
+jsonrpc	filename	identical	336
+mcp	both	identical	336
+mcp	content	identical	336
+mcp	filename	identical	336
+mcp-initialize	-	differs only in serverInfo.version 2.7.0 -> 2.8.0	5
+ss_query	both	differs only inside warnings (main [])	273
+ss_query	both	identical	63
+ss_query	content	identical	336
+ss_query	filename	differs only inside warnings (main [])	308
+ss_query	filename	identical	28
+head outputs carrying a "warnings" key, per non-ss_query surface: {'mcp-initialize:False': 5, 'cli-query-json:False': 1008, 'cli-evidence:False': 1008, 'jsonrpc:False': 1008, 'mcp:False': 1008, 'cli-search--json:False': 144, 'cli-search--evidence:False': 144}

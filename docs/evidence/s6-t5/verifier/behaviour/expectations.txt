@@ -1,0 +1,45 @@
+S6-T5 verifier: behaviour expectations, written 16 Nov 2026 before any behaviour run (fixture F1, invented).
+
+F1: roots north, south; filename_index true.
+  north lantern-festival.md        "# Evening / the lantern parade crossed the bridge with drums"
+  north orchard/plum-ledger.md     "# Notes / apples and pears ripened slowly"
+  north vault/walrus-secrets.md    labels [team:otter]  "# Secrets / narwhal tusks shimmer"
+  south canyon-echo.md             "# Echo / pebble streams wander"
+Word classes: (i) chunk+name lantern; (ii) visible name only festival, plum, ledger, canyon (south visible by default);
+(iii) chunks only parade, bridge, slowly; (iv) nowhere qorvix; (v) hidden walrus (labelled name), narwhal (labelled chunk),
+canyon/pebble under roots [north], lantern/festival under path_prefix north/orchard/; (vi) misspelt lantren (-> lantern),
+bridgr (-> bridge); (vii) grouped pear (-> pears), apple (-> apples), drum (-> drums); folder only: orchard.
+
+E1 content (unchanged from main): unmatched for every distinct term no chunk in scope holds, in query order, each
+   followed by its expanded/grouped warning; grouped terms that are matched come after. festival/plum/ledger/canyon/
+   orchard/walrus/qorvix unmatched under content.
+E2 both = content's array with exactly the query_term_unmatched entries removed whose term a visible file name holds
+   (festival, plum, ledger, canyon, and lantern in scopes where it would be unmatched by chunks). Nothing else differs:
+   same expanded lists, same grouped member lists, same order, same messages. orchard stays unmatched (folder only).
+   An expanded or grouped term keeps its unmatched entry unless a visible name holds it.
+E3 filename = [query_empty_after_analysis] if no term, else one query_term_unmatched per distinct analysed term (first
+   occurrence, query order, lowercased) that no visible file name holds; never expanded or grouped; vector_ignored
+   when a vector is passed (ruling 2 on the Report). lantern/festival/plum/ledger/canyon are not unmatched (default
+   scope); parade/qorvix/lantren/pear/orchard/walrus etc. are.
+E4 roots [north]: canyon, pebble hidden -> reported exactly as an absent word of the same length (byte for byte after
+   substituting the term), under both and filename. labels [team:otter]: walrus not unmatched under both/filename,
+   narwhal not unmatched under content/both. path_prefix north/orchard/: lantern, festival hidden -> as absent.
+E5 main's library: warnings [] under both and filename for every query; every byte outside "warnings" equal to the
+   head's under both and filename; content answers byte-identical between main and head.
+E6 hidden-versus-absent: for many generated invented words placed only in labelled files, a left-out root or outside
+   the path prefix (names and chunks), each against an absent word of the same length: the head's whole answer (not
+   only warnings) under both and filename is byte-identical after the substitution; also when combined with visible,
+   misspelt and grouped words in one query.
+
+Addendum, still before any run (after reading report.zig's writer): F1 also gets north apple-basket.md
+"# Basket / woven reeds" so that apple is a visible name while apples is a chunk word. Under both, apple is then not
+unmatched, and its query_term_grouped [apples] is written where report.zig writes the group of a grouped term that is
+not unmatched (after every unmatched term's entries, in query order), not where content writes it. So E2 is read as:
+both = report.zig's writer applied to content's terms with the unmatched set reduced by the visible names; when no
+grouped word is removed this is content's array with entries removed.
+
+Addendum 2, before the rerun that includes it: F1 gains north studio-log.md ("painted painting paints walked walking
+walks") and south walk-map.md ("hiking trails"), for member lists of more than one word: paint -> grouped [painted,
+painting, paints] (whatever content lists); walk is a visible name only when south is in scope, so under both its
+unmatched entry goes away by scope and its grouped list moves to the trailing part; under filename walk is unmatched
+under roots [north] and not otherwise.

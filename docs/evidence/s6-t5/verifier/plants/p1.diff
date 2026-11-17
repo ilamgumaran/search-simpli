@@ -1,0 +1,12 @@
+diff -ru <vscratch>/plants.noindex/p0/zig/src/filename_response.zig <vscratch>/plants.noindex/p1/zig/src/filename_response.zig
+--- <vscratch>/plants.noindex/p0/zig/src/filename_response.zig	2026-11-16 19:52:49
++++ <vscratch>/plants.noindex/p1/zig/src/filename_response.zig	2026-11-16 20:14:00
+@@ -199,7 +199,7 @@
+     if (abi_report) |extras| {
+         try json.objectField("warnings");
+         try json.beginArray();
+-        if (report.hasWarnings(extras)) try report.writeWarnings(&json, extras);
++        if (field != .both) if (report.hasWarnings(extras)) try report.writeWarnings(&json, extras);
+         try json.endArray();
+         try json.objectField("request");
+         try json.write(.{
