@@ -1,0 +1,64 @@
+{
+ "corpus": "tamil-10k",
+ "files": 10000,
+ "queries": [
+  "bazecha",
+  "benico",
+  "system",
+  "hashing",
+  "hybrid retrieval",
+  "retrieval hybrid",
+  "system systems",
+  "systems system",
+  "கீகசை",
+  "டூகனை",
+  "றூகுஞங்கள்",
+  "சைகீளையில்",
+  "கீகசை றூகுஞங்கள்",
+  "டூகனை சைகீளையில்",
+  "doc 00000"
+ ],
+ "finds": [
+  {
+   "query": "கீகசை",
+   "mode": "words"
+  },
+  {
+   "query": "றூகுஞங்கள்",
+   "mode": "words"
+  },
+  {
+   "query": "கீகசை றூகுஞங்கள்",
+   "mode": "words"
+  },
+  {
+   "query": "doc 00000",
+   "mode": "words"
+  },
+  {
+   "query": "கேடேயி குகடம் கிகசம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "டூகனை சேகணம் சூகஞம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "நூடைஞத்தின் சாகறம் லேசிதையின்",
+   "mode": "phrase"
+  },
+  {
+   "query": "டூகன*",
+   "mode": "prefix"
+  },
+  {
+   "query": "றூகு*",
+   "mode": "prefix"
+  },
+  {
+   "query": "சைகீ*",
+   "mode": "prefix"
+  }
+ ],
+ "roots": null
+}

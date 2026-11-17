@@ -1,0 +1,1 @@
+{'roots': [{'root_id': 'school', 'label': 'school', 'kind': 'host'}, {'root_id': 'home', 'label': 'home', 'kind': 'host', 'retain_source': False}, {'root_id': 'laptop', 'label': 'laptop', 'kind': 'host', 'required_labels': ['kids', 'zeta']}]}

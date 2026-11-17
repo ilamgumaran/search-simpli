@@ -1,0 +1,7 @@
+# main's Dart package (ad71cfb, 0.9.0) with main's library (DynamicLibrary.open of the ReleaseSmall build, = the
+# committed main native) against three copies of the committed fixture tests/fixtures/index-v5-s6t7 (oldrefuse.dart):
+open: SearchSimpliException: SearchSimpliException: ss_open: UnsupportedFlags
+applyChanges: SearchSimpliException: SearchSimpliException: ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags
+indexFolder: SearchSimpliException: SearchSimpliException: ss_index_folder: UnsupportedFlags
+# shasum -a 256 of every file before and after: the only difference is an empty WRITER.LOCK created in the applyChanges copy
+# (e3b0c442...b855, 0 bytes); the open and indexFolder copies unchanged.

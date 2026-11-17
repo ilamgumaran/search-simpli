@@ -1,0 +1,29 @@
+{
+ "j2": {
+  "stats": {
+   "manifest_bit6": 1,
+   "manifest_docs_eq": 1,
+   "manifest_doc_binding": 1,
+   "manifest_src_binding": 1,
+   "files_in_table": 88,
+   "records": 324,
+   "path_bytes": 2163,
+   "raw_ids_20hex": 324,
+   "retained_checked": 56,
+   "rebuilt_from_chunks": 54,
+   "residual_bytes": 907,
+   "overlaps": 3,
+   "bom": 1,
+   "kept_whole": 2,
+   "whole_no_chunk": 1,
+   "whole_empty": 1,
+   "rebuilt_no_final_newline": 1,
+   "whole_crlf": 1,
+   "mismatches": 0,
+   "table_eq_disk_set": 1,
+   "disk_files": 88
+  },
+  "mismatch_paths": [],
+  "missing_from_table": []
+ }
+}

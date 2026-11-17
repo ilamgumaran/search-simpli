@@ -1,0 +1,4 @@
+# abi-v5 seed 72 trials 7 and 14 were flagged later_fail by the first version of kill.py, which compared the later writer's answers with the new reference without normalising the generation number (the later writer published generation 3 over the killed one's leftovers; the reference is generation 2). later_cmp.py, generation and cursor normalised:
+kill.noindex/abi-v5-72/t7/idx same as the new generation apart from its number
+kill.noindex/abi-v5-72/t14/idx same as the new generation apart from its number
+# kill.py was then changed (probe_norm) and every later run used it.

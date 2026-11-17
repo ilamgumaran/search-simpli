@@ -1,0 +1,1 @@
+{"corpus": "timing-10k", "files": {"small": ["r-legacy", "group-54/doc-05447.md", 5], "median": ["r-legacy", "group-68/doc-06861.md", 9], "largest": ["r-legacy", "group-67/doc-06789.md", 13]}, "bytes": {"small": 179, "median": 718, "largest": 1655}}

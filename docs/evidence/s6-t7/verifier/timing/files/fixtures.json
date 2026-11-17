@@ -1,0 +1,1 @@
+{"corpus": "fixtures", "files": {"small": ["r-legacy", "markdown/front-matter-only.md", 3], "median": ["r-legacy", "mixed-knowledge/operations/measurement.md", 1], "largest": ["r-legacy", "family-folder/laptop/big-log.txt", 15500]}, "bytes": {"small": 29, "median": 307, "largest": 1133158}}

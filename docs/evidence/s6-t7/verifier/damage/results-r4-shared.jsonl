@@ -1,0 +1,1 @@
+{"case": "d_shared_256", "kind": "docs", "note": "shared = 256 on a pair sharing > 256 bytes (suffix one shorter: the decoded path is unchanged)", "index": "head/edge", "exit": 0, "result": {"open": "ok", "query": "ok", "outline_ok": 21, "read_equal": 19, "read_refused": 2, "errors": {"ss_read_span: SS_ERR_INVALID_ARGUMENT: start_line 1 is past the last line 0": 2}, "wrong": []}}
