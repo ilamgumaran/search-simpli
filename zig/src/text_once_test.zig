@@ -286,6 +286,67 @@ test "S6-T7 Verdict finding 1: overlaps of 1 and 2 bytes and of the whole previo
     std.debug.print("S6-T7 overlaps: recipe values 1 and 3 and an overlap of the whole previous chunk rebuilt exactly; {d} read_span ranges equal HYBSRC01's\n", .{spans});
 }
 
+/// A leading byte-order mark, per chunker (S6-T7 Second Verdict, R1).
+const marks = [_]Kind{
+    .{ .path = "m-bom-only.md", .bytes = "\xef\xbb\xbf" },
+    .{ .path = "m-bom-text.md", .bytes = "\xef\xbb\xbf\n\n# Title\n\nbody text\n" },
+    .{ .path = "m-bom-text.txt", .bytes = "\xef\xbb\xbfplain text\nsecond line\n" },
+};
+
+test "S6-T7 Second Verdict R1: a byte-order mark is a gap in Markdown and keeps any other file whole; every file read back exactly" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var indexed = try Indexed.initFiles(a, &marks);
+    defer indexed.deinit();
+    const s = try indexed.sections(a);
+    try std.testing.expect(s.metadata.text_once);
+    const bound = try boundOf(a, s.documents);
+    const resident = try source.openIndexedBound(a, s.source, bound);
+    var file = try indexed.out.openFile(io, s.metadata.source_file, .{});
+    defer file.close(io);
+    const streamed = (try source.openStreamedBound(a, a, io, file, s.source.len, bound)).section;
+    const raw = try Src.parse(a, s.source);
+    try std.testing.expectEqual(marks.len, raw.files.len);
+    for (raw.files) |f| try std.testing.expect(f.flags & 1 != 0); // `bom` set on all three
+
+    // Markdown, mark only: no chunk, kept whole.
+    const only = resident.find("m-bom-only.md").?;
+    try std.testing.expect(only.v2_whole);
+    try std.testing.expectEqual(@as(usize, 0), only.v2_chunks.len);
+    // Markdown, mark then text: rebuilt; the chunk text does not hold the
+    // mark, which is in the gap before the first chunk.
+    const md = resident.find("m-bom-text.md").?;
+    try std.testing.expect(!md.v2_whole);
+    for (md.v2_chunks) |chunk| try std.testing.expect(!std.mem.startsWith(u8, chunk.text, "\xef\xbb\xbf"));
+    try std.testing.expectEqual(@as(u64, 2 * 5), raw.files[1].recipe[0]); // the mark and two line feeds
+    // Any other file, mark then text: the first chunk holds the mark; kept whole.
+    const txt = resident.find("m-bom-text.txt").?;
+    try std.testing.expect(txt.v2_whole);
+    try std.testing.expect(std.mem.startsWith(u8, txt.v2_chunks[0].text, "\xef\xbb\xbf"));
+
+    const inputs = try a.alloc(source.InputFile, marks.len);
+    for (marks, inputs) |kind, *input| input.* = .{ .path = kind.path, .bytes = kind.bytes };
+    const v1 = try source.openIndexed(a, try source.encode(a, inputs));
+    var spans: usize = 0;
+    for (marks) |kind| {
+        const entry = resident.find(kind.path).?;
+        for ([_]source.Section{ resident, streamed }) |section| {
+            try std.testing.expectEqualSlices(u8, kind.bytes, try source.entryBytes(section, a, section.find(kind.path).?));
+            var first: u32 = 1;
+            while (first <= entry.line_count) : (first += 1) {
+                var last: u32 = first;
+                while (last <= entry.line_count) : (last += 1) for ([_]u32{ 0, 1 }) |context| {
+                    try expectSameSpan(a, try source.readSpan(a, v1, kind.path, first, last, context), try source.readSpan(a, section, kind.path, first, last, context));
+                    spans += 1;
+                };
+            }
+            try std.testing.expectEqualStrings(try outlineJson(a, try source.outline(a, v1, kind.path)), try outlineJson(a, try source.outline(a, section, kind.path)));
+        }
+    }
+    std.debug.print("S6-T7 byte-order mark: m-bom-only.md kept whole (no chunk), m-bom-text.md rebuilt (mark in the gap), m-bom-text.txt kept whole (mark in its chunk); {d} read_span ranges equal HYBSRC01's\n", .{spans});
+}
+
 fn expectSameSpan(a: std.mem.Allocator, want: source.SpanResult, got: source.SpanResult) !void {
     try std.testing.expectEqualStrings(try spanJson(a, want), try spanJson(a, got));
 }

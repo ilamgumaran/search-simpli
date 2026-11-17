@@ -23,7 +23,9 @@ or implementation tasks; current search behavior and native artifacts are unchan
 `ss_index_folder`, `apply_changes`) publishes the documents section as record v5 (a file table holding each
 path once, ids as raw bytes, varint fields) and the source section as `HYBSRC02` (only the bytes no chunk holds);
 `read_span` and `outline` rebuild a file from its chunks and check its SHA-256, and refuse a file that does not
-match. A file whose lines are not all LF-terminated, or with a chunk that is not an exact span of it, is kept whole.
+match. A file with no chunk, or with a chunk that is not an exact span of its bytes, is kept whole (a chunk of two
+or more lines in a file with CR LF, a lone CR or another non-LF line break; a non-Markdown file starting with a
+byte-order mark).
 `import-json` is unchanged. **Contracts 2.8.0, Dart 0.9.1**; no API, schema, C header or answer change.
 
 - **Size** (one generation, channel on): timing-10k 24,793,305 → 15,808,625 B (2.17 times its corpus), prose-10k
@@ -36,7 +38,8 @@ match. A file whose lines are not all LF-terminated, or with a chunk that is not
   42–76 % faster; a later `read_span`/`outline` of the 1.1 MB family log about +2 % CPU, other files the same or
   less.
 - **One way (the second, after S6-T4):** the new library opens an index `main` wrote and answers the same; its first
-  publish writes the new format (that one-file update +1.7 % to +2.1 % on the 10k corpora, once; later ones 4–11 % faster). An older library refuses the new index with `UnsupportedFlags`
+  publish writes the new format (that one-file update +1.7 % to +2.1 % on the 10k corpora, once; later ones 4–11 % faster; the verifier
+measured −0.28 % to +1.11 % and 2.2–13.3 % faster). An older library refuses the new index with `UnsupportedFlags`
   through `ss_open`, `ss_index_folder`, `ss_apply_changes` and the CLI, and leaves it byte-identical.
 - **Natives.** macOS 988,952 B (`main`: 971,064), Android 952,384 B (936,032), iOS framework binary 953,488 B
   (935,440); `native/SOURCE-SHA256` `7be54587…`; `searchd` `ReleaseSmall` 1,132,312 B (1,114,936). **For the consumer app:**

@@ -30,14 +30,17 @@ is the same.
   from before the upgrade, or rebuild with the older library.
 - **The first publish costs a little more, once.** It writes every file's
   record in the new format: measured +3.0 to +4.7 ms (+1.7 % to +2.1 %) on a
-  one-file update of the 10,000-file corpora. Later one-file updates are
-  4–11 % faster than 0.9.0's (they write less).
+  one-file update of the 10,000-file corpora (the verifier measured −0.28 %
+  to +1.11 %). Later one-file updates are 4–11 % faster than 0.9.0's (they
+  write less; the verifier measured 2.2–13.3 % faster).
 - **Kept whole.** A file with no chunk, or with a chunk that is not an exact
   span of its bytes, is kept whole in the source section, as before:
   correct, but not smaller. Every chunker joins a chunk's lines with a line
   feed, so a chunk of two or more lines in a file with CR LF, a lone CR or
   another line break (VT, FF, NEL, LS, PS and the like) is not exact and that
-  file is kept whole; a one-line chunk in such a file is still exact.
+  file is kept whole; a one-line chunk in such a file is still exact. A
+  Markdown file drops a leading byte-order mark from its chunks; any other
+  file starting with the mark keeps it in its first chunk and is kept whole.
 - **`importSnapshotJson` is unchanged** (it writes the older format).
 - **Natives rebuilt:** macOS 988,952 B (0.9.0: 971,064), Android 952,384 B
   (936,032), iOS framework binary 953,488 B (935,440).

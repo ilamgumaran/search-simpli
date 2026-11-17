@@ -321,7 +321,7 @@ rebuild(r):                      # r: the source record of a retained file f
 | Front matter, blank lines between Markdown sections, a file's leading or trailing blank lines | gap or tail bytes | every Markdown file with front matter |
 | No final newline | the chunk ends at the last byte; the tail is empty | 4 rebuilt in fixtures, 1 in J2, 1 in family |
 | Final newline | the tail is the newline (the chunk text is stripped) | most files |
-| BOM | `bom` set; the BOM is a gap of 3 bytes before the first chunk (the chunk text of a file with text after the mark does not hold it). A file holding only the mark is kept whole; its one chunk is the mark itself, cited as line 1–1 of a file of 0 lines (`main`'s chunker gives the same chunk) | 3 in fixtures, 1 in J2, 1 in family |
+| BOM | `bom` set in every case. **Markdown** (`md-section-v1`) drops the mark from chunk text: it is part of the gap before the first chunk (3 bytes, plus any blank lines before it); a `.md` file holding only the mark has no chunk and is kept whole. **Every other file** (`line-window-v1`) keeps the mark in its first chunk's text, while v1's line 1 starts after it (byte 3), so that chunk is never found at a true position and every such file starting with the mark is kept whole (read exactly, never smaller) | 3 in fixtures, 1 in J2, 1 in family (all Markdown) |
 | Empty file | retained, 0 chunks, kept whole, text length 0, residual 0 bytes, line count 0, map one varint `0` | 3 in fixtures, 1 in J2, 1 in family |
 | Blank (whitespace-only) file | retained, 0 chunks, kept whole | 1 in fixtures |
 | A file with chunks whose bytes are not retained (a root with `retain_source` false) | `retained = 0`; not in the source section | none in the six corpora; the default for `local` roots |
