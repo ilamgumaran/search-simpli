@@ -36,8 +36,12 @@ result field, signature or index format change; the C header gains comments only
   `filename` short requests +0.02 to +0.65 µs and `both` short requests up to +1.4 µs, as predicted; `content` no
   cell at the threshold. Large `both`/`filename` cells (0.2–0.7 ms) varied by tens of µs between runs of one build,
   as untouched `find` cells did ([Report §8](docs/tasks/S6-T5.md)).
-- **Natives.** Rebuilt with fresh caches from the head's source: macOS 954,008 B (was 954,088), Android 923,120 B
-  (919,840), iOS framework binary 934,816 B (935,256); `native/SOURCE-SHA256` `c7c90486…`. **For the consumer app:**
+- **Rework after the first Verdict (FAIL on `3056e65`):** tests for a three-member group and two-word expansions
+  under `both` (Zig and Dart), which the verifier's plant v6 and its twin fail; and the `both`/`filename` cost: the
+  trace itself is 0.1–0.5 µs per request, and the several µs beyond it came from a split of the unchanged scoring
+  function, now `main`'s source again ([rework report](docs/tasks/S6-T5.md)).
+- **Natives.** Rebuilt with fresh caches from the reworked head's source: macOS 953,960 B (was 954,088), Android
+  923,040 B (919,840), iOS framework binary 935,104 B (935,256); `native/SOURCE-SHA256` `f928ba26…`. **For the consumer app:**
   the next pin takes Dart 0.9.0 (contract 2.8.0): `both`/`filename` warnings appear where the array was empty.
 
 ## Host-supplied vectors drafted as a capability (S6-T6, plan item E, 2026-11-16; Proposed; verified, merge pending a green CI run)
