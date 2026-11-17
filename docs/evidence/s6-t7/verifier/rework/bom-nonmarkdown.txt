@@ -1,0 +1,7 @@
+a-bom-only.txt bytes efbbbf | bom 1 whole 1 recipe [] | chunks [(1, 1, 'efbbbf')]
+b-bom-nl.txt bytes efbbbf0a | bom 1 whole 1 recipe [] | chunks [(1, 1, 'efbbbf')]
+c-bom-space.txt bytes efbbbf200a | bom 1 whole 1 recipe [] | chunks [(1, 1, 'efbbbf')]
+d-bom-x.txt bytes efbbbf780a | bom 1 whole 1 recipe [] | chunks [(1, 1, 'efbbbf78')]
+e-bom-bom.txt bytes efbbbfefbbbf780a | bom 1 whole 1 recipe [] | chunks [(1, 1, 'efbbbfefbbbf78')]
+f-bom-only.md bytes efbbbf | bom 1 whole 1 recipe [] | chunks []
+g-bom-nl-x.md bytes efbbbf0a0a780a | bom 1 whole 0 recipe [10] | chunks [(1, 3, '78')]
