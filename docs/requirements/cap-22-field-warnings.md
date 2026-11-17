@@ -53,7 +53,9 @@ record takes CAP-22 and FR-31.
   (the stem, `filename-field-v1`), for a file in scope: the request's roots,
   path prefix and labels, the same test the channel applies before it ranks.
   A word only a file's **folder** names hold is not a file name: under `both`
-  it stays unmatched, as it is under `content` (open decision, §11).
+  it stays unmatched, as it is under `content`. This is a known limit
+  (orchestrator's ruling 3 on the S6-T5 Report); whether path components
+  should count is asked in `docs/journey/03-next.md`.
 - *`both`.* Unmatched: no chunk in scope holds the word (the test `content`
   makes) and no visible file name holds it. Expanded and grouped: the fuzzy-v1
   and fold groups `both` built for its body and title parts, which are
@@ -66,9 +68,12 @@ record takes CAP-22 and FR-31.
   channel under `content` and `both`, `docs/fold-groups-v1.md`). So **no
   `query_term_expanded` and no `query_term_grouped` can appear under
   `filename`**: reporting one would name words that were not searched.
-- *The other codes.* `query_empty_after_analysis` (a query with no searchable
-  term) and `vector_ignored` (a vector passed to a lexical request; `both` and
-  `filename` are lexical only) follow the same state as under `content`.
+- *The other codes.* Under `filename` the only *term* warning is
+  `query_term_unmatched`; `query_empty_after_analysis` (a query with no
+  searchable term) and `vector_ignored` (a vector passed to a lexical request;
+  `both` and `filename` are lexical only) remain, under `both` and `filename`
+  alike, from the same state as under `content` (orchestrator's ruling 2 on the
+  S6-T5 Report).
   `candidate_depth_cut` cannot occur (lexical, and `ss_query` refuses
   `candidate_k < top_k`).
 - *Order and wording* are `report.zig`'s, written by the same code as under
@@ -86,11 +91,12 @@ record takes CAP-22 and FR-31.
 ## 5. Contracts touched (CON)
 
 - New or changed schemas under `contracts/`: none. CON-01's `warnings` text
-  and the C header's describe the warnings with no field exception, so both are
-  untouched (S6-T5 ruling 5); this record, the Dart CHANGELOG and the policy
-  documents carry the 2.8.0 note. The header has no "Contract 2.8.0"
-  paragraph, unlike 2.2.0 to 2.7.0: whether to add one (comments only) is an
-  open question in the S6-T5 Report.
+  describes the warnings with no field exception and is untouched. The C
+  header gains, as every earlier version did, a "Contract 2.8.0" comment
+  paragraph and the `ss_version` example "2.8.0": comments only, no
+  declaration changed (orchestrator's ruling 1 on the S6-T5 Report; ruling 5
+  forbade a new field, not a comment). This record, the Dart CHANGELOG and the
+  policy documents carry the same note.
 - Backward-compatibility plan: contracts 2.7.0 → **2.8.0** and Dart 0.8.0 →
   **0.9.0**, the rule of every earlier observable change of `ss_query`'s output
   (S5-T2 to S5-T8): a minor contract version, and a minor Dart version because
@@ -161,15 +167,16 @@ holds hidden and absent words to identical bytes, so it is not a conflict.
 
 ## 11. Open decisions
 
-- Decision: whether a word only a visible file's folder names hold (the title
-  field, not the file-name channel) should count as held under `both`. Today
-  it is unmatched under `content` and stays so under `both`.
-- Owner: the maintainer.
-- Evidence needed: a J2 row where a folder name answers the query.
-- Decision: the Python reference gives no warnings in any field; whether it
-  should.
-- Owner: the maintainer.
-- Evidence needed: a consumer of the reference's report.
+- Known limit, not an open decision (ruling 3 on the S6-T5 Report): a word
+  only a visible file's folder names hold (the title field, not the file-name
+  channel) is unmatched under `content` and stays so under `both`. Whether
+  path components should count is a 03-next row. Evidence needed: a J2 row
+  where a folder name answers the query.
+- No Python parity test (ruling 4 on the S6-T5 Report): the Python reference
+  gives no warnings in any field, so the engine is tested against written
+  expectations (`zig/src/field_warnings_test.zig`, the Dart `contract 2.8.0`
+  group), and the captured-answers comparison holds `both` to the engine's own
+  `content` output.
 
 ## 12. Maintainer approval (step 6b — required before build)
 
