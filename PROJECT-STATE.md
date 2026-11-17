@@ -15,11 +15,17 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## Lexical format v3: a smaller lexical section (S6-T4, objective plan item D2 step 1, 2026-11-16; built, not yet verified)
+## Lexical format v3: a smaller lexical section (S6-T4, objective plan item D2 step 1, 2026-11-16; merged on the maintainer's decision, timing rule not passed)
 
-Built on `task/S6-T4` ([task, Report and bars](docs/tasks/S6-T4.md),
-[format](docs/lexical-segment-format-v3.md), [manifest v2.3](docs/manifest-format-v2.md#v23-lexical-sections-v3-s6-t4),
-[index size, Landed](docs/index-size.md#landed)); a different agent verifies and merges.
+**Merged into `main` 16 Nov on the maintainer's decision, with the timing rule not passed** ([task, Report and
+Verdicts](docs/tasks/S6-T4.md), [format](docs/lexical-segment-format-v3.md),
+[manifest v2.3](docs/manifest-format-v2.md#v23-lexical-sections-v3-s6-t4), [index size, Landed](docs/index-size.md#landed)).
+Two FAIL Verdicts stand as the record of the timing measurement: under the five-run rule two Tamil `find` cells fail
+clause (1) (+0.011 and +0.017 ms on about 3 ms) and 18 small cells clause (2) (about 0.1–0.3 µs on Tamil warm queries
+of 3–8 µs). The builder traced the cost to code placement (inert code alone moves the same cells as much) and found no
+fix with a mechanism; the maintainer accepted the cost and ruled that from now on a request on a code path a task did
+not change is judged by clause (1) only ([ROLES](docs/process/ROLES.md)). The third pass checked the Q1 tests (the
+verifier's plant caught), the natives (rebuilt byte-identical, stamp `f56d7d9e…`) and every suite on the merged tree.
 
 - **Format.** Every folder writer (`searchd index`, `apply`, `search`'s in-memory build, `ss_index_folder`,
   `ss_apply_changes`) writes both lexical sections as `HYBLEX03`: postings as document gaps with tf = 1 in the
@@ -30,7 +36,7 @@ Built on `task/S6-T4` ([task, Report and bars](docs/tasks/S6-T4.md),
 - **Measured** (ReleaseSmall, macOS arm64, against `main` at 98c4a2b on the same files): the 10k timing index
   32,281,645 → 24,793,305 B (4.44 → 3.41 times the corpus), prose 69,778,345 → 54,111,784, Tamil
   73,831,391 → 66,154,883, J2 367,659 → 260,237; open −17 % to −26 %; memory after open −7.1 / −15.1 / −6.9 MB;
-  warm query, `find`, first `find` and one-file update within their bars against two placement controls; the
+  first `find` and one-file update within their bars; warm query and `find` as above (accepted, not passing); the
   first update of a v2 index +4.8 % to +8.3 % once. 65,456 answers (query, evidence, find, outline, read_span,
   list_files, roots, status) identical between v2 by `main` and v3 over J2, `fixtures/`, the family-folder pack
   and three 10k corpora; the J2 native gate clean, 0 rows differ.

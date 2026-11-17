@@ -9,8 +9,12 @@ error codes and C ABI; contracts stay 2.7.0; every answer is the same.
 
 - **Smaller and faster to open.** Measured on 10,000-file corpora: the index
   is 23 % smaller on generated notes, 22 % on English prose, 10 % on Tamil;
-  `open` 17–26 % faster; 7–15 MB less memory after `open`. Queries, `find`
-  and updates take the same time.
+  `open` 17–26 % faster; 7–15 MB less memory after `open`. Updates take the
+  same time after the first (below). Queries and `find` stay within the
+  timing rule's median bar (+0.010 ms, or +1 %) on every measured request
+  but two `find` requests on Tamil text of about 3 ms, 0.011–0.017 ms
+  slower; Tamil warm queries of 3–8 µs measured about 0.1–0.3 µs slower.
+  The maintainer accepted this cost of code placement (S6-T4).
 - **Migration, one way.** This library opens every index an older one wrote.
   The first publish under it (an update, `applyChanges`, `indexFolder`) rewrites
   the index in the new format. **After that first publish, an older library

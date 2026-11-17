@@ -49,7 +49,8 @@ Raw tables: [`docs/evidence/s6-t3/`](evidence/s6-t3/README.md).
 
 ## Landed
 
-**Step 1, lexical v3 (S6-T4, 16 Nov 2026).** Both lexical sections are
+**Step 1, lexical v3 (S6-T4, verified and merged 16 Nov 2026 on the
+maintainer's decision, the timing rule not passed).** Both lexical sections are
 [`HYBLEX03`](lexical-segment-format-v3.md) (C1, C2b, C3 and F2) under
 [manifest v2.3](manifest-format-v2.md#v23-lexical-sections-v3-s6-t4). Measured
 on indexes written by `searchd index --filename-index` (one generation,
@@ -71,9 +72,13 @@ header cost nothing measurable here), the two small fixtures 0.4 % over it.
 Every section is the Phase 1 prototype's to the byte. Nothing a query, `find`,
 `outline`, `read_span`, `list_files` or `index_status` answers changed (65,456
 answers compared). Open is 17–26 % faster, memory after open 7.1 MB (timing),
-15.1 MB (prose) and 6.9 MB (Tamil) lower; warm query, `find` and the one-file
-update are unchanged within the placement controls' band; the first update of
-a v2 index costs 5–8 % once. The numbers, bars and method are in the
+15.1 MB (prose) and 6.9 MB (Tamil) lower. Warm query and `find` carry a
+small measured cost that does **not** pass the timing rule: on Tamil about
+0.1–0.3 µs on warm queries of 3–8 µs and +0.011 and +0.017 ms on two `find`
+requests of about 3 ms (the second Verdict's five runs); the builder traced it
+to where the added code moves the unchanged query code, and the maintainer
+accepted it on 16 Nov 2026 (S6-T4, "Maintainer's decision"). The one-file
+update is unchanged; the first update of a v2 index costs 5–8 % once. The numbers, bars and method are in the
 [S6-T4 Report](tasks/S6-T4.md) and `docs/evidence/s6-t4/phase2/`. Steps 2–4 are
 next (03-next D2-2 to D2-4).
 
