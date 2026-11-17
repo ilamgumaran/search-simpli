@@ -16,3 +16,7 @@ run5: ctl1 ctl2 main head main2
 # phase o (openx.py: the six pairs interleaved in one process, 200 rounds, seed 1000*run + corpus number 1..6, corpora j2 family fixtures timing prose tamil);
 # phase u (upd.py with each build's own searchd, the run's order, 3 trials) over timing-10k, prose-10k, tamil-10k, family.
 # Gate (S6-T4 gate.sh, unchanged) before every process; pmset -g log checked for a sleep inside each run afterwards.
+# ---- Added 17 Nov 2026 12:44, after the five runs above and before any run of it: phase o2.
+# Phase o's design shares one index directory among main, main2, ctl1, ctl2 and head-v4 (each opened 5x per round) while the head's index is
+# opened 1x per round. Phase o2 removes that asymmetry: openx2.py, the same six pairs, each opening its own plain copy (cp -R) of its index
+# (idx.noindex/oc/<pair>/<corpus>), 200 rounds, seed 2000*run + corpus number 1..6, corpora j2 family fixtures timing prose tamil; five gated runs.
