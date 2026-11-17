@@ -1,0 +1,10 @@
+--- <vscratch>/plants2/base/src/zig/src/lexical_segment.zig	2026-11-16 15:46:54
++++ <vscratch>/plants2/Q2/src/zig/src/lexical_segment.zig	2026-11-16 15:57:40
+@@ -481,7 +481,6 @@
+             if (ordinal >= length) return error.InvalidPositions;
+         }
+     }
+-    if (at != sections.positions.len) return error.InvalidPositions;
+ 
+     at = 0;
+     for (document_lengths) |length| {

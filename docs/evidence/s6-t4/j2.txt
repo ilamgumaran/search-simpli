@@ -1,0 +1,5 @@
+S6-T4 Phase 1: J2 through scripts/j2_run.py --searchd, for main's searchd (v2), the eager prototype and the lazy prototype (v3).
+main: j2_gate.py: J2 gate: pass
+eager: j2_gate.py: J2 gate: pass
+lazy: j2_gate.py: J2 gate: pass
+main/eager and main/lazy j2_run.py --compare: search_field content: 0 queries differ; search_field both: 0 queries differ.

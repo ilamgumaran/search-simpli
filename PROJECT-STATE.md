@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-16 (S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; built on `task/S6-T5`, awaiting verification. Before it: S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-16 (S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; built on `task/S6-T5` with `main` at `ce96916` merged in, awaiting verification. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -40,9 +40,43 @@ result field, signature or index format change; the C header gains comments only
   under `both` (Zig and Dart), which the verifier's plant v6 and its twin fail; and the `both`/`filename` cost: the
   trace itself is 0.1–0.5 µs per request, and the several µs beyond it came from a split of the unchanged scoring
   function, now `main`'s source again ([rework report](docs/tasks/S6-T5.md)).
-- **Natives.** Rebuilt with fresh caches from the reworked head's source: macOS 953,960 B (was 954,088), Android
-  923,040 B (919,840), iOS framework binary 935,104 B (935,256); `native/SOURCE-SHA256` `f928ba26…`. **For the consumer app:**
+- **Natives.** Rebuilt with empty caches after `main` (`ce96916`, S6-T4) was merged in: macOS 971,064 B (`main`:
+  971,304), Android 936,032 B (932,864), iOS framework binary 935,440 B (935,584); `native/SOURCE-SHA256`
+  `d4212f8f…`; `searchd` `ReleaseSmall` 1,114,936 B (1,114,984). **For the consumer app:**
   the next pin takes Dart 0.9.0 (contract 2.8.0): `both`/`filename` warnings appear where the array was empty.
+
+## Lexical format v3: a smaller lexical section (S6-T4, objective plan item D2 step 1, 2026-11-16; merged on the maintainer's decision, timing rule not passed)
+
+**Merged into `main` 16 Nov as `f3e354e` on the maintainer's decision, with the timing rule not passed** ([task, Report and
+Verdicts](docs/tasks/S6-T4.md), [format](docs/lexical-segment-format-v3.md),
+[manifest v2.3](docs/manifest-format-v2.md#v23-lexical-sections-v3-s6-t4), [index size, Landed](docs/index-size.md#landed)).
+Two FAIL Verdicts stand as the record of the timing measurement: under the five-run rule two Tamil `find` cells fail
+clause (1) (+0.011 and +0.017 ms on about 3 ms) and 18 small cells clause (2) (about 0.1–0.3 µs on Tamil warm queries
+of 3–8 µs). The builder traced the cost to code placement (inert code alone moves the same cells as much) and found no
+fix with a mechanism; the maintainer accepted the cost and ruled that from now on a request on a code path a task did
+not change is judged by clause (1) only ([ROLES](docs/process/ROLES.md)). The third pass checked the Q1 tests (the
+verifier's plant caught), the natives (rebuilt byte-identical, stamp `f56d7d9e…`) and every suite on the merged tree.
+
+- **Format.** Every folder writer (`searchd index`, `apply`, `search`'s in-memory build, `ss_index_folder`,
+  `ss_apply_changes`) writes both lexical sections as `HYBLEX03`: postings as document gaps with tf = 1 in the
+  low bit, a front-coded dictionary (shared prefix capped at 255 bytes; no term shortened), document lengths as
+  varints. Manifest v2.3 sets flag bit 5 `lexical_v3`. Decoded in full at open into the same arrays as before
+  (strategy (i)). `import-json` writes what it wrote before, byte for byte. Every reader still reads `HYBLEX01`
+  and `HYBLEX02`.
+- **Measured** (ReleaseSmall, macOS arm64, against `main` at 98c4a2b on the same files): the 10k timing index
+  32,281,645 → 24,793,305 B (4.44 → 3.41 times the corpus), prose 69,778,345 → 54,111,784, Tamil
+  73,831,391 → 66,154,883, J2 367,659 → 260,237; open −17 % to −26 %; memory after open −7.1 / −15.1 / −6.9 MB;
+  first `find` and one-file update within their bars; warm query and `find` as above (accepted, not passing); the
+  first update of a v2 index +4.8 % to +8.3 % once. 65,456 answers (query, evidence, find, outline, read_span,
+  list_files, roots, status) identical between v2 by `main` and v3 over J2, `fixtures/`, the family-folder pack
+  and three 10k corpora; the J2 native gate clean, 0 rows differ.
+- **One way.** The first publish under this library rewrites an older index as v3; from then on a library
+  before it refuses the index (`UnsupportedFlags` at open, measured on 98c4a2b's own `searchd` and dylib) and
+  must rebuild from the files. Indexes are never shared between devices on different library versions.
+- **Versions.** Contracts 2.7.0, C header and tool schemas unchanged; Dart 0.8.1 (patch, CHANGELOG migration
+  note); natives rebuilt (`native/SOURCE-SHA256` `f56d7d9e…`): macOS 971,304 B (+17,216), Android 932,864 B
+  (+13,024), iOS framework binary 935,584 B (+328). App: pin bump row in 03-next (one way).
+- **Filed:** 03-next D2-1b, a lazy lexical reader, with Phase 1's numbers.
 
 ## Host-supplied vectors drafted as a capability (S6-T6, plan item E, 2026-11-16; Proposed; verified, merge pending a green CI run)
 

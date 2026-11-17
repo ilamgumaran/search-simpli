@@ -62,6 +62,8 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 
 - [Document/vector segment v1](segment-format-v1.md), [v2](segment-format-v2.md), and [v3](segment-format-v3.md)
 - [Lexical segment v1](lexical-segment-format-v1.md)
+- [Lexical segment v2](lexical-segment-format-v2.md)
+- [Lexical segment v3](lexical-segment-format-v3.md) (S6-T4, plan item D2 step 1)
 - [Generation manifest](manifest-format-v1.md)
 - [Atomic publication and recovery](publication-recovery.md)
 - [Generation lifecycle](generation-lifecycle.md)

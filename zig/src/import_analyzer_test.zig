@@ -13,6 +13,7 @@
 //! rank 1 through the import door.
 const std = @import("std");
 const lexical_segment = @import("lexical_segment.zig");
+const postings = @import("postings.zig");
 const chunker = @import("chunker.zig");
 const hybrid = @import("hybrid.zig");
 const importer = @import("importer.zig");
@@ -83,6 +84,10 @@ fn readWhole(arena: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []cons
     return dir.readFile(io, name, buffer);
 }
 
+fn decodeLexical(arena: std.mem.Allocator, encoded: []const u8, header: lexical_segment.Header) !postings.Index {
+    return lexical_segment.decodeWith(encoded, try arena.alloc(postings.TermEntry, header.term_count), try arena.alloc(postings.Posting, header.posting_count), try arena.alloc(u32, header.document_count), .{ .inspected = header, .term_text_allocator = arena });
+}
+
 /// S3-T1 amendment: `searchd index` now publishes a v2 manifest, record-v4
 /// documents and a source section, none of which interchange JSON v1 can
 /// carry, while `import-json` keeps writing the v1 manifest and v3 records.
@@ -93,28 +98,36 @@ fn readWhole(arena: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []cons
 fn expectSameSnapshotBytes(arena: std.mem.Allocator, io: std.Io, folder_dir: std.Io.Dir, import_dir: std.Io.Dir) !void {
     const folder_lexical = try readWhole(arena, io, folder_dir, "lexical-1.hyblex");
     const import_lexical = try readWhole(arena, io, import_dir, "lexical-1.hyblex");
-    // S3-T2: the folder door writes HYBLEX02 (positions), import-json
-    // HYBLEX01 under its v1 manifest. Sections 1-3 (document lengths, the
-    // sorted dictionary, postings) must still be equal byte for byte, as must
-    // every header count and the average length.
+    // S3-T2: the folder door writes positions, import-json HYBLEX01 under
+    // its v1 manifest. S6-T4: the folder door's section is HYBLEX03 (coded
+    // lengths, a front-coded dictionary, gap-coded postings), so sections
+    // 1-3 are compared decoded: every document length, term, document
+    // frequency and posting, every header count and the average length.
     const folder_header = try lexical_segment.inspect(folder_lexical);
     const import_header = try lexical_segment.inspect(import_lexical);
     try std.testing.expect(folder_header.hasPositions());
     try std.testing.expect(!import_header.hasPositions());
+    try std.testing.expectEqual(lexical_segment.version_v3, folder_header.version);
+    try std.testing.expectEqual(lexical_segment.version, import_header.version);
     try std.testing.expectEqual(folder_header.document_count, import_header.document_count);
     try std.testing.expectEqual(folder_header.term_count, import_header.term_count);
     try std.testing.expectEqual(folder_header.posting_count, import_header.posting_count);
     try std.testing.expectEqual(folder_header.average_document_length, import_header.average_document_length);
-    try std.testing.expectEqual(folder_header.dictionary_bytes, import_header.dictionary_bytes);
-    const sections_bytes = folder_header.document_lengths_bytes + folder_header.dictionary_bytes + folder_header.postings_bytes;
-    std.testing.expectEqualSlices(
-        u8,
-        folder_lexical[lexical_segment.header_length_v2..][0..sections_bytes],
-        import_lexical[lexical_segment.header_length..][0..sections_bytes],
-    ) catch |err| {
-        std.debug.print("S2-T1: lexical sections 1-3 differ between searchd index and import-json\n", .{});
+    const folder_index = try decodeLexical(arena, folder_lexical, folder_header);
+    const import_index = try decodeLexical(arena, import_lexical, import_header);
+    std.testing.expectEqualSlices(u32, folder_index.document_lengths, import_index.document_lengths) catch |err| {
+        std.debug.print("S2-T1: document lengths differ between searchd index and import-json\n", .{});
         return err;
     };
+    std.testing.expectEqualSlices(postings.Posting, folder_index.postings, import_index.postings) catch |err| {
+        std.debug.print("S2-T1: postings differ between searchd index and import-json\n", .{});
+        return err;
+    };
+    for (folder_index.terms, import_index.terms) |a, b| {
+        try std.testing.expectEqualStrings(a.term, b.term);
+        try std.testing.expectEqual(a.document_frequency, b.document_frequency);
+        try std.testing.expectEqual(a.postings_start, b.postings_start);
+    }
 
     const folder_manifest = try manifest.decode(try readWhole(arena, io, folder_dir, publication.current_manifest_file));
     const import_manifest = try manifest.decode(try readWhole(arena, io, import_dir, publication.current_manifest_file));

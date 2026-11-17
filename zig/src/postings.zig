@@ -86,6 +86,34 @@ pub fn readVarint(bytes: []const u8, offset: *usize) ?u32 {
     return @intCast(value);
 }
 
+pub const ListError = error{InvalidPosting};
+
+/// S6-T4 (`HYBLEX03` section 3): one term's `df` postings from exactly
+/// `coded`: per posting a varint `(gap << 1) | (tf == 1)`, the gap the
+/// document index itself for the first posting and the difference from the
+/// previous one (>= 1) after it; when the low bit is clear a varint tf >= 2
+/// follows. Every document index below `document_count`, so the list is
+/// strictly rising and in range; no byte of `coded` left over.
+pub fn decodeList(coded: []const u8, df: usize, document_count: u32, out: []Posting) ListError!void {
+    var at: usize = 0;
+    var previous: u32 = 0;
+    for (out[0..df], 0..) |*posting, k| {
+        const value = readVarint(coded, &at) orelse return error.InvalidPosting;
+        const gap = value >> 1;
+        if (k != 0 and gap == 0) return error.InvalidPosting;
+        const document = std.math.add(u32, previous, gap) catch return error.InvalidPosting;
+        if (document >= document_count) return error.InvalidPosting;
+        var tf: u32 = 1;
+        if (value & 1 == 0) {
+            tf = readVarint(coded, &at) orelse return error.InvalidPosting;
+            if (tf < 2) return error.InvalidPosting;
+        }
+        posting.* = .{ .document_index = document, .term_frequency = tf };
+        previous = document;
+    }
+    if (at != coded.len) return error.InvalidPosting;
+}
+
 /// Skip `count` varints already validated by the segment decoder.
 pub fn skipVarints(bytes: []const u8, offset: *usize, count: usize) void {
     var remaining = count;

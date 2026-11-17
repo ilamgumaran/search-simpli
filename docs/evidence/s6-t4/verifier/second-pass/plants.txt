@@ -1,0 +1,34 @@
+# S6-T4 second verification: plants on b01b70b (git archive, own ZIG_GLOBAL_CACHE_DIR and ZIG_LOCAL_CACHE_DIR each), Debug zig build test --summary new
+# P3: harness/P3-verifier.patch (the first pass's plant, unchanged); L1-L3: scripts/prototypes/s6t4/rework_plants.py; Q1, Q2: harness/Q1-verifier.patch, Q2-verifier.patch
+
+## base
+Build Summary: 9/9 steps succeeded; 463/472 tests passed (9 skipped)
+
+## P3
+Build Summary: 7/9 steps succeeded (1 failed); 460/472 tests passed (9 skipped, 3 failed)
+error: 'lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader' failed:
+error: 'lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections' failed:
+error: 'filename_field_test.test.S6-T4 rework: a file-name section whose last list is longer than its df is held to its list bytes' failed:
+
+## L1
+Build Summary: 7/9 steps succeeded (1 failed); 462/472 tests passed (9 skipped, 1 failed)
+error: 'lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections' failed:
+
+## L2
+Build Summary: 7/9 steps succeeded (1 failed); 462/472 tests passed (9 skipped, 1 failed)
+error: 'lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections' failed:
+
+## L3
+Build Summary: 7/9 steps succeeded (1 failed); 461/472 tests passed (9 skipped, 2 failed)
+error: 'lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader' failed:
+error: 'lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections' failed:
+
+## Q2
+Build Summary: 7/9 steps succeeded (1 failed); 462/472 tests passed (9 skipped, 1 failed)
+error: 'lexical_segment.test.S4-T12 ruling 2: every refusal keeps its name through encodedLength, encode and encodeAlloc' failed:
+
+## Q1
+Build Summary: 9/9 steps succeeded; 463/472 tests passed (9 skipped)
+
+## Q1 on main (git archive of 98c4a2b, own caches)
+Build Summary: 9/9 steps succeeded; 448/457 tests passed (9 skipped)

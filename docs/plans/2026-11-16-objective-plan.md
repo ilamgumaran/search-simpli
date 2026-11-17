@@ -70,6 +70,11 @@ The text is stored twice (chunks and source), each copy larger than the corpus.
 The timing corpus has an unusually large vocabulary, which inflates the lexical
 section; ordinary prose must be measured before a target is fixed.
 
+**After D2 step 1** (lexical v3, [S6-T4](../tasks/S6-T4.md), 16 Nov 2026): the
+same 10,000-file index is 24,793,305 B, **3.41** times its corpus;
+`lexical-1.hyblex` 5,396,552 B and `filename-lexical-1.hyblex` 92,952 B, every
+other section unchanged ([`docs/index-size.md`](../index-size.md#landed)).
+
 ## The work, in order
 
 Each item becomes one or more task files under `docs/tasks/` (series **S6**),
@@ -145,6 +150,14 @@ whether to keep one is the maintainer's decision (03-next).
 2. **D2 onward:** the chosen changes, one format version at a time, each with a
    reader for the previous version, a migration note and before/after numbers
    for size, open, query and one-file update.
+   **Step 1, lexical v3, done 16 Nov 2026** ([S6-T4](../tasks/S6-T4.md),
+   verified on `59f25e1` and merged into `main` as `f3e354e` on the maintainer's decision,
+   with the timing rule not passed): both lexical sections `HYBLEX03` under
+   manifest v2.3; the index 22–24 % smaller on the timing and prose corpora
+   (10 % on Tamil), the open 17–26 % faster, every answer unchanged; on Tamil
+   warm queries about 0.1–0.3 µs and two `find` requests 0.011–0.017 ms slower,
+   accepted by the maintainer; one way for a consumer (an older library cannot
+   open an index after its first v3 publish). Steps 2–4 follow.
 3. **Delta sections** for writes (already filed in 03-next) follow D2, since both
    touch the section formats.
 
@@ -178,7 +191,8 @@ each behind its capability document.
 ## Decisions taken under the instruction
 
 The maintainer said to use best judgment toward the objective. These are the
-decisions that judgment has taken so far; each can be reversed.
+decisions that judgment has taken so far; each can be reversed. Rows marked as
+the maintainer's decision are his, not this judgment's.
 
 | Decision | Why |
 | --- | --- |
@@ -188,3 +202,5 @@ decisions that judgment has taken so far; each can be reversed.
 | The S5-T12 timing rule with placement controls stands. | Identical sources build to different timings by placement alone; the old band could not tell that from a regression. |
 | CAP-13 is **not** moved to Validated here. | Its exit asks for the maintainer's reading of the S5-T10 evidence; that is not a judgment about the objective. |
 | `IMPROVEMENT-BOARD.md` is still not edited by this orchestrator. | It has its own owner (review R12). |
+| **The maintainer's decision, 16 Nov:** S6-T4 merges as built, with its measured cost (two Tamil `find` cells fail clause (1) of the five-run timing rule, 18 small cells clause (2)); accepted, not passing. | The maintainer's replies of 16 Nov to the orchestrator's recommendation; see [S6-T4](../tasks/S6-T4.md#maintainers-decision-16-nov-2026). |
+| **The maintainer's decision, 16 Nov:** a request on a code path the task did not change is judged by clause (1) only; clause (2), the controls' band, is still reported but no longer fails it. Changed paths keep both clauses. | The same replies; see [S6-T4](../tasks/S6-T4.md#maintainers-decision-16-nov-2026) and the dated rule in [`ROLES.md`](../process/ROLES.md). |

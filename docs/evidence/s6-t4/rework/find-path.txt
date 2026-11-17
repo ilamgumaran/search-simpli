@@ -1,0 +1,116 @@
+# S6-T4 rework, item 2: the three `find` cells (timing `find words from`,
+# Tamil `find words கீகசை`, Tamil `find prefix டூகன*`)
+
+## What differs between a v2 and a v3 index after open (from the code)
+
+- The find path's code is the same for both: `find.zig`, `scope.zig`,
+  `postings.zig`'s lookups and position tables are unchanged by this branch
+  apart from `postings.decodeList` (open only). No find code branches on the
+  format: outside the codec, the format is read only by the manifest checks,
+  `filename_field` (carry rule, load check, reservation) and
+  `snapshot_open.decodeLoaded` (passes the arena for the term text).
+- The arrays `find` reads are the same arrays with the same contents: the
+  `TermEntry` table, the `Posting` table and the document lengths are decoded
+  into the same open block, element for element as a v2 section's;
+  `sorted_terms` is true for both (the v2 content section was already
+  sorted), so `find` uses `postings.lookupExact` and the same prefix range.
+- Positions and offsets (sections 4 and 5) are byte for byte v2's and are
+  read in place in both; only their start within the loaded section moves
+  (timing-10k positions at byte 9,000,613 in v2, 1,909,412 in v3: 37 and 36
+  mod 64; Tamil 9,339,603 and 2,060,234: 19 and 10 mod 64). Position tables
+  are built at the first `find` in both, from the same bytes.
+- One thing is placed differently: a v3 section's term text is one block
+  from the open arena (allocated during the decode), where a v2 term is a
+  slice of the section's dictionary. Each lookup compares the same bytes;
+  the block is contiguous where v2's terms are spread through the
+  dictionary. Arena allocations made after it (the position tables at the
+  first `find`) sit at other addresses.
+- No slice became a copy on the find path, no indirection was added, no
+  allocation was added per request.
+
+## Why the sign follows the run number
+
+run2.sh (builder) and vrun.sh (verifier) rotate the same five libraries by
+one place per run, so `main` always runs immediately after the head: head
+4th and main 5th in run 1, head 3rd and main 4th in run 2. For `find words
+from` the 4th place was the fastest place and the 3rd the slowest, averaged
+over the four runs (below), so head - main is negative in both run 1s and
+positive in both run 2s whatever the head's own cost. The same libraries'
+`find` cells taken together show nothing: the median of head - main over every
+`find` cell of a corpus is within +-0.005 ms in all four runs (the same median
+for main2 - main, the same bytes as main, runs from -0.0123 to +0.0036 ms).
+
+## The format alone (an investigation, not a bar run)
+
+`format_ab.sh`: this branch's library (the committed macOS native) on the v2
+index (written by 98c4a2b) and on the v3 index (by this branch) of the same
+corpus, alternated ABBA, four rounds per corpus, the gate before each process
+(16 of 16 passed, 5-minute load 1.64-1.81, lock absent; no sleep in
+`pmset -g log`; the Mac in dark wake, `UserIsActive` 0). Code placement is the
+same for both, so what is left is the format. `find words from`: v3 faster in
+all four rounds (median -0.009 ms). The Tamil pair: v3 slower in three rounds
+of four (median +0.005 and +0.004 ms, about 0.15 %), the size main2 - main
+reached on the same cells (+0.0145, +0.0166, +0.0275 ms), with no mechanism in
+the code above. Every warm query cell: median v3 - v2 0.0000 ms (timing and
+Tamil, 45 cells each).
+
+## timing-10k find words `from`
+
+p50 / min ms by position in the run:
+
+- builder 1: 1 main2 3.0087 / 2.9842; 2 ctl1 3.0118 / 2.9859; 3 ctl2 3.0294 / 2.9881; 4 v3 3.0165 / 2.9867; 5 main 3.0342 / 2.9957 (head - main -0.0177, main2 - main -0.0255)
+- builder 2: 1 ctl1 3.0130 / 2.9795; 2 ctl2 3.0182 / 2.9770; 3 v3 3.0357 / 3.0013; 4 main 3.0152 / 2.9831; 5 main2 3.0158 / 2.9859 (head - main +0.0205, main2 - main +0.0005)
+- verifier 1: 1 main2 3.0221 / 2.9901; 2 ctl1 3.0442 / 3.0183; 3 ctl2 3.0198 / 2.9862; 4 v3 3.0034 / 2.9758; 5 main 3.0326 / 2.9907 (head - main -0.0292, main2 - main -0.0105)
+- verifier 2: 1 ctl1 3.0449 / 3.0109; 2 ctl2 3.0134 / 2.9862; 3 v3 3.0309 / 2.9977; 4 main 3.0113 / 2.9839; 5 main2 3.0157 / 2.9905 (head - main +0.0197, main2 - main +0.0044)
+
+mean p50 by position over the four runs: 1: 3.0222 2: 3.0219 3: 3.0290 4: 3.0116 5: 3.0245
+
+this branch's library, v2 index against v3 index (ABBA; p50 / min ms):
+
+- round 1 (v2 first): v2 3.0412 / 2.9950, v3 3.0269 / 2.9865, v3 - v2 -0.0143
+- round 2 (v3 first): v2 3.0363 / 2.9815, v3 3.0257 / 2.9913, v3 - v2 -0.0107
+- round 3 (v2 first): v2 3.0470 / 3.0025, v3 3.0395 / 2.9970, v3 - v2 -0.0075
+- round 4 (v3 first): v2 3.0416 / 2.9947, v3 3.0396 / 2.9927, v3 - v2 -0.0020
+
+median v3 - v2: -0.0091 ms
+
+## tamil-10k find words `கீகசை`
+
+p50 / min ms by position in the run:
+
+- builder 1: 1 main2 2.9999 / 2.9317; 2 ctl1 2.9581 / 2.9206; 3 ctl2 2.9746 / 2.9337; 4 v3 2.9942 / 2.9416; 5 main 2.9724 / 2.9492 (head - main +0.0218, main2 - main +0.0275)
+- builder 2: 1 ctl1 2.9764 / 2.9376; 2 ctl2 2.9733 / 2.9315; 3 v3 2.9801 / 2.9386; 4 main 2.9955 / 2.9477; 5 main2 2.9830 / 2.9311 (head - main -0.0154, main2 - main -0.0125)
+- verifier 1: 1 main2 2.9665 / 2.9228; 2 ctl1 2.9909 / 2.9657; 3 ctl2 2.9743 / 2.9431; 4 v3 2.9816 / 2.9531; 5 main 2.9754 / 2.9426 (head - main +0.0062, main2 - main -0.0088)
+- verifier 2: 1 ctl1 3.0749 / 2.9654; 2 ctl2 2.9765 / 2.9456; 3 v3 2.9829 / 2.9541; 4 main 2.9639 / 2.9433; 5 main2 2.9784 / 2.9459 (head - main +0.0190, main2 - main +0.0145)
+
+mean p50 by position over the four runs: 1: 3.0044 2: 2.9747 3: 2.9780 4: 2.9838 5: 2.9773
+
+this branch's library, v2 index against v3 index (ABBA; p50 / min ms):
+
+- round 1 (v2 first): v2 2.9856 / 2.9425, v3 3.0021 / 2.9507, v3 - v2 +0.0165
+- round 2 (v3 first): v2 2.9908 / 2.9380, v3 2.9958 / 2.9583, v3 - v2 +0.0050
+- round 3 (v2 first): v2 2.9868 / 2.9338, v3 2.9918 / 2.9444, v3 - v2 +0.0050
+- round 4 (v3 first): v2 3.0022 / 2.9512, v3 2.9970 / 2.9412, v3 - v2 -0.0052
+
+median v3 - v2: +0.0050 ms
+
+## tamil-10k find prefix `டூகன*`
+
+p50 / min ms by position in the run:
+
+- builder 1: 1 main2 3.0091 / 2.9690; 2 ctl1 2.9688 / 2.9425; 3 ctl2 3.0007 / 2.9629; 4 v3 3.0109 / 2.9765; 5 main 2.9865 / 2.9612 (head - main +0.0244, main2 - main +0.0226)
+- builder 2: 1 ctl1 2.9853 / 2.9410; 2 ctl2 2.9982 / 2.9619; 3 v3 3.0015 / 2.9703; 4 main 3.0150 / 2.9798; 5 main2 2.9956 / 2.9548 (head - main -0.0135, main2 - main -0.0194)
+- verifier 1: 1 main2 2.9845 / 2.9360; 2 ctl1 3.0097 / 2.9812; 3 ctl2 3.0015 / 2.9521; 4 v3 3.0007 / 2.9618; 5 main 2.9945 / 2.9609 (head - main +0.0063, main2 - main -0.0100)
+- verifier 2: 1 ctl1 3.0990 / 3.0059; 2 ctl2 2.9957 / 2.9580; 3 v3 3.0054 / 2.9696; 4 main 2.9838 / 2.9545; 5 main2 3.0004 / 2.9786 (head - main +0.0216, main2 - main +0.0166)
+
+mean p50 by position over the four runs: 1: 3.0194 2: 2.9931 3: 3.0023 4: 3.0026 5: 2.9942
+
+this branch's library, v2 index against v3 index (ABBA; p50 / min ms):
+
+- round 1 (v2 first): v2 3.0023 / 2.9615, v3 3.0191 / 2.9628, v3 - v2 +0.0168
+- round 2 (v3 first): v2 3.0080 / 2.9590, v3 3.0163 / 2.9760, v3 - v2 +0.0083
+- round 3 (v2 first): v2 3.0052 / 2.9665, v3 3.0053 / 2.9697, v3 - v2 +0.0001
+- round 4 (v3 first): v2 3.0224 / 2.9663, v3 3.0103 / 2.9674, v3 - v2 -0.0121
+
+median v3 - v2: +0.0042 ms
+

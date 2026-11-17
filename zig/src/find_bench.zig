@@ -170,7 +170,7 @@ fn printSections(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, engi
     if (comptime @hasDecl(lexical_segment, "header_length_v2")) {
         std.debug.print("lexical section {d} B: version {d}, header {d}, lengths {d}, dictionary {d}, postings {d}, positions {d}, offsets {d}\n", .{
             metadata.lexical_bytes,       header.version,
-            if (header.version == 2) lexical_segment.header_length_v2 else lexical_segment.header_length,
+            lexical_segment.headerLength(header.version),
             header.document_lengths_bytes, header.dictionary_bytes,
             header.postings_bytes,        header.positions_bytes,
             header.offsets_bytes,

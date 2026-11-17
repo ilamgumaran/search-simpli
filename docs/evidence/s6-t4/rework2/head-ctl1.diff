@@ -1,0 +1,40 @@
+--- a/zig/src/lexical_segment.zig
++++ b/zig/src/lexical_segment.zig
+@@ -342,6 +342,27 @@
+     term_text_allocator: ?std.mem.Allocator = null,
+ };
+ 
++fn inertDecode(which: usize, encoded: []const u8, term_output: []postings.TermEntry, posting_output: []postings.Posting, document_length_output: []u32, options: DecodeOptions) DecodeError!postings.Index {
++    var copy = options;
++    copy.inspected = null;
++    return switch (which % inert_copies) {
++        inline 0...inert_copies - 1 => |k| @call(.never_inline, inertCopy(k).run, .{ encoded[k + 1 ..], term_output, posting_output, document_length_output, copy }),
++        else => unreachable,
++    };
++}
++
++const inert_copies = 13;
++
++fn inertCopy(comptime k: usize) type {
++    return struct {
++        const tag = k;
++        fn run(encoded: []const u8, term_output: []postings.TermEntry, posting_output: []postings.Posting, document_length_output: []u32, options: DecodeOptions) DecodeError!postings.Index {
++            return @call(.always_inline, decodeWith, .{ encoded, term_output, posting_output, document_length_output, options });
++        }
++    };
++}
++
++
+ pub fn decodeWith(
+     encoded: []const u8,
+     term_output: []postings.TermEntry,
+@@ -350,6 +371,9 @@
+     options: DecodeOptions,
+ ) DecodeError!postings.Index {
+     const header = options.inspected orelse try inspect(encoded);
++    // S6-T4 placement control 1 (bench only): never true (no section is 2^60
++    // bytes long); the copies below are never run.
++    if (encoded.len >= (1 << 60)) return inertDecode(encoded.len, encoded, term_output, posting_output, document_length_output, options);
+     if (header.version == version_v3) return decodeV3(encoded, header, term_output, posting_output, document_length_output, options);
+     if (term_output.len < header.term_count) return error.TermCapacityTooSmall;
+     if (posting_output.len < header.posting_count) return error.PostingCapacityTooSmall;

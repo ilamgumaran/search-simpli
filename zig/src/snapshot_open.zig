@@ -195,7 +195,7 @@ fn loadEngine(allocators: Allocators, io: std.Io, from: From, options: engine.En
     // source-reading operations (`read_span`, `outline`) answer `CAPACITY`
     // (`openSource` reports why). A writer still treats it as a missing
     // section and heals it (`index --update`, `apply_changes`).
-    return decodeLoaded(block, layout, snapshot, options);
+    return decodeLoaded(allocators.arena, block, layout, snapshot, options);
 }
 
 /// S6-T2: `loadEngine` over sections in memory: the manifest is copied into
@@ -216,7 +216,7 @@ fn loadEngineMemory(allocators: Allocators, sections: Sections, options: engine.
     // (`manifest.validateSnapshotHeaders`). `LoadedSnapshot` holds mutable
     // slices, but `openWith` only reads them (its checks and both decoders
     // take `[]const u8`), so the sections are used in place, not copied.
-    return decodeLoaded(block, layout, .{
+    return decodeLoaded(allocators.arena, block, layout, .{
         .metadata = try manifest.decode(manifest_encoded),
         .manifest_encoded = manifest_encoded,
         .documents_encoded = @constCast(sections.documents),
@@ -225,9 +225,14 @@ fn loadEngineMemory(allocators: Allocators, sections: Sections, options: engine.
 }
 
 /// The decode both loads share: `Engine.openWith` into the block's tables.
-fn decodeLoaded(block: engine.OpenBlockBytes, layout: OpenBlock, snapshot: publication.LoadedSnapshot, options: engine.Engine.OpenOptions) !Loaded {
+/// S6-T4: a `HYBLEX03` section's decoded term text (its header's
+/// `term_text_bytes`, unknown until the section is read, so not in the
+/// block) comes from `arena`; v1 and v2 terms stay slices of the section.
+fn decodeLoaded(arena: std.mem.Allocator, block: engine.OpenBlockBytes, layout: OpenBlock, snapshot: publication.LoadedSnapshot, initial_options: engine.Engine.OpenOptions) !Loaded {
     const metadata = snapshot.metadata;
     const vector_count = metadata.document_count * metadata.vector_dimensions; // checked by `OpenBlock.of`
+    var options = initial_options;
+    options.term_text_allocator = arena;
     var opened = try engine.Engine.openWith(
         snapshot,
         OpenBlock.slice(hybrid.Document, block, layout.documents, metadata.document_count),

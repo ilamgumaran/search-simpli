@@ -169,7 +169,7 @@ pub fn importJsonKeeping(
         documents_encoded,
         lexical_encoded,
     );
-    const filename_data = if (filename_enabled) try filename_field.build(lexical_arena.allocator(), documents, payload.analyzer_id) else filename_field.Built{ .catalog = &.{}, .lexical = &.{} };
+    const filename_data = if (filename_enabled) try filename_field.buildV1(lexical_arena.allocator(), documents, payload.analyzer_id) else filename_field.Built{ .catalog = &.{}, .lexical = &.{} };
     const catalog_file = try std.fmt.allocPrint(allocator, "filenames-{d}.hybseg", .{payload.generation});
     defer allocator.free(catalog_file);
     const filename_lexical_file = try std.fmt.allocPrint(allocator, "filename-lexical-{d}.hyblex", .{payload.generation});

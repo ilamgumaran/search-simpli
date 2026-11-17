@@ -270,7 +270,7 @@ test "S4-T2 R4: the full filename check (tests, import-json) sees a resealed ter
     const kind = (try lexical_segment.inspect(lexical)).checksum_kind;
     const at = std.mem.indexOf(u8, lexical, "week").?;
     lexical[at + 3] = 's';
-    const fixed = if (std.mem.eql(u8, lexical[0..8], lexical_segment.magic_v2)) lexical_segment.header_length_v2 else lexical_segment.header_length;
+    const fixed = lexical_segment.headerLengthOfBytes(lexical);
     const value = checksum.compute(kind, lexical[0 .. fixed - 8], lexical[fixed..]);
     std.mem.writeInt(u64, lexical[fixed - 8 ..][0..8], value, .little);
     try std.testing.expectError(error.FilenameLexicalMismatch, filename_field.validate(a, eager.documents, catalog, lexical, eager.analyzer_id));
@@ -293,7 +293,7 @@ fn rewriteLexical(a: std.mem.Allocator, dir: std.Io.Dir, edit: *const fn ([]u8, 
     const lexical = try dir.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
     const header = try lexical_segment.inspect(lexical);
     edit(lexical, header);
-    const fixed = lexical_segment.header_length_v2;
+    const fixed = header.length();
     const value = checksum.compute(header.checksum_kind, lexical[0 .. fixed - 8], lexical[fixed..]);
     std.mem.writeInt(u64, lexical[fixed - 8 ..][0..8], value, .little);
     try dir.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = lexical });
@@ -307,7 +307,7 @@ fn writeManifest(a: std.mem.Allocator, dir: std.Io.Dir, metadata: manifest.Manif
 }
 
 fn breakPositions(lexical: []u8, header: lexical_segment.Header) void {
-    const start = lexical_segment.header_length_v2 + header.document_lengths_bytes + header.dictionary_bytes + header.postings_bytes;
+    const start = header.length() + header.document_lengths_bytes + header.dictionary_bytes + header.postings_bytes;
     // Every byte a continuation byte: no ordinal varint ever ends.
     @memset(lexical[start .. start + header.positions_bytes], 0x80);
 }

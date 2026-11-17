@@ -1013,7 +1013,8 @@ test "S3-T3: find and index_status say pending_files and truncated, over the vis
 /// S4-T11 ruling 2: the current generation's `lexical-N.hyblex` is byte
 /// for byte what `lexical_build.buildPositional` gives over its documents'
 /// tokens (every document re-tokenized: the oracle shares no code with the
-/// writer's merge). Returns that fresh index.
+/// writer's merge), in the format the writer publishes (`HYBLEX03` since
+/// S6-T4). Returns that fresh index.
 fn expectFreshParity(f: *Fixture) !@import("postings.zig").Index {
     const a = f.arena();
     const scoped = try f.opened();
@@ -1021,8 +1022,7 @@ fn expectFreshParity(f: *Fixture) !@import("postings.zig").Index {
     const lists = try a.alloc([]const @import("analysis.zig").PositionedToken, engine.documents.len);
     for (engine.documents, lists) |document, *list| list.* = try indexer.tokenizePositioned(a, .v2, document.text);
     const fresh = try lexical_build.buildPositional(a, engine.documents, lists);
-    const expected = try a.alloc(u8, try @import("lexical_segment.zig").encodedLength(fresh));
-    _ = try @import("lexical_segment.zig").encode(fresh, expected);
+    const expected = try @import("lexical_segment.zig").encodeV3Alloc(a, fresh);
     const metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
     try std.testing.expectEqualSlices(u8, expected, try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited));
     try std.testing.expect(metadata.has_positions);
@@ -1186,7 +1186,7 @@ test "S4-T11 ruling 2: a HYBLEX01 previous generation takes the fresh path and u
     const lexical_segment = @import("lexical_segment.zig");
     var metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
     const encoded = try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
-    var index = try lexical_segment.decode(encoded, try a.alloc(@import("postings.zig").TermEntry, metadata.term_count), try a.alloc(@import("postings.zig").Posting, metadata.posting_count), try a.alloc(u32, metadata.document_count));
+    var index = try lexical_segment.decodeWith(encoded, try a.alloc(@import("postings.zig").TermEntry, metadata.term_count), try a.alloc(@import("postings.zig").Posting, metadata.posting_count), try a.alloc(u32, metadata.document_count), .{ .term_text_allocator = a });
     index.positions = null;
     index.sorted_terms = false;
     const v1 = try lexical_segment.encode(index, try a.alloc(u8, try lexical_segment.encodedLength(index)));
@@ -1195,6 +1195,7 @@ test "S4-T11 ruling 2: a HYBLEX01 previous generation takes the fresh path and u
     metadata.lexical_bytes = v1.len;
     metadata.lexical_checksum = std.mem.readInt(u64, v1[lexical_segment.header_length - 8 ..][0..8], .little);
     metadata.has_positions = false;
+    metadata.lexical_v3 = false;
     try f.out.writeFile(io, .{ .sub_path = "MANIFEST", .data = try manifest.encode(metadata, try a.alloc(u8, try manifest.encodedLength(metadata))) });
     try std.testing.expect(!(try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited))).has_positions);
 
@@ -1550,10 +1551,10 @@ fn changeB(f: *Fixture) ![]const u8 {
     return joinChanges(a, "[]", &.{try add(a, "home", "b.txt", "first line of b\nsecond line of b\na third line\n", "")});
 }
 
-/// Where section 4 (positions) of a `HYBLEX02` section starts, and its length.
+/// Where section 4 (positions) of a `HYBLEX02` or `HYBLEX03` section starts, and its length.
 fn positionsRange(bytes: []const u8) struct { start: usize, len: usize } {
     const header = lexical_segment_module.inspect(bytes) catch unreachable;
-    return .{ .start = lexical_segment_module.header_length_v2 + header.document_lengths_bytes + header.dictionary_bytes + header.postings_bytes, .len = header.positions_bytes };
+    return .{ .start = lexical_segment_module.headerLengthOfBytes(bytes) + header.document_lengths_bytes + header.dictionary_bytes + header.postings_bytes, .len = header.positions_bytes };
 }
 
 test "S4-T13 ruling 2(a): a previous lexical section with a flipped byte, or one that disagrees with the manifest, is refused at open" {
@@ -1573,7 +1574,7 @@ test "S4-T13 ruling 2(a): a previous lexical section with a flipped byte, or one
     try std.testing.expectError(error.ChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
     try std.testing.expectEqualStrings(flipped_listing, try f.listing());
     // The same byte re-sealed in the section, not in the manifest.
-    resealSection(flipped, lexical_segment_module.header_length_v2);
+    resealSection(flipped, lexical_segment_module.headerLengthOfBytes(flipped));
     try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = flipped });
     const resealed_listing = try f.listing();
     try std.testing.expectError(error.LexicalSectionChecksumMismatch, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
@@ -1593,7 +1594,7 @@ test "S4-T13 ruling 2(b): a re-sealed repeated ordinal in a carried posting is r
     var metadata = try currentManifest(&f);
     const bytes = try f.out.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
     const header = try lexical_segment_module.inspect(bytes);
-    const index = try lexical_segment_module.decode(bytes, try a.alloc(@import("postings.zig").TermEntry, header.term_count), try a.alloc(@import("postings.zig").Posting, header.posting_count), try a.alloc(u32, header.document_count));
+    const index = try lexical_segment_module.decodeWith(bytes, try a.alloc(@import("postings.zig").TermEntry, header.term_count), try a.alloc(@import("postings.zig").Posting, header.posting_count), try a.alloc(u32, header.document_count), .{ .inspected = header, .term_text_allocator = a });
     const documents = (try f.opened()).service.engine.documents;
     // The second ordinal of a posting of `a.md` (carried: only b.txt
     // changes), a one-byte gap set to zero: a repeated ordinal.
@@ -1609,9 +1610,9 @@ test "S4-T13 ruling 2(b): a re-sealed repeated ordinal in a carried posting is r
     }
     const range = positionsRange(bytes);
     bytes[range.start + target.?] = 0;
-    resealSection(bytes, lexical_segment_module.header_length_v2);
+    resealSection(bytes, lexical_segment_module.headerLengthOfBytes(bytes));
     try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = bytes });
-    metadata.lexical_checksum = storedSectionChecksum(bytes, lexical_segment_module.header_length_v2);
+    metadata.lexical_checksum = storedSectionChecksum(bytes, lexical_segment_module.headerLengthOfBytes(bytes));
     try writeManifest(&f, metadata);
     const before = try f.listing();
     // S4-T13: the open no longer walks the positions; the merged index's
@@ -1632,10 +1633,10 @@ test "S4-T13 ruling 2(c): a re-sealed byte appended to section 4 is refused by t
     const longer = try std.mem.concat(a, u8, &.{ bytes[0 .. range.start + range.len], &.{0x00}, bytes[range.start + range.len ..] });
     // Section 4's length (header offset 56) grows by the byte.
     std.mem.writeInt(u64, longer[56..64], range.len + 1, .little);
-    resealSection(longer, lexical_segment_module.header_length_v2);
+    resealSection(longer, lexical_segment_module.headerLengthOfBytes(longer));
     try f.out.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = longer });
     metadata.lexical_bytes = longer.len;
-    metadata.lexical_checksum = storedSectionChecksum(longer, lexical_segment_module.header_length_v2);
+    metadata.lexical_checksum = storedSectionChecksum(longer, lexical_segment_module.headerLengthOfBytes(longer));
     try writeManifest(&f, metadata);
     const before = try f.listing();
     try std.testing.expectError(error.InvalidLexicalSection, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
@@ -1860,14 +1861,19 @@ fn forgeFilenameLexical(f: *Fixture, forge: Forge) ![]const u8 {
     const bytes = try f.out.readFileAlloc(io, bound.lexical_file, a, .unlimited);
     const header = try lexical_segment_module.inspect(bytes);
     try std.testing.expect(!header.hasPositions() and header.term_count > 0);
-    // Section 2's first record: u32 length, u32 frequency, u64 start, u64
-    // length, then the term's bytes.
-    const at = lexical_segment_module.header_length + header.document_lengths_bytes + 24;
+    // S6-T4: a `HYBLEX03` section (what the writer publishes): section 2's
+    // first entry is a shared length of 0 and a one-byte suffix length,
+    // then the term's bytes.
+    try std.testing.expectEqual(lexical_segment_module.version_v3, header.version);
+    const fixed = header.length();
+    try std.testing.expectEqual(@as(u8, 0), bytes[fixed + header.document_lengths_bytes]);
+    try std.testing.expect(bytes[fixed + header.document_lengths_bytes + 1] < 0x80);
+    const at = fixed + header.document_lengths_bytes + 2;
     bytes[at] ^= 0x01;
-    if (forge != .flipped) resealSection(bytes, lexical_segment_module.header_length);
+    if (forge != .flipped) resealSection(bytes, fixed);
     try f.out.writeFile(io, .{ .sub_path = bound.lexical_file, .data = bytes });
     if (forge == .resealed_with_manifest) {
-        bound.lexical_checksum = storedSectionChecksum(bytes, lexical_segment_module.header_length);
+        bound.lexical_checksum = storedSectionChecksum(bytes, fixed);
         metadata.filename = bound;
         try writeManifest(f, metadata);
     }
@@ -2221,8 +2227,8 @@ fn unsortGeneration(f: *Fixture, how: Unsorted) !void {
     const lists = try a.alloc([]const @import("analysis.zig").PositionedToken, order.items.len);
     for (order.items, lists) |document, *list| list.* = try indexer.tokenizePositioned(a, .v2, document.text);
     const index = try lexical_build.buildPositional(a, order.items, lists);
-    const lexical = try a.alloc(u8, try lexical_segment_module.encodedLength(index));
-    _ = try lexical_segment_module.encode(index, lexical);
+    // S6-T4: in the format the writer publishes (`HYBLEX03`).
+    const lexical = try lexical_segment_module.encodeV3Alloc(a, index);
     const documents_encoded = try a.alloc(u8, try segment_module.encodedLengthV4(order.items));
     _ = try segment_module.encodeV4(order.items, documents_encoded);
     try f.out.writeFile(io, .{ .sub_path = metadata.documents_file, .data = documents_encoded });
@@ -2230,7 +2236,7 @@ fn unsortGeneration(f: *Fixture, how: Unsorted) !void {
     metadata.documents_bytes = documents_encoded.len;
     metadata.documents_checksum = storedSectionChecksum(documents_encoded, segment_module.header_length);
     metadata.lexical_bytes = lexical.len;
-    metadata.lexical_checksum = storedSectionChecksum(lexical, lexical_segment_module.header_length_v2);
+    metadata.lexical_checksum = storedSectionChecksum(lexical, lexical_segment_module.headerLengthOfBytes(lexical));
     metadata.term_count = index.terms.len;
     metadata.posting_count = index.postings.len;
     try writeManifest(f, metadata);

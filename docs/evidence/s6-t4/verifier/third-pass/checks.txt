@@ -1,0 +1,18 @@
+S6-T4 third pass (verifier): Q1 plant, natives, suites. No timing taken.
+
+Q1 plant (verifier/second-pass/harness/Q1-verifier.patch, unchanged) on a git archive of 59f25e1, own Zig caches, Debug zig build test:
+  Q1: Build Summary: 7/9 steps succeeded (1 failed); 462/473 tests passed (9 skipped, 2 failed)
+    error: 'lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader' failed:
+    error: 'lexical_segment.test.S6-T4 second rework (Q1): a byte left over after the last document's offsets is refused, v2 and v3, at open and lazily' failed:
+    S6-T4 byte flips: 5170 resealed flips, 2982 refused, 2188 accepted (each re-encodes to its own bytes); every unsealed flip refused
+  base: Build Summary: 9/9 steps succeeded; 464/473 tests passed (9 skipped)
+    S6-T4 byte flips: 5170 resealed flips, 2982 refused, 2188 accepted (each re-encodes to its own bytes); every unsealed flip refused
+    S6-T4 byte flips: 14 sections with a byte after the last offsets, all refused
+
+Natives rebuilt by tool/build_native.sh from empty Zig caches (git archive of 59f25e1), cmp against the committed files:
+  identical 971304 B  macos-arm64/libsearch_simpli.dylib
+  identical 932864 B  android-arm64/libsearch_simpli.so
+  identical 935584 B  ios-arm64/search_simpli.framework/search_simpli
+  stamp written: f56d7d9e0922d5b4fa9f70738ead216dbd4cf09cfb19906c54f51070c26fc23e
+  source_digest.py: f56d7d9e0922d5b4fa9f70738ead216dbd4cf09cfb19906c54f51070c26fc23e
+  searchd ReleaseSmall: 1114984 B
