@@ -525,6 +525,11 @@ void main() {
           .writeAsStringSync('# Trip\n\nthe dinosaur museum had bones\n');
       File('${folder.path}/garden/bean-diary.md')
           .writeAsStringSync('# Beans\n\ntomatoes and beans grew tall\n');
+      // S6-T5 rework: a group of three forms and expansions of two words.
+      File('${folder.path}/studio-log.md').writeAsStringSync(
+          '# Studio\n\nshe painted while painting paints and walked\n');
+      File('${folder.path}/fair-notes.md').writeAsStringSync(
+          '# Fair\n\nthe festival was festive and the lantern lanterns glowed\n');
       SearchSimpli.indexFolder(
         out.path,
         folder.path,
@@ -572,6 +577,46 @@ void main() {
         (SearchWarningCode.queryTermUnmatched, 'qqzzxx'),
         (SearchWarningCode.queryTermUnmatched, 'tomato'),
       ]);
+    });
+
+    test('both: members and expansions in full and in order, as content gives them',
+        () {
+      // Lists joined, so that the records compare by value.
+      List<(SearchWarningCode, String?, String?, String?, String)> full(
+              SearchField field) =>
+          named
+              .query('paint festivl lantren diary',
+                  topK: 5, mode: RetrievalMode.lexical, searchField: field)
+              .warnings!
+              .map((w) => (
+                    w.code,
+                    w.term,
+                    w.members?.join(', '),
+                    w.expansions?.join(', '),
+                    w.message
+                  ))
+              .toList();
+      final content = full(SearchField.content);
+      expect(content, [
+        (SearchWarningCode.queryTermUnmatched, 'paint', null, null,
+            'the term was not found in the searched files'),
+        (SearchWarningCode.queryTermGrouped, 'paint',
+            'painted, painting, paints', null,
+            'also searched as: painted, painting, paints'),
+        (SearchWarningCode.queryTermUnmatched, 'festivl', null, null,
+            'the term was not found in the searched files'),
+        (SearchWarningCode.queryTermExpanded, 'festivl', null,
+            'festival, festive', 'also searched: festival, festive'),
+        (SearchWarningCode.queryTermUnmatched, 'lantren', null, null,
+            'the term was not found in the searched files'),
+        (SearchWarningCode.queryTermExpanded, 'lantren', null,
+            'lantern, lanterns', 'also searched: lantern, lanterns'),
+        (SearchWarningCode.queryTermUnmatched, 'diary', null, null,
+            'the term was not found in the searched files'),
+      ]);
+      // `diary` is a visible file name: both is content less that entry,
+      // every member and expansion list the same.
+      expect(full(SearchField.both), content.sublist(0, 6));
     });
   });
 }

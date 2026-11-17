@@ -14,7 +14,9 @@ const roots =
 /// One invented folder in two roots. `diary` is only a file's name, `museum`
 /// only a chunk's word, `garden` only a folder's name; `quokka-notes.md`
 /// needs a label, `school/` is a second root.
-const files = [_]struct { root: []const u8, path: []const u8, text: []const u8, labels: []const u8 = "" }{
+const File = struct { root: []const u8, path: []const u8, text: []const u8, labels: []const u8 = "" };
+
+const files = [_]File{
     .{ .root = "home", .path = "dinosaur-trip.md", .text = "# Trip\n\nthe dinosaur museum had bones\n" },
     .{ .root = "home", .path = "garden/bean-diary.md", .text = "# Beans\n\ntomatoes and beans grew tall\n" },
     .{ .root = "home", .path = "private/quokka-notes.md", .text = "# Notes\n\nzebra stripes\n", .labels = "[\"tenant:acme\"]" },
@@ -27,6 +29,10 @@ const Fixture = struct {
     handle: *abi.Handle,
 
     fn open() !Fixture {
+        return openFiles(&files);
+    }
+
+    fn openFiles(set: []const File) !Fixture {
         const a = std.testing.allocator;
         var tmp = std.testing.tmpDir(.{ .iterate = true });
         errdefer tmp.cleanup();
@@ -35,7 +41,7 @@ const Fixture = struct {
         var changes: std.Io.Writer.Allocating = .init(a);
         defer changes.deinit();
         try changes.writer.print("{{\"roots\":{s},\"changes\":[", .{roots});
-        for (files, 0..) |f, i| {
+        for (set, 0..) |f, i| {
             const encoded = try a.alloc(u8, std.base64.standard.Encoder.calcSize(f.text.len));
             defer a.free(encoded);
             _ = std.base64.standard.Encoder.encode(encoded, f.text);
@@ -198,4 +204,71 @@ test "content: the field path leaves content's warnings as they were" {
     defer a.free(got);
     try std.testing.expectEqualStrings("[" ++ unmatched("diary") ++ "," ++ unmatched("dinosuar") ++
         ",{\"code\":\"query_term_expanded\",\"message\":\"also searched: dinosaur\",\"term\":\"dinosuar\",\"expansions\":[\"dinosaur\"]}]", got);
+}
+
+/// Word forms and near spellings with more than one member each (S6-T5
+/// rework, the verifier's plant v6): `paint` and `walk` group three forms
+/// each, `festivl` and `lantren` are near more than one word.
+const forms = [_]File{
+    .{ .root = "home", .path = "studio-log.md", .text = "# Studio\n\nshe painted while painting paints and walked walking walks\n" },
+    .{ .root = "home", .path = "fair-notes.md", .text = "# Fair\n\nthe festival was festive and the lantern lanterns lantana glowed\n" },
+    .{ .root = "school", .path = "walk-map.md", .text = "# Map\n\nhiking trails\n" },
+};
+
+inline fn grouped(comptime term: []const u8, comptime list: []const u8, comptime members: []const u8) []const u8 {
+    comptime {
+        return "{\"code\":\"query_term_grouped\",\"message\":\"also searched as: " ++ list ++ "\",\"term\":\"" ++ term ++ "\",\"members\":[" ++ members ++ "]}";
+    }
+}
+
+inline fn expanded(comptime term: []const u8, comptime list: []const u8, comptime words: []const u8) []const u8 {
+    comptime {
+        return "{\"code\":\"query_term_expanded\",\"message\":\"also searched: " ++ list ++ "\",\"term\":\"" ++ term ++ "\",\"expansions\":[" ++ words ++ "]}";
+    }
+}
+
+test "both: a group of three members and expansions of two words, in full and in order, as content gives them" {
+    var fixture = try Fixture.openFiles(&forms);
+    defer fixture.close();
+    const a = std.testing.allocator;
+    const paint = grouped("paint", "painted, painting, paints", "\"painted\",\"painting\",\"paints\"");
+    const festivl = expanded("festivl", "festival, festive", "\"festival\",\"festive\"");
+    const lantren = expanded("lantren", "lantern, lanterns", "\"lantern\",\"lanterns\"");
+    // No word here is a visible file name: both is content, byte for byte.
+    const query = "paint festivl lantren";
+    const expected = "[" ++ unmatched("paint") ++ "," ++ paint ++ "," ++ unmatched("festivl") ++ "," ++ festivl ++ "," ++ unmatched("lantren") ++ "," ++ lantren ++ "]";
+    const content = try fixture.warnings(query, "content", "", &.{});
+    defer a.free(content);
+    try std.testing.expectEqualStrings(expected, content);
+    const both = try fixture.warnings(query, "both", "", &.{});
+    defer a.free(both);
+    try std.testing.expectEqualStrings(expected, both);
+}
+
+test "both: with a visible file name holding one word, the other groups stay whole and the named word's group follows" {
+    var fixture = try Fixture.openFiles(&forms);
+    defer fixture.close();
+    const a = std.testing.allocator;
+    const paint = grouped("paint", "painted, painting, paints", "\"painted\",\"painting\",\"paints\"");
+    const walk = grouped("walk", "walks", "\"walks\"");
+    const festivl = expanded("festivl", "festival, festive", "\"festival\",\"festive\"");
+    const lantren = expanded("lantren", "lantern, lanterns", "\"lantern\",\"lanterns\"");
+    const query = "paint walk festivl lantren";
+    const content = try fixture.warnings(query, "content", "", &.{});
+    defer a.free(content);
+    try std.testing.expectEqualStrings("[" ++ unmatched("paint") ++ "," ++ paint ++ "," ++ unmatched("walk") ++ "," ++ walk ++ "," ++
+        unmatched("festivl") ++ "," ++ festivl ++ "," ++ unmatched("lantren") ++ "," ++ lantren ++ "]", content);
+    // `walk-map.md` (root school) holds `walk` in its name: not unmatched
+    // under both, so its group is written after the unmatched terms'.
+    const both = try fixture.warnings(query, "both", "", &.{});
+    defer a.free(both);
+    try std.testing.expectEqualStrings("[" ++ unmatched("paint") ++ "," ++ paint ++ "," ++ unmatched("festivl") ++ "," ++ festivl ++ "," ++
+        unmatched("lantren") ++ "," ++ lantren ++ "," ++ walk ++ "]", both);
+    // With that root left out, the name is hidden: both is content again.
+    const scoped_content = try fixture.warnings(query, "content", "\"roots\":[\"home\"]", &.{});
+    defer a.free(scoped_content);
+    const scoped_both = try fixture.warnings(query, "both", "\"roots\":[\"home\"]", &.{});
+    defer a.free(scoped_both);
+    try std.testing.expectEqualStrings(scoped_content, scoped_both);
+    try std.testing.expect(std.mem.indexOf(u8, scoped_both, paint) != null);
 }
