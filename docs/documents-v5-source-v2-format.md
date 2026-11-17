@@ -321,7 +321,7 @@ rebuild(r):                      # r: the source record of a retained file f
 | Front matter, blank lines between Markdown sections, a file's leading or trailing blank lines | gap or tail bytes | every Markdown file with front matter |
 | No final newline | the chunk ends at the last byte; the tail is empty | 4 rebuilt in fixtures, 1 in J2, 1 in family |
 | Final newline | the tail is the newline (the chunk text is stripped) | most files |
-| BOM | `bom` set; the BOM is a gap of 3 bytes before the first chunk (chunk text never holds it) | 3 in fixtures, 1 in J2, 1 in family |
+| BOM | `bom` set; the BOM is a gap of 3 bytes before the first chunk (the chunk text of a file with text after the mark does not hold it). A file holding only the mark is kept whole; its one chunk is the mark itself, cited as line 1–1 of a file of 0 lines (`main`'s chunker gives the same chunk) | 3 in fixtures, 1 in J2, 1 in family |
 | Empty file | retained, 0 chunks, kept whole, text length 0, residual 0 bytes, line count 0, map one varint `0` | 3 in fixtures, 1 in J2, 1 in family |
 | Blank (whitespace-only) file | retained, 0 chunks, kept whole | 1 in fixtures |
 | A file with chunks whose bytes are not retained (a root with `retain_source` false) | `retained = 0`; not in the source section | none in the six corpora; the default for `local` roots |
@@ -647,7 +647,7 @@ On the six corpora S6-T4 used:
 The library (Phase 2), on the same six corpora:
 
 - **Sections:** documents and source equal the prototype's to the byte
-  (timing-10k: 8,028,417 B and 539,719 B); the index 34–45 % smaller than
+  (timing-10k: 8,028,417 B and 539,719 B); the index 33.3–44.5 % smaller than
   `main`'s ([`index-size.md`](index-size.md#landed)).
 - **Rebuild:** `read_span` of every file, whole and over every pair of
   adjacent lines, byte-identical to `main`'s, fresh and after one update

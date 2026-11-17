@@ -90,7 +90,8 @@ Identifiers and filenames follow v1's rules; the three filenames must differ.
   (`too_large`, `unreadable`, `budget_exhausted`) for files a writer was given
   but could not index in full, kept until a later change of the path; a
   `find` or `index_status` over a scope holding one says `truncated`.
-- `source_section_version`: `1` when a source section is bound, else `0`.
+- `source_section_version`: the bound source section's version (`1` for
+  `HYBSRC01`; `2` for `HYBSRC02`, under v2.4's bit 6), else `0`.
 
 `decode` checks that `meta` is a UTF-8 object literal (first byte `{`, last
 `}`); `parseMeta` parses it fully (`manifest_meta` must be 2, every chunker has
