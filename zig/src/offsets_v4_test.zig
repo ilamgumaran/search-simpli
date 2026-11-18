@@ -426,6 +426,9 @@ test "S6-T8: every section 5 rule, violated with the checksum recomputed, is ref
     v = try cloneDocs(a, base.docs);
     v[last_doc].count = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x1F };
     try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsVarintOverflow, "a count of 2^32 or more");
+    v = try cloneDocs(a, base.docs);
+    v[last_doc].count = &.{ 0x80, 0x80, 0x80, 0x80, 0x10 };
+    try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsVarintOverflow, "a count of exactly 2^32");
     // Rule 2: the count equals the document's length.
     v = try cloneDocs(a, base.docs);
     v[last_doc].count = try varintBytes(a, base.lengths[last_doc] + 1);
@@ -433,6 +436,11 @@ test "S6-T8: every section 5 rule, violated with the checksum recomputed, is ref
     v = try cloneDocs(a, base.docs);
     v[0].count = try varintBytes(a, base.lengths[0] - 1);
     try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsCountMismatch, "the first count one less");
+    // ... and the last one less: a count that let it through would read one
+    // token fewer and end before the section (rule 12's error, not rule 2's).
+    v = try cloneDocs(a, base.docs);
+    v[last_doc].count = try varintBytes(a, base.lengths[last_doc] - 1);
+    try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsCountMismatch, "the last count one less");
     v = try cloneDocs(a, base.docs);
     v[3].count = &.{0x01}; // the document with no token
     try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsCountMismatch, "a count of 1 on a document with no token");
@@ -458,6 +466,9 @@ test "S6-T8: every section 5 rule, violated with the checksum recomputed, is ref
     v = try cloneDocs(a, base.docs);
     v[last_doc].tokens[last_tok].esc_l = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x1F };
     try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsVarintOverflow, "a length escape of 2^32 or more");
+    v = try cloneDocs(a, base.docs);
+    v[last_doc].tokens[last_tok].esc_l = &.{ 0x80, 0x80, 0x80, 0x80, 0x10 };
+    try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsVarintOverflow, "a length escape of exactly 2^32");
     // Rule 6: an escape below 15 (each field; 14, the last value a nibble
     // holds, and 0).
     for ([_][]const u8{ &.{0x0E}, &.{0x00} }) |small| {
@@ -514,7 +525,7 @@ test "S6-T8: every section 5 rule, violated with the checksum recomputed, is ref
     v[last_doc].tokens[last_tok].esc_l = try varintBytes(a, (@as(u64, 1) << 32) - 1 - last_start);
     for ([_]bool{ true, false }) |eager| _ = try decodeBoth(a, try withOffsets(a, good, try emitDocs(a, v, &.{})), eager);
     std.debug.print("S6-T8: {d} damaged sections 5 refused with their rules' errors (rules 1-10 and 12), eager and lazy; an overlong escape and an end of 2^32 - 1 accepted\n", .{refused_rules});
-    try std.testing.expectEqual(@as(usize, 24), refused_rules);
+    try std.testing.expectEqual(@as(usize, 27), refused_rules);
 }
 
 test "S6-T8: the header of HYBLEX04: version 4 and flags exactly 3" {
@@ -886,4 +897,137 @@ test "S6-T8 item 1b: every table of a built index, coded as v2 and transcoded, i
         fresh_at = want;
     }
     try std.testing.expectEqual(index.positions.?.offsets.len, fresh_at);
+}
+
+// ------------------------------------- the boundary sweep (the Fifth Verdict)
+
+/// A v2 table: `count_field` as its u32 count, then each token's start
+/// delta and length as varints (each given as its value, or as raw bytes
+/// where `raw` is set), then `tail`.
+fn pairsTable(a: std.mem.Allocator, count_field: u32, tokens: []const [2]u64, tail: []const u8) ![]u8 {
+    var list = std.ArrayList(u8).empty;
+    var count_bytes: [4]u8 = undefined;
+    std.mem.writeInt(u32, &count_bytes, count_field, .little);
+    try list.appendSlice(a, &count_bytes);
+    for (tokens) |token| for (token) |value| try list.appendSlice(a, try varintBytes(a, value));
+    try list.appendSlice(a, tail);
+    return list.items;
+}
+
+/// Both v2 table readers refuse `offsets[at_start..end]` (`count` tokens)
+/// with v2's error, and the transcode writes nothing.
+fn expectPairsRefused(a: std.mem.Allocator, offsets: []const u8, at_start: usize, end: usize, count: u32, what: []const u8) !void {
+    errdefer std.debug.print("S6-T8 sweep: {s} was not refused\n", .{what});
+    try std.testing.expectError(error.InvalidPositions, postings.checkPairsTable(offsets, at_start, end, count));
+    var out = std.ArrayList(u8).empty;
+    try std.testing.expectError(error.InvalidPositions, postings.transcodePairsTable(&out, a, offsets, at_start, end, count));
+    try std.testing.expectEqual(@as(usize, 0), out.items.len);
+}
+
+/// Both accept it, and the transcode writes the reference's bytes.
+fn expectPairsAccepted(a: std.mem.Allocator, offsets: []const u8, count: u32, what: []const u8) !void {
+    errdefer std.debug.print("S6-T8 sweep: {s} was not accepted as v2 reads it\n", .{what});
+    try postings.checkPairsTable(offsets, 0, offsets.len, count);
+    var out = std.ArrayList(u8).empty;
+    try postings.transcodePairsTable(&out, a, offsets, 0, offsets.len, count);
+    try std.testing.expectEqualSlices(u8, (try referenceTranscode(a, offsets, 0, offsets.len, count)).?, out.items);
+}
+
+test "S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const two = [_][2]u64{ .{ 2, 3 }, .{ 4, 5 } };
+    // The count's 4 bytes: 3 left, and a start one past the end.
+    try expectPairsRefused(a, &.{ 0, 0, 0 }, 0, 3, 0, "a table of 3 bytes");
+    const empty = try pairsTable(a, 0, &.{}, &.{});
+    try std.testing.expectEqual(@as(usize, 4), empty.len);
+    try expectPairsAccepted(a, empty, 0, "a table of exactly 4 bytes, no token");
+    try expectPairsRefused(a, empty, empty.len + 1, empty.len, 0, "a table starting one past its end");
+    // The count, one either side of the document's length.
+    try expectPairsRefused(a, try pairsTable(a, 1, &two, &.{}), 0, (try pairsTable(a, 1, &two, &.{})).len, 2, "a count one less");
+    try expectPairsRefused(a, try pairsTable(a, 3, &two, &.{}), 0, (try pairsTable(a, 3, &two, &.{})).len, 2, "a count one more");
+    try expectPairsAccepted(a, try pairsTable(a, 2, &two, &.{}), 2, "the count equal");
+    // One byte between the last token and the table's end.
+    const left = try pairsTable(a, 2, &two, &.{0x00});
+    try expectPairsRefused(a, left, 0, left.len, 2, "one byte left over");
+    // The last varint cut: the delta's one byte only.
+    const cut = try pairsTable(a, 1, &.{.{ 2, 3 }}, &.{});
+    try expectPairsRefused(a, cut, 0, cut.len - 1, 1, "the length missing");
+    // A varint of exactly 2^32, and 2^32 - 1.
+    for ([_]usize{ 0, 1 }) |field| {
+        var token = [2]u64{ 0, 1 };
+        token[field] = @as(u64, 1) << 32;
+        const big = try pairsTable(a, 1, &.{token}, &.{});
+        try expectPairsRefused(a, big, 0, big.len, 1, if (field == 0) "a delta of exactly 2^32" else "a length of exactly 2^32");
+    }
+    // The end: exactly 2^32 refused, 2^32 - 1 accepted.
+    const at_bound = try pairsTable(a, 1, &.{.{ 10, (@as(u64, 1) << 32) - 10 }}, &.{});
+    try expectPairsRefused(a, at_bound, 0, at_bound.len, 1, "an end of exactly 2^32");
+    try expectPairsAccepted(a, try pairsTable(a, 1, &.{.{ 10, (@as(u64, 1) << 32) - 11 }}, &.{}), 1, "an end of 2^32 - 1");
+    // A length of 1 accepted, 0 refused.
+    try expectPairsAccepted(a, try pairsTable(a, 1, &.{.{ 0, 1 }}, &.{}), 1, "a length of 1");
+    const zero = try pairsTable(a, 1, &.{.{ 0, 0 }}, &.{});
+    try expectPairsRefused(a, zero, 0, zero.len, 1, "a length of 0");
+    // The transcode's fast path at a varint whose first byte is 0x80 (128 is
+    // `80 01`), and its escapes at 14, 15 and 16 (a gap's zigzag and a
+    // length).
+    try expectPairsAccepted(a, try pairsTable(a, 3, &.{ .{ 128, 128 }, .{ 0, 128 }, .{ 256, 2 } }, &.{}), 3, "deltas and lengths of 128 and 256");
+    for ([_]u64{ 14, 15, 16 }) |value| {
+        // After (0, 20): the gap whose zigzag is `value`, and a length of `value`.
+        const start: u64 = @intCast(20 + postings.unzigzag(value));
+        try expectPairsAccepted(a, try pairsTable(a, 2, &.{ .{ 0, 20 }, .{ start, value } }, &.{}), 2, "a zigzag gap and a length of 14, 15 and 16");
+    }
+    // A gap's zigzag of exactly 2^32 (a start 2^31 after the previous end):
+    // refused apart; 2^32 - 2 (2^31 - 1) accepted.
+    var out = std.ArrayList(u8).empty;
+    const far = try pairsTable(a, 1, &.{.{ @as(u64, 1) << 31, 1 }}, &.{});
+    try std.testing.expectError(error.GapNotRepresentable, postings.transcodePairsTable(&out, a, far, 0, far.len, 1));
+    try expectPairsAccepted(a, try pairsTable(a, 1, &.{.{ (@as(u64, 1) << 31) - 1, 1 }}, &.{}), 1, "a gap of 2^31 - 1");
+}
+
+test "S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    // readVarint: 2^32 - 1 in five bytes; 2^32; a sixth byte; the end.
+    var at: usize = 0;
+    try std.testing.expectEqual(@as(?u32, std.math.maxInt(u32)), postings.readVarint(&.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x0F }, &at));
+    try std.testing.expectEqual(@as(usize, 5), at);
+    at = 0;
+    try std.testing.expectEqual(@as(?u32, null), postings.readVarint(&.{ 0x80, 0x80, 0x80, 0x80, 0x10 }, &at));
+    try std.testing.expectEqual(@as(?u32, null), postings.readVarint(&.{ 0x80, 0x80, 0x80, 0x80, 0x80, 0x00 }, &at));
+    try std.testing.expectEqual(@as(?u32, null), postings.readVarint(&.{ 0x80, 0x80 }, &at));
+    try std.testing.expectEqual(@as(?u32, null), postings.readVarint(&.{}, &at));
+    try std.testing.expectEqual(@as(usize, 0), at);
+
+    // varintsEnd: sixteen two-byte varints starting 0x80 (the block counts
+    // end bytes only); exactly fifteen bytes for sixteen varints; fifteen
+    // varints in sixteen bytes; a start at and one past the end.
+    var twos = std.ArrayList(u8).empty;
+    for (0..16) |_| try twos.appendSlice(a, &.{ 0x80, 0x01 });
+    try std.testing.expectEqual(@as(?usize, 32), source.varintsEnd(twos.items, 0, 16));
+    const zeros = [_]u8{0} ** 16;
+    try std.testing.expectEqual(@as(?usize, null), source.varintsEnd(zeros[0..15], 0, 16));
+    try std.testing.expectEqual(@as(?usize, 15), source.varintsEnd(&zeros, 0, 15));
+    try std.testing.expectEqual(@as(?usize, 16), source.varintsEnd(&zeros, 0, 16));
+    try std.testing.expectEqual(@as(?usize, null), source.varintsEnd(&zeros, zeros.len + 1, 16));
+    try std.testing.expectEqual(@as(?usize, null), source.varintsEnd(&zeros, zeros.len, 1));
+    try std.testing.expectEqual(@as(?usize, zeros.len), source.varintsEnd(&zeros, zeros.len, 0));
+
+    // oneByteTableEnd: fifteen tokens with sixteen bytes after the count;
+    // sixteen tokens with fifteen; a count of 128 (`80 01`) and 128 tokens;
+    // a count cut at the end; a token byte missing.
+    const plain = [_]u8{0x11} ** 17;
+    try std.testing.expectEqual(@as(?usize, 16), postings.oneByteTableEnd(&plain, 0, 15));
+    try std.testing.expectEqual(@as(?usize, null), postings.oneByteTableEnd(plain[0..16], 0, 16));
+    try std.testing.expectEqual(@as(?usize, 17), postings.oneByteTableEnd(&plain, 0, 16));
+    var long = std.ArrayList(u8).empty;
+    try long.appendSlice(a, &.{ 0x80, 0x01 });
+    try long.appendNTimes(a, 0x11, 128);
+    try std.testing.expectEqual(@as(?usize, 130), postings.oneByteTableEnd(long.items, 0, 128));
+    try std.testing.expectEqual(@as(?usize, null), postings.oneByteTableEnd(&.{0x80}, 0, 0));
+    try std.testing.expectEqual(@as(?usize, null), postings.oneByteTableEnd(&.{0x01}, 0, 1));
+    // An escape varint of 128 (`80 01`) after a token byte.
+    try std.testing.expectEqual(@as(?usize, 4), postings.oneByteTableEnd(&.{ 0x01, 0xF1, 0x80, 0x01, 0x22 }, 0, 1));
 }

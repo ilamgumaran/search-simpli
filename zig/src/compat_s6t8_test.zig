@@ -699,10 +699,17 @@ fn v2Padded(a: std.mem.Allocator, value: u64, n: usize) ![]const u8 {
 /// outcome.
 const V2Site = enum {
     count_not_length,
+    /// The count one less than the document's length (the boundary sweep:
+    /// the count's other side).
+    count_one_less,
     start_sixth_byte,
     start_fifth_byte_high,
     length_sixth_byte,
     length_fifth_byte_high,
+    /// A varint of exactly 2^32 (the boundary sweep: `readVarint`'s value
+    /// bound at its first value past a u32).
+    start_exactly_2p32,
+    length_exactly_2p32,
     zero_length,
     end_exactly_2p32,
     /// Valid v2 (the old reader accepts it), refused by the transcode only
@@ -744,10 +751,13 @@ fn expectV2SiteRefused(site: V2Site, where: DroppedAt, path: TablePath) !void {
     var old_reader_refuses = true;
     switch (site) {
         .count_not_length => docs[k].count += 1,
+        .count_one_less => docs[k].count -= 1,
         .start_sixth_byte => tail.delta = try v2Padded(a, v2Value(tail.delta), 6),
         .start_fifth_byte_high => tail.delta = try v2Varint(a, v2Value(tail.delta) + (1 << 32)),
         .length_sixth_byte => tail.length = try v2Padded(a, v2Value(tail.length), 6),
         .length_fifth_byte_high => tail.length = try v2Varint(a, v2Value(tail.length) + (1 << 32)),
+        .start_exactly_2p32 => tail.delta = try v2Varint(a, 1 << 32),
+        .length_exactly_2p32 => tail.length = try v2Varint(a, 1 << 32),
         .zero_length => tail.length = &.{0},
         .end_exactly_2p32 => tail.delta = try v2Varint(a, (1 << 32) - before_tail - v2Value(tail.length)),
         .gap_exactly_2p31 => {
@@ -797,6 +807,10 @@ test "S6-T8 sites: a count other than the document's length, carried or dropped,
     try expectV2SiteRefusedEverywhere(.count_not_length, &both_paths);
 }
 
+test "S6-T8 sites: a count one less than the document's length, carried or dropped, at three tables" {
+    try expectV2SiteRefusedEverywhere(.count_one_less, &both_paths);
+}
+
 test "S6-T8 sites: a start delta with a sixth byte (its value unchanged), carried or dropped, at three tables" {
     try expectV2SiteRefusedEverywhere(.start_sixth_byte, &both_paths);
 }
@@ -811,6 +825,11 @@ test "S6-T8 sites: a length with a sixth byte (its value unchanged), carried or 
 
 test "S6-T8 sites: a length whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables" {
     try expectV2SiteRefusedEverywhere(.length_fifth_byte_high, &both_paths);
+}
+
+test "S6-T8 sites: a start delta and a length of exactly 2^32, carried or dropped, at three tables" {
+    try expectV2SiteRefusedEverywhere(.start_exactly_2p32, &both_paths);
+    try expectV2SiteRefusedEverywhere(.length_exactly_2p32, &both_paths);
 }
 
 test "S6-T8 sites: a length of 0, carried or dropped, at three tables" {
@@ -1151,4 +1170,44 @@ test "S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: f
 test "S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed" {
     for ([_]DroppedAt{ .first, .middle }) |where| for (both_paths) |path|
         try expectV4DamageRefused(.inner_stray_byte, where, path, error.OffsetsCountMismatch, error.InvalidPositions);
+}
+
+/// `main`'s fixture (v2-coded section 5), every chunk's last token ending
+/// `past` codepoints after its text's end, every checksum resealed.
+fn v2EndsPastText(a: std.mem.Allocator, tmp: std.testing.TmpDir, name: []const u8, past: u64) !std.Io.Dir {
+    const dir = try copyOf(a, tmp, fixture_main, name);
+    const engine = try snapshot_open.open(a, io, dir);
+    const base = try v2Tables(a, dir);
+    try std.testing.expectEqual(engine.documents.len, base.docs.len);
+    var moved: usize = 0;
+    for (base.docs, engine.documents) |*doc, document| {
+        if (doc.tokens.len == 0) continue;
+        var start: u64 = 0;
+        for (doc.tokens) |token| start += v2Value(token.delta);
+        // As `find` counts them (its `codepoints`).
+        const codepoints: u64 = @intCast(@import("analysis.zig").codepointCount(document.text));
+        const tail = &doc.tokens[doc.tokens.len - 1];
+        try std.testing.expect(start + v2Value(tail.length) <= codepoints);
+        tail.length = try v2Varint(a, codepoints + past - start);
+        moved += 1;
+    }
+    try std.testing.expect(moved > 0);
+    try v2Reseal(a, dir, base.good, try v2Emit(a, base.docs));
+    // v2's own rules hold: only the text shows it.
+    try oldReaderVerdict(a, dir);
+    return dir;
+}
+
+test "S6-T8 boundary sweep, rule 11 on a v2-coded index: a highlight one past its chunk's text is refused by find; one ending at the text's end answers" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var past = try v2EndsPastText(a, tmp, "r11-v2-past", 1);
+    defer past.close(io);
+    try std.testing.expectEqual(@as(?anyerror, error.OffsetsPastText), firstFindError(a, past));
+    var at_end = try v2EndsPastText(a, tmp, "r11-v2-at-end", 0);
+    defer at_end.close(io);
+    try std.testing.expectEqual(@as(?anyerror, null), firstFindError(a, at_end));
 }
