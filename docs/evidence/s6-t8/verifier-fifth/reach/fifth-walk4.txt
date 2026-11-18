@@ -1,0 +1,3 @@
+edge: walk ends at 26456 of 26456 -> end check passes
+r12_inner_byte_after_first: walk ends at 26419 of 26457 -> end check refuses
+r12_inner_byte_after_mid: walk ends at 26422 of 26457 -> end check refuses
