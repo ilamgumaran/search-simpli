@@ -1,0 +1,21 @@
+# F2, code or index: the same three cells with the head's library on main's index (HYBLEX03; the head reads it, as
+# ruling 2 tests) beside the head's library on its own index. headFm, headBm = headF's and headB's libraries, each on its
+# own copy of main's index; headF, headB on copies of the head's; main, main2, ctl1, p28 on copies of main's. An
+# 8-library Williams design (two squares, 16 runs), written before the first run.
+run111:main headF p28 headFm main2 headB ctl1 headBm
+run112:headF headFm main headB p28 headBm main2 ctl1
+run113:headFm headB headF headBm main ctl1 p28 main2
+run114:headB headBm headFm ctl1 headF main2 main p28
+run115:headBm ctl1 headB main2 headFm p28 headF main
+run116:ctl1 main2 headBm p28 headB main headFm headF
+run117:main2 p28 ctl1 main headBm headF headB headFm
+run118:p28 main main2 headF ctl1 headFm headBm headB
+run119:headBm ctl1 headB main2 headFm p28 headF main
+run120:ctl1 main2 headBm p28 headB main headFm headF
+run121:main2 p28 ctl1 main headBm headF headB headFm
+run122:p28 main main2 headF ctl1 headFm headBm headB
+run123:main headF p28 headFm main2 headB ctl1 headBm
+run124:headF headFm main headB p28 headBm main2 ctl1
+run125:headFm headB headF headBm main ctl1 p28 main2
+run126:headB headBm headFm ctl1 headF main2 main p28
+2026-11-18 05:45:01
