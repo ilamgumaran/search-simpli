@@ -1,0 +1,21 @@
+....................s................................................ss............ssssssssss....................ss..........................s....s.................s........................................................................................F....................sssssssssssssss..........ssF............................................ss........................ssssss....................................
+======================================================================
+FAIL: test_reference_report_names_its_policies (test_j2_gate.PythonReferenceTests)
+S5-T6 (review R02): the reference's report names its source and policy ids.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/tests/test_j2_gate.py", line 174, in test_reference_report_names_its_policies
+    self.assertTrue(engine["commit"])
+AssertionError: None is not true
+======================================================================
+FAIL: test_file_list_is_independent_of_caller_directory (test_privacy.PrivacyTest)
+S1-T6 criterion 3: `git ls-files` runs from the repo root, so the
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/tests/test_privacy.py", line 54, in test_file_list_is_independent_of_caller_directory
+    self.assertGreater(len(from_root), 10)
+AssertionError: 0 not greater than 10
+----------------------------------------------------------------------
+Ran 408 tests in 28.440s
+FAILED (failures=2, skipped=43)
+[{"query": "benico", "ms_1k": 0.0078, "ms_10k": 0.0095, "growth": 1.21}, {"query": "hybrid retrieval", "ms_1k": 0.0198, "ms_10k": 0.0569, "growth": 2.87}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.1006, "ms_10k": 0.6302, "growth": 6.27}, {"query": "the and of to in", "ms_1k": 0.1118, "ms_10k": 0.835, "growth": 7.47}]

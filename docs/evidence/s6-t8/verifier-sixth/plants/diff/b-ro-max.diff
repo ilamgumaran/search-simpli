@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-ro-max/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig	2026-11-18 15:47:50
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-ro-max/zig/src/postings.zig	2026-11-18 16:04:09
+@@ -279,7 +279,7 @@
+         if (byte & 0x80 == 0) break;
+         shift += 7;
+     }
+-    if (value > std.math.maxInt(u32)) return error.OffsetsVarintOverflow;
++    if (value > std.math.maxInt(u32) + 1) return error.OffsetsVarintOverflow;
+     at.* = i;
+     return @intCast(value);
+ }

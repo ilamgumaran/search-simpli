@@ -1,0 +1,52 @@
++- run test 517 pass, 9 skip, 16 crash (542 total)
+error: 'incremental_indexing_test.test.S4-T11 ruling 2: seeded random mutations, each round's update equals a fresh index byte for byte' terminated with signal ABRT with stderr:
+       thread 111545778 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'apply_test.test.S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes' terminated with signal ABRT with stderr:
+       thread 111545951 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index' terminated with signal ABRT with stderr:
+       thread 111545974 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same' terminated with signal ABRT with stderr:
+       thread 111546019 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same' terminated with signal ABRT with stderr:
+       thread 111546047 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result' terminated with signal ABRT with stderr:
+       thread 111546089 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table' terminated with signal ABRT with stderr:
+       thread 111546095 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8 sites: a v4 section that ends before a table's last token byte is refused at a later update, carried or dropped, at three tables' terminated with signal ABRT with stderr:
+       thread 111546104 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables' terminated with signal ABRT with stderr:
+       thread 111546116 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables' terminated with signal ABRT with stderr:
+       thread 111546125 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed' terminated with signal ABRT with stderr:
+       thread 111546139 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables' terminated with signal ABRT with stderr:
+       thread 111546151 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables' terminated with signal ABRT with stderr:
+       thread 111546179 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed' terminated with signal ABRT with stderr:
+       thread 111546195 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails' terminated with signal ABRT with stderr:
+       thread 111546204 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'offsets_v4_test.test.S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound' terminated with signal ABRT with stderr:
+       thread 111546209 panic: integer overflow
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+Build Summary: 7/9 steps succeeded (1 failed); 523/548 tests passed (9 skipped, 16 crashed)
++- run test 517 pass, 9 skip, 16 crash (542 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M

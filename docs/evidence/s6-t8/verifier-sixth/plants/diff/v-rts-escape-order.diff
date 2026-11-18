@@ -1,0 +1,13 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/v-rts-escape-order/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig	2026-11-18 15:47:50
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/v-rts-escape-order/zig/src/postings.zig	2026-11-18 16:43:19
+@@ -486,8 +486,8 @@
+                 at += 1;
+                 var g: u32 = byte & 0x0F;
+                 var l: u32 = byte >> 4;
+-                if (g == offsets_escape) g = readVarint(bytes, &at).?;
+                 if (l == offsets_escape) l = readVarint(bytes, &at).?;
++                if (g == offsets_escape) g = readVarint(bytes, &at).?;
+                 const start: u32 = @intCast(end + unzigzag(g));
+                 span.* = .{ .start = start, .length = l };
+                 end = @as(i64, start) + l;

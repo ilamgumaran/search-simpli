@@ -1,0 +1,17 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/lexical_segment.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/v-enc-count-ok/zig/src/lexical_segment.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/lexical_segment.zig	2026-11-18 15:47:50
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/v-enc-count-ok/zig/src/lexical_segment.zig	2026-11-18 16:00:40
+@@ -586,9 +586,10 @@
+         // The dictionary pass proved the order, or found a descending pair
+         // (no duplicate, or the hash set would have named it).
+         if (!sorted) return error.UnsortedTerms;
+-        validatePositions(index.terms, index.postings, index.document_lengths, sections) catch |err| return switch (err) {
+-            error.UnsortedTerms => error.UnsortedTerms,
+-            else => error.InvalidPositions,
++        validatePositions(index.terms, index.postings, index.document_lengths, sections) catch |err| switch (err) {
++            error.UnsortedTerms => return error.UnsortedTerms,
++            error.OffsetsCountMismatch => {},
++            else => return error.InvalidPositions,
+         };
+         marks.mark("positions");
+     }

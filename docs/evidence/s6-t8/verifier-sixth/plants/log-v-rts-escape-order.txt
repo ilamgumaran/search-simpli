@@ -1,0 +1,10 @@
++- run test 531 pass, 9 skip, 2 crash (542 total)
+error: 'offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte' terminated with signal ABRT with stderr:
+       thread 111553032 panic: integer does not fit in destination type
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'offsets_v4_test.test.S6-T8 item 1b: every table of a built index, coded as v2 and transcoded, is the fresh v4 section' terminated with signal ABRT with stderr:
+       thread 111553433 panic: integer does not fit in destination type
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 crashed)
++- run test 531 pass, 9 skip, 2 crash (542 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M

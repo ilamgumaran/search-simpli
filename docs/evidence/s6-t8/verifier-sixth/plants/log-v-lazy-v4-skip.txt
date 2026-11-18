@@ -1,0 +1,15 @@
++- run test 526 pass, 9 skip, 5 fail, 2 crash (542 total)
+error: 'lazy_open_test.test.S4-T1: damaged positions open lazily and fail the first find with the eager open's error' terminated with signal ABRT with stderr:
+       thread 111553030 panic: index out of bounds: index 18, len 18
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'compat_s6t8_test.test.S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed' failed:
+error: 'compat_s6t8_test.test.S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables' failed:
+error: 'compat_s6t8_test.test.S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables' failed:
+error: 'compat_s6t8_test.test.S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed' terminated with signal ABRT with stderr:
+       thread 111553366 panic: index out of bounds: index 82, len 18
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily' failed:
+error: 'offsets_v4_test.test.S6-T8 rule 7 through find: a damaged section 5 fails the first find and every later one with the rule's error' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 532/548 tests passed (9 skipped, 5 failed, 2 crashed)
++- run test 526 pass, 9 skip, 5 fail, 2 crash (542 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M

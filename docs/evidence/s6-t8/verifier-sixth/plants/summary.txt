@@ -1,0 +1,83 @@
+b-ck-count-minus: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: a count one less than the document's length, carried or dropped, at three tables
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it
+b-ck-leftover: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it
+b-ob-remaining: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 523/548 tests passed (9 skipped, 16 crashed); crash markers 49
+    failed: apply_test.test.S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes (crashed)
+    failed: compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index (crashed)
+    failed: compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same (crashed)
+    failed: compat_s6t8_test.test.S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables (crashed)
+    failed: compat_s6t8_test.test.S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed (crashed)
+    failed: compat_s6t8_test.test.S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables (crashed)
+    failed: compat_s6t8_test.test.S6-T8 sites: a v4 section that ends before a table's last token byte is refused at a later update, carried or dropped, at three tables (crashed)
+    failed: compat_s6t8_test.test.S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table (crashed)
+    failed: compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables (crashed)
+    failed: compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables (crashed)
+    failed: compat_s6t8_test.test.S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed (crashed)
+    failed: compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result (crashed)
+    failed: compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same (crashed)
+    failed: incremental_indexing_test.test.S4-T11 ruling 2: seeded random mutations, each round's update equals a fresh index byte for byte (crashed)
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound (crashed)
+    failed: offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails (crashed)
+b-r11-v2: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 boundary sweep, rule 11 on a v2-coded index: a highlight one past its chunk's text is refused by find; one ending at the text's end answers
+b-ro-max: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 crashed); crash markers 4
+    failed: offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily (crashed)
+b-rv-max: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 536/548 tests passed (9 skipped, 3 crashed); crash markers 10
+    failed: compat_s6t8_test.test.S6-T8 sites: a start delta and a length of exactly 2^32, carried or dropped, at three tables (crashed)
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it (crashed)
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound (crashed)
+b-sv-end-byte: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 536/548 tests passed (9 skipped, 3 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound
+    failed: offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails
+b-tr-fast-room: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 crashed); crash markers 7
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it (crashed)
+    failed: offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses (crashed)
+b-tr-gap: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 crashed); crash markers 7
+    failed: compat_s6t8_test.test.S6-T8 sites: a gap of exactly 2^31 (valid v2, zigzag 2^32) in a carried table is refused at three tables; a dropped one is not checked for it (crashed)
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it (crashed)
+b-ve-room: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 crashed); crash markers 4
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound (crashed)
+b-vo-count-minus: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-vo-trailing: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed
+    failed: offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-wk-last-v4: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed
+none: changed lines 0; Build Summary: 9/9 steps succeeded; 539/548 tests passed (9 skipped); crash markers 0
+v-enc-count-ok: changed lines 7; Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed
+v-enc-zero-ok: changed lines 7; Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables
+v-lazy-v4-skip: changed lines 1; Build Summary: 7/9 steps succeeded (1 failed); 532/548 tests passed (9 skipped, 5 failed, 2 crashed); crash markers 7
+    failed: compat_s6t8_test.test.S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables
+    failed: compat_s6t8_test.test.S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed (crashed)
+    failed: compat_s6t8_test.test.S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables
+    failed: compat_s6t8_test.test.S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed
+    failed: lazy_open_test.test.S4-T1: damaged positions open lazily and fail the first find with the eager open's error (crashed)
+    failed: offsets_v4_test.test.S6-T8 rule 7 through find: a damaged section 5 fails the first find and every later one with the rule's error
+    failed: offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+v-r11-first-only: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 boundary sweep, rule 11 on a v2-coded index: a highlight one past its chunk's text is refused by find; one ending at the text's end answers
+v-rts-escape-order: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 crashed); crash markers 7
+    failed: offsets_v4_test.test.S6-T8 item 1b: every table of a built index, coded as v2 and transcoded, is the fresh v4 section (crashed)
+    failed: offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte (crashed)
+v-tr-gap-from-start: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 527/548 tests passed (9 skipped, 12 failed); crash markers 0
+    failed: compat_292cb568_test.test.S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XXH3 sections, no filename sections) that reads the same
+    failed: compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one
+    failed: compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index
+    failed: compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one
+    failed: compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same
+    failed: compat_s6t8_test.test.S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed
+    failed: compat_s6t8_test.test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one
+    failed: compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result
+    failed: compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same
+    failed: offsets_v4_test.test.S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it
+    failed: offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+    failed: offsets_v4_test.test.S6-T8 item 1b: every table of a built index, coded as v2 and transcoded, is the fresh v4 section
+v-vo-end-overflow: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables
+    failed: offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily

@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-ob-remaining/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig	2026-11-18 15:47:50
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-ob-remaining/zig/src/postings.zig	2026-11-18 16:36:33
+@@ -129,7 +129,7 @@
+     var at = skipOneVarint(bytes, at_start) orelse return null;
+     var remaining: usize = length;
+     while (remaining > 0) {
+-        if (remaining >= lanes and bytes.len - at >= lanes) {
++        if (remaining >= lanes - 1 and bytes.len - at >= lanes) {
+             const block: Block = bytes[at..][0..lanes].*;
+             const low = block & @as(Block, @splat(0x0F));
+             const high = block >> @as(@Vector(lanes, u3), @splat(4));
