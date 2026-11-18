@@ -636,7 +636,8 @@ test "S3-T2: a v1 manifest cannot bind HYBLEX02; a v2 manifest's flag follows th
     const segment = @import("segment.zig");
     const documents = [_]hybrid.Document{.{ .id = "a", .text = "one two", .path = "a.md", .start_line = 1, .end_line = 1 }};
     const lists = [_][]const @import("analysis.zig").PositionedToken{try analyzer_v2.tokenizePositioned(arena, documents[0].text)};
-    const index = try lexical_build.buildPositional(arena, &documents, &lists);
+    // `HYBLEX02` holds v2's section 5 (the writer's is v4's since S6-T8).
+    const index = try @import("postings.zig").withOffsetsCoding(arena, try lexical_build.buildPositional(arena, &documents, &lists), .pairs);
     const lexical = try lexical_segment.encode(index, try arena.alloc(u8, try lexical_segment.encodedLength(index)));
     const documents_encoded = try segment.encode(&documents, try arena.alloc(u8, try segment.encodedLength(&documents)));
     try std.testing.expectError(error.UnsupportedVersion, manifest.create(1, "analyzer-v2", "none", "d", "l", documents_encoded, lexical));

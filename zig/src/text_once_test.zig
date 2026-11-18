@@ -1188,7 +1188,8 @@ test "S6-T7: the manifest's text_once flag binds record v5 and HYBSRC02 both way
     try std.testing.expectError(error.InvalidSourceSection, manifest.validateSource(on, old));
     // A library before v2.4 (flags 0 to 5) refuses the manifest at its flags.
     const encoded = try indexed.out.readFileAlloc(io, "MANIFEST", a, .unlimited);
-    try std.testing.expect(std.mem.readInt(u16, encoded[10..12], .little) & ~@as(u16, 0x3f) == manifest.flag_text_once);
+    // (S6-T8: a writer since v2.5 also sets bit 7, `lexical_v4`.)
+    try std.testing.expect(std.mem.readInt(u16, encoded[10..12], .little) & ~@as(u16, 0x3f) == manifest.flag_text_once | manifest.flag_lexical_v4);
 }
 
 test "S6-T7: an update carries unchanged files' records, maps and residual runs byte for byte, and the result is a fresh index's" {

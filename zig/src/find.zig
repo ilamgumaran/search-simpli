@@ -145,7 +145,9 @@ pub const Outcome = union(enum) {
     failed: source.Failure,
 };
 
-pub const Error = std.mem.Allocator.Error || analyzer_v2.Error;
+/// S6-T8: `OffsetsPastText` is rule 11 of `docs/lexical-segment-format-v4.md`
+/// (a token's end past its chunk's text), a corrupt snapshot.
+pub const Error = std.mem.Allocator.Error || analyzer_v2.Error || error{OffsetsPastText};
 
 /// One match inside a chunk: token ordinals `first..last` (inclusive) and a
 /// key naming what matched (a query term for words/prefix; 0 for a phrase).
@@ -616,11 +618,15 @@ const Context = struct {
     }
 
     /// Each token's codepoint span in the chunk: section 5, or re-tokenized
-    /// (no positions, or `recompute_offsets`).
-    fn spans(context: *const Context, document_index: u32) Error![]const postings.TokenSpan {
+    /// (no positions, or `recompute_offsets`). `codepoints` is the chunk
+    /// text's codepoint count: a section-5 span ending past it is refused
+    /// (S6-T8, rule 11), never returned.
+    fn spans(context: *const Context, document_index: u32, codepoints: usize) Error![]const postings.TokenSpan {
         if (context.tables) |tables| if (!context.request.recompute_offsets) {
             const output = try context.allocator.alloc(postings.TokenSpan, context.index.document_lengths[document_index]);
-            return postings.readTokenSpans(context.index, tables, document_index, output);
+            const read = postings.readTokenSpans(context.index, tables, document_index, output);
+            try postings.checkSpansWithinText(read, codepoints);
+            return read;
         };
         const tokens = try context.contentTokens(document_index);
         const output = try context.allocator.alloc(postings.TokenSpan, tokens.len);
@@ -668,7 +674,7 @@ const Context = struct {
                 const b_document = documents[b.document_index];
                 const previous = documents[candidates[group[position - 1]].document_index];
                 if (previous.end_line < b_document.start_line) continue;
-                const b_spans = try context.spans(b.document_index);
+                const b_spans = try context.spans(b.document_index, analysis.codepointCount(b_document.text));
                 var all_shared = b.matches.len > 0;
                 for (b.matches) |match| {
                     const end_line = lineOf(b_document.text, endOffset(b_spans, match.last));
@@ -698,7 +704,8 @@ const Context = struct {
     fn makeHit(context: *const Context, candidate: Candidate) Error!Hit {
         const allocator = context.allocator;
         const document = context.engine.documents[candidate.document_index];
-        const token_spans = try context.spans(candidate.document_index);
+        const codepoints = analysis.codepointCount(document.text);
+        const token_spans = try context.spans(candidate.document_index, codepoints);
         const ranges = try allocator.alloc(Range, candidate.matches.len);
         const keys = try allocator.alloc(u32, candidate.matches.len);
         for (candidate.matches, ranges, keys) |match, *range, *key| {
@@ -706,7 +713,7 @@ const Context = struct {
             range.* = .{ first.start, endOffset(token_spans, match.last) };
             key.* = match.key;
         }
-        const snippet = try makeSnippet(allocator, document.text, token_spans, ranges, keys);
+        const snippet = try makeSnippet(allocator, document.text, codepoints, token_spans, ranges, keys);
         return .{
             .document_index = candidate.document_index,
             .chunk_id = document.id,
@@ -899,11 +906,12 @@ const Snippet = struct { text: []const u8, start: u32, offsets: []const Range };
 fn makeSnippet(
     allocator: std.mem.Allocator,
     text: []const u8,
+    codepoints: usize,
     token_spans: []const postings.TokenSpan,
     ranges: []const Range,
     keys: []const u32,
 ) Error!Snippet {
-    const total: u32 = @intCast(analysis.codepointCount(text));
+    const total: u32 = @intCast(codepoints);
     var start: u32 = 0;
     var end: u32 = total;
     if (total > max_snippet_codepoints) {

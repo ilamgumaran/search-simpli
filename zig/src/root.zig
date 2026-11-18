@@ -64,6 +64,9 @@ pub const lazy_open_test = @import("lazy_open_test.zig");
 pub const compat_292cb568_test = @import("compat_292cb568_test.zig");
 pub const compat_98c4a2b_test = @import("compat_98c4a2b_test.zig");
 pub const compat_s6t7_test = @import("compat_s6t7_test.zig");
+// S6-T8: `HYBLEX04` (section 5 at one byte per token, manifest v2.5).
+pub const compat_s6t8_test = @import("compat_s6t8_test.zig");
+pub const offsets_v4_test = @import("offsets_v4_test.zig");
 pub const nfr13_arena_test = @import("nfr13_arena_test.zig");
 pub const reload_test = @import("reload_test.zig");
 pub const both_view_test = @import("both_view_test.zig");
@@ -155,6 +158,8 @@ test "load every engine module test suite" {
     _ = compat_292cb568_test;
     _ = compat_98c4a2b_test;
     _ = compat_s6t7_test;
+    _ = compat_s6t8_test;
+    _ = offsets_v4_test;
     _ = nfr13_arena_test;
     _ = reload_test;
     _ = both_view_test;

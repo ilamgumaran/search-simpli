@@ -254,10 +254,8 @@ pub fn buildPositional(
         if (tokens.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
         document_lengths[document_index] = @intCast(tokens.len);
         total_length += tokens.len;
-        var count_bytes: [4]u8 = undefined;
-        std.mem.writeInt(u32, &count_bytes, @intCast(tokens.len), .little);
-        try offsets.appendSlice(scratch, &count_bytes);
-        var previous_start: u32 = 0;
+        // S6-T8: section 5 in the format the writers publish (`HYBLEX04`).
+        try postings.appendOffsetsTable(&offsets, scratch, .one_byte, tokens);
         for (tokens, 0..) |token, ordinal| {
             const gop = try id_by_name.getOrPut(token.bytes);
             if (!gop.found_existing) {
@@ -266,12 +264,6 @@ pub fn buildPositional(
                 try names.append(scratch, token.bytes);
             }
             occurrences.appendAssumeCapacity(.{ .term = gop.value_ptr.*, .document = @intCast(document_index), .ordinal = @intCast(ordinal) });
-            // Offsets come from the tokenizer in text order; a mapped token
-            // (NFC changed its text) may share its start with the previous one.
-            const start = @max(token.start, previous_start);
-            try postings.appendVarint(&offsets, scratch, start - previous_start);
-            try postings.appendVarint(&offsets, scratch, @max(token.length, 1));
-            previous_start = start;
         }
     }
 
@@ -349,7 +341,7 @@ pub fn buildPositional(
         .postings = all_postings,
         .document_lengths = document_lengths,
         .average_document_length = average_document_length,
-        .positions = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items) },
+        .positions = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items), .coding = .one_byte },
         .sorted_terms = true,
     };
 }
@@ -375,14 +367,14 @@ pub fn reconstructPositioned(allocator: std.mem.Allocator, index: postings.Index
         }
     }
     at = 0;
-    for (lists) |list| {
-        at += 4;
-        var start: u32 = 0;
-        for (list) |*token| {
-            start += postings.readVarint(sections.offsets, &at).?;
-            token.start = start;
-            token.length = postings.readVarint(sections.offsets, &at).?;
+    for (lists, index.document_lengths) |list, length| {
+        const spans = try allocator.alloc(postings.TokenSpan, length);
+        defer allocator.free(spans);
+        for (list, postings.readOffsetsTable(sections, at, spans)) |*token, span| {
+            token.start = span.start;
+            token.length = span.length;
         }
+        at = postings.skipOffsetsTable(sections, at, length);
     }
     return lists;
 }
@@ -534,23 +526,30 @@ test "buildPositional keeps build's statistics, sorts terms and round-trips posi
     const query = [_][]const u8{ "apple", "zebra", "the" };
     try std.testing.expectEqualSlices(f32, try scoreQuery(reference, &query, &scores_a, .{}), try scoreQuery(index, &query, &scores_b, .{}));
 
+    // S6-T8: the writer's section 5 is v4's; the round trip holds through
+    // `HYBLEX04` and, transcoded, through `HYBLEX02`.
+    try std.testing.expectEqual(postings.OffsetsCoding.one_byte, index.positions.?.coding);
     var buffer: [4096]u8 = undefined;
-    const encoded = try lexical_segment.encode(index, &buffer);
-    try std.testing.expectEqualStrings(lexical_segment.magic_v2, encoded[0..8]);
-    var terms_out: [16]postings.TermEntry = undefined;
-    var postings_out: [16]postings.Posting = undefined;
-    var lengths_out: [documents.len]u32 = undefined;
-    const decoded = try lexical_segment.decode(encoded, &terms_out, &postings_out, &lengths_out);
-    try std.testing.expect(decoded.positions != null);
-    const tokens = (try reconstructPositioned(arena, decoded)).?;
-    for (positioned, tokens) |want_list, got_list| {
-        try std.testing.expectEqual(want_list.len, got_list.len);
-        for (want_list, got_list) |want, got| {
-            try std.testing.expectEqualStrings(want.bytes, got.bytes);
-            try std.testing.expectEqual(want.start, got.start);
-            try std.testing.expectEqual(want.length, got.length);
+    const encoded_v2 = try lexical_segment.encode(try postings.withOffsetsCoding(arena, index, .pairs), &buffer);
+    try std.testing.expectEqualStrings(lexical_segment.magic_v2, encoded_v2[0..8]);
+    const encoded_v4 = try lexical_segment.encodeV3Alloc(arena, index);
+    try std.testing.expectEqualStrings(lexical_segment.magic_v4, encoded_v4[0..8]);
+    for ([_][]const u8{ encoded_v2, encoded_v4 }) |encoded| {
+        var terms_out: [16]postings.TermEntry = undefined;
+        var postings_out: [16]postings.Posting = undefined;
+        var lengths_out: [documents.len]u32 = undefined;
+        const decoded = try lexical_segment.decodeWith(encoded, &terms_out, &postings_out, &lengths_out, .{ .term_text_allocator = arena });
+        try std.testing.expect(decoded.positions != null);
+        const tokens = (try reconstructPositioned(arena, decoded)).?;
+        for (positioned, tokens) |want_list, got_list| {
+            try std.testing.expectEqual(want_list.len, got_list.len);
+            for (want_list, got_list) |want, got| {
+                try std.testing.expectEqualStrings(want.bytes, got.bytes);
+                try std.testing.expectEqual(want.start, got.start);
+                try std.testing.expectEqual(want.length, got.length);
+            }
         }
+        try std.testing.expectEqual(@as(u32, 11), tokens[2][2].start);
+        try std.testing.expectEqual(@as(u32, 5), tokens[2][2].length);
     }
-    try std.testing.expectEqual(@as(u32, 11), tokens[2][2].start);
-    try std.testing.expectEqual(@as(u32, 5), tokens[2][2].length);
 }
