@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-17 (S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-17 (S6-T8 built, awaiting its Verdict: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,36 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## Highlight offsets at one byte per token (S6-T8, objective plan item D2 step 3, 2026-11-17; built, not yet verified)
+
+**Built, awaiting its Verdict** ([task and Report](docs/tasks/S6-T8.md),
+[format](docs/lexical-segment-format-v4.md), [manifest v2.5](docs/manifest-format-v2.md#v25-lexical-section-v4-s6-t8),
+[index size, Landed](docs/index-size.md#landed)). Every folder writer publishes the content lexical section as
+`HYBLEX04`: v3 with section 5 (the highlight offsets `find` reads) at one byte per token, the zigzag gap from the
+previous token's end and the token's length in two 4-bit fields, 15 escaping to the whole value as a varint. The
+file-name section stays `HYBLEX03`. Twelve validity rules, each refused on its own error (`SS_ERR_CORRUPT_SNAPSHOT`
+through the C ABI). **Contracts 2.8.0, Dart 0.9.2**; no API, schema, C header or answer change.
+
+- **Size** (one generation, channel on): timing-10k 15,808,625 → 14,612,980 B (2.01 times its corpus), prose-10k
+  35,196,921 → 31,967,055 (1.85), Tamil-10k 36,731,764 → 35,533,368 (1.28), fixtures 1.72, family 1.93, J2
+  157,654 B; the offsets section half its size (−50.0 % to −50.8 % on the 10k corpora), S6-T3's C5b figure to the
+  byte.
+- **Same answers:** C ABI, CLI, JSON-RPC, MCP and `searchd search` byte-identical to `main` on J2, the fixtures,
+  the family fixture, the three 10k corpora and ten boundary files, fresh, on `main`'s index and after one update;
+  every `find` hit's highlights equal, on a query set with Tamil, combining marks, long tokens and gaps and tokens
+  at a chunk's ends.
+- **Speed** (the builder's two runs, for information): open 2.3–6.5 % faster, memory after open up to 3.2 MB lower;
+  no `find` cell at the rule's threshold. **Missed:** the first publish from the old format +3.5 % to +13.4 % (once),
+  one-file updates after it +0.8 % to +6.9 %, against "not more than 2 %"; five warm `both` queries on prose 4.0–7.6 %
+  slower beyond the controls (the same with the new library on `main`'s own index).
+- **One way (the third, after S6-T4 and S6-T7):** the new library opens indexes written by `main` at `62324f9`,
+  before S6-T7 and before S6-T4, and answers the same; its first publish writes one whole v2.5 generation equal to a
+  fresh index. An older library refuses the new index with `UnsupportedFlags` through `ss_open`,
+  `ss_index_folder`, `ss_apply_changes` and the CLI, and leaves it byte-identical.
+- **Natives.** macOS 989,992 B (`main`: 988,952), Android 958,368 B (952,384), iOS framework binary 971,280 B
+  (953,488); `native/SOURCE-SHA256` `0bcba04f…`; `searchd` `ReleaseSmall` 1,133,432 B (1,132,312). **For the
+  consumer app:** the next pin takes Dart 0.9.2 (03-next pin row, all three one-way notes).
 
 ## Text once: each file's text stored once (S6-T7, objective plan item D2 step 2, 2026-11-17; merged as `a02b2cc`)
 

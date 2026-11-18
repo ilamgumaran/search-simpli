@@ -1,11 +1,12 @@
-# Generation manifest format v2 (minor version 2.4)
+# Generation manifest format v2 (minor version 2.5)
 
 Status: implemented in `zig/src/manifest.zig` (S3-T1; v2.1 flag bit 2 since
 S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1); v2.2 flag bits 3 and 4
 since S4-T2, see [v2.2 filename sections](#v22-filename-sections-s4-t2-cap-16)
 and [v2.2 recovery state](#v22-recovery-state-section-s4-t2); v2.3 flag bit 5
 since S6-T4, see [v2.3 lexical sections v3](#v23-lexical-sections-v3-s6-t4); v2.4 flag bit 6
-since S6-T7, see [v2.4 text once](#v24-text-once-s6-t7)).
+since S6-T7, see [v2.4 text once](#v24-text-once-s6-t7); v2.5 flag bit 7
+since S6-T8, see [v2.5 lexical section v4](#v25-lexical-section-v4-s6-t8)).
 Magic: `HYBMAN02`.
 Written by `searchd index` / `ss_index_folder` (`zig/src/indexer.zig`).
 `import-json` still writes [v1](manifest-format-v1.md), and every reader opens
@@ -22,7 +23,7 @@ generation (CAP-19 FR-18, CFT-09).
 |---:|---:|---|---|
 | 0 | 8 | magic `HYBMAN02` | v2 (v1: `HYBMAN01`) |
 | 8 | 2 | version `2` | |
-| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2), bit 4 `state_section` (v2.2), bit 5 `lexical_v3` (v2.3), bit 6 `text_once` (v2.4); other bits must be zero | v2 (v1: zero) |
+| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2), bit 4 `state_section` (v2.2), bit 5 `lexical_v3` (v2.3), bit 6 `text_once` (v2.4), bit 7 `lexical_v4` (v2.5); other bits must be zero | v2 (v1: zero) |
 | 12 | 8 | generation number (nonzero) | v1 |
 | 20 | 4 | shared document count | v1 |
 | 24 | 4 | vector dimensions | v1 |
@@ -398,4 +399,42 @@ before v2.4 (`ad71cfb` and earlier) refuses a v2.4 manifest on bit 6 with
 the index's files byte-identical
 ([`docs/evidence/s6-t7/old-library-phase2.txt`](evidence/s6-t7/old-library-phase2.txt)).
 After the first publish under a v2.4 library an older library cannot open the
+directory and must rebuild it from the files into a fresh directory.
+
+## v2.5: lexical section v4 (S6-T8)
+
+Bit 7 of the flags, `lexical_v4` (`0x0080`), says that the content lexical
+section is [`HYBLEX04`](lexical-segment-format-v4.md): v3 with section 5 (the
+highlight offsets `find` reads) at one byte per token, two 4-bit fields with
+a varint escape at 15. Every validity rule of that section is in its format
+document. Bit 7 is set only together with bit 5 and narrows it: under bits 5
+and 7 the content section is `HYBLEX04` and a bound file-name section stays
+`HYBLEX03` (it has no section 5). Every folder writer since S6-T8 sets it. The
+header layout, the magic, the version number `2` and every other flag are
+unchanged; the recorded lexical length and checksum are the `HYBLEX04` file's.
+
+Rules (`manifest.validateSnapshotHeaders`): with bit 7 the content section
+must be `HYBLEX04`; without it, it must not be (`InvalidLexicalSection` either
+way); a `HYBLEX04` content section also needs bit 5 (`InvalidLexicalSection`).
+A v1 manifest refuses bit 7. `import-json` never sets it.
+
+Upgrade. A reader since v2.5 opens every older generation unchanged (`HYBLEX01`
+to `HYBLEX03` keep their readers; `postings.PositionSections` records which
+coding section 5 uses). The first publish over an older directory (an
+update, `apply_changes`) writes one whole v2.5 generation, byte for byte a
+fresh index's: the carried documents' section 5 tables are transcoded token
+by token from v2's coding, the fresh ones written in v4's. The old generation
+stays whole until the manifest is replaced. `tests/fixtures/index-v5-s6t7/`
+(written by `main` at 62324f9), `tests/fixtures/index-v3-s6t4/` and
+`tests/fixtures/index-98c4a2b/` are opened, compared with a fresh index answer
+for answer, updated and crashed mid-publish by `zig/src/compat_s6t8_test.zig`;
+`tests/fixtures/index-lex4-s6t8/` is v2.5's reference
+(`tests/fixtures/gen_index_lex4_s6t8.sh`).
+
+**Compatibility and rollback (one way, the third after v2.3 and v2.4).** A
+reader before v2.5 (62324f9 and earlier) refuses a v2.5 manifest on bit 7 with
+`UnsupportedFlags` before it reads any section, through `ss_open` and every
+`searchd` command, and leaves the index's files byte-identical
+([`docs/evidence/s6-t8/old-library.txt`](evidence/s6-t8/old-library.txt)).
+After the first publish under a v2.5 library an older library cannot open the
 directory and must rebuild it from the files into a fresh directory.
