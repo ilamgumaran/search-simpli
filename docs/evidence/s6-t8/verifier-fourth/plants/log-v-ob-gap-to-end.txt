@@ -1,0 +1,6 @@
++- run test 521 pass, 9 skip, 2 fail (532 total)
+error: 'compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 527/538 tests passed (9 skipped, 2 failed)
++- run test 521 pass, 9 skip, 2 fail (532 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M

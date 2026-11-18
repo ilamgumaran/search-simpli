@@ -1,0 +1,63 @@
+main  z_first              v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  z_mid                v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  z_last               v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  z_first              v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  z_mid                v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  z_last               v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  z_first              v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  z_mid                v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  z_last               v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions

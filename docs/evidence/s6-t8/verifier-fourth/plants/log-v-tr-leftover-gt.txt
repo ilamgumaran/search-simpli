@@ -1,0 +1,5 @@
++- run test 522 pass, 9 skip, 1 fail (532 total)
+error: 'offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 528/538 tests passed (9 skipped, 1 failed)
++- run test 522 pass, 9 skip, 1 fail (532 total)
++- run test 6 pass (6 total) 978ms MaxRSS:5M
