@@ -1,0 +1,143 @@
+# S6-T8 item 2: machine code of the ss_query path, function by function (scripts/prototypes/s6t8/compare_functions.py over
+# objdump -d of the unstripped builds of main, ctlS and e5d1734's library; unstripped = .strip = false on the library module,
+# which also links Zig's stack-trace code, so these are not the shipped bytes: section 3 of item2-summary.txt times them).
+# Listed: query-path functions whose normalised code differs (addresses, page offsets and anonymous symbol numbers masked;
+# a call to any outlined fragment is OUTLINED). No query-path function's source differs between ctlS and the head.
+
+## main -> ctlS
+functions (outlined fragments excluded from the counts below): 1886
+identical: 547
+differ: 471
+only in A: 434; only in B: 434
+outlined fragments: A 2637, B 2652
+  _abi.queryImpl: 3743 -> 3757 instructions, outlined calls 577 -> 583
+  _analyzer_v2.casefoldCodepoint: 19 -> 19 instructions, outlined calls 0 -> 0
+  _analyzer_v2.tokenize: 173 -> 173 instructions, outlined calls 28 -> 28
+  _analyzer_v2.tokenizePositioned: 229 -> 226 instructions, outlined calls 22 -> 23
+  _engine.Engine.computeGroups: 873 -> 874 instructions, outlined calls 86 -> 82
+  _engine.Engine.noteExpanded: 117 -> 117 instructions, outlined calls 13 -> 13
+  _engine.Engine.noteGrouped: 139 -> 139 instructions, outlined calls 13 -> 13
+  _engine.Engine.queryTraced: 2927 -> 2943 instructions, outlined calls 302 -> 314
+  _filename_field.Decoded.filenameTerm: 30 -> 30 instructions, outlined calls 6 -> 6
+  _filename_field.decode: 49 -> 40 instructions, outlined calls 5 -> 7
+  _filename_field.decodeInspected: 1631 -> 1610 instructions, outlined calls 222 -> 220
+  _filename_field.group: 1515 -> 1512 instructions, outlined calls 199 -> 200
+  _filename_field.loadBytes: 144 -> 144 instructions, outlined calls 6 -> 6
+  _filename_field.mergeHit: 74 -> 75 instructions, outlined calls 2 -> 1
+  _filename_field.queryDecodedTraced: 3110 -> 3129 instructions, outlined calls 314 -> 314
+  _filename_field.visibleNameHolds: 54 -> 68 instructions, outlined calls 3 -> 2
+  _fuzzy.Context.heldInScope: 40 -> 41 instructions, outlined calls 2 -> 1
+  _fuzzy.Context.keyFrequency: 27 -> 27 instructions, outlined calls 2 -> 2
+  _fuzzy.Context.titleHeld: 59 -> 59 instructions, outlined calls 4 -> 4
+  _fuzzy.Groups.deinit: 22 -> 22 instructions, outlined calls 5 -> 5
+  _fuzzy.ScorerTerms.deinit: 22 -> 22 instructions, outlined calls 6 -> 6
+  _hybrid.BoundedTop(filename_field.Candidate,[]const hybrid.Document,(function 'candidateBefore')).offer: 89 -> 89 instructions, outlined calls 5 -> 5
+  _hybrid.BoundedTop(filename_field.Candidate,[]const hybrid.Document,(function 'candidateBefore')).sorted: 327 -> 327 instructions, outlined calls 43 -> 43
+  _hybrid.BoundedTop(filename_field.Merged,filename_field.MergedOrder,(function 'mergedBefore')).offer: 93 -> 93 instructions, outlined calls 4 -> 4
+  _hybrid.BoundedTop(hybrid.Candidate,void,(function 'candidateLess')).offer: 99 -> 99 instructions, outlined calls 0 -> 0
+  _hybrid.BoundedTop(hybrid.Candidate,void,(function 'candidateLess')).sorted: 439 -> 440 instructions, outlined calls 30 -> 29
+  _hybrid.matchesPath: 3 -> 3 instructions, outlined calls 1 -> 1
+  _postings.SparseScorer.contribution: 30 -> 30 instructions, outlined calls 0 -> 0
+  _postings.SparseScorer.next: 148 -> 148 instructions, outlined calls 4 -> 4
+  _postings.SparseScorer.scoreOf: 117 -> 117 instructions, outlined calls 6 -> 6
+  _postings.buildPositionTables: 78 -> 78 instructions, outlined calls 4 -> 4
+  _postings.lookupExact: 36 -> 36 instructions, outlined calls 6 -> 6
+  _postings.noteUnmatched: 90 -> 90 instructions, outlined calls 9 -> 9
+  _title_field.Parts.deinit: 13 -> 13 instructions, outlined calls 4 -> 4
+  _title_field.Titled(postings.SparseScorer).deinit: 13 -> 13 instructions, outlined calls 2 -> 2
+  _title_field.scoreQuery: 2009 -> 2013 instructions, outlined calls 250 -> 249
+  only in B: _filename_field.decodeInspected__struct_5839.less
+  only in B: _title_field.deriveMarked__anon_78932
+  only in B: _title_field.eachToken__anon_79068
+
+## ctlS -> headB
+functions (outlined fragments excluded from the counts below): 1895
+identical: 593
+differ: 424
+only in A: 435; only in B: 443
+outlined fragments: A 2652, B 2666
+  _abi.queryImpl: 3757 -> 3747 instructions, outlined calls 583 -> 587
+  _analyzer_v2.isLetterOrDigit: 5 -> 5 instructions, outlined calls 0 -> 0
+  _analyzer_v2.tokenize: 173 -> 173 instructions, outlined calls 28 -> 28
+  _analyzer_v2.tokenizePositioned: 226 -> 226 instructions, outlined calls 23 -> 23
+  _engine.Engine.computeGroups: 874 -> 877 instructions, outlined calls 82 -> 81
+  _engine.Engine.noteExpanded: 117 -> 118 instructions, outlined calls 13 -> 13
+  _engine.Engine.noteGrouped: 139 -> 140 instructions, outlined calls 13 -> 13
+  _engine.Engine.queryTraced: 2943 -> 2947 instructions, outlined calls 314 -> 313
+  _engine.Engine.validateQueryText: 7 -> 7 instructions, outlined calls 0 -> 0
+  _filename_field.Decoded.filenameTerm: 30 -> 31 instructions, outlined calls 6 -> 5
+  _filename_field.decodeInspected: 1610 -> 1611 instructions, outlined calls 220 -> 219
+  _filename_field.group: 1512 -> 1512 instructions, outlined calls 200 -> 200
+  _filename_field.queryDecodedTraced: 3129 -> 3130 instructions, outlined calls 314 -> 316
+  _fuzzy.Context.titleHeld: 59 -> 62 instructions, outlined calls 4 -> 4
+  _fuzzy.Groups.deinit: 22 -> 22 instructions, outlined calls 5 -> 5
+  _fuzzy.ScorerTerms.deinit: 22 -> 22 instructions, outlined calls 6 -> 6
+  _hybrid.BoundedTop(filename_field.Candidate,[]const hybrid.Document,(function 'candidateBefore')).offer: 89 -> 89 instructions, outlined calls 5 -> 5
+  _hybrid.BoundedTop(filename_field.Candidate,[]const hybrid.Document,(function 'candidateBefore')).sorted: 327 -> 327 instructions, outlined calls 43 -> 43
+  _hybrid.BoundedTop(filename_field.Merged,filename_field.MergedOrder,(function 'mergedBefore')).offer: 93 -> 93 instructions, outlined calls 4 -> 4
+  _hybrid.BoundedTop(hybrid.Candidate,void,(function 'candidateLess')).offer: 99 -> 99 instructions, outlined calls 0 -> 0
+  _hybrid.BoundedTop(hybrid.Candidate,void,(function 'candidateLess')).sorted: 440 -> 440 instructions, outlined calls 29 -> 29
+  _hybrid.matchesPath: 3 -> 3 instructions, outlined calls 1 -> 1
+  _hybrid.semanticScore: 88 -> 88 instructions, outlined calls 1 -> 1
+  _postings.SparseScorer.scoreOf: 117 -> 119 instructions, outlined calls 6 -> 5
+  _postings.buildPositionTables: 78 -> 106 instructions, outlined calls 4 -> 8
+  _postings.noteUnmatched: 90 -> 90 instructions, outlined calls 9 -> 9
+  _postings.resolveQueryTraced: 97 -> 101 instructions, outlined calls 8 -> 9
+  _postings.skipVarints: 9 -> 10 instructions, outlined calls 1 -> 0
+  _title_field.Field.lookup: 34 -> 35 instructions, outlined calls 5 -> 4
+  _title_field.Parts.deinit: 13 -> 13 instructions, outlined calls 4 -> 4
+  _title_field.Titled(postings.SparseScorer).deinit: 13 -> 13 instructions, outlined calls 2 -> 2
+  _title_field.scoreQuery: 2013 -> 2020 instructions, outlined calls 249 -> 246
+  only in B: _filename_field.decodeInspected__struct_5899.less
+  only in B: _postings.appendOffsetsTable__anon_5064
+  only in B: _postings.appendOneByteToken
+  only in B: _postings.putVarint
+  only in B: _postings.readOffsetsVarint
+  only in B: _postings.skipOneVarint
+  only in B: _title_field.deriveMarked__anon_79152
+  only in B: _title_field.eachToken__anon_79288
+
+## one of them, _postings.SparseScorer.scoreOf (BM25 per document), ctlS -> head: the outliner moved an epilogue's
+## register restores into a shared fragment in ctlS and not in the head; the rest is branch offsets
+11c11
+< cbz	w8, SELF+0x154
+---
+> cbz	w8, SELF+0x15c
+60c60
+< bl	0x8d940 <_postings.SparseScorer.contribution>
+---
+> bl	0x8e8f8 <_postings.SparseScorer.contribution>
+80,82c80,84
+< mov	x2, x30
+< bl	OUTLINED
+< mov	x30, x2
+---
+> ldp	x20, x19, [sp, #0x70]
+> ldp	x22, x21, [sp, #0x60]
+> ldp	x24, x23, [sp, #0x50]
+> ldp	x26, x25, [sp, #0x40]
+> ldp	x28, x27, [sp, #0x30]
+96c98
+< b.ls	SELF+0x19c
+---
+> b.ls	SELF+0x1a4
+103c105
+< b	SELF+0x178
+---
+> b	SELF+0x180
+105c107
+< b.hs	SELF+0x1cc
+---
+> b.hs	SELF+0x1d4
+109c111
+< b.ne	SELF+0x1cc
+---
+> b.ne	SELF+0x1d4
+114c116
+< bl	0x8d940 <_postings.SparseScorer.contribution>
+---
+> bl	0x8e8f8 <_postings.SparseScorer.contribution>
+117c119
+< b	SELF+0x164
+---
+> b	SELF+0x16c

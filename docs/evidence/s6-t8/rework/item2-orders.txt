@@ -1,0 +1,9 @@
+# S6-T8 rulings on the Report, item 2: the five prose warm both cells, orders written before the first run (a 5x5 Latin square).
+# main, main2 = 62324f9 twice; head = the working tree with item 1b (headB); ctl1 = main + 44 never-run blocks (__text +4,124 B);
+# ctlS = main + the branch's PositionSections.coding field, never read (postings.Index 96 -> 104 B).
+run1:main head ctlS ctl1 main2
+run2:head ctl1 main main2 ctlS
+run3:ctlS main2 ctl1 head main
+run4:ctl1 ctlS main2 main head
+run5:main2 main head ctlS ctl1
+2026-11-18 00:32:44

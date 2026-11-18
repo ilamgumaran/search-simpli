@@ -1,0 +1,10 @@
+# The cells at T in the final runs 31-32 (final-query-summary.txt), interleaved, a 6x6 Williams square written before the first run:
+# timing-10k (both from, were, doc 00000; find words from, prefix bada*, words badamo) and prose-10k (both the, within, the within,
+# have drink, across lengthy seeming 04276; find phrase bottle and orchard, words the). fb = fb74582's library (find source identical to the head's).
+run41:main head fb ctl3 ctlP main2
+run42:head ctl3 main main2 fb ctlP
+run43:ctl3 main2 head ctlP main fb
+run44:main2 ctlP ctl3 fb head main
+run45:ctlP fb main2 main ctl3 head
+run46:fb main ctlP head main2 ctl3
+2026-11-18 01:03:46

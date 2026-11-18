@@ -1,0 +1,22 @@
+{
+ "corpus": "prose-10k",
+ "files": 10000,
+ "queries": [
+  "the",
+  "within",
+  "the within",
+  "have drink",
+  "across lengthy seeming 04276"
+ ],
+ "finds": [
+  {
+   "query": "bottle and orchard",
+   "mode": "phrase"
+  },
+  {
+   "query": "the",
+   "mode": "words"
+  }
+ ],
+ "roots": null
+}

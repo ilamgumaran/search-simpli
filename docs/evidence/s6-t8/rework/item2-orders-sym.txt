@@ -1,0 +1,7 @@
+# item 2, the same five cells with the libraries built unstripped (.strip = false on the library module only; macOS; Zig then links
+# its stack-trace code, so the machine code is not the shipped one), written before the first run. head = headBSym.
+run11:mainSym headBSym ctl1Sym main
+run12:headBSym main mainSym ctl1Sym
+run13:ctl1Sym mainSym main headBSym
+run14:main ctl1Sym headBSym mainSym
+2026-11-18 00:39:05
