@@ -25,6 +25,7 @@ const lexical_segment = @import("lexical_segment.zig");
 const manifest = @import("manifest.zig");
 const publication = @import("publication.zig");
 const snapshot_open = @import("snapshot_open.zig");
+const ops = @import("ops.zig");
 
 const io = std.testing.io;
 const fixture_main = "../tests/fixtures/index-v5-s6t7";
@@ -707,6 +708,10 @@ const V2Site = enum {
     /// Valid v2 (the old reader accepts it), refused by the transcode only
     /// (`GapNotRepresentable`): carried tables only.
     gap_exactly_2p31,
+    /// One byte after the table: the walk (`apply.offsetTableStarts`) ends
+    /// off the section's end (`InvalidLexicalSection`), the v2 side of its
+    /// last check (the ruling after the Fourth Verdict).
+    leftover_byte,
 };
 
 fn expectV2SiteRefused(site: V2Site, where: DroppedAt, path: TablePath) !void {
@@ -753,8 +758,13 @@ fn expectV2SiteRefused(site: V2Site, where: DroppedAt, path: TablePath) !void {
             expected = error.InvalidLexicalSection;
             old_reader_refuses = false;
         },
+        .leftover_byte => expected = error.InvalidLexicalSection,
     }
-    try v2Reseal(a, dir, base.good, try v2Emit(a, docs));
+    const offsets = if (site == .leftover_byte)
+        try std.mem.concat(a, u8, &.{ try v2Emit(a, docs[0 .. k + 1]), &.{0}, try v2Emit(a, docs[k + 1 ..]) })
+    else
+        try v2Emit(a, docs);
+    try v2Reseal(a, dir, base.good, offsets);
     if (old_reader_refuses) {
         try std.testing.expectError(error.InvalidPositions, oldReaderVerdict(a, dir));
     } else try oldReaderVerdict(a, dir);
@@ -872,6 +882,11 @@ const V4Site = enum {
     /// Right after a last token byte whose length nibble is the escape (and
     /// after its gap escape, if it has one).
     length_escape_cut,
+    /// Not a cut: one byte after the section's last table, the section
+    /// otherwise whole. The walk ends off the section's end
+    /// (`InvalidLexicalSection`), the v4 side of `apply.offsetTableStarts`'
+    /// last check (the Fourth Verdict's F5).
+    leftover_byte,
 };
 
 const empty_file =
@@ -933,8 +948,27 @@ fn expectV4SiteRefused(site: V4Site, where: DroppedAt, path: TablePath, with_emp
                 else => {},
             }
         },
+        .leftover_byte => {
+            try v4Append(&list, a, base.docs[k .. k + 1]);
+            try list.append(a, 0);
+            try v4Append(&list, a, base.docs[k + 1 ..]);
+        },
     }
     try v2Reseal(a, dir, base.good, list.items);
+    if (site == .leftover_byte) {
+        // The reader refuses it at the first `find`: after the last table,
+        // with v4's rule 12 (`OffsetsTrailingData`).
+        const opened = try snapshot_open.openScoped(a, io, dir);
+        defer opened.folder.close();
+        const service = @import("service.zig").Service{ .engine = opened.engine, .folder = opened.folder };
+        const query = switch (try ops.parseObject(a, "{\"query\":\"the\"}")) {
+            .ok => |map| map,
+            .failed => return error.TestUnexpectedResult,
+        };
+        if (ops.find(a, service, query, cli.cli_caller)) |_| {
+            return error.TestUnexpectedResult;
+        } else |err| if (where == .last) try std.testing.expectEqual(error.OffsetsTrailingData, err);
+    }
     const before = try snapshotFiles(a, dir);
     const change = switch (path) {
         .carried => second_shed,
@@ -973,4 +1007,16 @@ test "S6-T8 sites: a v4 section that ends where a gap escape varint should follo
 
 test "S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables" {
     try expectV4SiteRefusedEverywhere(.length_escape_cut);
+}
+
+test "S6-T8 sites: one byte after a v2 table is refused by the walk at the first publish, carried or dropped, at three tables" {
+    try expectV2SiteRefusedEverywhere(.leftover_byte, &both_paths);
+}
+
+// Only after the last table: a byte after an inner v4 table is read as the
+// next table's count, which the walk does not compare, so the walk need not
+// end off the section's end there (the encode's v4 rules then refuse a
+// carried table); that is not the walk's last check.
+test "S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed" {
+    for (both_paths) |path| try expectV4SiteRefused(.leftover_byte, .last, path, false);
 }
