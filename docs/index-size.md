@@ -141,8 +141,8 @@ rounded to nearest:
 J2's index: 169,267 → 157,654 B (−6.9 %). The saving on every corpus is
 S6-T3's C5b re-encoding to the byte (−1,195,645, −3,229,866 and −1,198,396 B on
 the 10k corpora), and every other section is `main`'s byte for byte. The 10k
-corpora come in under the projection and the two small fixtures 0.3 % over it
-(+18,780 and +7,112 B) for one reason: the step 3 projection is step 2's
+corpora come in under the projection and the two small corpora over it, the
+fixtures by 0.2 % (+18,780 B) and family by 0.3 % (+7,112 B), for one reason: the step 3 projection is step 2's
 projection less the C5b saving, the measured saving equals the projected one to
 the byte, so each difference is step 2's own difference from its projection,
 carried unchanged (step 2 measured +18,780 and +7,112 B over it on the fixtures

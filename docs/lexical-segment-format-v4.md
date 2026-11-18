@@ -29,7 +29,7 @@ with three fields fixed:
 |---:|---:|---|---|
 | 0 | 8 | magic | ASCII `HYBLEX04` |
 | 8 | 2 | version | `4` |
-| 10 | 2 | flags | exactly `0x0003`: bit 0 (XXH3-64 checksum) and bit 1 (sections 4 and 5 present) both set; any other value is `UnsupportedFlags` |
+| 10 | 2 | flags | exactly `0x0003`: bit 0 (XXH3-64 checksum) and bit 1 (sections 4 and 5 present) both set; any other value is refused: the section's own header check names it `UnsupportedFlags`, but through a manifest (`ss_open`, the CLI and every surface) the manifest's check of its sections runs first and the open fails with `InvalidLexicalSection`, as for v3 |
 
 Every other field (document, term and posting counts, the average document
 length, the five section lengths, the term text bytes, the checksum over
@@ -142,8 +142,18 @@ when a document's offsets become a returned `find` hit's highlights.
 | 11 | Each token's end is at most the number of codepoints of its document's text (a decoded offset past the text) | `OffsetsPastText` |
 | 12 | No byte is left over after the last document's last token | `OffsetsTrailingData` |
 
-Within one token the checks run in the order of the decoding above: the gap's
-escape (rules 4–6), then the length's (4–6), then rules 7, 8, 9 and 10. Every
+The section is checked document by document, in order, and the first rule
+broken names the error. Within one document, the count is read (rule 1) and
+compared with the document's length (rule 2) before any of its tokens is read,
+so a wrong count is `OffsetsCountMismatch` even when the section would also
+run out inside that document's tokens. Within one token the checks run in the
+order of the decoding above: the token's byte (rule 3), the gap's escape
+(rules 4–6), then the length's (4–6), then rules 7, 8, 9 and 10. A varint (a
+count or an escape) is read byte by byte, and before each byte the section's
+end is checked first: a varint whose last byte in the section still carries
+the continuation bit is `OffsetsTruncated`, even after five such bytes; a
+sixth byte present in the section is `OffsetsVarintOverflow`, as is a value of
+2^32 or more. Every
 error is a corruption error: `SS_ERR_CORRUPT_SNAPSHOT` through the C ABI, and
 under the lazy strategy the first `find` and every later one on that handle
 fail the same way, as for v3's step 7. Rule 11 fails the `find` that would
