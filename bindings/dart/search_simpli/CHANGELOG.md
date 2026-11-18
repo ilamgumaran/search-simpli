@@ -31,8 +31,8 @@ same, highlights included.
   running different library versions.** To be able to roll back, keep a copy
   of the index directory from before the upgrade, or rebuild with the older
   library.
-- **Natives rebuilt** (`native/SOURCE-SHA256` `8bf3f7c2…`): macOS arm64
-  990,120 B, Android arm64 959,664 B, iOS arm64 framework binary 971,400 B.
+- **Natives rebuilt** (`native/SOURCE-SHA256` `2e203ac5…`): macOS arm64
+  990,040 B, Android arm64 959,584 B, iOS arm64 framework binary 970,992 B.
 
 ## 0.9.1 (S6-T7; contract 2.8.0; patch: index format, one way)
 

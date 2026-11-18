@@ -64,12 +64,12 @@ PLANTS = {
     # longer refuses a v2 length of 0 (v4's rule 7 at the encode still
     # refuses the written table) ...
     "f1-refusal-removed": [("postings.zig",
-        "        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;",
-        "        if (start + length > std.math.maxInt(u32)) return error.InvalidPositions;")],
+        "        // v2's rules: every length at least 1, every end within a u32.\n        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;",
+        "        // v2's rules: every length at least 1, every end within a u32.\n        if (start + length > std.math.maxInt(u32)) return error.InvalidPositions;")],
     # ... and the repair `6b340b4` made: the length of 0 written as 1.
     "f1-repair-restored": [("postings.zig",
-        "        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;",
-        "        if (length == 0) length = 1;\n        if (start + length > std.math.maxInt(u32)) return error.InvalidPositions;")],
+        "        // v2's rules: every length at least 1, every end within a u32.\n        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;",
+        "        // v2's rules: every length at least 1, every end within a u32.\n        if (length == 0) length = 1;\n        if (start + length > std.math.maxInt(u32)) return error.InvalidPositions;")],
     # ... and the tables of the documents that publish removes not checked.
     "f1-dropped-unchecked": [("apply.zig",
         "            if (!carried.isSet(old)) try postings.checkPairsTable(",

@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-18 (S6-T8 built and reworked on the rulings on its Report, awaiting its Verdict: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-18 (S6-T8 built, reworked on the rulings on its Report and again on the ruling after its FAIL Verdict, awaiting its next Verdict; one warm `both` cell on prose goes to the maintainer as a failed cell explained by code placement: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,9 +15,9 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## Highlight offsets at one byte per token (S6-T8, objective plan item D2 step 3, 2026-11-17; built, not yet verified)
+## Highlight offsets at one byte per token (S6-T8, objective plan item D2 step 3, 2026-11-17; reworked after its Verdict, not yet verified)
 
-**Built, awaiting its Verdict** ([task and Report](docs/tasks/S6-T8.md),
+**Built; FAIL Verdict of 18 Nov reworked (F1 fixed; F2 to the maintainer); awaiting its next Verdict** ([task and Report](docs/tasks/S6-T8.md),
 [format](docs/lexical-segment-format-v4.md), [manifest v2.5](docs/manifest-format-v2.md#v25-lexical-section-v4-s6-t8),
 [index size, Landed](docs/index-size.md#landed)). Every folder writer publishes the content lexical section as
 `HYBLEX04`: v3 with section 5 (the highlight offsets `find` reads) at one byte per token, the zigzag gap from the
@@ -37,14 +37,16 @@ through the C ABI). **Contracts 2.8.0, Dart 0.9.2**; no API, schema, C header or
   rule's threshold), memory after open up to 3.2 MB lower; no `find` cell at the threshold in a six-run rerun. The
   first publish from the old format −0.8 % to +1.8 % (once) and one-file updates after it −2.1 % to +0.7 %, within
   "not more than 2 %", after two writer changes made on measurement (the first build missed: +3.5 % to +13.4 % and up
-  to +6.9 %). Some warm `both` queries on prose move 10–25 µs with code placement in the `ReleaseSmall` build;
-  never-run code of the same size moves them as much (the Report's item 2).
+  to +6.9 %). Warm `both the` on prose 10k is +31 to +38 µs (6.5 % to 8.0 %) on the final library, beyond a single
+  never-run control and within six placed ones; never-run code placed where the task's code sits moves it +22 to
+  +37 µs in the `ReleaseSmall` build, so it goes to the maintainer as a failed cell explained by code placement
+  (the Report's item 2 and its F2).
 - **One way (the third, after S6-T4 and S6-T7):** the new library opens indexes written by `main` at `62324f9`,
   before S6-T7 and before S6-T4, and answers the same; its first publish writes one whole v2.5 generation equal to a
   fresh index. An older library refuses the new index with `UnsupportedFlags` through `ss_open`,
   `ss_index_folder`, `ss_apply_changes` and the CLI, and leaves it byte-identical.
-- **Natives.** macOS 990,120 B (`main`: 988,952), Android 959,664 B (952,384), iOS framework binary 971,400 B
-  (953,488); `native/SOURCE-SHA256` `8bf3f7c2…`; `searchd` `ReleaseSmall` 1,133,304 B (1,132,312). **For the
+- **Natives.** macOS 990,040 B (`main`: 988,952), Android 959,584 B (952,384), iOS framework binary 970,992 B
+  (953,488); `native/SOURCE-SHA256` `2e203ac5…`; `searchd` `ReleaseSmall` 1,133,704 B (1,132,312). **For the
   consumer app:** the next pin takes Dart 0.9.2 (03-next pin row, all three one-way notes).
 
 ## Text once: each file's text stored once (S6-T7, objective plan item D2 step 2, 2026-11-17; merged as `a02b2cc`)
