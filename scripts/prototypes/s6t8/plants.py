@@ -29,12 +29,18 @@ PLANTS = {
     # every reader.
     "nibbles-swapped": [("postings.zig",
         "    try list.append(allocator, g | (l << 4));",
-        "    try list.append(allocator, l | (g << 4));")] + [("postings.zig", o, n) for o, n in DECODERS],
+        "    try list.append(allocator, l | (g << 4));"),
+        # rulings on the Report, item 1b: the first publish's transcoder too.
+        ("postings.zig", "        out[w] = g | (l << 4);", "        out[w] = l | (g << 4);")] + [("postings.zig", o, n) for o, n in DECODERS],
     # The escape at 14 (14 and up escape) or 16, writer and readers alike.
     "escape-14": [("postings.zig", "pub const offsets_escape: u8 = 15;", "pub const offsets_escape: u8 = 14;")],
     "escape-16": [("postings.zig", "pub const offsets_escape: u8 = 15;", "pub const offsets_escape: u8 = 16;")],
     # The length's escape before the gap's, writer and every reader.
     "escape-order-swapped": [
+        # rulings on the Report, item 1b: the first publish's transcoder too.
+        ("postings.zig",
+         "        if (g == offsets_escape) putVarint(out, &w, @intCast(z));\n        if (l == offsets_escape) putVarint(out, &w, @intCast(kept));",
+         "        if (l == offsets_escape) putVarint(out, &w, @intCast(kept));\n        if (g == offsets_escape) putVarint(out, &w, @intCast(z));"),
         ("postings.zig",
          "    if (g == offsets_escape) try appendVarint(list, allocator, @intCast(z));\n    if (l == offsets_escape) try appendVarint(list, allocator, length);",
          "    if (l == offsets_escape) try appendVarint(list, allocator, length);\n    if (g == offsets_escape) try appendVarint(list, allocator, @intCast(z));"),
