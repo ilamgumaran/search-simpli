@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-17 (S6-T8 built, awaiting its Verdict: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-18 (S6-T8 built and reworked on the rulings on its Report, awaiting its Verdict: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -27,22 +27,24 @@ through the C ABI). **Contracts 2.8.0, Dart 0.9.2**; no API, schema, C header or
 
 - **Size** (one generation, channel on): timing-10k 15,808,625 → 14,612,980 B (2.01 times its corpus), prose-10k
   35,196,921 → 31,967,055 (1.85), Tamil-10k 36,731,764 → 35,533,368 (1.28), fixtures 1.72, family 1.93, J2
-  157,654 B; the offsets section half its size (−50.0 % to −50.8 % on the 10k corpora), S6-T3's C5b figure to the
+  157,654 B; the offsets section half its size (−50.1 % to −50.8 % on the 10k corpora), S6-T3's C5b figure to the
   byte.
 - **Same answers:** C ABI, CLI, JSON-RPC, MCP and `searchd search` byte-identical to `main` on J2, the fixtures,
   the family fixture, the three 10k corpora and ten boundary files, fresh, on `main`'s index and after one update;
   every `find` hit's highlights equal, on a query set with Tamil, combining marks, long tokens and gaps and tokens
   at a chunk's ends.
-- **Speed** (the builder's two runs, for information): open 2.3–6.5 % faster, memory after open up to 3.2 MB lower;
-  no `find` cell at the rule's threshold. **Missed:** the first publish from the old format +3.5 % to +13.4 % (once),
-  one-file updates after it +0.8 % to +6.9 %, against "not more than 2 %"; five warm `both` queries on prose 4.0–7.6 %
-  slower beyond the controls (the same with the new library on `main`'s own index).
+- **Speed** (the builder's runs on the final code, for information): open 1.5–4.1 % faster (J2 equal within the
+  rule's threshold), memory after open up to 3.2 MB lower; no `find` cell at the threshold in a six-run rerun. The
+  first publish from the old format −0.8 % to +1.8 % (once) and one-file updates after it −2.1 % to +0.7 %, within
+  "not more than 2 %", after two writer changes made on measurement (the first build missed: +3.5 % to +13.4 % and up
+  to +6.9 %). Some warm `both` queries on prose move 10–25 µs with code placement in the `ReleaseSmall` build;
+  never-run code of the same size moves them as much (the Report's item 2).
 - **One way (the third, after S6-T4 and S6-T7):** the new library opens indexes written by `main` at `62324f9`,
   before S6-T7 and before S6-T4, and answers the same; its first publish writes one whole v2.5 generation equal to a
   fresh index. An older library refuses the new index with `UnsupportedFlags` through `ss_open`,
   `ss_index_folder`, `ss_apply_changes` and the CLI, and leaves it byte-identical.
-- **Natives.** macOS 989,992 B (`main`: 988,952), Android 958,368 B (952,384), iOS framework binary 971,280 B
-  (953,488); `native/SOURCE-SHA256` `0bcba04f…`; `searchd` `ReleaseSmall` 1,133,432 B (1,132,312). **For the
+- **Natives.** macOS 990,120 B (`main`: 988,952), Android 959,664 B (952,384), iOS framework binary 971,400 B
+  (953,488); `native/SOURCE-SHA256` `8bf3f7c2…`; `searchd` `ReleaseSmall` 1,133,304 B (1,132,312). **For the
   consumer app:** the next pin takes Dart 0.9.2 (03-next pin row, all three one-way notes).
 
 ## Text once: each file's text stored once (S6-T7, objective plan item D2 step 2, 2026-11-17; merged as `a02b2cc`)

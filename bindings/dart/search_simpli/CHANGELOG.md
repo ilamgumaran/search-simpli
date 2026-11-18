@@ -10,16 +10,16 @@ same, highlights included.
 
 - **Smaller.** Measured on 10,000-file corpora, one generation: the
   highlight offsets take half the bytes (2,351,372 → 1,155,727 B on
-  generated notes), the whole index 7.5 % less on generated notes
-  (15,808,625 → 14,612,980 B), 9.1 % on English prose, 3.2 % on Tamil;
+  generated notes), the whole index 7.6 % less on generated notes
+  (15,808,625 → 14,612,980 B), 9.2 % on English prose, 3.3 % on Tamil;
   2.01, 1.85 and 1.28 times the text it holds.
-- **Speed** (the builder's two runs, macOS arm64; the verifier's five
-  decide): opening an index 2.3 % to 6.5 % faster, memory after open up to
-  3.2 MB lower; `find` as fast or faster. Slower: the first publish from the
-  previous format, once (+3.5 % to +13.4 %; +6.0 to +19.9 ms on the
-  10,000-file corpora), one-file updates after it (+0.8 % to +6.9 %), and
-  some warm `searchField: both` queries on English prose (up to +7.6 %,
-  +46.6 µs).
+- **Speed** (the builder's runs, macOS arm64; the verifier's five
+  decide): opening an index 1.5 % to 4.1 % faster, memory after open up to
+  3.2 MB lower; `find` as fast or faster. The first publish from the
+  previous format, once, and one-file updates after it within 2 % of
+  0.9.1's (−0.8 % to +1.8 % and −2.1 % to +0.7 %). Some warm
+  `searchField: both` queries on English prose move by 10 to 25 µs with
+  the build's code placement.
 - **Migration, one way (the third, after 0.8.1's and 0.9.1's).** This
   library opens every index an older one wrote and answers the same. The
   first publish under it (an update, `applyChanges`, `indexFolder`) rewrites
@@ -31,8 +31,8 @@ same, highlights included.
   running different library versions.** To be able to roll back, keep a copy
   of the index directory from before the upgrade, or rebuild with the older
   library.
-- **Natives rebuilt** (`native/SOURCE-SHA256` `0bcba04f…`): macOS arm64
-  989,992 B, Android arm64 958,368 B, iOS arm64 framework binary 971,280 B.
+- **Natives rebuilt** (`native/SOURCE-SHA256` `8bf3f7c2…`): macOS arm64
+  990,120 B, Android arm64 959,664 B, iOS arm64 framework binary 971,400 B.
 
 ## 0.9.1 (S6-T7; contract 2.8.0; patch: index format, one way)
 
