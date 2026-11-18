@@ -1,7 +1,8 @@
-# S6-T8 builder runs 3 and 4 (fb74582's library), open p50 per run and memory after open (bench.py: RSS change at open), head vs main and the controls; memory shown from run 3, the first of the two (j2 and fixtures moved by a page or two between runs)
-j2          open main 0.145 0.158 ms, head 0.148 0.146 ms; median d -5.1 us (-3.4 %), largest control -0.9 us; memory after open main 131,072 B head 131,072 B (+0 B) memory same in both runs: False
-family      open main 1.056 1.065 ms, head 1.029 1.033 ms; median d -29.6 us (-2.8 %), largest control -4.0 us; memory after open main 4,964,352 B head 4,734,976 B (-229,376 B) memory same in both runs: True
-fixtures    open main 2.893 2.907 ms, head 2.821 2.845 ms; median d -67.3 us (-2.3 %), largest control +33.2 us; memory after open main 14,925,824 B head 14,434,304 B (-491,520 B) memory same in both runs: False
-timing-10k  open main 5.397 5.488 ms, head 5.280 5.338 ms; median d -133.0 us (-2.4 %), largest control -2.4 us; memory after open main 25,690,112 B head 24,494,080 B (-1,196,032 B) memory same in both runs: True
-prose-10k   open main 12.416 11.870 ms, head 11.305 11.384 ms; median d -798.7 us (-6.6 %), largest control -236.6 us; memory after open main 53,067,800 B head 49,840,152 B (-3,227,648 B) memory same in both runs: True
-tamil-10k   open main 7.867 7.913 ms, head 7.667 7.693 ms; median d -210.4 us (-2.7 %), largest control +161.4 us; memory after open main 46,923,800 B head 45,727,768 B (-1,196,032 B) memory same in both runs: True
+# S6-T8 builder runs 3 and 4 (fb74582's library): open p50 per run, and memory after open (bench.py: RSS change at open) per run,
+# head against main and the largest control; a saving's percentage truncated toward zero, a growth's rounded up.
+j2          open main 0.145 0.158 ms, head 0.148 0.146 ms; median d -5.1 us (-3.3 %), largest control -0.9 us; memory after open main 131,072 / 147,456 B, head 131,072 / 114,688 B
+family      open main 1.056 1.065 ms, head 1.029 1.033 ms; median d -29.6 us (-2.7 %), largest control -4.0 us; memory after open main 4,964,352 / 4,964,352 B, head 4,734,976 / 4,734,976 B
+fixtures    open main 2.893 2.907 ms, head 2.821 2.845 ms; median d -67.3 us (-2.3 %), largest control +33.2 us; memory after open main 14,925,824 / 14,909,440 B, head 14,434,304 / 14,434,304 B
+timing-10k  open main 5.397 5.488 ms, head 5.280 5.338 ms; median d -133.0 us (-2.4 %), largest control -2.4 us; memory after open main 25,690,112 / 25,690,112 B, head 24,494,080 / 24,494,080 B
+prose-10k   open main 12.416 11.870 ms, head 11.305 11.384 ms; median d -798.7 us (-6.5 %), largest control -236.6 us; memory after open main 53,067,800 / 53,067,800 B, head 49,840,152 / 49,840,152 B
+tamil-10k   open main 7.867 7.913 ms, head 7.667 7.693 ms; median d -210.4 us (-2.6 %), largest control +161.4 us; memory after open main 46,923,800 / 46,923,800 B, head 45,727,768 / 45,727,768 B

@@ -31,7 +31,7 @@ for line in open(sys.argv[1], encoding="utf-8"):
     cell["second"] += r["result"]["second_update_ms"]
     cell["after"] = r["result"]["magics_after_first"]
     loads += r["result"]["load_before"] + r["result"]["load_after"]
-print(f"5-minute load {min(loads):.2f}-{max(loads):.2f} (1-, 5- and 15-minute values before and after each set)")
+print(f"load {min(loads):.2f}-{max(loads):.2f} (the 1-, 5- and 15-minute values before and after each set)")
 for corpus, by in rows.items():
     parts = []
     for kind in ("first", "second"):

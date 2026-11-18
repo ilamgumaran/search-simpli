@@ -571,7 +571,7 @@ test "S6-T8 rule 11: a highlight past its chunk's text is refused by find (Offse
     _ = try ops.find(a, .{ .engine = clean_opened.engine, .folder = clean_opened.folder }, try params(a, "{\"query\":\"solo\"}"), cli.cli_caller);
 }
 
-test "S6-T8 rule 9 through find: a damaged section 5 fails the first find and every later one with the rule's error" {
+test "S6-T8 rule 7 through find: a damaged section 5 fails the first find and every later one with the rule's error" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const a = arena_state.allocator();
