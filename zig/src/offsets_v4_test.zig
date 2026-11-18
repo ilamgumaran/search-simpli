@@ -629,3 +629,200 @@ test "S6-T8: the manifest's bit 7 binds HYBLEX04 both ways, and only with bit 5"
     try std.testing.expectEqual(manifest.flag_lexical_v4, std.mem.readInt(u16, encoded[10..12], .little) & manifest.flag_lexical_v4);
     try std.testing.expect(std.mem.readInt(u16, encoded[10..12], .little) & ~@as(u16, 0x7f) != 0);
 }
+
+// ---------------------------- the writer's carry (rulings on the Report, 1b)
+
+const source = @import("source.zig");
+
+/// The walk `apply.offsetTableStarts` did per v4 table before item 1b: the
+/// count varint, then per token its byte and one varint per escape nibble.
+fn referenceOneByteTableEnd(bytes: []const u8, at_start: usize, length: u32) ?usize {
+    var at = source.varintsEnd(bytes, at_start, 1) orelse return null;
+    for (0..length) |_| {
+        if (at >= bytes.len) return null;
+        const byte = bytes[at];
+        at += 1;
+        const escapes = @as(usize, @intFromBool(byte & 0x0F == postings.offsets_escape)) + @intFromBool(byte >> 4 == postings.offsets_escape);
+        at = source.varintsEnd(bytes, at, escapes) orelse return null;
+    }
+    return at;
+}
+
+fn randomVarint(list: *std.ArrayList(u8), a: std.mem.Allocator, random: std.Random) !void {
+    const value: u32 = switch (random.uintLessThan(u8, 4)) {
+        0 => random.uintLessThan(u32, 0x80),
+        1 => random.uintLessThan(u32, 0x4000),
+        2 => random.uintLessThan(u32, 0x20_0000),
+        else => random.int(u32),
+    };
+    try postings.appendVarint(list, a, value);
+}
+
+test "S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var prng = std.Random.DefaultPrng.init(0x5618_0001);
+    const random = prng.random();
+    var compared: usize = 0;
+    var walked_fast: usize = 0;
+    for (0..3000) |trial| {
+        var list = std.ArrayList(u8).empty;
+        for (0..random.uintLessThan(usize, 4)) |_| try list.append(a, random.int(u8));
+        const at_start = list.items.len;
+        // Escape density from none to every token.
+        const densities = [_]u32{ 0, 0, 5, 50, 300, 1000 };
+        const escape_per_mille = densities[trial % densities.len];
+        const count: u32 = if (trial % 7 == 0) random.uintLessThan(u32, 400) else random.uintLessThan(u32, 70);
+        try postings.appendVarint(&list, a, count);
+        for (0..count) |_| {
+            var g: u8 = random.uintLessThan(u8, 15);
+            var l: u8 = random.uintLessThan(u8, 15);
+            if (random.uintLessThan(u32, 1000) < escape_per_mille) g = 15;
+            if (random.uintLessThan(u32, 1000) < escape_per_mille) l = 15;
+            try list.append(a, g | (l << 4));
+            if (g == 15) try randomVarint(&list, a, random);
+            if (l == 15) try randomVarint(&list, a, random);
+        }
+        for (0..random.uintLessThan(usize, 20)) |_| try list.append(a, random.int(u8));
+        const whole = list.items;
+        // The true count, one off each way, and cuts of the section.
+        for ([_]u32{ count, count +| 1, count -| 1, count +| 17 }) |length| {
+            var cut = whole.len;
+            while (true) {
+                const bytes = whole[0..cut];
+                const want = referenceOneByteTableEnd(bytes, at_start, length);
+                try std.testing.expectEqual(want, postings.oneByteTableEnd(bytes, at_start, length));
+                compared += 1;
+                if (want != null and length >= 16) walked_fast += 1;
+                if (cut <= at_start) break;
+                cut -= @min(cut - at_start, 1 + random.uintLessThan(usize, @max(1, whole.len / 6)));
+            }
+        }
+    }
+    // Random bytes, no structure.
+    for (0..3000) |_| {
+        const bytes = try a.alloc(u8, random.uintLessThan(usize, 120));
+        random.bytes(bytes);
+        const length = random.uintLessThan(u32, 120);
+        try std.testing.expectEqual(referenceOneByteTableEnd(bytes, 0, length), postings.oneByteTableEnd(bytes, 0, length));
+        compared += 1;
+    }
+    try std.testing.expect(compared > 20_000 and walked_fast > 1000);
+}
+
+/// What `apply.mergeCarried` wrote per carried v2 table before item 1b.
+fn referenceTranscode(a: std.mem.Allocator, offsets: []const u8, at_start: usize, end: usize, count: u32) !?[]const u8 {
+    const spans = try a.alloc(postings.TokenSpan, count);
+    const read = postings.readOffsetsTableChecked(.{ .positions = &.{}, .offsets = offsets, .coding = .pairs }, at_start, end, spans) orelse return null;
+    var list = std.ArrayList(u8).empty;
+    try postings.appendOffsetsTable(&list, a, .one_byte, read);
+    return list.items;
+}
+
+test "S6-T8 item 1b: transcodePairsTable writes the bytes of the read and append, and refuses what the read refuses" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var prng = std.Random.DefaultPrng.init(0x5618_0002);
+    const random = prng.random();
+    var equal: usize = 0;
+    var refused: usize = 0;
+    for (0..4000) |trial| {
+        var list = std.ArrayList(u8).empty;
+        for (0..random.uintLessThan(usize, 5)) |_| try list.append(a, random.int(u8));
+        const at_start = list.items.len;
+        const count: u32 = if (trial % 9 == 0) random.uintLessThan(u32, 300) else random.uintLessThan(u32, 40);
+        var count_bytes: [4]u8 = undefined;
+        std.mem.writeInt(u32, &count_bytes, count, .little);
+        try list.appendSlice(a, &count_bytes);
+        for (0..count) |_| {
+            const delta: u32 = switch (random.uintLessThan(u8, 8)) {
+                0 => 0,
+                1 => random.intRangeAtMost(u32, 12, 20),
+                2 => random.uintLessThan(u32, 0x4000),
+                3 => random.uintLessThan(u32, 0x10_0000),
+                else => random.uintLessThan(u32, 12),
+            };
+            const length: u32 = switch (random.uintLessThan(u8, 8)) {
+                0 => 0,
+                1 => random.intRangeAtMost(u32, 13, 17),
+                2 => random.uintLessThan(u32, 400),
+                else => 1 + random.uintLessThan(u32, 12),
+            };
+            // A varint with a needless continuation byte now and then,
+            // which v2's reader accepts.
+            if (random.uintLessThan(u8, 50) == 0 and delta < 0x80) {
+                try list.appendSlice(a, &.{ @as(u8, @intCast(delta)) | 0x80, 0x00 });
+            } else try postings.appendVarint(&list, a, delta);
+            try postings.appendVarint(&list, a, length);
+        }
+        var end = list.items.len;
+        var document_length = count;
+        switch (trial % 10) {
+            0 => end -= @min(end - at_start, 1 + random.uintLessThan(usize, 4)),
+            1 => {
+                try list.append(a, random.int(u8));
+                end += 1;
+            },
+            2 => document_length = count +% 1,
+            3 => if (count > 0) {
+                document_length = count - 1;
+            },
+            else => {},
+        }
+        for (0..random.uintLessThan(usize, 6)) |_| try list.append(a, random.int(u8));
+        const want = try referenceTranscode(a, list.items, at_start, end, document_length);
+        var got = std.ArrayList(u8).empty;
+        try got.appendSlice(a, "prefix");
+        if (want) |bytes| {
+            try postings.transcodePairsTable(&got, a, list.items, at_start, end, document_length);
+            try std.testing.expectEqualStrings("prefix", got.items[0..6]);
+            try std.testing.expectEqualSlices(u8, bytes, got.items[6..]);
+            equal += 1;
+        } else {
+            try std.testing.expectError(error.InvalidTable, postings.transcodePairsTable(&got, a, list.items, at_start, end, document_length));
+            try std.testing.expectEqualStrings("prefix", got.items);
+            refused += 1;
+        }
+    }
+    try std.testing.expect(equal > 2000 and refused > 1000);
+    // A gap whose zigzag does not fit a u32 (the read accepts it; the pair
+    // of calls had no defined result) is refused.
+    var big = std.ArrayList(u8).empty;
+    try big.appendSlice(a, &.{ 1, 0, 0, 0 });
+    try postings.appendVarint(&big, a, 0xFFFF_FFF0);
+    try postings.appendVarint(&big, a, 5);
+    var out = std.ArrayList(u8).empty;
+    try std.testing.expectError(error.InvalidTable, postings.transcodePairsTable(&out, a, big.items, 0, big.items.len, 1));
+    try std.testing.expectEqual(@as(usize, 0), out.items.len);
+}
+
+test "S6-T8 item 1b: every table of a built index, coded as v2 and transcoded, is the fresh v4 section" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var texts = std.ArrayList([]const u8).empty;
+    try texts.appendSlice(a, &example_texts);
+    for (boundary_files) |f| try texts.append(a, f.text);
+    const index = try buildOf(a, texts.items);
+    const v2 = try postings.withOffsetsCoding(a, index, .pairs);
+    const old = v2.positions.?.offsets;
+    var out = std.ArrayList(u8).empty;
+    var at: usize = 0;
+    for (index.document_lengths) |length| {
+        const end = source.varintsEnd(old, at + 4, @as(usize, length) * 2) orelse return error.TestUnexpectedResult;
+        try postings.transcodePairsTable(&out, a, old, at, end, length);
+        at = end;
+    }
+    try std.testing.expectEqual(old.len, at);
+    try std.testing.expectEqualSlices(u8, index.positions.?.offsets, out.items);
+    // And the fast walk finds each fresh table where the reference does.
+    var fresh_at: usize = 0;
+    for (index.document_lengths) |length| {
+        const want = referenceOneByteTableEnd(index.positions.?.offsets, fresh_at, length).?;
+        try std.testing.expectEqual(want, postings.oneByteTableEnd(index.positions.?.offsets, fresh_at, length).?);
+        fresh_at = want;
+    }
+    try std.testing.expectEqual(index.positions.?.offsets.len, fresh_at);
+}

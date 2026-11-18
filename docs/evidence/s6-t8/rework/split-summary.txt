@@ -1,0 +1,181 @@
+# item 1a: build_lexical.offsets split by the inner timers, fb74582's code plus the timers (split-fb74582-marks.jsonl), then the item-1b code (split-b1.jsonl).
+load 1.53-2.27 (the 1-, 5- and 15-minute values before and after each set)
+
+family first (6 updates, head only)   head ms
+  build_lexical.map                              0.005
+  build_lexical.fresh                            0.131
+  build_lexical.merge                            0.426
+  build_lexical.offsets.starts                   0.035
+  build_lexical.offsets.transcode                1.533
+  build_lexical.offsets                          1.569
+  build_lexical                                  2.146
+  total                                         10.941
+  wall                                          13.883
+
+family second (6 updates, head only)   head ms
+  build_lexical.map                              0.004
+  build_lexical.fresh                            0.140
+  build_lexical.merge                            0.428
+  build_lexical.offsets.starts                   0.883
+  build_lexical.offsets                          0.899
+  build_lexical                                  1.468
+  total                                         10.661
+  build_lexical.offsets.copy                     0.015
+  wall                                          13.532
+
+fixtures first (6 updates, head only)   head ms
+  build_lexical.map                              0.012
+  build_lexical.fresh                            0.023
+  build_lexical.merge                            1.128
+  build_lexical.offsets.starts                   0.101
+  build_lexical.offsets.transcode                4.404
+  build_lexical.offsets                          4.505
+  build_lexical                                  5.646
+  total                                         27.439
+  wall                                          31.648
+
+fixtures second (6 updates, head only)   head ms
+  build_lexical.map                              0.012
+  build_lexical.fresh                            0.018
+  build_lexical.merge                            1.111
+  build_lexical.offsets.starts                   2.339
+  build_lexical.offsets                          2.387
+  build_lexical                                  3.530
+  total                                         25.271
+  build_lexical.offsets.copy                     0.049
+  wall                                          29.285
+
+timing-10k first (6 updates, head only)   head ms
+  build_lexical.map                              0.037
+  build_lexical.fresh                            0.044
+  build_lexical.merge                            3.354
+  build_lexical.offsets.starts                   0.508
+  build_lexical.offsets.transcode                7.593
+  build_lexical.offsets                          8.097
+  build_lexical                                 11.542
+  total                                        171.268
+  wall                                         181.053
+
+timing-10k second (6 updates, head only)   head ms
+  build_lexical.map                              0.037
+  build_lexical.fresh                            0.042
+  build_lexical.merge                            3.316
+  build_lexical.offsets.starts                   4.354
+  build_lexical.offsets                          4.453
+  build_lexical                                  7.830
+  total                                        162.445
+  build_lexical.offsets.copy                     0.104
+  wall                                         171.879
+
+prose-10k first (6 updates, head only)   head ms
+  build_lexical.map                              0.040
+  build_lexical.fresh                            0.041
+  build_lexical.merge                            7.204
+  build_lexical.offsets.starts                   0.599
+  build_lexical.offsets.transcode               21.195
+  build_lexical.offsets                         21.794
+  build_lexical                                 29.051
+  total                                        222.387
+  wall                                         232.724
+
+prose-10k second (6 updates, head only)   head ms
+  build_lexical.map                              0.037
+  build_lexical.fresh                            0.039
+  build_lexical.merge                            7.309
+  build_lexical.offsets.starts                  11.846
+  build_lexical.offsets                         12.082
+  build_lexical                                 19.462
+  total                                        210.019
+  build_lexical.offsets.copy                     0.240
+  wall                                         220.197
+
+tamil-10k first (6 updates, head only)   head ms
+  build_lexical.map                              0.040
+  build_lexical.fresh                            0.042
+  build_lexical.merge                            3.579
+  build_lexical.offsets.starts                   0.486
+  build_lexical.offsets.transcode                7.705
+  build_lexical.offsets                          8.195
+  build_lexical                                 11.861
+  total                                        203.006
+  wall                                         213.716
+
+tamil-10k second (6 updates, head only)   head ms
+  build_lexical.map                              0.036
+  build_lexical.fresh                            0.042
+  build_lexical.merge                            3.627
+  build_lexical.offsets.starts                   4.346
+  build_lexical.offsets                          4.446
+  build_lexical                                  8.146
+  total                                        196.024
+  build_lexical.offsets.copy                     0.101
+  wall                                         206.212
+
+## after item 1b
+load 1.47-1.65 (the 1-, 5- and 15-minute values before and after each set)
+
+fixtures first (6 updates, head only)   head ms
+  build_lexical.map                              0.013
+  build_lexical.fresh                            0.021
+  build_lexical.merge                            1.097
+  build_lexical.offsets.starts                   0.099
+  build_lexical.offsets.transcode                0.997
+  build_lexical.offsets                          1.097
+  build_lexical                                  2.228
+  total                                         24.011
+  wall                                          28.396
+
+fixtures second (6 updates, head only)   head ms
+  build_lexical.map                              0.013
+  build_lexical.fresh                            0.019
+  build_lexical.merge                            1.112
+  build_lexical.offsets.starts                   0.530
+  build_lexical.offsets                          0.577
+  build_lexical                                  1.732
+  total                                         23.430
+  build_lexical.offsets.copy                     0.048
+  wall                                          27.486
+
+prose-10k first (6 updates, head only)   head ms
+  build_lexical.map                              0.038
+  build_lexical.fresh                            0.042
+  build_lexical.merge                            7.085
+  build_lexical.offsets.starts                   0.596
+  build_lexical.offsets.transcode                4.183
+  build_lexical.offsets                          4.782
+  build_lexical                                 11.957
+  total                                        206.875
+  wall                                         217.357
+
+prose-10k second (6 updates, head only)   head ms
+  build_lexical.map                              0.038
+  build_lexical.fresh                            0.042
+  build_lexical.merge                            7.155
+  build_lexical.offsets.starts                   0.462
+  build_lexical.offsets                          0.685
+  build_lexical                                  7.917
+  total                                        199.512
+  build_lexical.offsets.copy                     0.222
+  wall                                         210.941
+
+timing-10k first (6 updates, head only)   head ms
+  build_lexical.map                              0.040
+  build_lexical.fresh                            0.044
+  build_lexical.merge                            3.268
+  build_lexical.offsets.starts                   0.493
+  build_lexical.offsets.transcode                1.611
+  build_lexical.offsets                          2.104
+  build_lexical                                  5.442
+  total                                        163.178
+  wall                                         172.651
+
+timing-10k second (6 updates, head only)   head ms
+  build_lexical.map                              0.037
+  build_lexical.fresh                            0.045
+  build_lexical.merge                            3.285
+  build_lexical.offsets.starts                   0.351
+  build_lexical.offsets                          0.457
+  build_lexical                                  3.822
+  total                                        158.681
+  build_lexical.offsets.copy                     0.105
+  wall                                         168.169

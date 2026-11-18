@@ -114,6 +114,121 @@ pub fn appendOffsetsTable(
     }
 }
 
+/// S6-T8 (rulings on the Report, item 1b, made after measuring): where the
+/// v4 table that starts at `at_start` ends, for a document of `length`
+/// tokens, or null where the section ends first. The writer's carry walks
+/// the previous generation with it (`apply.offsetTableStarts`). A varint is
+/// its bytes up to the first below 0x80, as `source.varintsEnd` reads one;
+/// no value is checked (that is `validateOneByteOffsets`). Sixteen tokens
+/// at a time while none of their sixteen bytes holds an escape nibble: those
+/// bytes are then sixteen whole tokens.
+pub fn oneByteTableEnd(bytes: []const u8, at_start: usize, length: u32) ?usize {
+    const lanes = 16;
+    const Block = @Vector(lanes, u8);
+    const escape: Block = @splat(offsets_escape);
+    var at = skipOneVarint(bytes, at_start) orelse return null;
+    var remaining: usize = length;
+    while (remaining > 0) {
+        if (remaining >= lanes and bytes.len - at >= lanes) {
+            const block: Block = bytes[at..][0..lanes].*;
+            const low = block & @as(Block, @splat(0x0F));
+            const high = block >> @as(@Vector(lanes, u3), @splat(4));
+            if (!@reduce(.Or, low == escape) and !@reduce(.Or, high == escape)) {
+                at += lanes;
+                remaining -= lanes;
+                continue;
+            }
+        }
+        if (at >= bytes.len) return null;
+        const byte = bytes[at];
+        at += 1;
+        if (byte & 0x0F == offsets_escape) at = skipOneVarint(bytes, at) orelse return null;
+        if (byte >> 4 == offsets_escape) at = skipOneVarint(bytes, at) orelse return null;
+        remaining -= 1;
+    }
+    return at;
+}
+
+fn skipOneVarint(bytes: []const u8, at_start: usize) ?usize {
+    var at = at_start;
+    while (at < bytes.len) {
+        const byte = bytes[at];
+        at += 1;
+        if (byte < 0x80) return at;
+    }
+    return null;
+}
+
+/// S6-T8 (rulings on the Report, item 1b, made after measuring): one
+/// document's v2 table (`offsets[at_start..end]`, which must hold exactly
+/// `count` tokens) appended to `list` in v4's coding, without the spans
+/// between: the bytes `appendOffsetsTable(.one_byte, ...)` writes for what
+/// `readOffsetsTableChecked(.pairs, ...)` reads, and `error.InvalidTable`
+/// wherever that read returns null. It also refuses (`InvalidTable`) a
+/// token whose zigzag gap or end does not fit a `u32`, where the pair of
+/// calls has no defined result (an `@intCast` or a `u32` sum overflows).
+/// The first publish over a v2/v3 generation transcodes every carried
+/// table with it (`apply.mergeCarried`).
+pub fn transcodePairsTable(
+    list: *std.ArrayList(u8),
+    allocator: std.mem.Allocator,
+    offsets: []const u8,
+    at_start: usize,
+    end: usize,
+    count: u32,
+) (std.mem.Allocator.Error || error{InvalidTable})!void {
+    const bytes = offsets[0..end];
+    if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidTable;
+    if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return error.InvalidTable;
+    var at = at_start + 4;
+    // At most 5 bytes for the count and 11 per token (the byte and two
+    // five-byte varints).
+    try list.ensureUnusedCapacity(allocator, 5 + @as(usize, count) * 11);
+    const out = list.unusedCapacitySlice();
+    var w: usize = 0;
+    putVarint(out, &w, count);
+    var start: u64 = 0;
+    var previous_end: u64 = 0;
+    for (0..count) |_| {
+        var delta: u32 = undefined;
+        var length: u32 = undefined;
+        if (bytes.len - at >= 2 and bytes[at] < 0x80 and bytes[at + 1] < 0x80) {
+            delta = bytes[at];
+            length = bytes[at + 1];
+            at += 2;
+        } else {
+            delta = readVarint(bytes, &at) orelse return error.InvalidTable;
+            length = readVarint(bytes, &at) orelse return error.InvalidTable;
+        }
+        start += delta;
+        if (start + length > std.math.maxInt(u32)) return error.InvalidTable;
+        const kept: u64 = @max(length, 1);
+        if (start + kept > std.math.maxInt(u32)) return error.InvalidTable;
+        const z = zigzag(@as(i64, @intCast(start)) - @as(i64, @intCast(previous_end)));
+        if (z > std.math.maxInt(u32)) return error.InvalidTable;
+        const g: u8 = if (z >= offsets_escape) offsets_escape else @intCast(z);
+        const l: u8 = if (kept >= offsets_escape) offsets_escape else @intCast(kept);
+        out[w] = g | (l << 4);
+        w += 1;
+        if (g == offsets_escape) putVarint(out, &w, @intCast(z));
+        if (l == offsets_escape) putVarint(out, &w, @intCast(kept));
+        previous_end = start + kept;
+    }
+    if (at != end) return error.InvalidTable;
+    list.items.len += w;
+}
+
+fn putVarint(out: []u8, w: *usize, value: u32) void {
+    var remaining = value;
+    while (remaining >= 0x80) {
+        out[w.*] = @as(u8, @truncate(remaining)) | 0x80;
+        w.* += 1;
+        remaining >>= 7;
+    }
+    out[w.*] = @truncate(remaining);
+    w.* += 1;
+}
+
 /// S6-T8: each section-5 rule of `HYBLEX04` and its own error
 /// (`docs/lexical-segment-format-v4.md` § Validation).
 pub const OffsetsError = error{

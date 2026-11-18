@@ -1,0 +1,5 @@
+# S6-T8 rulings on the Report (18 Nov 2026), item 1a: stage breakdown, orders written before the first run.
+# main = 62324f9 searchd (ReleaseSmall), head = fb74582 searchd (ReleaseSmall), 3 rounds per set.
+stg-run1:main head head main
+stg-run2:head main main head
+2026-11-18 00:11:13

@@ -2111,16 +2111,9 @@ fn offsetTableStarts(scratch: std.mem.Allocator, sections: postings.PositionSect
                 if (offsets.len - at < 4) return error.InvalidLexicalSection;
                 at = try skipVarintsChecked(offsets, at + 4, @as(usize, length) * 2);
             },
-            .one_byte => {
-                at = try skipVarintsChecked(offsets, at, 1);
-                for (0..length) |_| {
-                    if (at >= offsets.len) return error.InvalidLexicalSection;
-                    const byte = offsets[at];
-                    at += 1;
-                    const escapes = @as(usize, @intFromBool(byte & 0x0F == postings.offsets_escape)) + @intFromBool(byte >> 4 == postings.offsets_escape);
-                    at = try skipVarintsChecked(offsets, at, escapes);
-                }
-            },
+            // S6-T8 (rulings on the Report, item 1b, made after measuring):
+            // sixteen tokens at a time where none escapes.
+            .one_byte => at = postings.oneByteTableEnd(offsets, at, length) orelse return error.InvalidLexicalSection,
         }
     }
     starts[lengths.len] = at;
@@ -2326,6 +2319,9 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
     defer scratch.free(old_starts);
     const fresh_starts = try offsetTableStarts(scratch, fresh_sections, fresh.document_lengths);
     defer scratch.free(fresh_starts);
+    // S6-T8 (rulings on the Report, item 1a): the walks and the copy or
+    // transcode timed apart.
+    stages.inner("build_lexical.offsets.starts");
     var offsets_out: []u8 = undefined;
     if (sections.coding == fresh_sections.coding) {
         var offsets_sink = ByteSink{ .out = try allocator.alloc(u8, sections.offsets.len + fresh_sections.offsets.len) };
@@ -2349,7 +2345,14 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
         defer spans.deinit(scratch);
         fresh_index = 0;
         for (sources) |item| switch (item) {
-            .carried => |old| {
+            // S6-T8 (rulings on the Report, item 1b, made after measuring):
+            // v2 to v4 directly, the same bytes as the read and append below.
+            .carried => |old| if (sections.coding == .pairs and fresh_sections.coding == .one_byte) {
+                postings.transcodePairsTable(&list, scratch, sections.offsets, old_starts[old], old_starts[old + 1], previous.document_lengths[old]) catch |err| switch (err) {
+                    error.InvalidTable => return error.InvalidLexicalSection,
+                    error.OutOfMemory => return error.OutOfMemory,
+                };
+            } else {
                 try spans.resize(scratch, previous.document_lengths[old]);
                 const read = postings.readOffsetsTableChecked(sections, old_starts[old], old_starts[old + 1], spans.items) orelse return error.InvalidLexicalSection;
                 try postings.appendOffsetsTable(&list, scratch, fresh_sections.coding, read);
@@ -2361,6 +2364,7 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
         };
         offsets_out = try allocator.dupe(u8, list.items);
     }
+    stages.inner(if (sections.coding == fresh_sections.coding) "build_lexical.offsets.copy" else "build_lexical.offsets.transcode");
     stages.sub("build_lexical.offsets");
 
     return .{

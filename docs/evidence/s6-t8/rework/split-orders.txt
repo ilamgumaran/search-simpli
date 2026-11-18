@@ -1,0 +1,3 @@
+# item 1a, the split of build_lexical.offsets: fb74582 plus the inner timers only (head), 3 rounds per set, written before the run.
+stg-runsplit:head head
+2026-11-18 00:16:28
