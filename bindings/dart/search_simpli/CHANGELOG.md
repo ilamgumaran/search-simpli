@@ -30,7 +30,10 @@ same, highlights included.
   fresh directory. **An index directory is never shared between devices
   running different library versions.** To be able to roll back, keep a copy
   of the index directory from before the upgrade, or rebuild with the older
-  library.
+  library. An index from an older library whose highlight offsets are
+  damaged (one its own `find` already refuses) is refused at that first
+  publish, even when the damaged file is being removed (the index is left as
+  it was), and must be rebuilt from the files.
 - **Natives rebuilt** (`native/SOURCE-SHA256` `2e203ac5…`): macOS arm64
   990,040 B, Android arm64 959,584 B, iOS arm64 framework binary 970,992 B.
 

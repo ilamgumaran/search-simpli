@@ -237,6 +237,21 @@ meets a v4 index as a clear refusal, never as a misread.
   was. One valid v2 table cannot be written in v4: a gap whose zigzag is 2^32
   or more (a token 2^31 codepoints or more from the previous token's end),
   which rule 5 forbids; the publish fails with `InvalidLexicalSection`.
+- At that first publish the tables of the documents it removes are not
+  written, but they are checked by the same v2 rules
+  (`postings.checkPairsTable`), and a table v2 refuses refuses the publish
+  (`InvalidPositions`, or `InvalidLexicalSection` where the tables are found),
+  the old generation left whole. `main`'s writer dropped them unchecked, so an
+  old index whose only damage sat in a removed file's table was published over;
+  now it needs a full rebuild (`ss_index_folder` without `update`,
+  `searchd index` without `--update`).
+- Under v4 (an update over a `HYBLEX04` section), a removed document's table
+  is dropped with the document without its rules being checked; only its
+  length in bytes is walked, as v2's writer does for v2 tables. The two differ
+  because the first publish is the one point where the writer takes in an
+  older format, which it must accept exactly as that format's reader does,
+  while a v4 section is this writer's own output, checked by every v4 rule
+  when it was written and by the reader at each `find` that decodes it.
 - Readers keep the section's bytes as they are (`postings.PositionSections`
   records which coding section 5 uses) and decode a document's tokens when a
   `find` hit needs them, as for v2's varints.
