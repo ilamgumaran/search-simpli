@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-17 (S6-T7 built on `task/S6-T7`, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt; awaiting its Verdict, not merged. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-17 (S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,9 +15,9 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## Text once: each file's text stored once (S6-T7, objective plan item D2 step 2, 2026-11-17; built, awaiting its Verdict)
+## Text once: each file's text stored once (S6-T7, objective plan item D2 step 2, 2026-11-17; merged as `a02b2cc`)
 
-**Built on `task/S6-T7`, not merged** ([task and Report](docs/tasks/S6-T7.md),
+**Merged as `a02b2cc`** ([task and Report](docs/tasks/S6-T7.md),
 [format](docs/documents-v5-source-v2-format.md), [manifest v2.4](docs/manifest-format-v2.md#v24-text-once-s6-t7),
 [index size, Landed](docs/index-size.md#landed)). Every folder writer (`searchd index`,
 `ss_index_folder`, `apply_changes`) publishes the documents section as record v5 (a file table holding each

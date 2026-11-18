@@ -85,7 +85,7 @@ accepted it on 16 Nov 2026 (S6-T4, "Maintainer's decision"). The one-file
 update is unchanged; the first update of a v2 index costs 5–8 % once. The numbers, bars and method are in the
 [S6-T4 Report](tasks/S6-T4.md) and `docs/evidence/s6-t4/phase2/`.
 
-**Step 2, text once (S6-T7, built 17 Nov 2026; awaiting its Verdict).** The
+**Step 2, text once (S6-T7, merged 17 Nov 2026 as `a02b2cc`).** The
 documents section is record v5 (a file table holding each path once, raw ids,
 varint fields) and the source section `HYBSRC02` (only the bytes no chunk
 holds; `read_span` and `outline` rebuild a file from its chunks and check its
