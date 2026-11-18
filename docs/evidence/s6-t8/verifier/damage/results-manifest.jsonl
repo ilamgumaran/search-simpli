@@ -1,0 +1,7 @@
+{"case": "bit7_cleared_over_v4", "ss_open": "ss_open: InvalidLexicalSection", "cli query": "exit 1 error: InvalidLexicalSection"}
+{"case": "bit7_set_over_v3", "ss_open": "ss_open: InvalidLexicalSection", "cli query": "exit 1 error: InvalidLexicalSection"}
+{"case": "bit5_cleared_bit7_kept", "ss_open": "ss_open: InvalidLexicalSection", "cli query": "exit 1 error: InvalidLexicalSection"}
+{"case": "bit8_set", "ss_open": "ss_open: UnsupportedFlags", "cli query": "exit 1 error: UnsupportedFlags"}
+{"case": "v4_header_version_3", "ss_open": "ss_open: InvalidLexicalSection", "cli query": "exit 1 error: InvalidLexicalSection"}
+{"case": "v4_header_flags_0001", "ss_open": "ss_open: InvalidLexicalSection", "cli query": "exit 1 error: InvalidLexicalSection"}
+{"case": "v4_header_flags_0007", "ss_open": "ss_open: InvalidLexicalSection", "cli query": "exit 1 error: InvalidLexicalSection"}

@@ -1,0 +1,2 @@
+error: 'compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 499/509 tests passed (9 skipped, 1 failed)

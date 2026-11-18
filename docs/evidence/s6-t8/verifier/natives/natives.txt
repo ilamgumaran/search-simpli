@@ -1,0 +1,14 @@
+build_native.sh on a fresh archive of 6b340b4 (own caches): exit 0
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib (  990120 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  959664 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  971400 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (8bf3f7c24c57f56269e1a52cfb54b3533644d6ec55fe418198b031051f80f486)
+cmp with the committed files at 6b340b4: macOS dylib 990,120 B identical; Android .so 959,664 B identical; example jniLibs .so identical; iOS framework binary 971,400 B identical; Info.plist identical
+macOS dylib identical to the verifier's own ReleaseSmall head build (libs/head)
+SOURCE-SHA256 rebuilt and recomputed: 8bf3f7c24c57f56269e1a52cfb54b3533644d6ec55fe418198b031051f80f486 (committed: the same)
+check_native.sh:
+check_native: macos-arm64 memcpy at 0x740 (221 calls against 117): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5a77c (499 calls against 170): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (219 calls against 108): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)

@@ -1,0 +1,13 @@
+error: 'lexical_segment.test.S6-T4: HYBLEX03 round trip, with and without positions' failed:
+error: 'lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader' failed:
+error: 'lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections' failed:
+error: 'lexical_segment.test.S6-T4 second rework (Q1): a byte left over after the last document's offsets is refused, v2 and v3, at open and lazily' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: manifest bit 5 and the lexical sections must agree (a v3 section without the flag, a v2 one with it, a v1 file-name section under it)' failed:
+error: 'compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder' failed:
+error: 'compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same' failed:
+error: 'compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one' failed:
+error: 'compat_s6t8_test.test.S6-T8: indexes from 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.5 index, their bytes untouched' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result' failed:
+error: 'compat_s6t8_test.test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 488/509 tests passed (9 skipped, 12 failed)

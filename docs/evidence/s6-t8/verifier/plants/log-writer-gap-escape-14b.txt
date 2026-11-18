@@ -1,0 +1,16 @@
+error: 'source_fixture_test.test.S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section' failed:
+error: 'bm25_conformance_test.test.BM25 ranking matches the Python reference for analyzer-v1 and analyzer-v2' failed:
+error: 'import_analyzer_test.test.S2-T1: import-json with analyzer-v2 publishes the same bytes as searchd index on the app-text fixture' failed:
+error: 'offsets_v4_test.test.S6-T8: zigzag and the escape threshold' failed:
+error: 'offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find' failed:
+error: 'offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned' failed:
+error: 'offsets_v4_test.test.S6-T8 rule 7 through find: a damaged section 5 fails the first find and every later one with the rule's error' failed:
+error: 'offsets_v4_test.test.S6-T8: the manifest's bit 7 binds HYBLEX04 both ways, and only with bit 5' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: transcodePairsTable writes the bytes of the read and append, and refuses what the read refuses' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: every table of a built index, coded as v2 and transcoded, is the fresh v4 section' failed:
+error: 'direct_search_test.test.S6-T2: search answers as index then query/evidence, J2 corpus, every query, all three fields' failed:
+error: 'direct_search_test.test.S6-T2: search answers as index then query/evidence, the whole fixtures folder' failed:
+error: 'direct_search_test.test.S6-T2: the detached sections are the bytes index publishes (J2, fixtures, the walk's rules; with and without the file-name channel)' failed:
+error: 'direct_search_test.test.S6-T2: search's flags reach the answer (field, top-k, json, evidence, caps)' failed:
+error: 'direct_search_test.test.S6-T2: the scoped detached open reads the source section from memory' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 485/509 tests passed (9 skipped, 15 failed)

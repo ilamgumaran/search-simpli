@@ -1,0 +1,3 @@
+error: 'text_once_test.test.S6-T7: an update carries unchanged files' records, maps and residual runs byte for byte, and the result is a fresh index's' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 498/509 tests passed (9 skipped, 2 failed)

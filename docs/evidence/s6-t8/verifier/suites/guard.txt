@@ -1,0 +1,6 @@
+1/2 filename_complexity_test.test.filename query complexity: decoded anchors need zero body-record reads at 1k and 10k...OK
+2/2 filename_complexity_test.test.filename query complexity: broad filename and both queries keep linear scratch at 1k and 10k...OK
+All 2 tests passed.
+1/2 filename_complexity_test.test.filename query complexity: decoded anchors need zero body-record reads at 1k and 10k...OK
+2/2 filename_complexity_test.test.filename query complexity: broad filename and both queries keep linear scratch at 1k and 10k...OK
+All 2 tests passed.
