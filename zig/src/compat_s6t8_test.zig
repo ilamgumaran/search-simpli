@@ -1020,3 +1020,135 @@ test "S6-T8 sites: one byte after a v2 table is refused by the walk at the first
 test "S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed" {
     for (both_paths) |path| try expectV4SiteRefused(.leftover_byte, .last, path, false);
 }
+
+// The Fifth Verdict: value damage in a carried v4 table (F6's boundary
+// among it) and a stray byte after an inner v4 table, each at a later
+// update over `main`'s fixture published once (generation 2, `HYBLEX04`).
+
+/// The error of the first `find` on `dir` (the open, or the query), or
+/// null where both succeed.
+fn firstFindError(a: std.mem.Allocator, dir: std.Io.Dir) ?anyerror {
+    const opened = snapshot_open.openScoped(a, io, dir) catch |err| return err;
+    defer opened.folder.close();
+    const service = @import("service.zig").Service{ .engine = opened.engine, .folder = opened.folder };
+    const query = switch (ops.parseObject(a, "{\"query\":\"the\"}") catch |err| return err) {
+        .ok => |map| map,
+        .failed => return error.TestUnexpectedResult,
+    };
+    _ = ops.find(a, service, query, cli.cli_caller) catch |err| return err;
+    return null;
+}
+
+/// v4 token `token`'s start, gap from the previous token's end.
+fn v4Start(tokens: []const V4Token, token: usize) u64 {
+    var previous_end: i64 = 0;
+    var start: i64 = 0;
+    for (tokens[0 .. token + 1]) |t| {
+        const g: u64 = if (t.byte & 0x0F == postings.offsets_escape) v2Value(t.esc_g) else t.byte & 0x0F;
+        const l: u64 = if (t.byte >> 4 == postings.offsets_escape) v2Value(t.esc_l) else t.byte >> 4;
+        start = previous_end + postings.unzigzag(g);
+        previous_end = start + @as(i64, @intCast(l));
+    }
+    return @intCast(start);
+}
+
+const V4Damage = enum {
+    /// The table's last token ends at exactly 2^32 (rule 10's boundary).
+    end_exactly_2p32,
+    /// ... and at 2^32 + 1.
+    end_past_2p32,
+    /// The table's last token's length 0 (rule 7).
+    zero_length,
+    /// One byte 0x00 after the table, an inner one: read as the next
+    /// table's count.
+    inner_stray_byte,
+};
+
+/// `damage` in one table (the first, a middle or the last; an inner stray
+/// byte, the first or a middle), every checksum resealed. The first `find`
+/// refuses it with `find_error`; a later update, an unrelated file added
+/// (`.carried`, every table carried) or that table's file removed
+/// (`.dropped`), refuses it with `update_error`, generation 2 staying and
+/// every file byte-identical.
+fn expectV4DamageRefused(damage: V4Damage, where: DroppedAt, path: TablePath, find_error: anyerror, update_error: anyerror) !void {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const name = try std.fmt.allocPrint(a, "v4damage-{s}-{s}-{s}", .{ @tagName(damage), @tagName(where), @tagName(path) });
+    var dir = try copyOf(a, tmp, fixture_main, name);
+    defer dir.close(io);
+    switch (try apply.applyChanges(a, io, dir, shed, .{})) {
+        .ok => {},
+        .failed => return error.TestUnexpectedResult,
+    }
+    const base = try v4Tables(a, dir);
+    const k = tablePosition(base.docs.len, where, struct {
+        docs: []const V4Doc,
+        fn at(self: @This(), i: usize) bool {
+            return self.docs[i].tokens.len > 0;
+        }
+    }{ .docs = base.docs });
+    try std.testing.expect(base.docs[k].tokens.len > 0);
+    const docs = try a.dupe(V4Doc, base.docs);
+    docs[k].tokens = try a.dupe(V4Token, base.docs[k].tokens);
+    const last = docs[k].tokens.len - 1;
+    const token = &docs[k].tokens[last];
+    var list = std.ArrayList(u8).empty;
+    switch (damage) {
+        .end_exactly_2p32, .end_past_2p32 => {
+            const start = v4Start(docs[k].tokens, last);
+            const end: u64 = if (damage == .end_exactly_2p32) @as(u64, 1) << 32 else (@as(u64, 1) << 32) + 1;
+            token.byte |= 0xF0;
+            token.esc_l = try v2Varint(a, end - start);
+            try v4Append(&list, a, docs);
+        },
+        .zero_length => {
+            token.byte &= 0x0F;
+            token.esc_l = &.{};
+            try v4Append(&list, a, docs);
+        },
+        .inner_stray_byte => {
+            try std.testing.expect(where != .last);
+            try v4Append(&list, a, docs[0 .. k + 1]);
+            try list.append(a, 0);
+            try v4Append(&list, a, docs[k + 1 ..]);
+        },
+    }
+    try v2Reseal(a, dir, base.good, list.items);
+    const read = firstFindError(a, dir);
+    const before = try snapshotFiles(a, dir);
+    const change = switch (path) {
+        .carried => second_shed,
+        .dropped => try std.fmt.allocPrint(a, "{{\"changes\":[{{\"op\":\"remove\",\"root_id\":\"r-legacy\",\"path\":\"{s}\"}}]}}", .{base.paths[k]}),
+    };
+    const got = if (apply.applyChanges(a, io, dir, change, .{})) |outcome| switch (outcome) {
+        .ok => error.TestUnexpectedResult,
+        .failed => error.RefusedAsFailure,
+    } else |err| err;
+    const read_as_expected = if (read) |e| e == find_error else false;
+    if (!read_as_expected or got != update_error) {
+        std.debug.print("S6-T8 v4 damage: {s}, {s} table at the {s} document ({d} of {d}): find gave {s} (expected {s}), the update {s} (expected {s})\n", .{ @tagName(damage), @tagName(path), @tagName(where), k, base.docs.len, if (read) |e| @errorName(e) else "no error", @errorName(find_error), @errorName(got), @errorName(update_error) });
+        return error.TestUnexpectedError;
+    }
+    try expectSameFiles(before, try snapshotFiles(a, dir));
+    const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    try std.testing.expectEqual(@as(u64, 2), metadata.generation);
+    try std.testing.expect(metadata.lexical_v4);
+}
+
+test "S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables" {
+    for ([_]V4Damage{ .end_exactly_2p32, .end_past_2p32 }) |damage| for ([_]DroppedAt{ .first, .middle, .last }) |where|
+        try expectV4DamageRefused(damage, where, .carried, error.OffsetsEndOverflow, error.InvalidPositions);
+}
+
+test "S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables" {
+    for ([_]DroppedAt{ .first, .middle, .last }) |where|
+        try expectV4DamageRefused(.zero_length, where, .carried, error.OffsetsZeroLength, error.InvalidPositions);
+}
+
+test "S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed" {
+    for ([_]DroppedAt{ .first, .middle }) |where| for (both_paths) |path|
+        try expectV4DamageRefused(.inner_stray_byte, where, path, error.OffsetsCountMismatch, error.InvalidPositions);
+}

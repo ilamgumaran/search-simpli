@@ -303,6 +303,21 @@ fn parseDocs(a: std.mem.Allocator, offsets: []const u8, lengths: []const u32) ![
     return docs;
 }
 
+/// Token `i`'s start in `doc` (each gap from the previous token's end).
+fn tokenStart(doc: Doc, i: usize) u64 {
+    var previous_end: i64 = 0;
+    var start: i64 = 0;
+    for (doc.tokens[0 .. i + 1]) |tok| {
+        var at: usize = 0;
+        const g: u64 = if (tok.byte & 0x0F == 15) uleb(tok.esc_g, &at) catch unreachable else tok.byte & 0x0F;
+        at = 0;
+        const l: u64 = if (tok.byte >> 4 == 15) uleb(tok.esc_l, &at) catch unreachable else tok.byte >> 4;
+        start = previous_end + postings.unzigzag(g);
+        previous_end = start + @as(i64, @intCast(l));
+    }
+    return @intCast(start);
+}
+
 fn cloneDocs(a: std.mem.Allocator, docs: []const Doc) ![]Doc {
     const out = try a.dupe(Doc, docs);
     for (out) |*doc| doc.tokens = try a.dupe(Tok, doc.tokens);
@@ -472,10 +487,17 @@ test "S6-T8: every section 5 rule, violated with the checksum recomputed, is ref
     v = try cloneDocs(a, base.docs);
     v[0].tokens[2] = .{ .byte = 0x2F, .esc_g = try varintBytes(a, postings.zigzag(-22)) };
     try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsStartDecreases, "a start below the previous start");
-    // Rule 10: an end past a u32 (the last token's length 2^32 - 1).
+    // Rule 10: an end past a u32. At the boundary (the Fifth Verdict's F6):
+    // the last token's length 2^32 minus its start, an end of exactly 2^32;
+    // and well past it (a length of 2^32 - 1 after a start of at least 2).
+    const last_start = tokenStart(base.docs[last_doc], last_tok);
+    try std.testing.expect(last_start >= 2);
+    v = try cloneDocs(a, base.docs);
+    v[last_doc].tokens[last_tok].esc_l = try varintBytes(a, (@as(u64, 1) << 32) - last_start);
+    try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsEndOverflow, "an end of exactly 2^32");
     v = try cloneDocs(a, base.docs);
     v[last_doc].tokens[last_tok].esc_l = &.{ 0xFF, 0xFF, 0xFF, 0xFF, 0x0F };
-    try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsEndOverflow, "an end past 2^32 - 1");
+    try expectRefused(a, good, try emitDocs(a, v, &.{}), error.OffsetsEndOverflow, "an end past 2^32");
     // Rule 12: no byte left over (a zero byte, and a whole valid-looking
     // token after the last document).
     try expectRefused(a, good, try emitDocs(a, base.docs, &.{0x00}), error.OffsetsTrailingData, "a byte left over");
@@ -486,8 +508,13 @@ test "S6-T8: every section 5 rule, violated with the checksum recomputed, is ref
     v = try cloneDocs(a, base.docs);
     v[0].tokens[1].esc_l = &.{ 0x95, 0x00 };
     _ = try decodeBoth(a, try withOffsets(a, good, try emitDocs(a, v, &.{})), true);
-    std.debug.print("S6-T8: {d} damaged sections 5 refused with their rules' errors (rules 1-10 and 12), eager and lazy; an overlong escape accepted\n", .{refused_rules});
-    try std.testing.expectEqual(@as(usize, 23), refused_rules);
+    // ... and rule 10's last end allowed: exactly 2^32 - 1 (rule 11 is
+    // `find`'s, with the text).
+    v = try cloneDocs(a, base.docs);
+    v[last_doc].tokens[last_tok].esc_l = try varintBytes(a, (@as(u64, 1) << 32) - 1 - last_start);
+    for ([_]bool{ true, false }) |eager| _ = try decodeBoth(a, try withOffsets(a, good, try emitDocs(a, v, &.{})), eager);
+    std.debug.print("S6-T8: {d} damaged sections 5 refused with their rules' errors (rules 1-10 and 12), eager and lazy; an overlong escape and an end of 2^32 - 1 accepted\n", .{refused_rules});
+    try std.testing.expectEqual(@as(usize, 24), refused_rules);
 }
 
 test "S6-T8: the header of HYBLEX04: version 4 and flags exactly 3" {
