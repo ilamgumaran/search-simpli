@@ -216,6 +216,17 @@ meets a v4 index as a clear refusal, never as a misread.
   the same starts and lengths), the fresh ones written in v4's; the result is
   byte for byte a fresh index's. The old generation stays whole until the
   manifest is replaced.
+- That transcode accepts from a v2 table exactly what v2's validation
+  ([v2](lexical-segment-format-v2.md)'s section 5 rules) accepts, and nothing
+  is clamped or repaired: a count other than the document's length, a varint
+  that does not read, a length of 0, an end past a `u32` or a table that does
+  not end where the next begins fails the publish with v2's error
+  (`InvalidPositions`; a section that ends inside a table, or holds a byte
+  after the last one, is refused while the tables are found, with
+  `InvalidLexicalSection`, as before v4), and the old generation is left as it
+  was. One valid v2 table cannot be written in v4: a gap whose zigzag is 2^32
+  or more (a token 2^31 codepoints or more from the previous token's end),
+  which rule 5 forbids; the publish fails with `InvalidLexicalSection`.
 - Readers keep the section's bytes as they are (`postings.PositionSections`
   records which coding section 5 uses) and decode a document's tokens when a
   `find` hit needs them, as for v2's varints.

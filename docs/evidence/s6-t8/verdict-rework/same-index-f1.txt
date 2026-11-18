@@ -1,0 +1,21 @@
+# S6-T8 ruling after the Verdict, F1: the index each writer writes (scripts/prototypes/s6t8/same_index.py).
+# A = 6b340b4's searchd (sha256 f5db8c8fca080224...), B = the F1 searchd (sha256 2270e20baa975794...), both ReleaseSmall.
+# fresh = from nothing; first = the first one-line update of main's index (HYBLEX03 -> HYBLEX04); second = the next.
+family fresh: 9 files byte-identical; differ: none
+family first: 15 files byte-identical; differ: none
+family second: 15 files byte-identical; differ: none
+fixtures fresh: 9 files byte-identical; differ: none
+fixtures first: 15 files byte-identical; differ: none
+fixtures second: 15 files byte-identical; differ: none
+j2 fresh: 9 files byte-identical; differ: none
+j2 first: 15 files byte-identical; differ: none
+j2 second: 21 files byte-identical; differ: none
+timing-10k fresh: 9 files byte-identical; differ: none
+timing-10k first: 15 files byte-identical; differ: none
+timing-10k second: 15 files byte-identical; differ: none
+prose-10k fresh: 9 files byte-identical; differ: none
+prose-10k first: 15 files byte-identical; differ: none
+prose-10k second: 15 files byte-identical; differ: none
+tamil-10k fresh: 9 files byte-identical; differ: none
+tamil-10k first: 15 files byte-identical; differ: none
+tamil-10k second: 15 files byte-identical; differ: none

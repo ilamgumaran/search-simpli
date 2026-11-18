@@ -711,16 +711,35 @@ test "S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fail
     try std.testing.expect(compared > 20_000 and walked_fast > 1000);
 }
 
-/// What `apply.mergeCarried` wrote per carried v2 table before item 1b.
+/// The reference for one carried v2 table (the ruling after the Verdict,
+/// F1): v2's validation of that table as `lexical_segment.validatePositions`
+/// states it (a `u32` count equal to the document's length, two varints per
+/// token, every length at least 1, every end within a `u32`, the table
+/// ending at `end`), null where it refuses; else the bytes
+/// `appendOffsetsTable(.one_byte, ...)` writes for the same starts and
+/// lengths. (Before the Verdict this reference read with a checked reader
+/// that let a length of 0 through and the append then wrote 1: it pinned the
+/// repair F1 names.)
 fn referenceTranscode(a: std.mem.Allocator, offsets: []const u8, at_start: usize, end: usize, count: u32) !?[]const u8 {
+    const bytes = offsets[0..end];
+    if (bytes.len < at_start or bytes.len - at_start < 4) return null;
+    if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return null;
+    var at = at_start + 4;
     const spans = try a.alloc(postings.TokenSpan, count);
-    const read = postings.readOffsetsTableChecked(.{ .positions = &.{}, .offsets = offsets, .coding = .pairs }, at_start, end, spans) orelse return null;
+    var start: u64 = 0;
+    for (spans) |*span| {
+        start += postings.readVarint(bytes, &at) orelse return null;
+        const length = postings.readVarint(bytes, &at) orelse return null;
+        if (length == 0 or start + length > std.math.maxInt(u32)) return null;
+        span.* = .{ .start = @intCast(start), .length = length };
+    }
+    if (at != end) return null;
     var list = std.ArrayList(u8).empty;
-    try postings.appendOffsetsTable(&list, a, .one_byte, read);
+    try postings.appendOffsetsTable(&list, a, .one_byte, spans);
     return list.items;
 }
 
-test "S6-T8 item 1b: transcodePairsTable writes the bytes of the read and append, and refuses what the read refuses" {
+test "S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const a = arena_state.allocator();
@@ -744,8 +763,9 @@ test "S6-T8 item 1b: transcodePairsTable writes the bytes of the read and append
                 3 => random.uintLessThan(u32, 0x10_0000),
                 else => random.uintLessThan(u32, 12),
             };
+            // A length of 0 (v2 refuses it) about once in 200 tokens.
             const length: u32 = switch (random.uintLessThan(u8, 8)) {
-                0 => 0,
+                0 => if (random.uintLessThan(u8, 25) == 0) 0 else 7,
                 1 => random.intRangeAtMost(u32, 13, 17),
                 2 => random.uintLessThan(u32, 400),
                 else => 1 + random.uintLessThan(u32, 12),
@@ -781,20 +801,34 @@ test "S6-T8 item 1b: transcodePairsTable writes the bytes of the read and append
             try std.testing.expectEqualSlices(u8, bytes, got.items[6..]);
             equal += 1;
         } else {
-            try std.testing.expectError(error.InvalidTable, postings.transcodePairsTable(&got, a, list.items, at_start, end, document_length));
+            try std.testing.expectError(error.InvalidPositions, postings.transcodePairsTable(&got, a, list.items, at_start, end, document_length));
             try std.testing.expectEqualStrings("prefix", got.items);
             refused += 1;
         }
     }
+    if (!(equal > 2000 and refused > 1000)) std.debug.print("S6-T8 item 1b transcode: equal {d}, refused {d}\n", .{ equal, refused });
     try std.testing.expect(equal > 2000 and refused > 1000);
-    // A gap whose zigzag does not fit a u32 (the read accepts it; the pair
-    // of calls had no defined result) is refused.
+    // F1: a length of 0 anywhere in the table is refused, never written as 1.
+    for (0..3) |position| {
+        var zero = std.ArrayList(u8).empty;
+        try zero.appendSlice(a, &.{ 3, 0, 0, 0 });
+        for (0..3) |k| {
+            try postings.appendVarint(&zero, a, 2);
+            try postings.appendVarint(&zero, a, if (k == position) 0 else 4);
+        }
+        var out = std.ArrayList(u8).empty;
+        try std.testing.expectEqual(@as(?[]const u8, null), try referenceTranscode(a, zero.items, 0, zero.items.len, 3));
+        try std.testing.expectError(error.InvalidPositions, postings.transcodePairsTable(&out, a, zero.items, 0, zero.items.len, 3));
+        try std.testing.expectEqual(@as(usize, 0), out.items.len);
+    }
+    // A gap whose zigzag does not fit a u32 is valid v2 that v4 cannot hold
+    // (rule 5): refused apart, nothing written.
     var big = std.ArrayList(u8).empty;
     try big.appendSlice(a, &.{ 1, 0, 0, 0 });
     try postings.appendVarint(&big, a, 0xFFFF_FFF0);
     try postings.appendVarint(&big, a, 5);
     var out = std.ArrayList(u8).empty;
-    try std.testing.expectError(error.InvalidTable, postings.transcodePairsTable(&out, a, big.items, 0, big.items.len, 1));
+    try std.testing.expectError(error.GapNotRepresentable, postings.transcodePairsTable(&out, a, big.items, 0, big.items.len, 1));
     try std.testing.expectEqual(@as(usize, 0), out.items.len);
 }
 

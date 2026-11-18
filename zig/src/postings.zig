@@ -159,16 +159,38 @@ fn skipOneVarint(bytes: []const u8, at_start: usize) ?usize {
     return null;
 }
 
-/// S6-T8 (rulings on the Report, item 1b, made after measuring): one
-/// document's v2 table (`offsets[at_start..end]`, which must hold exactly
-/// `count` tokens) appended to `list` in v4's coding, without the spans
-/// between: the bytes `appendOffsetsTable(.one_byte, ...)` writes for what
-/// `readOffsetsTableChecked(.pairs, ...)` reads, and `error.InvalidTable`
-/// wherever that read returns null. It also refuses (`InvalidTable`) a
-/// token whose zigzag gap or end does not fit a `u32`, where the pair of
-/// calls has no defined result (an `@intCast` or a `u32` sum overflows).
-/// The first publish over a v2/v3 generation transcodes every carried
-/// table with it (`apply.mergeCarried`).
+/// S6-T8 (the ruling after the Verdict, F1): v2's validation
+/// (`lexical_segment.validatePositions`) of one document's table
+/// (`offsets[at_start..end]`, `count` tokens), for a table the first publish
+/// drops rather than transcodes: `InvalidPositions` where v2 refuses it.
+pub fn checkPairsTable(offsets: []const u8, at_start: usize, end: usize, count: u32) error{InvalidPositions}!void {
+    const bytes = offsets[0..end];
+    if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidPositions;
+    if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return error.InvalidPositions;
+    var at = at_start + 4;
+    var start: u64 = 0;
+    for (0..count) |_| {
+        start += readVarint(bytes, &at) orelse return error.InvalidPositions;
+        const length = readVarint(bytes, &at) orelse return error.InvalidPositions;
+        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;
+    }
+    if (at != end) return error.InvalidPositions;
+}
+
+/// S6-T8 (rulings on the Report, item 1b, made after measuring; the ruling
+/// after the Verdict, F1): one document's v2 table (`offsets[at_start..end]`,
+/// which must hold exactly `count` tokens) appended to `list` in v4's
+/// coding, the same starts and lengths, without the spans between. It
+/// accepts exactly what v2's validation (`lexical_segment.validatePositions`)
+/// accepts of that table and refuses the rest with v2's error,
+/// `InvalidPositions`: a count that is not `count`, a varint that does not
+/// read, a length of 0, an end past a `u32`, or a table that does not end at
+/// `end`. Nothing is clamped or repaired. One valid v2 table v4 cannot hold
+/// is refused apart (`GapNotRepresentable`): a gap whose zigzag is 2^32 or
+/// more (a token more than 2^31 codepoints after the previous token's end,
+/// or that far before it), which v4's rule 5 forbids. The first publish over
+/// a v2/v3 generation transcodes every carried table with it
+/// (`apply.mergeCarried`).
 pub fn transcodePairsTable(
     list: *std.ArrayList(u8),
     allocator: std.mem.Allocator,
@@ -176,10 +198,10 @@ pub fn transcodePairsTable(
     at_start: usize,
     end: usize,
     count: u32,
-) (std.mem.Allocator.Error || error{InvalidTable})!void {
+) (std.mem.Allocator.Error || error{ InvalidPositions, GapNotRepresentable })!void {
     const bytes = offsets[0..end];
-    if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidTable;
-    if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return error.InvalidTable;
+    if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidPositions;
+    if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return error.InvalidPositions;
     var at = at_start + 4;
     // At most 5 bytes for the count and 11 per token (the byte and two
     // five-byte varints).
@@ -197,24 +219,23 @@ pub fn transcodePairsTable(
             length = bytes[at + 1];
             at += 2;
         } else {
-            delta = readVarint(bytes, &at) orelse return error.InvalidTable;
-            length = readVarint(bytes, &at) orelse return error.InvalidTable;
+            delta = readVarint(bytes, &at) orelse return error.InvalidPositions;
+            length = readVarint(bytes, &at) orelse return error.InvalidPositions;
         }
         start += delta;
-        if (start + length > std.math.maxInt(u32)) return error.InvalidTable;
-        const kept: u64 = @max(length, 1);
-        if (start + kept > std.math.maxInt(u32)) return error.InvalidTable;
+        // v2's rules: every length at least 1, every end within a u32.
+        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;
         const z = zigzag(@as(i64, @intCast(start)) - @as(i64, @intCast(previous_end)));
-        if (z > std.math.maxInt(u32)) return error.InvalidTable;
+        if (z > std.math.maxInt(u32)) return error.GapNotRepresentable;
         const g: u8 = if (z >= offsets_escape) offsets_escape else @intCast(z);
-        const l: u8 = if (kept >= offsets_escape) offsets_escape else @intCast(kept);
+        const l: u8 = if (length >= offsets_escape) offsets_escape else @intCast(length);
         out[w] = g | (l << 4);
         w += 1;
         if (g == offsets_escape) putVarint(out, &w, @intCast(z));
-        if (l == offsets_escape) putVarint(out, &w, @intCast(kept));
-        previous_end = start + kept;
+        if (l == offsets_escape) putVarint(out, &w, length);
+        previous_end = start + length;
     }
-    if (at != end) return error.InvalidTable;
+    if (at != end) return error.InvalidPositions;
     list.items.len += w;
 }
 
@@ -439,51 +460,6 @@ pub fn skipOffsetsTable(sections: PositionSections, at: usize, length: u32) usiz
 /// hold its document length. Returns the filled prefix.
 pub fn readTokenSpans(index: Index, tables: PositionTables, document_index: usize, output: []TokenSpan) []TokenSpan {
     return readOffsetsTable(index.positions.?, tables.document_starts[document_index], output);
-}
-
-/// `readOffsetsTable` over a table not yet validated, which must hold
-/// exactly `output.len` tokens and end at `end`: null on any varint that
-/// does not read, a count that differs, a start or end past a `u32`, or a
-/// table that does not end at `end`. The writer's carry reads the previous
-/// generation's tables with it (S6-T8).
-pub fn readOffsetsTableChecked(sections: PositionSections, at_start: usize, end: usize, output: []TokenSpan) ?[]TokenSpan {
-    const bytes = sections.offsets[0..end];
-    var at = at_start;
-    var previous_end: i64 = 0;
-    var start: i64 = 0;
-    const count: usize = switch (sections.coding) {
-        .pairs => blk: {
-            if (bytes.len < at or bytes.len - at < 4) return null;
-            defer at += 4;
-            break :blk std.mem.readInt(u32, bytes[at..][0..4], .little);
-        },
-        .one_byte => readVarint(bytes, &at) orelse return null,
-    };
-    if (count != output.len) return null;
-    for (output) |*span| {
-        var length: u32 = undefined;
-        switch (sections.coding) {
-            .pairs => {
-                start += readVarint(bytes, &at) orelse return null;
-                length = readVarint(bytes, &at) orelse return null;
-            },
-            .one_byte => {
-                if (at >= bytes.len) return null;
-                const byte = bytes[at];
-                at += 1;
-                var g: u32 = byte & 0x0F;
-                length = byte >> 4;
-                if (g == offsets_escape) g = readVarint(bytes, &at) orelse return null;
-                if (length == offsets_escape) length = readVarint(bytes, &at) orelse return null;
-                start = previous_end + unzigzag(g);
-            },
-        }
-        if (start < 0 or start + length > std.math.maxInt(u32)) return null;
-        span.* = .{ .start = @intCast(start), .length = length };
-        previous_end = start + length;
-    }
-    if (at != end) return null;
-    return output;
 }
 
 /// The spans of the validated section-5 table that starts at `at`, in

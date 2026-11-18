@@ -16,9 +16,6 @@ DECODERS = [
     ("            var g: u32 = byte & 0x0F;\n            var l: u32 = byte >> 4;\n            if (g == offsets_escape) {",
      "            var g: u32 = byte >> 4;\n            var l: u32 = byte & 0x0F;\n            if (g == offsets_escape) {"),
     # skipOffsetsTable needs no change (it skips both escapes alike).
-    # readOffsetsTableChecked
-    ("                var g: u32 = byte & 0x0F;\n                length = byte >> 4;",
-     "                var g: u32 = byte >> 4;\n                length = byte & 0x0F;"),
     # readOffsetsTable
     ("                var g: u32 = byte & 0x0F;\n                var l: u32 = byte >> 4;\n                if (g == offsets_escape) g = readVarint(bytes, &at).?;",
      "                var g: u32 = byte >> 4;\n                var l: u32 = byte & 0x0F;\n                if (g == offsets_escape) g = readVarint(bytes, &at).?;"),
@@ -39,17 +36,14 @@ PLANTS = {
     "escape-order-swapped": [
         # rulings on the Report, item 1b: the first publish's transcoder too.
         ("postings.zig",
-         "        if (g == offsets_escape) putVarint(out, &w, @intCast(z));\n        if (l == offsets_escape) putVarint(out, &w, @intCast(kept));",
-         "        if (l == offsets_escape) putVarint(out, &w, @intCast(kept));\n        if (g == offsets_escape) putVarint(out, &w, @intCast(z));"),
+         "        if (g == offsets_escape) putVarint(out, &w, @intCast(z));\n        if (l == offsets_escape) putVarint(out, &w, length);",
+         "        if (l == offsets_escape) putVarint(out, &w, length);\n        if (g == offsets_escape) putVarint(out, &w, @intCast(z));"),
         ("postings.zig",
          "    if (g == offsets_escape) try appendVarint(list, allocator, @intCast(z));\n    if (l == offsets_escape) try appendVarint(list, allocator, length);",
          "    if (l == offsets_escape) try appendVarint(list, allocator, length);\n    if (g == offsets_escape) try appendVarint(list, allocator, @intCast(z));"),
         ("postings.zig",
          "            if (g == offsets_escape) {\n                g = try readOffsetsVarint(offsets, &at);\n                if (g < offsets_escape) return error.OffsetsNonCanonicalEscape;\n            }\n            if (l == offsets_escape) {\n                l = try readOffsetsVarint(offsets, &at);\n                if (l < offsets_escape) return error.OffsetsNonCanonicalEscape;\n            }",
          "            if (l == offsets_escape) {\n                l = try readOffsetsVarint(offsets, &at);\n                if (l < offsets_escape) return error.OffsetsNonCanonicalEscape;\n            }\n            if (g == offsets_escape) {\n                g = try readOffsetsVarint(offsets, &at);\n                if (g < offsets_escape) return error.OffsetsNonCanonicalEscape;\n            }"),
-        ("postings.zig",
-         "                if (g == offsets_escape) g = readVarint(bytes, &at) orelse return null;\n                if (length == offsets_escape) length = readVarint(bytes, &at) orelse return null;",
-         "                if (length == offsets_escape) length = readVarint(bytes, &at) orelse return null;\n                if (g == offsets_escape) g = readVarint(bytes, &at) orelse return null;"),
         ("postings.zig",
          "                if (g == offsets_escape) g = readVarint(bytes, &at).?;\n                if (l == offsets_escape) l = readVarint(bytes, &at).?;",
          "                if (l == offsets_escape) l = readVarint(bytes, &at).?;\n                if (g == offsets_escape) g = readVarint(bytes, &at).?;"),
@@ -66,6 +60,20 @@ PLANTS = {
     "old-reader-removed": [("lexical_segment.zig",
         "if (header.version == version_v4) .one_byte else .pairs",
         ".one_byte")],
+    # The ruling after the Verdict, F1: the first publish's transcoder no
+    # longer refuses a v2 length of 0 (v4's rule 7 at the encode still
+    # refuses the written table) ...
+    "f1-refusal-removed": [("postings.zig",
+        "        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;",
+        "        if (start + length > std.math.maxInt(u32)) return error.InvalidPositions;")],
+    # ... and the repair `6b340b4` made: the length of 0 written as 1.
+    "f1-repair-restored": [("postings.zig",
+        "        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;",
+        "        if (length == 0) length = 1;\n        if (start + length > std.math.maxInt(u32)) return error.InvalidPositions;")],
+    # ... and the tables of the documents that publish removes not checked.
+    "f1-dropped-unchecked": [("apply.zig",
+        "            if (!carried.isSet(old)) try postings.checkPairsTable(",
+        "            if (false and !carried.isSet(old)) try postings.checkPairsTable(")],
     # A byte after the last document's last token accepted.
     "leftover-accepted": [("postings.zig",
         "    if (at != offsets.len) return error.OffsetsTrailingData;\n",

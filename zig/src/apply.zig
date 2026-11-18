@@ -2341,27 +2341,33 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
         var list = std.ArrayList(u8).empty;
         defer list.deinit(scratch);
         try list.ensureTotalCapacity(scratch, sections.offsets.len + fresh_sections.offsets.len);
-        var spans = std.ArrayList(postings.TokenSpan).empty;
-        defer spans.deinit(scratch);
+        // The only coding change is v2 to v4 (every writer writes v4).
+        if (sections.coding != .pairs or fresh_sections.coding != .one_byte) return error.InvalidLexicalSection;
         fresh_index = 0;
         for (sources) |item| switch (item) {
-            // S6-T8 (rulings on the Report, item 1b, made after measuring):
-            // v2 to v4 directly, the same bytes as the read and append below.
-            .carried => |old| if (sections.coding == .pairs and fresh_sections.coding == .one_byte) {
-                postings.transcodePairsTable(&list, scratch, sections.offsets, old_starts[old], old_starts[old + 1], previous.document_lengths[old]) catch |err| switch (err) {
-                    error.InvalidTable => return error.InvalidLexicalSection,
-                    error.OutOfMemory => return error.OutOfMemory,
-                };
-            } else {
-                try spans.resize(scratch, previous.document_lengths[old]);
-                const read = postings.readOffsetsTableChecked(sections, old_starts[old], old_starts[old + 1], spans.items) orelse return error.InvalidLexicalSection;
-                try postings.appendOffsetsTable(&list, scratch, fresh_sections.coding, read);
+            // S6-T8 (rulings on the Report, item 1b, made after measuring;
+            // the ruling after the Verdict, F1): v2 to v4 directly, refusing
+            // with v2's error what v2's validation refuses, nothing repaired.
+            .carried => |old| postings.transcodePairsTable(&list, scratch, sections.offsets, old_starts[old], old_starts[old + 1], previous.document_lengths[old]) catch |err| switch (err) {
+                error.InvalidPositions => return error.InvalidPositions,
+                error.GapNotRepresentable => return error.InvalidLexicalSection,
+                error.OutOfMemory => return error.OutOfMemory,
             },
             .fresh => {
                 try list.appendSlice(scratch, fresh_sections.offsets[fresh_starts[fresh_index]..fresh_starts[fresh_index + 1]]);
                 fresh_index += 1;
             },
         };
+        // The tables of the documents this publish removes are checked by
+        // v2's rules and dropped: v2's reader refuses the whole section for
+        // any one of them, so the writer does too (the ruling after the
+        // Verdict, F1).
+        var carried = try std.DynamicBitSetUnmanaged.initEmpty(scratch, previous.document_lengths.len);
+        defer carried.deinit(scratch);
+        for (sources) |item| if (item == .carried) carried.set(item.carried);
+        for (previous.document_lengths, 0..) |length, old| {
+            if (!carried.isSet(old)) try postings.checkPairsTable(sections.offsets, old_starts[old], old_starts[old + 1], length);
+        }
         offsets_out = try allocator.dupe(u8, list.items);
     }
     stages.inner(if (sections.coding == fresh_sections.coding) "build_lexical.offsets.copy" else "build_lexical.offsets.transcode");
