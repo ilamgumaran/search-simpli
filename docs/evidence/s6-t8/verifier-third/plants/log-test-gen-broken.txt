@@ -1,0 +1,10 @@
++- run test 505 pass, 9 skip, 6 fail (520 total)
+error: 'compat_s6t8_test.test.S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F3, dropped table: a byte left over after the first, a middle or the last table, that file removed, is refused by the first publish (the table walk)' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 511/526 tests passed (9 skipped, 6 failed)
++- run test 505 pass, 9 skip, 6 fail (520 total)
++- run test 6 pass (6 total) 5s MaxRSS:5M

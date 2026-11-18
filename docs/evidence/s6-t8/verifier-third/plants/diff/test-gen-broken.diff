@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite3/zig/src/compat_s6t8_test.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants3.noindex/src/test-gen-broken/zig/src/compat_s6t8_test.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite3/zig/src/compat_s6t8_test.zig	2026-11-18 09:09:48
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants3.noindex/src/test-gen-broken/zig/src/compat_s6t8_test.zig	2026-11-18 09:40:12
+@@ -615,7 +615,7 @@
+     }
+     try expectSameFiles(before, try snapshotFiles(a, dir));
+     const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+-    try std.testing.expectEqual(@as(u64, 1), metadata.generation);
++    try std.testing.expectEqual(@as(u64, 2), metadata.generation);
+     try std.testing.expect(!metadata.lexical_v4);
+ }
+ 
