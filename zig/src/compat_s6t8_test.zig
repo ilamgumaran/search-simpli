@@ -545,3 +545,104 @@ test "S6-T8 F1: a length of 0 in a table the first publish drops (its file remov
     try std.testing.expectEqual(error.InvalidPositions, got);
     try expectSameFiles(before, try snapshotFiles(a, dir));
 }
+
+// ------------------- the ruling after the Second Verdict, F3: the tables the first publish drops
+
+/// A v2 rule broken in the table of a document the first publish drops.
+/// The first five are the rules `postings.checkPairsTable` enforces on a
+/// dropped table; the table walk (`apply.offsetTableStarts`) finds a byte
+/// left over before any table is checked.
+const DroppedRule = enum { zero_length, count_not_length, end_past_u32, varint_sixth_byte, varint_fifth_byte_high, leftover_byte };
+const DroppedAt = enum { first, middle, last };
+
+/// `rule` broken in one document's table, the section's first, a middle or
+/// its last, on a copy of `main`'s fixture; then that document's file
+/// removed through `apply_changes`, so its table is dropped, not carried:
+/// the old reader refuses the section, and so does the first publish, with
+/// the rule's error, leaving generation 1 and every file byte-identical.
+fn expectDroppedDamageRefused(rule: DroppedRule, where: DroppedAt) !void {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const name = try std.fmt.allocPrint(a, "dropped-{s}-{s}", .{ @tagName(rule), @tagName(where) });
+    var dir = try copyOf(a, tmp, fixture_main, name);
+    defer dir.close(io);
+    const engine = try snapshot_open.open(a, io, dir);
+    const base = try v2Tables(a, dir);
+    try std.testing.expectEqual(engine.documents.len, base.docs.len);
+    // The document: the section's first or last exactly, or the first
+    // with a token from the middle on.
+    const k = switch (where) {
+        .first => 0,
+        .last => base.docs.len - 1,
+        .middle => blk: {
+            var m = base.docs.len / 2;
+            while (base.docs[m].tokens.len == 0) m += 1;
+            break :blk m;
+        },
+    };
+    try std.testing.expect(base.docs[k].tokens.len > 0);
+    try std.testing.expect(k + 1 < base.docs.len or where == .last);
+    const docs = try a.dupe(V2Doc, base.docs);
+    docs[k].tokens = try a.dupe(V2Token, docs[k].tokens);
+    const tail = &docs[k].tokens[docs[k].tokens.len - 1];
+    var expected: anyerror = error.InvalidPositions;
+    var offsets: []const u8 = undefined;
+    switch (rule) {
+        .zero_length => tail.length = &.{0},
+        .count_not_length => docs[k].count += 1,
+        .end_past_u32 => tail.delta = try v2Varint(a, std.math.maxInt(u32)),
+        .varint_sixth_byte => tail.length = &.{ 0x81, 0x80, 0x80, 0x80, 0x80, 0x00 },
+        .varint_fifth_byte_high => tail.length = &.{ 0x81, 0x80, 0x80, 0x80, 0x10 },
+        .leftover_byte => expected = error.InvalidLexicalSection,
+    }
+    if (rule == .leftover_byte) {
+        offsets = try std.mem.concat(a, u8, &.{ try v2Emit(a, docs[0 .. k + 1]), &.{0}, try v2Emit(a, docs[k + 1 ..]) });
+    } else offsets = try v2Emit(a, docs);
+    try v2Reseal(a, dir, base.good, offsets);
+    try std.testing.expectError(error.InvalidPositions, oldReaderVerdict(a, dir));
+    const before = try snapshotFiles(a, dir);
+    const remove = try std.fmt.allocPrint(a, "{{\"changes\":[{{\"op\":\"remove\",\"root_id\":\"r-legacy\",\"path\":\"{s}\"}}]}}", .{engine.documents[k].path});
+    const got = if (apply.applyChanges(a, io, dir, remove, .{})) |outcome| switch (outcome) {
+        .ok => error.TestUnexpectedResult,
+        .failed => error.RefusedAsFailure,
+    } else |err| err;
+    if (got != expected) {
+        std.debug.print("S6-T8 F3: {s} at the {s} document ({d} of {d}): the first publish gave {s}, expected {s}\n", .{ @tagName(rule), @tagName(where), k, base.docs.len, @errorName(got), @errorName(expected) });
+        return error.TestUnexpectedError;
+    }
+    try expectSameFiles(before, try snapshotFiles(a, dir));
+    const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    try std.testing.expectEqual(@as(u64, 1), metadata.generation);
+    try std.testing.expect(!metadata.lexical_v4);
+}
+
+fn expectDroppedDamageRefusedEverywhere(rule: DroppedRule) !void {
+    for ([_]DroppedAt{ .first, .middle, .last }) |where| try expectDroppedDamageRefused(rule, where);
+}
+
+test "S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish" {
+    try expectDroppedDamageRefusedEverywhere(.zero_length);
+}
+
+test "S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish" {
+    try expectDroppedDamageRefusedEverywhere(.count_not_length);
+}
+
+test "S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish" {
+    try expectDroppedDamageRefusedEverywhere(.end_past_u32);
+}
+
+test "S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish" {
+    try expectDroppedDamageRefusedEverywhere(.varint_sixth_byte);
+}
+
+test "S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish" {
+    try expectDroppedDamageRefusedEverywhere(.varint_fifth_byte_high);
+}
+
+test "S6-T8 F3, dropped table: a byte left over after the first, a middle or the last table, that file removed, is refused by the first publish (the table walk)" {
+    try expectDroppedDamageRefusedEverywhere(.leftover_byte);
+}
