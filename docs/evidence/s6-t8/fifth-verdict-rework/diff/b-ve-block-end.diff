@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/source.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ve-block-end/zig/src/source.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/source.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ve-block-end/zig/src/source.zig	2026-11-18 14:42:56
+@@ -95,7 +95,7 @@
+     if (offset > bytes.len) return null;
+     while (remaining >= lanes and bytes.len - offset >= lanes) {
+         const block: Block = bytes[offset..][0..lanes].*;
+-        const ends: u16 = @bitCast(block < @as(Block, @splat(0x80)));
++        const ends: u16 = @bitCast(block < @as(Block, @splat(0x81)));
+         remaining -= @popCount(ends);
+         offset += lanes;
+     }

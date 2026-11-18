@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ro-shift/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ro-shift/zig/src/postings.zig	2026-11-18 13:47:16
+@@ -272,7 +272,7 @@
+     var i = at.*;
+     while (true) {
+         if (i >= bytes.len) return error.OffsetsTruncated;
+-        if (shift > 28) return error.OffsetsVarintOverflow;
++        if (shift > 29) return error.OffsetsVarintOverflow;
+         const byte = bytes[i];
+         i += 1;
+         value |= @as(u64, byte & 0x7F) << shift;

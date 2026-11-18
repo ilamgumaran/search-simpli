@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/apply.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-wk-four/zig/src/apply.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/apply.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-wk-four/zig/src/apply.zig	2026-11-18 15:01:15
+@@ -2108,7 +2108,7 @@
+         starts[document] = at;
+         switch (sections.coding) {
+             .pairs => {
+-                if (offsets.len - at < 4) return error.InvalidLexicalSection;
++                if (offsets.len - at < 3) return error.InvalidLexicalSection;
+                 at = try skipVarintsChecked(offsets, at + 4, @as(usize, length) * 2);
+             },
+             // S6-T8 (rulings on the Report, item 1b, made after measuring):

@@ -1,0 +1,8 @@
+b-vo-count-minus	b-ro-max
+b-ck-len	b-ck-four
+b-ck-count-minus	b-ck-leftover
+b-tr-len	b-tr-count-minus
+b-rv-max	b-ve-room
+b-r11-v2	b-ro-shift
+b-rv-shift	b-tr-gap-escape
+b-tr-length-escape	b-wk-four

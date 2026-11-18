@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/find.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-r11-v4/zig/src/find.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/find.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-r11-v4/zig/src/find.zig	2026-11-18 15:07:14
+@@ -628,7 +628,7 @@
+         if (context.tables) |tables| if (!context.request.recompute_offsets) {
+             const output = try context.allocator.alloc(postings.TokenSpan, context.index.document_lengths[document_index]);
+             const read = postings.readTokenSpans(context.index, tables, document_index, output);
+-            if (codepoints) |count| try postings.checkSpansWithinText(read, count);
++            if (codepoints) |count| try postings.checkSpansWithinText(read, if (context.index.positions.?.coding == .one_byte) count + 1 else count);
+             return read;
+         };
+         const tokens = try context.contentTokens(document_index);

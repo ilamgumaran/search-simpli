@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-r11/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-r11/zig/src/postings.zig	2026-11-18 15:10:49
+@@ -324,7 +324,7 @@
+ /// S6-T8 rule 11: every span's end at most `codepoints` (its document's
+ /// text). The spans come from `readTokenSpans`.
+ pub fn checkSpansWithinText(spans: []const TokenSpan, codepoints: usize) error{OffsetsPastText}!void {
+-    for (spans) |span| if (@as(usize, span.start) + span.length > codepoints) return error.OffsetsPastText;
++    for (spans) |span| if (@as(usize, span.start) + span.length > codepoints + 1) return error.OffsetsPastText;
+ }
+ 
+ /// One token's codepoint range in a chunk's text (section 5).

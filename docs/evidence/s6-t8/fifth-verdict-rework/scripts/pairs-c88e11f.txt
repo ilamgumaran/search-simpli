@@ -1,0 +1,26 @@
+b-vo-count-plus	b-vo-count-minus
+b-vo-token-at	b-vo-gap-canon
+b-vo-length-canon	b-vo-zero
+b-vo-before-chunk	b-vo-decreases
+b-vo-trailing	b-ro-at
+b-ro-shift	b-ro-max
+b-ck-len	b-ck-four
+b-ck-count-plus	b-ck-count-minus
+b-ck-zero	b-ck-end
+b-ck-leftover	b-tr-len
+b-tr-four	b-tr-count-plus
+b-tr-count-minus	b-tr-fast-room
+b-tr-fast-delta	b-tr-fast-length
+b-tr-zero	b-tr-end
+b-tr-gap	b-tr-gap-escape
+b-tr-length-escape	b-tr-leftover
+b-ob-remaining	b-ob-room
+b-ob-at	b-sv-at
+b-sv-end-byte	b-rv-at
+b-rv-shift	b-rv-max
+b-ve-offset	b-ve-remaining
+b-ve-room	b-ve-block-end
+b-ve-at	b-wk-four
+b-wk-last-v2	b-wk-last-v4
+b-r11-v4	b-r11-v2
+b-r11	

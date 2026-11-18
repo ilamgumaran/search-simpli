@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-vo-zero/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-vo-zero/zig/src/postings.zig	2026-11-18 13:38:15
+@@ -308,7 +308,7 @@
+                 l = try readOffsetsVarint(offsets, &at);
+                 if (l < offsets_escape) return error.OffsetsNonCanonicalEscape;
+             }
+-            if (l == 0) return error.OffsetsZeroLength;
++            if (@as(i64, l) < 0) return error.OffsetsZeroLength;
+             const start = previous_end + unzigzag(g);
+             if (start < 0) return error.OffsetsStartBeforeChunk;
+             if (start < previous_start) return error.OffsetsStartDecreases;

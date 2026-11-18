@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-vo-gap-canon/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-vo-gap-canon/zig/src/postings.zig	2026-11-18 13:19:23
+@@ -302,7 +302,7 @@
+             var l: u32 = byte >> 4;
+             if (g == offsets_escape) {
+                 g = try readOffsetsVarint(offsets, &at);
+-                if (g < offsets_escape) return error.OffsetsNonCanonicalEscape;
++                if (g < offsets_escape - 1) return error.OffsetsNonCanonicalEscape;
+             }
+             if (l == offsets_escape) {
+                 l = try readOffsetsVarint(offsets, &at);

@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites5.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites5.noindex/src/b-ck-four/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites5.noindex/none/zig/src/postings.zig	2026-11-18 15:15:49
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites5.noindex/src/b-ck-four/zig/src/postings.zig	2026-11-18 15:20:06
+@@ -165,7 +165,7 @@
+ /// drops rather than transcodes: `InvalidPositions` where v2 refuses it.
+ pub fn checkPairsTable(offsets: []const u8, at_start: usize, end: usize, count: u32) error{InvalidPositions}!void {
+     const bytes = offsets[0..end];
+-    if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidPositions;
++    if (bytes.len < at_start or bytes.len - at_start < 3) return error.InvalidPositions;
+     if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return error.InvalidPositions;
+     var at = at_start + 4;
+     var start: u64 = 0;
