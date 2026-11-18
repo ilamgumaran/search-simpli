@@ -1,0 +1,187 @@
+# S6-T8 ruling 7: plants, each in its own copy of the worktree at ab42899's source (scripts/prototypes/s6t8/plants.py),
+# zig build test with a fresh --global-cache-dir and --cache-dir (scratch run_plant.sh). Every plant fails the suite.
+# (The later find.zig change, which skips rule 11's codepoint count in deduplicate, touches none of the planted code.)
+
+## nibbles-swapped
+run test 483 pass, 9 skip, 8 fail (500 total)
+  compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags
+  compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result
+  offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte
+  offsets_v4_test.test.S6-T8: zigzag and the escape threshold
+  offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find
+  offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+  offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned
+  offsets_v4_test.test.S6-T8 rule 9 through find: a damaged section 5 fails the first find and every later one with the rule's error
+
+## escape-14
+run test 483 pass, 9 skip, 8 fail (500 total)
+  compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags
+  compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result
+  offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte
+  offsets_v4_test.test.S6-T8: zigzag and the escape threshold
+  offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find
+  offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+  offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned
+  offsets_v4_test.test.S6-T8 rule 9 through find: a damaged section 5 fails the first find and every later one with the rule's error
+
+## escape-16
+run test 456 pass, 9 skip, 35 fail (500 total)
+  source_fixture_test.test.S3-T1: read_span, outline and the source binding agree with the family-folder judgments
+  source_fixture_test.test.S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section
+  text_once_test.test.S6-T7 ruling 3: every kind of file is rebuilt to its exact bytes, with HYBSRC01's map, SHA-256, read_span and outline
+  text_once_test.test.S6-T7 Verdict finding 1: overlaps of 1 and 2 bytes and of the whole previous chunk are rebuilt exactly, through read_span and outline
+  text_once_test.test.S6-T7 ruling 11: every documents v5 rule, violated with the checksum recomputed, is refused with its error
+  text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)
+  text_once_test.test.S6-T7: the manifest's text_once flag binds record v5 and HYBSRC02 both ways
+  text_once_test.test.S6-T7: an update carries unchanged files' records, maps and residual runs byte for byte, and the result is a fresh index's
+  bm25_conformance_test.test.BM25 ranking matches the Python reference for analyzer-v1 and analyzer-v2
+  apply_test.test.S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes
+  import_analyzer_test.test.S2-T1: Tamil fixture published through import-json with analyzer-v2 finds every judged passage at rank 1
+  import_analyzer_test.test.S2-T1: import-json with analyzer-v2 publishes the same bytes as searchd index on the app-text fixture
+  import_analyzer_test.test.S1-T14: Tamil words absent from the corpus match nothing through either door (S5-T4: fold-groups-v1 off; on, only the plural of a held word)
+  find_fixture_test.test.S3-T2: phrase and prefix judgments reach precision and recall 1.00 across all pages; the listed misses are missed
+  find_fixture_test.test.S3-T2: overlapping windows that show the same occurrence are deduplicated to the earlier chunk
+  compat_98c4a2b_test.test.S6-T4 ruling 3: two terms sharing 300 bytes go through the analyzer, the writer caps the shared prefix at 255, and each finds its own file
+  compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags
+  compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result
+  offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte
+  offsets_v4_test.test.S6-T8: zigzag and the escape threshold
+  offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find
+  offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+  offsets_v4_test.test.S6-T8: the header of HYBLEX04: version 4 and flags exactly 3
+  offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned
+  offsets_v4_test.test.S6-T8 rule 9 through find: a damaged section 5 fails the first find and every later one with the rule's error
+  offsets_v4_test.test.S6-T8: the manifest's bit 7 binds HYBLEX04 both ways, and only with bit 5
+  nfr13_arena_test.test.S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge over the family folder inside 64 MiB
+  nfr13_arena_test.test.S4-T1 NFR-13: the cap bites (a 256 KiB cap refuses the same open)
+  direct_search_test.test.S6-T2: search answers as index then query/evidence, J2 corpus, every query, all three fields
+  direct_search_test.test.S6-T2: search answers as index then query/evidence, the whole fixtures folder
+  direct_search_test.test.S6-T2: search answers as index then query/evidence over the walk's rules and the byte caps
+  direct_search_test.test.S6-T2: the detached sections are the bytes index publishes (J2, fixtures, the walk's rules; with and without the file-name channel)
+  direct_search_test.test.S6-T2: search reads the folder and writes nothing in it or beside it
+  direct_search_test.test.S6-T2: search's flags reach the answer (field, top-k, json, evidence, caps)
+  direct_search_test.test.S6-T2: the scoped detached open reads the source section from memory
+
+## escape-order-swapped
+run test 489 pass, 9 skip, 2 fail (500 total)
+  offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte
+  offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+
+## zigzag-unsigned
+run test 441 pass, 9 skip, 50 fail (500 total)
+  lexical_segment.test.HYBLEX02 round trip keeps positions, offsets and sorted terms (S3-T2)
+  rpc.test.S3-T4: the RPC folder methods, the command-line scope and apply_changes gating
+  mcp.test.S3-T6: tools/call answers the canonical JSON of ops and refuses forged scope
+  lexical_build.test.buildPositional keeps build's statistics, sorts terms and round-trips positions (S3-T2)
+  ops.test.S3-T4: the envelope, root-relative paths and the request echo
+  ops.test.S3-T4: the scope narrows, labels come only from a trusted caller
+  source_fixture_test.test.S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPACITY); --update heals it
+  source_fixture_test.test.S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section
+  apply_test.test.S3-T3: two roots indexed and queried together and apart; a root is its own corpus
+  apply_test.test.S3-T3: a hidden label domain inside one root is indistinguishable from absent in every payload
+  apply_test.test.S3-T3: a root with more than 64 label sets counts exactly and scores like the visible corpus
+  apply_test.test.S3-T3: find and index_status say pending_files and truncated, over the visible scope only
+  find_fixture_test.test.S3-T2: phrase and prefix judgments reach precision and recall 1.00 across all pages; the listed misses are missed
+  find_fixture_test.test.S3-T2: phrase handles repeated tokens, punctuation inside the phrase and Tamil; quotes force phrase
+  find_fixture_test.test.S3-T2: empty queries, a stray star, page size and cursors are INVALID_ARGUMENT; a stale cursor says so
+  find_fixture_test.test.S3-T2: prefix expands over the visible vocabulary only, at most 1,000 terms, else CAPACITY
+  find_fixture_test.test.S3-T2: ordering is score desc, then root_id, path, start_line; files and coverage count hits
+  find_fixture_test.test.S3-T2: overlapping windows that show the same occurrence are deduplicated to the earlier chunk
+  find_fixture_test.test.S3-T2: snippets are at most 240 codepoints around the best window, cut at token boundaries
+  find_fixture_test.test.S3-T2: --update carries exact positions; a HYBLEX01 generation is upgraded
+  lazy_open_test.test.lazy source rejects appended and truncated bytes on its pinned handle
+  lazy_open_test.test.S4-T1: the scoped open defers the source, the statistics and the position tables to their first use
+  lazy_open_test.test.S4-T1: the lazy open answers every operation exactly as the eager open did
+  lazy_open_test.test.S4-T2 R4: a damaged filename catalog opens, fails the first filename query with its error, content still answers
+  compat_292cb568_test.test.S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XXH3 sections, no filename sections) that reads the same
+  compat_98c4a2b_test.test.S6-T4 ruling 4: a 98c4a2b (v2) index opens and answers exactly as a fresh v3 index of the same folder
+  compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index
+  compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one
+  compat_98c4a2b_test.test.S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's flags (UnsupportedFlags), never reading a section
+  compat_98c4a2b_test.test.S6-T4 ruling 3: two terms sharing 300 bytes go through the analyzer, the writer caps the shared prefix at 255, and each finds its own file
+  compat_s6t7_test.test.S6-T7: the committed text-once fixture is 62324f9's writer output (this writer's but for HYBLEX04), and a library before v2.4 refuses it at the flags
+  compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder
+  compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same
+  compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one
+  compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags
+  compat_s6t8_test.test.S6-T8: indexes from 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.5 index, their bytes untouched
+  compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same
+  compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result
+  compat_s6t8_test.test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one
+  offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte
+  offsets_v4_test.test.S6-T8: zigzag and the escape threshold
+  offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find
+  offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+  offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned
+  nfr13_arena_test.test.S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge over the family folder inside 64 MiB
+  nfr13_arena_test.test.S4-T1 NFR-13: find and search_knowledge over a 10,000-file index inside 64 MiB, the open included
+  nfr13_arena_test.test.filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files
+  reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (poisoned testing allocator)
+  reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (C allocator, as a release searchd)
+  cli_test.test.S3-T4: --json prints exactly the operation's JSON; text output and refusals
+
+## count-off-by-one
+run test 447 pass, 9 skip, 14 fail, 30 crash (500 total)
+  lexical_segment.test.HYBLEX02 round trip keeps positions, offsets and sorted terms (S3-T2)
+  lexical_segment.test.HYBLEX02 corruption: checksum first, then every section 4/5 rule (S3-T2)
+  lexical_segment.test.S6-T4: HYBLEX03 round trip, with and without positions
+  lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader
+  lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections
+  lexical_segment.test.S6-T4 second rework (Q1): a byte left over after the last document's offsets is refused, v2 and v3, at open and lazily
+  mcp.test.S3-T6: tools/call answers the canonical JSON of ops and refuses forged scope (crashed)
+  lexical_build.test.buildPositional keeps build's statistics, sorts terms and round-trips positions (S3-T2)
+  source_fixture_test.test.S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPACITY); --update heals it (crashed)
+  apply_test.test.S3-T3: two roots indexed and queried together and apart; a root is its own corpus (crashed)
+  apply_test.test.S3-T3: a hidden label domain inside one root is indistinguishable from absent in every payload (crashed)
+  apply_test.test.S3-T3: a root with more than 64 label sets counts exactly and scores like the visible corpus (crashed)
+  find_fixture_test.test.S3-T2: phrase and prefix judgments reach precision and recall 1.00 across all pages; the listed misses are missed
+  find_fixture_test.test.S3-T2: phrase handles repeated tokens, punctuation inside the phrase and Tamil; quotes force phrase (crashed)
+  find_fixture_test.test.S3-T2: empty queries, a stray star, page size and cursors are INVALID_ARGUMENT; a stale cursor says so (crashed)
+  find_fixture_test.test.S3-T2: prefix expands over the visible vocabulary only, at most 1,000 terms, else CAPACITY (crashed)
+  find_fixture_test.test.S3-T2: ordering is score desc, then root_id, path, start_line; files and coverage count hits (crashed)
+  find_fixture_test.test.S3-T2: overlapping windows that show the same occurrence are deduplicated to the earlier chunk (crashed)
+  find_fixture_test.test.S3-T2: a v1 manifest cannot bind HYBLEX02; a v2 manifest's flag follows the section
+  find_fixture_test.test.S3-T2: --update carries exact positions; a HYBLEX01 generation is upgraded (crashed)
+  lazy_open_test.test.S4-T1: the scoped open defers the source, the statistics and the position tables to their first use (crashed)
+  lazy_open_test.test.S4-T1: the lazy open answers every operation exactly as the eager open did (crashed)
+  compat_292cb568_test.test.S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XXH3 sections, no filename sections) that reads the same (crashed)
+  compat_98c4a2b_test.test.S6-T4 ruling 4: a 98c4a2b (v2) index opens and answers exactly as a fresh v3 index of the same folder (crashed)
+  compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index (crashed)
+  compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one (crashed)
+  compat_98c4a2b_test.test.S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's flags (UnsupportedFlags), never reading a section
+  compat_s6t7_test.test.S6-T7: the committed text-once fixture is 62324f9's writer output (this writer's but for HYBLEX04), and a library before v2.4 refuses it at the flags
+  compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder (crashed)
+  compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same (crashed)
+  compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one (crashed)
+  compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags
+  compat_s6t8_test.test.S6-T8: indexes from 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.5 index, their bytes untouched (crashed)
+  compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same (crashed)
+  compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result (crashed)
+  compat_s6t8_test.test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one (crashed)
+  offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte
+  offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find (crashed)
+  offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned (crashed)
+  offsets_v4_test.test.S6-T8: the manifest's bit 7 binds HYBLEX04 both ways, and only with bit 5
+  nfr13_arena_test.test.S4-T1 NFR-13: find and search_knowledge over a 10,000-file index inside 64 MiB, the open included (crashed)
+  nfr13_arena_test.test.filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files (crashed)
+  reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (poisoned testing allocator) (crashed)
+  reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (C allocator, as a release searchd) (crashed)
+
+## old-reader-removed
+run test 479 pass, 9 skip, 12 fail (500 total)
+  lexical_segment.test.S6-T4: HYBLEX03 round trip, with and without positions
+  lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader
+  lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections
+  lexical_segment.test.S6-T4 second rework (Q1): a byte left over after the last document's offsets is refused, v2 and v3, at open and lazily
+  compat_98c4a2b_test.test.S6-T4 ruling 4: manifest bit 5 and the lexical sections must agree (a v3 section without the flag, a v2 one with it, a v1 file-name section under it)
+  compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder
+  compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same
+  compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one
+  compat_s6t8_test.test.S6-T8: indexes from 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.5 index, their bytes untouched
+  compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same
+  compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result
+  compat_s6t8_test.test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one
+
+## leftover-accepted
+run test 490 pass, 9 skip, 1 fail (500 total)
+  offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily

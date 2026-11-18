@@ -1,0 +1,8 @@
+# S6-T8 builder timing, orders written before the first run (17 Nov 2026).
+# Query/find bench (bench.py bench), five libraries per run, a Latin-square pair:
+run1:main main2 head ctl1 ctl2
+run2:head ctl2 ctl1 main main2
+# One-file update and first publish from the old format (updates.sh), per round:
+upd-run1:main head head main
+upd-run2:head main main head
+2026-11-17 22:15:35

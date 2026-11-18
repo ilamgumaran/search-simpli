@@ -1,0 +1,308 @@
+{
+ "corpus": "family-folder",
+ "files": 46,
+ "queries": [
+  "bazecha",
+  "benico",
+  "system",
+  "hashing",
+  "hybrid retrieval",
+  "retrieval hybrid",
+  "system systems",
+  "systems system",
+  "the",
+  "table",
+  "bed",
+  "task",
+  "the bed",
+  "table task",
+  "README"
+ ],
+ "finds": [
+  {
+   "query": "the",
+   "mode": "words"
+  },
+  {
+   "query": "bed",
+   "mode": "words"
+  },
+  {
+   "query": "the bed",
+   "mode": "words"
+  },
+  {
+   "query": "README",
+   "mode": "words"
+  },
+  {
+   "query": "pack Invented content",
+   "mode": "phrase"
+  },
+  {
+   "query": "three folders school",
+   "mode": "phrase"
+  },
+  {
+   "query": "judgment changed says",
+   "mode": "phrase"
+  },
+  {
+   "query": "tabl*",
+   "mode": "prefix"
+  },
+  {
+   "query": "பள்ளி",
+   "mode": "words"
+  },
+  {
+   "query": "விடுமுறை",
+   "mode": "words"
+  },
+  {
+   "query": "கணி",
+   "mode": "words"
+  },
+  {
+   "query": "தமிழ்",
+   "mode": "words"
+  },
+  {
+   "query": "குறிப்புகள்",
+   "mode": "words"
+  },
+  {
+   "query": "வெள்ளிக்கிழமை",
+   "mode": "words"
+  },
+  {
+   "query": "தொடங்குகிறது",
+   "mode": "words"
+  },
+  {
+   "query": "கணிதம்",
+   "mode": "words"
+  },
+  {
+   "query": "பள்ளி விடுமுறை",
+   "mode": "phrase"
+  },
+  {
+   "query": "தமிழ் குறிப்புகள்",
+   "mode": "phrase"
+  },
+  {
+   "query": "குறிப்புகள் பள்ளி",
+   "mode": "phrase"
+  },
+  {
+   "query": "பள்ளி பள்ளி",
+   "mode": "phrase"
+  },
+  {
+   "query": "விடுமுறை வெள்ளிக்கிழமை",
+   "mode": "phrase"
+  },
+  {
+   "query": "வெள்ளிக்கிழமை தொடங்குகிறது",
+   "mode": "phrase"
+  },
+  {
+   "query": "தொடங்குகிறது கணிதம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "கணிதம் வீட்டுப்பாடம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "deterministically",
+   "mode": "words"
+  },
+  {
+   "query": "ஞாயிற்றுக்கிழமை",
+   "mode": "words"
+  },
+  {
+   "query": "determ*",
+   "mode": "prefix"
+  },
+  {
+   "query": "ஞாயிற்*",
+   "mode": "prefix"
+  },
+  {
+   "query": "school",
+   "mode": "words"
+  },
+  {
+   "query": "laptop",
+   "mode": "words"
+  },
+  {
+   "query": "1",
+   "mode": "words"
+  },
+  {
+   "query": "p1",
+   "mode": "words"
+  },
+  {
+   "query": "x1",
+   "mode": "words"
+  },
+  {
+   "query": "o1",
+   "mode": "words"
+  },
+  {
+   "query": "s1",
+   "mode": "words"
+  },
+  {
+   "query": "Notes",
+   "mode": "words"
+  },
+  {
+   "query": "Notes school",
+   "mode": "phrase"
+  },
+  {
+   "query": "Why laptop",
+   "mode": "phrase"
+  },
+  {
+   "query": "Expected 1",
+   "mode": "phrase"
+  },
+  {
+   "query": "Note p1",
+   "mode": "phrase"
+  },
+  {
+   "query": "Note x1",
+   "mode": "phrase"
+  },
+  {
+   "query": "Note o1",
+   "mode": "phrase"
+  },
+  {
+   "query": "Note s1",
+   "mode": "phrase"
+  },
+  {
+   "query": "notes Notes",
+   "mode": "phrase"
+  },
+  {
+   "query": "Family",
+   "mode": "words"
+  },
+  {
+   "query": "Electricity",
+   "mode": "words"
+  },
+  {
+   "query": "title",
+   "mode": "words"
+  },
+  {
+   "query": "Budget",
+   "mode": "words"
+  },
+  {
+   "query": "Chores",
+   "mode": "words"
+  },
+  {
+   "query": "Garden",
+   "mode": "words"
+  },
+  {
+   "query": "House",
+   "mode": "words"
+  },
+  {
+   "query": "Packing",
+   "mode": "words"
+  },
+  {
+   "query": "count",
+   "mode": "words"
+  },
+  {
+   "query": "automatic",
+   "mode": "words"
+  },
+  {
+   "query": "flowerpots",
+   "mode": "words"
+  },
+  {
+   "query": "tea",
+   "mode": "words"
+  },
+  {
+   "query": "year",
+   "mode": "words"
+  },
+  {
+   "query": "Saturday",
+   "mode": "words"
+  },
+  {
+   "query": "clementines",
+   "mode": "words"
+  },
+  {
+   "query": "day",
+   "mode": "words"
+  },
+  {
+   "query": "Roots",
+   "mode": "words"
+  },
+  {
+   "query": "Conventions",
+   "mode": "words"
+  },
+  {
+   "query": "Gates",
+   "mode": "words"
+  },
+  {
+   "query": "The",
+   "mode": "words"
+  },
+  {
+   "query": "Phrase",
+   "mode": "words"
+  },
+  {
+   "query": "Prefix",
+   "mode": "words"
+  },
+  {
+   "query": "Outline",
+   "mode": "words"
+  },
+  {
+   "query": "photosynthesis",
+   "mode": "words"
+  },
+  {
+   "query": "நூலகத்திற்குச்",
+   "mode": "words"
+  },
+  {
+   "query": "Photosynthesis",
+   "mode": "words"
+  },
+  {
+   "query": "Photosynthetic",
+   "mode": "words"
+  }
+ ],
+ "roots": null
+}

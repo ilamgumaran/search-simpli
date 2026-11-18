@@ -1,0 +1,176 @@
+{
+ "corpus": "tamil-10k",
+ "files": 10000,
+ "queries": [
+  "bazecha",
+  "benico",
+  "system",
+  "hashing",
+  "hybrid retrieval",
+  "retrieval hybrid",
+  "system systems",
+  "systems system",
+  "கீகசை",
+  "டூகனை",
+  "றூகுஞங்கள்",
+  "சைகீளையில்",
+  "கீகசை றூகுஞங்கள்",
+  "டூகனை சைகீளையில்",
+  "doc 00000"
+ ],
+ "finds": [
+  {
+   "query": "கீகசை",
+   "mode": "words"
+  },
+  {
+   "query": "றூகுஞங்கள்",
+   "mode": "words"
+  },
+  {
+   "query": "கீகசை றூகுஞங்கள்",
+   "mode": "words"
+  },
+  {
+   "query": "doc 00000",
+   "mode": "words"
+  },
+  {
+   "query": "கேடேயி குகடம் கிகசம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "டூகனை சேகணம் சூகஞம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "நூடைஞத்தின் சாகறம் லேசிதையின்",
+   "mode": "phrase"
+  },
+  {
+   "query": "டூகன*",
+   "mode": "prefix"
+  },
+  {
+   "query": "றூகு*",
+   "mode": "prefix"
+  },
+  {
+   "query": "சைகீ*",
+   "mode": "prefix"
+  },
+  {
+   "query": "கககம்",
+   "mode": "words"
+  },
+  {
+   "query": "காககி",
+   "mode": "words"
+  },
+  {
+   "query": "ரிகெறைக்கு",
+   "mode": "words"
+  },
+  {
+   "query": "கெசூதங்கள்",
+   "mode": "words"
+  },
+  {
+   "query": "கெகதம்",
+   "mode": "words"
+  },
+  {
+   "query": "கேடேயி",
+   "mode": "words"
+  },
+  {
+   "query": "குகடம்",
+   "mode": "words"
+  },
+  {
+   "query": "கிகசம்",
+   "mode": "words"
+  },
+  {
+   "query": "கககம் காககி",
+   "mode": "phrase"
+  },
+  {
+   "query": "காககி ரிகெறைக்கு",
+   "mode": "phrase"
+  },
+  {
+   "query": "ரிகெறைக்கு கெசூதங்கள்",
+   "mode": "phrase"
+  },
+  {
+   "query": "கெசூதங்கள் கெகதம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "கெகதம் கேடேயி",
+   "mode": "phrase"
+  },
+  {
+   "query": "கேடேயி குகடம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "குகடம் கிகசம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "கிகசம் டேகயி",
+   "mode": "phrase"
+  },
+  {
+   "query": "கைகபம்",
+   "mode": "words"
+  },
+  {
+   "query": "சாகறம்",
+   "mode": "words"
+  },
+  {
+   "query": "சீகஙம்",
+   "mode": "words"
+  },
+  {
+   "query": "சூகஞம்",
+   "mode": "words"
+  },
+  {
+   "query": "ஞேதணத்தில்",
+   "mode": "words"
+  },
+  {
+   "query": "ஞேதணத்தின்",
+   "mode": "words"
+  },
+  {
+   "query": "ஞைதணி",
+   "mode": "words"
+  },
+  {
+   "query": "ஞைதணிகள்",
+   "mode": "words"
+  },
+  {
+   "query": "ஞைதணிக்கு",
+   "mode": "words"
+  },
+  {
+   "query": "ஞைதணியில்",
+   "mode": "words"
+  },
+  {
+   "query": "ஞைதணியின்",
+   "mode": "words"
+  },
+  {
+   "query": "ணதநம்",
+   "mode": "words"
+  }
+ ],
+ "roots": null
+}
