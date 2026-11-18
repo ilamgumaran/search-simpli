@@ -1,0 +1,20 @@
+# F2 bisect (ruling after the Verdict): prose-10k warm both `the`, `the within`, `have drink`, each library its own copy
+# of the index (main, main2, ctl1: main's index; ab4, fb, headB, headF: the head's). A 7-library Williams design (two
+# squares, 14 runs), written before the first run. main = main2 = 62324f9's library; ab4 = ab42899's; fb = fb74582's;
+# headB = e5d1734's (= 6b340b4's, the Verdict's head); headF = ea1dcde's (F1); ctl1 = the verifier's control (main plus
+# 61 never-run loops in postings.lookupExact, __text +5,252 B).
+run61:main ab4 main2 fb ctl1 headB headF
+run62:ab4 fb main headB main2 headF ctl1
+run63:fb headB ab4 headF main ctl1 main2
+run64:headB headF fb ctl1 ab4 main2 main
+run65:headF ctl1 headB main2 fb main ab4
+run66:ctl1 main2 headF main headB ab4 fb
+run67:main2 main ctl1 ab4 headF fb headB
+run68:headF headB ctl1 fb main2 ab4 main
+run69:ctl1 headF main2 headB main fb ab4
+run70:main2 ctl1 main headF ab4 headB fb
+run71:main main2 ab4 ctl1 fb headF headB
+run72:ab4 main fb main2 headB ctl1 headF
+run73:fb ab4 headB main headF main2 ctl1
+run74:headB fb headF ab4 ctl1 main main2
+2026-11-18 05:29:05
