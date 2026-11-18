@@ -442,7 +442,11 @@ test "S6-T8 F1: a length of 0 in one v2 token (the verifier's v2_first_publish c
     }
 }
 
-test "S6-T8 F1: each v2 rule of section 5, broken once, is refused by the first publish with the old generation left byte-identical" {
+/// One v2 rule of section 5 broken once on a copy of `main`'s fixture
+/// (the re-emitted tables checked first to be the fixture's own bytes): v2's
+/// reader refuses it, and so does the first publish (`index --update`),
+/// with `case.publish_error`, leaving every file byte-identical.
+fn expectV2DamageRefused(damage: V2Damage) !void {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const a = arena_state.allocator();
@@ -451,29 +455,58 @@ test "S6-T8 F1: each v2 rule of section 5, broken once, is refused by the first 
     var pristine = try copyOf(a, tmp, fixture_main, "pristine");
     defer pristine.close(io);
     const base = try v2Tables(a, pristine);
-    // The re-emitted tables are the fixture's own bytes.
     try v2Reseal(a, pristine, base.good, try v2Emit(a, base.docs));
     try std.testing.expectEqualSlices(u8, base.good, try pristine.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited));
-    var refused: usize = 0;
-    for (std.enums.values(V2Damage)) |damage| {
-        const name = try std.fmt.allocPrint(a, "v2-{s}", .{@tagName(damage)});
-        var dir = try copyOf(a, tmp, fixture_main, name);
-        defer dir.close(io);
-        const case = try v2Damaged(a, base.docs, damage);
-        try v2Reseal(a, dir, base.good, case.offsets);
-        // A v2 rule: the old reader refuses it at the first find.
-        try std.testing.expectError(error.InvalidPositions, oldReaderVerdict(a, dir));
-        const before = try snapshotFiles(a, dir);
-        const got = publishError(a, tmp, name, dir, false);
-        if (got != case.publish_error) {
-            std.debug.print("S6-T8 F1: {s}: the first publish gave {s}, expected {s}\n", .{ @tagName(damage), @errorName(got), @errorName(case.publish_error) });
-            return error.TestUnexpectedError;
-        }
-        try expectSameFiles(before, try snapshotFiles(a, dir));
-        try std.testing.expectError(error.InvalidPositions, oldReaderVerdict(a, dir));
-        refused += 1;
+    const name = try std.fmt.allocPrint(a, "v2-{s}", .{@tagName(damage)});
+    var dir = try copyOf(a, tmp, fixture_main, name);
+    defer dir.close(io);
+    const case = try v2Damaged(a, base.docs, damage);
+    try v2Reseal(a, dir, base.good, case.offsets);
+    try std.testing.expectError(error.InvalidPositions, oldReaderVerdict(a, dir));
+    const before = try snapshotFiles(a, dir);
+    const got = publishError(a, tmp, name, dir, false);
+    if (got != case.publish_error) {
+        std.debug.print("S6-T8 F1: {s}: the first publish gave {s}, expected {s}\n", .{ @tagName(damage), @errorName(got), @errorName(case.publish_error) });
+        return error.TestUnexpectedError;
     }
-    try std.testing.expectEqual(std.enums.values(V2Damage).len, refused);
+    try expectSameFiles(before, try snapshotFiles(a, dir));
+    try std.testing.expectError(error.InvalidPositions, oldReaderVerdict(a, dir));
+}
+
+test "S6-T8 F1, v2 rule: a length of 0 in the first token is refused by the first publish" {
+    try expectV2DamageRefused(.zero_length_first);
+}
+
+test "S6-T8 F1, v2 rule: a length of 0 in the last token is refused by the first publish" {
+    try expectV2DamageRefused(.zero_length_last);
+}
+
+test "S6-T8 F1, v2 rule: an end past a u32 is refused by the first publish" {
+    try expectV2DamageRefused(.end_past_u32);
+}
+
+test "S6-T8 F1, v2 rule: a count other than the document's length is refused by the first publish" {
+    try expectV2DamageRefused(.count_not_length);
+}
+
+test "S6-T8 F1, v2 rule: a varint with a sixth byte is refused by the first publish" {
+    try expectV2DamageRefused(.varint_sixth_byte);
+}
+
+test "S6-T8 F1, v2 rule: a varint whose fifth byte is above 0x0F is refused by the first publish" {
+    try expectV2DamageRefused(.varint_fifth_byte_high);
+}
+
+test "S6-T8 F1, v2 rule: a section that ends inside the last table is refused by the first publish" {
+    try expectV2DamageRefused(.ends_inside_last_table);
+}
+
+test "S6-T8 F1, v2 rule: a section that ends inside the last count is refused by the first publish" {
+    try expectV2DamageRefused(.ends_inside_last_count);
+}
+
+test "S6-T8 F1, v2 rule: a byte after the last table is refused by the first publish" {
+    try expectV2DamageRefused(.leftover_byte);
 }
 
 test "S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical" {
