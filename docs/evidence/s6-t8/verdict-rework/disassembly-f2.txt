@@ -1,0 +1,228 @@
+# S6-T8 F2 (b): the machine code of the ss_query `both` path, main against the head, function by function
+# (scripts/prototypes/s6t8/compare_functions.py over objdump -d --no-show-raw-insn --no-leading-addr of unstripped
+# macOS ReleaseSmall builds: .strip = false on the library module only, which also links Zig's stack-trace code, so
+# these are not the shipped bytes). main = 62324f9's source; e5d1734 = the Verdict's head's library source; ea1dcde =
+# the F1 head's. A `both` query's body channel walks each query term's postings in filename_field.scoreQuery
+# (inlined into filename_field.queryDecodedTraced) and calls scoring.bm25Contribution once per posting, which calls
+# logf once per posting (read from the code and this disassembly; not profiled: `sample` cannot attach here).
+
+## 1. query-path functions whose code differs, main -> headB (headB = e5d1734, headF = ea1dcde)
+functions (outlined fragments excluded from the counts below): 1893
+identical: 455
+differ: 564
+only in A: 433; only in B: 441
+outlined fragments: A 2637, B 2666
+  _abi.queryImpl: 3743 -> 3747 instructions, outlined calls 577 -> 587
+  _engine.Engine.computeGroups: 873 -> 877 instructions, outlined calls 86 -> 81
+  _engine.Engine.noteExpanded: 117 -> 118 instructions, outlined calls 13 -> 13
+  _engine.Engine.noteGrouped: 139 -> 140 instructions, outlined calls 13 -> 13
+  _engine.Engine.queryTraced: 2927 -> 2947 instructions, outlined calls 302 -> 313
+  _engine.Engine.validateQueryText: 7 -> 7 instructions, outlined calls 0 -> 0
+  _filename_field.Decoded.filenameTerm: 30 -> 31 instructions, outlined calls 6 -> 5
+  _filename_field.decode: 49 -> 40 instructions, outlined calls 5 -> 7
+  _filename_field.decodeInspected: 1631 -> 1611 instructions, outlined calls 222 -> 219
+  _filename_field.group: 1515 -> 1512 instructions, outlined calls 199 -> 200
+  _filename_field.loadBytes: 144 -> 144 instructions, outlined calls 6 -> 6
+  _filename_field.mergeHit: 74 -> 75 instructions, outlined calls 2 -> 1
+  _filename_field.queryDecodedTraced: 3110 -> 3130 instructions, outlined calls 314 -> 316
+  _filename_field.visibleNameHolds: 54 -> 68 instructions, outlined calls 3 -> 2
+  _hybrid.BoundedTop(filename_field.Candidate,[]const hybrid.Document,(function 'candidateBefore')).offer: 89 -> 89 instructions, outlined calls 5 -> 5
+  _hybrid.BoundedTop(filename_field.Candidate,[]const hybrid.Document,(function 'candidateBefore')).sorted: 327 -> 327 instructions, outlined calls 43 -> 43
+  _hybrid.BoundedTop(filename_field.Merged,filename_field.MergedOrder,(function 'mergedBefore')).offer: 93 -> 93 instructions, outlined calls 4 -> 4
+  _hybrid.BoundedTop(hybrid.Candidate,void,(function 'candidateLess')).offer: 99 -> 99 instructions, outlined calls 0 -> 0
+  _hybrid.BoundedTop(hybrid.Candidate,void,(function 'candidateLess')).sorted: 439 -> 440 instructions, outlined calls 30 -> 29
+  _hybrid.matchesPath: 3 -> 3 instructions, outlined calls 1 -> 1
+  _hybrid.semanticScore: 88 -> 88 instructions, outlined calls 1 -> 1
+  _postings.SparseScorer.contribution: 30 -> 30 instructions, outlined calls 0 -> 0
+  _postings.SparseScorer.next: 148 -> 148 instructions, outlined calls 4 -> 4
+  _postings.SparseScorer.scoreOf: 117 -> 119 instructions, outlined calls 6 -> 5
+  _postings.buildPositionTables: 78 -> 106 instructions, outlined calls 4 -> 8
+  _postings.lookupExact: 36 -> 36 instructions, outlined calls 6 -> 6
+  _postings.noteUnmatched: 90 -> 90 instructions, outlined calls 9 -> 9
+  _postings.resolveQueryTraced: 97 -> 101 instructions, outlined calls 8 -> 9
+  _postings.skipVarints: 9 -> 10 instructions, outlined calls 1 -> 0
+  _title_field.Field.lookup: 34 -> 35 instructions, outlined calls 5 -> 4
+  _title_field.scoreQuery: 2009 -> 2020 instructions, outlined calls 250 -> 246
+  only in B: _filename_field.decodeInspected__struct_5899.less
+  only in B: _postings.appendOffsetsTable__anon_5064
+  only in B: _postings.appendOneByteToken
+  only in B: _postings.putVarint
+  only in B: _postings.readOffsetsVarint
+  only in B: _postings.skipOneVarint
+  only in B: _title_field.deriveMarked__anon_79152
+  only in B: _title_field.eachToken__anon_79288
+
+## 1. query-path functions whose code differs, headB -> headF (headB = e5d1734, headF = ea1dcde)
+functions (outlined fragments excluded from the counts below): 1876
+identical: 653
+differ: 392
+only in A: 415; only in B: 416
+outlined fragments: A 2666, B 2669
+  _abi.queryImpl: 3747 -> 3745 instructions, outlined calls 587 -> 587
+  _engine.Engine.computeGroups: 877 -> 877 instructions, outlined calls 81 -> 81
+  _engine.Engine.noteExpanded: 118 -> 118 instructions, outlined calls 13 -> 13
+  _engine.Engine.noteGrouped: 140 -> 140 instructions, outlined calls 13 -> 13
+  _engine.Engine.queryTraced: 2947 -> 2949 instructions, outlined calls 313 -> 309
+  _filename_field.Decoded.filenameTerm: 31 -> 30 instructions, outlined calls 5 -> 6
+  _filename_field.decode: 40 -> 40 instructions, outlined calls 7 -> 7
+  _filename_field.decodeInspected: 1611 -> 1608 instructions, outlined calls 219 -> 221
+  _filename_field.group: 1512 -> 1512 instructions, outlined calls 200 -> 200
+  _filename_field.mergeHit: 75 -> 75 instructions, outlined calls 1 -> 1
+  _filename_field.queryDecodedTraced: 3130 -> 3128 instructions, outlined calls 316 -> 316
+  _hybrid.BoundedTop(filename_field.Candidate,[]const hybrid.Document,(function 'candidateBefore')).offer: 89 -> 89 instructions, outlined calls 5 -> 5
+  _hybrid.BoundedTop(filename_field.Candidate,[]const hybrid.Document,(function 'candidateBefore')).sorted: 327 -> 326 instructions, outlined calls 43 -> 44
+  _hybrid.BoundedTop(filename_field.Merged,filename_field.MergedOrder,(function 'mergedBefore')).offer: 93 -> 93 instructions, outlined calls 4 -> 4
+  _hybrid.BoundedTop(hybrid.Candidate,void,(function 'candidateLess')).offer: 99 -> 99 instructions, outlined calls 0 -> 0
+  _hybrid.BoundedTop(hybrid.Candidate,void,(function 'candidateLess')).sorted: 440 -> 440 instructions, outlined calls 29 -> 29
+  _postings.appendOffsetsTable__anon_5064: 32 -> 56 instructions, outlined calls 3 -> 7
+  _postings.buildPositionTables: 106 -> 106 instructions, outlined calls 8 -> 8
+  _postings.noteUnmatched: 90 -> 90 instructions, outlined calls 9 -> 9
+  _title_field.Field.lookup: 35 -> 34 instructions, outlined calls 4 -> 5
+  _title_field.scoreQuery: 2020 -> 2011 instructions, outlined calls 246 -> 248
+  only in B: _filename_field.decodeInspected__struct_5879.less
+  only in B: _title_field.deriveMarked__anon_79103
+  only in B: _title_field.eachToken__anon_79239
+
+## 2. the per-posting callees (bm25Contribution, logf, lookupExact), unified diff of the normalised code
+# main -> headB
+### _scoring.bm25Contribution 39 39
+### _logf 47 47
+### _postings.lookupExact 36 36
+@@ -6,3 +6,3 @@
+ ldp	x23, x22, [x0]
+-ldrb	w8, [x0, #0x5c]
++ldrb	w8, [x0, #0x64]
+ tbz	w8, #0x0, SELF+0x5c
+# headB -> headF
+### _scoring.bm25Contribution 39 39
+### _logf 47 47
+### _postings.lookupExact 36 36
+
+## 3. the three per-posting loops of filename_field.queryDecodedTraced (scoreQuery inlined), 30 instructions before each call to bm25Contribution and 12 after
+# main -> headB
+call sites 3 3
+site 0: 44 diff lines
+    @@ -0,0 +1 @@
+    +mov	x23, x19
+    @@ -3 +4 @@
+    -cbz	x19, SELF+0x658
+    +cbz	x19, SELF+0x69c
+    @@ -5 +6 @@
+    -cbz	x12, SELF+0x5e0
+    +cbz	x12, SELF+0x628
+    @@ -7 +8 @@
+    -tbz	w8, #0x0, SELF+0x64c
+    +tbz	w8, #0x0, SELF+0x690
+    @@ -10 +11 @@
+    -tbnz	w8, #0x0, SELF+0x60c
+    +tbnz	w8, #0x0, SELF+0x654
+    @@ -14 +15 @@
+    -ldr	x1, [sp, #0x1a8]
+    +ldr	x1, [sp, #0x1b0]
+    @@ -18 +19 @@
+    -b.ne	SELF+0x2d2c
+    +b.ne	SELF+0x2d7c
+    @@ -21,2 +22,2 @@
+    -ldr	x8, [sp, #0x1b0]
+    -ldr	s1, [x8, x27, lsl #2]
+    +ldp	x9, x8, [sp, #0x1b8]
+    +ldr	s1, [x9, x27, lsl #2]
+    @@ -24 +24,0 @@
+    -ldr	x8, [sp, #0x1c0]
+    @@ -30 +30 @@
+    -ldr	x1, [sp, #0x190]
+    +ldr	x1, [sp, #0x1a0]
+site 1: 17 diff lines
+    @@ -1 +1 @@
+    -cbz	w9, SELF+0x9d8
+    +cbz	w9, SELF+0xa28
+    @@ -9 +9 @@
+    -b.eq	SELF+0x97c
+    +b.eq	SELF+0x9d4
+    @@ -13 +13 @@
+    -b.hs	SELF+0x930
+    +b.hs	SELF+0x988
+    @@ -18 +18 @@
+    -b.ne	SELF+0x930
+    +b.ne	SELF+0x988
+    @@ -41,2 +41,2 @@
+    -b	SELF+0x8b4
+    -ldr	x10, [sp, #0x180]
+    +b	SELF+0x90c
+    +ldr	x10, [sp, #0x178]
+site 2: 41 diff lines
+    @@ -0,0 +1,2 @@
+    +add	x22, x9, x8, lsl #3
+    +cbz	x21, SELF+0xb00
+    @@ -2,3 +4,2 @@
+    -ldr	x8, [sp, #0x1b8]
+    -cbz	x8, SELF+0xa38
+    -ldr	x8, [sp, #0x1b8]
+    +ldp	x9, x8, [sp, #0x188]
+    +cbz	x8, SELF+0xa8c
+    @@ -6,2 +7 @@
+    -tbz	w8, #0x0, SELF+0xaa4
+    -ldr	x9, [sp, #0x178]
+    +tbz	w8, #0x0, SELF+0xaf4
+    @@ -9 +9 @@
+    -tbnz	w8, #0x0, SELF+0xa64
+    +tbnz	w8, #0x0, SELF+0xab4
+    @@ -13 +13 @@
+    -ldr	x1, [sp, #0x1a8]
+    +ldr	x1, [sp, #0x1b0]
+    @@ -17,2 +17,2 @@
+    -b.ne	SELF+0x2d2c
+    -ldr	x24, [sp, #0x188]
+    +b.ne	SELF+0x2d7c
+    +ldr	x24, [sp, #0x180]
+    @@ -25 +25 @@
+    -str	x8, [x26, #0x78]
+    +str	x8, [x25, #0x78]
+    @@ -36,2 +36,2 @@
+    -cbnz	x21, SELF+0xa20
+    -ldp	x11, x10, [sp, #0x158]
+# headB -> headF
+call sites 3 3
+site 0: 3 diff lines
+    @@ -19 +19 @@
+    -b.ne	SELF+0x2d7c
+    +b.ne	SELF+0x2d74
+site 1: identical
+site 2: 3 diff lines
+    @@ -17 +17 @@
+    -b.ne	SELF+0x2d7c
+    +b.ne	SELF+0x2d74
+
+## 4. where the per-posting callees sit in each shipped (stripped) library: found by their first 16 normalised instructions
+# main
+_scoring.bm25Contribution 0x67c5c(mod64=28) len=39
+_logf 0x8cd30(mod64=48) len=47
+_postings.lookupExact 0x67fc8(mod64=8) len=36
+# ctlS
+_scoring.bm25Contribution 0x67e34(mod64=52) len=39
+_logf 0x8d1ac(mod64=44) len=47
+_postings.lookupExact 0x681a0(mod64=32) len=36
+# p4
+_scoring.bm25Contribution 0x67ee4(mod64=36) len=39
+_logf 0x8cfb8(mod64=56) len=47
+_postings.lookupExact 0x68250(mod64=16) len=36
+# p28
+_scoring.bm25Contribution 0x68abc(mod64=60) len=39
+_logf 0x8dd68(mod64=40) len=47
+_postings.lookupExact 0x68e28(mod64=40) len=36
+# p36
+_scoring.bm25Contribution 0x68d00(mod64=0) len=39
+_logf 0x8df9c(mod64=28) len=47
+_postings.lookupExact 0x6906c(mod64=44) len=36
+# ctl1
+_scoring.bm25Contribution 0x67c5c(mod64=28) len=39
+_logf 0x8dd4c(mod64=12) len=47
+_postings.lookupExact not found len=36
+# headB
+_scoring.bm25Contribution 0x68d70(mod64=48) len=39
+_logf 0x8e1d8(mod64=24) len=47
+_postings.lookupExact 0x690e0(mod64=32) len=36
+# headF
+_scoring.bm25Contribution 0x68b9c(mod64=28) len=39
+_logf 0x8dfec(mod64=44) len=47
+_postings.lookupExact 0x68f0c(mod64=12) len=36

@@ -1,0 +1,12 @@
+# F2 bisect (f2-orders.txt, runs 61-74): summarize_cells.py with main2 and ctl1 as controls and headF as the head; then f2_table.py (median change against main, us, and the per-run range of variant - main in the same run).
+# ctl1 here is my control of 17 Nov (main + 44 never-run blocks in postings.lookupExact, __text +4,124 B), not the verifier's (the orders file's description of it is wrong).
+runs 14; 1-, 5- and 15-minute load before each set 1.04-2.49
+cell                                     main    main2     ctl1      ab4       fb    headB    headF       T  head-ctl  verdict  answers
+both the                                474.2     +0.6    +16.6    +29.6    +36.4    +20.6    +38.1    10.0     +21.5  beyond   1
+both the within                         610.4     -2.8    +21.1    +33.5    +47.2    +20.9    +39.5    10.0     +18.4  beyond   1
+both have drink                         535.7     +0.7     +8.5    +24.8    +35.8    +11.6    +35.2    10.0     +26.7  beyond   1
+
+runs 14
+both 'the': main 474.2; main2 +0.6 [-18..+21]; ctl1 +16.6 [+4..+20]; ab4 +29.6 [+21..+46]; fb +36.4 [+22..+44]; headB +20.6 [+18..+47]; headF +38.1 [+27..+42]
+both 'the within': main 610.4; main2 -2.8 [-37..+26]; ctl1 +21.1 [-10..+29]; ab4 +33.5 [+5..+58]; fb +47.2 [+15..+59]; headB +20.9 [+10..+40]; headF +39.5 [+4..+65]
+both 'have drink': main 535.7; main2 +0.7 [-35..+23]; ctl1 +8.5 [-24..+14]; ab4 +24.8 [-3..+52]; fb +35.8 [+2..+43]; headB +11.6 [-17..+28]; headF +35.2 [+4..+62]
