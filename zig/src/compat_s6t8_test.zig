@@ -646,3 +646,331 @@ test "S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the fi
 test "S6-T8 F3, dropped table: a byte left over after the first, a middle or the last table, that file removed, is refused by the first publish (the table walk)" {
     try expectDroppedDamageRefusedEverywhere(.leftover_byte);
 }
+
+// ------------------- the ruling after the Third Verdict: every refusal site, both paths, three documents
+
+/// Where the damaged table goes: through the first publish as a carried
+/// table (an unrelated file added, every old document carried), or as the
+/// table of a document whose file that publish removes.
+const TablePath = enum { carried, dropped };
+
+/// The section's first document, a middle one (the first with a token from
+/// the middle on) or its last; the first and last exactly, so a check
+/// skipped for either end is seen.
+fn tablePosition(docs_len: usize, where: DroppedAt, has_tokens: anytype) usize {
+    return switch (where) {
+        .first => 0,
+        .last => docs_len - 1,
+        .middle => blk: {
+            var m = docs_len / 2;
+            while (!has_tokens.at(m)) m += 1;
+            break :blk m;
+        },
+    };
+}
+
+fn v2Value(raw: []const u8) u64 {
+    var value: u64 = 0;
+    for (raw, 0..) |byte, i| value |= @as(u64, byte & 0x7F) << @intCast(7 * i);
+    return value;
+}
+
+/// `value` as a varint of exactly `n` bytes (continuation bits padded with
+/// zero groups): six bytes is v2's sixth-byte rule broken with the value
+/// itself unchanged, so a reader that let a sixth byte through would read
+/// the table's own value and publish.
+fn v2Padded(a: std.mem.Allocator, value: u64, n: usize) ![]const u8 {
+    const out = try a.alloc(u8, n);
+    var rest = value;
+    for (out, 0..) |*byte, i| {
+        byte.* = @as(u8, @truncate(rest)) & 0x7F;
+        if (i + 1 < n) byte.* |= 0x80;
+        rest >>= 7;
+    }
+    return out;
+}
+
+/// The refusal sites of `checkPairsTable` and `transcodePairsTable` that a
+/// table of an old index reaches (the Report's site table): each broken in
+/// one table, the bad value chosen at the bound, so that a site loosened by
+/// one step (a sixth byte let through, a fifth byte cut to 32 bits instead
+/// of refused, an end of exactly 2^32, a gap of exactly 2^31) changes the
+/// outcome.
+const V2Site = enum {
+    count_not_length,
+    start_sixth_byte,
+    start_fifth_byte_high,
+    length_sixth_byte,
+    length_fifth_byte_high,
+    zero_length,
+    end_exactly_2p32,
+    /// Valid v2 (the old reader accepts it), refused by the transcode only
+    /// (`GapNotRepresentable`): carried tables only.
+    gap_exactly_2p31,
+};
+
+fn expectV2SiteRefused(site: V2Site, where: DroppedAt, path: TablePath) !void {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const name = try std.fmt.allocPrint(a, "v2site-{s}-{s}-{s}", .{ @tagName(site), @tagName(where), @tagName(path) });
+    var dir = try copyOf(a, tmp, fixture_main, name);
+    defer dir.close(io);
+    const engine = try snapshot_open.open(a, io, dir);
+    const base = try v2Tables(a, dir);
+    try std.testing.expectEqual(engine.documents.len, base.docs.len);
+    const k = tablePosition(base.docs.len, where, struct {
+        docs: []const V2Doc,
+        fn at(self: @This(), i: usize) bool {
+            return self.docs[i].tokens.len > 0;
+        }
+    }{ .docs = base.docs });
+    try std.testing.expect(base.docs[k].tokens.len > 0);
+    const docs = try a.dupe(V2Doc, base.docs);
+    docs[k].tokens = try a.dupe(V2Token, docs[k].tokens);
+    const tokens = docs[k].tokens;
+    const tail = &tokens[tokens.len - 1];
+    // The tail token's start before it, from the deltas.
+    var before_tail: u64 = 0;
+    for (tokens[0 .. tokens.len - 1]) |token| before_tail += v2Value(token.delta);
+    var expected: anyerror = error.InvalidPositions;
+    var old_reader_refuses = true;
+    switch (site) {
+        .count_not_length => docs[k].count += 1,
+        .start_sixth_byte => tail.delta = try v2Padded(a, v2Value(tail.delta), 6),
+        .start_fifth_byte_high => tail.delta = try v2Varint(a, v2Value(tail.delta) + (1 << 32)),
+        .length_sixth_byte => tail.length = try v2Padded(a, v2Value(tail.length), 6),
+        .length_fifth_byte_high => tail.length = try v2Varint(a, v2Value(tail.length) + (1 << 32)),
+        .zero_length => tail.length = &.{0},
+        .end_exactly_2p32 => tail.delta = try v2Varint(a, (1 << 32) - before_tail - v2Value(tail.length)),
+        .gap_exactly_2p31 => {
+            // The first token 2^31 codepoints after the table's start (the
+            // previous end 0): zigzag 2^32. Every later start moves with it
+            // and stays within a u32.
+            tokens[0].delta = try v2Varint(a, 1 << 31);
+            expected = error.InvalidLexicalSection;
+            old_reader_refuses = false;
+        },
+    }
+    try v2Reseal(a, dir, base.good, try v2Emit(a, docs));
+    if (old_reader_refuses) {
+        try std.testing.expectError(error.InvalidPositions, oldReaderVerdict(a, dir));
+    } else try oldReaderVerdict(a, dir);
+    const before = try snapshotFiles(a, dir);
+    const change = switch (path) {
+        .carried => shed,
+        .dropped => try std.fmt.allocPrint(a, "{{\"changes\":[{{\"op\":\"remove\",\"root_id\":\"r-legacy\",\"path\":\"{s}\"}}]}}", .{engine.documents[k].path}),
+    };
+    const got = if (apply.applyChanges(a, io, dir, change, .{})) |outcome| switch (outcome) {
+        .ok => error.TestUnexpectedResult,
+        .failed => error.RefusedAsFailure,
+    } else |err| err;
+    if (got != expected) {
+        std.debug.print("S6-T8 sites: v2 {s}, {s} table at the {s} document ({d} of {d}): the first publish gave {s}, expected {s}\n", .{ @tagName(site), @tagName(path), @tagName(where), k, base.docs.len, @errorName(got), @errorName(expected) });
+        return error.TestUnexpectedError;
+    }
+    try expectSameFiles(before, try snapshotFiles(a, dir));
+    const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    try std.testing.expectEqual(@as(u64, 1), metadata.generation);
+    try std.testing.expect(!metadata.lexical_v4);
+}
+
+fn expectV2SiteRefusedEverywhere(site: V2Site, paths: []const TablePath) !void {
+    for (paths) |path| for ([_]DroppedAt{ .first, .middle, .last }) |where| try expectV2SiteRefused(site, where, path);
+}
+
+const both_paths = [_]TablePath{ .carried, .dropped };
+
+test "S6-T8 sites: a count other than the document's length, carried or dropped, at the first, a middle and the last table" {
+    try expectV2SiteRefusedEverywhere(.count_not_length, &both_paths);
+}
+
+test "S6-T8 sites: a start delta with a sixth byte (its value unchanged), carried or dropped, at three tables" {
+    try expectV2SiteRefusedEverywhere(.start_sixth_byte, &both_paths);
+}
+
+test "S6-T8 sites: a start delta whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables" {
+    try expectV2SiteRefusedEverywhere(.start_fifth_byte_high, &both_paths);
+}
+
+test "S6-T8 sites: a length with a sixth byte (its value unchanged), carried or dropped, at three tables" {
+    try expectV2SiteRefusedEverywhere(.length_sixth_byte, &both_paths);
+}
+
+test "S6-T8 sites: a length whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables" {
+    try expectV2SiteRefusedEverywhere(.length_fifth_byte_high, &both_paths);
+}
+
+test "S6-T8 sites: a length of 0, carried or dropped, at three tables" {
+    try expectV2SiteRefusedEverywhere(.zero_length, &both_paths);
+}
+
+test "S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables" {
+    try expectV2SiteRefusedEverywhere(.end_exactly_2p32, &both_paths);
+}
+
+test "S6-T8 sites: a gap of exactly 2^31 (valid v2, zigzag 2^32) in a carried table is refused at three tables; a dropped one is not checked for it" {
+    try expectV2SiteRefusedEverywhere(.gap_exactly_2p31, &.{.carried});
+}
+
+// The v4 table walk (`postings.oneByteTableEnd`, `skipOneVarint`) at a later
+// update: structure only, so its refusals are a section that ends inside a
+// table. A section can only end once, so the damage cuts the section inside
+// the chosen document's table and the documents after it lose their bytes.
+
+const V4Token = struct { byte: u8, esc_g: []const u8, esc_l: []const u8 };
+const V4Doc = struct { count: []const u8, tokens: []V4Token };
+
+fn v4Tables(a: std.mem.Allocator, dir: std.Io.Dir) !struct { good: []const u8, docs: []V4Doc, paths: []const []const u8 } {
+    const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    try std.testing.expect(metadata.lexical_v4);
+    const good = try dir.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
+    const engine = try snapshot_open.open(a, io, dir);
+    const sections = engine.lexical_index.positions.?;
+    try std.testing.expectEqual(postings.OffsetsCoding.one_byte, sections.coding);
+    const offsets = sections.offsets;
+    const docs = try a.alloc(V4Doc, engine.lexical_index.document_lengths.len);
+    const paths = try a.alloc([]const u8, docs.len);
+    var at: usize = 0;
+    for (engine.lexical_index.document_lengths, docs, paths, engine.documents) |length, *doc, *path, document| {
+        path.* = document.path;
+        doc.count = v2Raw(offsets, &at);
+        doc.tokens = try a.alloc(V4Token, length);
+        for (doc.tokens) |*token| {
+            token.* = .{ .byte = offsets[at], .esc_g = &.{}, .esc_l = &.{} };
+            at += 1;
+            if (token.byte & 0x0F == postings.offsets_escape) token.esc_g = v2Raw(offsets, &at);
+            if (token.byte >> 4 == postings.offsets_escape) token.esc_l = v2Raw(offsets, &at);
+        }
+    }
+    try std.testing.expectEqual(offsets.len, at);
+    return .{ .good = good, .docs = docs, .paths = paths };
+}
+
+fn v4Append(list: *std.ArrayList(u8), a: std.mem.Allocator, docs: []const V4Doc) !void {
+    for (docs) |doc| {
+        try list.appendSlice(a, doc.count);
+        for (doc.tokens) |token| {
+            try list.append(a, token.byte);
+            try list.appendSlice(a, token.esc_g);
+            try list.appendSlice(a, token.esc_l);
+        }
+    }
+}
+
+/// The refusal sites of `oneByteTableEnd` and `skipOneVarint`, each by a
+/// section that ends there inside the chosen document's table.
+const V4Site = enum {
+    /// Inside the count varint (its last byte given the continuation bit).
+    count_cut,
+    /// Before the table's last token byte.
+    token_cut,
+    /// Right after a last token byte whose gap nibble is the escape.
+    gap_escape_cut,
+    /// Right after a last token byte whose length nibble is the escape (and
+    /// after its gap escape, if it has one).
+    length_escape_cut,
+};
+
+const empty_file =
+    \\{"changes":[{"op":"add","root_id":"r-legacy","path":"zzz-marks.txt","content_base64":"LS0gKiAtLQo="}]}
+;
+const second_shed =
+    \\{"changes":[{"op":"add","root_id":"r-legacy","path":"shed2.txt","content_base64":"QSBzZWNvbmQgc2hlZCBob2xkcyB0aGUgdG9vbHMuCg=="}]}
+;
+
+/// `main`'s fixture published once under this library (generation 2,
+/// `HYBLEX04`), its section 5 cut by `site` inside one table, then a later
+/// update: an unrelated file added (every table carried) or that table's
+/// file removed. The walk refuses the section (`InvalidLexicalSection`),
+/// generation 2 stays, every file byte-identical. `with_empty_last` first
+/// adds a file with no token, so the section's last table holds a count
+/// and nothing else.
+fn expectV4SiteRefused(site: V4Site, where: DroppedAt, path: TablePath, with_empty_last: bool) !void {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const name = try std.fmt.allocPrint(a, "v4site-{s}-{s}-{s}-{}", .{ @tagName(site), @tagName(where), @tagName(path), with_empty_last });
+    var dir = try copyOf(a, tmp, fixture_main, name);
+    defer dir.close(io);
+    switch (try apply.applyChanges(a, io, dir, if (with_empty_last) empty_file else shed, .{})) {
+        .ok => {},
+        .failed => return error.TestUnexpectedResult,
+    }
+    const base = try v4Tables(a, dir);
+    const k = tablePosition(base.docs.len, where, struct {
+        docs: []const V4Doc,
+        fn at(self: @This(), i: usize) bool {
+            return self.docs[i].tokens.len > 0;
+        }
+    }{ .docs = base.docs });
+    if (with_empty_last) {
+        try std.testing.expectEqual(DroppedAt.last, where);
+        try std.testing.expectEqual(@as(usize, 0), base.docs[k].tokens.len);
+    } else try std.testing.expect(base.docs[k].tokens.len > 0);
+    var list = std.ArrayList(u8).empty;
+    try v4Append(&list, a, base.docs[0..k]);
+    const doc = base.docs[k];
+    switch (site) {
+        .count_cut => {
+            try list.appendSlice(a, doc.count[0 .. doc.count.len - 1]);
+            try list.append(a, doc.count[doc.count.len - 1] | 0x80);
+        },
+        .token_cut, .gap_escape_cut, .length_escape_cut => {
+            try list.appendSlice(a, doc.count);
+            const last = doc.tokens[doc.tokens.len - 1];
+            try v4Append(&list, a, &.{.{ .count = &.{}, .tokens = doc.tokens[0 .. doc.tokens.len - 1] }});
+            switch (site) {
+                .gap_escape_cut => try list.append(a, last.byte | 0x0F),
+                .length_escape_cut => {
+                    try list.append(a, last.byte | 0xF0);
+                    try list.appendSlice(a, last.esc_g);
+                },
+                else => {},
+            }
+        },
+    }
+    try v2Reseal(a, dir, base.good, list.items);
+    const before = try snapshotFiles(a, dir);
+    const change = switch (path) {
+        .carried => second_shed,
+        .dropped => try std.fmt.allocPrint(a, "{{\"changes\":[{{\"op\":\"remove\",\"root_id\":\"r-legacy\",\"path\":\"{s}\"}}]}}", .{base.paths[k]}),
+    };
+    const got = if (apply.applyChanges(a, io, dir, change, .{})) |outcome| switch (outcome) {
+        .ok => error.TestUnexpectedResult,
+        .failed => error.RefusedAsFailure,
+    } else |err| err;
+    if (got != error.InvalidLexicalSection) {
+        std.debug.print("S6-T8 sites: v4 {s}, {s} table at the {s} document ({d} of {d}): the update gave {s}, expected InvalidLexicalSection\n", .{ @tagName(site), @tagName(path), @tagName(where), k, base.docs.len, @errorName(got) });
+        return error.TestUnexpectedError;
+    }
+    try expectSameFiles(before, try snapshotFiles(a, dir));
+    const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    try std.testing.expectEqual(@as(u64, 2), metadata.generation);
+    try std.testing.expect(metadata.lexical_v4);
+}
+
+fn expectV4SiteRefusedEverywhere(site: V4Site) !void {
+    for (both_paths) |path| for ([_]DroppedAt{ .first, .middle, .last }) |where| try expectV4SiteRefused(site, where, path, false);
+}
+
+test "S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table" {
+    try expectV4SiteRefusedEverywhere(.count_cut);
+    for (both_paths) |path| try expectV4SiteRefused(.count_cut, .last, path, true);
+}
+
+test "S6-T8 sites: a v4 section that ends before a table's last token byte is refused at a later update, carried or dropped, at three tables" {
+    try expectV4SiteRefusedEverywhere(.token_cut);
+}
+
+test "S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables" {
+    try expectV4SiteRefusedEverywhere(.gap_escape_cut);
+}
+
+test "S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables" {
+    try expectV4SiteRefusedEverywhere(.length_escape_cut);
+}
