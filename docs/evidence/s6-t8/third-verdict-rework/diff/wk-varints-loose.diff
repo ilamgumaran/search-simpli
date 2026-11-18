@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/apply.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/wk-varints-loose/zig/src/apply.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/apply.zig	2026-11-18 09:57:46
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/wk-varints-loose/zig/src/apply.zig	2026-11-18 11:25:32
+@@ -2092,7 +2092,7 @@
+ /// sections: a section that ends first is `InvalidLexicalSection`, never a
+ /// read past it.
+ fn skipVarintsChecked(bytes: []const u8, at: usize, count: usize) error{InvalidLexicalSection}!usize {
+-    return source.varintsEnd(bytes, at, count) orelse error.InvalidLexicalSection;
++    return source.varintsEnd(bytes, at, count) orelse bytes.len;
+ }
+ 
+ /// Where each document's section-5 table starts in `sections.offsets`,

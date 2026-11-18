@@ -1,0 +1,11 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/tr-short-removed/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig	2026-11-18 09:57:46
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/tr-short-removed/zig/src/postings.zig	2026-11-18 10:37:10
+@@ -200,7 +200,6 @@
+     count: u32,
+ ) (std.mem.Allocator.Error || error{ InvalidPositions, GapNotRepresentable })!void {
+     const bytes = offsets[0..end];
+-    if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidPositions;
+     if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return error.InvalidPositions;
+     var at = at_start + 4;
+     // At most 5 bytes for the count and 11 per token (the byte and two

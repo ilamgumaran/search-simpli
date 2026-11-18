@@ -46,7 +46,9 @@ through the C ABI). **Contracts 2.8.0, Dart 0.9.2**; no API, schema, C header or
   fresh index. An older library refuses the new index with `UnsupportedFlags` through `ss_open`,
   `ss_index_folder`, `ss_apply_changes` and the CLI, and leaves it byte-identical. An old-format index with a
   damaged offsets table (one the old reader refuses), whether the table is carried or its file is removed, is
-  refused at the first publish (`InvalidPositions`, the old generation left whole) and needs a full rebuild.
+  refused at the first publish (`InvalidPositions`; `InvalidLexicalSection` for damage the table walk finds, such as a
+  section that ends inside a table or holds a byte after the last one; the old generation left whole) and needs a full
+  rebuild.
 - **Natives.** macOS 990,040 B (`main`: 988,952), Android 959,584 B (952,384), iOS framework binary 970,992 B
   (953,488); `native/SOURCE-SHA256` `2e203ac5…`; `searchd` `ReleaseSmall` 1,133,704 B (1,132,312). **For the
   consumer app:** the next pin takes Dart 0.9.2 (03-next pin row, all three one-way notes).

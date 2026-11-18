@@ -1,0 +1,14 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/rv-fifth-loose/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig	2026-11-18 09:57:46
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/rv-fifth-loose/zig/src/postings.zig	2026-11-18 11:11:55
+@@ -366,9 +366,8 @@
+         if (byte & 0x80 == 0) break;
+         shift += 7;
+     }
+-    if (value > std.math.maxInt(u32)) return null;
+     offset.* = at;
+-    return @intCast(value);
++    return @truncate(value);
+ }
+ 
+ pub const ListError = error{InvalidPosting};

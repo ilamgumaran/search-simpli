@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/sv-end-loose/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig	2026-11-18 09:57:46
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/sv-end-loose/zig/src/postings.zig	2026-11-18 11:22:09
+@@ -156,7 +156,7 @@
+         at += 1;
+         if (byte < 0x80) return at;
+     }
+-    return null;
++    return at;
+ }
+ 
+ /// S6-T8 (the ruling after the Verdict, F1): v2's validation

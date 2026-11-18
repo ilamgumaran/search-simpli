@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/ob-count-loose/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig	2026-11-18 09:57:46
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/ob-count-loose/zig/src/postings.zig	2026-11-18 11:15:44
+@@ -126,7 +126,7 @@
+     const lanes = 16;
+     const Block = @Vector(lanes, u8);
+     const escape: Block = @splat(offsets_escape);
+-    var at = skipOneVarint(bytes, at_start) orelse return null;
++    var at = skipOneVarint(bytes, at_start) orelse bytes.len;
+     var remaining: usize = length;
+     while (remaining > 0) {
+         if (remaining >= lanes and bytes.len - at >= lanes) {
