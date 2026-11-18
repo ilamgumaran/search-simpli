@@ -1,0 +1,2 @@
+{"case": "d_trailing_bound", "kind": "docs", "note": "one byte after the last record inside the bound section: header lengths unchanged, manifest length and both checksums resealed", "index": "head/j2", "exit": 0, "result": {"open": "refused: ss_open: InvalidDocumentSection"}}
+{"case": "d_bound_doccount_m", "kind": "docs", "note": "document count raised past records bytes / 8, in the header and the manifest", "index": "head/j2", "exit": 0, "result": {"open": "refused: ss_open: DocumentCountMismatch"}}

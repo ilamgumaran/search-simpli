@@ -10,6 +10,7 @@ const manifest = @import("manifest.zig");
 const postings = @import("postings.zig");
 const publication = @import("publication.zig");
 const scope = @import("scope.zig");
+const segment = @import("segment.zig");
 const source_section = @import("source.zig");
 const filename_field = @import("filename_field.zig");
 
@@ -92,6 +93,10 @@ fn openFrom(allocator: std.mem.Allocator, io: std.Io, from: From) !engine.Engine
 const Loaded = struct {
     engine: engine.Engine,
     metadata: manifest.Manifest,
+    /// S6-T7: the documents section's bytes (in the open block, or the
+    /// caller's in memory): a `HYBSRC02` source section is bound to its
+    /// file table (`scope.Loads.documents_encoded`).
+    documents_encoded: []const u8,
 };
 
 /// S4-T9: where each part of the open's one block lies, from the manifest's
@@ -233,6 +238,7 @@ fn decodeLoaded(arena: std.mem.Allocator, block: engine.OpenBlockBytes, layout: 
     const vector_count = metadata.document_count * metadata.vector_dimensions; // checked by `OpenBlock.of`
     var options = initial_options;
     options.term_text_allocator = arena;
+    options.documents_allocator = arena;
     var opened = try engine.Engine.openWith(
         snapshot,
         OpenBlock.slice(hybrid.Document, block, layout.documents, metadata.document_count),
@@ -248,7 +254,7 @@ fn decodeLoaded(arena: std.mem.Allocator, block: engine.OpenBlockBytes, layout: 
     // reading the sections.
     opened.filename_index_enabled = metadata.filename != null;
     if (metadata.filename) |f| opened.filename_policy_id = f.policy_id;
-    return .{ .engine = opened, .metadata = metadata };
+    return .{ .engine = opened, .metadata = metadata, .documents_encoded = snapshot.documents_encoded };
 }
 
 /// The current generation's manifest and source section (S3-T1), validated
@@ -277,7 +283,17 @@ pub fn openSource(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !Op
     const buffer = try allocator.alloc(u8, metadata.source_bytes);
     const bytes = (publication.loadSource(dir, io, metadata, buffer) catch |err|
         return .{ .metadata = metadata, .source = null, .source_error = @errorName(err) }).?;
-    const section = source_section.openIndexed(allocator, bytes) catch |err| switch (err) {
+    // S6-T7: a `HYBSRC02` section is bound to the documents section.
+    var bound: ?source_section.Bound = null;
+    if (std.mem.startsWith(u8, bytes, "HYBSRC02")) {
+        const documents_encoded = try allocator.alloc(u8, metadata.documents_bytes);
+        _ = try dir.readFile(io, metadata.documents_file, documents_encoded);
+        const header = try segment.inspect(documents_encoded);
+        if (header.checksum != metadata.documents_checksum) return error.DocumentSectionChecksumMismatch;
+        const documents = try segment.decodeInspectedWith(documents_encoded, header, try allocator.alloc(hybrid.Document, header.document_count), try allocator.alloc(f32, header.document_count * header.vector_dimensions), allocator, true);
+        bound = .{ .documents_encoded = documents_encoded, .documents = documents };
+    }
+    const section = source_section.openIndexedBound(allocator, bytes, bound) catch |err| switch (err) {
         error.OutOfMemory => return err,
         else => return .{ .metadata = metadata, .source = null, .source_error = @errorName(err) },
     };
@@ -335,6 +351,7 @@ fn openScopedFrom(allocators: Allocators, io: std.Io, from: From) !Scoped {
         .allocator = allocator,
         .blocks = allocators.blocks,
         .documents = opened_engine.documents,
+        .documents_encoded = loaded.documents_encoded,
         .index = opened_engine.lexical_index,
         .source_bytes = metadata.source_bytes,
         .source_checksum = metadata.source_checksum,

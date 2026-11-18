@@ -1,0 +1,18 @@
+# S6-T7 rework recheck: plants on a fresh git archive of 8236c1e each, own Zig caches, Debug zig build test (plant2.sh; plants.py).
+# plant | what it changes | build summary | failing tests
+none | control: no change | 9/9 steps succeeded; 483/492 tests passed (9 skipped) | none
+parity_v1 | reader: recipe parity swapped only when v = 1 (overlap 1 read as gap 0) | 7/9 steps succeeded (1 failed); 482/492 tests passed (9 skipped, 1 failed) | S6-T7 Verdict finding 1: overlaps of 1 and 2 bytes and of the whole previous chunk are reb
+overlap_bound_removed | reader: an overlap larger than the bytes emitted so far accepted by the walk | 7/9 steps succeeded (1 failed); 482/492 tests passed (9 skipped, 1 failed) | S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused wi
+shared_cap_check | reader: a front-coding prefix above 255 accepted | 7/9 steps succeeded (1 failed); 482/492 tests passed (9 skipped, 1 failed) | S6-T7 ruling 11: every documents v5 rule, violated with the checksum recomputed, is refuse
+overlap2_as1 | reader: an overlap of 2 (v = 3) rebuilt as an overlap of 1 | 7/9 steps succeeded (1 failed); 482/492 tests passed (9 skipped, 1 failed) | S6-T7 Verdict finding 1: overlaps of 1 and 2 bytes and of the whole previous chunk are reb
+whole_prev_off | reader: an overlap equal to the whole previous chunk rebuilt one byte short of it (k - 1) | 7/9 steps succeeded (1 failed); 482/492 tests passed (9 skipped, 1 failed) | S6-T7 Verdict finding 1: overlaps of 1 and 2 bytes and of the whole previous chunk are reb
+overlap_bound_ge | reader: the walk refuses k >= pos (an overlap of everything emitted so far refused) | 9/9 steps succeeded; 483/492 tests passed (9 skipped) | none
+shared_cap_254 | reader: a front-coding prefix of exactly 255 refused (cap checked as 254) | 7/9 steps succeeded (1 failed); 479/492 tests passed (9 skipped, 4 failed) | text_once_test: ruling 3 (every kind of file rebuilt); ruling 11 documents v5 rules; ruling 11 HYBSRC02 rules; an update carries unchanged files
+
+# The new tests' own lines (rule refused at open, before any SHA-256):
+S6-T7 documents rule "shared 256 on a common prefix over 255, the path unchanged": accepted, want InvalidFileTable
+S6-T7 source rule "an overlap one byte past what was emitted, the residual total kept": accepted (resident), want InvalidFileTable
+
+# overlap_bound_ge passes the suite: k == pos with k >= 1 needs a chunk i >= 1 found at byte 0 of the file. Every chunker's next window starts
+# at a later line than the previous one's first line (line >= 2, so its byte offset > 0) and k = pos - found < pos. Unreachable from any writer;
+# such a recipe is valid by the format (k <= pos) and only a hand-made section holds it.

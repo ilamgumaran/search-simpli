@@ -1,0 +1,12 @@
+S6-T7 Phase 2: one-file updates (migrate.py, run_updates.sh): main's searchd and the head's on copies of the
+index main wrote; per variant two sets of three fresh copies (order main, head, head, main); ms, median of six.
+first = the first update of main's index (head: v4/HYBSRC01 -> v5/HYBSRC02; main: v4 -> v4);
+second = the next one-line update (head: v5 -> v5; main: v4 -> v4).
+timing-10k  first:  main   170.3  head   173.3    +3.0 ms ( +1.7 %)   second: main   169.4  head   162.8    -6.7 ms ( -3.9 %)
+            after the first update: main {'generation': 2, 'documents_version': 4, 'source_magic': 'HYBSRC01'}; head {'generation': 2, 'documents_version': 5, 'source_magic': 'HYBSRC02'}
+prose-10k   first:  main   221.5  head   226.3    +4.7 ms ( +2.1 %)   second: main   221.4  head   211.7    -9.6 ms ( -4.4 %)
+            after the first update: main {'generation': 2, 'documents_version': 4, 'source_magic': 'HYBSRC01'}; head {'generation': 2, 'documents_version': 5, 'source_magic': 'HYBSRC02'}
+tamil-10k   first:  main   229.4  head   233.4    +4.0 ms ( +1.7 %)   second: main   230.7  head   205.1   -25.6 ms (-11.1 %)
+            after the first update: main {'generation': 2, 'documents_version': 4, 'source_magic': 'HYBSRC01'}; head {'generation': 2, 'documents_version': 5, 'source_magic': 'HYBSRC02'}
+family      first:  main    12.9  head    12.9    +0.0 ms ( +0.1 %)   second: main    12.8  head    12.1    -0.8 ms ( -6.1 %)
+            after the first update: main {'generation': 2, 'documents_version': 4, 'source_magic': 'HYBSRC01'}; head {'generation': 2, 'documents_version': 5, 'source_magic': 'HYBSRC02'}

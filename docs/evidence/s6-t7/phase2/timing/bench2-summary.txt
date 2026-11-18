@@ -1,0 +1,138 @@
+## j2: largest file home/garden-diary.md (15584 B, 397 lines); 6 main and 6 head runs; 5-minute load 3.78-3.87
+   median file recipes/pancakes.md (321 B, 17 lines); smallest pe-kit.txt (63 B, 1 lines)
+  open p50 ms                          main       0.1429  head       0.1477    +3.35 %
+  memory after open B                  main      294,912  head      262,144   -11.11 %
+  memory after first read_span B       main      483,328  head      360,448   -25.42 %
+  first read_span p50 ms               main       0.0280  head       0.0267    -4.54 %
+  first outline after it p50 ms        main       0.2403  head       0.2331    -2.99 %
+  later read_span head p50 ms          main       0.0092  head       0.0092    +0.22 %
+  later read_span head CPU ms/call     main       0.0094  head       0.0094    +0.00 %
+  later read_span middle p50 ms        main       0.0099  head       0.0099    +0.01 %
+  later read_span middle CPU ms/call   main       0.0101  head       0.0101    +0.25 %
+  later read_span tail p50 ms          main       0.0107  head       0.0107    +0.78 %
+  later read_span tail CPU ms/call     main       0.0109  head       0.0109    +0.62 %
+  later outline p50 ms                 main       0.2382  head       0.2315    -2.79 %
+  later outline CPU ms/call            main       0.2400  head       0.2336    -2.67 %
+  later median read_span p50 ms        main       0.0028  head       0.0028    +1.49 %
+  later median read_span CPU ms/call   main       0.0029  head       0.0030    +0.51 %
+  later median outline p50 ms          main       0.0067  head       0.0066    -1.24 %
+  later median outline CPU ms/call     main       0.0069  head       0.0069    -0.43 %
+  later smallest read_span p50 ms      main       0.0025  head       0.0021   -15.56 %
+  later smallest read_span CPU ms/call main       0.0027  head       0.0024   -13.49 %
+  later smallest outline p50 ms        main       0.0018  head       0.0015   -19.33 %
+  later smallest outline CPU ms/call   main       0.0020  head       0.0017   -17.73 %
+## fixtures: largest file r-legacy/family-folder/laptop/big-log.txt (1133158 B, 15500 lines); 6 main and 6 head runs; 5-minute load 3.43-3.59
+   median file mixed-knowledge/operations/measurement.md (307 B, 1 lines); smallest markdown/front-matter-only.md (29 B, 3 lines)
+  open p50 ms                          main       2.8841  head       2.8851    +0.03 %
+  memory after open B                  main   15,171,584  head   14,974,976    -1.30 %
+  memory after first read_span B       main   16,629,760  head   16,416,768    -1.28 %
+  first read_span p50 ms               main       1.0016  head       0.6148   -38.61 %
+  first outline after it p50 ms        main       0.3904  head       0.3996    +2.36 %
+  later read_span head p50 ms          main       0.3896  head       0.3992    +2.46 %
+  later read_span head CPU ms/call     main       0.3918  head       0.4008    +2.29 %
+  later read_span middle p50 ms        main       0.4160  head       0.4254    +2.27 %
+  later read_span middle CPU ms/call   main       0.4176  head       0.4268    +2.20 %
+  later read_span tail p50 ms          main       0.4430  head       0.4518    +1.98 %
+  later read_span tail CPU ms/call     main       0.4440  head       0.4532    +2.08 %
+  later outline p50 ms                 main       0.3851  head       0.3948    +2.52 %
+  later outline CPU ms/call            main       0.3873  head       0.3963    +2.33 %
+  later median read_span p50 ms        main       0.0057  head       0.0056    -2.56 %
+  later median read_span CPU ms/call   main       0.0059  head       0.0057    -3.04 %
+  later median outline p50 ms          main       0.0093  head       0.0091    -2.67 %
+  later median outline CPU ms/call     main       0.0095  head       0.0093    -2.26 %
+  later smallest read_span p50 ms      main       0.0061  head       0.0060    -1.71 %
+  later smallest read_span CPU ms/call main       0.0064  head       0.0063    -1.02 %
+  later smallest outline p50 ms        main       0.0062  head       0.0061    -2.01 %
+  later smallest outline CPU ms/call   main       0.0065  head       0.0063    -3.31 %
+## family: largest file r-legacy/laptop/big-log.txt (1133158 B, 15500 lines); 6 main and 6 head runs; 5-minute load 3.59-3.78
+   median file school/timetable.md (271 B, 31 lines); smallest home/no-final-newline.txt (75 B, 4 lines)
+  open p50 ms                          main       1.0561  head       1.0547    -0.14 %
+  memory after open B                  main    5,062,656  head    4,997,120    -1.29 %
+  memory after first read_span B       main    6,266,880  head    6,217,728    -0.78 %
+  first read_span p50 ms               main       0.6362  head       0.5501   -13.53 %
+  first outline after it p50 ms        main       0.3901  head       0.3968    +1.71 %
+  later read_span head p50 ms          main       0.3910  head       0.3979    +1.77 %
+  later read_span head CPU ms/call     main       0.3936  head       0.3996    +1.53 %
+  later read_span middle p50 ms        main       0.4177  head       0.4241    +1.54 %
+  later read_span middle CPU ms/call   main       0.4195  head       0.4259    +1.52 %
+  later read_span tail p50 ms          main       0.4438  head       0.4506    +1.53 %
+  later read_span tail CPU ms/call     main       0.4456  head       0.4524    +1.52 %
+  later outline p50 ms                 main       0.3866  head       0.3936    +1.83 %
+  later outline CPU ms/call            main       0.3888  head       0.3955    +1.73 %
+  later median read_span p50 ms        main       0.0038  head       0.0038    -0.53 %
+  later median read_span CPU ms/call   main       0.0040  head       0.0040    +0.12 %
+  later median outline p50 ms          main       0.0071  head       0.0071    -0.29 %
+  later median outline CPU ms/call     main       0.0074  head       0.0073    -0.81 %
+  later smallest read_span p50 ms      main       0.0024  head       0.0020   -17.56 %
+  later smallest read_span CPU ms/call main       0.0026  head       0.0021   -16.78 %
+  later smallest outline p50 ms        main       0.0017  head       0.0013   -23.74 %
+  later smallest outline CPU ms/call   main       0.0018  head       0.0014   -21.26 %
+## timing-10k: largest file r-legacy/group-67/doc-06789.md (1655 B, 13 lines); 6 main and 6 head runs; 5-minute load 3.32-3.41
+   median file group-48/doc-04825.md (718 B, 13 lines); smallest group-54/doc-05447.md (179 B, 5 lines)
+  open p50 ms                          main       5.3671  head       5.3866    +0.36 %
+  memory after open B                  main   26,476,568  head   25,821,184    -2.48 %
+  memory after first read_span B       main   42,655,768  head   41,910,296    -1.75 %
+  first read_span p50 ms               main       1.3201  head       0.7552   -42.79 %
+  first outline after it p50 ms        main       0.0601  head       0.0488   -18.76 %
+  later read_span head p50 ms          main       0.0307  head       0.0230   -25.22 %
+  later read_span head CPU ms/call     main       0.0312  head       0.0233   -25.32 %
+  later read_span middle p50 ms        main       0.0305  head       0.0228   -25.14 %
+  later read_span middle CPU ms/call   main       0.0309  head       0.0232   -24.75 %
+  later read_span tail p50 ms          main       0.0304  head       0.0228   -24.91 %
+  later read_span tail CPU ms/call     main       0.0310  head       0.0231   -25.48 %
+  later outline p50 ms                 main       0.0515  head       0.0433   -15.91 %
+  later outline CPU ms/call            main       0.0521  head       0.0437   -16.06 %
+  later median read_span p50 ms        main       0.0209  head       0.0161   -22.91 %
+  later median read_span CPU ms/call   main       0.0214  head       0.0163   -23.48 %
+  later median outline p50 ms          main       0.0297  head       0.0247   -16.81 %
+  later median outline CPU ms/call     main       0.0301  head       0.0251   -16.35 %
+  later smallest read_span p50 ms      main       0.0226  head       0.0169   -25.14 %
+  later smallest read_span CPU ms/call main       0.0230  head       0.0174   -24.66 %
+  later smallest outline p50 ms        main       0.0245  head       0.0188   -23.43 %
+  later smallest outline CPU ms/call   main       0.0249  head       0.0190   -23.68 %
+## prose-10k: largest file r-legacy/reading/once-back-wander-09202.md (46812 B, 902 lines); 6 main and 6 head runs; 5-minute load 3.11-3.28
+   median file journal/piece-needs-reads-05691.md (1126 B, 20 lines); smallest school/perhaps-trip-07207.md (123 B, 3 lines)
+  open p50 ms                          main      11.7192  head      11.8543    +1.15 %
+  memory after open B                  main   53,739,544  head   53,198,872    -1.01 %
+  memory after first read_span B       main   71,188,540  head   69,623,856    -2.20 %
+  first read_span p50 ms               main       2.5676  head       1.0840   -57.78 %
+  first outline after it p50 ms        main       0.7319  head       0.7136    -2.50 %
+  later read_span head p50 ms          main       0.0361  head       0.0365    +1.10 %
+  later read_span head CPU ms/call     main       0.0366  head       0.0371    +1.41 %
+  later read_span middle p50 ms        main       0.0377  head       0.0381    +1.22 %
+  later read_span middle CPU ms/call   main       0.0381  head       0.0387    +1.58 %
+  later read_span tail p50 ms          main       0.0394  head       0.0397    +0.79 %
+  later read_span tail CPU ms/call     main       0.0399  head       0.0401    +0.63 %
+  later outline p50 ms                 main       0.7244  head       0.7029    -2.97 %
+  later outline CPU ms/call            main       0.7263  head       0.7054    -2.87 %
+  later median read_span p50 ms        main       0.0127  head       0.0128    +0.66 %
+  later median read_span CPU ms/call   main       0.0129  head       0.0130    +1.03 %
+  later median outline p50 ms          main       0.0272  head       0.0268    -1.61 %
+  later median outline CPU ms/call     main       0.0276  head       0.0271    -1.76 %
+  later smallest read_span p50 ms      main       0.0221  head       0.0221    -0.19 %
+  later smallest read_span CPU ms/call main       0.0225  head       0.0225    +0.07 %
+  later smallest outline p50 ms        main       0.0231  head       0.0231    -0.09 %
+  later smallest outline CPU ms/call   main       0.0233  head       0.0233    -0.06 %
+## tamil-10k: largest file r-legacy/group-37/doc-03790.md (6010 B, 13 lines); 6 main and 6 head runs; 5-minute load 2.97-3.11
+   median file group-53/doc-05350.md (2766 B, 9 lines); smallest group-51/doc-05169.md (682 B, 5 lines)
+  open p50 ms                          main       7.7936  head       7.7753    -0.23 %
+  memory after open B                  main   47,677,464  head   47,054,872    -1.31 %
+  memory after first read_span B       main   64,282,672  head   63,750,204    -0.83 %
+  first read_span p50 ms               main       3.2555  head       0.7726   -76.27 %
+  first outline after it p50 ms        main       0.0732  head       0.0680    -7.03 %
+  later read_span head p50 ms          main       0.0267  head       0.0233   -12.72 %
+  later read_span head CPU ms/call     main       0.0272  head       0.0238   -12.46 %
+  later read_span middle p50 ms        main       0.0265  head       0.0231   -12.60 %
+  later read_span middle CPU ms/call   main       0.0270  head       0.0234   -13.33 %
+  later read_span tail p50 ms          main       0.0265  head       0.0231   -12.67 %
+  later read_span tail CPU ms/call     main       0.0268  head       0.0234   -12.59 %
+  later outline p50 ms                 main       0.0630  head       0.0596    -5.42 %
+  later outline CPU ms/call            main       0.0637  head       0.0604    -5.16 %
+  later median read_span p50 ms        main       0.0270  head       0.0212   -21.47 %
+  later median read_span CPU ms/call   main       0.0273  head       0.0214   -21.67 %
+  later median outline p50 ms          main       0.0435  head       0.0379   -12.80 %
+  later median outline CPU ms/call     main       0.0440  head       0.0383   -13.06 %
+  later smallest read_span p50 ms      main       0.0228  head       0.0172   -24.50 %
+  later smallest read_span CPU ms/call main       0.0232  head       0.0175   -24.55 %
+  later smallest outline p50 ms        main       0.0265  head       0.0210   -20.98 %
+  later smallest outline CPU ms/call   main       0.0270  head       0.0213   -20.98 %

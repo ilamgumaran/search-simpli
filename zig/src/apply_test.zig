@@ -1029,14 +1029,16 @@ fn expectFreshParity(f: *Fixture) !@import("postings.zig").Index {
     // S4-T11 ruling 3: the source section is what `source.encode` gives
     // over its files' bytes, every file hashed and scanned afresh.
     if (metadata.hasSource()) {
+        // S6-T7: `HYBSRC02` over the generation's documents: each file
+        // rebuilt, then located afresh.
         const written = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
-        const section = try source.open(written);
+        const section = (try snapshot_open.openSource(a, io, f.out)).source.?;
         const files = try a.alloc(source.InputFile, section.file_count);
-        for (files, 0..) |*file, index| {
+        for (files, section.v2.?.files, 0..) |*file, bound, index| {
             const entry = section.file(index);
-            file.* = .{ .path = entry.path, .bytes = entry.bytes };
+            file.* = .{ .path = entry.path, .bytes = try source.entryBytes(section, a, entry), .first_chunk = bound.first, .chunk_count = bound.chunks };
         }
-        try std.testing.expectEqualSlices(u8, try source.encode(a, files), written);
+        try std.testing.expectEqualSlices(u8, try @import("source_v2.zig").encodeMarked(a, files, section.v2.?.documents, source.NoMarks{}), written);
     }
     return fresh;
 }
@@ -1688,12 +1690,21 @@ fn resealedSource(f: *Fixture, at: usize, delta: u8) !void {
     try writeManifest(f, metadata);
 }
 
-/// The current source section as the writer opens it (`source.openTable`:
-/// no map checked against its bytes).
+/// The current source section as the writer opens it (no map checked
+/// against its bytes; S6-T7: a `HYBSRC02` section bound to its documents).
 fn currentSource(f: *Fixture) !source.Section {
-    const metadata = try currentManifest(f);
-    const bytes = try f.out.readFileAlloc(io, metadata.source_file, f.arena(), .unlimited);
-    return source.openTable(f.arena(), bytes, try source.inspect(bytes));
+    const opened = try snapshot_open.openSource(f.arena(), io, f.out);
+    if (opened.source_error) |name| {
+        std.debug.print("source unavailable: {s}\n", .{name});
+        return error.TestUnexpectedResult;
+    }
+    return opened.source.?;
+}
+
+/// S6-T7: the offset in the section of a `HYBSRC02` record's line count
+/// (after its SHA-256, its one-byte flags and its length varint).
+fn lineCountOffset(entry: source.FileEntry) usize {
+    return source.header_length + entry.v2_record + 33 + @import("segment_v5.zig").varintLength(entry.text_length);
 }
 
 test "S4-T14 ruling 3(a): a re-sealed bad line map is carried by an update of another file, refused per file by the reader, and replaced by an update of its file" {
@@ -1708,12 +1719,10 @@ test "S4-T14 ruling 3(a): a re-sealed bad line map is carried by an update of an
     const at = source.header_length + section.files_table.len + entry.line_map_offset + 1;
     try std.testing.expect(section.encoded[at] < 0x7f and section.encoded[at - 1] == 0);
     try resealedSource(&f, at, 1);
-    {
-        const metadata = try currentManifest(&f);
-        const bytes = try f.out.readFileAlloc(io, metadata.source_file, a, .unlimited);
-        // The resident readers still refuse the whole section.
-        try std.testing.expectError(error.InvalidLineMap, source.open(bytes));
-    }
+    // S6-T7: a `HYBSRC02` section's open checks each map's bounds only
+    // (every reader checks a map where it reads its file).
+    try std.testing.expect(section.v2 != null);
+    _ = try currentSource(&f);
     // An update of b.txt publishes, carrying a.md's record as it is.
     const damaged_map = (try source.carriedRecord((try currentSource(&f)).find("home/a.md").?, true)).line_map;
     try std.testing.expect(!std.mem.eql(u8, (try source.carriedRecord(entry, true)).line_map, damaged_map));
@@ -1766,7 +1775,8 @@ test "S4-T14 ruling 3(c): a previous source section whose last map runs past the
     try std.testing.expectEqualStrings("school/c.md", section.file(2).path);
     // c.md (the last record) line count 3 made 4: its varints run past the
     // maps region.
-    try resealedSource(&f, source.header_length + section.record_offsets[2] + 20, 1);
+    try std.testing.expect(section.encoded[lineCountOffset(section.file(2))] == 3);
+    try resealedSource(&f, lineCountOffset(section.file(2)), 1);
     const before = try f.listing();
     try std.testing.expectError(error.InvalidLineMap, apply.applyChanges(a, io, f.out, try changeB(&f), .{}));
     try std.testing.expectEqualStrings(before, try f.listing());
@@ -2192,7 +2202,23 @@ fn unsortGeneration(f: *Fixture, how: Unsorted) !void {
     const a = f.arena();
     var metadata = try currentManifest(f);
     const encoded = try f.out.readFileAlloc(io, metadata.documents_file, a, .unlimited);
-    const documents = try segment_module.decode(encoded, try a.alloc(hybrid.Document, metadata.document_count), try a.alloc(f32, metadata.document_count * metadata.vector_dimensions));
+    const documents = try segment_module.decodeInspectedWith(encoded, try segment_module.inspect(encoded), try a.alloc(hybrid.Document, metadata.document_count), try a.alloc(f32, metadata.document_count * metadata.vector_dimensions), a, metadata.hasSource());
+    // S6-T7: record v5 cannot hold records out of path order, so the
+    // generation is re-written as a writer before v2.4 left it: record v4
+    // documents and a `HYBSRC01` source section over the same bytes.
+    if (metadata.hasSource()) {
+        const section = try currentSource(f);
+        const files = try a.alloc(source.InputFile, section.file_count);
+        for (files, 0..) |*file, index| {
+            const entry = section.file(index);
+            file.* = .{ .path = entry.path, .bytes = try source.entryBytes(section, a, entry) };
+        }
+        const old_source = try source.encode(a, files);
+        try f.out.writeFile(io, .{ .sub_path = metadata.source_file, .data = old_source });
+        metadata.source_bytes = old_source.len;
+        metadata.source_checksum = storedSectionChecksum(old_source, source.header_length);
+    }
+    metadata.text_once = false;
     var order = std.ArrayList(hybrid.Document).empty;
     switch (how) {
         .descending => {

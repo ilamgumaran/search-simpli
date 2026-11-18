@@ -1,0 +1,1 @@
+{"corpus": "family", "files": {"small": ["r-legacy", "home/no-final-newline.txt", 4], "median": ["r-legacy", "school/timetable.md", 31], "largest": ["r-legacy", "laptop/big-log.txt", 15500]}, "bytes": {"small": 75, "median": 271, "largest": 1133158}}

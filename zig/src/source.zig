@@ -29,8 +29,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const checksum_mod = @import("checksum.zig");
+const hybrid = @import("hybrid.zig");
 const chunker = @import("chunker.zig");
 const chunker_md = @import("chunker_md.zig");
+const source_v2 = @import("source_v2.zig");
+pub const Bound = source_v2.Bound;
 
 pub const magic = "HYBSRC01";
 pub const version: u16 = 1;
@@ -55,6 +58,13 @@ pub const InputFile = struct {
     /// S4-T11 ruling 3: the previous section's record of these same bytes
     /// (`carriedRecord`), copied instead of hashing and scanning them again.
     carried: ?Carried = null,
+    /// S6-T7 (`HYBSRC02`): the file's records in the documents the
+    /// generation writes (`source_v2.encodeMarked`), and the previous v2
+    /// section's record, map and residual run when neither the bytes nor
+    /// the chunks changed (copied as they are).
+    first_chunk: u32 = 0,
+    chunk_count: u32 = 0,
+    carried_v2: ?source_v2.Carried = null,
 };
 
 /// S4-T11 ruling 3: what a file's record holds that depends only on its
@@ -127,6 +137,10 @@ pub const DecodeError = error{
     InvalidLineMap,
     UnsortedPaths,
     InvalidPath,
+    /// S6-T7: a `HYBSRC02` section opened without its documents section,
+    /// or whose file count is not the documents' retained count.
+    SourceNeedsDocuments,
+    SourceFileCountMismatch,
 };
 
 pub const FileEntry = struct {
@@ -152,6 +166,14 @@ pub const FileEntry = struct {
     /// S4-T14: the record's position in the files table (0-based), as `find`
     /// and `file` return it: the index of its bit in `Section.checked`.
     position: usize = 0,
+    /// S6-T7, a `HYBSRC02` file: kept whole, its recipe varints, its
+    /// residual run's length, its chunks, and its record's offsets.
+    v2_whole: bool = false,
+    v2_recipe: []const u8 = &.{},
+    v2_residual_length: usize = 0,
+    v2_chunks: []const hybrid.Document = &.{},
+    v2_record: usize = 0,
+    v2_record_end: usize = 0,
 };
 
 /// S3-T4 (sparse line index, built at open, no format change): every
@@ -207,6 +229,9 @@ pub const Section = struct {
     /// (`openStreamed`'s `index_allocator`). Empty for a resident section,
     /// whose every map `open` checked.
     checked: []std.atomic.Value(usize) = &.{},
+    /// S6-T7: a `HYBSRC02` section's per-file table and the documents it
+    /// rebuilds from (`source_v2.walk`); null for `HYBSRC01`.
+    v2: ?*const source_v2.State = null,
 
     fn withCheckpoints(section: Section, index: usize, entry: FileEntry) FileEntry {
         var copy = entry;
@@ -218,6 +243,7 @@ pub const Section = struct {
 
     /// The `index`-th file (0-based, path order).
     pub fn file(section: Section, index: usize) FileEntry {
+        if (section.v2 != null) return source_v2.entry(section, index);
         if (section.record_offsets.len == section.file_count) {
             var direct = Cursor{ .bytes = section.files_table, .offset = section.record_offsets[index] };
             return section.withCheckpoints(index, readRecord(&direct, section) catch unreachable);
@@ -248,6 +274,7 @@ pub const Section = struct {
     /// when present (paths are strictly sorted by bytes), else a linear scan
     /// of the table that touches only fixed fields and paths.
     pub fn find(section: Section, path: []const u8) ?FileEntry {
+        if (section.v2 != null) return source_v2.find(section, path);
         if (section.record_offsets.len == section.file_count and section.file_count > 0) {
             var low: usize = 0;
             var high: usize = section.file_count;
@@ -292,6 +319,7 @@ pub const Section = struct {
     /// again (a file that passes is recorded in `checked` and not checked
     /// again).
     pub fn fileBytes(section: Section, allocator: std.mem.Allocator, entry: FileEntry) error{OutOfMemory}!BytesResult {
+        if (section.v2 != null) return source_v2.fileBytes(section, allocator, entry);
         const text = section.text_file orelse return .{ .ok = entry.bytes };
         const buffer = try allocator.alloc(u8, entry.text_length);
         const read = text.file.readPositionalAll(text.io, buffer, text.offset + entry.text_offset) catch |err| return unavailable(allocator, @errorName(err));
@@ -310,7 +338,31 @@ pub const Section = struct {
     }
 };
 
-const word_bits = @bitSizeOf(usize);
+/// S6-T7: a file's bytes for a caller that needs them whole (tests, the
+/// writer): `Section.fileBytes`, with a failed check as
+/// `error.SourceFileUnavailable`.
+pub fn entryBytes(section: Section, allocator: std.mem.Allocator, entry: FileEntry) error{ OutOfMemory, SourceFileUnavailable }![]const u8 {
+    return switch (try section.fileBytes(allocator, entry)) {
+        .ok => |bytes| bytes,
+        .failed => error.SourceFileUnavailable,
+    };
+}
+
+pub const word_bits = @bitSizeOf(usize);
+
+pub fn unavailablePub(allocator: std.mem.Allocator, name: []const u8) error{OutOfMemory}!BytesResult {
+    return unavailable(allocator, name);
+}
+
+pub fn validateLineMapPub(entry: FileEntry) DecodeError!usize {
+    return validateLineMap(entry, null);
+}
+
+pub fn markCheckedPub(section: Section, entry: FileEntry) void {
+    section.markChecked(entry);
+}
+
+pub const MapReaderPub = MapReader;
 
 fn bitOf(position: usize) usize {
     return @as(usize, 1) << @intCast(position % word_bits);
@@ -404,7 +456,7 @@ fn writeLeb128(list: *std.ArrayList(u8), allocator: std.mem.Allocator, value: u6
     }
 }
 
-fn validPath(path: []const u8) bool {
+pub fn validPath(path: []const u8) bool {
     if (path.len == 0 or path.len > std.math.maxInt(u32)) return false;
     if (path[0] == '/') return false;
     for (path) |byte| if (byte == 0 or byte == '\n' or byte == '\r') return false;
@@ -545,6 +597,9 @@ pub const Header = struct {
     checksum: u64,
     /// S4-T1: header flags bit 0 (`checksum.flag_xxh3`).
     checksum_kind: checksum_mod.Kind = .fnv1a64,
+    /// S6-T7: 1 (`HYBSRC01`) or 2 (`HYBSRC02`: `files_bytes` is the
+    /// records area, `text_bytes` the residual area).
+    format: u16 = version,
 };
 
 /// Validate the header, the declared size and the checksum only.
@@ -559,10 +614,12 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
 /// declared size checked against `length`; not the checksum.
 fn parseHeader(prefix: []const u8, length: usize) DecodeError!Header {
     var cursor = Cursor{ .bytes = prefix };
-    if (!std.mem.eql(u8, try cursor.take(magic.len), magic)) return error.BadMagic;
-    if (try cursor.readU16() != version) return error.UnsupportedVersion;
+    const found_magic = try cursor.take(magic.len);
+    const format: u16 = if (std.mem.eql(u8, found_magic, magic)) version else if (std.mem.eql(u8, found_magic, source_v2.magic)) source_v2.version else return error.BadMagic;
+    if (try cursor.readU16() != format) return error.UnsupportedVersion;
     const flags = try cursor.readU16();
     if (flags & ~checksum_mod.flag_xxh3 != 0) return error.UnsupportedFlags;
+    if (format == source_v2.version and flags != checksum_mod.flag_xxh3) return error.UnsupportedFlags;
     const kind = checksum_mod.kindOfFlags(flags);
     const file_count: usize = try cast(try cursor.readU32());
     const files_bytes: usize = try cast(try cursor.readU64());
@@ -575,13 +632,34 @@ fn parseHeader(prefix: []const u8, length: usize) DecodeError!Header {
     expected = try add(expected, text_bytes);
     if (length < expected) return error.Truncated;
     if (length > expected) return error.TrailingData;
-    return .{ .file_count = file_count, .files_bytes = files_bytes, .maps_bytes = maps_bytes, .text_bytes = text_bytes, .checksum = checksum, .checksum_kind = kind };
+    return .{ .file_count = file_count, .files_bytes = files_bytes, .maps_bytes = maps_bytes, .text_bytes = text_bytes, .checksum = checksum, .checksum_kind = kind, .format = format };
 }
 
 /// Validate a whole section (header, checksum, file table, paths, every line
 /// map) and return a borrowing view of it.
 pub fn open(encoded: []const u8) DecodeError!Section {
     return openWith(encoded, null, null);
+}
+
+/// S6-T7: open a section of either format, resident: `HYBSRC01` as
+/// `openIndexed`, `HYBSRC02` bound to `bound` (its documents section) with
+/// `source_v2.walk`'s rules; a v2 section without `bound` is
+/// `SourceNeedsDocuments`. Allocations from `allocator`.
+pub fn openIndexedBound(allocator: std.mem.Allocator, encoded: []const u8, bound: ?Bound) (DecodeError || error{OutOfMemory})!Section {
+    const header = try inspect(encoded);
+    if (header.format == version) return openIndexed(allocator, encoded);
+    var section = residentSection(encoded, header);
+    try source_v2.walk(allocator, &section, bound orelse return error.SourceNeedsDocuments);
+    return section;
+}
+
+/// S6-T7: `openTable` for either format (the writer's open of its previous
+/// generation).
+pub fn openTableBound(allocator: std.mem.Allocator, encoded: []const u8, header: Header, bound: ?Bound) (DecodeError || error{OutOfMemory})!Section {
+    if (header.format == version) return openTable(allocator, encoded, header);
+    var section = residentSection(encoded, header);
+    try source_v2.walk(allocator, &section, bound orelse return error.SourceNeedsDocuments);
+    return section;
 }
 
 /// `open`, plus a record-offset table so `find` is O(log n), and (S3-T4) a
@@ -592,6 +670,7 @@ pub fn open(encoded: []const u8) DecodeError!Section {
 /// of them) with their per-file starts.
 pub fn openIndexed(allocator: std.mem.Allocator, encoded: []const u8) (DecodeError || error{OutOfMemory})!Section {
     const header = try inspect(encoded);
+    if (header.format != version) return error.SourceNeedsDocuments;
     var index = try Index.init(allocator, header);
     var section = try openWith(encoded, &index, null);
     section.record_offsets = index.offsets;
@@ -611,6 +690,7 @@ pub fn openIndexed(allocator: std.mem.Allocator, encoded: []const u8) (DecodeErr
 /// map as it is (`carriedRecord`), and a reader checks it where it reads the
 /// file (`Section.fileBytes`).
 pub fn openTable(allocator: std.mem.Allocator, encoded: []const u8, header: Header) (DecodeError || error{OutOfMemory})!Section {
+    if (header.format != version) return error.SourceNeedsDocuments;
     var index = Index{ .offsets = try allocator.alloc(usize, header.file_count) };
     var section = residentSection(encoded, header);
     try walkTable(section, &index, .bounds);
@@ -663,6 +743,7 @@ fn residentSection(encoded: []const u8, header: Header) Section {
 
 fn openWith(encoded: []const u8, index: ?*Index, inspected: ?Header) DecodeError!Section {
     const header = inspected orelse try inspect(encoded);
+    if (header.format != version) return error.SourceNeedsDocuments;
     const section = residentSection(encoded, header);
     try walkTable(section, index, .against_bytes);
     return section;
@@ -779,7 +860,21 @@ pub fn openStreamed(
     file: std.Io.File,
     length: usize,
 ) (DecodeError || ReadError || error{OutOfMemory})!Streamed {
-    return openStreamedWith(index_allocator, blocks, io, file, length, stream_buffer_bytes);
+    return openStreamedWith(index_allocator, blocks, io, file, length, stream_buffer_bytes, null);
+}
+
+/// S6-T7: `openStreamed` for either format; a `HYBSRC02` section is bound
+/// to `bound` (its residual area streamed for the checksum as v1's text
+/// is, then read per call), walked by `source_v2.walk` after the checksum.
+pub fn openStreamedBound(
+    index_allocator: std.mem.Allocator,
+    blocks: std.mem.Allocator,
+    io: std.Io,
+    file: std.Io.File,
+    length: usize,
+    bound: ?Bound,
+) (DecodeError || ReadError || error{OutOfMemory})!Streamed {
+    return openStreamedWith(index_allocator, blocks, io, file, length, stream_buffer_bytes, bound);
 }
 
 /// `openStreamed` through a buffer of at most `buffer_bytes` (at least 1);
@@ -791,11 +886,13 @@ fn openStreamedWith(
     file: std.Io.File,
     length: usize,
     buffer_bytes: usize,
+    bound: ?Bound,
 ) (DecodeError || ReadError || error{OutOfMemory})!Streamed {
     var head: [header_length]u8 = undefined;
     const head_length = @min(length, header_length);
     if (try file.readPositionalAll(io, head[0..head_length], 0) != head_length) return error.ShortRead;
     const header = try parseHeader(head[0..head_length], length);
+    if (header.format != version and bound == null) return error.SourceNeedsDocuments;
     const maps_start = header_length + header.files_bytes;
     const resident_length = maps_start + header.maps_bytes;
     const block = try blocks.alloc(u8, resident_length);
@@ -816,16 +913,20 @@ fn openStreamedWith(
         .text_length = header.text_bytes,
         .text_file = .{ .file = file, .io = io, .offset = resident_length },
     };
-    var index = Index{ .offsets = try index_allocator.alloc(usize, header.file_count) };
+    var index = Index{ .offsets = try index_allocator.alloc(usize, if (header.format == version) header.file_count else 0) };
     // The table walk reads no text; its first error is answered after the
     // checksum, as `open` answers a damaged section by its checksum first.
-    const walked: ?DecodeError = if (walkTable(section, &index, .bounds)) |_| null else |err| err;
+    const walked: ?DecodeError = if (header.format != version) null else if (walkTable(section, &index, .bounds)) |_| null else |err| err;
     const buffer = try blocks.alloc(u8, @min(@max(buffer_bytes, 1), header.text_bytes));
     defer blocks.free(buffer);
     var stream = Stream{ .io = io, .file = file, .next_read = resident_length, .unread = header.text_bytes, .buffer = buffer, .sum = &sum };
     try stream.drain();
     if (sum.final() != header.checksum) return error.ChecksumMismatch;
     if (walked) |err| return err;
+    if (header.format != version) {
+        source_v2.walk(index_allocator, &section, bound.?) catch |err| return err;
+        return .{ .section = section, .block = block };
+    }
     section.record_offsets = index.offsets;
     const words = try index_allocator.alloc(std.atomic.Value(usize), (header.file_count + word_bits - 1) / word_bits);
     @memset(words, .init(0));
@@ -991,7 +1092,7 @@ const MapReader = struct {
     /// Varints decoded so far (the sparse index's test counts them).
     decoded: usize = 0,
 
-    fn next(reader: *MapReader) DecodeError!u64 {
+    pub fn next(reader: *MapReader) DecodeError!u64 {
         reader.decoded += 1;
         var delta: u64 = 0;
         var shift: u7 = 0;
@@ -1675,13 +1776,13 @@ const StreamedFixture = struct {
     /// The streamed open with its blocks from the testing allocator (a block
     /// or buffer left behind fails the test as a leak), freed again here.
     fn open(fixture: *StreamedFixture, index_allocator: std.mem.Allocator, buffer_bytes: usize) !Section {
-        const streamed = try openStreamedWith(index_allocator, std.testing.allocator, std.testing.io, fixture.file, fixture.length, buffer_bytes);
+        const streamed = try openStreamedWith(index_allocator, std.testing.allocator, std.testing.io, fixture.file, fixture.length, buffer_bytes, null);
         std.testing.allocator.free(streamed.block);
         return streamed.section;
     }
 
     fn openKept(fixture: *StreamedFixture, index_allocator: std.mem.Allocator, buffer_bytes: usize) !Streamed {
-        return openStreamedWith(index_allocator, std.testing.allocator, std.testing.io, fixture.file, fixture.length, buffer_bytes);
+        return openStreamedWith(index_allocator, std.testing.allocator, std.testing.io, fixture.file, fixture.length, buffer_bytes, null);
     }
 
     fn deinit(fixture: *StreamedFixture) void {

@@ -1,0 +1,36 @@
+# S6-T7 Phase 2: same answers as main, C ABI (scripts/prototypes/s6t7/same_answers.py).
+# main: the macOS dylib main ships at ad71cfb; branch: native/macos-arm64/libsearch_simpli.dylib at 5deb25e
+# (byte-identical after the later restamp). fresh: each library's own fresh index of the corpus
+# (main's written by main's searchd, the branch's by the branch's); updated: main's index updated
+# once by each library (the five folders: index --update with no file changed; J2: apply of one
+# added file), so the branch's is its first publish from the old format.
+
+fresh j2: same: 1855 vs 1855 rows: evidence 644 (differ 0, refused 0), find 7 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 88 (differ 0, refused 0), query 849 (differ 0, refused 0), read_span pairs 88 (differ 0, refused 0), read_span past end 88 (differ 0, refused 88), read_span whole 88 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 1921
+fresh fixtures: same: 1026 vs 1026 rows: evidence 38 (differ 0, refused 0), find 12 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 232 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 232 (differ 0, refused 0), read_span past end 232 (differ 0, refused 232), read_span whole 232 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 160188
+fresh family: same: 267 vs 267 rows: evidence 25 (differ 0, refused 0), find 10 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 46 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 46 (differ 0, refused 0), read_span past end 46 (differ 0, refused 46), read_span whole 46 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 19346
+fresh timing-10k: same: 40102 vs 40102 rows: evidence 31 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 10000 (differ 0, refused 0), read_span past end 10000 (differ 0, refused 10000), read_span whole 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 79836
+fresh prose-10k: same: 40101 vs 40101 rows: evidence 30 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 10000 (differ 0, refused 0), read_span past end 10000 (differ 0, refused 10000), read_span whole 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 237206
+fresh tamil-10k: same: 40088 vs 40088 rows: evidence 15 (differ 0, refused 0), find 16 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 10000 (differ 0, refused 0), read_span past end 10000 (differ 0, refused 10000), read_span whole 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 79784
+updated j2: same: 1859 vs 1859 rows: evidence 644 (differ 0, refused 0), find 7 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 89 (differ 0, refused 0), query 849 (differ 0, refused 0), read_span pairs 89 (differ 0, refused 0), read_span past end 89 (differ 0, refused 89), read_span whole 89 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 1921
+updated fixtures: same: 1026 vs 1026 rows: evidence 38 (differ 0, refused 0), find 12 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 232 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 232 (differ 0, refused 0), read_span past end 232 (differ 0, refused 232), read_span whole 232 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 160188
+updated family: same: 267 vs 267 rows: evidence 25 (differ 0, refused 0), find 10 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 46 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 46 (differ 0, refused 0), read_span past end 46 (differ 0, refused 46), read_span whole 46 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 19346
+updated timing-10k: same: 40102 vs 40102 rows: evidence 31 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 10000 (differ 0, refused 0), read_span past end 10000 (differ 0, refused 10000), read_span whole 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 79836
+updated prose-10k: same: 40101 vs 40101 rows: evidence 30 (differ 0, refused 0), find 14 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 10000 (differ 0, refused 0), read_span past end 10000 (differ 0, refused 10000), read_span whole 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 237206
+updated tamil-10k: same: 40088 vs 40088 rows: evidence 15 (differ 0, refused 0), find 16 (differ 0, refused 0), list_files 10 (differ 0, refused 0), outline 10000 (differ 0, refused 0), query 45 (differ 0, refused 0), read_span pairs 10000 (differ 0, refused 0), read_span past end 10000 (differ 0, refused 10000), read_span whole 10000 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 79784
+
+# The branch's updated sections against its fresh ones (documents, source, lexical), byte for byte:
+family documents-2.hybseg == fresh documents-1.hybseg
+family source-2.hybsrc == fresh source-1.hybsrc
+family lexical-2.hyblex == fresh lexical-1.hyblex
+fixtures documents-2.hybseg == fresh documents-1.hybseg
+fixtures source-2.hybsrc == fresh source-1.hybsrc
+fixtures lexical-2.hyblex == fresh lexical-1.hyblex
+timing-10k documents-2.hybseg == fresh documents-1.hybseg
+timing-10k source-2.hybsrc == fresh source-1.hybsrc
+timing-10k lexical-2.hyblex == fresh lexical-1.hyblex
+prose-10k documents-2.hybseg == fresh documents-1.hybseg
+prose-10k source-2.hybsrc == fresh source-1.hybsrc
+prose-10k lexical-2.hyblex == fresh lexical-1.hyblex
+tamil-10k documents-2.hybseg == fresh documents-1.hybseg
+tamil-10k source-2.hybsrc == fresh source-1.hybsrc
+tamil-10k lexical-2.hyblex == fresh lexical-1.hyblex

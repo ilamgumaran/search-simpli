@@ -1,0 +1,125 @@
+{
+  "profile_version": 1,
+  "profile_id": "6f054895a3dc80e79176dfd4358b3eab0b5780374adc5e44d99643ff1e28faf2",
+  "corpus": "<home>/workspace/repos/search-simpli-wt/S6-T7-vscratch/src.noindex/clone/fixtures/relevance-smoke/corpus",
+  "suite": "<home>/workspace/repos/search-simpli-wt/S6-T7-vscratch/src.noindex/clone/fixtures/relevance-smoke/judgments.json",
+  "vector_mode": "none",
+  "index_source": "built",
+  "index_path": null,
+  "timing_ms": {
+    "build": 1.2887920000000004,
+    "evaluation": 1.4958749999999936
+  },
+  "evaluation": {
+    "suite_version": 2,
+    "index": {
+      "root": "<home>/workspace/repos/search-simpli-wt/S6-T7-vscratch/src.noindex/clone/fixtures/relevance-smoke/corpus",
+      "version": 1,
+      "vector_mode": "none",
+      "embedding": null,
+      "chunks": 10
+    },
+    "warnings": [],
+    "reports": [
+      {
+        "mode": "lexical",
+        "top_k": 10,
+        "query_count": 4,
+        "macro_recall_at_k": 1.0,
+        "success_at_k": 1.0,
+        "mean_reciprocal_rank": 1.0,
+        "mean_ndcg_at_k": 1.0,
+        "queries": [
+          {
+            "id": "lamp",
+            "query": "red ceramic table lamp",
+            "first_relevant_rank": 1,
+            "recall": 1.0,
+            "ndcg_at_k": 1.0,
+            "returned": [
+              "08baa0e4bea593168fee",
+              "29ec4c1c3072014b34e6"
+            ],
+            "returned_paths": [
+              "product-00001.md",
+              "product-00002.md"
+            ],
+            "returned_relevance_grades": [
+              2,
+              1
+            ]
+          },
+          {
+            "id": "sofa-bed",
+            "query": "queen sleeper sofa bed",
+            "first_relevant_rank": 1,
+            "recall": 1.0,
+            "ndcg_at_k": 1.0,
+            "returned": [
+              "821387e43d11abd55e20",
+              "e2e49f2f5f16916ca0ed"
+            ],
+            "returned_paths": [
+              "product-00003.md",
+              "product-00004.md"
+            ],
+            "returned_relevance_grades": [
+              2,
+              1
+            ]
+          },
+          {
+            "id": "slow-cooker",
+            "query": "stainless steel slow cooker",
+            "first_relevant_rank": 1,
+            "recall": 1.0,
+            "ndcg_at_k": 1.0,
+            "returned": [
+              "d04d3be383d6acb9ea1e",
+              "fa69efab89e6c59b1138"
+            ],
+            "returned_paths": [
+              "product-00005.md",
+              "product-00006.md"
+            ],
+            "returned_relevance_grades": [
+              2,
+              1
+            ]
+          },
+          {
+            "id": "dinosaur-decal",
+            "query": "dinosaur wall decal",
+            "first_relevant_rank": 1,
+            "recall": 1.0,
+            "ndcg_at_k": 1.0,
+            "returned": [
+              "ef2323170dbd2d7aab03",
+              "4aafe9db7139944da0e4"
+            ],
+            "returned_paths": [
+              "product-00007.md",
+              "product-00008.md"
+            ],
+            "returned_relevance_grades": [
+              2,
+              1
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "gate": {
+    "minima": {
+      "ndcg": 1.0,
+      "mrr": 1.0,
+      "recall": 1.0,
+      "success": 1.0
+    },
+    "baseline_profile_id": null,
+    "max_absolute_regression": null,
+    "passed": true,
+    "failures": []
+  }
+}

@@ -1,10 +1,11 @@
-# Generation manifest format v2 (minor version 2.3)
+# Generation manifest format v2 (minor version 2.4)
 
 Status: implemented in `zig/src/manifest.zig` (S3-T1; v2.1 flag bit 2 since
 S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1); v2.2 flag bits 3 and 4
 since S4-T2, see [v2.2 filename sections](#v22-filename-sections-s4-t2-cap-16)
 and [v2.2 recovery state](#v22-recovery-state-section-s4-t2); v2.3 flag bit 5
-since S6-T4, see [v2.3 lexical sections v3](#v23-lexical-sections-v3-s6-t4)).
+since S6-T4, see [v2.3 lexical sections v3](#v23-lexical-sections-v3-s6-t4); v2.4 flag bit 6
+since S6-T7, see [v2.4 text once](#v24-text-once-s6-t7)).
 Magic: `HYBMAN02`.
 Written by `searchd index` / `ss_index_folder` (`zig/src/indexer.zig`).
 `import-json` still writes [v1](manifest-format-v1.md), and every reader opens
@@ -21,7 +22,7 @@ generation (CAP-19 FR-18, CFT-09).
 |---:|---:|---|---|
 | 0 | 8 | magic `HYBMAN02` | v2 (v1: `HYBMAN01`) |
 | 8 | 2 | version `2` | |
-| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2), bit 4 `state_section` (v2.2), bit 5 `lexical_v3` (v2.3); other bits must be zero | v2 (v1: zero) |
+| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2), bit 4 `state_section` (v2.2), bit 5 `lexical_v3` (v2.3), bit 6 `text_once` (v2.4); other bits must be zero | v2 (v1: zero) |
 | 12 | 8 | generation number (nonzero) | v1 |
 | 20 | 4 | shared document count | v1 |
 | 24 | 4 | vector dimensions | v1 |
@@ -89,7 +90,8 @@ Identifiers and filenames follow v1's rules; the three filenames must differ.
   (`too_large`, `unreadable`, `budget_exhausted`) for files a writer was given
   but could not index in full, kept until a later change of the path; a
   `find` or `index_status` over a scope holding one says `truncated`.
-- `source_section_version`: `1` when a source section is bound, else `0`.
+- `source_section_version`: the bound source section's version (`1` for
+  `HYBSRC01`; `2` for `HYBSRC02`, under v2.4's bit 6), else `0`.
 
 `decode` checks that `meta` is a UTF-8 object literal (first byte `{`, last
 `}`); `parseMeta` parses it fully (`manifest_meta` must be 2, every chunker has
@@ -365,3 +367,35 @@ After the first publish under a v2.3 library, an older library cannot open
 the directory and must rebuild it from the files into a fresh directory.
 Index directories are never shared between devices running different library
 versions.
+
+## v2.4: text once (S6-T7)
+
+Bit 6 of the flags, `text_once` (`0x0040`), says that the documents section is
+record v5 (its file table holds each path once) and the source section, when
+the manifest binds one, is `HYBSRC02` (only the bytes no chunk holds; files are
+rebuilt from their chunks and checked by SHA-256). Both are specified in
+[`documents-v5-source-v2-format.md`](documents-v5-source-v2-format.md), with
+every validity rule. Every folder writer since S6-T7 sets it. The header
+layout, the magic, the version number `2` and every other flag are unchanged;
+the meta's `source_section_version` is `2` under the bit.
+
+Rules (`manifest.validateSnapshotHeaders`, `apply`'s open of the previous
+generation): with bit 6 the documents section must be record v5 and a bound
+source `HYBSRC02`; without it neither may be (`InvalidDocumentSection`,
+`InvalidSourceSection`). `import-json` never sets it.
+
+Upgrade. A reader since v2.4 opens every older generation unchanged (record
+v1–v4 and `HYBSRC01` keep their readers). The first publish over an older
+directory writes one whole v2.4 generation; the old one stays whole until the
+manifest is replaced. `tests/fixtures/index-v3-s6t4/` (written at `a534678`)
+is opened, compared with a fresh index answer for answer, and updated by
+`zig/src/compat_s6t7_test.zig`.
+
+**Compatibility and rollback (one way, the second after v2.3).** A reader
+before v2.4 (`ad71cfb` and earlier) refuses a v2.4 manifest on bit 6 with
+`UnsupportedFlags` before it reads any section, through `ss_open`,
+`ss_index_folder`, `ss_apply_changes` and every `searchd` command, and leaves
+the index's files byte-identical
+([`docs/evidence/s6-t7/old-library-phase2.txt`](evidence/s6-t7/old-library-phase2.txt)).
+After the first publish under a v2.4 library an older library cannot open the
+directory and must rebuild it from the files into a fresh directory.

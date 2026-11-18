@@ -1,0 +1,1 @@
+{"corpus": "j2", "files": {"small": ["school", "pe-kit.txt", 1], "median": ["home", "recipes/pancakes.md", 17], "largest": ["home", "garden-diary.md", 397]}, "bytes": {"small": 63, "median": 321, "largest": 15584}}

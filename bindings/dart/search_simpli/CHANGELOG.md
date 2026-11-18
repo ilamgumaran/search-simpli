@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.9.1 (S6-T7; contract 2.8.0; patch: index format, one way)
+
+A smaller index: each file's text is stored once. The chunk records keep
+their text; the source section keeps only the bytes no chunk holds, and
+`readSpan` and `outline` rebuild a file from its chunks and those bytes and
+check its SHA-256 (`docs/documents-v5-source-v2-format.md`: documents record
+v5, source `HYBSRC02`, manifest v2.4, flag bit 6). No API change: the same
+calls, JSON fields, error codes and C ABI; contracts stay 2.8.0; every answer
+is the same.
+
+- **Smaller.** Measured on 10,000-file corpora, one generation: the index is
+  36 % smaller on generated notes (24,793,305 → 15,808,625 B), 35 % on
+  English prose, 44 % on Tamil; 2.17, 2.04 and 1.33 times the text it holds.
+- **Open and reads.** `open` takes what it took (within 1 %); memory after
+  `open` is 0.5–0.7 MB lower; the first `readSpan` on a handle is 42–76 %
+  faster (it no longer checks the whole text area). A later `readSpan` or
+  `outline` of a 1.1 MB file costs about 2 % more CPU (the rebuild), of a
+  typical file the same or less.
+- **Migration, one way (the second, after 0.8.1's).** This library opens
+  every index an older one wrote and answers the same. The first publish
+  under it (an update, `applyChanges`, `indexFolder`) rewrites the index in
+  the new format. **After that first publish, an older library (0.9.0 and
+  earlier) cannot open the index** (`open` throws `SearchSimpliException`,
+  its message `ss_open: UnsupportedFlags`; the index is left as it was)
+  **and must rebuild it from the files** into a fresh directory. **An index
+  directory is never shared between devices running different library
+  versions.** To be able to roll back, keep a copy of the index directory
+  from before the upgrade, or rebuild with the older library.
+- **The first publish costs a little more, once.** It writes every file's
+  record in the new format: measured +3.0 to +4.7 ms (+1.7 % to +2.1 %) on a
+  one-file update of the 10,000-file corpora (the verifier measured −0.28 %
+  to +1.11 %). Later one-file updates are 4–11 % faster than 0.9.0's (they
+  write less; the verifier measured 2.2–13.3 % faster).
+- **Kept whole.** A file with no chunk, or with a chunk that is not an exact
+  span of its bytes, is kept whole in the source section, as before:
+  correct, but not smaller. Every chunker joins a chunk's lines with a line
+  feed, so a chunk of two or more lines in a file with CR LF, a lone CR or
+  another line break (VT, FF, NEL, LS, PS and the like) is not exact and that
+  file is kept whole; a one-line chunk in such a file is still exact. A
+  Markdown file drops a leading byte-order mark from its chunks; any other
+  file starting with the mark keeps it in its first chunk and is kept whole.
+- **`importSnapshotJson` is unchanged** (it writes the older format).
+- **Natives rebuilt:** macOS 988,952 B (0.9.0: 971,064), Android 952,384 B
+  (936,032), iOS framework binary 953,488 B (935,440).
+
 ## 0.9.0 (S6-T5; contract 2.8.0; minor: additive report entries)
 
 Warnings under every search field (`docs/requirements/cap-22-field-warnings.md`).

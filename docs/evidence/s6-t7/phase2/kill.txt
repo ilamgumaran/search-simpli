@@ -1,0 +1,110 @@
+# S6-T7 Phase 2: SIGKILL of the branch's searchd (ReleaseSmall, 5deb25e) index --update --filename-index
+# during the first publish from main's format (scripts/prototypes/s6t7/kill.py), each trial on a fresh
+# copy of main's index; the delay is from the process start. Load 1.47 2.01 2.09.
+
+## timing-10k, 0-240 ms step 16
+   0 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+  16 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+  32 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+  48 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+  64 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+  80 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+  96 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 112 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 128 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 144 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 160 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 176 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 3 whole, same answers
+ 192 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 208 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 224 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 240 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+summary: {'gen1': 12, 'gen2': 4, 'killed': 12, 'finished': 4, 'failures': 0, 'later': 16}
+
+## timing-10k, 160-200 ms step 1
+ 160 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 161 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 162 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 163 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 164 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 165 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 166 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 167 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 168 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 169 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 170 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 171 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 172 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 173 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 174 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 175 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 176 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 3 whole, same answers
+ 177 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 178 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 179 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 180 ms: killed; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 181 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 182 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 183 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 184 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 185 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 186 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 187 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 188 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 189 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 190 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 191 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 192 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 193 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 194 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 195 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 196 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 197 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 198 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 199 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 200 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+summary: {'gen1': 21, 'gen2': 20, 'killed': 22, 'finished': 19, 'failures': 0, 'later': 41}
+
+## prose-10k, 100-500 ms step 10
+ 100 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 110 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 120 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 130 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 140 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 150 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 160 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 170 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 180 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 190 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 200 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 210 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 220 ms: killed; generation 1, bit 6 0, record v4, HYBSRC01; answers same; later update -> generation 2 whole, same answers
+ 230 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 240 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 250 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 260 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 270 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 280 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 290 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 300 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 310 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 320 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 330 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 340 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 350 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 360 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 370 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 380 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 390 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 400 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 410 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 420 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 430 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 440 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 450 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 460 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 470 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 480 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 490 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+ 500 ms: finished; generation 2, bit 6 1, record v5, HYBSRC02; answers same; later update -> generation 3 whole, same answers
+summary: {'gen1': 13, 'gen2': 28, 'killed': 13, 'finished': 28, 'failures': 0, 'later': 41}

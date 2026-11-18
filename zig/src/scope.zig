@@ -478,6 +478,14 @@ pub const Loads = struct {
     source_memory: ?[]const u8 = null,
     filename_catalog_memory: ?[]const u8 = null,
     filename_lexical_memory: ?[]const u8 = null,
+    /// S6-T7: the documents section's bytes, which a `HYBSRC02` source
+    /// section is bound to (its file table walked again at the source's
+    /// first use, `source.Bound`). Last (the S4-T10 note above).
+    documents_encoded: []const u8 = &.{},
+
+    fn bound(loads: *const Loads) source.Bound {
+        return .{ .documents_encoded = loads.documents_encoded, .documents = loads.documents };
+    }
 
     fn lock(loads: *Loads) void {
         loads.mutex.lockUncancelable(loads.io);
@@ -507,7 +515,7 @@ pub const Loads = struct {
         // per call (`source.Section.fileBytes`). The checksum is computed
         // once, by the stream, and must equal the manifest's
         // (`manifest.validateSource`'s rule).
-        const streamed = source.openStreamed(loads.allocator, loads.blocks, loads.io, file, loads.source_bytes) catch |err| switch (err) {
+        const streamed = source.openStreamedBound(loads.allocator, loads.blocks, loads.io, file, loads.source_bytes, loads.bound()) catch |err| switch (err) {
             error.OutOfMemory => return error.OutOfMemory,
             error.ShortRead => return "SourceSectionSizeMismatch",
             else => return @errorName(err),
@@ -527,7 +535,7 @@ pub const Loads = struct {
     /// resident section, as `snapshot_open.openSource` opens one).
     fn readSourceMemory(loads: *Loads, bytes: []const u8) error{OutOfMemory}!?[]const u8 {
         if (bytes.len != loads.source_bytes) return "SourceSectionSizeMismatch";
-        const section = source.openIndexed(loads.allocator, bytes) catch |err| switch (err) {
+        const section = source.openIndexedBound(loads.allocator, bytes, loads.bound()) catch |err| switch (err) {
             error.OutOfMemory => return error.OutOfMemory,
             else => return @errorName(err),
         };

@@ -1,0 +1,14 @@
+# tool/build_native.sh from a fresh git archive of f99a7cc (SS_ANDROID_NDK r28c, pinned Zig 0.16.0, own caches), then cmp with the committed files:
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib (  988952 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  952384 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  953488 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (7be54587d230e9b6c33f33439b5025d530b87037ac7eeb07736d6e7162af9ba8)
+cmp: native/macos-arm64/libsearch_simpli.dylib identical (988,952 B)
+cmp: native/android-arm64/libsearch_simpli.so identical (952,384 B)
+cmp: example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so identical (952,384 B)
+cmp: native/ios-arm64/search_simpli.framework/search_simpli identical (953,488 B); Info.plist identical (749 B)
+cmp: native/SOURCE-SHA256 identical: 7be54587d230e9b6c33f33439b5025d530b87037ac7eeb07736d6e7162af9ba8
+tool/check_native.sh on the committed natives: exit 0 (ok: macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+main (ad71cfb) committed natives: macOS 971,064 B, Android 936,032 B, iOS 935,440 B
+verifier ReleaseSmall builds (buildlibs.sh): head dylib 988,952 B sha 3c1d631e..., = committed; head searchd 1,132,312 B; main dylib 971,064 B; main searchd 1,114,936 B

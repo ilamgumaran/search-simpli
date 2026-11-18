@@ -1,0 +1,27 @@
+pack family-folder (judgments version 2): 13 scenarios, 5 phrase, 5 prefix, 5 outline, 8 read_span
+words recall@5: 1.000 over 4 cases (gate >= 0.9)
+  uc007-01 4/4 expected spans in top 5: 'tide table'
+  uc007-06 1/1 expected spans in top 5: 'teacher said spelling test next week'
+  uc007-07 2/2 expected spans in top 5: 'when is the band concert'
+  uc007-10 2/2 expected spans in top 5: 'what to do after the dough rests'
+empty result for the newt question: pass
+outline exactness: 7/7 (gate 1.00)
+read_span exactness: 9/9 (gate 1.00)
+lifecycle exactness: 3/3 (gate 1.00)
+phrase_neighbour exactness: 1/1 (gate 1.00)
+phrase: precision 1.00, recall 1.00 across all pages over 6 cases (gate 1.00); expected engine misses found: 0
+  p1 3 hits, precision 1.00, recall 1.00: 'count me in'
+  p2 1 hits, precision 1.00, recall 1.00: 'the dough rests'
+  p3 0 hits, precision 1.00, recall 1.00, expected misses 1: 'round the old mill pond'
+  p4 1 hits, precision 1.00, recall 1.00: 'the the'
+  p5 2 hits, precision 1.00, recall 1.00: 'பள்ளி விடுமுறை'
+  uc007-02 3 hits, precision 1.00, recall 1.00: 'count me in'
+prefix: precision 1.00, recall 1.00 across all pages over 6 cases (gate 1.00); expected engine misses found: 0
+  x1 5 hits, precision 1.00, recall 1.00, expected misses 1: 'photosyn*'
+  x2 7 hits, precision 1.00, recall 1.00: 'spell*'
+  x3 5 hits, precision 1.00, recall 1.00: 'harbo*'
+  x4 5 hits, precision 1.00, recall 1.00: 'lighthou*'
+  x5 1 hits, precision 1.00, recall 1.00: 'கணி*'
+  uc007-03 5 hits, precision 1.00, recall 1.00, expected misses 1: 'photosyn*'
+not yet implemented: 0 skipped
+gate: pass

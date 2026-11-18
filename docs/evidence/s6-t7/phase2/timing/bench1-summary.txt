@@ -1,0 +1,84 @@
+## j2: largest file home/garden-diary.md (15584 B, 397 lines); 6 main and 6 head runs; 5-minute load 1.62-1.65
+  open p50 ms                          main       0.1486  head       0.1477    -0.56 %
+  memory after open B                  main      311,296  head      262,144   -15.79 %
+  memory after first read_span B       main      507,904  head      335,872   -33.87 %
+  first read_span p50 ms               main       0.0287  head       0.0266    -7.19 %
+  first outline after it p50 ms        main       0.2416  head       0.2365    -2.10 %
+  later read_span head p50 ms          main       0.0092  head       0.0092    +0.45 %
+  later read_span head CPU ms/call     main       0.0095  head       0.0095    +0.42 %
+  later read_span middle p50 ms        main       0.0099  head       0.0099    +0.01 %
+  later read_span middle CPU ms/call   main       0.0101  head       0.0102    +0.54 %
+  later read_span tail p50 ms          main       0.0107  head       0.0107    +0.58 %
+  later read_span tail CPU ms/call     main       0.0109  head       0.0111    +1.84 %
+  later outline p50 ms                 main       0.2383  head       0.2328    -2.30 %
+  later outline CPU ms/call            main       0.2399  head       0.2341    -2.43 %
+## fixtures: largest file r-legacy/family-folder/laptop/big-log.txt (1133158 B, 15500 lines); 6 main and 6 head runs; 5-minute load 1.57-1.62
+  open p50 ms                          main       2.8914  head       2.8890    -0.08 %
+  memory after open B                  main   15,171,584  head   14,983,168    -1.24 %
+  memory after first read_span B       main   16,646,144  head   16,474,112    -1.03 %
+  first read_span p50 ms               main       1.0041  head       0.6177   -38.48 %
+  first outline after it p50 ms        main       0.3910  head       0.3995    +2.16 %
+  later read_span head p50 ms          main       0.3897  head       0.3992    +2.45 %
+  later read_span head CPU ms/call     main       0.3918  head       0.4012    +2.39 %
+  later read_span middle p50 ms        main       0.4168  head       0.4254    +2.06 %
+  later read_span middle CPU ms/call   main       0.4180  head       0.4271    +2.17 %
+  later read_span tail p50 ms          main       0.4431  head       0.4517    +1.94 %
+  later read_span tail CPU ms/call     main       0.4443  head       0.4533    +2.01 %
+  later outline p50 ms                 main       0.3852  head       0.3949    +2.52 %
+  later outline CPU ms/call            main       0.3875  head       0.3966    +2.35 %
+## family: largest file r-legacy/laptop/big-log.txt (1133158 B, 15500 lines); 6 main and 6 head runs; 5-minute load 1.65-1.68
+  open p50 ms                          main       1.0577  head       1.0606    +0.28 %
+  memory after open B                  main    5,062,656  head    4,997,120    -1.29 %
+  memory after first read_span B       main    6,234,112  head    6,193,152    -0.66 %
+  first read_span p50 ms               main       0.6362  head       0.5503   -13.51 %
+  first outline after it p50 ms        main       0.3895  head       0.3964    +1.78 %
+  later read_span head p50 ms          main       0.3910  head       0.3979    +1.76 %
+  later read_span head CPU ms/call     main       0.3937  head       0.4002    +1.65 %
+  later read_span middle p50 ms        main       0.4191  head       0.4242    +1.21 %
+  later read_span middle CPU ms/call   main       0.4198  head       0.4262    +1.52 %
+  later read_span tail p50 ms          main       0.4446  head       0.4505    +1.32 %
+  later read_span tail CPU ms/call     main       0.4458  head       0.4524    +1.48 %
+  later outline p50 ms                 main       0.3866  head       0.3935    +1.79 %
+  later outline CPU ms/call            main       0.3894  head       0.3952    +1.51 %
+## timing-10k: largest file r-legacy/group-67/doc-06789.md (1655 B, 13 lines); 6 main and 6 head runs; 5-minute load 1.53-1.57
+  open p50 ms                          main       5.3771  head       5.3963    +0.36 %
+  memory after open B                  main   26,476,568  head   25,821,184    -2.48 %
+  memory after first read_span B       main   41,902,104  head   41,091,096    -1.94 %
+  first read_span p50 ms               main       1.3219  head       0.7647   -42.15 %
+  first outline after it p50 ms        main       0.0606  head       0.0492   -18.71 %
+  later read_span head p50 ms          main       0.0305  head       0.0230   -24.49 %
+  later read_span head CPU ms/call     main       0.0308  head       0.0233   -24.30 %
+  later read_span middle p50 ms        main       0.0306  head       0.0229   -25.27 %
+  later read_span middle CPU ms/call   main       0.0309  head       0.0233   -24.65 %
+  later read_span tail p50 ms          main       0.0305  head       0.0228   -25.14 %
+  later read_span tail CPU ms/call     main       0.0310  head       0.0231   -25.49 %
+  later outline p50 ms                 main       0.0516  head       0.0433   -16.11 %
+  later outline CPU ms/call            main       0.0521  head       0.0438   -15.94 %
+## prose-10k: largest file r-legacy/reading/once-back-wander-09202.md (46812 B, 902 lines); 6 main and 6 head runs; 5-minute load 1.48-1.52
+  open p50 ms                          main      11.6719  head      11.7583    +0.74 %
+  memory after open B                  main   53,723,160  head   53,198,872    -0.98 %
+  memory after first read_span B       main   70,418,492  head   68,894,780    -2.16 %
+  first read_span p50 ms               main       2.5711  head       1.0836   -57.86 %
+  first outline after it p50 ms        main       0.7322  head       0.7117    -2.81 %
+  later read_span head p50 ms          main       0.0362  head       0.0366    +0.86 %
+  later read_span head CPU ms/call     main       0.0368  head       0.0370    +0.47 %
+  later read_span middle p50 ms        main       0.0377  head       0.0383    +1.72 %
+  later read_span middle CPU ms/call   main       0.0381  head       0.0386    +1.45 %
+  later read_span tail p50 ms          main       0.0393  head       0.0397    +1.06 %
+  later read_span tail CPU ms/call     main       0.0398  head       0.0402    +1.02 %
+  later outline p50 ms                 main       0.7241  head       0.7035    -2.84 %
+  later outline CPU ms/call            main       0.7263  head       0.7051    -2.92 %
+## tamil-10k: largest file r-legacy/group-37/doc-03790.md (6010 B, 13 lines); 6 main and 6 head runs; 5-minute load 1.48-1.50
+  open p50 ms                          main       7.7622  head       7.7974    +0.45 %
+  memory after open B                  main   47,677,464  head   47,054,872    -1.31 %
+  memory after first read_span B       main   63,471,676  head   63,119,408    -0.56 %
+  first read_span p50 ms               main       3.2576  head       0.7726   -76.28 %
+  first outline after it p50 ms        main       0.0736  head       0.0677    -8.01 %
+  later read_span head p50 ms          main       0.0268  head       0.0233   -13.05 %
+  later read_span head CPU ms/call     main       0.0272  head       0.0237   -13.07 %
+  later read_span middle p50 ms        main       0.0267  head       0.0230   -13.91 %
+  later read_span middle CPU ms/call   main       0.0271  head       0.0232   -14.16 %
+  later read_span tail p50 ms          main       0.0267  head       0.0229   -14.06 %
+  later read_span tail CPU ms/call     main       0.0270  head       0.0232   -14.20 %
+  later outline p50 ms                 main       0.0627  head       0.0602    -3.92 %
+  later outline CPU ms/call            main       0.0632  head       0.0604    -4.48 %

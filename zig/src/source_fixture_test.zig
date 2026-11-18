@@ -118,7 +118,7 @@ test "S3-T1: read_span, outline and the source binding agree with the family-fol
                 std.debug.print("not retained: {s}/{s}\n", .{ root.name, entry.path });
                 return error.TestUnexpectedResult;
             };
-            try std.testing.expectEqualSlices(u8, disk, retained.bytes);
+            try std.testing.expectEqualSlices(u8, disk, try source.entryBytes(root.source, arena, retained));
             var digest: [32]u8 = undefined;
             std.crypto.hash.sha2.Sha256.hash(disk, &digest, .{});
             try std.testing.expectEqualSlices(u8, &digest, &retained.sha256);
@@ -292,8 +292,8 @@ test "S3-T1: --update carries retained bytes and re-chunks Markdown written by l
     const again = try indexer.indexFolderIncremental(arena, io, root_tmp.dir, out_tmp.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
     try std.testing.expectEqual(@as(usize, 2), again.unchanged);
     const third = (try snapshot_open.openSource(arena, io, out_tmp.dir)).source.?;
-    try std.testing.expectEqualStrings(plain, third.find("list.txt").?.bytes);
-    try std.testing.expectEqualStrings(note, third.find("week.md").?.bytes);
+    try std.testing.expectEqualStrings(plain, try source.entryBytes(third, arena, third.find("list.txt").?));
+    try std.testing.expectEqualStrings(note, try source.entryBytes(third, arena, third.find("week.md").?));
 }
 
 test "S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPACITY); --update heals it" {
@@ -357,7 +357,7 @@ test "S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPAC
     try std.testing.expectEqualStrings("missing_section", healed.recovered.?);
     try std.testing.expectEqual(@as(usize, 1), healed.added);
     const section = (try snapshot_open.openSource(arena, io, out_tmp.dir)).source.?;
-    try std.testing.expectEqualStrings("# A\nalpha\n", section.find("a.md").?.bytes);
+    try std.testing.expectEqualStrings("# A\nalpha\n", try source.entryBytes(section, arena, section.find("a.md").?));
 }
 
 // ------------------------- S4-T14: a line map is checked where its file is read ---
@@ -453,7 +453,9 @@ test "S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map c
     _ = try indexer.indexFolderIncremental(arena, io, root, out_tmp.dir, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
     const metadata = try manifest.decode(try readAll(arena, out_tmp.dir, "MANIFEST"));
     const original = try readAll(arena, out_tmp.dir, metadata.source_file);
-    const section = try source.openIndexed(arena, original);
+    // S6-T7: a `HYBSRC02` section, bound to the documents section.
+    const section = (try snapshot_open.openSource(arena, io, out_tmp.dir)).source.?;
+    try std.testing.expect(section.v2 != null);
     const clean = try familyAnswers(arena, out_tmp.dir);
     try std.testing.expectEqualStrings("verified", clean.status);
     try std.testing.expect(clean.files.len >= 40);
@@ -490,8 +492,13 @@ test "S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map c
     for (damaged.per_file) |got| try std.testing.expect(std.mem.indexOf(u8, got, "source section unavailable (ChecksumMismatch)") != null);
 
     // (c) the last record's line count raised, re-sealed with the manifest:
-    // its varints run past the maps region; the whole section.
-    try replaceSource(arena, out_tmp.dir, metadata, try resealed(arena, original, source.header_length + section.record_offsets[section.file_count - 1] + 20, 1), true);
+    // its varints run past the maps region; the whole section. (S6-T7: the
+    // record v2's line count follows its SHA-256, its flags byte and its
+    // length varint.)
+    const last = section.file(section.file_count - 1);
+    const line_count_at = source.header_length + last.v2_record + 33 + @import("segment_v5.zig").varintLength(last.text_length);
+    try std.testing.expect(original[line_count_at] & 0x7f < 0x7f);
+    try replaceSource(arena, out_tmp.dir, metadata, try resealed(arena, original, line_count_at, 1), true);
     const past = try familyAnswers(arena, out_tmp.dir);
     try std.testing.expectEqualStrings("unavailable", past.status);
     for (past.per_file) |got| try std.testing.expect(std.mem.indexOf(u8, got, "source section unavailable (InvalidLineMap)") != null);

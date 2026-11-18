@@ -49,7 +49,12 @@ pub const state_header_bytes: usize = 16;
 /// `HYBLEX03`. Readers before v2.3 refuse the manifest on this bit
 /// (`UnsupportedFlags`) before reading any section.
 pub const flag_lexical_v3: u16 = 32;
-pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections | flag_state_section | flag_lexical_v3;
+/// v2.4 (S6-T7, `docs/documents-v5-source-v2-format.md`): the documents
+/// section is record v5 (`HYBSEG01` version 5, with the file table) and the
+/// source section, if bound, is `HYBSRC02`. Readers before v2.4 refuse the
+/// manifest on this bit (`UnsupportedFlags`) before reading any section.
+pub const flag_text_once: u16 = 64;
+pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections | flag_state_section | flag_lexical_v3 | flag_text_once;
 
 pub const StateMetadata = struct {
     file: []const u8,
@@ -96,6 +101,9 @@ pub const Manifest = struct {
     /// v2.3 (S6-T4): `flag_lexical_v3`; set by the writer exactly when the
     /// lexical sections are `HYBLEX03`.
     lexical_v3: bool = false,
+    /// v2.4 (S6-T7): `flag_text_once`; set by the writer exactly when the
+    /// documents section is record v5 (and the source section `HYBSRC02`).
+    text_once: bool = false,
     /// Empty when the generation binds no source section.
     source_file: []const u8 = "",
     source_bytes: usize = 0,
@@ -169,7 +177,7 @@ pub fn create(
     const value = try sectionFields(generation, analyzer_id, embedding_model_id, documents_file, lexical_file, documents_encoded, lexical_encoded);
     // S3-T2: a v1 manifest cannot say `has_positions`, so it cannot bind a
     // `HYBLEX02` section (`createV2` can).
-    if (value.has_positions or value.lexical_v3) return error.UnsupportedVersion;
+    if (value.has_positions or value.lexical_v3 or value.text_once) return error.UnsupportedVersion;
     try validateFields(value);
     return value;
 }
@@ -205,6 +213,7 @@ fn sectionFields(
         .has_positions = lexical_header.hasPositions(),
         .xxh3_sections = document_header.checksum_kind == .xxh3_64 or lexical_header.checksum_kind == .xxh3_64,
         .lexical_v3 = lexical_header.version == lexical_segment.version_v3,
+        .text_once = document_header.format_version == segment.version_v5,
     };
 }
 
@@ -227,6 +236,7 @@ pub fn createV2(
     value.meta = meta;
     if (source_encoded) |bytes| {
         const header = source_section.inspect(bytes) catch return error.InvalidSourceSection;
+        if ((header.format == 2) != value.text_once) return error.InvalidSourceSection;
         value.source_file = source_file;
         value.source_bytes = bytes.len;
         value.source_checksum = header.checksum;
@@ -376,6 +386,7 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
     if (value.has_positions) flags |= flag_has_positions;
     if (value.xxh3_sections) flags |= flag_xxh3_sections;
     if (value.lexical_v3) flags |= flag_lexical_v3;
+    if (value.text_once) flags |= flag_text_once;
     if (value.filename != null) flags |= flag_filename_sections;
     if (value.state != null) flags |= flag_state_section;
 
@@ -515,6 +526,7 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .has_positions = flags & flag_has_positions != 0,
         .xxh3_sections = flags & flag_xxh3_sections != 0,
         .lexical_v3 = flags & flag_lexical_v3 != 0,
+        .text_once = flags & flag_text_once != 0,
         .source_file = source_file,
         .source_bytes = source_bytes,
         .source_checksum = source_checksum,
@@ -616,6 +628,8 @@ pub fn validateSnapshotHeaders(
     // S3-T2: the flag and the section agree (`HYBLEX02` exactly when set).
     if (lexical_header.hasPositions() != value.has_positions) return error.InvalidLexicalSection;
     if ((lexical_header.version == lexical_segment.version_v3) != value.lexical_v3) return error.InvalidLexicalSection;
+    // S6-T7: record v5 exactly when the flag says so.
+    if ((document_header.format_version == segment.version_v5) != value.text_once) return error.InvalidDocumentSection;
     // S4-T1: an XXH3 section only under a manifest that says so.
     if (!value.xxh3_sections) {
         if (document_header.checksum_kind != .fnv1a64) return error.InvalidDocumentSection;
@@ -636,6 +650,8 @@ pub fn validateSource(value: Manifest, source_encoded: ?[]const u8) ManifestErro
     const header = source_section.inspect(bytes) catch return error.InvalidSourceSection;
     if (header.checksum != value.source_checksum) return error.SourceSectionChecksumMismatch;
     if (!value.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidSourceSection;
+    // S6-T7: `HYBSRC02` exactly when the flag says so.
+    if ((header.format == 2) != value.text_once) return error.InvalidSourceSection;
 }
 
 /// Check the recovery-state section bytes a generation names (null when
@@ -946,7 +962,8 @@ pub fn parseMeta(allocator: std.mem.Allocator, meta: []const u8) error{ OutOfMem
     const unchunked = try parseFileList(allocator, object.get("unchunked"));
     const skipped = try parseFileList(allocator, object.get("skipped"));
     const source_version = object.get("source_section_version") orelse std.json.Value{ .integer = 0 };
-    if (source_version != .integer or source_version.integer < 0 or source_version.integer > 1) return error.InvalidMeta;
+    // S6-T7: 2 is `HYBSRC02`.
+    if (source_version != .integer or source_version.integer < 0 or source_version.integer > 2) return error.InvalidMeta;
     return .{
         .chunkers = chunkers,
         .roots = roots,
@@ -1353,8 +1370,9 @@ test "manifest v2 rejects bad meta, unsafe source names and stray flags" {
     var storage: [1024]u8 = undefined;
     const encoded = try encode(value, &storage);
     // A stray flag bit with a recomputed checksum is refused as unsupported
-    // (bit 3 is the v2.2 filename extension; bit 6 is unassigned).
-    encoded[10] = 0x40;
+    // (bit 3 is the v2.2 filename extension; bit 6 is v2.4's `text_once`,
+    // bit 7 is unassigned).
+    encoded[10] = 0x80;
     var checksum_offset: usize = header_length_v2 - 8;
     writeU64(encoded, &checksum_offset, manifestChecksum(encoded[0 .. header_length_v2 - 8], encoded[header_length_v2..]));
     try std.testing.expectError(error.UnsupportedFlags, decode(encoded));
@@ -1481,15 +1499,15 @@ test "S4-T2 manifest v2.2: the checksum covers every filename header field and p
 }
 
 test "S4-T2 manifest v2.2: stray flag bits, duplicate names and missing filename names are refused" {
-    // Bits 0 to 5 are known (bit 4: the recovery-state section, below; bit
-    // 5: `HYBLEX03`, v2.3).
+    // Bits 0 to 6 are known (bit 4: the recovery-state section, below; bit
+    // 5: `HYBLEX03`, v2.3; bit 6: record v5 and `HYBSRC02`, v2.4).
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     var fixture = try SnapshotFixture.init();
     var storage: [1024]u8 = undefined;
     const encoded = try encode(try filenameTestManifest(&fixture), &storage);
-    var bit: u4 = 6;
+    var bit: u4 = 7;
     while (true) : (bit += 1) {
         const copy = try arena.dupe(u8, encoded);
         std.mem.writeInt(u16, copy[10..12], std.mem.readInt(u16, copy[10..12], .little) | (@as(u16, 1) << bit), .little);

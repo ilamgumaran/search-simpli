@@ -1,0 +1,6 @@
+brk1 exit 1 Build Summary: 7/9 steps succeeded (1 failed); 481/491 tests passed (9 skipped, 1 failed)
+error: 'text_once_test.test.S6-T7 ruling 9: a record v5 cannot code fails the encode with a named error' failed:
+brk2 exit 1 Build Summary: 7/9 steps succeeded (1 failed); 481/491 tests passed (9 skipped, 1 failed)
+error: 'compat_s6t7_test.test.S6-T7: the committed text-once fixture is this writer's output, and a library before v2.4 refuses it at the flags' failed:
+
+[exited with code 0]

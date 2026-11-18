@@ -1,0 +1,31 @@
+{
+ "edge": {
+  "stats": {
+   "manifest_bit6": 1,
+   "manifest_docs_eq": 1,
+   "manifest_doc_binding": 1,
+   "manifest_src_binding": 1,
+   "files_in_table": 21,
+   "records": 217,
+   "path_bytes": 976,
+   "raw_ids_20hex": 217,
+   "retained_checked": 21,
+   "kept_whole": 8,
+   "whole_crlf": 2,
+   "residual_bytes": 267,
+   "whole_lone_cr": 1,
+   "rebuilt_from_chunks": 13,
+   "rebuilt_no_final_newline": 2,
+   "bom": 2,
+   "whole_no_chunk": 3,
+   "whole_empty": 1,
+   "overlaps": 193,
+   "contained": 1,
+   "mismatches": 0,
+   "table_eq_disk_set": 1,
+   "disk_files": 21
+  },
+  "mismatch_paths": [],
+  "missing_from_table": []
+ }
+}

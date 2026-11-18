@@ -1,0 +1,87 @@
+# S6-T7 Phase 2 plants: each in its own copy of 5deb25e's tree (git archive) with root.zig as
+# committed after it (the two new test files referenced from the test block), its own
+# --cache-dir and --global-cache-dir; scripts/prototypes/s6t7/plants.py applies the plant.
+# Command: zig build test --summary all (Debug). Failing tests by file.
+
+## gap-short
+Build Summary: 7/9 steps succeeded (1 failed); 453/491 tests passed (9 skipped, 21 failed, 8 crashed)
+   3 apply_test
+   1 compat_292cb568_test
+   3 compat_98c4a2b_test
+   4 compat_s6t7_test
+   1 direct_search_test
+   4 lazy_open_test
+   1 mcp
+   3 nfr13_arena_test
+   1 ops
+   3 reload_test
+   3 source_fixture_test
+   2 text_once_test
+  - text_once_test.test.S6-T7 ruling 3: every kind of file is rebuilt to its exact bytes, with HYBSRC01's map, SHA-256, read_span and outline
+  - text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)' terminated with signal ABRT with stderr:
+  - compat_s6t7_test.test.S6-T7: the committed text-once fixture is this writer's output, and a library before v2.4 refuses it at the flags
+  - compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder
+  - compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same
+  - compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one
+
+## sha-skipped
+Build Summary: 7/9 steps succeeded (1 failed); 481/491 tests passed (9 skipped, 1 crashed)
+   1 text_once_test
+  - text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)' terminated with signal ABRT with stderr:
+
+## overlap-twice
+Build Summary: 7/9 steps succeeded (1 failed); 479/491 tests passed (9 skipped, 1 failed, 2 crashed)
+   1 source_fixture_test
+   2 text_once_test
+  - text_once_test.test.S6-T7 ruling 3: every kind of file is rebuilt to its exact bytes, with HYBSRC01's map, SHA-256, read_span and outline
+  - text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)' terminated with signal ABRT with stderr:
+
+## binding-off-by-one
+Build Summary: 7/9 steps succeeded (1 failed); 418/491 tests passed (9 skipped, 52 failed, 12 crashed)
+  26 apply_test
+   1 compat_292cb568_test
+   3 compat_98c4a2b_test
+   3 compat_s6t7_test
+   1 direct_search_test
+   1 filename_field_test
+   1 find_fixture_test
+   5 incremental_indexing_test
+   5 lazy_open_test
+   2 mcp
+   3 nfr13_arena_test
+   3 ops
+   3 reload_test
+   1 rpc
+   3 source_fixture_test
+   3 text_once_test
+  - text_once_test.test.S6-T7 ruling 3: every kind of file is rebuilt to its exact bytes, with HYBSRC01's map, SHA-256, read_span and outline
+  - text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)
+  - text_once_test.test.S6-T7: an update carries unchanged files' records, maps and residual runs byte for byte, and the result is a fresh index's
+  - compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder
+  - compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same
+  - compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one
+
+## leftover-accepted
+Build Summary: 7/9 steps succeeded (1 failed); 481/491 tests passed (9 skipped, 1 failed)
+   1 text_once_test
+  - text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)
+
+## old-reader-removed
+Build Summary: 7/9 steps succeeded (1 failed); 448/491 tests passed (9 skipped, 34 failed)
+   1 apply_test
+   7 compat_292cb568_test
+   4 compat_98c4a2b_test
+   3 compat_s6t7_test
+   3 manifest
+   3 segment
+  12 source
+   1 text_once_test
+  - text_once_test.test.S6-T7 ruling 3: every kind of file is rebuilt to its exact bytes, with HYBSRC01's map, SHA-256, read_span and outline
+  - compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder
+  - compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same
+  - compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one
+
+## sha-skipped, again, after the every-read checks were made to fail rather than panic (text_once_test.zig as committed)
+Build Summary: 7/9 steps succeeded (1 failed); 481/491 tests passed (9 skipped, 1 failed)
+  - text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)
+       S6-T7 every read: a changed file was returned, not refused by its SHA-256

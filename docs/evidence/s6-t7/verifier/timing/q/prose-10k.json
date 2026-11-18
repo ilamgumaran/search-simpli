@@ -1,0 +1,60 @@
+{
+ "corpus": "prose-10k",
+ "files": 10000,
+ "queries": [
+  "bazecha",
+  "benico",
+  "system",
+  "hashing",
+  "hybrid retrieval",
+  "retrieval hybrid",
+  "system systems",
+  "systems system",
+  "the",
+  "have",
+  "within",
+  "drink",
+  "the within",
+  "have drink",
+  "across lengthy seeming 04276"
+ ],
+ "finds": [
+  {
+   "query": "the",
+   "mode": "words"
+  },
+  {
+   "query": "within",
+   "mode": "words"
+  },
+  {
+   "query": "the within",
+   "mode": "words"
+  },
+  {
+   "query": "across lengthy seeming 04276",
+   "mode": "words"
+  },
+  {
+   "query": "you get bowls",
+   "mode": "phrase"
+  },
+  {
+   "query": "partly all rougher",
+   "mode": "phrase"
+  },
+  {
+   "query": "bottle and orchard",
+   "mode": "phrase"
+  },
+  {
+   "query": "with*",
+   "mode": "prefix"
+  },
+  {
+   "query": "drin*",
+   "mode": "prefix"
+  }
+ ],
+ "roots": null
+}

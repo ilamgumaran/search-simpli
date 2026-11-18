@@ -7,6 +7,13 @@ header layout unchanged (36 bytes, checksummed). `searchd index` writes record v
 byte for byte (`segment.encode`). The reader decodes v1–v4. Design:
 [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §2.
 
+**Since S6-T7 (manifest v2.4)** the folder writer (`searchd index`,
+`ss_index_folder`, `ss_apply_changes`) writes the content documents section as
+record v5 instead, with its file table:
+[`documents-v5-source-v2-format.md`](documents-v5-source-v2-format.md). This
+library still reads record v4 in any index an earlier one wrote, and still
+writes v4 nowhere a folder generation is published.
+
 ## Per-document record
 
 All integers little-endian:

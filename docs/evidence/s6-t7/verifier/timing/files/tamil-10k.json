@@ -1,0 +1,1 @@
+{"corpus": "tamil-10k", "files": {"small": ["r-legacy", "group-51/doc-05169.md", 5], "median": ["r-legacy", "group-75/doc-07574.md", 9], "largest": ["r-legacy", "group-37/doc-03790.md", 13]}, "bytes": {"small": 682, "median": 2766, "largest": 6010}}
