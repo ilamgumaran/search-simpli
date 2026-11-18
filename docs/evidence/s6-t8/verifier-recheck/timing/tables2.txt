@@ -1,0 +1,144 @@
+cells: 1162 complete, 0 incomplete; answer problems: 0
+
+(1) prose-10k warm both cells
+prose-10k both across lengthy seeming 04276: main 532.7 us, head2-main +17.0 (+3.20 %), T 10.0; RULE SET largest pB +17.2, beyond -0.2 -> passes; ORIGINAL SET largest main2 +6.1, beyond +10.9 -> FAILS
+    controls - main: main2 +6.1 ctl1 -8.5 ctl2 -7.7 pA +13.1 pB +17.2 pD -26.0 pC +2.0; head2-main per run: +22.4 +12.8 -3.5 +17.0 +20.1
+prose-10k both bazecha: main 12.5 us, head2-main +0.1 (+1.00 %), T 10.0; RULE SET largest pB +1.0, beyond -0.9 -> passes; ORIGINAL SET largest main2 +0.3, beyond -0.2 -> passes
+    controls - main: main2 +0.3 ctl1 +0.2 ctl2 +0.2 pA +0.1 pB +1.0 pD +0.7 pC +0.0; head2-main per run: +0.1 +0.0 -0.3 +0.7 +0.4
+prose-10k both benico: main 13.7 us, head2-main -0.1 (-0.60 %), T 10.0; RULE SET largest pB +1.0, beyond -1.1 -> passes; ORIGINAL SET largest ctl2 +0.4, beyond -0.5 -> passes
+    controls - main: main2 +0.1 ctl1 +0.0 ctl2 +0.4 pA +0.0 pB +1.0 pD +0.1 pC +0.1; head2-main per run: -0.3 -0.1 -0.4 +0.8 +0.3
+prose-10k both drink: main 359.2 us, head2-main +16.4 (+4.56 %), T 10.0; RULE SET largest pB +19.3, beyond -2.9 -> passes; ORIGINAL SET largest ctl2 +6.7, beyond +9.6 -> passes
+    controls - main: main2 +2.9 ctl1 +3.2 ctl2 +6.7 pA +13.1 pB +19.3 pD -1.6 pC +3.3; head2-main per run: +16.4 +14.7 -4.5 +16.7 +18.6
+prose-10k both hashing: main 179.0 us, head2-main +6.6 (+3.68 %), T 10.0; RULE SET largest pB +8.0, beyond -1.4 -> passes; ORIGINAL SET largest ctl2 +1.5, beyond +5.0 -> passes
+    controls - main: main2 +1.0 ctl1 -2.3 ctl2 +1.5 pA +2.6 pB +8.0 pD -3.1 pC -0.8; head2-main per run: +6.6 +4.1 +4.2 +7.5 +6.9
+prose-10k both have: main 329.0 us, head2-main +16.2 (+4.91 %), T 10.0; RULE SET largest pA +16.1, beyond +0.1 -> passes; ORIGINAL SET largest main2 +3.7, beyond +12.5 -> FAILS
+    controls - main: main2 +3.7 ctl1 -8.2 ctl2 -10.8 pA +16.1 pB +8.4 pD -13.9 pC +9.4; head2-main per run: +20.5 +15.3 -1.3 +16.2 +18.5
+prose-10k both have drink: main 540.5 us, head2-main +31.4 (+5.81 %), T 10.0; RULE SET largest pA +34.2, beyond -2.8 -> passes; ORIGINAL SET largest ctl1 +3.2, beyond +28.1 -> FAILS
+    controls - main: main2 +3.2 ctl1 +3.2 ctl2 -4.0 pA +34.2 pB +20.7 pD -5.7 pC +19.0; head2-main per run: +34.8 +26.1 -0.1 +34.1 +31.4
+prose-10k both hybrid retrieval: main 20.3 us, head2-main -0.2 (-0.82 %), T 10.0; RULE SET largest pB +0.7, beyond -0.9 -> passes; ORIGINAL SET largest main2 -0.2, beyond -0.0 -> passes
+    controls - main: main2 -0.2 ctl1 -0.5 ctl2 -0.7 pA -0.1 pB +0.7 pD +0.1 pC +0.1; head2-main per run: +0.1 -0.7 -1.1 +0.5 -0.2
+prose-10k both retrieval hybrid: main 20.5 us, head2-main -0.3 (-1.42 %), T 10.0; RULE SET largest pB +0.4, beyond -0.7 -> passes; ORIGINAL SET largest ctl2 -0.1, beyond -0.2 -> passes
+    controls - main: main2 -0.4 ctl1 -0.2 ctl2 -0.1 pA -0.5 pB +0.4 pD -0.1 pC -1.0; head2-main per run: +0.2 -0.6 -1.9 +0.1 -0.3
+prose-10k both system: main 349.1 us, head2-main +10.7 (+3.08 %), T 10.0; RULE SET largest pB +14.2, beyond -3.5 -> passes; ORIGINAL SET largest main2 +3.7, beyond +7.0 -> passes
+    controls - main: main2 +3.7 ctl1 +0.4 ctl2 +3.3 pA +11.0 pB +14.2 pD +1.3 pC +1.0; head2-main per run: +13.6 +7.6 +6.8 +12.3 +10.7
+prose-10k both system systems: main 371.2 us, head2-main +6.5 (+1.74 %), T 10.0; RULE SET largest pB +10.0, beyond -3.5 -> passes; ORIGINAL SET largest main2 +2.5, beyond +4.0 -> passes
+    controls - main: main2 +2.5 ctl1 -4.4 ctl2 -14.4 pA +6.7 pB +10.0 pD +1.0 pC -0.3; head2-main per run: +7.3 +5.0 -18.1 +6.8 +6.5
+prose-10k both systems system: main 371.5 us, head2-main +7.6 (+2.05 %), T 10.0; RULE SET largest pB +9.9, beyond -2.3 -> passes; ORIGINAL SET largest main2 +2.8, beyond +4.8 -> passes
+    controls - main: main2 +2.8 ctl1 -2.5 ctl2 -9.0 pA +6.9 pB +9.9 pD -2.2 pC -1.9; head2-main per run: +10.6 +7.6 -17.8 +8.8 +7.0
+prose-10k both the: main 478.3 us, head2-main +34.0 (+7.10 %), T 10.0; RULE SET largest pA +37.9, beyond -4.0 -> passes; ORIGINAL SET largest ctl2 +9.6, beyond +24.3 -> FAILS
+    controls - main: main2 +3.5 ctl1 +7.1 ctl2 +9.6 pA +37.9 pB +26.9 pD -7.4 pC +22.3; head2-main per run: +38.9 +30.4 +9.1 +38.7 +34.0
+prose-10k both the within: main 613.2 us, head2-main +41.9 (+6.84 %), T 10.0; RULE SET largest pA +53.0, beyond -11.1 -> passes; ORIGINAL SET largest ctl1 +15.5, beyond +26.4 -> FAILS
+    controls - main: main2 +1.7 ctl1 +15.5 ctl2 +6.5 pA +53.0 pB +40.5 pD +14.1 pC +31.3; head2-main per run: +45.5 +42.0 +6.8 +41.9 +41.1
+prose-10k both within: main 427.7 us, head2-main +26.0 (+6.07 %), T 10.0; RULE SET largest pB +29.6, beyond -3.7 -> passes; ORIGINAL SET largest main2 +1.6, beyond +24.3 -> FAILS
+    controls - main: main2 +1.6 ctl1 -0.4 ctl2 -10.2 pA +24.2 pB +29.6 pD +3.6 pC +12.0; head2-main per run: +26.8 +22.4 +4.5 +27.7 +26.0
+
+(2) cells failing under either set
+fixtures both the: main 306.8 us, head2-main +15.6 (+5.09 %), T 10.0; RULE SET largest pA +10.9, beyond +4.7 -> passes; ORIGINAL SET largest main2 +0.6, beyond +15.0 -> FAILS
+    controls - main: main2 +0.6 ctl1 -9.4 ctl2 -1.0 pA +10.9 pB +8.0 pD -3.2 pC +0.3; head2-main per run: +12.5 +15.6 +10.0 +17.0 +74.0
+prose-10k both across lengthy seeming 04276: main 532.7 us, head2-main +17.0 (+3.20 %), T 10.0; RULE SET largest pB +17.2, beyond -0.2 -> passes; ORIGINAL SET largest main2 +6.1, beyond +10.9 -> FAILS
+    controls - main: main2 +6.1 ctl1 -8.5 ctl2 -7.7 pA +13.1 pB +17.2 pD -26.0 pC +2.0; head2-main per run: +22.4 +12.8 -3.5 +17.0 +20.1
+prose-10k both have: main 329.0 us, head2-main +16.2 (+4.91 %), T 10.0; RULE SET largest pA +16.1, beyond +0.1 -> passes; ORIGINAL SET largest main2 +3.7, beyond +12.5 -> FAILS
+    controls - main: main2 +3.7 ctl1 -8.2 ctl2 -10.8 pA +16.1 pB +8.4 pD -13.9 pC +9.4; head2-main per run: +20.5 +15.3 -1.3 +16.2 +18.5
+prose-10k both have drink: main 540.5 us, head2-main +31.4 (+5.81 %), T 10.0; RULE SET largest pA +34.2, beyond -2.8 -> passes; ORIGINAL SET largest ctl1 +3.2, beyond +28.1 -> FAILS
+    controls - main: main2 +3.2 ctl1 +3.2 ctl2 -4.0 pA +34.2 pB +20.7 pD -5.7 pC +19.0; head2-main per run: +34.8 +26.1 -0.1 +34.1 +31.4
+prose-10k both the: main 478.3 us, head2-main +34.0 (+7.10 %), T 10.0; RULE SET largest pA +37.9, beyond -4.0 -> passes; ORIGINAL SET largest ctl2 +9.6, beyond +24.3 -> FAILS
+    controls - main: main2 +3.5 ctl1 +7.1 ctl2 +9.6 pA +37.9 pB +26.9 pD -7.4 pC +22.3; head2-main per run: +38.9 +30.4 +9.1 +38.7 +34.0
+prose-10k both the within: main 613.2 us, head2-main +41.9 (+6.84 %), T 10.0; RULE SET largest pA +53.0, beyond -11.1 -> passes; ORIGINAL SET largest ctl1 +15.5, beyond +26.4 -> FAILS
+    controls - main: main2 +1.7 ctl1 +15.5 ctl2 +6.5 pA +53.0 pB +40.5 pD +14.1 pC +31.3; head2-main per run: +45.5 +42.0 +6.8 +41.9 +41.1
+prose-10k both within: main 427.7 us, head2-main +26.0 (+6.07 %), T 10.0; RULE SET largest pB +29.6, beyond -3.7 -> passes; ORIGINAL SET largest main2 +1.6, beyond +24.3 -> FAILS
+    controls - main: main2 +1.6 ctl1 -0.4 ctl2 -10.2 pA +24.2 pB +29.6 pD +3.6 pC +12.0; head2-main per run: +26.8 +22.4 +4.5 +27.7 +26.0
+prose-10k filename across lengthy seeming 04276: main 338.7 us, head2-main +16.5 (+4.87 %), T 10.0; RULE SET largest pB +18.5, beyond -2.0 -> passes; ORIGINAL SET largest ctl2 +4.3, beyond +12.2 -> FAILS
+    controls - main: main2 +3.0 ctl1 -0.9 ctl2 +4.3 pA +11.6 pB +18.5 pD -0.2 pC +0.5; head2-main per run: +18.7 +13.9 +13.9 +17.3 +16.5
+prose-10k filename drink: main 195.0 us, head2-main +12.8 (+6.56 %), T 10.0; RULE SET largest pB +13.1, beyond -0.3 -> passes; ORIGINAL SET largest ctl2 +2.5, beyond +10.3 -> FAILS
+    controls - main: main2 +0.6 ctl1 -0.4 ctl2 +2.5 pA +7.0 pB +13.1 pD +0.8 pC +3.5; head2-main per run: +13.6 +13.6 +12.5 +12.8 +12.1
+prose-10k filename system: main 275.7 us, head2-main +17.5 (+6.35 %), T 10.0; RULE SET largest pB +17.7, beyond -0.2 -> passes; ORIGINAL SET largest ctl2 +4.0, beyond +13.5 -> FAILS
+    controls - main: main2 +0.5 ctl1 +0.8 ctl2 +4.0 pA +9.1 pB +17.7 pD -2.0 pC +5.2; head2-main per run: +16.3 +17.0 +17.5 +18.4 +17.9
+prose-10k filename system systems: main 284.0 us, head2-main +13.8 (+4.87 %), T 10.0; RULE SET largest pB +17.2, beyond -3.4 -> passes; ORIGINAL SET largest ctl2 +2.9, beyond +10.9 -> FAILS
+    controls - main: main2 +1.2 ctl1 -0.7 ctl2 +2.9 pA +9.6 pB +17.2 pD -4.7 pC +2.3; head2-main per run: +13.8 +12.5 +12.8 +15.0 +17.8
+prose-10k filename systems system: main 284.8 us, head2-main +14.0 (+4.92 %), T 10.0; RULE SET largest pB +16.0, beyond -2.0 -> passes; ORIGINAL SET largest main2 +3.1, beyond +10.9 -> FAILS
+    controls - main: main2 +3.1 ctl1 -0.5 ctl2 +1.5 pA +6.8 pB +16.0 pD -4.5 pC +0.9; head2-main per run: +14.1 +13.5 +11.5 +14.0 +29.3
+prose-10k filename the within: main 308.8 us, head2-main +20.9 (+6.76 %), T 10.0; RULE SET largest pB +21.3, beyond -0.4 -> passes; ORIGINAL SET largest ctl2 +6.9, beyond +14.0 -> FAILS
+    controls - main: main2 +1.2 ctl1 +0.9 ctl2 +6.9 pA +16.1 pB +21.3 pD +4.5 pC +7.9; head2-main per run: +20.9 +22.3 +19.0 +21.4 +19.5
+prose-10k filename within: main 308.1 us, head2-main +19.6 (+6.37 %), T 10.0; RULE SET largest pB +21.1, beyond -1.5 -> passes; ORIGINAL SET largest ctl1 +4.0, beyond +15.7 -> FAILS
+    controls - main: main2 +2.1 ctl1 +4.0 ctl2 +3.9 pA +12.4 pB +21.1 pD +1.1 pC +7.0; head2-main per run: +19.0 +19.6 +19.2 +21.3 +25.0
+timing-10k both from: main 286.3 us, head2-main +20.9 (+7.29 %), T 10.0; RULE SET largest pA +23.8, beyond -2.9 -> passes; ORIGINAL SET largest ctl1 +8.8, beyond +12.1 -> FAILS
+    controls - main: main2 -0.3 ctl1 +8.8 ctl2 +3.1 pA +23.8 pB +22.0 pD +13.3 pC +19.4; head2-main per run: +20.0 +22.0 +19.7 +22.4 +20.9
+timing-10k both from badamo: main 303.5 us, head2-main +11.9 (+3.91 %), T 10.0; RULE SET largest pB +12.3, beyond -0.4 -> passes; ORIGINAL SET largest main2 -0.1, beyond +12.0 -> FAILS
+    controls - main: main2 -0.1 ctl1 -6.9 ctl2 -7.8 pA +12.2 pB +12.3 pD -2.9 pC +10.2; head2-main per run: +5.3 +4.8 +12.3 +13.9 +11.9
+timing-10k both were: main 296.8 us, head2-main +11.7 (+3.93 %), T 10.0; RULE SET largest pA +13.5, beyond -1.9 -> passes; ORIGINAL SET largest ctl2 -0.5, beyond +12.2 -> FAILS
+    controls - main: main2 -3.0 ctl1 -1.9 ctl2 -0.5 pA +13.5 pB +6.7 pD +1.2 pC +11.0; head2-main per run: -12.6 +11.7 +12.3 +13.1 +11.5
+
+(3) cells at or above T (head2 - main >= T), either set
+family both the: main 232.0 us, head2-main +12.7 (+5.46 %), T 10.0; RULE SET largest pA +10.7, beyond +2.0 -> passes; ORIGINAL SET largest ctl2 +2.8, beyond +9.9 -> passes
+    controls - main: main2 +1.1 ctl1 -3.1 ctl2 +2.8 pA +10.7 pB +10.2 pD -3.3 pC +1.7; head2-main per run: +10.8 +13.7 +13.2 +12.7 +12.0
+fixtures both questions: main 308.7 us, head2-main +10.9 (+3.54 %), T 10.0; RULE SET largest pB +11.4, beyond -0.5 -> passes; ORIGINAL SET largest ctl2 +2.5, beyond +8.5 -> passes
+    controls - main: main2 +1.9 ctl1 -2.2 ctl2 +2.5 pA +9.0 pB +11.4 pD +1.2 pC +1.6; head2-main per run: +10.9 +12.0 +10.8 +9.7 +27.2
+fixtures both the: main 306.8 us, head2-main +15.6 (+5.09 %), T 10.0; RULE SET largest pA +10.9, beyond +4.7 -> passes; ORIGINAL SET largest main2 +0.6, beyond +15.0 -> FAILS
+    controls - main: main2 +0.6 ctl1 -9.4 ctl2 -1.0 pA +10.9 pB +8.0 pD -3.2 pC +0.3; head2-main per run: +12.5 +15.6 +10.0 +17.0 +74.0
+fixtures first find: main 6058.0 us, head2-main +80.5 (+1.33 %), T 60.6; RULE SET largest pC +368.0, beyond -287.5 -> passes; ORIGINAL SET largest ctl2 +55.2, beyond +25.3 -> passes
+    controls - main: main2 -40.9 ctl1 +51.9 ctl2 +55.2 pA +99.7 pB +60.2 pD +330.2 pC +368.0; head2-main per run: +38.0 +80.5 +84.4 -240.7 +202.6
+prose-10k both across lengthy seeming 04276: main 532.7 us, head2-main +17.0 (+3.20 %), T 10.0; RULE SET largest pB +17.2, beyond -0.2 -> passes; ORIGINAL SET largest main2 +6.1, beyond +10.9 -> FAILS
+    controls - main: main2 +6.1 ctl1 -8.5 ctl2 -7.7 pA +13.1 pB +17.2 pD -26.0 pC +2.0; head2-main per run: +22.4 +12.8 -3.5 +17.0 +20.1
+prose-10k both drink: main 359.2 us, head2-main +16.4 (+4.56 %), T 10.0; RULE SET largest pB +19.3, beyond -2.9 -> passes; ORIGINAL SET largest ctl2 +6.7, beyond +9.6 -> passes
+    controls - main: main2 +2.9 ctl1 +3.2 ctl2 +6.7 pA +13.1 pB +19.3 pD -1.6 pC +3.3; head2-main per run: +16.4 +14.7 -4.5 +16.7 +18.6
+prose-10k both have: main 329.0 us, head2-main +16.2 (+4.91 %), T 10.0; RULE SET largest pA +16.1, beyond +0.1 -> passes; ORIGINAL SET largest main2 +3.7, beyond +12.5 -> FAILS
+    controls - main: main2 +3.7 ctl1 -8.2 ctl2 -10.8 pA +16.1 pB +8.4 pD -13.9 pC +9.4; head2-main per run: +20.5 +15.3 -1.3 +16.2 +18.5
+prose-10k both have drink: main 540.5 us, head2-main +31.4 (+5.81 %), T 10.0; RULE SET largest pA +34.2, beyond -2.8 -> passes; ORIGINAL SET largest ctl1 +3.2, beyond +28.1 -> FAILS
+    controls - main: main2 +3.2 ctl1 +3.2 ctl2 -4.0 pA +34.2 pB +20.7 pD -5.7 pC +19.0; head2-main per run: +34.8 +26.1 -0.1 +34.1 +31.4
+prose-10k both system: main 349.1 us, head2-main +10.7 (+3.08 %), T 10.0; RULE SET largest pB +14.2, beyond -3.5 -> passes; ORIGINAL SET largest main2 +3.7, beyond +7.0 -> passes
+    controls - main: main2 +3.7 ctl1 +0.4 ctl2 +3.3 pA +11.0 pB +14.2 pD +1.3 pC +1.0; head2-main per run: +13.6 +7.6 +6.8 +12.3 +10.7
+prose-10k both the: main 478.3 us, head2-main +34.0 (+7.10 %), T 10.0; RULE SET largest pA +37.9, beyond -4.0 -> passes; ORIGINAL SET largest ctl2 +9.6, beyond +24.3 -> FAILS
+    controls - main: main2 +3.5 ctl1 +7.1 ctl2 +9.6 pA +37.9 pB +26.9 pD -7.4 pC +22.3; head2-main per run: +38.9 +30.4 +9.1 +38.7 +34.0
+prose-10k both the within: main 613.2 us, head2-main +41.9 (+6.84 %), T 10.0; RULE SET largest pA +53.0, beyond -11.1 -> passes; ORIGINAL SET largest ctl1 +15.5, beyond +26.4 -> FAILS
+    controls - main: main2 +1.7 ctl1 +15.5 ctl2 +6.5 pA +53.0 pB +40.5 pD +14.1 pC +31.3; head2-main per run: +45.5 +42.0 +6.8 +41.9 +41.1
+prose-10k both within: main 427.7 us, head2-main +26.0 (+6.07 %), T 10.0; RULE SET largest pB +29.6, beyond -3.7 -> passes; ORIGINAL SET largest main2 +1.6, beyond +24.3 -> FAILS
+    controls - main: main2 +1.6 ctl1 -0.4 ctl2 -10.2 pA +24.2 pB +29.6 pD +3.6 pC +12.0; head2-main per run: +26.8 +22.4 +4.5 +27.7 +26.0
+prose-10k filename across lengthy seeming 04276: main 338.7 us, head2-main +16.5 (+4.87 %), T 10.0; RULE SET largest pB +18.5, beyond -2.0 -> passes; ORIGINAL SET largest ctl2 +4.3, beyond +12.2 -> FAILS
+    controls - main: main2 +3.0 ctl1 -0.9 ctl2 +4.3 pA +11.6 pB +18.5 pD -0.2 pC +0.5; head2-main per run: +18.7 +13.9 +13.9 +17.3 +16.5
+prose-10k filename drink: main 195.0 us, head2-main +12.8 (+6.56 %), T 10.0; RULE SET largest pB +13.1, beyond -0.3 -> passes; ORIGINAL SET largest ctl2 +2.5, beyond +10.3 -> FAILS
+    controls - main: main2 +0.6 ctl1 -0.4 ctl2 +2.5 pA +7.0 pB +13.1 pD +0.8 pC +3.5; head2-main per run: +13.6 +13.6 +12.5 +12.8 +12.1
+prose-10k filename system: main 275.7 us, head2-main +17.5 (+6.35 %), T 10.0; RULE SET largest pB +17.7, beyond -0.2 -> passes; ORIGINAL SET largest ctl2 +4.0, beyond +13.5 -> FAILS
+    controls - main: main2 +0.5 ctl1 +0.8 ctl2 +4.0 pA +9.1 pB +17.7 pD -2.0 pC +5.2; head2-main per run: +16.3 +17.0 +17.5 +18.4 +17.9
+prose-10k filename system systems: main 284.0 us, head2-main +13.8 (+4.87 %), T 10.0; RULE SET largest pB +17.2, beyond -3.4 -> passes; ORIGINAL SET largest ctl2 +2.9, beyond +10.9 -> FAILS
+    controls - main: main2 +1.2 ctl1 -0.7 ctl2 +2.9 pA +9.6 pB +17.2 pD -4.7 pC +2.3; head2-main per run: +13.8 +12.5 +12.8 +15.0 +17.8
+prose-10k filename systems system: main 284.8 us, head2-main +14.0 (+4.92 %), T 10.0; RULE SET largest pB +16.0, beyond -2.0 -> passes; ORIGINAL SET largest main2 +3.1, beyond +10.9 -> FAILS
+    controls - main: main2 +3.1 ctl1 -0.5 ctl2 +1.5 pA +6.8 pB +16.0 pD -4.5 pC +0.9; head2-main per run: +14.1 +13.5 +11.5 +14.0 +29.3
+prose-10k filename the within: main 308.8 us, head2-main +20.9 (+6.76 %), T 10.0; RULE SET largest pB +21.3, beyond -0.4 -> passes; ORIGINAL SET largest ctl2 +6.9, beyond +14.0 -> FAILS
+    controls - main: main2 +1.2 ctl1 +0.9 ctl2 +6.9 pA +16.1 pB +21.3 pD +4.5 pC +7.9; head2-main per run: +20.9 +22.3 +19.0 +21.4 +19.5
+prose-10k filename within: main 308.1 us, head2-main +19.6 (+6.37 %), T 10.0; RULE SET largest pB +21.1, beyond -1.5 -> passes; ORIGINAL SET largest ctl1 +4.0, beyond +15.7 -> FAILS
+    controls - main: main2 +2.1 ctl1 +4.0 ctl2 +3.9 pA +12.4 pB +21.1 pD +1.1 pC +7.0; head2-main per run: +19.0 +19.6 +19.2 +21.3 +25.0
+tamil-10k find words சாகறம்: main 2819.0 us, head2-main +33.0 (+1.17 %), T 28.2; RULE SET largest main2 +12.7, beyond +20.3 -> passes; ORIGINAL SET largest main2 +12.7, beyond +20.3 -> passes
+    controls - main: main2 +12.7 ctl1 +7.8 ctl2 -1.7 pA +10.7 pB -27.7 pD -34.6 pC -14.0; head2-main per run: +29.0 +41.5 +36.1 +33.0 +7.5
+timing-10k both from: main 286.3 us, head2-main +20.9 (+7.29 %), T 10.0; RULE SET largest pA +23.8, beyond -2.9 -> passes; ORIGINAL SET largest ctl1 +8.8, beyond +12.1 -> FAILS
+    controls - main: main2 -0.3 ctl1 +8.8 ctl2 +3.1 pA +23.8 pB +22.0 pD +13.3 pC +19.4; head2-main per run: +20.0 +22.0 +19.7 +22.4 +20.9
+timing-10k both from badamo: main 303.5 us, head2-main +11.9 (+3.91 %), T 10.0; RULE SET largest pB +12.3, beyond -0.4 -> passes; ORIGINAL SET largest main2 -0.1, beyond +12.0 -> FAILS
+    controls - main: main2 -0.1 ctl1 -6.9 ctl2 -7.8 pA +12.2 pB +12.3 pD -2.9 pC +10.2; head2-main per run: +5.3 +4.8 +12.3 +13.9 +11.9
+timing-10k both were: main 296.8 us, head2-main +11.7 (+3.93 %), T 10.0; RULE SET largest pA +13.5, beyond -1.9 -> passes; ORIGINAL SET largest ctl2 -0.5, beyond +12.2 -> FAILS
+    controls - main: main2 -3.0 ctl1 -1.9 ctl2 -0.5 pA +13.5 pB +6.7 pD +1.2 pC +11.0; head2-main per run: -12.6 +11.7 +12.3 +13.1 +11.5
+timing-10k find words from: main 2900.0 us, head2-main +35.2 (+1.21 %), T 29.0; RULE SET largest ctl1 +20.3, beyond +14.9 -> passes; ORIGINAL SET largest ctl1 +20.3, beyond +14.9 -> passes
+    controls - main: main2 +8.8 ctl1 +20.3 ctl2 +3.5 pA +16.1 pB -36.3 pD -16.0 pC -5.0; head2-main per run: +9.7 +35.2 +46.5 +37.8 +26.1
+prose-10k first (median of 3): main 220452.5 us, head2-main +4083.9 (+1.85 %), T 2204.5; RULE SET largest ctl1 +2086.6, beyond +1997.3 -> passes; ORIGINAL SET largest ctl1 +2086.6, beyond +1997.3 -> passes
+    controls - main: main2 -753.3 ctl1 +2086.6 ctl2 -1404.0 pA -715.5 pB +735.4 pD +657.1 pC -249.9; head2-main per run: -14340.8 +4083.9 +17448.3 -29717.8 +15690.9
+tamil-10k first (median of 3): main 207941.4 us, head2-main +2288.3 (+1.10 %), T 2079.4; RULE SET largest pB +1730.5, beyond +557.7 -> passes; ORIGINAL SET largest main2 +658.3, beyond +1630.0 -> passes
+    controls - main: main2 +658.3 ctl1 -69.5 ctl2 -2398.6 pA -373.7 pB +1730.5 pD -1459.9 pC -1232.8; head2-main per run: -10574.1 +2288.3 +337.8 +3526.3 +3625.4
+timing-10k first (median of 3): main 173829.3 us, head2-main +3031.2 (+1.74 %), T 1738.3; RULE SET largest pD +2218.1, beyond +813.1 -> passes; ORIGINAL SET largest main2 +1645.3, beyond +1385.9 -> passes
+    controls - main: main2 +1645.3 ctl1 +638.7 ctl2 +893.5 pA +1409.2 pB +743.7 pD +2218.1 pC +345.9; head2-main per run: +6161.2 -20197.1 +2997.8 +3031.2 +3647.1
+  27 cells at or above T
+
+(4) write expectations (first publish and one-file update not slower than main by more than 2 %)
+family first (median of 3): main 12.1 ms, head2-main +0.1 ms (+0.56 %) -> met; per run -1.1 +0.4 +0.3 +0.1 -2.0
+family update (median of 3): main 11.2 ms, head2-main -0.0 ms (-0.42 %) -> met; per run +0.2 +0.2 -0.1 -0.0 -0.6
+prose-10k first (median of 3): main 220.5 ms, head2-main +4.1 ms (+1.85 %) -> met; per run -14.3 +4.1 +17.4 -29.7 +15.7
+prose-10k update (median of 3): main 222.2 ms, head2-main -1.7 ms (-0.76 %) -> met; per run -17.6 -0.3 -1.4 -31.6 -1.7
+tamil-10k first (median of 3): main 207.9 ms, head2-main +2.3 ms (+1.10 %) -> met; per run -10.6 +2.3 +0.3 +3.5 +3.6
+tamil-10k update (median of 3): main 206.8 ms, head2-main -1.6 ms (-0.79 %) -> met; per run -2.9 +0.8 +2.6 -14.2 -1.6
+timing-10k first (median of 3): main 173.8 ms, head2-main +3.0 ms (+1.74 %) -> met; per run +6.2 -20.2 +3.0 +3.0 +3.6
+timing-10k update (median of 3): main 173.8 ms, head2-main -0.4 ms (-0.24 %) -> met; per run -0.3 -21.6 -0.4 +0.8 -0.7
+
+memory after open (bytes, head2 - main, five-run median)
+family: -229,376 B (-4.6 %)
+fixtures: -475,136 B (-3.2 %)
+j2: -32,768 B (-22.2 %)
+prose-10k: -3,227,648 B (-6.1 %)
+tamil-10k: -1,196,032 B (-2.5 %)
+timing-10k: -1,196,032 B (-4.7 %)

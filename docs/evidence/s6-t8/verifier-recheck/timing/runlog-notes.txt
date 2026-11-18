@@ -1,0 +1,2 @@
+2026-11-18 08:13:49 run12 q: Mac slept 07:54:44-08:09:56 during pA timing-10k bench; that row moved aside and rerun
+2026-11-18 08:18:31 coordinator: a run with a sleep inside is discarded whole. Slept run12 q phase (07:53:13-08:13:19, sleep 07:54:44-08:09:56) kept in discarded/, single-row rerun (08:13:4x) unused; run12 q retaken in full in its written order

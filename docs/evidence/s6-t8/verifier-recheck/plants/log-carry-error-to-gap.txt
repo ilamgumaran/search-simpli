@@ -1,0 +1,8 @@
+error: 'compat_s6t8_test.test.S6-T8 F1: a length of 0 in one v2 token (the verifier's v2_first_publish case) is refused at the first publish, the old generation whole and byte-identical' failed:
+error: 'compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the first token is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the last token is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F1, v2 rule: an end past a u32 is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F1, v2 rule: a count other than the document's length is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F1, v2 rule: a varint with a sixth byte is refused by the first publish' failed:
+error: 'compat_s6t8_test.test.S6-T8 F1, v2 rule: a varint whose fifth byte is above 0x0F is refused by the first publish' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 504/520 tests passed (9 skipped, 7 failed)

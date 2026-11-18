@@ -1,0 +1,1 @@
+240 writes the same as head2's, 0 differ

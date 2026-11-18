@@ -1,0 +1,420 @@
+main  z_first              v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  z_mid                v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  z_last               v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  end_2p32             v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  count_plus1_last     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  count_minus1_mid     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  varint_sixth         v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  varint_fifth_over    v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+main  trunc_last_table     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+main  trunc_last_count     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+main  leftover             v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+main  gap_2p31_minus1      v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_cli_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+main  gap_2p31             v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+main  neg_gap_2p31         v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_cli_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+main  neg_gap_2p31_plus1   v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+main  past_text            v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_cli_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+main  removed_z            v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+main  removed_count        v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+main  removed_end          v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+main  removed_last_z       v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre7  z_first              v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  z_mid                v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  z_last               v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  end_2p32             v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  count_plus1_last     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  count_minus1_mid     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  varint_sixth         v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  varint_fifth_over    v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre7  trunc_last_table     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+pre7  trunc_last_count     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+pre7  leftover             v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+pre7  gap_2p31_minus1      v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_cli_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre7  gap_2p31             v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre7  neg_gap_2p31         v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_cli_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre7  neg_gap_2p31_plus1   v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre7  past_text            v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_cli_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre7  removed_z            v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre7  removed_count        v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre7  removed_end          v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre7  removed_last_z       v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre4  z_first              v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  z_mid                v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  z_last               v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  end_2p32             v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  count_plus1_last     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  count_minus1_mid     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  varint_sixth         v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  varint_fifth_over    v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+pre4  trunc_last_table     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+pre4  trunc_last_count     v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+pre4  leftover             v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:InvalidPositions
+pre4  gap_2p31_minus1      v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_cli_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre4  gap_2p31             v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre4  neg_gap_2p31         v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_cli_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre4  neg_gap_2p31_plus1   v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_cli_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_update: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_apply: REF[InvalidLexicalSection] g1 chg=0 after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre4  past_text            v2=ok  old_read=hits head_read=E:OffsetsPastText
+      head_cli_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_cli_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_update: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_apply: PUB g2 bit7=True after=E:OffsetsPastText
+      head_abi_index_folder: PUB g2 bit7=True after=hits
+      old_cli_update: PUB g2 bit7=False after=E:OffsetsPastText
+pre4  removed_z            v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre4  removed_count        v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre4  removed_end          v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre4  removed_last_z       v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file

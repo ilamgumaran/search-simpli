@@ -1,0 +1,18 @@
+run11 q j2 family fixtures: 2026-11-18 07:43:16 .. 2026-11-18 07:44:39: 0 sleep/wake lines
+run11 q timing-10k: 2026-11-18 07:44:46 .. 2026-11-18 07:45:25: 0 sleep/wake lines
+run11 q prose-10k tamil-10k: 2026-11-18 07:45:31 .. 2026-11-18 07:48:29: 0 sleep/wake lines
+run11 u timing-10k: 2026-11-18 07:48:36 .. 2026-11-18 07:49:57: 0 sleep/wake lines
+run11 u prose-10k tamil-10k family: 2026-11-18 07:50:03 .. 2026-11-18 07:53:06: 0 sleep/wake lines
+run12 q all: 2026-11-18 07:53:13 .. 2026-11-18 08:13:19: 3 sleep/wake lines (DISCARDED whole, coordinator's rule; retaken)
+    2026-11-18 07:54:44 -0500 Sleep               	Entering Sleep state due to 'Maintenance Sleep':TCPKe
+    2026-11-18 07:54:46 -0500 Wake Requests       	[*process=dasd request=SleepService deltaSecs=909 wak
+    2026-11-18 08:09:56 -0500 DarkWake            	DarkWake from Deep Idle [CDNPB] : due to NUB.SPMI0Sw3
+run12 q timing-10k: 2026-11-18 08:13:52 .. 2026-11-18 08:13:56: 0 sleep/wake lines (the single-row rerun of pA; NOT USED, kept in discarded/)
+run12 u all: 2026-11-18 08:14:00 .. 2026-11-18 08:18:19: 0 sleep/wake lines
+run12 q all: 2026-11-18 08:18:33 .. 2026-11-18 08:23:30: 0 sleep/wake lines
+run13 q all: 2026-11-18 08:23:37 .. 2026-11-18 08:28:34: 0 sleep/wake lines
+run13 u all: 2026-11-18 08:28:44 .. 2026-11-18 08:33:08: 0 sleep/wake lines
+run14 q all: 2026-11-18 08:33:13 .. 2026-11-18 08:38:10: 0 sleep/wake lines
+run14 u all: 2026-11-18 08:38:15 .. 2026-11-18 08:42:40: 0 sleep/wake lines
+run15 q all: 2026-11-18 08:42:44 .. 2026-11-18 08:47:43: 0 sleep/wake lines
+run15 u all: 2026-11-18 08:47:48 .. 2026-11-18 08:52:14: 0 sleep/wake lines

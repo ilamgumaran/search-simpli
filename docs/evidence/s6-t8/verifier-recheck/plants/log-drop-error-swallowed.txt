@@ -1,0 +1,2 @@
+error: 'compat_s6t8_test.test.S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 failed)

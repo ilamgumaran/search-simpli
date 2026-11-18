@@ -1,0 +1,42 @@
+main  removed_z            v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+main  removed_end          v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: PUB g2 bit7=True after=no hit in the file
+      head_cli_apply: PUB g2 bit7=True after=no hit in the file
+      head_abi_index_update: PUB g2 bit7=True after=no hit in the file
+      head_abi_apply: PUB g2 bit7=True after=no hit in the file
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre7  removed_z            v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre7  removed_end          v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: PUB g2 bit7=True after=no hit in the file
+      head_cli_apply: PUB g2 bit7=True after=no hit in the file
+      head_abi_index_update: PUB g2 bit7=True after=no hit in the file
+      head_abi_apply: PUB g2 bit7=True after=no hit in the file
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre4  removed_z            v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_cli_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_update: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_apply: REF[InvalidPositions] g1 chg=0 after=E:InvalidPositions
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
+pre4  removed_end          v2=bad old_read=E:InvalidPositions head_read=E:InvalidPositions
+      head_cli_update: PUB g2 bit7=True after=no hit in the file
+      head_cli_apply: PUB g2 bit7=True after=no hit in the file
+      head_abi_index_update: PUB g2 bit7=True after=no hit in the file
+      head_abi_apply: PUB g2 bit7=True after=no hit in the file
+      head_abi_index_folder: PUB g2 bit7=True after=no hit in the file
+      old_cli_update: PUB g2 bit7=False after=no hit in the file
