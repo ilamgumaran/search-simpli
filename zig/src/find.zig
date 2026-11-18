@@ -619,13 +619,16 @@ const Context = struct {
 
     /// Each token's codepoint span in the chunk: section 5, or re-tokenized
     /// (no positions, or `recompute_offsets`). `codepoints` is the chunk
-    /// text's codepoint count: a section-5 span ending past it is refused
-    /// (S6-T8, rule 11), never returned.
-    fn spans(context: *const Context, document_index: u32, codepoints: usize) Error![]const postings.TokenSpan {
+    /// text's codepoint count when the spans become a hit's highlights: a
+    /// section-5 span ending past it is refused (S6-T8, rule 11), never
+    /// returned. Null where the spans are only compared as line numbers
+    /// (`deduplicate`: `lineOf` stops at the text's end), which counts no
+    /// codepoints, as before S6-T8.
+    fn spans(context: *const Context, document_index: u32, codepoints: ?usize) Error![]const postings.TokenSpan {
         if (context.tables) |tables| if (!context.request.recompute_offsets) {
             const output = try context.allocator.alloc(postings.TokenSpan, context.index.document_lengths[document_index]);
             const read = postings.readTokenSpans(context.index, tables, document_index, output);
-            try postings.checkSpansWithinText(read, codepoints);
+            if (codepoints) |count| try postings.checkSpansWithinText(read, count);
             return read;
         };
         const tokens = try context.contentTokens(document_index);
@@ -674,7 +677,7 @@ const Context = struct {
                 const b_document = documents[b.document_index];
                 const previous = documents[candidates[group[position - 1]].document_index];
                 if (previous.end_line < b_document.start_line) continue;
-                const b_spans = try context.spans(b.document_index, analysis.codepointCount(b_document.text));
+                const b_spans = try context.spans(b.document_index, null);
                 var all_shared = b.matches.len > 0;
                 for (b.matches) |match| {
                     const end_line = lineOf(b_document.text, endOffset(b_spans, match.last));

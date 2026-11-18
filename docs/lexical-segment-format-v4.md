@@ -125,7 +125,7 @@ keeps v2's rules. Section 5's rules are below, each with the error that names
 it. They run where v3's step 7 runs: lazily, before the first use of positions
 or offsets (the first `ss_find`, S4-T1), over the whole section, except rule
 11, which needs the chunk's text from the documents section and is checked
-when a document's offsets are read for a `find` hit.
+when a document's offsets become a returned `find` hit's highlights.
 
 | # | Rule | Error |
 |---:|---|---|
@@ -146,9 +146,12 @@ Within one token the checks run in the order of the decoding above: the gap's
 escape (rules 4–6), then the length's (4–6), then rules 7, 8, 9 and 10. Every
 error is a corruption error: `SS_ERR_CORRUPT_SNAPSHOT` through the C ABI, and
 under the lazy strategy the first `find` and every later one on that handle
-fail the same way, as for v3's step 7. Rule 11 fails the `find` that reaches
-the document (its text is in another section, so the lexical section alone
-cannot check it), and never returns a highlight past the text. Nothing is
+fail the same way, as for v3's step 7. Rule 11 fails the `find` that would
+return a hit on that document (its text is in another section, so the
+lexical section alone cannot check it), and never returns a highlight past
+the text. The overlap check between neighbouring chunks (`deduplicate`)
+reads offsets only as line numbers, which stop at the text's last line, so
+it counts no codepoints and does not check rule 11. Nothing is
 repaired or skipped: the remedy is a re-index.
 
 Because the checksum covers every byte, a truncated, cut or flipped section is
