@@ -1,0 +1,22 @@
+# S6-T8 (ruling after the Fourth Verdict): the plants of the split row 32 (v2 and v4) and row 33, and the verifier's v-wk-v4-tail
+# (verifier-fourth/plants/plants4.py), each in a fresh git archive of 30b4cdb (the F5 tests) with its own Zig caches, its planted tree
+# diffed against an unplanted archive before the build (diff/NAME.diff, each 2 changed lines), Debug zig build test, two at a time
+# (one pair per command, the next started only after the first had exited), nothing else running. Unplanted: engine test step
+# 525 pass, 9 skip of 534 (Build Summary 531 of 540).
+
+## wk-leftover-v2-off
+  engine test step: 522 pass, 9 skip, 3 fail (534 total)
+  fails: compat_s6t8_test: S6-T8 F1, v2 rule: a byte after the last table is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 F3, dropped table: a byte left over after the first, a middle or the last table, that file removed, is refused by the first publish (the table walk)
+  fails: compat_s6t8_test: S6-T8 sites: one byte after a v2 table is refused by the walk at the first publish, carried or dropped, at three tables
+
+## wk-leftover-v4-off
+  engine test step: 524 pass, 9 skip, 1 fail (534 total)
+  fails: compat_s6t8_test: S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed
+
+## v-wk-v4-tail
+  engine test step: 524 pass, 9 skip, 1 fail (534 total)
+  fails: compat_s6t8_test: S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed
+
+## mc-coding-guard-removed
+  engine test step: 525 pass, 9 skip (534 total)

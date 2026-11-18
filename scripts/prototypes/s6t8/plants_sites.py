@@ -1,5 +1,5 @@
 """S6-T8 (the ruling after the Third Verdict): one plant per refusal site of the old-format table code, each removing
-or loosening that site only, inside the named function's body. Bounds are loosened by one step (a sixth varint byte
+or loosening that site only, inside the named function's body (for a site that serves both section-5 codings, one plant per coding). Bounds are loosened by one step (a sixth varint byte
 let through, a fifth byte cut to 32 bits instead of refused, an end or a gap one past the bound, the section's end
 read as a varint's end); equalities are removed. Each anchor must occur exactly once in its function's body.
 
@@ -73,6 +73,7 @@ OB = ("postings.zig", "pub fn oneByteTableEnd(")
 SV = ("postings.zig", "fn skipOneVarint(")
 WK = ("apply.zig", "fn offsetTableStarts(")
 SK = ("apply.zig", "fn skipVarintsChecked(")
+MC = ("apply.zig", "fn mergeCarried(")
 
 SHORT = "    if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidPositions;\n"
 COUNT = (") != count) return error.InvalidPositions;", ") != count and false) return error.InvalidPositions;")
@@ -137,6 +138,16 @@ P = {
     "wk-leftover-removed": ("walk: bytes after the last table",
                             [(WK, "    if (at != offsets.len) return error.InvalidLexicalSection;",
                               "    if (at != offsets.len and false) return error.InvalidLexicalSection;", False)], False),
+    # The ruling after the Fourth Verdict: row 32 split by coding (the walk's last check serves v2 and v4), and row 33.
+    "wk-leftover-v2-off": ("walk: bytes after the last table, v2 coding only",
+                           [(WK, "    if (at != offsets.len) return error.InvalidLexicalSection;",
+                             "    if (at != offsets.len and sections.coding != .pairs) return error.InvalidLexicalSection;", False)], False),
+    "wk-leftover-v4-off": ("walk: bytes after the last table, v4 coding only",
+                           [(WK, "    if (at != offsets.len) return error.InvalidLexicalSection;",
+                             "    if (at != offsets.len and sections.coding != .one_byte) return error.InvalidLexicalSection;", False)], False),
+    "mc-coding-guard-removed": ("mergeCarried: the coding guard of the transcode branch",
+                                [(MC, "if (sections.coding != .pairs or fresh_sections.coding != .one_byte) return error.InvalidLexicalSection;",
+                                  "if (false and (sections.coding != .pairs or fresh_sections.coding != .one_byte)) return error.InvalidLexicalSection;", False)], False),
 }
 
 

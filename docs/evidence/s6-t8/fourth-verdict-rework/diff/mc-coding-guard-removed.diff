@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites3.noindex/none/zig/src/apply.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites3.noindex/src/mc-coding-guard-removed/zig/src/apply.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites3.noindex/none/zig/src/apply.zig	2026-11-18 12:29:45
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites3.noindex/src/mc-coding-guard-removed/zig/src/apply.zig	2026-11-18 12:33:58
+@@ -2342,7 +2342,7 @@
+         defer list.deinit(scratch);
+         try list.ensureTotalCapacity(scratch, sections.offsets.len + fresh_sections.offsets.len);
+         // The only coding change is v2 to v4 (every writer writes v4).
+-        if (sections.coding != .pairs or fresh_sections.coding != .one_byte) return error.InvalidLexicalSection;
++        if (false and (sections.coding != .pairs or fresh_sections.coding != .one_byte)) return error.InvalidLexicalSection;
+         fresh_index = 0;
+         for (sources) |item| switch (item) {
+             // S6-T8 (rulings on the Report, item 1b, made after measuring;
