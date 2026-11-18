@@ -1,6 +1,7 @@
 # S6-T8: index sizes, main (62324f9) and this branch, from measured bytes (scripts/prototypes/s6t8/sizes.py).
-# Each corpus indexed by each side's ReleaseSmall searchd with --filename-index (J2: apply of its changes file);
-# one generation; percentages truncated toward zero. 'other_sections_identical': every section but the content
+# Each corpus indexed by each side's ReleaseSmall searchd with --filename-index (J2: apply of its changes file); the branch's
+# indexes rebuilt by the final searchd (e5d1734, sha256 f5db8c8f...), the same bytes as fb74582's. One generation;
+# percentages rounded to nearest. 'other_sections_identical': every section but the content
 # lexical section and the manifest is the same bytes. boundaries: the ten boundary files of offsets_v4_test.zig's kind.
 {"corpus": "timing-10k", "magic": ["HYBLEX03", "HYBLEX04"], "total": [15808625, 14612980], "lexical": [5396552, 4200907], "offsets": [2351372, 1155727], "manifest": [696, 696], "other_sections_identical": true}
 {"corpus": "prose-10k", "magic": ["HYBLEX03", "HYBLEX04"], "total": [35196921, 31967055], "lexical": [13244927, 10015061], "offsets": [6448994, 3219128], "manifest": [696, 696], "other_sections_identical": true}
@@ -12,24 +13,24 @@
 
 | Corpus | Measure | main (B) | branch (B) | change (B) | change |
 |---|---|---:|---:|---:|---:|
-| timing-10k | index (current generation) | 15,808,625 | 14,612,980 | -1,195,645 | -7.5% |
-| timing-10k | content lexical section | 5,396,552 | 4,200,907 | -1,195,645 | -22.1% |
+| timing-10k | index (current generation) | 15,808,625 | 14,612,980 | -1,195,645 | -7.6% |
+| timing-10k | content lexical section | 5,396,552 | 4,200,907 | -1,195,645 | -22.2% |
 | timing-10k | section 5 (offsets) | 2,351,372 | 1,155,727 | -1,195,645 | -50.8% |
-| prose-10k | index (current generation) | 35,196,921 | 31,967,055 | -3,229,866 | -9.1% |
-| prose-10k | content lexical section | 13,244,927 | 10,015,061 | -3,229,866 | -24.3% |
-| prose-10k | section 5 (offsets) | 6,448,994 | 3,219,128 | -3,229,866 | -50.0% |
-| tamil-10k | index (current generation) | 36,731,764 | 35,533,368 | -1,198,396 | -3.2% |
-| tamil-10k | content lexical section | 5,555,692 | 4,357,296 | -1,198,396 | -21.5% |
+| prose-10k | index (current generation) | 35,196,921 | 31,967,055 | -3,229,866 | -9.2% |
+| prose-10k | content lexical section | 13,244,927 | 10,015,061 | -3,229,866 | -24.4% |
+| prose-10k | section 5 (offsets) | 6,448,994 | 3,219,128 | -3,229,866 | -50.1% |
+| tamil-10k | index (current generation) | 36,731,764 | 35,533,368 | -1,198,396 | -3.3% |
+| tamil-10k | content lexical section | 5,555,692 | 4,357,296 | -1,198,396 | -21.6% |
 | tamil-10k | section 5 (offsets) | 2,356,900 | 1,158,504 | -1,198,396 | -50.8% |
 | fixtures | index (current generation) | 8,443,782 | 7,969,705 | -474,077 | -5.6% |
-| fixtures | content lexical section | 2,891,550 | 2,417,473 | -474,077 | -16.3% |
-| fixtures | section 5 (offsets) | 1,185,351 | 711,274 | -474,077 | -39.9% |
-| family | index (current generation) | 2,614,805 | 2,382,441 | -232,364 | -8.8% |
-| family | content lexical section | 1,128,011 | 895,647 | -232,364 | -20.5% |
+| fixtures | content lexical section | 2,891,550 | 2,417,473 | -474,077 | -16.4% |
+| fixtures | section 5 (offsets) | 1,185,351 | 711,274 | -474,077 | -40.0% |
+| family | index (current generation) | 2,614,805 | 2,382,441 | -232,364 | -8.9% |
+| family | content lexical section | 1,128,011 | 895,647 | -232,364 | -20.6% |
 | family | section 5 (offsets) | 467,096 | 234,732 | -232,364 | -49.7% |
-| j2 | index (current generation) | 169,267 | 157,654 | -11,613 | -6.8% |
-| j2 | content lexical section | 63,600 | 51,987 | -11,613 | -18.2% |
+| j2 | index (current generation) | 169,267 | 157,654 | -11,613 | -6.9% |
+| j2 | content lexical section | 63,600 | 51,987 | -11,613 | -18.3% |
 | j2 | section 5 (offsets) | 22,634 | 11,021 | -11,613 | -51.3% |
-| boundaries | index (current generation) | 4,198 | 4,145 | -53 | -1.2% |
+| boundaries | index (current generation) | 4,198 | 4,145 | -53 | -1.3% |
 | boundaries | content lexical section | 456 | 403 | -53 | -11.6% |
 | boundaries | section 5 (offsets) | 96 | 43 | -53 | -55.2% |

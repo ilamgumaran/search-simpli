@@ -39,3 +39,21 @@ both have drink                         537.4     +2.5     +6.0     +9.1    +34.
 both across lengthy seeming 04276       528.9     +7.1     +9.6     +3.8    +15.1     -1.9    10.0     -11.5  -        1
 find phrase bottle and orchard          100.6     -4.3     -3.8     +9.4     -4.0    -10.1    10.0     -19.4  -        1
 find words the                        14009.7    +64.4     -6.0    +34.3   -605.5   -580.5   140.1    -644.9  -        1
+
+## timing-10k without run 44: pmset -g log shows a maintenance sleep from 01:06:50 to 01:22:28; the gate line of run 44's head set
+## is at 01:06:50 and the next (main) at 01:22:28, so the head set may have run across the sleep (the load values froze over it).
+## The same summary over runs 41-43, 45 and 46; prose-10k's sets of run 44 ran after the wake.
+runs 5; 1-, 5- and 15-minute load before each set 1.09-2.77
+cell                                     main    main2     ctl3     ctlP       fb     head       T  head-ctl  verdict  answers
+content from                            155.0     +0.7     +2.5     +0.8     +3.4     +2.3    10.0      -0.2  -        1
+content were                            155.9     -0.0     +1.6     -0.3     +3.3     +4.5    10.0      +2.9  -        1
+content doc 00000                       110.8     -2.8     -1.6     -2.2     +4.5     +4.3    10.0      +5.9  -        1
+filename from                             2.8     -0.0     -0.0     -0.0     -0.0     -0.1    10.0      -0.0  -        1
+filename were                             2.8     -0.0     +0.0     -0.0     -0.0     -0.1    10.0      -0.1  -        1
+filename doc 00000                      242.3     +1.3     +3.0     +2.5     +6.0     +0.1    10.0      -3.0  -        1
+both from                               284.7     +2.0     +6.8     +0.7    +24.4    +15.0    10.0      +8.3  at T     1
+both were                               297.2     -1.8     +3.0     -8.3    +13.7     +7.0    10.0      +4.0  -        1
+both doc 00000                          335.0     +0.4     +2.7     -1.6     +2.5     -1.0    10.0      -3.7  -        1
+find words from                        2909.5     +1.0    +16.4    -18.5    -13.8     -1.7    29.1     -18.1  -        1
+find prefix bada*                       783.2     -0.4     -0.1     -0.4     -2.0     +0.7    10.0      +0.8  -        1
+find words badamo                        22.5     -0.0     -0.1     -0.2     -0.8     -0.5    10.0      -0.5  -        1

@@ -5,20 +5,19 @@ the head (rows of run_updates.sh), for ruling 4's 2 % bar.
     python3 -I summarize_updates.py UPDATES.jsonl
 
 Per corpus and variant, the median over every timed update of every set and
-run; the head's change against main in ms and percent of main (one decimal; a
-saving truncated toward zero, a growth rounded up). first = the first update
+run; the head's change against main in ms and percent of main (one decimal,
+rounded to nearest, half away from zero). first = the first update
 of main's index (head: HYBLEX03 -> HYBLEX04), second = the next one-line
 update. Not part of any library.
 """
 import json
-import math
 import statistics
 import sys
 from collections import defaultdict
 
 
 def pct(change: float, base: float) -> str:
-    tenths = int(abs(change) * 1000 / base) if change < 0 else math.ceil(change * 1000 / base)
+    tenths = int(abs(change) * 1000 / base + 0.5)
     return f"{'-' if change < 0 else '+'}{tenths // 10}.{tenths % 10} %"
 
 

@@ -1,0 +1,12 @@
+# S6-T8 ruling 2 through Dart (rulings on the Report, item 3): main's Dart package and its macOS library (62324f9, 0.9.1;
+# library sha256 3c1d631eeb30b374…, ss_version 2.8.0) against a v2.5 index, tests/fixtures/index-lex4-s6t8, each call on its own copy.
+# Test: scripts/prototypes/s6t8/dart_v25_refused_test.dart, copied into a scratch extract of main's package (git archive 62324f9) and
+# run there: dart test test/v25_refused_test.dart with INDEX and FOLDER (fixtures/family-folder) set. 'changed' lists files whose bytes
+# differ after the call; WRITER.LOCK is the empty lock file the old library creates where the fixture has none.
+00:00 +0: open
+open: SearchSimpliException: SearchSimpliException: ss_open: UnsupportedFlags; files 8 -> 8, changed []
+00:00 +1: applyChanges
+applyChanges: SearchSimpliException: SearchSimpliException: ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags; files 8 -> 9, changed [WRITER.LOCK]
+00:00 +2: indexFolder
+indexFolder: SearchSimpliException: SearchSimpliException: ss_index_folder: UnsupportedFlags; files 8 -> 8, changed []
+00:00 +3: All tests passed!

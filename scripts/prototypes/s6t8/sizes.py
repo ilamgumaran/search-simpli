@@ -9,8 +9,7 @@ current generation (MANIFEST, INDEX-STATE.json and each section file whose
 name ends in -<generation>.<ext>, WRITER.LOCK excluded), the content lexical
 section's bytes, and its section 5 (offsets) length from the section's
 header; each with the change in bytes and in percent of main's, one decimal,
-a saving truncated toward zero and a growth rounded up (never rounded in the
-branch's favour). Also checks
+rounded to nearest (half away from zero). Also checks
 that every section other than the content lexical section and the manifest
 is the same bytes. Not part of any library.
 """
@@ -39,9 +38,9 @@ def offsets_length(lexical: bytes) -> int:
 
 
 def pct(change: int, base: int) -> str:
-    # One decimal: a saving truncated toward zero, a growth rounded up, so
-    # neither is shown in the branch's favour.
-    tenths = abs(change) * 1000 // base if change < 0 else -(-change * 1000 // base)
+    # One decimal, from the bytes, rounded to nearest (half away from zero;
+    # rulings on the Report, item 3).
+    tenths = (abs(change) * 2000 // base + 1) // 2
     sign = "-" if change < 0 else "+"
     return f"{sign}{tenths // 10}.{tenths % 10}%"
 
