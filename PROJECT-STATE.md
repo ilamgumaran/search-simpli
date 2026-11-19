@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-18 (S6-T8 built, reworked on the rulings on its Report and again on the ruling after its FAIL Verdict, awaiting its next Verdict; one warm `both` cell on prose goes to the maintainer as a failed cell explained by code placement: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-18 (S6-T8 merged as `7c088a3` on 18 Nov 2026 after its Sixth Verdict, PASS, and the maintainer's go-ahead; the prose-10k `both` cells, 5–7 % slower and explained by code placement, accepted by him: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -15,9 +15,9 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## Highlight offsets at one byte per token (S6-T8, objective plan item D2 step 3, 2026-11-17; reworked after its Verdict, not yet verified)
+## Highlight offsets at one byte per token (S6-T8, objective plan item D2 step 3, 2026-11-17; merged 18 Nov 2026)
 
-**Built; FAIL Verdict of 18 Nov reworked (F1 fixed; F2 to the maintainer); awaiting its next Verdict** ([task and Report](docs/tasks/S6-T8.md),
+**Merged as `7c088a3` on 18 Nov 2026 after six Verdicts (the sixth PASS; F1 fixed; F2 accepted by the maintainer)** ([task and Report](docs/tasks/S6-T8.md),
 [format](docs/lexical-segment-format-v4.md), [manifest v2.5](docs/manifest-format-v2.md#v25-lexical-section-v4-s6-t8),
 [index size, Landed](docs/index-size.md#landed)). Every folder writer publishes the content lexical section as
 `HYBLEX04`: v3 with section 5 (the highlight offsets `find` reads) at one byte per token, the zigzag gap from the

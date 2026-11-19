@@ -41,7 +41,7 @@ Raw tables: [`docs/evidence/s6-t3/`](evidence/s6-t3/README.md).
   measured 2.17 (timing 10k), 2.04 (prose 10k), 1.33 (Tamil 10k), 1.82
   (fixtures), 2.11 (family folder) against the projection's 2.31, 2.10, 1.36,
   1.82, 2.11.
-- **Step 3 is built, not yet verified** ([below](#landed); S6-T8): the
+- **Step 3 is merged** (as `7c088a3`, 18 Nov 2026) ([below](#landed); S6-T8): the
   highlight offsets at one byte per token, measured 2.01 (timing 10k), 1.85
   (prose 10k), 1.28 (Tamil 10k), 1.72 (fixtures), 1.93 (family folder) against
   the projection's 2.15, 1.92, 1.32, 1.72, 1.92.
@@ -119,8 +119,8 @@ rebuild), of the other files measured the same or less. The numbers, bars and
 method are in the [S6-T7 Report](tasks/S6-T7.md) and
 `docs/evidence/s6-t7/phase2/`.
 
-**Step 3, the highlight offsets at one byte per token (S6-T8, built 17 Nov
-2026, not yet verified).** The content lexical section is
+**Step 3, the highlight offsets at one byte per token (S6-T8, merged as
+`7c088a3` on 18 Nov 2026).** The content lexical section is
 [`HYBLEX04`](lexical-segment-format-v4.md): v3 with section 5 recoded as C5b,
 per token one byte (the zigzag gap from the previous token's end and the
 length, two 4-bit fields, 15 escaping to the whole value as a varint), the

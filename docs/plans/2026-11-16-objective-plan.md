@@ -161,7 +161,12 @@ whether to keep one is the maintainer's decision (03-next).
    **Step 2, text once, done 17 Nov 2026** ([S6-T7](../tasks/S6-T7.md), merged as
    `a02b2cc`): documents record v5, source `HYBSRC02`, manifest v2.4; the index
    33.3–44.5 % smaller on the six corpora, every answer unchanged; the second
-   one-way step for a consumer. Steps 3–4 follow.
+   one-way step for a consumer.
+   **Step 3, highlight offsets at one byte per token, done 18 Nov 2026**
+   ([S6-T8](../tasks/S6-T8.md), merged as `7c088a3`): lexical section `HYBLEX04`,
+   manifest v2.5; the index 7.6 % (timing 10k), 9.2 % (prose 10k) and 3.3 %
+   (Tamil 10k) smaller, every answer unchanged; the third one-way step for a
+   consumer. Step 4 follows.
 3. **Delta sections** for writes (already filed in 03-next) follow D2, since both
    touch the section formats.
 
@@ -209,5 +214,6 @@ the maintainer's decision are his, not this judgment's.
 | **The maintainer's decision, 16 Nov:** S6-T4 merges as built, with its measured cost (two Tamil `find` cells fail clause (1) of the five-run timing rule, 18 small cells clause (2)); accepted, not passing. | The maintainer's replies of 16 Nov to the orchestrator's recommendation; see [S6-T4](../tasks/S6-T4.md#maintainers-decision-16-nov-2026). |
 | **The maintainer's decision, 16 Nov:** a request on a code path the task did not change is judged by clause (1) only; clause (2), the controls' band, is still reported but no longer fails it. Changed paths keep both clauses. | The same replies; see [S6-T4](../tasks/S6-T4.md#maintainers-decision-16-nov-2026) and the dated rule in [`ROLES.md`](../process/ROLES.md). |
 | **The maintainer's go-ahead, 17 Nov:** S6-T7 (D2 step 2, text once) merges with ruling 13's open-time expectation missed on prose-10k by 0.017–0.031 ms; it passes the 2026-11-17 rule. | His reply of 17 Nov to the orchestrator's question; see [S6-T7](../tasks/S6-T7.md). |
+| **The maintainer's go-ahead, 18 Nov:** S6-T8 (D2 step 3, one-byte highlight offsets) merges with the prose-10k `both` cells 5–7 % slower (they pass the 2026-11-17 rule as written; they fail under the verifier's original three controls alone) and audit items 5, 9, 14, 16, I5 and I6 filed as follow-up. | His reply of 18 Nov to the orchestrator's question; see [S6-T8](../tasks/S6-T8.md). |
 | **The maintainer's decision, 17 Nov:** the timing rule, for every request, changed path or not: a cell fails only if the five-run median of (head − `main`) is at or above T (the larger of 0.010 ms and 1 % of `main`'s median) and exceeds by at least T the largest five-run median of `main2` and of each placement control (at least one matching the task's compiled-code delta). The band clause is tabulated, no longer a failing test. Chosen after seeing S6-T5's data. | The maintainer's reply of 17 Nov ("go with your recommendation and keep the work saved pls") to the orchestrator's recommendation; under the rule then in force builds with no change failed more cells than S6-T5 (37, 16 and 2 against 23, of 163). See [S6-T5](../tasks/S6-T5.md#maintainers-decision-17-nov-2026) and the dated rule in [`ROLES.md`](../process/ROLES.md). |
 | **The maintainer's decision, 17 Nov:** S6-T5 (item G, warnings under `both` and `filename`) merges (merged as `423b2e9`); under the rule of 17 Nov its five runs give no failing cell. Both FAIL Verdicts stand as the record of the measurement under the rule then in force. | The same reply; see [S6-T5](../tasks/S6-T5.md#maintainers-decision-17-nov-2026). |
