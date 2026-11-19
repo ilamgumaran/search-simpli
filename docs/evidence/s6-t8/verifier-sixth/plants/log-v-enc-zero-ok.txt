@@ -1,0 +1,5 @@
++- run test 532 pass, 9 skip, 1 fail (542 total)
+error: 'compat_s6t8_test.test.S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 failed)
++- run test 532 pass, 9 skip, 1 fail (542 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M

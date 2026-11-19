@@ -1,0 +1,9 @@
+worktree at 965cce7
+== check_layers
+check_layers: OK (45 files in layers, 6 allowed interface imports)
+exit 0
+== check_requirements
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+exit 0
+== check_no_home_paths
+exit 0

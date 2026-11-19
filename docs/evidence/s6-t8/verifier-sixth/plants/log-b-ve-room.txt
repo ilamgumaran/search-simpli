@@ -1,0 +1,7 @@
++- run test 532 pass, 9 skip, 1 crash (542 total)
+error: 'offsets_v4_test.test.S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound' terminated with signal ABRT with stderr:
+       thread 111535647 panic: index out of bounds: index 16, len 15
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 crashed)
++- run test 532 pass, 9 skip, 1 crash (542 total)
++- run test 6 pass (6 total) 986ms MaxRSS:5M

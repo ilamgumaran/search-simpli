@@ -1,0 +1,37 @@
+# S6-T8 verifier, recheck after the rework (fa61957; library ea1dcde): F2 by the rule of 2026-11-17 and ruling 4's write
+# expectations. Written, committed and pushed before the first timed run. Nothing below is chosen after seeing a number.
+#
+# Libraries (each its own source copy and Zig caches, macOS arm64 ReleaseSmall; __text against main's 582,048 B):
+#   main  = c0eae3d, dylib 988,952 B.                      main2 = c0eae3d built again, byte-identical to main.
+#   head2 = fa61957 (= ea1dcde's library, the committed macOS native byte for byte), __text 586,844 (+4,796).
+#   ctl1  = main + 61 never-run loops in postings.lookupExact            (my first control, 18 Nov), __text +5,252.
+#   ctl2  = main + 63 never-run loops in postings.readTokenSpans         (my first control, 18 Nov), __text +5,312.
+#   pA, pB, pD, pC = main + one never-run function of 18, 36, 43, 54 loops placed where this task's writer code sits:
+#     in postings.zig right after PositionSections, called from apply.mergeCarried's section-5 merge under a branch never
+#     true at run time (my own generator, tim/mkplaced.py; not the builder's script or binaries).
+#     __text: pA +1,988, pB +4,024, pD +4,696 (size-matched to head2's +4,796), pC +6,216.
+#
+# Which controls count (fixed now):
+#   RULE SET (decides the cell): main2, ctl1, ctl2, pA, pB, pD, pC. The rule's text takes "the largest of the five-run
+#     medians of (main2 - main) and of each placement control - main", the controls being "builds of main plus never-run
+#     code, at least one of them matching the task's own compiled-code delta". It sets no condition on where the
+#     never-run code is placed, so every such build I made counts. pD matches head2's delta; ctl1 and ctl2 matched the
+#     Verdict's head (+5,288).
+#   ORIGINAL SET (reported beside it, as the coordinator asked; it decides nothing): main2, ctl1, ctl2.
+#
+# T = max(0.010 ms, 1 % of main's five-run median). A cell fails if median(head2 - main) >= T and exceeds by >= T the
+# largest five-run median of (control - main) over the set.
+#
+# Five runs, numbered 11-15. Each library takes a different position in each run (row r = the list rotated by 2(r-11)):
+run11: main head2 main2 ctl1 pA ctl2 pD pB pC
+run12: main2 ctl1 pA ctl2 pD pB pC main head2
+run13: pA ctl2 pD pB pC main head2 main2 ctl1
+run14: pD pB pC main head2 main2 ctl1 pA ctl2
+run15: pC main head2 main2 ctl1 pA ctl2 pD pB
+# Within a run, in this order: phase q (all six corpora, every query and find cell, open p50 of 30, memory after open,
+# first query and find; the builder's committed query sets, as in my first runs; prose-10k's five warm `both` cells are
+# among them), then phase u (first publish from main's format and a one-file update, 3 trials, timing, prose, Tamil,
+# family). Each library reads its own copy of its index (head2: its own v2.5 index; the controls and main2: main's).
+# Gate before every process (tim2/gate.sh: the lock absent, 5-minute load below 4.0, no toolchain at 20 % CPU);
+# pmset -g log checked for Sleep/Wake/DarkWake inside each run afterwards; a run with one is discarded and retaken as
+# the same number with "b". Nothing else runs beside a timed run.

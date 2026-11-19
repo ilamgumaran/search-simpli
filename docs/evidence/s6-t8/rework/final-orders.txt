@@ -1,0 +1,6 @@
+# Final builder timing on e5d1734 (rulings on the Report), orders written before the first run. bench.py bench, five libraries per run.
+# main, main2 = 62324f9 twice; head = e5d1734 (the committed native); ctl3 = main + 57 never-run blocks in lookupExact (__text +5,256 B,
+# head +5,288 B); ctlP = main + 41 never-run blocks placed where this task's new code sits (__text +5,228 B).
+run31:main main2 head ctl3 ctlP
+run32:head ctlP ctl3 main main2
+2026-11-18 00:56:38

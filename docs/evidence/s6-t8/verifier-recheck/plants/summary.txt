@@ -1,0 +1,35 @@
+carry-error-swallowed: changed lines 2; Build Summary: 9/9 steps succeeded; 511/520 tests passed (9 skipped); crash markers 0
+carry-error-to-gap: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 504/520 tests passed (9 skipped, 7 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a count other than the document's length is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the first token is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the last token is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a varint whose fifth byte is above 0x0F is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a varint with a sixth byte is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: an end past a u32 is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1: a length of 0 in one v2 token (the verifier's v2_first_publish case) is refused at the first publish, the old generation whole and byte-identical
+ck-count-removed: changed lines 2; Build Summary: 9/9 steps succeeded; 511/520 tests passed (9 skipped); crash markers 0
+ck-end-removed: changed lines 2; Build Summary: 9/9 steps succeeded; 511/520 tests passed (9 skipped); crash markers 0
+ck-u32-end-removed: changed lines 2; Build Summary: 9/9 steps succeeded; 511/520 tests passed (9 skipped); crash markers 0
+ck-zero-removed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical
+drop-error-swallowed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical
+drop-skip-last: changed lines 2; Build Summary: 9/9 steps succeeded; 511/520 tests passed (9 skipped); crash markers 0
+f1-dropped-unchecked: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical
+f1-refusal-removed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+f1-repair-restored: changed lines 1; Build Summary: 7/9 steps succeeded (1 failed); 507/520 tests passed (9 skipped, 4 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the first token is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the last token is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1: a length of 0 in one v2 token (the verifier's v2_first_publish case) is refused at the first publish, the old generation whole and byte-identical
+    failed: offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+none: changed lines 0; Build Summary: 9/9 steps succeeded; 511/520 tests passed (9 skipped); crash markers 0
+tr-count-removed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a count other than the document's length is refused by the first publish
+tr-end-removed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+tr-gap-check-removed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 crashed); crash markers 4
+    failed: offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses (crashed)
+tr-u32-end-removed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: an end past a u32 is refused by the first publish

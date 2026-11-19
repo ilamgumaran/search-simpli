@@ -1,0 +1,14 @@
+error: 'lexical_segment.test.HYBLEX02 round trip keeps positions, offsets and sorted terms (S3-T2)' failed:
+error: 'lexical_segment.test.HYBLEX02 corruption: checksum first, then every section 4/5 rule (S3-T2)' failed:
+error: 'lexical_segment.test.S4-T12 ruling 2: every refusal keeps its name through encodedLength, encode and encodeAlloc' failed:
+error: 'lexical_segment.test.S4-T12 ruling 3: a positional index claiming sorted but descending is UnsortedTerms; a sorted one encodes' failed:
+error: 'lexical_segment.test.S6-T4 second rework (Q1): a byte left over after the last document's offsets is refused, v2 and v3, at open and lazily' failed:
+error: 'lexical_build.test.buildPositional keeps build's statistics, sorts terms and round-trips positions (S3-T2)' failed:
+error: 'compat_292cb568_test.test.S4-T1: an index written at 292cb568 opens and answers find, read_span, outline, list_files and search_knowledge' failed:
+error: 'compat_292cb568_test.test.S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XXH3 sections, no filename sections) that reads the same' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: a 98c4a2b (v2) index opens and answers exactly as a fresh v3 index of the same folder' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one' failed:
+error: 'compat_s6t8_test.test.S6-T8: indexes from 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.5 index, their bytes untouched' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 487/509 tests passed (9 skipped, 13 failed)

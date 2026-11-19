@@ -1,0 +1,5 @@
++- run test 524 pass, 9 skip, 1 fail (534 total)
+error: 'offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 530/540 tests passed (9 skipped, 1 failed)
++- run test 524 pass, 9 skip, 1 fail (534 total)
++- run test 6 pass (6 total) 965ms MaxRSS:5M

@@ -1,0 +1,8 @@
+# Final builder runs 31 and 32 on e5d1734 (final-orders.txt): open p50 per run and memory after open (bench.py: RSS change at open) per run,
+# head against main and the largest control (main2, ctl3, ctlP); percentages rounded to nearest. summarize_open.py.
+j2          open main 0.148 0.147 ms, head 0.149 0.147 ms; median d +0.3 us (+0.2 %), largest control +2.0 us; memory after open main 131,072 / 131,072 B, head 114,688 / 114,688 B
+family      open main 1.050 1.046 ms, head 1.021 1.011 ms; median d -31.8 us (-3.0 %), largest control +9.1 us; memory after open main 4,964,352 / 4,964,352 B, head 4,734,976 / 4,734,976 B
+fixtures    open main 2.915 2.956 ms, head 2.876 2.819 ms; median d -87.8 us (-3.0 %), largest control -52.9 us; memory after open main 14,909,440 / 14,909,440 B, head 14,434,304 / 14,450,688 B
+timing-10k  open main 5.405 5.349 ms, head 5.216 5.270 ms; median d -133.7 us (-2.5 %), largest control +33.7 us; memory after open main 25,690,112 / 25,690,112 B, head 24,494,080 / 24,494,080 B
+tamil-10k   open main 7.725 7.735 ms, head 7.611 7.611 ms; median d -119.0 us (-1.5 %), largest control +228.9 us; memory after open main 46,923,800 / 46,923,800 B, head 45,727,768 / 45,727,768 B
+prose-10k   open main 11.719 11.760 ms, head 11.218 11.300 ms; median d -480.2 us (-4.1 %), largest control +133.6 us; memory after open main 53,067,800 / 53,067,800 B, head 49,840,152 / 49,840,152 B

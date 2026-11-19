@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/rv-sixth-loose/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig	2026-11-18 09:57:46
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/rv-sixth-loose/zig/src/postings.zig	2026-11-18 11:11:55
+@@ -359,7 +359,7 @@
+     var shift: u6 = 0;
+     var at = offset.*;
+     while (true) {
+-        if (at >= bytes.len or shift > 28) return null;
++        if (at >= bytes.len or shift > 35) return null;
+         const byte = bytes[at];
+         at += 1;
+         value |= @as(u64, byte & 0x7F) << shift;

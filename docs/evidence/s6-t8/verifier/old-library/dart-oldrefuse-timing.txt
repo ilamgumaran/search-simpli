@@ -1,0 +1,3 @@
+open: SearchSimpliException: SearchSimpliException: ss_open: UnsupportedFlags
+applyChanges: SearchSimpliException: SearchSimpliException: ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags
+indexFolder: SearchSimpliException: SearchSimpliException: ss_index_folder: UnsupportedFlags

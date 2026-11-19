@@ -1,0 +1,7 @@
++- run test 530 pass, 9 skip, 3 fail (542 total)
+error: 'compat_s6t8_test.test.S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails' failed:
+error: 'offsets_v4_test.test.S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 536/548 tests passed (9 skipped, 3 failed)
++- run test 530 pass, 9 skip, 3 fail (542 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M

@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/source.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-ve-room/zig/src/source.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/source.zig	2026-11-18 15:47:50
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-ve-room/zig/src/source.zig	2026-11-18 16:27:33
+@@ -93,7 +93,7 @@
+     var remaining = count;
+     var offset = at;
+     if (offset > bytes.len) return null;
+-    while (remaining >= lanes and bytes.len - offset >= lanes) {
++    while (remaining >= lanes and bytes.len - offset >= lanes - 1) {
+         const block: Block = bytes[offset..][0..lanes].*;
+         const ends: u16 = @bitCast(block < @as(Block, @splat(0x80)));
+         remaining -= @popCount(ends);

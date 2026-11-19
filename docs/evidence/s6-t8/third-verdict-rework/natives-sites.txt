@@ -1,0 +1,14 @@
+build_native.sh on a fresh archive of 7d5e8c1 (own caches): exit 0
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib (  990040 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  959584 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  970992 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (2e203ac5ddf21714cf1053253b45967efd31aa7739826fff3d031196d255bfcc)
+cmp native/macos-arm64/libsearch_simpli.dylib: identical to the committed file (990040 B)
+cmp native/android-arm64/libsearch_simpli.so: identical to the committed file (959584 B)
+cmp example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: identical to the committed file (959584 B)
+cmp native/ios-arm64/search_simpli.framework/search_simpli: identical to the committed file (970992 B)
+cmp native/ios-arm64/search_simpli.framework/Info.plist: identical to the committed file (749 B)
+cmp native/SOURCE-SHA256: identical to the committed file (65 B)
+check_native.sh:
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)

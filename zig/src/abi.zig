@@ -589,6 +589,19 @@ fn errorCode(err: anyerror) i64 {
         // `find` (a lazy open), not by `ss_open`.
         error.InvalidPositions,
         error.UnsortedTerms,
+        // S6-T8: the rules of a `HYBLEX04` section 5, each with its own
+        // error (`docs/lexical-segment-format-v4.md`), at the first `find`;
+        // rule 11 at the `find` that reads the document.
+        error.OffsetsTruncated,
+        error.OffsetsVarintOverflow,
+        error.OffsetsCountMismatch,
+        error.OffsetsNonCanonicalEscape,
+        error.OffsetsZeroLength,
+        error.OffsetsStartBeforeChunk,
+        error.OffsetsStartDecreases,
+        error.OffsetsEndOverflow,
+        error.OffsetsTrailingData,
+        error.OffsetsPastText,
         // S4-T2: the v2.2 filename sections (checked at the first filename
         // query, a lazy load) and the recovery-state section (checked by the
         // next writer, which refuses to write over a damaged one).

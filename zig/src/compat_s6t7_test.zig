@@ -60,7 +60,7 @@ fn oldIndex(a: std.mem.Allocator, tmp: std.testing.TmpDir, name: []const u8) !st
     return dir;
 }
 
-test "S6-T7: the committed text-once fixture is this writer's output, and a library before v2.4 refuses it at the flags" {
+test "S6-T7: the committed text-once fixture is 62324f9's writer output (this writer's but for HYBLEX04), and a library before v2.4 refuses it at the flags" {
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const a = arena_state.allocator();
@@ -77,10 +77,15 @@ test "S6-T7: the committed text-once fixture is this writer's output, and a libr
     defer tmp.cleanup();
     var fresh = try compat.freshIndex(a, tmp, "fresh");
     defer fresh.close(io);
+    // S6-T8: since v2.5 the content section is `HYBLEX04` and the manifest
+    // sets bit 7; every other section is still this fixture's, and the
+    // content section is the fixture's `HYBLEX03` with section 5 recoded.
+    // `compat_s6t8_test.zig` holds v2.5's reference.
     for (files) |name| {
-        if (std.mem.eql(u8, name, "INDEX-STATE.json")) continue;
+        if (std.mem.eql(u8, name, "INDEX-STATE.json") or std.mem.eql(u8, name, "MANIFEST") or std.mem.eql(u8, name, "lexical-1.hyblex")) continue;
         try std.testing.expectEqualSlices(u8, try committed.readFileAlloc(io, name, a, .unlimited), try fresh.readFileAlloc(io, name, a, .unlimited));
     }
+    try compat.expectSameLexicalAsV3(a, try committed.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited), try fresh.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited));
     // The old fixture's sections that did not change format are the new
     // fixture's, byte for byte.
     for ([_][]const u8{ "lexical-1.hyblex", "filenames-1.hybseg", "filename-lexical-1.hyblex", "state-1.hybstate" }) |name| {

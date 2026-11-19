@@ -1,0 +1,13 @@
++- run test 517 pass, 9 skip, 7 fail, 1 crash (534 total)
+error: 'source.test.source section rejects corruption, unsorted paths and bad line maps' terminated with signal ABRT with stderr:
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'source.test.S4-T11: varintsEnd counts end bytes across blocks and refuses a short section' failed:
+error: 'source.test.S4-T14 ruling 3: openTable walks the table and bounds the maps; a map that disagrees with its bytes is refused where the file is read' failed:
+error: 'source_fixture_test.test.S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section' failed:
+error: 'text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)' failed:
+error: 'apply_test.test.S4-T14 ruling 3(c): a previous source section whose last map runs past the maps region is refused at the writer's open' failed:
+error: 'compat_s6t8_test.test.S6-T8 F1, v2 rule: a section that ends inside the last table is refused by the first publish' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 523/540 tests passed (9 skipped, 7 failed, 1 crashed)
++- run test 517 pass, 9 skip, 7 fail, 1 crash (534 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M

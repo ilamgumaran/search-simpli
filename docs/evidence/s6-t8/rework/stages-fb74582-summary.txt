@@ -1,0 +1,92 @@
+# item 1a: stage medians, main (62324f9) against fb74582, from stages-fb74582.jsonl (orders stage-orders.txt); stages under 0.3 ms of change left out.
+load 1.08-2.19 (the 1-, 5- and 15-minute values before and after each set)
+
+family first (12 updates each)   main ms   head ms   change
+  build_lexical.offsets                          0.059     1.535    +1.476 +2480.7 %
+  build_lexical                                  0.636     2.101    +1.465 +230.3 %
+  total                                          9.584    10.845    +1.260 +13.1 %
+  wall                                          12.469    13.829    +1.361 +10.9 %
+
+family second (12 updates each)   main ms   head ms   change
+  build_lexical.offsets                          0.056     0.899    +0.843 +1506.2 %
+  build_lexical                                  0.632     1.461    +0.829 +131.2 %
+  total                                          9.678    10.166    +0.489 +5.0 %
+  wall                                          12.542    12.909    +0.367 +2.9 %
+
+fixtures first (12 updates each)   main ms   head ms   change
+  build_lexical.offsets                          0.183     4.477    +4.294 +2346.4 %
+  build_lexical                                  1.341     5.622    +4.281 +319.2 %
+  encode_sections.lexical                        7.832     7.509    -0.323 -4.1 %
+  encode_sections                                8.707     8.373    -0.334 -3.8 %
+  total                                         23.640    27.373    +3.732 +15.8 %
+  wall                                          27.724    31.367    +3.642 +13.1 %
+
+fixtures second (12 updates each)   main ms   head ms   change
+  build_lexical.offsets                          0.180     2.394    +2.214 +1230.3 %
+  build_lexical                                  1.334     3.546    +2.212 +165.8 %
+  total                                         23.476    25.567    +2.091 +8.9 %
+  wall                                          27.210    29.335    +2.125 +7.8 %
+
+timing-10k first (12 updates each)   main ms   head ms   change
+  changes                                      115.418   114.581    -0.837 -0.7 %
+  build_lexical.offsets                          0.680     8.191    +7.511 +1104.6 %
+  build_lexical                                  4.137    11.581    +7.444 +179.9 %
+  encode_sections.lexical.positions              4.291     3.905    -0.386 -9.0 %
+  encode_sections.lexical                       12.864    12.279    -0.584 -4.5 %
+  encode_sections                               15.877    15.363    -0.514 -3.2 %
+  publish                                        7.027     6.603    -0.425 -6.0 %
+  total                                        163.123   168.564    +5.441 +3.3 %
+  wall                                         172.961   178.257    +5.296 +3.1 %
+
+timing-10k second (12 updates each)   main ms   head ms   change
+  build_lexical.offsets                          0.667     4.438    +3.771 +565.9 %
+  build_lexical                                  4.124     7.870    +3.745 +90.8 %
+  encode_sections.lexical.positions              4.464     3.719    -0.746 -16.7 %
+  encode_sections.lexical                       12.901    12.053    -0.849 -6.6 %
+  encode_sections                               16.035    15.140    -0.895 -5.6 %
+  publish                                        7.367     6.913    -0.454 -6.2 %
+  total                                        159.888   161.628    +1.740 +1.1 %
+  wall                                         169.643   171.041    +1.398 +0.8 %
+
+prose-10k first (12 updates each)   main ms   head ms   change
+  changes                                      120.946   121.625    +0.679 +0.6 %
+  build_lexical.offsets                          1.028    21.983   +20.955 +2038.4 %
+  build_lexical                                  8.314    29.341   +21.028 +252.9 %
+  encode_sections.lexical.positions             15.587    12.760    -2.827 -18.1 %
+  encode_sections.lexical                       30.504    27.613    -2.891 -9.5 %
+  encode_sections                               35.247    32.421    -2.826 -8.0 %
+  publish                                       10.480     9.669    -0.811 -7.7 %
+  total                                        207.346   224.585   +17.239 +8.3 %
+  wall                                         217.556   235.006   +17.450 +8.0 %
+
+prose-10k second (12 updates each)   main ms   head ms   change
+  open_previous                                 15.039    14.609    -0.430 -2.9 %
+  changes                                      117.394   117.843    +0.449 +0.4 %
+  build_lexical.offsets                          1.026    12.043   +11.018 +1074.4 %
+  build_lexical                                  8.341    19.426   +11.085 +132.9 %
+  encode_sections.lexical.positions             15.822    13.005    -2.817 -17.8 %
+  encode_sections.lexical                       30.844    27.581    -3.263 -10.6 %
+  encode_sections                               35.648    32.300    -3.348 -9.4 %
+  publish                                       11.950    10.952    -0.998 -8.4 %
+  total                                        203.820   211.068    +7.248 +3.6 %
+  wall                                         213.949   221.026    +7.077 +3.3 %
+
+tamil-10k first (12 updates each)   main ms   head ms   change
+  build_lexical.offsets                          0.667     8.280    +7.612 +1140.4 %
+  build_lexical                                  4.453    11.907    +7.454 +167.4 %
+  encode_sections.lexical.positions              4.281     3.800    -0.482 -11.2 %
+  encode_sections.lexical                       12.979    12.405    -0.573 -4.4 %
+  encode_sections                               18.626    17.980    -0.646 -3.5 %
+  publish                                       10.505     9.954    -0.552 -5.3 %
+  total                                        195.989   201.743    +5.754 +2.9 %
+  wall                                         206.601   212.300    +5.700 +2.8 %
+
+tamil-10k second (12 updates each)   main ms   head ms   change
+  build_lexical.offsets                          0.672     4.442    +3.770 +561.1 %
+  build_lexical                                  4.520     8.176    +3.656 +80.9 %
+  encode_sections.lexical.positions              4.521     3.864    -0.657 -14.5 %
+  encode_sections.lexical                       13.311    12.352    -0.958 -7.2 %
+  encode_sections                               18.984    18.090    -0.894 -4.7 %
+  publish                                       11.053    10.480    -0.573 -5.2 %
+  total                                        192.755   195.171    +2.415 +1.3 %
+  wall                                         203.152   205.302    +2.150 +1.1 %

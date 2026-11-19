@@ -1,0 +1,11 @@
+load 1.29-3.26 (the 1-, 5- and 15-minute values before and after each set)
+timing-10k  first: main   172.2 head   178.2 (12 each)   +6.0 ms (+3.5 %)   second: main   169.1 head   172.8 (12 each)   +3.7 ms (+2.2 %)
+            after the first update: main {'generation': 2, 'flags': '0x7f', 'lexical_magic': 'HYBLEX03'}; head {'generation': 2, 'flags': '0xff', 'lexical_magic': 'HYBLEX04'}
+prose-10k   first: main   216.6 head   236.5 (12 each)  +19.9 ms (+9.2 %)   second: main   214.1 head   222.4 (12 each)   +8.3 ms (+3.9 %)
+            after the first update: main {'generation': 2, 'flags': '0x7f', 'lexical_magic': 'HYBLEX03'}; head {'generation': 2, 'flags': '0xff', 'lexical_magic': 'HYBLEX04'}
+tamil-10k   first: main   205.0 head   212.8 (12 each)   +7.8 ms (+3.8 %)   second: main   203.7 head   205.3 (12 each)   +1.6 ms (+0.8 %)
+            after the first update: main {'generation': 2, 'flags': '0x7f', 'lexical_magic': 'HYBLEX03'}; head {'generation': 2, 'flags': '0xff', 'lexical_magic': 'HYBLEX04'}
+family      first: main    12.3 head    13.8 (12 each)   +1.5 ms (+12.5 %)   second: main    12.1 head    12.6 (12 each)   +0.5 ms (+4.2 %)
+            after the first update: main {'generation': 2, 'flags': '0x7f', 'lexical_magic': 'HYBLEX03'}; head {'generation': 2, 'flags': '0xff', 'lexical_magic': 'HYBLEX04'}
+fixtures    first: main    27.7 head    31.4 (12 each)   +3.7 ms (+13.4 %)   second: main    27.3 head    29.1 (12 each)   +1.9 ms (+6.9 %)
+            after the first update: main {'generation': 2, 'flags': '0x7f', 'lexical_magic': 'HYBLEX03'}; head {'generation': 2, 'flags': '0xff', 'lexical_magic': 'HYBLEX04'}

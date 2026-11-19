@@ -1,0 +1,45 @@
+error: 'source_fixture_test.test.S3-T1: read_span, outline and the source binding agree with the family-folder judgments' failed:
+error: 'source_fixture_test.test.S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section' failed:
+error: 'text_once_test.test.S6-T7 ruling 3: every kind of file is rebuilt to its exact bytes, with HYBSRC01's map, SHA-256, read_span and outline' failed:
+error: 'text_once_test.test.S6-T7 Verdict finding 1: overlaps of 1 and 2 bytes and of the whole previous chunk are rebuilt exactly, through read_span and outline' failed:
+error: 'text_once_test.test.S6-T7 ruling 11: every documents v5 rule, violated with the checksum recomputed, is refused with its error' failed:
+error: 'text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)' failed:
+error: 'text_once_test.test.S6-T7: the manifest's text_once flag binds record v5 and HYBSRC02 both ways' failed:
+error: 'text_once_test.test.S6-T7: an update carries unchanged files' records, maps and residual runs byte for byte, and the result is a fresh index's' failed:
+error: 'bm25_conformance_test.test.BM25 ranking matches the Python reference for analyzer-v1 and analyzer-v2' failed:
+error: 'apply_test.test.S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes' failed:
+error: 'import_analyzer_test.test.S2-T1: Tamil fixture published through import-json with analyzer-v2 finds every judged passage at rank 1' failed:
+error: 'import_analyzer_test.test.S2-T1: import-json with analyzer-v2 publishes the same bytes as searchd index on the app-text fixture' failed:
+error: 'import_analyzer_test.test.S1-T14: Tamil words absent from the corpus match nothing through either door (S5-T4: fold-groups-v1 off; on, only the plural of a held word)' failed:
+error: 'find_fixture_test.test.S3-T2: phrase and prefix judgments reach precision and recall 1.00 across all pages; the listed misses are missed' failed:
+error: 'compat_292cb568_test.test.S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XXH3 sections, no filename sections) that reads the same' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: a 98c4a2b (v2) index opens and answers exactly as a fresh v3 index of the same folder' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's flags (UnsupportedFlags), never reading a section' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 3: two terms sharing 300 bytes go through the analyzer, the writer caps the shared prefix at 255, and each finds its own file' failed:
+error: 'compat_s6t7_test.test.S6-T7: the committed text-once fixture is 62324f9's writer output (this writer's but for HYBLEX04), and a library before v2.4 refuses it at the flags' failed:
+error: 'compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder' failed:
+error: 'compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same' failed:
+error: 'compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one' failed:
+error: 'compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags' failed:
+error: 'compat_s6t8_test.test.S6-T8: indexes from 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.5 index, their bytes untouched' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result' failed:
+error: 'compat_s6t8_test.test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one' failed:
+error: 'offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte' failed:
+error: 'offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find' failed:
+error: 'offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily' failed:
+error: 'offsets_v4_test.test.S6-T8: the header of HYBLEX04: version 4 and flags exactly 3' failed:
+error: 'offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned' failed:
+error: 'offsets_v4_test.test.S6-T8 rule 7 through find: a damaged section 5 fails the first find and every later one with the rule's error' failed:
+error: 'offsets_v4_test.test.S6-T8: the manifest's bit 7 binds HYBLEX04 both ways, and only with bit 5' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: every table of a built index, coded as v2 and transcoded, is the fresh v4 section' terminated with signal ABRT with stderr:
+error: 'nfr13_arena_test.test.S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge over the family folder inside 64 MiB' failed:
+error: 'nfr13_arena_test.test.S4-T1 NFR-13: the cap bites (a 256 KiB cap refuses the same open)' failed:
+error: 'direct_search_test.test.S6-T2: search answers as index then query/evidence, J2 corpus, every query, all three fields' failed:
+error: 'direct_search_test.test.S6-T2: search answers as index then query/evidence, the whole fixtures folder' failed:
+error: 'direct_search_test.test.S6-T2: the detached sections are the bytes index publishes (J2, fixtures, the walk's rules; with and without the file-name channel)' failed:
+error: 'direct_search_test.test.S6-T2: search's flags reach the answer (field, top-k, json, evidence, caps)' failed:
+error: 'direct_search_test.test.S6-T2: the scoped detached open reads the source section from memory' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 456/509 tests passed (9 skipped, 43 failed, 1 crashed)

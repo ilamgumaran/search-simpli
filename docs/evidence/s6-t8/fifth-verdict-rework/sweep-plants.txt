@@ -1,0 +1,272 @@
+b-vo-count-plus | vo: count != length (rule 2), one more let through | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-vo-count-minus | vo: count != length (rule 2), one less let through | v4
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 3m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 532 pass, 9 skip, 1 fail (542 total) | 1 failed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-vo-token-at | vo: at >= len before a token byte (rule 3) | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 crash (537 total) | 1 failed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily (crash)
+b-vo-gap-canon | vo: gap escape < 15 (rule 6) | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-vo-length-canon | vo: length escape < 15 (rule 6) | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-vo-zero | vo: length == 0, as < 1 (rule 7) | v4
+  at c88e11f: diff 2 lines | run test 525 pass, 9 skip, 3 fail (537 total) | 3 failed
+    - S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables
+    - S6-T8 rule 7 through find: a damaged section 5 fails the first find and every later one with the rule's error
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-vo-before-chunk | vo: start < 0 (rule 8) | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-vo-decreases | vo: start < previous start (rule 9) | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-vo-end | vo: end > 2^32 - 1 (rule 10) | v4
+  at c88e11f: diff 2 lines | run test 526 pass, 9 skip, 2 fail (537 total) | 2 failed
+    - S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-vo-trailing | vo: at != len after the last table (rule 12) | v4
+  at c88e11f: diff 2 lines | run test 526 pass, 9 skip, 2 fail (537 total) | 2 failed
+    - S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+b-ro-at | readOffsetsVarint: i >= len (rules 1, 4) | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 crash (537 total) | 1 failed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily (crash)
+b-ro-shift | readOffsetsVarint: shift > 28 (rules 1, 5) | v4
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 2m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 533 pass, 9 skip (542 total) 3m MaxRSS:933M | 0 failed
+b-ro-max | readOffsetsVarint: value > 2^32 - 1 (rules 1, 5) | v4
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 2m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 532 pass, 9 skip, 1 crash (542 total) | 1 failed
+    - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily (crash)
+b-ck-len | ck: len < at_start | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 2m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 532 pass, 9 skip, 1 crash (542 total) | 1 failed
+    - S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it (crash)
+b-ck-four | ck: len - at_start < 4 | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 2m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 532 pass, 9 skip, 1 crash (542 total) | 1 failed
+    - S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it (crash)
+b-ck-count-plus | ck: count != length, one more let through | v2
+  at c88e11f: diff 2 lines | run test 526 pass, 9 skip, 2 fail (537 total) | 2 failed
+    - S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish
+    - S6-T8 sites: a count other than the document's length, carried or dropped, at the first, a middle and the last table
+b-ck-count-minus | ck: count != length, one less let through | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 4m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 531 pass, 9 skip, 2 fail (542 total) | 2 failed
+    - S6-T8 sites: a count one less than the document's length, carried or dropped, at three tables
+    - S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it
+b-ck-zero | ck: length == 0, as < 1 | v2
+  at c88e11f: diff 2 lines | run test 525 pass, 9 skip, 3 fail (537 total) | 3 failed
+    - S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical
+    - S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish
+    - S6-T8 sites: a length of 0, carried or dropped, at three tables
+b-ck-end | ck: start + length > 2^32 - 1 | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables
+b-ck-leftover | ck: at != end | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 2m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 532 pass, 9 skip, 1 fail (542 total) | 1 failed
+    - S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it
+b-tr-len | tr: len < at_start | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 2m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 532 pass, 9 skip, 1 crash (542 total) | 1 failed
+    - S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it (crash)
+b-tr-four | tr: len - at_start < 4 | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 crash (537 total) | 1 failed
+    - S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses (crash)
+b-tr-count-plus | tr: count != length, one more let through | v2
+  at c88e11f: diff 2 lines | run test 526 pass, 9 skip, 2 fail (537 total) | 2 failed
+    - S6-T8 F1, v2 rule: a count other than the document's length is refused by the first publish
+    - S6-T8 sites: a count other than the document's length, carried or dropped, at the first, a middle and the last table
+b-tr-count-minus | tr: count != length, one less let through | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 3m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 531 pass, 9 skip, 2 fail (542 total) | 2 failed
+    - S6-T8 sites: a count one less than the document's length, carried or dropped, at three tables
+    - S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it
+b-tr-fast-room | tr: fast path, len - at >= 2 | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 crash (537 total) | 1 failed
+    - S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses (crash)
+b-tr-fast-delta | tr: fast path, delta byte < 0x80 | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+b-tr-fast-length | tr: fast path, length byte < 0x80 | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+b-tr-zero | tr: length == 0, as < 1 | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+b-tr-end | tr: start + length > 2^32 - 1 | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables
+b-tr-gap | tr: zigzag gap > 2^32 - 1 (GapNotRepresentable) | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 crash (537 total) | 1 failed
+    - S6-T8 sites: a gap of exactly 2^31 (valid v2, zigzag 2^32) in a carried table is refused at three tables; a dropped one is not checked for it (crash)
+b-tr-gap-escape | tr: zigzag gap >= 15 escapes | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 3m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 533 pass, 9 skip (542 total) 3m MaxRSS:933M | 0 failed
+b-tr-length-escape | tr: length >= 15 escapes | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 3m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 533 pass, 9 skip (542 total) 3m MaxRSS:933M | 0 failed
+b-tr-leftover | tr: at != end | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+b-ob-remaining | ob: fast path, remaining >= 16 | v4
+  at c88e11f: diff 2 lines | run test 513 pass, 9 skip, 15 crash (537 total) | 15 failed
+    - S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes (crash)
+    - S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index (crash)
+    - S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same (crash)
+    - S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables (crash)
+    - S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed (crash)
+    - S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables (crash)
+    - S6-T8 sites: a v4 section that ends before a table's last token byte is refused at a later update, carried or dropped, at three tables (crash)
+    - S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table (crash)
+    - S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables (crash)
+    - S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables (crash)
+    - S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed (crash)
+    - S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result (crash)
+    - S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same (crash)
+    - S4-T11 ruling 2: seeded random mutations, each round's update equals a fresh index byte for byte (crash)
+    - S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails (crash)
+b-ob-room | ob: fast path, len - at >= 16 | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 crash (537 total) | 1 failed
+    - S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails (crash)
+b-ob-at | ob: at >= len before a token byte | v4
+  at c88e11f: diff 2 lines | run test 526 pass, 9 skip, 2 crash (537 total) | 2 failed
+    - S6-T8 sites: a v4 section that ends before a table's last token byte is refused at a later update, carried or dropped, at three tables (crash)
+    - S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails (crash)
+b-sv-at | skipOneVarint: at < len | v4
+  at c88e11f: diff 2 lines | run test 524 pass, 9 skip, 4 crash (537 total) | 4 failed
+    - S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table (crash)
+    - S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables (crash)
+    - S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables (crash)
+    - S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails (crash)
+b-sv-end-byte | skipOneVarint: byte < 0x80 ends the varint | v4
+  at c88e11f: diff 2 lines | run test 526 pass, 9 skip, 2 fail (537 total) | 2 failed
+    - S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table
+    - S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails
+b-rv-at | readVarint: at >= len | v2
+  at c88e11f: diff 2 lines | run test 521 pass, 9 skip, 7 crash (537 total) | 7 failed
+    - S6-T8 F1, v2 rule: a section that ends inside the last table is refused by the first publish (crash)
+    - S6-T4 rework: a file-name section whose last list is longer than its df is held to its list bytes (crash)
+    - HYBLEX02 corruption: checksum first, then every section 4/5 rule (S3-T2) (crash)
+    - S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections (crash)
+    - S6-T4: HYBLEX03 damage is refused (checksum, truncation, zero gap, prefix, counts) (crash)
+    - S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader (crash)
+    - S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses (crash)
+b-rv-shift | readVarint: shift > 28 | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 3m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 533 pass, 9 skip (542 total) 3m MaxRSS:933M | 0 failed
+b-rv-max | readVarint: value > 2^32 - 1 | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 3m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 530 pass, 9 skip, 3 crash (542 total) | 3 failed
+    - S6-T8 sites: a start delta and a length of exactly 2^32, carried or dropped, at three tables (crash)
+    - S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it (crash)
+    - S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound (crash)
+b-ve-offset | varintsEnd: offset > len | v2
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S4-T11: varintsEnd counts end bytes across blocks and refuses a short section
+b-ve-remaining | varintsEnd: fast path, remaining >= 16 | v2
+  at c88e11f: diff 2 lines | run test 480 pass, 9 skip, 48 crash (537 total) | 48 failed
+    - S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes (crash)
+    - S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XXH3 sections, no filename sections) that reads the same (crash)
+    - S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one (crash)
+    - S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index (crash)
+    - S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one (crash)
+    - S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same (crash)
+    - S6-T8 F1, v2 rule: a byte after the last table is refused by the first publish (crash)
+    - S6-T8 F1, v2 rule: a count other than the document's length is refused by the first publish (crash)
+    - S6-T8 F1, v2 rule: a length of 0 in the first token is refused by the first publish (crash)
+    - S6-T8 F1, v2 rule: a length of 0 in the last token is refused by the first publish (crash)
+    - S6-T8 F1, v2 rule: a section that ends inside the last count is refused by the first publish (crash)
+    - S6-T8 F1, v2 rule: a section that ends inside the last table is refused by the first publish (crash)
+    - S6-T8 F1, v2 rule: a varint whose fifth byte is above 0x0F is refused by the first publish (crash)
+    - S6-T8 F1, v2 rule: a varint with a sixth byte is refused by the first publish (crash)
+    - S6-T8 F1, v2 rule: an end past a u32 is refused by the first publish (crash)
+    - S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical (crash)
+    - S6-T8 F1: a length of 0 in one v2 token (the verifier's v2_first_publish case) is refused at the first publish, the old generation whole and byte-identical (crash)
+    - S6-T8 F3, dropped table: a byte left over after the first, a middle or the last table, that file removed, is refused by the first publish (the table walk) (crash)
+    - S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish (crash)
+    - S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish (crash)
+    - S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish (crash)
+    - S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish (crash)
+    - S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish (crash)
+    - S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables (crash)
+    - S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed (crash)
+    - S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables (crash)
+    - S6-T8 sites: a count other than the document's length, carried or dropped, at the first, a middle and the last table (crash)
+    - S6-T8 sites: a gap of exactly 2^31 (valid v2, zigzag 2^32) in a carried table is refused at three tables; a dropped one is not checked for it (crash)
+    - S6-T8 sites: a length of 0, carried or dropped, at three tables (crash)
+    - S6-T8 sites: a length whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables (crash)
+    - S6-T8 sites: a length with a sixth byte (its value unchanged), carried or dropped, at three tables (crash)
+    - S6-T8 sites: a start delta whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables (crash)
+    - S6-T8 sites: a start delta with a sixth byte (its value unchanged), carried or dropped, at three tables (crash)
+    - S6-T8 sites: a v4 section that ends before a table's last token byte is refused at a later update, carried or dropped, at three tables (crash)
+    - S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table (crash)
+    - S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables (crash)
+    - S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables (crash)
+    - S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables (crash)
+    - S6-T8 sites: one byte after a v2 table is refused by the walk at the first publish, carried or dropped, at three tables (crash)
+    - S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed (crash)
+    - S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one (crash)
+    - S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result (crash)
+    - S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same (crash)
+    - S6-T2: the scoped detached open reads the source section from memory (crash)
+    - S4-T11 ruling 2: seeded random mutations, each round's update equals a fresh index byte for byte (crash)
+    - S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge over the family folder inside 64 MiB (crash)
+    - S3-T1: read_span, outline and the source binding agree with the family-folder judgments (crash)
+    - S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section (crash)
+b-ve-room | varintsEnd: fast path, len - offset >= 16 | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 3m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 532 pass, 9 skip, 1 crash (542 total) | 1 failed
+    - S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound (crash)
+b-ve-block-end | varintsEnd: fast path, byte < 0x80 is an end | v2
+  at c88e11f: diff 2 lines | run test 523 pass, 9 skip, 3 fail, 2 crash (537 total) | 5 failed
+    - S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes
+    - S4-T11: varintsEnd counts end bytes across blocks and refuses a short section
+    - S6-T7: an update carries unchanged files' records, maps and residual runs byte for byte, and the result is a fresh index's
+    - S6-T2: the scoped detached open reads the source section from memory (crash)
+    - S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section (crash)
+b-ve-at | varintsEnd: offset >= len | v2
+  at c88e11f: diff 2 lines | run test 519 pass, 9 skip, 9 crash (537 total) | 9 failed
+    - S4-T12 ruling 4: the merge refuses a previous section 4 or 5 with a byte left over or missing, in every build (crash)
+    - S4-T14 ruling 3(c): a previous source section whose last map runs past the maps region is refused at the writer's open (crash)
+    - S6-T8 F1, v2 rule: a section that ends inside the last table is refused by the first publish (crash)
+    - S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails (crash)
+    - S4-T11: varintsEnd counts end bytes across blocks and refuses a short section (crash)
+    - S4-T14 ruling 3: openTable walks the table and bounds the maps; a map that disagrees with its bytes is refused where the file is read (crash)
+    - source section rejects corruption, unsorted paths and bad line maps (crash)
+    - S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section (crash)
+    - S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed) (crash)
+b-wk-four | walk: len - at < 4 (v2 count) | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 2m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 533 pass, 9 skip (542 total) 3m MaxRSS:933M | 0 failed
+b-wk-last-v2 | walk: at != len after the last table, one byte let through | v2
+  at c88e11f: diff 2 lines | run test 525 pass, 9 skip, 3 fail (537 total) | 3 failed
+    - S6-T8 F1, v2 rule: a byte after the last table is refused by the first publish
+    - S6-T8 F3, dropped table: a byte left over after the first, a middle or the last table, that file removed, is refused by the first publish (the table walk)
+    - S6-T8 sites: one byte after a v2 table is refused by the walk at the first publish, carried or dropped, at three tables
+b-wk-last-v4 | walk: at != len after the last table, one byte let through | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed
+b-r11-v4 | rule 11: end > codepoints, at find | v4
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned
+b-r11-v2 | rule 11: end > codepoints, at find | v2
+  at c88e11f: diff 2 lines | run test 528 pass, 9 skip (537 total) 3m MaxRSS:933M | 0 failed
+  at 7ff9212: diff 2 lines | run test 532 pass, 9 skip, 1 fail (542 total) | 1 failed
+    - S6-T8 boundary sweep, rule 11 on a v2-coded index: a highlight one past its chunk's text is refused by find; one ending at the text's end answers
+b-r11 | rule 11: end > codepoints, in checkSpansWithinText | both
+  at c88e11f: diff 2 lines | run test 527 pass, 9 skip, 1 fail (537 total) | 1 failed
+    - S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned
+
+The verifier's v-vo-end-overflow (verifier-fifth/plants/plants5.py), at c88e11f:
+v-vo-end-overflow | +- run test 526 pass, 9 skip, 2 fail (537 total) | failed 2
+   - S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update r
+   - S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open
+
+Unplanted: c88e11f engine step 528 pass, 9 skip (537 total); 7ff9212 engine step 533 pass, 9 skip (542 total).

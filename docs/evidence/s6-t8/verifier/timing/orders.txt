@@ -1,0 +1,25 @@
+# S6-T8 verifier: five run orders, fixed before any timed run and committed to evidence before run 1.
+# A Latin square over the five libraries, L[i][j] = (2i + j) mod 5 over (main, head, main2, ctl1, ctl2): each library takes every position once.
+# main  = c0eae3d ReleaseSmall zig build lib (own copy and caches), dylib 988,952 B, __text 582,048 B; opens its own copy of main's index (manifest v2.4, HYBLEX03).
+# main2 = the same source built again in its own copy and caches (byte-identical to main); opens its own copy of main's index.
+# head  = 6b340b4, dylib 990,120 B, __text 587,336 B (+5,288); opens its own copy of the head's index (manifest v2.5, HYBLEX04).
+# ctl1  = c0eae3d + 61 never-run loops in postings.lookupExact (every query and find) behind term.len >= 2^50; dylib 989,160 B, __text 587,300 B (+5,252).
+# ctl2  = c0eae3d + 63 never-run loops in postings.readTokenSpans (find's highlight read, the function this task rewrote) behind bytes.len >= 2^50; dylib 988,952 B, __text 587,360 B (+5,312).
+# (First builds of 57 blocks each came to +4,948 and +4,808 B and were set aside before any timed run.)
+# (head, main) positions: run1 (2,1), run2 (5,4), run3 (3,2), run4 (1,5), run5 (4,3).
+run1: main head main2 ctl1 ctl2
+run2: main2 ctl1 ctl2 main head
+run3: ctl2 main head main2 ctl1
+run4: head main2 ctl1 ctl2 main
+run5: ctl1 ctl2 main head main2
+# Within a run (vrun.sh), in this order: phase q, phase o2, phase u.
+# phase q (S6-T4 bench.py bench, unchanged: warm query and find p50, open p50 of 30, memory after open, first query and find) over
+#   j2 family fixtures timing-10k prose-10k tamil-10k, the builder's committed query sets (docs/evidence/s6-t8/queries/, 339 find
+#   cells), each library in the run's order on its OWN copy of its index (idx.noindex/oc/<library>/<corpus>, cp -R);
+# phase o2 (openx2.py: six pairs interleaved in one process, each its own index copy, 200 rounds, seed 3000*run + corpus number 1..6,
+#   corpora j2 family fixtures timing prose tamil; pairs main, main2, ctl1, ctl2, head, head-v4 = the head's library on main's index);
+# phase u (upd.py with each build's own searchd, the run's order, 3 trials; per trial an APFS clone of main's index and of the corpus:
+#   first publish = one line appended to the first file (head: v2.4 -> v2.5, the transcode; others v2.4 -> v2.4), then
+#   one-file update = one line appended to the 100th file) over timing-10k prose-10k tamil-10k family.
+# Gate (tim/gate.sh: lock absent, 5-minute load below 4.0, no toolchain at 20 % CPU in top's top eight) before every process;
+# pmset -g log checked for a sleep inside each run afterwards; a run with a sleep inside it is discarded and retaken as run N b.

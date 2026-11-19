@@ -1,0 +1,6 @@
++- run test 531 pass, 9 skip, 2 fail (542 total)
+error: 'compat_s6t8_test.test.S6-T8 sites: a count one less than the document's length, carried or dropped, at three tables' failed:
+error: 'offsets_v4_test.test.S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 failed)
++- run test 531 pass, 9 skip, 2 fail (542 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M

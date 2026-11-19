@@ -1,0 +1,2 @@
+error: 'offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 499/509 tests passed (9 skipped, 1 failed)

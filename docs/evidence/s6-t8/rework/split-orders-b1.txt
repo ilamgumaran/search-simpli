@@ -1,0 +1,3 @@
+# item 1b, the split after the change (head = the working tree with oneByteTableEnd and transcodePairsTable), 3 rounds, written before the run.
+stg-runsplit:head head
+2026-11-18 00:30:11

@@ -1,0 +1,7 @@
++- run test 509 pass, 9 skip, 2 fail (520 total)
+error: 'compat_s6t8_test.test.S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical' failed:
+error: 'compat_s6t8_test.test.S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish' failed:
+       S6-T8 F3: zero_length at the first document (0 of 48): the first publish gave TestUnexpectedResult, expected InvalidPositions
+Build Summary: 7/9 steps succeeded (1 failed); 515/526 tests passed (9 skipped, 2 failed)
++- run test 509 pass, 9 skip, 2 fail (520 total)
++- run test 6 pass (6 total) 5s MaxRSS:5M

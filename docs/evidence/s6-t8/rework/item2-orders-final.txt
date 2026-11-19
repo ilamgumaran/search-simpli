@@ -1,0 +1,11 @@
+# item 2, decisive: the five prose warm both cells on e5d1734's library (head), a 6x6 Williams square, written before the first run.
+# ctl3 = main + 57 never-run blocks in postings.lookupExact (__text +5,256 B; head +5,288 B); ctlP = main + 41 never-run blocks
+# in a new postings function right after PositionSections, called from apply.mergeCarried under a never-true branch
+# (__text +5,228 B: placed where this task's new code sits); ctlS = main + the PositionSections.coding field only.
+run21:main head ctlS ctl3 ctlP main2
+run22:head ctl3 main main2 ctlS ctlP
+run23:ctl3 main2 head ctlP main ctlS
+run24:main2 ctlP ctl3 ctlS head main
+run25:ctlP ctlS main2 main ctl3 head
+run26:ctlS main ctlP head main2 ctl3
+2026-11-18 00:51:13

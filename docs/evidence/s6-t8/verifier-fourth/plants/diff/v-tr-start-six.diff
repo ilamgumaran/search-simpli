@@ -1,0 +1,37 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite4/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants4.noindex/src/v-tr-start-six/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite4/zig/src/postings.zig	2026-11-18 11:36:54
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants4.noindex/src/v-tr-start-six/zig/src/postings.zig	2026-11-18 11:50:47
+@@ -191,6 +191,24 @@
+ /// or that far before it), which v4's rule 5 forbids. The first publish over
+ /// a v2/v3 generation transcodes every carried table with it
+ /// (`apply.mergeCarried`).
++/// verifier plant reader
++fn vpSix(bytes: []const u8, offset: *usize) ?u32 {
++    var value: u64 = 0;
++    var shift: u6 = 0;
++    var at = offset.*;
++    while (true) {
++        if (at >= bytes.len or shift > 35) return null;
++        const byte = bytes[at];
++        at += 1;
++        value |= @as(u64, byte & 0x7F) << shift;
++        if (byte & 0x80 == 0) break;
++        shift += 7;
++    }
++    if (value > std.math.maxInt(u32)) return null;
++    offset.* = at;
++    return @intCast(value);
++}
++
+ pub fn transcodePairsTable(
+     list: *std.ArrayList(u8),
+     allocator: std.mem.Allocator,
+@@ -219,7 +237,7 @@
+             length = bytes[at + 1];
+             at += 2;
+         } else {
+-            delta = readVarint(bytes, &at) orelse return error.InvalidPositions;
++            delta = vpSix(bytes, &at) orelse return error.InvalidPositions;
+             length = readVarint(bytes, &at) orelse return error.InvalidPositions;
+         }
+         start += delta;

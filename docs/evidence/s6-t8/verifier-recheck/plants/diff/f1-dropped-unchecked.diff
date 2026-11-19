@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/head2/zig/src/apply.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants2.noindex/src/f1-dropped-unchecked/zig/src/apply.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/head2/zig/src/apply.zig	2026-11-18 07:00:51
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants2.noindex/src/f1-dropped-unchecked/zig/src/apply.zig	2026-11-18 07:13:04
+@@ -2366,7 +2366,7 @@
+         defer carried.deinit(scratch);
+         for (sources) |item| if (item == .carried) carried.set(item.carried);
+         for (previous.document_lengths, 0..) |length, old| {
+-            if (!carried.isSet(old)) try postings.checkPairsTable(sections.offsets, old_starts[old], old_starts[old + 1], length);
++            if (!carried.isSet(old) and old == std.math.maxInt(usize)) try postings.checkPairsTable(sections.offsets, old_starts[old], old_starts[old + 1], length);
+         }
+         offsets_out = try allocator.dupe(u8, list.items);
+     }

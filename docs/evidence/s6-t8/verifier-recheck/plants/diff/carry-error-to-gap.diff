@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/head2/zig/src/apply.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants2.noindex/src/carry-error-to-gap/zig/src/apply.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/head2/zig/src/apply.zig	2026-11-18 07:00:51
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants2.noindex/src/carry-error-to-gap/zig/src/apply.zig	2026-11-18 07:34:09
+@@ -2349,7 +2349,7 @@
+             // the ruling after the Verdict, F1): v2 to v4 directly, refusing
+             // with v2's error what v2's validation refuses, nothing repaired.
+             .carried => |old| postings.transcodePairsTable(&list, scratch, sections.offsets, old_starts[old], old_starts[old + 1], previous.document_lengths[old]) catch |err| switch (err) {
+-                error.InvalidPositions => return error.InvalidPositions,
++                error.InvalidPositions => return error.InvalidLexicalSection,
+                 error.GapNotRepresentable => return error.InvalidLexicalSection,
+                 error.OutOfMemory => return error.OutOfMemory,
+             },

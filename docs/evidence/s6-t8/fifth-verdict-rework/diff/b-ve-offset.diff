@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/source.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ve-offset/zig/src/source.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/source.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ve-offset/zig/src/source.zig	2026-11-18 14:39:08
+@@ -92,7 +92,7 @@
+     const Block = @Vector(lanes, u8);
+     var remaining = count;
+     var offset = at;
+-    if (offset > bytes.len) return null;
++    if (offset > bytes.len + 1) return null;
+     while (remaining >= lanes and bytes.len - offset >= lanes) {
+         const block: Block = bytes[offset..][0..lanes].*;
+         const ends: u16 = @bitCast(block < @as(Block, @splat(0x80)));

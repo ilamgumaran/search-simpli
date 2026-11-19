@@ -28,6 +28,12 @@ pub const flag_positions_v3: u16 = 2;
 /// longer common prefixes here (the suffix carries the rest); a reader
 /// refuses more. It bounds the decoded term text by the section's size.
 pub const max_shared_v3: usize = 255;
+/// S6-T8 (`docs/lexical-segment-format-v4.md`): `HYBLEX04`, the content
+/// section every folder writer publishes: v3's header and sections 1-4, with
+/// section 5 at one byte per token (`postings.OffsetsCoding.one_byte`).
+/// Flags exactly bits 0 and 1: a v4 section always carries sections 4 and 5.
+pub const magic_v4 = "HYBLEX04";
+pub const version_v4: u16 = 4;
 const term_record_length: usize = 24;
 const posting_record_length: usize = 8;
 
@@ -53,7 +59,7 @@ pub const EncodeError = error{
     OutOfMemory,
 };
 
-pub const DecodeError = error{
+pub const DecodeError = postings.OffsetsError || error{
     BadMagic,
     UnsupportedVersion,
     UnsupportedFlags,
@@ -100,7 +106,7 @@ pub const Header = struct {
     term_text_bytes: usize = 0,
 
     pub fn hasPositions(header: Header) bool {
-        return header.version == version_v2 or (header.version == version_v3 and header.positions_flag);
+        return header.version == version_v2 or header.version == version_v4 or (header.version == version_v3 and header.positions_flag);
     }
 
     pub fn length(header: Header) usize {
@@ -159,6 +165,8 @@ const Sizes = struct {
 };
 
 fn sizes(index: postings.Index) EncodeError!Sizes {
+    // `HYBLEX02` holds section 5 only in v2's coding (S6-T8).
+    if (index.positions) |sections| if (sections.coding != .pairs) return error.InvalidPositions;
     var dictionary_bytes: usize = 0;
     for (index.terms) |entry| {
         dictionary_bytes = try checkedAdd(dictionary_bytes, term_record_length);
@@ -238,7 +246,7 @@ fn writeSized(index: postings.Index, sized: Sizes, output: []u8) []u8 {
 
 pub fn headerLength(found_version: u16) usize {
     return switch (found_version) {
-        version_v3 => header_length_v3,
+        version_v3, version_v4 => header_length_v3,
         version_v2 => header_length_v2,
         else => header_length,
     };
@@ -248,14 +256,15 @@ pub fn headerLength(found_version: u16) usize {
 /// of the stored checksum; 0 when it is too short or unknown.
 pub fn headerLengthOfBytes(encoded: []const u8) usize {
     if (encoded.len < 8) return 0;
-    if (std.mem.eql(u8, encoded[0..8], magic_v3)) return header_length_v3;
+    if (std.mem.eql(u8, encoded[0..8], magic_v3) or std.mem.eql(u8, encoded[0..8], magic_v4)) return header_length_v3;
     if (std.mem.eql(u8, encoded[0..8], magic_v2)) return header_length_v2;
     if (std.mem.eql(u8, encoded[0..8], magic)) return header_length;
     return 0;
 }
 
 pub fn inspect(encoded: []const u8) DecodeError!Header {
-    if (encoded.len >= 8 and std.mem.eql(u8, encoded[0..8], magic_v3)) return inspectV3(encoded);
+    if (encoded.len >= 8 and std.mem.eql(u8, encoded[0..8], magic_v3)) return inspectV3(encoded, version_v3);
+    if (encoded.len >= 8 and std.mem.eql(u8, encoded[0..8], magic_v4)) return inspectV3(encoded, version_v4);
     var cursor = Cursor{ .bytes = encoded };
     const found_magic = try cursor.take(magic.len);
     const v2 = std.mem.eql(u8, found_magic, magic_v2);
@@ -350,7 +359,7 @@ pub fn decodeWith(
     options: DecodeOptions,
 ) DecodeError!postings.Index {
     const header = options.inspected orelse try inspect(encoded);
-    if (header.version == version_v3) return decodeV3(encoded, header, term_output, posting_output, document_length_output, options);
+    if (header.version == version_v3 or header.version == version_v4) return decodeV3(encoded, header, term_output, posting_output, document_length_output, options);
     if (term_output.len < header.term_count) return error.TermCapacityTooSmall;
     if (posting_output.len < header.posting_count) return error.PostingCapacityTooSmall;
     if (document_length_output.len < header.document_count) return error.DocumentLengthCapacityTooSmall;
@@ -483,6 +492,8 @@ fn validatePositions(
     }
     if (at != sections.positions.len) return error.InvalidPositions;
 
+    // S6-T8: section 5 at one byte per token, each rule with its own error.
+    if (sections.coding == .one_byte) return postings.validateOneByteOffsets(sections.offsets, document_lengths);
     at = 0;
     for (document_lengths) |length| {
         if (sections.offsets.len - at < 4) return error.InvalidPositions;
@@ -804,7 +815,8 @@ fn positionalFixture(arena: std.mem.Allocator) !postings.Index {
     };
     var lists: [documents.len][]const @import("analysis.zig").PositionedToken = undefined;
     for (documents, 0..) |document, i| lists[i] = try analyzer_v2.tokenizePositioned(arena, document.text);
-    return lexical_build.buildPositional(arena, &documents, &lists);
+    // v2's section 5 (the writer's is v4's since S6-T8).
+    return postings.withOffsetsCoding(arena, try lexical_build.buildPositional(arena, &documents, &lists), .pairs);
 }
 
 fn rechecksum(encoded: []u8) void {
@@ -1113,12 +1125,14 @@ test "S4-T12 ruling 3: a positional index claiming sorted but descending is Unso
 
 // ===================================================================== v3 ==
 
-fn inspectV3(encoded: []const u8) DecodeError!Header {
+fn inspectV3(encoded: []const u8, expected_version: u16) DecodeError!Header {
     var cursor = Cursor{ .bytes = encoded, .offset = magic_v3.len };
-    if (try cursor.readU16() != version_v3) return error.UnsupportedVersion;
+    if (try cursor.readU16() != expected_version) return error.UnsupportedVersion;
     const flags = try cursor.readU16();
-    // Bit 0 (XXH3-64) is required, bit 1 names sections 4 and 5.
+    // Bit 0 (XXH3-64) is required, bit 1 names sections 4 and 5; v4
+    // (S6-T8) requires both.
     if (flags & ~(checksum.flag_xxh3 | flag_positions_v3) != 0 or flags & checksum.flag_xxh3 == 0) return error.UnsupportedFlags;
+    if (expected_version == version_v4 and flags != checksum.flag_xxh3 | flag_positions_v3) return error.UnsupportedFlags;
     const document_count = try castToUsize(try cursor.readU32());
     const term_count = try castToUsize(try cursor.readU32());
     const posting_count = try castToUsize(try cursor.readU64());
@@ -1154,7 +1168,7 @@ fn inspectV3(encoded: []const u8) DecodeError!Header {
     // suffix, which is in the dictionary.
     if (term_text_bytes > try decodeCheckedAdd(try decodeCheckedMultiply(term_count, max_shared_v3), dictionary_bytes)) return error.InvalidSectionLength;
     return .{
-        .version = version_v3,
+        .version = expected_version,
         .document_count = document_count,
         .term_count = term_count,
         .posting_count = posting_count,
@@ -1256,7 +1270,11 @@ fn decodeV3(
         .postings = posting_output[0..header.posting_count],
         .document_lengths = document_length_output[0..header.document_count],
         .average_document_length = header.average_document_length,
-        .positions = if (header.positions_flag) .{ .positions = positions_bytes, .offsets = offsets_bytes } else null,
+        .positions = if (header.positions_flag) .{
+            .positions = positions_bytes,
+            .offsets = offsets_bytes,
+            .coding = if (header.version == version_v4) .one_byte else .pairs,
+        } else null,
         .sorted_terms = true,
     };
     if (header.positions_flag and options.validate_positions) try validatePositions(index.terms, index.postings, index.document_lengths, index.positions.?);
@@ -1328,9 +1346,11 @@ pub fn encodeV3AllocMarked(allocator: std.mem.Allocator, index: postings.Index, 
     total = try checkedAdd(total, positions_len);
     total = try checkedAdd(total, offsets_len);
     const output = try allocator.alloc(u8, total);
-    @memcpy(output[0..8], magic_v3);
+    // S6-T8: section 5 at one byte per token makes the section `HYBLEX04`.
+    const v4 = if (index.positions) |p| p.coding == .one_byte else false;
+    @memcpy(output[0..8], if (v4) magic_v4 else magic_v3);
     var o: usize = 8;
-    writeU16(output, &o, version_v3);
+    writeU16(output, &o, if (v4) version_v4 else version_v3);
     writeU16(output, &o, checksum.flag_xxh3 | (if (index.positions != null) flag_positions_v3 else 0));
     writeU32(output, &o, @intCast(index.document_lengths.len));
     writeU32(output, &o, @intCast(index.terms.len));
@@ -1615,7 +1635,8 @@ fn lastListPositionalFixture(arena: std.mem.Allocator) !postings.Index {
     };
     var lists: [documents.len][]const @import("analysis.zig").PositionedToken = undefined;
     for (documents, 0..) |document, i| lists[i] = try analyzer_v2.tokenizePositioned(arena, document.text);
-    return sortedForV3(arena, try lexical_build.buildPositional(arena, &documents, &lists));
+    // v2's section 5, as `HYBLEX03` carries it (S6-T8: the writer's is v4's).
+    return postings.withOffsetsCoding(arena, try sortedForV3(arena, try lexical_build.buildPositional(arena, &documents, &lists)), .pairs);
 }
 
 /// What to change in an encoded `HYBLEX03` section: the last term's `list

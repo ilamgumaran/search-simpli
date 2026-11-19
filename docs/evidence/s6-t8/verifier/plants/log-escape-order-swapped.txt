@@ -1,0 +1,3 @@
+error: 'offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte' failed:
+error: 'offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 498/509 tests passed (9 skipped, 2 failed)

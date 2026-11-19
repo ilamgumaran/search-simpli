@@ -1,0 +1,5 @@
++- run test 522 pass, 9 skip, 1 fail (532 total)
+error: 'compat_s6t8_test.test.S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 528/538 tests passed (9 skipped, 1 failed)
++- run test 522 pass, 9 skip, 1 fail (532 total)
++- run test 6 pass (6 total) 969ms MaxRSS:5M

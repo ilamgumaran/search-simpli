@@ -1,0 +1,10 @@
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one' failed:
+error: 'compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same' failed:
+error: 'compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result' failed:
+error: 'compat_s6t8_test.test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: transcodePairsTable writes the bytes of the read and append, and refuses what the read refuses' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: every table of a built index, coded as v2 and transcoded, is the fresh v4 section' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 491/509 tests passed (9 skipped, 9 failed)

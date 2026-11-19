@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/v-tr-gap-from-start/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig	2026-11-18 15:47:50
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/v-tr-gap-from-start/zig/src/postings.zig	2026-11-18 16:39:41
+@@ -233,7 +233,7 @@
+         w += 1;
+         if (g == offsets_escape) putVarint(out, &w, @intCast(z));
+         if (l == offsets_escape) putVarint(out, &w, length);
+-        previous_end = start + length;
++        previous_end = start;
+     }
+     if (at != end) return error.InvalidPositions;
+     list.items.len += w;

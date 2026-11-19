@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ck-leftover/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ck-leftover/zig/src/postings.zig	2026-11-18 14:01:29
+@@ -174,7 +174,7 @@
+         const length = readVarint(bytes, &at) orelse return error.InvalidPositions;
+         if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;
+     }
+-    if (at != end) return error.InvalidPositions;
++    if (at != end and at + 1 != end) return error.InvalidPositions;
+ }
+ 
+ /// S6-T8 (rulings on the Report, item 1b, made after measuring; the ruling

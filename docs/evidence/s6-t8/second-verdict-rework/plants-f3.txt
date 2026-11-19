@@ -1,0 +1,42 @@
+# S6-T8 F3 (ruling after the Second Verdict): the verifier's three missed plants, with the verifier's own definitions
+# (verifier-recheck/plants/plants2.py), each in a fresh git archive of bb92ae5 (the F3 tests) with its own Zig caches, its
+# planted tree diffed against an unplanted archive before the build, Debug zig build test, two at a time then one, nothing
+# else running. Unplanted: 511 pass, 9 skip of 520 (and 6 of 6). Each test stops at the first position that publishes.
+
+## ck-count-removed
+planted ck-count-removed
+ck-count-removed exit=1 changed-lines=2 | +- run test 510 pass, 9 skip, 1 fail (520 total)
+# the diff:
+-    if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return error.InvalidPositions;
++    if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count + 0 and false) return error.InvalidPositions;
+# failing tests:
+  compat_s6t8_test.test.S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish
+  S6-T8 F3: count_not_length at the first document (0 of 48): the first publish gave TestUnexpectedResult, expected InvalidPositions
+
+## ck-u32-end-removed
+planted ck-u32-end-removed
+ck-u32-end-removed exit=1 changed-lines=2 | +- run test 510 pass, 9 skip, 1 fail (520 total)
+# the diff:
+-        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;
++        if (length == 0) return error.InvalidPositions;
+# failing tests:
+  compat_s6t8_test.test.S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish
+  S6-T8 F3: end_past_u32 at the first document (0 of 48): the first publish gave TestUnexpectedResult, expected InvalidPositions
+
+## drop-skip-last
+planted drop-skip-last
+drop-skip-last exit=1 changed-lines=2 | +- run test 506 pass, 9 skip, 5 fail (520 total)
+# the diff:
+-            if (!carried.isSet(old)) try postings.checkPairsTable(sections.offsets, old_starts[old], old_starts[old + 1], length);
++            if (!carried.isSet(old) and old + 1 < previous.document_lengths.len) try postings.checkPairsTable(sections.offsets, old_starts[old], old_starts[old + 1], length);
+# failing tests:
+  compat_s6t8_test.test.S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish
+  S6-T8 F3: zero_length at the last document (47 of 48): the first publish gave TestUnexpectedResult, expected InvalidPositions
+  compat_s6t8_test.test.S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish
+  S6-T8 F3: count_not_length at the last document (47 of 48): the first publish gave TestUnexpectedResult, expected InvalidPositions
+  compat_s6t8_test.test.S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish
+  S6-T8 F3: end_past_u32 at the last document (47 of 48): the first publish gave TestUnexpectedResult, expected InvalidPositions
+  compat_s6t8_test.test.S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish
+  S6-T8 F3: varint_sixth_byte at the last document (47 of 48): the first publish gave TestUnexpectedResult, expected InvalidPositions
+  compat_s6t8_test.test.S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish
+  S6-T8 F3: varint_fifth_byte_high at the last document (47 of 48): the first publish gave TestUnexpectedResult, expected InvalidPositions

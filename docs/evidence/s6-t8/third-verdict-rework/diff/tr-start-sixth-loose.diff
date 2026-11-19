@@ -1,0 +1,73 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/tr-start-sixth-loose/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig	2026-11-18 09:57:46
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/tr-start-sixth-loose/zig/src/postings.zig	2026-11-18 10:55:17
+@@ -163,6 +163,60 @@
+ /// (`lexical_segment.validatePositions`) of one document's table
+ /// (`offsets[at_start..end]`, `count` tokens), for a table the first publish
+ /// drops rather than transcodes: `InvalidPositions` where v2 refuses it.
++/// plant: readVarint with a sixth byte let through
++fn readVarintSix(bytes: []const u8, offset: *usize) ?u32 {
++    var value: u64 = 0;
++    var shift: u6 = 0;
++    var at = offset.*;
++    while (true) {
++        if (at >= bytes.len or shift > 35) return null;
++        const byte = bytes[at];
++        at += 1;
++        value |= @as(u64, byte & 0x7F) << shift;
++        if (byte & 0x80 == 0) break;
++        shift += 7;
++    }
++    if (value > std.math.maxInt(u32)) return null;
++    offset.* = at;
++    return @intCast(value);
++}
++
++/// plant: readVarint with the value cut to 32 bits instead of refused
++fn readVarintCut(bytes: []const u8, offset: *usize) ?u32 {
++    var value: u64 = 0;
++    var shift: u6 = 0;
++    var at = offset.*;
++    while (true) {
++        if (at >= bytes.len or shift > 28) return null;
++        const byte = bytes[at];
++        at += 1;
++        value |= @as(u64, byte & 0x7F) << shift;
++        if (byte & 0x80 == 0) break;
++        shift += 7;
++    }
++    offset.* = at;
++    return @truncate(value);
++}
++
++/// plant: readVarint with the end of the bytes read as the varint's end
++fn readVarintEnd(bytes: []const u8, offset: *usize) ?u32 {
++    var value: u64 = 0;
++    var shift: u6 = 0;
++    var at = offset.*;
++    while (true) {
++        if (at >= bytes.len) break;
++        if (shift > 28) return null;
++        const byte = bytes[at];
++        at += 1;
++        value |= @as(u64, byte & 0x7F) << shift;
++        if (byte & 0x80 == 0) break;
++        shift += 7;
++    }
++    if (value > std.math.maxInt(u32)) return null;
++    offset.* = at;
++    return @intCast(value);
++}
++
+ pub fn checkPairsTable(offsets: []const u8, at_start: usize, end: usize, count: u32) error{InvalidPositions}!void {
+     const bytes = offsets[0..end];
+     if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidPositions;
+@@ -219,7 +273,7 @@
+             length = bytes[at + 1];
+             at += 2;
+         } else {
+-            delta = readVarint(bytes, &at) orelse return error.InvalidPositions;
++            delta = readVarintSix(bytes, &at) orelse return error.InvalidPositions;
+             length = readVarint(bytes, &at) orelse return error.InvalidPositions;
+         }
+         start += delta;

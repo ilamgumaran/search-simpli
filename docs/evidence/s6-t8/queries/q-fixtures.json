@@ -1,0 +1,396 @@
+{
+ "corpus": "fixtures",
+ "files": 232,
+ "queries": [
+  "bazecha",
+  "benico",
+  "system",
+  "hashing",
+  "hybrid retrieval",
+  "retrieval hybrid",
+  "system systems",
+  "systems system",
+  "the",
+  "this",
+  "questions",
+  "happy",
+  "the questions",
+  "this happy",
+  "design"
+ ],
+ "finds": [
+  {
+   "query": "the",
+   "mode": "words"
+  },
+  {
+   "query": "questions",
+   "mode": "words"
+  },
+  {
+   "query": "the questions",
+   "mode": "words"
+  },
+  {
+   "query": "design",
+   "mode": "words"
+  },
+  {
+   "query": "secret propulsion mechanism",
+   "mode": "phrase"
+  },
+  {
+   "query": "ques*",
+   "mode": "prefix"
+  },
+  {
+   "query": "happ*",
+   "mode": "prefix"
+  },
+  {
+   "query": "பள்ளி",
+   "mode": "words"
+  },
+  {
+   "query": "விடுமுறை",
+   "mode": "words"
+  },
+  {
+   "query": "கணி",
+   "mode": "words"
+  },
+  {
+   "query": "தமிழ்",
+   "mode": "words"
+  },
+  {
+   "query": "குறிப்புகள்",
+   "mode": "words"
+  },
+  {
+   "query": "வெள்ளிக்கிழமை",
+   "mode": "words"
+  },
+  {
+   "query": "தொடங்குகிறது",
+   "mode": "words"
+  },
+  {
+   "query": "கணிதம்",
+   "mode": "words"
+  },
+  {
+   "query": "பள்ளி விடுமுறை",
+   "mode": "phrase"
+  },
+  {
+   "query": "தமிழ் குறிப்புகள்",
+   "mode": "phrase"
+  },
+  {
+   "query": "குறிப்புகள் பள்ளி",
+   "mode": "phrase"
+  },
+  {
+   "query": "பள்ளி பள்ளி",
+   "mode": "phrase"
+  },
+  {
+   "query": "விடுமுறை வெள்ளிக்கிழமை",
+   "mode": "phrase"
+  },
+  {
+   "query": "வெள்ளிக்கிழமை தொடங்குகிறது",
+   "mode": "phrase"
+  },
+  {
+   "query": "தொடங்குகிறது கணிதம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "கணிதம் வீட்டுப்பாடம்",
+   "mode": "phrase"
+  },
+  {
+   "query": "LlamaCppProvider",
+   "mode": "words"
+  },
+  {
+   "query": "referenceAnswer",
+   "mode": "words"
+  },
+  {
+   "query": "deterministically",
+   "mode": "words"
+  },
+  {
+   "query": "ஞாயிற்றுக்கிழமை",
+   "mode": "words"
+  },
+  {
+   "query": "பயன்படுத்தினாள்",
+   "mode": "words"
+  },
+  {
+   "query": "விளையாடினார்கள்",
+   "mode": "words"
+  },
+  {
+   "query": "காத்திருக்கிறோம்",
+   "mode": "words"
+  },
+  {
+   "query": "வெட்டிக்கொண்டாள்",
+   "mode": "words"
+  },
+  {
+   "query": "LlamaC*",
+   "mode": "prefix"
+  },
+  {
+   "query": "refere*",
+   "mode": "prefix"
+  },
+  {
+   "query": "determ*",
+   "mode": "prefix"
+  },
+  {
+   "query": "ஞாயிற்*",
+   "mode": "prefix"
+  },
+  {
+   "query": "பயன்பட*",
+   "mode": "prefix"
+  },
+  {
+   "query": "விளையா*",
+   "mode": "prefix"
+  },
+  {
+   "query": "காத்தி*",
+   "mode": "prefix"
+  },
+  {
+   "query": "வெட்டி*",
+   "mode": "prefix"
+  },
+  {
+   "query": "school",
+   "mode": "words"
+  },
+  {
+   "query": "laptop",
+   "mode": "words"
+  },
+  {
+   "query": "1",
+   "mode": "words"
+  },
+  {
+   "query": "p1",
+   "mode": "words"
+  },
+  {
+   "query": "x1",
+   "mode": "words"
+  },
+  {
+   "query": "o1",
+   "mode": "words"
+  },
+  {
+   "query": "s1",
+   "mode": "words"
+  },
+  {
+   "query": "Notes",
+   "mode": "words"
+  },
+  {
+   "query": "Notes school",
+   "mode": "phrase"
+  },
+  {
+   "query": "Why laptop",
+   "mode": "phrase"
+  },
+  {
+   "query": "Expected 1",
+   "mode": "phrase"
+  },
+  {
+   "query": "Note p1",
+   "mode": "phrase"
+  },
+  {
+   "query": "Note x1",
+   "mode": "phrase"
+  },
+  {
+   "query": "Note o1",
+   "mode": "phrase"
+  },
+  {
+   "query": "Note s1",
+   "mode": "phrase"
+  },
+  {
+   "query": "notes Notes",
+   "mode": "phrase"
+  },
+  {
+   "query": "The",
+   "mode": "words"
+  },
+  {
+   "query": "Vendored",
+   "mode": "words"
+  },
+  {
+   "query": "A",
+   "mode": "words"
+  },
+  {
+   "query": "Use",
+   "mode": "words"
+  },
+  {
+   "query": "Summarize",
+   "mode": "words"
+  },
+  {
+   "query": "You",
+   "mode": "words"
+  },
+  {
+   "query": "Be",
+   "mode": "words"
+  },
+  {
+   "query": "Invented",
+   "mode": "words"
+  },
+  {
+   "query": "mechanism",
+   "mode": "words"
+  },
+  {
+   "query": "timing",
+   "mode": "words"
+  },
+  {
+   "query": "communication",
+   "mode": "words"
+  },
+  {
+   "query": "repo",
+   "mode": "words"
+  },
+  {
+   "query": "over",
+   "mode": "words"
+  },
+  {
+   "query": "sentences",
+   "mode": "words"
+  },
+  {
+   "query": "list",
+   "mode": "words"
+  },
+  {
+   "query": "factual",
+   "mode": "words"
+  },
+  {
+   "query": "Week",
+   "mode": "words"
+  },
+  {
+   "query": "Vocabulary",
+   "mode": "words"
+  },
+  {
+   "query": "Grammar",
+   "mode": "words"
+  },
+  {
+   "query": "Reading",
+   "mode": "words"
+  },
+  {
+   "query": "Spelling",
+   "mode": "words"
+  },
+  {
+   "query": "Fractions",
+   "mode": "words"
+  },
+  {
+   "query": "Decimals",
+   "mode": "words"
+  },
+  {
+   "query": "representative",
+   "mode": "words"
+  },
+  {
+   "query": "withholdAnswer",
+   "mode": "words"
+  },
+  {
+   "query": "photosynthesis",
+   "mode": "words"
+  },
+  {
+   "query": "நூலகத்திற்குச்",
+   "mode": "words"
+  },
+  {
+   "query": "Photosynthesis",
+   "mode": "words"
+  },
+  {
+   "query": "Photosynthetic",
+   "mode": "words"
+  },
+  {
+   "query": "transpositions",
+   "mode": "words"
+  },
+  {
+   "query": "காத்திருந்தார்",
+   "mode": "words"
+  },
+  {
+   "query": "திறந்திருக்கும்",
+   "mode": "words"
+  },
+  {
+   "query": "கேள்விப்பட்டேன்",
+   "mode": "words"
+  },
+  {
+   "query": "எடுத்துக்கொண்டு",
+   "mode": "words"
+  },
+  {
+   "query": "விளைபொருட்களைக்",
+   "mode": "words"
+  },
+  {
+   "query": "interoperability",
+   "mode": "words"
+  },
+  {
+   "query": "விற்கப்படுகின்றன",
+   "mode": "words"
+  },
+  {
+   "query": "ஆரோக்கியத்திற்கு",
+   "mode": "words"
+  }
+ ],
+ "roots": null
+}

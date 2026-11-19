@@ -1,0 +1,30 @@
+ck-count-removed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 516/526 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish
+ck-fifth-loose-length: changed lines 19; Build Summary: 7/9 steps succeeded (1 failed); 516/526 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish
+ck-fifth-loose-start: changed lines 19; Build Summary: 9/9 steps succeeded; 517/526 tests passed (9 skipped); crash markers 0
+ck-u32-end-removed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 516/526 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish
+ck-zero-removed: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 515/526 tests passed (9 skipped, 2 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish
+drop-skip-first: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 512/526 tests passed (9 skipped, 5 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish
+drop-skip-last: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 512/526 tests passed (9 skipped, 5 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish
+none: changed lines 0; Build Summary: 9/9 steps succeeded; 517/526 tests passed (9 skipped); crash markers 0
+test-gen-broken: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 511/526 tests passed (9 skipped, 6 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a byte left over after the first, a middle or the last table, that file removed, is refused by the first publish (the table walk)
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish

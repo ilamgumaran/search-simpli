@@ -1,0 +1,9 @@
+error: 'compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result' failed:
+error: 'offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte' failed:
+error: 'offsets_v4_test.test.S6-T8: zigzag and the escape threshold' failed:
+error: 'offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find' failed:
+error: 'offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily' failed:
+error: 'offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned' failed:
+error: 'offsets_v4_test.test.S6-T8 rule 7 through find: a damaged section 5 fails the first find and every later one with the rule's error' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 492/509 tests passed (9 skipped, 8 failed)

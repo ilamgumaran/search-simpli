@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ck-end/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-ck-end/zig/src/postings.zig	2026-11-18 13:57:38
+@@ -172,7 +172,7 @@
+     for (0..count) |_| {
+         start += readVarint(bytes, &at) orelse return error.InvalidPositions;
+         const length = readVarint(bytes, &at) orelse return error.InvalidPositions;
+-        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;
++        if (length == 0 or start + length > std.math.maxInt(u32) + 1) return error.InvalidPositions;
+     }
+     if (at != end) return error.InvalidPositions;
+ }

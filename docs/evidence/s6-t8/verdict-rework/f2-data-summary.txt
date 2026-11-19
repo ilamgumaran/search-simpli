@@ -1,0 +1,11 @@
+# F2 code or index (f2-data-orders.txt, runs 111-126): headFm and headBm are headF's and headB's libraries on copies of main's index. summarize_cells.py with main2, ctl1 and p28 as controls and headF as the head; then f2_table.py.
+runs 16; 1-, 5- and 15-minute load before each set 1.11-2.29
+cell                                     main    main2     ctl1      p28   headFm    headB   headBm    headF       T  head-ctl  verdict  answers
+both the                                478.2     -1.4    +15.6    +21.6    +36.5    +21.0    +20.5    +34.3    10.0     +12.7  beyond   1
+both the within                         612.2     -0.7    +24.0    +28.4    +38.4    +24.0    +23.8    +39.0    10.0     +10.6  beyond   1
+both have drink                         537.8     +0.0     +8.1    +16.7    +33.4    +12.9    +13.0    +33.1    10.0     +16.4  beyond   1
+
+runs 16
+both 'the': main 478.2; main2 -1.4 [-7..+28]; ctl1 +15.6 [+9..+47]; p28 +21.6 [+16..+54]; headFm +36.5 [+32..+42]; headB +21.0 [+18..+25]; headBm +20.5 [+17..+27]; headF +34.3 [+22..+62]
+both 'the within': main 612.2; main2 -0.7 [-6..+9]; ctl1 +24.0 [+17..+59]; p28 +28.4 [+21..+67]; headFm +38.4 [+35..+44]; headB +24.0 [+19..+43]; headBm +23.8 [+21..+29]; headF +39.0 [+28..+71]
+both 'have drink': main 537.8; main2 +0.0 [-5..+4]; ctl1 +8.1 [+4..+48]; p28 +16.7 [+12..+49]; headFm +33.4 [+29..+39]; headB +12.9 [+8..+16]; headBm +13.0 [+9..+15]; headF +33.1 [+15..+46]

@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-vo-count-minus/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig	2026-11-18 15:47:50
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-vo-count-minus/zig/src/postings.zig	2026-11-18 16:04:09
+@@ -291,7 +291,7 @@
+     var at: usize = 0;
+     for (document_lengths) |length| {
+         const count = try readOffsetsVarint(offsets, &at);
+-        if (count != length) return error.OffsetsCountMismatch;
++        if (count != length and @as(u64, count) + 1 != length) return error.OffsetsCountMismatch;
+         var previous_start: i64 = 0;
+         var previous_end: i64 = 0;
+         for (0..count) |_| {

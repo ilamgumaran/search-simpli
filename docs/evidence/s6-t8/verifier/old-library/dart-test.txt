@@ -1,0 +1,8 @@
+00:00 +0: loading test/v25_refused_test.dart
+00:00 +0: open
+open: SearchSimpliException: SearchSimpliException: ss_open: UnsupportedFlags; files 8 -> 8, changed []
+00:00 +1: applyChanges
+applyChanges: SearchSimpliException: SearchSimpliException: ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags; files 8 -> 9, changed [WRITER.LOCK]
+00:00 +2: indexFolder
+indexFolder: SearchSimpliException: SearchSimpliException: ss_index_folder: UnsupportedFlags; files 8 -> 8, changed []
+00:00 +3: All tests passed!

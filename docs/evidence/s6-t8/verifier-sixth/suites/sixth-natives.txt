@@ -1,0 +1,11 @@
+build_native.sh on a fresh archive of 965cce7 (own caches): exit 0
+cmp native/macos-arm64/libsearch_simpli.dylib: identical (990040 B)
+cmp native/android-arm64/libsearch_simpli.so: identical (959584 B)
+cmp example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: identical (959584 B)
+cmp native/ios-arm64/search_simpli.framework/search_simpli: identical (970992 B)
+cmp native/ios-arm64/search_simpli.framework/Info.plist: identical (749 B)
+cmp native/SOURCE-SHA256: identical (65 B)
+SOURCE-SHA256: 2e203ac5ddf21714cf1053253b45967efd31aa7739826fff3d031196d255bfcc
+check_native.sh (fresh copy):
+check_native: ios-arm64 memcpy at 0x587c (218 calls against 112): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)

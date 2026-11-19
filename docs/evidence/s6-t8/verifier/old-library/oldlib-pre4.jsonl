@@ -1,0 +1,30 @@
+{"target": "fixture-v25", "step": "abi_open", "result": "refused: ss_open: UnsupportedFlags", "changed_files": []}
+{"target": "fixture-v25", "step": "abi_index_folder", "result": "refused: ss_index_folder: UnsupportedFlags", "changed_files": []}
+{"target": "fixture-v25", "step": "abi_apply_changes", "result": "refused: ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags", "changed_files": ["WRITER.LOCK: absent -> (0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')"]}
+{"target": "fixture-v25", "step": "cli_query", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "fixture-v25", "step": "cli_index_update", "result": "exit 1: error: UnsupportedFlags", "changed_files": ["WRITER.LOCK: absent -> (0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')"]}
+{"target": "fixture-v25", "step": "cli_apply", "result": "exit 1: error: UnsupportedFlags", "changed_files": ["WRITER.LOCK: absent -> (0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')"]}
+{"target": "timing-10k", "step": "abi_open", "result": "refused: ss_open: UnsupportedFlags", "changed_files": []}
+{"target": "timing-10k", "step": "abi_index_folder", "result": "refused: ss_index_folder: UnsupportedFlags", "changed_files": []}
+{"target": "timing-10k", "step": "abi_apply_changes", "result": "refused: ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags", "changed_files": []}
+{"target": "timing-10k", "step": "cli_query", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "timing-10k", "step": "cli_index_update", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "timing-10k", "step": "cli_apply", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "edge", "step": "abi_open", "result": "refused: ss_open: UnsupportedFlags", "changed_files": []}
+{"target": "edge", "step": "abi_index_folder", "result": "refused: ss_index_folder: UnsupportedFlags", "changed_files": []}
+{"target": "edge", "step": "abi_apply_changes", "result": "refused: ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags", "changed_files": []}
+{"target": "edge", "step": "cli_query", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "edge", "step": "cli_index_update", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "edge", "step": "cli_apply", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "family", "step": "abi_open", "result": "refused: ss_open: UnsupportedFlags", "changed_files": []}
+{"target": "family", "step": "abi_index_folder", "result": "refused: ss_index_folder: UnsupportedFlags", "changed_files": []}
+{"target": "family", "step": "abi_apply_changes", "result": "refused: ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags", "changed_files": []}
+{"target": "family", "step": "cli_query", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "family", "step": "cli_index_update", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "family", "step": "cli_apply", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "j2", "step": "abi_open", "result": "refused: ss_open: UnsupportedFlags", "changed_files": []}
+{"target": "j2", "step": "abi_index_folder", "result": "refused: ss_index_folder: UnsupportedFlags", "changed_files": []}
+{"target": "j2", "step": "abi_apply_changes", "result": "refused: ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags", "changed_files": []}
+{"target": "j2", "step": "cli_query", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "j2", "step": "cli_index_update", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}
+{"target": "j2", "step": "cli_apply", "result": "exit 1: error: UnsupportedFlags", "changed_files": []}

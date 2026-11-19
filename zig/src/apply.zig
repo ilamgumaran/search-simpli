@@ -1969,10 +1969,8 @@ fn buildPositionalFresh(allocator: std.mem.Allocator, sources: []const DocSource
             .fresh => |tokens| {
                 if (tokens.len > std.math.maxInt(u32)) return error.DocumentCountOverflow;
                 document_lengths[document_index] = @intCast(tokens.len);
-                var count_bytes: [4]u8 = undefined;
-                std.mem.writeInt(u32, &count_bytes, @intCast(tokens.len), .little);
-                try offsets.appendSlice(scratch, &count_bytes);
-                var previous_start: u32 = 0;
+                // S6-T8: section 5 at one byte per token (`HYBLEX04`).
+                try postings.appendOffsetsTable(&offsets, scratch, .one_byte, tokens);
                 for (tokens, 0..) |token, ordinal| {
                     const gop = try id_by_name.getOrPut(token.bytes);
                     if (!gop.found_existing) {
@@ -1981,10 +1979,6 @@ fn buildPositionalFresh(allocator: std.mem.Allocator, sources: []const DocSource
                         try names.append(scratch, token.bytes);
                     }
                     try occurrences.append(scratch, .{ .term = gop.value_ptr.*, .document = @intCast(document_index), .ordinal = @intCast(ordinal) });
-                    const start = @max(token.start, previous_start);
-                    try postings.appendVarint(&offsets, scratch, start - previous_start);
-                    try postings.appendVarint(&offsets, scratch, @max(token.length, 1));
-                    previous_start = start;
                 }
             },
         }
@@ -2051,7 +2045,7 @@ fn buildPositionalFresh(allocator: std.mem.Allocator, sources: []const DocSource
         terms[r] = .{ .term = names.items[term], .document_frequency = @intCast(postings_length), .postings_start = postings_start, .postings_length = postings_length };
     }
     const average: f32 = if (sources.len == 0) 0 else @as(f32, @floatFromInt(total_length)) / @as(f32, @floatFromInt(sources.len));
-    const sections: postings.PositionSections = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items) };
+    const sections: postings.PositionSections = .{ .positions = try allocator.dupe(u8, positions.items), .offsets = try allocator.dupe(u8, offsets.items), .coding = .one_byte };
     stages.sub("build_lexical.encode");
     return .{
         .terms = terms,
@@ -2101,17 +2095,26 @@ fn skipVarintsChecked(bytes: []const u8, at: usize, count: usize) error{InvalidL
     return source.varintsEnd(bytes, at, count) orelse error.InvalidLexicalSection;
 }
 
-/// Where each document's section-5 table starts in `offsets`, plus the end
-/// (`lengths.len + 1` entries): a `u32` count, then two varints per token.
-/// The walk must end exactly at the end of the section.
-fn offsetTableStarts(scratch: std.mem.Allocator, offsets: []const u8, lengths: []const u32) ![]usize {
+/// Where each document's section-5 table starts in `sections.offsets`,
+/// plus the end (`lengths.len + 1` entries): v2's coding, a `u32` count then
+/// two varints per token; v4's (S6-T8), a varint count then per token one
+/// byte and its escapes. The walk must end exactly at the end of the section.
+fn offsetTableStarts(scratch: std.mem.Allocator, sections: postings.PositionSections, lengths: []const u32) ![]usize {
+    const offsets = sections.offsets;
     const starts = try scratch.alloc(usize, lengths.len + 1);
     errdefer scratch.free(starts);
     var at: usize = 0;
     for (lengths, 0..) |length, document| {
         starts[document] = at;
-        if (offsets.len - at < 4) return error.InvalidLexicalSection;
-        at = try skipVarintsChecked(offsets, at + 4, @as(usize, length) * 2);
+        switch (sections.coding) {
+            .pairs => {
+                if (offsets.len - at < 4) return error.InvalidLexicalSection;
+                at = try skipVarintsChecked(offsets, at + 4, @as(usize, length) * 2);
+            },
+            // S6-T8 (rulings on the Report, item 1b, made after measuring):
+            // sixteen tokens at a time where none escapes.
+            .one_byte => at = postings.oneByteTableEnd(offsets, at, length) orelse return error.InvalidLexicalSection,
+        }
     }
     starts[lengths.len] = at;
     // S4-T12 ruling 4: a refusal in every build, not a Debug assert (which
@@ -2312,20 +2315,62 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
     stages.sub("build_lexical.merge");
 
     // (d) Section 5: each document's table, previous or fresh.
-    const old_starts = try offsetTableStarts(scratch, sections.offsets, previous.document_lengths);
+    const old_starts = try offsetTableStarts(scratch, sections, previous.document_lengths);
     defer scratch.free(old_starts);
-    const fresh_starts = try offsetTableStarts(scratch, fresh_sections.offsets, fresh.document_lengths);
+    const fresh_starts = try offsetTableStarts(scratch, fresh_sections, fresh.document_lengths);
     defer scratch.free(fresh_starts);
-    var offsets_sink = ByteSink{ .out = try allocator.alloc(u8, sections.offsets.len + fresh_sections.offsets.len) };
-    fresh_index = 0;
-    for (sources) |item| switch (item) {
-        .carried => |old| try offsets_sink.append(sections.offsets[old_starts[old]..old_starts[old + 1]]),
-        .fresh => {
-            try offsets_sink.append(fresh_sections.offsets[fresh_starts[fresh_index]..fresh_starts[fresh_index + 1]]);
-            fresh_index += 1;
-        },
-    };
-    const offsets_out = try offsets_sink.written();
+    // S6-T8 (rulings on the Report, item 1a): the walks and the copy or
+    // transcode timed apart.
+    stages.inner("build_lexical.offsets.starts");
+    var offsets_out: []u8 = undefined;
+    if (sections.coding == fresh_sections.coding) {
+        var offsets_sink = ByteSink{ .out = try allocator.alloc(u8, sections.offsets.len + fresh_sections.offsets.len) };
+        fresh_index = 0;
+        for (sources) |item| switch (item) {
+            .carried => |old| try offsets_sink.append(sections.offsets[old_starts[old]..old_starts[old + 1]]),
+            .fresh => {
+                try offsets_sink.append(fresh_sections.offsets[fresh_starts[fresh_index]..fresh_starts[fresh_index + 1]]);
+                fresh_index += 1;
+            },
+        };
+        offsets_out = try offsets_sink.written();
+    } else {
+        // S6-T8: the first publish over a v2/v3 generation transcodes each
+        // carried document's table to the fresh coding, token by token (the
+        // same starts and lengths), so the section is a fresh index's.
+        var list = std.ArrayList(u8).empty;
+        defer list.deinit(scratch);
+        try list.ensureTotalCapacity(scratch, sections.offsets.len + fresh_sections.offsets.len);
+        // The only coding change is v2 to v4 (every writer writes v4).
+        if (sections.coding != .pairs or fresh_sections.coding != .one_byte) return error.InvalidLexicalSection;
+        fresh_index = 0;
+        for (sources) |item| switch (item) {
+            // S6-T8 (rulings on the Report, item 1b, made after measuring;
+            // the ruling after the Verdict, F1): v2 to v4 directly, refusing
+            // with v2's error what v2's validation refuses, nothing repaired.
+            .carried => |old| postings.transcodePairsTable(&list, scratch, sections.offsets, old_starts[old], old_starts[old + 1], previous.document_lengths[old]) catch |err| switch (err) {
+                error.InvalidPositions => return error.InvalidPositions,
+                error.GapNotRepresentable => return error.InvalidLexicalSection,
+                error.OutOfMemory => return error.OutOfMemory,
+            },
+            .fresh => {
+                try list.appendSlice(scratch, fresh_sections.offsets[fresh_starts[fresh_index]..fresh_starts[fresh_index + 1]]);
+                fresh_index += 1;
+            },
+        };
+        // The tables of the documents this publish removes are checked by
+        // v2's rules and dropped: v2's reader refuses the whole section for
+        // any one of them, so the writer does too (the ruling after the
+        // Verdict, F1).
+        var carried = try std.DynamicBitSetUnmanaged.initEmpty(scratch, previous.document_lengths.len);
+        defer carried.deinit(scratch);
+        for (sources) |item| if (item == .carried) carried.set(item.carried);
+        for (previous.document_lengths, 0..) |length, old| {
+            if (!carried.isSet(old)) try postings.checkPairsTable(sections.offsets, old_starts[old], old_starts[old + 1], length);
+        }
+        offsets_out = try allocator.dupe(u8, list.items);
+    }
+    stages.inner(if (sections.coding == fresh_sections.coding) "build_lexical.offsets.copy" else "build_lexical.offsets.transcode");
     stages.sub("build_lexical.offsets");
 
     return .{
@@ -2333,7 +2378,7 @@ fn mergeCarried(allocator: std.mem.Allocator, previous: postings.Index, sources:
         .postings = postings_out[0..posting_count],
         .document_lengths = document_lengths,
         .average_document_length = average,
-        .positions = .{ .positions = positions_out, .offsets = offsets_out },
+        .positions = .{ .positions = positions_out, .offsets = offsets_out, .coding = fresh_sections.coding },
         .sorted_terms = true,
     };
 }
@@ -2986,6 +3031,9 @@ fn buildGeneration(
         .xxh3_sections = true,
         // S6-T4: manifest v2.3, the lexical sections are `HYBLEX03`.
         .lexical_v3 = true,
+        // S6-T8: manifest v2.5, the content section is `HYBLEX04` (section
+        // 5 at one byte per token) whenever it carries positions.
+        .lexical_v4 = if (lexical_index.positions) |p| p.coding == .one_byte else false,
         .analyzer_id = options.analyzer.label(),
         .embedding_model_id = "none",
         .documents_file = documents_file,

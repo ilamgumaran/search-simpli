@@ -1,0 +1,5 @@
++- run test 532 pass, 9 skip, 1 fail (542 total)
+error: 'compat_s6t8_test.test.S6-T8 boundary sweep, rule 11 on a v2-coded index: a highlight one past its chunk's text is refused by find; one ending at the text's end answers' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 538/548 tests passed (9 skipped, 1 failed)
++- run test 532 pass, 9 skip, 1 fail (542 total)
++- run test 6 pass (6 total) 974ms MaxRSS:5M

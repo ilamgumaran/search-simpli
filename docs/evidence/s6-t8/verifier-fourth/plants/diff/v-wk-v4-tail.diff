@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite4/zig/src/apply.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants4.noindex/src/v-wk-v4-tail/zig/src/apply.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite4/zig/src/apply.zig	2026-11-18 11:36:54
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants4.noindex/src/v-wk-v4-tail/zig/src/apply.zig	2026-11-18 12:16:46
+@@ -2119,7 +2119,7 @@
+     starts[lengths.len] = at;
+     // S4-T12 ruling 4: a refusal in every build, not a Debug assert (which
+     // `ReleaseSmall` may assume true and drop the check with it).
+-    if (at != offsets.len) return error.InvalidLexicalSection;
++    if (at != offsets.len and sections.coding == .pairs) return error.InvalidLexicalSection;
+     return starts;
+ }
+ 

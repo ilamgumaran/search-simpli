@@ -107,7 +107,8 @@ fn expectSameSnapshotBytes(arena: std.mem.Allocator, io: std.Io, folder_dir: std
     const import_header = try lexical_segment.inspect(import_lexical);
     try std.testing.expect(folder_header.hasPositions());
     try std.testing.expect(!import_header.hasPositions());
-    try std.testing.expectEqual(lexical_segment.version_v3, folder_header.version);
+    // S6-T8: `HYBLEX04` (v3 with section 5 at one byte per token).
+    try std.testing.expectEqual(lexical_segment.version_v4, folder_header.version);
     try std.testing.expectEqual(lexical_segment.version, import_header.version);
     try std.testing.expectEqual(folder_header.document_count, import_header.document_count);
     try std.testing.expectEqual(folder_header.term_count, import_header.term_count);

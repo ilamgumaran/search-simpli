@@ -1,0 +1,16 @@
+{
+ "corpus": "prose-10k",
+ "files": 10000,
+ "queries": [
+  "the",
+  "the within",
+  "have drink"
+ ],
+ "finds": [
+  {
+   "query": "the",
+   "mode": "words"
+  }
+ ],
+ "roots": null
+}

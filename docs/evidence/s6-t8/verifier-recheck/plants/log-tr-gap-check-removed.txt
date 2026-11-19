@@ -1,0 +1,4 @@
+error: 'offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses' terminated with signal ABRT with stderr:
+       thread 111009631 panic: integer does not fit in destination type
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+Build Summary: 7/9 steps succeeded (1 failed); 510/520 tests passed (9 skipped, 1 crashed)

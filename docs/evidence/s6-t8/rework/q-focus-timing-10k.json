@@ -1,0 +1,24 @@
+{
+ "corpus": "timing-10k",
+ "files": 10000,
+ "queries": [
+  "from",
+  "were",
+  "doc 00000"
+ ],
+ "finds": [
+  {
+   "query": "from",
+   "mode": "words"
+  },
+  {
+   "query": "bada*",
+   "mode": "prefix"
+  },
+  {
+   "query": "badamo",
+   "mode": "words"
+  }
+ ],
+ "roots": null
+}

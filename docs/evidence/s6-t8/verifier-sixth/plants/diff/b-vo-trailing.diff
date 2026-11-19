@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-vo-trailing/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/src.noindex/suite6/zig/src/postings.zig	2026-11-18 15:47:50
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-vscratch/plants6.noindex/src/b-vo-trailing/zig/src/postings.zig	2026-11-18 16:30:08
+@@ -318,7 +318,7 @@
+             previous_end = end;
+         }
+     }
+-    if (at != offsets.len) return error.OffsetsTrailingData;
++    if (at != offsets.len and at + 1 != offsets.len) return error.OffsetsTrailingData;
+ }
+ 
+ /// S6-T8 rule 11: every span's end at most `codepoints` (its document's

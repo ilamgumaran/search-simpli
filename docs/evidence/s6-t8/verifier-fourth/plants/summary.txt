@@ -1,0 +1,29 @@
+ck-fifth-loose-start: changed lines 19; Build Summary: 7/9 steps succeeded (1 failed); 528/538 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: a start delta whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables
+none: changed lines 0; Build Summary: 9/9 steps succeeded; 529/538 tests passed (9 skipped); crash markers 0
+v-ck-end-eq: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 528/538 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables
+v-ck-start-six: changed lines 20; Build Summary: 7/9 steps succeeded (1 failed); 528/538 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: a start delta with a sixth byte (its value unchanged), carried or dropped, at three tables
+v-ob-gap-to-end: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 527/538 tests passed (9 skipped, 2 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables
+    failed: offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails
+v-tr-end-eq: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 528/538 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables
+v-tr-gap-error: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 527/538 tests passed (9 skipped, 2 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: a gap of exactly 2^31 (valid v2, zigzag 2^32) in a carried table is refused at three tables; a dropped one is not checked for it
+    failed: offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+v-tr-leftover-gt: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 528/538 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+v-tr-start-cut: changed lines 19; Build Summary: 7/9 steps succeeded (1 failed); 528/538 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: a start delta whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables
+v-tr-start-six: changed lines 20; Build Summary: 7/9 steps succeeded (1 failed); 528/538 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: a start delta with a sixth byte (its value unchanged), carried or dropped, at three tables
+v-tr-unsliced: changed lines 2; Build Summary: 9/9 steps succeeded; 529/538 tests passed (9 skipped); crash markers 0
+v-tr-zero-fast-repair: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 524/538 tests passed (9 skipped, 5 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the first token is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the last token is refused by the first publish
+    failed: compat_s6t8_test.test.S6-T8 F1: a length of 0 in one v2 token (the verifier's v2_first_publish case) is refused at the first publish, the old generation whole and byte-identical
+    failed: compat_s6t8_test.test.S6-T8 sites: a length of 0, carried or dropped, at three tables
+    failed: offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+v-wk-v4-tail: changed lines 2; Build Summary: 9/9 steps succeeded; 529/538 tests passed (9 skipped); crash markers 0

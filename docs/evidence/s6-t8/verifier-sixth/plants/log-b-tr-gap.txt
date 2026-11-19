@@ -1,0 +1,10 @@
++- run test 531 pass, 9 skip, 2 crash (542 total)
+error: 'compat_s6t8_test.test.S6-T8 sites: a gap of exactly 2^31 (valid v2, zigzag 2^32) in a carried table is refused at three tables; a dropped one is not checked for it' terminated with signal ABRT with stderr:
+       thread 111541188 panic: integer does not fit in destination type
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+error: 'offsets_v4_test.test.S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it' terminated with signal ABRT with stderr:
+       thread 111541507 panic: integer does not fit in destination type
+               return mainServer(init) catch |err| panic("internal test runner failure: {t}", .{err});
+Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 crashed)
++- run test 531 pass, 9 skip, 2 crash (542 total)
++- run test 6 pass (6 total) 967ms MaxRSS:5M

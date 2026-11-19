@@ -1,0 +1,4 @@
+{"mode": "abi-first", "window": [0.0, 1.3], "seed": 923, "trials": 12, "unkilled_s": 0.1018, "old": 6, "new": 6, "fail": 0, "killed_before_exit": 6, "later_ok": 12}
+{"mode": "abi-v5", "window": [0.0, 1.3], "seed": 924, "trials": 12, "unkilled_s": 0.1094, "old": 10, "new": 2, "fail": 0, "killed_before_exit": 10, "later_ok": 12}
+{"mode": "cli-first", "window": [0.0, 1.3], "seed": 921, "trials": 12, "unkilled_s": 0.3049, "old": 10, "new": 2, "fail": 0, "killed_before_exit": 10, "later_ok": 12}
+{"mode": "cli-v5", "window": [0.0, 1.3], "seed": 922, "trials": 12, "unkilled_s": 0.2099, "old": 9, "new": 3, "fail": 0, "killed_before_exit": 9, "later_ok": 12}

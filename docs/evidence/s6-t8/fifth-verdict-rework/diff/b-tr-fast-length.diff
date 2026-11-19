@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-tr-fast-length/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-tr-fast-length/zig/src/postings.zig	2026-11-18 14:11:16
+@@ -214,7 +214,7 @@
+     for (0..count) |_| {
+         var delta: u32 = undefined;
+         var length: u32 = undefined;
+-        if (bytes.len - at >= 2 and bytes[at] < 0x80 and bytes[at + 1] < 0x80) {
++        if (bytes.len - at >= 2 and bytes[at] < 0x80 and bytes[at + 1] < 0x81) {
+             delta = bytes[at];
+             length = bytes[at + 1];
+             at += 2;

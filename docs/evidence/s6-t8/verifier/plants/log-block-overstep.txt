@@ -1,0 +1,30 @@
+error: 'text_once_test.test.S6-T7: an update carries unchanged files' records, maps and residual runs byte for byte, and the result is a fresh index's' failed:
+error: 'incremental_indexing_test.test.five-step fixture mutation: add, edit, delete, rename, oversize' failed:
+error: 'incremental_indexing_test.test.S4-T11 ruling 2: seeded random mutations, each round's update equals a fresh index byte for byte' failed:
+error: 'apply_test.test.S3-T3: rename detection pairs equal hashes by sorted path and reports ambiguous moves' failed:
+error: 'apply_test.test.S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes' failed:
+error: 'apply_test.test.S3-T3: a generation carrying unchanged documents has the lexical section a fresh positional build gives' failed:
+error: 'apply_test.test.S4-T11 ruling 2: the carried merge writes a fresh build's lexical section at every step' failed:
+error: 'apply_test.test.S4-T13 ruling 2(a): a previous lexical section with a flipped byte, or one that disagrees with the manifest, is refused at open' failed:
+error: 'apply_test.test.S4-T13 ruling 2(b): a re-sealed repeated ordinal in a carried posting is refused before anything is published' failed:
+error: 'apply_test.test.S4-T13 ruling 2(d) (and 3(c)): an untouched previous generation gives a fresh index's sections' failed:
+error: 'apply_test.test.S4-T13 ruling 3(a): a previous source section with a flipped byte, or one that disagrees with the manifest, is refused at open' failed:
+error: 'apply_test.test.S4-T14 ruling 3(a): a re-sealed bad line map is carried by an update of another file, refused per file by the reader, and replaced by an update of its file' failed:
+error: 'apply_test.test.S4-T13 ruling 4: the filename sections equal a full build at every step' failed:
+error: 'apply_test.test.S4-T13 ruling 4: with no path changed the previous filename lexical section is carried byte for byte; its guard is the checksum' failed:
+error: 'apply_test.test.S4-T13 ruling 4: a damaged previous filename lexical section is rebuilt, never carried or refused' failed:
+error: 'apply_test.test.S4-T16 finding 14: no stage name is dropped on the writer's longest paths' failed:
+error: 'apply_test.test.S4-T16 rulings 2-4: every kind of update writes a fresh index's documents, lexical, source and filename sections' failed:
+error: 'apply_test.test.S4-T16 ruling 3: the source walk over a section that holds only some roots' files writes a fresh index's sections' failed:
+error: 'apply_test.test.S4-T16 ruling 2: an update of a generation whose records are out of path order writes a fresh index's sections' failed:
+error: 'apply_test.test.S4-T16 ruling 5(b): a state whose entries are out of record order runs the not-in-state loop and writes the same sections' failed:
+error: 'apply_test.test.S4-T16 ruling 5(c): a previous path the state does not name is rebuilt from the generation, and the output equals the update where none is missing' failed:
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index' failed:
+error: 'compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same' failed:
+error: 'compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result' failed:
+error: 'offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails' failed:
+error: 'reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (poisoned testing allocator)' failed:
+error: 'reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (C allocator, as a release searchd)' failed:
+error: 'filename_field_test.test.opt-in folder index publishes filename channel and refresh setting is pinned' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 471/509 tests passed (9 skipped, 29 failed)

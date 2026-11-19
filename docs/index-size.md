@@ -37,10 +37,14 @@ Raw tables: [`docs/evidence/s6-t3/`](evidence/s6-t3/README.md).
 - **Step 1 has landed** ([below](#landed)): lexical v3, measured 3.41 (timing
   10k), 3.14 (prose 10k), 2.39 (Tamil 10k), 2.88 (fixtures), 3.17 (family
   folder) against the projection's 3.46, 3.17, 2.40, 2.87, 3.15.
-- **Step 2 is built, not yet verified** ([below](#landed); S6-T7): text once,
+- **Step 2 has landed** ([below](#landed); S6-T7): text once,
   measured 2.17 (timing 10k), 2.04 (prose 10k), 1.33 (Tamil 10k), 1.82
   (fixtures), 2.11 (family folder) against the projection's 2.31, 2.10, 1.36,
   1.82, 2.11.
+- **Step 3 is built, not yet verified** ([below](#landed); S6-T8): the
+  highlight offsets at one byte per token, measured 2.01 (timing 10k), 1.85
+  (prose 10k), 1.28 (Tamil 10k), 1.72 (fixtures), 1.93 (family folder) against
+  the projection's 2.15, 1.92, 1.32, 1.72, 1.92.
 - **Not taken in D2 (ruled 16 Nov 2026, [below](#rulings-16-nov-2026)):**
   leaving the offsets out (to 1.81 timing, 1.63 prose, but `find` words
   measured 0.03–0.84 ms slower at the median, up to 5 ms at p95), block
@@ -113,7 +117,50 @@ lower on the 10k corpora, and the first `read_span` on a handle 42–76 % faster
 a later `read_span` of the 1.1 MB family log costs about 2 % more CPU (the
 rebuild), of the other files measured the same or less. The numbers, bars and
 method are in the [S6-T7 Report](tasks/S6-T7.md) and
-`docs/evidence/s6-t7/phase2/`. Steps 3 and 4 are next (03-next D2-3, D2-4).
+`docs/evidence/s6-t7/phase2/`.
+
+**Step 3, the highlight offsets at one byte per token (S6-T8, built 17 Nov
+2026, not yet verified).** The content lexical section is
+[`HYBLEX04`](lexical-segment-format-v4.md): v3 with section 5 recoded as C5b,
+per token one byte (the zigzag gap from the previous token's end and the
+length, two 4-bit fields, 15 escaping to the whole value as a varint), the
+count per document a varint; under
+[manifest v2.5](manifest-format-v2.md#v25-lexical-section-v4-s6-t8). Measured
+the same way, against `main` at `62324f9` (step 2) on the same files, and
+against the step 3 column of the [projection](#projection); percentages
+rounded to nearest:
+
+| Corpus | Corpus bytes | Before (step 2) | After (step 3) | Change | Section 5 before → after | Projected (step 3) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| timing-10k | 7,269,199 | 15,808,625 (2.17) | 14,612,980 (2.01) | −1,195,645 (−7.6 %) | 2,351,372 → 1,155,727 (−50.8 %) | 15,592,516 (2.15) |
+| prose-10k | 17,244,024 | 35,196,921 (2.04) | 31,967,055 (1.85) | −3,229,866 (−9.2 %) | 6,448,994 → 3,219,128 (−50.1 %) | 33,041,293 (1.92) |
+| tamil-10k | 27,708,457 | 36,731,764 (1.33) | 35,533,368 (1.28) | −1,198,396 (−3.3 %) | 2,356,900 → 1,158,504 (−50.8 %) | 36,515,215 (1.32) |
+| fixtures | 4,635,177 | 8,443,782 (1.82) | 7,969,705 (1.72) | −474,077 (−5.6 %) | 1,185,351 → 711,274 (−40.0 %) | 7,950,925 (1.72) |
+| family | 1,237,342 | 2,614,805 (2.11) | 2,382,441 (1.93) | −232,364 (−8.9 %) | 467,096 → 234,732 (−49.7 %) | 2,375,329 (1.92) |
+
+J2's index: 169,267 → 157,654 B (−6.9 %). The saving on every corpus is
+S6-T3's C5b re-encoding to the byte (−1,195,645, −3,229,866 and −1,198,396 B on
+the 10k corpora), and every other section is `main`'s byte for byte. The 10k
+corpora come in under the projection and the two small corpora over it, the
+fixtures by 0.2 % (+18,780 B) and family by 0.3 % (+7,112 B), for one reason: the step 3 projection is step 2's
+projection less the C5b saving, the measured saving equals the projected one to
+the byte, so each difference is step 2's own difference from its projection,
+carried unchanged (step 2 measured +18,780 and +7,112 B over it on the fixtures
+and family, and under it on the 10k corpora).
+Nothing a query, `find`, `outline`, `read_span`, `list_files` or
+`index_status` answers changed: every `find` hit's highlights equal `main`'s,
+on a query set with Tamil, combining marks, tokens of 15 codepoints and more,
+gaps of 15 and more and tokens at a chunk's ends. In the builder's runs on
+the final code (for information; the verifier's five decide) open was 1.5 % to
+4.1 % faster (J2 equal within the rule's threshold) and memory after open up
+to 3.2 MB lower; the first publish from step 2's format was −0.8 % to +1.8 %
+and one-file updates after it −2.1 % to +0.7 %, within the 2 % expected, after
+two writer changes made on measurement (a first build was 3.5 % to 13.4 %
+slower on the first publish and up to 6.9 % on later updates). A few warm
+`both` queries on prose move by 10 to 25 µs with the code's placement in the
+`ReleaseSmall` build, as never-run code of the same size moves them. The numbers,
+bars and method are in the [S6-T8 Report](tasks/S6-T8.md) and
+`docs/evidence/s6-t8/`. Step 4 is next (03-next D2-4).
 
 ## How it was measured
 

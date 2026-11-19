@@ -1,0 +1,177 @@
+# S6-T8 (ruling after the Third Verdict): one plant per refusal site (scripts/prototypes/s6t8/plants_sites.py), and the verifier's
+# ck-fifth-loose-start (verifier-third/plants/plants3.py), each in a fresh git archive of 7d5e8c1 (the site tests) with its own Zig caches;
+# the planted tree diffed against an unplanted archive before the build (diff/NAME.diff; every one non-empty; the reader plants add one
+# loosened copy of readVarint, about 50 lines, and change one call); Debug zig build test; unplanted 523 pass, 9 skip of 532 in the
+# engine test step (Build Summary 529 of 538). Two at a time (run_site_plant.sh, site_pair.sh, two_pairs.sh, waits by waitfor.py),
+# except 14 plants that first ran up to 14 at once by my error (the Report's rules); those 14 were run again two at a time, here,
+# and every outcome equals the first run's (first-run results at the end).
+
+## ck-fifth-loose-start
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: a start delta whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables
+
+## ck-short-removed
+  engine test step: 523 pass, 9 skip (532 total)
+
+## ck-count-removed
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 sites: a count other than the document's length, carried or dropped, at the first, a middle and the last table
+
+## ck-start-sixth-loose
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: a start delta with a sixth byte (its value unchanged), carried or dropped, at three tables
+
+## ck-start-fifth-loose
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: a start delta whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables
+
+## ck-length-sixth-loose
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 sites: a length with a sixth byte (its value unchanged), carried or dropped, at three tables
+
+## ck-length-fifth-loose
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 sites: a length whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables
+
+## ck-trunc-loose
+  engine test step: 523 pass, 9 skip (532 total)
+
+## ck-zero-removed
+  engine test step: 520 pass, 9 skip, 3 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical
+  fails: compat_s6t8_test: S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 sites: a length of 0, carried or dropped, at three tables
+
+## ck-end-loose
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables
+
+## ck-leftover-removed
+  engine test step: 523 pass, 9 skip (532 total)
+
+## tr-short-removed
+  engine test step: 522 pass, 9 skip, 1 crash (532 total)
+error: 'offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses' terminated with signal ABRT with stderr:
+  crash: thread 111221342 panic: index out of bounds: index 4, len 2
+
+## tr-count-removed
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F1, v2 rule: a count other than the document's length is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 sites: a count other than the document's length, carried or dropped, at the first, a middle and the last table
+
+## tr-start-sixth-loose
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: a start delta with a sixth byte (its value unchanged), carried or dropped, at three tables
+
+## tr-start-fifth-loose
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: a start delta whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables
+
+## tr-length-sixth-loose
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F1, v2 rule: a varint with a sixth byte is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 sites: a length with a sixth byte (its value unchanged), carried or dropped, at three tables
+
+## tr-length-fifth-loose
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F1, v2 rule: a varint whose fifth byte is above 0x0F is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 sites: a length whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables
+
+## tr-trunc-loose
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: offsets_v4_test: S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+
+## tr-zero-removed
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: offsets_v4_test: S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+
+## tr-end-loose
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables
+
+## tr-gap-loose
+  engine test step: 522 pass, 9 skip, 1 crash (532 total)
+error: 'compat_s6t8_test.test.S6-T8 sites: a gap of exactly 2^31 (valid v2, zigzag 2^32) in a carried table is refused at three tables; a dropped one is not checked for it' terminated with signal ABRT with stderr:
+  crash: thread 111239021 panic: integer does not fit in destination type
+
+## tr-leftover-removed
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: offsets_v4_test: S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses
+
+## rv-sixth-loose
+  engine test step: 519 pass, 9 skip, 4 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F1, v2 rule: a varint with a sixth byte is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 sites: a start delta with a sixth byte (its value unchanged), carried or dropped, at three tables
+  fails: compat_s6t8_test: S6-T8 sites: a length with a sixth byte (its value unchanged), carried or dropped, at three tables
+
+## rv-fifth-loose
+  engine test step: 519 pass, 9 skip, 4 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F1, v2 rule: a varint whose fifth byte is above 0x0F is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 sites: a start delta whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables
+  fails: compat_s6t8_test: S6-T8 sites: a length whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables
+
+## rv-trunc-loose
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: lexical_segment: S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader
+  fails: lexical_segment: S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections
+
+## ob-count-loose
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table
+  fails: offsets_v4_test: S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails
+
+## ob-token-bound-loose
+  engine test step: 521 pass, 9 skip, 2 crash (532 total)
+error: 'compat_s6t8_test.test.S6-T8 sites: a v4 section that ends before a table's last token byte is refused at a later update, carried or dropped, at three tables' terminated with signal ABRT with stderr:
+error: 'offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails' terminated with signal ABRT with stderr:
+  crash: thread 111250046 panic: index out of bounds: index 12, len 12
+
+## ob-gap-escape-loose
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables
+  fails: offsets_v4_test: S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails
+
+## ob-length-escape-loose
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables
+  fails: offsets_v4_test: S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails
+
+## sv-end-loose
+  engine test step: 519 pass, 9 skip, 4 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table
+  fails: compat_s6t8_test: S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables
+  fails: compat_s6t8_test: S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables
+  fails: offsets_v4_test: S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails
+
+## wk-short-removed
+  engine test step: 523 pass, 9 skip (532 total)
+
+## wk-varints-loose
+  engine test step: 522 pass, 9 skip, 1 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F1, v2 rule: a section that ends inside the last table is refused by the first publish
+
+## wk-leftover-removed
+  engine test step: 521 pass, 9 skip, 2 fail (532 total)
+  fails: compat_s6t8_test: S6-T8 F1, v2 rule: a byte after the last table is refused by the first publish
+  fails: compat_s6t8_test: S6-T8 F3, dropped table: a byte left over after the first, a middle or the last table, that file removed, is refused by the first publish (the table walk)
+
+## first run of the 14 plants that ran overlapped (not used above)
+  ck-count-removed exit=1 changed-lines=2 | +- run test 521 pass, 9 skip, 2 fail (532 total)
+  ck-end-loose exit=1 changed-lines=2 | +- run test 522 pass, 9 skip, 1 fail (532 total)
+  ck-leftover-removed exit=0 changed-lines=2 | +- run test 523 pass, 9 skip (532 total)
+  ck-length-fifth-loose exit=1 changed-lines=53 | +- run test 521 pass, 9 skip, 2 fail (532 total)
+  ck-length-sixth-loose exit=1 changed-lines=53 | +- run test 521 pass, 9 skip, 2 fail (532 total)
+  ck-short-removed exit=0 changed-lines=1 | +- run test 523 pass, 9 skip (532 total)
+  ck-start-sixth-loose exit=1 changed-lines=53 | +- run test 522 pass, 9 skip, 1 fail (532 total)
+  ck-trunc-loose exit=0 changed-lines=55 | +- run test 523 pass, 9 skip (532 total)
+  ck-zero-removed exit=1 changed-lines=2 | +- run test 520 pass, 9 skip, 3 fail (532 total)
+  tr-count-removed exit=1 changed-lines=2 | +- run test 521 pass, 9 skip, 2 fail (532 total)
+  tr-length-sixth-loose exit=1 changed-lines=53 | +- run test 521 pass, 9 skip, 2 fail (532 total)
+  tr-short-removed exit=1 changed-lines=1 | +- run test 522 pass, 9 skip, 1 crash (532 total)
+  tr-start-fifth-loose exit=1 changed-lines=53 | +- run test 522 pass, 9 skip, 1 fail (532 total)
+  tr-start-sixth-loose exit=1 changed-lines=53 | +- run test 522 pass, 9 skip, 1 fail (532 total)

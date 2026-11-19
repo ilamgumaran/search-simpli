@@ -11,6 +11,12 @@ reader reads `HYBLEX01`, `HYBLEX02` and `HYBLEX03`. Companion to
 [`index-size.md`](index-size.md) (candidates C1, C2b, C3 and F2, which this
 format builds).
 
+Since S6-T8 ([manifest v2.5](manifest-format-v2.md#v25-lexical-section-v4-s6-t8))
+the writers write the **content** section as
+[`HYBLEX04`](lexical-segment-format-v4.md), this format with section 5 at one
+byte per token; the file-name section stays `HYBLEX03`, and every reader
+still reads this format for both.
+
 V3 keeps v2's five sections in the same order and recodes the first three:
 document lengths as varints (C3), the dictionary front-coded (C1), and each
 term's postings as gaps with the term frequency folded into the gap (C2b).

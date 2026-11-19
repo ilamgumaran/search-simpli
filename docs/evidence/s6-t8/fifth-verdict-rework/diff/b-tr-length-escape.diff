@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-tr-length-escape/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-tr-length-escape/zig/src/postings.zig	2026-11-18 14:21:41
+@@ -228,7 +228,7 @@
+         const z = zigzag(@as(i64, @intCast(start)) - @as(i64, @intCast(previous_end)));
+         if (z > std.math.maxInt(u32)) return error.GapNotRepresentable;
+         const g: u8 = if (z >= offsets_escape) offsets_escape else @intCast(z);
+-        const l: u8 = if (length >= offsets_escape) offsets_escape else @intCast(length);
++        const l: u8 = if (length > offsets_escape) offsets_escape else @intCast(length);
+         out[w] = g | (l << 4);
+         w += 1;
+         if (g == offsets_escape) putVarint(out, &w, @intCast(z));

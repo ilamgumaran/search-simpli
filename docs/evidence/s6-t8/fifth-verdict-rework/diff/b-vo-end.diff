@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-vo-end/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/none/zig/src/postings.zig	2026-11-18 13:12:34
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites4.noindex/src/b-vo-end/zig/src/postings.zig	2026-11-18 13:12:49
+@@ -313,7 +313,7 @@
+             if (start < 0) return error.OffsetsStartBeforeChunk;
+             if (start < previous_start) return error.OffsetsStartDecreases;
+             const end = start + l;
+-            if (end > std.math.maxInt(u32)) return error.OffsetsEndOverflow;
++            if (end > std.math.maxInt(u32) + 1) return error.OffsetsEndOverflow;
+             previous_start = start;
+             previous_end = end;
+         }

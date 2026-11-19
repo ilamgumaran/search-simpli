@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/tr-zero-removed/zig/src/postings.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/none/zig/src/postings.zig	2026-11-18 09:57:46
++++ <home>/workspace/repos/search-simpli-wt/S6-T8-scratch/sites2.noindex/src/tr-zero-removed/zig/src/postings.zig	2026-11-18 11:04:31
+@@ -224,7 +224,7 @@
+         }
+         start += delta;
+         // v2's rules: every length at least 1, every end within a u32.
+-        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;
++        if (start + length > std.math.maxInt(u32)) return error.InvalidPositions;
+         const z = zigzag(@as(i64, @intCast(start)) - @as(i64, @intCast(previous_end)));
+         if (z > std.math.maxInt(u32)) return error.GapNotRepresentable;
+         const g: u8 = if (z >= offsets_escape) offsets_escape else @intCast(z);

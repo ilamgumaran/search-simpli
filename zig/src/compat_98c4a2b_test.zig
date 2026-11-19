@@ -150,7 +150,10 @@ pub fn magicOf(a: std.mem.Allocator, dir: std.Io.Dir, name: []const u8) ![]const
 fn expectV3(a: std.mem.Allocator, dir: std.Io.Dir) !manifest.Manifest {
     const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
     try std.testing.expect(metadata.lexical_v3);
-    try std.testing.expectEqualStrings(lexical_segment.magic_v3, try magicOf(a, dir, metadata.lexical_file));
+    // S6-T8: since v2.5 the writer's content section is `HYBLEX04` (v3 with
+    // section 5 at one byte per token); the file-name section stays v3.
+    try std.testing.expect(metadata.lexical_v4);
+    try std.testing.expectEqualStrings(lexical_segment.magic_v4, try magicOf(a, dir, metadata.lexical_file));
     try std.testing.expectEqualStrings(lexical_segment.magic_v3, try magicOf(a, dir, metadata.filename.?.lexical_file));
     return metadata;
 }
@@ -309,13 +312,34 @@ test "S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's f
     defer tmp.cleanup();
     var fresh = try freshIndex(a, tmp, "fresh");
     defer fresh.close(io);
+    // S6-T8: the content section is `HYBLEX04` since v2.5; its sections 1
+    // to 4 and every token span are the committed `HYBLEX03`'s
+    // (`expectSameLexicalAsV3`).
     for (files) |name| {
         if (std.mem.eql(u8, name, "INDEX-STATE.json") or std.mem.eql(u8, name, "MANIFEST") or
-            std.mem.eql(u8, name, "documents-1.hybseg") or std.mem.eql(u8, name, "source-1.hybsrc")) continue;
+            std.mem.eql(u8, name, "documents-1.hybseg") or std.mem.eql(u8, name, "source-1.hybsrc") or
+            std.mem.eql(u8, name, "lexical-1.hyblex")) continue;
         try std.testing.expectEqualSlices(u8, try committed.readFileAlloc(io, name, a, .unlimited), try fresh.readFileAlloc(io, name, a, .unlimited));
     }
+    try expectSameLexicalAsV3(a, try committed.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited), try fresh.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited));
     try std.testing.expect(refusedBy98c4a2b(try fresh.readFileAlloc(io, publication.current_manifest_file, a, .unlimited)));
-    _ = try expectV3(a, committed);
+    const committed_metadata = try manifest.decode(committed_manifest);
+    try std.testing.expect(committed_metadata.lexical_v3 and !committed_metadata.lexical_v4);
+    try std.testing.expectEqualStrings(lexical_segment.magic_v3, try magicOf(a, committed, committed_metadata.lexical_file));
+    try std.testing.expectEqualStrings(lexical_segment.magic_v3, try magicOf(a, committed, committed_metadata.filename.?.lexical_file));
+}
+
+/// S6-T8: `v4` (a `HYBLEX04` content section) is `v3` (a `HYBLEX03` one)
+/// with section 5 recoded: decoded, transcoded to v2's coding and written
+/// as `HYBLEX03`, it gives `v3` byte for byte.
+pub fn expectSameLexicalAsV3(a: std.mem.Allocator, v3: []const u8, v4: []const u8) !void {
+    const postings = @import("postings.zig");
+    try std.testing.expectEqualStrings(lexical_segment.magic_v3, v3[0..8]);
+    try std.testing.expectEqualStrings(lexical_segment.magic_v4, v4[0..8]);
+    const header = try lexical_segment.inspect(v4);
+    const decoded = try lexical_segment.decodeWith(v4, try a.alloc(postings.TermEntry, header.term_count), try a.alloc(postings.Posting, header.posting_count), try a.alloc(u32, header.document_count), .{ .term_text_allocator = a });
+    try std.testing.expectEqual(postings.OffsetsCoding.one_byte, decoded.positions.?.coding);
+    try std.testing.expectEqualSlices(u8, v3, try lexical_segment.encodeV3Alloc(a, try postings.withOffsetsCoding(a, decoded, .pairs)));
 }
 
 fn uleb(bytes: []const u8, at: *usize) u64 {

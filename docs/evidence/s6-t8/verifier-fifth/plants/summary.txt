@@ -1,0 +1,21 @@
+none: changed lines 0; Build Summary: 9/9 steps succeeded; 531/540 tests passed (9 skipped); crash markers 0
+v-r11-by-one: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 530/540 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned
+v-ve-end-break: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 523/540 tests passed (9 skipped, 7 failed, 1 crashed); crash markers 4
+    failed: apply_test.test.S4-T14 ruling 3(c): a previous source section whose last map runs past the maps region is refused at the writer's open
+    failed: compat_s6t8_test.test.S6-T8 F1, v2 rule: a section that ends inside the last table is refused by the first publish
+    failed: offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails
+    failed: source.test.S4-T11: varintsEnd counts end bytes across blocks and refuses a short section
+    failed: source.test.S4-T14 ruling 3: openTable walks the table and bounds the maps; a map that disagrees with its bytes is refused where the file is read
+    failed: source.test.source section rejects corruption, unsorted paths and bad line maps (crashed)
+    failed: source_fixture_test.test.S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section
+    failed: text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)
+v-vo-before-chunk: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 530/540 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+v-vo-decreases: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 530/540 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+v-vo-end-overflow: changed lines 2; Build Summary: 9/9 steps succeeded; 531/540 tests passed (9 skipped); crash markers 0
+v-vo-len-noncanon: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 530/540 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily
+v-wk-v4-tail: changed lines 2; Build Summary: 7/9 steps succeeded (1 failed); 530/540 tests passed (9 skipped, 1 failed); crash markers 0
+    failed: compat_s6t8_test.test.S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed

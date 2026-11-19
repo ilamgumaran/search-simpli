@@ -1,0 +1,200 @@
+{
+ "corpus": "prose-10k",
+ "files": 10000,
+ "queries": [
+  "bazecha",
+  "benico",
+  "system",
+  "hashing",
+  "hybrid retrieval",
+  "retrieval hybrid",
+  "system systems",
+  "systems system",
+  "the",
+  "have",
+  "within",
+  "drink",
+  "the within",
+  "have drink",
+  "across lengthy seeming 04276"
+ ],
+ "finds": [
+  {
+   "query": "the",
+   "mode": "words"
+  },
+  {
+   "query": "within",
+   "mode": "words"
+  },
+  {
+   "query": "the within",
+   "mode": "words"
+  },
+  {
+   "query": "across lengthy seeming 04276",
+   "mode": "words"
+  },
+  {
+   "query": "you get bowls",
+   "mode": "phrase"
+  },
+  {
+   "query": "partly all rougher",
+   "mode": "phrase"
+  },
+  {
+   "query": "bottle and orchard",
+   "mode": "phrase"
+  },
+  {
+   "query": "with*",
+   "mode": "prefix"
+  },
+  {
+   "query": "drin*",
+   "mode": "prefix"
+  },
+  {
+   "query": "environmentaler",
+   "mode": "words"
+  },
+  {
+   "query": "internationally",
+   "mode": "words"
+  },
+  {
+   "query": "environmentally",
+   "mode": "words"
+  },
+  {
+   "query": "internationaler",
+   "mode": "words"
+  },
+  {
+   "query": "Internationaler",
+   "mode": "words"
+  },
+  {
+   "query": "Environmentaler",
+   "mode": "words"
+  },
+  {
+   "query": "Internationally",
+   "mode": "words"
+  },
+  {
+   "query": "Environmentally",
+   "mode": "words"
+  },
+  {
+   "query": "enviro*",
+   "mode": "prefix"
+  },
+  {
+   "query": "intern*",
+   "mode": "prefix"
+  },
+  {
+   "query": "Intern*",
+   "mode": "prefix"
+  },
+  {
+   "query": "Enviro*",
+   "mode": "prefix"
+  },
+  {
+   "query": "Across",
+   "mode": "words"
+  },
+  {
+   "query": "Adding",
+   "mode": "words"
+  },
+  {
+   "query": "Advise",
+   "mode": "words"
+  },
+  {
+   "query": "title",
+   "mode": "words"
+  },
+  {
+   "query": "Again",
+   "mode": "words"
+  },
+  {
+   "query": "Against",
+   "mode": "words"
+  },
+  {
+   "query": "Agenda",
+   "mode": "words"
+  },
+  {
+   "query": "Air",
+   "mode": "words"
+  },
+  {
+   "query": "follows",
+   "mode": "words"
+  },
+  {
+   "query": "most",
+   "mode": "words"
+  },
+  {
+   "query": "shirt",
+   "mode": "words"
+  },
+  {
+   "query": "just",
+   "mode": "words"
+  },
+  {
+   "query": "continuing",
+   "mode": "words"
+  },
+  {
+   "query": "own",
+   "mode": "words"
+  },
+  {
+   "query": "if",
+   "mode": "words"
+  },
+  {
+   "query": "Another",
+   "mode": "words"
+  },
+  {
+   "query": "Baby",
+   "mode": "words"
+  },
+  {
+   "query": "Little",
+   "mode": "words"
+  },
+  {
+   "query": "Just",
+   "mode": "words"
+  },
+  {
+   "query": "Majorer",
+   "mode": "words"
+  },
+  {
+   "query": "Cancels",
+   "mode": "words"
+  },
+  {
+   "query": "democratically",
+   "mode": "words"
+  },
+  {
+   "query": "Democratically",
+   "mode": "words"
+  }
+ ],
+ "roots": null
+}

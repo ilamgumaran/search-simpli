@@ -1,0 +1,6 @@
++- run test 531 pass, 9 skip, 2 fail (542 total)
+error: 'compat_s6t8_test.test.S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables' failed:
+error: 'offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 537/548 tests passed (9 skipped, 2 failed)
++- run test 531 pass, 9 skip, 2 fail (542 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M

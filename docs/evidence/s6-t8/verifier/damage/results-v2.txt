@@ -1,0 +1,36 @@
+== v2_zero_length
+  read main  find: error: InvalidPositions
+  read head  find: error: InvalidPositions
+  publish by main: error: InvalidPositions                    then head find: error: InvalidPositions
+  publish by ab4 : {"generation":2,"analyzer_id":"analyzer-   then head find: [('tamil.txt', [[165, 166]])]
+  publish by fb  : {"generation":2,"analyzer_id":"analyzer-   then head find: [('tamil.txt', [[165, 166]])]
+  publish by head: {"generation":2,"analyzer_id":"analyzer-   then head find: [('tamil.txt', [[165, 166]])]
+== v2_past_text
+  read main  find: [('tamil.txt', [[165, 216]])]
+  read head  find: error: OffsetsPastText
+  publish by main: {"generation":2,"analyzer_id":"analyzer-   then head find: error: OffsetsPastText
+  publish by ab4 : {"generation":2,"analyzer_id":"analyzer-   then head find: error: OffsetsPastText
+  publish by fb  : {"generation":2,"analyzer_id":"analyzer-   then head find: error: OffsetsPastText
+  publish by head: {"generation":2,"analyzer_id":"analyzer-   then head find: error: OffsetsPastText
+== v2_count_plus1_last
+  read main  find: error: InvalidPositions
+  read head  find: error: InvalidPositions
+  publish by main: error: InvalidPositions                    then head find: error: InvalidPositions
+  publish by ab4 : error: InvalidLexicalSection               then head find: error: InvalidPositions
+  publish by fb  : error: InvalidLexicalSection               then head find: error: InvalidPositions
+  publish by head: error: InvalidLexicalSection               then head find: error: InvalidPositions
+== v2_leftover
+  read main  find: error: InvalidPositions
+  read head  find: error: InvalidPositions
+  publish by main: error: InvalidLexicalSection               then head find: error: InvalidPositions
+  publish by ab4 : error: InvalidLexicalSection               then head find: error: InvalidPositions
+  publish by fb  : error: InvalidLexicalSection               then head find: error: InvalidPositions
+  publish by head: error: InvalidLexicalSection               then head find: error: InvalidPositions
+== v2_max_varints
+  read main  find: [('tamil.txt', [[4294967294, 4294967295]])]
+  read head  find: error: OffsetsPastText
+  publish by main: {"generation":2,"analyzer_id":"analyzer-   then head find: error: OffsetsPastText
+  publish by ab4 : {"generation":2,"analyzer_id":"analyzer-   then head find: error: OffsetsPastText
+  publish by fb  : {"generation":2,"analyzer_id":"analyzer-   then head find: error: OffsetsPastText
+  publish by head: error: InvalidLexicalSection               then head find: error: OffsetsPastText
+== clean head index: [('tamil.txt', [[165, 215]])]

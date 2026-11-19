@@ -1,0 +1,100 @@
+# S6-T8 ruling after the Verdict: kill.py with ea1dcde's ReleaseSmall searchd (sha256 2270e20baa975794...) over main's timing-10k
+# index, the same two sweeps as kill.txt, kill-fb74582.txt and rework/kill-e5d1734.txt; ea1dcde changed the first publish's transcode,
+# the code this sweep kills. 92 trials: 39 killed (36 left generation 1; 3 were killed after the manifest was replaced and left a whole
+# generation 2), 53 finished, 0 failures.
+# run 1: delays 0-1000 ms by 25
+   0 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+  25 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+  50 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+  75 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 100 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 125 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 150 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 175 ms: killed; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 200 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 225 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 250 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 275 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 300 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 325 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 350 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 375 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 400 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 425 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 450 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 475 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 500 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 525 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 550 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 575 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 600 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 625 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 650 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 675 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 700 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 725 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 750 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 775 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 800 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 825 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 850 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 875 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 900 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 925 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 950 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 975 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+1000 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+summary: {'gen1': 7, 'gen2': 34, 'killed': 8, 'finished': 33, 'failures': 0, 'later': 41}
+# run 2: delays 120-220 ms by 2
+ 120 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 122 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 124 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 126 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 128 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 130 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 132 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 134 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 136 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 138 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 140 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 142 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 144 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 146 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 148 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 150 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 152 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 154 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 156 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 158 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 160 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 162 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 164 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 166 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 168 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 170 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 172 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 2 whole, same answers
+ 174 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 3 whole, same answers
+ 176 ms: killed; generation 1, bit 7 0, HYBLEX03; answers same; later update -> generation 3 whole, same answers
+ 178 ms: killed; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 180 ms: killed; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 182 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 184 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 186 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 188 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 190 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 192 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 194 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 196 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 198 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 200 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 202 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 204 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 206 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 208 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 210 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 212 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 214 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 216 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 218 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+ 220 ms: finished; generation 2, bit 7 1, HYBLEX04; answers same; later update -> generation 3 whole, same answers
+summary: {'gen1': 29, 'gen2': 22, 'killed': 31, 'finished': 20, 'failures': 0, 'later': 51}

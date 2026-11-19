@@ -36,11 +36,296 @@ pub const Index = struct {
 /// document order, a u32 token count (equal to its document length) and per
 /// token two varints, the start codepoint as a delta from the previous
 /// token's start (the first from 0) and the length in codepoints, into the
-/// chunk's text.
+/// chunk's text. S6-T8 (`HYBLEX04`, `docs/lexical-segment-format-v4.md`):
+/// section 5 may instead be coded at one byte per token (`coding`
+/// `.one_byte`); every reader of section 5 goes through the functions below,
+/// which take either coding.
 pub const PositionSections = struct {
     positions: []const u8,
     offsets: []const u8,
+    coding: OffsetsCoding = .pairs,
 };
+
+/// How section 5 is coded: `.pairs` is v2's (a u32 count, then per token
+/// the start as a delta from the previous start and the length, two
+/// varints); `.one_byte` is v4's (a varint count, then per token one byte,
+/// the zigzag gap from the previous token's end in the low nibble and the
+/// length in the high one, a nibble of 15 escaping to the whole value as a
+/// varint after the byte, the gap's first).
+pub const OffsetsCoding = enum { pairs, one_byte };
+
+/// v4: the nibble value that means "the whole value follows as a varint".
+pub const offsets_escape: u8 = 15;
+
+/// v4 zigzag: 0 -> 0, -1 -> 1, 1 -> 2, ... (`docs/lexical-segment-format-v4.md`).
+pub fn zigzag(gap: i64) u64 {
+    return if (gap >= 0) @as(u64, @intCast(gap)) << 1 else (@as(u64, @intCast(-gap)) << 1) - 1;
+}
+
+pub fn unzigzag(z: u64) i64 {
+    const half: i64 = @intCast(z >> 1);
+    return if (z & 1 == 0) half else -half - 1;
+}
+
+/// Append one v4 token (`start`, `length`) after a token that ended at
+/// `previous_end` (0 at a document's first token). Both values must fit
+/// their varints: the caller keeps starts and ends below 2^31.
+pub fn appendOneByteToken(list: *std.ArrayList(u8), allocator: std.mem.Allocator, previous_end: u32, start: u32, length: u32) std.mem.Allocator.Error!void {
+    const z = zigzag(@as(i64, start) - @as(i64, previous_end));
+    const g: u8 = if (z >= offsets_escape) offsets_escape else @intCast(z);
+    const l: u8 = if (length >= offsets_escape) offsets_escape else @intCast(length);
+    try list.append(allocator, g | (l << 4));
+    if (g == offsets_escape) try appendVarint(list, allocator, @intCast(z));
+    if (l == offsets_escape) try appendVarint(list, allocator, length);
+}
+
+/// The writers' section-5 table of one document in `coding`, from its
+/// tokens' starts and lengths as the tokenizer gives them: every start kept
+/// at or after the previous one, every length at least 1 (as `buildPositional`
+/// always did).
+pub fn appendOffsetsTable(
+    list: *std.ArrayList(u8),
+    allocator: std.mem.Allocator,
+    coding: OffsetsCoding,
+    tokens: anytype,
+) std.mem.Allocator.Error!void {
+    switch (coding) {
+        .pairs => {
+            var count_bytes: [4]u8 = undefined;
+            std.mem.writeInt(u32, &count_bytes, @intCast(tokens.len), .little);
+            try list.appendSlice(allocator, &count_bytes);
+        },
+        .one_byte => try appendVarint(list, allocator, @intCast(tokens.len)),
+    }
+    var previous_start: u32 = 0;
+    var previous_end: u32 = 0;
+    for (tokens) |token| {
+        const start = @max(token.start, previous_start);
+        const length = @max(token.length, 1);
+        switch (coding) {
+            .pairs => {
+                try appendVarint(list, allocator, start - previous_start);
+                try appendVarint(list, allocator, length);
+            },
+            .one_byte => try appendOneByteToken(list, allocator, previous_end, start, length),
+        }
+        previous_start = start;
+        previous_end = start + length;
+    }
+}
+
+/// S6-T8 (rulings on the Report, item 1b, made after measuring): where the
+/// v4 table that starts at `at_start` ends, for a document of `length`
+/// tokens, or null where the section ends first. The writer's carry walks
+/// the previous generation with it (`apply.offsetTableStarts`). A varint is
+/// its bytes up to the first below 0x80, as `source.varintsEnd` reads one;
+/// no value is checked (that is `validateOneByteOffsets`). Sixteen tokens
+/// at a time while none of their sixteen bytes holds an escape nibble: those
+/// bytes are then sixteen whole tokens.
+pub fn oneByteTableEnd(bytes: []const u8, at_start: usize, length: u32) ?usize {
+    const lanes = 16;
+    const Block = @Vector(lanes, u8);
+    const escape: Block = @splat(offsets_escape);
+    var at = skipOneVarint(bytes, at_start) orelse return null;
+    var remaining: usize = length;
+    while (remaining > 0) {
+        if (remaining >= lanes and bytes.len - at >= lanes) {
+            const block: Block = bytes[at..][0..lanes].*;
+            const low = block & @as(Block, @splat(0x0F));
+            const high = block >> @as(@Vector(lanes, u3), @splat(4));
+            if (!@reduce(.Or, low == escape) and !@reduce(.Or, high == escape)) {
+                at += lanes;
+                remaining -= lanes;
+                continue;
+            }
+        }
+        if (at >= bytes.len) return null;
+        const byte = bytes[at];
+        at += 1;
+        if (byte & 0x0F == offsets_escape) at = skipOneVarint(bytes, at) orelse return null;
+        if (byte >> 4 == offsets_escape) at = skipOneVarint(bytes, at) orelse return null;
+        remaining -= 1;
+    }
+    return at;
+}
+
+fn skipOneVarint(bytes: []const u8, at_start: usize) ?usize {
+    var at = at_start;
+    while (at < bytes.len) {
+        const byte = bytes[at];
+        at += 1;
+        if (byte < 0x80) return at;
+    }
+    return null;
+}
+
+/// S6-T8 (the ruling after the Verdict, F1): v2's validation
+/// (`lexical_segment.validatePositions`) of one document's table
+/// (`offsets[at_start..end]`, `count` tokens), for a table the first publish
+/// drops rather than transcodes: `InvalidPositions` where v2 refuses it.
+pub fn checkPairsTable(offsets: []const u8, at_start: usize, end: usize, count: u32) error{InvalidPositions}!void {
+    const bytes = offsets[0..end];
+    if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidPositions;
+    if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return error.InvalidPositions;
+    var at = at_start + 4;
+    var start: u64 = 0;
+    for (0..count) |_| {
+        start += readVarint(bytes, &at) orelse return error.InvalidPositions;
+        const length = readVarint(bytes, &at) orelse return error.InvalidPositions;
+        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;
+    }
+    if (at != end) return error.InvalidPositions;
+}
+
+/// S6-T8 (rulings on the Report, item 1b, made after measuring; the ruling
+/// after the Verdict, F1): one document's v2 table (`offsets[at_start..end]`,
+/// which must hold exactly `count` tokens) appended to `list` in v4's
+/// coding, the same starts and lengths, without the spans between. It
+/// accepts exactly what v2's validation (`lexical_segment.validatePositions`)
+/// accepts of that table and refuses the rest with v2's error,
+/// `InvalidPositions`: a count that is not `count`, a varint that does not
+/// read, a length of 0, an end past a `u32`, or a table that does not end at
+/// `end`. Nothing is clamped or repaired. One valid v2 table v4 cannot hold
+/// is refused apart (`GapNotRepresentable`): a gap whose zigzag is 2^32 or
+/// more (a token more than 2^31 codepoints after the previous token's end,
+/// or that far before it), which v4's rule 5 forbids. The first publish over
+/// a v2/v3 generation transcodes every carried table with it
+/// (`apply.mergeCarried`).
+pub fn transcodePairsTable(
+    list: *std.ArrayList(u8),
+    allocator: std.mem.Allocator,
+    offsets: []const u8,
+    at_start: usize,
+    end: usize,
+    count: u32,
+) (std.mem.Allocator.Error || error{ InvalidPositions, GapNotRepresentable })!void {
+    const bytes = offsets[0..end];
+    if (bytes.len < at_start or bytes.len - at_start < 4) return error.InvalidPositions;
+    if (std.mem.readInt(u32, bytes[at_start..][0..4], .little) != count) return error.InvalidPositions;
+    var at = at_start + 4;
+    // At most 5 bytes for the count and 11 per token (the byte and two
+    // five-byte varints).
+    try list.ensureUnusedCapacity(allocator, 5 + @as(usize, count) * 11);
+    const out = list.unusedCapacitySlice();
+    var w: usize = 0;
+    putVarint(out, &w, count);
+    var start: u64 = 0;
+    var previous_end: u64 = 0;
+    for (0..count) |_| {
+        var delta: u32 = undefined;
+        var length: u32 = undefined;
+        if (bytes.len - at >= 2 and bytes[at] < 0x80 and bytes[at + 1] < 0x80) {
+            delta = bytes[at];
+            length = bytes[at + 1];
+            at += 2;
+        } else {
+            delta = readVarint(bytes, &at) orelse return error.InvalidPositions;
+            length = readVarint(bytes, &at) orelse return error.InvalidPositions;
+        }
+        start += delta;
+        // v2's rules: every length at least 1, every end within a u32.
+        if (length == 0 or start + length > std.math.maxInt(u32)) return error.InvalidPositions;
+        const z = zigzag(@as(i64, @intCast(start)) - @as(i64, @intCast(previous_end)));
+        if (z > std.math.maxInt(u32)) return error.GapNotRepresentable;
+        const g: u8 = if (z >= offsets_escape) offsets_escape else @intCast(z);
+        const l: u8 = if (length >= offsets_escape) offsets_escape else @intCast(length);
+        out[w] = g | (l << 4);
+        w += 1;
+        if (g == offsets_escape) putVarint(out, &w, @intCast(z));
+        if (l == offsets_escape) putVarint(out, &w, length);
+        previous_end = start + length;
+    }
+    if (at != end) return error.InvalidPositions;
+    list.items.len += w;
+}
+
+fn putVarint(out: []u8, w: *usize, value: u32) void {
+    var remaining = value;
+    while (remaining >= 0x80) {
+        out[w.*] = @as(u8, @truncate(remaining)) | 0x80;
+        w.* += 1;
+        remaining >>= 7;
+    }
+    out[w.*] = @truncate(remaining);
+    w.* += 1;
+}
+
+/// S6-T8: each section-5 rule of `HYBLEX04` and its own error
+/// (`docs/lexical-segment-format-v4.md` § Validation).
+pub const OffsetsError = error{
+    OffsetsTruncated,
+    OffsetsVarintOverflow,
+    OffsetsCountMismatch,
+    OffsetsNonCanonicalEscape,
+    OffsetsZeroLength,
+    OffsetsStartBeforeChunk,
+    OffsetsStartDecreases,
+    OffsetsEndOverflow,
+    OffsetsTrailingData,
+};
+
+/// One varint of a v4 section 5, telling a section that ends inside it
+/// (`OffsetsTruncated`) from a malformed one (`OffsetsVarintOverflow`).
+fn readOffsetsVarint(bytes: []const u8, at: *usize) OffsetsError!u32 {
+    var value: u64 = 0;
+    var shift: u6 = 0;
+    var i = at.*;
+    while (true) {
+        if (i >= bytes.len) return error.OffsetsTruncated;
+        if (shift > 28) return error.OffsetsVarintOverflow;
+        const byte = bytes[i];
+        i += 1;
+        value |= @as(u64, byte & 0x7F) << shift;
+        if (byte & 0x80 == 0) break;
+        shift += 7;
+    }
+    if (value > std.math.maxInt(u32)) return error.OffsetsVarintOverflow;
+    at.* = i;
+    return @intCast(value);
+}
+
+/// Every rule of a v4 section 5 against the document lengths of section 1
+/// (rules 1-10 and 12; rule 11 needs the text, `checkSpansWithinText`).
+/// Allocation-free.
+pub fn validateOneByteOffsets(offsets: []const u8, document_lengths: []const u32) OffsetsError!void {
+    var at: usize = 0;
+    for (document_lengths) |length| {
+        const count = try readOffsetsVarint(offsets, &at);
+        if (count != length) return error.OffsetsCountMismatch;
+        var previous_start: i64 = 0;
+        var previous_end: i64 = 0;
+        for (0..count) |_| {
+            if (at >= offsets.len) return error.OffsetsTruncated;
+            const byte = offsets[at];
+            at += 1;
+            var g: u32 = byte & 0x0F;
+            var l: u32 = byte >> 4;
+            if (g == offsets_escape) {
+                g = try readOffsetsVarint(offsets, &at);
+                if (g < offsets_escape) return error.OffsetsNonCanonicalEscape;
+            }
+            if (l == offsets_escape) {
+                l = try readOffsetsVarint(offsets, &at);
+                if (l < offsets_escape) return error.OffsetsNonCanonicalEscape;
+            }
+            if (l == 0) return error.OffsetsZeroLength;
+            const start = previous_end + unzigzag(g);
+            if (start < 0) return error.OffsetsStartBeforeChunk;
+            if (start < previous_start) return error.OffsetsStartDecreases;
+            const end = start + l;
+            if (end > std.math.maxInt(u32)) return error.OffsetsEndOverflow;
+            previous_start = start;
+            previous_end = end;
+        }
+    }
+    if (at != offsets.len) return error.OffsetsTrailingData;
+}
+
+/// S6-T8 rule 11: every span's end at most `codepoints` (its document's
+/// text). The spans come from `readTokenSpans`.
+pub fn checkSpansWithinText(spans: []const TokenSpan, codepoints: usize) error{OffsetsPastText}!void {
+    for (spans) |span| if (@as(usize, span.start) + span.length > codepoints) return error.OffsetsPastText;
+}
 
 /// One token's codepoint range in a chunk's text (section 5).
 pub const TokenSpan = struct {
@@ -143,25 +428,73 @@ pub fn buildPositionTables(allocator: std.mem.Allocator, index: Index) std.mem.A
     at = 0;
     for (index.document_lengths, 0..) |length, document_index| {
         document_starts[document_index] = at;
-        at += 4;
-        skipVarints(sections.offsets, &at, @as(usize, length) * 2);
+        at = skipOffsetsTable(sections, at, length);
     }
     return .{ .term_starts = term_starts, .document_starts = document_starts };
+}
+
+/// Where the validated section-5 table that starts at `at` (of a document
+/// of `length` tokens) ends, in either coding.
+pub fn skipOffsetsTable(sections: PositionSections, at: usize, length: u32) usize {
+    var i = at;
+    switch (sections.coding) {
+        .pairs => {
+            i += 4;
+            skipVarints(sections.offsets, &i, @as(usize, length) * 2);
+        },
+        .one_byte => {
+            skipVarints(sections.offsets, &i, 1);
+            const bytes = sections.offsets;
+            for (0..length) |_| {
+                const byte = bytes[i];
+                i += 1;
+                if (byte & 0x0F == offsets_escape) skipVarints(bytes, &i, 1);
+                if (byte >> 4 == offsets_escape) skipVarints(bytes, &i, 1);
+            }
+        },
+    }
+    return i;
 }
 
 /// The token spans of `document_index` (section 5) into `output`, which must
 /// hold its document length. Returns the filled prefix.
 pub fn readTokenSpans(index: Index, tables: PositionTables, document_index: usize, output: []TokenSpan) []TokenSpan {
-    const bytes = index.positions.?.offsets;
-    var at = tables.document_starts[document_index];
-    const count: usize = std.mem.readInt(u32, bytes[at..][0..4], .little);
-    at += 4;
-    var start: u32 = 0;
-    for (output[0..count]) |*span| {
-        start += readVarint(bytes, &at).?;
-        span.* = .{ .start = start, .length = readVarint(bytes, &at).? };
+    return readOffsetsTable(index.positions.?, tables.document_starts[document_index], output);
+}
+
+/// The spans of the validated section-5 table that starts at `at`, in
+/// either coding, into `output` (at least its token count long).
+pub fn readOffsetsTable(sections: PositionSections, at_start: usize, output: []TokenSpan) []TokenSpan {
+    const bytes = sections.offsets;
+    var at = at_start;
+    switch (sections.coding) {
+        .pairs => {
+            const count: usize = std.mem.readInt(u32, bytes[at..][0..4], .little);
+            at += 4;
+            var start: u32 = 0;
+            for (output[0..count]) |*span| {
+                start += readVarint(bytes, &at).?;
+                span.* = .{ .start = start, .length = readVarint(bytes, &at).? };
+            }
+            return output[0..count];
+        },
+        .one_byte => {
+            const count: usize = readVarint(bytes, &at).?;
+            var end: i64 = 0;
+            for (output[0..count]) |*span| {
+                const byte = bytes[at];
+                at += 1;
+                var g: u32 = byte & 0x0F;
+                var l: u32 = byte >> 4;
+                if (g == offsets_escape) g = readVarint(bytes, &at).?;
+                if (l == offsets_escape) l = readVarint(bytes, &at).?;
+                const start: u32 = @intCast(end + unzigzag(g));
+                span.* = .{ .start = start, .length = l };
+                end = @as(i64, start) + l;
+            }
+            return output[0..count];
+        },
     }
-    return output[0..count];
 }
 
 /// The dictionary index of exactly `term` (bytes): a binary search in a
@@ -641,4 +974,24 @@ test "decoded segment can rebuild postings and preserve hybrid results" {
         try std.testing.expectEqual(expected_result.semantic_rank, actual_result.semantic_rank);
         try std.testing.expectApproxEqAbs(expected_result.fused_score, actual_result.fused_score, 0.000001);
     }
+}
+
+/// `index` with section 5 in `coding` (the same spans, each document's
+/// table transcoded); `index` itself when it already is. For writers of an
+/// older format (`HYBLEX02`, `HYBLEX03`: tests and fixtures) and for the
+/// tests that compare codings. Owned by `allocator`.
+pub fn withOffsetsCoding(allocator: std.mem.Allocator, index: Index, coding: OffsetsCoding) std.mem.Allocator.Error!Index {
+    const sections = index.positions orelse return index;
+    if (sections.coding == coding) return index;
+    var list = std.ArrayList(u8).empty;
+    var at: usize = 0;
+    for (index.document_lengths) |length| {
+        const spans = try allocator.alloc(TokenSpan, length);
+        defer allocator.free(spans);
+        try appendOffsetsTable(&list, allocator, coding, readOffsetsTable(sections, at, spans));
+        at = skipOffsetsTable(sections, at, length);
+    }
+    var out = index;
+    out.positions = .{ .positions = sections.positions, .offsets = try list.toOwnedSlice(allocator), .coding = coding };
+    return out;
 }

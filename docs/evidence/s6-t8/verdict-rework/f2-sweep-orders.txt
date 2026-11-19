@@ -1,0 +1,30 @@
+# F2 (c), the placement control as a sweep: the same three prose-10k warm both cells; main plus a never-run function of
+# B inert blocks placed where this task's writer code sits (make_placed_control.py, called from apply.mergeCarried under a
+# branch that is never true; no query-path source changed), for B = 4, 12, 20, 28, 36, 48 (p4..p48; __text +648, +1,972,
+# +3,288, +4,152, +4,716, +5,952 B against main's 582,048); ctlS = main plus PositionSections.coding only (+1,148 B; grows
+# postings.Index 96 -> 104 B, the field offsets every hot scorer function reads); headB = e5d1734's library (the Verdict's
+# head, +5,288 B); headF = ea1dcde's (F1, +4,796 B). main's index for main, main2, ctlS and p*; the head's for headB, headF.
+# An 11-library Williams design (two squares, 22 runs), written before the first run.
+run81:main ctlS main2 p4 headF p12 headB p20 p48 p28 p36
+run82:ctlS p4 main p12 main2 p20 headF p28 headB p36 p48
+run83:p4 p12 ctlS p20 main p28 main2 p36 headF p48 headB
+run84:p12 p20 p4 p28 ctlS p36 main p48 main2 headB headF
+run85:p20 p28 p12 p36 p4 p48 ctlS headB main headF main2
+run86:p28 p36 p20 p48 p12 headB p4 headF ctlS main2 main
+run87:p36 p48 p28 headB p20 headF p12 main2 p4 main ctlS
+run88:p48 headB p36 headF p28 main2 p20 main p12 ctlS p4
+run89:headB headF p48 main2 p36 main p28 ctlS p20 p4 p12
+run90:headF main2 headB main p48 ctlS p36 p4 p28 p12 p20
+run91:main2 main headF ctlS headB p4 p48 p12 p36 p20 p28
+run92:p36 p28 p48 p20 headB p12 headF p4 main2 ctlS main
+run93:p48 p36 headB p28 headF p20 main2 p12 main p4 ctlS
+run94:headB p48 headF p36 main2 p28 main p20 ctlS p12 p4
+run95:headF headB main2 p48 main p36 ctlS p28 p4 p20 p12
+run96:main2 headF main headB ctlS p48 p4 p36 p12 p28 p20
+run97:main main2 ctlS headF p4 headB p12 p48 p20 p36 p28
+run98:ctlS main p4 main2 p12 headF p20 headB p28 p48 p36
+run99:p4 ctlS p12 main p20 main2 p28 headF p36 headB p48
+run100:p12 p4 p20 ctlS p28 main p36 main2 p48 headF headB
+run101:p20 p12 p28 p4 p36 ctlS p48 main headB main2 headF
+run102:p28 p20 p36 p12 p48 p4 headB ctlS headF main main2
+2026-11-18 05:42:40
