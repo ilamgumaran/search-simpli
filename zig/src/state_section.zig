@@ -29,6 +29,11 @@
 //! (`incremental_state.encodeBinary`, `docs/state-section-format-v2.md`).
 //! Writers since S4-T4 write `HYBSTA02` and read both; a library before
 //! S4-T4 refuses `HYBSTA02` here (`BadMagic`, so `InvalidStateSection`).
+//!
+//! S6-T9: `HYBSTA03` (version `3`), the same header again; its payload's
+//! records of retained files refer to their source record
+//! (`incremental_state.encodeBinaryRefs`, `docs/state-section-format-v3.md`).
+//! Writers since S6-T9 write it and read all three.
 const checksum_mod = @import("checksum.zig");
 const std = @import("std");
 
@@ -38,11 +43,14 @@ pub const version: u16 = 1;
 /// The binary form (S4-T4).
 pub const magic_v2 = "HYBSTA02";
 pub const version_v2: u16 = 2;
+/// The binary form whose records may refer to the source table (S6-T9).
+pub const magic_v3 = "HYBSTA03";
+pub const version_v3: u16 = 3;
 pub const header_length: usize = 32;
 
 pub const DecodeError = error{ BadMagic, UnsupportedVersion, UnsupportedFlags, Truncated, TrailingData, ChecksumMismatch, SizeOverflow };
 
-pub const Form = enum { json, binary };
+pub const Form = enum { json, binary, binary_v3 };
 
 pub const Header = struct {
     payload_bytes: usize,
@@ -61,10 +69,32 @@ pub fn encodeBinary(allocator: std.mem.Allocator, binary_payload: []const u8) er
     return encodeForm(allocator, .binary, binary_payload);
 }
 
+/// S6-T9: the `HYBSTA03` section for `payload`
+/// (`incremental_state.encodeBinaryRefs`).
+pub fn encodeBinaryV3(allocator: std.mem.Allocator, binary_payload: []const u8) error{OutOfMemory}![]u8 {
+    return encodeForm(allocator, .binary_v3, binary_payload);
+}
+
+fn magicOf(form: Form) *const [8]u8 {
+    return switch (form) {
+        .json => magic,
+        .binary => magic_v2,
+        .binary_v3 => magic_v3,
+    };
+}
+
+fn versionOf(form: Form) u16 {
+    return switch (form) {
+        .json => version,
+        .binary => version_v2,
+        .binary_v3 => version_v3,
+    };
+}
+
 fn encodeForm(allocator: std.mem.Allocator, form: Form, bytes: []const u8) error{OutOfMemory}![]u8 {
     const out = try allocator.alloc(u8, header_length + bytes.len);
-    @memcpy(out[0..8], if (form == .json) magic else magic_v2);
-    std.mem.writeInt(u16, out[8..10], if (form == .json) version else version_v2, .little);
+    @memcpy(out[0..8], magicOf(form));
+    std.mem.writeInt(u16, out[8..10], versionOf(form), .little);
     std.mem.writeInt(u16, out[10..12], checksum_mod.flag_xxh3, .little);
     std.mem.writeInt(u32, out[12..16], 0, .little);
     std.mem.writeInt(u64, out[16..24], bytes.len, .little);
@@ -76,8 +106,8 @@ fn encodeForm(allocator: std.mem.Allocator, form: Form, bytes: []const u8) error
 /// Validate the header, the declared size and the checksum.
 pub fn inspect(encoded: []const u8) DecodeError!Header {
     if (encoded.len < header_length) return error.Truncated;
-    const form: Form = if (std.mem.eql(u8, encoded[0..8], magic)) .json else if (std.mem.eql(u8, encoded[0..8], magic_v2)) .binary else return error.BadMagic;
-    if (std.mem.readInt(u16, encoded[8..10], .little) != (if (form == .json) version else version_v2)) return error.UnsupportedVersion;
+    const form: Form = if (std.mem.eql(u8, encoded[0..8], magic)) .json else if (std.mem.eql(u8, encoded[0..8], magic_v2)) .binary else if (std.mem.eql(u8, encoded[0..8], magic_v3)) .binary_v3 else return error.BadMagic;
+    if (std.mem.readInt(u16, encoded[8..10], .little) != versionOf(form)) return error.UnsupportedVersion;
     const flags = std.mem.readInt(u16, encoded[10..12], .little);
     if (flags & ~checksum_mod.flag_xxh3 != 0 or std.mem.readInt(u32, encoded[12..16], .little) != 0) return error.UnsupportedFlags;
     const kind = checksum_mod.kindOfFlags(flags);
@@ -92,6 +122,7 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
 
 /// The form of a section `inspect` accepted (its magic).
 pub fn formOf(encoded: []const u8) Form {
+    if (std.mem.eql(u8, encoded[0..8], magic_v3)) return .binary_v3;
     return if (std.mem.eql(u8, encoded[0..8], magic_v2)) .binary else .json;
 }
 
@@ -175,7 +206,10 @@ test "S4-T4: HYBSTA02 refuses truncation, a flipped byte anywhere and a stray ma
     @memcpy(copy[0..8], magic);
     std.mem.writeInt(u16, copy[8..10], version_v2, .little);
     try std.testing.expectError(error.UnsupportedVersion, inspect(copy));
-    for ([_]*const [8]u8{ "HYBSTA03", "HYBSTA00", "HYBSTB02", "hybsta02" }) |stray| {
+    // S6-T9: HYBSTA03 is a magic now; with version 2 it is UnsupportedVersion.
+    @memcpy(copy[0..8], magic_v3);
+    try std.testing.expectError(error.UnsupportedVersion, inspect(copy));
+    for ([_]*const [8]u8{ "HYBSTA04", "HYBSTA00", "HYBSTB02", "hybsta02" }) |stray| {
         @memcpy(copy[0..8], stray);
         try std.testing.expectError(error.BadMagic, inspect(copy));
     }

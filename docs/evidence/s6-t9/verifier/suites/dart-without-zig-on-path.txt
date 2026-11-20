@@ -1,0 +1,133 @@
+Analyzing lib, test...
+No issues found!
+00:00 +0: loading test/search_simpli_test.dart
+00:00 +0: test/library_loader_test.dart: isInsideMacApp is a pure function of the executable path
+00:00 +1: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +2: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +3: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +4: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +5: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +6: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +7: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +8: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +9: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +10: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +11: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +12: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +13: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +14: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +15: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +16: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +17: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +18: test/query_report_test.dart: an unmatched word is a typed warning with its term
+00:00 +19: test/search_simpli_test.dart: a valid query vector (S2-T13) lexical mode does not read the vector; a large valid one ranks
+00:00 +20: test/query_report_test.dart: a punctuation-only query is empty after analysis
+00:00 +21: test/query_report_test.dart: a punctuation-only query is empty after analysis
+00:00 +22: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +23: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +24: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +25: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +26: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +27: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +28: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +29: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +30: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +31: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +32: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +33: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +34: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +35: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +36: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +36 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +37 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +38 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +39 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +40 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +41 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +42 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +43 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +44 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +45 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +46 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +46 -1: test/conformance_test.dart: (setUpAll) [E]
+  ProcessException: No such file or directory
+    Command: zig build
+  dart:io                            Process.run
+  test/conformance_test.dart 106:34  main.<fn>
+  
+00:00 +47 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +48 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +49 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +50 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +51 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +52 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +53 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +54 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +55 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +56 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +57 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +58 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +59 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +60 -1: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +60 -2: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +61 -2: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +62 -2: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +63 -2: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +63 -2: test/parity_test.dart: (setUpAll) [E]
+  ProcessException: No such file or directory
+    Command: zig build
+  dart:io                      Process.run
+  test/parity_test.dart 60:33  main.<fn>
+  
+00:00 +64 -2: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +64 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +64 -3: test/parity_test.dart: (tearDownAll) [E]
+  LateInitializationError: Local 'rpc' has not been initialized.
+  dart:_internal         LateError._throwLocalNotInitialized
+  test/parity_test.dart  main.<fn>
+  
+00:00 +65 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +66 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +67 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +68 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +69 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +70 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +71 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +72 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +73 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +74 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +75 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +76 -3: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +76 -4: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +77 -4: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +77 -4: test/old_library_test.dart: (setUpAll) [E]
+  ProcessException: No such file or directory
+    Command: zig build-lib -dynamic -OReleaseSmall /var/folders/1k/d54q_xmd5l7dlv09cdv9v3ym0000gn/T/ss-dart-old-lib-gC2V4E/previous.c -femit-bin=/var/folders/1k/d54q_xmd5l7dlv09cdv9v3ym0000gn/T/ss-dart-old-lib-gC2V4E/libprevious.dylib
+  dart:io                           Process.run
+  test/old_library_test.dart 23:31  _standIn
+  test/old_library_test.dart 35:22  main.<fn>
+  
+00:00 +77 -4: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +78 -4: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +78 -4: test/query_report_test.dart: contract 2.8.0: warnings under search_field both and filename both: members and expansions in full and in order, as content gives them
+00:00 +79 -4: test/folder_knowledge_test.dart: find pages every phrase and prefix judgment to its complete set
+00:00 +80 -4: test/folder_knowledge_test.dart: find: typed hit, envelope, scope by roots, refusals with codes
+00:00 +81 -4: test/folder_knowledge_test.dart: a generation without positions or source answers CAPACITY
+00:00 +82 -4: test/folder_knowledge_test.dart: a damaged source section surfaces at the first read, not at open (contract 2.1.0, S4-T1)
+00:00 +83 -4: test/folder_knowledge_test.dart: outline reproduces every outline judgment
+00:00 +84 -4: test/folder_knowledge_test.dart: readSpan is byte exact for every read_span judgment; caps and clamping
+00:00 +85 -4: test/folder_knowledge_test.dart: listFiles pages and filters; roots counts
+00:00 +86 -4: test/folder_knowledge_test.dart: query and evidence take roots; evidence names section and neighbours
+00:00 +87 -4: test/folder_knowledge_test.dart: host-fed filename index retains S3 and recovers without its state cache
+00:00 +88 -4: test/folder_knowledge_test.dart: applyChanges publishes, refuses a stale generation and file reads by default
+00:00 +89 -4: test/folder_knowledge_test.dart: (tearDownAll)
+00:00 +89 -4: Some tests failed.
+
+Failing tests:
+  test/conformance_test.dart: (setUpAll)
+  test/old_library_test.dart: (setUpAll)
+  test/parity_test.dart: (setUpAll)
+  test/parity_test.dart: (tearDownAll)
+
+Consider enabling the flag chain-stack-traces to receive more detailed exceptions.
+For example, 'dart test --chain-stack-traces'.

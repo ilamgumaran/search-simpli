@@ -26,8 +26,18 @@
 //! checked against the current `MANIFEST` as the writer checks it. A pointer
 //! the `MANIFEST` does not bind (or no `MANIFEST`) loads as `null`, never as a
 //! partial state; a writer always prefers the bound section to this file.
+//!
+//! S6-T9: the section is `HYBSTA03` (`docs/state-section-format-v3.md`): a
+//! retained file's record refers to its source record, whose SHA-256 and
+//! length, and whose path in the documents file table, the decoder reads
+//! from the generation's source table (`SourceTable`).
+const hybrid = @import("hybrid.zig");
 const manifest = @import("manifest.zig");
 const publication = @import("publication.zig");
+const segment = @import("segment.zig");
+const snapshot_open = @import("snapshot_open.zig");
+const source = @import("source.zig");
+const source_v2 = @import("source_v2.zig");
 const state_section = @import("state_section.zig");
 const std = @import("std");
 
@@ -83,7 +93,59 @@ pub const State = struct {
     version: u32 = state_version,
 };
 
-pub const LoadError = error{ InvalidState, StateTooLarge, OutOfMemory };
+pub const LoadError = error{
+    InvalidState,
+    StateTooLarge,
+    OutOfMemory,
+    // S6-T9: the rules of a `HYBSTA03` referenced record, each its own error
+    // (`docs/state-section-format-v3.md`, S1 to S5).
+    StateReferenceFlags,
+    StateReferenceWithoutSource,
+    StateReferenceOutOfRange,
+    StateReferenceOrder,
+    StateReferencePath,
+};
+
+/// S6-T9: the source records a `HYBSTA03` section's references resolve
+/// against: the generation's `HYBSRC02` section, walked (`source_v2.walk`
+/// set `v2`) after its checksum and the documents section's were checked.
+pub const SourceTable = struct {
+    section: ?*const source.Section = null,
+    /// Without `section`: the records as a list (`state_v3_test.zig`).
+    list: []const SourceRef = &.{},
+
+    pub fn count(table: SourceTable) usize {
+        const section = table.section orelse return table.list.len;
+        return section.v2.?.files.len;
+    }
+
+    /// Record `r`'s table path, SHA-256 and text length.
+    pub fn target(table: SourceTable, r: usize) LoadError!SourceRef {
+        const section = table.section orelse return table.list[r];
+        const file = section.v2.?.files[r];
+        const head = source_v2.recordHead(section.files_table, file.record) catch return error.InvalidState;
+        return .{ .ordinal = @intCast(r), .path = file.path, .sha256 = head.sha256, .length = head.length };
+    }
+};
+
+/// S6-T9: a file's record in the generation's new source section, as the
+/// writer offers it to `encodeBinaryRefs`: its ordinal, its path in the
+/// documents file table, its SHA-256 and its text length.
+pub const SourceRef = struct {
+    ordinal: u32,
+    path: []const u8,
+    sha256: [32]u8,
+    length: u64,
+};
+
+/// S6-T9: the root-relative path of table path `path` in root `root_id`
+/// (`r-legacy`: the whole path; another root: what follows `root_id/`,
+/// at least one byte), or null when `path` is not in that root.
+pub fn relativeOf(root_id: []const u8, path: []const u8) ?[]const u8 {
+    if (std.mem.eql(u8, root_id, legacy_root_id)) return path;
+    if (path.len <= root_id.len + 1 or !std.mem.startsWith(u8, path, root_id) or path[root_id.len] != '/') return null;
+    return path[root_id.len + 1 ..];
+}
 
 /// Read `INDEX-STATE.json` from `dir` and return the state it holds or, for
 /// a version 3 pointer, the state of the section it names (`resolvePointer`).
@@ -147,10 +209,12 @@ pub fn parsePointer(allocator: std.mem.Allocator, bytes: []const u8) ?Pointer {
 /// `manifest.validateState` (size, header, checksum) and decode to that same
 /// generation and analyzer (else `error.InvalidState`).
 pub fn resolvePointer(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, pointer: Pointer) LoadError!?State {
-    const manifest_bytes = readNamed(allocator, io, dir, publication.current_manifest_file) catch |err| switch (err) {
+    // S6-T9 on S6-T13: `MANIFEST` read through the handle it was sized
+    // by (`snapshot_open.readManifest`), not a `stat` and a read by name.
+    const manifest_bytes = (snapshot_open.readManifest(allocator, io, dir) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
         else => return null,
-    };
+    }).bytes;
     const metadata = manifest.decode(manifest_bytes) catch return null;
     const bound = metadata.state orelse return null;
     if (!std.mem.eql(u8, bound.file, pointer.state_file) or metadata.generation != pointer.generation or
@@ -160,9 +224,57 @@ pub fn resolvePointer(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir,
         else => return null,
     };
     manifest.validateState(metadata, section) catch return error.InvalidState;
-    const state = try decodeSection(allocator, section);
+    const table = if (state_section.formOf(section) == .binary_v3) try sourceTableOf(allocator, io, dir, metadata) else null;
+    const state = try decodeSectionWith(allocator, section, if (table) |*s| SourceTable{ .section = s } else null);
     if (state.generation != metadata.generation or !std.mem.eql(u8, state.analyzer_id, metadata.analyzer_id)) return error.InvalidState;
     return state;
+}
+
+/// S6-T9: the state section the current `MANIFEST` binds, decoded as a
+/// writer decodes it (`resolvePointer` without a pointer); `null` when there
+/// is no `MANIFEST` or it binds no state section.
+pub fn loadBound(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) LoadError!?State {
+    // S6-T9 on S6-T13: `MANIFEST` read through the handle it was sized
+    // by (`snapshot_open.readManifest`), not a `stat` and a read by name.
+    const manifest_bytes = (snapshot_open.readManifest(allocator, io, dir) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return null,
+    }).bytes;
+    const metadata = manifest.decode(manifest_bytes) catch return null;
+    const bound = metadata.state orelse return null;
+    return resolvePointer(allocator, io, dir, .{ .generation = metadata.generation, .analyzer_id = metadata.analyzer_id, .state_file = bound.file });
+}
+
+/// S6-T9: the source table of the generation `metadata` describes, for
+/// `resolvePointer`: its documents and `HYBSRC02` sections read, checked
+/// against the manifest (size, checksum) and walked as a writer's open walks
+/// them. Null when the generation binds no `HYBSRC02` section; a section
+/// that fails a check is `InvalidState`.
+pub fn sourceTableOf(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, metadata: manifest.Manifest) LoadError!?source.Section {
+    if (!metadata.hasSource() or !metadata.text_once) return null;
+    const documents_encoded = readNamed(allocator, io, dir, metadata.documents_file) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.InvalidState,
+    };
+    if (documents_encoded.len != metadata.documents_bytes) return error.InvalidState;
+    const header = segment.inspect(documents_encoded) catch return error.InvalidState;
+    if (header.checksum != metadata.documents_checksum or header.format_version != segment.version_v5) return error.InvalidState;
+    const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch return error.InvalidState;
+    const documents = segment.decodeInspectedWith(documents_encoded, header, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count), allocator, true) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.InvalidState,
+    };
+    const source_encoded = readNamed(allocator, io, dir, metadata.source_file) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.InvalidState,
+    };
+    if (source_encoded.len != metadata.source_bytes) return error.InvalidState;
+    const source_header = source.inspect(source_encoded) catch return error.InvalidState;
+    if (source_header.checksum != metadata.source_checksum or source_header.format != source_v2.version) return error.InvalidState;
+    return source.openTableBound(allocator, source_encoded, source_header, .{ .documents_encoded = documents_encoded, .documents = documents }) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => return error.InvalidState,
+    };
 }
 
 fn readNamed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []const u8) ![]u8 {
@@ -176,15 +288,31 @@ fn readNamed(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, name: []
 /// already accepted it): the JSON of `HYBSTA01` (S4-T2) or the binary state
 /// of `HYBSTA02` (S4-T4).
 pub fn decodeSection(allocator: std.mem.Allocator, section: []const u8) LoadError!State {
+    return decodeSectionWith(allocator, section, null);
+}
+
+/// S6-T9: `decodeSection` with the generation's source table, which a
+/// `HYBSTA03` section's referenced records need (without one a reference is
+/// `StateReferenceWithoutSource`).
+pub fn decodeSectionWith(allocator: std.mem.Allocator, section: []const u8, table: ?SourceTable) LoadError!State {
     return switch (state_section.formOf(section)) {
         .json => parseCommitted(allocator, state_section.payload(section)),
         .binary => decodeBinary(allocator, state_section.payload(section)),
+        .binary_v3 => decodeBinaryWith(allocator, state_section.payload(section), true, table),
     };
 }
 
-/// The `HYBSTA02` section of `state` (S4-T4 ruling 3), as writers publish it.
+/// The `HYBSTA02` section of `state` (S4-T4 ruling 3), as writers published
+/// it before S6-T9.
 pub fn encodeSection(allocator: std.mem.Allocator, state: State) ![]u8 {
     return state_section.encodeBinary(allocator, try encodeBinary(allocator, state));
+}
+
+/// S6-T9: the `HYBSTA03` section of `state`, as writers publish it: file
+/// `i` refers to `refs[i]` when `refers` holds (`refs` is empty, or one
+/// per file).
+pub fn encodeSectionRefs(allocator: std.mem.Allocator, state: State, refs: []const ?SourceRef) ![]u8 {
+    return state_section.encodeBinaryV3(allocator, try encodeBinaryRefs(allocator, state, refs));
 }
 
 // --- the binary state (HYBSTA02 payload, docs/state-section-format-v2.md) ---
@@ -193,6 +321,8 @@ pub fn encodeSection(allocator: std.mem.Allocator, state: State) ![]u8 {
 pub const binary_header_length: usize = 40;
 pub const binary_root_length: usize = 24;
 pub const binary_file_length: usize = 76;
+/// S6-T9: a `HYBSTA03` referenced file record.
+pub const binary_ref_length: usize = 36;
 
 const file_has_size: u32 = 1 << 0;
 const file_has_mtime: u32 = 1 << 1;
@@ -201,6 +331,9 @@ const file_pending: u32 = 1 << 3;
 const file_has_moved_from: u32 = 1 << 4;
 const file_has_chunker: u32 = 1 << 5;
 const file_known_flags: u32 = (1 << 6) - 1;
+/// S6-T9 (`HYBSTA03`): the record refers to its source record.
+const file_source_ref: u32 = 1 << 6;
+const file_known_flags_v3: u32 = (1 << 7) - 1;
 const root_retain_source: u32 = 1 << 0;
 
 /// Shared strings (root ids, labels, kinds, origins, chunker ids, the
@@ -243,6 +376,33 @@ fn count32(value: usize) !u32 {
 /// each hash as 32 raw bytes. A hash that is not 64 hex digits is stored as
 /// unknown (`sha256` absent): no writer of this engine records one.
 pub fn encodeBinary(allocator: std.mem.Allocator, state: State) ![]u8 {
+    return encodePayload(allocator, state, null);
+}
+
+/// S6-T9: the `HYBSTA03` payload of `state`: file `i` is a referenced
+/// record when `refers(state.files[i], refs[i], …)` holds, else v2's full
+/// record. `refs` is empty (no file refers) or has one slot per file.
+pub fn encodeBinaryRefs(allocator: std.mem.Allocator, state: State, refs: []const ?SourceRef) ![]u8 {
+    if (refs.len != 0 and refs.len != state.files.len) return error.InvalidState;
+    return encodePayload(allocator, state, refs);
+}
+
+/// S6-T9 (`docs/state-section-format-v3.md` § Writing): whether `entry` is
+/// stored as a reference to `ref`, given the last referenced ordinal. Then
+/// the decoder rebuilds exactly `entry`'s path, size and hash from it.
+pub fn refers(entry: Entry, ref: ?SourceRef, last: ?u32) bool {
+    const r = ref orelse return false;
+    if (entry.status != .indexed) return false;
+    if (last) |l| if (r.ordinal <= l) return false;
+    const size = entry.size orelse return false;
+    if (size != r.length or entry.hash.len != 64) return false;
+    const hex = std.fmt.bytesToHex(r.sha256, .lower);
+    if (!std.mem.eql(u8, entry.hash, &hex)) return false;
+    const relative = relativeOf(entry.root_id, r.path) orelse return false;
+    return std.mem.eql(u8, relative, entry.path);
+}
+
+fn encodePayload(allocator: std.mem.Allocator, state: State, refs_or_v2: ?[]const ?SourceRef) ![]u8 {
     var strings = StringTable{};
     defer strings.index.deinit(allocator);
     defer strings.items.deinit(allocator);
@@ -260,15 +420,24 @@ pub fn encodeBinary(allocator: std.mem.Allocator, state: State) ![]u8 {
     }
     const file_refs = try allocator.alloc([2]u32, state.files.len);
     defer allocator.free(file_refs);
-    for (state.files, file_refs) |entry, *refs| {
+    // S6-T9: the source ordinal each referenced file names, else null.
+    const referenced = try allocator.alloc(?u32, state.files.len);
+    defer allocator.free(referenced);
+    var records_bytes: usize = 0;
+    var last: ?u32 = null;
+    for (state.files, file_refs, referenced, 0..) |entry, *refs, *ordinal, i| {
         refs.* = .{ try strings.ref(allocator, entry.root_id), if (entry.chunker) |c| try strings.ref(allocator, c) else 0 };
         for (entry.required_labels) |label| try label_refs.append(allocator, try strings.ref(allocator, label));
-        text_bytes += entry.path.len + (if (entry.moved_from) |m| m.len else 0);
+        const ref: ?SourceRef = if (refs_or_v2) |refs_list| (if (refs_list.len == 0) null else refs_list[i]) else null;
+        ordinal.* = if (refers(entry, ref, last)) ref.?.ordinal else null;
+        if (ordinal.*) |o| last = o;
+        records_bytes += if (ordinal.* != null) binary_ref_length else binary_file_length;
+        text_bytes += (if (ordinal.* != null) 0 else entry.path.len) + (if (entry.moved_from) |m| m.len else 0);
     }
     var string_bytes: usize = 0;
     for (strings.items.items) |text| string_bytes += text.len;
     const total = binary_header_length + 4 * strings.items.items.len + string_bytes + binary_root_length * roots.len +
-        binary_file_length * state.files.len + 4 * label_refs.items.len + text_bytes;
+        records_bytes + 4 * label_refs.items.len + text_bytes;
     const out = try allocator.alloc(u8, total);
     errdefer allocator.free(out);
     @memset(out, 0);
@@ -294,7 +463,30 @@ pub fn encodeBinary(allocator: std.mem.Allocator, state: State) ![]u8 {
         put32(out, at + 20, try count32(root.required_labels.len));
         at += binary_root_length;
     }
-    for (state.files, file_refs) |entry, refs| {
+    for (state.files, file_refs, referenced) |entry, refs, ordinal| {
+        if (ordinal) |o| {
+            // S6-T9: the 36-byte referenced record (no size, digest or path).
+            var flags: u32 = file_source_ref;
+            put32(out, at, refs[0]);
+            if (entry.mtime_ms) |mtime| {
+                flags |= file_has_mtime;
+                put64(out, at + 8, @bitCast(mtime));
+            }
+            put32(out, at + 16, entry.chunks);
+            if (entry.chunker != null) {
+                flags |= file_has_chunker;
+                put32(out, at + 20, refs[1]);
+            }
+            put32(out, at + 24, try count32(entry.required_labels.len));
+            put32(out, at + 28, o);
+            if (entry.moved_from) |moved| {
+                flags |= file_has_moved_from;
+                put32(out, at + 32, try count32(moved.len));
+            }
+            put32(out, at + 4, flags);
+            at += binary_ref_length;
+            continue;
+        }
         var flags: u32 = 0;
         if (entry.status == .pending) flags |= file_pending;
         put32(out, at, refs[0]);
@@ -328,9 +520,11 @@ pub fn encodeBinary(allocator: std.mem.Allocator, state: State) ![]u8 {
         put32(out, at, ref);
         at += 4;
     }
-    for (state.files) |entry| {
-        @memcpy(out[at..][0..entry.path.len], entry.path);
-        at += entry.path.len;
+    for (state.files, referenced) |entry, ordinal| {
+        if (ordinal == null) {
+            @memcpy(out[at..][0..entry.path.len], entry.path);
+            at += entry.path.len;
+        }
         if (entry.moved_from) |moved| {
             @memcpy(out[at..][0..moved.len], moved);
             at += moved.len;
@@ -376,6 +570,15 @@ fn utf8Text(text: []const u8) LoadError![]const u8 {
 /// `bytes`, which must outlive the result (callers keep the section in the
 /// same arena); the label lists and hex hashes are allocated.
 pub fn decodeBinary(allocator: std.mem.Allocator, bytes: []const u8) LoadError!State {
+    return decodeBinaryWith(allocator, bytes, false, null);
+}
+
+/// The state of a `HYBSTA02` payload (`v3` false) or a `HYBSTA03` one (`v3`
+/// true; S6-T9), whose referenced records resolve against `table`. Every v2
+/// rule is `InvalidState`; the reference rules S1 to S5 of
+/// `docs/state-section-format-v3.md` each have their own error, in that
+/// order, after the record's own fields are checked.
+pub fn decodeBinaryWith(allocator: std.mem.Allocator, bytes: []const u8, v3: bool, table: ?SourceTable) LoadError!State {
     var reader = Reader{ .bytes = bytes };
     const header = try reader.take(binary_header_length);
     if (read32(header, 0) != state_version or read32(header, 4) != 0 or read32(header, 36) != 0) return error.InvalidState;
@@ -385,15 +588,29 @@ pub fn decodeBinary(allocator: std.mem.Allocator, bytes: []const u8) LoadError!S
     const file_count = read32(header, 28);
     const label_ref_count = read32(header, 32);
     // Every count is bounded by the bytes it needs before anything is
-    // allocated for it.
-    const fixed = @as(u128, 4) * string_count + @as(u128, binary_root_length) * root_count + @as(u128, binary_file_length) * file_count + @as(u128, 4) * label_ref_count;
+    // allocated for it (a `HYBSTA03` record needs at least 36 bytes).
+    const least_record: u128 = if (v3) binary_ref_length else binary_file_length;
+    const fixed = @as(u128, 4) * string_count + @as(u128, binary_root_length) * root_count + least_record * file_count + @as(u128, 4) * label_ref_count;
     if (fixed > bytes.len - reader.at) return error.InvalidState;
     const lengths = try reader.take(4 * @as(usize, string_count));
     const strings = try allocator.alloc([]const u8, string_count);
     for (strings, 0..) |*text, i| text.* = try utf8Text(try reader.take(read32(lengths, 4 * i)));
     const analyzer_id = try stringAt(strings, read32(header, 16));
     const root_records = try reader.take(binary_root_length * @as(usize, root_count));
-    const file_records = try reader.take(binary_file_length * @as(usize, file_count));
+    // The file records: v2's are 76 bytes each; a `HYBSTA03` record's length
+    // is in its flags word (offset 4), bit 6.
+    var records_length: usize = binary_file_length * @as(usize, file_count);
+    if (v3) {
+        records_length = 0;
+        for (0..file_count) |_| {
+            if (binary_ref_length > bytes.len - reader.at - records_length) return error.InvalidState;
+            const flags = read32(bytes, reader.at + records_length + 4);
+            const length: usize = if (flags & file_source_ref != 0) binary_ref_length else binary_file_length;
+            if (length > bytes.len - reader.at - records_length) return error.InvalidState;
+            records_length += length;
+        }
+    }
+    const file_records = try reader.take(records_length);
     const label_bytes = try reader.take(4 * @as(usize, label_ref_count));
     const labels = try allocator.alloc([]const u8, label_ref_count);
     for (labels, 0..) |*label, i| label.* = try stringAt(strings, read32(label_bytes, 4 * i));
@@ -415,12 +632,54 @@ pub fn decodeBinary(allocator: std.mem.Allocator, bytes: []const u8) LoadError!S
         };
         next_label += label_count;
     }
+    const known: u32 = if (v3) file_known_flags_v3 else file_known_flags;
     const files = try allocator.alloc(Entry, file_count);
     const hashes = try allocator.alloc(u8, 64 * @as(usize, file_count));
+    var at: usize = 0;
+    var last_ref: ?u32 = null;
     for (files, 0..) |*entry, i| {
-        const record = file_records[binary_file_length * i ..][0..binary_file_length];
-        const flags = read32(record, 4);
-        if (flags & ~file_known_flags != 0) return error.InvalidState;
+        const flags = read32(file_records, at + 4);
+        if (flags & ~known != 0) return error.InvalidState;
+        if (flags & file_source_ref != 0) {
+            // S6-T9: a referenced record (36 bytes).
+            const record = file_records[at..][0..binary_ref_length];
+            at += binary_ref_length;
+            const label_count = read32(record, 24);
+            if (label_count > labels.len - next_label) return error.InvalidState;
+            const root_id = try stringAt(strings, read32(record, 0));
+            if (flags & file_has_mtime == 0 and read64(record, 8) != 0) return error.InvalidState;
+            if (flags & file_has_chunker == 0 and read32(record, 20) != 0) return error.InvalidState;
+            if (flags & file_has_moved_from == 0 and read32(record, 32) != 0) return error.InvalidState;
+            const chunker: ?[]const u8 = if (flags & file_has_chunker != 0) try stringAt(strings, read32(record, 20)) else null;
+            const moved_from: ?[]const u8 = if (flags & file_has_moved_from != 0) try utf8Text(try reader.take(read32(record, 32))) else null;
+            // S1 to S5.
+            if (flags & (file_has_size | file_has_sha256 | file_pending) != 0) return error.StateReferenceFlags;
+            const source_table = table orelse return error.StateReferenceWithoutSource;
+            const ordinal = read32(record, 28);
+            if (ordinal >= source_table.count()) return error.StateReferenceOutOfRange;
+            if (last_ref) |previous| if (ordinal <= previous) return error.StateReferenceOrder;
+            last_ref = ordinal;
+            const target = try source_table.target(ordinal);
+            const path = relativeOf(root_id, target.path) orelse return error.StateReferencePath;
+            const hex = hashes[64 * i ..][0..64];
+            hex.* = std.fmt.bytesToHex(target.sha256, .lower);
+            entry.* = .{
+                .root_id = root_id,
+                .path = path,
+                .hash = hex,
+                .size = target.length,
+                .mtime_ms = if (flags & file_has_mtime != 0) @bitCast(read64(record, 8)) else null,
+                .status = .indexed,
+                .chunker = chunker,
+                .chunks = read32(record, 16),
+                .moved_from = moved_from,
+                .required_labels = labels[next_label..][0..label_count],
+            };
+            next_label += label_count;
+            continue;
+        }
+        const record = file_records[at..][0..binary_file_length];
+        at += binary_file_length;
         const label_count = read32(record, 32);
         if (label_count > labels.len - next_label) return error.InvalidState;
         const raw = record[44..76];

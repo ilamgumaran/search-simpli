@@ -83,7 +83,7 @@ test "S6-T7: the committed text-once fixture is 62324f9's writer output (this wr
     // `compat_s6t8_test.zig` holds v2.5's reference.
     for (files) |name| {
         if (std.mem.eql(u8, name, "INDEX-STATE.json") or std.mem.eql(u8, name, "MANIFEST") or std.mem.eql(u8, name, "lexical-1.hyblex")) continue;
-        try std.testing.expectEqualSlices(u8, try committed.readFileAlloc(io, name, a, .unlimited), try fresh.readFileAlloc(io, name, a, .unlimited));
+        try compat.expectSameAsBeforeV26(a, committed, fresh, name);
     }
     try compat.expectSameLexicalAsV3(a, try committed.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited), try fresh.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited));
     // The old fixture's sections that did not change format are the new

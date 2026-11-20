@@ -15,6 +15,10 @@ const apply = @import("apply.zig");
 const cli = @import("cli.zig");
 const engine_module = @import("engine.zig");
 const filename_field = @import("filename_field.zig");
+const hybrid = @import("hybrid.zig");
+const incremental_state = @import("incremental_state.zig");
+const postings = @import("postings.zig");
+const segment = @import("segment.zig");
 const lexical_segment = @import("lexical_segment.zig");
 const manifest = @import("manifest.zig");
 const ops = @import("ops.zig");
@@ -319,7 +323,7 @@ test "S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's f
         if (std.mem.eql(u8, name, "INDEX-STATE.json") or std.mem.eql(u8, name, "MANIFEST") or
             std.mem.eql(u8, name, "documents-1.hybseg") or std.mem.eql(u8, name, "source-1.hybsrc") or
             std.mem.eql(u8, name, "lexical-1.hyblex")) continue;
-        try std.testing.expectEqualSlices(u8, try committed.readFileAlloc(io, name, a, .unlimited), try fresh.readFileAlloc(io, name, a, .unlimited));
+        try expectSameAsBeforeV26(a, committed, fresh, name);
     }
     try expectSameLexicalAsV3(a, try committed.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited), try fresh.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited));
     try std.testing.expect(refusedBy98c4a2b(try fresh.readFileAlloc(io, publication.current_manifest_file, a, .unlimited)));
@@ -332,8 +336,43 @@ test "S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's f
 /// S6-T8: `v4` (a `HYBLEX04` content section) is `v3` (a `HYBLEX03` one)
 /// with section 5 recoded: decoded, transcoded to v2's coding and written
 /// as `HYBLEX03`, it gives `v3` byte for byte.
+/// S6-T9: the state the current `MANIFEST` of `dir` binds, decoded with
+/// its source table and re-encoded as `HYBSTA02`: for a v2.6 index, the
+/// bytes a writer before v2.6 would have published for the same state.
+pub fn stateAsV2(a: std.mem.Allocator, dir: std.Io.Dir) ![]u8 {
+    const state = (try incremental_state.loadBound(a, io, dir)) orelse return error.TestUnexpectedResult;
+    return incremental_state.encodeSection(a, state);
+}
+
+/// S6-T9: the file-name catalog the current `MANIFEST` of `dir` binds,
+/// decoded (record v6's ids and stems derived from the body) and
+/// re-encoded as record v3, the catalog a writer before v2.6 published.
+pub fn catalogAsV3(a: std.mem.Allocator, dir: std.Io.Dir) ![]u8 {
+    const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    const documents_encoded = try dir.readFileAlloc(io, metadata.documents_file, a, .unlimited);
+    const body = try segment.decodeInspectedWith(documents_encoded, try segment.inspect(documents_encoded), try a.alloc(hybrid.Document, metadata.document_count), &.{}, a, metadata.hasSource());
+    const f = metadata.filename orelse return error.TestUnexpectedResult;
+    const empty = postings.Index{ .terms = &.{}, .postings = &.{}, .document_lengths = &.{}, .average_document_length = 0 };
+    const decoded = try filename_field.decode(a, body, empty, try dir.readFileAlloc(io, f.catalog_file, a, .unlimited), try dir.readFileAlloc(io, f.lexical_file, a, .unlimited));
+    const out = try a.alloc(u8, try segment.encodedLength(decoded.catalog));
+    return segment.encode(decoded.catalog, out);
+}
+
+/// S6-T9: `before`'s section `name` (written before v2.6) against `now`'s
+/// (v2.6): byte for byte, the state and catalog after `stateAsV2` and
+/// `catalogAsV3`.
+pub fn expectSameAsBeforeV26(a: std.mem.Allocator, before: std.Io.Dir, now: std.Io.Dir, name: []const u8) !void {
+    const want = try before.readFileAlloc(io, name, a, .unlimited);
+    const got = if (std.mem.startsWith(u8, name, "state-"))
+        try stateAsV2(a, now)
+    else if (std.mem.startsWith(u8, name, "filenames-"))
+        try catalogAsV3(a, now)
+    else
+        try now.readFileAlloc(io, name, a, .unlimited);
+    try std.testing.expectEqualSlices(u8, want, got);
+}
+
 pub fn expectSameLexicalAsV3(a: std.mem.Allocator, v3: []const u8, v4: []const u8) !void {
-    const postings = @import("postings.zig");
     try std.testing.expectEqualStrings(lexical_segment.magic_v3, v3[0..8]);
     try std.testing.expectEqualStrings(lexical_segment.magic_v4, v4[0..8]);
     const header = try lexical_segment.inspect(v4);

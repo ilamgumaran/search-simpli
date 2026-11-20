@@ -1,0 +1,43 @@
+S6-T9 ruling 6: scripts/prototypes/s6t9/kill.py, 2026-11-19 15:01-15:03, searchd ReleaseSmall at b1622d2 (1,151,240 B), old index timing-10k written by main a019f22, delays 0-1000 ms step 25. Not a timing run.
+   0 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+  25 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+  50 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+  75 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 100 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 125 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 150 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 175 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 200 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 225 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 250 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 275 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 300 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 325 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 350 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 375 ms: killed; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 400 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 425 ms: killed; generation 1, bits 8-9 0, HYBSTA02, catalog v3; answers same; later update -> generation 2 whole, same answers
+ 450 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 475 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 500 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 525 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 550 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 575 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 600 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 625 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 650 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 675 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 700 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 725 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 750 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 775 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 800 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 825 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 850 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 875 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 900 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 925 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 950 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+ 975 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+1000 ms: finished; generation 2, bits 8-9 3, HYBSTA03, catalog v6; answers same; later update -> generation 3 whole, same answers
+summary: {'gen1': 17, 'gen2': 24, 'killed': 18, 'finished': 23, 'failures': 0, 'later': 41}

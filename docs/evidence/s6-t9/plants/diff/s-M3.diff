@@ -1,0 +1,13 @@
+diff -ru ARCHIVE/none/zig/src/manifest.zig ARCHIVE/src/s-M3/zig/src/manifest.zig
+--- ARCHIVE/none/zig/src/manifest.zig	2026-11-19 13:59:54
++++ ARCHIVE/src/s-M3/zig/src/manifest.zig	2026-11-19 14:25:03
+@@ -714,8 +714,7 @@
+     if (header.checksum != state.checksum) return error.StateSectionChecksumMismatch;
+     if (!value.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidStateSection;
+     // S6-T9 (v2.6, M3): `HYBSTA03` exactly under bit 8.
+-    if ((header.form == .binary_v3) != value.state_v3) return error.StateSectionVersionMismatch;
+-}
++    }
+ 
+ /// `base` binding the recovery-state section `state_encoded` as `file`.
+ pub fn withState(base: Manifest, file: []const u8, state_encoded: []const u8) ManifestError!Manifest {

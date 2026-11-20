@@ -1,0 +1,49 @@
+# tools/build.sh new 1439d6a, old 1ec2f56 (fresh git archive each, own caches, ReleaseSmall); tools/run.sh new, then old
+searchd: 1439d6a 1151208 B, 1ec2f56 1151240 B
+macOS dylib: 1439d6a 1006456 B (cmp-identical to the committed native), 1ec2f56 1006488 B (identical to 1ec2f56's committed native)
+indexes: prose-10k (10,000 files) and fixtures, --filename-index; upd = a copy of fixtures indexed, then one file appended, one deleted, one added, index --update, then index --update unchanged
+index files compared (all but logs): 39; differ: 0
+  5320833 ./fixtures/documents-1.hybseg
+  3209 ./fixtures/filename-lexical-1.hyblex
+  13317 ./fixtures/filenames-1.hybseg
+  94 ./fixtures/INDEX-STATE.json
+  2417473 ./fixtures/lexical-1.hyblex
+  1062 ./fixtures/MANIFEST
+  181663 ./fixtures/source-1.hybsrc
+  8529 ./fixtures/state-1.hybstate
+  0 ./fixtures/WRITER.LOCK
+  18865516 ./prose/documents-1.hybseg
+  146333 ./prose/filename-lexical-1.hyblex
+  607567 ./prose/filenames-1.hybseg
+  94 ./prose/INDEX-STATE.json
+  10015061 ./prose/lexical-1.hyblex
+  696 ./prose/MANIFEST
+  820567 ./prose/source-1.hybsrc
+  360159 ./prose/state-1.hybstate
+  0 ./prose/WRITER.LOCK
+  5320833 ./upd/documents-1.hybseg
+  5320858 ./upd/documents-2.hybseg
+  5320858 ./upd/documents-3.hybseg
+  3209 ./upd/filename-lexical-1.hyblex
+  3214 ./upd/filename-lexical-2.hyblex
+  3214 ./upd/filename-lexical-3.hyblex
+  13317 ./upd/filenames-1.hybseg
+  13288 ./upd/filenames-2.hybseg
+  13288 ./upd/filenames-3.hybseg
+  94 ./upd/INDEX-STATE.json
+  2417473 ./upd/lexical-1.hyblex
+  2417380 ./upd/lexical-2.hyblex
+  2417380 ./upd/lexical-3.hyblex
+  1062 ./upd/MANIFEST
+  181663 ./upd/source-1.hybsrc
+  181667 ./upd/source-2.hybsrc
+  181667 ./upd/source-3.hybsrc
+  8529 ./upd/state-1.hybstate
+  8529 ./upd/state-2.hybstate
+  8529 ./upd/state-3.hybstate
+  0 ./upd/WRITER.LOCK
+logs (out path normalised): prose, fixtures, upd1, upd2, upd3 identical
+upd2 report: {"generation":2,"analyzer_id":"analyzer-v2","added":1,"changed":1,"removed":1,"unchanged":230,"budget_exhausted":0,"too_large":0,"unreadable":0,"too_large_paths":[],"unreadable_paths":[],"documents":4084,"terms":68075,"postings":379879}
+upd3 report: {"generation":3,"analyzer_id":"analyzer-v2","added":0,"changed":0,"removed":0,"unchanged":232,"budget_exhausted":0,"too_large":0,"unreadable":0,"too_large_paths":[],"unreadable_paths":[],"documents":4084,"terms":68075,"postings":379879}
+upd INDEX-STATE.json: {"state_version":3,"generation":3,"analyzer_id":"analyzer-v2","state_file":"state-3.hybstate"}
+queries: 50 (tools/queries.txt; p = prose-10k index, f = fixtures index), searchd query --json --top-k 10; outputs (with exit code) differ: 0 of 50; 49 return 10 results, 1 (xyzzyqqq) returns 0

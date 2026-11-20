@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/incremental_state.zig ARCHIVE/src/s-v3-unknown-flag/zig/src/incremental_state.zig
+--- ARCHIVE/none/zig/src/incremental_state.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/s-v3-unknown-flag/zig/src/incremental_state.zig	2026-11-19 12:28:07
+@@ -627,7 +627,7 @@
+         };
+         next_label += label_count;
+     }
+-    const known: u32 = if (v3) file_known_flags_v3 else file_known_flags;
++    const known: u32 = if (v3) file_known_flags_v3 | 0x80 else file_known_flags;
+     const files = try allocator.alloc(Entry, file_count);
+     const hashes = try allocator.alloc(u8, 64 * @as(usize, file_count));
+     var at: usize = 0;

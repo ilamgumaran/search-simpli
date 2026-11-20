@@ -1,0 +1,61 @@
+tool/build_native.sh: building with 0.16.0 from <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/src.noindex/nat/zig
+Build Summary: 28/28 steps succeeded
+lib success
++- install search_simpli success
+|  +- compile lib search_simpli ReleaseSmall aarch64-macos cached 60ms MaxRSS:31M
+|     +- WriteFile cached
+|     +- compile obj fastmem ReleaseFast aarch64-macos cached 54ms MaxRSS:31M
+|     +- compile obj fastmem ReleaseFast aarch64-macos (reused)
+|     +- options cached
++- install search_simpli success
+|  +- compile lib search_simpli ReleaseSmall aarch64-macos cached 68ms MaxRSS:31M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem ReleaseFast aarch64-macos (reused)
+|     +- compile obj fastmem ReleaseFast aarch64-macos (reused)
+|     +- options (reused)
++- install search_simpli success
+|  +- compile lib search_simpli ReleaseSmall aarch64-linux-android success 7s MaxRSS:515M
+|     +- WriteFile android-libc.txt success
+|     +- WriteFile cached
+|     +- compile obj fastmem ReleaseFast aarch64-linux-android success 115ms MaxRSS:104M
+|     +- compile obj fastmem ReleaseFast aarch64-linux-android (reused)
+|     +- options (reused)
++- install search_simpli success
+|  +- compile lib search_simpli ReleaseSmall aarch64-linux-android success 7s MaxRSS:546M
+|     +- WriteFile android-libc.txt (reused)
+|     +- WriteFile (reused)
+|     +- compile obj fastmem ReleaseFast aarch64-linux-android (reused)
+|     +- compile obj fastmem ReleaseFast aarch64-linux-android (reused)
+|     +- options (reused)
++- install search_simpli success
+|  +- compile lib search_simpli ReleaseSmall aarch64-ios.17.0 cached 68ms MaxRSS:31M
+|     +- WriteFile ios-libc.txt cached
+|     +- WriteFile cached
+|     +- compile obj fastmem ReleaseFast aarch64-ios.17.0 cached 54ms MaxRSS:31M
+|     +- compile obj fastmem ReleaseFast aarch64-ios.17.0 (reused)
+|     +- options (reused)
++- install search_simpli success
+|  +- compile lib search_simpli ReleaseSmall aarch64-ios.17.0 cached 68ms MaxRSS:31M
+|     +- WriteFile ios-libc.txt (reused)
+|     +- WriteFile (reused)
+|     +- compile obj fastmem ReleaseFast aarch64-ios.17.0 (reused)
+|     +- compile obj fastmem ReleaseFast aarch64-ios.17.0 (reused)
+|     +- options (reused)
++- install search_simpli success
+|  +- compile lib search_simpli ReleaseSmall x86_64-linux-gnu cached 60ms MaxRSS:31M
+|     +- WriteFile cached
+|     +- compile obj fastmem ReleaseFast x86_64-linux-gnu cached 54ms MaxRSS:31M
+|     +- compile obj fastmem ReleaseFast x86_64-linux-gnu (reused)
+|     +- options (reused)
++- install search_simpli success
+   +- compile lib search_simpli ReleaseSmall x86_64-linux-gnu cached 67ms MaxRSS:31M
+      +- WriteFile (reused)
+      +- compile obj fastmem ReleaseFast x86_64-linux-gnu (reused)
+      +- compile obj fastmem ReleaseFast x86_64-linux-gnu (reused)
+      +- options (reused)
+
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib ( 1006488 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  966416 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  971384 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (eab97f4ea1cff3de3840bb8e179702b59df1cc263f40c8863cfe60a6b5435603)

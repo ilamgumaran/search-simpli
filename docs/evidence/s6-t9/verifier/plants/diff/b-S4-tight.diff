@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/incremental_state.zig <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/b-S4-tight/zig/src/incremental_state.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/incremental_state.zig	2026-11-19 15:34:47
++++ <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/b-S4-tight/zig/src/incremental_state.zig	2026-11-19 20:51:09
+@@ -652,7 +652,7 @@
+             const source_table = table orelse return error.StateReferenceWithoutSource;
+             const ordinal = read32(record, 28);
+             if (ordinal >= source_table.count()) return error.StateReferenceOutOfRange;
+-            if (last_ref) |previous| if (ordinal <= previous) return error.StateReferenceOrder;
++            if (last_ref) |previous| if (ordinal <= previous + 1) return error.StateReferenceOrder;
+             last_ref = ordinal;
+             const target = try source_table.target(ordinal);
+             const path = relativeOf(root_id, target.path) orelse return error.StateReferencePath;

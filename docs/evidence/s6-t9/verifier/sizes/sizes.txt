@@ -1,0 +1,6 @@
+j2: total 157,654 -> 149,693 (-7,961, -5.0 %); state 8,529 -> 3,398 (-5,131, -60.2 %); catalog 7,443 -> 4,613 (-2,830, -38.0 %); MANIFEST 997 -> 997; other 5 files byte-identical: True
+family: total 2,382,441 -> 2,378,262 (-4,179, -0.2 %); state 4,626 -> 1,833 (-2,793, -60.4 %); catalog 3,621 -> 2,235 (-1,386, -38.3 %); MANIFEST 787 -> 787; other 5 files byte-identical: True
+fixtures: total 7,969,705 -> 7,946,180 (-23,525, -0.3 %); state 24,805 -> 8,529 (-16,276, -65.6 %); catalog 20,566 -> 13,317 (-7,249, -35.2 %); MANIFEST 1062 -> 1062; other 5 files byte-identical: True
+timing-10k: total 14,612,980 -> 13,712,980 (-900,000, -6.2 %); state 970,159 -> 360,159 (-610,000, -62.9 %); catalog 780,036 -> 490,036 (-290,000, -37.2 %); MANIFEST 696 -> 696; other 5 files byte-identical: True
+prose-10k: total 31,967,055 -> 30,815,993 (-1,151,062, -3.6 %); state 1,087,690 -> 360,159 (-727,531, -66.9 %); catalog 1,031,098 -> 607,567 (-423,531, -41.1 %); MANIFEST 696 -> 696; other 5 files byte-identical: True
+tamil-10k: total 35,533,368 -> 34,633,368 (-900,000, -2.5 %); state 970,159 -> 360,159 (-610,000, -62.9 %); catalog 780,036 -> 490,036 (-290,000, -37.2 %); MANIFEST 696 -> 696; other 5 files byte-identical: True

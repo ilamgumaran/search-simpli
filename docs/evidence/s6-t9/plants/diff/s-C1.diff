@@ -1,0 +1,13 @@
+diff -ru ARCHIVE/none/zig/src/segment.zig ARCHIVE/src/s-C1/zig/src/segment.zig
+--- ARCHIVE/none/zig/src/segment.zig	2026-11-19 13:59:54
++++ ARCHIVE/src/s-C1/zig/src/segment.zig	2026-11-19 14:44:07
+@@ -323,8 +323,7 @@
+         // S6-T9: record v6 (a catalog) has v3's fields, its id and text
+         // lengths zero (C1, C2).
+         if (header.format_version == version_catalog_v6) {
+-            if (id_length != 0) return error.FilenameCatalogIdPresent;
+-            if (text_length != 0) return error.FilenameCatalogTextPresent;
++                        if (text_length != 0) return error.FilenameCatalogTextPresent;
+         }
+         if (header.format_version == version) {
+             chunker_index = try cursor.readU16();

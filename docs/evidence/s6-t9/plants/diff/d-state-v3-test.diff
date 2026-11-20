@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/state_v3_test.zig ARCHIVE/src/d-state-v3-test/zig/src/state_v3_test.zig
+--- ARCHIVE/none/zig/src/state_v3_test.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/d-state-v3-test/zig/src/state_v3_test.zig	2026-11-19 12:09:39
+@@ -139,7 +139,7 @@
+     const state = incremental_state.State{ .generation = 3, .analyzer_id = "analyzer-v2", .roots = &root, .files = &files };
+     const refs = [_]?SourceRef{ null, ref };
+     const payload = try incremental_state.encodeBinaryRefs(a, state, &refs);
+-    try std.testing.expectEqual(@as(usize, 238), payload.len);
++    try std.testing.expectEqual(@as(usize, 239), payload.len);
+     try std.testing.expectEqual(@as(usize, 291), (try incremental_state.encodeBinary(a, state)).len);
+     const expected_head = [_]u32{ 2, 0, 3, 0, 0, 4, 1, 2, 0, 0, 11, 4, 4, 13 };
+     for (expected_head, 0..) |value, i| try std.testing.expectEqual(value, get32(payload, 4 * i));

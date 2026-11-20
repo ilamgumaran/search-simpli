@@ -1,0 +1,31 @@
+unplanted exit=0 changed-lines=0 secs=139 | Build Summary: 9/9 steps succeeded; 569/578 tests passed (9 skipped) | 0 fail/error lines
+v-trailing-v3 exit=1 changed-lines=2 secs=3598 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+v-S1-no-pending exit=1 changed-lines=2 secs=3598 | Build Summary: 7/9 steps succeeded (1 failed); 567/578 tests passed (9 skipped, 2 failed) | 3 fail/error lines
+v-S1-no-sha exit=1 changed-lines=2 secs=597 | Build Summary: 7/9 steps succeeded (1 failed); 567/578 tests passed (9 skipped, 2 failed) | 3 fail/error lines
+v-S4-first-only exit=1 changed-lines=2 secs=598 | Build Summary: 7/9 steps succeeded (1 failed); 567/578 tests passed (9 skipped, 2 failed) | 3 fail/error lines
+b-walk-headroom-loose exit=0 changed-lines=2 secs=161 | Build Summary: 9/9 steps succeeded; 569/578 tests passed (9 skipped) | 0 fail/error lines
+s-table-doc-version exit=0 changed-lines=2 secs=161 | Build Summary: 9/9 steps succeeded; 569/578 tests passed (9 skipped) | 0 fail/error lines
+b-refers-order exit=1 changed-lines=2 secs=176 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+d-compat-s6t9-test exit=1 changed-lines=2 secs=176 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+s-documents-v6 exit=1 changed-lines=1 secs=3033 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+s-carried-inspect exit=1 changed-lines=2 secs=3033 | Build Summary: 7/9 steps succeeded (1 failed); 556/578 tests passed (9 skipped, 13 failed) | 14 fail/error lines
+s-M4-load exit=1 changed-lines=3 secs=3125 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+s-C2 exit=1 changed-lines=3 secs=3125 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+v-M3-oneway exit=1 changed-lines=2 secs=2121 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+v-M4-manifest-oneway exit=1 changed-lines=2 secs=2122 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+v-M4-load-oneway exit=1 changed-lines=2 secs=1094 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+v-ref-labels exit=1 changed-lines=1 secs=1093 | Build Summary: 7/9 steps succeeded (1 failed); 561/578 tests passed (9 skipped, 8 failed) | 9 fail/error lines
+s-S2 exit=1 changed-lines=2 secs=149 | Build Summary: 7/9 steps succeeded (1 failed); 566/578 tests passed (9 skipped, 3 failed) | 4 fail/error lines
+b-S3-loose exit=1 changed-lines=2 secs=149 | Build Summary: 7/9 steps succeeded (1 failed); 567/578 tests passed (9 skipped, 2 crashed) | 3 fail/error lines
+b-S4-tight exit=1 changed-lines=2 secs=148 | Build Summary: 7/9 steps succeeded (1 failed); 501/578 tests passed (9 skipped, 68 failed) | 71 fail/error lines
+s-S5-separator exit=1 changed-lines=2 secs=152 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+b-count-bound-loose exit=1 changed-lines=2 secs=200 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+s-v2-bit6 exit=1 changed-lines=2 secs=200 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+s-ref-zero-moved exit=1 changed-lines=2 secs=213 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+s-section-v3-version exit=1 changed-lines=2 secs=213 | Build Summary: 7/9 steps succeeded (1 failed); 567/578 tests passed (9 skipped, 2 failed) | 3 fail/error lines
+s-writer-v1-source exit=1 changed-lines=2 secs=215 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 crashed) | 2 fail/error lines
+s-M2 exit=1 changed-lines=3 secs=216 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+v-refers-pending exit=1 changed-lines=1 secs=194 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+v-refers-hash exit=1 changed-lines=2 secs=194 | Build Summary: 7/9 steps succeeded (1 failed); 568/578 tests passed (9 skipped, 1 failed) | 2 fail/error lines
+v-apply-swallow exit=1 changed-lines=2 secs=249 | Build Summary: 7/9 steps succeeded (1 failed); 566/578 tests passed (9 skipped, 3 failed) | 4 fail/error lines
+v-ref-mtime exit=1 changed-lines=2 secs=250 | Build Summary: 7/9 steps succeeded (1 failed); 564/578 tests passed (9 skipped, 5 failed) | 6 fail/error lines

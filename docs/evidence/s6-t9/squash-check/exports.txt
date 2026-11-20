@@ -1,0 +1,22 @@
+# nm -gU exported symbols, ReleaseSmall macOS dylib built from fresh archives
+1ec2f56:       18 symbols; 1439d6a:       18 symbols; diff: none
+___dso_handle
+__mh_dylib_header
+_ss_apply_changes
+_ss_close
+_ss_evidence
+_ss_find
+_ss_free
+_ss_import_json
+_ss_index_folder
+_ss_last_error
+_ss_list_files
+_ss_open
+_ss_outline
+_ss_query
+_ss_read_span
+_ss_roots
+_ss_status
+_ss_version
+# zig/include, 1ec2f56 vs 1439d6a: identical
+# bindings/dart/search_simpli/lib: identical

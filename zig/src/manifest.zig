@@ -60,7 +60,15 @@ pub const flag_text_once: u16 = 64;
 /// Readers before v2.5 refuse the manifest on this bit (`UnsupportedFlags`)
 /// before reading any section.
 pub const flag_lexical_v4: u16 = 128;
-pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections | flag_state_section | flag_lexical_v3 | flag_text_once | flag_lexical_v4;
+/// v2.6 (S6-T9, `docs/state-section-format-v3.md`): the bound state section
+/// is `HYBSTA03`; set only with `flag_state_section`. Readers before v2.6
+/// refuse the manifest on this bit (`UnsupportedFlags`) before reading any
+/// section.
+pub const flag_state_v3: u16 = 256;
+/// v2.6 (S6-T9, `docs/filename-catalog-format-v6.md`): the bound file-name
+/// catalog is record v6; set only with `flag_filename_sections`.
+pub const flag_catalog_v6: u16 = 512;
+pub const known_flags_v2: u16 = flag_has_source | flag_has_positions | flag_xxh3_sections | flag_filename_sections | flag_state_section | flag_lexical_v3 | flag_text_once | flag_lexical_v4 | flag_state_v3 | flag_catalog_v6;
 
 pub const StateMetadata = struct {
     file: []const u8,
@@ -113,6 +121,12 @@ pub const Manifest = struct {
     /// v2.5 (S6-T8): `flag_lexical_v4`; set by the writer exactly when the
     /// content lexical section is `HYBLEX04`.
     lexical_v4: bool = false,
+    /// v2.6 (S6-T9): `flag_state_v3`; set by the writer exactly when the
+    /// bound state section is `HYBSTA03`.
+    state_v3: bool = false,
+    /// v2.6 (S6-T9): `flag_catalog_v6`; set by the writer exactly when the
+    /// bound file-name catalog is record v6.
+    catalog_v6: bool = false,
     /// Empty when the generation binds no source section.
     source_file: []const u8 = "",
     source_bytes: usize = 0,
@@ -172,6 +186,11 @@ pub const ManifestError = error{
     StateSectionUnexpected,
     StateSectionSizeMismatch,
     StateSectionChecksumMismatch,
+    // S6-T9 (v2.6): rules M1 to M4 of `docs/manifest-format-v2.md`.
+    StateVersionFlagWithoutSection,
+    CatalogVersionFlagWithoutSection,
+    StateSectionVersionMismatch,
+    FilenameCatalogVersionMismatch,
 };
 
 pub fn create(
@@ -263,12 +282,14 @@ pub fn withFilename(
     catalog_encoded: []const u8,
     filename_lexical_encoded: []const u8,
 ) ManifestError!Manifest {
-    const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
+    const catalog = segment.inspectCatalog(catalog_encoded) catch return error.InvalidFilenameCatalog;
     const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
     if (catalog.vector_dimensions != 0 or catalog.document_count != lexical.document_count) return error.FilenameCountMismatch;
     if ((lexical.version == lexical_segment.version_v3) != base.lexical_v3) return error.InvalidFilenameLexicalSection;
     var value = base;
     value.format_version = version_v2;
+    // S6-T9 (v2.6): bit 9 exactly for a record v6 catalog.
+    value.catalog_v6 = catalog.format_version == segment.version_catalog_v6;
     if (catalog.checksum_kind == .xxh3_64 or lexical.checksum_kind == .xxh3_64) value.xxh3_sections = true;
     if (value.meta.len == 0) value.meta = "{\"manifest_meta\":2,\"chunkers\":[{\"id\":\"line-window-v1\",\"params\":{\"max_chars\":1600,\"overlap_lines\":3}}],\"roots\":[{\"root_id\":\"r-legacy\",\"label\":\"folder\",\"kind\":\"local\",\"required_labels\":[]}],\"source_section_version\":0}";
     value.filename = .{
@@ -301,9 +322,11 @@ pub fn validateFilenameSections(value: Manifest, catalog_encoded: []const u8, fi
     const filename = value.filename orelse return error.InvalidFilenamePolicy;
     if (catalog_encoded.len != filename.catalog_bytes) return error.FilenameCatalogSizeMismatch;
     if (filename_lexical_encoded.len != filename.lexical_bytes) return error.FilenameLexicalSizeMismatch;
-    const catalog = segment.inspect(catalog_encoded) catch return error.InvalidFilenameCatalog;
+    const catalog = segment.inspectCatalog(catalog_encoded) catch return error.InvalidFilenameCatalog;
     const lexical = lexical_segment.inspect(filename_lexical_encoded) catch return error.InvalidFilenameLexicalSection;
     if (!value.xxh3_sections and (catalog.checksum_kind != .fnv1a64 or lexical.checksum_kind != .fnv1a64)) return error.InvalidFilenameCatalog;
+    // S6-T9 (v2.6, M4): record v6 exactly under bit 9.
+    if ((catalog.format_version == segment.version_catalog_v6) != value.catalog_v6) return error.FilenameCatalogVersionMismatch;
     if ((lexical.version == lexical_segment.version_v3) != value.lexical_v3) return error.InvalidFilenameLexicalSection;
     if (catalog.checksum != filename.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
     if (lexical.checksum != filename.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
@@ -398,6 +421,8 @@ fn encodeV2(value: Manifest, output: []u8) ManifestError![]u8 {
     if (value.lexical_v3) flags |= flag_lexical_v3;
     if (value.text_once) flags |= flag_text_once;
     if (value.lexical_v4) flags |= flag_lexical_v4;
+    if (value.state_v3) flags |= flag_state_v3;
+    if (value.catalog_v6) flags |= flag_catalog_v6;
     if (value.filename != null) flags |= flag_filename_sections;
     if (value.state != null) flags |= flag_state_section;
 
@@ -539,6 +564,8 @@ fn decodeV2(encoded: []const u8) ManifestError!Manifest {
         .lexical_v3 = flags & flag_lexical_v3 != 0,
         .text_once = flags & flag_text_once != 0,
         .lexical_v4 = flags & flag_lexical_v4 != 0,
+        .state_v3 = flags & flag_state_v3 != 0,
+        .catalog_v6 = flags & flag_catalog_v6 != 0,
         .source_file = source_file,
         .source_bytes = source_bytes,
         .source_checksum = source_checksum,
@@ -686,6 +713,8 @@ pub fn validateState(value: Manifest, state_encoded: ?[]const u8) ManifestError!
     };
     if (header.checksum != state.checksum) return error.StateSectionChecksumMismatch;
     if (!value.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidStateSection;
+    // S6-T9 (v2.6, M3): `HYBSTA03` exactly under bit 8.
+    if ((header.form == .binary_v3) != value.state_v3) return error.StateSectionVersionMismatch;
 }
 
 /// `base` binding the recovery-state section `state_encoded` as `file`.
@@ -693,6 +722,7 @@ pub fn withState(base: Manifest, file: []const u8, state_encoded: []const u8) Ma
     const header = state_section.inspect(state_encoded) catch return error.InvalidStateSection;
     var value = base;
     value.state = .{ .file = file, .bytes = state_encoded.len, .checksum = header.checksum };
+    value.state_v3 = header.form == .binary_v3;
     if (header.checksum_kind == .xxh3_64) value.xxh3_sections = true;
     try validateFields(value);
     return value;
@@ -700,6 +730,9 @@ pub fn withState(base: Manifest, file: []const u8, state_encoded: []const u8) Ma
 
 fn validateFields(value: Manifest) ManifestError!void {
     if (value.generation == 0) return error.GenerationZero;
+    // S6-T9 (v2.6, M1 and M2): each version bit needs its section.
+    if (value.state_v3 and value.state == null) return error.StateVersionFlagWithoutSection;
+    if (value.catalog_v6 and value.filename == null) return error.CatalogVersionFlagWithoutSection;
     if (value.document_count > std.math.maxInt(u32) or
         value.vector_dimensions > std.math.maxInt(u32) or
         value.term_count > std.math.maxInt(u32)) return error.CountOverflow;
@@ -1387,8 +1420,9 @@ test "manifest v2 rejects bad meta, unsafe source names and stray flags" {
     const encoded = try encode(value, &storage);
     // A stray flag bit with a recomputed checksum is refused as unsupported
     // (bit 3 is the v2.2 filename extension; bit 6 is v2.4's `text_once`,
-    // bit 7 v2.5's `lexical_v4`; bit 8 is unassigned).
-    encoded[11] = 0x01;
+    // bit 7 v2.5's `lexical_v4`; bits 8 and 9 v2.6's `state_v3` and
+    // `catalog_v6`; bit 10 is unassigned).
+    encoded[11] = 0x04;
     var checksum_offset: usize = header_length_v2 - 8;
     writeU64(encoded, &checksum_offset, manifestChecksum(encoded[0 .. header_length_v2 - 8], encoded[header_length_v2..]));
     try std.testing.expectError(error.UnsupportedFlags, decode(encoded));
@@ -1515,16 +1549,16 @@ test "S4-T2 manifest v2.2: the checksum covers every filename header field and p
 }
 
 test "S4-T2 manifest v2.2: stray flag bits, duplicate names and missing filename names are refused" {
-    // Bits 0 to 7 are known (bit 4: the recovery-state section, below; bit
+    // Bits 0 to 9 are known (bit 4: the recovery-state section, below; bit
     // 5: `HYBLEX03`, v2.3; bit 6: record v5 and `HYBSRC02`, v2.4; bit 7:
-    // `HYBLEX04`, v2.5).
+    // `HYBLEX04`, v2.5; bits 8 and 9: `HYBSTA03` and catalog v6, v2.6).
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     var fixture = try SnapshotFixture.init();
     var storage: [1024]u8 = undefined;
     const encoded = try encode(try filenameTestManifest(&fixture), &storage);
-    var bit: u4 = 8;
+    var bit: u4 = 10;
     while (true) : (bit += 1) {
         const copy = try arena.dupe(u8, encoded);
         std.mem.writeInt(u16, copy[10..12], std.mem.readInt(u16, copy[10..12], .little) | (@as(u16, 1) << bit), .little);

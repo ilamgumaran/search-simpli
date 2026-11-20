@@ -1,0 +1,16 @@
+The builder's 14 missed cells (open and first content query on Tamil, 12 warm cells), decided on the verifier's five runs (us)
+corpus | cell | builder head-main (2 runs) | verifier head-main (5 runs) | T | rule-set top control | rule | placed alone | main2 alone
+tamil-10k | [open] | +194.6 | +48.9 | 76.9 | +68.7 | pass | pass | pass
+tamil-10k | [first_query] | +294.1 | +114.8 | 128.2 | +210.1 | pass | pass | pass
+timing-10k | both from badamo | +13.0 | +3.2 | 10.0 | -0.0 | pass | pass | pass
+timing-10k | both were belohu | +14.0 | +3.2 | 10.0 | +0.2 | pass | pass | pass
+timing-10k | find words from | +48.7 | -34.9 | 30.0 | -8.5 | pass | pass | pass
+timing-10k | find prefix bada* | +19.7 | +34.5 | 10.0 | +10.0 | FAIL | FAIL | FAIL
+timing-10k | find prefix belo* | +21.8 | -3.8 | 10.0 | +9.6 | pass | pass | pass
+prose-10k | find words the within | +37.0 | +32.0 | 21.4 | +44.8 | pass | pass | FAIL
+prose-10k | find words Again | +56.4 | -2.4 | 13.8 | +6.4 | pass | pass | pass
+tamil-10k | filename doc 00000 | +24.7 | +6.3 | 10.0 | +1.1 | pass | pass | pass
+tamil-10k | both கீகசை | +32.0 | +10.6 | 10.0 | +9.5 | pass | pass | pass
+tamil-10k | both டூகனை | +27.9 | +5.3 | 10.0 | +4.3 | pass | pass | pass
+tamil-10k | both றூகுஞங்கள் | +17.1 | +5.0 | 10.0 | +1.1 | pass | pass | pass
+tamil-10k | both கீகசை றூகுஞங்கள் | +21.4 | +2.4 | 10.0 | +2.5 | pass | pass | pass

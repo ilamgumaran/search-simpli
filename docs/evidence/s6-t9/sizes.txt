@@ -1,0 +1,36 @@
+# S6-T9: index sizes, main (a019f22) and this branch (b1622d2), from measured bytes (scripts/prototypes/s6t9/sizes.py).
+# Each corpus indexed by each side's ReleaseSmall searchd with --filename-index (J2: apply of its changes file);
+# branch searchd 1,151,240 B, sha256 5111e4df3cfccb8d...; main's 1,133,704 B. One generation; percentages rounded to nearest.
+# 'other_sections_identical': every section but the state, the catalog and the manifest is the same bytes.
+# S6-T3's figures (index-size.md D and F): timing-10k state -610,000, catalog -290,000; prose-10k -727,531, -423,531.
+{"corpus": "timing-10k", "magic": ["HYBSTA02", "HYBSTA03"], "catalog_version": [3, 6], "total": [14612980, 13712980], "state": [970159, 360159], "catalog": [780036, 490036], "manifest": [696, 696], "other_sections_identical": true}
+{"corpus": "prose-10k", "magic": ["HYBSTA02", "HYBSTA03"], "catalog_version": [3, 6], "total": [31967055, 30815993], "state": [1087690, 360159], "catalog": [1031098, 607567], "manifest": [696, 696], "other_sections_identical": true}
+{"corpus": "tamil-10k", "magic": ["HYBSTA02", "HYBSTA03"], "catalog_version": [3, 6], "total": [35533368, 34633368], "state": [970159, 360159], "catalog": [780036, 490036], "manifest": [696, 696], "other_sections_identical": true}
+{"corpus": "fixtures", "magic": ["HYBSTA02", "HYBSTA03"], "catalog_version": [3, 6], "total": [7969705, 7946180], "state": [24805, 8529], "catalog": [20566, 13317], "manifest": [1062, 1062], "other_sections_identical": true}
+{"corpus": "family", "magic": ["HYBSTA02", "HYBSTA03"], "catalog_version": [3, 6], "total": [2382441, 2378262], "state": [4626, 1833], "catalog": [3621, 2235], "manifest": [787, 787], "other_sections_identical": true}
+{"corpus": "j2", "magic": ["HYBSTA02", "HYBSTA03"], "catalog_version": [3, 6], "total": [157654, 149693], "state": [8529, 3398], "catalog": [7443, 4613], "manifest": [997, 997], "other_sections_identical": true}
+{"corpus": "boundaries", "magic": ["HYBSTA02", "HYBSTA03"], "catalog_version": [3, 6], "total": [4145, 3410], "state": [1024, 537], "catalog": [651, 403], "manifest": [696, 696], "other_sections_identical": true}
+
+| Corpus | Measure | main (B) | branch (B) | change (B) | change |
+|---|---|---:|---:|---:|---:|
+| timing-10k | index (current generation) | 14,612,980 | 13,712,980 | -900,000 | -6.2% |
+| timing-10k | state section | 970,159 | 360,159 | -610,000 | -62.9% |
+| timing-10k | file-name catalog | 780,036 | 490,036 | -290,000 | -37.2% |
+| prose-10k | index (current generation) | 31,967,055 | 30,815,993 | -1,151,062 | -3.6% |
+| prose-10k | state section | 1,087,690 | 360,159 | -727,531 | -66.9% |
+| prose-10k | file-name catalog | 1,031,098 | 607,567 | -423,531 | -41.1% |
+| tamil-10k | index (current generation) | 35,533,368 | 34,633,368 | -900,000 | -2.5% |
+| tamil-10k | state section | 970,159 | 360,159 | -610,000 | -62.9% |
+| tamil-10k | file-name catalog | 780,036 | 490,036 | -290,000 | -37.2% |
+| fixtures | index (current generation) | 7,969,705 | 7,946,180 | -23,525 | -0.3% |
+| fixtures | state section | 24,805 | 8,529 | -16,276 | -65.6% |
+| fixtures | file-name catalog | 20,566 | 13,317 | -7,249 | -35.2% |
+| family | index (current generation) | 2,382,441 | 2,378,262 | -4,179 | -0.2% |
+| family | state section | 4,626 | 1,833 | -2,793 | -60.4% |
+| family | file-name catalog | 3,621 | 2,235 | -1,386 | -38.3% |
+| j2 | index (current generation) | 157,654 | 149,693 | -7,961 | -5.0% |
+| j2 | state section | 8,529 | 3,398 | -5,131 | -60.2% |
+| j2 | file-name catalog | 7,443 | 4,613 | -2,830 | -38.0% |
+| boundaries | index (current generation) | 4,145 | 3,410 | -735 | -17.7% |
+| boundaries | state section | 1,024 | 537 | -487 | -47.6% |
+| boundaries | file-name catalog | 651 | 403 | -248 | -38.1% |

@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/incremental_state.zig ARCHIVE/src/s-table-doc-version/zig/src/incremental_state.zig
+--- ARCHIVE/none/zig/src/incremental_state.zig	2026-11-19 13:31:22
++++ ARCHIVE/src/s-table-doc-version/zig/src/incremental_state.zig	2026-11-19 13:40:29
+@@ -253,7 +253,7 @@
+     };
+     if (documents_encoded.len != metadata.documents_bytes) return error.InvalidState;
+     const header = segment.inspect(documents_encoded) catch return error.InvalidState;
+-    if (header.checksum != metadata.documents_checksum or header.format_version != segment.version_v5) return error.InvalidState;
++    if (header.checksum != metadata.documents_checksum) return error.InvalidState;
+     const vector_count = std.math.mul(usize, metadata.document_count, metadata.vector_dimensions) catch return error.InvalidState;
+     const documents = segment.decodeInspectedWith(documents_encoded, header, try allocator.alloc(hybrid.Document, metadata.document_count), try allocator.alloc(f32, vector_count), allocator, true) catch |err| switch (err) {
+         error.OutOfMemory => return error.OutOfMemory,

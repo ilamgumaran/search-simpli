@@ -1,0 +1,29 @@
+19:09:26 load 6.25 6.55 4.66 start
+19:16:08 load 6.98 6.64 5.35 same-answer batch ad done
+19:18:00 load 5.97 6.25 5.34 compare: comparisons 276, with a difference 0, missing 12
+19:18:54 load 5.87 6.26 5.41 kill cli-first: {"summary": {"mode": "cli-first", "window": [0.0, 1.3], "seed": 9101, "trials": 20, "unkilled_s": 0.179, "old": 14, "new": 6, "fail": 0, "killed_before_exit": 14, "later_ok": 20}}
+19:18:57 load 5.87 6.26 5.41 kill abi-v6: {"summary": {"mode": "abi-v6", "window": [0.0, 1.3], "seed": 9102, "trials": 10, "unkilled_s": 0.0711, "old": 6, "new": 4, "fail": 0, "killed_before_exit": 6, "later_ok": 10}}
+19:19:14 load 6.08 6.28 5.43 natives: 7 identical, 0 differ
+19:20:15 load 5.72 6.12 5.41 suite zig-rs exit=0 61s | Build Summary: 9/9 steps succeeded; 569/578 tests passed (9 skipped) 
+19:20:21 load 5.58 6.09 5.40 suite abi-debug exit=0 6s | Build Summary: 8/8 steps succeeded 
+19:35:51 load 5.26 6.00 5.38 suite abi-rs exit=0 930s | Build Summary: 8/8 steps succeeded 
+19:35:56 load 5.40 6.02 5.39 suite guard exit=0 5s | 
+19:36:26 load 9.76 6.98 5.76 suite py-nozig exit=1 30s | Ran 408 tests in 29.166s FAILED (failures=2, skipped=43) 
+19:53:49 load 9.10 7.15 5.88 suite py-zig exit=1 1043s | Ran 463 tests in 44.797s FAILED (failures=2) 
+19:53:55 load 8.85 7.13 5.88 suite py-git2 exit=0 6s | OK Ran 15 tests in 2.697s OK 
+19:53:56 load 8.85 7.13 5.88 suite dart exit=3 1s | 
+19:53:57 load 8.62 7.11 5.88 suite relevance exit=0 1s | gate: pass 
+19:53:59 load 8.62 7.11 5.88 suite j2-py exit=0 2s | J2 gate: python-reference run j2-py.json against the baseline of 2026-11-12 (engine 2f1e27424); allow-
+19:54:01 load 8.62 7.11 5.88 suite j2-native exit=0 2s | J2 gate: searchd run j2-native.json against the baseline of 2026-11-12 (engine 2f1e27424); allow-l
+19:54:01 load 8.62 7.11 5.88 suite checks exit=0 0s | 
+20:29:24 load 7.22 8.83 6.96 plants v-M3-oneway v-M4-manifest-oneway: v-M3-oneway exit=1 changed-lines=2 secs=2121 | Build Summary v-M4-manifest-oneway exit=1 changed-lines=2 secs=2122 | Buil 
+20:47:38 load 3.80 6.83 6.45 plants v-M4-load-oneway v-ref-labels: v-M4-load-oneway exit=1 changed-lines=2 secs=1094 | Build Su v-ref-labels exit=1 changed-lines=1 secs=1093 | Build Summar 
+20:48:39 load  4.14 6.35 6.30  chain2 start
+20:51:08 load  3.55 5.50 5.97  plants s-S2 b-S3-loose: s-S2 exit=1 changed-lines=2 secs=149 | Build Summary: 7/9 st b-S3-loose exit=1 changed-lines=2 secs=149 | Build Summary:  
+20:53:41 load  3.26 4.55 5.50  plants b-S4-tight s-S5-separator: b-S4-tight exit=1 changed-lines=2 secs=148 | Build Summary:  s-S5-separator exit=1 changed-lines=2 secs=152 | Build Summa 
+20:57:01 load  2.90 3.88 5.02  plants b-count-bound-loose s-v2-bit6: b-count-bound-loose exit=1 changed-lines=2 secs=200 | Build  s-v2-bit6 exit=1 changed-lines=2 secs=200 | Build Summary: 7 
+21:00:35 load  2.99 3.76 4.73  plants s-ref-zero-moved s-section-v3-version: s-ref-zero-moved exit=1 changed-lines=2 secs=213 | Build Sum s-section-v3-version exit=1 changed-lines=2 secs=213 | Build 
+21:04:12 load  2.91 3.37 4.33  plants s-writer-v1-source s-M2: s-writer-v1-source exit=1 changed-lines=2 secs=215 | Build S s-M2 exit=1 changed-lines=3 secs=216 | Build Summary: 7/9 st 
+21:07:26 load  2.80 3.26 4.10  plants v-refers-pending v-refers-hash: v-refers-pending exit=1 changed-lines=1 secs=194 | Build Sum v-refers-hash exit=1 changed-lines=2 secs=194 | Build Summar 
+21:11:37 load  2.83 3.79 4.21  plants v-apply-swallow v-ref-mtime: v-apply-swallow exit=1 changed-lines=2 secs=249 | Build Summ v-ref-mtime exit=1 changed-lines=2 secs=250 | Build Summary: 
+21:11:37 load  2.83 3.79 4.21  chain2 done

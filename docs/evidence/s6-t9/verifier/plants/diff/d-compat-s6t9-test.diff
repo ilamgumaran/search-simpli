@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/compat_s6t9_test.zig <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/d-compat-s6t9-test/zig/src/compat_s6t9_test.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/compat_s6t9_test.zig	2026-11-19 15:34:47
++++ <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/d-compat-s6t9-test/zig/src/compat_s6t9_test.zig	2026-11-19 19:16:53
+@@ -107,7 +107,7 @@
+     _ = try expectV26(a, committed);
+     const committed_manifest = try committed.readFileAlloc(io, publication.current_manifest_file, a, .unlimited);
+     try std.testing.expect(refusedBeforeV26(committed_manifest));
+-    try std.testing.expectEqual(manifest.flag_state_v3 | manifest.flag_catalog_v6, std.mem.readInt(u16, committed_manifest[10..12], .little) & ~@as(u16, 0xff));
++    try std.testing.expectEqual(manifest.flag_state_v3, std.mem.readInt(u16, committed_manifest[10..12], .little) & ~@as(u16, 0xff));
+     for (olds) |old_path| {
+         var old = try std.Io.Dir.cwd().openDir(io, old_path, .{});
+         defer old.close(io);

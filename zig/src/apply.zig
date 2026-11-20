@@ -821,7 +821,12 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: ?std.Io.Dir, parse
             // section; else an `INDEX-STATE.json` naming this generation and
             // analyzer (generations that predate the section); else the
             // conservative reconstruction from the generation itself.
-            if (previous_state_section) |bytes| previous_state = try incremental_state.decodeSection(allocator, bytes);
+            // S6-T9: a `HYBSTA03` section's references resolve against the
+            // source section just opened (walked after both checksums).
+            if (previous_state_section) |bytes| {
+                const table: ?incremental_state.SourceTable = if (previous_source) |*s| (if (s.v2 != null) .{ .section = s } else null) else null;
+                previous_state = try incremental_state.decodeSectionWith(allocator, bytes, table);
+            }
             if (previous_state) |state| {
                 if (state.generation != prev.generation or !std.mem.eql(u8, state.analyzer_id, prev.analyzer_id)) return error.InvalidState;
             } else if (incremental_state.load(allocator, io, dir.?) catch null) |state| {
@@ -2759,6 +2764,9 @@ fn buildGeneration(
     var pending = std.ArrayList(manifest.PendingEntry).empty;
     var unchunked = std.ArrayList(manifest.PendingEntry).empty;
     var state_files = std.ArrayList(incremental_state.Entry).empty;
+    // S6-T9: each state entry's slot in `retained` (its source record), or
+    // null, for the `HYBSTA03` references.
+    var state_slots = std.ArrayList(?u32).empty;
     var any_retain = false;
     for (work.roots.items) |root| if (root.entry.retain_source) {
         any_retain = true;
@@ -2771,6 +2779,7 @@ fn buildGeneration(
     try sources.ensureTotalCapacityPrecise(allocator, previous_records + 64);
     if (any_retain) try retained.ensureTotalCapacityPrecise(allocator, files.len);
     try state_files.ensureTotalCapacityPrecise(allocator, files.len);
+    try state_slots.ensureTotalCapacityPrecise(allocator, files.len);
     // S4-T16 ruling 3: the previous source section read in step with the
     // files (both in path order) for every file that carries its own path.
     var source_walk: ?SourceWalk = if (prev_source) |section| SourceWalk{ .section = section } else null;
@@ -2798,6 +2807,7 @@ fn buildGeneration(
                 .moved_from = file.moved_from orelse file.recorded_moved_from,
                 .required_labels = file.labels,
             });
+            try state_slots.append(allocator, null);
             continue;
         }
         const labels = try scope.packLabels(allocator, root.required_labels, file.labels);
@@ -2938,6 +2948,7 @@ fn buildGeneration(
             .moved_from = file.moved_from orelse file.recorded_moved_from,
             .required_labels = file.labels,
         });
+        try state_slots.append(allocator, if (retained_slot) |slot| @intCast(slot) else null);
     }
 
     stages.mark("build_documents");
@@ -3003,8 +3014,11 @@ fn buildGeneration(
     // read only by the next writer, not copied into `meta` where every open
     // would read it.
     stages.mark("meta");
-    // S4-T4 ruling 3: the binary form, `HYBSTA02`.
-    const state_encoded = try incremental_state.encodeSection(allocator, .{ .generation = generation, .analyzer_id = options.analyzer.label(), .roots = state_roots, .files = state_files.items });
+    // S4-T4 ruling 3: the binary form. S6-T9: `HYBSTA03`, each retained
+    // file's record referring to its record in the source section just
+    // encoded (`stateRefs` reads each record's digest and length back).
+    const state_refs: []const ?incremental_state.SourceRef = if (source_encoded) |bytes| try stateRefs(allocator, bytes, retained.items, state_slots.items) else &.{};
+    const state_encoded = try incremental_state.encodeSectionRefs(allocator, .{ .generation = generation, .analyzer_id = options.analyzer.label(), .roots = state_roots, .files = state_files.items }, state_refs);
     stages.mark("state_encode");
     const documents_file = try std.fmt.allocPrint(allocator, "documents-{d}.hybseg", .{generation});
     const lexical_file = try std.fmt.allocPrint(allocator, "lexical-{d}.hyblex", .{generation});
@@ -3072,6 +3086,27 @@ fn buildGeneration(
         .term_count = lexical_index.terms.len,
         .posting_count = lexical_index.postings.len,
     };
+}
+
+/// S6-T9: for each state entry, its record in the encoded `HYBSRC02`
+/// section `source_encoded` (built from `retained`, in its order): ordinal,
+/// table path, SHA-256 and text length, read back from the bytes; null for
+/// an entry with no record. `incremental_state.refers` decides which are
+/// stored as references.
+fn stateRefs(allocator: std.mem.Allocator, source_encoded: []const u8, retained: []const source.InputFile, slots: []const ?u32) ![]const ?incremental_state.SourceRef {
+    const records_bytes: usize = @intCast(std.mem.readInt(u64, source_encoded[16..24], .little));
+    const records = source_encoded[source.header_length..][0..records_bytes];
+    const heads = try allocator.alloc(source_v2.Head, retained.len);
+    var at: usize = 0;
+    for (retained, heads) |input, *head| {
+        const parsed = source_v2.parseRecord(records, at, input.chunk_count) catch return error.InvalidSourceSection;
+        head.* = .{ .sha256 = parsed.sha256, .length = parsed.length };
+        at = parsed.end;
+    }
+    if (at != records.len) return error.InvalidSourceSection;
+    const refs = try allocator.alloc(?incremental_state.SourceRef, slots.len);
+    for (slots, refs) |slot, *ref| ref.* = if (slot) |s| .{ .ordinal = s, .path = retained[s].path, .sha256 = heads[s].sha256, .length = heads[s].length } else null;
+    return refs;
 }
 
 // ------------------------------------------------------------------ report ---

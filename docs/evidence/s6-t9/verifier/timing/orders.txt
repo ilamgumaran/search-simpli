@@ -1,0 +1,51 @@
+# S6-T9 verifier: the five timed runs. Written, committed and pushed before the first timed run (19 Nov 2026).
+# Nothing below is chosen after seeing a timed number.
+#
+# Libraries and searchd (each its own source copy and own Zig caches, macOS arm64 ReleaseSmall; __text of the dylib):
+#   main  = a019f22, dylib 990,040 B, sha256 7c3c359ca7ae025f... (= main's committed native), __text 586,844 B
+#   main2 = a019f22 built again in another copy (byte-identical to main)
+#   head  = e3e8125, dylib 1,006,488 B, sha256 a009ef5150d0ce5b... (= the branch's committed native), __text 591,856 B
+#           (+5,012 B)
+#   Controls: main + one never-run function of 58 inert loops (tools/mkctl.py, the verifier's own generator), placed
+#   just before the named host function and called at its top under a branch never true at run time (an input of
+#   2^50 bytes or more):
+#   cq = postings.lookupExact (every content query and find: the hot query path, not beside the new code)
+#                                                              __text 592,024 (+5,180)
+#   co = segment.inspect (every open; the head changed inspect: inspectCatalog, inspectFixed)   __text 591,960 (+5,116)
+#   cf = filename_field.decodeInspected (the first filename/both query; where the head derives ids and stems)
+#                                                              __text 592,804 (+5,960; the dylib crosses a 16 KiB page
+#                                                              as the head's does: 1,006,728 B)
+#   cm = manifest.decodeV2 (every open and write; the head added bits 8 and 9)                  __text 591,964 (+5,120)
+#   cs = incremental_state.decodeBinary (every writer's state decode; the head added decodeBinaryWith)
+#                                                              __text 591,968 (+5,124)
+#   co, cm and cs match the head's delta within 2.2 %; cf and co, cm, cs are the controls with never-run code placed
+#   beside the new code.
+#
+# Control sets (fixed now):
+#   RULE SET (decides each cell): main2, cq, co, cf, cm, cs.
+#   PLACED ALONE (reported; decides nothing): co, cf, cm, cs.     MAIN2 ALONE (reported; decides nothing): main2.
+# T = max(0.010 ms, 1 % of main's five-run median for the cell). A cell fails if median_r(head - main) >= T and exceeds by
+# >= T the largest median_r(control - main) over the set (rule of 2026-11-17). Band excursions (head above every other
+# build in 3 or more of 5 runs) are tabulated, never failing. Open and memory: ruling 4 "not above main" read through
+# the same rule for open time (a timed cell) and directly in bytes for memory.
+# Update expectations (ruling 4, not slower than main by more than 2 %): per build, the median over the five runs of
+# each run's median of 3 trials, for first publish (wall), one-file update (wall) and planning (plan_ms of the
+# unchanged update, and of the other two), head against main; main2, cs and cm reported beside as noise.
+#
+# Each build opens its own copy of its index: idx.noindex/oc/<build>/<corpus> (head: a clone of the index head wrote;
+# every other build: a clone of the index main wrote). Gate before every process (tim/gate.sh: lock absent, 5-minute
+# load below 4.0, no toolchain at 20 % CPU or more). pmset -g log checked for Sleep/Wake/DarkWake inside each run's
+# window afterwards; a run with one is discarded whole and retaken as the same number with "b".
+# Phase q (six corpora) then phase u (timing-10k, prose-10k, tamil-10k, family) in each run. Rows below: run<N><phase>.
+# q: 8 builds, each run the base list rotated left by 0, 3, 6, 1, 4 (head in positions 2, 7, 4, 1, 6).
+run1q: main head main2 cq co cf cm cs
+run2q: cq co cf cm cs main head main2
+run3q: cm cs main head main2 cq co cf
+run4q: head main2 cq co cf cm cs main
+run5q: co cf cm cs main head main2 cq
+# u: 5 builds, the base list rotated left by 0, 2, 4, 1, 3.
+run1u: main head main2 cs cm
+run2u: main2 cs cm main head
+run3u: cm main head main2 cs
+run4u: head main2 cs cm main
+run5u: cs cm main head main2

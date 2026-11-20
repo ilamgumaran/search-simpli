@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/incremental_state.zig ARCHIVE/src/b-ref-label-count-tight/zig/src/incremental_state.zig
+--- ARCHIVE/none/zig/src/incremental_state.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/b-ref-label-count-tight/zig/src/incremental_state.zig	2026-11-19 12:34:51
+@@ -640,7 +640,7 @@
+             const record = file_records[at..][0..binary_ref_length];
+             at += binary_ref_length;
+             const label_count = read32(record, 24);
+-            if (label_count > labels.len - next_label) return error.InvalidState;
++            if (label_count >= labels.len - next_label) return error.InvalidState;
+             const root_id = try stringAt(strings, read32(record, 0));
+             if (flags & file_has_mtime == 0 and read64(record, 8) != 0) return error.InvalidState;
+             if (flags & file_has_chunker == 0 and read32(record, 20) != 0) return error.InvalidState;

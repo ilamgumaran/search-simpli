@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/apply.zig ARCHIVE/src/s-writer-v1-source/zig/src/apply.zig
+--- ARCHIVE/none/zig/src/apply.zig	2026-11-19 13:59:54
++++ ARCHIVE/src/s-writer-v1-source/zig/src/apply.zig	2026-11-19 14:19:28
+@@ -824,7 +824,7 @@
+             // S6-T9: a `HYBSTA03` section's references resolve against the
+             // source section just opened (walked after both checksums).
+             if (previous_state_section) |bytes| {
+-                const table: ?incremental_state.SourceTable = if (previous_source) |*s| (if (s.v2 != null) .{ .section = s } else null) else null;
++                const table: ?incremental_state.SourceTable = if (previous_source) |*s| (.{ .section = s }) else null;
+                 previous_state = try incremental_state.decodeSectionWith(allocator, bytes, table);
+             }
+             if (previous_state) |state| {

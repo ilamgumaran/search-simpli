@@ -1,0 +1,13 @@
+j2: state v2 -> v3, entries 88 / 88, referenced 88, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 87 / 87, differing 0
+c1 (changed, added, removed, renamed, from main): j2: state v2 -> v3, entries 88 / 88, referenced 88, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 87 / 87, differing 0
+family: state v2 -> v3, entries 46 / 46, referenced 46, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 45 / 45, differing 0
+c1 (changed, added, removed, renamed, from main): family: state v2 -> v3, entries 46 / 46, referenced 46, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 45 / 45, differing 0
+fixtures: state v2 -> v3, entries 232 / 232, referenced 232, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 228 / 228, differing 0
+c1 (changed, added, removed, renamed, from main): fixtures: state v2 -> v3, entries 232 / 232, referenced 232, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 228 / 228, differing 0
+timing-10k: state v2 -> v3, entries 10000 / 10000, referenced 10000, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 10000 / 10000, differing 0
+c1 (changed, added, removed, renamed, from main): timing-10k: state v2 -> v3, entries 10000 / 10000, referenced 10000, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 10000 / 10000, differing 0
+prose-10k: state v2 -> v3, entries 10000 / 10000, referenced 10000, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 10000 / 10000, differing 0
+c1 (changed, added, removed, renamed, from main): prose-10k: state v2 -> v3, entries 10000 / 10000, referenced 10000, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 10000 / 10000, differing 0
+tamil-10k: state v2 -> v3, entries 10000 / 10000, referenced 10000, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 10000 / 10000, differing 0
+c1 (changed, added, removed, renamed, from main): tamil-10k: state v2 -> v3, entries 10000 / 10000, referenced 10000, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 10000 / 10000, differing 0
+mixed (a pending file, unreferenced, after a further apply): j2-main-p: state v2 -> v3, entries 89 / 89, referenced 88, entries differing 0, roots/generation/analyzer equal True; catalog v3 -> v6, entries 87 / 87, differing 0

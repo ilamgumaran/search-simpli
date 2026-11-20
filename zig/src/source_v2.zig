@@ -86,6 +86,19 @@ pub fn parseRecord(records: []const u8, at: usize, chunks: u32) source.DecodeErr
     return parsed;
 }
 
+/// S6-T9: the SHA-256 and text length of the record at `at` (one the walk
+/// validated), without its recipe: what a `HYBSTA03` reference reads.
+pub const Head = struct { sha256: [32]u8, length: u64 };
+
+pub fn recordHead(records: []const u8, at: usize) source.DecodeError!Head {
+    var r = Records{ .bytes = records, .at = at };
+    var head: Head = undefined;
+    @memcpy(&head.sha256, try r.take(sha_bytes));
+    _ = try r.varint32();
+    head.length = try r.varint64(10);
+    return head;
+}
+
 /// The residual length of a rebuilt file: its recipe walked over its
 /// chunks' lengths (an overlap longer than the bytes emitted, or a
 /// position past the file's length, is `InvalidFileTable`).

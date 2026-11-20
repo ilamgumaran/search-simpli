@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.9.4 (S6-T9; contract 2.8.0; patch: index format, one way)
+
+Carries 0.9.3's fix. A smaller index: the incremental state names each
+file's record in the source section instead of repeating its path, size
+and SHA-256
+(`docs/state-section-format-v3.md`: `HYBSTA03`), and the file-name catalog
+no longer stores the stem and chunk id it can derive
+(`docs/filename-catalog-format-v6.md`: record v6); manifest v2.6, flag
+bits 8 and 9. No API change: the same calls, JSON fields, error codes and C
+ABI; contracts stay 2.8.0; every answer is the same.
+
+- **Smaller.** Measured on 10,000-file corpora, one generation: the state
+  section 62.9 % smaller on generated notes (970,159 → 360,159 B) and the
+  file-name catalog 37.2 % (780,036 → 490,036 B); the whole index 6.2 %
+  less on generated notes (14,612,980 → 13,712,980 B), 3.6 % on English
+  prose, 2.5 % on Tamil; 1.89, 1.79 and 1.25 times the text it holds.
+- **Speed** (the verifier's five gated runs against 0.9.2, macOS arm64):
+  opening an index no slower than 0.9.2 by the timing rule on any of the
+  six corpora measured; the first `searchField: filename` query after an
+  open 13.3 % to 33.1 % faster and the first `both` 1.5 % to 10.6 %
+  faster; the first publish from the previous format 2.5 % to 4.4 %
+  faster, one-file updates after it 2.8 % to 3.8 % faster, planning an
+  update −1.3 % to +1.1 %. Not met in that set: three warm `find` queries
+  on the generated-notes corpus, +11.9 to +34.5 µs (+4.3 % to +5.3 %)
+  against a noise threshold of 10.0 µs. A second five-run set measured the
+  same three at −1.8 to −6.0 µs, and none of its 25 `find` queries
+  failed; the maintainer accepted them.
+- **Migration, one way (the fourth, after 0.8.1's, 0.9.1's and 0.9.2's).**
+  This library opens every index an older one wrote and answers the same.
+  The first publish under it (an update, `applyChanges`, `indexFolder`)
+  rewrites the index in the new format, one whole generation. **After that
+  first publish, an older library (0.9.3 and earlier) cannot open the
+  index** (`open` throws `SearchSimpliException`, its message
+  `ss_open: UnsupportedFlags`; the index is left as it was) **and must
+  rebuild it from the files** into a fresh directory. **An index directory
+  is never shared between devices running different library versions.** To
+  be able to roll back, keep a copy of the index directory from before the
+  upgrade, or rebuild with the older library.
+- **Natives rebuilt** from the merged source (`native/SOURCE-SHA256`
+  `4bba15ab…`): macOS arm64 1,006,456 B, Android arm64 966,800 B, iOS arm64
+  framework binary 971,424 B.
+
 ## 0.9.3 (S6-T13; contract 2.8.0; patch: a fix)
 
 An open no longer fails when another process publishes while it reads

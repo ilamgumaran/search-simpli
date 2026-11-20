@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/incremental_state.zig ARCHIVE/src/s-ref-zero-chunker/zig/src/incremental_state.zig
+--- ARCHIVE/none/zig/src/incremental_state.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/s-ref-zero-chunker/zig/src/incremental_state.zig	2026-11-19 12:41:49
+@@ -643,7 +643,7 @@
+             if (label_count > labels.len - next_label) return error.InvalidState;
+             const root_id = try stringAt(strings, read32(record, 0));
+             if (flags & file_has_mtime == 0 and read64(record, 8) != 0) return error.InvalidState;
+-            if (flags & file_has_chunker == 0 and read32(record, 20) != 0) return error.InvalidState;
++            
+             if (flags & file_has_moved_from == 0 and read32(record, 32) != 0) return error.InvalidState;
+             const chunker: ?[]const u8 = if (flags & file_has_chunker != 0) try stringAt(strings, read32(record, 20)) else null;
+             const moved_from: ?[]const u8 = if (flags & file_has_moved_from != 0) try utf8Text(try reader.take(read32(record, 32))) else null;

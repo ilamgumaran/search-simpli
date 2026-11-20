@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-18 (S6-T8 merged as `7c088a3` on 18 Nov 2026 after its Sixth Verdict, PASS, and the maintainer's go-ahead; the prose-10k `both` cells, 5–7 % slower and explained by code placement, accepted by him: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-20 (S6-T9 merged on 20 Nov 2026 on the maintainer's go-ahead, squashed onto `main` after S6-T13: the state section refers to the source table (`HYBSTA03`) and the file-name catalog derives its stems and chunk ids (record v6), manifest v2.6, the fourth one-way format step; Dart 0.9.4, natives rebuilt. Before it: S6-T13 merged 20 Nov 2026 (an open reads `MANIFEST` through the handle it measured; `lifecycle.scan` returns a missing section's error; Dart 0.9.3). Before it: S6-T8 merged as `7c088a3` on 18 Nov 2026 after its Sixth Verdict, PASS, and the maintainer's go-ahead; the prose-10k `both` cells, 5–7 % slower and explained by code placement, accepted by him: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,47 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## State and catalog stop repeating (S6-T9, objective plan item D2 step 4, 2026-11-19; merged 20 Nov 2026)
+
+**Merged on 20 Nov 2026 on the maintainer's go-ahead, squashed onto `main` after S6-T13** (Verdict FAIL on the
+timing rule alone, F1, accepted by him; [task, Report, Verdict and the merge record](docs/tasks/S6-T9.md),
+[state format](docs/state-section-format-v3.md), [catalog format](docs/filename-catalog-format-v6.md),
+[manifest v2.6](docs/manifest-format-v2.md), [index size, Landed](docs/index-size.md#landed)). Every writer
+publishes the state section as `HYBSTA03`: a file whose bytes the new source section holds is a 36-byte record
+naming its source-table record (ordinal), its path, size and SHA-256 read from that record; others keep v2's
+76-byte record. The file-name catalog is record v6: v3's layout with the chunk id and the stem not stored, both
+derived from the body anchor and the path. Manifest v2.6 sets bits 8 and 9. Each validity rule refused on its own
+error. **Contracts 2.8.0, Dart 0.9.4** (0.9.3 is S6-T13's); no API, schema, C header or answer change.
+
+- **Size** (one generation, channel on): timing-10k 14,612,980 → 13,712,980 B (1.89 times its corpus), prose-10k
+  31,967,055 → 30,815,993 (1.79), Tamil-10k 35,533,368 → 34,633,368 (1.25), fixtures 1.71, family 1.92, J2
+  149,693 B; the state −610,000 B and the catalog −290,000 B at 10k timing, S6-T3's D and F figures to the byte.
+- **Same answers:** C ABI, CLI, JSON-RPC, MCP and `searchd search` byte-identical to `main` on J2, the fixtures,
+  the family fixture, the three 10k corpora and the boundary files, fresh, on `main`'s index and after one update;
+  after the migration an unchanged folder plans no work and changed, added, removed and moved files are planned as
+  `main` plans them.
+- **Speed** (the verifier's five gated runs): open below T on all six corpora; the first file-name query after an
+  open 13.3–33.1 % faster and the first `both` 1.5–10.6 % faster; the first publish from the old format 2.5–4.4 %
+  faster and one-file updates after it 2.8–3.8 % faster; planning −1.3 % to +1.1 %. Missed in that set (F1): three
+  warm `find` cells on timing-10k, `prefix bada*` +34.5 µs, `words Database` +14.3, `words Distributed` +11.9
+  (T 10.0); the verifier's second five-run set has them at −6.0, −1.8 and −3.8 µs and all 25 `find` cells pass.
+  Accepted by the maintainer, as was F2: a damaged file-name catalog is refused by readers and rebuilt at the next
+  publish, as on `main`. Timing was not re-measured after the squash (S6-T13 adds +0.005 ms or less to an open
+  and does not touch `find`).
+- **One way (the fourth, after S6-T4, S6-T7 and S6-T8):** the new library opens indexes written by `main` at
+  `a019f22`, before S6-T8, before S6-T7 and before S6-T4, and answers the same; its first publish writes one whole
+  v2.6 generation equal to a fresh index. An older library refuses the new index with `UnsupportedFlags` through
+  `ss_open`, `ss_index_folder`, `ss_apply_changes`, the CLI and Dart 0.9.2, and leaves it byte-identical.
+- **Natives** (rebuilt from the merged source): macOS 1,006,456 B (S6-T13's `main`: 990,120), Android 966,800 B
+  (959,744), iOS framework binary 971,424 B (971,032); `native/SOURCE-SHA256` `4bba15ab…`; `searchd`
+  `ReleaseSmall` 1,151,208 B (1,133,832). **For the consumer app:** a second pin, Dart 0.9.4, for the fourth one-way
+  step (03-next pin row, all four one-way notes).
+- **The squash** (20 Nov): indexes written by the merged `searchd` are byte-identical to `1ec2f56`'s (the verified
+  head) on the three 10k corpora, the fixtures, the family fixture and J2; every J2 answer surface is identical; an
+  index written by `main` at `f335d07` is migrated exactly as `1ec2f56` migrated one written by `a019f22`. The
+  writer's previous-state read of `MANIFEST` (`incremental_state.resolvePointer`, `loadBound`) now goes through
+  S6-T13's `snapshot_open.readManifest`. Next in the plan: B2 (the file move) is unblocked.
 
 ## Highlight offsets at one byte per token (S6-T8, objective plan item D2 step 3, 2026-11-17; merged 18 Nov 2026)
 

@@ -12,6 +12,11 @@ pub const version: u16 = 4;
 pub const version_v5: u16 = segment_v5.version;
 pub const legacy_version: u16 = 3;
 pub const minimum_supported_version: u16 = 1;
+/// S6-T9: the file-name catalog's record v6 (`docs/filename-catalog-format-v6.md`):
+/// record v3's layout with the id and text lengths zero (both derived by the
+/// reader). A catalog version only: `inspect` (documents) refuses it,
+/// `inspectCatalog` accepts it.
+pub const version_catalog_v6: u16 = 6;
 const v3_fixed_length: usize = 28;
 const v4_fixed_length: usize = 44;
 pub const header_length: usize = 36;
@@ -47,6 +52,9 @@ pub const DecodeError = error{
     InvalidFileTable,
     UnsortedPaths,
     InvalidRecord,
+    /// S6-T9, catalog record v6: rules C1 and C2.
+    FilenameCatalogIdPresent,
+    FilenameCatalogTextPresent,
 };
 
 pub const Header = struct {
@@ -98,7 +106,7 @@ fn measure(documents: []const hybrid.Document, record_version: u16) EncodeError!
         try validateFieldLength(document.vector.len);
         try validateFieldLength(document.required_labels.len);
         try validateRequiredLabels(document.required_labels);
-        if (record_version >= 4) {
+        if (record_version == version) {
             try validateFieldLength(document.section_path.len);
             validateSection(document.section_depth, document.heading_line, document.start_line, document.section_path) catch
                 return error.InvalidSection;
@@ -108,9 +116,12 @@ fn measure(documents: []const hybrid.Document, record_version: u16) EncodeError!
             if (hasV4Fields(document)) return error.RequiresVersion4;
             length = try checkedAdd(length, v3_fixed_length);
         }
-        length = try checkedAdd(length, document.id.len);
+        // S6-T9: record v6 stores neither id nor text.
+        if (record_version != version_catalog_v6) {
+            length = try checkedAdd(length, document.id.len);
+            length = try checkedAdd(length, document.text.len);
+        }
         length = try checkedAdd(length, document.path.len);
-        length = try checkedAdd(length, document.text.len);
         length = try checkedAdd(length, document.required_labels.len);
         length = try checkedAdd(length, try checkedMultiply(document.vector.len, @sizeOf(f32)));
     }
@@ -126,6 +137,14 @@ pub fn encode(documents: []const hybrid.Document, output: []u8) EncodeError![]u8
 /// path, heading line, source document index).
 pub fn encodeV4(documents: []const hybrid.Document, output: []u8) EncodeError![]u8 {
     return encodeVersion(documents, output, version);
+}
+
+/// S6-T9: a file-name catalog as record v6 (`filename_field.group`'s
+/// entries; their ids and texts are not stored), XXH3-64, in an exact
+/// buffer from `allocator`.
+pub fn encodeCatalogV6(allocator: std.mem.Allocator, documents: []const hybrid.Document) (EncodeError || std.mem.Allocator.Error)![]u8 {
+    const measured = try measure(documents, version_catalog_v6);
+    return writeVersion(documents, try allocator.alloc(u8, measured.length), version_catalog_v6, measured);
 }
 
 /// S4-T16 ruling 4(a): one validation walk sizes an exact buffer and the
@@ -166,31 +185,34 @@ fn writeVersion(documents: []const hybrid.Document, output: []u8, record_version
     std.debug.assert(header_offset == header_length);
 
     var payload_offset = header_length;
+    const derived = record_version == version_catalog_v6;
     for (documents) |document| {
-        writeU32(output, &payload_offset, @intCast(document.id.len));
+        const id: []const u8 = if (derived) "" else document.id;
+        const text: []const u8 = if (derived) "" else document.text;
+        writeU32(output, &payload_offset, @intCast(id.len));
         writeU32(output, &payload_offset, @intCast(document.path.len));
-        writeU32(output, &payload_offset, @intCast(document.text.len));
+        writeU32(output, &payload_offset, @intCast(text.len));
         writeU32(output, &payload_offset, @intCast(document.vector.len));
         writeU32(output, &payload_offset, document.start_line);
         writeU32(output, &payload_offset, document.end_line);
         writeU32(output, &payload_offset, @intCast(document.required_labels.len));
-        if (record_version >= 4) {
+        if (record_version == version) {
             writeU16(output, &payload_offset, document.chunker_index);
             writeU16(output, &payload_offset, document.section_depth);
             writeU32(output, &payload_offset, document.heading_line);
             writeU32(output, &payload_offset, document.source_doc_index);
             writeU32(output, &payload_offset, @intCast(document.section_path.len));
         }
-        @memcpy(output[payload_offset .. payload_offset + document.id.len], document.id);
-        payload_offset += document.id.len;
+        @memcpy(output[payload_offset .. payload_offset + id.len], id);
+        payload_offset += id.len;
         @memcpy(output[payload_offset .. payload_offset + document.path.len], document.path);
         payload_offset += document.path.len;
-        @memcpy(output[payload_offset .. payload_offset + document.text.len], document.text);
-        payload_offset += document.text.len;
+        @memcpy(output[payload_offset .. payload_offset + text.len], text);
+        payload_offset += text.len;
         @memcpy(output[payload_offset .. payload_offset + document.required_labels.len], document.required_labels);
         payload_offset += document.required_labels.len;
         for (document.vector) |value| writeU32(output, &payload_offset, @bitCast(value));
-        if (record_version >= 4) {
+        if (record_version == version) {
             @memcpy(output[payload_offset .. payload_offset + document.section_path.len], document.section_path);
             payload_offset += document.section_path.len;
         }
@@ -210,6 +232,26 @@ pub fn inspect(encoded: []const u8) DecodeError!Header {
     const actual_version = try cursor.readU16();
     if (actual_version == version_v5) return segment_v5.parseHeader(encoded);
     if (actual_version < minimum_supported_version or actual_version > version) return error.UnsupportedVersion;
+    return inspectFixed(encoded, actual_version);
+}
+
+/// S6-T9: `inspect` for a file-name catalog: record v1 to v4 and the
+/// catalog's record v6; record v5 (a documents version) is
+/// `UnsupportedVersion`.
+pub fn inspectCatalog(encoded: []const u8) DecodeError!Header {
+    var cursor = Cursor{ .bytes = encoded };
+    const actual_magic = try cursor.take(magic.len);
+    if (!std.mem.eql(u8, actual_magic, magic)) return error.BadMagic;
+    const actual_version = try cursor.readU16();
+    if (actual_version == version_catalog_v6) return inspectFixed(encoded, actual_version);
+    if (actual_version < minimum_supported_version or actual_version > version) return error.UnsupportedVersion;
+    return inspectFixed(encoded, actual_version);
+}
+
+/// The 36-byte header of records v1 to v4 and v6, after its magic and
+/// version (`actual_version`, accepted by the caller).
+fn inspectFixed(encoded: []const u8, actual_version: u16) DecodeError!Header {
+    var cursor = Cursor{ .bytes = encoded, .offset = magic.len + 2 };
     // Flags: bit 0 (S4-T1) selects XXH3-64; before S4-T1 the field was
     // written zero and not read, and any other bit is refused.
     const flags = try cursor.readU16();
@@ -278,7 +320,13 @@ pub fn decodeInspected(
         var heading_line: u32 = 0;
         var source_doc_index: u32 = hybrid.no_source_doc;
         var section_path_length: usize = 0;
-        if (header.format_version >= 4) {
+        // S6-T9: record v6 (a catalog) has v3's fields, its id and text
+        // lengths zero (C1, C2).
+        if (header.format_version == version_catalog_v6) {
+            if (id_length != 0) return error.FilenameCatalogIdPresent;
+            if (text_length != 0) return error.FilenameCatalogTextPresent;
+        }
+        if (header.format_version == version) {
             chunker_index = try cursor.readU16();
             section_depth = try cursor.readU16();
             heading_line = try cursor.readU32();

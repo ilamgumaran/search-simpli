@@ -1,0 +1,34 @@
+set 1 runs 1,2,3,4,5; set 2 runs 1,2,3,4,5; 25 timing-10k find cells
+cell | set1 head-main, T, top ctl, rule | set2 head-main, T, top ctl, rule | pooled(10) head-main, T, top, rule | set2 placed, main2 alone
+find phrase bahuki begeno bakucu   | +0.0 T 10.0 top +0.1 cq pass | -0.0 T 10.0 top +0.0 cf pass | -0.0 T 10.0 top +0.1 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find phrase barigo bejoju becoco   | +0.0 T 10.0 top +0.1 cq pass | -0.0 T 10.0 top +0.0 cq pass | -0.0 T 10.0 top +0.0 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find phrase with befewho with      | +2.5 T 10.0 top +4.8 cs pass | +0.1 T 10.0 top +8.8 cs pass | +1.0 T 10.0 top +7.0 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find prefix bada*                  | +34.5 T 10.0 top +10.0 cq FAIL | -6.0 T 10.0 top +6.0 co pass | -4.3 T 10.0 top +5.5 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find prefix belo*                  | -3.8 T 10.0 top +9.6 cq pass | -5.3 T 10.0 top +4.7 co pass | -4.3 T 10.0 top +5.8 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words Compilers               | +10.8 T 10.0 top +2.5 cq pass | -2.5 T 10.0 top -0.8 cm pass | -1.8 T 10.0 top +0.8 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words Database                | +14.3 T 10.0 top +1.4 cq FAIL | -1.8 T 10.0 top +1.0 cq pass | -0.5 T 10.0 top +1.1 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words Distributed             | +11.9 T 10.0 top +1.4 main2 FAIL | -3.8 T 10.0 top +2.2 cq pass | -3.2 T 10.0 top +1.5 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words Garbage                 | -1.3 T 10.0 top +2.0 main2 pass | -1.5 T 10.0 top +2.4 cq pass | -1.4 T 10.0 top +1.7 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words Hash                    | -2.5 T 10.0 top +6.4 cq pass | -2.4 T 10.0 top +0.8 main2 pass | -2.5 T 10.0 top +0.5 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words Hybrid                  | +0.5 T 10.0 top +0.1 cq pass | -1.0 T 10.0 top +1.8 main2 pass | -0.4 T 10.0 top +1.1 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words Operating               | +9.5 T 10.0 top +0.7 cq pass | -2.7 T 10.0 top +1.4 main2 pass | +0.5 T 10.0 top +0.7 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words Type                    | +5.1 T 10.0 top +3.2 cq pass | -2.8 T 10.0 top +0.9 main2 pass | +0.1 T 10.0 top +1.1 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words badamo                  | -0.0 T 10.0 top +0.2 cq pass | -0.1 T 10.0 top +0.2 main2 pass | -0.1 T 10.0 top +0.2 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words betecha                 | +1.0 T 10.0 top +0.2 cq pass | -0.1 T 10.0 top +0.0 main2 pass | -0.0 T 10.0 top +0.1 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words beteche                 | +0.9 T 10.0 top +0.1 co pass | -0.1 T 10.0 top +0.1 main2 pass | +0.1 T 10.0 top +0.1 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words betechi                 | +0.1 T 10.0 top +0.3 cq pass | -0.0 T 10.0 top +0.0 cq pass | +0.1 T 10.0 top +0.1 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words betesha                 | +0.2 T 10.0 top +0.2 cq pass | -0.1 T 10.0 top +0.2 cq pass | -0.0 T 10.0 top +0.2 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words beteshe                 | +1.1 T 10.0 top +0.2 cq pass | +0.1 T 10.0 top +0.2 cq pass | +0.1 T 10.0 top +0.2 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words beteshi                 | +0.2 T 10.0 top +0.2 cq pass | -0.1 T 10.0 top +0.2 cq pass | -0.1 T 10.0 top +0.2 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words betesho                 | +0.2 T 10.0 top +0.3 main2 pass | -0.1 T 10.0 top +0.3 cq pass | -0.0 T 10.0 top +0.2 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words beteshu                 | +0.0 T 10.0 top +0.2 cq pass | -0.1 T 10.0 top +0.3 cq pass | +0.0 T 10.0 top +0.2 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words doc 00000               | +0.0 T 10.0 top +0.0 cq pass | +0.0 T 10.0 top +0.0 main2 pass | +0.0 T 10.0 top +0.0 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words from                    | -34.9 T 30.0 top -8.5 main2 pass | -53.6 T 29.5 top +14.6 main2 pass | -44.2 T 29.6 top +5.9 pass | placed pass main2 pass (pooled placed pass main2 pass)
+find words from badamo             | +3.8 T 10.0 top +5.9 cs pass | +2.1 T 10.0 top +6.0 cs pass | +2.3 T 10.0 top +6.0 pass | placed pass main2 pass (pooled placed pass main2 pass)
+
+rule set fails: set 1 3 ['find prefix bada*', 'find words Database', 'find words Distributed']
+                set 2 0 []
+                pooled 0 []
+set 2 placed-alone fails: []
+set 2 main2-alone fails: []
+answer hashes: 25 cells, 0 with more than one answer over both sets, every build and run

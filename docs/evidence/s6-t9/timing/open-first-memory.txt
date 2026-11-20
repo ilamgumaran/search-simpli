@@ -1,0 +1,41 @@
+# S6-T9 builder runs 1 and 2 (19 Nov 2026, 11:15-11:25: queries 11:15:34-11:21, updates 11:21:33-11:25; pmset shows no sleep or wake between 10:25 and 11:59): open, the first content,
+# find, file-name and both query after an open (scripts/prototypes/s6t9/summarize_first.py), and memory after open (s6t8/summarize_open.py).
+# Each library opened its own copy of the index (main, main2 and the controls copies of main's, head of the index it wrote).
+j2          open            main     144.5 us  d    +24.1 us (+16.7 %)  T  10.0  largest control    +32.4 us  AT T
+j2          first query     main     414.7 us  d    +38.7 us (+9.3 %)  T  10.0  largest control    +58.2 us  AT T
+j2          first find      main      58.7 us  d     +7.7 us (+13.1 %)  T  10.0  largest control     +8.0 us  
+j2          first filename  main      37.9 us  d     -3.3 us (-8.7 %)  T  10.0  largest control     +5.5 us  
+j2          first both      main     470.1 us  d    +37.2 us (+7.9 %)  T  10.0  largest control    +62.3 us  AT T
+family      open            main    1032.3 us  d     -2.8 us (-0.3 %)  T  10.3  largest control     +4.8 us  
+family      first query     main     410.0 us  d     +7.4 us (+1.8 %)  T  10.0  largest control    +16.4 us  
+family      first find      main    1890.3 us  d    -33.5 us (-1.8 %)  T  18.9  largest control    +53.0 us  
+family      first filename  main      23.5 us  d     -3.3 us (-13.9 %)  T  10.0  largest control     -0.4 us  
+family      first both      main     489.5 us  d     +5.5 us (+1.1 %)  T  10.0  largest control     +7.5 us  
+fixtures    open            main    2927.1 us  d    -39.1 us (-1.3 %)  T  29.3  largest control     +4.9 us  
+fixtures    first query     main    7573.3 us  d   -294.9 us (-3.9 %)  T  75.7  largest control    +25.7 us  
+fixtures    first find      main    6403.9 us  d   -314.2 us (-4.9 %)  T  64.0  largest control    -88.5 us  
+fixtures    first filename  main      91.3 us  d    -18.1 us (-19.8 %)  T  10.0  largest control     +1.8 us  
+fixtures    first both      main    7545.7 us  d   -110.8 us (-1.5 %)  T  75.5  largest control   +290.0 us  
+timing-10k  open            main    5279.3 us  d    +67.1 us (+1.3 %)  T  52.8  largest control    +73.8 us  AT T
+timing-10k  first query     main    4191.5 us  d     +6.9 us (+0.2 %)  T  41.9  largest control   +159.2 us  
+timing-10k  first find      main    8864.3 us  d   -144.7 us (-1.6 %)  T  88.6  largest control   +583.9 us  
+timing-10k  first filename  main    1869.4 us  d   -610.9 us (-32.7 %)  T  18.7  largest control    +61.5 us  
+timing-10k  first both      main    6128.7 us  d   -646.6 us (-10.6 %)  T  61.3  largest control   +247.1 us  
+prose-10k   open            main   11312.1 us  d   +119.7 us (+1.1 %)  T 113.1  largest control   +409.5 us  AT T
+prose-10k   first query     main    4624.3 us  d    +13.3 us (+0.3 %)  T  46.2  largest control   +104.7 us  
+prose-10k   first find      main   32939.6 us  d    +21.6 us (+0.1 %)  T 329.4  largest control   +192.2 us  
+prose-10k   first filename  main    2840.9 us  d   -769.2 us (-27.1 %)  T  28.4  largest control     -3.0 us  
+prose-10k   first both      main    7351.5 us  d   -770.7 us (-10.5 %)  T  73.5  largest control    +38.7 us  
+tamil-10k   open            main    7753.6 us  d   +194.6 us (+2.5 %)  T  77.5  largest control    +37.3 us  BEYOND
+tamil-10k   first query     main   12911.3 us  d   +294.1 us (+2.3 %)  T 129.1  largest control    +96.6 us  BEYOND
+tamil-10k   first find      main    8882.2 us  d    -49.6 us (-0.6 %)  T  88.8  largest control   +169.1 us  
+tamil-10k   first filename  main    1877.2 us  d   -566.5 us (-30.2 %)  T  18.8  largest control    +37.5 us  
+tamil-10k   first both      main   14707.7 us  d   -322.3 us (-2.2 %)  T 147.1  largest control   +100.7 us  
+cells at T: 7; beyond the controls by T: 2
+
+j2          open main 0.146 0.143 ms, head 0.186 0.151 ms; median d +24.1 us (+16.7 %), largest control +32.4 us; memory after open main 131,072 / 131,072 B, head 114,688 / 114,688 B
+family      open main 1.024 1.040 ms, head 1.022 1.037 ms; median d -2.8 us (-0.3 %), largest control +4.8 us; memory after open main 4,734,976 / 4,734,976 B, head 4,734,976 / 4,734,976 B
+fixtures    open main 2.822 3.033 ms, head 2.885 2.891 ms; median d -39.1 us (-1.3 %), largest control +4.9 us; memory after open main 14,434,304 / 14,434,304 B, head 14,434,304 / 14,450,688 B
+timing-10k  open main 5.267 5.292 ms, head 5.320 5.373 ms; median d +67.1 us (+1.3 %), largest control +73.8 us; memory after open main 24,494,080 / 24,494,080 B, head 24,494,080 / 24,494,080 B
+prose-10k   open main 11.230 11.394 ms, head 11.404 11.460 ms; median d +119.7 us (+1.1 %), largest control +409.5 us; memory after open main 49,840,152 / 49,840,152 B, head 49,840,152 / 49,840,152 B
+tamil-10k   open main 7.728 7.779 ms, head 7.755 8.141 ms; median d +194.6 us (+2.5 %), largest control +37.3 us; memory after open main 45,727,768 / 45,727,768 B, head 45,727,768 / 45,727,768 B
