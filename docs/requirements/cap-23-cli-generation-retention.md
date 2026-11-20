@@ -121,9 +121,11 @@ the highest in use. So this record takes **CAP-23**, **FR-32**, **FR-33**,
      `FileNotFound` (`searchd query` exits 1) and a retry reads the new
      `MANIFEST`. Through the command line this cannot happen today, because
      nothing is deleted; it is the one new failure a reader can see (CFT-29).
-   - *Windows*: deleting an open file fails; that is counted in
-     `prune_failures`, the file stays, the publish succeeds and the next
-     publish retries (`docs/generation-lifecycle.md`).
+   - *Windows*: not tested, and no CI job builds or runs there, so whether
+     deleting a section file a reader holds open fails is not shown. A
+     deletion that does fail is counted in `prune_failures`, the file stays,
+     the publish succeeds and the next publish retries
+     (`docs/generation-lifecycle.md`).
 
 ## 4. Non-functional impact
 
