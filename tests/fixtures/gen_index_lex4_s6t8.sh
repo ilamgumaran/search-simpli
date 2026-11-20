@@ -4,7 +4,7 @@
 # --filename-index` by this checkout's engine (manifest v2.5: the content
 # lexical section `HYBLEX04`, section 5 at one byte per token; the file-name
 # lexical section `HYBLEX03`; documents record v5, source `HYBSRC02`).
-# `zig/src/compat_s6t8_test.zig` checks that the writer still gives these
+# `zig/src/tests/compat_s6t8_test.zig` checks that the writer still gives these
 # bytes and that a library before v2.5 refuses them at the manifest's flags.
 #
 # Usage, from anywhere inside the repository, with zig 0.16.0 on PATH:

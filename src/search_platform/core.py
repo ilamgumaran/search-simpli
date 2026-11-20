@@ -272,7 +272,7 @@ def _chunk_id(path: str, start_line: int, end_line: int, text: str) -> str:
 # ------------------------------------------------------------ md-section-v1 ---
 # S3-T1 (CAP-19 FR-18): Markdown files (`.md`, `.markdown`, case-insensitive)
 # are chunked by sections; every other file keeps `line-window-v1` above.
-# `zig/src/chunker_md.zig` is the native port; `fixtures/chunk-golden-md.json`
+# `zig/src/core/chunker_md.zig` is the native port; `fixtures/chunk-golden-md.json`
 # (scripts/gen_chunk_golden_md.py) pins both. Format:
 # docs/folder-knowledge-implementation.md section 2 and docs/segment-format-v4.md.
 
@@ -1106,7 +1106,7 @@ def _ranks(scores: dict[str, float], *, positive_only: bool = False) -> dict[str
 # tokenized with analyzer-v2 (`_filename_tokenize`), one document per file, BM25
 # over the visible files times coverage (the share of the query's distinct
 # analyzer-v2 terms the field holds), times TITLE_WEIGHT. The Zig engine derives
-# the same field from the documents section's record paths (zig/src/title_field.zig).
+# the same field from the documents section's record paths (zig/src/core/title_field.zig).
 
 TITLE_POLICY_ID = "title-field-v1"
 TITLE_WEIGHT = 2.5
@@ -1184,7 +1184,7 @@ def _title_scores(visible_chunks: list[dict], query: str, root_ids: tuple[str, .
 # code points) or 2 (6 or more), on code points; ordered by (distance, key df
 # descending, UTF-8 bytes), key df the in-scope body df or 1 for a title-only term;
 # the first FUZZY_MAX_EXPANSIONS kept, weighted by FUZZY_WEIGHTS. The Zig engine
-# implements the same rule (zig/src/fuzzy.zig).
+# implements the same rule (zig/src/core/fuzzy.zig).
 
 FUZZY_POLICY_ID = "fuzzy-v1"
 FUZZY_MIN_CODE_POINTS = 5

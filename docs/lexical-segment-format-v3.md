@@ -1,6 +1,6 @@
 # Immutable lexical segment format v3 (`HYBLEX03`)
 
-Status: **implemented** in `zig/src/lexical_segment.zig` (S6-T4, 16 Nov
+Status: **implemented** in `zig/src/core/lexical_segment.zig` (S6-T4, 16 Nov
 2026; designed and measured in its Phase 1, built in Phase 2 after the
 orchestrator's ruling). Every folder writer (`searchd index`, `searchd
 apply`, `searchd search`'s in-memory build, `ss_index_folder`,
@@ -195,7 +195,7 @@ read and names it.
   byte: `HYBLEX01` under its v1 manifest, and with the file-name channel both
   lexical sections `HYBLEX01` under a v2 manifest without bit 5
   (`filename_field.buildV1`; `tests/fixtures/import-filename-98c4a2b/` is
-  98c4a2b's output, and `zig/src/compat_98c4a2b_test.zig` checks the bytes).
+  98c4a2b's output, and `zig/src/tests/compat_98c4a2b_test.zig` checks the bytes).
 - Every reader reads `HYBLEX01`, `HYBLEX02` and `HYBLEX03`. A writer caps a
   common prefix of more than 255 bytes at 255 (the suffix carries the rest;
   no term is shortened or refused). An update whose

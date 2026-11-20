@@ -247,7 +247,7 @@ into every shared library and executable it builds. In `ReleaseSmall`, that
 `compiler_rt`'s `memcpy`, `memmove` and `memset` are byte-at-a-time loops,
 and they were the library's on every target up to 0.3.11. The build now adds
 one more object to every library, `searchd` and the test binaries:
-`zig/src/fastmem.zig`, compiled with `-fno-builtin` so its loops cannot
+`zig/src/core/fastmem.zig`, compiled with `-fno-builtin` so its loops cannot
 become calls to `memcpy`. A `ReleaseSmall` build compiles this one object
 `ReleaseFast`, stripped as `ReleaseSmall` would strip it: `ReleaseSmall`'s
 machine outliner gave `memcpy` a stack frame and turned its short-length
@@ -332,7 +332,7 @@ example called `importSnapshotJson` (`ss_import_json`) directly on the
 device and failed with `ss_import_json: AccessDenied` on a fresh API 34
 (Android 14) emulator. The cause is in Zig 0.16's standard library, not this binding:
 `Dir.createFileAtomic` (used by the engine's atomic-publication path,
-`zig/src/publication.zig`) opens an `O_TMPFILE` descriptor before renaming
+`zig/src/core/publication.zig`) opens an `O_TMPFILE` descriptor before renaming
 it into place on Linux targets, and this device's SELinux policy denies
 `O_TMPFILE` inside an app's private `files/` directory — confirmed by
 reading `lib/std/Io/Threaded.zig`'s `dirCreateFileAtomic`, which turns that

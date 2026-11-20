@@ -2,8 +2,8 @@
 """Generate the `md-section-v1` golden conformance fixture (S3-T1 ruling 2).
 
 Calls the Python reference (`search_platform.core._md_section_chunks`,
-`markdown_outline`, `_chunk_id`) directly. `zig/src/chunker_md_test.zig` reads
-the JSON and asserts the Zig port in `zig/src/chunker_md.zig` produces the same
+`markdown_outline`, `_chunk_id`) directly. `zig/src/core/chunker_md_test.zig` reads
+the JSON and asserts the Zig port in `zig/src/core/chunker_md.zig` produces the same
 chunk ids, line ranges, text, section paths, heading lines and outlines on
 every listed file. Every file is chunked with md-section-v1 whatever its
 extension: the golden pins the chunker, not the extension dispatch.

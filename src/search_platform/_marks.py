@@ -2,7 +2,7 @@
 
 Produced by scripts/gen_unicode_tables.py --python-marks using Python 3.9.6's
 `unicodedata` (Unicode 13.0.0): the 293 ranges of General_Category Mn and Mc,
-the same table the Zig analyzer uses (`mark_ranges` in zig/src/unicode_tables.zig).
+the same table the Zig analyzer uses (`mark_ranges` in zig/src/core/unicode_tables.zig).
 Regenerate: python3 scripts/gen_unicode_tables.py --python-marks > src/search_platform/_marks.py
 """
 

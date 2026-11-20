@@ -190,13 +190,13 @@ until promoted.
 | NFR-06 | Optional neural imports are lazy and fail with concise errors | CAP-03 | Implemented |
 | NFR-07 | Every material change backed by tests or a recorded experiment | all | Standing |
 | NFR-08 | Docs distinguish implementation, observation, hypothesis, future option | all | Standing |
-| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free | CAP-13 | Diagnostic · implemented (S3-T6: `zig/src/mcp.zig`, Zig only; [task](../tasks/S3-T6.md)) |
+| NFR-09 | Optional interface adapters (MCP/HTTP) are isolated so the base local mode stays dependency-free | CAP-13 | Diagnostic · implemented (S3-T6: `zig/src/interfaces/mcp.zig`, Zig only; [task](../tasks/S3-T6.md)) |
 
 | NFR-10 | Phrase/words latency and generation-bound paging | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
 | NFR-11 | Positional segment size budget | CAP-19 | Diagnostic · implemented (S3-T2: [task](../tasks/S3-T2.md)) |
 | NFR-12 | Full/incremental indexing time and memory budgets (one-changed-file bound in ReleaseSmall since S4-T1) | CAP-19 | Diagnostic · implemented (S3-T3: [task](../tasks/S3-T3.md); S4-T1: [task](../tasks/S4-T1.md)) |
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | CAP-19 | Diagnostic · implemented (S4-T1: [task](../tasks/S4-T1.md)) |
-| NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic · implemented (S3-T6: `zig/src/mcp.zig` Zig only, `tests/mcp_client.py` standard library; [task](../tasks/S3-T6.md)) |
+| NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic · implemented (S3-T6: `zig/src/interfaces/mcp.zig` Zig only, `tests/mcp_client.py` standard library; [task](../tasks/S3-T6.md)) |
 | NFR-15 | Direct search creates no file or directory anywhere; its cost against the index path is measured, not assumed | CAP-20 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md)) |
 | NFR-16 | Vectors in their own versioned section, loaded only by vector queries; lexical answers and memory unchanged; vector costs measured before promotion | CAP-21 | Proposed (S6-T6) |
 | NFR-17 | With the command line's defaults at most two complete generations after a publish; deletion confined to the engine's own superseded section files in the index directory | CAP-23 | Proposed (S6-T11) |

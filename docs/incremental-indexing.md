@@ -3,7 +3,7 @@
 Status (rewritten for S1-T4, `docs/tasks/S1-T4.md` criterion 4): the shipped,
 tested incremental path is native — `searchd index --update` and
 `ss_index_folder(..., "update": true)`, implemented in
-`zig/src/indexer.zig`'s `indexFolderIncremental` (S1-T3,
+`zig/src/core/indexer.zig`'s `indexFolderIncremental` (S1-T3,
 `docs/tasks/S1-T3.md`). It reuses lexical work (tokenized chunks), not
 embeddings: this path is lexical-only (`embedding_model_id: "none"`), same as
 `searchd index`'s full rebuild. A separate, older Python-side incremental
@@ -292,7 +292,7 @@ incremental build from it is refused with "chunker contract does not match"
 ### Roots, host-fed changes and INDEX-STATE v2 (S3-T3)
 
 Since S3-T3 every generation is written by one core function,
-`apply.applyChanges` / `apply.applyBatch` (`zig/src/apply.zig`;
+`apply.applyChanges` / `apply.applyBatch` (`zig/src/core/apply.zig`;
 [implementation §5–§6](folder-knowledge-implementation.md)). A request names
 roots (`root_id`, `label`, `kind` local/icloud/host, `required_labels`,
 `retain_source`, and for a `local` root the absolute `path` its `file`

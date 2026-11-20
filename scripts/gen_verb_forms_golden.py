@@ -14,7 +14,7 @@ R does not apply) is hashed into `digest.sha256`; `digest` also counts the terms
 those R applies to, the forms (R's exact lookups) and the eligible forms. The terms of
 J2, the family folder and R's traps are also listed in full: `listed` holds each one R
 applies to with its bases, forms and eligible forms,
-`off` each one it does not. `zig/src/verb_forms_test.zig` computes R on every term
+`off` each one it does not. `zig/src/core/verb_forms_test.zig` computes R on every term
 (K's golden's and the traps) and must equal both, byte for byte. Regenerate K's
 golden first when it is stale.
 

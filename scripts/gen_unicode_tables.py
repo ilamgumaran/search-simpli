@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate zig/src/unicode_tables.zig from Python's built-in Unicode
+"""Generate zig/src/core/unicode_tables.zig from Python's built-in Unicode
 character database (`unicodedata`), for `analyzer-v2` (S1-T1).
 
 Zig 0.16.0's `std.unicode` (checked directly against the pinned toolchain's
@@ -29,7 +29,7 @@ Three tables are produced:
    input. Multi-codepoint casefold expansions (e.g. German sharp s, a
    handful of ligatures) are intentionally out of scope for this simple
    per-codepoint fold; see the analyzer-v2 doc comment in
-   `zig/src/analyzer_v2.zig` for the documented limitation.
+   `zig/src/core/analyzer_v2.zig` for the documented limitation.
 3. NFC support: `decomposition_pairs` (codepoint -> canonical 2-codepoint
    decomposition, two codepoints or a singleton (stored with b = 0; S1-T15),
    compatibility decompositions with a <tag> excluded),
@@ -43,7 +43,7 @@ Three tables are produced:
    "composition exclusion" set without needing to vendor that list
    separately. Hangul syllable decomposition/composition is algorithmic in
    the Unicode Standard (not data-table driven) and is left out of these
-   generated tables; `zig/src/nfc.zig` implements it (S1-T15).
+   generated tables; `zig/src/core/nfc.zig` implements it (S1-T15).
 
 4. The fold table (S5-T4, `fold-groups-v1`, docs/tasks/S5-T4.md ruling 2): for
    every code point c (surrogates excepted) whose fold differs from c, the fold
@@ -54,7 +54,7 @@ Three tables are produced:
    states: the code points that change, those not already handled by NFC and a
    simple lowercase map, their UTF-8 bytes, the multi-code-point outputs and the
    longest.
-   In `zig/src/unicode_tables.zig` (for `zig/src/fold.zig`) the table holds only
+   In `zig/src/core/unicode_tables.zig` (for `zig/src/core/fold.zig`) the table holds only
    the code points where the fold differs from what the engine already does:
    NFC of analyzer-v2's simple fold of c (`casefold_pairs`, c itself when
    `str.casefold()` expands). Every other code point folds through that path, and
@@ -63,7 +63,7 @@ Three tables are produced:
    points, an index into the distinct outputs, the outputs' offsets, and their
    UTF-8 bytes in one pool.
 
-Run: `python3 scripts/gen_unicode_tables.py > zig/src/unicode_tables.zig`
+Run: `python3 scripts/gen_unicode_tables.py > zig/src/core/unicode_tables.zig`
 No third-party dependencies; stdlib `unicodedata` only.
 """
 import sys
@@ -182,7 +182,7 @@ def main_python_marks():
            "",
            f"Produced by scripts/gen_unicode_tables.py --python-marks using Python {sys.version.split()[0]}'s",
            f"`unicodedata` (Unicode {unicodedata.unidata_version}): the {len(ranges)} ranges of General_Category Mn and Mc,",
-           "the same table the Zig analyzer uses (`mark_ranges` in zig/src/unicode_tables.zig).",
+           "the same table the Zig analyzer uses (`mark_ranges` in zig/src/core/unicode_tables.zig).",
            "Regenerate: python3 scripts/gen_unicode_tables.py --python-marks > src/search_platform/_marks.py",
            '"""',
            "",

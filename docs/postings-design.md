@@ -1,6 +1,6 @@
 # Inverted postings design
 
-Status: allocation-free in-memory implementation in `zig/src/postings.zig`, with exact persistence in `zig/src/lexical_segment.zig`; compression and top-k pruning remain.
+Status: allocation-free in-memory implementation in `zig/src/core/postings.zig`, with exact persistence in `zig/src/core/lexical_segment.zig`; compression and top-k pruning remain.
 
 ## Why postings replace document scans
 

@@ -1,7 +1,7 @@
 # State section format v3 (`HYBSTA03`)
 
 Status: S6-T9 (D2-4, the fourth index-size step). Header in
-`zig/src/state_section.zig`, payload in `zig/src/incremental_state.zig`
+`zig/src/core/state_section.zig`, payload in `zig/src/core/incremental_state.zig`
 (`encodeBinaryRefs`, `decodeBinaryWith`). File `state-N.hybstate`, bound to its
 generation by [manifest v2.6](manifest-format-v2.md#v26-state-v3-and-catalog-v6-s6-t9)
 (flag bits 4 and 8). Content: the

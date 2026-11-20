@@ -1,8 +1,8 @@
 # The MCP server (`searchd mcp`)
 
 Status: implemented (S3-T6, contract 2.0.0). CAP-19 FR-24, realizing
-[CAP-13](requirements/cap-13-mcp-adapter.md). Code: `zig/src/mcp.zig`; the
-results come from `zig/src/ops.zig`, the same code the RPC server, the CLI
+[CAP-13](requirements/cap-13-mcp-adapter.md). Code: `zig/src/interfaces/mcp.zig`; the
+results come from `zig/src/ops/ops.zig`, the same code the RPC server, the CLI
 `--json` and the C ABI answer through.
 
 `searchd mcp` serves one published index to one Model Context Protocol host

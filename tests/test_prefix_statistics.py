@@ -11,8 +11,8 @@ counted. `filename` and `both` keep their own prefix-scoped statistics
 The fixture is invented: two roots, `notes` (visible) and `attic` (label
 `adults`); the prefix `notes/pond/` holds three files, `notes/meadow/` five more
 visible ones outside it. Scores are compared with the tolerance the engine's
-grouped and title goldens use against the reference (`zig/src/fuzzy_test.zig`,
-`zig/src/title_field_test.zig`): |engine - reference| <= 1e-4 * max(1, |reference|)."""
+grouped and title goldens use against the reference (`zig/src/tests/fuzzy_test.zig`,
+`zig/src/tests/title_field_test.zig`): |engine - reference| <= 1e-4 * max(1, |reference|)."""
 
 from __future__ import annotations
 

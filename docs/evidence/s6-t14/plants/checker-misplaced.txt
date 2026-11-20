@@ -1,0 +1,30 @@
+# S6-T14: scripts/check_layers.py (working tree) on a copy of the repository with misplaced files
+## the copy unchanged
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports)
+exit 0
+## core/fold.zig moved to ops/fold.zig
+scripts/check_layers.py:93: FILES names zig/src/core/fold.zig, which does not exist
+zig/src/core/core.zig:24: imports fold.zig, which resolves to zig/src/core/fold.zig: no such file
+zig/src/core/engine.zig:2: imports fold.zig, which resolves to zig/src/core/fold.zig: no such file
+zig/src/core/fold_test.zig:5: imports fold.zig, which resolves to zig/src/core/fold.zig: no such file
+zig/src/core/scope.zig:32: imports fold.zig, which resolves to zig/src/core/fold.zig: no such file
+zig/src/core/verb_form_groups_test.zig:11: imports fold.zig, which resolves to zig/src/core/fold.zig: no such file
+zig/src/core/verb_forms.zig:38: imports fold.zig, which resolves to zig/src/core/fold.zig: no such file
+zig/src/core/verb_forms_test.zig:7: imports fold.zig, which resolves to zig/src/core/fold.zig: no such file
+zig/src/ops/fold.zig:1: sits in zig/src/ops/, outside its layer's folder: FILES assigns fold.zig to core as core/fold.zig (zig/src/core/)
+zig/src/ops/fold.zig:35: imports fuzzy.zig, which resolves to zig/src/ops/fuzzy.zig: no such file
+zig/src/ops/fold.zig:36: imports nfc.zig, which resolves to zig/src/ops/nfc.zig: no such file
+zig/src/ops/fold.zig:37: imports postings.zig, which resolves to zig/src/ops/postings.zig: no such file
+zig/src/ops/fold.zig:38: imports unicode_tables.zig, which resolves to zig/src/ops/unicode_tables.zig: no such file
+zig/src/ops/fold.zig:39: imports title_field.zig, which resolves to zig/src/ops/title_field.zig: no such file
+zig/src/ops/fold.zig:40: imports verb_forms.zig, which resolves to zig/src/ops/verb_forms.zig: no such file
+check_layers: 15 problem(s)
+exit 1
+## a copy of core/nfc_bench.zig directly in zig/src/
+zig/src/nfc_bench.zig:1: sits directly in zig/src/, outside the layer folders (core/, ops/, interfaces/) and tests/: move it to its layer's folder
+check_layers: 1 problem(s)
+exit 1
+## core/nfc_bench.zig (a core-only benchmark) moved to tests/
+zig/src/tests/nfc_bench.zig:8: imports nfc.zig, which resolves to zig/src/tests/nfc.zig: no such file
+check_layers: 1 problem(s)
+exit 1

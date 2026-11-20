@@ -1,8 +1,8 @@
 # Immutable lexical segment format v2 (`HYBLEX02`)
 
-Status: implemented by S3-T2 in `zig/src/lexical_segment.zig` (reader and
-writer), `zig/src/lexical_build.zig` (`buildPositional`) and
-`zig/src/postings.zig` (varints, position tables). Written by `searchd index`
+Status: implemented by S3-T2 in `zig/src/core/lexical_segment.zig` (reader and
+writer), `zig/src/core/lexical_build.zig` (`buildPositional`) and
+`zig/src/core/postings.zig` (varints, position tables). Written by `searchd index`
 (full and `--update`); `import-json` keeps writing `HYBLEX01` under its v1
 manifest. Companion to [`lexical-segment-format-v1.md`](lexical-segment-format-v1.md)
 and [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §3.

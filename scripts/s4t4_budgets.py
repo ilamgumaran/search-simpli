@@ -5,7 +5,7 @@ Two commands, both on S4-T1's 10k timing corpus (`scripts/gen_timing_corpus.py
 <dir> 10000`, checked against the recorded SHA-256):
 
 `profile` (ruling 1): one library and its `searchd` (both built with this
-tree's stage timers, `SEARCH_SIMPLI_APPLY_STAGES`, `zig/src/apply.zig`
+tree's stage timers, `SEARCH_SIMPLI_APPLY_STAGES`, `zig/src/core/apply.zig`
 `Stages`). Two indexes are written by `searchd index`, filename channel off
 and on; then, `--runs` times for each (interleaved), a fresh copy of the
 index gets one `ss_apply_changes` (`group-00/doc-00000.md` plus one line,

@@ -1,6 +1,6 @@
 # Immutable document/vector segment format v4 (minor version 4.1)
 
-Status: implemented in `zig/src/segment.zig` (S3-T1; v4.1 since S4-T1, see
+Status: implemented in `zig/src/core/segment.zig` (S3-T1; v4.1 since S4-T1, see
 [v4.1](#v41-section-checksum-s4-t1)). Magic `HYBSEG01`,
 header layout unchanged (36 bytes, checksummed). `searchd index` writes record v4
 (`segment.encodeV4`); `import-json` keeps writing [v3](segment-format-v3.md)
@@ -72,7 +72,7 @@ bit 0; record v3 (`import-json`) never does. The manifest that binds an XXH3
 section sets its own bit 2 ([manifest v2.1](manifest-format-v2.md#v21-xxh3-section-checksums-s4-t1)).
 A reader before S4-T1 that met such a section would fail its checksum, but it
 never gets that far: it refuses the v2.1 manifest first. Implementation:
-`zig/src/checksum.zig`.
+`zig/src/core/checksum.zig`.
 
 ## The writer validates once (S4-T16)
 
@@ -87,7 +87,7 @@ measured at under 1 ms to gain on 10,000 files and not taken.
 
 ## What the fields carry
 
-`md-section-v1` (`zig/src/chunker_md.zig`, `search_platform.core._md_section_chunks`)
+`md-section-v1` (`zig/src/core/chunker_md.zig`, `search_platform.core._md_section_chunks`)
 fills `section_path`, `section_depth` and `heading_line`; `line-window-v1`
 leaves them empty. `source_doc_index` points at the file's original bytes in
 the generation's [source section](source-section-v1.md), which `read_span` and

@@ -4,7 +4,7 @@ acceptance criterion 2: "BM25 results identical between Python and Zig for
 both analyzers").
 
 Calls the real `search_platform.core.build_index`/`core.search` (lexical
-mode, k1=1.2 b=0.75, the same formula `zig/src/scoring.zig` implements) as
+mode, k1=1.2 b=0.75, the same formula `zig/src/core/scoring.zig` implements) as
 the oracle. Two corpora:
 
 - `fixtures/app-text` (plain ASCII English): queried with mixed-case terms

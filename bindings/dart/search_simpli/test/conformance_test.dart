@@ -8,7 +8,7 @@
 ///
 /// (a) is checked against `fixtures/bm25-golden.json`, generated directly
 /// from the real `search_platform.core.build_index`/`core.search`
-/// (`scripts/gen_bm25_golden.py`) — the same golden `zig/src/
+/// (`scripts/gen_bm25_golden.py`) — the same golden `zig/src/core/
 /// bm25_conformance_test.zig` uses for S1-T1's own Python-vs-Zig
 /// conformance, so this test proves the *binding* reproduces what the
 /// *engine* already proved matches Python, rather than re-deriving that
@@ -202,7 +202,7 @@ void main() {
           // section is the same title line). The engines break ties
           // differently on purpose (Zig by document index, Python by chunk
           // id), so the FFI top-1 may be any path the reference scored equal
-          // to its top (same rule as zig/src/bm25_conformance_test.zig).
+          // to its top (same rule as zig/src/core/bm25_conformance_test.zig).
           // S5-T2: the golden is plain BM25 (generated at title weight 0).
           // When the FFI top-1 carries no title part its score is its plain
           // body score and every other score only grew, so it is the plain
@@ -260,7 +260,7 @@ void main() {
         expect(compared, queries.length);
         // Printed so the task Report can paste a real "N queries compared,
         // N identical" line, same convention as
-        // `zig/src/bm25_conformance_test.zig`'s own summary line.
+        // `zig/src/core/bm25_conformance_test.zig`'s own summary line.
         // ignore: avoid_print
         print('$corpusName conformance: $compared queries compared, ${compared - titled} identical to the plain-BM25 Python top-1 '
             '($titled with a title part at top-1, compared with the CLI only), $compared identical to the CLI top-1');

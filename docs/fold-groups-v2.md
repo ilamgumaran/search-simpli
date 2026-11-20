@@ -10,8 +10,8 @@ groups its words the same way. fold-groups-v2 is
 [fold-groups-v1](fold-groups-v1.md) (its key K, its key map, its order and
 its scoring, unchanged) with one more source of members: R, the `-ing` and
 `-ed` verb forms of a query word. R is implemented twice and held equal byte
-for byte by a golden: the Zig engine (`zig/src/verb_forms.zig`, used by
-`zig/src/fold.zig`) and the Python mirror (`src/search_platform/verb_forms.py`,
+for byte by a golden: the Zig engine (`zig/src/core/verb_forms.zig`, used by
+`zig/src/core/fold.zig`) and the Python mirror (`src/search_platform/verb_forms.py`,
 used by `core._query_groups`; `scripts/gen_verb_forms_golden.py`,
 `fixtures/verb-forms-golden.json`: 2,856 terms listed with their forms, 16,211
 listed as off, and a digest over 49,347 terms).

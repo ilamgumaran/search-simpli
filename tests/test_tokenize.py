@@ -1,5 +1,5 @@
 """S1-T14: analyzer-v2 tokenization in the Python reference (the Zig side has
-the same table in `zig/src/analyzer_v2.zig`; the BM25 and chunk goldens make
+the same table in `zig/src/core/analyzer_v2.zig`; the BM25 and chunk goldens make
 the two agree on every fixture)."""
 
 import subprocess

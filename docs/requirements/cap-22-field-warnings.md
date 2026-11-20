@@ -83,7 +83,7 @@ record takes CAP-22 and FR-31.
 
 | ID | Requirement / impact | Target or constraint |
 |---|---|---|
-| NFR-05 / INV-03 | The warnings cross the label wall exactly as `content`'s: a word only a hidden chunk, file or file name holds gives an absent word's bytes. | `zig/src/field_warnings_test.zig` compares hidden and absent pairs (labels, roots, path prefix) under `both` and `filename`. |
+| NFR-05 / INV-03 | The warnings cross the label wall exactly as `content`'s: a word only a hidden chunk, file or file name holds gives an absent word's bytes. | `zig/src/interfaces/field_warnings_test.zig` compares hidden and absent pairs (labels, roots, path prefix) under `both` and `filename`. |
 | NFR-03 | Deterministic: the order is the query's. | Same writer as `content`. |
 | Latency | `both` and `filename` pay for the trace: per distinct query term one lookup in the content index (`both`) or the file-name dictionary, with a scan of that name's postings to the first visible file, plus the warning objects; `content` pays nothing. Measured inside `ss_query` with clocks: 0.1 to 0.5 µs per request on the three 10k corpora (S6-T5 rework). **Correction after the first Verdict:** the first head also changed how the unchanged BM25 walks were compiled (the scoring took the tokens as a parameter), which cost several µs on requests whose words every file name holds; the rework restores `main`'s scoring source. Not predicted: where a build places the unchanged scoring loops. Two builds that differ only in whether the trace is filled moved the large `both`/`filename` cells (0.25 to 0.8 ms) by −20 to +7 µs; that is not a cost of the warnings, and this document does not predict it. | Stated in advance and measured by S6-T4's five-run rule ([S6-T5](../tasks/S6-T5.md) Report and rework report). No threshold as a test (ROLES). |
 | NFR-01 / INV-06 | No dependency added. | Zig standard library only. |
@@ -140,7 +140,7 @@ holds hidden and absent words to identical bytes, so it is not a conflict.
 
 ## 9. Acceptance gate (step 6 — decidable before building)
 
-- Primary metric: the tests of FR-31 (`zig/src/field_warnings_test.zig`, the
+- Primary metric: the tests of FR-31 (`zig/src/interfaces/field_warnings_test.zig`, the
   Dart `contract 2.8.0` group) · baseline `main` `1c15b19` (always `[]`) ·
   tolerance zero.
 - Citation-support behavior: unchanged.
@@ -158,7 +158,7 @@ holds hidden and absent words to identical bytes, so it is not a conflict.
 
 ## 10. Evidence plan (step 8)
 
-- Tests to add: `zig/src/field_warnings_test.zig` (6 tests), a Dart group of 2
+- Tests to add: `zig/src/interfaces/field_warnings_test.zig` (6 tests), a Dart group of 2
   tests, four plants (S6-T5 Report).
 - `EXPERIMENTS.md` entry planned: none; the cost is in the S6-T5 Report.
 - `PROJECT-STATE.md` update: contracts 2.8.0, Dart 0.9.0.
@@ -174,7 +174,7 @@ holds hidden and absent words to identical bytes, so it is not a conflict.
   where a folder name answers the query.
 - No Python parity test (ruling 4 on the S6-T5 Report): the Python reference
   gives no warnings in any field, so the engine is tested against written
-  expectations (`zig/src/field_warnings_test.zig`, the Dart `contract 2.8.0`
+  expectations (`zig/src/interfaces/field_warnings_test.zig`, the Dart `contract 2.8.0`
   group), and the captured-answers comparison holds `both` to the engine's own
   `content` output.
 

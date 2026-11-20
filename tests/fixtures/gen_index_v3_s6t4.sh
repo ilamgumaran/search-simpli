@@ -2,12 +2,12 @@
 # S6-T4 ruling 4: regenerate tests/fixtures/index-v3-s6t4/, the lexical v3
 # reference index: fixtures/family-folder/home indexed with
 # `searchd index --filename-index` (manifest v2.3, both lexical sections
-# `HYBLEX03`). `zig/src/compat_98c4a2b_test.zig` checks that the writer
+# `HYBLEX03`). `zig/src/tests/compat_98c4a2b_test.zig` checks that the writer
 # still gives its lexical, file-name and state sections and that a library
 # before v3 refuses it at the manifest's flags. S6-T7: since manifest v2.4
 # the writer's documents and source sections are record v5 and `HYBSRC02`,
 # so the fixture is written by the engine at a534678 (`main` before S6-T7),
-# and `zig/src/compat_s6t7_test.zig` checks that it opens, answers and
+# and `zig/src/tests/compat_s6t7_test.zig` checks that it opens, answers and
 # updates under this library.
 #
 # Usage, from anywhere inside the repository, with zig 0.16.0 on PATH:

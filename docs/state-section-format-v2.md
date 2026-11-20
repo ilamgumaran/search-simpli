@@ -1,7 +1,7 @@
 # State section format v2 (`HYBSTA02`)
 
-Status: implemented in `zig/src/state_section.zig` (header) and
-`zig/src/incremental_state.zig` (`encodeBinary`, `decodeBinary`), S4-T4 ruling
+Status: implemented in `zig/src/core/state_section.zig` (header) and
+`zig/src/core/incremental_state.zig` (`encodeBinary`, `decodeBinary`), S4-T4 ruling
 3. File `state-N.hybstate`, bound to its generation by
 [manifest v2.2](manifest-format-v2.md#v22-recovery-state-section-s4-t2)
 (flag bit 4). Content: the

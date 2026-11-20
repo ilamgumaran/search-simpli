@@ -56,14 +56,14 @@ handle and every later filename query answers it (`SS_ERR_CORRUPT_SNAPSHOT`
 through the C ABI); content queries are unaffected. Writers validate the
 canonical postings in full (`filename_field.validate`) after building and
 before publishing. The one-shot `snapshot_open.open` (the CLI's single
-query) stays eager. `zig/src/lazy_open_test.zig` pins the deferral, the
+query) stays eager. `zig/src/tests/lazy_open_test.zig` pins the deferral, the
 single load under concurrent queries and the damaged-section errors.
 
 **Query (S4-T2 R5).** One filename query is linear in the touched postings:
 touched lists and seen flags instead of hash maps, a body-anchor ordinal map
 for root masks, and an unscoped fast path that takes the corpus totals when
 the mask allows every root. The answers equal PR #21's query exactly
-(`zig/src/filename_field_test.zig` compares both on labelled and unlabelled
+(`zig/src/core/filename_field_test.zig` compares both on labelled and unlabelled
 corpora, prefixes, labels and masks).
 
 Readers open manifest v1, v2.0, v2.1 and v2.2; readers before v2.2 refuse bit

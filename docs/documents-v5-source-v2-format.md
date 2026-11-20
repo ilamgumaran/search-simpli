@@ -1,13 +1,13 @@
 # Text once: documents record v5 and source section v2
 
-**Status: implemented (S6-T7 Phase 2).** `zig/src/segment_v5.zig` writes and
-reads the documents section, `zig/src/source_v2.zig` the source section; the
+**Status: implemented (S6-T7 Phase 2).** `zig/src/core/segment_v5.zig` writes and
+reads the documents section, `zig/src/core/source_v2.zig` the source section; the
 folder writer (`apply.zig`) publishes them at every publish, manifest v2.4.
 The Phase 1 prototype `scripts/prototypes/s6t7/text_once.py` wrote the same
 bytes from an index `main` wrote: on the six corpora the library's sections
 equal the prototype's to the byte. Every validity rule below has a Zig test
-that breaks it with the checksum recomputed (`zig/src/text_once_test.zig`);
-the old formats' compatibility is in `zig/src/compat_s6t7_test.zig`.
+that breaks it with the checksum recomputed (`zig/src/tests/text_once_test.zig`);
+the old formats' compatibility is in `zig/src/tests/compat_s6t7_test.zig`.
 Measured results are in `docs/tasks/S6-T7.md` (Reports) and
 `docs/evidence/s6-t7/`.
 

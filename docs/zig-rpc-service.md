@@ -1,6 +1,6 @@
 # Zig JSON-RPC search service
 
-Status: implemented in `zig/src/service.zig`, `zig/src/rpc.zig`, and the `searchd serve` command.
+Status: implemented in `zig/src/ops/service.zig`, `zig/src/interfaces/rpc.zig`, and the `searchd serve` command.
 
 ## Live persistent demo
 
@@ -27,7 +27,7 @@ The first four match the Python reference:
 - `list_sources`
 - `index_status`
 
-Contract 2.0.0 (S3-T4) adds the folder-knowledge methods `find`, `outline`, `read_span`, `list_files`, `roots`, and `apply_changes` only under `serve --allow-write` (`docs/tool-protocol.md` has every parameter; `contracts/tool-request.schema.json` version 2 every request shape). Their results are produced by `zig/src/ops.zig`, the same code the C ABI and `searchd <command> --json` use, so the three are byte-identical (the parity tests: `tests/test_folder_surfaces.py` for the CLI and the server, `bindings/dart/search_simpli/test/parity_test.dart` for all three with the Dart binding).
+Contract 2.0.0 (S3-T4) adds the folder-knowledge methods `find`, `outline`, `read_span`, `list_files`, `roots`, and `apply_changes` only under `serve --allow-write` (`docs/tool-protocol.md` has every parameter; `contracts/tool-request.schema.json` version 2 every request shape). Their results are produced by `zig/src/ops/ops.zig`, the same code the C ABI and `searchd <command> --json` use, so the three are byte-identical (the parity tests: `tests/test_folder_surfaces.py` for the CLI and the server, `bindings/dart/search_simpli/test/parity_test.dart` for all three with the Dart binding).
 
 ```sh
 searchd apply /tmp/folders --changes changes.json

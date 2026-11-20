@@ -4,7 +4,7 @@
 Calls the *actual* Python reference functions in `search_platform.core`
 (`_iter_text_files`, `_line_chunks`, `_chunk_id`) directly -- not a
 reimplementation of them -- so the golden file is guaranteed to be exactly
-what the Python reference produces. `zig/src/chunker_test.zig` reads the
+what the Python reference produces. `zig/src/core/chunker_test.zig` reads the
 generated JSON and asserts the Zig port produces identical chunk ids, line
 ranges, and text on every listed file.
 

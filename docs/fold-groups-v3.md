@@ -8,8 +8,8 @@ the weights, the cap, the membership test, the order and the scoring,
 unchanged) with one change: a query word's verb forms are R's **eligible
 forms** only, R's forms less those that belong to another word. The rule is
 implemented twice and held equal byte for byte by the verb-forms golden: the
-Zig engine (`verb_forms.eligibleForms` in `zig/src/verb_forms.zig`, used by
-`zig/src/fold.zig`) and the Python mirror (`verb_forms.eligible_forms` in
+Zig engine (`verb_forms.eligibleForms` in `zig/src/core/verb_forms.zig`, used by
+`zig/src/core/fold.zig`) and the Python mirror (`verb_forms.eligible_forms` in
 `src/search_platform/verb_forms.py`, used by `core._fold_groups`;
 `scripts/gen_verb_forms_golden.py`, `fixtures/verb-forms-golden.json`, which
 now lists each term's eligible forms beside its forms: 2,978 terms listed, 16,214

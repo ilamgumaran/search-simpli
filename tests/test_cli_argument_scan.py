@@ -1,12 +1,12 @@
 """S1-T8 criterion 1 source scan: every argument-parsing decision lives in
-`zig/src/cli.zig` (`parseArgs`). `main.zig` only prints what it returns and
+`zig/src/interfaces/cli.zig` (`parseArgs`). `main.zig` only prints what it returns and
 exits, so none of the old bypasses may reappear there."""
 
 import re
 import unittest
 from pathlib import Path
 
-MAIN = Path(__file__).resolve().parents[1] / "zig" / "src" / "main.zig"
+MAIN = Path(__file__).resolve().parents[1] / "zig" / "src" / "interfaces" / "main.zig"
 
 # (description, pattern) searched in main.zig with comments removed.
 FORBIDDEN = [

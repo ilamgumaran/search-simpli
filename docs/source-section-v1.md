@@ -1,6 +1,6 @@
 # Source section format v1
 
-Status: implemented in `zig/src/source.zig` (S3-T1). Magic `HYBSRC01`, file
+Status: implemented in `zig/src/core/source.zig` (S3-T1). Magic `HYBSRC01`, file
 `source-N.hybsrc`, bound to its generation by [manifest v2](manifest-format-v2.md).
 Design: [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §4.
 

@@ -8,14 +8,14 @@ them: one union index of the three roots, the root ids stripped from the title
 field (`title_root_ids`). The golden records each chunk's id, path, lines and term
 counts, and per query the expansions (`fuzzy_expansions`) and every chunk with a
 positive lexical score: that score (body BM25 with the groups, plus the title part
-on the chunk that received it) and the title part. `zig/src/fuzzy_test.zig` builds
+on the chunk that received it) and the title part. `zig/src/tests/fuzzy_test.zig` builds
 an index from the same term counts, derives the title field from the same paths and
 compares the expansions exactly and the scores to f32 tolerance.
 
 A query whose words the reference's body analyzer and the file-name analyzer
 analyse differently is left out and named in `skipped`. Since S5-T4 both fold
 simply (the `ß` row), so none is. The reference runs with fold-groups-v1 off
-(`fold=""`), as `zig/src/fuzzy_test.zig` runs the engine: the golden is fuzzy-v1's
+(`fold=""`), as `zig/src/tests/fuzzy_test.zig` runs the engine: the golden is fuzzy-v1's
 alone.
 
 The planted cases, each checked here before it is written:

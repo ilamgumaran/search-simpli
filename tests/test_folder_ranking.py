@@ -11,7 +11,7 @@ the label `adults`, with and without the label, and one root named).
 
 Same hits (root-qualified path and lines) in the same order, and scores within
 the tolerance the engine's grouped and title goldens use against the reference
-(`zig/src/fuzzy_test.zig`, `zig/src/title_field_test.zig`; S5-T7):
+(`zig/src/tests/fuzzy_test.zig`, `zig/src/tests/title_field_test.zig`; S5-T7):
 |engine - reference| <= 1e-4 * max(1, |reference|). The helper's `score` is the
 reference's `ranking.lexical.score` (BM25 plus the title part a chunk received)."""
 

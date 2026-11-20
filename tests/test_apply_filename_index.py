@@ -8,7 +8,7 @@ before). Also: empty roots, labels (a hidden file is neither searched nor
 named), a repeated command, the flag given twice, the flag on no other
 subcommand, and the two crash points of a first write (sections written but no
 `MANIFEST`; `MANIFEST` published but no `INDEX-STATE.json`). The crash hook
-itself (`fail_after_publish`) is in `zig/src/cli_test.zig`.
+itself (`fail_after_publish`) is in `zig/src/tests/cli_test.zig`.
 
 Finding the binary as `test_cli_process.py` does: `$SEARCHD_BINARY`, else one
 `zig build --prefix <tmp>`; `SEARCH_SIMPLI_NO_ZIG=1` (CI) skips. All content is

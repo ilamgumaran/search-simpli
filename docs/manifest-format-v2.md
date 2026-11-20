@@ -1,6 +1,6 @@
 # Generation manifest format v2 (minor version 2.6)
 
-Status: implemented in `zig/src/manifest.zig` (S3-T1; v2.1 flag bit 2 since
+Status: implemented in `zig/src/core/manifest.zig` (S3-T1; v2.1 flag bit 2 since
 S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1); v2.2 flag bits 3 and 4
 since S4-T2, see [v2.2 filename sections](#v22-filename-sections-s4-t2-cap-16)
 and [v2.2 recovery state](#v22-recovery-state-section-s4-t2); v2.3 flag bit 5
@@ -9,7 +9,7 @@ since S6-T7, see [v2.4 text once](#v24-text-once-s6-t7); v2.5 flag bit 7
 since S6-T8, see [v2.5 lexical section v4](#v25-lexical-section-v4-s6-t8); v2.6 flag
 bits 8 and 9 since S6-T9, see [v2.6 state v3 and catalog v6](#v26-state-v3-and-catalog-v6-s6-t9)).
 Magic: `HYBMAN02`.
-Written by `searchd index` / `ss_index_folder` (`zig/src/indexer.zig`).
+Written by `searchd index` / `ss_index_folder` (`zig/src/core/indexer.zig`).
 `import-json` still writes [v1](manifest-format-v1.md), and every reader opens
 both. Design: [`folder-knowledge-implementation.md`](folder-knowledge-implementation.md) §1.
 
@@ -165,7 +165,7 @@ Compatibility:
 - A reader since v2.1 opens every v2 generation written before it (FNV-1a
   sections, bit 2 clear) unchanged; `tests/fixtures/index-292cb568/` (written
   at commit 292cb568, the pin of the consumer app) is opened and queried by
-  `zig/src/compat_292cb568_test.zig`, and the first `apply_changes` over it
+  `zig/src/tests/compat_292cb568_test.zig`, and the first `apply_changes` over it
   publishes a v2.1 generation.
 - A reader before v2.1 (292cb568 and earlier) refuses a v2.1 manifest on the
   unknown flag bit with `UnsupportedFlags` before it reads any section
@@ -262,7 +262,7 @@ So a generation is 120 bytes of header (bit 4 only) or 168 (bits 3 and 4).
 The last payload string is the state file name, a safe basename distinct from
 every other section's.
 
-The section (`zig/src/state_section.zig`), little-endian, 32-byte header:
+The section (`zig/src/core/state_section.zig`), little-endian, 32-byte header:
 
 | Offset | Size | Field |
 |---:|---:|---|
@@ -366,7 +366,7 @@ conversion path; the cost is stated in the task Report,
 [`docs/tasks/S6-T4.md`](tasks/S6-T4.md)). From then on it is carried as
 before. `tests/fixtures/index-98c4a2b/` (written at 98c4a2b, the last commit
 before v3) is opened, compared with a fresh v3 index answer for answer, and
-updated to v3 by `zig/src/compat_98c4a2b_test.zig`.
+updated to v3 by `zig/src/tests/compat_98c4a2b_test.zig`.
 
 **Compatibility and rollback (one way).** A reader before v2.3 (98c4a2b and
 earlier) refuses a v2.3 manifest on bit 5 with `UnsupportedFlags`, before it
@@ -399,7 +399,7 @@ v1–v4 and `HYBSRC01` keep their readers). The first publish over an older
 directory writes one whole v2.4 generation; the old one stays whole until the
 manifest is replaced. `tests/fixtures/index-v3-s6t4/` (written at `a534678`)
 is opened, compared with a fresh index answer for answer, and updated by
-`zig/src/compat_s6t7_test.zig`.
+`zig/src/tests/compat_s6t7_test.zig`.
 
 **Compatibility and rollback (one way, the second after v2.3).** A reader
 before v2.4 (`ad71cfb` and earlier) refuses a v2.4 manifest on bit 6 with
@@ -436,7 +436,7 @@ by token from v2's coding, the fresh ones written in v4's. The old generation
 stays whole until the manifest is replaced. `tests/fixtures/index-v5-s6t7/`
 (written by `main` at 62324f9), `tests/fixtures/index-v3-s6t4/` and
 `tests/fixtures/index-98c4a2b/` are opened, compared with a fresh index answer
-for answer, updated and crashed mid-publish by `zig/src/compat_s6t8_test.zig`;
+for answer, updated and crashed mid-publish by `zig/src/tests/compat_s6t8_test.zig`;
 `tests/fixtures/index-lex4-s6t8/` is v2.5's reference
 (`tests/fixtures/gen_index_lex4_s6t8.sh`).
 
@@ -490,7 +490,7 @@ old generation stays whole until the manifest is replaced.
 `tests/fixtures/index-v5-s6t7/`, `tests/fixtures/index-v3-s6t4/` and
 `tests/fixtures/index-98c4a2b/` are opened, compared with a fresh index
 answer for answer, updated and crashed mid-publish by
-`zig/src/compat_s6t9_test.zig`; `tests/fixtures/index-refs-s6t9/` is v2.6's
+`zig/src/tests/compat_s6t9_test.zig`; `tests/fixtures/index-refs-s6t9/` is v2.6's
 reference (`tests/fixtures/gen_index_refs_s6t9.sh`).
 
 **Compatibility and rollback (one way, the fourth after v2.3, v2.4 and

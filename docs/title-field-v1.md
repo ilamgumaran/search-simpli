@@ -2,7 +2,7 @@
 
 Status: shipped by [S5-T2](tasks/S5-T2.md), contracts 2.3.0. The Python
 reference (`src/search_platform/core.py`) and the Zig engine
-(`zig/src/title_field.zig`) implement the same field; a golden generated from
+(`zig/src/core/title_field.zig`) implement the same field; a golden generated from
 the reference (`scripts/gen_title_golden.py`,
 `fixtures/title-field-golden.json`) holds them equal to f32 tolerance.
 

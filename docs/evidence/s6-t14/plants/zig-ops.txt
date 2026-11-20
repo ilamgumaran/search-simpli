@@ -1,0 +1,20 @@
+# plant ops: zig/src/ops/filename_response.zig, in a fresh archive of d967f09 with its own Zig caches
+@@ -382,7 +382,7 @@
+     try std.testing.expect(filename.get("matched").?.bool);
+     try std.testing.expectEqualStrings("Annual_Report.md", filename.get("text").?.string);
+     const filename_terms = filename.get("matched_terms").?.array.items;
+-    try std.testing.expectEqual(@as(usize, 1), filename_terms.len);
++    try std.testing.expectEqual(@as(usize, 2), filename_terms.len);
+     try std.testing.expectEqualStrings("annual", filename_terms[0].string);
+     const filename_citation = filename.get("citation").?.object;
+     try std.testing.expectEqualStrings("filename", filename_citation.get("field").?.string);
+exit 1, 35 s
++- run test operations 9 pass, 1 fail (10 total)
+error: 'filename_response.test.filename results expose source-based match sections and readable citations' failed:
+       expected 2, found 1
+Build Summary: 13/15 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 3s MaxRSS:35M
++- run test operations 9 pass, 1 fail (10 total)
++- run test interfaces 26 pass (26 total) 190ms MaxRSS:5M
++- run test tests 284 pass, 9 skip (293 total) 19s MaxRSS:402M
++- run test 6 pass (6 total) 259ms MaxRSS:4M

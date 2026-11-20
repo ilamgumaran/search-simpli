@@ -1,0 +1,22 @@
+# plant tests: zig/src/tests/reload_test.zig, in a fresh archive of d967f09 with its own Zig caches
+@@ -145,7 +145,7 @@
+     try expectHas(listed, "\"total\":2");
+     try expectHas(try call(&served, a, "index_status", "{}"), "\"source\":\"verified\"");
+     const loads = served.generation.service.folder.?.loads;
+-    try std.testing.expectEqual(@as(u32, 1), loads.source_loads);
++    try std.testing.expectEqual(@as(u32, 2), loads.source_loads);
+     try std.testing.expectEqual(@as(u32, 1), loads.statistics_loads);
+     try std.testing.expectEqual(@as(u32, 1), loads.positions_loads);
+
+exit 1, 96 s
++- run test tests 282 pass, 9 skip, 2 fail (293 total)
+error: 'reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (poisoned testing allocator)' failed:
+       expected 2, found 1
+error: 'reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (C allocator, as a release searchd)' failed:
+       expected 2, found 1
+Build Summary: 13/15 steps succeeded (1 failed); 577/588 tests passed (9 skipped, 2 failed)
++- run test core 253 pass (253 total) 6s MaxRSS:35M
++- run test operations 10 pass (10 total) 238ms MaxRSS:3M
++- run test interfaces 26 pass (26 total) 399ms MaxRSS:5M
++- run test tests 282 pass, 9 skip, 2 fail (293 total)
++- run test 6 pass (6 total) 563ms MaxRSS:4M

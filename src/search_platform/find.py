@@ -1,6 +1,6 @@
 """`find` (S3-T2): words, phrase and prefix modes over a Python index.
 
-The behavioural reference for `zig/src/find.zig` (CAP-19 FR-17, FR-25;
+The behavioural reference for `zig/src/core/find.zig` (CAP-19 FR-17, FR-25;
 `docs/folder-knowledge-implementation.md` section 8). The Python index keeps
 no positions, so every chunk a mode needs is re-tokenized at query time with
 `tokenize_positioned`: the same tokens as `core.tokenize`, each with its
@@ -40,7 +40,7 @@ POSITIONS_ABSENT = "re-index required: positions absent"
 STALE_CURSOR = "stale cursor"
 LEGACY_ROOT_ID = "r-legacy"
 _HANGUL_FIRST, _HANGUL_COUNT = 0xAC00, 11172
-# `str.strip()`'s set, the 29 codepoints `zig/src/chunker.zig` lists.
+# `str.strip()`'s set, the 29 codepoints `zig/src/core/chunker.zig` lists.
 _WHITESPACE = {chr(cp) for cp in (
     0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x85, 0xA0, 0x1680, 0x2000, 0x2001,
     0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x2028, 0x2029, 0x202F,
@@ -56,7 +56,7 @@ def _inert(char: str) -> bool:
 def normalize_mapped(text: str) -> tuple[str, list[int], list[int]]:
     """NFC of `text` with, per output codepoint, the input range it came from.
 
-    Regions as `zig/src/nfc.zig`: an inert codepoint (ASCII or a precomposed
+    Regions as `zig/src/core/nfc.zig`: an inert codepoint (ASCII or a precomposed
     Hangul syllable) before a run of non-inert ones, up to the next inert
     codepoint. A region NFC leaves unchanged maps one to one; a changed region
     maps every output codepoint to the whole region.

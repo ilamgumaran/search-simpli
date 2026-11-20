@@ -2,7 +2,7 @@
 
 Status: **specified first** (S6-T8, 17 Nov 2026, plan item D2 step 3,
 candidate C5b of [`index-size.md`](index-size.md)); implemented in
-`zig/src/lexical_segment.zig` (header, validation) and `zig/src/postings.zig`
+`zig/src/core/lexical_segment.zig` (header, validation) and `zig/src/core/postings.zig`
 (section 5's coding, position tables, token spans). Every folder writer
 (`searchd index`, `searchd apply`, `searchd search`'s in-memory build,
 `ss_index_folder`, `ss_apply_changes`) writes it for the **content** lexical
@@ -201,7 +201,7 @@ Section 5 is these 16 bytes (hex), one line per document:
 - Doc 3: a count of 0 and no token byte.
 
 The same four documents in v2's section 5 take 32 bytes (a `u32` count per
-document and two varints per token). `zig/src/offsets_v4_test.zig` builds
+document and two varints per token). `zig/src/tests/offsets_v4_test.zig` builds
 these documents with the writer and checks these 16 bytes.
 
 ## Manifest binding

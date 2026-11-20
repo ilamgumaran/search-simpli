@@ -7,7 +7,7 @@ title field of J2's chunked files, as `relevance_smoke.py --pack j2` indexes the
 union index of the three roots, the root ids stripped (`title_root_ids`). The golden
 records the record paths, the roots and, per query, every file with a positive title
 part and its weighted score (w 2.5, unscoped statistics), sorted by path.
-`zig/src/title_field_test.zig` derives the field from the same paths and compares the
+`zig/src/tests/title_field_test.zig` derives the field from the same paths and compares the
 files and the scores to f32 tolerance.
 
 Run: `python3 scripts/gen_title_golden.py > fixtures/title-field-golden.json`
