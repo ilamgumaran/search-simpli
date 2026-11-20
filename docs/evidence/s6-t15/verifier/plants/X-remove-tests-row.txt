@@ -1,0 +1,40 @@
+# plant X-remove-tests-row on 6554055
+ .../runs/{pristine => X-remove-tests-row/src}/zig/build.zig              | 1 -
+ 1 file changed, 1 deletion(-)
+
+## checker exit 1
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 53 | 295 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+
+scripts/check_layers.py:195: BUILD_ROOTS names tests/root.zig, which zig/build.zig does not name
+zig/src/tests/apply_test.zig:221: holds 48 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/cli_test.zig:7: holds 24 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/compat_292cb568_test.zig:63: holds 7 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/compat_98c4a2b_test.zig:165: holds 8 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/compat_s6t7_test.zig:63: holds 4 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/compat_s6t8_test.zig:80: holds 43 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/compat_s6t9_test.zig:101: holds 9 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/direct_search_test.zig:138: holds 8 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/fold_groups_test.zig:95: holds 8 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/fuzzy_test.zig:57: holds 15 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/lazy_open_test.zig:30: holds 11 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/nfr13_arena_test.zig:251: holds 17 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/offsets_v4_test.zig:55: holds 14 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/query_report_test.zig:96: holds 18 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/query_utf8_test.zig:270: holds 3 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/reload_test.zig:163: holds 3 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/root.zig:110: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/source_fixture_test.zig:64: holds 5 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/state_v3_test.zig:127: holds 21 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/text_once_test.zig:143: holds 8 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+zig/src/tests/title_field_test.zig:23: holds 18 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+check_layers: 22 problem(s)
+

@@ -1,0 +1,29 @@
+# plant baseline on 6554055
+
+## checker exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 74 | 588 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+
+## zig build test exit 0 (106 s)
++- run test core w
+failed command: <run>/lc/o/5932df6db6206329d665354277226816/core --cache-dir=<run>/lc --seed=0x428835d1 --listen=-
++- run test tests w
+S5-T3 fuzzy golden: 4848 chunk scores in 120 expanded queries (9 planted cases) within 1e-4
+failed command: <run>/lc/o/1a0696880d06ee66800b8502022ece1d/tests --cache-dir=<run>/lc --seed=0x428835d1 --listen=-
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total) 35s MaxRSS:412M
++- run test operations 10 pass (10 total) 183ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 293ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 986ms MaxRSS:5M

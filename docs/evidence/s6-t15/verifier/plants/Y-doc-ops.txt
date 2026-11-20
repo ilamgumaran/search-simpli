@@ -1,0 +1,36 @@
+# plant Y-doc-ops on 6554055
+ .../runs/{pristine => Y-doc-ops/src}/zig/src/ops/operations.zig     | 2 ++
+ .../runs/Y-doc-ops/src/zig/src/ops/report_doc_test.zig}             | 6 ++++++
+ 2 files changed, 8 insertions(+)
+
+## checker exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 4 | 11 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 75 | 589 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build test`)
+
+## zig build test exit 1 (1029 s)
++- run test operations 10 pass, 1 fail (11 total)
+error: 'report_doc_test.test.doc-followed ops test fails on purpose' failed:
+failed command: <run>/lc/o/6d3a1930b98fa232c1d141869121bebf/operations --cache-dir=<run>/lc --seed=0x571d7f8 --listen=-
++- run test core w
+failed command: <run>/lc/o/00da245306a98d9e3ada087532001b31/core --cache-dir=<run>/lc --seed=0x571d7f8 --listen=-
++- run test tests w
+S5-T3 fuzzy golden: 4848 chunk scores in 120 expanded queries (9 planted cases) within 1e-4
+failed command: <run>/lc/o/d5d12a4e5e8b9db1dadbfc7c0c22ed76/tests --cache-dir=<run>/lc --seed=0x571d7f8 --listen=-
+Build Summary: 13/15 steps succeeded (1 failed); 579/589 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 35s MaxRSS:412M
++- run test operations 10 pass, 1 fail (11 total)
++- run test interfaces 26 pass (26 total) 296ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 942ms MaxRSS:5M
+error: the following build command failed with exit code 1:
