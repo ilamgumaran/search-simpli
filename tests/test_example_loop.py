@@ -6,6 +6,7 @@ newt question must get the skill's exact negative sentence; `apply_changes`
 is never called; and the skill document carries the sentences the loop uses.
 `SEARCH_SIMPLI_NO_ZIG=1` skips the process tests."""
 
+import ast
 import importlib.util
 import json
 import os
@@ -66,6 +67,54 @@ class SkillDocumentTests(unittest.TestCase):
             self.assertIn(needle, text, needle)
         schema = json.loads((REPO / "contracts" / "tools" / "search_knowledge.request.schema.json").read_text(encoding="utf-8"))
         self.assertEqual(schema["properties"]["search_field"]["enum"], ["content", "filename", "both"])
+
+    def test_skill_names_only_the_read_span_request_fields_the_contract_has(self) -> None:
+        """S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field
+        is `root_id`, and an agent sent `"root"` and was refused. The field names are read from
+        the contract's request schema, never from a list typed here."""
+        text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        tools_dir = REPO / "contracts" / "tools"
+        request = json.loads((tools_dir / "read_span.request.schema.json").read_text(encoding="utf-8"))
+        result = json.loads((tools_dir / "read_span.result.schema.json").read_text(encoding="utf-8"))
+        fields = set(request["properties"])
+        required = list(request["required"])
+        tools = {path.name.split(".")[0] for path in tools_dir.glob("*.request.schema.json")}
+        self.assertIn("read_span", tools)
+        # A word that is part of a field's name but not a field itself ("root" of `root_id`).
+        parts = {part for name in fields for part in name.split("_")} - fields
+
+        def backticked(span: str) -> list:
+            return [name.rstrip("/") for name in re.findall(r"`([^`]+)`", span)]
+
+        # 1. Step 3's call: every name it gives is a request field, every required field is
+        #    named, and no bare word names a field the schema does not have.
+        call = re.search(r"call\s+`read_span`\s+with\s+(.*?),\s+or\s+`read_chunk`", text, re.S)
+        self.assertIsNotNone(call, "the skill no longer says which fields to send to read_span")
+        clause = call.group(1)
+        named = [name for name in backticked(clause) if name not in tools]
+        for name in named:
+            self.assertIn(name, fields, f"the skill sends read_span `{name}`, which its request schema does not have")
+        for name in required:
+            self.assertIn(name, named, f"the skill's read_span call does not name the required `{name}`")
+        for word in re.findall(r"[A-Za-z_]+", re.sub(r"`[^`]*`", " ", clause)):
+            self.assertNotIn(word.lower(), parts, f"the skill's read_span call says {word!r}, which is not a request field")
+        # 2. The tools table: what the row says it takes is a request field, what it
+        #    returns is in the result (or request) schema.
+        row = next(line for line in text.splitlines() if line.startswith("| `read_span` |"))
+        cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
+        for name in backticked(cells[1]):
+            self.assertIn(name, fields | tools, name)
+        for name in backticked(cells[2]):
+            self.assertIn(name, fields | set(result["properties"]) | tools, name)
+        # 3. Every read_span call of the example loop sends only request fields, and all required ones.
+        tree = ast.parse((SKILL / "example_loop.py").read_text(encoding="utf-8"))
+        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and node.args
+                 and isinstance(node.args[0], ast.Constant) and node.args[0].value == "read_span"]
+        self.assertGreater(len(calls), 0)
+        for node in calls:
+            sent = {keyword.arg for keyword in node.keywords}
+            self.assertLessEqual(sent, fields, f"example_loop.py line {node.lineno}")
+            self.assertLessEqual(set(required), sent, f"example_loop.py line {node.lineno}")
 
     def test_the_loop_cannot_call_apply_changes(self) -> None:
         self.assertNotIn("apply_changes", loop.READ_TOOLS)
