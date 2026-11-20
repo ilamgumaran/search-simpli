@@ -1,0 +1,38 @@
+zig build lib: SS_ANDROID_NDK is not set; skipping the aarch64-linux-android libraries.
+PASS ss_version
+PASS ss_import_json publishes generation 1
+PASS ss_import_json rejects malformed JSON with a negative code
+PASS ss_last_error is non-empty after a failure
+PASS ss_open opens the published demo snapshot
+PASS ss_open on a missing directory returns NULL
+PASS ss_status matches the captured index_status result, plus the 2.0.0 and 2.1.0 fields
+PASS ss_query matches the captured search_knowledge result byte for byte, plus warnings and request
+PASS ss_query warns about an unmatched term
+PASS ss_query warns that the vector was ignored in lexical mode
+PASS ss_query adds profile only on request
+PASS ss_evidence matches the captured read_chunk result, plus root_id, section_path, neighbours
+PASS ss_evidence reports an unknown id as not found
+PASS ss_query rejects top_k=0
+PASS ss_query rejects a mismatched query_vector length
+PASS ss_query rejects query_text that is not valid UTF-8
+PASS ss_apply_changes publishes a host batch; stale generation, bad JSON, forged labels, unknown options, file reads off are refused
+PASS ss_find answers words, phrase and pages; stale/malformed cursor, empty query, page size, unknown field, missing query, NULL handle, absent positions are refused
+PASS ss_outline gives headings and front matter; unknown path, unknown root, missing root_id, absent source are refused
+PASS ss_read_span is byte exact with context and clamping; over 400 lines, context 21, line 0, a pending file, absent source are refused
+PASS ss_list_files lists indexed and pending files with paging; stale cursor, bad status, page size 0, NULL handle are refused
+PASS ss_roots counts the visible roots; roots narrows ss_roots, ss_query and ss_evidence; a bad roots, a non-object, NULL handle are refused
+PASS a filename_index directory: ss_status ends with filename_policy_id; a filename query finds the file by name; filename without lexical, filename on a directory without the channel are refused
+PASS a handle opened before ss_apply_changes on the same directory answers its own generation after the write and the pruning (read_span, find, outline, query, list_files); a fresh handle answers the new one
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
+test-abi success
++- run exe abi_test success 165ms
+   +- compile exe abi_test ReleaseSmall native success 110ms MaxRSS:68M
+      +- WriteFile cached
+      +- compile lib search_simpli ReleaseSmall native success 6s MaxRSS:519M
+      |  +- WriteFile cached
+      |  +- compile obj fastmem ReleaseFast native cached 36ms MaxRSS:31M
+      |  +- compile obj fastmem ReleaseFast native (reused)
+      |  +- options cached
+      +- compile lib search_simpli ReleaseSmall native (+4 more reused dependencies)
+

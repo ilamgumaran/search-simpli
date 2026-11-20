@@ -1,0 +1,28 @@
+planted w-json-example
+--- diff base w-json-example
+diff -r -u base/skills/folder-knowledge/SKILL.md w-json-example/skills/folder-knowledge/SKILL.md
+--- base/skills/folder-knowledge/SKILL.md	2026-11-19 22:05:48
++++ w-json-example/skills/folder-knowledge/SKILL.md	2026-11-19 22:17:39
+@@ -137,3 +137,9 @@
+ ```sh
+ python3 skills/folder-knowledge/example_loop.py --searchd /path/to/searchd
+ ```
++
++A `read_span` call as the loop sends it:
++
++```json
++{"name": "read_span", "arguments": {"root": "r1", "path": "notes/kite.md", "start_line": 4, "end_line": 6}}
++```
+--- SEARCH_SIMPLI_NO_ZIG=1 tests.test_example_loop.SkillDocumentTests
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field ... ok
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.004s
+
+OK
+exit 0

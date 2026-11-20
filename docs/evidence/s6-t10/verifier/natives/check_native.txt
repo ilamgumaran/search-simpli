@@ -1,0 +1,5 @@
+check_native: macos-arm64 memcpy at 0x740 (219 calls against 119): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5a80c (503 calls against 168): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (218 calls against 112): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+exit 0

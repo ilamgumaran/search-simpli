@@ -1,0 +1,45 @@
+planted w-request-rename-start
+--- diff base w-request-rename-start
+diff -r -u base/contracts/tools/read_span.request.schema.json w-request-rename-start/contracts/tools/read_span.request.schema.json
+--- base/contracts/tools/read_span.request.schema.json	2026-11-19 22:05:48
++++ w-request-rename-start/contracts/tools/read_span.request.schema.json	2026-11-19 22:17:40
+@@ -15,7 +15,7 @@
+       "description": "Root-relative path.",
+       "minLength": 1
+     },
+-    "start_line": {
++    "first_line": {
+       "type": "integer",
+       "description": "First line, 1-based.",
+       "minimum": 1,
+@@ -51,7 +51,7 @@
+   "required": [
+     "root_id",
+     "path",
+-    "start_line",
++    "first_line",
+     "end_line"
+   ]
+ }
+--- SEARCH_SIMPLI_NO_ZIG=1 tests.test_example_loop.SkillDocumentTests
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field ... FAIL
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+======================================================================
+FAIL: test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<vscratch>/py.noindex/w-request-rename-start/tests/test_example_loop.py", line 96, in test_skill_names_only_the_read_span_request_fields_the_contract_has
+    self.assertIn(name, fields, f"the skill sends read_span `{name}`, which its request schema does not have")
+AssertionError: 'start_line' not found in {'root_id', 'path', 'end_line', 'first_line', 'context_lines', 'roots'} : the skill sends read_span `start_line`, which its request schema does not have
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+FAILED (failures=1)
+exit 1
