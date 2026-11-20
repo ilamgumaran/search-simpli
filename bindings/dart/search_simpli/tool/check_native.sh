@@ -57,7 +57,7 @@ plist_value() { plutil -extract "$1" raw -o - "$FW/Info.plist" 2>/dev/null || tr
 [ "$(plist_value MinimumOSVersion)" = "17.0" ] || bad "MinimumOSVersion"
 [ "$(plist_value CFBundleSupportedPlatforms.0)" = "iPhoneOS" ] || bad "CFBundleSupportedPlatforms"
 
-# S4-T18: memcpy is the library's word-wise copy (zig/src/fastmem.zig), not
+# S4-T18: memcpy is the library's word-wise copy (zig/src/core/fastmem.zig), not
 # compiler_rt's byte loop. In each binary memcpy is the most-called function
 # (calls plus tail calls; 0.3.11: 182 against 101 on Apple, 356 against 140 on
 # Android, whose .so is stripped); the code there and in the functions it
