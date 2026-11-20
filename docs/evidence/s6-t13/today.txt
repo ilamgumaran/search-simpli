@@ -1,0 +1,18 @@
+# S6-T13: what main's code does today (fbf0d62 + the tests of 786d500), 20 Nov 2026.
+# Filtered run of the new tests (run_filtered.sh); the open test in a scratch copy changed only to record each case's outcome instead of returning the first error.
+
+## zig build test on 786d500 (Debug)
+Build Summary: 7/9 steps succeeded (1 failed); 542/554 tests passed (9 skipped, 3 failed)
+error: 'manifest_read_test.test.S6-T13: scan returns FileNotFound when MANIFEST names a missing documents or lexical file; no MANIFEST stays no error' failed:
+error: 'manifest_read_test.test.S6-T13: an open whose MANIFEST is replaced between its stat and its read returns one whole generation' failed:
+error: 'manifest_read_test.test.S6-T13: a folder index whose MANIFEST grows across the publish opens whole between stat and read' failed:
+
+## scan, MANIFEST names documents-2.hybseg, which is missing (generations 1 and 2 published)
+expected error.FileNotFound, found .{ .current_generation = null, .current_files = 0, .orphan_document_files = 1, .orphan_lexical_files = 2, .superseded_document_files = 0, .superseded_lexical_files = 0, .unknown_files = 0, .current_source_files = 0, .current_filename_files = 0, .orphan_filename_files = 0, .superseded_filename_files = 0, .orphan_source_files = 0, .superseded_source_files = 0, .current_state_files = 0, .orphan_state_files = 0, .superseded_state_files = 0 }
+
+## open between stat and read
+FAIL (TestExpectedError)
+S6-T13 MANIFEST replaced between stat and read (opener, new length - stat length: generation read): open -1:new open 0:new open 1:Truncated open 2048:Truncated open_scoped -1:new open_scoped 0:new open_scoped 1:Truncated open_scoped 2048:Truncated open_source -1:new open_source 0:new open_source 1:Truncated open_source 2048:Truncated
+7/8 manifest_read_test.test.S6-T13: a folder index whose MANIFEST grows across the publish opens whole between stat and read...openScoped (MANIFEST 576 bytes at the stat, 580 after the publish): Truncated
+FAIL (Truncated)
+6 passed; 0 skipped; 2 failed.

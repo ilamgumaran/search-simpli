@@ -1,0 +1,43 @@
+== p1-scan-old (scratch copy of 14c438a's tree, the plant's diff in p1-scan-old.diff, fresh global and local Zig caches; zig test root.zig --test-filter S6-T13)
+5/8 manifest_read_test.test.S6-T13: scan returns FileNotFound when MANIFEST names a missing documents or lexical file; no MANIFEST stays no error...expected error.FileNotFound, found .{ .current_generation = null, .current_files = 0, .orphan_document_files = 1, .orphan_lexical_files = 2, .superseded_document_files = 0, .superseded_lexical_files = 0, .unknown_files = 0, .current_source_files = 0, .current_filename_files = 0, .orphan_filename_files = 0, .superseded_filename_files = 0, .orphan_source_files = 0, .superseded_source_files = 0, .current_state_files = 0, .orphan_state_files = 0, .superseded_state_files = 0 }
+FAIL (TestExpectedError)
+6/8 manifest_read_test.test.S6-T13: an open whose MANIFEST is replaced between its stat and its read returns one whole generation...S6-T13 MANIFEST replaced between stat and read (opener, new length - stat length: generation read): open -1:old open 0:old open 1:old open 2048:old open_scoped -1:old open_scoped 0:old open_scoped 1:old open_scoped 2048:old open_source -1:old open_source 0:old open_source 1:old open_source 2048:old
+7/8 manifest_read_test.test.S6-T13: a folder index whose MANIFEST grows across the publish opens whole between stat and read...S6-T13 folder MANIFEST 576 -> 580 bytes between stat and read: generation 9 read
+8/8 manifest_read_test.test.S6-T13: a damaged MANIFEST is refused with the same error as before, by every open...OK
+7 passed; 0 skipped; 1 failed.
+== p2-scan-every-error (scratch copy of 14c438a's tree, the plant's diff in p2-scan-every-error.diff, fresh global and local Zig caches; zig test root.zig --test-filter S6-T13)
+5/8 manifest_read_test.test.S6-T13: scan returns FileNotFound when MANIFEST names a missing documents or lexical file; no MANIFEST stays no error...FAIL (FileNotFound)
+6/8 manifest_read_test.test.S6-T13: an open whose MANIFEST is replaced between its stat and its read returns one whole generation...S6-T13 MANIFEST replaced between stat and read (opener, new length - stat length: generation read): open -1:old open 0:old open 1:old open 2048:old open_scoped -1:old open_scoped 0:old open_scoped 1:old open_scoped 2048:old open_source -1:old open_source 0:old open_source 1:old open_source 2048:old
+7/8 manifest_read_test.test.S6-T13: a folder index whose MANIFEST grows across the publish opens whole between stat and read...S6-T13 folder MANIFEST 576 -> 580 bytes between stat and read: generation 9 read
+8/8 manifest_read_test.test.S6-T13: a damaged MANIFEST is refused with the same error as before, by every open...OK
+7 passed; 0 skipped; 1 failed.
+== p3-open-old (scratch copy of 14c438a's tree, the plant's diff in p3-open-old.diff, fresh global and local Zig caches; zig test root.zig --test-filter S6-T13)
+5/8 manifest_read_test.test.S6-T13: scan returns FileNotFound when MANIFEST names a missing documents or lexical file; no MANIFEST stays no error...OK
+6/8 manifest_read_test.test.S6-T13: an open whose MANIFEST is replaced between its stat and its read returns one whole generation...open (new MANIFEST 160 bytes, stat said 159): Truncated
+open, new MANIFEST 1 byte(s) against the stat: Truncated
+FAIL (Truncated)
+    if (encoded.len < expected_total) return error.Truncated;
+7/8 manifest_read_test.test.S6-T13: a folder index whose MANIFEST grows across the publish opens whole between stat and read...openScoped (MANIFEST 576 bytes at the stat, 580 after the publish): Truncated
+FAIL (Truncated)
+    if (encoded.len < expected_total) return error.Truncated;
+8/8 manifest_read_test.test.S6-T13: a damaged MANIFEST is refused with the same error as before, by every open...OK
+6 passed; 0 skipped; 2 failed.
+== p4-opensource-old (scratch copy of 14c438a's tree, the plant's diff in p4-opensource-old.diff, fresh global and local Zig caches; zig test root.zig --test-filter S6-T13)
+5/8 manifest_read_test.test.S6-T13: scan returns FileNotFound when MANIFEST names a missing documents or lexical file; no MANIFEST stays no error...OK
+6/8 manifest_read_test.test.S6-T13: an open whose MANIFEST is replaced between its stat and its read returns one whole generation...openSource (new MANIFEST 160 bytes, stat said 159): Truncated
+open_source, new MANIFEST 1 byte(s) against the stat: Truncated
+FAIL (Truncated)
+    if (encoded.len < expected_total) return error.Truncated;
+7/8 manifest_read_test.test.S6-T13: a folder index whose MANIFEST grows across the publish opens whole between stat and read...S6-T13 folder MANIFEST 576 -> 580 bytes between stat and read: generation 9 read
+8/8 manifest_read_test.test.S6-T13: a damaged MANIFEST is refused with the same error as before, by every open...OK
+7 passed; 0 skipped; 1 failed.
+== p5-damaged-error (scratch copy of 14c438a's tree, the plant's diff in p5-damaged-error.diff, fresh global and local Zig caches; zig test root.zig --test-filter S6-T13)
+5/8 manifest_read_test.test.S6-T13: scan returns FileNotFound when MANIFEST names a missing documents or lexical file; no MANIFEST stays no error...OK
+6/8 manifest_read_test.test.S6-T13: an open whose MANIFEST is replaced between its stat and its read returns one whole generation...S6-T13 MANIFEST replaced between stat and read (opener, new length - stat length: generation read): open -1:old open 0:old open 1:old open 2048:old open_scoped -1:old open_scoped 0:old open_scoped 1:old open_scoped 2048:old open_source -1:old open_source 0:old open_source 1:old open_source 2048:old
+7/8 manifest_read_test.test.S6-T13: a folder index whose MANIFEST grows across the publish opens whole between stat and read...S6-T13 folder MANIFEST 576 -> 580 bytes between stat and read: generation 9 read
+8/8 manifest_read_test.test.S6-T13: a damaged MANIFEST is refused with the same error as before, by every open...expected error.Truncated, found error.ManifestChanged
+FAIL (TestUnexpectedError)
+    if (encoded.len < expected_total) return error.Truncated;
+            return error.TestUnexpectedError;
+        try std.testing.expectError(expected[i], snapshot_open.open(a, io, tmp.dir));
+7 passed; 0 skipped; 1 failed.
