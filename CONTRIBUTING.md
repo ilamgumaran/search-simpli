@@ -39,8 +39,8 @@ points the Dart binding at another copy of the library and outranks this reposit
 ## The suites
 
 These are the commands the CI workflow (`.github/workflows/checks.yml`) runs, from the
-repository root unless a `cd` says otherwise. Each was run on macOS arm64 for S6-T1 on
-16 Nov 2026; the counts are from that run and grow as tests are added.
+repository root unless a `cd` says otherwise. The comments say what a passing run shows;
+the counts themselves grow as tests are added, so paste the ones your run printed.
 
 **Without Zig** (the `checks` job):
 
@@ -55,16 +55,17 @@ PYTHONHASHSEED=0 python3 scripts/relevance_smoke.py --pack j2 --output .search/j
 python3 scripts/j2_gate.py .search/j2.json
 ```
 
-(408 Python tests, 42 of them skipped because they need Zig.)
+(The tests that need Zig are skipped here, and the run says how many.)
 
 **Zig engine and C ABI** (the `native-linux` job):
 
 ```sh
 cd zig
-zig build test --summary all        # 440 of 449 passed, 9 skipped
-zig build test-abi --summary all    # abi_test: 24/24 checks passed
+zig build test --summary all        # none failed; each step's total is the count
+                                    # `python3 scripts/check_layers.py --list-tests` prints
+zig build test-abi --summary all    # abi_test: every check passed
 cd ..
-env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests -v   # 456 tests
+env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests -v   # the Zig tests run too
 ```
 
 The Python suite builds a Debug `searchd` itself when it finds Zig on `PATH`.
@@ -93,7 +94,7 @@ python3 scripts/ci_unicode_goldens.py
 ```sh
 cd bindings/dart/search_simpli
 dart pub get
-dart test                           # 94 tests; needs Zig on PATH (it builds searchd)
+dart test                           # all passed; needs Zig on PATH (it builds searchd)
 ```
 
 **Before every commit:**
@@ -153,10 +154,20 @@ and ABI as it is needs none.
 one way only, and another layer is reached through its module, never by a path.
 Tests, benchmarks and tools sit beside their subject, or in `zig/src/tests/` when they
 cross layers. [docs/layers.md](docs/layers.md) lists every file and says how to add an
-interface or a core feature. A new file under `zig/src/` goes in its layer's folder and
-must be added to `scripts/check_layers.py` (and to its folder's module root, when
-another folder imports it); run `python3 scripts/check_layers.py --write-doc` to
-regenerate the document's table, then `python3 scripts/check_layers.py`.
+interface, a core feature or a test. A new file under `zig/src/` goes in its layer's
+folder, is added to `scripts/check_layers.py` and is named in its folder's module root
+(`core/core.zig`, `ops/operations.zig` or `interfaces/interfaces.zig`: a `pub const`
+and a `_ = name;` line in the root's test-build `comptime` block); run
+`python3 scripts/check_layers.py --write-doc` to regenerate the document's table, then
+`python3 scripts/check_layers.py`.
+
+A test runs only when a step of `zig build test` reaches its file. A new test beside
+its subject is named in that folder's module root, as above; one in `zig/src/tests/` is
+named in `tests/root.zig` (a `pub const` and a `_ = name;` line in its test block).
+Naming it only through a module, `@import("core").name`, is not enough: a Zig test build
+runs the tests of its root module's files only. The checker fails, naming the file,
+when a file that holds a `test` is reached by no step, and
+`python3 scripts/check_layers.py --list-tests` shows which step runs each file.
 
 ## Native libraries and the source digest
 

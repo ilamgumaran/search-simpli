@@ -2,7 +2,8 @@
 
 **State:** written by S6-T1 (16 Nov 2026, from `main` at `7cd2c16`), item B1 of the
 [objective plan](plans/2026-11-16-objective-plan.md); the folders by S6-T14 (item B2),
-which moved every file into its layer's folder without changing what it does.
+which moved every file into its layer's folder without changing what it does; the
+check that every test runs by S6-T15.
 
 The engine's Zig sources form three layers, and each layer is a folder of `zig/src/`
 and a Zig module. The core can be improved without touching an interface, and a new
@@ -28,7 +29,8 @@ a file imports another file of its own folder by path, as before. A third module
 and the `fastmem` step, because a Zig test build only collects the tests of its root
 module's files. A module root names its folder's files in a `comptime` block that is
 compiled in a test build only, so it adds no test of its own; the totals are the same
-as when every file sat in one folder.
+as when every file sat in one folder. The checker fails when a module root leaves out
+a file of its folder, and when a file holding a test is reached by no step (below).
 
 `scripts/check_layers.py` holds the assignment of every file and checks it. It runs
 in CI (the `checks` job, no Zig needed) and through `python3 -m unittest`
@@ -149,9 +151,21 @@ Module roots (only `pub const` imports of their folder's files):
 
 | File (`zig/src/`) | Module | What it is |
 |---|---|---|
-| `core/core.zig` | `core` | the module `core`: every core file but `fastmem.zig`, and the core tests another folder names |
+| `core/core.zig` | `core` | the module `core`: every core file but `fastmem.zig`, and every core test |
 | `ops/operations.zig` | `operations` | the module `operations` (it imports `core`): every operations file |
 | `interfaces/interfaces.zig` | `interfaces` | the module `interfaces`, for the tests in `tests/`: every interface file but `main.zig`, and `field_warnings_test.zig` |
+
+The roots `zig/build.zig` compiles (a test step runs the tests of the files its root reaches by path):
+
+| File (`zig/src/`) | Step of `zig build test` | What it is the root of |
+|---|---|---|
+| `core/core.zig` | `core` | the module `core`, and the test step `core` |
+| `ops/operations.zig` | `operations` | the module `operations`, and the test step `operations` |
+| `interfaces/interfaces.zig` | `interfaces` | the module `interfaces` (for `tests/`), and the test step `interfaces` |
+| `tests/root.zig` | `tests` | the test step `tests`: the cross-layer tests |
+| `core/fastmem.zig` | `fastmem` | the `fastmem` object, and its own test step (`run test` in the Build Summary) |
+| `interfaces/main.zig` | none | the `searchd` executable |
+| `interfaces/abi.zig` | none | the C ABI libraries, and the library of `zig build test-abi` |
 
 Imports between interfaces that are allowed (any other fails the check):
 
@@ -180,7 +194,7 @@ Tests, benchmarks and tools (in their subject's layer folder, or `tests/` when t
 
 | File or pattern | Why |
 |---|---|
-| `*_test.zig` | a test, compiled by `zig build test` through its folder's module root or `tests/root.zig`, or run alone with `zig test` |
+| `*_test.zig` | a test: named in its folder's module root, or reached from the test block of `tests/root.zig`, so that its folder's step of `zig build test` runs it (or run alone with `zig test`) |
 | `*_bench.zig` | a benchmark, run by hand with `zig run` (zig/README.md) |
 | `core/nfc_dump.zig` | a test tool for `scripts/nfc_compare.py`, in no build |
 | `tests/root.zig` | the root of the cross-layer tests' step of `zig build test`: names every module and every test in `tests/` |
@@ -203,6 +217,18 @@ to regenerate the table above, then `python3 scripts/check_layers.py`. A change 
 contract, an index format or the C ABI still needs its
 [capability document](capability-process.md) first.
 
+**A new test** sits beside its subject (an in-file `test` block, or `core/x_test.zig`)
+or, when it crosses layers, in `tests/`, and runs only when a step's root reaches its
+file by path. In `core/`, `ops/` or `interfaces/` that means a `pub const` in the
+folder's module root and a `_ = name;` line in the root's test-build `comptime` block
+(every file of the folder is named there, tested or not); in `tests/`, a `pub const`
+in `tests/root.zig` and a `_ = name;` line in its test block, or an import that a
+reached test compiles. A file reached only through a module (`@import("core").name`)
+does not count, since a test build runs the tests of its root module's files only.
+`python3 scripts/check_layers.py` fails, naming the file, when a file that holds a
+`test` is reached by no step, and `--list-tests` prints which step runs each file's
+tests and how many there are: each step's total in `zig build test --summary all`.
+
 ## What the check reads, and what it does not
 
 It reads every `.zig` file under `zig/src/` (dot folders included) as Zig tokens, so
@@ -221,9 +247,22 @@ files must be named in the "Imports that are not files" table above, and only th
 folders listed there may use them; an unknown name fails. A file directly in
 `zig/src/`, in an unknown folder, or in a folder other than its layer's, fails.
 
-What it cannot see: what `zig/build.zig` wires together beyond the module names (which
-module is the root of which artifact, and what a named module added with `addImport`
-or `addOptions` contains; a new one must be listed, but its contents are not read);
+**Which tests run.** The roots are the `"src/....zig"` strings of `zig/build.zig`, each
+listed in the roots table above with its test step (the checker fails on a root
+missing from either side). From a step's root it follows the `.zig` imports a test
+build compiles: an `@import` written in a `test` block or a container-level `comptime`
+block, or in a declaration of the same file such a block names, directly or through
+other declarations (`_ = engine;` compiles `const engine = @import("engine.zig");`), and
+so on from file to file. A container-level import nothing compiled names is not
+followed, as Zig does not compile it. Every `test` declaration of a file counts, one in
+a nested `struct` too. Imports through a module are not followed for tests.
+
+What it cannot see: what `zig/build.zig` wires together beyond the roots and the module
+names (how a root is passed to `addTest` or `addModule`, and what a named module added
+with `addImport` or `addOptions` contains; a new one must be listed, but its contents
+are not read); an import compiled only because a function of another file names it,
+which the reach does not follow, so such a file fails until a root or a test names it
+(the strict side);
 `@embedFile` and `@cImport`, which bring in bytes or C declarations rather than Zig
 files; imports in files outside `zig/src/` (`zig/build.zig`, `zig/tests/`); and
 branches that are never compiled (an import under `if (false)` still counts, so the
