@@ -1,0 +1,50 @@
+################ plant root-removed (from b89a555)
+--- diff against the archive:
+diff -ruN <scratch>/base/zig/src/tests/compat_98c4a2b_test.zig <scratch>/plant-root-removed/zig/src/tests/compat_98c4a2b_test.zig
+--- <scratch>/base/zig/src/tests/compat_98c4a2b_test.zig	2026-11-20 13:30:19
++++ <scratch>/plant-root-removed/zig/src/tests/compat_98c4a2b_test.zig	2026-11-20 14:09:50
+@@ -528,3 +528,7 @@
+     defer opened.folder.close();
+     try std.testing.expect((try opened.engine.queryFields(a, "budget", .filename, .{ .top_k = 3, .retrieval_mode = .lexical })).len > 0);
+ }
++
++test "plant root-removed: a failing test" {
++    try std.testing.expectEqual(@as(u32, 1), 2);
++}
+diff -ruN <scratch>/base/zig/src/tests/root.zig <scratch>/plant-root-removed/zig/src/tests/root.zig
+--- <scratch>/base/zig/src/tests/root.zig	2026-11-20 13:30:19
++++ <scratch>/plant-root-removed/zig/src/tests/root.zig	2026-11-20 14:09:50
+@@ -62,7 +62,6 @@
+ pub const find_fixture_test = @import("core").find_fixture_test;
+ pub const lazy_open_test = @import("lazy_open_test.zig");
+ pub const compat_292cb568_test = @import("compat_292cb568_test.zig");
+-pub const compat_98c4a2b_test = @import("compat_98c4a2b_test.zig");
+ pub const compat_s6t7_test = @import("compat_s6t7_test.zig");
+ // S6-T8: `HYBLEX04` (section 5 at one byte per token, manifest v2.5).
+ pub const compat_s6t8_test = @import("compat_s6t8_test.zig");
+@@ -159,7 +158,6 @@
+     _ = find_fixture_test;
+     _ = lazy_open_test;
+     _ = compat_292cb568_test;
+-    _ = compat_98c4a2b_test;
+     _ = compat_s6t7_test;
+     _ = compat_s6t8_test;
+     _ = state_v3_test;
+--- zig build test --summary all (Debug), own caches:
++- run test core w
++- run test tests 284 pass, 9 skip, 1 fail (294 total)
+error: 'compat_98c4a2b_test.test.plant root-removed: a failing test' failed:
+Build Summary: 13/15 steps succeeded (1 failed); 579/589 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 36s MaxRSS:412M
++- run test operations 10 pass (10 total) 196ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 337ms MaxRSS:10M
++- run test tests 284 pass, 9 skip, 1 fail (294 total)
++- run test 6 pass (6 total) 939ms MaxRSS:5M
+error: the following build command failed with exit code 1:
+error: 'compat_98c4a2b_test.test.plant root-removed: a failing test' failed:
+       expected 1, found 2
+       <scratch>/plant-root-removed/zig/src/tests/compat_98c4a2b_test.zig:533:5: 0x100d516b3 in test.plant root-removed: a failing test (tests)
+zig build test exit 1
+--- the checker on this copy:
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 589 tests, each run by a step of `zig build test`)
+check_layers exit 0

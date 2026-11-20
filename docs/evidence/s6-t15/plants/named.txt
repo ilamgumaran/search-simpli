@@ -1,0 +1,65 @@
+################ plant named (from b89a555)
+--- diff against the archive:
+diff -ruN <scratch>/base/zig/src/core/core.zig <scratch>/plant-named/zig/src/core/core.zig
+--- <scratch>/base/zig/src/core/core.zig	2026-11-20 13:30:19
++++ <scratch>/plant-named/zig/src/core/core.zig	2026-11-20 13:43:01
+@@ -40,6 +40,7 @@
+ pub const manifest_read_test = @import("manifest_read_test.zig");
+ pub const nfc = @import("nfc.zig");
+ pub const nfc_timing_test = @import("nfc_timing_test.zig");
++pub const plant_module_test = @import("plant_module_test.zig");
+ pub const postings = @import("postings.zig");
+ pub const publication = @import("publication.zig");
+ pub const scope = @import("scope.zig");
+@@ -97,6 +98,7 @@
+         _ = manifest_read_test;
+         _ = nfc;
+         _ = nfc_timing_test;
++        _ = plant_module_test;
+         _ = postings;
+         _ = publication;
+         _ = scope;
+diff -ruN <scratch>/base/zig/src/core/plant_module_test.zig <scratch>/plant-named/zig/src/core/plant_module_test.zig
+--- <scratch>/base/zig/src/core/plant_module_test.zig	1969-12-31 19:00:00
++++ <scratch>/plant-named/zig/src/core/plant_module_test.zig	2026-11-20 13:43:01
+@@ -0,0 +1,5 @@
++const std = @import("std");
++
++test "plant named: a failing test" {
++    try std.testing.expectEqual(@as(u32, 1), 2);
++}
+diff -ruN <scratch>/base/zig/src/tests/root.zig <scratch>/plant-named/zig/src/tests/root.zig
+--- <scratch>/base/zig/src/tests/root.zig	2026-11-20 13:30:19
++++ <scratch>/plant-named/zig/src/tests/root.zig	2026-11-20 13:43:01
+@@ -74,6 +74,7 @@
+ pub const reload_test = @import("reload_test.zig");
+ pub const both_view_test = @import("core").both_view_test;
+ pub const field_warnings_test = @import("interfaces").field_warnings_test;
++pub const plant_module_test = @import("core").plant_module_test;
+
+ pub const Bm25Parameters = scoring.Bm25Parameters;
+ pub const bm25Contribution = scoring.bm25Contribution;
+@@ -181,4 +182,5 @@
+     _ = filename_complexity_test;
+     _ = cli_test;
+     _ = direct_search_test;
++    _ = plant_module_test;
+ }
+--- zig build test --summary all (Debug), own caches:
++- run test core 253 pass, 1 fail (254 total)
+error: 'plant_module_test.test.plant named: a failing test' failed:
++- run test tests w
+Build Summary: 13/15 steps succeeded (1 failed); 579/589 tests passed (9 skipped, 1 failed)
++- run test core 253 pass, 1 fail (254 total)
++- run test operations 10 pass (10 total) 247ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 434ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+error: the following build command failed with exit code 1:
+error: 'plant_module_test.test.plant named: a failing test' failed:
+       expected 1, found 2
+       <scratch>/plant-named/zig/src/core/plant_module_test.zig:4:5: 0x1033283e7 in test.plant named: a failing test (core)
+zig build test exit 1
+--- the checker on this copy:
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build test`)
+check_layers exit 0

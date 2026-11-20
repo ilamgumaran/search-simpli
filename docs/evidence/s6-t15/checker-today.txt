@@ -1,0 +1,89 @@
+# S6-T15: scripts/check_layers.py --list-tests on a fresh git archive of a50e224
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 74 | 588 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `core/analysis.zig` | 3 | core | `core/core.zig` |
+| `core/analyzer_v2.zig` | 8 | core | `core/core.zig` |
+| `core/apply.zig` | 3 | core | `core/core.zig` |
+| `core/bm25_conformance_test.zig` | 1 | core | `core/core.zig` |
+| `core/both_view_test.zig` | 2 | core | `core/core.zig` |
+| `core/checksum.zig` | 3 | core | `core/core.zig` |
+| `core/chunker.zig` | 5 | core | `core/core.zig` |
+| `core/chunker_md.zig` | 2 | core | `core/core.zig` |
+| `core/chunker_md_test.zig` | 1 | core | `core/core.zig` |
+| `core/chunker_test.zig` | 1 | core | `core/core.zig` |
+| `core/engine.zig` | 2 | core | `core/core.zig` |
+| `core/fastmem.zig` | 6 | fastmem | (the root) |
+| `core/filename_complexity_test.zig` | 2 | core | `core/core.zig` |
+| `core/filename_field.zig` | 1 | core | `core/core.zig` |
+| `core/filename_field_test.zig` | 12 | core | `core/core.zig` |
+| `core/find.zig` | 1 | core | `core/core.zig` |
+| `core/find_fixture_test.zig` | 10 | core | `core/core.zig` |
+| `core/fold.zig` | 3 | core | `core/core.zig` |
+| `core/fold_test.zig` | 3 | core | `core/core.zig` |
+| `core/generation_alloc.zig` | 9 | core | `core/core.zig` |
+| `core/hybrid.zig` | 10 | core | `core/core.zig` |
+| `core/import_analyzer_test.zig` | 4 | core | `core/core.zig` |
+| `core/import_build_timing_test.zig` | 1 | core | `core/core.zig` |
+| `core/importer.zig` | 2 | core | `core/core.zig` |
+| `core/incremental_indexing_test.zig` | 19 | core | `core/core.zig` |
+| `core/incremental_state.zig` | 7 | core | `core/core.zig` |
+| `core/indexer.zig` | 8 | core | `core/core.zig` |
+| `core/lexical_build.zig` | 2 | core | `core/core.zig` |
+| `core/lexical_segment.zig` | 17 | core | `core/core.zig` |
+| `core/lifecycle.zig` | 5 | core | `core/core.zig` |
+| `core/manifest.zig` | 15 | core | `core/core.zig` |
+| `core/manifest_inplace_test.zig` | 3 | core | `core/core.zig` |
+| `core/manifest_read_test.zig` | 4 | core | `core/core.zig` |
+| `core/nfc.zig` | 12 | core | `core/core.zig` |
+| `core/nfc_timing_test.zig` | 2 | core | `core/core.zig` |
+| `core/postings.zig` | 5 | core | `core/core.zig` |
+| `core/publication.zig` | 10 | core | `core/core.zig` |
+| `core/scope.zig` | 2 | core | `core/core.zig` |
+| `core/scoring.zig` | 7 | core | `core/core.zig` |
+| `core/segment.zig` | 14 | core | `core/core.zig` |
+| `core/snapshot_open.zig` | 1 | core | `core/core.zig` |
+| `core/source.zig` | 16 | core | `core/core.zig` |
+| `core/state_section.zig` | 4 | core | `core/core.zig` |
+| `core/verb_form_groups_test.zig` | 6 | core | `core/core.zig` |
+| `core/verb_forms.zig` | 3 | core | `core/core.zig` |
+| `core/verb_forms_test.zig` | 2 | core | `core/core.zig` |
+| `interfaces/abi.zig` | 9 | interfaces | `interfaces/interfaces.zig` |
+| `interfaces/field_warnings_test.zig` | 8 | interfaces | `interfaces/interfaces.zig` |
+| `interfaces/mcp.zig` | 5 | interfaces | `interfaces/interfaces.zig` |
+| `interfaces/rpc.zig` | 4 | interfaces | `interfaces/interfaces.zig` |
+| `ops/filename_response.zig` | 1 | operations | `ops/operations.zig` |
+| `ops/ops.zig` | 6 | operations | `ops/operations.zig` |
+| `ops/service.zig` | 3 | operations | `ops/operations.zig` |
+| `tests/apply_test.zig` | 48 | tests | `tests/root.zig` |
+| `tests/cli_test.zig` | 24 | tests | `tests/root.zig` |
+| `tests/compat_292cb568_test.zig` | 7 | tests | `tests/root.zig` |
+| `tests/compat_98c4a2b_test.zig` | 8 | tests | `tests/root.zig` |
+| `tests/compat_s6t7_test.zig` | 4 | tests | `tests/root.zig` |
+| `tests/compat_s6t8_test.zig` | 43 | tests | `tests/root.zig` |
+| `tests/compat_s6t9_test.zig` | 9 | tests | `tests/root.zig` |
+| `tests/direct_search_test.zig` | 8 | tests | `tests/root.zig` |
+| `tests/fold_groups_test.zig` | 8 | tests | `tests/root.zig` |
+| `tests/fuzzy_test.zig` | 15 | tests | `tests/root.zig` |
+| `tests/lazy_open_test.zig` | 11 | tests | `tests/root.zig` |
+| `tests/nfr13_arena_test.zig` | 17 | tests | `tests/root.zig` |
+| `tests/offsets_v4_test.zig` | 14 | tests | `tests/root.zig` |
+| `tests/query_report_test.zig` | 18 | tests | `tests/root.zig` |
+| `tests/query_utf8_test.zig` | 3 | tests | `tests/root.zig` |
+| `tests/reload_test.zig` | 3 | tests | `tests/root.zig` |
+| `tests/root.zig` | 1 | tests | (the root) |
+| `tests/source_fixture_test.zig` | 5 | tests | `tests/root.zig` |
+| `tests/state_v3_test.zig` | 21 | tests | `tests/root.zig` |
+| `tests/text_once_test.zig` | 8 | tests | `tests/root.zig` |
+| `tests/title_field_test.zig` | 18 | tests | `tests/root.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+exit 0

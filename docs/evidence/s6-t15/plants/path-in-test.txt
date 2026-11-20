@@ -1,0 +1,42 @@
+################ plant path-in-test (from b89a555)
+--- diff against the archive:
+diff -ruN <scratch>/base/zig/src/tests/plant_path_test.zig <scratch>/plant-path-in-test/zig/src/tests/plant_path_test.zig
+--- <scratch>/base/zig/src/tests/plant_path_test.zig	1969-12-31 19:00:00
++++ <scratch>/plant-path-in-test/zig/src/tests/plant_path_test.zig	2026-11-20 13:45:43
+@@ -0,0 +1,5 @@
++const std = @import("std");
++
++test "plant path-in-test: a failing test" {
++    try std.testing.expectEqual(@as(u32, 1), 2);
++}
+diff -ruN <scratch>/base/zig/src/tests/reload_test.zig <scratch>/plant-path-in-test/zig/src/tests/reload_test.zig
+--- <scratch>/base/zig/src/tests/reload_test.zig	2026-11-20 13:30:19
++++ <scratch>/plant-path-in-test/zig/src/tests/reload_test.zig	2026-11-20 13:45:43
+@@ -190,3 +190,9 @@
+     try std.testing.expect(served.generation.arena == before);
+     try expectHas(try call(&served, a, "read_span", "{\"root_id\":\"school\",\"path\":\"week.md\",\"start_line\":5,\"end_line\":5}"), "\"text\":\"tide table on Monday\\n\"");
+ }
++
++const plant_path = @import("plant_path_test.zig");
++
++test "plant: reach plant_path_test.zig by path" {
++    _ = plant_path;
++}
+--- zig build test --summary all (Debug), own caches:
++- run test core w
++- run test tests 285 pass, 9 skip, 1 fail (295 total)
+error: 'plant_path_test.test.plant path-in-test: a failing test' failed:
+Build Summary: 13/15 steps succeeded (1 failed); 580/590 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 58s MaxRSS:412M
++- run test operations 10 pass (10 total) 576ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 713ms MaxRSS:10M
++- run test tests 285 pass, 9 skip, 1 fail (295 total)
++- run test 6 pass (6 total) 1s MaxRSS:5M
+error: the following build command failed with exit code 1:
+error: 'plant_path_test.test.plant path-in-test: a failing test' failed:
+       expected 1, found 2
+       <scratch>/plant-path-in-test/zig/src/tests/plant_path_test.zig:4:5: 0x104d9002b in test.plant path-in-test: a failing test (tests)
+zig build test exit 1
+--- the checker on this copy:
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 590 tests, each run by a step of `zig build test`)
+check_layers exit 0
