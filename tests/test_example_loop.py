@@ -237,6 +237,11 @@ class SkillDocumentTests(unittest.TestCase):
         named_blocks = [block for kind, _, block in blocks if kind != "fence" and re.search(r"\bread_span\b", block)]
         # The tools row, step 2's name-only bullet and step 3 name it today.
         self.assertGreaterEqual(len(named_blocks), 3)
+        # Known limit (the orchestrator's ruling after the Second Verdict, the maintainer may reverse
+        # it): a real field of another tool named in the same block (`line` of `outline`, `chunk_id`
+        # of `find`, `section_path` of `search_knowledge`) put to read_span passes here. A word-matching
+        # test cannot tell "send X to read_span" from "X is in the other tool's result" without
+        # flagging today's correct text; the server refuses such a call with `unknown field`.
         for block in named_blocks:
             allowed = contract.allowed_in(block)
             for name in backticked_names(block):
@@ -244,6 +249,14 @@ class SkillDocumentTests(unittest.TestCase):
             for word in backticked_names(block) + bare_words(block):
                 self.assertNotIn(word.lower(), contract.stems,
                                  f"SKILL.md says {word!r} beside read_span: part of a request field's name, not a field ({sorted(contract.request)}): {block[:120]!r}")
+        # The tools row's "use it when" cell says what read_span takes: request fields and tool names
+        # only, never a result field (the Second Verdict's F3, `byte_exact`); its "returns" cell may
+        # name result fields.
+        row = next(block for kind, _, block in blocks if kind == "row" and block.startswith("| `read_span` |"))
+        cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
+        for name in backticked_names(cells[1]):
+            self.assertIn(name, set(contract.request) | contract.tools,
+                          f"the tools row offers `{name}` as something read_span takes, and its request schema does not have it")
         for kind, info, body in blocks:
             if kind != "fence" or not re.search(r"\bread_span\b", body):
                 continue
