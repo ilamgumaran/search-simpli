@@ -23,6 +23,13 @@ const source = @import("source.zig");
 
 const io = std.testing.io;
 
+// S6-T13: the scan with a missing section and the MANIFEST read during a
+// publish (`manifest_read_test.zig`), reached from here so `root.zig` (in the
+// natives' source digest) does not change for a test file.
+test {
+    _ = @import("manifest_read_test.zig");
+}
+
 test "lazy source rejects appended and truncated bytes on its pinned handle" {
     for ([_]bool{ false, true }) |append| {
         var indexed = try Indexed.init();
