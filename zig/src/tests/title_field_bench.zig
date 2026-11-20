@@ -2,7 +2,7 @@
 //! stage, and an estimate of what the title part adds to a content query.
 //! Opt-in diagnostic, not part of any library or the build graph:
 //!
-//!     zig run -lc -OReleaseSmall zig/src/title_field_bench.zig -- INDEX [ROUNDS]
+//!     zig run -lc -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/title_field_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX [ROUNDS]
 //!
 //! INDEX is a `searchd index --filename-index` over a
 //! `scripts/gen_timing_corpus.py` corpus. Prints, as JSON lines:

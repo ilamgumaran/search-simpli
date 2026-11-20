@@ -1,5 +1,5 @@
 //! Bounded, opt-in filename scaling diagnostic; no wall-clock CI gate.
-//! zig run -lc -OReleaseSmall zig/src/filename_bench.zig -- INDEX [QUERY] [CAP_MIB]
+//! zig run -lc -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/filename_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX [QUERY] [CAP_MIB]
 //! Use the same generated corpus at 1k/10k/15k/20k; report failures too.
 const std = @import("std");
 const snapshot = @import("core").snapshot_open;

@@ -1,6 +1,6 @@
 //! S3-T2 timing tool (§13 profile): query latency over a published index.
 //!
-//!     zig run -OReleaseFast zig/src/find_bench.zig -- INDEX_DIR [MODE ...]
+//!     zig run -OReleaseFast zig/src/core/find_bench.zig -- INDEX_DIR [MODE ...]
 //!
 //! MODE is any of `knowledge` (search_knowledge: `Engine.queryTokenized`,
 //! lexical, top 10), `words`, `phrase`, `prefix` (`find`, page size 20),

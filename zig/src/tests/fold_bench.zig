@@ -4,7 +4,7 @@
 //! adds to a warm `content` and `both` query. Opt-in diagnostic, not part of
 //! any library or the build graph:
 //!
-//!     zig run -lc -OReleaseSmall zig/src/fold_bench.zig -- INDEX [--derive-only]
+//!     zig run -lc -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/fold_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX [--derive-only]
 //!
 //! INDEX is a `searchd index --filename-index` over a
 //! `scripts/gen_timing_corpus.py` corpus. Prints, as JSON lines:

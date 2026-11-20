@@ -1,6 +1,6 @@
 //! S1-T16 timing tool: `nfc.normalize` on the bytes of a file, in process.
 //!
-//!     zig run -OReleaseFast zig/src/nfc_bench.zig -- FILE [RUNS]
+//!     zig run -OReleaseFast zig/src/core/nfc_bench.zig -- FILE [RUNS]
 //!
 //! Prints every run's milliseconds and the best. Not part of any library or
 //! the build graph.

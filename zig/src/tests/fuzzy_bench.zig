@@ -3,7 +3,7 @@
 //! estimate of what an expansion adds to a warm `content` and `both` query.
 //! Opt-in diagnostic, not part of any library or the build graph:
 //!
-//!     zig run -lc -OReleaseSmall zig/src/fuzzy_bench.zig -- INDEX
+//!     zig run -lc -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/fuzzy_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX
 //!
 //! INDEX is a `searchd index --filename-index` over a
 //! `scripts/gen_timing_corpus.py` corpus. The misspelt words are chosen

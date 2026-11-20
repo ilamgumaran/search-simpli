@@ -2,7 +2,7 @@
 //! Reads a file of lines (space-separated hex codepoints), writes one line
 //! per input: the NFC of that string as hex codepoints, or `ERR`.
 //!
-//!     zig run -OReleaseFast zig/src/nfc_dump.zig -- IN OUT
+//!     zig run -OReleaseFast zig/src/core/nfc_dump.zig -- IN OUT
 //!
 //! It is not part of any library or the build graph.
 const std = @import("std");
