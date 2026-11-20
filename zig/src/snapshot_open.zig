@@ -168,13 +168,9 @@ fn loadEngine(allocators: Allocators, io: std.Io, from: From, options: engine.En
         .memory => |sections| return loadEngineMemory(allocators, sections, options),
     };
     const blocks = allocators.blocks;
-    var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
-    const manifest_stat = try manifest_file.stat(io);
-    manifest_file.close(io);
-    const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
-    const manifest_read = try blocks.alloc(u8, manifest_size);
-    defer blocks.free(manifest_read);
-    const manifest_first = try dir.readFile(io, publication.current_manifest_file, manifest_read);
+    const manifest_read = try readManifest(blocks, io, dir);
+    defer blocks.free(manifest_read.buffer);
+    const manifest_first = manifest_read.bytes;
     const layout = try OpenBlock.of(try manifest.decode(manifest_first), manifest_first.len);
 
     const block = try blocks.alignedAlloc(u8, .fromByteUnits(engine.open_block_alignment), layout.total);
@@ -201,6 +197,32 @@ fn loadEngine(allocators: Allocators, io: std.Io, from: From, options: engine.En
     // (`openSource` reports why). A writer still treats it as a missing
     // section and heals it (`index --update`, `apply_changes`).
     return decodeLoaded(allocators.arena, block, layout, snapshot, options);
+}
+
+/// S6-T13: `MANIFEST` read whole from one open. The buffer is sized by a
+/// `stat` of the handle that is then read, so a publish that renames a new
+/// `MANIFEST` in between leaves the read on the file this open opened (the
+/// old generation, whole). Before, the size came from one open and the bytes
+/// from a second open by name, and a new `MANIFEST` longer than the old came
+/// back cut to the old size (`Truncated`; `manifest_read_test.zig`).
+/// `buffer` is the stat's size, to be freed whole; `bytes` is what was read
+/// (shorter only if the file shrank in place, which `manifest.decode` refuses
+/// as it refuses any cut `MANIFEST`).
+const ManifestRead = struct { buffer: []u8, bytes: []u8 };
+
+fn readManifest(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !ManifestRead {
+    const file = try dir.openFile(io, publication.current_manifest_file, .{});
+    defer file.close(io);
+    const stat = try file.stat(io);
+    const size = std.math.cast(usize, stat.size) orelse return error.IndexTooLarge;
+    const buffer = try allocator.alloc(u8, size);
+    errdefer allocator.free(buffer);
+    // As `std.Io.Dir.readFile` reads, but through this handle.
+    var reader = file.reader(io, &.{});
+    const length = reader.interface.readSliceShort(buffer) catch |err| switch (err) {
+        error.ReadFailed => return reader.err.?,
+    };
+    return .{ .buffer = buffer, .bytes = buffer[0..length] };
 }
 
 /// S6-T2: `loadEngine` over sections in memory: the manifest is copied into
@@ -272,12 +294,8 @@ pub const OpenedSource = struct {
 };
 
 pub fn openSource(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !OpenedSource {
-    var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
-    const manifest_stat = try manifest_file.stat(io);
-    manifest_file.close(io);
-    const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
-    const manifest_buffer = try allocator.alloc(u8, manifest_size);
-    const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
+    // S6-T13: one open, as `loadEngine`.
+    const manifest_encoded = (try readManifest(allocator, io, dir)).bytes;
     const metadata = try manifest.decode(manifest_encoded);
     if (!metadata.hasSource()) return .{ .metadata = metadata, .source = null };
     const buffer = try allocator.alloc(u8, metadata.source_bytes);
