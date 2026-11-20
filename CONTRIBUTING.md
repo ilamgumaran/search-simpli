@@ -60,9 +60,9 @@ python3 scripts/j2_gate.py .search/j2.json
 **Zig engine and C ABI** (the `native-linux` job):
 
 ```sh
+python3 scripts/check_test_counts.py --run   # zig build test --summary all: none failed,
+                                             # and each step's total equals the listing
 cd zig
-zig build test --summary all        # none failed; each step's total is the count
-                                    # `python3 scripts/check_layers.py --list-tests` prints
 zig build test-abi --summary all    # abi_test: every check passed
 cd ..
 env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests -v   # the Zig tests run too
@@ -74,8 +74,8 @@ The Python suite builds a Debug `searchd` itself when it finds Zig on `PATH`.
 `ReleaseSmall`, so the same suites run there too:
 
 ```sh
+python3 scripts/check_test_counts.py --run -- -Doptimize=ReleaseSmall
 cd zig
-zig build test -Doptimize=ReleaseSmall --summary all
 zig build test-abi -Doptimize=ReleaseSmall --summary all
 zig build -Doptimize=ReleaseSmall --prefix ../.search/release
 cd ..
@@ -154,20 +154,25 @@ and ABI as it is needs none.
 one way only, and another layer is reached through its module, never by a path.
 Tests, benchmarks and tools sit beside their subject, or in `zig/src/tests/` when they
 cross layers. [docs/layers.md](docs/layers.md) lists every file and says how to add an
-interface, a core feature or a test. A new file under `zig/src/` goes in its layer's
-folder, is added to `scripts/check_layers.py` and is named in its folder's module root
-(`core/core.zig`, `ops/operations.zig` or `interfaces/interfaces.zig`: a `pub const`
-and a `_ = name;` line in the root's test-build `comptime` block); run
+interface, a core feature or a test. A new layer file under `zig/src/` (not a test,
+benchmark or tool) goes in its layer's folder, is added to `FILES` in
+`scripts/check_layers.py` and is named in its folder's module root (`core/core.zig`,
+`ops/operations.zig` or `interfaces/interfaces.zig`: a `pub const` and a `_ = name;`
+line in the root's test-build `comptime` block); run
 `python3 scripts/check_layers.py --write-doc` to regenerate the document's table, then
 `python3 scripts/check_layers.py`.
 
-A test runs only when a step of `zig build test` reaches its file. A new test beside
-its subject is named in that folder's module root, as above; one in `zig/src/tests/` is
-named in `tests/root.zig` (a `pub const` and a `_ = name;` line in its test block).
-Naming it only through a module, `@import("core").name`, is not enough: a Zig test build
-runs the tests of its root module's files only. The checker fails, naming the file,
-when a file that holds a `test` is reached by no step, and
-`python3 scripts/check_layers.py --list-tests` shows which step runs each file.
+A new test file (`*_test.zig`) is not added to `FILES`; it runs only when a step of
+`zig build test` reaches it. Beside its subject, it is named in that folder's module
+root, as above; in `zig/src/tests/`, in `tests/root.zig` (a `pub const` and a
+`_ = name;` line in its test block). Naming it only through a module,
+`@import("core").name`, is not enough: a Zig test build runs the tests of its root
+module's files only. `python3 scripts/check_layers.py` fails, naming the file, when a
+file that holds a `test` is reached by no step, and `--list-tests` shows which step runs
+each file. Its reading of Zig is not exact (`docs/layers.md`, "What it cannot see"), so
+the authority is `python3 scripts/check_test_counts.py --run`, which runs
+`zig build test --summary all` and fails when a step's total differs from that listing;
+CI runs it in both Zig jobs.
 
 ## Native libraries and the source digest
 
