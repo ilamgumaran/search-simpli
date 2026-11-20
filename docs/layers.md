@@ -278,7 +278,10 @@ guard; a reached file with a test that does not count fails.
 
 **What it cannot see, and which way it errs.** Its reading of Zig is not exact, and
 `scripts/check_test_counts.py`, which compares each step's total with a real run, is
-the authority. The checker's limits:
+the authority. Its listing takes the steps from the roots table, not from
+`zig/build.zig`, so a step the build loses still shows as missing from the run; it
+matches them by the name the Build Summary prints after `run test` (the step's own
+name, and none for `fastmem`). The checker's limits:
 
 - *Strict* (it fails a test that does run): an import compiled only through a function
   that a test calls, in the same file or another (`std.testing.refAllDecls` included),

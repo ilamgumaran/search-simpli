@@ -25,8 +25,11 @@ Usage (from anywhere; no dependencies but Python and, for --run, Zig 0.16 on PAT
         # compares a saved run's output (stdout and stderr together)
 
 It exits 1 when a comparison fails, and with --run also when the build fails (after
-printing the comparison). The steps are matched by the name the Build Summary prints
-after `run test`, which zig/build.zig sets (check_layers.build_test_steps).
+printing the comparison). The listing's steps are BUILD_ROOTS' (scripts/check_layers.py),
+not what zig/build.zig holds now, so this check does not lean on the checker's reading of
+the build; the checker's own problems are noted, not counted, since it is its own step.
+The steps are matched by the name the Build Summary prints after `run test`
+(check_layers.step_label).
 """
 
 from __future__ import annotations
@@ -79,8 +82,10 @@ def parse_summary(text: str):
 
 
 def listing(root: Path):
-    """The checker's tests per step of `zig build test`: (label -> (step, count), problems).
-    label is the name the Build Summary prints for the step (zig/build.zig's `.name`)."""
+    """The checker's tests per step of `zig build test`: (label -> (step, count), the
+    static checker's problems). label is the name the Build Summary prints for the step
+    (check_layers.step_label). The steps are BUILD_ROOTS', whatever zig/build.zig now
+    holds, so this comparison does not depend on the checker's reading of the build."""
     report = {}
     problems = check_layers.check(root, report=report)
     counts = {}
@@ -89,12 +94,7 @@ def listing(root: Path):
             counts[step] = counts.get(step, 0) + report["tests"][rel]
     out = {}
     for rel, step in report.get("steps", {}).items():
-        label = report.get("labels", {}).get(rel)
-        if label is None:
-            problems.append(f"{check_layers.BUILD}: no test step of `zig build test` is rooted at src/{rel} "
-                            f"(BUILD_ROOTS gives it the step {step!r})")
-            continue
-        out[label] = (step, counts.get(step, 0))
+        out[report["labels"][rel]] = (step, counts.get(step, 0))
     return out, problems
 
 
@@ -148,9 +148,8 @@ def main(argv=None) -> int:
         text = "".join(captured)
     else:
         text = args.log.read_text(encoding="utf-8", errors="replace")
-    expected, problems = listing(root)
-    ran, parse_problems = parse_summary(text)
-    problems += parse_problems
+    expected, static = listing(root)
+    ran, problems = parse_summary(text)
     rows, compare_problems = compare(expected, ran)
     problems += compare_problems
     print()
@@ -158,6 +157,10 @@ def main(argv=None) -> int:
     print("|---|---|---:|---|---|")
     for step, shown, count, got, verdict in rows:
         print(f"| {step} | `{shown}` | {count} | {got} | {verdict} |")
+    if static:
+        # Not this check's verdict: scripts/check_layers.py is its own step.
+        print(f"check_test_counts: note: scripts/check_layers.py reports {len(static)} problem(s) of its own "
+              "(run it to see them); they do not change this comparison")
     for problem in problems:
         print(f"check_test_counts: {problem}")
     if build_code:

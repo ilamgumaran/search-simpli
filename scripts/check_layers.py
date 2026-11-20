@@ -201,6 +201,17 @@ BUILD_ROOTS = {
     "interfaces/main.zig": (None, "the `searchd` executable"),
     "interfaces/abi.zig": (None, "the C ABI libraries, and the library of `zig build test-abi`"),
 }
+# The name the Build Summary of `zig build test --summary all` prints after `run test`
+# for a step, where it is not the step's own name: zig/build.zig compiles fastmem's
+# tests with no `.name` (S6-T15 rework; scripts/check_test_counts.py matches by it).
+STEP_LABELS = {"fastmem": ""}
+
+
+def step_label(step: str) -> str:
+    """What the Build Summary prints after `run test` for a step of BUILD_ROOTS."""
+    return STEP_LABELS.get(step, step)
+
+
 # Files of a layer's folder that its module root leaves out: each is the root of a
 # compilation of its own (BUILD_ROOTS) and is never compiled as part of the module.
 OUTSIDE_MODULE = {
@@ -1131,7 +1142,6 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
     # S6-T15: the roots zig/build.zig compiles, and the tests each step of `zig build test` runs.
     build_path = root / BUILD
     named = {}
-    report_steps = {}
     if not build_path.is_file():
         problems.append(f"{BUILD}:1: missing; the checker reads the roots of `zig build test` from it")
     else:
@@ -1164,11 +1174,15 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
                 elif row and label != want:
                     problems.append(f"{BUILD}:{number}: the test_roots row {label!r} is rooted at src/{rel}, "
                                     f"the root of the step {want!r} in BUILD_ROOTS: a row's name and path go together")
+                elif not row and label != step_label(want):
+                    shown, expected = f"run test {label}".rstrip(), f"run test {step_label(want)}".rstrip()
+                    problems.append(f"{BUILD}:{number}: the test rooted at src/{rel} is named {label!r}, so the "
+                                    f"Build Summary shows `{shown}`; the step {want!r} is expected as "
+                                    f"`{expected}` (STEP_LABELS in scripts/check_layers.py)")
         for rel, (step, _) in sorted(build_roots.items()):
             if step is not None and rel not in by_root:
                 problems.append(f"{_script_line(rel, table='BUILD_ROOTS')}: BUILD_ROOTS makes {rel} the root of the "
                                 f"step {step!r}, but no test the `test` step of {BUILD} runs is rooted there")
-        report_steps = {rel: places[0][0] for rel, places in by_root.items()}
     for rel in sorted(build_roots):
         # A missing file listed in another table is reported there.
         if rel not in present_set and rel not in files and rel not in module_roots and rel not in exempt_files:
@@ -1178,7 +1192,9 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
         if rel not in build_roots:
             problems.append(f"{_script_line(rel, table='OUTSIDE_MODULE')}: OUTSIDE_MODULE names {rel}, "
                             "which is not in BUILD_ROOTS")
-    live_roots = {rel: v for rel, v in build_roots.items() if rel in named}
+    # The listing is what BUILD_ROOTS says should run, whatever zig/build.zig now does:
+    # the build is checked against it above, and a real run by scripts/check_test_counts.py.
+    live_roots = {rel: v for rel, v in build_roots.items() if rel in present_set}
     tests, test_lines, reached, via_module, unrun = test_reach(src, present, live_roots, exports, layer_modules)
     roots_of = {FOLDERS[layer]: rel for rel, (layer, _, _) in module_roots.items()}
     tests_root = next((rel for rel, (step, _) in build_roots.items() if step == TESTS), "tests/root.zig")
@@ -1235,7 +1251,7 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
     if report is not None:
         report.update(tests=tests, lines=test_lines, reached=reached, via_module=via_module,
                       steps={rel: step for rel, (step, _) in live_roots.items() if step is not None},
-                      labels=report_steps)
+                      labels={rel: step_label(step) for rel, (step, _) in live_roots.items() if step is not None})
 
     if doc:
         doc_path = root / DOC

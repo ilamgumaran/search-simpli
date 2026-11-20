@@ -1,0 +1,71 @@
+# X-add-test-step on ecae2c3
+ .../repos/search-simpli-wt/S6-T15-scratch.noindex/after-verdict/X-add-test-step/{pristine => src}/zig/build.zig  | 1 +
+ .../search-simpli-wt/S6-T15-scratch.noindex/after-verdict/X-add-test-step/src/zig/src/tests/extra_test.zig}      | 1 +
+ 2 files changed, 2 insertions(+)
+## static checker (check_layers.py --list-tests) exit 1
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 74 | 588 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `tests/extra_test.zig` | 1 | none | nothing |
+
+zig/build.zig:63: names src/tests/extra_test.zig, which BUILD_ROOTS (scripts/check_layers.py) does not list: add it, with the step of `zig build test` it is the root of, or None
+zig/build.zig:63: a test step is rooted at src/tests/extra_test.zig, which BUILD_ROOTS (scripts/check_layers.py) gives no step: add the step there
+zig/src/tests/extra_test.zig:1: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+check_layers: 3 problem(s)
+
+## count comparison (check_test_counts.py --run, zig build test --summary all, Debug) exit 1 (166 s)
+Build Summary: 17/17 steps succeeded; 580/589 tests passed (9 skipped)
+test success
++- run test core 253 pass (253 total) 40s MaxRSS:412M
++- run test operations 10 pass (10 total) 215ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 480ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test extra 1 pass (1 total) 158ms MaxRSS:2M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+
+|  +- compile test core Debug native success 4s MaxRSS:817M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 95ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 3s MaxRSS:614M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 3s MaxRSS:676M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+|  +- compile test tests Debug native success 5s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|  +- compile test extra Debug native success 1s MaxRSS:283M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+|---|---|---:|---|---|
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+| (none) | `run test extra` | - | 1 | FAIL |
+check_test_counts: zig/build.zig:63: names src/tests/extra_test.zig, which BUILD_ROOTS (scripts/check_layers.py) does not list: add it, with the step of `zig build test` it is the root of, or None
+check_test_counts: zig/build.zig:63: a test step is rooted at src/tests/extra_test.zig, which BUILD_ROOTS (scripts/check_layers.py) gives no step: add the step there
+check_test_counts: zig/src/tests/extra_test.zig:1: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+check_test_counts: the run has the step `run test extra` (+- run test extra 1 pass (1 total) 158ms MaxRSS:2M), which the listing lacks

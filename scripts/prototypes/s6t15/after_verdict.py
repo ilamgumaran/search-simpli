@@ -21,13 +21,8 @@ from pathlib import Path
 WT, COMMIT, SCRATCH, OUT = Path(sys.argv[1]), sys.argv[2], Path(sys.argv[3]), Path(sys.argv[4])
 NAMES = sys.argv[5:]
 
-ORDER = ["baseline",
-         "X-remove-core-row", "X-remove-fastmem-step", "X-copy-paste-ops-row", "X-remove-tests-row",
-         "X-change-tests-root", "X-add-test-step",
-         "A-nested-unref", "B-generic", "C-fn-named-not-called", "D-method-uncalled", "E-comptime-if-false",
-         "F-comptime-not-is-test", "G-pub-const-nontest-fn", "H-path-in-other-module-test", "I-refAllDecls",
-         "J-two-modules", "K-usingnamespace", "L-bench-only", "M-field-name", "R-import-in-named-struct",
-         "Y-doc-ops"]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from after_verdict_order import ORDER  # noqa: E402
 
 
 def load_plants():

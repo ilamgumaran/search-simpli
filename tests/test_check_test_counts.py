@@ -158,6 +158,27 @@ class RepositoryTests(unittest.TestCase):
                          [("", "fastmem"), ("core", "core"), ("interfaces", "interfaces"),
                           ("operations", "operations"), ("tests", "tests")])
 
+    def test_the_listing_does_not_follow_the_build_file(self):
+        # The Verdict's first edit, the core row deleted: the listing still has the step
+        # (BUILD_ROOTS'), so a run without it fails the comparison on its own.
+        import shutil
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp)
+            shutil.copytree(REPO / "zig" / "src", copy / "zig" / "src")
+            (copy / "docs").mkdir()
+            shutil.copy(REPO / "docs" / "layers.md", copy / "docs" / "layers.md")
+            row = '        .{ .name = "core", .path = "src/core/core.zig" },\n'
+            build = (REPO / "zig" / "build.zig").read_text(encoding="utf-8")
+            self.assertEqual(build.count(row), 1)
+            (copy / "zig" / "build.zig").write_text(build.replace(row, ""), encoding="utf-8")
+            expected, static = check_test_counts.listing(copy)
+            self.assertIn("core", expected)
+            self.assertTrue(static)  # the static checker fails it too, on its own
+            text = "\n".join(line for line in DEBUG.splitlines() if "test core" not in line)
+            ran = check_test_counts.parse_summary(text)[0]
+            _, problems = check_test_counts.compare(expected, ran)
+            self.assertTrue(any("'core'" in p and "the run has no such step" in p for p in problems), problems)
+
     def test_main_against_a_log_of_the_listing_passes_and_one_test_more_fails(self):
         expected, _ = check_test_counts.listing(REPO)
         lines = ["Build Summary: ok", "test success"]

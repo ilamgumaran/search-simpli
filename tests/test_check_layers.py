@@ -860,11 +860,12 @@ class BuildStepTests(unittest.TestCase):
         problems = self.edit('const test_step = b.step("test", "Run the tests");', 'const test_step = b.step("t", "");')
         self.assertIn('no `const ... = b.step("test", ...)`', " ".join(problems))
 
-    def test_a_named_test_outside_the_loop_takes_its_name(self):
+    def test_a_test_outside_the_loop_named_otherwise_than_step_labels_fails(self):
+        # The count comparison matches steps by the Build Summary's name (STEP_LABELS).
         self.tree.write_build(BUILD.replace(MORE, FASTMEM.replace(".{ .root_module", '.{ .name = "mem", .root_module')))
-        report = {}
-        self.assertEqual(self.tree.check(doc=False, report=report), [])
-        self.assertEqual(report["labels"]["core/fastmem.zig"], "mem")
+        self.assertEqual(self.tree.check(doc=False), [
+            "zig/build.zig:17: the test rooted at src/core/fastmem.zig is named 'mem', so the Build Summary shows "
+            "`run test mem`; the step 'fastmem' is expected as `run test` (STEP_LABELS in scripts/check_layers.py)"])
 
     def test_the_verifier_s_edits_to_the_real_build_fail(self):
         # Finding 1's three edits, on the real zig/build.zig: each makes build_test_steps

@@ -1,0 +1,53 @@
+# X-remove-core-row on ecae2c3
+ .../search-simpli-wt/S6-T15-scratch.noindex/after-verdict/X-remove-core-row/{pristine => src}/zig/build.zig      | 1 -
+ 1 file changed, 1 deletion(-)
+## static checker (check_layers.py --list-tests) exit 1
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 74 | 588 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+
+scripts/check_layers.py:196: BUILD_ROOTS makes core/core.zig the root of the step 'core', but no test the `test` step of zig/build.zig runs is rooted there
+check_layers: 1 problem(s)
+
+## count comparison (check_test_counts.py --run, zig build test --summary all, Debug) exit 1 (107 s)
+Build Summary: 13/13 steps succeeded; 326/335 tests passed (9 skipped)
+test success
++- run test operations 10 pass (10 total) 205ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 299ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+
+|  +- compile test operations Debug native success 2s MaxRSS:622M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 98ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 3s MaxRSS:681M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+|  +- compile test tests Debug native success 5s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+|---|---|---:|---|---|
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: scripts/check_layers.py:196: BUILD_ROOTS makes core/core.zig the root of the step 'core', but no test the `test` step of zig/build.zig runs is rooted there
+check_test_counts: zig/build.zig: no test step of `zig build test` is rooted at src/core/core.zig (BUILD_ROOTS gives it the step 'core')

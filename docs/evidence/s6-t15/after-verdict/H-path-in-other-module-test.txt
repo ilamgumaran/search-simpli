@@ -1,0 +1,61 @@
+# H-path-in-other-module-test on ecae2c3
+ .../after-verdict/H-path-in-other-module-test/{pristine => src}/zig/src/interfaces/field_warnings_test.zig    | 4 ++++
+ .../S6-T15-scratch.noindex/after-verdict/H-path-in-other-module-test/src/zig/src/interfaces/plant_h_test.zig} | 4 ++++
+ 2 files changed, 8 insertions(+)
+## static checker (check_layers.py --list-tests) exit 1
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 5 | 28 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 75 | 590 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `interfaces/plant_h_test.zig` | 1 | interfaces | `interfaces/field_warnings_test.zig` |
+
+zig/src/interfaces/interfaces.zig:1: does not name interfaces/plant_h_test.zig: a module root names every file of its folder (a pub const, and a line in its test-build comptime block), so the module's step of `zig build test` compiles it and runs its tests
+check_layers: 1 problem(s)
+
+## count comparison (check_test_counts.py --run, zig build test --summary all, Debug) exit 1 (141 s)
+Build Summary: 13/15 steps succeeded (1 failed); 580/590 tests passed (9 skipped, 1 failed)
+test transitive failure
++- run test core 253 pass (253 total) 53s MaxRSS:412M
++- run test operations 10 pass (10 total) 325ms MaxRSS:7M
++- run test interfaces 27 pass, 1 fail (28 total)
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+
+|  +- compile test core Debug native success 9s MaxRSS:823M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 104ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 6s MaxRSS:604M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 7s MaxRSS:682M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+|  +- compile test tests Debug native success 11s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+|---|---|---:|---|---|
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 28 | 28 (27 pass, 1 fail) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: zig/src/interfaces/interfaces.zig:1: does not name interfaces/plant_h_test.zig: a module root names every file of its folder (a pub const, and a line in its test-build comptime block), so the module's step of `zig build test` compiles it and runs its tests
+check_test_counts: zig build test exited 1
