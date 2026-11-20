@@ -1,0 +1,32 @@
+diff -ru src.noindex/main/zig/src/lexical_segment.zig src.noindex/cb2/zig/src/lexical_segment.zig
+--- src.noindex/main/zig/src/lexical_segment.zig	2026-11-20 01:57:40
++++ src.noindex/cb2/zig/src/lexical_segment.zig	2026-11-20 03:17:41
+@@ -262,7 +262,28 @@
+     return 0;
+ }
+ 
++/// S6-T13 verifier placement control: never called at run time.
++pub fn verifierControl(bytes: []const u8, seed: u64) u64 {
++    var acc: u64 = seed;
++    {
++        var k0: usize = 0;
++        while (k0 + 2 < bytes.len) : (k0 += 1) {
++            acc = (acc *% 1099511628211) ^ (@as(u64, bytes[k0]) << 1);
++            if (bytes[k0 + 1] == 0) acc +%= @as(u64, k0) *% 5;
++        }
++    }
++    {
++        var k1: usize = 1;
++        while (k1 + 3 < bytes.len) : (k1 += 2) {
++            acc = (acc *% 1099511628217) ^ (@as(u64, bytes[k1]) << 2);
++            if (bytes[k1 + 1] == 41) acc +%= @as(u64, k1) *% 9;
++        }
++    }
++    return acc;
++}
++
+ pub fn inspect(encoded: []const u8) DecodeError!Header {
++    if (encoded.len >= (@as(usize, 1) << 50) and verifierControl(encoded, 3) == 9) return error.Truncated;
+     if (encoded.len >= 8 and std.mem.eql(u8, encoded[0..8], magic_v3)) return inspectV3(encoded, version_v3);
+     if (encoded.len >= 8 and std.mem.eql(u8, encoded[0..8], magic_v4)) return inspectV3(encoded, version_v4);
+     var cursor = Cursor{ .bytes = encoded };
