@@ -33,7 +33,9 @@ same, highlights included.
   library. An index from an older library whose highlight offsets are
   damaged (one its own `find` already refuses) is refused at that first
   publish, even when the damaged file is being removed (the index is left as
-  it was), and must be rebuilt from the files.
+  it was), and must be rebuilt from the files (`indexFolder` without
+  `update`): where only a removed file's offset table was damaged, 0.9.1's
+  incremental publish published over it (S6-T10's note).
 - **Natives rebuilt** (`native/SOURCE-SHA256` `2e203ac5…`): macOS arm64
   990,040 B, Android arm64 959,584 B, iOS arm64 framework binary 970,992 B.
 

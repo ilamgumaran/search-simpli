@@ -241,10 +241,14 @@ meets a v4 index as a clear refusal, never as a misread.
   written, but they are checked by the same v2 rules
   (`postings.checkPairsTable`), and a table v2 refuses refuses the publish
   (`InvalidPositions`, or `InvalidLexicalSection` where the tables are found),
-  the old generation left whole. `main`'s writer dropped them unchecked, so an
-  old index whose only damage sat in a removed file's table was published over;
-  now it needs a full rebuild (`ss_index_folder` without `update`,
-  `searchd index` without `--update`).
+  the old generation left whole. **Rebuild note:** the writer before v4
+  (Dart 0.9.1's) dropped those tables unchecked, so it published over an old
+  index whose only damage sat in a removed file's offset table; this writer
+  refuses that index at the first incremental publish (an update,
+  `apply_changes`), and it needs a full rebuild from the files
+  (`ss_index_folder` without `update`, `searchd index` without `--update`).
+  Before that publish such an index's `find` already failed on either library
+  (v2's validation refuses the whole section).
 - Under v4 (an update over a `HYBLEX04` section), a removed document's table
   is dropped with the document without its rules being checked; only its
   length in bytes is walked, as v2's writer does for v2 tables. The two differ
@@ -255,6 +259,32 @@ meets a v4 index as a clear refusal, never as a misread.
 - Readers keep the section's bytes as they are (`postings.PositionSections`
   records which coding section 5 uses) and decode a document's tokens when a
   `find` hit needs them, as for v2's varints.
+
+## Known behaviour (S6-T8's Verdicts, recorded by S6-T10)
+
+No behaviour change; each is a sentence for the maintainer.
+
+- **A v2 gap v4 cannot hold (audit item 5):** a valid v2 table with a gap
+  whose zigzag is 2^32 or more (a token 2^31 codepoints or more from the
+  previous token's end) is refused at the first publish with
+  `InvalidLexicalSection`, the old generation left whole, and an undamaged
+  index can hold one only if both size caps (`max_file_bytes`,
+  `max_total_bytes`) were raised above 2 GiB and a file held such a run in one
+  line.
+- **A removed document's v4 table is not checked (audit item 14):** under v4 a
+  removed document's table is dropped with only its structure walked, so value
+  damage in it (a length of 0, say) disappears without a report, and the new
+  generation is correct.
+- **A removed document's section-4 damage is not reported (audit item 16):**
+  damage in section 4 of a removed document's postings is dropped with the
+  document, unreported, as before v4 (S4-T11's merge; not tried).
+- **No writer checks rule 11 (note I5):** a carried table whose span ends past
+  its chunk's text, at or below 2^32 − 1, is published again by a later
+  update, and `find` refuses that hit with `OffsetsPastText` before and after
+  the write.
+
+Whether a writer should check the tables it drops (items 14 and 16) is open
+for the maintainer ([03-next](journey/03-next.md)).
 
 ## Deliberate limitations
 
