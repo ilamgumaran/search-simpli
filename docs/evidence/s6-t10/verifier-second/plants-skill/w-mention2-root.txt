@@ -1,0 +1,40 @@
+planted w-mention2-root
+--- diff base w-mention2-root
+diff -r -u base/skills/folder-knowledge/SKILL.md w-mention2-root/skills/folder-knowledge/SKILL.md
+--- base/skills/folder-knowledge/SKILL.md	2026-11-19 23:18:12
++++ w-mention2-root/skills/folder-knowledge/SKILL.md	2026-11-19 23:20:48
+@@ -50,7 +50,7 @@
+      file's first passage, marked as not matched
+      (`match_sections.content.matched: false`):
+      it is navigation, not evidence. Read the file (`outline`, then
+-     `read_span`) before quoting anything from it, and cite the file without
++     `read_span` with the result's `root` and `path`) before quoting anything from it, and cite the file without
+      lines when only the name matched. An index built without the
+      file-name channel has no `filename_policy_id` in `index_status` and
+      refuses a `filename` or `both` request; the host says so in its own
+--- SEARCH_SIMPLI_NO_ZIG=1 tests.test_example_loop.SkillDocumentTests
+test_every_read_span_call_of_the_example_loop_sends_request_fields (test_example_loop.SkillDocumentTests)
+S6-T10: every read_span call of example_loop.py (the literal name, or a module constant ... ok
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10; widened after the Verdict's F1): the skill said "root" for ... FAIL
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_skill_read_span_call_agrees_with_the_schema_on_what_is_required (test_example_loop.SkillDocumentTests)
+S6-T10 (the Verdict's `w-optional-end`): the schema requires `root_id`, `path`, ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+======================================================================
+FAIL: test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10; widened after the Verdict's F1): the skill said "root" for
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<vscratch>/py.noindex/w-mention2-root/tests/test_example_loop.py", line 243, in test_skill_names_only_the_read_span_request_fields_the_contract_has
+    self.assertIn(name, allowed, f"SKILL.md names `{name}` beside read_span, and no schema of a tool named there has it: {block[:120]!r}")
+AssertionError: 'root' not found in {'expansions', 'matched_terms', 'both', 'say_when_evidence_is_insufficient', 'truncated', 'filename', 'analyzer_id', 'File name', 'read_chunk', 'scope', 'filename_policy_id', 'unavailable', 'has_source', 'Content', 'fuzzy_policy_id', 'request', 'start_line', 'generation', 'filename_matches_are_navigation', 'fields', 'retrieval_mode', 'postings', 'roots', 'raw', 'citation', 'end_line', 'mode', 'fold-groups-v3', 'read_span', 'source', 'pending', 'line', 'cite_path_and_lines', 'unverified', 'field', 'retrieval', 'authorization', 'section_path', 'score', 'path', 'embedding', 'title', 'context_after', 'absent', 'chunker', 'root_id', 'has_positions', 'warnings', 'level', 'match_sections', 'principal_label_count', 'tool', 'list_sources', 'term', 'title-field-v1', 'list_files', 'results', 'path_prefix', 'search_field', 'index', 'verified', 'version', 'outline', 'content', 'lines', 'pending_files', 'vector_mode', 'matched_in', 'members', 'search_knowledge', 'fuzzy-v1', 'embedding_model_id', 'matched', 'answer_policy', 'front_matter', 'query', 'chunk_id', 'index_status', 'headings', 'ready', 'candidate_k', 'documents', 'fold_policy_id', 'terms', 'lexical', 'chunkers', 'text', 'filename-field-v1', 'rank', 'basename', 'labels_applied', 'semantics', 'context_before', 'context_lines', 'message', 'ranking', 'pending_paths', 'apply_changes', 'kind', 'find', 'code', 'files', 'sha256', 'ground_in_results', 'byte_exact', 'vector_dimensions', 'title_policy_id', 'top_k', 'hybrid', 'vector', 'all-required-labels-v1', 'label', 'searchd', 'abi_test'} : SKILL.md names `root` beside read_span, and no schema of a tool named there has it: '- A question that names a file, or asks "what is the file called ... about", or uses a word likelier to sit in a file\'s '
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.009s
+
+FAILED (failures=1)
+exit 1

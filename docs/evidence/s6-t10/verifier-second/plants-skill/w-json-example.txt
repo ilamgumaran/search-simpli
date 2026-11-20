@@ -1,0 +1,43 @@
+planted w-json-example
+--- diff base w-json-example
+diff -r -u base/skills/folder-knowledge/SKILL.md w-json-example/skills/folder-knowledge/SKILL.md
+--- base/skills/folder-knowledge/SKILL.md	2026-11-19 23:18:12
++++ w-json-example/skills/folder-knowledge/SKILL.md	2026-11-19 23:20:48
+@@ -137,3 +137,9 @@
+ ```sh
+ python3 skills/folder-knowledge/example_loop.py --searchd /path/to/searchd
+ ```
++
++A `read_span` call as the loop sends it:
++
++```json
++{"name": "read_span", "arguments": {"root": "r1", "path": "notes/kite.md", "start_line": 4, "end_line": 6}}
++```
+--- SEARCH_SIMPLI_NO_ZIG=1 tests.test_example_loop.SkillDocumentTests
+test_every_read_span_call_of_the_example_loop_sends_request_fields (test_example_loop.SkillDocumentTests)
+S6-T10: every read_span call of example_loop.py (the literal name, or a module constant ... ok
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10; widened after the Verdict's F1): the skill said "root" for ... FAIL
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_skill_read_span_call_agrees_with_the_schema_on_what_is_required (test_example_loop.SkillDocumentTests)
+S6-T10 (the Verdict's `w-optional-end`): the schema requires `root_id`, `path`, ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+======================================================================
+FAIL: test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10; widened after the Verdict's F1): the skill said "root" for
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<vscratch>/py.noindex/w-json-example/tests/test_example_loop.py", line 254, in test_skill_names_only_the_read_span_request_fields_the_contract_has
+    contract.check_call(self, set(arguments), f"fenced example {arguments}")
+  File "<vscratch>/py.noindex/w-json-example/tests/test_example_loop.py", line 85, in check_call
+    case.assertLessEqual(sent, set(self.request), f"{where}: read_span has no field {sorted(sent - set(self.request))}")
+AssertionError: {'start_line', 'end_line', 'path', 'root'} not less than or equal to {'roots', 'root_id', 'start_line', 'context_lines', 'path', 'end_line'} : fenced example {'root': 'r1', 'path': 'notes/kite.md', 'start_line': 4, 'end_line': 6}: read_span has no field ['root']
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.009s
+
+FAILED (failures=1)
+exit 1
