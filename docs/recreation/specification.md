@@ -264,3 +264,11 @@ Status `Diagnostic · implemented` means built and verified on the invented fami
 | ID | Short text | Capability spec | Status |
 |---|---|---|---|
 | FR-31 | `ss_query` computes `warnings` under `search_field` `both` (`content`'s, except that a word a visible file name holds is not unmatched) and `filename` (`query_term_unmatched` only, for a word no visible file name holds); a word only hidden files hold is reported as an absent word | [CAP-22](../requirements/cap-22-field-warnings.md) | Implemented (S6-T5) |
+
+### CAP-23 — the command line keeps two generations by default (S6-T11, proposed, not approved)
+
+| ID | Short text | Capability spec | Status |
+|---|---|---|---|
+| FR-32 | `searchd index` (full and `--update`) and `searchd apply` keep two generations unless `--keep-generations N` or `--keep-generations all` says otherwise; `ss_index_folder`, `ss_apply_changes`, `ss_import_json` and Dart keep their default (nothing deleted) | [CAP-23](../requirements/cap-23-cli-generation-retention.md) | Proposed |
+| FR-33 | A command-line publish says what retention removed: the prune fields whenever retention is in effect, one stderr line when files were deleted | [CAP-23](../requirements/cap-23-cli-generation-retention.md) | Proposed |
+| NFR-17 | With the command line's defaults at most two complete generations after a publish; deletion confined to the engine's own superseded section files directly inside the index directory | [CAP-23](../requirements/cap-23-cli-generation-retention.md) | Proposed |
