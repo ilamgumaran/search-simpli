@@ -10,7 +10,11 @@ name and runs that copy's own scripts/check_layers.py on it:
   interfaces/interfaces.zig), every name of the test-build `comptime` block:
   (a) its `_ = name;` line only; (b) the whole name, that line and its `pub const`;
 - tests/root.zig, every name whose `pub const` imports a `.zig` path: (a) its
-  `_ = name;` line in the test block; (b) the whole name, its `pub const` and that line;
+  `_ = name;` line in the test block; (b) the whole name, its `pub const` and that line.
+  Expected to fail, unless another test file of tests/ imports the same file by path
+  (found by a plain text search, independent of the checker): then Zig still runs its
+  tests through that file, and the checker is expected to pass (plant `root-removed`
+  shows it with a real build);
 - tests/root.zig, every name imported through a module (`@import("core").x`):
   (a) only. These files run in their own folder's step, not in `tests`, so the
   checker is expected to pass: their removal changes no test that runs.
@@ -70,8 +74,11 @@ def cases(archive: Path):
             continue
         without_ref = lines[:test_at] + [x for x in lines[test_at:] if x != ref]
         if target.endswith(".zig"):
-            yield TESTS_ROOT, name, "a", without_ref, 1
-            yield TESTS_ROOT, name, "b", [x for x in without_ref if x != line], 1
+            others = [f for f in sorted((archive / "zig" / "src" / "tests").glob("*_test.zig"))
+                      if f.name != target and f'@import("{target}")' in f.read_text(encoding="utf-8")]
+            label = " (also imported by " + ", ".join(f.name for f in others) + ")" if others else ""
+            yield TESTS_ROOT, name, "a" + label, without_ref, 0 if others else 1
+            yield TESTS_ROOT, name, "b" + label, [x for x in without_ref if x != line], 0 if others else 1
         else:
             yield TESTS_ROOT, name, "a (module)", without_ref, 0
 
@@ -95,7 +102,7 @@ def main(archive: Path, scratch: Path) -> int:
     print("| Root | Removed | Cases | Checker failed | Expected |")
     print("|---|---|---:|---:|---|")
     for (rel, variant), (count, failed) in totals.items():
-        want = "pass" if "module" in variant else "fail"
+        want = "pass" if "module" in variant or "also imported" in variant else "fail"
         print(f"| `{rel}` | {variant} | {count} | {failed} | {want} |")
     print(f"{sum(c for c, _ in totals.values())} cases; {wrong} not as expected")
     return 1 if wrong else 0

@@ -23,6 +23,9 @@ NAME is one of:
   tests/plant_mid_test.zig (no test of its own) and named only in a function of it,
   which a new test in tests/reload_test.zig calls. Zig: runs it. Checker: fails, the
   strict side it states (it does not follow a function of another file).
+- root-removed: compat_98c4a2b_test's two lines removed from tests/root.zig and a
+  failing test added to tests/compat_98c4a2b_test.zig, which four other tests of
+  tests/ import by path. Zig: still runs it. Checker: passes.
 - words: a new tests/plant_words_test.zig whose only `test`s are in comments and
   strings, named in tests/root.zig's test block. Zig: no new test. Checker: passes
   and counts 0 tests in it.
@@ -82,6 +85,12 @@ def main(name: str, copy: Path) -> int:
             out.write('\nconst plant_mid = @import("plant_mid_test.zig");\n\n'
                       'test "plant: call a function of another file" {\n'
                       '    try std.testing.expectEqual(@as(u32, 1), plant_mid.one());\n}\n')
+    elif name == "root-removed":
+        edit(tests_root, 'pub const compat_98c4a2b_test = @import("compat_98c4a2b_test.zig");\n', "")
+        edit(tests_root, "    _ = compat_98c4a2b_test;\n", "")
+        with (src / "tests" / "compat_98c4a2b_test.zig").open("a", encoding="utf-8") as out:
+            out.write('\ntest "plant root-removed: a failing test" {\n'
+                      '    try std.testing.expectEqual(@as(u32, 1), 2);\n}\n')
     elif name == "words":
         (src / "tests" / "plant_words_test.zig").write_text("\n".join([
             "//! A file whose only `test`s are text: none is a test declaration.",
