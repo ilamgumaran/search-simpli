@@ -1,0 +1,32 @@
+# S6-T13 verifier: natives from a fresh git archive of eb53311 (own ZIG_GLOBAL_CACHE_DIR and ZIG_LOCAL_CACHE_DIR, NDK 28.2.13676358), tool/build_native.sh
+start 03:14:39
+Build Summary: 28/28 steps succeeded
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib (  990120 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  959744 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  971032 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (7c3e8f18774cd3bd39447f25323cb61428be461c92ba4fa4f611e1d07075d1c8)
+exit 0 end 03:14:52
+cmp-identical to the committed file: bindings/dart/search_simpli/native/macos-arm64/libsearch_simpli.dylib (990120 B)
+cmp-identical to the committed file: bindings/dart/search_simpli/native/android-arm64/libsearch_simpli.so (959744 B)
+cmp-identical to the committed file: bindings/dart/search_simpli/example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so (959744 B)
+cmp-identical to the committed file: bindings/dart/search_simpli/native/ios-arm64/search_simpli.framework/search_simpli (971032 B)
+cmp-identical to the committed file: bindings/dart/search_simpli/native/ios-arm64/search_simpli.framework/Info.plist (749 B)
+cmp-identical to the committed file: bindings/dart/search_simpli/native/SOURCE-SHA256 (65 B)
+
+check_native (committed natives):
+check_native: macos-arm64 memcpy at 0x740 (218 calls against 119): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5a824 (503 calls against 168): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (218 calls against 112): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+exit 0
+
+sizes, main fbf0d62 -> head:
+  990040 -> 990120 bindings/dart/search_simpli/native/macos-arm64/libsearch_simpli.dylib
+  959584 -> 959744 bindings/dart/search_simpli/native/android-arm64/libsearch_simpli.so
+  970992 -> 971032 bindings/dart/search_simpli/native/ios-arm64/search_simpli.framework/search_simpli
+  searchd ReleaseSmall (own copies, own caches): 1133704 -> 1133832
+  macOS dylib __text: 586844 -> 586956
+  built main 03:15:43: dylib   990040 B sha256 7c3c359ca7ae025f __text 586844 B
+  built head 03:16:08: dylib   990120 B sha256 d2d259f8e95203a0 __text 586956 B
+  built main2 03:16:27: dylib   990040 B sha256 7c3c359ca7ae025f __text 586844 B

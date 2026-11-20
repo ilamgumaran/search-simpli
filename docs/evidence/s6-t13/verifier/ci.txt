@@ -1,0 +1,5 @@
+# CI, one read without credentials at 2026-11-20 03:46:11 -0500 (08:46:11Z), not polled:
+532a590 checks completed success 2026-11-20T08:19:12Z 2026-11-20T08:23:56Z push (the verifier's orders commit)
+eb53311 checks completed success 2026-11-20T07:56:16Z 2026-11-20T08:00:44Z push (the builder's head)
+0923ab7 checks completed success 2026-11-20T07:52:16Z 2026-11-20T07:59:24Z push
+(the runs API lists the 'checks' workflow; its jobs were not read)

@@ -1,0 +1,30 @@
+# S6-T13 verifier: ss_open across real processes (tools/vxproc.py, vxrun.sh). Writer: head's library, ss_import_json of generation after generation (embedding model id alternating 1 and 40 characters, so every other MANIFEST is 39 B longer than the one it replaces), keep_generations as named. Readers: main's and head's libraries at once on the same directory, ss_open + ss_status + ss_close in a loop. 'mixed_status' counts a status whose documents or model id is not its generation's.
+## keep-none (240 documents, 15 s)
+{"role": "reader", "tag": "main", "opens": 76139, "errors": {"ss_open: Truncated": 127}, "mixed_status": 0, "distinct_generations": 5359}
+{"role": "reader", "tag": "head", "opens": 81365, "errors": {}, "mixed_status": 0, "distinct_generations": 5359}
+{"role": "writer", "keep": "none", "publishes": 5359, "last_generation": 5360, "failures": {}, "manifest_bytes": 195}
+## keep-1 (240 documents, 15 s)
+{"role": "reader", "tag": "main", "opens": 77227, "errors": {"ss_open: Truncated": 99, "ss_open: FileNotFound": 1}, "mixed_status": 0, "distinct_generations": 5202}
+{"role": "reader", "tag": "head", "opens": 82353, "errors": {"ss_open: FileNotFound": 1}, "mixed_status": 0, "distinct_generations": 5202}
+{"role": "writer", "keep": "1", "publishes": 5202, "last_generation": 5203, "failures": {}, "manifest_bytes": 156}
+## keep-2 (240 documents, 15 s)
+{"role": "reader", "tag": "main", "opens": 77062, "errors": {"ss_open: Truncated": 104}, "mixed_status": 0, "distinct_generations": 5201}
+{"role": "reader", "tag": "head", "opens": 82316, "errors": {}, "mixed_status": 0, "distinct_generations": 5202}
+{"role": "writer", "keep": "2", "publishes": 5202, "last_generation": 5203, "failures": {}, "manifest_bytes": 156}
+## keep-1-4000 (VXDOCS=4000: 4,000 documents, 20 s)
+{"role": "reader", "tag": "head", "opens": 12314, "errors": {"ss_open: FileNotFound": 1}, "mixed_status": 0, "distinct_generations": 662}
+{"role": "reader", "tag": "main", "opens": 12256, "errors": {"ss_open: Truncated": 2, "ss_open: FileNotFound": 1}, "mixed_status": 0, "distinct_generations": 662}
+{"role": "writer", "keep": "1", "publishes": 662, "last_generation": 663, "failures": {}, "manifest_bytes": 154}
+## keep-2-4000 (VXDOCS=4000: 4,000 documents, 20 s)
+{"role": "reader", "tag": "head", "opens": 12331, "errors": {}, "mixed_status": 0, "distinct_generations": 662}
+{"role": "reader", "tag": "main", "opens": 12290, "errors": {"ss_open: Truncated": 4}, "mixed_status": 0, "distinct_generations": 662}
+{"role": "writer", "keep": "2", "publishes": 663, "last_generation": 664, "failures": {}, "manifest_bytes": 193}
+## folder index (vxfolder.sh): ss_index_folder update + filename_index over a copy of fixtures/family-folder (46 files), one file rewritten per publish, v2 generations with source, file-name and state sections; 15 s
+### keep 1
+{"role": "reader", "tag": "main", "opens": 12616, "errors": {"ss_open: FileNotFound": 2}, "mixed_status": 0, "distinct_generations": 1563}
+{"role": "reader", "tag": "head", "opens": 12682, "errors": {"ss_open: FileNotFound": 2}, "mixed_status": 0, "distinct_generations": 1563}
+{"role": "folder-writer", "keep": "1", "publishes": 1563, "failures": {}}
+### keep 2
+{"role": "reader", "tag": "main", "opens": 12565, "errors": {}, "mixed_status": 0, "distinct_generations": 1560}
+{"role": "reader", "tag": "head", "opens": 12743, "errors": {}, "mixed_status": 0, "distinct_generations": 1560}
+{"role": "folder-writer", "keep": "2", "publishes": 1560, "failures": {}}

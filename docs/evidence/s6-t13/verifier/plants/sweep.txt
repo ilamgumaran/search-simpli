@@ -1,0 +1,77 @@
+# every interleaving (verifier test A, A2), head eb53311 then main fbf0d62; k = the publish runs before the k-th file operation of the open
+## eb53311
+VSWEEP open publish delta -1: 10 points, 0 not whole; 0:new 1:old 2:old 3:old 4:old 5:old 6:old 7:old 8:old 9:old
+VSWEEP open publish delta 0: 10 points, 0 not whole; 0:new 1:old 2:old 3:old 4:old 5:old 6:old 7:old 8:old 9:old
+VSWEEP open publish delta 1: 10 points, 0 not whole; 0:new 1:old 2:old 3:old 4:old 5:old 6:old 7:old 8:old 9:old
+VSWEEP open_scoped publish delta -1: 10 points, 0 not whole; 0:new 1:old 2:old 3:old 4:old 5:old 6:old 7:old 8:old 9:old
+VSWEEP open_scoped publish delta 0: 10 points, 0 not whole; 0:new 1:old 2:old 3:old 4:old 5:old 6:old 7:old 8:old 9:old
+VSWEEP open_scoped publish delta 1: 10 points, 0 not whole; 0:new 1:old 2:old 3:old 4:old 5:old 6:old 7:old 8:old 9:old
+VSWEEP open_source publish delta -1: 4 points, 0 not whole; 0:new 1:old 2:old 3:old
+VSWEEP open_source publish delta 0: 4 points, 0 not whole; 0:new 1:old 2:old 3:old
+VSWEEP open_source publish delta 1: 4 points, 0 not whole; 0:new 1:old 2:old 3:old
+VSWEEP open publish_prune delta -1: 10 points, 7 not whole; 0:new 1:FileNotFound 2:FileNotFound 3:FileNotFound 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:old 9:old
+VSWEEP open publish_prune delta 0: 10 points, 7 not whole; 0:new 1:FileNotFound 2:FileNotFound 3:FileNotFound 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:old 9:old
+VSWEEP open publish_prune delta 1: 10 points, 7 not whole; 0:new 1:FileNotFound 2:FileNotFound 3:FileNotFound 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:old 9:old
+VSWEEP open_scoped publish_prune delta -1: 10 points, 7 not whole; 0:new 1:FileNotFound 2:FileNotFound 3:FileNotFound 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:old 9:old
+VSWEEP open_scoped publish_prune delta 0: 10 points, 7 not whole; 0:new 1:FileNotFound 2:FileNotFound 3:FileNotFound 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:old 9:old
+VSWEEP open_scoped publish_prune delta 1: 10 points, 7 not whole; 0:new 1:FileNotFound 2:FileNotFound 3:FileNotFound 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:old 9:old
+VSWEEP open_source publish_prune delta -1: 4 points, 0 not whole; 0:new 1:old 2:old 3:old
+VSWEEP open_source publish_prune delta 0: 4 points, 0 not whole; 0:new 1:old 2:old 3:old
+VSWEEP open_source publish_prune delta 1: 4 points, 0 not whole; 0:new 1:old 2:old 3:old
+VB open: Truncated
+VB open_scoped: Truncated
+VB open_source: Truncated
+VC open: old
+VC open_scoped: old
+VC open_source: old
+VD empty open: Truncated
+VD empty open_scoped: Truncated
+VD empty open_source: Truncated
+VD one open: Truncated
+VD one open_scoped: Truncated
+VD one open_source: Truncated
+VD dir open: IsDir
+VD dir open_scoped: IsDir
+VD dir open_source: IsDir
+VE cut: Truncated
+VE flipped: ChecksumMismatch
+VE documents: InvalidDocumentSection
+VE lexical: InvalidLexicalSection
+## fbf0d62
+VSWEEP open publish delta -1: 12 points, 0 not whole; 0:new 1:new 2:new 3:new 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open publish delta 0: 12 points, 0 not whole; 0:new 1:new 2:new 3:new 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open publish delta 1: 12 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open_scoped publish delta -1: 12 points, 0 not whole; 0:new 1:new 2:new 3:new 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open_scoped publish delta 0: 12 points, 0 not whole; 0:new 1:new 2:new 3:new 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open_scoped publish delta 1: 12 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open_source publish delta -1: 6 points, 0 not whole; 0:new 1:new 2:new 3:new 4:old 5:old
+VSWEEP open_source publish delta 0: 6 points, 0 not whole; 0:new 1:new 2:new 3:new 4:old 5:old
+VSWEEP open_source publish delta 1: 6 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old
+VSWEEP open publish_prune delta -1: 12 points, 6 not whole; 0:new 1:new 2:new 3:new 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:FileNotFound 9:FileNotFound 10:old 11:old
+VSWEEP open publish_prune delta 0: 12 points, 6 not whole; 0:new 1:new 2:new 3:new 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:FileNotFound 9:FileNotFound 10:old 11:old
+VSWEEP open publish_prune delta 1: 12 points, 9 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:FileNotFound 9:FileNotFound 10:old 11:old
+VSWEEP open_scoped publish_prune delta -1: 12 points, 6 not whole; 0:new 1:new 2:new 3:new 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:FileNotFound 9:FileNotFound 10:old 11:old
+VSWEEP open_scoped publish_prune delta 0: 12 points, 6 not whole; 0:new 1:new 2:new 3:new 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:FileNotFound 9:FileNotFound 10:old 11:old
+VSWEEP open_scoped publish_prune delta 1: 12 points, 9 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:FileNotFound 5:FileNotFound 6:FileNotFound 7:FileNotFound 8:FileNotFound 9:FileNotFound 10:old 11:old
+VSWEEP open_source publish_prune delta -1: 6 points, 0 not whole; 0:new 1:new 2:new 3:new 4:old 5:old
+VSWEEP open_source publish_prune delta 0: 6 points, 0 not whole; 0:new 1:new 2:new 3:new 4:old 5:old
+VSWEEP open_source publish_prune delta 1: 6 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old
+VB open: Truncated
+VB open_scoped: Truncated
+VB open_source: Truncated
+VC open: old
+VC open_scoped: old
+VC open_source: old
+VD empty open: Truncated
+VD empty open_scoped: Truncated
+VD empty open_source: Truncated
+VD one open: Truncated
+VD one open_scoped: Truncated
+VD one open_source: Truncated
+VD dir open: IsDir
+VD dir open_scoped: IsDir
+VD dir open_source: IsDir
+VE cut: Truncated
+VE flipped: ChecksumMismatch
+VE documents: InvalidDocumentSection
+VE lexical: InvalidLexicalSection
