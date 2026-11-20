@@ -1,0 +1,2 @@
+pmset -g log, Sleep/Wake/DarkWake entries from 02:29:00 to 02:32:00 on 2026-11-20 (the five runs, 02:29:08 to 02:31:49):
+(none above this line: no sleep or wake inside a run)
