@@ -41,3 +41,12 @@ FAIL (TestUnexpectedError)
             return error.TestUnexpectedError;
         try std.testing.expectError(expected[i], snapshot_open.open(a, io, tmp.dir));
 7 passed; 0 skipped; 1 failed.
+
+== Through zig build (not the filtered runner): a full git archive of 14c438a, the plant applied by plants.py (diff checked: p3 10 changed lines, p1 9), fresh global and local caches, zig build test --summary all (unplanted: 546/555 passed, 9 skipped)
+-- p3
+error: 'manifest_read_test.test.S6-T13: an open whose MANIFEST is replaced between its stat and its read returns one whole generation' failed:
+error: 'manifest_read_test.test.S6-T13: a folder index whose MANIFEST grows across the publish opens whole between stat and read' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 544/555 tests passed (9 skipped, 2 failed)
+-- p1
+error: 'manifest_read_test.test.S6-T13: scan returns FileNotFound when MANIFEST names a missing documents or lexical file; no MANIFEST stays no error' failed:
+Build Summary: 7/9 steps succeeded (1 failed); 545/555 tests passed (9 skipped, 1 failed)
