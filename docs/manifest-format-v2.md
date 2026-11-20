@@ -106,10 +106,15 @@ path).
 As v1 for the document and lexical sections, plus: when `has_source` is set,
 the named source file must exist with exactly the recorded length, and its own
 header checksum (`HYBSRC01`) must equal the recorded one
-(`manifest.validateSource`). `snapshot_open.open` checks presence and length
-(so a lost source file reads as a missing section and `--update` recovers with
-`recovered: "missing_section"`); `snapshot_open.openSource` reads and validates
-the whole section.
+(`manifest.validateSource`). Since S3-T4 an open (`snapshot_open.open`,
+`ss_open`) does not read it and does not fail without it: a lost or damaged
+source section makes only `read_span` and `outline` answer `CAPACITY`
+(`ss_open` opens the file and reads it at first use, see
+[`generation-lifecycle.md`](generation-lifecycle.md#the-files-of-a-generation)).
+A writer reads it whole with the previous generation (`apply.zig`,
+`openPrevious`), so there a lost source file reads as a missing section and
+`--update` recovers with `recovered: "missing_section"`;
+`snapshot_open.openSource` reads and validates the whole section.
 
 ## Publication
 
@@ -118,7 +123,10 @@ the whole section.
 and syncs again: a reader that sees the new manifest finds all three files.
 Pruning (`keep_generations`) removes a superseded generation's source file with
 its other two; the report's `pruned_files` keeps counting document and lexical
-files only (its v1 meaning), source deletions are counted apart.
+files only (its v1 meaning), source deletions are counted apart
+(`PruneReport.deleted_source`, which no report prints; the same holds for the
+v2.2 file-name and state sections, see
+[`generation-lifecycle.md`](generation-lifecycle.md#retention-pruning-keep_generations-s2-t5)).
 
 ## Compatibility
 
