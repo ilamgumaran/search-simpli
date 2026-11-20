@@ -1,0 +1,1393 @@
+//! C ABI over the Zig engine (ADR 0002, `docs/tasks/S1-T0.md`).
+//!
+//! Every exported `ss_*` function is documented in `zig/include/search_simpli.h`;
+//! this file is the implementation. Design notes that do not fit the header:
+//!
+//! - **Allocation.** All memory this file allocates (the opened handle, its
+//!   decoded workspaces, and every returned JSON string) comes from the C
+//!   allocator (`malloc`/`free`), never from a Zig allocator with hidden
+//!   metadata. `ss_free` therefore just calls `free()` on the pointer; there
+//!   is no bookkeeping table and no global allocator state.
+//! - **I/O.** `ss_open` and `ss_import_json` are the only functions that touch
+//!   the filesystem. They use `std.Io.Threaded.global_single_threaded`, the
+//!   standard library's ready-made synchronous, non-concurrent `Io`
+//!   implementation, so this library needs no `std.process.Init` and starts
+//!   no threads of its own.
+//! - **Errors.** Functions that return a pointer (`ss_open`, `ss_status`,
+//!   `ss_query`, `ss_evidence`) return `NULL` on failure. The one function
+//!   that returns an integer result (`ss_import_json`) returns a negative
+//!   `ss_error_code` (see below) on failure. Either way, `ss_last_error()`
+//!   returns a thread-local, human-readable description of the most recent
+//!   failure on the calling thread; it is not part of the engine's state (no
+//!   handle is required to read it, and no handle's behavior depends on it),
+//!   so it does not count against "no global mutable state beyond the
+//!   handle" any more than C's own `errno`/`strerror` would.
+//! - **Concurrency.** A single handle must not be used from two threads at
+//!   once without external synchronization: `ss_query`/`ss_evidence`/
+//!   `ss_status` only read the handle's immutable decoded snapshot and
+//!   allocate fresh scratch space per call (never touching shared mutable
+//!   scratch), so concurrent *reads* on the same handle from multiple
+//!   threads are safe; `ss_close` racing with any other call on the same
+//!   handle is not.
+
+const std = @import("std");
+const chunker = @import("core").chunker;
+const engine_module = @import("core").engine;
+const generation_alloc = @import("core").generation_alloc;
+const hybrid = @import("core").hybrid;
+const importer = @import("core").importer;
+const indexer = @import("core").indexer;
+const manifest = @import("core").manifest;
+const postings = @import("core").postings;
+const publication = @import("core").publication;
+const query_report = @import("operations").report;
+const rpc = @import("rpc.zig");
+const scoring = @import("core").scoring;
+const service_module = @import("operations").service;
+const ops = @import("operations").ops;
+const scope = @import("core").scope;
+const snapshot_open = @import("core").snapshot_open;
+
+/// Negative error codes returned by `ss_import_json`. Matches
+/// `docs/zig-engine-api.md`'s ABI section.
+pub const SS_ERR_INVALID_ARGUMENT: i64 = -1;
+pub const SS_ERR_IO: i64 = -2;
+pub const SS_ERR_CORRUPT_SNAPSHOT: i64 = -3;
+pub const SS_ERR_CAPACITY: i64 = -4;
+pub const SS_ERR_OUT_OF_MEMORY: i64 = -5;
+pub const SS_ERR_NOT_FOUND: i64 = -6;
+pub const SS_ERR_INTERNAL: i64 = -7;
+
+const allocator = std.heap.c_allocator;
+/// Supplied by `build.zig` (`contractsVersionOptions`), which reads
+/// `contracts/CONTRACTS_VERSION` at configure time — `@embedFile` cannot
+/// reach outside `zig/`'s own module package boundary.
+const contracts_version: [:0]const u8 = @import("build_options").contracts_version;
+
+fn io() std.Io {
+    return std.Io.Threaded.global_single_threaded.io();
+}
+
+threadlocal var last_error_buffer: [512]u8 = undefined;
+threadlocal var last_error_len: usize = 0;
+
+fn clearLastError() void {
+    last_error_len = 0;
+    last_error_buffer[0] = 0;
+}
+
+fn setLastError(comptime fmt: []const u8, args: anytype) void {
+    const available = last_error_buffer[0 .. last_error_buffer.len - 1];
+    const written = std.fmt.bufPrint(available, fmt, args) catch available;
+    last_error_len = written.len;
+    last_error_buffer[last_error_len] = 0;
+}
+
+/// Returns a thread-local, null-terminated description of the most recent
+/// failure on the calling thread (empty string if there has been none yet).
+/// Valid until the next `ss_*` call that fails on this thread.
+pub export fn ss_last_error() callconv(.c) [*:0]const u8 {
+    return @ptrCast(last_error_buffer[0..last_error_len :0].ptr);
+}
+
+/// The engine contract/build version (`contracts/CONTRACTS_VERSION`), e.g.
+/// `"2.8.0"`. Static storage: never pass this pointer to `ss_free`.
+pub export fn ss_version() callconv(.c) [*:0]const u8 {
+    return contracts_version.ptr;
+}
+
+/// Opaque handle to one opened, immutable, published snapshot generation.
+/// The sections it reads and the tables decoded from them are exact blocks
+/// from the C allocator (S4-T9, `snapshot_open.Allocators`); everything else
+/// it holds (the S3-T4 scope data: roots, pending files, statistics groups,
+/// the source section's path and sparse line indexes, the position tables)
+/// lives in one arena over the C allocator. `ss_close` frees both.
+pub const Handle = struct {
+    arena: std.heap.ArenaAllocator,
+    engine: engine_module.Engine,
+    folder: *scope.Folder,
+
+    fn service(handle: *const Handle) service_module.Service {
+        return .{ .engine = handle.engine, .folder = handle.folder };
+    }
+};
+
+/// Open the published snapshot directory `dir` (as written by `searchd
+/// init-demo`, `searchd import-json`, or `ss_import_json`) and decode its
+/// current generation into freshly allocated workspaces. Returns `NULL` on
+/// any I/O or validation failure; see `ss_last_error()`.
+pub export fn ss_open(dir_path: [*:0]const u8) callconv(.c) ?*Handle {
+    clearLastError();
+    return openImpl(allocator, std.mem.span(dir_path)) catch |err| {
+        setLastError("ss_open: {s}", .{@errorName(err)});
+        return null;
+    };
+}
+
+/// `parent`: the C allocator for `ss_open`; a test passes the testing
+/// allocator so that a block `closeWith` does not free fails it as a leak.
+fn openImpl(parent: std.mem.Allocator, path: []const u8) !*Handle {
+    const gio = io();
+    var dir = try std.Io.Dir.cwd().openDir(gio, path, .{});
+    defer dir.close(gio);
+
+    const handle = try parent.create(Handle);
+    errdefer parent.destroy(handle);
+    handle.arena = std.heap.ArenaAllocator.init(parent);
+    errdefer handle.arena.deinit();
+    // S3-T4: the scoped open (roots, statistics, source section, position
+    // tables) so every operation answers over a scope; a lost source section
+    // does not fail it (S3-T1 finding 2). S4-T1: a lazy open: the source
+    // section, the statistics groups and the position tables load at first
+    // use, once per handle (`scope.Loads`).
+    // S4-T9: the open's block (and the source and filename sections' at
+    // their first use) exactly from the C allocator, the rest in the arena.
+    const opened = try snapshot_open.openScopedWith(.{ .blocks = parent, .arena = handle.arena.allocator() }, gio, dir);
+    handle.engine = opened.engine;
+    handle.folder = opened.folder;
+    return handle;
+}
+
+/// Free everything opened by `ss_open`. `NULL` is a safe no-op.
+pub export fn ss_close(handle: ?*Handle) callconv(.c) void {
+    const h = handle orelse return;
+    closeWith(allocator, h);
+}
+
+/// `ss_close` for a handle `openImpl` opened over `parent`: the files and the
+/// exact blocks (S4-T9, `snapshot_open.close`), then the arena, then the handle.
+fn closeWith(parent: std.mem.Allocator, h: *Handle) void {
+    snapshot_open.close(h.engine, h.folder);
+    h.arena.deinit();
+    parent.destroy(h);
+}
+
+/// Snapshot status as JSON (the same fields as JSON-RPC `index_status`'s
+/// `result`): the v1 fields `ready`, `generation`, `analyzer_id`,
+/// `embedding_model_id`, `vector_dimensions`, `documents`, `terms`,
+/// `postings`, then (contract 2.0.0) `files`, `pending`, `truncated`,
+/// `roots`, `pending_paths`, `has_source`, `has_positions`, `chunkers`, and
+/// (contract 2.1.0) `source`, read without loading the source section. The
+/// counts are over the default scope: every root, no principal labels (the
+/// scope `ss_query` uses without options), so a labelled file is not
+/// counted (S3-T3 finding: no whole-index counts); `ss_roots` takes a scope.
+/// Caller frees the result with `ss_free`. `NULL` on failure (`ss_last_error()`).
+pub export fn ss_status(handle: ?*Handle) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse {
+        setLastError("ss_status: null handle", .{});
+        return null;
+    };
+    return runOperation("ss_status", h, null, ops.indexStatus);
+}
+
+const QueryOptions = struct {
+    search_field: []const u8 = "content",
+    retrieval_mode: ?[]const u8 = null,
+    candidate_k: ?usize = null,
+    path_prefix: ?[]const u8 = null,
+    principal_labels: []const []const u8 = &.{},
+    /// Contract 2.0.0: root ids to search (null = every root); an unknown id
+    /// names nothing.
+    roots: ?[]const []const u8 = null,
+    /// S2-T4: add `profile{...}` timings to the report.
+    profile: bool = false,
+};
+
+/// Run one query and return the same `result` JSON object a `search_knowledge`
+/// JSON-RPC response would carry (`tool`, `query`, `index`, `retrieval`,
+/// `results`, `answer_policy`) — produced by the identical code
+/// (`rpc.writeSearchResultValue`, `ops.writeSearchResult`), so it is
+/// byte-for-byte what the JSON-RPC service would return for the same request
+/// minus the folder fields the service adds since S3-T6 (item `root_id` and
+/// `section_path`, result `truncated` and `pending_files`).
+///
+/// `query_vector`/`dims` are ignored for lexical mode and for snapshots with
+/// zero vector dimensions; otherwise `dims` must equal the snapshot's vector
+/// dimensions (see `ss_status`). `top_k` must be 1-100. `options_json` may be
+/// `NULL`/empty for defaults, or a JSON object with any of `retrieval_mode`
+/// (`"lexical"`/`"vector"`/`"hybrid"`, default `"hybrid"`), `candidate_k`
+/// (default 100, must be >= `top_k` and <= 10000), `path_prefix`, and
+/// `principal_labels` (array of strings).
+///
+/// Caller frees the result with `ss_free`. `NULL` on failure
+/// (`ss_last_error()`).
+pub export fn ss_query(
+    handle: ?*Handle,
+    query_text: [*:0]const u8,
+    query_vector: ?[*]const f32,
+    dims: usize,
+    top_k: usize,
+    options_json: ?[*:0]const u8,
+) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse {
+        setLastError("ss_query: null handle", .{});
+        return null;
+    };
+    const text = std.mem.span(query_text);
+    // S2-T11: validate before any analysis, in every mode and analyzer. The
+    // error class is SS_ERR_INVALID_ARGUMENT (`ss_query` returns a pointer, so
+    // the class is named in the message, as `ss_last_error()` is its only
+    // channel).
+    engine_module.Engine.validateQueryText(text) catch {
+        setLastError("ss_query: query_text is not valid UTF-8 (SS_ERR_INVALID_ARGUMENT)", .{});
+        return null;
+    };
+    const vector: []const f32 = if (query_vector) |ptr| ptr[0..dims] else &.{};
+    const options_text = if (options_json) |ptr| std.mem.span(ptr) else "";
+    return queryImpl(h, text, vector, top_k, options_text) catch |err| {
+        if (err == error.VectorNormNotFinite) {
+            setLastError("ss_query: invalid query vector: a component is not finite or the L2 norm overflows float32 (VectorNormNotFinite)", .{});
+            return null;
+        }
+        setLastError("ss_query: {s}", .{@errorName(err)});
+        return null;
+    };
+}
+
+fn queryImpl(
+    h: *Handle,
+    query_text: []const u8,
+    query_vector: []const f32,
+    top_k: usize,
+    options_json: []const u8,
+) ![*:0]u8 {
+    if (top_k == 0 or top_k > 100) return error.InvalidTopK;
+
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const options: QueryOptions = if (options_json.len == 0)
+        .{}
+    else blk: {
+        const parsed = try std.json.parseFromSlice(QueryOptions, arena.allocator(), options_json, .{});
+        break :blk parsed.value;
+    };
+
+    const mode = if (options.retrieval_mode) |name|
+        rpc.parseMode(name) orelse return error.InvalidRetrievalMode
+    else
+        .hybrid;
+    const candidate_k = options.candidate_k orelse 100;
+    if (candidate_k < top_k or candidate_k > 10_000) return error.InvalidCandidateDepth;
+
+    const field = std.meta.stringToEnum(@import("core").filename_field.Field, options.search_field) orelse return error.InvalidSearchField;
+    if (field != .content) {
+        if (options.profile) return error.FilenameProfileUnavailable;
+        if (mode != .lexical or options.retrieval_mode == null) return error.FilenameSearchRequiresLexical;
+        var query_options = hybrid.SearchOptions{ .top_k = top_k, .candidate_k = candidate_k, .retrieval_mode = .lexical, .path_prefix = options.path_prefix, .principal_labels = options.principal_labels };
+        if (h.service().folder) |folder| query_options.visible_roots = folder.mask(try folder.allowedRoots(arena.allocator(), .{ .roots = options.roots, .principal_labels = options.principal_labels }));
+        // S6-T5: the warnings `content` gives, decided for the field
+        // (`Engine.queryFieldsTraced`); a vector is never used here.
+        var field_trace = hybrid.Trace{ .allocator = arena.allocator(), .io = io() };
+        const hits = try h.engine.queryFieldsTraced(arena.allocator(), query_text, field, query_options, &field_trace);
+        var output: std.Io.Writer.Allocating = .init(allocator);
+        defer output.deinit();
+        try @import("operations").filename_response.writeAbiEvidence(&output.writer, arena.allocator(), h.engine, query_text, field, query_options, hits, .{
+            .trace = &field_trace,
+            .mode = .lexical,
+            .analyzer_id = h.engine.analyzer_id,
+            .top_k = top_k,
+            .candidate_k = candidate_k,
+            .path_prefix = options.path_prefix,
+            .vector_ignored = if (query_vector.len != 0) .lexical_mode else null,
+        });
+        return (try output.toOwnedSliceSentinel(0)).ptr;
+    }
+    const effective_vector: []const f32 = if (mode == .lexical or h.engine.vector_dimensions == 0)
+        &.{}
+    else vec: {
+        if (query_vector.len != h.engine.vector_dimensions) return error.VectorDimensionMismatch;
+        // S2-T13: non-finite components and a norm that overflows f32 are rejected
+        // (INVALID_ARGUMENT class); lexical mode and zero-dimension snapshots
+        // never get here, so they neither read nor validate the vector.
+        if (!scoring.isValidVector(query_vector)) return error.VectorNormNotFinite;
+        break :vec query_vector;
+    };
+
+    const vector_ignored: ?query_report.VectorIgnored = if (query_vector.len == 0 or effective_vector.len != 0)
+        null
+    else if (mode == .lexical)
+        .lexical_mode
+    else
+        .no_vectors_in_snapshot;
+
+    const service = h.service();
+    const document_count = h.engine.documents.len;
+    // S2-T3: nothing here scales with the corpus. The ranking selection
+    // allocates from the per-call arena (sized by the matched chunks and
+    // `candidate_k`); only the final `top_k` rows need these two arrays.
+    const result_capacity = @min(top_k, document_count);
+    const results = try allocator.alloc(hybrid.Result, result_capacity);
+    defer allocator.free(results);
+    const evidence = try allocator.alloc(engine_module.Evidence, result_capacity);
+    defer allocator.free(evidence);
+
+    // S1-T1 threaded an allocator through `searchKnowledge` so query
+    // tokenization dispatches on the snapshot's `analyzer_id`
+    // (`Engine.queryTokenized`): an `analyzer-v2` snapshot has to NFC-normalise
+    // and Unicode-tokenize the query text, which allocates. The per-call arena
+    // above already owns everything this call needs and is torn down before
+    // `ss_query` returns, so the ABI keeps its "no hidden allocator, nothing
+    // retained between calls" contract.
+    var trace = hybrid.Trace{ .allocator = arena.allocator(), .io = io(), .profile = options.profile };
+    const search_options = hybrid.SearchOptions{
+        .top_k = top_k,
+        .candidate_k = candidate_k,
+        .retrieval_mode = mode,
+        .path_prefix = options.path_prefix,
+        .principal_labels = options.principal_labels,
+    };
+    // Contract 2.0.0: `roots` goes through the scope (roots before
+    // candidates, visible-scope statistics); without it the call is the v1
+    // path, unchanged.
+    const found = if (options.roots) |roots|
+        try (service_module.ScopedService{ .service = service }).searchKnowledge(arena.allocator(), query_text, effective_vector, search_options, .{ .roots = roots, .principal_labels = options.principal_labels }, results, evidence, &trace)
+    else
+        try service.searchKnowledgeTraced(arena.allocator(), query_text, effective_vector, search_options, results, evidence, &trace);
+
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    errdefer out.deinit();
+    var json = std.json.Stringify{ .writer = &out.writer };
+    try rpc.writeSearchResultValueWith(&json, service, query_text, mode, options.principal_labels.len, found, .{
+        .trace = &trace,
+        .mode = mode,
+        .analyzer_id = h.engine.analyzer_id,
+        .top_k = top_k,
+        .candidate_k = candidate_k,
+        .path_prefix = options.path_prefix,
+        .vector_ignored = vector_ignored,
+    });
+    const owned = try out.toOwnedSliceSentinel(0);
+    return owned.ptr;
+}
+
+/// Look up stored chunks by id. `ids_json` is a JSON object:
+/// `{"ids": ["chunk-1", ...], "path_prefix": "guides/", "principal_labels": [], "roots": ["school"]}`
+/// (`path_prefix`, `principal_labels` and, since contract 2.0.0, `roots` are
+/// optional; same meaning as `read_chunk`). Returns a JSON array with one
+/// entry per id, in the same order: a chunk object (`chunk_id`, `citation`,
+/// `content` — the v1 fields and layout `read_chunk` returns — then, since
+/// 2.0.0, `root_id`, `section_path`, `neighbours`) when found and inside the
+/// scope, or `{"chunk_id": "...", "found": false}` otherwise. The lookup goes
+/// through the scope (`ops.evidence`; S3-T3 finding 2).
+///
+/// Caller frees the result with `ss_free`. `NULL` on failure
+/// (`ss_last_error()`), which includes a malformed `ids_json`.
+pub export fn ss_evidence(handle: ?*Handle, ids_json: [*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse {
+        setLastError("ss_evidence: null handle", .{});
+        return null;
+    };
+    return runOperation("ss_evidence", h, ids_json, ops.evidence);
+}
+
+// === S3-T4: the folder-knowledge operations (contract 2.0.0) ===============
+
+/// The ABI's caller is the host app, trusted with the scope: a request may
+/// state `roots` and `principal_labels`.
+const abi_caller = ops.Caller{ .request_labels = true };
+
+/// Parse `request_json` (NULL or empty = `{}`), run `operation` in a
+/// per-call arena, and return its JSON (C-allocated) or NULL with
+/// `ss_last_error()` = `"<name>: SS_ERR_<CODE>: <message>"`.
+fn runOperation(comptime name: []const u8, h: *Handle, request_json: ?[*:0]const u8, comptime operation: anytype) ?[*:0]u8 {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const text = if (request_json) |ptr| std.mem.span(ptr) else "";
+    const result = operationResult(arena.allocator(), h, text, operation) catch |err| {
+        setLastError(name ++ ": {s}: {s}", .{ errorName(errorCode(err)), @errorName(err) });
+        return null;
+    };
+    switch (result) {
+        .failed => |failure| {
+            setLastError(name ++ ": {s}: {s}", .{ failure.code.ssName(), failure.message });
+            return null;
+        },
+        .ok => |json| {
+            const owned = allocator.dupeZ(u8, json) catch {
+                setLastError(name ++ ": SS_ERR_OUT_OF_MEMORY: OutOfMemory", .{});
+                return null;
+            };
+            return owned.ptr;
+        },
+    }
+}
+
+fn operationResult(arena: std.mem.Allocator, h: *Handle, text: []const u8, comptime operation: anytype) !ops.Result {
+    const params = switch (try ops.parseObject(arena, text)) {
+        .ok => |object| object,
+        .failed => |failure| return .{ .failed = failure },
+    };
+    return operation(arena, h.service(), params, abi_caller);
+}
+
+/// The `SS_ERR_*` name of a code `errorCode` returns.
+fn errorName(code: i64) []const u8 {
+    return switch (code) {
+        SS_ERR_INVALID_ARGUMENT => "SS_ERR_INVALID_ARGUMENT",
+        SS_ERR_IO => "SS_ERR_IO",
+        SS_ERR_CORRUPT_SNAPSHOT => "SS_ERR_CORRUPT_SNAPSHOT",
+        SS_ERR_CAPACITY => "SS_ERR_CAPACITY",
+        SS_ERR_OUT_OF_MEMORY => "SS_ERR_OUT_OF_MEMORY",
+        SS_ERR_NOT_FOUND => "SS_ERR_NOT_FOUND",
+        else => "SS_ERR_INTERNAL",
+    };
+}
+
+/// `find` (CAP-19 FR-22, implementation section 8). See `search_simpli.h`.
+pub export fn ss_find(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_find");
+    return runOperation("ss_find", h, request_json, ops.find);
+}
+
+/// `outline` of one file. See `search_simpli.h`.
+pub export fn ss_outline(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_outline");
+    return runOperation("ss_outline", h, request_json, ops.outline);
+}
+
+/// `read_span` of one file, byte exact. See `search_simpli.h`.
+pub export fn ss_read_span(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_read_span");
+    return runOperation("ss_read_span", h, request_json, ops.readSpan);
+}
+
+/// `list_files`, paged. See `search_simpli.h`.
+pub export fn ss_list_files(handle: ?*Handle, request_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_list_files");
+    return runOperation("ss_list_files", h, request_json, ops.listFiles);
+}
+
+/// The visible roots and their counts. See `search_simpli.h`.
+pub export fn ss_roots(handle: ?*Handle, options_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const h = handle orelse return nullHandle("ss_roots");
+    return runOperation("ss_roots", h, options_json, ops.visibleRoots);
+}
+
+fn nullHandle(comptime name: []const u8) ?[*:0]u8 {
+    setLastError(name ++ ": SS_ERR_INVALID_ARGUMENT: null handle", .{});
+    return null;
+}
+
+/// `apply_changes` (implementation section 6): publish one new generation
+/// in `dir_path` from host-fed changes. See `search_simpli.h`.
+pub export fn ss_apply_changes(dir_path: ?[*:0]const u8, changes_json: ?[*:0]const u8, opts_json: ?[*:0]const u8) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const dir_text = if (dir_path) |ptr| std.mem.span(ptr) else {
+        setLastError("ss_apply_changes: SS_ERR_INVALID_ARGUMENT: null dir_path", .{});
+        return null;
+    };
+    const changes_text = if (changes_json) |ptr| std.mem.span(ptr) else {
+        setLastError("ss_apply_changes: SS_ERR_INVALID_ARGUMENT: null changes_json", .{});
+        return null;
+    };
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const result = applyImpl(arena.allocator(), dir_text, changes_text, if (opts_json) |ptr| std.mem.span(ptr) else "") catch |err| {
+        if (err == error.NoFreeGeneration) {
+            var line_buffer: [384]u8 = undefined;
+            setLastError("ss_apply_changes: SS_ERR_IO: {s}", .{generation_alloc.describeNoFreeGeneration(&line_buffer)});
+        } else setLastError("ss_apply_changes: {s}: {s}", .{ errorName(errorCode(err)), @errorName(err) });
+        return null;
+    };
+    switch (result) {
+        .failed => |failure| {
+            setLastError("ss_apply_changes: {s}: {s}", .{ failure.code.ssName(), failure.message });
+            return null;
+        },
+        .ok => |json| {
+            const owned = allocator.dupeZ(u8, json) catch {
+                setLastError("ss_apply_changes: SS_ERR_OUT_OF_MEMORY: OutOfMemory", .{});
+                return null;
+            };
+            return owned.ptr;
+        },
+    }
+}
+
+fn applyImpl(arena: std.mem.Allocator, dir_path: []const u8, changes_json: []const u8, opts_json: []const u8) !ops.Result {
+    const options = switch (try ops.parseObject(arena, opts_json)) {
+        .failed => |failure| return .{ .failed = failure },
+        .ok => |object| switch (try ops.applyOptions(arena, object)) {
+            .failed => |failure| return .{ .failed = failure },
+            .ok => |options| options,
+        },
+    };
+    const gio = io();
+    var dir = try std.Io.Dir.cwd().createDirPathOpen(gio, dir_path, .{ .open_options = .{ .iterate = true } });
+    defer dir.close(gio);
+    return ops.applyChanges(arena, gio, dir, changes_json, options);
+}
+
+/// Validate the neutral interchange JSON in `bytes[0..bytes_len]`
+/// (`contracts/snapshot-interchange.schema.json`) and atomically publish it
+/// as a new generation under `dir` (created if missing), exactly as `searchd
+/// import-json` does. Returns the published generation number (>= 1) on
+/// success, or a negative `ss_error_code` (`SS_ERR_*` above) on failure; see
+/// `ss_last_error()` for the reason.
+pub export fn ss_import_json(dir_path: [*:0]const u8, bytes: [*]const u8, bytes_len: usize) callconv(.c) i64 {
+    clearLastError();
+    const generation = importImpl(std.mem.span(dir_path), bytes[0..bytes_len]) catch |err| {
+        setLastError("ss_import_json: {s}", .{@errorName(err)});
+        return errorCode(err);
+    };
+    return @intCast(generation);
+}
+
+fn importImpl(dir_path: []const u8, bytes: []const u8) !u64 {
+    const gio = io();
+    var dir = try std.Io.Dir.cwd().createDirPathOpen(gio, dir_path, .{});
+    defer dir.close(gio);
+    const report = try importer.importJson(dir, gio, allocator, bytes);
+    return report.generation;
+}
+
+fn errorCode(err: anyerror) i64 {
+    return switch (err) {
+        error.OutOfMemory => SS_ERR_OUT_OF_MEMORY,
+
+        error.FileNotFound,
+        error.AccessDenied,
+        error.NotDir,
+        error.IsDir,
+        error.WriterBusy,
+        error.PathAlreadyExists,
+        => SS_ERR_IO,
+
+        error.BadMagic,
+        error.UnsupportedVersion,
+        error.UnsupportedFlags,
+        error.Truncated,
+        error.TrailingData,
+        error.ChecksumMismatch,
+        error.SizeOverflow,
+        error.CountOverflow,
+        error.GenerationZero,
+        error.InvalidIdentifier,
+        error.UnsafeFilename,
+        error.SameFilename,
+        error.InvalidDocumentSection,
+        error.InvalidLexicalSection,
+        error.DocumentCountMismatch,
+        error.VectorDimensionMismatch,
+        error.TermCountMismatch,
+        error.PostingCountMismatch,
+        error.DocumentSectionSizeMismatch,
+        error.LexicalSectionSizeMismatch,
+        error.DocumentSectionChecksumMismatch,
+        error.LexicalSectionChecksumMismatch,
+        error.InvalidCitation,
+        error.InvalidRequiredLabels,
+        // S4-T1: a lexical section's positions are validated at the first
+        // `find` (a lazy open), not by `ss_open`.
+        error.InvalidPositions,
+        error.UnsortedTerms,
+        // S6-T8: the rules of a `HYBLEX04` section 5, each with its own
+        // error (`docs/lexical-segment-format-v4.md`), at the first `find`;
+        // rule 11 at the `find` that reads the document.
+        error.OffsetsTruncated,
+        error.OffsetsVarintOverflow,
+        error.OffsetsCountMismatch,
+        error.OffsetsNonCanonicalEscape,
+        error.OffsetsZeroLength,
+        error.OffsetsStartBeforeChunk,
+        error.OffsetsStartDecreases,
+        error.OffsetsEndOverflow,
+        error.OffsetsTrailingData,
+        error.OffsetsPastText,
+        // S4-T2: the v2.2 filename sections (checked at the first filename
+        // query, a lazy load) and the recovery-state section (checked by the
+        // next writer, which refuses to write over a damaged one).
+        error.InvalidFilenameCatalog,
+        error.InvalidFilenameLexicalSection,
+        error.InvalidFilenamePolicy,
+        error.FilenameCatalogSizeMismatch,
+        error.FilenameLexicalSizeMismatch,
+        error.FilenameCatalogChecksumMismatch,
+        error.FilenameLexicalChecksumMismatch,
+        error.FilenameCatalogMismatch,
+        error.FilenameLexicalMismatch,
+        error.FilenameCountMismatch,
+        error.FilenameTermCountMismatch,
+        error.FilenamePostingCountMismatch,
+        error.FilenameSectionsRequired,
+        error.InvalidStateSection,
+        error.StateSectionMissing,
+        error.StateSectionUnexpected,
+        error.StateSectionSizeMismatch,
+        error.StateSectionChecksumMismatch,
+        // S6-T9: manifest v2.6's rules (M1 to M4), a `HYBSTA03` state's
+        // reference rules (S1 to S5, checked by the next writer) and a
+        // record v6 catalog's (C1, C2, at the first file-name query).
+        error.StateVersionFlagWithoutSection,
+        error.CatalogVersionFlagWithoutSection,
+        error.StateSectionVersionMismatch,
+        error.FilenameCatalogVersionMismatch,
+        error.StateReferenceFlags,
+        error.StateReferenceWithoutSource,
+        error.StateReferenceOutOfRange,
+        error.StateReferenceOrder,
+        error.StateReferencePath,
+        error.FilenameCatalogIdPresent,
+        error.FilenameCatalogTextPresent,
+        => SS_ERR_CORRUPT_SNAPSHOT,
+
+        error.DocumentCapacityTooSmall,
+        error.VectorCapacityTooSmall,
+        error.EvidenceCapacityTooSmall,
+        error.SourceCapacityTooSmall,
+        error.WorkspaceTooSmall,
+        => SS_ERR_CAPACITY,
+
+        error.UnsupportedInterchangeVersion,
+        error.UnsupportedAnalyzer,
+        error.InvalidEmbeddingModel,
+        error.EmbeddingMetadataMismatch,
+        error.InvalidDocument,
+        error.VectorDimensionsInconsistent,
+        error.TooManyRequiredLabels,
+        error.InvalidRequiredLabel,
+        error.DuplicateRequiredLabel,
+        error.IndexTooLarge,
+        // S1-T3/S1-T4 (`ss_index_folder`): an unrecognized `opts.analyzer`
+        // value, or an `--update` run whose `out_dir` was already published
+        // with a different analyzer -- caller mistakes, not corruption or
+        // I/O. (`error.NoDocuments` used to appear here too, for a folder
+        // with no indexable files; S1-T4 criterion 3 makes that publish an
+        // empty generation instead of failing, so `indexFolder`/
+        // `indexFolderIncremental` no longer raise it.)
+        error.InvalidAnalyzer,
+        error.AnalyzerMismatch,
+        error.InvalidKeepGenerations,
+        // S2-T13: a document vector with a non-finite L2 norm.
+        error.VectorNormNotFinite,
+        => SS_ERR_INVALID_ARGUMENT,
+
+        else => SS_ERR_INTERNAL,
+    };
+}
+
+/// Free a pointer previously returned by `ss_status`, `ss_query`, or
+/// `ss_evidence`. Never call this on the result of `ss_version()`. `NULL` is
+/// a safe no-op.
+pub export fn ss_free(ptr: ?[*:0]u8) callconv(.c) void {
+    if (ptr) |p| std.c.free(p);
+}
+
+// === S1-T3: ss_index_folder ================================================
+// Additive only (docs/tasks/S1-T3.md): appended at the end of the file so it
+// merges cleanly alongside S1-T2's Dart FFI package, which does not bind
+// this function.
+
+const IndexFolderOptions = struct {
+    filename_index: ?bool = null,
+    /// `"analyzer-v1"`/`"v1"` or `"analyzer-v2"`/`"v2"` (default), same
+    /// spelling `indexer.AnalyzerId.parse` and `searchd index --analyzer`
+    /// accept.
+    analyzer: []const u8 = "analyzer-v2",
+    max_chars: ?usize = null,
+    overlap_lines: ?usize = null,
+    /// `false` (default): full rebuild, always publishing the next free
+    /// generation in `dir_path` (S1-T3 criterion 5 -- never
+    /// `PathAlreadyExists` on a directory that already holds a snapshot).
+    /// `true`: incremental update (`indexer.indexFolderIncremental`) --
+    /// content hashes, unchanged files skipped, deleted files tombstoned.
+    update: bool = false,
+    max_file_bytes: ?u64 = null,
+    max_total_bytes: ?u64 = null,
+    /// S2-T5, opt-in: keep only the newest N generations (N >= 1) after a
+    /// successful publish. Absent: nothing is deleted.
+    keep_generations: ?usize = null,
+};
+
+/// Index the folder at `folder_path` and atomically publish (or
+/// re-publish/update) a lexical-only snapshot into `dir_path` (created,
+/// including parent directories, if it does not already exist) -- the
+/// native-engine equivalent of `searchd index`/`searchd index --update`
+/// (S1-T3, `docs/tasks/S1-T3.md`).
+///
+/// This function mutates the directory identified by `dir_path` rather than
+/// operating on an already-`ss_open`-ed handle: indexing publishes a *new*
+/// generation, and a `Handle`'s decoded arrays are a snapshot of one
+/// specific already-published generation, so there is nothing for an open
+/// handle to do here that reopening afterward does not already cover. Close
+/// and reopen (`ss_close` + `ss_open`) any handle on `dir_path` after this
+/// call to see the new generation.
+///
+/// `opts_json` may be `NULL`/empty for defaults, or a JSON object with any
+/// of `analyzer`, `max_chars`, `overlap_lines`, `update`, `max_file_bytes`,
+/// `max_total_bytes` (see `IndexFolderOptions` above; same meanings as the
+/// `searchd index` flags of the same names).
+///
+/// Returns a heap-allocated, null-terminated JSON report object on success
+/// -- the caller must free it with `ss_free` -- with fields `generation`,
+/// `analyzer_id`, `added`, `changed`, `removed`, `unchanged`,
+/// `budget_exhausted`, `too_large`, `unreadable`, `too_large_paths` (array
+/// of relative paths), `unreadable_paths` (array of relative paths),
+/// `documents`, `terms`, `postings` (S1-T4, `docs/tasks/S1-T4.md` criterion
+/// 3: `unchanged`/`budget_exhausted` replace the old, ambiguous `skipped`
+/// field -- "nothing to do" and "left for a later run" are no longer the
+/// same number -- and every `too_large`/`unreadable` file is named, not
+/// just counted). A non-`--update` run always reports
+/// `changed`/`removed`/`unchanged` as 0 (a full rebuild never compares
+/// against a previous generation); `max_file_bytes`/`max_total_bytes` are
+/// enforced on both a non-`--update` and an `--update` run alike (S1-T5,
+/// round-E rework), so `too_large`/`budget_exhausted` (and their path
+/// arrays) can be nonzero either way. An `--update` run additionally
+/// reports `changed`/`removed`. An empty folder, or a folder whose last
+/// indexable file was just deleted, publishes an empty generation (0
+/// documents/terms/postings) rather than failing.
+/// Returns `NULL` on failure -- a missing/unreadable `folder_path`, an
+/// unrecognized `analyzer`, or (on `--update`) `dir_path` already holding a
+/// snapshot published with a different analyzer -- see `ss_last_error()`.
+pub export fn ss_index_folder(
+    dir_path: [*:0]const u8,
+    folder_path: [*:0]const u8,
+    opts_json: ?[*:0]const u8,
+) callconv(.c) ?[*:0]u8 {
+    clearLastError();
+    const options_text = if (opts_json) |ptr| std.mem.span(ptr) else "";
+    return indexFolderImpl(std.mem.span(dir_path), std.mem.span(folder_path), options_text) catch |err| {
+        if (err == error.NoFreeGeneration) {
+            var line_buffer: [384]u8 = undefined;
+            setLastError("ss_index_folder: {s}", .{generation_alloc.describeNoFreeGeneration(&line_buffer)});
+        } else setLastError("ss_index_folder: {s}", .{@errorName(err)});
+        return null;
+    };
+}
+
+fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []const u8) ![*:0]u8 {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const arena_allocator = arena.allocator();
+
+    const options: IndexFolderOptions = if (opts_json.len == 0)
+        .{}
+    else blk: {
+        const parsed = try std.json.parseFromSlice(IndexFolderOptions, arena_allocator, opts_json, .{});
+        break :blk parsed.value;
+    };
+    const analyzer = indexer.AnalyzerId.parse(options.analyzer) orelse return error.InvalidAnalyzer;
+    const max_chars = options.max_chars orelse chunker.default_max_chars;
+    const overlap_lines = options.overlap_lines orelse chunker.default_overlap_lines;
+    const default_caps = indexer.Caps{};
+    const caps = indexer.Caps{
+        .filename_index = options.filename_index,
+        .max_file_bytes = options.max_file_bytes orelse default_caps.max_file_bytes,
+        .max_total_bytes = options.max_total_bytes orelse default_caps.max_total_bytes,
+        .keep_generations = options.keep_generations,
+    };
+    if (caps.keep_generations != null and caps.keep_generations.? == 0) return error.InvalidKeepGenerations;
+
+    const gio = io();
+    var root = try std.Io.Dir.cwd().openDir(gio, folder_path, .{ .iterate = true });
+    defer root.close(gio);
+    var out_dir = try std.Io.Dir.cwd().createDirPathOpen(gio, dir_path, .{ .open_options = .{ .iterate = true } });
+    defer out_dir.close(gio);
+
+    var out: std.Io.Writer.Allocating = .init(allocator);
+    errdefer out.deinit();
+    var json = std.json.Stringify{ .writer = &out.writer };
+
+    if (options.update) {
+        const report = try indexer.indexFolderIncremental(arena_allocator, gio, root, out_dir, analyzer, max_chars, overlap_lines, caps);
+        try json.beginObject();
+        try json.objectField("generation");
+        try json.write(report.generation);
+        try json.objectField("analyzer_id");
+        try json.write(report.analyzer_id);
+        try json.objectField("added");
+        try json.write(report.added);
+        try json.objectField("changed");
+        try json.write(report.changed);
+        try json.objectField("removed");
+        try json.write(report.removed);
+        try json.objectField("unchanged");
+        try json.write(report.unchanged);
+        try json.objectField("budget_exhausted");
+        try json.write(report.budget_exhausted);
+        try json.objectField("too_large");
+        try json.write(report.too_large);
+        try json.objectField("unreadable");
+        try json.write(report.unreadable);
+        try json.objectField("too_large_paths");
+        try json.beginArray();
+        for (report.too_large_paths) |path| try json.write(path);
+        try json.endArray();
+        try json.objectField("unreadable_paths");
+        try json.beginArray();
+        for (report.unreadable_paths) |path| try json.write(path);
+        try json.endArray();
+        try json.objectField("documents");
+        try json.write(report.documents);
+        try json.objectField("terms");
+        try json.write(report.terms);
+        try json.objectField("postings");
+        try json.write(report.postings);
+        if (report.recovered) |why| {
+            try json.objectField("recovered");
+            try json.write(why);
+        }
+        if (options.keep_generations != null) {
+            try json.objectField("pruned_files");
+            try json.write(report.pruned_files);
+            try json.objectField("prune_failures");
+            try json.write(report.prune_failures);
+        }
+        try json.endObject();
+    } else {
+        const generation = try generation_alloc.nextFreeGeneration(arena_allocator, gio, out_dir);
+        const report = try indexer.indexFolder(arena_allocator, gio, root, out_dir, analyzer, generation, max_chars, overlap_lines, caps);
+        try json.beginObject();
+        try json.objectField("generation");
+        try json.write(report.generation);
+        try json.objectField("analyzer_id");
+        try json.write(report.analyzer_id);
+        try json.objectField("added");
+        try json.write(report.added);
+        try json.objectField("changed");
+        try json.write(report.changed);
+        try json.objectField("removed");
+        try json.write(report.removed);
+        try json.objectField("unchanged");
+        try json.write(report.unchanged);
+        try json.objectField("budget_exhausted");
+        try json.write(report.budget_exhausted);
+        try json.objectField("too_large");
+        try json.write(report.too_large);
+        try json.objectField("unreadable");
+        try json.write(report.unreadable);
+        try json.objectField("too_large_paths");
+        try json.beginArray();
+        for (report.too_large_paths) |path| try json.write(path);
+        try json.endArray();
+        try json.objectField("unreadable_paths");
+        try json.beginArray();
+        for (report.unreadable_paths) |path| try json.write(path);
+        try json.endArray();
+        try json.objectField("documents");
+        try json.write(report.documents);
+        try json.objectField("terms");
+        try json.write(report.terms);
+        try json.objectField("postings");
+        try json.write(report.postings);
+        if (options.keep_generations != null) {
+            try json.objectField("pruned_files");
+            try json.write(report.pruned_files);
+            try json.objectField("prune_failures");
+            try json.write(report.prune_failures);
+        }
+        try json.endObject();
+    }
+    const owned = try out.toOwnedSliceSentinel(0);
+    return owned.ptr;
+}
+
+test "ss_index_folder names the file behind NoFreeGeneration in ss_last_error" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io_impl = std.testing.io;
+
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/a.md", .data = "alpha\n" });
+    try tmp.dir.createDir(io_impl, "out", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "out/lexical-18446744073709551615.hyblex", .data = "x" });
+
+    const notes_path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_path_z);
+    const out_path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_path_z);
+
+    try std.testing.expect(ss_index_folder(out_path_z, notes_path_z, null) == null);
+    const message = std.mem.span(ss_last_error());
+    try std.testing.expect(std.mem.indexOf(u8, message, "NoFreeGeneration") != null);
+    try std.testing.expect(std.mem.indexOf(u8, message, "lexical-18446744073709551615.hyblex") != null);
+    try std.testing.expect(std.mem.indexOf(u8, message, "zig-cache") == null);
+}
+
+test "ss_index_folder lists every max trace and resets the list between calls" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const test_io = std.testing.io;
+    const max = "18446744073709551615";
+    const documents_max = "documents-" ++ max ++ ".hybseg";
+    const lexical_max = "lexical-" ++ max ++ ".hyblex";
+    const names = [_][]const u8{ "MANIFEST", "INDEX-STATE.json", documents_max, lexical_max };
+
+    try tmp.dir.createDir(test_io, "notes", .default_dir);
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "notes/a.md", .data = "alpha\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+    const one_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/one", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(one_z);
+    const fresh_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/fresh", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(fresh_z);
+
+    ss_free(ss_index_folder(out_z, notes_z, null) orelse return error.IndexFailed);
+    var original_manifest_buffer: [4096]u8 = undefined;
+    const original_manifest = try tmp.dir.readFile(test_io, "out/MANIFEST", &original_manifest_buffer);
+    var metadata = try manifest.decode(original_manifest);
+    // Re-encode a real indexed snapshot's manifest at u64 max and retain its
+    // actual section bytes under the canonical max names.
+    var section_buffer: [65536]u8 = undefined;
+    const original_documents_path = try std.fmt.allocPrint(std.testing.allocator, "out/{s}", .{metadata.documents_file});
+    defer std.testing.allocator.free(original_documents_path);
+    const original_documents = try tmp.dir.readFile(test_io, original_documents_path, &section_buffer);
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "out/" ++ documents_max, .data = original_documents });
+    const original_lexical_path = try std.fmt.allocPrint(std.testing.allocator, "out/{s}", .{metadata.lexical_file});
+    defer std.testing.allocator.free(original_lexical_path);
+    const original_lexical = try tmp.dir.readFile(test_io, original_lexical_path, &section_buffer);
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "out/" ++ lexical_max, .data = original_lexical });
+    metadata.generation = std.math.maxInt(u64);
+    metadata.documents_file = documents_max;
+    metadata.lexical_file = lexical_max;
+    var encoded_manifest_buffer: [4096]u8 = undefined;
+    const encoded_manifest = try manifest.encode(metadata, &encoded_manifest_buffer);
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "out/MANIFEST", .data = encoded_manifest });
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "out/INDEX-STATE.json", .data = "{\"generation\":18446744073709551615,\"analyzer_id\":\"analyzer-v2\",\"files\":[]}" });
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "out/documents-018446744073709551615.hybseg", .data = "alias" });
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "out/lexical-7.hyblex", .data = "lower" });
+    try tmp.dir.createDir(test_io, "out/lexical-018446744073709551615.hyblex", .default_dir);
+
+    const max_handle = ss_open(out_z) orelse return error.OpenFailed;
+    ss_close(max_handle);
+
+    const snapshot_paths = [_][]const u8{
+        "out/MANIFEST",           "out/INDEX-STATE.json", "out/" ++ documents_max,                      "out/" ++ lexical_max,
+        "out/documents-1.hybseg", "out/lexical-1.hyblex", "out/documents-018446744073709551615.hybseg", "out/lexical-7.hyblex",
+    };
+    var saved: [snapshot_paths.len][]u8 = undefined;
+    for (snapshot_paths, 0..) |path, i| {
+        var buffer: [65536]u8 = undefined;
+        saved[i] = try std.testing.allocator.dupe(u8, try tmp.dir.readFile(test_io, path, &buffer));
+    }
+    defer for (saved) |bytes| std.testing.allocator.free(bytes);
+
+    try std.testing.expect(ss_index_folder(out_z, notes_z, null) == null);
+    const first_message = try std.testing.allocator.dupe(u8, std.mem.span(ss_last_error()));
+    defer std.testing.allocator.free(first_message);
+    try std.testing.expect(std.mem.startsWith(u8, first_message, "ss_index_folder: NoFreeGeneration"));
+    try std.testing.expect(std.mem.indexOf(u8, first_message, max) != null);
+    var previous: usize = 0;
+    for (names) |name| {
+        const position = std.mem.indexOf(u8, first_message, name) orelse return error.MissingTrace;
+        try std.testing.expect(position >= previous);
+        try std.testing.expect(std.mem.indexOf(u8, first_message[position + name.len ..], name) == null);
+        previous = position + name.len;
+    }
+    try std.testing.expect(std.mem.indexOf(u8, first_message, "fresh") != null);
+    try std.testing.expect(std.mem.indexOf(u8, first_message, "inspect") != null);
+    try std.testing.expect(std.mem.indexOf(u8, first_message, "delete or rename that file") == null);
+    try std.testing.expect(std.mem.indexOf(u8, first_message, "zig-cache") == null);
+    try std.testing.expect(std.mem.indexOf(u8, first_message, "documents-018446744073709551615.hybseg") == null);
+    try std.testing.expect(std.mem.indexOf(u8, first_message, "lexical-7.hyblex") == null);
+    for (snapshot_paths, saved) |path, bytes| {
+        var buffer: [65536]u8 = undefined;
+        try std.testing.expectEqualSlices(u8, bytes, try tmp.dir.readFile(test_io, path, &buffer));
+    }
+
+    try tmp.dir.createDir(test_io, "one", .default_dir);
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "one/lexical-" ++ max ++ ".hyblex", .data = "orphan" });
+    const Worker = struct {
+        fn run(dir: [*:0]const u8, notes: [*:0]const u8, output: *[512]u8, length: *usize) void {
+            if (ss_index_folder(dir, notes, null)) |json| {
+                ss_free(json);
+                length.* = 0;
+                return;
+            }
+            const message = std.mem.span(ss_last_error());
+            length.* = message.len;
+            @memcpy(output[0..message.len], message);
+        }
+    };
+    var worker_buffer: [512]u8 = undefined;
+    var worker_length: usize = 0;
+    const worker = try std.Thread.spawn(.{}, Worker.run, .{ one_z.ptr, notes_z.ptr, &worker_buffer, &worker_length });
+    worker.join();
+    const worker_message = worker_buffer[0..worker_length];
+    try std.testing.expect(std.mem.indexOf(u8, worker_message, lexical_max) != null);
+    for (names[0..3]) |name| try std.testing.expect(std.mem.indexOf(u8, worker_message, name) == null);
+    try std.testing.expectEqualStrings(first_message, std.mem.span(ss_last_error()));
+    var cause_buffer: [512]u8 = undefined;
+    const main_cause = generation_alloc.describeNoFreeGeneration(&cause_buffer);
+    for (names) |name| try std.testing.expect(std.mem.indexOf(u8, main_cause, name) != null);
+
+    try std.testing.expect(ss_index_folder(one_z, notes_z, null) == null);
+    const one_message = std.mem.span(ss_last_error());
+    try std.testing.expect(std.mem.indexOf(u8, one_message, lexical_max) != null);
+    for (names[0..3]) |name| try std.testing.expect(std.mem.indexOf(u8, one_message, name) == null);
+    try std.testing.expect(ss_index_folder(out_z, notes_z, null) == null);
+    try std.testing.expectEqualStrings(first_message, std.mem.span(ss_last_error()));
+
+    ss_free(ss_index_folder(fresh_z, notes_z, null) orelse return error.IndexFailed);
+    try std.testing.expectEqualStrings("", std.mem.span(ss_last_error()));
+    for (snapshot_paths, saved) |path, bytes| {
+        var buffer: [65536]u8 = undefined;
+        try std.testing.expectEqualSlices(u8, bytes, try tmp.dir.readFile(test_io, path, &buffer));
+    }
+}
+
+test "ss_index_folder publishes and re-publishes, full and incremental" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const io_impl = std.testing.io;
+
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/a.md", .data = "hybrid retrieval combines lexical and semantic ranks\n" });
+
+    const notes_path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_path_z);
+    const out_path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_path_z);
+
+    const first_json = ss_index_folder(out_path_z, notes_path_z, null) orelse {
+        std.debug.print("ss_index_folder failed: {s}\n", .{ss_last_error()});
+        return error.IndexFailed;
+    };
+    defer ss_free(first_json);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(first_json), "\"generation\":1") != null);
+
+    // Criterion 5: re-running without --update re-publishes rather than
+    // failing with PathAlreadyExists.
+    const second_json = ss_index_folder(out_path_z, notes_path_z, null) orelse {
+        std.debug.print("ss_index_folder failed: {s}\n", .{ss_last_error()});
+        return error.IndexFailed;
+    };
+    defer ss_free(second_json);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(second_json), "\"generation\":2") != null);
+
+    // --update: full rebuilds now write INDEX-STATE.json (S1-T5 criterion 2), so
+    // the first --update reports unchanged files, not added (generation 3 because
+    // generation 2 was the second full rebuild).
+    const update_json = ss_index_folder(out_path_z, notes_path_z, "{\"update\":true}") orelse {
+        std.debug.print("ss_index_folder failed: {s}\n", .{ss_last_error()});
+        return error.IndexFailed;
+    };
+    defer ss_free(update_json);
+    var parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, std.mem.span(update_json), .{});
+    defer parsed.deinit();
+    try std.testing.expectEqual(@as(i64, 3), parsed.value.object.get("generation").?.integer);
+    try std.testing.expectEqual(@as(i64, 0), parsed.value.object.get("added").?.integer);
+    try std.testing.expectEqual(@as(i64, 1), parsed.value.object.get("unchanged").?.integer);
+
+    const handle = ss_open(out_path_z) orelse return error.OpenFailed;
+    defer ss_close(handle);
+    const query_json = ss_query(handle, "hybrid", null, 0, 1, "{\"retrieval_mode\":\"lexical\"}") orelse return error.QueryFailed;
+    defer ss_free(query_json);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(query_json), "a.md") != null);
+}
+// === S2-T5: keep_generations through the C ABI ===============================
+test "keep_generations prunes through ss_index_folder and ss_import_json; zero is rejected" {
+    const io_impl = io();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/a.md", .data = "hybrid retrieval combines lexical and semantic ranks\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+
+    try std.testing.expect(ss_index_folder(out_z, notes_z, "{\"keep_generations\":0}") == null);
+    // Default: nothing deleted, and the report has no prune fields.
+    for (0..3) |_| ss_free(ss_index_folder(out_z, notes_z, null) orelse return error.IndexFailed);
+    var out_dir = try tmp.dir.openDir(io_impl, "out", .{ .iterate = true });
+    defer out_dir.close(io_impl);
+    try std.testing.expectEqual(@as(usize, 3), try countSections(io_impl, out_dir, ".hybseg"));
+
+    const json_ptr = ss_index_folder(out_z, notes_z, "{\"keep_generations\":2}") orelse return error.IndexFailed;
+    defer ss_free(json_ptr);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(json_ptr), "\"pruned_files\":4") != null); // gens 1,2: 2 files each
+    try std.testing.expectEqual(@as(usize, 2), try countSections(io_impl, out_dir, ".hybseg"));
+    try std.testing.expectEqual(@as(usize, 2), try countSections(io_impl, out_dir, ".hyblex"));
+
+    // ss_import_json: optional field in the payload.
+    const import_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/imp", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(import_z);
+    const doc = "{\"id\":\"one\",\"path\":\"a.md\",\"start_line\":1,\"end_line\":1,\"text\":\"search evidence\",\"vector\":[],\"required_labels\":[]}";
+    inline for (.{ 1, 2, 3 }) |g| {
+        const payload = std.fmt.comptimePrint("{{\"format_version\":1,\"generation\":{d},\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"keep_generations\":1,\"documents\":[{s}]}}", .{ g, doc });
+        try std.testing.expectEqual(@as(i64, g), ss_import_json(import_z, payload.ptr, payload.len));
+    }
+    var imp_dir = try tmp.dir.openDir(io_impl, "imp", .{ .iterate = true });
+    defer imp_dir.close(io_impl);
+    try std.testing.expectEqual(@as(usize, 1), try countSections(io_impl, imp_dir, ".hybseg"));
+    const zero = "{\"format_version\":1,\"generation\":4,\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"keep_generations\":0,\"documents\":[]}";
+    try std.testing.expectEqual(SS_ERR_INVALID_ARGUMENT, ss_import_json(import_z, zero.ptr, zero.len));
+    const handle = ss_open(import_z) orelse return error.OpenFailed;
+    ss_close(handle);
+}
+
+// === S2-T14: numbering after a lost MANIFEST, through the C ABI ===============
+test "lost MANIFEST: ss_index_folder numbers above generation 2 (full and --update), ss_import_json prunes it as superseded" {
+    const io_impl = io();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/a.md", .data = "hybrid retrieval combines lexical and semantic ranks\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+
+    for (0..2) |_| ss_free(ss_index_folder(out_z, notes_z, null) orelse return error.IndexFailed);
+    var out_dir = try tmp.dir.openDir(io_impl, "out", .{ .iterate = true });
+    defer out_dir.close(io_impl);
+    try out_dir.deleteFile(io_impl, "MANIFEST");
+    try out_dir.deleteFile(io_impl, "documents-1.hybseg");
+    try out_dir.deleteFile(io_impl, "lexical-1.hyblex");
+
+    // Full publish: generation 3, and keep_generations 1 prunes generation 2.
+    const full = ss_index_folder(out_z, notes_z, "{\"keep_generations\":1}") orelse return error.IndexFailed;
+    defer ss_free(full);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(full), "\"generation\":3") != null);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(full), "\"pruned_files\":2") != null);
+    try std.testing.expectEqual(@as(usize, 1), try countSections(io_impl, out_dir, ".hybseg"));
+
+    // --update after a lost MANIFEST (INDEX-STATE.json present): generation 4.
+    try out_dir.deleteFile(io_impl, "MANIFEST");
+    const upd = ss_index_folder(out_z, notes_z, "{\"update\":true}") orelse return error.IndexFailed;
+    defer ss_free(upd);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(upd), "\"generation\":4") != null);
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(upd), "missing_manifest") != null);
+
+    // ss_import_json: the caller numbers the generation. Publishing generation
+    // 5 (above the remains of 3 and 4) into a directory with no MANIFEST
+    // leaves the older ones superseded, and keep_generations 1 prunes them.
+    try out_dir.deleteFile(io_impl, "MANIFEST");
+    const payload = "{\"format_version\":1,\"generation\":5,\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"keep_generations\":1,\"documents\":[]}";
+    try std.testing.expectEqual(@as(i64, 5), ss_import_json(out_z, payload.ptr, payload.len));
+    try std.testing.expectEqual(@as(usize, 1), try countSections(io_impl, out_dir, ".hybseg"));
+}
+
+fn countSections(io_impl: std.Io, dir: std.Io.Dir, suffix: []const u8) !usize {
+    var n: usize = 0;
+    var it = dir.iterate();
+    while (try it.next(io_impl)) |entry| {
+        if (entry.kind == .file and std.mem.endsWith(u8, entry.name, suffix)) n += 1;
+    }
+    return n;
+}
+// === end S1-T3 ==============================================================
+
+test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence agree with the RPC path" {
+    const segment = @import("core").segment;
+    const lexical_segment = @import("core").lexical_segment;
+    const lifecycle = @import("core").lifecycle;
+
+    const documents = [_]hybrid.Document{
+        .{ .id = "both", .text = "hybrid retrieval combines ranks", .vector = &.{ 0.8, 0.2 }, .path = "guides/hybrid.md", .start_line = 1, .end_line = 6 },
+        .{ .id = "lexical", .text = "hybrid hybrid exact", .vector = &.{ 0, 1 }, .path = "guides/lexical.md", .start_line = 10, .end_line = 12 },
+        .{ .id = "semantic", .text = "meaning based result", .vector = &.{ 1, 0 }, .path = "guides/semantic.md", .start_line = 20, .end_line = 22 },
+    };
+    var document_encoded_storage: [1024]u8 = undefined;
+    const documents_encoded = try segment.encode(&documents, &document_encoded_storage);
+    var terms: [24]postings.TermEntry = undefined;
+    var posting_storage: [32]postings.Posting = undefined;
+    var lengths: [documents.len]u32 = undefined;
+    var fills: [24]usize = undefined;
+    const source_index = try postings.build(&documents, &terms, &posting_storage, &lengths, &fills);
+    var lexical_encoded_storage: [2048]u8 = undefined;
+    const lexical_encoded = try lexical_segment.encode(source_index, &lexical_encoded_storage);
+    const metadata = try manifest.create(
+        1,
+        "ascii-alnum-v1",
+        "manual-test-vectors-v1",
+        "documents-1.hybseg",
+        "lexical-1.hyblex",
+        documents_encoded,
+        lexical_encoded,
+    );
+    var manifest_encoded_storage: [512]u8 = undefined;
+    const manifest_encoded = try manifest.encode(metadata, &manifest_encoded_storage);
+
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    try lifecycle.publishSerialized(tmp.dir, std.testing.io, manifest_encoded, documents_encoded, lexical_encoded);
+
+    const path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(path_z);
+
+    const handle = ss_open(path_z) orelse {
+        std.debug.print("ss_open failed: {s}\n", .{ss_last_error()});
+        return error.OpenFailed;
+    };
+    defer ss_close(handle);
+
+    const status_json = ss_status(handle) orelse return error.StatusFailed;
+    defer ss_free(status_json);
+    const status_text = std.mem.span(status_json);
+    try std.testing.expect(std.mem.indexOf(u8, status_text, "\"generation\":1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, status_text, "\"documents\":3") != null);
+
+    const query_vector = [_]f32{ 1, 0 };
+    const query_json = ss_query(handle, "hybrid", &query_vector, query_vector.len, 1, null) orelse return error.QueryFailed;
+    defer ss_free(query_json);
+    const query_text = std.mem.span(query_json);
+
+    var parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, query_text, .{});
+    defer parsed.deinit();
+    const first = parsed.value.object.get("results").?.array.items[0].object;
+    try std.testing.expectEqualStrings("both", first.get("chunk_id").?.string);
+
+    const service = service_module.Service{ .engine = handle.engine, .folder = handle.folder };
+    var results: [documents.len]hybrid.Result = undefined;
+    var evidence_storage: [documents.len]engine_module.Evidence = undefined;
+    // S5-T2: given the handle's folder, the service ranks with the same
+    // title field as ss_query.
+    const evidence = try service.searchKnowledge(std.testing.allocator, "hybrid", &query_vector, .{ .top_k = 1 }, &results, &evidence_storage);
+    var golden: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer golden.deinit();
+    var golden_json = std.json.Stringify{ .writer = &golden.writer };
+    try rpc.writeSearchResultValue(&golden_json, service, "hybrid", .hybrid, 0, evidence);
+    // S2-T4: ss_query ends with `warnings` and `request` after the shared
+    // fields; everything before them is the RPC result, byte for byte.
+    const shared = golden.written()[0 .. golden.written().len - 1];
+    try std.testing.expectEqualStrings(shared, query_text[0..shared.len]);
+    try std.testing.expectEqualStrings(
+        ",\"warnings\":[],\"request\":{\"analyzer_id\":\"ascii-alnum-v1\",\"retrieval_mode\":\"hybrid\",\"top_k\":1,\"candidate_k\":100,\"path_prefix\":null}}",
+        query_text[shared.len..],
+    );
+
+    const evidence_json = ss_evidence(handle, "{\"ids\":[\"both\",\"missing-id\"]}") orelse return error.EvidenceFailed;
+    defer ss_free(evidence_json);
+    var evidence_parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, std.mem.span(evidence_json), .{});
+    defer evidence_parsed.deinit();
+    const evidence_items = evidence_parsed.value.array.items;
+    try std.testing.expectEqualStrings("guides/hybrid.md", evidence_items[0].object.get("citation").?.object.get("path").?.string);
+    try std.testing.expectEqual(false, evidence_items[1].object.get("found").?.bool);
+
+    try std.testing.expectEqualStrings("2.8.0", std.mem.span(ss_version()));
+}
+
+test "ss_import_json publishes a queryable snapshot and reports negative codes on failure" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(path_z);
+
+    const json =
+        \\{"format_version":1,"generation":1,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"none","documents":[
+        \\{"id":"one","path":"a.md","start_line":1,"end_line":1,"text":"search evidence","vector":[],"required_labels":[]}
+        \\]}
+    ;
+    const generation = ss_import_json(path_z, json.ptr, json.len);
+    try std.testing.expectEqual(@as(i64, 1), generation);
+
+    const handle = ss_open(path_z) orelse return error.OpenFailed;
+    defer ss_close(handle);
+    try std.testing.expectEqual(@as(usize, 1), handle.engine.documents.len);
+
+    const bad = ss_import_json(path_z, "not json", 8);
+    try std.testing.expect(bad < 0);
+    try std.testing.expect(std.mem.span(ss_last_error()).len > 0);
+}
+
+test "S2-T13: a vector whose L2 norm is not finite is rejected at query and import" {
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const path_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(path_z);
+
+    const good =
+        \\{"format_version":1,"generation":1,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"m","documents":[
+        \\{"id":"a","path":"a.md","start_line":1,"end_line":1,"text":"alpha search","vector":[1,0],"required_labels":[]},
+        \\{"id":"b","path":"b.md","start_line":1,"end_line":1,"text":"beta search","vector":[0,1],"required_labels":[]}
+        \\]}
+    ;
+    try std.testing.expectEqual(@as(i64, 1), ss_import_json(path_z, good.ptr, good.len));
+    const handle = ss_open(path_z) orelse return error.OpenFailed;
+    defer ss_close(handle);
+
+    const nan = std.math.nan(f32);
+    const inf = std.math.inf(f32);
+    const bad_vectors = [_][2]f32{ .{ 2e19, 0 }, .{ 1e30, 1 }, .{ std.math.floatMax(f32), 0 }, .{ nan, 0 }, .{ 0, inf }, .{ -inf, 0 } };
+    for (bad_vectors) |bad| {
+        for ([_][:0]const u8{ "{\"retrieval_mode\":\"vector\"}", "{\"retrieval_mode\":\"hybrid\"}", "" }) |options| {
+            const out = ss_query(handle, "search", &bad, 2, 2, options.ptr);
+            try std.testing.expect(out == null);
+            try std.testing.expect(std.mem.indexOf(u8, std.mem.span(ss_last_error()), "invalid query vector") != null);
+        }
+        // Lexical mode never reads the vector: no validation, no error, still reported.
+        const lexical = ss_query(handle, "search", &bad, 2, 2, "{\"retrieval_mode\":\"lexical\"}") orelse return error.QueryFailed;
+        defer ss_free(lexical);
+        try std.testing.expect(std.mem.indexOf(u8, std.mem.span(lexical), "\"vector_ignored\"") != null);
+    }
+    // Valid vectors, including the largest accepted norm and an all-zero one, work.
+    for ([_][2]f32{ .{ 1, 0 }, .{ 1.8e19, 0 }, .{ 0, 0 } }) |good_vector| {
+        const out = ss_query(handle, "search", &good_vector, 2, 2, "{\"retrieval_mode\":\"vector\"}") orelse return error.QueryFailed;
+        ss_free(out);
+    }
+
+    // Import: a document vector with a non-finite norm is INVALID_ARGUMENT and
+    // nothing is published (the generation stays 1; a fresh directory stays empty).
+    const bad_import =
+        \\{"format_version":1,"generation":2,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"m","documents":[
+        \\{"id":"a","path":"a.md","start_line":1,"end_line":1,"text":"alpha","vector":[1,0],"required_labels":[]},
+        \\{"id":"b","path":"b.md","start_line":1,"end_line":1,"text":"beta","vector":[2e19,0],"required_labels":[]}
+        \\]}
+    ;
+    try std.testing.expectEqual(SS_ERR_INVALID_ARGUMENT, ss_import_json(path_z, bad_import.ptr, bad_import.len));
+    try std.testing.expect(std.mem.indexOf(u8, std.mem.span(ss_last_error()), "VectorNormNotFinite") != null);
+    const overflow_import =
+        \\{"format_version":1,"generation":2,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"m","documents":[
+        \\{"id":"b","path":"b.md","start_line":1,"end_line":1,"text":"beta","vector":[1e39,0],"required_labels":[]}
+        \\]}
+    ;
+    try std.testing.expect(ss_import_json(path_z, overflow_import.ptr, overflow_import.len) < 0);
+    const status = ss_status(handle) orelse return error.StatusFailed;
+    ss_free(status);
+    const reopened = ss_open(path_z) orelse return error.OpenFailed;
+    defer ss_close(reopened);
+    try std.testing.expectEqual(@as(usize, 2), reopened.engine.documents.len);
+    // The failed attempts left nothing behind: generation 2 is still free.
+    const next =
+        \\{"format_version":1,"generation":2,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"m","documents":[
+        \\{"id":"a","path":"a.md","start_line":1,"end_line":1,"text":"alpha","vector":[1,0],"required_labels":[]}
+        \\]}
+    ;
+    try std.testing.expectEqual(@as(i64, 2), ss_import_json(path_z, next.ptr, next.len));
+}
+
+// === S4-T9: ss_close frees the handle's exact blocks ==========================
+test "S4-T9: ss_close frees the open's block and the source and filename blocks of their first use" {
+    const io_impl = io();
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.createDir(io_impl, "notes", .default_dir);
+    try tmp.dir.writeFile(io_impl, .{ .sub_path = "notes/tide-table.md", .data = "# Tide table\n\nhybrid retrieval combines lexical and semantic ranks\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+    ss_free(ss_index_folder(out_z, notes_z, "{\"filename_index\":true}") orelse return error.IndexFailed);
+
+    // The handle and all it holds come from the testing allocator, so a
+    // block the close path does not free fails this test as a leak.
+    const handle = try openImpl(std.testing.allocator, out_z);
+    defer closeWith(std.testing.allocator, handle);
+    try std.testing.expect(handle.engine.open_block != null);
+    try std.testing.expect(handle.folder.loads.source_block == null);
+    try std.testing.expect(handle.folder.loads.filename_block == null);
+    const span = ss_read_span(handle, "{\"root_id\":\"r-legacy\",\"path\":\"tide-table.md\",\"start_line\":3,\"end_line\":3}") orelse {
+        std.debug.print("ss_read_span failed: {s}\n", .{ss_last_error()});
+        return error.ReadSpanFailed;
+    };
+    ss_free(span);
+    const named = ss_query(handle, "tide", null, 0, 1, "{\"retrieval_mode\":\"lexical\",\"search_field\":\"filename\"}") orelse {
+        std.debug.print("ss_query failed: {s}\n", .{ss_last_error()});
+        return error.QueryFailed;
+    };
+    ss_free(named);
+    try std.testing.expect(handle.folder.loads.source_block != null);
+    try std.testing.expect(handle.folder.loads.filename_block != null);
+}

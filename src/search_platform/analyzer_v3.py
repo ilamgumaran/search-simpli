@@ -1,6 +1,6 @@
 """K, the key function of `fold-groups-v1` (S5-T4, docs/tasks/S5-T4.md rulings 2-5).
 
-The Python mirror of `zig/src/fold.zig`. K maps one analyzer-v2 token to zero or
+The Python mirror of `zig/src/core/fold.zig`. K maps one analyzer-v2 token to zero or
 more terms through four parts, in order:
 
   F  fold: each code point through the generated fold table (`_fold.FOLD`,

@@ -1,6 +1,6 @@
 """S3-T1: md-section-v1, outline and read_span in the Python reference.
 
-The golden (`fixtures/chunk-golden-md.json`) is what `zig/src/chunker_md_test.zig`
+The golden (`fixtures/chunk-golden-md.json`) is what `zig/src/core/chunker_md_test.zig`
 holds the Zig port to; these tests hold the Python reference to the same file,
 to the frozen family-folder judgments, and to the line-window-v1 golden that
 must not move.

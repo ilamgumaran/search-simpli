@@ -3,7 +3,7 @@
 
 Cases: every non-surrogate codepoint on its own, the NFD form of each (so
 recomposition is exercised), and a set of Hangul / mark sequences. The Zig
-side is `zig/src/nfc_dump.zig`, built and run with the toolchain on PATH.
+side is `zig/src/core/nfc_dump.zig`, built and run with the toolchain on PATH.
 `NormalizationTest.txt` is not available offline; with `--normalization-test
 FILE` its part-1 NFC column is checked as well (c2 == NFC(c1) == NFC(c2) ==
 NFC(c3)).
@@ -113,7 +113,7 @@ def main():
     infile, outfile = work / "in.txt", work / "out.txt"
     infile.write_text("\n".join(hexs(c) for c in cases) + "\n", encoding="ascii")
     subprocess.run(
-        ["zig", "run", "-OReleaseFast", str(ROOT / "zig/src/nfc_dump.zig"), "--",
+        ["zig", "run", "-OReleaseFast", str(ROOT / "zig/src/core/nfc_dump.zig"), "--",
          str(infile), str(outfile)],
         check=True, cwd=work, capture_output=True, timeout=500,
     )

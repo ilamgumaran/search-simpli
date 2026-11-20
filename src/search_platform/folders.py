@@ -1,6 +1,6 @@
 """Several roots, host-fed changes and visible-scope statistics: the Python
 reference for S3-T3 (`docs/folder-knowledge-implementation.md` sections 5-7,
-`zig/src/apply.zig`, `zig/src/scope.zig`).
+`zig/src/core/apply.zig`, `zig/src/core/scope.zig`).
 
 `FolderIndex` holds roots and files in memory and applies `apply_changes`
 requests with the same rules as the engine: whole-request refusals raise

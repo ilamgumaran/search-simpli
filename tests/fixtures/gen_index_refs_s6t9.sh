@@ -6,7 +6,7 @@
 # record; the file-name catalog record v6, ids and stems derived; as v2.5,
 # the content lexical section `HYBLEX04`, the file-name lexical section
 # `HYBLEX03`, documents record v5, source `HYBSRC02`).
-# `zig/src/compat_s6t9_test.zig` checks that the writer still gives these
+# `zig/src/tests/compat_s6t9_test.zig` checks that the writer still gives these
 # bytes and that a library before v2.6 refuses them at the manifest's flags.
 #
 # Usage, from anywhere inside the repository, with zig 0.16.0 on PATH:

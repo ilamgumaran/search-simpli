@@ -4,16 +4,22 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // S6-T14: the layers are modules (docs/layers.md). zig/src/core/ is the module
+    // `core`, zig/src/ops/ is `operations` (it imports `core`); an interface file
+    // imports both by name and never reaches into their folders by path.
+    const layers = layerModules(b, target, optimize);
+
     const executable_module = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("src/interfaces/main.zig"),
         .target = target,
         .optimize = optimize,
     });
+    layers.addTo(executable_module);
     const executable = b.addExecutable(.{
         .name = "searchd",
         .root_module = executable_module,
     });
-    // S4-T18: the word-wise memcpy/memmove/memset (src/fastmem.zig).
+    // S4-T18: the word-wise memcpy/memmove/memset (src/core/fastmem.zig).
     executable_module.addObject(fastmemObject(b, target, optimize));
     b.installArtifact(executable);
     // S3-T6: the MCP server's tool descriptors carry contracts/tools/ verbatim.
@@ -28,26 +34,54 @@ pub fn build(b: *std.Build) void {
     // === S1-T0: contracts/CONTRACTS_VERSION -> abi.zig's ss_version() =====
     // @embedFile can't reach outside zig/'s module package, so build.zig
     // reads it directly and hands it in as a build option instead. Every
-    // module that (transitively) imports src/abi.zig needs this import.
+    // module that (transitively) imports src/interfaces/abi.zig needs this import.
     const contracts_version_options = contractsVersionOptions(b);
     // === end S1-T0 ==========================================================
 
-    const test_module = b.createModule(.{
-        .root_source_file = b.path("src/root.zig"),
+    // S6-T14: a test build collects only the tests of its root module's files,
+    // so the engine's tests run in four steps, one per root module, which
+    // together are the one step `src/root.zig` was before the move: `core`
+    // (core/core.zig), `operations` (ops/operations.zig), `interfaces`
+    // (interfaces/interfaces.zig) and `tests` (tests/root.zig: the cross-layer
+    // tests, over the three modules).
+    const test_step = b.step("test", "Run engine unit tests");
+    // S4-T18: the engine's tests run on the same copy the artifacts ship.
+    const test_fastmem = fastmemObject(b, target, optimize);
+    const interfaces_module = b.createModule(.{
+        .root_source_file = b.path("src/interfaces/interfaces.zig"),
         .target = target,
         .optimize = optimize,
-        // root.zig now pulls in abi.zig (see S1-T0 below), which uses the C
-        // allocator.
-        .link_libc = true,
     });
-    test_module.addOptions("build_options", contracts_version_options);
-    test_module.addOptions("tool_schemas", tool_schema_options);
-    // S4-T18: the engine's tests run on the same copy the artifacts ship.
-    test_module.addObject(fastmemObject(b, target, optimize));
-    const unit_tests = b.addTest(.{ .root_module = test_module });
-    const test_command = b.addRunArtifact(unit_tests);
-    const test_step = b.step("test", "Run engine unit tests");
-    test_step.dependOn(&test_command.step);
+    layers.addTo(interfaces_module);
+    interfaces_module.addOptions("build_options", contracts_version_options);
+    interfaces_module.addOptions("tool_schemas", tool_schema_options);
+    const test_roots = [_]struct { name: []const u8, path: []const u8 }{
+        .{ .name = "core", .path = "src/core/core.zig" },
+        .{ .name = "operations", .path = "src/ops/operations.zig" },
+        .{ .name = "interfaces", .path = "src/interfaces/interfaces.zig" },
+        .{ .name = "tests", .path = "src/tests/root.zig" },
+    };
+    for (test_roots) |root| {
+        const test_module = b.createModule(.{
+            .root_source_file = b.path(root.path),
+            .target = target,
+            .optimize = optimize,
+            // abi.zig (in the interfaces and the cross-layer tests) uses the C
+            // allocator; every engine test build links libc, as the one before.
+            .link_libc = true,
+        });
+        const name = root.name;
+        if (!std.mem.eql(u8, name, "core")) test_module.addImport("core", layers.core);
+        if (std.mem.eql(u8, name, "interfaces") or std.mem.eql(u8, name, "tests")) {
+            test_module.addImport("operations", layers.operations);
+            test_module.addOptions("build_options", contracts_version_options);
+            test_module.addOptions("tool_schemas", tool_schema_options);
+        }
+        if (std.mem.eql(u8, name, "tests")) test_module.addImport("interfaces", interfaces_module);
+        test_module.addObject(test_fastmem);
+        const unit_tests = b.addTest(.{ .name = name, .root_module = test_module });
+        test_step.dependOn(&b.addRunArtifact(unit_tests).step);
+    }
     // S4-T18: fastmem.zig's own tests, compiled as the object is (-fno-builtin).
     const fastmem_tests = b.addTest(.{ .root_module = fastmemModule(b, target, optimize) });
     test_step.dependOn(&b.addRunArtifact(fastmem_tests).step);
@@ -82,7 +116,7 @@ fn contractsVersionOptions(b: *std.Build) *std.Build.Step.Options {
 /// server's listing order: CAP-13's four, the four folder reads, the write.
 const tool_names = [_][]const u8{ "search_knowledge", "read_chunk", "list_sources", "index_status", "find", "outline", "read_span", "list_files", "apply_changes" };
 
-/// S3-T6: `@import("tool_schemas")` for `src/mcp.zig`: for every tool,
+/// S3-T6: `@import("tool_schemas")` for `src/interfaces/mcp.zig`: for every tool,
 /// `<tool>_request` and `<tool>_result`, the file
 /// `../contracts/tools/<tool>.<kind>.schema.json` read at configure time
 /// (`@embedFile` cannot reach outside `zig/`, as for CONTRACTS_VERSION) and
@@ -110,6 +144,36 @@ fn toolSchemaOptions(b: *std.Build) *std.Build.Step.Options {
     const version = b.build_root.handle.readFile(b.graph.io, "../contracts/CONTRACTS_VERSION", &version_buffer) catch @panic("missing contracts/CONTRACTS_VERSION");
     options.addOption([]const u8, "contracts_version", b.dupe(std.mem.trim(u8, version, " \t\r\n")));
     return options;
+}
+
+/// S6-T14: the modules `core` (zig/src/core/, rooted at core.zig) and
+/// `operations` (zig/src/ops/, rooted at operations.zig, importing `core`) for
+/// one target and mode. They set no other option: like the files of the root
+/// module they were before the move, they take the compilation's.
+const Layers = struct {
+    core: *std.Build.Module,
+    operations: *std.Build.Module,
+
+    /// Lets `module` (an interface, or a test root) import both by name.
+    fn addTo(self: Layers, module: *std.Build.Module) void {
+        module.addImport("core", self.core);
+        module.addImport("operations", self.operations);
+    }
+};
+
+fn layerModules(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) Layers {
+    const core = b.createModule(.{
+        .root_source_file = b.path("src/core/core.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const operations = b.createModule(.{
+        .root_source_file = b.path("src/ops/operations.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    operations.addImport("core", core);
+    return .{ .core = core, .operations = operations };
 }
 
 const AbiTargetSpec = struct {
@@ -141,7 +205,7 @@ const abi_targets = [_]AbiTargetSpec{
 };
 
 /// `zig build lib`: static and shared `search_simpli` libraries over the C
-/// ABI (`src/abi.zig`) for every target in `abi_targets`, installed under
+/// ABI (`src/interfaces/abi.zig`) for every target in `abi_targets`, installed under
 /// `zig-out/lib/<target>/`.
 ///
 /// The Android target needs the NDK's bundled libc (Zig ships no Android
@@ -178,14 +242,17 @@ fn addAbiLibraries(
         // S4-T18: one word-wise memcpy/memmove/memset object per target,
         // linked into both linkages (in the static archive it is a member).
         const fastmem = fastmemObject(b, resolved_target, optimize);
+        // S6-T14: the core and operations modules, for this target.
+        const target_layers = layerModules(b, resolved_target, optimize);
 
         inline for (.{ std.builtin.LinkMode.static, std.builtin.LinkMode.dynamic }) |linkage| {
             const module = b.createModule(.{
-                .root_source_file = b.path("src/abi.zig"),
+                .root_source_file = b.path("src/interfaces/abi.zig"),
                 .target = resolved_target,
                 .optimize = optimize,
                 .link_libc = true,
             });
+            target_layers.addTo(module);
             module.addOptions("build_options", contracts_version_options);
             module.addObject(fastmem);
             const library = b.addLibrary(.{
@@ -216,7 +283,7 @@ fn addAbiLibraries(
     }
 }
 
-/// S4-T18: `src/fastmem.zig`'s module: compiled with `-fno-builtin`, so
+/// S4-T18: `src/core/fastmem.zig`'s module: compiled with `-fno-builtin`, so
 /// LLVM never turns its loops back into calls to `memcpy` (the function it
 /// defines), and position-independent, for the shared libraries. A
 /// `ReleaseSmall` build compiles this one object `ReleaseFast` (bar 4(c)'s
@@ -225,7 +292,7 @@ fn addAbiLibraries(
 /// `find`'s 56,424 copies of 1-15 B paid. Other modes keep their own.
 fn fastmemModule(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) *std.Build.Module {
     return b.createModule(.{
-        .root_source_file = b.path("src/fastmem.zig"),
+        .root_source_file = b.path("src/core/fastmem.zig"),
         .target = target,
         .optimize = if (optimize == .ReleaseSmall) .ReleaseFast else optimize,
         // ReleaseSmall strips by default and ReleaseFast does not: without
@@ -313,11 +380,12 @@ fn addAbiTest(
     contracts_version_options: *std.Build.Step.Options,
 ) void {
     const native_module = b.createModule(.{
-        .root_source_file = b.path("src/abi.zig"),
+        .root_source_file = b.path("src/interfaces/abi.zig"),
         .target = target,
         .optimize = optimize,
         .link_libc = true,
     });
+    layerModules(b, target, optimize).addTo(native_module);
     native_module.addOptions("build_options", contracts_version_options);
     // S4-T18: the harness runs the library on the copy it ships.
     native_module.addObject(fastmemObject(b, target, optimize));

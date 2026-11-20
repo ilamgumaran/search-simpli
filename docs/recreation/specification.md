@@ -240,7 +240,7 @@ contract, or expand the separately proposed E-01A pack workflow.
 | NFR-13 | Bounded caller-owned workspaces and bounded reads | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
 | NFR-14 | Dependency-free MCP server and conformance client | [CAP-19](../requirements/cap-19-folder-knowledge.md) | Diagnostic · implemented |
 
-Status `Diagnostic · implemented` means built and verified on the invented family-folder fixture and the generated 10k corpus (S3-T1 to S3-T7, evidence in the task files), not on a user-derived corpus. NFR-13 is Diagnostic · implemented since S4-T1 (its 64 MiB arena-cap test, `zig/src/nfr13_arena_test.zig`). Detailed behavior remains in CAP-19. Existing behavior is unchanged.
+Status `Diagnostic · implemented` means built and verified on the invented family-folder fixture and the generated 10k corpus (S3-T1 to S3-T7, evidence in the task files), not on a user-derived corpus. NFR-13 is Diagnostic · implemented since S4-T1 (its 64 MiB arena-cap test, `zig/src/tests/nfr13_arena_test.zig`). Detailed behavior remains in CAP-19. Existing behavior is unchanged.
 
 ### CAP-20 — direct folder search (S6-T2)
 

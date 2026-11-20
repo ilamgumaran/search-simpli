@@ -1,0 +1,67 @@
+# S6-T14 builder suites, 20 Nov 2026 (key lines of each log; the logs stay in the builder's scratch)
+## zig build test: main-test-debug
++- run test 573 pass, 9 skip (582 total) 2m MaxRSS:935M
++- run test 6 pass (6 total) 951ms MaxRSS:5M
++- run test w
+Build Summary: 9/9 steps succeeded; 579/588 tests passed (9 skipped)
+## zig build test: main-test-rs
++- run test 573 pass, 9 skip (582 total) 22s MaxRSS:395M
++- run test 6 pass (6 total) 297ms MaxRSS:4M
++- run test w
+Build Summary: 9/9 steps succeeded; 579/588 tests passed (9 skipped)
+## zig build test: wt1-test-debug
++- run test 6 pass (6 total) 6s MaxRSS:5M
++- run test core 253 pass (253 total) 4m MaxRSS:412M
++- run test core w
++- run test interfaces 26 pass (26 total) 1s MaxRSS:10M
++- run test operations 10 pass (10 total) 969ms MaxRSS:7M
++- run test tests 284 pass, 9 skip (293 total) 6m MaxRSS:644M
++- run test tests w
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
+## zig build test: wt1-test-small
++- run test 6 pass (6 total) 275ms MaxRSS:4M
++- run test core 253 pass (253 total) 3s MaxRSS:35M
++- run test core w
++- run test interfaces 26 pass (26 total) 204ms MaxRSS:5M
++- run test operations 10 pass (10 total) 141ms MaxRSS:3M
++- run test tests 284 pass, 9 skip (293 total) 18s MaxRSS:402M
++- run test tests w
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
+## zig build test-abi: main-abi-debug
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
+## zig build test-abi: main-abi-rs
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
+## zig build test-abi: wt1-abi-debug
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
+## zig build test-abi: wt1-abi-rs
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
+## CI guard, zig test -ODebug -lc src/core/filename_complexity_test.zig --test-filter 'filename query complexity'
+All 2 tests passed.
+## CI guard, zig test -OReleaseSmall -lc src/core/filename_complexity_test.zig --test-filter 'filename query complexity'
+All 2 tests passed.
+## Python, git archive of 0ff5818 (no .git: two tests need one)
+FAIL: test_reference_report_names_its_policies (test_j2_gate.PythonReferenceTests)
+FAIL: test_file_list_is_independent_of_caller_directory (test_privacy.PrivacyTest)
+Ran 481 tests in 189.409s
+FAILED (failures=2)
+## Python with Zig, worktree
+Ran 481 tests in 133.413s
+OK
+## Python, SEARCHD_BINARY = the head's ReleaseSmall searchd
+Ran 481 tests in 40.110s
+OK
+## Python, SEARCH_SIMPLI_NO_ZIG=1
+Ran 426 tests in 34.298s
+OK (skipped=43)
+## Dart, git archive of 0ff5818
+No issues found!
+00:09 +97: All tests passed!
+## J2
+J2 gate: pass
+::notice title=J2 native run::290 queries x 2 variants, none skipped. searchd sha256 394f608ac54a6499d28f1cc20f363f0bb34b4609930dba2914c046c
+J2 native against the baseline's searchd cells (recorded 2026-11-12, binary 8b1f65c1d797): 0 rows differ
+J2 gate: pass

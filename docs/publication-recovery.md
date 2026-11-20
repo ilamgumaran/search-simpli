@@ -1,6 +1,6 @@
 # Atomic publication and recovery protocol
 
-Status: implemented and filesystem-tested in `zig/src/publication.zig`, using a portable named-temp-file-plus-rename sequence (`publication.writeAtomicFile`) rather than Zig 0.16.0's `Dir.createFileAtomic` directly.
+Status: implemented and filesystem-tested in `zig/src/core/publication.zig`, using a portable named-temp-file-plus-rename sequence (`publication.writeAtomicFile`) rather than Zig 0.16.0's `Dir.createFileAtomic` directly.
 
 ## Publication
 

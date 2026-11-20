@@ -133,7 +133,7 @@ indexing arena: the analyzer used to leave a normalized copy and a codepoint
 array per chunk in the arena (the S3-T2 tokenizer streams NFC with an offset
 map and allocates only its exact-size result).
 
-Query latency, `zig/src/find_bench.zig` (open the index, draw queries from the
+Query latency, `zig/src/core/find_bench.zig` (open the index, draw queries from the
 indexed chunks, 5 warm-up then 200 timed per mode, three repetitions;
 microseconds p50 / p95 per repetition; `find` with page size 20;
 `search_knowledge` = `Engine.queryTokenized`, lexical, top 10):

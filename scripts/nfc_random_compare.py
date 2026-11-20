@@ -4,7 +4,7 @@
 Draws N random strings (1 to --maxlen, default 12, codepoints) from a mix of Hangul jamo and
 syllables, Tamil, Devanagari and other two-part-vowel scripts, Latin with
 combining marks, ASCII, CJK compatibility ideographs, variation selectors,
-composition exclusions and singletons, runs them through `zig/src/nfc_dump.zig`
+composition exclusions and singletons, runs them through `zig/src/core/nfc_dump.zig`
 and diffs against `unicodedata.normalize("NFC")`. Exit 0 only at 0 differences.
 
     python3 scripts/nfc_random_compare.py [--n 200000] [--seed 1610] [--work DIR]
@@ -75,7 +75,7 @@ def main():
     cases = [draw(rng, p, rng.choice(mixes), args.maxlen) for _ in range(args.n)]
     infile, outfile, exe = work / "in.txt", work / "out.txt", work / "nfc_dump"
     infile.write_text("\n".join(hexs(c) for c in cases) + "\n", encoding="ascii")
-    subprocess.run(["zig", "build-exe", "-OReleaseFast", str(ROOT / "zig/src/nfc_dump.zig"), f"-femit-bin={exe}"],
+    subprocess.run(["zig", "build-exe", "-OReleaseFast", str(ROOT / "zig/src/core/nfc_dump.zig"), f"-femit-bin={exe}"],
                    check=True, cwd=work, capture_output=True, timeout=500)
     subprocess.run([str(exe), str(infile), str(outfile)], check=True, timeout=500)
     got = outfile.read_text(encoding="ascii").split("\n")

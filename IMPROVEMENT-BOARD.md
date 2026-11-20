@@ -376,7 +376,7 @@ each earns the next with evidence.
 - **Owner:**
 - **Links:** [design](docs/search-quality-plan-2026-10.md),
   [SQ-07 / SQ-08](docs/tasks/search-quality-follow-ups.md),
-  [native analyzer limitation](zig/src/analyzer_v2.zig),
+  [native analyzer limitation](zig/src/core/analyzer_v2.zig),
   [Python/Zig bridge](docs/python-zig-bridge.md)
 
 ---

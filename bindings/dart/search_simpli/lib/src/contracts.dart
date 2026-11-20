@@ -854,7 +854,7 @@ class EvidenceChunk {
 }
 
 /// Options for [SearchSimpli.indexFolder] — mirrors
-/// `zig/src/abi.zig`'s `IndexFolderOptions` and `ss_index_folder`'s
+/// `zig/src/interfaces/abi.zig`'s `IndexFolderOptions` and `ss_index_folder`'s
 /// `opts_json` (`zig/include/search_simpli.h`), same field meanings as the
 /// `searchd index` flags of the same names.
 class IndexFolderOptions {
@@ -954,8 +954,8 @@ enum IndexRecovery {
   }
 }
 
-/// `ss_index_folder()`'s JSON report object — mirrors `zig/src/indexer.zig`'s
-/// `IncrementalReport` as unified by `zig/src/abi.zig` (docs/tasks/S1-T4.md
+/// `ss_index_folder()`'s JSON report object — mirrors `zig/src/core/indexer.zig`'s
+/// `IncrementalReport` as unified by `zig/src/interfaces/abi.zig` (docs/tasks/S1-T4.md
 /// criterion 1). A non-`update` run always reports
 /// `changed`/`removed`/`unchanged` as 0 (a full rebuild never compares
 /// against a previous generation); an `update` run additionally reports

@@ -1,0 +1,8 @@
+core/find_bench.zig: zig build-exe -OReleaseFast zig/src/core/find_bench.zig -> exit 0 (36 s)
+core/nfc_bench.zig: zig build-exe -OReleaseFast zig/src/core/nfc_bench.zig -> exit 0 (13 s)
+core/nfc_dump.zig: zig build-exe -OReleaseFast zig/src/core/nfc_dump.zig -> exit 0 (33 s)
+tests/filename_bench.zig: zig build-exe -lc -OReleaseSmall --dep core --dep operations -Mroot=... --dep core -Moperations=... -Mcore=... -> exit 0 (27 s)
+tests/fold_bench.zig: zig build-exe -lc -OReleaseSmall --dep core --dep operations -Mroot=... --dep core -Moperations=... -Mcore=... -> exit 0 (21 s)
+tests/fuzzy_bench.zig: zig build-exe -lc -OReleaseSmall --dep core --dep operations -Mroot=... --dep core -Moperations=... -Mcore=... -> exit 0 (20 s)
+tests/title_field_bench.zig: zig build-exe -lc -OReleaseSmall --dep core --dep operations -Mroot=... --dep core -Moperations=... -Mcore=... -> exit 0 (16 s)
+tests/mcp_bench.zig: zig build-exe  -OReleaseSmall --dep core --dep operations -Mroot=... --dep core -Moperations=... -Mcore=... -> exit 0 (7 s)

@@ -1,19 +1,34 @@
 # Layers: the core and the interfaces
 
 **State:** written by S6-T1 (16 Nov 2026, from `main` at `7cd2c16`), item B1 of the
-[objective plan](plans/2026-11-16-objective-plan.md). It describes the import graph
-of `zig/src/` as it is; no Zig file was moved or changed for it.
+[objective plan](plans/2026-11-16-objective-plan.md); the folders by S6-T14 (item B2),
+which moved every file into its layer's folder without changing what it does.
 
-The engine's Zig sources sit in one folder, `zig/src/`, but they form three layers.
-The core can be improved without touching an interface, and a new interface can be
-added without touching the core, as long as imports run one way only:
+The engine's Zig sources form three layers, and each layer is a folder of `zig/src/`
+and a Zig module. The core can be improved without touching an interface, and a new
+interface can be added without touching the core, as long as imports run one way only:
 
 ```text
 bindings     bindings/dart (later: JavaScript, Swift, Kotlin, Python)   -> the C ABI only
-interfaces   abi.zig · cli.zig + main.zig · rpc.zig · mcp.zig          -> operations, core
-operations   service.zig · ops.zig · report.zig · filename_response.zig -> core
-core         formats, analysis, indexing, ranking, the opened generation -> core
+interfaces/  abi.zig · cli.zig + main.zig · rpc.zig · mcp.zig          -> operations, core
+ops/         service.zig · ops.zig · report.zig · filename_response.zig -> core   (module `operations`)
+core/        formats, analysis, indexing, ranking, the opened generation -> core   (module `core`)
+tests/       the tests, benchmarks and tools that cross layers          -> any module
 ```
+
+`zig/build.zig` builds `core/` as the module `core` (root `core/core.zig`) and `ops/`
+as the module `operations` (root `ops/operations.zig`, which imports `core`). The
+`searchd` executable (`interfaces/main.zig`) and the C ABI libraries
+(`interfaces/abi.zig`) import both. An interface reaches a core file as
+`@import("core").engine` and an operations file as `@import("operations").service`;
+a file imports another file of its own folder by path, as before. A third module,
+`interfaces` (root `interfaces/interfaces.zig`), exists only for the tests in `tests/`.
+
+`zig build test` runs one test step per folder (core, operations, interfaces, tests)
+and the `fastmem` step, because a Zig test build only collects the tests of its root
+module's files. A module root names its folder's files in a `comptime` block that is
+compiled in a test build only, so it adds no test of its own; the totals are the same
+as when every file sat in one folder.
 
 `scripts/check_layers.py` holds the assignment of every file and checks it. It runs
 in CI (the `checks` job, no Zig needed) and through `python3 -m unittest`
@@ -25,17 +40,23 @@ python3 scripts/check_layers.py
 
 ## What each layer may import
 
-- **Core** imports core files only. It knows nothing of JSON-RPC, MCP, the command
-  line or the C ABI: no core file names `service.zig`, `ops.zig` or an interface.
-- **Operations** imports core and operations files. It is the one seam every
-  interface calls: the scoped service, the folder-knowledge operations as
-  canonical JSON (so every surface answers the same request with the same bytes),
+- **Core** (`core/`) imports core files only, by path within its folder. It knows
+  nothing of JSON-RPC, MCP, the command line or the C ABI: no core file imports the
+  module `operations`, the module `interfaces` or a path outside `core/`.
+- **Operations** (`ops/`) imports the module `core` and operations files. It is the
+  one seam every interface calls: the scoped service, the folder-knowledge operations
+  as canonical JSON (so every surface answers the same request with the same bytes),
   and the shared parts of a query report.
-- **Interfaces** import core and operations files. An interface importing another
-  interface fails the check unless the pair is listed as allowed (below).
-- **Tests, benchmarks and tools** (`*_test.zig`, `*_bench.zig`, `root.zig`,
-  `nfc_dump.zig`) may import any file of `zig/src/` and any listed module, but each
-  import must resolve; no assigned file may import them.
+- **Interfaces** (`interfaces/`) import the modules `core` and `operations`. An
+  interface importing another interface fails the check unless the pair is listed as
+  allowed (below).
+- **Tests, benchmarks and tools** (`*_test.zig`, `*_bench.zig`, `tests/root.zig`,
+  `core/nfc_dump.zig`) sit beside their subject when they import one layer's files
+  only, and are held to that layer's rule there. One that crosses layers sits in
+  `tests/` and may import any module. No layer's file imports them, by path or
+  through a module.
+- **No path leaves its folder.** A `.zig` import resolves inside the importing file's
+  own folder; another layer is reached through its module, never by `../`.
 - **Bindings** sit outside `zig/src/`. The Dart package (`bindings/dart/search_simpli/`)
   calls the C ABI through `dart:ffi`, generated from `zig/include/search_simpli.h`;
   it never sees a Zig file. A later binding (JavaScript over WebAssembly, Swift,
@@ -46,8 +67,8 @@ python3 scripts/check_layers.py
 
 ## Imports between interfaces, today
 
-The plan named one: `mcp.zig` imports `cli.zig`. The import graph at `7cd2c16`
-has three such imports that are debt, and three more that are by design:
+The plan named one: `mcp.zig` imports `cli.zig`. The import graph has three such
+imports that are debt, and three more that are by design:
 
 - **By design (entry).** `main.zig` is the `searchd` executable: it parses the command
   line with `cli.zig` and then runs a CLI command, `serve` (`rpc.zig`, over stdio or
@@ -57,8 +78,8 @@ has three such imports that are debt, and three more that are by design:
   for `rpc.Generation` (open and reload of the served generation) and `rpc.errorCodeOf`;
   `abi.zig` imports `rpc.zig` for `rpc.parseMode` and the `ss_query` result writer
   (`rpc.writeSearchResultValueWith`). Each is shared code that belongs in operations.
-  [03-next](journey/03-next.md) has a row to remove them (plan item B2 is the natural
-  place, since it moves the files anyway).
+  [03-next](journey/03-next.md) has a row to remove them. S6-T14 moved the files only
+  and left these imports as they were, since removing them changes function bodies.
 
 The checker fails on any other import between interfaces, and on an allowed pair
 that no longer occurs, so the list can only shrink by being edited.
@@ -70,70 +91,78 @@ from its tables.
 
 <!-- BEGIN generated by scripts/check_layers.py --write-doc: edit the script, not this block -->
 
-| Layer | Files | May import |
-|---|---:|---|
-| core | 36 | core only |
-| operations | 4 | core and operations |
-| interfaces | 5 | core and operations; another interface only as an allowed pair |
+| Layer | Folder (`zig/src/`) | Module | Files | May import |
+|---|---|---|---:|---|
+| core | `core/` | `core` (`core/core.zig`) | 36 | core only |
+| operations | `ops/` | `operations` (`ops/operations.zig`) | 4 | core and operations |
+| interfaces | `interfaces/` | `interfaces` (`interfaces/interfaces.zig`) | 5 | core and operations; another interface only as an allowed pair |
 
 | File (`zig/src/`) | Layer | What it holds |
 |---|---|---|
-| `analysis.zig` | core | `analyzer-v1`, the ASCII tokenizer |
-| `analyzer_v2.zig` | core | `analyzer-v2`, Unicode tokenization (NFC, case folding, letters and digits) |
-| `apply.zig` | core | `apply_changes`: host-fed changes published as the next generation |
-| `benchmark.zig` | core | the synthetic ranking benchmark behind `searchd benchmark` |
-| `checksum.zig` | core | section integrity checksums |
-| `chunker.zig` | core | `line-window-v1` and the chunker chosen by path |
-| `chunker_md.zig` | core | `md-section-v1`, the Markdown chunker |
-| `engine.zig` | core | the opened generation: search, evidence and reads |
-| `fastmem.zig` | core | the library's own `memcpy`, `memmove` and `memset` |
-| `filename_field.zig` | core | the file-name channel: catalog, lexical section, search |
-| `find.zig` | core | `find`: exact words and phrases over one generation |
-| `fold.zig` | core | word-form groups: the fold key and the key map |
-| `fuzzy.zig` | core | `fuzzy-v1`, misspelling tolerance at query time |
-| `generation_alloc.zig` | core | the next free generation number of a directory |
-| `hybrid.zig` | core | documents, search options, scope masks, lexical and vector fusion |
-| `importer.zig` | core | imports an interchange snapshot written by the Python reference |
-| `incremental_state.zig` | core | `INDEX-STATE.json`, the per-file state of updates |
-| `indexer.zig` | core | native folder indexing: walk, read, chunk, publish |
-| `lexical_build.zig` | core | a postings index from tokenized documents, for any analyzer |
-| `lexical_segment.zig` | core | the lexical section format (`HYBLEX`) |
-| `lifecycle.zig` | core | the writer lock, generation retention and pruning |
-| `manifest.zig` | core | the generation manifest |
-| `nfc.zig` | core | Unicode normalization form C |
-| `postings.zig` | core | the inverted index, positions and sparse BM25 scoring |
-| `publication.zig` | core | atomic publication and recovery |
-| `scope.zig` | core | roots, request scope and visible-scope statistics |
-| `scoring.zig` | core | BM25, cosine similarity and reciprocal-rank fusion |
-| `segment.zig` | core | the documents section format (`HYBSEG`) |
-| `segment_v5.zig` | core | documents record v5: the file table and compact records (`HYBSEG01` version 5) |
-| `snapshot_open.zig` | core | opens a published generation for querying |
-| `source.zig` | core | the source section (`HYBSRC`): file bytes and line maps |
-| `source_v2.zig` | core | the source section v2 (`HYBSRC02`): files rebuilt from chunks and residual bytes |
-| `state_section.zig` | core | the recovery-state section (`HYBSTATE`) |
-| `title_field.zig` | core | `title-field-v1`: folder and file names as a title |
-| `unicode_tables.zig` | core | generated Unicode 13.0.0 tables (`scripts/gen_unicode_tables.py`) |
-| `verb_forms.zig` | core | the verb-form rule of the fold groups |
-| `filename_response.zig` | operations | the result object of `filename` and `both` searches, for JSON-RPC, the CLI and the C ABI |
-| `ops.zig` | operations | the folder-knowledge operations as canonical JSON (`find`, `outline`, `read_span`, `list_files`, `index_status`, `evidence`, `apply_changes`) |
-| `report.zig` | operations | the tail of a query report: `warnings`, `request`, `profile` |
-| `service.zig` | operations | the scoped service over an opened generation: search, status, listings, reads |
-| `abi.zig` | interfaces | the C ABI (`ss_*`; `zig/include/search_simpli.h`), under the Dart binding |
-| `cli.zig` | interfaces | `searchd` commands and their arguments |
-| `main.zig` | interfaces | the `searchd` entry: runs a CLI command, `serve` (stdio or loopback HTTP) or `mcp` |
-| `mcp.zig` | interfaces | `searchd mcp`: the Model Context Protocol server over stdio |
-| `rpc.zig` | interfaces | JSON-RPC 2.0 dispatch for `searchd serve` |
+| `core/analysis.zig` | core | `analyzer-v1`, the ASCII tokenizer |
+| `core/analyzer_v2.zig` | core | `analyzer-v2`, Unicode tokenization (NFC, case folding, letters and digits) |
+| `core/apply.zig` | core | `apply_changes`: host-fed changes published as the next generation |
+| `core/benchmark.zig` | core | the synthetic ranking benchmark behind `searchd benchmark` |
+| `core/checksum.zig` | core | section integrity checksums |
+| `core/chunker.zig` | core | `line-window-v1` and the chunker chosen by path |
+| `core/chunker_md.zig` | core | `md-section-v1`, the Markdown chunker |
+| `core/engine.zig` | core | the opened generation: search, evidence and reads |
+| `core/fastmem.zig` | core | the library's own `memcpy`, `memmove` and `memset` |
+| `core/filename_field.zig` | core | the file-name channel: catalog, lexical section, search |
+| `core/find.zig` | core | `find`: exact words and phrases over one generation |
+| `core/fold.zig` | core | word-form groups: the fold key and the key map |
+| `core/fuzzy.zig` | core | `fuzzy-v1`, misspelling tolerance at query time |
+| `core/generation_alloc.zig` | core | the next free generation number of a directory |
+| `core/hybrid.zig` | core | documents, search options, scope masks, lexical and vector fusion |
+| `core/importer.zig` | core | imports an interchange snapshot written by the Python reference |
+| `core/incremental_state.zig` | core | `INDEX-STATE.json`, the per-file state of updates |
+| `core/indexer.zig` | core | native folder indexing: walk, read, chunk, publish |
+| `core/lexical_build.zig` | core | a postings index from tokenized documents, for any analyzer |
+| `core/lexical_segment.zig` | core | the lexical section format (`HYBLEX`) |
+| `core/lifecycle.zig` | core | the writer lock, generation retention and pruning |
+| `core/manifest.zig` | core | the generation manifest |
+| `core/nfc.zig` | core | Unicode normalization form C |
+| `core/postings.zig` | core | the inverted index, positions and sparse BM25 scoring |
+| `core/publication.zig` | core | atomic publication and recovery |
+| `core/scope.zig` | core | roots, request scope and visible-scope statistics |
+| `core/scoring.zig` | core | BM25, cosine similarity and reciprocal-rank fusion |
+| `core/segment.zig` | core | the documents section format (`HYBSEG`) |
+| `core/segment_v5.zig` | core | documents record v5: the file table and compact records (`HYBSEG01` version 5) |
+| `core/snapshot_open.zig` | core | opens a published generation for querying |
+| `core/source.zig` | core | the source section (`HYBSRC`): file bytes and line maps |
+| `core/source_v2.zig` | core | the source section v2 (`HYBSRC02`): files rebuilt from chunks and residual bytes |
+| `core/state_section.zig` | core | the recovery-state section (`HYBSTATE`) |
+| `core/title_field.zig` | core | `title-field-v1`: folder and file names as a title |
+| `core/unicode_tables.zig` | core | generated Unicode 13.0.0 tables (`scripts/gen_unicode_tables.py`) |
+| `core/verb_forms.zig` | core | the verb-form rule of the fold groups |
+| `ops/filename_response.zig` | operations | the result object of `filename` and `both` searches, for JSON-RPC, the CLI and the C ABI |
+| `ops/ops.zig` | operations | the folder-knowledge operations as canonical JSON (`find`, `outline`, `read_span`, `list_files`, `index_status`, `evidence`, `apply_changes`) |
+| `ops/report.zig` | operations | the tail of a query report: `warnings`, `request`, `profile` |
+| `ops/service.zig` | operations | the scoped service over an opened generation: search, status, listings, reads |
+| `interfaces/abi.zig` | interfaces | the C ABI (`ss_*`; `zig/include/search_simpli.h`), under the Dart binding |
+| `interfaces/cli.zig` | interfaces | `searchd` commands and their arguments |
+| `interfaces/main.zig` | interfaces | the `searchd` entry: runs a CLI command, `serve` (stdio or loopback HTTP) or `mcp` |
+| `interfaces/mcp.zig` | interfaces | `searchd mcp`: the Model Context Protocol server over stdio |
+| `interfaces/rpc.zig` | interfaces | JSON-RPC 2.0 dispatch for `searchd serve` |
+
+Module roots (only `pub const` imports of their folder's files):
+
+| File (`zig/src/`) | Module | What it is |
+|---|---|---|
+| `core/core.zig` | `core` | the module `core`: every core file but `fastmem.zig`, and the core tests another folder names |
+| `ops/operations.zig` | `operations` | the module `operations` (it imports `core`): every operations file |
+| `interfaces/interfaces.zig` | `interfaces` | the module `interfaces`, for the tests in `tests/`: every interface file but `main.zig`, and `field_warnings_test.zig` |
 
 Imports between interfaces that are allowed (any other fails the check):
 
 | File | Imports | Kind | What it uses |
 |---|---|---|---|
-| `main.zig` | `cli.zig` | entry | the executable parses its command line with the CLI's parser |
-| `main.zig` | `mcp.zig` | entry | the executable runs `mcp`, the MCP server |
-| `main.zig` | `rpc.zig` | entry | the executable runs `serve`, the JSON-RPC server |
-| `abi.zig` | `rpc.zig` | debt | `rpc.parseMode` and `rpc.writeSearchResultValueWith`, the `ss_query` result writer |
-| `mcp.zig` | `cli.zig` | debt | `cli.McpArgs`, the parsed `searchd mcp` arguments |
-| `mcp.zig` | `rpc.zig` | debt | `rpc.Generation` (open and reload) and `rpc.errorCodeOf` |
+| `interfaces/main.zig` | `interfaces/cli.zig` | entry | the executable parses its command line with the CLI's parser |
+| `interfaces/main.zig` | `interfaces/mcp.zig` | entry | the executable runs `mcp`, the MCP server |
+| `interfaces/main.zig` | `interfaces/rpc.zig` | entry | the executable runs `serve`, the JSON-RPC server |
+| `interfaces/abi.zig` | `interfaces/rpc.zig` | debt | `rpc.parseMode` and `rpc.writeSearchResultValueWith`, the `ss_query` result writer |
+| `interfaces/mcp.zig` | `interfaces/cli.zig` | debt | `cli.McpArgs`, the parsed `searchd mcp` arguments |
+| `interfaces/mcp.zig` | `interfaces/rpc.zig` | debt | `rpc.Generation` (open and reload) and `rpc.errorCodeOf` |
 
 Imports that are not files (any other name fails the check):
 
@@ -141,32 +170,38 @@ Imports that are not files (any other name fails the check):
 |---|---|---|
 | `std` | any file | the Zig standard library |
 | `builtin` | any file | the compilation's target and options |
-| `build_options` | interfaces and exempt files | `contracts_version`, read from `contracts/CONTRACTS_VERSION` by `zig/build.zig` |
-| `tool_schemas` | interfaces and exempt files | the MCP tools' JSON schemas from `contracts/tools/`, read by `zig/build.zig` |
+| `core` | files of operations, interfaces and tests | the core layer, `core/core.zig` (S6-T14) |
+| `operations` | files of interfaces and tests | the operations layer, `ops/operations.zig` (S6-T14) |
+| `interfaces` | files of tests | the interfaces, `interfaces/interfaces.zig`, for the cross-layer tests (S6-T14) |
+| `build_options` | files of interfaces and tests | `contracts_version`, read from `contracts/CONTRACTS_VERSION` by `zig/build.zig` |
+| `tool_schemas` | files of interfaces and tests | the MCP tools' JSON schemas from `contracts/tools/`, read by `zig/build.zig` |
 
-Exempt from the direction rule (still accounted for):
+Tests, benchmarks and tools (in their subject's layer folder, or `tests/` when they cross layers):
 
 | File or pattern | Why |
 |---|---|
-| `*_test.zig` | a test, compiled by `zig build test` through `root.zig` or run alone with `zig test` |
-| `*_bench.zig` | a benchmark, run by hand with `zig run` |
-| `nfc_dump.zig` | a test tool for `scripts/nfc_compare.py`, in no build |
-| `root.zig` | the root of `zig build test`: imports every file so their tests run |
+| `*_test.zig` | a test, compiled by `zig build test` through its folder's module root or `tests/root.zig`, or run alone with `zig test` |
+| `*_bench.zig` | a benchmark, run by hand with `zig run` (zig/README.md) |
+| `core/nfc_dump.zig` | a test tool for `scripts/nfc_compare.py`, in no build |
+| `tests/root.zig` | the root of the cross-layer tests' step of `zig build test`: names every module and every test in `tests/` |
 
 <!-- END generated by scripts/check_layers.py -->
 
 ## Adding a new interface, or a core feature
 
 **A new interface** (a WebAssembly entry, an HTTP server, a new command) is a new file
-assigned to `interfaces` in `scripts/check_layers.py`. It calls `service.zig` and
-`ops.zig` (and core types where it must), never another interface; if it needs
-something an interface already has (argument parsing, a result writer), move that
-piece into operations first. **A core feature** (a new section, an analyzer, a ranking
-rule) is a core file that imports core files only; the interfaces reach it through
-operations, so add the operation (and its JSON in `ops.zig`) beside it. In both
-cases run `python3 scripts/check_layers.py --write-doc` to regenerate the table above,
-then `python3 scripts/check_layers.py`. A change to a contract, an index format or
-the C ABI still needs its [capability document](capability-process.md) first.
+in `interfaces/`, assigned to `interfaces` in `scripts/check_layers.py`. It calls
+`@import("operations").service` and `.ops` (and core types through `@import("core")`
+where it must), never another interface; if it needs something an interface already
+has (argument parsing, a result writer), move that piece into operations first.
+**A core feature** (a new section, an analyzer, a ranking rule) is a file in `core/`
+that imports core files only; add it to `core/core.zig` so the other folders can reach
+it. The interfaces reach it through operations, so add the operation (and its JSON in
+`ops/ops.zig`) beside it. A new operations file goes in `ops/` and in
+`ops/operations.zig`. In every case run `python3 scripts/check_layers.py --write-doc`
+to regenerate the table above, then `python3 scripts/check_layers.py`. A change to a
+contract, an index format or the C ABI still needs its
+[capability document](capability-process.md) first.
 
 ## What the check reads, and what it does not
 
@@ -174,20 +209,22 @@ It reads every `.zig` file under `zig/src/` (dot folders included) as Zig tokens
 text in a comment (`//`, `///`, `//!`), a string, a character literal or a multiline
 `\\` string is never taken for code. An `@import` is found however it is laid out:
 across lines, with spaces before or inside the parentheses, with a trailing comma
-(`zig fmt`'s own layout), with escapes in its string. Each `.zig` target is resolved
-against the importing file's real directory, so `../src/ops.zig` from
-`zig/src/engine.zig` is `ops.zig` and keeps working when the files move into folders
-(plan item B2). A target that leaves `zig/src/`, or names no file there, fails; so does
-an unassigned file that is imported, and an import whose operand is not one string
+(`zig fmt`'s own layout), with escapes in its string, and the name after it
+(`@import("core").engine`) is read as well. Each `.zig` target is resolved against
+the importing file's real directory, so `../ops/ops.zig` from `zig/src/core/engine.zig`
+is `ops/ops.zig`, and fails as a path into another folder. A target that leaves
+`zig/src/`, or names no file there, fails; so does an unassigned file that is imported,
+a name a module root does not export, and an import whose operand is not one string
 literal (`"o" ++ "ps.zig"`, a `const` holding the path, a multiline string): Zig itself
 refuses those, and the checker reports them rather than guess. Imports that are not
 files must be named in the "Imports that are not files" table above, and only the
-layers listed there may use them; an unknown name fails.
+folders listed there may use them; an unknown name fails. A file directly in
+`zig/src/`, in an unknown folder, or in a folder other than its layer's, fails.
 
-What it cannot see: what `zig/build.zig` wires together (which module is the root of
-which artifact, and what a named module added with `addImport` or `addOptions`
-contains; a new one must be listed, but its contents are not read); `@embedFile` and
-`@cImport`, which bring in bytes or C declarations rather than Zig files; imports in
-files outside `zig/src/` (`zig/build.zig`, `zig/tests/`); and branches that are never
-compiled (an import under `if (false)` still counts, so the check errs on the strict
-side). It does not judge the bindings or the Python reference.
+What it cannot see: what `zig/build.zig` wires together beyond the module names (which
+module is the root of which artifact, and what a named module added with `addImport`
+or `addOptions` contains; a new one must be listed, but its contents are not read);
+`@embedFile` and `@cImport`, which bring in bytes or C declarations rather than Zig
+files; imports in files outside `zig/src/` (`zig/build.zig`, `zig/tests/`); and
+branches that are never compiled (an import under `if (false)` still counts, so the
+check errs on the strict side). It does not judge the bindings or the Python reference.

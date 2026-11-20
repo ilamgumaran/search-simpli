@@ -3,7 +3,7 @@ table checks normalise.
 
 `scripts/gen_unicode_tables.py` writes the generating interpreter's version into
 the header of `src/search_platform/_fold.py`, `src/search_platform/_marks.py` and
-`zig/src/unicode_tables.zig` ("Produced by scripts/gen_unicode_tables.py ... using
+`zig/src/core/unicode_tables.zig` ("Produced by scripts/gen_unicode_tables.py ... using
 Python 3.9.6's"). CI's Python 3.9 is a later 3.9 patch release with the same
 Unicode 13.0.0, so the checks compare every byte except that version: the pattern
 is anchored to the start of a line and to the header phrase, and it replaces at

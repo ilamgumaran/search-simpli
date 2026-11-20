@@ -35,6 +35,31 @@ zig build run -- import-json /tmp/search-snapshot /tmp/zig-snapshot.json
 zig build run -- serve /tmp/search-snapshot
 ```
 
+The sources sit in one folder per layer ([docs/layers.md](../docs/layers.md)):
+`src/core/` (the module `core`), `src/ops/` (the module `operations`, which imports
+`core`), `src/interfaces/` (`main.zig` is `searchd`, `abi.zig` the C ABI libraries) and
+`src/tests/` (the tests, benchmarks and tools that cross layers). `zig build test` runs
+one step per folder and the `fastmem` step.
+
+A benchmark or tool of `src/core/` runs on its own, from the repository root:
+
+```sh
+zig run -OReleaseFast zig/src/core/find_bench.zig -- INDEX_DIR [MODE ...]
+zig run -OReleaseFast zig/src/core/nfc_bench.zig -- FILE [RUNS]
+zig run -OReleaseFast zig/src/core/nfc_dump.zig -- IN OUT
+```
+
+A benchmark of `src/tests/` imports the modules, so name them (`-lc` where the
+benchmark's own usage line has it; `scripts/mcp_overhead.py` builds this command):
+
+```sh
+zig run -lc -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/fold_bench.zig \
+  --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX
+```
+
+The same form runs `filename_bench.zig`, `fuzzy_bench.zig`, `title_field_bench.zig` and
+`mcp_bench.zig` (without `-lc`) with their own arguments.
+
 Use the pinned Zig 0.16.0 toolchain. Native Linux CI runs the engine, ABI and Python CLI suites; macOS/iOS shipped-library verification remains a separate platform step. The Python behavioral tests remain the cross-language baseline.
 
 The search core uses caller-owned slices rather than allocating. Channel ranks and final RRF ordering use deterministic in-place `O(n log n)` sorts; the persistent postings path avoids scanning non-matching lexical documents while exhaustive vectors remain the correctness baseline. `benchmark` measures the real postings + vector + fusion path and reports total plus lexical/ranking stage percentiles.

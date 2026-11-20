@@ -1,0 +1,598 @@
+# S6-T14 verifier, check 2: every test by name and outcome (tools/v_names.py: each test binary of zig build test run directly from its archive's zig/)
+# main 87c4ddb: the engine binary and fastmem; head a54c7f8: core, operations, interfaces, tests and fastmem; each mode built in its own cache
+names-main-dbg: 588 tests, 588 distinct names, OK 579, SKIP 9, sha256 0591cb5cbcdcb183
+names-head-dbg: 588 tests, 588 distinct names, OK 579, SKIP 9, sha256 0591cb5cbcdcb183
+names-main-rs: 588 tests, 588 distinct names, OK 579, SKIP 9, sha256 0591cb5cbcdcb183
+names-head-rs: 588 tests, 588 distinct names, OK 579, SKIP 9, sha256 0591cb5cbcdcb183
+diff main-dbg head-dbg: identical
+diff main-rs head-rs: identical
+diff main-rs main-dbg: identical
+## the list (all four identical), name<TAB>outcome
+abi.test.S2-T13: a vector whose L2 norm is not finite is rejected at query and import	OK
+abi.test.S4-T9: ss_close frees the open's block and the source and filename blocks of their first use	OK
+abi.test.keep_generations prunes through ss_index_folder and ss_import_json; zero is rejected	OK
+abi.test.lost MANIFEST: ss_index_folder numbers above generation 2 (full and --update), ss_import_json prunes it as superseded	OK
+abi.test.ss_import_json publishes a queryable snapshot and reports negative codes on failure	OK
+abi.test.ss_index_folder lists every max trace and resets the list between calls	OK
+abi.test.ss_index_folder names the file behind NoFreeGeneration in ss_last_error	OK
+abi.test.ss_index_folder publishes and re-publishes, full and incremental	OK
+abi.test.ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence agree with the RPC path	OK
+analysis.test.first occurrence suppresses duplicate query terms	OK
+analysis.test.term frequency uses ASCII case folding	OK
+analysis.test.token iterator finds words and numbers	OK
+analyzer_v2.test.tokenize drops variation selectors (S1-T15)	OK
+analyzer_v2.test.tokenize joiners stay inside a run and never start or end one (S1-T14)	OK
+analyzer_v2.test.tokenize keeps Devanagari and Latin-with-accents words whole (S1-T14)	OK
+analyzer_v2.test.tokenize keeps Tamil words whole (S1-T14)	OK
+analyzer_v2.test.tokenize splits, casefolds, and NFC-normalizes English text	OK
+analyzer_v2.test.tokenize treats letters and digits uniformly across scripts	OK
+analyzer_v2.test.tokenize: decomposed Hangul equals precomposed; CJK compatibility folds (S1-T15)	OK
+analyzer_v2.test.tokenizePositioned yields tokenize's tokens with codepoint offsets (S3-T2)	OK
+apply.test.S4-T12 ruling 4: the merge refuses a previous section 4 or 5 with a byte left over or missing, in every build	OK
+apply.test.S4-T16 ruling 2: the previous documents by range, and the list fallback when the order or contiguity breaks	OK
+apply.test.S4-T16 ruling 3 (finding 4): the merged file order equals the sort of every file over random batches	OK
+apply_test.test.S3-T3: a batch over the caps is refused whole	OK
+apply_test.test.S3-T3: a content hash mismatch rejects that change; the rest is published	OK
+apply_test.test.S3-T3: a crash between the manifest and the state write leaves a readable generation; the next call reports unchanged	OK
+apply_test.test.S3-T3: a generation carrying unchanged documents has the lexical section a fresh positional build gives	OK
+apply_test.test.S3-T3: a hidden label domain inside one root is indistinguishable from absent in every payload	OK
+apply_test.test.S3-T3: a root with more than 64 label sets counts exactly and scores like the visible corpus	OK
+apply_test.test.S3-T3: a stale expect_generation is refused first, naming the current generation	OK
+apply_test.test.S3-T3: add, change, move, pending, add, remove and remove_root, one call each	OK
+apply_test.test.S3-T3: duplicate and conflicting changes apply in array order and are reported	OK
+apply_test.test.S3-T3: find and index_status say pending_files and truncated, over the visible scope only	OK
+apply_test.test.S3-T3: forged principal_labels in a host-fed request are rejected and nothing is published	OK
+apply_test.test.S3-T3: index_folder's root and host roots share an index; --update leaves host roots alone	OK
+apply_test.test.S3-T3: remove_root leaves no term, count, state, source or meta of the root	OK
+apply_test.test.S3-T3: rename detection pairs equal hashes by sorted path and reports ambiguous moves	OK
+apply_test.test.S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes	OK
+apply_test.test.S3-T3: the report JSON carries every section 6 field	OK
+apply_test.test.S3-T3: two roots indexed and queried together and apart; a root is its own corpus	OK
+apply_test.test.S3-T3: unsafe paths, a file outside its root, a symlink and disabled file reads are refused whole	OK
+apply_test.test.S4-T11 ruling 2: a HYBLEX01 previous generation takes the fresh path and upgrades	OK
+apply_test.test.S4-T11 ruling 2: the carried merge writes a fresh build's lexical section at every step	OK
+apply_test.test.S4-T13 ruling 2(a): a previous lexical section with a flipped byte, or one that disagrees with the manifest, is refused at open	OK
+apply_test.test.S4-T13 ruling 2(b): a re-sealed repeated ordinal in a carried posting is refused before anything is published	OK
+apply_test.test.S4-T13 ruling 2(c): a re-sealed byte appended to section 4 is refused by the merge's end-of-walk check	OK
+apply_test.test.S4-T13 ruling 2(d) (and 3(c)): an untouched previous generation gives a fresh index's sections	OK
+apply_test.test.S4-T13 ruling 3(a): a previous source section with a flipped byte, or one that disagrees with the manifest, is refused at open	OK
+apply_test.test.S4-T13 ruling 4: a damaged previous filename lexical section is rebuilt, never carried or refused	OK
+apply_test.test.S4-T13 ruling 4: samePaths compares paths in order and labels, every file's chunks adjacent	OK
+apply_test.test.S4-T13 ruling 4: the filename sections equal a full build at every step	OK
+apply_test.test.S4-T13 ruling 4: with no path changed the previous filename lexical section is carried byte for byte; its guard is the checksum	OK
+apply_test.test.S4-T14 ruling 3(a): a re-sealed bad line map is carried by an update of another file, refused per file by the reader, and replaced by an update of its file	OK
+apply_test.test.S4-T14 ruling 3(c): a previous source section whose last map runs past the maps region is refused at the writer's open	OK
+apply_test.test.S4-T16 finding 14: no stage name is dropped on the writer's longest paths	OK
+apply_test.test.S4-T16 ruling 2: an update of a generation whose records are out of path order writes a fresh index's sections	OK
+apply_test.test.S4-T16 ruling 3: the source walk over a section that holds only some roots' files writes a fresh index's sections	OK
+apply_test.test.S4-T16 ruling 5(b): a state whose entries are out of record order runs the not-in-state loop and writes the same sections	OK
+apply_test.test.S4-T16 ruling 5(c): a previous path the state does not name is rebuilt from the generation, and the output equals the update where none is missing	OK
+apply_test.test.S4-T16 rulings 2-4: every kind of update writes a fresh index's documents, lexical, source and filename sections	OK
+apply_test.test.S4-T2 R3: a damaged recovery-state section refuses the write and readers still open	OK
+apply_test.test.S4-T2 R5: a root whose path has a linked prefix is read, a link below the root is still refused	OK
+apply_test.test.S4-T4 R2: INDEX-STATE.json is a version 3 pointer to the bound section, and loads through it	OK
+apply_test.test.S4-T4 R2: a pointer corrupted at any byte is never trusted over the bound section	OK
+apply_test.test.S4-T4 R2: a pointer to a section the MANIFEST does not bind loads as null; the writer reconstructs	OK
+apply_test.test.S4-T4 R2: a version 2 INDEX-STATE.json (an older writer's) still loads and feeds the next writer	OK
+apply_test.test.S4-T4 R2: with the pointer deleted, the bound section carries the state into the next generation	OK
+apply_test.test.S4-T4 R3: a flipped byte anywhere in a HYBSTA02 section refuses the write with a stated code; readers still open	OK
+apply_test.test.S4-T4 R3: writers publish HYBSTA03 (S6-T9; HYBSTA02 before); a HYBSTA01 section (0.3.0's) is still read	OK
+apply_test.test.committed recovery state preserves own labels, hashes, mtimes, pending and moves without cache	OK
+apply_test.test.restricted writers cannot change root policy, hidden files or labels	OK
+bm25_conformance_test.test.BM25 ranking matches the Python reference for analyzer-v1 and analyzer-v2	OK
+both_view_test.test.the check: no walk exactly when no record is labelled and the mask allows every root of every document; the walk's answer in every case	OK
+both_view_test.test.the counter through the engine: no walk when nothing can be hidden, one walk under any hiding scope or label	OK
+checksum.test.FNV-1a 64 is the pre-S4-T1 section checksum	OK
+checksum.test.XXH3-64 with seed 0 over the header then the payload	OK
+checksum.test.flags select the kind	OK
+chunker.test.chunk counts Tamil text by codepoint, not by UTF-8 byte	OK
+chunker.test.chunk produces overlapping windows once max_chars is exceeded	OK
+chunker.test.chunk splits a short document into a single stripped chunk	OK
+chunker.test.chunkId matches the documented sha256-hex20 identity	OK
+chunker.test.kindForPath selects md-section-v1 for .md and .markdown only	OK
+chunker_md.test.md-section-v1 keeps a chunk inside its section and records the path	OK
+chunker_md.test.md-section-v1 on an empty file yields nothing	OK
+chunker_md_test.test.md-section-v1 matches the Python reference on every golden file	OK
+chunker_test.test.line-window-v1 chunker matches the Python reference on every fixture file	OK
+cli_test.test.S3-T4: --json prints exactly the operation's JSON; text output and refusals	OK
+cli_test.test.S3-T4: the folder commands parse, and every bad argument is one usage line	OK
+cli_test.test.S5-T11: --filename-index parses on apply only; twice is once; index's is unchanged	OK
+cli_test.test.S5-T11: a crash after the fresh one-step publish leaves the complete first generation with the channel	OK
+cli_test.test.S5-T11: a fresh apply with --filename-index publishes only the requested roots with the channel	OK
+cli_test.test.S5-T11: an index with the channel takes the flag as a no-op; a repeat is safe	OK
+cli_test.test.S5-T11: an index without the channel refuses the flag: exit 2, one line, nothing written	OK
+cli_test.test.S5-T11: without the flag a fresh apply stays plain, as before	OK
+cli_test.test.a failure of the work is not a usage error and keeps exit 1 (S1-T8 criterion 3)	OK
+cli_test.test.a flag with no value, for every flag that takes one (S1-T8 criterion 1)	OK
+cli_test.test.a missing positional argument (S1-T8 criterion 1)	OK
+cli_test.test.a value longer than the message buffer is marked truncated, still one line (S1-T8 criterion 2)	OK
+cli_test.test.every numeric option rejects every bad spelling, quoting the value (S1-T8 criterion 2)	OK
+cli_test.test.help is a command, a bare invocation is a usage error carrying the usage text (S1-T8 criterion 3)	OK
+cli_test.test.index --generation 0 creates no --out directory (S1-T8 round 2, criterion 1)	OK
+cli_test.test.index summary line prints budget_exhausted (S1-T6 criterion 1)	OK
+cli_test.test.invalid enumerated values (S1-T8 criterion 1)	OK
+cli_test.test.options positive today still reject 0, the others accept it (S1-T8 criterion 2)	OK
+cli_test.test.query and evidence reject invalid UTF-8 text with one line and status 2 (S2-T11)	OK
+cli_test.test.unknown command is one line pointing at --help (S1-T8 criterion 1, 3)	OK
+cli_test.test.unknown flag for every subcommand (S1-T8 criterion 1)	OK
+cli_test.test.usage text states the exit statuses (S1-T8 criterion 3)	OK
+cli_test.test.valid arguments parse (S1-T8 criterion 2)	OK
+cli_test.test.values only the work used to reject are usage errors, decided before any work (S1-T8 round 2, criterion 1)	OK
+compat_292cb568_test.test.S4-T1: an index written at 292cb568 opens and answers find, read_span, outline, list_files and search_knowledge	OK
+compat_292cb568_test.test.S4-T1: apply_changes over a 292cb568 index publishes a v2.2 generation (XXH3 sections, no filename sections) that reads the same	OK
+compat_292cb568_test.test.S4-T1: the 292cb568 fixture is the pre-v2.1 format (FNV-1a sections, no flag 4)	OK
+compat_292cb568_test.test.S5-T2: a 292cb568 index gets the title field by the derive, at its first content query and not at the open	OK
+compat_292cb568_test.test.S5-T3: a 292cb568 index opens and expands a misspelt word (fuzzy-v1 needs no rebuild)	OK
+compat_292cb568_test.test.S5-T4: a 292cb568 index opens and groups a plural with its singular (fold-groups-v1 needs no rebuild)	OK
+compat_292cb568_test.test.S5-T5: a 292cb568 index opens and groups a word with its verb forms (fold-groups-v2 needs no rebuild)	OK
+compat_98c4a2b_test.test.S6-T4 ruling 3: two terms sharing 300 bytes go through the analyzer, the writer caps the shared prefix at 255, and each finds its own file	OK
+compat_98c4a2b_test.test.S6-T4 ruling 4: a 98c4a2b (v2) index opens and answers exactly as a fresh v3 index of the same folder	OK
+compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one	OK
+compat_98c4a2b_test.test.S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's flags (UnsupportedFlags), never reading a section	OK
+compat_98c4a2b_test.test.S6-T4 ruling 4: manifest bit 5 and the lexical sections must agree (a v3 section without the flag, a v2 one with it, a v1 file-name section under it)	OK
+compat_98c4a2b_test.test.S6-T4 ruling 4: the 98c4a2b fixture is the format before v3 (HYBLEX02 content, HYBLEX01 file names, no flag 5)	OK
+compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index	OK
+compat_98c4a2b_test.test.S6-T4: import-json with the file-name channel writes what 98c4a2b wrote (manifest without bit 5, HYBLEX01 sections), byte for byte	OK
+compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one	OK
+compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder	OK
+compat_s6t7_test.test.S6-T7: the committed text-once fixture is 62324f9's writer output (this writer's but for HYBLEX04), and a library before v2.4 refuses it at the flags	OK
+compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same	OK
+compat_s6t8_test.test.S6-T10 rule 11 on a v2-coded index, a Tamil chunk of several spans: an end one codepoint past the text in the first, a middle or the last span is refused by find; one at the text's end answers	OK
+compat_s6t8_test.test.S6-T8 F1, v2 rule: a byte after the last table is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F1, v2 rule: a count other than the document's length is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the first token is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F1, v2 rule: a length of 0 in the last token is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F1, v2 rule: a section that ends inside the last count is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F1, v2 rule: a section that ends inside the last table is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F1, v2 rule: a varint whose fifth byte is above 0x0F is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F1, v2 rule: a varint with a sixth byte is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F1, v2 rule: an end past a u32 is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F1: a length of 0 in a table the first publish drops (its file removed) is refused too, the old generation byte-identical	OK
+compat_s6t8_test.test.S6-T8 F1: a length of 0 in one v2 token (the verifier's v2_first_publish case) is refused at the first publish, the old generation whole and byte-identical	OK
+compat_s6t8_test.test.S6-T8 F3, dropped table: a byte left over after the first, a middle or the last table, that file removed, is refused by the first publish (the table walk)	OK
+compat_s6t8_test.test.S6-T8 F3, dropped table: a count other than the document's length in the first, a middle or the last table, that file removed, is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F3, dropped table: a length of 0 in the first, a middle or the last document's table, that file removed, is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F3, dropped table: a varint whose fifth byte is above 0x0F in the first, a middle or the last table, that file removed, is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F3, dropped table: a varint with a sixth byte in the first, a middle or the last table, that file removed, is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F3, dropped table: an end past a u32 in the first, a middle or the last table, that file removed, is refused by the first publish	OK
+compat_s6t8_test.test.S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables	OK
+compat_s6t8_test.test.S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or that table's file removed	OK
+compat_s6t8_test.test.S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at three tables	OK
+compat_s6t8_test.test.S6-T8 boundary sweep, rule 11 on a v2-coded index: a highlight one past its chunk's text is refused by find; one ending at the text's end answers	OK
+compat_s6t8_test.test.S6-T8 sites: a count one less than the document's length, carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: a count other than the document's length, carried or dropped, at the first, a middle and the last table	OK
+compat_s6t8_test.test.S6-T8 sites: a gap of exactly 2^31 (valid v2, zigzag 2^32) in a carried table is refused at three tables; a dropped one is not checked for it	OK
+compat_s6t8_test.test.S6-T8 sites: a length of 0, carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: a length whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: a length with a sixth byte (its value unchanged), carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: a start delta and a length of exactly 2^32, carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: a start delta whose fifth byte is above 0x0F (its value plus 2^32), carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: a start delta with a sixth byte (its value unchanged), carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: a v4 section that ends before a table's last token byte is refused at a later update, carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empty last table	OK
+compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: an end of exactly 2^32, carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: one byte after a v2 table is refused by the walk at the first publish, carried or dropped, at three tables	OK
+compat_s6t8_test.test.S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last document's file removed	OK
+compat_s6t8_test.test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one	OK
+compat_s6t8_test.test.S6-T8: indexes from 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.5 index, their bytes untouched	OK
+compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags	OK
+compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result	OK
+compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same	OK
+compat_s6t9_test.test.S6-T9 catalog C1 and C2: an id or a text in a v6 record is refused at the eager open and at the first file-name query, first, middle and last record	OK
+compat_s6t9_test.test.S6-T9 catalog C3 (M4): a v6 catalog without bit 9, or a v3 catalog under it, is refused at the eager open and at the first file-name query	OK
+compat_s6t9_test.test.S6-T9 catalog: the writer does not read the previous catalog (as since S4-T13); an update over a catalog damaged by C1 publishes a catalog built from the documents	OK
+compat_s6t9_test.test.S6-T9 state v3 S2 at the writer: a HYBSTA03 state over a HYBSRC01 source (bit 8 without bit 6, which no writer produces) is StateReferenceWithoutSource at the next write and at the pointer, the files untouched	OK
+compat_s6t9_test.test.S6-T9: a crash during the first publish from main's v2.5 format leaves the whole old generation, or after the manifest the whole new one	OK
+compat_s6t9_test.test.S6-T9: indexes from main (v2.5), 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.6 index, their bytes untouched	OK
+compat_s6t9_test.test.S6-T9: the committed v2.6 fixture is this writer's output, and a library before v2.6 refuses it at the flags	OK
+compat_s6t9_test.test.S6-T9: the first publish over main's v2.5 format through apply_changes equals the same change over v2.6	OK
+compat_s6t9_test.test.S6-T9: the first update of each older index plans no work, publishes one whole v2.6 generation, a fresh index's sections, and answers the same	OK
+direct_search_test.test.S6-T2: search answers as index then query/evidence over the walk's rules and the byte caps	OK
+direct_search_test.test.S6-T2: search answers as index then query/evidence, J2 corpus, every query, all three fields	OK
+direct_search_test.test.S6-T2: search answers as index then query/evidence, the whole fixtures folder	OK
+direct_search_test.test.S6-T2: search reads the folder and writes nothing in it or beside it	OK
+direct_search_test.test.S6-T2: search's flags reach the answer (field, top-k, json, evidence, caps)	OK
+direct_search_test.test.S6-T2: search's usage errors are one line and status 2; an empty folder answers nothing, status 0	OK
+direct_search_test.test.S6-T2: the detached sections are the bytes index publishes (J2, fixtures, the walk's rules; with and without the file-name channel)	OK
+direct_search_test.test.S6-T2: the scoped detached open reads the source section from memory	OK
+engine.test.engine query exposes caller capacity errors	OK
+engine.test.published snapshot opens and returns cited hybrid evidence	OK
+fastmem.test.S4-T18 large sizes: 4 KiB + 1 and 1 MiB + 7, copied, moved both ways and set	OK
+fastmem.test.S4-T18 memcpy: every length 0..256 at every source and destination alignment 0..15, guards untouched	OK
+fastmem.test.S4-T18 memmove: every length 0..256 at every alignment 0..15 without overlap	OK
+fastmem.test.S4-T18 memmove: overlapping ranges forward and backward, every length 0..256, shifts -64..64	OK
+fastmem.test.S4-T18 memset: every length 0..256 at every alignment 0..15, zero and non-zero	OK
+fastmem.test.S4-T18 zero lengths take null pointers and return dest	OK
+field_warnings_test.test.both and filename: a word only a hidden file or name holds gets an absent word's warnings, byte for byte	OK
+field_warnings_test.test.both and filename: query_empty_after_analysis and vector_ignored as under content	OK
+field_warnings_test.test.both: a group of three members and expansions of two words, in full and in order, as content gives them	OK
+field_warnings_test.test.both: a word only a visible file name holds is not unmatched; a word only a folder holds still is	OK
+field_warnings_test.test.both: the warnings content gives, codes, order, wording and members unchanged	OK
+field_warnings_test.test.both: with a visible file name holding one word, the other groups stay whole and the named word's group follows	OK
+field_warnings_test.test.content: the field path leaves content's warnings as they were	OK
+field_warnings_test.test.filename: only query_term_unmatched, for a word no visible file name holds	OK
+filename_complexity_test.test.filename query complexity: broad filename and both queries keep linear scratch at 1k and 10k	OK
+filename_complexity_test.test.filename query complexity: decoded anchors need zero body-record reads at 1k and 10k	OK
+filename_field.test.S4-T15 ruling 2(a): the bounded selections are the full sort's first candidate_k, element for element	OK
+filename_field_test.test.POSIX backslash filename is indexed literally	OK
+filename_field_test.test.S4-T13 ruling 4: the carried lexical section with a rebuilt catalog is a full build's, and the writer's check refuses what disagrees	OK
+filename_field_test.test.S4-T2 R5: the linear filename query equals PR #21's query exactly, scoped and unscoped	OK
+filename_field_test.test.S4-T4 R4: the writer's check accepts what build encoded, and the full re-tokenizing check agrees	OK
+filename_field_test.test.S4-T4 R4: the writer's check refuses sections that differ from what build produced	OK
+filename_field_test.test.S6-T4 rework: a file-name section whose last list is longer than its df is held to its list bytes	OK
+filename_field_test.test.cached filename anchors apply body ordinals and isolate scoped averages	OK
+filename_field_test.test.filename and both scope scores ignore hidden earlier files and zero-score candidates	OK
+filename_field_test.test.filename catalog validation rejects inconsistent labels	OK
+filename_field_test.test.filename field builds validated file catalog and returns a real anchor	OK
+filename_field_test.test.opt-in folder index publishes filename channel and refresh setting is pinned	OK
+filename_field_test.test.streaming filename validation rejects a semantically wrong posting frequency	OK
+filename_response.test.filename results expose source-based match sections and readable citations	OK
+find.test.S4-T17 ruling 3: the index-ranked list equals a record sort under rankedBefore, element for element, and so do the files	OK
+find_fixture_test.test.S3-T2: --update carries exact positions; a HYBLEX01 generation is upgraded	OK
+find_fixture_test.test.S3-T2: a HYBLEX01 generation answers phrase with CAPACITY; words and prefix still work	OK
+find_fixture_test.test.S3-T2: a v1 manifest cannot bind HYBLEX02; a v2 manifest's flag follows the section	OK
+find_fixture_test.test.S3-T2: empty queries, a stray star, page size and cursors are INVALID_ARGUMENT; a stale cursor says so	OK
+find_fixture_test.test.S3-T2: ordering is score desc, then root_id, path, start_line; files and coverage count hits	OK
+find_fixture_test.test.S3-T2: overlapping windows that show the same occurrence are deduplicated to the earlier chunk	OK
+find_fixture_test.test.S3-T2: phrase and prefix judgments reach precision and recall 1.00 across all pages; the listed misses are missed	OK
+find_fixture_test.test.S3-T2: phrase handles repeated tokens, punctuation inside the phrase and Tamil; quotes force phrase	OK
+find_fixture_test.test.S3-T2: prefix expands over the visible vocabulary only, at most 1,000 terms, else CAPACITY	OK
+find_fixture_test.test.S3-T2: snippets are at most 240 codepoints around the best window, cut at token boundaries	OK
+fold.test.K on the traps of rulings 2-5	OK
+fold.test.the Tamil fast path equals K's full path on every one- and two-code-point string of U+0B80-U+0BFF and on inflected words	OK
+fold.test.the key map groups terms by key	OK
+fold_groups_test.test.a fold group and a fuzzy-v1 group in one query, on a freeing allocator: each scores once, nothing leaks	OK
+fold_groups_test.test.both: the body and the title part share the groups (title members included); the filename channel is not grouped	OK
+fold_groups_test.test.groups: members only from chunks in scope (labels, prefix) and visible titles under the prefix	OK
+fold_groups_test.test.groups: the trigger (not empty, not the term alone), the order (term, key df, bytes) and the members past three	OK
+fold_groups_test.test.scoring: the best member per chunk at one df; fold off ranks as before; no group ranks as before	OK
+fold_groups_test.test.through the engine: privacy, fuzzy-v1 on the ungrouped tokens only, the grouped trace	OK
+fold_groups_test.test.warnings: a member held only by a hidden chunk is never named	OK
+fold_groups_test.test.warnings: query_term_grouped with its members, after an unmatched term's own; fold_policy_id beside fuzzy_policy_id	OK
+fold_test.test.K equals the Python mirror's golden on every term, byte for byte	OK
+fold_test.test.the fold table is sorted and every output is valid UTF-8 in the pool	OK
+fold_test.test_0	OK
+fuzzy_test.test.OSA: the banded table with its early exit equals the full table	OK
+fuzzy_test.test.both: the body scoring and the title part share the groups; the filename channel is not expanded	OK
+fuzzy_test.test.fuzzy-v1 kept (S5-T8 re-ruling): a second-letter typo of a short word reaches the word; a first-letter typo reaches nothing	OK
+fuzzy_test.test.group scoring: a distance-2 member weighs half; a title-only member scores in the title part	OK
+fuzzy_test.test.group scoring: the best member per chunk at one df, never the sum; no group ranks as before	OK
+fuzzy_test.test.privacy through the engine: the order's key df counts only the chunks the caller can see	OK
+fuzzy_test.test.scan privacy: a word held only by a label-hidden chunk or file is neither used nor reported	OK
+fuzzy_test.test.scan under a path prefix: the key df is the scope's, the candidate must be held under the prefix	OK
+fuzzy_test.test.scan: a title-only candidate at key df 1, after a body word at a higher df	OK
+fuzzy_test.test.scan: the first-letter range, the order (distance, key df, bytes) and N = 3	OK
+fuzzy_test.test.the expansions and the lexical and title scores match the Python reference's golden	OK
+fuzzy_test.test.trigger: 5 code points and Latin script; never below, never Tamil or mixed	OK
+fuzzy_test.test.trigger: a term held only outside the scope triggers; a visible title guards, a hidden one does not	OK
+fuzzy_test.test.warnings: a word held only by a hidden chunk is never named as an expansion	OK
+fuzzy_test.test.warnings: query_term_unmatched kept, followed by query_term_expanded with its expansions, in query order	OK
+generation_alloc.test.NoFreeGeneration lists a tied section subset above a lower manifest	OK
+generation_alloc.test.NoFreeGeneration lists all tied canonical traces in fixed order	OK
+generation_alloc.test.NoFreeGeneration names the file and the generation read from it	OK
+generation_alloc.test.filename generation slots respect dangling symlink directory entries	OK
+generation_alloc.test.nextFreeGeneration at u64 max is an error, not a panic	OK
+generation_alloc.test.nextFreeGeneration is 1 for a fresh directory	OK
+generation_alloc.test.nextFreeGeneration numbers above a lone higher section file and above INDEX-STATE	OK
+generation_alloc.test.nextFreeGeneration skips a crash orphan past the current generation	OK
+generation_alloc.test.nextFreeGeneration skips a leftover source section (S3-T1)	OK
+hybrid.test.RRF rewards a document supported by both channels	OK
+hybrid.test.candidate depth is applied independently before fusion	OK
+hybrid.test.empty evidence produces no results	OK
+hybrid.test.lexical search ranks an exact rare term	OK
+hybrid.test.optimized ranking preserves channel ties candidate cutoffs and fused order	OK
+hybrid.test.path scope and retrieval mode apply before component ranks	OK
+hybrid.test.required labels filter both channels before component ranks	OK
+hybrid.test.search validates workspace and vector dimensions	OK
+hybrid.test.semantic vectors retrieve a paraphrase without lexical overlap	OK
+hybrid.test.sparse ranking equals the dense reference on random tie-heavy inputs	OK
+import_analyzer_test.test.S1-T14: Tamil words absent from the corpus match nothing through either door (S5-T4: fold-groups-v1 off; on, only the plural of a held word)	OK
+import_analyzer_test.test.S2-T1: Tamil fixture published through import-json with analyzer-v2 finds every judged passage at rank 1	OK
+import_analyzer_test.test.S2-T1: import-json still rejects an analyzer id outside the contract's enum	OK
+import_analyzer_test.test.S2-T1: import-json with analyzer-v2 publishes the same bytes as searchd index on the app-text fixture	OK
+import_build_timing_test.test.ascii-alnum-v1 import time grows linearly with the corpus (S2-T2 plant)	OK
+importer.test.interchange imports into a published queryable snapshot	OK
+importer.test.interchange rejects analyzer and vector metadata mismatches	OK
+incremental_indexing_test.test.AnalyzerMismatch is rejected rather than silently mixing tokenizations	OK
+incremental_indexing_test.test.S1-T23 3(a): each of the six candidate names, as a dangling link and as a link to itself, reserves its slot and is left unchanged	OK
+incremental_indexing_test.test.S1-T23 3(a): six links on generations 1 to 6, one name each, kinds alternating: the allocator answers 7 and every link is unchanged	OK
+incremental_indexing_test.test.S1-T23 3(b): MANIFEST at u64 max - 1 and a link at the max candidate under each name: NoFreeGeneration, the link unchanged, the entry named (source-N since S5-T5)	OK
+incremental_indexing_test.test.S4-T11 ruling 2: seeded random mutations, each round's update equals a fresh index byte for byte	OK
+incremental_indexing_test.test.a file grown past max_file_bytes is reported too_large and its old chunks are tombstoned	OK
+incremental_indexing_test.test.a file over max_total_bytes is reported budget_exhausted, distinct from unchanged	OK
+incremental_indexing_test.test.a fresh directory and an empty folder report no recovery; zero documents only for zero files	OK
+incremental_indexing_test.test.an unreadable file's path is listed and its previous chunks are kept	OK
+incremental_indexing_test.test.crash mid-publication: an orphaned generation file does not corrupt the current snapshot, and the existing scanner sees it	OK
+incremental_indexing_test.test.five-step fixture mutation: add, edit, delete, rename, oversize	OK
+incremental_indexing_test.test.keep_generations counts only complete generations and always prunes a lone leftover	OK
+incremental_indexing_test.test.keep_generations of zero is rejected before anything is written	OK
+incremental_indexing_test.test.keep_generations=2 leaves exactly two generations over 20 publishes; absent keeps all	OK
+incremental_indexing_test.test.last-file deletion publishes an empty generation instead of NoDocuments	OK
+incremental_indexing_test.test.lost MANIFEST with only generation 2 on disk publishes generation 3, generation 2 is superseded and pruned	OK
+incremental_indexing_test.test.pruning touches only superseded canonical section files	OK
+incremental_indexing_test.test.update with a missing MANIFEST re-indexes every file instead of publishing an empty generation	OK
+incremental_indexing_test.test.update with a missing section re-indexes every file instead of publishing an empty generation	OK
+incremental_state.test.S4-T4: a pointer without a MANIFEST loads as null and still names its generation	OK
+incremental_state.test.S4-T4: the binary state refuses every truncation, trailing bytes, unknown flags and out-of-range references	OK
+incremental_state.test.S4-T4: the binary state round-trips every field, and equals what the JSON form carries	OK
+incremental_state.test.S4-T4: the version 3 pointer round-trips and is told apart from a version 1 or 2 state	OK
+incremental_state.test.committed state uses typed decoding and rejects null, version 1 or unknown state fields	OK
+incremental_state.test.state round-trips through save/load	OK
+incremental_state.test.state v2 keeps roots, statuses, labels and moves; v1 loads as r-legacy	OK
+indexer.test.full rebuild writes INDEX-STATE.json, first --update reports unchanged (S1-T5 criterion 2)	OK
+indexer.test.hasAllowedExtension matches DEFAULT_EXTENSIONS case-insensitively	OK
+indexer.test.indexFolder applies max_file_bytes cap on a full rebuild (S1-T5 criterion 1)	OK
+indexer.test.indexFolder applies max_total_bytes cap on a full rebuild (S1-T5 criterion 1 rework)	OK
+indexer.test.indexFolder lists the paths of files it could not read	OK
+indexer.test.indexFolder publishes a queryable generation from a real folder	OK
+indexer.test.indexFolder publishes an empty generation for an empty folder instead of NoDocuments	OK
+indexer.test.isIgnoredPath skips dotfiles and ignored directories	OK
+lazy_open_test.test.S4-T14: concurrent first reads of one file on one handle check its map without a lock and answer alike	OK
+lazy_open_test.test.S4-T1: XXH3 sections are refused under a manifest that does not set flag_xxh3_sections	OK
+lazy_open_test.test.S4-T1: concurrent first uses load each table once and see the same tables	OK
+lazy_open_test.test.S4-T1: damaged positions open lazily and fail the first find with the eager open's error	OK
+lazy_open_test.test.S4-T1: the lazy open answers every operation exactly as the eager open did	OK
+lazy_open_test.test.S4-T1: the scoped open defers the source, the statistics and the position tables to their first use	OK
+lazy_open_test.test.S4-T2 R4: a damaged filename catalog opens, fails the first filename query with its error, content still answers	OK
+lazy_open_test.test.S4-T2 R4: the full filename check (tests, import-json) sees a resealed term; readers check checksums and structure	OK
+lazy_open_test.test.S4-T2 R4: the scoped open reads neither filename section; the first filename query loads both once	OK
+lazy_open_test.test.lazy source rejects appended and truncated bytes on its pinned handle	OK
+lazy_open_test.test_0	OK
+lexical_build.test.build and scoreQuery reproduce BM25 ranking from pre-tokenized documents	OK
+lexical_build.test.buildPositional keeps build's statistics, sorts terms and round-trips positions (S3-T2)	OK
+lexical_segment.test.HYBLEX02 corruption: checksum first, then every section 4/5 rule (S3-T2)	OK
+lexical_segment.test.HYBLEX02 round trip keeps positions, offsets and sorted terms (S3-T2)	OK
+lexical_segment.test.S4-T12 ruling 2: every refusal keeps its name through encodedLength, encode and encodeAlloc	OK
+lexical_segment.test.S4-T12 ruling 3: a positional index claiming sorted but descending is UnsortedTerms; a sorted one encodes	OK
+lexical_segment.test.S4-T12 ruling 3: a positional index with an adjacent duplicate is DuplicateTerm, whatever sorted_terms says	OK
+lexical_segment.test.S6-T4 rework: the last list, the last dictionary entry and the last document length are held to their sections	OK
+lexical_segment.test.S6-T4 ruling 3: the reader refuses a shared length above 255 or above the previous term's length	OK
+lexical_segment.test.S6-T4 ruling 3: the writer caps a shared prefix at 255 bytes and never truncates a term	OK
+lexical_segment.test.S6-T4 second rework (Q1): a byte left over after the last document's offsets is refused, v2 and v3, at open and lazily	OK
+lexical_segment.test.S6-T4: HYBLEX03 damage is refused (checksum, truncation, zero gap, prefix, counts)	OK
+lexical_segment.test.S6-T4: HYBLEX03 round trip, with and without positions	OK
+lexical_segment.test.S6-T4: flipping any byte of a small HYBLEX03 section never crashes the reader	OK
+lexical_segment.test.lexical segment checksum covers metadata and payload	OK
+lexical_segment.test.lexical segment rejects inconsistent index metadata	OK
+lexical_segment.test.lexical segment round trip preserves BM25 scores	OK
+lexical_segment.test.lexical segment validates caller capacities	OK
+lexical_segment.test.persisted lexical index preserves hybrid ordering	OK
+lifecycle.test.pruning removes superseded source sections and scan counts them apart (S3-T1)	OK
+lifecycle.test.scanner distinguishes current generation and conservative orphans	OK
+lifecycle.test.scanner does not count INDEX-STATE.json as an unknown file	OK
+lifecycle.test.scanner treats generation files as orphans when no manifest exists	OK
+lifecycle.test.writer lease serializes publication attempts	OK
+manifest.test.S3-T3: meta keeps root labels and origin, pending and unchunked files	OK
+manifest.test.S4-T2 manifest v2.2: round trip with and without flag 8, same magic and version	OK
+manifest.test.S4-T2 manifest v2.2: stray flag bits, duplicate names and missing filename names are refused	OK
+manifest.test.S4-T2 manifest v2.2: the checksum covers every filename header field and payload string	OK
+manifest.test.S4-T2 manifest v2.2: the recovery-state binding (flag 16) round trips, is checksummed and validated	OK
+manifest.test.S4-T2 manifest v2.2: what older readers do with a generation this one writes	OK
+manifest.test.manifest checksum detects metadata and payload corruption	OK
+manifest.test.manifest rejects cross-section document count disagreement	OK
+manifest.test.manifest rejects unsafe filenames and invalid identifiers	OK
+manifest.test.manifest round trip validates both immutable sections	OK
+manifest.test.manifest v2 checksum detects corruption of the new fields	OK
+manifest.test.manifest v2 rejects bad meta, unsafe source names and stray flags	OK
+manifest.test.manifest v2 round trip binds the source section and the meta	OK
+manifest.test.manifest v2 without a source section and v1 still decode	OK
+manifest.test.snapshot validation detects wrong or corrupted section	OK
+manifest_inplace_test.test.S6-T13 verifier B: MANIFEST cut in place between the stat and the read is Truncated	OK
+manifest_inplace_test.test.S6-T13 verifier C: MANIFEST grown in place between the stat and the read reads the stat's length	OK
+manifest_inplace_test.test.S6-T13 verifier E: scan over a damaged MANIFEST or a section whose checksum does not match returns the error	OK
+manifest_read_test.test.S6-T13: a damaged MANIFEST is refused with the same error as before, by every open	OK
+manifest_read_test.test.S6-T13: a folder index whose MANIFEST grows across the publish opens whole between stat and read	OK
+manifest_read_test.test.S6-T13: an open whose MANIFEST is replaced between its stat and its read returns one whole generation	OK
+manifest_read_test.test.S6-T13: scan returns FileNotFound when MANIFEST names a missing documents or lexical file; no MANIFEST stays no error	OK
+mcp.test.S3-T6: URIs round-trip through percent-encoding	OK
+mcp.test.S3-T6: resources list, read and refuse through read_span's limits	OK
+mcp.test.S3-T6: the handshake, ping, the pinned revision and the lifecycle errors	OK
+mcp.test.S3-T6: tools/call answers the canonical JSON of ops and refuses forged scope	OK
+mcp.test.S3-T6: tools/list per mode carries the S3-T5 schemas	OK
+nfc.test.NFC composes a trailing combining acute accent	OK
+nfc.test.NFC composes decomposed Hangul and leaves composed Hangul alone (S1-T15)	OK
+nfc.test.NFC composes two-part vowels whose second part is a starter (S1-T15)	OK
+nfc.test.NFC is a no-op on already-composed text	OK
+nfc.test.NFC leaves plain ASCII and Tamil text untouched	OK
+nfc.test.NFC orders multiple combining marks by combining class before composing	OK
+nfc.test.NFC replaces singleton decompositions (S1-T15)	OK
+nfc.test.a mark blocks a starter from its class-0 second part, in Tamil too (S1-T16)	OK
+nfc.test.inert codepoints are never part of a table row except as the first of a pair (S1-T16)	OK
+nfc.test.normalizeMapped equals normalize and maps back to the input	OK
+nfc.test.regions around marks in mixed ASCII, Hangul and Latin text (S1-T16)	OK
+nfc.test.the generated tables have no row in the Hangul blocks (S1-T16 early outs)	OK
+nfc_timing_test.test.NFC time grows linearly across one long mark region (S1-T17)	OK
+nfc_timing_test.test.NFC time grows linearly with the length of one line (S1-T16)	OK
+nfr13_arena_test.test.NFR-13 scale: 15,000 files (one handle under 64 MiB; each operation on a fresh handle under 64 MiB as a regression guard)	SKIP
+nfr13_arena_test.test.NFR-13 scale: 20,000 files	SKIP
+nfr13_arena_test.test.S4-T1 NFR-13: find and search_knowledge over a 10,000-file index inside 64 MiB, the open included	OK
+nfr13_arena_test.test.S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge over the family folder inside 64 MiB	OK
+nfr13_arena_test.test.S4-T1 NFR-13: the cap bites (a 256 KiB cap refuses the same open)	OK
+nfr13_arena_test.test.S5-T2 NFR-13 scale: the same at 15,000 files	SKIP
+nfr13_arena_test.test.S5-T2 NFR-13 scale: the same at 20,000 files (information)	SKIP
+nfr13_arena_test.test.S5-T2 NFR-13: the open, the first content query and the first both query on one handle at 10k files, under 64 MiB	OK
+nfr13_arena_test.test.S5-T3 NFR-13 scale: the same at 15,000 files	SKIP
+nfr13_arena_test.test.S5-T3 NFR-13 scale: the same at 20,000 files (information)	SKIP
+nfr13_arena_test.test.S5-T3 NFR-13: a triggering content and both query at 10k files: nothing kept, one scan under 256 KiB, under 64 MiB	OK
+nfr13_arena_test.test.S5-T4 NFR-13 scale: the same at 15,000 files	SKIP
+nfr13_arena_test.test.S5-T4 NFR-13 scale: the same at 20,000 files (information)	SKIP
+nfr13_arena_test.test.S5-T4 NFR-13: a grouped content and both query at 10k files: the key map alone kept (<= 64 KiB), its build <= 1.0 MB, under 64 MiB	OK
+nfr13_arena_test.test.S5-T5 NFR-13 scale: the same at 15,000 files	SKIP
+nfr13_arena_test.test.S5-T5 NFR-13: a content and both query grouped through R alone at 10k files: the key map alone kept, nothing between queries, under 64 MiB	OK
+nfr13_arena_test.test.filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files	OK
+offsets_v4_test.test.S6-T10 rule 11 on a v4-coded index, five spans in a chunk: an end past the text in the first, a middle or the last span is each refused by find (OffsetsPastText); an end at the text's end answers	OK
+offsets_v4_test.test.S6-T8 boundary sweep: checkPairsTable and transcodePairsTable refuse at each bound and accept one inside it	OK
+offsets_v4_test.test.S6-T8 boundary sweep: readVarint, source.varintsEnd and oneByteTableEnd at each bound	OK
+offsets_v4_test.test.S6-T8 item 1b and F1: transcodePairsTable writes the bytes of v2's read and v4's append, and refuses with v2's error what v2's validation refuses	OK
+offsets_v4_test.test.S6-T8 item 1b: every table of a built index, coded as v2 and transcoded, is the fresh v4 section	OK
+offsets_v4_test.test.S6-T8 item 1b: oneByteTableEnd ends where the per-token walk ends, or fails where it fails	OK
+offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned	OK
+offsets_v4_test.test.S6-T8 rule 7 through find: a damaged section 5 fails the first find and every later one with the rule's error	OK
+offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find	OK
+offsets_v4_test.test.S6-T8: every section 5 rule, violated with the checksum recomputed, is refused with its own error, at the open and lazily	OK
+offsets_v4_test.test.S6-T8: the format document's worked example is the writer's section 5, byte for byte	OK
+offsets_v4_test.test.S6-T8: the header of HYBLEX04: version 4 and flags exactly 3	OK
+offsets_v4_test.test.S6-T8: the manifest's bit 7 binds HYBLEX04 both ways, and only with bit 5	OK
+offsets_v4_test.test.S6-T8: zigzag and the escape threshold	OK
+ops.test.S3-T4: apply options are strict	OK
+ops.test.S3-T4: evidence goes through the scope and names section, root and neighbours	OK
+ops.test.S3-T4: list_files pages, filters and sizes; roots and the scoped status	OK
+ops.test.S3-T4: read_span caps, clamping and every refusal; outline	OK
+ops.test.S3-T4: the envelope, root-relative paths and the request echo	OK
+ops.test.S3-T4: the scope narrows, labels come only from a trusted caller	OK
+postings.test.decoded segment can rebuild postings and preserve hybrid results	OK
+postings.test.postings BM25 matches the scan oracle	OK
+postings.test.postings build reports caller capacity errors	OK
+postings.test.postings scores preserve full hybrid ordering	OK
+postings.test.postings store document and term frequencies	OK
+publication.test.failed directory sync after MANIFEST keeps the new generation complete	OK
+publication.test.failed directory sync before MANIFEST leaves it untouched and cleans new sections	OK
+publication.test.failed immutable filename reuse leaves current generation unchanged	OK
+publication.test.invalid snapshot is rejected before MANIFEST visibility	OK
+publication.test.publication atomically selects a complete generation	OK
+publication.test.publish syncs the directory after the section renames and again after MANIFEST	OK
+publication.test.syncDirectory succeeds on a real directory handle	OK
+publication.test.writeAtomicFile materializes bytes at the destination and leaves no stray temp file	OK
+publication.test.writeAtomicFile with replace_existing=false fails closed and cleans up its temp file	OK
+publication.test.writeAtomicFile with replace_existing=true overwrites and leaves no stray temp file	OK
+query_report_test.test.S1-T23 3(c): ss_index_folder update skips a dangling and a self-referential section link, keeps both, publishes generation 4	OK
+query_report_test.test.a word hidden by labels or prefix and a word absent everywhere get identical warnings	OK
+query_report_test.test.an unknown option is still rejected	OK
+query_report_test.test.analyzer-v2 reports Unicode terms that match nothing	OK
+query_report_test.test.candidate_depth_cut in hybrid mode, for each channel that offered more than candidate_k	OK
+query_report_test.test.candidate_depth_cut in lexical mode needs candidate_k < top_k	OK
+query_report_test.test.candidate_depth_cut stays quiet in single-channel modes when candidate_k >= top_k	OK
+query_report_test.test.hybrid on a snapshot without vectors is one channel: a common word does not warn	OK
+query_report_test.test.profile appears only when asked for, and leaves the rest of the report unchanged	OK
+query_report_test.test.query terms are neither looked up nor warned about in vector mode	OK
+query_report_test.test.query_empty_after_analysis for punctuation, an empty query and unsearchable script	OK
+query_report_test.test.query_term_unmatched also covers a term present only outside the searched scope	OK
+query_report_test.test.query_term_unmatched names every word that matches no chunk (lexical, hybrid)	OK
+query_report_test.test.request echoes what was used, defaults included	OK
+query_report_test.test.the term of a filtered-out word is the analysed query term, not the dictionary's spelling	OK
+query_report_test.test.vector mode reports zero matched chunks	OK
+query_report_test.test.vector_ignored when a vector is passed and not used	OK
+query_report_test.test.warnings come in query order, each term once	OK
+query_utf8_test.test.every byte 0x00-0xFF and 2,000 random byte strings terminate in nfc and the v2 tokenizer	OK
+query_utf8_test.test.fuzz: 100,000 random byte strings through ss_query on a v2 and a v1 snapshot	OK
+query_utf8_test.test.ss_query rejects invalid UTF-8 on analyzer-v2 and ascii-alnum-v1 without hanging (hang test)	OK
+reload_test.test.S4-T6: a failed reload leaves the old generation served	OK
+reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (C allocator, as a release searchd)	OK
+reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (poisoned testing allocator)	OK
+root.test.load every engine module test suite	OK
+rpc.test.JSON RPC returns parse errors and status	OK
+rpc.test.JSON RPC search returns scoped cited evidence	OK
+rpc.test.JSON RPC validates vectors methods scoped reads and principal labels	OK
+rpc.test.S3-T4: the RPC folder methods, the command-line scope and apply_changes gating	OK
+scope.test.labels pack as a sorted union and split back against the root	OK
+scope.test.record paths, root lookup and the legacy root	OK
+scoring.test.BM25 rewards a present term	OK
+scoring.test.cosine at f32 extremes is finite, not NaN (S2-T13)	OK
+scoring.test.cosine similarity validates dimensions and direction	OK
+scoring.test.global corpus statistics reproduce bm25Contribution; a provider overrides frequency (S3-T2)	OK
+scoring.test.isValidVector rejects non-finite components and an overflowing norm (S2-T13)	OK
+scoring.test.rarer terms receive a larger BM25 contribution	OK
+scoring.test.reciprocal rank prefers earlier results and ignores absence	OK
+segment.test.S4-T16 ruling 4(a): every refusal keeps its name through encodedLengthV4, encodeV4 and encodeAllocV4	OK
+segment.test.segment checksum detects metadata corruption	OK
+segment.test.segment checksum detects payload corruption	OK
+segment.test.segment decode validates output capacities	OK
+segment.test.segment rejects inconsistent citation metadata	OK
+segment.test.segment rejects inconsistent vector dimensions and small buffers	OK
+segment.test.segment rejects noncanonical required labels	OK
+segment.test.segment round trip preserves documents and vectors	OK
+segment.test.segment round trip preserves hybrid query results	OK
+segment.test.segment v2 reader remains compatible with v1 records	OK
+segment.test.segment v3 writer is unchanged and refuses v4 fields	OK
+segment.test.segment v4 checksum covers the new fields	OK
+segment.test.segment v4 rejects inconsistent section metadata	OK
+segment.test.segment v4 round trip keeps section, chunker and source fields	OK
+service.test.service applies required labels to search read and source listing	OK
+service.test.service exposes scoped search read list and status operations	OK
+service.test.service reports evidence and source capacity errors	OK
+snapshot_open.test.open reproduces a published demo generation	OK
+source.test.S3-T4: the sparse line index finds any line by decoding at most one block	OK
+source.test.S4-T10: a streamed file whose bytes no longer match their SHA-256 answers CAPACITY naming the check	OK
+source.test.S4-T10: the running checksum equals checksum.compute over the same bytes at every split	OK
+source.test.S4-T10: the streamed open holds the table and the maps, reads each file per call, and agrees with openIndexed through any buffer	OK
+source.test.S4-T11 ruling 3: carried records encode byte for byte as the files hashed and scanned afresh	OK
+source.test.S4-T11: varintsEnd counts end bytes across blocks and refuses a short section	OK
+source.test.S4-T14 ruling 2(d): a streamed file's map is checked once per handle; a file that fails is checked at every call	OK
+source.test.S4-T14 ruling 3: openTable walks the table and bounds the maps; a map that disagrees with its bytes is refused where the file is read	OK
+source.test.S4-T14: nextBreakCandidate stops at every byte isBreakAt can start a break at, and validateLineMap agrees with lineStarts across block edges	OK
+source.test.indexed and linear lookups agree	OK
+source.test.line maps follow CRLF, CR, LF and the other splitlines terminators	OK
+source.test.outline reports headings for Markdown and only lines for other files	OK
+source.test.read_span caps: 400 lines including context and 256 KiB	OK
+source.test.read_span is byte exact with terminators, context and clamping	OK
+source.test.source section rejects corruption, unsorted paths and bad line maps	OK
+source.test.source section round trip keeps original bytes, hashes and line counts	OK
+source_fixture_test.test.S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPACITY); --update heals it	OK
+source_fixture_test.test.S3-T1: --update carries retained bytes and re-chunks Markdown written by line windows	OK
+source_fixture_test.test.S3-T1: read_span, outline and the source binding agree with the family-folder judgments	OK
+source_fixture_test.test.S3-T1: without a source section read_span and outline answer CAPACITY source absent	OK
+source_fixture_test.test.S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section	OK
+state_section.test.S4-T4: HYBSTA02 refuses truncation, a flipped byte anywhere and a stray magic or version	OK
+state_section.test.S4-T4: HYBSTA02 round trip with the same header, flags, length and checksum as HYBSTA01	OK
+state_section.test.state section refuses a flipped byte, a short or long file and unknown flags	OK
+state_section.test.state section round trip, XXH3-64 over header and payload	OK
+state_v3_test.test.S6-T9 manifest v2.6 M1 and M2: bit 8 without a state section, bit 9 without file-name sections, are refused at decode	OK
+state_v3_test.test.S6-T9 manifest v2.6 M4 at the writer's check: validateFilenameSections refuses a record v6 catalog without bit 9 and a v3 catalog under it	OK
+state_v3_test.test.S6-T9 state v3 S1: a referenced record with bit 0, 2 or 3 set is StateReferenceFlags, first, middle and last record	OK
+state_v3_test.test.S6-T9 state v3 S2: a reference without a source table is StateReferenceWithoutSource, first, middle and last record	OK
+state_v3_test.test.S6-T9 state v3 S2: references in a generation with no source section are refused at the next write and at the pointer, first, middle and last record	OK
+state_v3_test.test.S6-T9 state v3 S3: a source record at or past the source's count is StateReferenceOutOfRange; one less is read	OK
+state_v3_test.test.S6-T9 state v3 S4: a source record not above the previous reference's is StateReferenceOrder, first, middle and last record	OK
+state_v3_test.test.S6-T9 state v3 S5 bound: the root prefix needs one byte after its slash	OK
+state_v3_test.test.S6-T9 state v3 S5: a table path outside the record's root is StateReferencePath, first, middle and last record	OK
+state_v3_test.test.S6-T9 state v3 bound: a payload with no slack (36 bytes a file, nothing else) is read at its count; one more file is refused before any allocation	OK
+state_v3_test.test.S6-T9 state v3 section header: HYBSTA03 at version 2 or 4 is UnsupportedVersion, the magics are not crossed, with the checksum recomputed	OK
+state_v3_test.test.S6-T9 state v3 writer bound: an entry offered the same source record as the reference before it keeps its full record (the ordinals strictly increase, S4)	OK
+state_v3_test.test.S6-T9 state v3: a referenced record's absent fields hold zero (v2's rule, InvalidState), first, middle and last record	OK
+state_v3_test.test.S6-T9 state v3: a referenced record's label count past the label references, or its root past the strings, is InvalidState, first, middle and last record	OK
+state_v3_test.test.S6-T9 state v3: counts, record lengths and truncation are refused (InvalidState), never read past the payload	OK
+state_v3_test.test.S6-T9 state v3: decode(encode(state)) is the state, references taken exactly when the entry matches its record	OK
+state_v3_test.test.S6-T9 state v3: each rule is refused at the next write (a carrying write) and at the pointer, first, middle and last record; files untouched, readers answer	OK
+state_v3_test.test.S6-T9 state v3: the pointer resolves a HYBSTA03 state only against the documents and source sections its manifest binds; each check refused (InvalidState), the writer's open refusing the same damage	OK
+state_v3_test.test.S6-T9 state v3: the section version against flag bit 8 (M3) is refused at the next write; a HYBSTA02 section under a manifest without it is read	OK
+state_v3_test.test.S6-T9 state v3: the worked example of the format document, byte for byte	OK
+state_v3_test.test.S6-T9 state v3: the writer's state is HYBSTA03, every retained file referenced, the pending one full; it decodes to the files	OK
+text_once_test.test.S6-T7 Second Verdict R1: a byte-order mark is a gap in Markdown and keeps any other file whole; every file read back exactly	OK
+text_once_test.test.S6-T7 Verdict finding 1: overlaps of 1 and 2 bytes and of the whole previous chunk are rebuilt exactly, through read_span and outline	OK
+text_once_test.test.S6-T7 ruling 11: every HYBSRC02 rule, violated with the checksum recomputed, is refused with its error (resident and streamed)	OK
+text_once_test.test.S6-T7 ruling 11: every documents v5 rule, violated with the checksum recomputed, is refused with its error	OK
+text_once_test.test.S6-T7 ruling 3: every kind of file is rebuilt to its exact bytes, with HYBSRC01's map, SHA-256, read_span and outline	OK
+text_once_test.test.S6-T7 ruling 9: a record v5 cannot code fails the encode with a named error	OK
+text_once_test.test.S6-T7: an update carries unchanged files' records, maps and residual runs byte for byte, and the result is a fresh index's	OK
+text_once_test.test.S6-T7: the manifest's text_once flag binds record v5 and HYBSRC02 both ways	OK
+title_field_test.test.both: one result per file, the merged order, and the ranking fields	OK
+title_field_test.test.content: a title-only file is returned through its first chunk	OK
+title_field_test.test.content: streaming per file yields the drain's matches, scores and parts	OK
+title_field_test.test.content: the part goes on the file's best body chunk, an exact tie to the smaller id	OK
+title_field_test.test.content: title weight 0 and no title field give today's results, byte for byte	OK
+title_field_test.test.derive marks its five stages in order	OK
+title_field_test.test.derive of no documents, and the scratch is released (testing allocator)	OK
+title_field_test.test.grouping falls back when a file's chunks are not adjacent	OK
+title_field_test.test.grouping in one pass when the paths come in order	OK
+title_field_test.test.the ASCII token path agrees with analyzer_v2.tokenize	OK
+title_field_test.test.the title field is derived once per opened generation, at the first content or both query, never at the open	OK
+title_field_test.test.title BM25 with the idf once equals scoring.bm25Contribution bit for bit	OK
+title_field_test.test.title scores match the Python reference's golden over J2's paths and knowledge queries	OK
+title_field_test.test.title statistics: a root mask and the labels narrow N, the average and df; a path prefix does not	OK
+title_field_test.test.title stem follows Path.stem, not the filename field's stem	OK
+title_field_test.test.title tokens fold like analyzer-v2: Tamil NFC and NFD, full-width, accents	OK
+title_field_test.test.title tokens: a legacy-root or unrooted path is taken whole	OK
+title_field_test.test.title tokens: folders then the stem, never the root id	OK
+verb_form_groups_test.test.R: a held word takes a form at 0.5 only when the form's key df is not above its own	OK
+verb_form_groups_test.test.R: a word no chunk and no title holds takes its forms at 1.0, and fuzzy-v1 does not also run on it	OK
+verb_form_groups_test.test.R: fold off ranks as before; a word R does not apply to ranks as with fold-groups-v1	OK
+verb_form_groups_test.test.R: members only from chunks in scope and visible titles under the prefix; the form held by a hidden chunk or a hidden name is not named	OK
+verb_form_groups_test.test.R: the invariant, on every held word of the corpus: no R-only member's key df above the word's own, the group df unchanged by R	OK
+verb_form_groups_test.test.fold-groups-v3: only R's eligible forms; the forms of another word are left out	OK
+verb_forms.test.bases and forms of a few words	OK
+verb_forms.test.eligible forms: the doubling shape and its left-out forms	OK
+verb_forms.test.the largest word fits the buffers	OK
+verb_forms_test.test.R equals the Python mirror's golden on every term, byte for byte	OK
+verb_forms_test.test_0	OK

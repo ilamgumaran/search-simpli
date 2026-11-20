@@ -148,11 +148,15 @@ and ABI as it is needs none.
 
 ## The layers
 
-`zig/src/` is divided into core, operations and interfaces; imports run one way only.
-[docs/layers.md](docs/layers.md) lists every file and says how to add an interface or a
-core feature. A new file under `zig/src/` must be added to `scripts/check_layers.py`; run
-`python3 scripts/check_layers.py --write-doc` to regenerate the document's table, then
-`python3 scripts/check_layers.py`.
+`zig/src/` is divided into core, operations and interfaces, each a folder (`core/`,
+`ops/`, `interfaces/`) and the first two Zig modules (`core`, `operations`); imports run
+one way only, and another layer is reached through its module, never by a path.
+Tests, benchmarks and tools sit beside their subject, or in `zig/src/tests/` when they
+cross layers. [docs/layers.md](docs/layers.md) lists every file and says how to add an
+interface or a core feature. A new file under `zig/src/` goes in its layer's folder and
+must be added to `scripts/check_layers.py` (and to its folder's module root, when
+another folder imports it); run `python3 scripts/check_layers.py --write-doc` to
+regenerate the document's table, then `python3 scripts/check_layers.py`.
 
 ## Native libraries and the source digest
 

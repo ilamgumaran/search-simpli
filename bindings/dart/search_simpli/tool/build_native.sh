@@ -93,7 +93,7 @@ if [ -f "$IOS_A" ]; then
   (cd "$IOS_OBJS" && ar x "$IOS_A" && rm -f __.SYMDEF* && chmod 644 ./*.o)
   # S4-T18: the archive's compiler_rt.o defines memcpy, memmove and memset
   # (one byte at a time in ReleaseSmall) as strong private externs, and
-  # fastmem.o defines the library's word-wise ones (zig/src/fastmem.zig), so
+  # fastmem.o defines the library's word-wise ones (zig/src/core/fastmem.zig), so
   # ld64 refuses the link ("duplicate symbol '_memcpy'"); Zig's own linkers
   # bind fastmem's for the other targets. Making compiler_rt.o's three local
   # lets the engine's calls bind fastmem's, as on macOS and Android.

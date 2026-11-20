@@ -1,0 +1,6 @@
+main index exit 0 indexed <vscratch>/head-arch/fixtures/j2: analyzer=analyzer-v2 generation=1 files_indexed=95 too_large
+head index exit 0 indexed <vscratch>/head-arch/fixtures/j2: analyzer=analyzer-v2 generation=1 files_indexed=95 too_large
+file lists equal: True 9 files, 1343477 B
+files byte-identical: 9 of 9
+20 queries, 0 differ; bytes of answers 3804 (first 3)
+5 finds, 0 differ

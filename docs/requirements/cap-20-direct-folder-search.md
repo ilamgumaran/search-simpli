@@ -36,7 +36,7 @@ Status: Implemented and verified (S6-T2) · built by [S6-T2](../tasks/S6-T2.md) 
 
 | ID | Requirement / impact | Target or constraint |
 |---|---|---|
-| NFR-15 | Direct search builds in memory: it creates no file or directory anywhere (folder, its parent, the working directory, the temporary directory), and its cost against the index path is stated by measurement, not assumed. | Tested by `zig/src/direct_search_test.zig` and `tests/test_direct_search.py`; crossover measured in [S6-T2](../tasks/S6-T2.md) §6 and [direct-search](../direct-search.md). No wall-clock threshold is a test (ROLES). |
+| NFR-15 | Direct search builds in memory: it creates no file or directory anywhere (folder, its parent, the working directory, the temporary directory), and its cost against the index path is stated by measurement, not assumed. | Tested by `zig/src/tests/direct_search_test.zig` and `tests/test_direct_search.py`; crossover measured in [S6-T2](../tasks/S6-T2.md) §6 and [direct-search](../direct-search.md). No wall-clock threshold is a test (ROLES). |
 | NFR-12 | Indexing time and memory: `search` pays the whole build on every call. | Not changed; the crossover table says up to what folder size that is acceptable. |
 | NFR-01 / INV-06 | No dependency added. | Zig standard library only. |
 
@@ -116,7 +116,7 @@ requires, so it is not a conflict.
 
 ## 10. Evidence plan (step 8)
 
-- Tests to add: `zig/src/direct_search_test.zig` (8 tests),
+- Tests to add: `zig/src/tests/direct_search_test.zig` (8 tests),
   `tests/test_direct_search.py` (7 process tests), three plants (S6-T2 Report).
 - `EXPERIMENTS.md` entry planned: none; the crossover is recorded in the S6-T2
   Report and `docs/direct-search.md`.

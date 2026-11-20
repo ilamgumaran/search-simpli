@@ -1,6 +1,6 @@
 """S5-T4: K, the key function of fold-groups-v1, in the Python mirror
 (`src/search_platform/analyzer_v3.py`, docs/tasks/S5-T4.md rulings 2-5). The
-Zig side (`zig/src/fold.zig`) equals the golden this mirror writes."""
+Zig side (`zig/src/core/fold.zig`) equals the golden this mirror writes."""
 
 import subprocess
 import sys
@@ -34,14 +34,14 @@ class FoldTableTests(unittest.TestCase):
                         "--python-fold > src/search_platform/_fold.py")
 
     def test_zig_tables_regenerate_byte_for_byte(self):
-        """zig/src/unicode_tables.zig, fold table included, is what the generator writes."""
+        """zig/src/core/unicode_tables.zig, fold table included, is what the generator writes."""
         if unicodedata.unidata_version != UNICODE_VERSION:
             self.skipTest("table generated with Unicode " + UNICODE_VERSION)
         fresh = subprocess.run([sys.executable, str(ROOT / "scripts" / "gen_unicode_tables.py")],
                                capture_output=True, text=True, check=True).stdout
-        self.assertTrue(same_table(fresh, (ROOT / "zig" / "src" / "unicode_tables.zig").read_text(encoding="utf-8")),
-                        "zig/src/unicode_tables.zig is stale: run python3 scripts/gen_unicode_tables.py "
-                        "> zig/src/unicode_tables.zig")
+        self.assertTrue(same_table(fresh, (ROOT / "zig" / "src" / "core" / "unicode_tables.zig").read_text(encoding="utf-8")),
+                        "zig/src/core/unicode_tables.zig is stale: run python3 scripts/gen_unicode_tables.py "
+                        "> zig/src/core/unicode_tables.zig")
 
     def test_table_counts(self):
         self.assertEqual(len(FOLD), 6158)

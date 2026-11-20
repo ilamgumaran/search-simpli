@@ -11,7 +11,8 @@ plus the labelled `private` root (`tests/test_folder_surfaces.fixture_request`):
    queries, each as a `find` (its judged mode, page size 20) and as a
    `search_knowledge` (top 10).
 3. Per repetition: the direct Zig call (`zig run -O<mode>
-   zig/src/mcp_bench.zig`: `ops.find` / `ops.searchKnowledge` in process,
+   zig/src/tests/mcp_bench.zig`, with the `core` and `operations` modules
+   (zig/README.md): `ops.find` / `ops.searchKnowledge` in process,
    5 warm-up rounds, then ROUNDS timed rounds), then the same rounds over
    one `searchd mcp` session (a `tools/call` line written, the response line
    read, timed in this client), then over `searchd serve` (the RPC round
@@ -39,6 +40,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
 
 from test_folder_surfaces import PACK, fixture_request  # noqa: E402
+
+
+def bench_modules(bench: str) -> list[str]:
+    """`zig run` arguments for a benchmark of zig/src/tests/ (S6-T14; zig/README.md): the
+    benchmark as the root module, with the `core` and `operations` modules it imports."""
+    src = ROOT / "zig" / "src"
+    return ["--dep", "core", "--dep", "operations", f"-Mroot={src / bench}",
+            "--dep", "core", f"-Moperations={src / 'ops' / 'operations.zig'}", f"-Mcore={src / 'core' / 'core.zig'}"]
+
 
 PROTOCOL_VERSION = "2025-11-25"
 WARMUPS = 5
@@ -140,7 +150,7 @@ def main() -> int:
         gate = True
         for repetition in range(1, options.repetitions + 1):
             direct_run = subprocess.run(
-                ["zig", "run", f"-O{options.optimize}", str(ROOT / "zig" / "src" / "mcp_bench.zig"), "--",
+                ["zig", "run", f"-O{options.optimize}", *bench_modules("tests/mcp_bench.zig"), "--",
                  str(index), str(requests_file), str(options.rounds)],
                 capture_output=True, text=True, cwd=ROOT)
             if direct_run.returncode != 0:

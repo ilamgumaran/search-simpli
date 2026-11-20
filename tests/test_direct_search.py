@@ -8,7 +8,7 @@ in its working directory or in the temporary directory, and leaves nothing
 behind; a missing folder, a file where a folder is expected and an empty query
 are usage errors (exit 2, one stderr line, empty stdout); an empty folder
 answers with no results and exit 0. The exhaustive comparison (every J2 query,
-every field and form) is `zig/src/direct_search_test.zig`; this module checks
+every field and form) is `zig/src/tests/direct_search_test.zig`; this module checks
 the command itself on a sample.
 
 Finding the binary as `test_cli_process.py` does: `$SEARCHD_BINARY`, else one

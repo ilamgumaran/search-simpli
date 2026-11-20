@@ -1,5 +1,5 @@
 """S3-T2: the Python reference's `find` (words, phrase, prefix), mirroring
-zig/src/find_fixture_test.zig on small invented folders."""
+zig/src/core/find_fixture_test.zig on small invented folders."""
 
 import sys
 import tempfile

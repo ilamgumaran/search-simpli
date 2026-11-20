@@ -1,0 +1,25 @@
+# S6-T14 verifier, ruling 1: tools/v_imports.py REPO 87c4ddb <rev>
+## against a54c7f8 (head)
+pairs 91; unchanged 56; changed 35; lines 62157; differing lines 431; @import (regex) old 889 new 889
+files only at NEW: ['zig/src/core/core.zig', 'zig/src/interfaces/interfaces.zig', 'zig/src/ops/operations.zig']
+problems: 0
+exit 0
+## against d967f09 (the move commit)
+pairs 91; unchanged 56; changed 35; lines 62157; differing lines 431; @import (regex) old 889 new 889
+files only at NEW: ['zig/src/core/core.zig', 'zig/src/interfaces/interfaces.zig', 'zig/src/ops/operations.zig']
+problems: 0
+exit 0
+## the script on a scratch clone of a54c7f8 with three plants (a space in a function line of ops/service.zig; core/engine.zig fold.zig -> fuzzy.zig; ops/service.zig core.engine -> core.find)
+TARGET zig/src/core/engine.zig:2: old ('file', 'zig/src/core/fold.zig', None) new ('file', 'zig/src/core/fuzzy.zig', None)
+  - const fold = @import("fold.zig");
+  + const fold = @import("fuzzy.zig");
+TARGET zig/src/ops/service.zig:1: old ('file', 'zig/src/core/engine.zig', None) new ('file', 'zig/src/core/find.zig', None)
+  - const engine_module = @import("engine.zig");
+  + const engine_module = @import("core").find;
+NON-IMPORT zig/src/ops/service.zig:97
+  -     pub fn searchKnowledge(
+  +     pub  fn searchKnowledge(
+pairs 91; unchanged 55; changed 36; lines 62157; differing lines 433; @import (regex) old 889 new 889
+files only at NEW: ['zig/src/core/core.zig', 'zig/src/interfaces/interfaces.zig', 'zig/src/ops/operations.zig']
+problems: 3
+exit 1

@@ -204,7 +204,7 @@ check-runs API returns without a sign-in; when a step fails the run files are ke
 `unicode-13-goldens` job runs their regeneration checks on Python 3.9 (Unicode
 13.0.0; the job asserts it) through `scripts/ci_unicode_goldens.py`, which counts
 nine checks by name and fails on a skip: the `_fold.py`, `_marks.py` and
-`zig/src/unicode_tables.zig` tables, the marks guard, and the analyzer-v3, title,
+`zig/src/core/unicode_tables.zig` tables, the marks guard, and the analyzer-v3, title,
 BM25, fuzzy and verb-forms goldens. The three table checks compare every byte but
 the generating Python's patch version in their header (the runner's 3.9 is not
 the Mac's 3.9.6; `tests/unicode_tables_header.py`). The 3.11 jobs still skip

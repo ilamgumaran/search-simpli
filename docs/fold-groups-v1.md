@@ -6,7 +6,7 @@ the key map, the order and the scoring below and adds `-ing`/`-ed` verb forms
 as members. This page stays v1's record. Query side only:
 no index format, writer or analyzer changes, and an index written before
 S5-T4 groups its words the same way. The key function K is implemented twice
-and held equal byte for byte by a golden: the Zig engine (`zig/src/fold.zig`)
+and held equal byte for byte by a golden: the Zig engine (`zig/src/core/fold.zig`)
 and the Python mirror (`src/search_platform/analyzer_v3.py`,
 `scripts/gen_analyzer_v3_golden.py`, `fixtures/analyzer-v3-golden.json`, 49,122
 terms). The Python reference (`src/search_platform/core.py`) groups with the

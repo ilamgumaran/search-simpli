@@ -1,7 +1,8 @@
-"""S6-T1: the layer checker (scripts/check_layers.py, docs/layers.md).
+"""S6-T1, S6-T14: the layer checker (scripts/check_layers.py, docs/layers.md).
 
-The real repository must pass; small synthetic trees show that each rule fails
-with the file and line named."""
+The real repository must pass; small synthetic trees in the folder layout
+(core/, ops/, interfaces/, tests/) show that each rule fails with the file and
+line named."""
 
 from __future__ import annotations
 
@@ -18,35 +19,49 @@ sys.path.insert(0, str(REPO / "scripts"))
 import check_layers  # noqa: E402
 
 FILES = {
-    "engine.zig": ("core", "the engine"),
-    "store.zig": ("core", "a format"),
-    "ops.zig": ("operations", "the seam"),
-    "cli.zig": ("interfaces", "commands"),
-    "rpc.zig": ("interfaces", "json-rpc"),
-    "mcp.zig": ("interfaces", "mcp"),
+    "core/engine.zig": ("core", "the engine"),
+    "core/store.zig": ("core", "a format"),
+    "ops/ops.zig": ("operations", "the seam"),
+    "interfaces/cli.zig": ("interfaces", "commands"),
+    "interfaces/rpc.zig": ("interfaces", "json-rpc"),
+    "interfaces/mcp.zig": ("interfaces", "mcp"),
 }
-ALLOWED = {("mcp.zig", "cli.zig"): ("debt", "the arguments")}
-EXEMPT_FILES = {"root.zig": "the test root"}
+MODULE_ROOTS = {
+    "core/core.zig": ("core", "core", "the core module"),
+    "ops/operations.zig": ("operations", "operations", "the operations module"),
+    "interfaces/interfaces.zig": ("interfaces", "interfaces", "the interfaces, for tests"),
+}
+ALLOWED = {("interfaces/mcp.zig", "interfaces/cli.zig"): ("debt", "the arguments")}
+EXEMPT_FILES = {"tests/root.zig": "the test root"}
 CLEAN = {
-    "engine.zig": 'const std = @import("std");\nconst store = @import("store.zig");\n',
-    "store.zig": 'const std = @import("std");\n',
-    "ops.zig": 'const engine = @import("engine.zig");\n',
-    "cli.zig": 'const ops = @import("ops.zig");\nconst engine = @import("engine.zig");\n',
-    "rpc.zig": 'const ops = @import("ops.zig");\nconst options = @import("build_options");\n',
-    "mcp.zig": 'const ops = @import("ops.zig");\nconst cli = @import("cli.zig");\n',
-    "root.zig": 'const cli = @import("cli.zig");\nconst mcp = @import("mcp.zig");\n',
-    "engine_test.zig": 'const rpc = @import("rpc.zig");\n',
-    "query_bench.zig": 'const mcp = @import("mcp.zig");\n',
+    "core/core.zig": 'pub const engine = @import("engine.zig");\npub const store = @import("store.zig");\n'
+                     'pub const store_test = @import("store_test.zig");\n',
+    "core/engine.zig": 'const std = @import("std");\nconst store = @import("store.zig");\n',
+    "core/store.zig": 'const std = @import("std");\n',
+    "core/store_test.zig": 'const store = @import("store.zig");\n',
+    "ops/operations.zig": 'pub const ops = @import("ops.zig");\n',
+    "ops/ops.zig": 'const engine = @import("core").engine;\n',
+    "interfaces/interfaces.zig": 'pub const cli = @import("cli.zig");\npub const rpc = @import("rpc.zig");\n'
+                                 'pub const mcp = @import("mcp.zig");\n',
+    "interfaces/cli.zig": 'const ops = @import("operations").ops;\nconst engine = @import("core").engine;\n',
+    "interfaces/rpc.zig": 'const ops = @import("operations").ops;\nconst options = @import("build_options");\n',
+    "interfaces/mcp.zig": 'const ops = @import("operations").ops;\nconst cli = @import("cli.zig");\n',
+    "tests/root.zig": 'const cli = @import("interfaces").cli;\nconst t = @import("core").store_test;\n'
+                      'const e = @import("engine_test.zig");\n',
+    "tests/engine_test.zig": 'const rpc = @import("interfaces").rpc;\nconst engine = @import("core").engine;\n',
+    "tests/query_bench.zig": 'const mcp = @import("interfaces").mcp;\nconst ops = @import("operations").ops;\n',
 }
 
 
 class Tree:
     """A temporary repository with zig/src and docs/layers.md."""
 
-    def __init__(self, sources=None, files=FILES, allowed=ALLOWED, exempt_files=EXEMPT_FILES):
+    def __init__(self, sources=None, files=FILES, allowed=ALLOWED, exempt_files=EXEMPT_FILES,
+                 module_roots=MODULE_ROOTS):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         self.files, self.allowed, self.exempt_files = dict(files), dict(allowed), dict(exempt_files)
+        self.module_roots = dict(module_roots)
         for rel, text in (CLEAN if sources is None else sources).items():
             self.write(rel, text)
         doc = self.root / "docs" / "layers.md"
@@ -58,11 +73,15 @@ class Tree:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
+    def remove(self, rel):
+        (self.root / "zig" / "src" / rel).unlink()
+
     def render(self):
-        return check_layers.render_doc(self.files, self.allowed, self.exempt_files)
+        return check_layers.render_doc(self.files, self.allowed, self.exempt_files, module_roots=self.module_roots)
 
     def check(self, doc=True):
-        return check_layers.check(self.root, self.files, self.allowed, self.exempt_files, doc=doc)
+        return check_layers.check(self.root, self.files, self.allowed, self.exempt_files, doc=doc,
+                                  module_roots=self.module_roots)
 
     def close(self):
         self.tmp.cleanup()
@@ -84,12 +103,17 @@ class RepositoryTests(unittest.TestCase):
         self.assertIn(check_layers.render_doc(), text)
 
     def test_the_plan_s_named_exception_is_listed(self):
-        self.assertEqual(check_layers.ALLOWED[("mcp.zig", "cli.zig")][0], "debt")
+        self.assertEqual(check_layers.ALLOWED[("interfaces/mcp.zig", "interfaces/cli.zig")][0], "debt")
 
-    def test_every_layer_is_known(self):
+    def test_every_layer_is_known_and_in_its_folder(self):
         for rel, (layer, role) in check_layers.FILES.items():
             self.assertIn(layer, check_layers.LAYER_ORDER, rel)
             self.assertTrue(role, rel)
+            self.assertEqual(rel.split("/")[0], check_layers.FOLDERS[layer], rel)
+
+    def test_every_zig_file_sits_in_one_of_the_four_folders(self):
+        for rel in check_layers.zig_files(REPO / "zig" / "src"):
+            self.assertIn(rel.split("/")[0], ("core", "ops", "interfaces", "tests"), rel)
 
 
 class RuleTests(unittest.TestCase):
@@ -102,78 +126,181 @@ class RuleTests(unittest.TestCase):
     def test_clean_tree_passes(self):
         self.assertEqual(self.tree.check(), [])
 
-    def test_core_importing_operations_fails_with_file_and_line(self):
-        self.tree.write("engine.zig", CLEAN["engine.zig"] + 'const ops = @import("ops.zig");\n')
+    # S6-T14: the folders.
+
+    def test_a_file_outside_its_layer_s_folder_fails(self):
+        self.tree.remove("core/store.zig")
+        self.tree.write("ops/store.zig", 'const std = @import("std");\n')
+        problems = self.tree.check()
+        self.assertIn("zig/src/ops/store.zig:1: sits in zig/src/ops/, outside its layer's folder: FILES assigns "
+                      "store.zig to core as core/store.zig (zig/src/core/)", problems)
+        self.assertTrue(any("FILES names zig/src/core/store.zig, which does not exist" in p for p in problems), problems)
+
+    def test_files_naming_a_path_outside_the_layer_s_folder_fails(self):
+        self.tree.files["ops/extra.zig"] = ("core", "misplaced")
+        self.tree.write("ops/extra.zig", 'const std = @import("std");\n')
+        problems = self.tree.check(doc=False)
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("FILES assigns ops/extra.zig to core, whose folder is zig/src/core/", problems[0])
+
+    def test_a_file_directly_in_zig_src_fails(self):
+        self.tree.write("extra.zig", 'const std = @import("std");\n')
         self.assertEqual(self.tree.check(), [
-            "zig/src/engine.zig:3: core file imports ops.zig (operations); core may import core only"])
+            "zig/src/extra.zig:1: sits directly in zig/src/, outside the layer folders (core/, ops/, interfaces/) "
+            "and tests/: move it to its layer's folder"])
+
+    def test_a_file_in_an_unknown_folder_fails(self):
+        self.tree.write("lib/extra_test.zig", 'const std = @import("std");\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/lib/extra_test.zig:1: sits in zig/src/lib/, outside the layer folders (core/, ops/, "
+            "interfaces/) and tests/: move it to its layer's folder"])
+
+    def test_a_layer_file_in_tests_fails(self):
+        self.tree.write("tests/helper.zig", 'const std = @import("std");\n')
+        problems = self.tree.check()
+        self.assertEqual(len(problems), 1, problems)
+        self.assertTrue(problems[0].startswith("zig/src/tests/helper.zig:1: zig/src/tests/ holds tests, "
+                                               "benchmarks and tools only"), problems[0])
+
+    def test_an_import_by_path_into_another_folder_fails(self):
+        self.tree.write("interfaces/cli.zig", 'const engine = @import("../core/engine.zig");\n'
+                                              'const ops = @import("operations").ops;\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/interfaces/cli.zig:1: imports ../core/engine.zig (zig/src/core/engine.zig), a file of another "
+            'folder: core is reached through its module, @import("core"), never by path'])
+
+    def test_an_import_by_path_into_tests_fails(self):
+        self.tree.write("core/engine.zig", CLEAN["core/engine.zig"] + 'const t = @import("../tests/engine_test.zig");\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/core/engine.zig:3: imports ../tests/engine_test.zig (zig/src/tests/engine_test.zig), a file of "
+            "another folder: zig/src/tests/ is no module, and nothing outside it imports its files"])
+
+    def test_a_test_in_tests_of_one_layer_only_fails(self):
+        self.tree.write("tests/store_more_test.zig", 'const store = @import("core").store;\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/tests/store_more_test.zig:1: imports core files only: a test, benchmark or tool of one layer "
+            "sits beside its subject, in zig/src/core/"])
+
+    def test_a_test_in_tests_that_crosses_through_another_test_passes(self):
+        self.tree.write("tests/engine_more_test.zig", 'const engine = @import("core").engine;\n'
+                                                      'const t = @import("engine_test.zig");\n')
+        self.assertEqual(self.tree.check(), [])
+
+    def test_a_test_in_a_layer_s_folder_is_held_to_that_layer(self):
+        self.tree.write("core/store_test.zig", CLEAN["core/store_test.zig"] + 'const ops = @import("operations").ops;\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/core/store_test.zig:2: core file imports the module operations, which only files of "
+            "interfaces and tests may import"])
+
+    def test_a_name_the_module_root_does_not_export_fails(self):
+        self.tree.write("ops/ops.zig", 'const engine = @import("core").nothing;\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/ops/ops.zig:1: imports core.nothing, which zig/src/core/core.zig does not export "
+            "(no pub const nothing)"])
+
+    def test_a_layer_file_importing_a_test_through_a_module_fails(self):
+        self.tree.write("ops/ops.zig", CLEAN["ops/ops.zig"] + 'const t = @import("core").store_test;\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/ops/ops.zig:2: operations file imports core.store_test (zig/src/core/store_test.zig), "
+            "a test, benchmark or tool file"])
+
+    def test_a_module_root_imported_by_path_fails(self):
+        self.tree.write("core/engine.zig", CLEAN["core/engine.zig"] + 'const c = @import("core.zig");\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/core/engine.zig:3: imports core.zig, a module root, by path: import the module by name"])
+
+    def test_a_module_root_outside_its_folder_fails(self):
+        self.tree.module_roots["core/ops_root.zig"] = ("operations", "ops2", "misplaced")
+        self.tree.write("core/ops_root.zig", "\n")
+        problems = self.tree.check(doc=False)
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("MODULE_ROOTS puts core/ops_root.zig, the operations module's root, outside zig/src/ops/",
+                      problems[0])
+
+    # The direction rule (S6-T1), through the modules.
+
+    def test_core_importing_operations_fails_with_file_and_line(self):
+        self.tree.write("core/engine.zig", CLEAN["core/engine.zig"] + 'const ops = @import("operations").ops;\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/core/engine.zig:3: core file imports the module operations, which only files of "
+            "interfaces and tests may import"])
 
     def test_core_importing_an_interface_fails(self):
-        self.tree.write("store.zig", 'const rpc = @import("rpc.zig");\n')
+        self.tree.write("core/store.zig", 'const rpc = @import("interfaces").rpc;\n')
         self.assertEqual(self.tree.check(), [
-            "zig/src/store.zig:1: core file imports rpc.zig (interfaces); core may import core only"])
+            "zig/src/core/store.zig:1: core file imports the module interfaces, which only files of tests may import"])
+
+    def test_core_importing_its_own_module_fails(self):
+        self.tree.write("core/store.zig", 'const engine = @import("core").engine;\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/core/store.zig:1: core file imports the module core, which only files of operations, "
+            "interfaces and tests may import"])
 
     def test_operations_importing_an_interface_fails(self):
-        self.tree.write("ops.zig", CLEAN["ops.zig"] + 'const cli = @import("cli.zig");\n')
+        self.tree.write("ops/ops.zig", CLEAN["ops/ops.zig"] + 'const cli = @import("interfaces").cli;\n')
         self.assertEqual(self.tree.check(), [
-            "zig/src/ops.zig:2: operations file imports cli.zig (interfaces); "
-            "operations may import core and operations"])
+            "zig/src/ops/ops.zig:2: operations file imports the module interfaces, which only files of tests "
+            "may import"])
 
     def test_an_interface_importing_another_fails_unless_allowed(self):
-        self.tree.write("rpc.zig", 'const cli = @import("cli.zig");\n')
+        self.tree.write("interfaces/rpc.zig", 'const cli = @import("cli.zig");\n')
         self.assertEqual(self.tree.check(), [
-            "zig/src/rpc.zig:1: interface file imports cli.zig, another interface, "
+            "zig/src/interfaces/rpc.zig:1: interface file imports cli.zig, another interface, "
             "and the pair is not in ALLOWED (scripts/check_layers.py)"])
 
     def test_removing_the_allowed_pair_fails(self):
         self.tree.allowed = {}
-        problems = self.tree.check(doc=False)
-        self.assertEqual(problems, [
-            "zig/src/mcp.zig:2: interface file imports cli.zig, another interface, "
+        self.assertEqual(self.tree.check(doc=False), [
+            "zig/src/interfaces/mcp.zig:2: interface file imports cli.zig, another interface, "
             "and the pair is not in ALLOWED (scripts/check_layers.py)"])
 
     def test_an_allowed_pair_that_no_longer_occurs_fails(self):
-        self.tree.write("mcp.zig", CLEAN["mcp.zig"].replace('const cli = @import("cli.zig");\n', ""))
+        self.tree.write("interfaces/mcp.zig", 'const ops = @import("operations").ops;\n')
         problems = self.tree.check()
         self.assertEqual(len(problems), 1, problems)
-        self.assertIn("allowed pair mcp.zig -> cli.zig no longer occurs", problems[0])
+        self.assertIn("allowed pair interfaces/mcp.zig -> interfaces/cli.zig no longer occurs", problems[0])
 
     def test_an_unassigned_file_fails(self):
-        self.tree.write("extra.zig", 'const std = @import("std");\n')
+        self.tree.write("core/extra.zig", 'const std = @import("std");\n')
         problems = self.tree.check()
         self.assertEqual(len(problems), 1, problems)
-        self.assertTrue(problems[0].startswith("zig/src/extra.zig:1: not assigned to a layer"), problems[0])
+        self.assertTrue(problems[0].startswith("zig/src/core/extra.zig:1: not assigned to a layer"), problems[0])
 
     def test_an_assigned_file_that_no_longer_exists_fails(self):
-        (self.tree.root / "zig" / "src" / "store.zig").unlink()
-        self.tree.write("engine.zig", 'const std = @import("std");\n')
+        self.tree.remove("core/store.zig")
+        self.tree.write("core/engine.zig", 'const std = @import("std");\n')
+        self.tree.write("core/store_test.zig", 'const std = @import("std");\n')
+        self.tree.write("core/core.zig", 'pub const engine = @import("engine.zig");\n'
+                                         'pub const store_test = @import("store_test.zig");\n')
         problems = self.tree.check()
         self.assertEqual(len(problems), 1, problems)
-        self.assertIn("FILES names zig/src/store.zig, which does not exist", problems[0])
+        self.assertIn("FILES names zig/src/core/store.zig, which does not exist", problems[0])
 
     def test_an_exempt_file_that_no_longer_exists_fails(self):
-        (self.tree.root / "zig" / "src" / "root.zig").unlink()
+        self.tree.remove("tests/root.zig")
         problems = self.tree.check()
         self.assertEqual(len(problems), 1, problems)
-        self.assertIn("EXEMPT_FILES names zig/src/root.zig, which does not exist", problems[0])
+        self.assertIn("EXEMPT_FILES names zig/src/tests/root.zig, which does not exist", problems[0])
 
     def test_tests_and_benchmarks_are_exempt_but_must_match_a_pattern(self):
-        # engine_test.zig imports rpc.zig and query_bench.zig imports mcp.zig: allowed.
+        # tests/engine_test.zig imports rpc and tests/query_bench.zig imports mcp: allowed.
         self.assertEqual(self.tree.check(), [])
-        self.tree.write("engine_tests.zig", 'const rpc = @import("rpc.zig");\n')
+        self.tree.write("tests/engine_tests.zig", 'const rpc = @import("interfaces").rpc;\n')
         problems = self.tree.check()
         self.assertEqual(len(problems), 1, problems)
-        self.assertTrue(problems[0].startswith("zig/src/engine_tests.zig:1: not assigned"), problems[0])
+        self.assertTrue(problems[0].startswith("zig/src/tests/engine_tests.zig:1: zig/src/tests/ holds tests"),
+                        problems[0])
 
     def test_an_assigned_file_importing_a_test_file_fails(self):
-        self.tree.write("ops.zig", CLEAN["ops.zig"] + 'const t = @import("engine_test.zig");\n')
+        self.tree.write("core/engine.zig", CLEAN["core/engine.zig"] + 'const t = @import("store_test.zig");\n')
         self.assertEqual(self.tree.check(), [
-            "zig/src/ops.zig:2: operations file imports engine_test.zig, a test, benchmark or tool file"])
+            "zig/src/core/engine.zig:3: core file imports store_test.zig, a test, benchmark or tool file"])
 
     def test_comments_and_strings_are_not_imports(self):
-        self.tree.write("engine.zig", "\n".join([
-            '// const ops = @import("ops.zig");',
-            'const store = @import("store.zig"); // was @import("rpc.zig")',
-            'const text = "@import(\\"cli.zig\\")";',
+        self.tree.write("core/engine.zig", "\n".join([
+            '// const ops = @import("operations");',
+            'const store = @import("store.zig"); // was @import("../interfaces/rpc.zig")',
+            'const text = "@import(\\"interfaces\\")";',
             '    \\\\ @import("mcp.zig") in a multiline string',
             "const quote = '\"'; const s = @import(\"store.zig\");",
             'const url = "http://example.invalid"; const t = @import("store.zig");',
@@ -181,52 +308,58 @@ class RuleTests(unittest.TestCase):
         ]))
         self.assertEqual(self.tree.check(), [])
 
-    # Rework after the first Verdict: the verifier's plants P1, P2 and P6, and their kin.
+    # Rework after S6-T1's first Verdict: the verifier's plants P1, P2 and P6, and their kin.
 
     def core_imports(self, text):
-        """engine.zig (core) given text after a clean first line; the problems found."""
-        self.tree.write("engine.zig", 'const store = @import("store.zig");\n' + text)
+        """core/engine.zig given text after a clean first line; the problems found."""
+        self.tree.write("core/engine.zig", 'const store = @import("store.zig");\n' + text)
         return self.tree.check()
 
+    OPS_FROM_CORE = ("core file imports the module operations, which only files of interfaces and tests may import")
+
     def test_p1_an_import_over_three_lines_with_a_trailing_comma(self):
-        self.assertEqual(self.core_imports('const ops_plant = @import(\n    "ops.zig",\n);\n'), [
-            "zig/src/engine.zig:2: core file imports ops.zig (operations); core may import core only"])
+        self.assertEqual(self.core_imports('const ops_plant = @import(\n    "operations",\n);\n'), [
+            f"zig/src/core/engine.zig:2: {self.OPS_FROM_CORE}"])
 
     def test_p2_spaces_before_and_inside_the_parentheses(self):
-        self.assertEqual(self.core_imports('const a = @import ("ops.zig");\nconst b = @import\t(\n"ops.zig" ) ;\n'), [
-            "zig/src/engine.zig:2: core file imports ops.zig (operations); core may import core only",
-            "zig/src/engine.zig:3: core file imports ops.zig (operations); core may import core only"])
+        self.assertEqual(self.core_imports('const a = @import ("operations");\nconst b = @import\t(\n"operations" ) ;\n'), [
+            f"zig/src/core/engine.zig:2: {self.OPS_FROM_CORE}",
+            f"zig/src/core/engine.zig:3: {self.OPS_FROM_CORE}"])
 
     def test_p6_a_path_out_of_zig_src_and_back_in(self):
-        self.assertEqual(self.core_imports('const ops_plant = @import("../src/ops.zig");\n'), [
-            "zig/src/engine.zig:2: core file imports ../src/ops.zig (operations); core may import core only"])
+        self.assertEqual(self.core_imports('const ops_plant = @import("../../src/ops/ops.zig");\n'), [
+            "zig/src/core/engine.zig:2: imports ../../src/ops/ops.zig (zig/src/ops/ops.zig), a file of another "
+            'folder: operations is reached through its module, @import("operations"), never by path'])
 
     def test_dot_segments_resolve(self):
-        self.assertEqual(self.core_imports('const a = @import("./ops.zig");\nconst b = @import("x/../ops.zig");\n'), [
-            "zig/src/engine.zig:2: core file imports ./ops.zig (operations); core may import core only",
-            "zig/src/engine.zig:3: core file imports x/../ops.zig (operations); core may import core only"])
+        self.assertEqual(self.core_imports('const a = @import("./store.zig");\nconst b = @import("x/../store.zig");\n'
+                                           'const c = @import("x/../../ops/ops.zig");\n'), [
+            "zig/src/core/engine.zig:4: imports x/../../ops/ops.zig (zig/src/ops/ops.zig), a file of another "
+            'folder: operations is reached through its module, @import("operations"), never by path'])
 
     def test_escapes_in_the_string_are_decoded(self):
         # Zig 0.16.0 compiles both (S6-T1 rework, scratch probe).
-        self.assertEqual(self.core_imports('const a = @import("ops\\x2ezig");\nconst b = @import("ops\\u{2e}zig");\n'), [
-            "zig/src/engine.zig:2: core file imports ops.zig (operations); core may import core only",
-            "zig/src/engine.zig:3: core file imports ops.zig (operations); core may import core only"])
+        self.assertEqual(self.core_imports('const a = @import("oper\\x61tions");\nconst b = @import("oper\\u{61}tions");\n'), [
+            f"zig/src/core/engine.zig:2: {self.OPS_FROM_CORE}",
+            f"zig/src/core/engine.zig:3: {self.OPS_FROM_CORE}"])
 
     def test_a_target_outside_zig_src_fails(self):
-        problems = self.core_imports('const a = @import("../../tools/x.zig");\n')
-        self.assertEqual(problems, ["zig/src/engine.zig:2: imports ../../tools/x.zig, which is outside zig/src/"])
+        problems = self.core_imports('const a = @import("../../../tools/x.zig");\n')
+        self.assertEqual(problems, ["zig/src/core/engine.zig:2: imports ../../../tools/x.zig, which is outside zig/src/"])
 
     def test_a_target_naming_no_file_fails(self):
         problems = self.core_imports('const a = @import("nope.zig");\n')
-        self.assertEqual(problems, ["zig/src/engine.zig:2: imports nope.zig, which resolves to zig/src/nope.zig: no such file"])
+        self.assertEqual(problems, [
+            "zig/src/core/engine.zig:2: imports nope.zig, which resolves to zig/src/core/nope.zig: no such file"])
 
     def test_an_imported_unassigned_file_fails_at_the_import_too(self):
-        self.tree.write(".hidden/extra.zig", 'const std = @import("std");\n')
+        self.tree.write("core/.hidden/extra.zig", 'const std = @import("std");\n')
         problems = self.core_imports('const a = @import(".hidden/extra.zig");\n')
         self.assertEqual(problems, [
-            "zig/src/.hidden/extra.zig:1: not assigned to a layer: add it to FILES in scripts/check_layers.py "
+            "zig/src/core/.hidden/extra.zig:1: not assigned to a layer: add it to FILES in scripts/check_layers.py "
             "(core, operations or interfaces), then run scripts/check_layers.py --write-doc",
-            "zig/src/engine.zig:2: imports .hidden/extra.zig (zig/src/.hidden/extra.zig), which is not assigned to a layer"])
+            "zig/src/core/engine.zig:2: imports .hidden/extra.zig (zig/src/core/.hidden/extra.zig), which is not "
+            "assigned to a layer"])
 
     def test_an_operand_that_is_not_one_string_literal_fails(self):
         problems = self.core_imports("\n".join([
@@ -240,7 +373,8 @@ class RuleTests(unittest.TestCase):
             "",
         ]))
         self.assertEqual([p.split(": ", 1)[0] for p in problems],
-                         ["zig/src/engine.zig:2", "zig/src/engine.zig:4", "zig/src/engine.zig:5", "zig/src/engine.zig:8"])
+                         ["zig/src/core/engine.zig:2", "zig/src/core/engine.zig:4", "zig/src/core/engine.zig:5",
+                          "zig/src/core/engine.zig:8"])
         self.assertTrue(all("not one string literal" in p for p in problems[:3]), problems)
         self.assertIn("@import without an argument list", problems[3])
 
@@ -248,50 +382,39 @@ class RuleTests(unittest.TestCase):
         problems = self.core_imports('const b = @import("builtin");\nconst t = @import("tool_schemas");\n'
                                      'const u = @import("unknown_module");\n')
         self.assertEqual(problems, [
-            "zig/src/engine.zig:3: core file imports the module tool_schemas, which only interfaces may import",
-            "zig/src/engine.zig:4: imports 'unknown_module', which is neither a .zig file nor a module listed "
+            "zig/src/core/engine.zig:3: core file imports the module tool_schemas, which only files of interfaces "
+            "and tests may import",
+            "zig/src/core/engine.zig:4: imports 'unknown_module', which is neither a .zig file nor a module listed "
             "in MODULES (scripts/check_layers.py)"])
 
     def test_p3_text_that_only_looks_like_an_import_is_ignored(self):
         self.assertEqual(self.core_imports("\n".join([
-            '// const a = @import("ops.zig");',
-            '/// @import("ops.zig") in a doc comment',
-            '//! @import("ops.zig") in a top-level doc comment',
-            'const s1 = "say \\"@import(\\\\\\"ops.zig\\\\\\")\\" // not a comment";',
-            'const s2 = "@import(\\"ops.zig\\")";',
+            '// const a = @import("operations");',
+            '/// @import("operations") in a doc comment',
+            '//! @import("../ops/ops.zig") in a top-level doc comment',
+            'const s1 = "say \\"@import(\\\\\\"operations\\\\\\")\\" // not a comment";',
+            'const s2 = "@import(\\"operations\\")";',
             "const m = ",
-            '    \\\\@import("ops.zig")',
+            '    \\\\@import("operations")',
             '    \\\\@import(',
-            '    \\\\    "ops.zig",',
+            '    \\\\    "operations",',
             "    \\\\)",
             ";",
             "const q = '\"'; const r = '\\''; const s = '@';",
-            'const url = "http://example.invalid"; // @import("ops.zig")',
-            'const @"@import(\\"ops.zig\\")" = 1;',
+            'const url = "http://example.invalid"; // @import("operations")',
+            'const @"@import(\\"operations\\")" = 1;',
             "",
         ])), [])
 
-    def test_imports_resolve_relative_to_the_importing_file(self):
-        self.tree.files = {
-            "core/engine.zig": ("core", "the engine"),
-            "ops/ops.zig": ("operations", "the seam"),
-        }
-        self.tree.allowed, self.tree.exempt_files = {}, {}
-        for rel in list(CLEAN):
-            (self.tree.root / "zig" / "src" / rel).unlink()
-        self.tree.write("core/engine.zig", 'const ops = @import("../ops/ops.zig");\n')
-        self.tree.write("ops/ops.zig", 'const engine = @import("../core/engine.zig");\n')
-        self.assertEqual(self.tree.check(doc=False), [
-            "zig/src/core/engine.zig:1: core file imports ../ops/ops.zig (operations); core may import core only"])
-
     def test_the_document_out_of_step_fails_with_its_line(self):
         doc = self.tree.root / "docs" / "layers.md"
-        doc.write_text(doc.read_text(encoding="utf-8").replace("| `store.zig` | core |", "| `store.zig` | operations |"),
+        doc.write_text(doc.read_text(encoding="utf-8").replace("| `core/store.zig` | core |",
+                                                               "| `core/store.zig` | operations |"),
                        encoding="utf-8")
         problems = self.tree.check()
         self.assertEqual(len(problems), 1, problems)
         line = int(problems[0].split(":")[1])
-        self.assertIn("`store.zig` | operations", doc.read_text(encoding="utf-8").split("\n")[line - 1])
+        self.assertIn("`core/store.zig` | operations", doc.read_text(encoding="utf-8").split("\n")[line - 1])
         self.assertIn("the generated block differs", problems[0])
 
     def test_the_document_without_markers_fails(self):
@@ -301,7 +424,7 @@ class RuleTests(unittest.TestCase):
         self.assertIn("no generated block", problems[0])
 
     def test_an_allowed_pair_must_join_two_interfaces(self):
-        self.tree.allowed = {**ALLOWED, ("ops.zig", "cli.zig"): ("debt", "wrong")}
+        self.tree.allowed = {**ALLOWED, ("ops/ops.zig", "interfaces/cli.zig"): ("debt", "wrong")}
         problems = self.tree.check(doc=False)
         self.assertIn("is not between two interface files", " ".join(problems))
 

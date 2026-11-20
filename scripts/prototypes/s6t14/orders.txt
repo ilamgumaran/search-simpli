@@ -1,0 +1,43 @@
+# S6-T14 builder: the timing runs of ruling 5. Written and committed before the first timed run (20 Nov 2026).
+# Nothing below is chosen after seeing a timed number.
+#
+# Expectation (ruling 5, stated before measuring): query, find and open time pass the timing rule of 2026-11-17
+# (docs/process/ROLES.md) against main on the three 10k corpora. The literal difference is reported beside it.
+#
+# Builds (macOS arm64 ReleaseSmall libsearch_simpli.dylib; __text from size -m):
+#   main  = 87c4ddb, `zig build lib -Doptimize=ReleaseSmall` in a git archive with its own caches:
+#           1,006,456 B, sha256 ab901f1bd8e8c78c... (= main's committed native), __text 592,208 B
+#   main2 = 87c4ddb built again in another archive copy with its own caches: byte-identical to main
+#   head  = d967f09, native/macos-arm64/libsearch_simpli.dylib as committed (tool/build_native.sh; a fresh-archive
+#           rebuild is cmp-identical): byte-identical to main, __text 592,208 B (+0 B)
+#
+# Control set (fixed now): main2. The rule's controls are main plus never-run code matching the task's
+# compiled-code delta; that delta is 0 B (the head's library is main's, byte for byte), so main plus 0 B of
+# never-run code is main itself and no placement control is built. main2 stands for build-to-build variation.
+#
+# Cells, per corpus (timing-10k, prose-10k, tamil-10k), from scripts/prototypes/s6t9/bench.py bench:
+#   open    open_p50 (ss_open + ss_close, 30 timed after 3 warm-ups)
+#   query   every warm query p50 (each query of the set under content, filename and both; 300 timed calls)
+#   find    every find request p50 (100 timed calls)
+#   the first query and the first find after an open are reported beside them, not judged.
+# T = max(0.010 ms, 1 % of main's five-run median for the cell). A cell fails if median_r(head - main) >= T and
+# exceeds by >= T median_r(main2 - main) (rule of 2026-11-17). Band excursions (head above both other builds in
+# 3 or more of 5 runs) are tabulated, never failing. The expectation is met when every cell passes; the raw
+# median_r(head - main) is reported beside each cell.
+#
+# Each build opens its own copy of its index: main and main2 a copy of the index main's searchd wrote, head a copy
+# of the index the head's searchd wrote (the two are byte-identical). The load gate (gate.sh: lock absent, 5-minute
+# load below 4.0, no toolchain at 20 % CPU or more in top's top eight) runs before every process; a refused gate
+# stops that run, which is not retried in a loop: the runs not taken are reported as owed. pmset -g log is read for
+# Sleep, Wake and DarkWake inside each run's window afterwards; a run with one is reported as such.
+# Latin square: builds rotated left by (r - 1) mod 3 in run r, corpora rotated left by (r - 1) mod 3.
+run1:main main2 head
+corpora1:timing-10k prose-10k tamil-10k
+run2:main2 head main
+corpora2:prose-10k tamil-10k timing-10k
+run3:head main main2
+corpora3:tamil-10k timing-10k prose-10k
+run4:main main2 head
+corpora4:timing-10k prose-10k tamil-10k
+run5:main2 head main
+corpora5:prose-10k tamil-10k timing-10k

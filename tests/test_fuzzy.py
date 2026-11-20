@@ -279,7 +279,7 @@ class PrefixRuleTests(unittest.TestCase):
             # The same hits in the same order, and since S5-T7 (review R03) the same
             # raw scores: the reference too keeps the statistics over the roots and
             # labels and narrows only the candidates by the prefix
-            # (tests/test_prefix_statistics.py, the tolerance of zig/src/fuzzy_test.zig).
+            # (tests/test_prefix_statistics.py, the tolerance of zig/src/tests/fuzzy_test.zig).
             self.assertEqual([r["citation"]["path"] for r in rpc["results"]],
                              [r["citation"]["path"] for r in reference])
             for got, want in zip(rpc["results"], reference):

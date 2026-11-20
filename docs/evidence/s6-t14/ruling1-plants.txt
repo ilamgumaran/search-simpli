@@ -1,0 +1,8 @@
+# S6-T14: prove_imports.py on a scratch clone of d967f09 with two planted faults (one commit on top):
+#  core/engine.zig: a space added inside the first 'pub fn ' line (a body line, not an import)
+#  ops/service.zig: @import("core").engine rewritten as @import("core").hybrid (an import naming another file)
+# S6-T14 ruling 1: scripts/prototypes/s6t14/prove_imports.py 87c4ddb HEAD
+PROBLEM zig/src/core/engine.zig: line 77 differs and is not an import line on both sides
+PROBLEM zig/src/ops/service.zig: line 1: imported zig/src/engine.zig, now core/hybrid.zig (expected core/engine.zig)
+prove_imports: 2 problem(s)
+prove_imports.py exit 1 (run again without the grep)

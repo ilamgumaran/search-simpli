@@ -1,10 +1,10 @@
 # Searching a folder directly (`searchd search`)
 
 Status: Implemented and verified (S6-T2, merged as `06f8c2e`, [CAP-20](requirements/cap-20-direct-folder-search.md),
-FR-26, NFR-15). Code: `zig/src/cli.zig` (`runSearchFolder`, `buildAndOpen`),
-`zig/src/indexer.zig` (`buildFolderDetached`), `zig/src/apply.zig`
-(`buildDetached`), `zig/src/snapshot_open.zig` (`openDetached`,
-`openScopedDetached`). Tests: `zig/src/direct_search_test.zig`,
+FR-26, NFR-15). Code: `zig/src/interfaces/cli.zig` (`runSearchFolder`, `buildAndOpen`),
+`zig/src/core/indexer.zig` (`buildFolderDetached`), `zig/src/core/apply.zig`
+(`buildDetached`), `zig/src/core/snapshot_open.zig` (`openDetached`,
+`openScopedDetached`). Tests: `zig/src/tests/direct_search_test.zig`,
 `tests/test_direct_search.py`.
 
 ## What it is

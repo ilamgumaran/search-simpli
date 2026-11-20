@@ -68,14 +68,16 @@ the [folder-knowledge skill](skills/folder-knowledge/SKILL.md) tells an agent ho
 ## Layers
 
 ```text
-bindings     Dart (later others)                                        -> the C ABI only
-interfaces   abi.zig · cli.zig + main.zig · rpc.zig · mcp.zig          -> operations, core
-operations   service.zig · ops.zig · report.zig · filename_response.zig -> core
-core         formats, analysis, indexing, ranking: every other file     -> core
+bindings              Dart (later others)                                        -> the C ABI only
+zig/src/interfaces/   abi.zig · cli.zig + main.zig · rpc.zig · mcp.zig          -> operations, core
+zig/src/ops/          service.zig · ops.zig · report.zig · filename_response.zig -> core
+zig/src/core/         formats, analysis, indexing, ranking: every other file     -> core
 ```
 
-[docs/layers.md](docs/layers.md) assigns every file of `zig/src/`, names today's exceptions,
-and says how to add an interface or a core feature; `scripts/check_layers.py` checks it in CI.
+Each layer is a folder and a Zig module (`core`, `operations`); tests that cross layers
+sit in `zig/src/tests/`. [docs/layers.md](docs/layers.md) assigns every file of
+`zig/src/`, names today's exceptions, and says how to add an interface or a core
+feature; `scripts/check_layers.py` checks it in CI.
 
 ## What is measured, and what is not there yet
 

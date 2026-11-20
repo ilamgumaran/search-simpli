@@ -3,15 +3,15 @@
 Status: design (2026-10-31); §1, §2 and §4 implemented by S3-T1 with the
 amendments marked **S3-T1** below (formats: [`manifest-format-v2.md`](manifest-format-v2.md),
 [`segment-format-v4.md`](segment-format-v4.md), [`source-section-v1.md`](source-section-v1.md));
-§5, §6 and §7 implemented in the core by S3-T3 (`zig/src/apply.zig`,
-`zig/src/scope.zig`, `zig/src/incremental_state.zig`; Python reference
+§5, §6 and §7 implemented in the core by S3-T3 (`zig/src/core/apply.zig`,
+`zig/src/core/scope.zig`, `zig/src/core/incremental_state.zig`; Python reference
 `src/search_platform/folders.py`) with the amendments marked **S3-T3**.
 §3, the `find` part of §8 and the §13 profile implemented by S3-T2 with the
 amendments marked **S3-T2** (format: [`lexical-segment-format-v2.md`](lexical-segment-format-v2.md)).
 §8 and §9 on every surface (C ABI, Dart, CLI, RPC; contract 2.0.0)
-implemented by S3-T4 (`zig/src/ops.zig`, `abi.zig`, `cli.zig`, `rpc.zig`,
+implemented by S3-T4 (`zig/src/ops/ops.zig`, `abi.zig`, `cli.zig`, `rpc.zig`,
 the Dart package) with the amendments marked **S3-T4**.
-§11 implemented by S3-T6 (`zig/src/mcp.zig`, [MCP server](mcp-server.md))
+§11 implemented by S3-T6 (`zig/src/interfaces/mcp.zig`, [MCP server](mcp-server.md))
 with the amendments marked **S3-T6**.
 Every other format, field and number here is **proposed**; a task's Report
 turns it into an observed fact or amends it.
@@ -123,7 +123,7 @@ section's path and line indexes). `ss_close` (and `rpc.Generation.close`)
 frees the blocks, then the arena. Before S4-T9 the two sections and the two
 reservations were one arena request, which the arena served from a block about
 1.5 times its size, so the open's peak was that block (S4-T8); now it is within
-1 MiB of the bytes the open reads (`zig/src/nfr13_arena_test.zig`).
+1 MiB of the bytes the open reads (`zig/src/tests/nfr13_arena_test.zig`).
 
 Both bits are unknown to readers before v2.2, which refuse the generation
 with `UnsupportedFlags`: rolling back the library needs the directory from
@@ -430,7 +430,7 @@ Report:
 changes, one root, `retain_source` per opts) so one code path writes
 generations.
 
-**S3-T3 amendments** (each one is tested in `zig/src/apply_test.zig` and
+**S3-T3 amendments** (each one is tested in `zig/src/tests/apply_test.zig` and
 `tests/test_folders.py`; the C ABI, Dart, CLI and RPC surfaces above are
 S3-T4's, the core entry point is `apply.applyChanges(dir, request_json,
 options)`):
@@ -635,7 +635,7 @@ is `phrase`. `empty: true` means this page has no hits; `pending_files` and
 `truncated` tell the caller the corpus may be incomplete (review finding 5,
 CFT-23).
 
-**S3-T2 amendments to `find`** (implemented in `zig/src/find.zig`, the Python
+**S3-T2 amendments to `find`** (implemented in `zig/src/core/find.zig`, the Python
 reference `search_platform/find.py`; no ABI, CLI or RPC surface until S3-T4):
 - Each hit also carries `snippet_start` (CAP-19 FR-17: the snippet's start
   offset in `content`). The snippet is a plain substring of `content` (no
@@ -698,7 +698,7 @@ reports `fields: {}` plus `raw` (the inner lines joined by LF).
 `index_status` adds `generation`, `roots[]` (visible), `pending`, `has_source`,
 `has_positions`, `chunkers[]`.
 
-**S3-T4 amendments** (implemented in `zig/src/ops.zig`; the C ABI, the CLI's
+**S3-T4 amendments** (implemented in `zig/src/ops/ops.zig`; the C ABI, the CLI's
 `--json` and the RPC `result` are the same bytes, the Dart binding decodes
 them; `docs/tool-protocol.md`, `zig/include/search_simpli.h`):
 - *Envelope.* Every read result starts with `request` (the request echoed
@@ -795,7 +795,7 @@ provider-neutral (review finding on FR-23).
 
 `searchd mcp <dir> [--roots a,b] [--labels l1,l2] [--allow-write] [--allow-file-reads]`.
 Transport: stdio, newline-delimited JSON-RPC 2.0 as MCP specifies; the MCP
-protocol revision is pinned in `zig/src/mcp.zig` as a constant and in the
+protocol revision is pinned in `zig/src/interfaces/mcp.zig` as a constant and in the
 server's `initialize` result (`protocolVersion`), chosen at build time as the
 latest stable revision the conformance client implements; the task records
 the exact string. Methods: `initialize`, `notifications/initialized`,
@@ -868,7 +868,7 @@ separately. Before/after tables live in `docs/scale-benchmark.md`.
 7,269,199 bytes, sha256 of the files concatenated in sorted path order
 `3a520dd588fa34cb2bec9a15b12f7ad8a0fc3c0d5feebd4baba4ce49fed96e38`,
 19,959 chunks) plus the family-folder fixture (three roots side by side,
-998 chunks); the timer is `zig/src/find_bench.zig` (queries drawn from the
+998 chunks); the timer is `zig/src/core/find_bench.zig` (queries drawn from the
 indexed chunks, 5 warm-up then 200 timed per mode, three repetitions); index
 runs are three per build. NFR-10's "10k chunks" is measured at 19,959.
 

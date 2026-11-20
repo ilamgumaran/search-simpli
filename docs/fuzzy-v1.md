@@ -2,7 +2,7 @@
 
 Status: shipped by [S5-T3](tasks/S5-T3.md), contracts 2.4.0. The Python
 reference (`src/search_platform/core.py`) and the Zig engine
-(`zig/src/fuzzy.zig`) implement the same rule; a golden generated from the
+(`zig/src/core/fuzzy.zig`) implement the same rule; a golden generated from the
 reference (`scripts/gen_fuzzy_golden.py`, `fixtures/fuzzy-golden.json`) holds
 them equal: the expansions exactly, the scores to f32 tolerance.
 

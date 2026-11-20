@@ -48,7 +48,7 @@ EXPECTED = {
     "tests.test_analyzer_v3.FoldTableTests.test_table_regenerates_byte_for_byte":
         ("src/search_platform/_fold.py", ["scripts/gen_unicode_tables.py", "--python-fold"]),
     "tests.test_analyzer_v3.FoldTableTests.test_zig_tables_regenerate_byte_for_byte":
-        ("zig/src/unicode_tables.zig", ["scripts/gen_unicode_tables.py"]),
+        ("zig/src/core/unicode_tables.zig", ["scripts/gen_unicode_tables.py"]),
     "tests.test_tokenize.TokenizeTests.test_marks_module_regenerates_byte_for_byte":
         ("src/search_platform/_marks.py", ["scripts/gen_unicode_tables.py", "--python-marks"]),
     "tests.test_tokenize.TokenizeTests.test_mark_table_matches_this_pythons_unicodedata":
@@ -67,7 +67,7 @@ EXPECTED = {
 
 # The three tables whose checks compare every byte but the generating Python's patch
 # version (tests/unicode_tables_header.py; orchestrator ruling 1 on the interim Report).
-TABLES = ("src/search_platform/_fold.py", "src/search_platform/_marks.py", "zig/src/unicode_tables.zig")
+TABLES = ("src/search_platform/_fold.py", "src/search_platform/_marks.py", "zig/src/core/unicode_tables.zig")
 DIFF_LINES = 4
 CLIP = 160
 

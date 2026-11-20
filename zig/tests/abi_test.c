@@ -3,13 +3,13 @@
  * criterion 3). Built and run by `zig build test-abi`.
  *
  * It publishes the same three-document demo snapshot as `searchd init-demo`
- * (zig/src/main.zig's demoDocuments()) through ss_import_json(), opens it
+ * (zig/src/interfaces/main.zig's demoDocuments()) through ss_import_json(), opens it
  * with ss_open(), then compares ss_status()/ss_query()/ss_evidence() against
  * golden JSON captured from a real `zig build run -- init-demo` +
  * `zig build run -- serve` run (docs/tasks/S1-T0.md's Report has the exact
  * commands and full pasted output). ss_query()'s golden string is not
  * hand-written: it is the literal `result` field of that captured
- * JSON-RPC `search_knowledge` response, because zig/src/abi.zig's ss_query
+ * JSON-RPC `search_knowledge` response, because zig/src/interfaces/abi.zig's ss_query
  * shares its JSON-writing code (rpc.writeSearchResultValue) with the
  * JSON-RPC service, so the two are byte-for-byte identical by construction.
  *

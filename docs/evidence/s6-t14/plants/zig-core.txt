@@ -1,0 +1,20 @@
+# plant core: zig/src/core/checksum.zig, in a fresh archive of d967f09 with its own Zig caches
+@@ -73,7 +73,7 @@
+
+ test "FNV-1a 64 is the pre-S4-T1 section checksum" {
+     // The published FNV-1a 64 test vectors.
+-    try std.testing.expectEqual(@as(u64, 0xcbf29ce484222325), compute(.fnv1a64, "", ""));
++    try std.testing.expectEqual(@as(u64, 0xcbf29ce484222326), compute(.fnv1a64, "", ""));
+     try std.testing.expectEqual(@as(u64, 0xaf63dc4c8601ec8c), compute(.fnv1a64, "a", ""));
+     try std.testing.expectEqual(compute(.fnv1a64, "foobar", ""), compute(.fnv1a64, "foo", "bar"));
+ }
+exit 1, 36 s
++- run test core 252 pass, 1 fail (253 total)
+error: 'checksum.test.FNV-1a 64 is the pre-S4-T1 section checksum' failed:
+       expected 14695981039346656038, found 14695981039346656037
+Build Summary: 13/15 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
++- run test core 252 pass, 1 fail (253 total)
++- run test operations 10 pass (10 total) 134ms MaxRSS:3M
++- run test interfaces 26 pass (26 total) 188ms MaxRSS:5M
++- run test tests 284 pass, 9 skip (293 total) 19s MaxRSS:402M
++- run test 6 pass (6 total) 270ms MaxRSS:4M

@@ -1,8 +1,8 @@
 # File-name catalog, record v6
 
 Status: S6-T9 (D2-4, the fourth index-size step). Implemented in
-`zig/src/segment.zig` (`encodeCatalogV6`, `inspectCatalog`, the v6 case of
-`decodeInspected`) and `zig/src/filename_field.zig` (the derivation and its
+`zig/src/core/segment.zig` (`encodeCatalogV6`, `inspectCatalog`, the v6 case of
+`decodeInspected`) and `zig/src/core/filename_field.zig` (the derivation and its
 checks). File `filenames-N.hybseg`, bound by
 [manifest v2.6](manifest-format-v2.md#v26-state-v3-and-catalog-v6-s6-t9)
 (flag bits 3 and 9). The semantics of the catalog are

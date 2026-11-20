@@ -1,7 +1,7 @@
 """R, the verb-form rule of `fold-groups-v2` (S5-T5, docs/tasks/S5-T5.md ruling 2, as
 restated in docs/tasks/S5-T5-prototype.md; docs/fold-groups-v2.md).
 
-The Python mirror of R in `zig/src/fold.zig`. R reads nothing but its term: no
+The Python mirror of R in `zig/src/core/fold.zig`. R reads nothing but its term: no
 dictionary, no file. For a query term t it gives the bases of t and the relatives of
 each base; the forms of t are those relatives, t itself left out, first seen first.
 The query side (`core._query_groups`) looks each form up, as exact bytes, among the

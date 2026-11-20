@@ -74,7 +74,7 @@ the highest in use. So this record takes **CAP-23**, **FR-32**, **FR-33**,
 
 1. **Which commands change their default.** `searchd index` and
    `searchd index --update` (today `--keep-generations N`, unset deletes
-   nothing: `zig/src/cli.zig` lines 574–575, `indexer.Caps.keep_generations`
+   nothing: `zig/src/interfaces/cli.zig` lines 574–575, `indexer.Caps.keep_generations`
    default `null`) and `searchd apply` (today no option and never deletes:
    `cli.zig` lines 640–660 parse no such flag and `runApply` builds
    `apply_module.Options` with only `allow_file_reads` and `filename_index`,
@@ -275,7 +275,7 @@ Every test runs in Debug and ReleaseSmall (ROLES, 2026-11-05). Baseline:
 
 - Tests to add: A1–A7 and A9 as process tests next to
   `tests/test_cli_process.py`, A6 in a process test, parser cases in
-  `zig/src/cli_test.zig`; the four plants.
+  `zig/src/tests/cli_test.zig`; the four plants.
 - `EXPERIMENTS.md` entry planned: none; A11's table goes in the task's Report
   beside S6-T3's.
 - `PROJECT-STATE.md` update: the default, the option, and the line that
@@ -365,7 +365,7 @@ Each with the options and the drafter's recommendation; none is decided here.
 
 - **Data loss, stated exactly.** Pruning deletes files, and with this change
   it does so without being asked. What can be deleted
-  (`lifecycle.pruneSupersededWithSource`, `zig/src/lifecycle.zig` lines
+  (`lifecycle.pruneSupersededWithSource`, `zig/src/core/lifecycle.zig` lines
   168–275; the one unlink is `dir.deleteFile` at line 264): regular files
   (not links, not directories) directly inside the index directory (`--out`
   for `index`, `<dir>` for `apply`), not in its subdirectories, named
@@ -376,13 +376,13 @@ Each with the options and the drafter's recommendation; none is decided here.
   the files the new `MANIFEST` names. Never deleted: `MANIFEST`,
   `WRITER.LOCK`, `INDEX-STATE.json`, temporary files, any other name, any
   section at or above the published generation (tested by
-  `zig/src/incremental_indexing_test.zig`, "pruning touches only superseded
+  `zig/src/core/incremental_indexing_test.zig`, "pruning touches only superseded
   canonical section files").
 - **Source files are never touched.** The indexed folder is opened for
   reading and walking only (`cli.runIndex`, `openDir` with iterate); pruning
   is handed only the index directory's handle; the only other deletions
   outside tests are a publish removing the files it itself just wrote when
-  it fails (`zig/src/publication.zig` lines 136–156 and 314). `searchd apply`
+  it fails (`zig/src/core/publication.zig` lines 136–156 and 314). `searchd apply`
   reads host-named files only with `--allow-file-reads` and deletes none of
   them. The one way a person's own file could be deleted: placing a file with
   exactly one of the six section names directly inside the index directory,

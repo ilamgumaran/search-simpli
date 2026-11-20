@@ -3,7 +3,7 @@
 # index: fixtures/family-folder/home indexed with `searchd index
 # --filename-index` by this checkout's engine (manifest v2.4: the documents
 # section record v5 with its file table, the source section `HYBSRC02`;
-# both lexical sections `HYBLEX03`). `zig/src/compat_s6t7_test.zig` checks
+# both lexical sections `HYBLEX03`). `zig/src/tests/compat_s6t7_test.zig` checks
 # that the writer still gives these bytes and that a library before v2.4
 # refuses them at the manifest's flags.
 #

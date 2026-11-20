@@ -79,7 +79,7 @@ the documents section (`HYBSEG01`, [segment format v4](../segment-format-v4.md))
 `u32 vector_length` in the fixed part and `vector_length × f32` after the
 labels.
 
-- `zig/src/segment.zig` `vectorDimensions`: a record's vector is either empty or
+- `zig/src/core/segment.zig` `vectorDimensions`: a record's vector is either empty or
   of the one length all non-empty vectors share; a second length is
   `VectorDimensionsInconsistent`. The header stores that length
   (`writeVersion`, the `dimensions` field).
@@ -93,7 +93,7 @@ labels.
 
 ### A2. What the manifest says about vectors
 
-`zig/src/manifest.zig` `Manifest` has two vector fields and no more:
+`zig/src/core/manifest.zig` `Manifest` has two vector fields and no more:
 
 - `embedding_model_id`: a string. `validateIdentifier` checks only that it is
   non-empty and holds no NUL, CR or LF. Nothing reads its meaning.
@@ -115,8 +115,8 @@ field added there would be **silently ignored** by an older reader.
 
 ### A3. The import path (the one way vectors get in)
 
-`zig/src/importer.zig` `importJsonKeeping`, shared by `searchd import-json`
-(`zig/src/main.zig`) and `ss_import_json` (`zig/src/abi.zig` `importImpl`). The
+`zig/src/core/importer.zig` `importJsonKeeping`, shared by `searchd import-json`
+(`zig/src/interfaces/main.zig`) and `ss_import_json` (`zig/src/interfaces/abi.zig` `importImpl`). The
 payload is [`contracts/snapshot-interchange.schema.json`](../../contracts/snapshot-interchange.schema.json)
 (CON-03), written by the Python reference (`src/search_platform/interchange.py`).
 
@@ -134,10 +134,10 @@ payload is [`contracts/snapshot-interchange.schema.json`](../../contracts/snapsh
 
 ### A4. The folder writer writes no vectors
 
-`searchd index` (`zig/src/indexer.zig` `indexFolder`) builds a batch and calls
+`searchd index` (`zig/src/core/indexer.zig` `indexFolder`) builds a batch and calls
 `apply.applyBatch`; `searchd apply`, `ss_apply_changes` and JSON-RPC
 `apply_changes` go through `apply.applyChanges`. Both end in
-`zig/src/apply.zig` `buildGeneration`:
+`zig/src/core/apply.zig` `buildGeneration`:
 
 - a freshly chunked file's records are appended with `.vector = &.{}`;
 - an unchanged file's records are copied whole from the previous generation
@@ -154,14 +154,14 @@ fail-closed, but by accident: nothing names it.
 
 The CLI's help says so for `index`: "`index` never produces vectors
 (`embedding_model_id` "none"); its snapshots only support lexical (BM25)
-queries" (`zig/src/cli.zig`, the usage text).
+queries" (`zig/src/interfaces/cli.zig`, the usage text).
 
 ### A5. How an open holds vectors
 
-`zig/src/snapshot_open.zig` `OpenBlock.of` reserves `document_count ×
+`zig/src/core/snapshot_open.zig` `OpenBlock.of` reserves `document_count ×
 vector_dimensions` floats in the open's one block, and `loadEngine` reads the
 whole documents section into the same block. `Engine.openWith`
-(`zig/src/engine.zig`) decodes the vectors from the section into the reserved
+(`zig/src/core/engine.zig`) decodes the vectors from the section into the reserved
 floats. An open therefore holds **every vector twice** (inside the section bytes
 and in the decoded array), and holds them for every query, lexical or not.
 
@@ -208,7 +208,7 @@ bite every existing caller the day one does (FR-30 below).
 
 ### A8. How hybrid fusion picks candidates
 
-`zig/src/hybrid.zig` `searchSparseTraced` (reached from `Engine.queryTraced`):
+`zig/src/core/hybrid.zig` `searchSparseTraced` (reached from `Engine.queryTraced`):
 
 - **Lexical channel:** the postings source yields matched chunks; each in scope
   (`inScope`: root mask, path prefix, all required labels) with a positive score

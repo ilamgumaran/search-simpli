@@ -14,7 +14,7 @@ K (`src/search_platform/analyzer_v3.py`, F -> A -> S -> T) is written for:
 The file lists, for each set, its term count and the SHA-256 of its sorted terms
 (newline-joined UTF-8), then `same` (the terms K leaves as they are) and `changed`
 (each term with K's terms; an empty list where K leaves nothing), all sorted by
-UTF-8 bytes. `zig/src/fold_test.zig` computes K on every listed term and must
+UTF-8 bytes. `zig/src/core/fold_test.zig` computes K on every listed term and must
 equal it byte for byte.
 
 Run: `python3 scripts/gen_analyzer_v3_golden.py > fixtures/analyzer-v3-golden.json`
