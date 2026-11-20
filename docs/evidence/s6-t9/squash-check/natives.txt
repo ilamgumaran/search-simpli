@@ -1,0 +1,18 @@
+build_native.sh exit 0
+Build Summary: 28/28 steps succeeded
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib ( 1006456 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  966800 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  971424 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (4bba15abcc8655dec965afee73f41148941b39688334248f9973e6b1b2f6e94f)
+identical 1006456 B native/macos-arm64/libsearch_simpli.dylib
+identical 966800 B native/android-arm64/libsearch_simpli.so
+identical 966800 B example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+identical 971424 B native/ios-arm64/search_simpli.framework/search_simpli
+identical 749 B native/ios-arm64/search_simpli.framework/Info.plist
+identical 65 B native/SOURCE-SHA256
+check_native: macos-arm64 memcpy at 0x740 (223 calls against 120): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5b0d4 (507 calls against 164): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (219 calls against 112): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+check_native.sh (worktree, committed natives) exit 0

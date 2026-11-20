@@ -1,0 +1,105 @@
+# git merge f335d07 + 1ec2f56 (merge base a019f22) in a scratch clone; conflicts staged as left by git (markers kept); tree b6566a0dc0e5513121e804430e0f10350f8f1b54
+# files where 1439d6a differs from that tree:
+ PROJECT-STATE.md                                   |  33 +++++---
+ README.md                                          |   6 +-
+ bindings/dart/search_simpli/CHANGELOG.md           |  74 +++++++++---------
+ .../src/main/jniLibs/arm64-v8a/libsearch_simpli.so | Bin 959744 -> 966800 bytes
+ bindings/dart/search_simpli/native/SOURCE-SHA256   |   6 +-
+ .../native/android-arm64/libsearch_simpli.so       | Bin 959744 -> 966800 bytes
+ .../search_simpli.framework/search_simpli          | Bin 971032 -> 971424 bytes
+ .../native/macos-arm64/libsearch_simpli.dylib      | Bin 990120 -> 1006456 bytes
+ bindings/dart/search_simpli/pubspec.yaml           |   2 +-
+ docs/index-size.md                                 |  22 +++---
+ docs/journey/03-next.md                            |  14 +---
+ docs/plans/2026-11-16-objective-plan.md            |  10 ++-
+ docs/tasks/S6-T9.md                                |  84 +++++++++++++++++++++
+ zig/src/incremental_state.zig                      |  13 +++-
+ zig/src/snapshot_open.zig                          |   7 +-
+ 15 files changed, 185 insertions(+), 86 deletions(-)
+
+# non-document text diffs (natives are binary: see natives.txt)
+diff --git a/bindings/dart/search_simpli/native/SOURCE-SHA256 b/bindings/dart/search_simpli/native/SOURCE-SHA256
+index c48d3d4..0c0aeff 100644
+--- a/bindings/dart/search_simpli/native/SOURCE-SHA256
++++ b/bindings/dart/search_simpli/native/SOURCE-SHA256
+@@ -1,5 +1 @@
+-<<<<<<< HEAD
+-7c3e8f18774cd3bd39447f25323cb61428be461c92ba4fa4f611e1d07075d1c8
+-=======
+-eab97f4ea1cff3de3840bb8e179702b59df1cc263f40c8863cfe60a6b5435603
+->>>>>>> 1ec2f56
++4bba15abcc8655dec965afee73f41148941b39688334248f9973e6b1b2f6e94f
+diff --git a/bindings/dart/search_simpli/pubspec.yaml b/bindings/dart/search_simpli/pubspec.yaml
+index c4c2099..17327bb 100644
+--- a/bindings/dart/search_simpli/pubspec.yaml
++++ b/bindings/dart/search_simpli/pubspec.yaml
+@@ -3,7 +3,7 @@ description: >
+   Dart FFI bindings for Search Simpli's C ABI (ss_*) hybrid search engine —
+   open a published snapshot, query it, and read cited evidence, from Dart
+   or Flutter, with no daemon process.
+-version: 0.9.3
++version: 0.9.4
+ publish_to: "none"
+ 
+ environment:
+diff --git a/zig/src/incremental_state.zig b/zig/src/incremental_state.zig
+index 2ac74dc..d2bc046 100644
+--- a/zig/src/incremental_state.zig
++++ b/zig/src/incremental_state.zig
+@@ -35,6 +35,7 @@ const hybrid = @import("hybrid.zig");
+ const manifest = @import("manifest.zig");
+ const publication = @import("publication.zig");
+ const segment = @import("segment.zig");
++const snapshot_open = @import("snapshot_open.zig");
+ const source = @import("source.zig");
+ const source_v2 = @import("source_v2.zig");
+ const state_section = @import("state_section.zig");
+@@ -208,10 +209,12 @@ pub fn parsePointer(allocator: std.mem.Allocator, bytes: []const u8) ?Pointer {
+ /// `manifest.validateState` (size, header, checksum) and decode to that same
+ /// generation and analyzer (else `error.InvalidState`).
+ pub fn resolvePointer(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, pointer: Pointer) LoadError!?State {
+-    const manifest_bytes = readNamed(allocator, io, dir, publication.current_manifest_file) catch |err| switch (err) {
++    // S6-T9 on S6-T13: `MANIFEST` read through the handle it was sized
++    // by (`snapshot_open.readManifest`), not a `stat` and a read by name.
++    const manifest_bytes = (snapshot_open.readManifest(allocator, io, dir) catch |err| switch (err) {
+         error.OutOfMemory => return error.OutOfMemory,
+         else => return null,
+-    };
++    }).bytes;
+     const metadata = manifest.decode(manifest_bytes) catch return null;
+     const bound = metadata.state orelse return null;
+     if (!std.mem.eql(u8, bound.file, pointer.state_file) or metadata.generation != pointer.generation or
+@@ -231,10 +234,12 @@ pub fn resolvePointer(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir,
+ /// writer decodes it (`resolvePointer` without a pointer); `null` when there
+ /// is no `MANIFEST` or it binds no state section.
+ pub fn loadBound(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) LoadError!?State {
+-    const manifest_bytes = readNamed(allocator, io, dir, publication.current_manifest_file) catch |err| switch (err) {
++    // S6-T9 on S6-T13: `MANIFEST` read through the handle it was sized
++    // by (`snapshot_open.readManifest`), not a `stat` and a read by name.
++    const manifest_bytes = (snapshot_open.readManifest(allocator, io, dir) catch |err| switch (err) {
+         error.OutOfMemory => return error.OutOfMemory,
+         else => return null,
+-    };
++    }).bytes;
+     const metadata = manifest.decode(manifest_bytes) catch return null;
+     const bound = metadata.state orelse return null;
+     return resolvePointer(allocator, io, dir, .{ .generation = metadata.generation, .analyzer_id = metadata.analyzer_id, .state_file = bound.file });
+diff --git a/zig/src/snapshot_open.zig b/zig/src/snapshot_open.zig
+index 34f8578..e6a16bb 100644
+--- a/zig/src/snapshot_open.zig
++++ b/zig/src/snapshot_open.zig
+@@ -207,10 +207,11 @@ fn loadEngine(allocators: Allocators, io: std.Io, from: From, options: engine.En
+ /// back cut to the old size (`Truncated`; `manifest_read_test.zig`).
+ /// `buffer` is the stat's size, to be freed whole; `bytes` is what was read
+ /// (shorter only if the file shrank in place, which `manifest.decode` refuses
+-/// as it refuses any cut `MANIFEST`).
+-const ManifestRead = struct { buffer: []u8, bytes: []u8 };
++/// as it refuses any cut `MANIFEST`). S6-T9: also the writer's previous-state
++/// read (`incremental_state.resolvePointer`, `loadBound`).
++pub const ManifestRead = struct { buffer: []u8, bytes: []u8 };
+ 
+-fn readManifest(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !ManifestRead {
++pub fn readManifest(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !ManifestRead {
+     const file = try dir.openFile(io, publication.current_manifest_file, .{});
+     defer file.close(io);
+     const stat = try file.stat(io);

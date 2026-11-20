@@ -1,0 +1,17 @@
+# Zig Debug zig build test on a fresh archive of 1439d6a (own caches); then plants A, B, C (tools/plant.py) on one more archive, incremental_state.zig restored from git between plants, a cache of their own
+clean: Build Summary: 9/9 steps succeeded; 579/588 tests passed (9 skipped) | engine: run test 573 pass, 9 skip (582 total) 2m  +- run test 6 pass (6 total) 938ms  
+plant A: Build Summary: 7/9 steps succeeded (1 failed); 568/588 tests passed (9 skipped, 11 failed)
+  error: 'apply_test.test.S3-T3: a crash between the manifest and the state write leaves a readable generation; the next call reports unchanged' failed:
+  error: 'apply_test.test.S4-T4 R2: a version 2 INDEX-STATE.json (an older writer's) still loads and feeds the next writer' failed:
+  error: 'apply_test.test.S4-T4 R3: writers publish HYBSTA03 (S6-T9; HYBSTA02 before); a HYBSTA01 section (0.3.0's) is still read' failed:
+  error: 'apply_test.test.S4-T16 ruling 2: an update of a generation whose records are out of path order writes a fresh index's sections' failed:
+  error: 'apply_test.test.S4-T16 ruling 5(b): a state whose entries are out of record order runs the not-in-state loop and writes the same sections' failed:
+  error: 'apply_test.test.S4-T16 ruling 5(c): a previous path the state does not name is rebuilt from the generation, and the output equals the update where none is missing' failed:
+  error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's flags (UnsupportedFlags), never reading a section' failed:
+  error: 'compat_s6t7_test.test.S6-T7: the committed text-once fixture is 62324f9's writer output (this writer's but for HYBLEX04), and a library before v2.4 refuses it at the flags' failed:
+  error: 'compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags' failed:
+  error: 'state_v3_test.test.S6-T9 state v3: the section version against flag bit 8 (M3) is refused at the next write; a HYBSTA02 section under a manifest without it is read' failed:
+  error: 'compat_s6t9_test.test.S6-T9: the committed v2.6 fixture is this writer's output, and a library before v2.6 refuses it at the flags' failed:
+plant B: Build Summary: 7/9 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
+  error: 'incremental_state.test.S4-T4: a pointer without a MANIFEST loads as null and still names its generation' failed:
+plant C: Build Summary: 9/9 steps succeeded; 579/588 tests passed (9 skipped)
