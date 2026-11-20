@@ -1,6 +1,6 @@
 # Project state and continuation handoff
 
-Last updated: 2026-11-20 (S6-T9 merged on 20 Nov 2026 on the maintainer's go-ahead, squashed onto `main` after S6-T13: the state section refers to the source table (`HYBSTA03`) and the file-name catalog derives its stems and chunk ids (record v6), manifest v2.6, the fourth one-way format step; Dart 0.9.4, natives rebuilt. Before it: S6-T13 merged 20 Nov 2026 (an open reads `MANIFEST` through the handle it measured; `lifecycle.scan` returns a missing section's error; Dart 0.9.3). Before it: S6-T8 merged as `7c088a3` on 18 Nov 2026 after its Sixth Verdict, PASS, and the maintainer's go-ahead; the prose-10k `both` cells, 5–7 % slower and explained by code placement, accepted by him: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
+Last updated: 2026-11-20 (S6-T14 built, awaiting its Verdict: every Zig file moved into `zig/src/core/`, `ops/`, `interfaces/` or `tests/`, the core and operations built as modules, no behaviour change. Before it: S6-T9 merged on 20 Nov 2026 on the maintainer's go-ahead, squashed onto `main` after S6-T13: the state section refers to the source table (`HYBSTA03`) and the file-name catalog derives its stems and chunk ids (record v6), manifest v2.6, the fourth one-way format step; Dart 0.9.4, natives rebuilt. Before it: S6-T13 merged 20 Nov 2026 (an open reads `MANIFEST` through the handle it measured; `lifecycle.scan` returns a missing section's error; Dart 0.9.3). Before it: S6-T8 merged as `7c088a3` on 18 Nov 2026 after its Sixth Verdict, PASS, and the maintainer's go-ahead; the prose-10k `both` cells, 5–7 % slower and explained by code placement, accepted by him: the highlight offsets at one byte per token, content lexical section `HYBLEX04`, manifest v2.5; Dart 0.9.2, natives rebuilt. Before it: S6-T7 merged as `a02b2cc` on 17 Nov 2026 after two PASS Verdicts and the maintainer's go-ahead, text once: documents record v5, source `HYBSRC02`, manifest v2.4; Dart 0.9.1, natives rebuilt. Before it: S6-T5, `ss_query` warnings under `search_field` `both` and `filename`; contracts 2.8.0, Dart 0.9.0, natives rebuilt; CAP-22 Implemented; merged into `main` on the maintainer's decision of 17 Nov under the timing rule he set that day; both FAIL Verdicts stand. Before it: S6-T4, lexical format v3, merged as `f3e354e` on the maintainer's decision; S6-T2, `searchd search <folder> "<query>"`, verified and merged as `06f8c2e`)
 
 Project: **Search Simpli** (`search-simpli`)
 
@@ -14,6 +14,28 @@ Project: **Search Simpli** (`search-simpli`)
 and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
+
+## The files in their layers' folders (S6-T14, objective plan item B2, 2026-11-20; built, awaiting its Verdict)
+
+**Built, awaiting its Verdict** ([task and Report](docs/tasks/S6-T14.md), [layers](docs/layers.md)). Every Zig file
+moved with `git mv` into the folder of the layer `scripts/check_layers.py` gave it: `zig/src/core/` (36 files, 16
+tests, 3 benchmarks and tools), `ops/` (4), `interfaces/` (5 and 1 test), and `zig/src/tests/` for the 20 tests and 5
+benchmarks that cross layers, with `root.zig`. `zig/build.zig` builds `core/` as the module `core` and `ops/` as
+`operations`; a file reaches another folder only as `@import("core").name` or `@import("operations").name`. Only
+import lines changed in the moved files (431 lines of 62,066, proved by script); three new module roots;
+`zig build test` runs one step per folder plus `fastmem` (a Zig test build collects its root module's tests only).
+The checker fails a file outside its layer's folder. **No library byte changed**: every native is `cmp`-identical to
+`main`'s, `SOURCE-SHA256` restamped (the digest covers the paths), Dart stays 0.9.4; contracts 2.8.0, the C header,
+exports, indexes and every answer surface byte-identical.
+
+- **Tests:** 579/588 passed, 9 skipped in Debug and ReleaseSmall, as on `main`; the four folder steps 253 + 10 + 26 +
+  293 = `main`'s 582-test engine step.
+- **Speed** (five gated runs, controls `main2`; the libraries are byte-identical): all 166 open, warm query and
+  `find` cells on the three 10k corpora pass the rule of 2026-11-17; open head − `main` +45.8 µs (+0.9 %) timing,
+  +66.8 (+0.6 %) prose, −1.1 Tamil; warm queries and finds within −19.8 to +14.8 µs.
+- **Commands:** `zig build test` as before; a benchmark of `zig/src/tests/` needs the module flags in
+  [`zig/README.md`](zig/README.md). Comments naming old paths remain in the moved files and the C header (listed in the
+  Report, for a follow-up).
 
 ## State and catalog stop repeating (S6-T9, objective plan item D2 step 4, 2026-11-19; merged 20 Nov 2026)
 

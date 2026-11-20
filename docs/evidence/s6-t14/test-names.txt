@@ -1,0 +1,8 @@
+# S6-T14 ruling 2: every test name and outcome, main against head (ReleaseSmall test binaries of zig build test, each run directly from
+# its copy's zig/, so the default runner prints one line per test; numbering stripped, lines sorted; one test prints its own run time, shown as N ms)
+main 87c4ddb, one engine binary: 573 passed; 9 skipped; 0 failed.
+head d967f09, core: All 253 tests passed.
+head d967f09, operations: All 10 tests passed.
+head d967f09, interfaces: All 26 tests passed.
+head d967f09, tests: 284 passed; 9 skipped; 0 failed.
+names and outcomes: main 582, head 582 (core + operations + interfaces + tests); diff after the ms normalisation: the same 582 lines

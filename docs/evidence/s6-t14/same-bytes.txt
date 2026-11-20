@@ -1,0 +1,35 @@
+# S6-T14 ruling 3: the head's outputs against main's (87c4ddb), 20 Nov 2026
+# main: searchd and dylib built from a git archive of 87c4ddb; head: the same from the worktree copy whose zig/ equals d967f09's (diff -r)
+## binaries
+identical 1151208 B bin/searchd
+identical 1006456 B libsearch_simpli.dylib
+## indexes (each build's searchd: index --filename-index; J2: apply --changes j2-changes.json --filename-index), diff -r
+timing-10k: 9 files, 13712980 B, identical
+prose-10k: 9 files, 30815993 B, identical
+tamil-10k: 9 files, 34633368 B, identical
+fixtures: 9 files, 7946180 B, identical
+family: 9 files, 2378262 B, identical
+j2: 9 files, 149693 B, identical
+## answers, cmp of each file (surf: CLI, JSON-RPC, MCP, searchd search via s6t7/surfaces.py; abi: the C ABI via s6t7/same_answers.py)
+surf-timing-10k: 1193 rows, 6639511 B, identical
+abi-timing-10k: 40102 rows, 13561855 B, identical
+surf-prose-10k: 1193 rows, 12364586 B, identical
+abi-prose-10k: 40101 rows, 17105166 B, identical
+surf-tamil-10k: 1196 rows, 7538126 B, identical
+abi-tamil-10k: 40088 rows, 14255144 B, identical
+surf-fixtures: 1187 rows, 1998996 B, identical
+abi-fixtures: 1026 rows, 1280220 B, identical
+surf-family: 1190 rows, 1222328 B, identical
+abi-family: 267 rows, 597869 B, identical
+surf-j2: 1178 rows, 1026674 B, identical
+abi-j2: 1855 rows, 5130637 B, identical
+## J2 comparers
+same: 1178 vs 1178 rows: cli evidence 12 (differ 0, error answers 0), cli find 7 (differ 0, error answers 0), cli list-files 1 (differ 0, error answers 0), cli outline 16 (differ 0, error answers 0), cli query 12 (differ 0, error answers 0), cli read-span 16 (differ 0, error answers 0), cli read-span text 16 (differ 0, error answers 0), cli roots 1 (differ 0, error answers 0), mcp 73 (differ 0, error answers 0), mcp tail 1 (differ 0, error answers 0), rpc 1022 (differ 0, error answers 618), rpc tail 1 (differ 0, error answers 0)
+same: 1855 vs 1855 rows: evidence 644 (differ 0, refused 0), find 7 (differ 0, refused 0), list_files 1 (differ 0, refused 0), outline 88 (differ 0, refused 0), query 849 (differ 0, refused 0), read_span pairs 88 (differ 0, refused 0), read_span past end 88 (differ 0, refused 88), read_span whole 88 (differ 0, refused 0), roots 1 (differ 0, refused 0), status 1 (differ 0, refused 0); adjacent-line read_span calls 1921
+## C header sha256 (main, head)
+36b96a20fb69935c30d5d87ae9d0df14816636dcf50036060dc9d6302450c787
+36b96a20fb69935c30d5d87ae9d0df14816636dcf50036060dc9d6302450c787
+## exported symbols of the rebuilt natives against main's listings
+macOS: same 18 lines
+iOS: same 16 lines
+Android: same 16 lines
