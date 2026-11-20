@@ -1,0 +1,30 @@
+## wall_med (ms)
+| corpus | main median | head - main | main2 / ca2 / cb2 - main | T | head - worst control | rule | band |
+| --- | ---: | ---: | --- | ---: | ---: | --- | ---: |
+| timing-10k | 5.4065 | +0.0049 (+0.09 %) | -0.0245 / +0.0291 / +0.0104 | 0.0541 | -0.0242 | pass | 0/5 |
+| prose-10k | 11.5799 | -0.0576 (-0.50 %) | +0.0156 / +0.0370 / +0.0400 | 0.1158 | -0.0976 | pass | 0/5 |
+| tamil-10k | 7.8287 | -0.0638 (-0.82 %) | -0.0068 / -0.0083 / -0.0144 | 0.0783 | -0.0571 | pass | 0/5 |
+
+## cpu_med (ms)
+| corpus | main median | head - main | main2 / ca2 / cb2 - main | T | head - worst control | rule | band |
+| --- | ---: | ---: | --- | ---: | ---: | --- | ---: |
+| timing-10k | 5.4012 | +0.0027 (+0.05 %) | -0.0174 / +0.0293 / +0.0084 | 0.0540 | -0.0266 | pass | 0/5 |
+| prose-10k | 11.5712 | -0.0573 (-0.49 %) | +0.0112 / +0.0366 / +0.0414 | 0.1157 | -0.0987 | pass | 0/5 |
+| tamil-10k | 7.8214 | -0.0610 (-0.78 %) | -0.0050 / -0.0109 / -0.0084 | 0.0782 | -0.0560 | pass | 0/5 |
+
+## per run, wall_med (ms)
+timing-10k run1: main 5.3415  main2 5.3277  head 5.3465  ca2 5.3764  cb2 5.3498
+timing-10k run2: main 5.3915  main2 5.3670  head 5.4064  ca2 5.4380  cb2 5.4019
+timing-10k run3: main 5.4481  main2 5.3822  head 5.4219  ca2 5.4600  cb2 5.4845
+timing-10k run4: main 5.4590  main2 5.4029  head 5.4471  ca2 5.4227  cb2 5.4040
+timing-10k run5: main 5.4065  main2 5.4257  head 5.4332  ca2 5.4356  cb2 5.4742
+prose-10k run1: main 11.4574  main2 11.4460  head 11.5075  ca2 11.5691  cb2 11.4974
+prose-10k run2: main 11.4830  main2 11.5351  head 11.4233  ca2 11.6186  cb2 11.5311
+prose-10k run3: main 11.6012  main2 11.5950  head 11.5401  ca2 11.6383  cb2 11.6593
+prose-10k run4: main 11.5799  main2 11.5955  head 11.5810  ca2 11.5806  cb2 11.4863
+prose-10k run5: main 11.6121  main2 11.6644  head 11.5545  ca2 11.6275  cb2 11.4782
+tamil-10k run1: main 7.7557  main2 7.7676  head 7.7529  ca2 7.8058  cb2 7.7793
+tamil-10k run2: main 7.7921  main2 7.8252  head 7.7283  ca2 7.7270  cb2 7.7245
+tamil-10k run3: main 8.1902  main2 8.1778  head 8.0411  ca2 7.8159  cb2 7.7620
+tamil-10k run4: main 7.8287  main2 7.8143  head 7.7664  ca2 7.8204  cb2 7.8143
+tamil-10k run5: main 7.8618  main2 7.8551  head 7.7859  ca2 7.8567  cb2 7.9069

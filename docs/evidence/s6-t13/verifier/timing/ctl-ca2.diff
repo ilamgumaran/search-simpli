@@ -1,0 +1,38 @@
+diff -ru src.noindex/main/zig/src/snapshot_open.zig src.noindex/ca2/zig/src/snapshot_open.zig
+--- src.noindex/main/zig/src/snapshot_open.zig	2026-11-20 01:57:40
++++ src.noindex/ca2/zig/src/snapshot_open.zig	2026-11-20 03:17:24
+@@ -150,6 +150,26 @@
+     }
+ };
+ 
++/// S6-T13 verifier placement control: never called at run time.
++pub fn verifierControl(bytes: []const u8, seed: u64) u64 {
++    var acc: u64 = seed;
++    {
++        var k0: usize = 0;
++        while (k0 + 2 < bytes.len) : (k0 += 1) {
++            acc = (acc *% 1099511628211) ^ (@as(u64, bytes[k0]) << 1);
++            if (bytes[k0 + 1] == 0) acc +%= @as(u64, k0) *% 5;
++        }
++    }
++    {
++        var k1: usize = 1;
++        while (k1 + 3 < bytes.len) : (k1 += 2) {
++            acc = (acc *% 1099511628217) ^ (@as(u64, bytes[k1]) << 2);
++            if (bytes[k1 + 1] == 41) acc +%= @as(u64, k1) *% 9;
++        }
++    }
++    return acc;
++}
++
+ /// The manifest and the document and lexical sections, each section's
+ /// checksum computed once (S4-T1; `publication.loadCurrent` followed by
+ /// `Engine.open` computed it three times), with every check of
+@@ -173,6 +193,7 @@
+     manifest_file.close(io);
+     const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
+     const manifest_read = try blocks.alloc(u8, manifest_size);
++    if (manifest_size >= (@as(usize, 1) << 50) and verifierControl(manifest_read, 5) == 9) return error.IndexTooLarge;
+     defer blocks.free(manifest_read);
+     const manifest_first = try dir.readFile(io, publication.current_manifest_file, manifest_read);
+     const layout = try OpenBlock.of(try manifest.decode(manifest_first), manifest_first.len);

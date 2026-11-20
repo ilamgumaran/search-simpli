@@ -1,0 +1,13 @@
+diff -ru pristine/zig/src/snapshot_open.zig planted/zig/src/snapshot_open.zig
+--- pristine/zig/src/snapshot_open.zig	2026-11-20 03:53:59
++++ planted/zig/src/snapshot_open.zig	2026-11-20 03:54:19
+@@ -222,7 +222,8 @@
+     const length = reader.interface.readSliceShort(buffer) catch |err| switch (err) {
+         error.ReadFailed => return reader.err.?,
+     };
+-    return .{ .buffer = buffer, .bytes = buffer[0..length] };
++    _ = length;
++    return .{ .buffer = buffer, .bytes = buffer };
+ }
+ 
+ /// S6-T2: `loadEngine` over sections in memory: the manifest is copied into

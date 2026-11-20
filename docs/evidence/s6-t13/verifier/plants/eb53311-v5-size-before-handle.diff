@@ -1,0 +1,14 @@
+diff -ru pristine/zig/src/snapshot_open.zig planted/zig/src/snapshot_open.zig
+--- pristine/zig/src/snapshot_open.zig	2026-11-20 02:56:13
++++ planted/zig/src/snapshot_open.zig	2026-11-20 03:34:03
+@@ -211,9 +211,9 @@
+ const ManifestRead = struct { buffer: []u8, bytes: []u8 };
+ 
+ fn readManifest(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !ManifestRead {
++    const stat = try dir.statFile(io, publication.current_manifest_file, .{});
+     const file = try dir.openFile(io, publication.current_manifest_file, .{});
+     defer file.close(io);
+-    const stat = try file.stat(io);
+     const size = std.math.cast(usize, stat.size) orelse return error.IndexTooLarge;
+     const buffer = try allocator.alloc(u8, size);
+     errdefer allocator.free(buffer);

@@ -1,0 +1,111 @@
+# S6-T13 verifier plants. Filtered runs: vplant.sh (a fresh archive of the commit's zig/, the verifier's test file added beside both copies, fresh caches; the filter runs the builder's four S6-T13 tests and the verifier's six). Full runs: vfull.sh (whole zig build test, Debug, without the verifier's file).
+== eb53311-none: exit=0 All 15 tests passed.
+   diff lines        0
+== eb53311-p1-scan-old: exit=1 14 passed; 0 skipped; 1 failed.
+S6-T13: scan returns FileNotFound when MANIFEST names a missing docume ... expected error.FileNotFound, found .{ .current_generation = null, .current_files = 0, .orphan_document_files = 1, .orphan_lexical
+   FAIL manifest_read_test: S6-T13: scan returns FileNotFound when MANIFEST names a miss -> TestExpectedError
+   diff lines       22
+== eb53311-p2-scan-every-error: exit=1 14 passed; 0 skipped; 1 failed.
+S6-T13: scan returns FileNotFound when MANIFEST names a missing docume ... FAIL (FileNotFound)
+   FAIL manifest_read_test: S6-T13: scan returns FileNotFound when MANIFEST names a miss -> FileNotFound
+   diff lines       15
+== eb53311-p3-open-old: exit=1 12 passed; 0 skipped; 3 failed.
+VSWEEP open publish delta 1: 12 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:ol
+VSWEEP open_scoped publish delta 1: 12 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:ol
+   FAIL verifier_s6t13_test: S6-T13 verifier A: a publish at every point of every open re -> TestExpectedEqual
+   FAIL manifest_read_test: S6-T13: an open whose MANIFEST is replaced between its stat  -> Truncated
+   FAIL manifest_read_test: S6-T13: a folder index whose MANIFEST grows across the publi -> Truncated
+   diff lines       20
+== eb53311-p4-opensource-old: exit=1 13 passed; 0 skipped; 2 failed.
+VSWEEP open_source publish delta 1: 6 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old
+   FAIL verifier_s6t13_test: S6-T13 verifier A: a publish at every point of every open re -> TestExpectedEqual
+   FAIL manifest_read_test: S6-T13: an open whose MANIFEST is replaced between its stat  -> Truncated
+   diff lines       17
+== eb53311-p5-damaged-error: exit=1 12 passed; 0 skipped; 3 failed.
+S6-T13: a damaged MANIFEST is refused with the same error as before, b ... expected error.Truncated, found error.ManifestChanged
+VB open: ManifestChanged
+VD empty open: ManifestChanged
+   FAIL verifier_s6t13_test: S6-T13 verifier B: MANIFEST cut in place between the stat an -> TestExpectedEqual
+   FAIL verifier_s6t13_test: S6-T13 verifier D: an empty, a one-byte and a directory MANI -> TestExpectedEqual
+   FAIL manifest_read_test: S6-T13: a damaged MANIFEST is refused with the same error as -> TestUnexpectedError
+   diff lines       12
+== eb53311-v1-short-read-ignored: exit=1 14 passed; 0 skipped; 1 failed.
+VB open: ChecksumMismatch
+   FAIL verifier_s6t13_test: S6-T13 verifier B: MANIFEST cut in place between the stat an -> TestExpectedEqual
+   diff lines       13
+== eb53311-v2-read-by-name: exit=1 12 passed; 0 skipped; 3 failed.
+VSWEEP open publish delta 1: 12 points, 2 not whole; 0:new 1:Truncated 2:Truncated 3:old 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open_scoped publish delta 1: 12 points, 2 not whole; 0:new 1:Truncated 2:Truncated 3:old 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open_source publish delta 1: 6 points, 2 not whole; 0:new 1:Truncated 2:Truncated 3:old 4:old 5:old
+   FAIL verifier_s6t13_test: S6-T13 verifier A: a publish at every point of every open re -> TestExpectedEqual
+   FAIL manifest_read_test: S6-T13: an open whose MANIFEST is replaced between its stat  -> Truncated
+   FAIL manifest_read_test: S6-T13: a folder index whose MANIFEST grows across the publi -> Truncated
+   diff lines       15
+== eb53311-v3-scan-documents-only: exit=1 14 passed; 0 skipped; 1 failed.
+S6-T13: scan returns FileNotFound when MANIFEST names a missing docume ... expected error.FileNotFound, found .{ .current_generation = null, .current_files = 0, .orphan_document_files = 2, .orphan_lexical
+   FAIL manifest_read_test: S6-T13: scan returns FileNotFound when MANIFEST names a miss -> TestExpectedError
+   diff lines       15
+== eb53311-v4-scan-notfound-mapped: exit=1 14 passed; 0 skipped; 1 failed.
+S6-T13: scan returns FileNotFound when MANIFEST names a missing docume ... expected error.FileNotFound, found error.SectionMissing
+   FAIL manifest_read_test: S6-T13: scan returns FileNotFound when MANIFEST names a miss -> TestUnexpectedError
+   diff lines       16
+== eb53311-v5-size-before-handle: exit=1 12 passed; 0 skipped; 3 failed.
+S6-T13: an open whose MANIFEST is replaced between its stat and its re ... expected 1, found 0
+S6-T13: a folder index whose MANIFEST grows across the publish opens w ... expected 1, found 0
+VSWEEP open publish delta 1: 10 points, 1 not whole; 0:new 1:Truncated 2:old 3:old 4:old 5:old 6:old 7:old 8:old 9:old
+VSWEEP open_scoped publish delta 1: 10 points, 1 not whole; 0:new 1:Truncated 2:old 3:old 4:old 5:old 6:old 7:old 8:old 9:old
+VSWEEP open_source publish delta 1: 4 points, 1 not whole; 0:new 1:Truncated 2:old 3:old
+   FAIL verifier_s6t13_test: S6-T13 verifier A: a publish at every point of every open re -> TestExpectedEqual
+   FAIL manifest_read_test: S6-T13: an open whose MANIFEST is replaced between its stat  -> TestExpectedEqual
+   FAIL manifest_read_test: S6-T13: a folder index whose MANIFEST grows across the publi -> TestExpectedEqual
+   diff lines       14
+== eb53311-v6a-buffer-minus-one: exit=1 10 passed; 0 skipped; 5 failed.
+S6-T13: a damaged MANIFEST is refused with the same error as before, b ... expected error.TrailingData, found .{ .roots = {  }, .folder = null, .open_block = { 51, 36, 64, 14, 1, 0, 0, 0, 3, 0, 0, 0, 0, 0
+VSWEEP open publish delta -1: 4 points, 4 not whole; 0:Truncated 1:Truncated 2:Truncated 3:Truncated
+VSWEEP open publish delta 0: 4 points, 4 not whole; 0:Truncated 1:Truncated 2:Truncated 3:Truncated
+VSWEEP open publish delta 1: 4 points, 4 not whole; 0:Truncated 1:Truncated 2:Truncated 3:Truncated
+VSWEEP open_scoped publish delta -1: 4 points, 4 not whole; 0:Truncated 1:Truncated 2:Truncated 3:Truncated
+VSWEEP open_scoped publish delta 0: 4 points, 4 not whole; 0:Truncated 1:Truncated 2:Truncated 3:Truncated
+VSWEEP open_scoped publish delta 1: 4 points, 4 not whole; 0:Truncated 1:Truncated 2:Truncated 3:Truncated
+VSWEEP open_source publish delta -1: 4 points, 4 not whole; 0:Truncated 1:Truncated 2:Truncated 3:Truncated
+VSWEEP open_source publish delta 0: 4 points, 4 not whole; 0:Truncated 1:Truncated 2:Truncated 3:Truncated
+VSWEEP open_source publish delta 1: 4 points, 4 not whole; 0:Truncated 1:Truncated 2:Truncated 3:Truncated
+VC open: Truncated
+   FAIL verifier_s6t13_test: S6-T13 verifier A: a publish at every point of every open re -> TestExpectedEqual
+   FAIL verifier_s6t13_test: S6-T13 verifier C: MANIFEST grown in place between the stat  -> TestExpectedEqual
+   FAIL manifest_read_test: S6-T13: an open whose MANIFEST is replaced between its stat  -> Truncated
+   FAIL manifest_read_test: S6-T13: a folder index whose MANIFEST grows across the publi -> Truncated
+   FAIL manifest_read_test: S6-T13: a damaged MANIFEST is refused with the same error as -> TestExpectedError
+   diff lines       12
+== eb53311-v6b-buffer-plus-one: exit=1 14 passed; 0 skipped; 1 failed.
+VC open: TrailingData
+   FAIL verifier_s6t13_test: S6-T13 verifier C: MANIFEST grown in place between the stat  -> TestExpectedEqual
+   diff lines       12
+== eb53311-v7-scan-damaged-as-none: exit=1 14 passed; 0 skipped; 1 failed.
+VE cut: report current null orphans 2/2
+   FAIL verifier_s6t13_test: S6-T13 verifier E: scan over a damaged MANIFEST or a section -> TestUnexpectedResult
+   diff lines       12
+== eb53311-v8-scan-no-validate: exit=1 14 passed; 0 skipped; 1 failed.
+VE documents: report current 2 orphans 0/0
+   FAIL verifier_s6t13_test: S6-T13 verifier E: scan over a damaged MANIFEST or a section -> TestUnexpectedResult
+   diff lines       13
+== eb53311-v9-reopen-for-read: exit=1 12 passed; 0 skipped; 3 failed.
+VSWEEP open publish delta 1: 12 points, 2 not whole; 0:new 1:Truncated 2:Truncated 3:old 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open_scoped publish delta 1: 12 points, 2 not whole; 0:new 1:Truncated 2:Truncated 3:old 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:old
+VSWEEP open_source publish delta 1: 6 points, 2 not whole; 0:new 1:Truncated 2:Truncated 3:old 4:old 5:old
+   FAIL verifier_s6t13_test: S6-T13 verifier A: a publish at every point of every open re -> TestExpectedEqual
+   FAIL manifest_read_test: S6-T13: an open whose MANIFEST is replaced between its stat  -> Truncated
+   FAIL manifest_read_test: S6-T13: a folder index whose MANIFEST grows across the publi -> Truncated
+   diff lines       14
+
+## main's code (fbf0d62) with the verifier's tests, unplanted
+== fbf0d62-none: exit=1 9 passed; 0 skipped; 1 failed.
+VSWEEP open publish delta 1: 12 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:ol
+VSWEEP open_scoped publish delta 1: 12 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old 6:old 7:old 8:old 9:old 10:old 11:ol
+VSWEEP open_source publish delta 1: 6 points, 3 not whole; 0:new 1:Truncated 2:Truncated 3:Truncated 4:old 5:old
+   FAIL verifier_s6t13_test: S6-T13 verifier A: a publish at every point of every open re -> TestExpectedEqual
+
+## through the whole zig build test (Debug), the verifier's file not included
+full-v1-short-read-ignored: Build Summary: 9/9 steps succeeded; 546/555 tests passed (9 skipped)
+full-v7-scan-damaged-as-none: Build Summary: 9/9 steps succeeded; 546/555 tests passed (9 skipped)
+full-v8-scan-no-validate: Build Summary: 9/9 steps succeeded; 546/555 tests passed (9 skipped)

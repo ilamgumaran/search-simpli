@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.3 (S6-T13; contract 2.8.0; patch: a fix)
+
+An open no longer fails when another process publishes while it reads
+`MANIFEST`. With pruning (`keep_generations: 1`) an open can still fail
+with `FileNotFound` when a publish and its prune land while it reads, as it
+already could before. No API change: the same calls, JSON fields, error
+codes and C ABI; contracts stay 2.8.0; the index format is unchanged; an
+open that no publish crosses answers as before.
+
+- **The fix.** `open` took the size of `MANIFEST` from one open of the file
+  and read the bytes through a second open by name. A publish that replaced
+  `MANIFEST` with a longer one between the two made `open` throw
+  `SearchSimpliException` with the message `ss_open: Truncated`, where
+  opening again succeeded. It now reads the file it measured, so it opens
+  the generation that was current when it began, whole. Reproduced by a
+  test that runs the publish between the two steps
+  (`zig/src/manifest_read_test.zig`).
+- A damaged `MANIFEST` fails with the same error as before.
+
 ## 0.9.2 (S6-T8; contract 2.8.0; patch: index format, one way)
 
 A smaller index: the highlight offsets `find` reads are stored at one byte

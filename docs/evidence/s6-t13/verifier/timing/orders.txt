@@ -1,0 +1,22 @@
+# S6-T13 verifier open-time orders (rule of 2026-11-17). Written and committed before the first timed run.
+# Builds, each from its own source copy with its own fresh Zig caches, macOS arm64 ReleaseSmall dylib (__text: size -m):
+#   main  fbf0d62                                   990,040 B  sha256 7c3c359ca7ae025f..  __text 586,844 B (= main's committed native)
+#   main2 fbf0d62, a second copy                    990,040 B  byte-identical to main
+#   head  eb53311 (library = 14c438a)               990,120 B  sha256 d2d259f8e95203a0..  __text 586,956 B (+112) (= the branch's native)
+#   ca2   main + never-run code, place a, 2 blocks  990,120 B  __text 586,972 B (+128): snapshot_open.loadEngine, right
+#         after the MANIFEST buffer is allocated (beside the changed read; the task's own delta within 16 B)
+#   cb2   main + never-run code, place b, 2 blocks  990,040 B  __text 586,996 B (+152): lexical_segment.inspect (every open)
+#   (tools/mkctl.py in the verifier's scratch; the diffs are ctl-ca2.diff and ctl-cb2.diff here)
+# Control set: main2, ca2, cb2.  Index: one `searchd index CORPUS --out DIR --filename-index` by main's searchd per corpus,
+# copied once per build (each build opens its own copy).  Per process: 8 untimed opens, 50 timed ss_open (vopen.py).
+# Cell: wall_med per corpus (cpu_med beside it). T = max(0.010 ms, 1 % of main's five-run median). A cell fails if
+# median_r(head - main) >= T and median_r(head - main) - max over the control set of median_r(control - main) >= T.
+# Band (head above every other build in a run) tabulated, never failing.  Gate (vgate.sh) before every process:
+# 5-minute load below 4.0 and the check lock absent; a refused gate stops the run, which is retaken later as a whole.
+# After each run, pmset -g log is read for Sleep, Wake or DarkWake inside its window; a run with one is discarded whole.
+# Latin square: in run r the builds are rotated left by 2(r-1) mod 5 and the corpora left by (r-1) mod 3.
+run1 corpora: timing-10k prose-10k tamil-10k | builds: main main2 head ca2 cb2
+run2 corpora: prose-10k tamil-10k timing-10k | builds: head ca2 cb2 main main2
+run3 corpora: tamil-10k timing-10k prose-10k | builds: cb2 main main2 head ca2
+run4 corpora: timing-10k prose-10k tamil-10k | builds: main2 head ca2 cb2 main
+run5 corpora: prose-10k tamil-10k timing-10k | builds: ca2 cb2 main main2 head

@@ -1,0 +1,29 @@
+# S6-T13 builder: the open-time runs (ruling 3). Written, committed and pushed before the first timed run (20 Nov 2026).
+# Nothing below is chosen after seeing a timed number.
+#
+# Builds (each its own source copy and own Zig caches; macOS arm64 ReleaseSmall dylib; __text from size -m):
+#   main  = fbf0d62, dylib 990,040 B, sha256 7c3c359ca7ae025f... (= main's committed native), __text 586,844 B
+#   main2 = fbf0d62 built again in another copy (byte-identical to main)
+#   head  = 14c438a, dylib 990,120 B, sha256 d2d259f8e95203a0... (= the branch's committed native), __text 586,956 B
+#           (+112 B)
+#   Controls: main + one never-run function (make_control.py), called under a branch never true at run time:
+#   cl = place l, 1 block: snapshot_open.loadEngine, beside the changed MANIFEST read   __text 586,928 (+84 B)
+#   cm = place m, 1 block + 2 steps: manifest.decodeV2 (every open, away from the change)  __text 586,964 (+120 B)
+#   cm matches the head's delta within 8 B (7 %); cl is the control placed beside the new code.
+#
+# Control set (fixed now): main2, cl, cm.
+# The cell: open_p50 (wall, ms) per corpus; cpu_p50 reported beside it. T = max(0.010 ms, 1 % of main's five-run median
+# for the cell). The cell fails if median_r(head - main) >= T and exceeds by >= T the largest median_r(control - main)
+# over the control set (rule of 2026-11-17). Band excursions (head above every other build in 3 or more of 5 runs)
+# tabulated, never failing. Ruling 3's expectation, "not above main", is met when the cell passes the rule; the raw
+# median_r(head - main) is reported beside it.
+#
+# Each build opens its own copy of the index main's searchd wrote (idx.noindex/<build>/<corpus>; the format is
+# unchanged). Gate before every process (gate.sh). pmset -g log checked for Sleep/Wake/DarkWake inside each run's
+# window afterwards; a run with one is discarded whole and retaken as the same number with "b".
+# Latin square: builds rotated left by r - 1 in run r, corpora rotated left by r - 1.
+run1 corpora: timing-10k prose-10k tamil-10k | builds: main main2 head cl cm
+run2 corpora: prose-10k tamil-10k timing-10k | builds: main2 head cl cm main
+run3 corpora: tamil-10k timing-10k prose-10k | builds: head cl cm main main2
+run4 corpora: timing-10k prose-10k tamil-10k | builds: cl cm main main2 head
+run5 corpora: prose-10k tamil-10k timing-10k | builds: cm main main2 head cl

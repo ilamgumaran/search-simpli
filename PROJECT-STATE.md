@@ -60,6 +60,15 @@ through the C ABI). **Contracts 2.8.0, Dart 0.9.2**; no API, schema, C header or
   known behaviour. Open for the maintainer: whether a writer should check the tables it drops (items 14, 16). The
   folder-knowledge skill's step 3 now names `read_span`'s request fields as the contract does (`root_id`, not
   `root`; filed by S5-T10), checked against the request schema by `tests/test_example_loop.py`. No library change.
+- **Two code readings tested and fixed ([S6-T13](docs/tasks/S6-T13.md), 20 Nov, Verdict PASS, not yet merged):**
+  `lifecycle.scan` over a `MANIFEST` whose documents or lexical file is missing now returns `FileNotFound` (it
+  reported no current generation and every file an orphan; no caller outside tests). An open reads `MANIFEST`
+  through the handle whose `stat` sized its buffer (`snapshot_open.readManifest`): a publish that replaced
+  `MANIFEST` with a longer one between the two gave `Truncated` (`ss_open: Truncated`), and the open now reads the
+  old generation whole. Both reproduced first by `zig/src/manifest_read_test.zig` (the publish run between the
+  `stat` and the read through a wrapped `std.Io`). No API, schema, C header, format or answer change; Dart 0.9.3;
+  natives rebuilt: macOS 990,120 B, Android 959,744 B, iOS framework binary 971,032 B, `native/SOURCE-SHA256`
+  `7c3e8f18…`; `searchd` `ReleaseSmall` 1,133,832 B (`main`: 1,133,704).
 
 ## Text once: each file's text stored once (S6-T7, objective plan item D2 step 2, 2026-11-17; merged as `a02b2cc`)
 

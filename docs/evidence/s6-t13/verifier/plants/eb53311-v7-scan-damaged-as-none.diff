@@ -1,0 +1,12 @@
+diff -ru pristine/zig/src/lifecycle.zig planted/zig/src/lifecycle.zig
+--- pristine/zig/src/lifecycle.zig	2026-11-20 02:56:13
++++ planted/zig/src/lifecycle.zig	2026-11-20 03:34:17
+@@ -376,7 +376,7 @@
+     // `FileNotFound` was taken for a missing `MANIFEST` and the current
+     // generation's remaining files were reported as orphans.
+     const current_metadata: ?manifest.Manifest = if (iterable_dir.readFile(io, publication.current_manifest_file, manifest_buffer)) |manifest_encoded| blk: {
+-        const metadata = try manifest.decode(manifest_encoded);
++        const metadata = manifest.decode(manifest_encoded) catch break :blk null;
+         const documents_encoded = try iterable_dir.readFile(io, metadata.documents_file, documents_buffer);
+         const lexical_encoded = try iterable_dir.readFile(io, metadata.lexical_file, lexical_buffer);
+         try manifest.validateSnapshot(metadata, documents_encoded, lexical_encoded);

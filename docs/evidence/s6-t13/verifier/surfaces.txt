@@ -1,0 +1,7 @@
+# S6-T13 verifier: same answers, main fbf0d62 against head eb53311 (ReleaseSmall builds, own caches)
+Indexes written by each build's searchd (fixtures --filename-index, fixtures/family-folder --filename-index, J2 by searchd apply of the 88-file J2 changes request, mkj2.py): fixtures, family and j2 directories byte-identical main vs head (diff -r).
+Surfaces (surf.py, the S6-T7 verifier's script: CLI query/evidence/find/outline/read-span/list-files/roots, serve JSON-RPC, mcp, search FOLDER), mm = main searchd on main's index, hh = head on head's, hm = head on main's:
+  j2: mm = hh = hm, 1312 rows, sha256 62ba28ddf19d6608
+  fixtures: mm = hh = hm, 1401 rows, sha256 4e171e2b24c15d2d
+  family: mm = hh = hm, 1179 rows, sha256 fc3870c1163e716e
+C ABI ss_query (scripts/capture_query_outputs.py --filename-fields), main's dylib vs head's: 16,490 queries, 0 error outputs, both sha256 1a6af632e4439f119d61a6549dc5e917bbd68dcfe721b126b42cd38202922a0a, cmp-identical.

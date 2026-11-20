@@ -1,0 +1,69 @@
+# S6-T13 verifier suites, on eb53311 (library = 14c438a): Zig in a fresh git archive with its own caches; Python in the worktree (two tests need .git); Dart in the fresh archive whose natives were rebuilt (cmp-identical)
+## zig-debug
+start 03:20:35
++- run test w
+Build Summary: 9/9 steps succeeded; 546/555 tests passed (9 skipped)
++- run test 540 pass, 9 skip (549 total) 2m MaxRSS:933M
++- run test 6 pass (6 total) 967ms MaxRSS:5M
+exit 0 end 03:22:54
+## zig-rs
+start 03:23:12
++- run test w
+Build Summary: 9/9 steps succeeded; 546/555 tests passed (9 skipped)
++- run test 540 pass, 9 skip (549 total) 21s MaxRSS:394M
++- run test 6 pass (6 total) 298ms MaxRSS:4M
+exit 0 end 03:23:47
+## abi-Debug
+start 03:23:53
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
++- run exe abi_test success 213ms
+exit 0 end 03:23:59
+## abi-ReleaseSmall
+start 03:23:59
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
++- run exe abi_test success 165ms
+exit 0 end 03:24:06
+## the S6-T13 lines of the Debug run
+S6-T13 MANIFEST replaced between stat and read (opener, new length - stat length: generation read): open -1:old open 0:old open 1:old open 2048:old open_scoped -1:old open_scoped 0:old open_scoped 1:o
+S6-T13 folder MANIFEST 576 -> 580 bytes between stat and read: generation 9 read
+## py-zig
+start 03:24:18
+Ran 466 tests in 86.616s
+OK
+exit 0 end 03:25:45
+## py-zig-rs
+start 03:25:53
+Ran 466 tests in 40.255s
+OK
+exit 0 end 03:26:33
+## py-nozig
+start 03:26:40
+Ran 411 tests in 26.132s
+OK (skipped=43)
+exit 0 end 03:27:06
+(py-zig-rs: SEARCHD_BINARY = the verifier's ReleaseSmall searchd of eb53311; py-nozig: SEARCH_SIMPLI_NO_ZIG=1)
+## dart (pub get, dart analyze lib test, dart test)
+start 03:27:13
+No issues found!
+00:06 +97: All tests passed!
+exit 0 end 03:27:25
++97: All tests passed!
+## J2 (in order: the Python reference; the head's searchd, 1,133,832 B; main's searchd, 1,133,704 B)
+J2 gate: pass
+::notice title=J2 native run::290 queries x 2 variants, none skipped. searchd sha256 baa9586bce2b9420e22f7fd101f6aec114d204eacf12fd048348571b3c770f5a (1133832 B, ReleaseSmall, zig None) built from com
+J2 native against the baseline's searchd cells (recorded 2026-11-12, binary 8b1f65c1d797): 0 rows differ
+J2 gate: pass
+::notice title=J2 native run::290 queries x 2 variants, none skipped. searchd sha256 2270e20baa975794685e28e873e90ce78abaa77a11052525b6cfb0dd8a4f9fd1 (1133704 B, ReleaseSmall, zig None) built from com
+J2 native against the baseline's searchd cells (recorded 2026-11-12, binary 8b1f65c1d797): 0 rows differ
+J2 gate: pass
+J2 native JSON, main's searchd against the head's: 4 leaves differ, all identity or load: /engine/binary/sha256, /engine/binary/size, /load/top_sample[0], /load/top_sample[2]
+## checkers
+check_layers: OK (45 files in layers, 6 allowed interface imports)
+layers 0
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+req 0
+home 0
+ws done
+check_no_home_paths after each git add: exit 0

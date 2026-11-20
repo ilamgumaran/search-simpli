@@ -1,0 +1,30 @@
+## open_p50 (ms)
+| corpus | main median | head - main | main2 / cl / cm - main | T | rule | band (head above all) |
+| --- | ---: | ---: | --- | ---: | --- | ---: |
+| timing-10k | 5.2198 | +0.0046 (+0.09 %) | +0.0261 / +0.0080 / +0.0406 | 0.0522 | pass | 0/5 |
+| prose-10k | 11.2931 | +0.0122 (+0.11 %) | -0.0807 / +0.0373 / -0.0492 | 0.1129 | pass | 1/5 |
+| tamil-10k | 7.6265 | +0.0064 (+0.08 %) | +0.0281 / -0.0009 / -0.0059 | 0.0763 | pass | 1/5 |
+
+## cpu_p50 (ms)
+| corpus | main median | head - main | main2 / cl / cm - main | T | rule | band (head above all) |
+| --- | ---: | ---: | --- | ---: | --- | ---: |
+| timing-10k | 5.2185 | +0.0045 (+0.09 %) | +0.0200 / +0.0107 / +0.0425 | 0.0522 | pass | 0/5 |
+| prose-10k | 11.2846 | +0.0133 (+0.12 %) | -0.0809 / +0.0394 / -0.0491 | 0.1128 | pass | 1/5 |
+| tamil-10k | 7.6196 | +0.0050 (+0.07 %) | +0.0216 / -0.0015 / -0.0063 | 0.0762 | pass | 1/5 |
+
+## per run, open_p50 (ms)
+timing-10k run1: main 5.2544  main2 5.2390  head 5.2424  cl 5.2609  cm 5.2837
+timing-10k run2: main 5.2198  main2 5.2325  head 5.2258  cl 5.2278  cm 5.2604
+timing-10k run3: main 5.2253  main2 5.4613  head 5.2096  cl 5.2137  cm 5.2544
+timing-10k run4: main 5.2196  main2 5.2458  head 5.2274  cl 5.2315  cm 5.2669
+timing-10k run5: main 5.2136  main2 5.2694  head 5.2181  cl 5.2685  cm 5.2687
+prose-10k run1: main 11.2931  main2 11.2124  head 11.2886  cl 11.2567  cm 11.2461
+prose-10k run2: main 11.3464  main2 11.1768  head 11.2516  cl 11.4270  cm 11.2389
+prose-10k run3: main 11.2702  main2 11.3650  head 11.2824  cl 11.3075  cm 11.3709
+prose-10k run4: main 11.3496  main2 11.2320  head 11.6979  cl 11.3459  cm 11.2503
+prose-10k run5: main 11.2203  main2 11.1920  head 11.2609  cl 11.2982  cm 11.1712
+tamil-10k run1: main 7.6271  main2 7.6351  head 7.6169  cl 7.6173  cm 7.8742
+tamil-10k run2: main 7.6265  main2 7.6795  head 7.6330  cl 7.6187  cm 7.8239
+tamil-10k run3: main 7.6377  main2 7.6417  head 7.6215  cl 7.6369  cm 7.6318
+tamil-10k run4: main 7.6113  main2 7.6527  head 7.6310  cl 7.6161  cm 7.5721
+tamil-10k run5: main 7.6220  main2 7.6501  head 7.9808  cl 7.6275  cm 7.5826

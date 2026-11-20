@@ -1,0 +1,17 @@
+diff -ru fixed/zig/src/snapshot_open.zig planted/zig/src/snapshot_open.zig
+--- fixed/zig/src/snapshot_open.zig
++++ planted/zig/src/snapshot_open.zig
+@@ -295,7 +295,12 @@
+ 
+ pub fn openSource(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !OpenedSource {
+     // S6-T13: one open, as `loadEngine`.
+-    const manifest_encoded = (try readManifest(allocator, io, dir)).bytes;
++    var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
++    const manifest_stat = try manifest_file.stat(io);
++    manifest_file.close(io);
++    const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
++    const manifest_buffer = try allocator.alloc(u8, manifest_size);
++    const manifest_encoded = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
+     const metadata = try manifest.decode(manifest_encoded);
+     if (!metadata.hasSource()) return .{ .metadata = metadata, .source = null };
+     const buffer = try allocator.alloc(u8, metadata.source_bytes);

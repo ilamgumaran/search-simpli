@@ -1,0 +1,14 @@
+diff -ru pristine/zig/src/snapshot_open.zig planted/zig/src/snapshot_open.zig
+--- pristine/zig/src/snapshot_open.zig	2026-11-20 02:56:13
++++ planted/zig/src/snapshot_open.zig	2026-11-20 03:34:27
+@@ -218,7 +218,9 @@
+     const buffer = try allocator.alloc(u8, size);
+     errdefer allocator.free(buffer);
+     // As `std.Io.Dir.readFile` reads, but through this handle.
+-    var reader = file.reader(io, &.{});
++    const again = try dir.openFile(io, publication.current_manifest_file, .{});
++    defer again.close(io);
++    var reader = again.reader(io, &.{});
+     const length = reader.interface.readSliceShort(buffer) catch |err| switch (err) {
+         error.ReadFailed => return reader.err.?,
+     };

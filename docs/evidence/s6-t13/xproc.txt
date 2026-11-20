@@ -1,0 +1,10 @@
+# S6-T13: the MANIFEST read across real processes, 20 Nov 2026 about 02:40, macOS arm64 (scripts/prototypes/s6t13/xproc.py).
+# A race, not the deterministic test: supplementary. Index: a folder indexed by main's ReleaseSmall searchd at generation 9
+# (one file), then --update to generation 10 (four files); both generations' sections present; MANIFEST 576 B (9) and
+# 580 B (10). A writer process renames the two manifests over MANIFEST in turn for 15 s while a reader process runs
+# ss_open + ss_close for 14 s through one library (the ReleaseSmall dylibs of orders.txt: main = fbf0d62, head = 14c438a).
+# Four pairs, in the order main, head, main, head:
+reader main: 121053 opens, errors {'ss_open: Truncated': 4232}   (writer: 80908 renames)
+reader head: 140015 opens, errors none                            (writer: 83286 renames)
+reader main: 119567 opens, errors {'ss_open: Truncated': 3707}   (writer: 77071 renames)
+reader head: 139185 opens, errors none                            (writer: 82787 renames)

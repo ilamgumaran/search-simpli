@@ -370,17 +370,21 @@ pub fn scan(
     documents_buffer: []u8,
     lexical_buffer: []u8,
 ) !ScanReport {
-    const current: ?publication.LoadedSnapshot = publication.loadCurrent(
-        iterable_dir,
-        io,
-        manifest_buffer,
-        documents_buffer,
-        lexical_buffer,
-    ) catch |err| switch (err) {
+    // S6-T13: only a missing `MANIFEST` means "no current generation". A
+    // `MANIFEST` whose documents or lexical file is missing returns that
+    // error (`FileNotFound`), as an invalid one returns its own; before, every
+    // `FileNotFound` was taken for a missing `MANIFEST` and the current
+    // generation's remaining files were reported as orphans.
+    const current_metadata: ?manifest.Manifest = if (iterable_dir.readFile(io, publication.current_manifest_file, manifest_buffer)) |manifest_encoded| blk: {
+        const metadata = try manifest.decode(manifest_encoded);
+        const documents_encoded = try iterable_dir.readFile(io, metadata.documents_file, documents_buffer);
+        const lexical_encoded = try iterable_dir.readFile(io, metadata.lexical_file, lexical_buffer);
+        try manifest.validateSnapshot(metadata, documents_encoded, lexical_encoded);
+        break :blk metadata;
+    } else |err| switch (err) {
         error.FileNotFound => null,
         else => return err,
     };
-    const current_metadata: ?manifest.Manifest = if (current) |snapshot| snapshot.metadata else null;
     var report = ScanReport{
         .current_generation = if (current_metadata) |metadata| metadata.generation else null,
         .current_files = 0,

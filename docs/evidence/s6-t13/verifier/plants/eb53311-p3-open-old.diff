@@ -1,0 +1,20 @@
+diff -ru pristine/zig/src/snapshot_open.zig planted/zig/src/snapshot_open.zig
+--- pristine/zig/src/snapshot_open.zig	2026-11-20 02:56:13
++++ planted/zig/src/snapshot_open.zig	2026-11-20 03:33:06
+@@ -168,9 +168,13 @@
+         .memory => |sections| return loadEngineMemory(allocators, sections, options),
+     };
+     const blocks = allocators.blocks;
+-    const manifest_read = try readManifest(blocks, io, dir);
+-    defer blocks.free(manifest_read.buffer);
+-    const manifest_first = manifest_read.bytes;
++    var manifest_file = try dir.openFile(io, publication.current_manifest_file, .{});
++    const manifest_stat = try manifest_file.stat(io);
++    manifest_file.close(io);
++    const manifest_size = std.math.cast(usize, manifest_stat.size) orelse return error.IndexTooLarge;
++    const manifest_buffer = try blocks.alloc(u8, manifest_size);
++    defer blocks.free(manifest_buffer);
++    const manifest_first = try dir.readFile(io, publication.current_manifest_file, manifest_buffer);
+     const layout = try OpenBlock.of(try manifest.decode(manifest_first), manifest_first.len);
+ 
+     const block = try blocks.alignedAlloc(u8, .fromByteUnits(engine.open_block_alignment), layout.total);

@@ -1,0 +1,5 @@
+pmset -g log, Sleep/Wake/DarkWake lines from 2026-11-20 03:00 to the check at 2026-11-20 03:20:26:
+2026-11-20 03:00:00 -0500 Sleep               	Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKe
+2026-11-20 03:00:02 -0500 Wake Requests       	[process=dasd request=SleepService deltaSecs=1044 wakeAt=2026-1
+2026-11-20 03:07:20 -0500 DarkWake            	DarkWake from Deep Idle [CDNPB] : due to NUB.SPMI0Sw3IRQ nub-sp
+None after 03:07:20 (DarkWake from Deep Idle); the five runs, 03:19:15 to 03:20:02, are inside that dark wake with no sleep or wake in their windows. UserIsActive 0; a PreventUserIdleSystemSleep assertion held by another process's caffeinate (not this session's).
