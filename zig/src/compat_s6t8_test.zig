@@ -97,8 +97,10 @@ test "S6-T8: the committed v2.5 fixture is this writer's output, and a library b
     var fresh = try compat.freshIndex(a, tmp, "fresh");
     defer fresh.close(io);
     for (files) |name| {
-        if (std.mem.eql(u8, name, "INDEX-STATE.json")) continue;
-        try std.testing.expectEqualSlices(u8, try committed.readFileAlloc(io, name, a, .unlimited), try fresh.readFileAlloc(io, name, a, .unlimited));
+        // S6-T9: the manifest sets bits 8 and 9 since v2.6, and the state
+        // and catalog are compared through their v2.5 encodings.
+        if (std.mem.eql(u8, name, "INDEX-STATE.json") or std.mem.eql(u8, name, "MANIFEST")) continue;
+        try compat.expectSameAsBeforeV26(a, committed, fresh, name);
     }
     // Against 62324f9's fixture only the content section and the manifest
     // differ, and the content section only in section 5.

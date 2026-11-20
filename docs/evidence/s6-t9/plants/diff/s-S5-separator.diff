@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/incremental_state.zig ARCHIVE/src/s-S5-separator/zig/src/incremental_state.zig
+--- ARCHIVE/none/zig/src/incremental_state.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/s-S5-separator/zig/src/incremental_state.zig	2026-11-19 13:12:11
+@@ -142,7 +142,7 @@
+ /// at least one byte), or null when `path` is not in that root.
+ pub fn relativeOf(root_id: []const u8, path: []const u8) ?[]const u8 {
+     if (std.mem.eql(u8, root_id, legacy_root_id)) return path;
+-    if (path.len <= root_id.len + 1 or !std.mem.startsWith(u8, path, root_id) or path[root_id.len] != '/') return null;
++    if (path.len <= root_id.len + 1 or !std.mem.startsWith(u8, path, root_id)) return null;
+     return path[root_id.len + 1 ..];
+ }
+ 

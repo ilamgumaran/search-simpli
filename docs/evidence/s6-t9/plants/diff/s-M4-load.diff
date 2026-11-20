@@ -1,0 +1,13 @@
+diff -ru ARCHIVE/none/zig/src/filename_field.zig ARCHIVE/src/s-M4-load/zig/src/filename_field.zig
+--- ARCHIVE/none/zig/src/filename_field.zig	2026-11-19 13:59:54
++++ ARCHIVE/src/s-M4-load/zig/src/filename_field.zig	2026-11-19 14:35:06
+@@ -571,8 +571,7 @@
+     // S6-T4: `HYBLEX03` exactly under manifest bit 5 (v2.3).
+     if ((lexical.version == lexical_segment.version_v3) != metadata.lexical_v3) return error.InvalidFilenameLexicalSection;
+     // S6-T9 (v2.6, M4): record v6 exactly under bit 9.
+-    if ((catalog.format_version == segment.version_catalog_v6) != metadata.catalog_v6) return error.FilenameCatalogVersionMismatch;
+-    if (catalog.checksum != f.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
++        if (catalog.checksum != f.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
+     if (lexical.checksum != f.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
+     if (catalog.document_count != f.file_count or lexical.document_count != f.file_count) return error.FilenameCountMismatch;
+     if (catalog.vector_dimensions != 0) return error.InvalidFilenameCatalog;

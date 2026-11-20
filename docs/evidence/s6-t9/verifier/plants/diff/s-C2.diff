@@ -1,0 +1,13 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/segment.zig <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/s-C2/zig/src/segment.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/segment.zig	2026-11-19 15:34:47
++++ <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/s-C2/zig/src/segment.zig	2026-11-19 19:35:51
+@@ -324,8 +324,7 @@
+         // lengths zero (C1, C2).
+         if (header.format_version == version_catalog_v6) {
+             if (id_length != 0) return error.FilenameCatalogIdPresent;
+-            if (text_length != 0) return error.FilenameCatalogTextPresent;
+-        }
++                    }
+         if (header.format_version == version) {
+             chunker_index = try cursor.readU16();
+             section_depth = try cursor.readU16();

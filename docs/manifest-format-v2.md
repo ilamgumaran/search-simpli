@@ -1,4 +1,4 @@
-# Generation manifest format v2 (minor version 2.5)
+# Generation manifest format v2 (minor version 2.6)
 
 Status: implemented in `zig/src/manifest.zig` (S3-T1; v2.1 flag bit 2 since
 S4-T1, see [v2.1](#v21-xxh3-section-checksums-s4-t1); v2.2 flag bits 3 and 4
@@ -6,7 +6,8 @@ since S4-T2, see [v2.2 filename sections](#v22-filename-sections-s4-t2-cap-16)
 and [v2.2 recovery state](#v22-recovery-state-section-s4-t2); v2.3 flag bit 5
 since S6-T4, see [v2.3 lexical sections v3](#v23-lexical-sections-v3-s6-t4); v2.4 flag bit 6
 since S6-T7, see [v2.4 text once](#v24-text-once-s6-t7); v2.5 flag bit 7
-since S6-T8, see [v2.5 lexical section v4](#v25-lexical-section-v4-s6-t8)).
+since S6-T8, see [v2.5 lexical section v4](#v25-lexical-section-v4-s6-t8); v2.6 flag
+bits 8 and 9 since S6-T9, see [v2.6 state v3 and catalog v6](#v26-state-v3-and-catalog-v6-s6-t9)).
 Magic: `HYBMAN02`.
 Written by `searchd index` / `ss_index_folder` (`zig/src/indexer.zig`).
 `import-json` still writes [v1](manifest-format-v1.md), and every reader opens
@@ -23,7 +24,7 @@ generation (CAP-19 FR-18, CFT-09).
 |---:|---:|---|---|
 | 0 | 8 | magic `HYBMAN02` | v2 (v1: `HYBMAN01`) |
 | 8 | 2 | version `2` | |
-| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2), bit 4 `state_section` (v2.2), bit 5 `lexical_v3` (v2.3), bit 6 `text_once` (v2.4), bit 7 `lexical_v4` (v2.5); other bits must be zero | v2 (v1: zero) |
+| 10 | 2 | flags: bit 0 `has_source`, bit 1 `has_positions`, bit 2 `xxh3_sections` (v2.1), bit 3 `filename_sections` (v2.2), bit 4 `state_section` (v2.2), bit 5 `lexical_v3` (v2.3), bit 6 `text_once` (v2.4), bit 7 `lexical_v4` (v2.5), bit 8 `state_v3` (v2.6), bit 9 `catalog_v6` (v2.6); other bits must be zero | v2 (v1: zero) |
 | 12 | 8 | generation number (nonzero) | v1 |
 | 20 | 4 | shared document count | v1 |
 | 24 | 4 | vector dimensions | v1 |
@@ -445,4 +446,57 @@ reader before v2.5 (62324f9 and earlier) refuses a v2.5 manifest on bit 7 with
 `searchd` command, and leaves the index's files byte-identical
 ([`docs/evidence/s6-t8/old-library.txt`](evidence/s6-t8/old-library.txt)).
 After the first publish under a v2.5 library an older library cannot open the
+directory and must rebuild it from the files into a fresh directory.
+
+## v2.6: state v3 and catalog v6 (S6-T9)
+
+Two flag bits, both set by every folder writer since S6-T9:
+
+- Bit 8, `state_v3` (`0x0100`): the bound recovery-state section is
+  [`HYBSTA03`](state-section-format-v3.md), whose records of retained files
+  refer to their source record instead of repeating SHA-256, path and size.
+- Bit 9, `catalog_v6` (`0x0200`): the bound file-name catalog is
+  [record v6](filename-catalog-format-v6.md), which stores neither the anchor
+  chunk's id nor the stem; a reader derives both.
+
+Every validity rule of the two sections is in its format document. The
+header layout, the magic, the version number `2` and every other flag are
+unchanged; the recorded state and catalog lengths and checksums are the new
+sections'.
+
+Rules, each with its own error:
+
+| # | Rule | Where | Error |
+|---:|---|---|---|
+| M1 | Bit 8 needs bit 4 (a bound state section). | `decode` (every open) and `encode` (`validateFields`) | `StateVersionFlagWithoutSection` |
+| M2 | Bit 9 needs bit 3 (bound file-name sections). | `decode` (every open) and `encode` (`validateFields`) | `CatalogVersionFlagWithoutSection` |
+| M3 | The state section is `HYBSTA03` exactly when bit 8 is set. | `validateState`, every writer | `StateSectionVersionMismatch` |
+| M4 | The catalog is record v6 exactly when bit 9 is set. | `validateFilenameSections` (the writer's check before it publishes) and `filename_field.loadBytes` (the eager open, and lazily the first file-name or `both` query) | `FilenameCatalogVersionMismatch` |
+
+M1 is checked before M2, both after the unknown-flag check and the
+manifest's own checksum. `withState` and `withFilename` set bits 8 and 9
+from the sections they bind, so a writer cannot publish a mismatch. A v1 manifest has no flags, so it cannot set
+either bit. `import-json` sets neither.
+
+Upgrade. A reader since v2.6 opens every older generation unchanged
+(`HYBSTA01`, `HYBSTA02` and catalog record v3 keep their readers). The first
+publish over an older directory (an update, `apply_changes`) writes one
+whole v2.6 generation, byte for byte a fresh index's (the state section
+apart from what a fresh index cannot know: recorded times and moves). The
+old generation stays whole until the manifest is replaced.
+`tests/fixtures/index-lex4-s6t8/` (S6-T8's v2.5 reference: the bytes
+`a019f22`'s `searchd` writes, checked in S6-T9; `fa56ee9` differs from
+`a019f22` only in `docs/tasks/S6-T9.md`),
+`tests/fixtures/index-v5-s6t7/`, `tests/fixtures/index-v3-s6t4/` and
+`tests/fixtures/index-98c4a2b/` are opened, compared with a fresh index
+answer for answer, updated and crashed mid-publish by
+`zig/src/compat_s6t9_test.zig`; `tests/fixtures/index-refs-s6t9/` is v2.6's
+reference (`tests/fixtures/gen_index_refs_s6t9.sh`).
+
+**Compatibility and rollback (one way, the fourth after v2.3, v2.4 and
+v2.5).** A reader before v2.6 (`fa56ee9` and earlier) refuses a v2.6
+manifest on bit 8 (and 9) with `UnsupportedFlags` before it reads any
+section, through `ss_open`, `ss_index_folder`, `ss_apply_changes` and every
+`searchd` command, and leaves the index's files byte-identical. After the
+first publish under a v2.6 library an older library cannot open the
 directory and must rebuild it from the files into a fresh directory.

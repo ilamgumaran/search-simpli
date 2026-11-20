@@ -1,0 +1,8 @@
+2026-11-19 21:14:15 -0500 Assertions          	PID 98449(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:03:59  id:0x0x100009c67 [System: BGTask kCPU]          
+2026-11-19 21:15:35 -0500 Assertions          	PID 731(cloudd) Created SystemIsActive "NSURLSessionTask F3B909C0-C8FB-4E38-9985-D82A89631336" 00:00:00  id:0x0xc00009dbf [System: PrevIdle BGTask SysAct
+2026-11-19 21:15:37 -0500 Assertions          	PID 731(cloudd) Created SystemIsActive "NSURLSessionTask 67368238-D6FA-4538-B2A4-4D80EDB0847E" 00:00:00  id:0x0xc00009dc7 [System: PrevIdle BGTask SysAct
+2026-11-19 21:15:38 -0500 Assertions          	PID 731(cloudd) Released SystemIsActive "NSURLSessionTask F3B909C0-C8FB-4E38-9985-D82A89631336" 00:00:03  id:0x0xc00009dbf [System: PrevIdle BGTask SysAc
+2026-11-19 21:15:40 -0500 Assertions          	PID 731(cloudd) Released SystemIsActive "NSURLSessionTask 67368238-D6FA-4538-B2A4-4D80EDB0847E" 00:00:03  id:0x0xc00009dc7 [System: PrevIdle BGTask kCPU]
+2026-11-19 21:15:44 -0500 Assertions          	PID 472(PowerUIAgent) Created MaintenanceWake "com.apple.obc" 00:00:00  id:0x0xd00009dcb [System: PrevIdle BGTask SRPrevSleep kCPU]          
+2026-11-19 21:15:44 -0500 Assertions          	PID 472(PowerUIAgent) Released MaintenanceWake "com.apple.obc" 00:00:00  id:0x0xd00009dcb [System: PrevIdle BGTask kCPU]          
+2026-11-19 21:17:41 -0500 Assertions          	PID 439(dasd) Released BackgroundTask "DASActivity:501:com.apple.proactive.PersonalizationPortrait.DailyMetricsLogging" 00:01:15  id:0x0xb00009dd7 [Syste

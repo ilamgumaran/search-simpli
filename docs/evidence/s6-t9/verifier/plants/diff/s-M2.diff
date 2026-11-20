@@ -1,0 +1,13 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/manifest.zig <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/s-M2/zig/src/manifest.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/manifest.zig	2026-11-19 15:34:47
++++ <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/s-M2/zig/src/manifest.zig	2026-11-19 21:00:36
+@@ -732,8 +732,7 @@
+     if (value.generation == 0) return error.GenerationZero;
+     // S6-T9 (v2.6, M1 and M2): each version bit needs its section.
+     if (value.state_v3 and value.state == null) return error.StateVersionFlagWithoutSection;
+-    if (value.catalog_v6 and value.filename == null) return error.CatalogVersionFlagWithoutSection;
+-    if (value.document_count > std.math.maxInt(u32) or
++        if (value.document_count > std.math.maxInt(u32) or
+         value.vector_dimensions > std.math.maxInt(u32) or
+         value.term_count > std.math.maxInt(u32)) return error.CountOverflow;
+     try validateIdentifier(value.analyzer_id);

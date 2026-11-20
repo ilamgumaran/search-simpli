@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/segment.zig ARCHIVE/src/s-catalog-v5/zig/src/segment.zig
+--- ARCHIVE/none/zig/src/segment.zig	2026-11-19 13:59:54
++++ ARCHIVE/src/s-catalog-v5/zig/src/segment.zig	2026-11-19 14:49:37
+@@ -243,7 +243,7 @@
+     const actual_magic = try cursor.take(magic.len);
+     if (!std.mem.eql(u8, actual_magic, magic)) return error.BadMagic;
+     const actual_version = try cursor.readU16();
+-    if (actual_version == version_catalog_v6) return inspectFixed(encoded, actual_version);
++    if (actual_version == version_catalog_v6 or actual_version == version_v5) return inspectFixed(encoded, actual_version);
+     if (actual_version < minimum_supported_version or actual_version > version) return error.UnsupportedVersion;
+     return inspectFixed(encoded, actual_version);
+ }

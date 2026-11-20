@@ -1,0 +1,17 @@
+# S6-T9 builder timing (two runs for information; the verifier's five decide). Orders and the control set written and
+# committed before the first run (19 Nov 2026). scripts/prototypes/s6t9/run_queries.sh (bench.py: S6-T4's bench with the
+# first file-name and first both query after an open), five libraries per run, each opening its own copy of the index.
+# Libraries (macOS arm64, ReleaseSmall, __text of the dylib):
+#   main  = a019f22 (7c3c359ca7ae025f..., the dylib main ships, rebuilt byte-identical), __text 586,844 B
+#   main2 = a019f22 built again in another copy with its own caches (byte-identical to main)
+#   head  = b1622d2, native/macos-arm64/libsearch_simpli.dylib (a009ef5150d0ce5b...), __text 591,856 B (+5,012)
+#   ctl1  = main + 54 never-run blocks in postings.lookupExact (scripts/prototypes/s6t7/make_control.py), __text 591,836 B (+4,992)
+#   ctlP  = main + 41 never-run blocks placed in filename_field.zig before decodeInspected, called at its top under a
+#           branch never true (scripts/prototypes/s6t9/make_placed_control.py), where this task's catalog derivation sits;
+#           __text 591,804 B (+4,960)
+run1:main main2 head ctl1 ctlP
+run2:head ctlP ctl1 main main2
+# First publish from main's format, one-file update after it, and an unchanged update's planning
+# (scripts/prototypes/s6t9/run_updates.sh, updates.py; main's ReleaseSmall searchd a019f22 against b1622d2's), per run:
+upd-run1:main head head main
+upd-run2:head main main head

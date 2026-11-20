@@ -1,0 +1,42 @@
+2026-11-19 15:53:03 start run1 q j2 family fixtures
+2026-11-19 15:54:16 end run1 q j2 family fixtures
+2026-11-19 15:54:19 start run1 q timing-10k
+2026-11-19 15:54:55 end run1 q timing-10k
+2026-11-19 15:54:57 start run1 q prose-10k tamil-10k
+2026-11-19 15:57:39 end run1 q prose-10k tamil-10k
+2026-11-19 15:57:41 start run1 u timing-10k prose-10k
+2026-11-19 15:59:20 end run1 u timing-10k prose-10k
+2026-11-19 15:59:23 start run1 u tamil-10k family
+2026-11-19 16:00:20 end run1 u tamil-10k family
+2026-11-19 16:00:25 start run2 q j2 family fixtures timing-10k
+2026-11-19 16:02:14 end run2 q j2 family fixtures timing-10k
+2026-11-19 16:02:14 start run2 q prose-10k
+2026-11-19 16:03:45 end run2 q prose-10k
+2026-11-19 16:03:57 start run2 q tamil-10k
+2026-11-19 16:05:09 end run2 q tamil-10k
+2026-11-19 16:05:11 start run2 u 
+2026-11-19 16:07:48 end run2 u 
+2026-11-19 16:07:51 start run3 q j2 family fixtures timing-10k
+2026-11-19 16:09:40 end run3 q j2 family fixtures timing-10k
+2026-11-19 16:09:40 start run3 q prose-10k
+2026-11-19 16:11:11 end run3 q prose-10k
+2026-11-19 16:11:26 start run3 q tamil-10k
+2026-11-19 16:12:38 end run3 q tamil-10k
+2026-11-19 16:12:40 start run3 u 
+2026-11-19 16:15:17 end run3 u 
+2026-11-19 16:15:21 start run4 q j2 family fixtures timing-10k
+2026-11-19 16:17:10 end run4 q j2 family fixtures timing-10k
+2026-11-19 16:17:10 start run4 q prose-10k
+2026-11-19 16:18:41 end run4 q prose-10k
+2026-11-19 16:18:53 start run4 q tamil-10k
+2026-11-19 16:20:07 end run4 q tamil-10k
+2026-11-19 16:20:10 start run4 u 
+2026-11-19 16:22:52 end run4 u 
+2026-11-19 16:22:56 start run5 q j2 family fixtures timing-10k
+2026-11-19 16:24:46 end run5 q j2 family fixtures timing-10k
+2026-11-19 16:24:46 start run5 q prose-10k
+2026-11-19 16:26:31 end run5 q prose-10k
+2026-11-19 16:26:44 start run5 q tamil-10k
+2026-11-19 16:28:00 end run5 q tamil-10k
+2026-11-19 16:28:05 start run5 u 
+2026-11-19 16:30:45 end run5 u 

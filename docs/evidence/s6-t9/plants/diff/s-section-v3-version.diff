@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/state_section.zig ARCHIVE/src/s-section-v3-version/zig/src/state_section.zig
+--- ARCHIVE/none/zig/src/state_section.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/s-section-v3-version/zig/src/state_section.zig	2026-11-19 13:16:05
+@@ -107,7 +107,7 @@
+ pub fn inspect(encoded: []const u8) DecodeError!Header {
+     if (encoded.len < header_length) return error.Truncated;
+     const form: Form = if (std.mem.eql(u8, encoded[0..8], magic)) .json else if (std.mem.eql(u8, encoded[0..8], magic_v2)) .binary else if (std.mem.eql(u8, encoded[0..8], magic_v3)) .binary_v3 else return error.BadMagic;
+-    if (std.mem.readInt(u16, encoded[8..10], .little) != versionOf(form)) return error.UnsupportedVersion;
++    if (std.mem.readInt(u16, encoded[8..10], .little) != versionOf(form) and form != .binary_v3) return error.UnsupportedVersion;
+     const flags = std.mem.readInt(u16, encoded[10..12], .little);
+     if (flags & ~checksum_mod.flag_xxh3 != 0 or std.mem.readInt(u32, encoded[12..16], .little) != 0) return error.UnsupportedFlags;
+     const kind = checksum_mod.kindOfFlags(flags);

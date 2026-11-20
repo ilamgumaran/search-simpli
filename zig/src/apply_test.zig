@@ -1410,6 +1410,7 @@ test "S4-T4 R2: a pointer to a section the MANIFEST does not bind loads as null;
     const bound = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
     var unbound = bound;
     unbound.state = null;
+    unbound.state_v3 = false; // S6-T9: bit 8 needs a bound state (M1)
     const buffer = try a.alloc(u8, try manifest.encodedLength(unbound));
     try publication.writeAtomicFile(f.out, io, publication.current_manifest_file, try manifest.encode(unbound, buffer), true);
     try std.testing.expect((try incremental_state.load(a, io, f.out)) == null);
@@ -1448,14 +1449,14 @@ test "S4-T4 R2: a version 2 INDEX-STATE.json (an older writer's) still loads and
 
 // --- S4-T4 ruling 3: the binary state section (HYBSTA02) ---
 
-test "S4-T4 R3: writers publish HYBSTA02; a HYBSTA01 section (0.3.0's) is still read" {
+test "S4-T4 R3: writers publish HYBSTA03 (S6-T9; HYBSTA02 before); a HYBSTA01 section (0.3.0's) is still read" {
     var f = try Fixture.init();
     defer f.deinit();
     const a = f.arena();
     try pointerFixture(&f);
     const metadata = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
     const section = try f.out.readFileAlloc(io, metadata.state.?.file, a, .unlimited);
-    try std.testing.expectEqualStrings("HYBSTA02", section[0..8]);
+    try std.testing.expectEqualStrings("HYBSTA03", section[0..8]);
     // The same generation as 0.3.0 wrote it: the JSON section, bound by the
     // manifest, and a full version 2 INDEX-STATE.json.
     const committed = (try incremental_state.load(a, io, f.out)).?;
@@ -1472,7 +1473,7 @@ test "S4-T4 R3: writers publish HYBSTA02; a HYBSTA01 section (0.3.0's) is still 
     try std.testing.expectEqual(@as(usize, 1), next.unchanged);
     try expectCommittedDetails(&f);
     const after = try manifest.decode(try f.out.readFileAlloc(io, "MANIFEST", a, .unlimited));
-    try std.testing.expectEqualStrings("HYBSTA02", (try f.out.readFileAlloc(io, after.state.?.file, a, .unlimited))[0..8]);
+    try std.testing.expectEqualStrings("HYBSTA03", (try f.out.readFileAlloc(io, after.state.?.file, a, .unlimited))[0..8]);
 }
 
 test "S4-T4 R3: a flipped byte anywhere in a HYBSTA02 section refuses the write with a stated code; readers still open" {
@@ -2201,6 +2202,12 @@ const Unsorted = enum { descending, split };
 fn unsortGeneration(f: *Fixture, how: Unsorted) !void {
     const a = f.arena();
     var metadata = try currentManifest(f);
+    // S6-T9: the state as a writer before v2.6 left it, `HYBSTA02` (its
+    // references need the `HYBSRC02` section re-written below).
+    const previous_state = (try incremental_state.loadBound(a, io, f.out)).?;
+    const state_v2 = try incremental_state.encodeSection(a, previous_state);
+    try f.out.writeFile(io, .{ .sub_path = metadata.state.?.file, .data = state_v2 });
+    metadata = try manifest.withState(metadata, metadata.state.?.file, state_v2);
     const encoded = try f.out.readFileAlloc(io, metadata.documents_file, a, .unlimited);
     const documents = try segment_module.decodeInspectedWith(encoded, try segment_module.inspect(encoded), try a.alloc(hybrid.Document, metadata.document_count), try a.alloc(f32, metadata.document_count * metadata.vector_dimensions), a, metadata.hasSource());
     // S6-T7: record v5 cannot hold records out of path order, so the
@@ -2319,7 +2326,7 @@ fn dropStateEntry(f: *Fixture, root_id: []const u8, path: []const u8) !void {
     const a = f.arena();
     var metadata = try currentManifest(f);
     const bound = metadata.state.?;
-    const state = try incremental_state.decodeSection(a, try f.out.readFileAlloc(io, bound.file, a, .unlimited));
+    const state = (try incremental_state.loadBound(a, io, f.out)).?;
     var kept = std.ArrayList(incremental_state.Entry).empty;
     for (state.files) |entry| {
         if (std.mem.eql(u8, entry.root_id, root_id) and std.mem.eql(u8, entry.path, path)) continue;
@@ -2341,7 +2348,7 @@ fn reverseStateEntries(f: *Fixture) !void {
     const a = f.arena();
     var metadata = try currentManifest(f);
     const bound = metadata.state.?;
-    const state = try incremental_state.decodeSection(a, try f.out.readFileAlloc(io, bound.file, a, .unlimited));
+    const state = (try incremental_state.loadBound(a, io, f.out)).?;
     const reversed = try a.dupe(incremental_state.Entry, state.files);
     std.mem.reverse(incremental_state.Entry, reversed);
     var rewritten = state;

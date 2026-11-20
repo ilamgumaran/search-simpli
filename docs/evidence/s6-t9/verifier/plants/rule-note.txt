@@ -1,0 +1,2 @@
+19:53:38 RULE BROKEN by the verifier: plant pair 's-M4-load s-C2' started while pair 's-documents-v6 s-carried-inspect' was still running (it had been moved to the background at 180 s): four plants at once for a while. Each still had its own copy and caches.
+20:28:10 RULE BROKEN again: the chain's plant phase began at 19:54 (pair v-M3-oneway v-M4-manifest-oneway) while my pair s-M4-load s-C2 was still running (ended about 20:27): four plants at once. No further manual plants.

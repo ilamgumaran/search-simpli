@@ -198,9 +198,8 @@ pub fn carryLexical(bytes: []const u8, metadata: manifest.FilenameMetadata, cata
 /// a changed file's chunks, is encoded.
 pub fn buildCarried(allocator: std.mem.Allocator, catalog_documents: []hybrid.Document, lexical: []const u8, carried: CarriedLexical, marks: anytype) !Built {
     marks.mark("lexical_carried");
-    const catalog_len = try segment.encodedLength(catalog_documents);
-    const catalog_buffer = try allocator.alloc(u8, catalog_len);
-    const catalog = try segment.encode(catalog_documents, catalog_buffer);
+    // S6-T9: the writers' catalog is record v6 (ids and stems derived).
+    const catalog = try segment.encodeCatalogV6(allocator, catalog_documents);
     marks.mark("encode_catalog");
     return .{ .catalog = catalog, .lexical = lexical, .decoded_catalog = catalog_documents, .carried = carried };
 }
@@ -228,9 +227,12 @@ fn buildFromCatalogAs(allocator: std.mem.Allocator, docs: []hybrid.Document, ana
     // S6-T4: `HYBLEX03` needs the dictionary sorted by bytes.
     const lexical_index = if (format == .v3) try lexical_segment.sortedForV3(allocator, built_index) else built_index;
     marks.mark("lexical_build");
-    const catalog_len = try segment.encodedLength(docs);
-    const catalog_buffer = try allocator.alloc(u8, catalog_len);
-    const catalog = try segment.encode(docs, catalog_buffer);
+    // S6-T9: the folder writers' catalog is record v6; `import-json`'s
+    // (`buildV1`) stays record v3, byte for byte.
+    const catalog = if (format == .v3) try segment.encodeCatalogV6(allocator, docs) else blk: {
+        const catalog_buffer = try allocator.alloc(u8, try segment.encodedLength(docs));
+        break :blk try segment.encode(docs, catalog_buffer);
+    };
     marks.mark("encode_catalog");
     const lexical = if (format == .v3) try lexical_segment.encodeV3Alloc(allocator, lexical_index) else try lexical_segment.encodeAlloc(allocator, lexical_index);
     marks.mark("encode_lexical");
@@ -279,10 +281,17 @@ pub fn validateBuilt(allocator: std.mem.Allocator, body_documents: []const hybri
 /// manifest (`carryLexical` computed that checksum once, when it was read),
 /// not decoded a second time.
 fn validateCarried(allocator: std.mem.Allocator, built: Built, carried: CarriedLexical) !void {
-    const header = segment.inspect(built.catalog) catch return error.FilenameCatalogMismatch;
+    const header = segment.inspectCatalog(built.catalog) catch return error.FilenameCatalogMismatch;
     if (header.vector_dimensions != 0 or header.document_count != built.decoded_catalog.len) return error.FilenameCatalogMismatch;
     const catalog = try segment.decodeInspected(built.catalog, header, try allocator.alloc(hybrid.Document, header.document_count), &.{});
-    for (catalog, built.decoded_catalog, 0..) |have, want, i| {
+    // S6-T9: a record v6 catalog stores no id or text (the decoder refused
+    // any); the grouping's are the derived ones (its anchor's id, the stem).
+    const derived = header.format_version == segment.version_catalog_v6;
+    for (catalog, built.decoded_catalog, 0..) |*have, want, i| {
+        if (derived) {
+            have.id = want.id;
+            have.text = stem(have.path);
+        }
         if (!validPath(have.path) or have.vector.len != 0 or !std.mem.eql(u8, have.text, stem(have.path))) return error.FilenameCatalogMismatch;
         if (i > 0 and std.mem.order(u8, catalog[i - 1].path, have.path) != .lt) return error.FilenameCatalogMismatch;
         if (!std.mem.eql(u8, have.id, want.id) or !std.mem.eql(u8, have.path, want.path) or !std.mem.eql(u8, have.text, want.text) or
@@ -451,7 +460,7 @@ pub fn loadReservation(metadata: manifest.Manifest) usize {
     return total;
 }
 pub fn decode(allocator: std.mem.Allocator, body_docs: []const hybrid.Document, body_index: postings.Index, catalog_encoded: []const u8, lexical_encoded: []const u8) !Decoded {
-    return decodeInspected(allocator, body_docs, body_index, catalog_encoded, try segment.inspect(catalog_encoded), lexical_encoded, try lexical_segment.inspect(lexical_encoded));
+    return decodeInspected(allocator, body_docs, body_index, catalog_encoded, try segment.inspectCatalog(catalog_encoded), lexical_encoded, try lexical_segment.inspect(lexical_encoded));
 }
 
 /// `decode` with both headers already inspected (each checksum computed
@@ -464,6 +473,12 @@ fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Docum
     const lex_lengths = try allocator.alloc(u32, lh.document_count);
     const lexical = try lexical_segment.decodeWith(lexical_encoded, lex_terms, lex_posts, lex_lengths, .{ .inspected = lh, .term_text_allocator = allocator });
     if (lexical.document_lengths.len != catalog.len) return error.FilenameCatalogMismatch;
+    // S6-T9: record v6 stores neither text nor id: the text is the stem,
+    // the id the anchor's (set below, once the anchors are found).
+    const derived = ch.format_version == segment.version_catalog_v6;
+    if (derived) for (catalog) |*doc| {
+        doc.text = stem(doc.path);
+    };
     for (catalog, 0..) |doc, i| {
         if (!validPath(doc.path) or doc.vector.len != 0 or !std.mem.eql(u8, doc.text, stem(doc.path))) return error.FilenameCatalogMismatch;
         if (i > 0 and std.mem.order(u8, catalog[i - 1].path, doc.path) != .lt) return error.FilenameCatalogMismatch;
@@ -488,9 +503,10 @@ fn decodeInspected(allocator: std.mem.Allocator, body_docs: []const hybrid.Docum
         if (!std.mem.eql(u8, doc.required_labels, catalog[ci].required_labels)) return error.FilenameCatalogMismatch;
         if (anchors[ci] == std.math.maxInt(usize) or anchorLess(doc, body_docs[anchors[ci]])) anchors[ci] = i;
     }
-    for (catalog, anchors) |doc, anchor| {
+    for (catalog, anchors) |*doc, anchor| {
         if (anchor == std.math.maxInt(usize)) return error.FilenameAnchorNotFound;
         const body = body_docs[anchor];
+        if (derived) doc.id = body.id;
         if (!std.mem.eql(u8, doc.id, body.id) or doc.start_line != body.start_line or doc.end_line != body.end_line) return error.FilenameCatalogMismatch;
     }
     const term_order = try allocator.alloc(u32, lexical.terms.len);
@@ -543,7 +559,7 @@ pub fn loadBytes(allocator: std.mem.Allocator, catalog_encoded: []const u8, lexi
     const f = metadata.filename orelse return error.FilenameIndexUnavailable;
     if (catalog_encoded.len != f.catalog_bytes) return error.FilenameCatalogSizeMismatch;
     if (lexical_encoded.len != f.lexical_bytes) return error.FilenameLexicalSizeMismatch;
-    const catalog = segment.inspect(catalog_encoded) catch |err| return switch (err) {
+    const catalog = segment.inspectCatalog(catalog_encoded) catch |err| return switch (err) {
         error.ChecksumMismatch => error.FilenameCatalogChecksumMismatch,
         else => error.InvalidFilenameCatalog,
     };
@@ -554,6 +570,8 @@ pub fn loadBytes(allocator: std.mem.Allocator, catalog_encoded: []const u8, lexi
     if (!metadata.xxh3_sections and (catalog.checksum_kind != .fnv1a64 or lexical.checksum_kind != .fnv1a64)) return error.InvalidFilenameCatalog;
     // S6-T4: `HYBLEX03` exactly under manifest bit 5 (v2.3).
     if ((lexical.version == lexical_segment.version_v3) != metadata.lexical_v3) return error.InvalidFilenameLexicalSection;
+    // S6-T9 (v2.6, M4): record v6 exactly under bit 9.
+    if ((catalog.format_version == segment.version_catalog_v6) != metadata.catalog_v6) return error.FilenameCatalogVersionMismatch;
     if (catalog.checksum != f.catalog_checksum) return error.FilenameCatalogChecksumMismatch;
     if (lexical.checksum != f.lexical_checksum) return error.FilenameLexicalChecksumMismatch;
     if (catalog.document_count != f.file_count or lexical.document_count != f.file_count) return error.FilenameCountMismatch;

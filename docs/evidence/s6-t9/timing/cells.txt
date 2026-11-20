@@ -1,0 +1,1156 @@
+# S6-T9 builder runs 1 and 2: warm query and find cells per corpus by the rule of 2026-11-17 (s6t8/summarize_cells.py, unchanged), main against head,
+# controls main2, ctl1, ctlP (orders.txt). Values in us.
+
+## j2
+runs 2; 1-, 5- and 15-minute load before each set 1.37-2.61
+cell                                     main    main2     ctl1     ctlP     head       T  head-ctl  verdict  answers
+content volcano project due date         13.8     +0.5     +1.6     +1.1     +1.0    10.0      -0.6  -        1
+content swimming kit tuesday             14.7     +0.5     +1.7     +1.2     +0.9    10.0      -0.9  -        1
+content school play start time           15.1     +0.6     +1.7     +1.3     +0.9    10.0      -0.8  -        1
+content library book due back            15.3     +0.5     +1.7     +1.0     +0.9    10.0      -0.8  -        1
+content screen time school nights        16.8     +0.6     +1.6     +1.0     +0.9    10.0      -0.6  -        1
+content fish chips friday                13.3     +0.1     +0.8     +0.5     +0.2    10.0      -0.6  -        1
+content dentist appointment               7.2     +0.4     +0.7     +0.6     +0.4    10.0      -0.4  -        1
+content wifi password                     4.9     +0.0     +0.5     +0.3     +0.3    10.0      -0.2  -        1
+content half term dates                  15.5     +0.1     +0.9     +0.4     +0.2    10.0      -0.6  -        1
+content recorder practice minutes        14.9     +0.4     +1.1     +0.9     +0.5    10.0      -0.6  -        1
+content wednesday pickup                 11.2     +0.3     +1.0     +0.7     +0.5    10.0      -0.5  -        1
+content biscuit dog food                 10.5     +0.3     +0.8     +0.6     +0.4    10.0      -0.4  -        1
+content spelling words week 9            15.6     +0.6     +1.4     +1.0     +0.8    10.0      -0.6  -        1
+content பூனை கதை                          7.4     +0.3     +0.7     +0.5     +0.4    10.0      -0.3  -        1
+content café opening hours               14.6     +0.3     +1.2     +0.6     +0.5    10.0      -0.6  -        1
+content paati phone number               13.3     +0.5     +1.3     +0.8     +0.7    10.0      -0.6  -        1
+content shopping list eggs flour         17.5     +0.6     +1.7     +1.0     +1.0    10.0      -0.7  -        1
+content class rules hands up             16.5     +0.5     +1.4     +0.9     +0.7    10.0      -0.7  -        1
+content tomato seedlings potted          13.2     +0.5     +1.3     +0.7     +0.6    10.0      -0.7  -        1
+content dinosoar bones                   11.4     +0.5     +1.1     +0.8     +0.6    10.0      -0.6  -        1
+content multiplicaton tables             12.4     +0.5     +1.1     +0.7     +0.6    10.0      -0.5  -        1
+content volcanoe project                 12.0     +0.5     +1.2     +0.3     +0.3    10.0      -0.9  -        1
+content fractoins homework               18.4     +0.7     +1.0     +0.5     +0.2    10.0      -0.8  -        1
+content freind birthday party            15.5     +0.3     +0.4     +0.0     -0.2    10.0      -0.6  -        1
+content libary books                     16.5     +0.7     +1.0     +0.4     +0.2    10.0      -0.8  -        1
+content bean hieght                      10.6     +0.4     +0.6     +0.2     +0.1    10.0      -0.6  -        1
+content wierd noise car                  13.0     +0.5     +0.8     +0.4     +0.1    10.0      -0.6  -        1
+content recyling bins                    10.5     +0.5     +0.7     +0.3     +0.2    10.0      -0.5  -        1
+content dinosuar                          7.4     +0.3     +0.5     +0.3     +0.1    10.0      -0.4  -        1
+content febuary                           8.5     +0.2     +0.6     +0.3     +0.0    10.0      -0.5  -        1
+content play rehersal times              16.1     +0.6     +0.9     +0.5     +0.1    10.0      -0.8  -        1
+content swimming goggels                 14.5     +0.6     +0.8     +0.3     +0.0    10.0      -0.8  -        1
+content sciense fair                     18.4     +0.9     +1.2     +0.6     +0.1    10.0      -1.1  -        1
+content pancaeks recipe                  13.4     +0.6     +0.7     +0.4     +0.1    10.0      -0.6  -        1
+content dinosaurs teeth                   8.5     +0.3     +0.4     +0.2     +0.0    10.0      -0.4  -        1
+content pony ride                         6.8     +0.2     +0.4     +0.1     +0.0    10.0      -0.3  -        1
+content teachers names                   14.2     +0.5     +0.6     +0.2     +0.0    10.0      -0.6  -        1
+content biscuit's lead                   11.1     +0.4     +0.6     +0.3     +0.1    10.0      -0.5  -        1
+content planting tulips                  10.6     +0.4     +0.5     +0.2     -0.0    10.0      -0.5  -        1
+content football practice cancelled      16.6     +0.4     +0.7     +0.2     -0.0    10.0      -0.7  -        1
+content feeds biscuit                     9.7     +0.4     +0.4     +0.2     +0.1    10.0      -0.3  -        1
+content spelling tests                   14.6     +0.3     +0.4     +0.1     -0.1    10.0      -0.5  -        1
+content strawberries                      7.3     +0.1     +0.2     +0.0     -0.0    10.0      -0.3  -        1
+content craft boxes                       9.1     +0.4     +0.4     +0.1     -0.0    10.0      -0.4  -        1
+content skip rope                         6.2     +0.3     +0.3     +0.1     -0.0    10.0      -0.3  -        1
+content painted pots                     12.9     +0.5     +0.6     +0.2     +0.2    10.0      -0.4  -        1
+content paati's recipes                  13.9     +0.5     +0.6     +0.2     +0.0    10.0      -0.5  -        1
+content cafe menu                         6.3     +0.2     +0.4     +0.1     +0.1    10.0      -0.3  -        1
+content naïve character book             16.4     +0.6     +0.9     +0.4     -0.0    10.0      -0.9  -        1
+content fruhling                          5.2     +0.2     +0.3     +0.2     -0.1    10.0      -0.4  -        1
+content room 12                          15.6     +0.5     +0.8     +0.2     -0.2    10.0      -1.0  -        1
+content ｇｏｇｇｌｅｓ                           7.3     +0.3     +0.3     +0.1     -0.1    10.0      -0.5  -        1
+content field trip date                  13.5     +0.4     +0.4     -0.0     -0.2    10.0      -0.6  -        1
+content ﬂute                              5.3     +0.2     +0.2     +0.0     -0.0    10.0      -0.3  -        1
+content noël concert                      7.8     +0.3     +0.3     +0.1     -0.0    10.0      -0.4  -        1
+content strasse                           4.6     +0.2     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content புத்தகங்கள்                       7.8     +0.3     +0.3     +0.1     -0.0    10.0      -0.3  -        1
+content யானை                              4.7     +0.2     +0.1     +0.1     -0.1    10.0      -0.2  -        1
+content கடைக்கு                           6.1     +0.2     +0.2     +0.1     -0.1    10.0      -0.3  -        1
+content மரம் கதை                          9.0     +0.1     +0.1     +0.0     -0.2    10.0      -0.4  -        1
+content நூலகத்தில்                        6.8     +0.3     +0.2     +0.1     -0.1    10.0      -0.4  -        1
+content பாட்டி வீடு                       9.3     +0.3     +0.2     +0.2     -0.1    10.0      -0.4  -        1
+content பழங்கள்                           6.0     +0.2     +0.2     +0.1     +0.0    10.0      -0.2  -        1
+content தேர்வுக்கு                        6.8     +0.3     +0.2     -0.0     +0.0    10.0      -0.3  -        1
+content பாடல்                             5.5     +0.3     +0.2     +0.1     +0.1    10.0      -0.2  -        1
+content பள்ளிக்கு                         6.4     +0.3     +0.2     +0.1     +0.0    10.0      -0.2  -        1
+content காலை                              4.3     +0.1     +0.1     +0.1     +0.0    10.0      -0.1  -        1
+content நாளை                              4.2     +0.1     +0.1     +0.1     -0.0    10.0      -0.2  -        1
+content தேர்வு                            5.2     +0.3     +0.2     +0.1     -0.1    10.0      -0.3  -        1
+content science homework                 15.3     +0.5     +1.0     +0.1     -0.0    10.0      -1.0  -        1
+content maths homework                   14.2     +0.2     +0.8     +0.1     -0.0    10.0      -0.8  -        1
+content pocket money                      6.3     +0.1     +0.3     -0.0     -0.1    10.0      -0.3  -        1
+content birthday party                    7.6     -0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content camping list                     10.2     +0.0     +0.3     +0.1     -0.1    10.0      -0.4  -        1
+content swimming lessons                 15.3     -0.0     +0.4     -0.0     -0.2    10.0      -0.6  -        1
+content art club                         10.3     +0.0     +0.3     +0.1     -0.0    10.0      -0.3  -        1
+content reading list                     13.5     +0.1     +0.5     +0.1     -0.1    10.0      -0.6  -        1
+content school uniform                   11.4     -0.0     +0.4     -0.0     -0.0    10.0      -0.4  -        1
+content பாட்டி கடிதங்கள்                  9.7     -0.0     +2.0     +0.0     -0.0    10.0      -2.0  -        1
+content football                          6.9     -0.0     +0.2     -0.0     -0.0    10.0      -0.2  -        1
+content hot chocolate                     7.4     +0.0     +0.2     +0.2     -0.0    10.0      -0.3  -        1
+content solar system model                9.6     +0.0     +0.3     +0.0     +0.0    10.0      -0.3  -        1
+content times tables test                15.7     +0.2     +0.4     -0.1     -0.3    10.0      -0.7  -        1
+content ice cream                         5.0     -0.1     +0.0     -0.1     -0.1    10.0      -0.1  -        1
+content car boot sale                    10.8     -0.1     +0.1     +0.0     -0.1    10.0      -0.2  -        1
+content fish fingers                      8.1     -0.0     +0.2     -0.0     -0.1    10.0      -0.3  -        1
+content hot dog                           7.9     +0.0     +0.1     -0.1     -0.0    10.0      -0.1  -        1
+content after school club                14.2     -0.0     +0.8     +0.3     -0.1    10.0      -0.9  -        1
+content piano lessons                    10.0     +0.0     +0.4     -0.0     -0.1    10.0      -0.5  -        1
+content volcano trip                      9.9     -0.2     +0.1     -0.2     -0.3    10.0      -0.4  -        1
+content dinosuar museum                  10.5     -0.2     +0.1     -0.2     -0.3    10.0      -0.4  -        1
+content skateing lessons                 15.4     -0.1     +0.1     -0.3     -0.4    10.0      -0.5  -        1
+content dinosaur eggs hatching           12.5     -0.1     +0.2     -0.1     -0.2    10.0      -0.5  -        1
+content painting the fence               24.9     -0.0     +0.8     +0.0     -0.1    10.0      -0.9  -        1
+content crêpe recipe                     13.6     -0.2     +0.4     -0.1     -0.4    10.0      -0.8  -        1
+content résumé letter                    13.1     -0.3     +0.1     -0.3     -0.4    10.0      -0.5  -        1
+content ரயில் பயணம்                       7.1     -0.3     -0.0     -0.3     -0.3    10.0      -0.3  -        1
+content கடற்கரை அலைகள்                    7.5     -0.3     -0.1     -0.2     -0.3    10.0      -0.2  -        1
+content music homework                   15.1     +0.1     +0.5     -0.1     -0.2    10.0      -0.6  -        1
+content garden plans                     12.1     -0.0     +0.3     -0.1     -0.1    10.0      -0.4  -        1
+content ice skating                      14.4     +0.2     +0.6     +0.2     -0.4    10.0      -1.0  -        1
+content cream tea                         5.3     +0.0     +0.1     +0.0     -0.0    10.0      -0.2  -        1
+content garden diary                     10.1     +0.1     +0.2     +0.1     -0.1    10.0      -0.3  -        1
+content house rules                      10.3     +0.1     +0.5     +0.1     -0.0    10.0      -0.5  -        1
+content kids questions                   11.4     -0.0     +0.2     -0.1     -0.2    10.0      -0.4  -        1
+content november calendar                12.3     -0.1     +0.4     -0.1     -0.2    10.0      -0.6  -        1
+content holiday                           6.0     -0.0     +0.2     -0.0     -0.0    10.0      -0.2  -        1
+content ideas                             6.6     +0.0     +0.1     -0.1     -0.0    10.0      -0.1  -        1
+content music                             5.4     +0.1     +0.2     +0.0     +0.0    10.0      -0.1  -        1
+content health                            4.2     +0.0     +0.2     -0.0     +0.1    10.0      -0.0  -        1
+content holiday photos                    9.1     -0.0     +0.2     -0.1     -0.0    10.0      -0.3  -        1
+content music exam                        7.1     +0.0     +0.2     +0.0     +0.1    10.0      -0.1  -        1
+content hot choclate                     11.4     +0.1     +0.7     +0.0     +0.2    10.0      -0.5  -        1
+content football tournamnet              10.2     +0.1     +0.5     +0.0     +0.3    10.0      -0.2  -        1
+content dentist thrusday                 13.4     +0.1     +0.6     +0.1     -0.0    10.0      -0.6  -        1
+content my wislist                        8.7     +0.1     +0.4     +0.1     +0.1    10.0      -0.3  -        1
+content wifi pasword                      8.9     +0.1     +0.6     +0.1     +0.2    10.0      -0.4  -        1
+content sandwitches and cake             20.6     -0.0     +0.6     -0.1     -0.3    10.0      -0.8  -        1
+content saving for a mikroscope          21.5     -0.0     +0.7     -0.0     -0.2    10.0      -0.9  -        1
+content neccesary spelling               16.9     +0.4     +0.6     +0.2     -0.1    10.0      -0.7  -        1
+content saturday brekfest                14.1     +0.4     +0.3     -0.0     -0.3    10.0      -0.6  -        1
+content lost caot                         6.0     -0.0     +0.2     +0.0     -0.1    10.0      -0.4  -        1
+content paper lantren                    12.4     -0.0     +0.5     -0.1     -0.3    10.0      -0.8  -        1
+content send the invitiations            25.4     +0.0     +0.8     +0.1     -0.2    10.0      -1.0  -        1
+content tournamnet tickets                9.1     +0.1     +0.3     +0.1     -0.0    10.0      -0.3  -        1
+content lantren sale                     11.2     +0.1     +0.4     +0.1     +0.0    10.0      -0.4  -        1
+content puppy                             4.8     +0.0     +0.2     +0.0     +0.0    10.0      -0.2  -        1
+content pastries                          5.8     +0.0     +0.2     +0.0     -0.1    10.0      -0.2  -        1
+content watch                             5.2     +0.0     +0.2     +0.1     -0.0    10.0      -0.3  -        1
+content peaches                           5.6     -0.0     +0.2     -0.0     -0.1    10.0      -0.3  -        1
+content domino                            4.6     +0.0     +0.1     +0.1     -0.0    10.0      -0.2  -        1
+content comic heroes                      6.9     -0.0     +0.2     -0.0     -0.1    10.0      -0.4  -        1
+content gloves                            5.7     -0.0     +0.1     -0.0     -0.1    10.0      -0.2  -        1
+content glasses                           5.2     -0.0     +0.1     +0.0     -0.1    10.0      -0.2  -        1
+content news                              4.9     -0.0     +0.1     +0.1     +0.0    10.0      -0.1  -        1
+content means                             6.4     +0.0     +0.2     +0.1     +0.0    10.0      -0.1  -        1
+content knitting                          6.0     -0.1     +0.2     +0.0     -0.1    10.0      -0.3  -        1
+content cycled                            5.5     -0.0     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content danced maypole                    7.1     -0.0     +0.3     -0.0     -0.1    10.0      -0.4  -        1
+content seal                              4.7     +0.0     +0.1     +0.0     -0.1    10.0      -0.2  -        1
+content fox cubs                          6.9     +0.1     +0.2     +0.0     -0.0    10.0      -0.3  -        1
+content hero costume                      7.0     +0.0     +0.2     +0.0     -0.1    10.0      -0.3  -        1
+content fete                              4.7     +0.1     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content zoë                               5.8     -0.0     +0.2     +0.0     +0.0    10.0      -0.2  -        1
+content role                              4.7     +0.0     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content déjà                              7.4     +0.0     +0.2     +0.0     -0.0    10.0      -0.3  -        1
+content creme brulee                      6.4     +0.0     +0.2     +0.0     -0.1    10.0      -0.3  -        1
+content chapter iv                        6.2     -0.0     +0.2     -0.0     -0.1    10.0      -0.3  -        1
+content coffee morning                   14.0     +0.1     +0.5     +0.0     -0.0    10.0      -0.6  -        1
+content 2nd                               4.0     +0.0     +0.1     +0.0     +0.0    10.0      -0.1  -        1
+content fußball                           5.7     +0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content smorrebrod                        4.9     +0.1     +0.2     +0.1     +0.0    10.0      -0.2  -        1
+content méla                              7.2     +0.1     +0.3     +0.0     -0.0    10.0      -0.3  -        1
+content pâté recipe                      11.0     +0.0     +0.5     +0.0     +0.1    10.0      -0.4  -        1
+content chapter v                         5.6     +0.1     +0.2     +0.0     +0.0    10.0      -0.2  -        1
+content படங்கள்                           6.5     +0.1     +0.2     +0.1     +0.0    10.0      -0.2  -        1
+content பறவை                              5.3     +0.0     +0.1     +0.0     +0.0    10.0      -0.1  -        1
+content நண்பர்கள்                         6.8     +0.1     +0.2     +0.0     +0.0    10.0      -0.2  -        1
+content கிராமத்தில்                       7.8     +0.2     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content நகரம்                             6.1     +0.1     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content தங்கைக்கு                         6.8     +0.1     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content பெட்டியில்                        7.2     +0.1     +0.3     +0.0     -0.0    10.0      -0.3  -        1
+content குருவி                            5.5     +0.1     +0.1     +0.0     -0.1    10.0      -0.2  -        1
+content குளம்                             6.1     +0.1     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content தம்பிக்கு                         6.7     +0.1     +0.2     +0.1     -0.1    10.0      -0.3  -        1
+content வேலை                              4.6     -0.0     +0.1     -0.0     -0.1    10.0      -0.1  -        1
+content முடிவு                            4.7     +0.0     +0.1     +0.0     -0.1    10.0      -0.1  -        1
+content நாங்கள்                           6.4     +0.0     +0.2     +0.0     -0.1    10.0      -0.3  -        1
+content படம் கண்காட்சி                    7.9     +0.0     +0.2     -0.0     -0.1    10.0      -0.3  -        1
+content வேலை நேரம்                        7.2     +0.0     +0.2     -0.1     -0.1    10.0      -0.4  -        1
+content sack hopping                      8.2     -0.0     +0.3     +0.1     -0.1    10.0      -0.4  -        1
+content wobbled                           5.6     +0.0     +0.2     +0.0     -0.1    10.0      -0.3  -        1
+content tidied                            5.9     -0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content stir porridge                     6.4     -0.0     +0.3     +0.1     -0.1    10.0      -0.3  -        1
+content scrubbed                          6.0     +0.0     +0.2     +0.1     -0.0    10.0      -0.3  -        1
+content juggling                          5.4     +0.0     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content buried                            5.9     -0.0     +0.2     +0.0     -0.0    10.0      -0.3  -        1
+content drip                              4.5     +0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content knead dough                       6.1     -0.0     +0.1     -0.0     -0.1    10.0      -0.3  -        1
+content sketching                         5.3     +0.0     +0.2     +0.1     -0.0    10.0      -0.3  -        1
+content drummed                           6.0     +0.0     +0.2     +0.0     -0.0    10.0      -0.3  -        1
+content diving                            5.1     +0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content herring                           6.7     +0.0     +0.3     +0.0     -0.1    10.0      -0.3  -        1
+content outing                            5.0     -0.0     +0.1     +0.0     -0.0    10.0      -0.2  -        1
+content pasted                            6.5     -0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content wedding                           5.4     +0.1     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content petting                           8.6     +0.0     +0.3     +0.1     -0.0    10.0      -0.3  -        1
+content sledging hill                     7.7     -0.0     +0.3     -0.0     -0.1    10.0      -0.3  -        1
+content paddling canoe                    8.1     +0.0     +0.3     +0.1     -0.1    10.0      -0.4  -        1
+content diving board                      8.7     -0.0     +0.3     +0.0     -0.1    10.0      -0.4  -        1
+content tidying rota                      8.4     +0.0     +0.3     +0.1     -0.0    10.0      -0.3  -        1
+content hops                              6.1     -0.0     +0.2     -0.0     -0.1    10.0      -0.3  -        1
+content hoping                            5.4     -0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content evenings                         14.2     -0.0     +0.3     -0.1     -0.2    10.0      -0.5  -        1
+content even                              4.7     -0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content tapping                           7.6     -0.0     +0.2     +0.0     -0.1    10.0      -0.4  -        1
+content taping                            5.4     +0.0     +0.2     +0.1     -0.1    10.0      -0.3  -        1
+content this and that                    17.0     -0.1     +0.6     -0.0     -0.1    10.0      -0.7  -        1
+content end of the pier                  23.6     -0.0     +0.7     +0.0     -0.2    10.0      -0.9  -        1
+content owl and the moon                 24.7     +0.0     +0.9     +0.0     -0.1    10.0      -1.0  -        1
+content my flowers                        8.9     +0.0     +0.3     +0.1     -0.1    10.0      -0.4  -        1
+content stationary                        7.2     +0.1     +0.3     +0.2     -0.1    10.0      -0.4  -        1
+content trampolene                        6.1     +0.1     +0.2     +0.1     -0.0    10.0      -0.2  -        1
+content sissors                          10.6     +0.1     +0.4     +0.2     -0.3    10.0      -0.7  -        1
+content oiling                            5.3     +0.0     +0.2     +0.1     +0.0    10.0      -0.1  -        1
+content chopped                           6.1     +0.0     +0.2     +0.0     -0.0    10.0      -0.3  -        1
+content sprinkling                        5.5     +0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content the dragon                       24.9     +0.2     +0.9     +0.1     -0.0    10.0      -0.9  -        1
+content my rocket                        11.6     +0.0     +0.4     +0.1     -0.1    10.0      -0.5  -        1
+content king of the jungle               25.7     +0.1     +0.9     +0.1     -0.1    10.0      -1.1  -        1
+content skiing                           16.6     +0.2     +0.6     +0.4     -0.1    10.0      -0.8  -        1
+content sailing                          12.0     +0.3     +0.6     +0.3     +0.0    10.0      -0.6  -        1
+content curling                          10.9     +0.2     +0.4     +0.2     -0.1    10.0      -0.5  -        1
+content radiator leak                     6.5     -0.0     +0.2     -0.0     -0.1    10.0      -0.3  -        1
+content hutch roof                       18.2     +0.0     +0.4     -0.0     -0.3    10.0      -0.7  -        1
+content caring                           11.8     +0.0     +0.5     +0.1     -0.3    10.0      -0.7  -        1
+content biting midges                    11.1     +0.1     +0.3     -0.0     -0.3    10.0      -0.6  -        1
+content mating season                    18.7     +0.0     +0.7     +0.0     -0.5    10.0      -1.2  -        1
+content மழை குடை                          5.4     -0.0     +0.1     +0.1     +0.0    10.0      -0.1  -        1
+content திருவிழா பட்டாசு                  8.6     -0.0     +0.3     +0.1     +0.1    10.0      -0.2  -        1
+content piñata                           10.0     +0.3     +0.5     -0.0     -0.2    10.0      -0.6  -        1
+content soufflé                          11.8     -0.3     +0.2     -0.3     -0.4    10.0      -0.6  -        1
+content porch swing                       7.3     +0.0     +0.3     +0.0     -0.0    10.0      -0.3  -        1
+content straw maze                        5.3     -0.0     +0.2     +0.0     -0.1    10.0      -0.3  -        1
+content the wizard                       24.2     +0.1     +0.9     +0.1     -0.2    10.0      -1.1  -        1
+content my hamster                        7.9     +0.0     +0.3     +0.0     -0.1    10.0      -0.4  -        1
+content land of giants                   16.6     -0.1     +0.3     -0.1     -0.2    10.0      -0.6  -        1
+content sewing                           16.7     +0.2     +0.7     +0.2     -0.1    10.0      -0.7  -        1
+content golfing                           6.5     +0.1     +0.3     +0.1     -0.0    10.0      -0.3  -        1
+content surfing                          16.1     +0.2     +0.7     +0.4     -0.3    10.0      -0.9  -        1
+content goat cheese                       6.8     +0.0     +0.3     +0.0     -0.0    10.0      -0.3  -        1
+content harbour ferry                     6.4     -0.0     +0.2     +0.1     -0.0    10.0      -0.3  -        1
+content hating                            5.2     +0.0     +0.2     +0.0     -0.0    10.0      -0.2  -        1
+content shedding fur                     17.2     +0.0     +0.6     +0.1     -0.2    10.0      -0.8  -        1
+content canned                            9.2     +0.0     +0.4     +0.1     -0.0    10.0      -0.4  -        1
+content நிலா விண்கலம்                     7.5     +0.0     +0.3     +0.1     -0.0    10.0      -0.3  -        1
+content குரங்கு தோப்பு                    7.7     +0.0     +0.3     +0.1     +0.0    10.0      -0.3  -        1
+content jalapeño                          7.1     -0.1     +0.3     -0.1     +0.0    10.0      -0.2  -        1
+content fiancé                           10.0     -0.0     +0.4     +0.0     -0.0    10.0      -0.5  -        1
+content ladder rungs                     14.5     +0.1     +0.5     +0.1     -0.1    10.0      -0.6  -        1
+content kite competition                  6.5     +0.1     +0.2     +0.0     -0.1    10.0      -0.3  -        1
+content center                           11.6     +0.0     +0.5     +0.2     +0.0    10.0      -0.4  -        1
+content bugdet                            8.9     +0.1     +0.4     +0.1     +0.1    10.0      -0.3  -        1
+content appels                           19.8     +0.0     +0.6     +0.1     -0.4    10.0      -1.0  -        1
+content diagarm                           5.9     +0.1     +0.3     +0.1     -0.0    10.0      -0.3  -        1
+content chairty                          10.2     +0.2     +0.5     +0.3     +0.0    10.0      -0.5  -        1
+content bonfrie                           7.6     +0.1     +0.3     +0.0     +0.1    10.0      -0.3  -        1
+content bukett                           22.2     -0.0     +0.7     +0.1     -0.4    10.0      -1.1  -        1
+content allredy                           5.8     +0.1     +0.2     +0.1     -0.1    10.0      -0.4  -        1
+content galerry                           5.9     +0.0     +0.2     +0.0     -0.1    10.0      -0.4  -        1
+content dokter                            6.6     +0.1     +0.3     +0.1     -0.1    10.0      -0.4  -        1
+content jakkit                            5.3     -0.0     +0.1     +0.0     -0.1    10.0      -0.3  -        1
+content chikkin                           8.4     +0.1     +0.6     +0.2     -0.1    10.0      -0.7  -        1
+content fivtean                           6.8     +0.1     +0.4     +0.1     -0.1    10.0      -0.6  -        1
+content parrot                            9.3     +0.1     +0.6     +0.1     -0.1    10.0      -0.7  -        1
+content walrus                            6.4     +0.1     +0.3     +0.1     -0.1    10.0      -0.4  -        1
+content tractor                           8.6     +0.1     +0.4     +0.1     -0.2    10.0      -0.6  -        1
+content beaver                            8.0     +0.1     +0.3     +0.1     -0.1    10.0      -0.4  -        1
+content fonics this week                 16.3     +0.1     +0.7     +0.0     -0.1    10.0      -0.9  -        1
+content riming words                     14.4     +0.0     +0.6     -0.0     -0.2    10.0      -0.8  -        1
+content when are the kwizzes             23.7     +0.0     +0.9     +0.1     -0.1    10.0      -1.0  -        1
+content who wanted kabobs                12.5     -0.1     +0.4     -0.1     -0.3    10.0      -0.7  -        1
+content did we buy salery                17.7     +0.1     +0.8     +0.2     -0.3    10.0      -1.1  -        1
+content which day is cikken              22.8     +0.3     +1.1     +0.1     -0.3    10.0      -1.4  -        1
+content where is the kushon              22.8     -0.0     +0.8     -0.0     -0.2    10.0      -1.0  -        1
+content fix the skootur                  29.1     +0.4     +1.4     +0.3     -0.3    10.0      -1.7  -        1
+content who has the wistel               25.8     +0.1     +1.2     +0.1     -0.1    10.0      -1.4  -        1
+content cayacs on the river              31.8     -0.0     +1.5     -0.0     -0.3    10.0      -1.7  -        1
+content what was nittid                  13.3     +0.1     +0.5     +0.1     -0.1    10.0      -0.7  -        1
+content when does the senter open        33.6     +0.2     +1.3     +0.3     -0.4    10.0      -1.8  -        1
+content catchup with chips               21.8     +0.0     +0.4     +0.0     -0.2    10.0      -0.6  -        1
+content the skweaky door                 28.4     +0.1     +1.4     +0.1     -0.4    10.0      -1.8  -        1
+content who made kustad                  11.7     -0.0     +0.4     +0.1     -0.1    10.0      -0.5  -        1
+content read the next captur             28.5     +0.1     +1.3     +0.3     -0.0    10.0      -1.3  -        1
+content when is the pulmer coming        30.7     +0.2     +1.3     +0.1     -0.2    10.0      -1.5  -        1
+content where are my galses              17.1     +0.0     +0.5     -0.0     -0.0    10.0      -0.5  -        1
+content who made the cumbel              27.1     +0.2     +1.0     +0.2     -0.1    10.0      -1.1  -        1
+content which sapner size                14.8     +0.3     +0.8     +0.3     -0.2    10.0      -0.9  -        1
+content who plays skwash                 19.8     -0.5     +0.0     -0.4     -0.9    10.0      -1.0  -        1
+content something kittid                 10.7     +0.1     +0.4     +0.0     -0.2    10.0      -0.6  -        1
+content how many skailes                 15.5     +0.2     +0.7     +0.2     -0.3    10.0      -1.0  -        1
+content the torley wheel                 29.1     -0.2     +0.9     -0.1     -0.5    10.0      -1.4  -        1
+content palstr cast                      16.3     +0.1     +0.8     +0.1     -0.2    10.0      -1.0  -        1
+both volcano project due date            74.3     +0.0     +0.1     -0.5     -0.1    10.0      -0.2  -        1
+both swimming kit tuesday                65.2     -0.0     +1.0     -0.6     -0.5    10.0      -1.5  -        1
+both school play start time              70.3     +0.0     +2.2     +0.1     -0.4    10.0      -2.6  -        1
+both library book due back               77.0     +0.0     +2.5     +0.1     -0.3    10.0      -2.7  -        1
+both screen time school nights           72.8     +0.2     +2.4     +0.0     -0.1    10.0      -2.5  -        1
+both fish chips friday                   63.5     +0.2     +1.3     -0.9     +0.3    10.0      -1.0  -        1
+both dentist appointment                 44.5     +1.0     -0.2     +0.0     +1.4    10.0      +0.4  -        1
+both wifi password                       10.1     +0.0     +0.1     +0.0     -0.0    10.0      -0.1  -        1
+both half term dates                     75.8     +0.6     +0.2     -0.8     +0.6    10.0      -0.0  -        1
+both recorder practice minutes           94.2     -0.1     +0.6     -1.5     -1.0    10.0      -1.5  -        1
+both wednesday pickup                    61.2     -0.1     +1.0     -0.1     -0.3    10.0      -1.3  -        1
+both biscuit dog food                    36.0     +0.1     +0.4     +0.3     -0.0    10.0      -0.4  -        1
+both spelling words week 9               93.8     +0.0     +1.6     -1.5     -0.2    10.0      -1.8  -        1
+both பூனை கதை                            18.6     +0.1     +0.8     +0.4     +0.1    10.0      -0.7  -        1
+both café opening hours                  48.2     +0.0     +1.7     -0.1     -0.5    10.0      -2.2  -        1
+both paati phone number                  73.6     +0.0     +2.5     +0.6     -0.1    10.0      -2.6  -        1
+both shopping list eggs flour            77.0     -0.2     +2.0     -0.2     -0.6    10.0      -2.6  -        1
+both class rules hands up                71.3     -0.1     +1.6     -0.2     +0.4    10.0      -1.2  -        1
+both tomato seedlings potted             62.7     +0.1     +1.1     -0.4     +1.3    10.0      +0.2  -        1
+both dinosoar bones                      21.7     +0.1     +0.4     -0.2     +0.4    10.0      +0.0  -        1
+both multiplicaton tables                48.0     -1.0     -0.3     -1.4     -1.4    10.0      -1.0  -        1
+both volcanoe project                    50.9     -0.3     -0.6     -1.2     -0.7    10.0      -0.4  -        1
+both fractoins homework                  80.1     -2.1     -2.1     -3.9     -3.6    10.0      -1.6  -        1
+both freind birthday party               60.1     -1.5     -0.1     -1.8     -2.2    10.0      -2.1  -        1
+both libary books                        75.4     +0.3     +2.9     +0.0     -0.6    10.0      -3.5  -        1
+both bean hieght                         54.3     +0.3     -0.2     -0.9     +0.7    10.0      +0.5  -        1
+both wierd noise car                     60.0     +0.5     -0.2     -0.7     +0.7    10.0      +0.1  -        1
+both recyling bins                       23.6     +0.2     +0.4     -0.1     +0.1    10.0      -0.3  -        1
+both dinosuar                            11.7     +0.1     +0.0     +0.1     -0.1    10.0      -0.2  -        1
+both febuary                             47.5     -0.5     -1.5     -0.9     +0.9    10.0      +1.3  -        1
+both play rehersal times                 78.5     -0.2     -0.8     +0.0     -0.6    10.0      -0.6  -        1
+both swimming goggels                    70.9     -0.5     -0.6     -0.9     -0.9    10.0      -0.4  -        1
+both sciense fair                        95.6     -0.4     -4.4     -2.1     -0.5    10.0      -0.1  -        1
+both pancaeks recipe                     28.5     +0.0     -0.3     +0.0     -0.2    10.0      -0.3  -        1
+both dinosaurs teeth                     18.9     -0.0     -0.4     +0.2     +0.1    10.0      -0.2  -        1
+both pony ride                           16.3     -0.1     -0.3     -0.1     -0.1    10.0      -0.1  -        1
+both teachers names                      86.4     +0.1     -3.6     -0.3     -0.4    10.0      -0.5  -        1
+both biscuit's lead                      58.1     +0.3     -0.3     +0.1     -0.1    10.0      -0.4  -        1
+both planting tulips                     60.7     -0.6     -2.2     -0.4     -0.5    10.0      -0.0  -        1
+both football practice cancelled         97.5     +0.3     -1.1     +0.2     -0.3    10.0      -0.5  -        1
+both feeds biscuit                       23.3     +0.1     -0.5     -0.0     -0.1    10.0      -0.2  -        1
+both spelling tests                      87.9     +0.3     -1.9     -1.4     +0.1    10.0      -0.3  -        1
+both strawberries                        49.7     -0.2     -3.2     -1.4     -0.3    10.0      -0.1  -        1
+both craft boxes                         39.7     -0.2     -1.6     -0.4     -0.7    10.0      -0.5  -        1
+both skip rope                           18.0     +0.0     -0.2     -0.2     -0.2    10.0      -0.2  -        1
+both painted pots                        76.0     -0.5     -2.7     -0.9     -1.4    10.0      -0.9  -        1
+both paati's recipes                     72.3     -0.1     -0.7     -0.1     -0.8    10.0      -0.7  -        1
+both cafe menu                           19.0     -0.0     -0.1     -0.0     +0.3    10.0      +0.3  -        1
+both naïve character book                83.1     -0.0     +0.1     -0.4     +0.9    10.0      +0.8  -        1
+both fruhling                            10.8     +0.0     +0.2     +0.1     +0.0    10.0      -0.1  -        1
+both room 12                            130.1     +0.3     -1.8     +0.6     +0.3    10.0      -0.2  -        1
+both ｇｏｇｇｌｅｓ                             12.7     +0.1     -0.0     +0.2     -0.1    10.0      -0.4  -        1
+both field trip date                     86.4     +0.4     -1.3     -0.8     -0.3    10.0      -0.7  -        1
+both ﬂute                                 9.8     +0.1     -0.1     +0.2     -0.0    10.0      -0.2  -        1
+both noël concert                        16.6     +0.2     +0.1     +0.2     +0.1    10.0      -0.1  -        1
+both strasse                              9.1     +0.0     +0.0     +0.1     -0.0    10.0      -0.1  -        1
+both புத்தகங்கள்                         32.5     +0.1     +0.2     +0.4     +0.0    10.0      -0.3  -        1
+both யானை                                16.0     +0.0     +0.1     +0.2     -0.0    10.0      -0.2  -        1
+both கடைக்கு                             19.3     +0.1     +0.0     +0.2     -0.0    10.0      -0.2  -        1
+both மரம் கதை                            21.7     +0.2     +0.2     +0.3     -0.0    10.0      -0.3  -        1
+both நூலகத்தில்                          18.9     +0.1     +0.1     +0.2     +0.1    10.0      -0.2  -        1
+both பாட்டி வீடு                         34.1     +0.1     +0.2     +0.4     -0.0    10.0      -0.4  -        1
+both பழங்கள்                             18.2     +0.1     +0.1     +0.2     -0.0    10.0      -0.2  -        1
+both தேர்வுக்கு                          18.7     +0.1     +0.1     +0.1     +0.0    10.0      -0.0  -        1
+both பாடல்                               17.5     +0.0     +0.0     +0.1     +0.0    10.0      -0.1  -        1
+both பள்ளிக்கு                           20.1     -0.0     +0.1     +0.1     +0.0    10.0      -0.1  -        1
+both காலை                                16.6     +0.0     +0.1     +0.2     -0.0    10.0      -0.2  -        1
+both நாளை                                15.0     +0.0     +0.1     +0.2     -0.1    10.0      -0.3  -        1
+both தேர்வு                              16.5     +0.0     +0.6     +0.1     -0.0    10.0      -0.6  -        1
+both science homework                    77.2     -0.6     -3.4     -2.4     -1.2    10.0      -0.6  -        1
+both maths homework                      75.6     +0.7     -2.9     +0.5     +0.3    10.0      -0.3  -        1
+both pocket money                        18.0     +0.1     -0.6     -0.1     +0.0    10.0      -0.1  -        1
+both birthday party                      33.4     -0.4     -2.0     -0.8     -0.6    10.0      -0.1  -        1
+both camping list                        34.3     +0.1     -0.3     +0.0     -0.0    10.0      -0.2  -        1
+both swimming lessons                    89.1     -0.1     -1.1     -0.5     -1.8    10.0      -1.6  -        1
+both art club                            48.8     +0.1     -1.5     -1.1     -0.3    10.0      -0.4  -        1
+both reading list                        95.3     +0.4     -2.2     -0.1     -0.5    10.0      -0.8  -        1
+both school uniform                      63.9     -0.1     -0.4     -0.2     -0.2    10.0      -0.1  -        1
+both பாட்டி கடிதங்கள்                    28.7     +0.2     +0.2     +0.2     +0.1    10.0      -0.1  -        1
+both football                            41.2     +0.0     -0.1     +0.1     +0.5    10.0      +0.5  -        1
+both hot chocolate                       38.9     -0.1     -0.8     -0.2     +0.7    10.0      +0.8  -        1
+both solar system model                  33.9     +0.1     -0.6     -0.3     +0.5    10.0      +0.5  -        1
+both times tables test                   82.6     +0.6     -0.6     -0.2     -0.1    10.0      -0.8  -        1
+both ice cream                           15.9     +0.0     -0.2     -0.1     -0.1    10.0      -0.1  -        1
+both car boot sale                       55.7     +0.2     -1.0     -0.1     +0.1    10.0      -0.2  -        1
+both fish fingers                        20.8     -0.0     -0.5     -0.1     -0.1    10.0      -0.0  -        1
+both hot dog                             37.8     +0.5     -0.5     -0.3     +0.2    10.0      -0.3  -        1
+both after school club                   68.0     -0.2     -1.1     -0.5     -0.2    10.0      +0.0  -        1
+both piano lessons                       48.9     -0.1     -0.1     +0.4     -0.2    10.0      -0.6  -        1
+both volcano trip                        45.9     -0.1     +0.5     +0.1     +1.0    10.0      +0.6  -        1
+both dinosuar museum                     22.7     +0.2     +0.1     +0.3     -0.0    10.0      -0.3  -        1
+both skateing lessons                    49.4     +0.3     -0.1     +0.2     -0.4    10.0      -0.7  -        1
+both dinosaur eggs hatching              25.0     +0.0     -0.5     +0.0     -0.3    10.0      -0.3  -        1
+both painting the fence                 125.3     +0.8     -2.3     -1.2     -1.0    10.0      -1.8  -        1
+both crêpe recipe                        29.9     +0.1     -0.3     -0.0     -0.1    10.0      -0.3  -        1
+both résumé letter                       43.8     -0.0     -0.8     +0.3     +0.4    10.0      +0.1  -        1
+both ரயில் பயணம்                         17.1     -0.0     -0.0     +0.0     -0.1    10.0      -0.1  -        1
+both கடற்கரை அலைகள்                      19.5     +0.0     +0.0     +0.1     -0.1    10.0      -0.2  -        1
+both music homework                      83.7     +0.5     -0.6     +0.1     -0.1    10.0      -0.6  -        1
+both garden plans                        49.8     +0.0     -0.6     -0.3     -0.5    10.0      -0.5  -        1
+both ice skating                         34.5     -0.1     -0.7     -0.5     -0.7    10.0      -0.6  -        1
+both cream tea                           21.1     -0.1     -0.9     -0.2     -0.2    10.0      -0.1  -        1
+both garden diary                        53.2     -1.4     -1.3     -1.1     -1.7    10.0      -0.6  -        1
+both house rules                         49.9     -1.0     -0.4     -0.6     -1.2    10.0      -0.8  -        1
+both kids questions                      63.9     -2.1     -2.6     -2.2     -1.6    10.0      +0.4  -        1
+both november calendar                  103.6     -2.5     -3.9     -2.2     -1.1    10.0      +1.2  -        1
+both holiday                             22.3     -0.7     -1.2     -0.7     -0.7    10.0      -0.0  -        1
+both ideas                               24.6     -0.8     -1.3     -0.8     -0.9    10.0      -0.1  -        1
+both music                               22.1     -1.4     -1.4     -1.4     -1.5    10.0      -0.1  -        1
+both health                               7.0     -0.3     -0.3     -0.3     -0.3    10.0      -0.0  -        1
+both holiday photos                      32.7     -1.2     -2.2     -1.4     -1.5    10.0      -0.2  -        1
+both music exam                          34.0     -1.1     -1.3     -1.3     -1.5    10.0      -0.4  -        1
+both hot choclate                        44.8     -1.7     -2.3     -2.1     -2.1    10.0      -0.5  -        1
+both football tournamnet                 46.8     -1.6     -1.9     -1.6     -1.8    10.0      -0.2  -        1
+both dentist thrusday                    92.5     -1.5     -3.5     -1.8     -1.8    10.0      -0.3  -        1
+both my wislist                          35.3     -0.4     -0.1     -0.2     -0.7    10.0      -0.6  -        1
+both wifi pasword                        14.1     +0.1     +0.4     -0.0     -0.1    10.0      -0.5  -        1
+both sandwitches and cake                84.3     +0.3     -1.3     -1.2     -0.5    10.0      -0.7  -        1
+both saving for a mikroscope             72.6     +0.2     -0.9     -0.5     -0.4    10.0      -0.6  -        1
+both neccesary spelling                  53.8     -0.1     -2.3     -1.4     -0.1    10.0      -0.0  -        1
+both saturday brekfest                   62.9     +0.1     -0.4     -0.2     -0.4    10.0      -0.5  -        1
+both lost caot                           22.0     +0.1     -0.4     -0.3     -0.2    10.0      -0.3  -        1
+both paper lantren                       51.4     -0.2     -1.1     -0.9     -0.5    10.0      -0.3  -        1
+both send the invitiations              133.2     -1.3     -3.7     -1.9     -2.6    10.0      -1.3  -        1
+both tournamnet tickets                  27.2     -0.2     -0.6     +0.2     -0.6    10.0      -0.8  -        1
+both lantren sale                        47.6     -0.6     -1.7     -0.8     -1.1    10.0      -0.5  -        1
+both puppy                               17.4     -0.4     -0.9     -0.6     -0.4    10.0      -0.0  -        1
+both pastries                            17.9     +0.1     -0.4     +0.1     +0.0    10.0      -0.1  -        1
+both watch                               26.6     +0.1     -0.2     -0.3     +0.0    10.0      -0.1  -        1
+both peaches                             17.8     +0.0     -0.4     -0.3     +0.2    10.0      +0.2  -        1
+both domino                              15.9     +0.0     -0.5     +0.1     +0.1    10.0      +0.1  -        1
+both comic heroes                        18.1     -0.1     -0.6     +0.1     +0.1    10.0      -0.0  -        1
+both gloves                              17.1     +0.0     -0.5     +0.1     +0.1    10.0      -0.1  -        1
+both glasses                             19.1     -0.0     -0.8     -0.1     +0.3    10.0      +0.3  -        1
+both news                                18.4     -0.0     -0.6     -0.2     +0.3    10.0      +0.3  -        1
+both means                               27.0     +0.2     -0.6     +0.2     +0.6    10.0      +0.4  -        1
+both knitting                            17.5     -0.0     -0.3     +0.0     +0.2    10.0      +0.2  -        1
+both cycled                              15.1     +0.0     -0.6     -0.2     +0.3    10.0      +0.3  -        1
+both danced maypole                      18.2     +0.1     -0.2     -0.0     +0.5    10.0      +0.4  -        1
+both seal                                14.3     -0.1     +0.0     -0.2     +0.3    10.0      +0.2  -        1
+both fox cubs                            20.1     +0.0     +0.1     +0.1     +0.1    10.0      -0.0  -        1
+both hero costume                        26.4     +0.1     -0.6     +0.1     -0.1    10.0      -0.2  -        1
+both fete                                16.5     +0.1     -0.1     -0.1     -0.1    10.0      -0.2  -        1
+both zoë                                 16.9     +0.2     -0.1     +0.3     +0.1    10.0      -0.2  -        1
+both role                                16.3     +0.3     -0.2     +0.1     +0.0    10.0      -0.2  -        1
+both déjà                                19.2     +0.1     -0.4     -0.0     -0.0    10.0      -0.1  -        1
+both creme brulee                        17.7     -0.0     -0.4     -0.2     -0.0    10.0      +0.0  -        1
+both chapter iv                          13.5     +0.0     +0.1     +0.2     +0.2    10.0      -0.0  -        1
+both coffee morning                      80.1     -0.2     -1.0     -0.3     -0.6    10.0      -0.4  -        1
+both 2nd                                 15.3     +0.2     -0.1     +0.3     +0.1    10.0      -0.2  -        1
+both fußball                             16.2     +0.0     -0.2     +0.1     -0.3    10.0      -0.4  -        1
+both smorrebrod                          15.8     -0.3     -0.7     -0.1     +0.2    10.0      +0.3  -        1
+both méla                                14.2     +0.1     -0.3     -0.0     -0.1    10.0      -0.2  -        1
+both pâté recipe                         27.5     +0.1     +0.2     -0.2     -0.1    10.0      -0.4  -        1
+both chapter v                           18.0     +0.1     -0.0     +1.0     +0.5    10.0      -0.5  -        1
+both படங்கள்                             34.1     +0.0     +0.1     +0.3     +0.0    10.0      -0.3  -        1
+both பறவை                                36.2     -0.3     -0.2     +0.2     -0.2    10.0      -0.4  -        1
+both நண்பர்கள்                           34.8     -0.1     +0.1     +0.4     +0.1    10.0      -0.3  -        1
+both கிராமத்தில்                         40.3     +0.0     +0.2     +0.5     +0.1    10.0      -0.4  -        1
+both நகரம்                               37.4     +0.0     +0.3     +0.6     +0.3    10.0      -0.3  -        1
+both தங்கைக்கு                           34.6     -0.0     +0.2     +0.4     +0.1    10.0      -0.4  -        1
+both பெட்டியில்                          33.3     +0.2     +0.4     +0.4     +0.1    10.0      -0.3  -        1
+both குருவி                              29.9     +0.2     +0.3     +0.3     +0.1    10.0      -0.2  -        1
+both குளம்                               37.6     +0.2     +0.4     +0.3     +0.1    10.0      -0.3  -        1
+both தம்பிக்கு                           34.4     +0.3     +0.4     +0.4     +0.2    10.0      -0.2  -        1
+both வேலை                                23.9     +0.2     +0.3     +0.2     +0.1    10.0      -0.2  -        1
+both முடிவு                              20.9     +0.1     +0.2     +0.3     +0.1    10.0      -0.2  -        1
+both நாங்கள்                             43.3     +0.5     +0.6     +0.4     +0.2    10.0      -0.4  -        1
+both படம் கண்காட்சி                      36.8     +0.4     +0.5     +0.5     +0.2    10.0      -0.4  -        1
+both வேலை நேரம்                          28.8     +0.3     +0.5     +0.2     +0.0    10.0      -0.4  -        1
+both sack hopping                        22.2     +0.0     +0.2     -0.1     -0.1    10.0      -0.3  -        1
+both wobbled                             11.7     +0.0     -0.2     -0.1     -0.1    10.0      -0.1  -        1
+both tidied                              11.5     +0.1     -0.3     -0.0     -0.1    10.0      -0.1  -        1
+both stir porridge                       12.2     +0.1     -0.4     +0.1     -0.1    10.0      -0.2  -        1
+both scrubbed                            11.8     +0.0     -0.3     -0.1     -0.0    10.0      -0.1  -        1
+both juggling                            10.9     +0.1     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+both buried                              11.7     +0.1     +0.1     -0.0     -0.0    10.0      -0.1  -        1
+both drip                                12.8     +0.0     -0.3     -0.2     -0.0    10.0      -0.0  -        1
+both knead dough                         11.7     +0.0     -0.1     -0.1     -0.1    10.0      -0.1  -        1
+both sketching                           11.6     +0.0     -0.1     -0.1     -0.0    10.0      -0.0  -        1
+both drummed                             12.8     -0.0     -0.4     -0.3     -0.2    10.0      -0.2  -        1
+both diving                               9.7     -0.0     -0.3     -0.1     -0.1    10.0      -0.1  -        1
+both herring                             24.5     -0.0     -1.3     -0.6     -0.1    10.0      -0.0  -        1
+both outing                              12.4     -0.0     -0.3     -0.3     +0.3    10.0      +0.4  -        1
+both pasted                              20.9     +0.0     -0.6     -0.4     +0.1    10.0      +0.1  -        1
+both wedding                             11.8     -0.0     -0.3     -0.1     -0.0    10.0      +0.0  -        1
+both petting                             24.5     -0.1     -0.7     -0.4     +0.0    10.0      +0.1  -        1
+both sledging hill                       12.7     -0.0     -0.3     -0.1     -0.0    10.0      +0.0  -        1
+both paddling canoe                      13.0     -0.0     -0.4     -0.1     +0.0    10.0      +0.0  -        1
+both diving board                        38.4     -0.1     -1.1     +0.0     -0.1    10.0      -0.1  -        1
+both tidying rota                        30.0     +0.0     -1.0     -0.4     -0.1    10.0      -0.2  -        1
+both hops                                20.0     +0.0     -0.6     -0.0     +0.0    10.0      -0.0  -        1
+both hoping                              11.7     -0.0     -0.2     +0.2     -0.1    10.0      -0.3  -        1
+both evenings                           103.8     -0.2     -1.3     -0.6     -0.4    10.0      -0.1  -        1
+both even                                18.4     +0.1     +0.1     -0.2     +0.1    10.0      -0.1  -        1
+both tapping                             28.9     +0.4     -0.1     +0.0     -0.1    10.0      -0.4  -        1
+both taping                              11.1     +0.1     +0.1     +0.0     -0.0    10.0      -0.1  -        1
+both this and that                       71.2     -0.1     -1.1     -1.4     -0.4    10.0      -0.3  -        1
+both end of the pier                    100.6     +0.1     -1.9     -1.5     -0.6    10.0      -0.7  -        1
+both owl and the moon                    93.9     -0.1     -0.5     -0.9     -0.6    10.0      -0.6  -        1
+both my flowers                          44.0     -0.0     -0.3     -0.0     -0.2    10.0      -0.2  -        1
+both stationary                          13.4     +0.0     -0.1     +0.0     -0.1    10.0      -0.1  -        1
+both trampolene                          12.3     +0.2     +0.1     -0.1     +0.1    10.0      -0.2  -        1
+both sissors                             16.5     +0.3     +0.3     +0.1     -0.1    10.0      -0.4  -        1
+both oiling                              10.9     +0.1     +0.1     -0.2     -0.0    10.0      -0.1  -        1
+both chopped                             11.4     +0.1     +0.1     -0.1     -0.0    10.0      -0.1  -        1
+both sprinkling                          10.5     +0.1     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+both the dragon                         133.0     -2.1     -4.4     -3.0     -2.5    10.0      -0.4  -        1
+both my rocket                           47.3     +0.5     +0.3     +0.3     -0.3    10.0      -0.8  -        1
+both king of the jungle                 126.0     +0.1     -3.2     -2.4     -0.7    10.0      -0.8  -        1
+both skiing                              76.6     +0.5     -0.2     +0.2     -0.4    10.0      -0.9  -        1
+both sailing                             26.6     +0.2     -0.2     +0.2     -0.1    10.0      -0.2  -        1
+both curling                             25.8     +0.1     -0.1     -0.1     +0.4    10.0      +0.3  -        1
+both radiator leak                       20.6     +0.1     -0.3     -0.5     +0.1    10.0      +0.0  -        1
+both hutch roof                          63.6     +0.1     -2.0     -1.7     +1.3    10.0      +1.2  -        1
+both caring                              35.5     +0.1     -0.6     -0.4     +0.5    10.0      +0.4  -        1
+both biting midges                       28.8     -0.0     -0.5     -0.2     +0.4    10.0      +0.4  -        1
+both mating season                       43.4     +0.4     -0.3     +0.7     -0.7    10.0      -1.4  -        1
+both மழை குடை                            17.2     +0.0     -0.0     +0.1     -0.1    10.0      -0.3  -        1
+both திருவிழா பட்டாசு                    30.6     +0.2     +0.1     +0.2     -0.0    10.0      -0.3  -        1
+both piñata                              11.2     +0.2     +0.2     +0.2     -0.1    10.0      -0.3  -        1
+both soufflé                             13.1     +0.1     +0.3     +0.2     -0.2    10.0      -0.5  -        1
+both porch swing                         28.7     -0.0     -0.3     +0.4     -0.0    10.0      -0.4  -        1
+both straw maze                          12.9     +0.0     +0.1     -0.0     +0.0    10.0      -0.1  -        1
+both the wizard                         125.1     +0.5     +0.1     +0.7     -0.1    10.0      -0.8  -        1
+both my hamster                          33.6     -1.0     -1.2     -0.7     -1.3    10.0      -0.5  -        1
+both land of giants                      81.0     +0.1     -3.6     -2.3     -0.7    10.0      -0.8  -        1
+both sewing                              78.4     -0.8     -2.7     -2.6     -1.9    10.0      -1.0  -        1
+both golfing                             18.5     -0.3     -0.3     -0.1     -0.4    10.0      -0.2  -        1
+both surfing                             85.5     +0.9     -0.4     -1.2     -0.3    10.0      -1.2  -        1
+both goat cheese                         22.5     +0.1     -0.0     +0.1     +0.1    10.0      -0.0  -        1
+both harbour ferry                       22.9     +0.0     -0.6     -0.7     +0.1    10.0      +0.0  -        1
+both hating                              12.3     +0.1     -0.1     -0.3     +0.0    10.0      -0.1  -        1
+both shedding fur                        61.4     -1.2     -0.9     -2.5     -1.2    10.0      -0.3  -        1
+both canned                              52.1     +0.4     +0.0     -0.4     -0.3    10.0      -0.7  -        1
+both நிலா விண்கலம்                       21.5     +0.2     +0.1     +0.3     -0.1    10.0      -0.4  -        1
+both குரங்கு தோப்பு                      23.5     +0.2     +0.1     +0.2     -0.0    10.0      -0.2  -        1
+both jalapeño                             8.6     -0.0     +0.1     +0.1     -0.0    10.0      -0.1  -        1
+both fiancé                              17.3     +0.0     +0.1     -0.0     -0.1    10.0      -0.1  -        1
+both ladder rungs                        77.1     -0.5     -1.7     -1.3     -1.4    10.0      -0.9  -        1
+both kite competition                    13.0     +0.0     -0.1     -0.1     -0.2    10.0      -0.2  -        1
+both center                              49.5     +0.0     -0.7     +0.0     -0.5    10.0      -0.5  -        1
+both bugdet                              19.3     +0.0     -0.0     -0.2     -0.4    10.0      -0.4  -        1
+both appels                              58.0     +0.6     -2.1     -0.6     +0.5    10.0      -0.2  -        1
+both diagarm                             11.3     +0.0     -0.1     -0.0     +0.2    10.0      +0.2  -        1
+both chairty                             30.9     +0.6     -0.3     -0.3     +0.2    10.0      -0.5  -        1
+both bonfrie                             14.7     +0.3     -0.1     -0.2     -0.3    10.0      -0.5  -        1
+both bukett                              61.5     +0.6     -1.6     -0.9     +0.5    10.0      -0.1  -        1
+both allredy                             16.6     +0.1     -0.2     -0.1     +0.3    10.0      +0.2  -        1
+both galerry                             17.5     +0.1     +0.0     +0.0     +0.1    10.0      -0.0  -        1
+both dokter                               9.1     +0.1     +0.1     +0.1     -0.1    10.0      -0.2  -        1
+both jakkit                              12.7     -0.0     -0.1     -0.1     -0.1    10.0      -0.1  -        1
+both chikkin                             12.3     +0.2     +0.0     -0.0     -0.3    10.0      -0.5  -        1
+both fivtean                             12.2     +0.1     -0.1     -0.0     -0.3    10.0      -0.4  -        1
+both parrot                              23.0     +0.2     -0.3     -0.2     -0.3    10.0      -0.5  -        1
+both walrus                              10.6     +0.2     -0.0     -0.0     -0.1    10.0      -0.3  -        1
+both tractor                             54.6     +0.1     -2.1     -0.9     -0.4    10.0      -0.6  -        1
+both beaver                              19.5     +0.5     +0.3     +0.4     +0.1    10.0      -0.3  -        1
+both fonics this week                    67.9     +0.0     -0.6     -0.3     -0.6    10.0      -0.6  -        1
+both riming words                        64.3     +0.1     -1.3     -1.0     -0.7    10.0      -0.8  -        1
+both when are the kwizzes                96.1     +0.1     -1.5     -0.3     -0.7    10.0      -0.8  -        1
+both who wanted kabobs                   46.8     +0.3     -0.9     -0.4     +0.1    10.0      -0.2  -        1
+both did we buy salery                   70.2     +2.5     -1.0     -0.7     -0.4    10.0      -2.9  -        1
+both which day is cikken                 83.1     +0.1     -0.7     -0.7     -0.2    10.0      -0.3  -        1
+both where is the kushon                 81.4     +0.0     -0.1     -0.4     -0.1    10.0      -0.1  -        1
+both fix the skootur                    130.0     +0.7     -0.8     +1.6     +0.0    10.0      -1.6  -        1
+both who has the wistel                  96.7     +0.5     -0.5     +0.1     +0.2    10.0      -0.3  -        1
+both cayacs on the river                128.0     -0.0     -0.1     +0.1     -0.4    10.0      -0.5  -        1
+both what was nittid                     75.1     -0.2     -1.5     -0.2     +0.8    10.0      +1.0  -        1
+both when does the senter open          103.2     +0.4     -0.8     +0.5     -1.0    10.0      -1.5  -        1
+both catchup with chips                  87.4     +0.2     -2.2     -1.5     -0.8    10.0      -1.0  -        1
+both the skweaky door                    92.8     -0.3     -1.0     +0.0     -0.0    10.0      -0.0  -        1
+both who made kustad                     58.7     +0.1     -1.3     -0.2     +0.0    10.0      -0.1  -        1
+both read the next captur                82.1     +0.3     -0.6     +0.4     -0.6    10.0      -1.0  -        1
+both when is the pulmer coming          108.9     +0.1     -1.8     -0.0     -1.2    10.0      -1.3  -        1
+both where are my galses                 82.9     -0.1     -0.6     -0.3     -0.5    10.0      -0.4  -        1
+both who made the cumbel                 98.4     -1.0     -2.0     -1.3     -1.7    10.0      -0.7  -        1
+both which sapner size                   34.2     -1.1     -1.9     -1.3     -1.7    10.0      -0.6  -        1
+both who plays skwash                    71.0     -1.0     -2.6     -2.4     -2.2    10.0      -1.2  -        1
+both something kittid                    23.5     -0.3     -0.7     -0.8     -0.8    10.0      -0.5  -        1
+both how many skailes                    58.7     -0.6     -2.4     -2.7     -2.3    10.0      -1.7  -        1
+both the torley wheel                   131.4     -2.6     -3.0     -0.7     -3.1    10.0      -2.4  -        1
+both palstr cast                         84.4     -2.7     -4.0     -3.1     -1.6    10.0      +1.1  -        1
+find words relay team                     4.1     -0.2     -0.2     -0.2     -0.1    10.0      +0.0  -        1
+find phrase bring a packed lunch          4.8     -0.2     -0.2     -0.2     -0.1    10.0      +0.1  -        1
+find prefix fossil*                       5.5     -0.2     -0.2     -0.1     -0.2    10.0      -0.0  -        1
+find words pe kit thursday                4.1     -0.1     -0.1     -0.1     -0.1    10.0      -0.0  -        1
+find words wendesday pickup               2.7     -0.1     -0.0     -0.1     -0.0    10.0      +0.0  -        1
+find words hot chocolate                  5.5     -0.2     -0.1     -0.2     -0.0    10.0      +0.1  -        1
+find phrase hot chocolate                 4.4     -0.1     -0.1     -0.1     -0.2    10.0      -0.0  -        1
+find words தமிழ்                          5.4     -0.2     -0.2     -0.2     -0.2    10.0      -0.0  -        1
+find words வகுப்பு                        4.5     -0.1     -0.1     -0.2     -0.2    10.0      -0.1  -        1
+find words பள்ளி                          4.5     -0.1     -0.1     -0.1     -0.1    10.0      -0.0  -        1
+find words காலை                           4.2     -0.1     -0.1     -0.1     -0.1    10.0      -0.0  -        1
+find words எட்டரை                         4.6     -0.1     -0.1     -0.2     -0.2    10.0      -0.1  -        1
+find words மணிக்குத்                      5.0     -0.2     -0.2     -0.2     -0.1    10.0      +0.0  -        1
+find words தொடங்கும்                      5.0     -0.1     -0.2     -0.2     -0.2    10.0      -0.1  -        1
+find words நாங்கள்                        6.6     -0.0     -0.0     -0.1     -0.1    10.0      -0.1  -        1
+find phrase தமிழ் வகுப்பு                 5.3     -0.2     -0.1     -0.2     -0.2    10.0      -0.0  -        1
+find phrase பள்ளி காலை                    5.1     -0.1     -0.1     -0.1     -0.2    10.0      -0.0  -        1
+find phrase காலை எட்டரை                   5.5     -0.2     -0.1     -0.1     -0.1    10.0      +0.1  -        1
+find phrase எட்டரை மணிக்குத்              5.9     -0.3     -0.2     -0.2     -0.3    10.0      -0.1  -        1
+find phrase மணிக்குத் தொடங்கும்           6.2     -0.1     -0.1     -0.1     -0.1    10.0      -0.1  -        1
+find phrase தொடங்கும் நாங்கள்             5.9     -0.1     -0.0     -0.1     -0.1    10.0      -0.1  -        1
+find phrase நாங்கள் எட்டு                 5.4     -0.0     +0.0     -0.0     -0.1    10.0      -0.1  -        1
+find phrase எட்டு மணிக்கு                 5.4     +0.0     -0.0     -0.0     +0.1    10.0      +0.1  -        1
+find words Noël                          4.1     -0.1     -0.1     -0.1     -0.0    10.0      +0.0  -        1
+find words வெள்ளிக்கிழமையும்              5.8     -0.0     -0.1     -0.1     -0.1    10.0      -0.1  -        1
+find words பயன்படுத்தினாள்                6.1     -0.0     -0.1     -0.1     -0.1    10.0      -0.1  -        1
+find words விளையாடினார்கள்                6.4     -0.0     -0.1     +0.0     -0.1    10.0      -0.2  -        1
+find words காத்திருக்கிறோம்               5.7     +0.0     -0.0     +0.1     -0.0    10.0      -0.2  -        1
+find words வெட்டிக்கொண்டாள்               5.7     +0.0     -0.0     +0.0     +0.1    10.0      +0.0  -        1
+find words பிடித்திருக்கிறது              5.8     -0.0     -0.1     -0.0     +0.2    10.0      +0.2  -        1
+find words திறந்திருக்கும்                5.4     -0.0     -0.1     +0.0     +0.1    10.0      +0.1  -        1
+find words கேள்விப்பட்டேன்                5.6     -0.0     -0.0     -0.1     -0.0    10.0      +0.0  -        1
+find prefix வெள்ளி*                       6.4     -0.1     -0.1     -0.1     -0.0    10.0      +0.0  -        1
+find prefix பயன்பட*                       5.4     -0.1     -0.1     -0.1     +0.1    10.0      +0.1  -        1
+find prefix விளையா*                       6.6     -0.1     -0.0     +0.1     -0.1    10.0      -0.2  -        1
+find prefix காத்தி*                       6.7     -0.0     -0.1     +0.0     -0.1    10.0      -0.1  -        1
+find prefix வெட்டி*                       4.9     -0.0     -0.0     -0.0     -0.0    10.0      -0.0  -        1
+find prefix பிடித்*                       4.9     -0.1     -0.1     -0.0     -0.1    10.0      -0.0  -        1
+find prefix திறந்த*                       5.9     -0.0     -0.1     -0.0     -0.1    10.0      -0.1  -        1
+find prefix கேள்வி*                       4.9     -0.0     -0.1     -0.1     +0.0    10.0      +0.1  -        1
+find words Lists                          3.6     -0.0     -0.0     -0.0     -0.0    10.0      -0.0  -        1
+find phrase lists Lists                   3.8     -0.0     -0.0     -0.1     +0.1    10.0      +0.1  -        1
+find words Year                          15.7     -0.5     -0.5     -0.4     -0.5    10.0      -0.1  -        1
+find words Autumn                        14.3     -0.0     -0.3     +0.0     -0.1    10.0      -0.2  -        1
+find words title                          3.6     +0.0     +0.1     +0.0     -0.0    10.0      -0.1  -        1
+find words Class                         12.8     -0.0     -0.1     +0.1     -0.0    10.0      -0.1  -        1
+find words School                        14.2     -0.1     -0.1     +0.0     -0.1    10.0      -0.1  -        1
+find words Counters                       5.0     -0.0     -0.1     -0.0     +0.1    10.0      +0.1  -        1
+find words Our                            6.3     -0.0     -0.0     +0.0     +0.1    10.0      +0.1  -        1
+find words German                         4.8     -0.0     -0.1     +0.0     +0.1    10.0      +0.0  -        1
+find words kiln                           3.6     -0.0     -0.1     -0.0     -0.1    10.0      -0.0  -        1
+find words candle                         4.7     -0.1     -0.1     -0.1     +0.0    10.0      +0.1  -        1
+find words please                         7.8     -0.1     -0.2     -0.1     -0.1    10.0      -0.0  -        1
+find words tell                           5.1     -0.1     -0.1     -0.0     +0.0    10.0      +0.1  -        1
+find words rings                          4.6     -0.0     +0.1     -0.0     +0.0    10.0      -0.1  -        1
+find words reason                         3.9     -0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+find words answer                         4.7     -0.0     -0.1     -0.0     +0.1    10.0      +0.1  -        1
+find words claw                           3.5     -0.0     +0.1     -0.0     +0.0    10.0      -0.0  -        1
+find words This                          13.0     -0.1     -0.1     -0.1     -0.0    10.0      +0.0  -        1
+find words Next                          12.8     -0.1     +0.0     -0.0     -0.1    10.0      -0.1  -        1
+find words Leaf                           7.3     -0.1     -0.1     +0.0     -0.0    10.0      -0.1  -        1
+find words Clay                           4.7     -0.1     -0.1     -0.1     +0.1    10.0      +0.2  -        1
+find words Paper                          7.5     -0.0     -0.1     -0.0     -0.0    10.0      +0.0  -        1
+find words Week                          15.1     -0.1     -0.2     -0.0     -0.1    10.0      -0.1  -        1
+find words multiplication                 4.9     +0.0     -0.0     -0.0     -0.0    10.0      -0.1  -        1
+find words வீட்டிலிருந்து                 5.4     +0.1     -0.1     -0.1     +0.1    10.0      -0.0  -        1
+find words காத்திருந்தார்                 6.0     -0.0     -0.0     -0.1     -0.1    10.0      -0.1  -        1
+find words விளையாடும்போது                 5.8     -0.0     -0.1     -0.0     +0.1    10.0      +0.1  -        1
+
+## family
+runs 2; 1-, 5- and 15-minute load before each set 1.38-2.58
+cell                                     main    main2     ctl1     ctlP     head       T  head-ctl  verdict  answers
+content bazecha                           5.2     -0.0     +0.0     +0.1     -0.1    10.0      -0.1  -        1
+content benico                           47.5     +0.3     +0.3     +0.1     +0.1    10.0      -0.2  -        1
+content system                            6.9     -0.0     +0.0     +0.0     -0.0    10.0      -0.0  -        1
+content hashing                          15.8     +0.0     +0.0     +0.2     +0.2    10.0      +0.0  -        1
+content hybrid retrieval                  7.0     -0.1     -0.1     +0.0     -0.1    10.0      -0.2  -        1
+content retrieval hybrid                  7.1     -0.0     -0.1     -0.0     -0.2    10.0      -0.2  -        1
+content system systems                    9.6     -0.0     +0.1     -0.0     -0.0    10.0      -0.1  -        1
+content systems system                    9.6     -0.0     +0.1     +0.1     +0.0    10.0      -0.0  -        1
+content the                              29.6     -0.1     -0.1     +0.2     +0.0    10.0      -0.1  -        1
+content table                            16.2     -0.0     -0.1     +0.0     -0.0    10.0      -0.0  -        1
+content bed                              11.1     +0.0     +0.0     +0.0     +0.0    10.0      +0.0  -        1
+content task                              6.2     -0.0     -0.0     +0.0     -0.0    10.0      -0.0  -        1
+content the bed                          25.5     +0.2     -0.0     +0.3     +0.0    10.0      -0.3  -        1
+content table task                       17.4     +0.1     -0.1     +0.0     -0.0    10.0      -0.1  -        1
+content README                           10.9     -0.0     -0.0     +0.1     +0.1    10.0      +0.0  -        1
+filename bazecha                          2.5     -0.0     -0.1     -0.0     -0.0    10.0      +0.0  -        1
+filename benico                           2.5     -0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+filename system                           2.5     -0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+filename hashing                          2.5     -0.0     -0.1     -0.0     -0.0    10.0      +0.0  -        1
+filename hybrid retrieval                 3.1     -0.0     -0.1     -0.1     -0.1    10.0      -0.0  -        1
+filename retrieval hybrid                 3.2     -0.1     -0.1     -0.1     -0.1    10.0      -0.0  -        1
+filename system systems                   3.1     -0.0     -0.1     -0.1     -0.0    10.0      -0.0  -        1
+filename systems system                   3.1     -0.0     -0.1     -0.1     -0.0    10.0      -0.0  -        1
+filename the                              2.3     -0.0     -0.0     -0.0     -0.0    10.0      -0.0  -        1
+filename table                            2.4     +0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+filename bed                              2.3     +0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+filename task                             2.4     -0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+filename the bed                          2.8     -0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+filename table task                       2.9     +0.0     -0.1     -0.1     -0.0    10.0      -0.0  -        1
+filename README                          32.2     -0.1     -2.2     -1.5     -0.0    10.0      +0.1  -        1
+both bazecha                              6.2     -0.0     -0.0     +0.0     -0.1    10.0      -0.1  -        1
+both benico                              57.0     -0.1     -2.4     -1.2     +0.5    10.0      +0.6  -        1
+both system                              68.0     +0.0     +0.3     +1.1     +1.0    10.0      -0.0  -        1
+both hashing                            142.0     -0.2     -3.6     -1.4     -0.2    10.0      +0.0  -        1
+both hybrid retrieval                     8.5     -0.1     -0.2     +0.0     -0.2    10.0      -0.2  -        1
+both retrieval hybrid                     8.6     -0.0     -0.2     -0.0     -0.2    10.0      -0.1  -        1
+both system systems                      71.3     +0.0     +0.1     +1.1     +1.1    10.0      +0.1  -        1
+both systems system                      71.6     +0.0     -0.2     +1.2     +1.3    10.0      +0.1  -        1
+both the                                244.8     +0.2    -10.7     -7.6     +2.0    10.0      +1.8  -        1
+both table                              170.4     +0.0     -6.7     -4.4     +0.5    10.0      +0.5  -        1
+both bed                                 74.0     +0.1     -0.8     +0.1     +0.0    10.0      -0.1  -        1
+both task                                75.0     -0.2     -4.9     -2.8     +0.4    10.0      +0.6  -        1
+both the bed                            175.7     -0.1     -3.8     -1.2     +0.5    10.0      +0.6  -        1
+both table task                         197.0     +0.2     -8.0     -4.5     +0.8    10.0      +0.6  -        1
+both README                              75.3     -0.6     -3.7     -2.0     -0.1    10.0      +0.5  -        1
+find words the                          171.6     -1.9     -7.8     -8.0     -6.8    10.0      -4.9  -        1
+find words bed                            9.5     +0.0     -0.0     +0.1     -0.1    10.0      -0.2  -        1
+find words the bed                       11.8     -0.0     -0.0     +0.0     +0.0    10.0      -0.0  -        1
+find words README                         9.7     +0.0     +0.0     +0.1     +0.1    10.0      -0.0  -        1
+find phrase pack Invented content         3.0     +0.0     +0.0     +0.0     +0.1    10.0      +0.1  -        1
+find phrase three folders school          3.1     +0.0     +0.0     -0.0     -0.0    10.0      -0.0  -        1
+find phrase judgment changed says         6.4     +0.0     +0.0     -0.1     +0.0    10.0      +0.0  -        1
+find prefix tabl*                        43.2     -0.7     -2.6     -2.2     -2.0    10.0      -1.3  -        1
+find words பள்ளி                         19.7     +0.0     -0.1     +0.1     -0.2    10.0      -0.3  -        1
+find words விடுமுறை                      19.6     +0.2     -0.0     +0.2     -0.1    10.0      -0.3  -        1
+find words கணி                            8.3     +0.0     +0.0     +0.1     +0.0    10.0      -0.1  -        1
+find words தமிழ்                          6.1     +0.0     -0.0     +0.0     -0.0    10.0      -0.0  -        1
+find words குறிப்புகள்                    6.9     -0.0     -0.1     -0.0     -0.1    10.0      -0.0  -        1
+find words வெள்ளிக்கிழமை                  7.4     -0.1     -0.1     -0.1     -0.1    10.0      +0.0  -        1
+find words தொடங்குகிறது                   7.2     -0.1     -0.1     -0.0     -0.1    10.0      -0.0  -        1
+find words கணிதம்                         6.7     -0.1     -0.1     -0.0     -0.1    10.0      -0.0  -        1
+find phrase பள்ளி விடுமுறை               21.2     -0.2     -0.4     -0.2     -0.3    10.0      -0.1  -        1
+find phrase தமிழ் குறிப்புகள்             7.6     -0.0     -0.0     -0.0     -0.0    10.0      -0.0  -        1
+find phrase குறிப்புகள் பள்ளி             6.7     -0.0     -0.0     +0.0     -0.0    10.0      -0.0  -        1
+find phrase பள்ளி பள்ளி                   7.6     -0.0     -0.0     -0.0     -0.1    10.0      -0.1  -        1
+find phrase விடுமுறை வெள்ளிக்கிழமை        8.9     -0.1     +0.0     -0.0     -0.0    10.0      -0.1  -        1
+find phrase வெள்ளிக்கிழமை தொடங்குகிறது      9.1     -0.1     -0.0     -0.0     -0.1    10.0      -0.1  -        1
+find phrase தொடங்குகிறது கணிதம்           8.2     -0.0     +0.0     +0.0     -0.1    10.0      -0.1  -        1
+find phrase கணிதம் வீட்டுப்பாடம்          8.4     +0.0     +0.0     +0.0     -0.1    10.0      -0.1  -        1
+find words deterministically              6.0     +0.0     +0.0     +0.0     +0.1    10.0      +0.0  -        1
+find words ஞாயிற்றுக்கிழமை                7.5     +0.1     +0.1     +0.0     -0.1    10.0      -0.2  -        1
+find prefix determ*                      16.0     +0.0     -0.1     +0.0     -0.0    10.0      -0.1  -        1
+find prefix ஞாயிற்*                       7.1     +0.1     +0.0     +0.0     -0.1    10.0      -0.1  -        1
+find words school                        66.2     -0.9     -2.5     -2.6     -2.1    10.0      -1.2  -        1
+find words laptop                        47.4     -0.5     -1.5     -1.7     -1.6    10.0      -1.1  -        1
+find words 1                             97.8     -0.6     -3.1     -3.6     -2.9    10.0      -2.2  -        1
+find words p1                            13.0     +0.0     +0.0     +0.2     +0.1    10.0      -0.1  -        1
+find words x1                            15.2     +0.0     +0.0     +0.1     +0.1    10.0      -0.1  -        1
+find words o1                            13.3     +0.0     +0.0     +0.2     +0.1    10.0      -0.1  -        1
+find words s1                            13.4     +0.1     +0.0     +0.1     +0.1    10.0      +0.0  -        1
+find words Notes                         66.2     -0.7     -1.9     -1.9     -1.9    10.0      -1.2  -        1
+find phrase Notes school                  9.9     -0.3     -0.2     -0.2     -0.2    10.0      -0.0  -        1
+find phrase Why laptop                    7.5     +0.0     +0.0     +0.1     +0.0    10.0      -0.0  -        1
+find phrase Expected 1                    7.2     -0.0     +0.0     +0.1     -0.0    10.0      -0.1  -        1
+find phrase Note p1                       4.3     +0.0     +0.0     +0.1     +0.1    10.0      -0.0  -        1
+find phrase Note x1                       4.2     +0.0     +0.0     +0.1     +0.1    10.0      +0.0  -        1
+find phrase Note o1                       3.8     +0.0     +0.0     +0.0     +0.0    10.0      -0.0  -        1
+find phrase Note s1                       4.0     +0.0     +0.0     +0.0     +0.0    10.0      +0.0  -        1
+find phrase notes Notes                   8.4     +0.0     +0.1     +0.1     -0.0    10.0      -0.1  -        1
+find words Family                        27.2     +0.3     -0.4     -0.2     -0.3    10.0      -0.6  -        1
+find words Electricity                    5.3     +0.0     -0.0     +0.0     +0.0    10.0      +0.0  -        1
+find words title                         55.5     -2.4     -2.9     -2.7     -2.4    10.0      -0.0  -        1
+find words Budget                         4.8     +0.0     -0.0     +0.1     +0.1    10.0      +0.1  -        1
+find words Chores                         5.2     +0.0     -0.1     +0.0     +0.1    10.0      +0.0  -        1
+find words Garden                        22.4     +0.1     -0.2     -0.0     +0.0    10.0      -0.0  -        1
+find words House                         12.4     +0.1     +0.0     +0.2     +0.0    10.0      -0.1  -        1
+find words Packing                        8.1     +0.0     +0.0     +0.1     +0.0    10.0      -0.1  -        1
+find words count                         18.4     +0.0     -0.1     +0.2     -0.0    10.0      -0.2  -        1
+find words automatic                      5.2     +0.0     +0.0     +0.1     +0.0    10.0      -0.0  -        1
+find words flowerpots                     5.4     -0.0     -0.0     +0.0     +0.0    10.0      +0.0  -        1
+find words tea                            8.5     -0.0     -0.1     +0.0     -0.1    10.0      -0.1  -        1
+find words year                          18.3     -0.1     -0.3     +0.0     -0.1    10.0      -0.1  -        1
+find words Saturday                      13.8     -0.0     -0.1     -0.0     -0.1    10.0      -0.1  -        1
+find words clementines                    5.5     -0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+find words day                           26.1     -0.4     -0.5     -0.4     -0.4    10.0      +0.0  -        1
+find words Roots                         32.5     -0.2     -0.6     -0.5     -0.5    10.0      -0.3  -        1
+find words Conventions                    9.7     -0.1     +0.0     +0.1     +0.1    10.0      +0.0  -        1
+find words Gates                         14.2     -0.0     -0.1     +0.2     +0.0    10.0      -0.2  -        1
+find words The                          170.7     -0.6     -6.3     -6.8     -6.0    10.0      -5.4  -        1
+find words Phrase                        46.5     -0.3     -1.1     -1.1     -1.0    10.0      -0.7  -        1
+find words Prefix                        47.9     -0.3     -0.8     -0.8     -0.9    10.0      -0.5  -        1
+find words Outline                       56.1     -0.5     -1.2     -1.2     -1.0    10.0      -0.5  -        1
+find words photosynthesis                23.0     -0.8     -0.8     -0.6     -0.7    10.0      -0.2  -        1
+find words நூலகத்திற்குச்                 7.1     -0.0     +0.0     -0.0     -0.0    10.0      -0.0  -        1
+find words Photosynthesis                23.0     -0.8     -0.8     -0.6     -0.8    10.0      -0.2  -        1
+find words Photosynthetic                 5.3     +0.0     +0.0     +0.0     +0.0    10.0      -0.0  -        1
+
+## fixtures
+runs 2; 1-, 5- and 15-minute load before each set 1.40-2.51
+cell                                     main    main2     ctl1     ctlP     head       T  head-ctl  verdict  answers
+content bazecha                           7.0     +0.1     +0.0     +0.1     +0.3    10.0      +0.2  -        1
+content benico                            7.0     +0.0     -0.0     +0.0     +0.2    10.0      +0.1  -        1
+content system                           19.9     +0.1     -0.1     -0.1     -0.0    10.0      -0.2  -        1
+content hashing                          13.0     +0.2     -0.0     -0.0     +0.1    10.0      -0.1  -        1
+content hybrid retrieval                 20.8     +0.4     +0.0     +0.2     +0.0    10.0      -0.4  -        1
+content retrieval hybrid                 20.7     +0.8     +0.0     +0.1     +0.1    10.0      -0.7  -        1
+content system systems                   23.5     +0.9     +0.1     +0.1     +0.1    10.0      -0.8  -        1
+content systems system                   23.7     +0.7     -0.1     -0.0     -0.1    10.0      -0.8  -        1
+content the                              51.5     +1.9     +0.1     +0.0     -0.5    10.0      -2.3  -        1
+content this                             22.3     +0.4     -0.1     -0.1     -0.1    10.0      -0.6  -        1
+content questions                        49.4     +1.7     +0.2     +0.3     +0.3    10.0      -1.3  -        1
+content happy                            29.1     +0.9     -0.1     -0.0     +0.4    10.0      -0.5  -        1
+content the questions                    74.2     +2.7     +0.4     +0.3     +0.2    10.0      -2.5  -        1
+content this happy                       39.9     +1.2     -0.2     +0.1     +0.2    10.0      -1.0  -        1
+content design                           15.6     +0.1     +0.0     +0.1     -0.1    10.0      -0.3  -        1
+filename bazecha                          2.5     +0.1     -0.0     -0.0     -0.0    10.0      -0.1  -        1
+filename benico                           2.5     +0.1     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+filename system                           2.5     +0.1     -0.1     -0.0     -0.0    10.0      -0.1  -        1
+filename hashing                          2.6     +0.1     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+filename hybrid retrieval                30.0     +0.9     -1.8     -1.3     -0.1    10.0      -1.0  -        1
+filename retrieval hybrid                30.1     +1.1     -1.7     -1.5     -0.1    10.0      -1.2  -        1
+filename system systems                   3.1     +0.1     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+filename systems system                   3.1     +0.1     -0.1     -0.1     -0.1    10.0      -0.2  -        1
+filename the                             26.8     +1.0     -0.6     -1.0     -0.3    10.0      -1.3  -        1
+filename this                             8.2     +0.2     +0.0     -0.3     -0.1    10.0      -0.3  -        1
+filename questions                        6.4     +0.2     -0.1     -0.3     -0.1    10.0      -0.3  -        1
+filename happy                            2.5     +0.0     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+filename the questions                   31.7     +1.1     -1.3     -0.9     -0.5    10.0      -1.5  -        1
+filename this happy                       8.8     +0.3     -0.3     -0.2     -0.1    10.0      -0.4  -        1
+filename design                           5.8     +0.2     -0.1     -0.2     -0.0    10.0      -0.3  -        1
+both bazecha                             41.9     +1.2     -1.9     -1.4     +0.8    10.0      -0.4  -        1
+both benico                              42.1     +1.4     -1.6     -1.4     +0.4    10.0      -1.0  -        1
+both system                             166.3     +5.5     -6.2     -2.3     -0.0    10.0      -5.5  -        1
+both hashing                             84.2     +3.1     -4.9     -2.5     -0.1    10.0      -3.1  -        1
+both hybrid retrieval                   219.6     +5.3     -9.4     -4.2     +1.1    10.0      -4.3  -        1
+both retrieval hybrid                   218.2     +0.1     -9.1     -4.1     +0.9    10.0      +0.8  -        1
+both system systems                     171.9     -0.0     -7.0     -2.4     -0.1    10.0      -0.1  -        1
+both systems system                     172.7     -0.1     -6.9     -2.5     -0.2    10.0      -0.1  -        1
+both the                                318.8     -0.1    -13.5     -8.4     -1.4    10.0      -1.2  -        1
+both this                                92.8     -0.1     -0.3     -0.1     -0.1    10.0      +0.0  -        1
+both questions                          319.9     -0.8    -12.9     -1.9     +0.3    10.0      +1.1  -        1
+both happy                              272.5     -2.0    -12.6     -6.1     -0.1    10.0      +2.0  -        1
+both the questions                      214.6     +0.1     -4.4     -0.5     +0.0    10.0      -0.1  -        1
+both this happy                         223.6     -1.0     -8.8     -2.7     -0.3    10.0      +0.6  -        1
+both design                             131.0     -0.1     -6.1     -1.3     +0.2    10.0      +0.3  -        1
+find words the                         1874.5     +1.7    +10.3    -15.4     +3.6    18.7      -6.8  -        1
+find words questions                     37.4     -0.1     -0.3     -0.2     +0.0    10.0      +0.1  -        1
+find words the questions                 43.6     +0.0     +0.1     -0.2     +0.2    10.0      +0.1  -        1
+find words design                        11.8     +0.0     -0.0     +0.1     -0.0    10.0      -0.1  -        1
+find phrase secret propulsion mechanism      5.8     +0.0     -0.0     +0.0     -0.1    10.0      -0.1  -        1
+find prefix ques*                       571.0     -0.9     -3.4     -3.2     +0.0    10.0      +0.9  -        1
+find prefix happ*                        43.0     +0.1     -0.0     +0.1     +0.0    10.0      -0.1  -        1
+find words பள்ளி                         30.8     +0.0     +0.2     +0.5     +0.0    10.0      -0.4  -        1
+find words விடுமுறை                      31.7     -0.1     +0.2     +0.1     +0.0    10.0      -0.2  -        1
+find words கணி                           15.5     +0.0     +0.0     -0.0     -0.1    10.0      -0.1  -        1
+find words தமிழ்                         38.6     -0.1     -0.0     -0.0     -0.0    10.0      -0.0  -        1
+find words குறிப்புகள்                   23.0     -0.1     -0.2     +0.1     -0.1    10.0      -0.2  -        1
+find words வெள்ளிக்கிழமை                 16.9     -0.0     +0.2     +0.4     -0.1    10.0      -0.5  -        1
+find words தொடங்குகிறது                  16.6     -0.1     +0.0     +0.0     -0.2    10.0      -0.2  -        1
+find words கணிதம்                        17.3     -0.1     -0.1     -0.0     -0.2    10.0      -0.2  -        1
+find phrase பள்ளி விடுமுறை               21.6     -0.0     +0.0     +0.1     -0.1    10.0      -0.2  -        1
+find phrase தமிழ் குறிப்புகள்            15.2     -0.1     -0.1     -0.0     -0.1    10.0      -0.1  -        1
+find phrase குறிப்புகள் பள்ளி            10.2     +0.0     +0.0     +0.0     -0.0    10.0      -0.1  -        1
+find phrase பள்ளி பள்ளி                   8.5     -0.1     -0.1     -0.1     -0.2    10.0      -0.2  -        1
+find phrase விடுமுறை வெள்ளிக்கிழமை       11.9     +0.1     +0.0     +0.1     -0.1    10.0      -0.2  -        1
+find phrase வெள்ளிக்கிழமை தொடங்குகிறது     11.9     +0.1     +0.1     +0.0     -0.1    10.0      -0.2  -        1
+find phrase தொடங்குகிறது கணிதம்           8.3     +0.1     +0.1     +0.0     -0.1    10.0      -0.1  -        1
+find phrase கணிதம் வீட்டுப்பாடம்          8.6     +0.0     +0.0     -0.0     -0.1    10.0      -0.1  -        1
+find words LlamaCppProvider               7.7     -0.0     -0.0     -0.0     +0.0    10.0      +0.0  -        1
+find words referenceAnswer                7.9     -0.0     -0.0     -0.0     -0.0    10.0      +0.0  -        1
+find words deterministically              9.8     +0.0     +0.0     +0.0     +0.0    10.0      -0.0  -        1
+find words ஞாயிற்றுக்கிழமை               15.8     -0.0     +0.1     +0.1     -0.1    10.0      -0.2  -        1
+find words பயன்படுத்தினாள்               18.3     -0.0     +0.1     +0.1     -0.1    10.0      -0.2  -        1
+find words விளையாடினார்கள்               17.3     +0.0     +0.1     +0.2     -0.2    10.0      -0.4  -        1
+find words காத்திருக்கிறோம்              18.5     -0.1     +0.1     -0.2     -0.3    10.0      -0.4  -        1
+find words வெட்டிக்கொண்டாள்              18.2     +0.0     +0.1     +0.5     -0.1    10.0      -0.6  -        1
+find prefix LlamaC*                       9.5     -0.0     +0.0     +0.0     -0.0    10.0      -0.0  -        1
+find prefix refere*                      51.0     -0.0     -0.4     -0.6     -0.1    10.0      -0.0  -        1
+find prefix determ*                      47.9     +0.1     +0.0     +0.3     +0.1    10.0      -0.2  -        1
+find prefix ஞாயிற்*                      17.0     +0.0     +0.3     +0.1     -0.0    10.0      -0.4  -        1
+find prefix பயன்பட*                      24.1     +0.0     +0.1     +0.0     -0.2    10.0      -0.3  -        1
+find prefix விளையா*                      28.5     +0.1     -0.1     +0.1     -0.0    10.0      -0.1  -        1
+find prefix காத்தி*                      25.8     +0.1     +0.1     +0.1     -0.0    10.0      -0.1  -        1
+find prefix வெட்டி*                      19.4     +0.1     +0.0     +0.1     -0.2    10.0      -0.3  -        1
+find words school                       643.4     +0.1     -4.2     -4.9     +1.2    10.0      +1.0  -        1
+find words laptop                       512.1     +0.2     -2.9     -3.6     -0.5    10.0      -0.8  -        1
+find words 1                           2168.8     +4.8    +35.7    -10.1     +8.3    21.7     -27.4  -        1
+find words p1                            17.4     +0.1     +0.1     +0.3     +0.1    10.0      -0.1  -        1
+find words x1                            22.4     +0.1     +0.0     +0.2     +0.1    10.0      -0.1  -        1
+find words o1                            18.1     -0.0     -0.1     +0.2     +0.1    10.0      -0.1  -        1
+find words s1                            27.8     +0.0     -0.2     +0.0     -0.1    10.0      -0.1  -        1
+find words Notes                        444.6     -2.0     -2.9     -5.1     -0.0    10.0      +2.0  -        1
+find phrase Notes school                 37.1     -0.2     -0.2     +0.1     -0.0    10.0      -0.1  -        1
+find phrase Why laptop                   10.0     -0.1     +0.0     -0.0     -0.0    10.0      -0.0  -        1
+find phrase Expected 1                   32.4     -0.1     -0.4     -0.2     +0.2    10.0      +0.2  -        1
+find phrase Note p1                       4.4     -0.0     +0.0     -0.0     -0.1    10.0      -0.1  -        1
+find phrase Note x1                       4.4     -0.0     +0.0     +0.0     -0.0    10.0      -0.1  -        1
+find phrase Note o1                       4.1     -0.1     -0.0     -0.0     -0.0    10.0      -0.0  -        1
+find phrase Note s1                       7.3     -0.1     +0.0     -0.1     +0.0    10.0      +0.0  -        1
+find phrase notes Notes                  33.5     -0.2     -0.0     -0.2     -0.1    10.0      -0.1  -        1
+find words The                         1875.0     -0.8     +9.9    -15.8     +0.6    18.7      -9.4  -        1
+find words Vendored                      11.7     -0.0     -0.0     +0.1     +0.0    10.0      -0.1  -        1
+find words A                           1523.9     +2.5     -7.9    -12.7     +1.1    15.2      -1.4  -        1
+find words Use                           21.9     +0.2     -0.0     +0.2     -0.0    10.0      -0.2  -        1
+find words Summarize                      9.8     -0.0     +0.0     +0.1     +0.0    10.0      -0.0  -        1
+find words You                           24.0     -0.0     -0.1     +0.0     -0.1    10.0      -0.1  -        1
+find words Be                            26.5     +0.1     -0.1     +0.0     -0.1    10.0      -0.2  -        1
+find words Invented                      33.3     +0.1     -0.1     -0.2     +0.0    10.0      -0.0  -        1
+find words mechanism                      4.9     +0.1     +0.0     +0.0     +0.0    10.0      -0.0  -        1
+find words timing                        16.6     +0.1     -0.1     -0.0     -0.1    10.0      -0.1  -        1
+find words communication                  5.2     +0.0     -0.0     +0.0     +0.0    10.0      -0.0  -        1
+find words repo                           8.1     +0.0     -0.0     +0.1     +0.0    10.0      -0.1  -        1
+find words over                          45.3     -0.2     -0.3     -0.4     -0.2    10.0      -0.0  -        1
+find words sentences                      8.9     -0.1     +0.0     +0.1     +0.0    10.0      -0.1  -        1
+find words list                         124.2     +1.4     -0.5     +0.6     +0.3    10.0      -1.1  -        1
+find words factual                       17.3     +0.0     +0.0     +0.2     +0.1    10.0      -0.1  -        1
+find words Week                         114.2     +1.6     -0.8     -0.1     +0.2    10.0      -1.3  -        1
+find words Vocabulary                    40.1     -0.1     +0.1     -0.1     -0.2    10.0      -0.2  -        1
+find words Grammar                       22.5     +0.1     -0.1     +0.1     +0.0    10.0      -0.1  -        1
+find words Reading                       92.6     +1.4     -0.7     -0.8     -0.2    10.0      -1.6  -        1
+find words Spelling                     112.4     +1.0     -0.8     -0.8     -0.3    10.0      -1.2  -        1
+find words Fractions                     33.8     -0.0     -0.1     -0.1     -0.2    10.0      -0.1  -        1
+find words Decimals                       9.1     +0.1     -0.0     +0.1     -0.0    10.0      -0.2  -        1
+find words representative                10.4     -0.0     -0.0     -0.1     -0.1    10.0      -0.1  -        1
+find words withholdAnswer                14.2     +0.0     -0.0     +0.1     +0.0    10.0      -0.0  -        1
+find words photosynthesis                25.8     +0.0     -0.0     +0.1     +0.1    10.0      -0.0  -        1
+find words நூலகத்திற்குச்                16.5     +0.1     +0.4     +0.2     +0.0    10.0      -0.4  -        1
+find words Photosynthesis                25.7     +0.0     +0.1     +0.2     +0.0    10.0      -0.1  -        1
+find words Photosynthetic                13.2     -0.1     -0.0     +0.0     -0.0    10.0      -0.1  -        1
+find words transpositions                 8.4     -0.0     -0.0     +0.0     -0.1    10.0      -0.1  -        1
+find words காத்திருந்தார்                18.7     +0.1     -0.0     +0.1     -0.2    10.0      -0.3  -        1
+find words திறந்திருக்கும்               16.2     +0.0     +0.0     +0.1     -0.1    10.0      -0.2  -        1
+find words கேள்விப்பட்டேன்               16.5     +0.0     -0.1     -0.1     -0.4    10.0      -0.4  -        1
+find words எடுத்துக்கொண்டு                7.8     +0.0     +0.0     +0.0     -0.1    10.0      -0.1  -        1
+find words விளைபொருட்களைக்                5.3     +0.1     +0.1     +0.1     -0.0    10.0      -0.1  -        1
+find words interoperability               5.2     +0.0     -0.0     +0.0     +0.0    10.0      -0.0  -        1
+find words விற்கப்படுகின்றன               8.3     +0.0     +0.0     +0.0     -0.2    10.0      -0.2  -        1
+find words ஆரோக்கியத்திற்கு               8.6     +0.0     +0.0     +0.0     -0.2    10.0      -0.3  -        1
+
+## timing-10k
+runs 2; 1-, 5- and 15-minute load before each set 1.45-2.44
+cell                                     main    main2     ctl1     ctlP     head       T  head-ctl  verdict  answers
+content bazecha                          11.6     +0.4     -0.1     +0.0     -0.0    10.0      -0.4  -        1
+content benico                           11.8     +0.4     -0.1     +0.0     -0.1    10.0      -0.4  -        1
+content system                          102.0     +3.0     -0.7     -0.2     -1.5    10.0      -4.5  -        1
+content hashing                          81.7     +2.7     -0.3     -0.4     -1.2    10.0      -3.9  -        1
+content hybrid retrieval                 52.3     +1.3     -0.2     +0.6     -0.3    10.0      -1.5  -        1
+content retrieval hybrid                 52.0     +2.0     +0.1     +0.5     -0.3    10.0      -2.3  -        1
+content system systems                  129.2     +3.4     -1.4     +0.9     -2.8    10.0      -6.3  -        1
+content systems system                  134.4     -1.4     -5.5     -5.7     -7.3    10.0      -5.9  -        1
+content from                            159.7     +4.4     +0.3     +2.0     -2.0    10.0      -6.4  -        1
+content were                            161.9     +4.1     -0.6     +0.8     -2.0    10.0      -6.1  -        1
+content badamo                           12.7     +0.4     -0.0     -0.0     +0.0    10.0      -0.4  -        1
+content belohu                           12.3     +0.5     +0.0     +0.0     +0.0    10.0      -0.4  -        1
+content from badamo                     169.7     +3.5     +0.4     +1.2     -2.9    10.0      -6.4  -        1
+content were belohu                     171.5     +3.9     -0.1     +2.0     -1.9    10.0      -5.8  -        1
+content doc 00000                       115.4     +4.1     +2.2     +2.3     -3.6    10.0      -7.7  -        1
+filename bazecha                          2.9     +0.1     -0.0     -0.1     -0.0    10.0      -0.1  -        1
+filename benico                           2.9     +0.1     -0.1     -0.1     +0.0    10.0      -0.1  -        1
+filename system                           2.9     +0.0     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+filename hashing                          2.9     +0.1     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+filename hybrid retrieval                 3.5     +0.1     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+filename retrieval hybrid                 3.6     +0.1     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+filename system systems                   3.5     +0.1     -0.0     -0.1     -0.0    10.0      -0.1  -        1
+filename systems system                   3.5     +0.1     +0.0     -0.1     +0.0    10.0      -0.1  -        1
+filename from                             2.8     +0.1     -0.0     -0.1     +0.0    10.0      -0.1  -        1
+filename were                             2.8     +0.1     -0.0     -0.1     +0.0    10.0      -0.0  -        1
+filename badamo                           2.9     +0.1     -0.1     -0.1     +0.0    10.0      -0.1  -        1
+filename belohu                           2.9     +0.0     -0.1     -0.1     +0.0    10.0      -0.0  -        1
+filename from badamo                      3.4     +0.0     -0.1     -0.1     -0.0    10.0      -0.1  -        1
+filename were belohu                      3.3     +0.1     -0.1     -0.1     +0.0    10.0      -0.0  -        1
+filename doc 00000                      247.8     +8.7     -2.3     -2.5     -0.9    10.0      -9.6  -        1
+both bazecha                            111.3     +4.0     -6.0     -2.7     +1.1    10.0      -2.9  -        1
+both benico                             104.4     +3.5     -5.2     -2.6     +0.8    10.0      -2.7  -        1
+both system                             215.3     +7.5     -2.5     -7.1     -2.0    10.0      -9.5  -        1
+both hashing                            191.7     +6.7     -2.8    -12.4     -1.1    10.0      -7.8  -        1
+both hybrid retrieval                   158.3     +5.6     +5.2     -1.4     -0.4    10.0      -6.0  -        1
+both retrieval hybrid                   158.3     +5.7     +5.9     -2.1     -0.4    10.0      -6.3  -        1
+both system systems                     248.4     +9.4     -1.9     -3.1     -2.6    10.0     -12.0  -        1
+both systems system                     247.8     +8.5     -2.6     -8.4     +2.0    10.0      -6.5  -        1
+both from                               307.3    +11.5     -3.8    -12.6    +12.7    10.0      +1.2  at T     1
+both were                               308.6    +10.6     -2.2    -11.7    +18.1    10.0      +7.5  at T     1
+both badamo                             109.3     +4.1     -6.2     -3.3     +4.3    10.0      +0.2  -        1
+both belohu                             109.1     +2.8     -6.5     -3.4     +4.8    10.0      +1.9  -        1
+both from badamo                        315.2     +0.2     -5.0    -17.0    +13.0    10.0     +12.8  beyond   1
+both were belohu                        323.9     +0.5     -6.4    -15.5    +14.0    10.0     +13.5  beyond   1
+both doc 00000                          338.8     +2.9     -2.5     -2.1     +9.7    10.0      +6.8  -        1
+find words from                        2948.8     -2.5    -42.2    -40.4    +48.7    29.5     +51.2  beyond   1
+find words badamo                        21.9     +0.0     -0.2     -0.1     +0.5    10.0      +0.5  -        1
+find words from badamo                   37.1     +0.1     +5.0     +0.9     +1.9    10.0      -3.1  -        1
+find words doc 00000                      2.0     +0.0     -0.0     +0.0     +0.0    10.0      +0.0  -        1
+find phrase barigo bejoju becoco          4.4     +0.0     -0.0     +0.2     +0.1    10.0      -0.1  -        1
+find phrase bahuki begeno bakucu          4.2     +0.0     +0.0     +0.0     +0.1    10.0      +0.1  -        1
+find phrase with befewho with            20.0     +1.1     +7.2     -0.2     +2.8    10.0      -4.4  -        1
+find prefix bada*                       788.3     -0.1     -5.8     -5.5    +19.7    10.0     +19.7  beyond   1
+find prefix belo*                       786.1     +2.4     -3.9     -6.1    +21.8    10.0     +19.4  beyond   1
+find words Hybrid                       280.8    -10.1    -14.6    -15.3     -3.6    10.0      +6.5  -        1
+find words Hash                         288.7    -15.7    -18.1    -17.3     -6.2    10.0      +9.5  -        1
+find words Garbage                      294.0    -12.9    -18.3    -17.1     -8.1    10.0      +4.8  -        1
+find words Type                         295.6    -14.3    -19.1    -18.5     -5.4    10.0      +8.9  -        1
+find words Distributed                  276.0     +2.1     -3.2     -2.9     +7.2    10.0      +5.0  -        1
+find words Operating                    274.0     -1.1     -5.3     -3.6     +6.1    10.0      +7.2  -        1
+find words Compilers                    273.6     +1.1     -2.9     -2.5     +7.1    10.0      +6.0  -        1
+find words Database                     267.8     +0.2     -4.3     -3.8     +8.0    10.0      +7.8  -        1
+find words betesha                       18.8     +0.1     -0.1     +0.0     +0.7    10.0      +0.5  -        1
+find words beteshe                       18.0     +0.1     -0.0     +0.0     +0.8    10.0      +0.7  -        1
+find words beteshi                       18.1     +0.1     -0.1     -0.0     +0.7    10.0      +0.6  -        1
+find words betesho                       19.1     +0.1     -0.1     +0.0     +0.6    10.0      +0.5  -        1
+find words beteshu                       19.4     +0.0     -0.1     +0.1     +0.6    10.0      +0.6  -        1
+find words betecha                       19.2     +0.0     -0.1     +0.1     +0.6    10.0      +0.5  -        1
+find words beteche                       16.4     +0.0     +0.0     +0.1     +0.6    10.0      +0.5  -        1
+find words betechi                       16.0     -0.0     +0.0     +0.1     +0.7    10.0      +0.6  -        1
+
+## prose-10k
+runs 2; 1-, 5- and 15-minute load before each set 1.34-2.36
+cell                                     main    main2     ctl1     ctlP     head       T  head-ctl  verdict  answers
+content bazecha                           9.8     +0.2     +0.4     +0.2     +0.2    10.0      -0.2  -        1
+content benico                           11.1     -0.1     -0.0     +0.3     -0.3    10.0      -0.7  -        1
+content system                           74.8     +0.3     +0.4     +0.5     -0.0    10.0      -0.5  -        1
+content hashing                          27.6     +0.1     +0.0     +0.1     -0.3    10.0      -0.4  -        1
+content hybrid retrieval                 17.0     +0.1     -0.2     +0.3     -0.4    10.0      -0.7  -        1
+content retrieval hybrid                 16.8     -0.1     -0.1     +0.1     -0.2    10.0      -0.4  -        1
+content system systems                   91.2     +0.7     +0.5     +0.6     -0.5    10.0      -1.2  -        1
+content systems system                   91.3     +3.3     +0.5     +0.8     -0.5    10.0      -3.8  -        1
+content the                             268.7     +7.4     +0.0     +1.0     -4.0    10.0     -11.4  -        1
+content have                            183.3     +0.6     +0.7     +1.3     -2.3    10.0      -3.5  -        1
+content within                           96.1     +0.9     -0.2     +1.2     -0.2    10.0      -1.4  -        1
+content drink                            64.1     +1.3     -0.1     -0.3     -0.3    10.0      -1.6  -        1
+content the within                      351.3     +1.6     -1.5     +2.3     -2.6    10.0      -4.9  -        1
+content have drink                      305.0     -1.2     -3.1     +4.0     -9.4    10.0     -13.4  -        1
+content across lengthy seeming 04276    220.1     -0.5     -0.8     +2.8     -7.3    10.0     -10.1  -        1
+filename bazecha                          2.9     +0.0     -0.0     -0.0     +0.0    10.0      -0.0  -        1
+filename benico                           2.9     +0.0     -0.0     -0.0     +0.1    10.0      +0.1  -        1
+filename system                         292.3     +1.6    -14.3     -9.4     -0.6    10.0      -2.2  -        1
+filename hashing                          2.9     +0.0     -0.1     +0.1     +0.0    10.0      -0.0  -        1
+filename hybrid retrieval                 3.6     -0.0     -0.1     +0.0     +0.0    10.0      +0.0  -        1
+filename retrieval hybrid                 3.6     +0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+filename system systems                 297.6     +2.6    -15.3     -8.2     +1.2    10.0      -1.4  -        1
+filename systems system                 299.6     +0.9    -16.4    -10.7     +0.6    10.0      -0.2  -        1
+filename the                              2.8     -0.0     -0.1     -0.0     -0.0    10.0      -0.0  -        1
+filename have                             2.8     -0.0     -0.0     -0.0     -0.0    10.0      -0.0  -        1
+filename within                         328.5     +1.3    -15.6    -11.3     -0.3    10.0      -1.6  -        1
+filename drink                          207.7     +2.0     -0.8     -5.6     +0.5    10.0      -1.5  -        1
+filename the within                     328.7     +1.9    -12.3     -9.7     +1.4    10.0      -0.5  -        1
+filename have drink                     211.5     +1.1    -11.8     -6.5     +0.4    10.0      -0.7  -        1
+filename across lengthy seeming 04276    354.3     +4.0    -17.3    -10.8     +3.9    10.0      -0.1  -        1
+both bazecha                             12.6     +0.3     +0.1     -0.2     -0.3    10.0      -0.6  -        1
+both benico                              13.5     +0.0     +0.0     -0.3     -0.4    10.0      -0.5  -        1
+both system                             359.0    +12.0     -9.2     -6.1     +0.1    10.0     -11.8  -        1
+both hashing                            185.3    +12.8     -6.3     -4.9     -2.3    10.0     -15.1  -        1
+both hybrid retrieval                    19.6     +0.6     -0.1     +0.1     -0.0    10.0      -0.7  -        1
+both retrieval hybrid                    19.8     +0.0     -0.1     -0.3     -0.2    10.0      -0.3  -        1
+both system systems                     377.5     +0.9     -9.2     -6.1     -1.1    10.0      -2.1  -        1
+both systems system                     378.9     +1.1     -6.0     -6.3     -0.9    10.0      -2.0  -        1
+both the                                512.5     -1.3    -11.4    -23.1     -2.7    10.0      -1.4  -        1
+both have                               344.8     -1.0     -6.8    -19.7     +1.2    10.0      +2.1  -        1
+both within                             452.7     +1.0    -18.9    -17.1     -1.4    10.0      -2.4  -        1
+both drink                              375.2     +1.7    -15.1     -7.2     -0.5    10.0      -2.3  -        1
+both the within                         654.9    +21.8    -20.6    -15.0     -2.2    10.0     -24.0  -        1
+both have drink                         571.8    +24.5    -19.8    -23.5    -12.1    10.0     -36.7  -        1
+both across lengthy seeming 04276       548.9    +19.8    -18.0    -31.5    -22.9    10.0     -42.7  -        1
+find words the                        13579.6   +413.6   +416.4   -145.8    -44.2   135.8    -460.6  -        1
+find words within                      1172.8     -0.6    +16.6     -1.8     -0.5    11.7     -17.1  -        1
+find words the within                  2118.4     -0.5    -12.1    -11.1    +37.0    21.2     +37.4  beyond   1
+find words across lengthy seeming 04276      2.7     +0.0     +0.1     +0.0     -0.0    10.0      -0.1  -        1
+find phrase you get bowls               112.7     +3.4     -0.9     -0.7     +5.3    10.0      +1.9  -        1
+find phrase partly all rougher           23.9     -1.1    +11.3     +2.8     +2.6    10.0      -8.6  -        1
+find phrase bottle and orchard           98.4    +13.0     +9.3     +9.0    +17.0    10.0      +4.1  at T     1
+find prefix with*                      7629.5    +82.5     -1.9    -19.6     -4.5    76.3     -87.0  -        1
+find prefix drin*                       365.1     +0.1     -1.6     -0.7     +0.9    10.0      +0.8  -        1
+find words environmentaler               88.4     +0.7     +0.2     +0.4     +0.0    10.0      -0.7  -        1
+find words internationally               46.9     +0.1     -0.1     +0.9     -0.3    10.0      -1.2  -        1
+find words environmentally               50.8     +0.0     -0.1     +0.2     -0.2    10.0      -0.5  -        1
+find words internationaler               63.5     -0.2     -0.7     -0.2     -0.4    10.0      -0.1  -        1
+find words Internationaler               63.2     -0.2     +0.0     +0.2     -0.3    10.0      -0.5  -        1
+find words Environmentaler               88.5     +0.4     -0.2     +0.7     -0.1    10.0      -0.9  -        1
+find words Internationally               46.9     +0.0     -0.1     +0.1     -0.3    10.0      -0.4  -        1
+find words Environmentally               50.7     +0.2     -0.1     +0.1     -0.1    10.0      -0.3  -        1
+find prefix enviro*                     254.6     -0.4     -1.5     -1.2     -0.9    10.0      -0.5  -        1
+find prefix intern*                     211.9     +0.9     -0.4     +2.3     +0.1    10.0      -2.1  -        1
+find prefix Intern*                     212.7     +1.2     +0.2     -1.1     -0.5    10.0      -1.7  -        1
+find prefix Enviro*                     253.3     +0.3     -0.5     +0.4     -0.3    10.0      -0.7  -        1
+find words Across                      1027.3     +2.3     -2.5     -2.5     -6.2    10.3      -8.5  -        1
+find words Adding                       210.0     -1.0     -2.1     -1.8     -2.6    10.0      -1.6  -        1
+find words Advise                       898.2     +2.2     -1.4     -4.7     -5.6    10.0      -7.8  -        1
+find words title                        118.3     -2.1     -3.0     -2.9     -1.0    10.0      +1.1  -        1
+find words Again                       1361.9     +5.0     +0.8     -2.9    +56.4    13.6     +51.4  beyond   1
+find words Against                     1081.8     -0.6     -4.2     -4.7     -5.5    10.8      -4.9  -        1
+find words Agenda                        85.5     +0.5     -0.4     -0.4     -0.4    10.0      -0.9  -        1
+find words Air                          468.5     -1.5     -1.7     -2.8     -1.4    10.0      +0.0  -        1
+find words follows                      936.3     -4.0    +20.4     -9.0     -5.7    10.0     -26.1  -        1
+find words most                        1983.0     +4.5    +35.9     +0.4     +1.2    19.8     -34.7  -        1
+find words shirt                         72.8     -0.3     -0.0     -0.3     +0.3    10.0      +0.3  -        1
+find words just                        1789.6    +41.5     +2.2     -2.6     -6.2    17.9     -47.7  -        1
+find words continuing                    72.5     +0.1     -0.9     -0.3     -0.3    10.0      -0.4  -        1
+find words own                         1390.6    +45.3     -1.9     -0.9     +0.9    13.9     -44.4  -        1
+find words if                          3185.6     +5.6     -8.3    -14.6     -1.8    31.9      -7.3  -        1
+find words Another                     1221.3     +1.3     -3.6    +25.6     -3.9    12.2     -29.5  -        1
+find words Baby                         317.2     +0.9     -0.6     +2.4     +0.4    10.0      -1.9  -        1
+find words Little                        99.9     +0.9     -0.6     -0.3     -0.7    10.0      -1.6  -        1
+find words Just                        1788.6     +1.5     +0.1    +39.6     -4.8    17.9     -44.4  -        1
+find words Majorer                      180.8     -0.9     +0.0     -1.8     -1.9    10.0      -1.9  -        1
+find words Cancels                       61.9     -0.3     -0.3     -0.3     -0.5    10.0      -0.2  -        1
+find words democratically                54.2     -0.0     -0.3     -0.1     -0.4    10.0      -0.4  -        1
+find words Democratically                54.0     +0.1     -0.2     +0.2     -0.1    10.0      -0.3  -        1
+
+## tamil-10k
+runs 2; 1-, 5- and 15-minute load before each set 1.23-2.17
+cell                                     main    main2     ctl1     ctlP     head       T  head-ctl  verdict  answers
+content bazecha                           3.4     +0.1     -0.0     +0.1     +0.1    10.0      -0.1  -        1
+content benico                            3.4     -0.1     -0.1     +0.0     -0.0    10.0      -0.0  -        1
+content system                            3.3     +0.1     -0.0     +0.1     +0.1    10.0      -0.0  -        1
+content hashing                           4.2     -0.0     -0.0     +0.2     -0.0    10.0      -0.2  -        1
+content hybrid retrieval                  5.0     +0.0     -0.1     +0.2     -0.1    10.0      -0.3  -        1
+content retrieval hybrid                  5.1     +0.2     -0.2     -0.1     -0.3    10.0      -0.5  -        1
+content system systems                    5.9     +0.1     -0.2     -0.1     -0.1    10.0      -0.1  -        1
+content systems system                    5.9     +0.1     -0.2     +0.0     -0.3    10.0      -0.3  -        1
+content கீகசை                           239.3     -2.7     -3.2     -2.4     -0.2    10.0      +2.2  -        1
+content டூகனை                           236.2     -2.1     -2.1     -0.9     +0.5    10.0      +1.4  -        1
+content றூகுஞங்கள்                       31.3     -0.6     -0.5     -0.1     +0.8    10.0      +0.9  -        1
+content சைகீளையில்                       33.0     -0.4     -0.4     +0.5     +0.9    10.0      +0.5  -        1
+content கீகசை றூகுஞங்கள்                297.9     -2.2     -1.3     +1.5     +0.9    10.0      -0.6  -        1
+content டூகனை சைகீளையில்                309.0     -1.6     -2.7     -0.8     -0.2    10.0      +0.6  -        1
+content doc 00000                       130.1     -0.4     +0.4     +0.4     -0.5    10.0      -0.9  -        1
+filename bazecha                          2.9     +0.0     -0.1     +0.0     +0.1    10.0      +0.1  -        1
+filename benico                           2.9     +0.1     -0.1     +0.0     +0.1    10.0      +0.0  -        1
+filename system                           2.9     -0.0     -0.1     -0.1     +0.0    10.0      +0.1  -        1
+filename hashing                          3.0     -0.1     -0.1     -0.1     +0.0    10.0      +0.1  -        1
+filename hybrid retrieval                 3.6     +0.0     -0.2     -0.2     -0.0    10.0      -0.0  -        1
+filename retrieval hybrid                 3.6     +0.1     -0.1     -0.1     +0.1    10.0      +0.0  -        1
+filename system systems                   3.5     +0.1     -0.1     -0.1     +0.0    10.0      -0.1  -        1
+filename systems system                   3.5     +0.0     -0.2     -0.1     +0.1    10.0      +0.0  -        1
+filename கீகசை                            3.2     +0.1     -0.0     +0.0     +0.1    10.0      +0.0  -        1
+filename டூகனை                            3.2     +0.1     -0.0     +0.0     +0.1    10.0      +0.0  -        1
+filename றூகுஞங்கள்                       4.9     +0.0     +0.0     +0.0     +0.1    10.0      +0.1  -        1
+filename சைகீளையில்                       5.1     -0.0     -0.0     +0.0     +0.2    10.0      +0.1  -        1
+filename கீகசை றூகுஞங்கள்                 6.6     -0.1     -0.1     -0.0     +0.1    10.0      +0.1  -        1
+filename டூகனை சைகீளையில்                 6.9     -0.0     -0.1     +0.1     +0.1    10.0      +0.0  -        1
+filename doc 00000                      687.6     -4.1     +4.6     +5.0    +24.7    10.0     +19.6  beyond   1
+both bazecha                              6.0     +0.1     -0.2     +0.1     +0.2    10.0      +0.1  -        1
+both benico                               5.9     +0.1     -0.2     +0.1     +0.1    10.0      -0.0  -        1
+both system                               5.9     +0.0     -0.2     +0.0     +0.1    10.0      +0.0  -        1
+both hashing                              6.8     -0.1     -0.2     +0.2     +0.0    10.0      -0.2  -        1
+both hybrid retrieval                     7.9     +0.0     -0.1     +0.4     +0.2    10.0      -0.2  -        1
+both retrieval hybrid                     8.0     +0.0     -0.1     +0.3     +0.2    10.0      -0.1  -        1
+both system systems                       8.8     -0.1     -0.3     +0.0     -0.0    10.0      -0.1  -        1
+both systems system                       8.7     +0.0     -0.2     +0.2     +0.1    10.0      -0.1  -        1
+both கீகசை                              708.9     -2.6     +3.5    -17.1    +32.0    10.0     +28.5  beyond   1
+both டூகனை                              709.7     -1.2     +3.0     -9.9    +27.9    10.0     +24.9  beyond   1
+both றூகுஞங்கள்                         381.5     -3.0     +4.4     +5.4    +17.1    10.0     +11.7  beyond   1
+both சைகீளையில்                         387.0     -2.0     +4.0     +7.8    +15.1    10.0      +7.4  at T     1
+both கீகசை றூகுஞங்கள்                   664.1     -0.0     +2.4     +2.1    +21.4    10.0     +19.0  beyond   1
+both டூகனை சைகீளையில்                   666.6     +4.2     +3.6    -12.3     +0.9    10.0      -3.3  -        1
+both doc 00000                          778.8     -3.0     +4.2     +8.6     +2.1    10.0      -6.5  -        1
+find words கீகசை                       2905.8     +1.8    -39.5    -21.7    -41.4    29.1     -43.1  -        1
+find words றூகுஞங்கள்                    36.1     -1.2     -2.1     -1.1     -1.7    10.0      -0.6  -        1
+find words கீகசை றூகுஞங்கள்              50.0     -1.2     +3.2     -3.2     -1.9    10.0      -5.1  -        1
+find words doc 00000                      2.1     -0.0     -0.1     -0.0     -0.1    10.0      -0.1  -        1
+find phrase கேடேயி குகடம் கிகசம்         46.5     -0.1    +10.6     +1.1     +2.1    10.0      -8.5  -        1
+find phrase டூகனை சேகணம் சூகஞம்         891.1    -30.7    -31.3    -37.7    -42.5    10.0     -11.8  -        1
+find phrase நூடைஞத்தின் சாகறம் லேசிதையின்      9.1     -0.4     -0.4     -0.4     -0.5    10.0      -0.1  -        1
+find prefix டூகன*                      3012.5    -86.2   -126.9   -109.7   -123.4    30.1     -37.2  -        1
+find prefix றூகு*                        64.9     -2.4     -3.0     -2.7     -2.9    10.0      -0.5  -        1
+find prefix சைகீ*                        69.1     -2.9     -2.3     -3.2     -3.1    10.0      -0.8  -        1
+find words கககம்                       2929.0    -84.6   -125.0    -93.7   -117.8    29.3     -33.3  -        1
+find words காககி                       3003.5    -94.3   -133.2    -98.3   -120.2    30.0     -25.9  -        1
+find words ரிகெறைக்கு                    31.2     -1.8     -2.7     -1.8     -2.3    10.0      -0.5  -        1
+find words கெசூதங்கள்                    33.0     -1.7     -2.5     -1.8     -2.5    10.0      -0.8  -        1
+find words கெகதம்                      2925.1    -81.6   -114.3    -89.5   -116.0    29.3     -34.4  -        1
+find words கேடேயி                        33.7     -1.9     -2.4     -2.0     -2.5    10.0      -0.6  -        1
+find words குகடம்                      2862.1    -34.5    -68.1    -46.1    -43.4    28.6      -8.8  -        1
+find words கிகசம்                      2864.4     -7.9    -45.1    -24.1    -24.5    28.6     -16.5  -        1
+find phrase கககம் காககி                1177.1     +0.1     +2.7     -0.2     -0.1    11.8      -2.8  -        1
+find phrase காககி ரிகெறைக்கு             20.0     -1.2     +2.1     -0.6     -0.2    10.0      -2.3  -        1
+find phrase ரிகெறைக்கு கெசூதங்கள்         7.3     -0.1     -0.1     +0.2     -0.1    10.0      -0.2  -        1
+find phrase கெசூதங்கள் கெகதம்            26.7     +1.3     +6.2     -0.5     +3.6    10.0      -2.6  -        1
+find phrase கெகதம் கேடேயி                27.4     -1.1     +2.9     -1.6     -0.6    10.0      -3.5  -        1
+find phrase கேடேயி குகடம்                27.9     +2.0     +9.4     +2.8     -0.3    10.0      -9.6  -        1
+find phrase குகடம் கிகசம்               905.5     -2.6     +0.2     -2.4     -4.6    10.0      -4.8  -        1
+find phrase கிகசம் டேகயி                912.2     -0.6     +1.4     -2.7     -3.5    10.0      -4.9  -        1
+find words கைகபம்                      2860.7     -4.8    -37.4    -20.1    -46.9    28.6     -42.1  -        1
+find words சாகறம்                      2871.4     -6.0    -33.1    -26.8    -46.4    28.7     -40.4  -        1
+find words சீகஙம்                      2851.5     -1.7    -29.0    -10.5    -41.0    28.5     -39.3  -        1
+find words சூகஞம்                      2859.4     -5.7    -38.1    -15.4    -46.0    28.6     -40.3  -        1
+find words ஞேதணத்தில்                    31.1     +0.1     +0.2     +1.2     +0.5    10.0      -0.7  -        1
+find words ஞேதணத்தின்                    31.6     +0.1     +0.1     -0.0     -0.1    10.0      -0.3  -        1
+find words ஞைதணி                         32.7     -0.3     -1.1     -0.9     -0.9    10.0      -0.6  -        1
+find words ஞைதணிகள்                      30.7     -0.1     -0.3     +0.1     -0.3    10.0      -0.3  -        1
+find words ஞைதணிக்கு                     32.8     -0.4     -0.7     +0.8     -0.2    10.0      -1.0  -        1
+find words ஞைதணியில்                     32.3     -0.1     -0.5     +0.2     -0.6    10.0      -0.9  -        1
+find words ஞைதணியின்                     32.9     -0.7     -0.5     +0.2     -0.5    10.0      -0.8  -        1
+find words ணதநம்                         30.3     -0.7     -1.6     -0.8     -1.1    10.0      -0.5  -        1

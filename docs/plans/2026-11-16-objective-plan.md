@@ -166,7 +166,14 @@ whether to keep one is the maintainer's decision (03-next).
    ([S6-T8](../tasks/S6-T8.md), merged as `7c088a3`): lexical section `HYBLEX04`,
    manifest v2.5; the index 7.6 % (timing 10k), 9.2 % (prose 10k) and 3.3 %
    (Tamil 10k) smaller, every answer unchanged; the third one-way step for a
-   consumer. Step 4 follows.
+   consumer.
+   **Step 4, state and catalog without repeats, done 20 Nov 2026**
+   ([S6-T9](../tasks/S6-T9.md), merged on the maintainer's go-ahead, squashed onto
+   `main` after S6-T13): state section `HYBSTA03`, file-name catalog record v6,
+   manifest v2.6; the index 6.2 % (timing 10k), 3.6 % (prose 10k) and 2.5 %
+   (Tamil 10k) smaller, 1.89 times the timing corpus, every answer unchanged;
+   the fourth one-way step for a consumer (Dart 0.9.4; the app needs a second
+   pin). D2's four format steps are merged; B2 (the file move) is unblocked.
 3. **Delta sections** for writes (already filed in 03-next) follow D2, since both
    touch the section formats.
 
@@ -217,3 +224,4 @@ the maintainer's decision are his, not this judgment's.
 | **The maintainer's go-ahead, 18 Nov:** S6-T8 (D2 step 3, one-byte highlight offsets) merges with the prose-10k `both` cells 5–7 % slower (they pass the 2026-11-17 rule as written; they fail under the verifier's original three controls alone) and audit items 5, 9, 14, 16, I5 and I6 filed as follow-up. | His reply of 18 Nov to the orchestrator's question; see [S6-T8](../tasks/S6-T8.md). |
 | **The maintainer's decision, 17 Nov:** the timing rule, for every request, changed path or not: a cell fails only if the five-run median of (head − `main`) is at or above T (the larger of 0.010 ms and 1 % of `main`'s median) and exceeds by at least T the largest five-run median of `main2` and of each placement control (at least one matching the task's compiled-code delta). The band clause is tabulated, no longer a failing test. Chosen after seeing S6-T5's data. | The maintainer's reply of 17 Nov ("go with your recommendation and keep the work saved pls") to the orchestrator's recommendation; under the rule then in force builds with no change failed more cells than S6-T5 (37, 16 and 2 against 23, of 163). See [S6-T5](../tasks/S6-T5.md#maintainers-decision-17-nov-2026) and the dated rule in [`ROLES.md`](../process/ROLES.md). |
 | **The maintainer's decision, 17 Nov:** S6-T5 (item G, warnings under `both` and `filename`) merges (merged as `423b2e9`); under the rule of 17 Nov its five runs give no failing cell. Both FAIL Verdicts stand as the record of the measurement under the rule then in force. | The same reply; see [S6-T5](../tasks/S6-T5.md#maintainers-decision-17-nov-2026). |
+| **The maintainer's go-ahead, 20 Nov:** S6-T9 (D2 step 4, state and catalog without repeats) merges with the Verdict's F1 (three warm `find` cells on timing-10k failed timing set 1 by +34.5, +14.3 and +11.9 µs against T 10.0 and passed set 2, all 25 cells) and F2 (a damaged file-name catalog is refused by readers and rebuilt at the next publish, as on `main`) put to him. Squashed onto `main` after S6-T13 and renumbered to Dart 0.9.4. | His answer "Merge" of 20 Nov to the orchestrator's question "Merge it to the engine's main?"; see [S6-T9](../tasks/S6-T9.md#maintainers-go-ahead-and-merge-20-nov-2026). |

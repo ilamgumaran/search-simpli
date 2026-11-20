@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/incremental_state.zig ARCHIVE/src/b-walk-headroom-tight/zig/src/incremental_state.zig
+--- ARCHIVE/none/zig/src/incremental_state.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/b-walk-headroom-tight/zig/src/incremental_state.zig	2026-11-19 12:20:01
+@@ -598,7 +598,7 @@
+     if (v3) {
+         records_length = 0;
+         for (0..file_count) |_| {
+-            if (binary_ref_length > bytes.len - reader.at - records_length) return error.InvalidState;
++            if (binary_ref_length + 1 > bytes.len - reader.at - records_length) return error.InvalidState;
+             const flags = read32(bytes, reader.at + records_length + 4);
+             const length: usize = if (flags & file_source_ref != 0) binary_ref_length else binary_file_length;
+             if (length > bytes.len - reader.at - records_length) return error.InvalidState;

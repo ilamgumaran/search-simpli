@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/incremental_state.zig <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/v-trailing-v3/zig/src/incremental_state.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/incremental_state.zig	2026-11-19 15:34:47
++++ <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/v-trailing-v3/zig/src/incremental_state.zig	2026-11-19 17:59:17
+@@ -706,7 +706,7 @@
+         };
+         next_label += label_count;
+     }
+-    if (next_label != labels.len or reader.at != bytes.len) return error.InvalidState;
++    if (next_label != labels.len or (!v3 and reader.at != bytes.len)) return error.InvalidState;
+     return .{ .generation = generation, .analyzer_id = analyzer_id, .roots = roots, .files = files };
+ }
+ 

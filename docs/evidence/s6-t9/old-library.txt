@@ -1,0 +1,109 @@
+# S6-T9 ruling 2: main's library and searchd (a019f22; the dylib main ships, and main's ReleaseSmall searchd) against v2.6 indexes
+# (scripts/prototypes/s6t8/old_library.py, unchanged). 1) tests/fixtures/index-refs-s6t9 (family-folder/home); 2) the branch's timing-10k index.
+
+## 1) tests/fixtures/index-refs-s6t9
+library libsearch_simpli.dylib ss_version 2.8.0, sha256 7c3c359ca7ae025f3b0b01b6da7edc42dada88a2d7f586a736acd8e4429d3d84
+ss_open: NULL; ss_last_error: 'ss_open: UnsupportedFlags'; files 8 -> 8, byte-identical: True
+ss_index_folder (full): NULL; ss_last_error: 'ss_index_folder: UnsupportedFlags'; files 8 -> 8, byte-identical: True
+ss_index_folder (update): NULL; ss_last_error: 'ss_index_folder: UnsupportedFlags'; files 8 -> 9, byte-identical: False
+  changed: [('WRITER.LOCK', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')] (the empty writer lock only)
+ss_apply_changes: NULL; ss_last_error: 'ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags'; files 8 -> 9, byte-identical: False
+  changed: [('WRITER.LOCK', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')] (the empty writer lock only)
+ss_apply_changes (allow_file_reads): NULL; ss_last_error: 'ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags'; files 8 -> 9, byte-identical: False
+  changed: [('WRITER.LOCK', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')] (the empty writer lock only)
+
+searchd searchd, sha256 2270e20baa975794685e28e873e90ce78abaa77a11052525b6cfb0dd8a4f9fd1
+$ searchd query idx garden
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd evidence idx garden
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd find idx garden --json
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd find idx garden pond --mode phrase --json
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd find idx gard --mode prefix --json
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd outline idx r-legacy garden.md --json
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd read-span idx r-legacy garden.md 1 4 --json
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd list-files idx --json
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd roots idx --json
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd index fixtures/family-folder/home --out idx --update --filename-index
+error: UnsupportedFlags
+exit 1; files 8 -> 9, byte-identical: False
+  changed: [('WRITER.LOCK', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')] (the empty writer lock only)
+$ searchd apply idx --changes shed.json --filename-index
+error: UnsupportedFlags
+exit 1; files 8 -> 9, byte-identical: False
+  changed: [('WRITER.LOCK', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')] (the empty writer lock only)
+$ searchd serve idx
+error: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+$ searchd mcp idx
+searchd: cannot open the index at idx: UnsupportedFlags
+exit 1; files 8 -> 8, byte-identical: True
+
+refused with UnsupportedFlags and the index unchanged on every call: True
+
+## 2) timing-10k
+library libsearch_simpli.dylib ss_version 2.8.0, sha256 7c3c359ca7ae025f3b0b01b6da7edc42dada88a2d7f586a736acd8e4429d3d84
+ss_open: NULL; ss_last_error: 'ss_open: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+ss_index_folder (full): NULL; ss_last_error: 'ss_index_folder: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+ss_index_folder (update): NULL; ss_last_error: 'ss_index_folder: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+ss_apply_changes: NULL; ss_last_error: 'ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+ss_apply_changes (allow_file_reads): NULL; ss_last_error: 'ss_apply_changes: SS_ERR_CORRUPT_SNAPSHOT: UnsupportedFlags'; files 9 -> 9, byte-identical: True
+
+searchd searchd, sha256 2270e20baa975794685e28e873e90ce78abaa77a11052525b6cfb0dd8a4f9fd1
+$ searchd query idx garden
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd evidence idx garden
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd find idx garden --json
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd find idx garden pond --mode phrase --json
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd find idx gard --mode prefix --json
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd outline idx r-legacy garden.md --json
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd read-span idx r-legacy garden.md 1 4 --json
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd list-files idx --json
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd roots idx --json
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd index <scratch>/corpora.noindex/timing-10k --out idx --update --filename-index
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd apply idx --changes shed.json --filename-index
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd serve idx
+error: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+$ searchd mcp idx
+searchd: cannot open the index at idx: UnsupportedFlags
+exit 1; files 9 -> 9, byte-identical: True
+
+refused with UnsupportedFlags and the index unchanged on every call: True

@@ -1,0 +1,12 @@
+diff -ru <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/manifest.zig <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/v-M3-oneway/zig/src/manifest.zig
+--- <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/none/zig/src/manifest.zig	2026-11-19 15:34:47
++++ <home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/plants.noindex/src/v-M3-oneway/zig/src/manifest.zig	2026-11-19 19:54:01
+@@ -714,7 +714,7 @@
+     if (header.checksum != state.checksum) return error.StateSectionChecksumMismatch;
+     if (!value.xxh3_sections and header.checksum_kind != .fnv1a64) return error.InvalidStateSection;
+     // S6-T9 (v2.6, M3): `HYBSTA03` exactly under bit 8.
+-    if ((header.form == .binary_v3) != value.state_v3) return error.StateSectionVersionMismatch;
++    if (header.form == .binary_v3 and !value.state_v3) return error.StateSectionVersionMismatch;
+ }
+ 
+ /// `base` binding the recovery-state section `state_encoded` as `file`.

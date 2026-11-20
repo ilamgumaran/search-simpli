@@ -1,0 +1,2 @@
+check_layers: OK (45 files in layers, 6 allowed interface imports)
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.

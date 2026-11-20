@@ -1,0 +1,24 @@
+# S6-T9 builder update runs 1 and 2 (scripts/prototypes/s6t9/run_updates.sh, updates.py; summarize_updates.py). main: a019f22's ReleaseSmall
+# searchd; head: b1622d2's. Per corpus 4 sets x 3 rounds per run; each round: first publish from main's v2.5 index (one line appended),
+# a one-file update after it, an unchanged update. plan = the writer's stages parse_committed + load_previous + changes.
+load 1.22-2.36 (1-, 5- and 15-minute values before and after each set)
+timing-10k  first     wall main    173.9 head    168.7 ms (12 each)   -5.2 ms (-3.0 %);  plan main  117.68 head  117.64 ms (-0.0 %);  state decode main 0.282 head 0.291 ms
+timing-10k  second    wall main    171.2 head    165.7 ms (12 each)   -5.6 ms (-3.2 %);  plan main  115.25 head  114.30 ms (-0.8 %);  state decode main 0.282 head 0.342 ms
+timing-10k  unchanged wall main    170.3 head    162.4 ms (12 each)   -7.9 ms (-4.6 %);  plan main  114.56 head  113.60 ms (-0.8 %);  state decode main 0.283 head 0.345 ms
+            flags after: main 0xff, head 0x3ff
+prose-10k   first     wall main    219.0 head    213.0 ms (12 each)   -6.1 ms (-2.8 %);  plan main  125.62 head  126.26 ms (+0.5 %);  state decode main 0.335 head 0.358 ms
+prose-10k   second    wall main    214.0 head    208.2 ms (12 each)   -5.8 ms (-2.7 %);  plan main  121.91 head  122.41 ms (+0.4 %);  state decode main 0.337 head 0.330 ms
+prose-10k   unchanged wall main    214.7 head    208.0 ms (12 each)   -6.7 ms (-3.1 %);  plan main  122.66 head  123.09 ms (+0.3 %);  state decode main 0.336 head 0.339 ms
+            flags after: main 0xff, head 0x3ff
+tamil-10k   first     wall main    210.9 head    204.9 ms (12 each)   -5.9 ms (-2.8 %);  plan main  140.45 head  141.20 ms (+0.5 %);  state decode main 0.300 head 0.310 ms
+tamil-10k   second    wall main    208.0 head    202.7 ms (12 each)   -5.3 ms (-2.6 %);  plan main  136.96 head  138.02 ms (+0.8 %);  state decode main 0.299 head 0.359 ms
+tamil-10k   unchanged wall main    205.5 head    202.4 ms (12 each)   -3.0 ms (-1.5 %);  plan main  136.68 head  137.89 ms (+0.9 %);  state decode main 0.292 head 0.359 ms
+            flags after: main 0xff, head 0x3ff
+family      first     wall main     12.2 head     12.1 ms (12 each)   -0.1 ms (-0.8 %);  plan main    0.99 head    0.99 ms (+0.6 %);  state decode main 0.003 head 0.003 ms
+family      second    wall main     12.4 head     11.8 ms (12 each)   -0.6 ms (-4.5 %);  plan main    0.98 head    0.98 ms (+0.7 %);  state decode main 0.003 head 0.003 ms
+family      unchanged wall main     11.3 head     10.8 ms (12 each)   -0.4 ms (-4.0 %);  plan main    0.97 head    0.97 ms (+0.2 %);  state decode main 0.003 head 0.003 ms
+            flags after: main 0xff, head 0x3ff
+fixtures    first     wall main     28.4 head     27.7 ms (12 each)   -0.7 ms (-2.6 %);  plan main    5.20 head    5.25 ms (+1.1 %);  state decode main 0.010 head 0.010 ms
+fixtures    second    wall main     28.4 head     28.1 ms (12 each)   -0.3 ms (-0.9 %);  plan main    5.09 head    5.14 ms (+1.0 %);  state decode main 0.010 head 0.010 ms
+fixtures    unchanged wall main     28.6 head     28.3 ms (12 each)   -0.3 ms (-1.1 %);  plan main    5.14 head    5.22 ms (+1.5 %);  state decode main 0.010 head 0.010 ms
+            flags after: main 0xff, head 0x3ff

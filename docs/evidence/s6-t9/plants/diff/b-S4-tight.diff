@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/incremental_state.zig ARCHIVE/src/b-S4-tight/zig/src/incremental_state.zig
+--- ARCHIVE/none/zig/src/incremental_state.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/b-S4-tight/zig/src/incremental_state.zig	2026-11-19 13:04:40
+@@ -652,7 +652,7 @@
+             const source_table = table orelse return error.StateReferenceWithoutSource;
+             const ordinal = read32(record, 28);
+             if (ordinal >= source_table.count()) return error.StateReferenceOutOfRange;
+-            if (last_ref) |previous| if (ordinal <= previous) return error.StateReferenceOrder;
++            if (last_ref) |previous| if (ordinal <= previous + 1) return error.StateReferenceOrder;
+             last_ref = ordinal;
+             const target = try source_table.target(ordinal);
+             const path = relativeOf(root_id, target.path) orelse return error.StateReferencePath;

@@ -1,0 +1,10 @@
+run1 window: 2026-11-19 15:53:03 .. 2026-11-19 16:00:20
+sleep/wake lines: 0
+run2 window: 2026-11-19 16:00:25 .. 2026-11-19 16:07:48
+sleep/wake lines: 0
+run3 window: 2026-11-19 16:07:51 .. 2026-11-19 16:15:17
+sleep/wake lines: 0
+run4 window: 2026-11-19 16:15:21 .. 2026-11-19 16:22:52
+sleep/wake lines: 0
+run5 window: 2026-11-19 16:22:56 .. 2026-11-19 16:30:45
+sleep/wake lines: 0

@@ -1,0 +1,158 @@
+unplanted: 0 failed
+v-trailing-v3: 1 failed
+  - state_v3_test.test.S6-T9 state v3: counts, record lengths and truncation are refused (InvalidState), never read past the payload
+v-S1-no-pending: 2 failed
+  - state_v3_test.test.S6-T9 state v3 S1: a referenced record with bit 0, 2 or 3 set is StateReferenceFlags, first, middle and last record
+  - state_v3_test.test.S6-T9 state v3: each rule is refused at the next write (a carrying write) and at the pointer, first, middle and last record; files untouched,
+v-S1-no-sha: 2 failed
+  - state_v3_test.test.S6-T9 state v3 S1: a referenced record with bit 0, 2 or 3 set is StateReferenceFlags, first, middle and last record
+  - state_v3_test.test.S6-T9 state v3: each rule is refused at the next write (a carrying write) and at the pointer, first, middle and last record; files untouched,
+v-S4-first-only: 2 failed
+  - state_v3_test.test.S6-T9 state v3 S4: a source record not above the previous reference's is StateReferenceOrder, first, middle and last record
+  - state_v3_test.test.S6-T9 state v3: each rule is refused at the next write (a carrying write) and at the pointer, first, middle and last record; files untouched,
+b-walk-headroom-loose: 0 failed
+s-table-doc-version: 0 failed
+b-refers-order: 1 failed
+  - state_v3_test.test.S6-T9 state v3 writer bound: an entry offered the same source record as the reference before it keeps its full record (the ordinals strictly 
+d-compat-s6t9-test: 1 failed
+  - compat_s6t9_test.test.S6-T9: the committed v2.6 fixture is this writer's output, and a library before v2.6 refuses it at the flags
+s-documents-v6: 1 failed
+  - compat_s6t9_test.test.S6-T9 catalog C3 (M4): a v6 catalog without bit 9, or a v3 catalog under it, is refused at the eager open and at the first file-name query
+s-carried-inspect: 13 failed
+  - apply_test.test.S4-T13 ruling 4: the filename sections equal a full build at every step
+  - apply_test.test.S4-T13 ruling 4: with no path changed the previous filename lexical section is carried byte for byte; its guard is the checksum
+  - apply_test.test.S4-T16 finding 14: no stage name is dropped on the writer's longest paths
+  - apply_test.test.S4-T16 rulings 2-4: every kind of update writes a fresh index's documents, lexical, source and filename sections
+  - apply_test.test.S4-T16 ruling 3: the source walk over a section that holds only some roots' files writes a fresh index's sections
+  - apply_test.test.S4-T16 ruling 5(b): a state whose entries are out of record order runs the not-in-state loop and writes the same sections
+  - apply_test.test.S4-T16 ruling 5(c): a previous path the state does not name is rebuilt from the generation, and the output equals the update where none is missi
+  - compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same
+  - compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same
+  - compat_s6t9_test.test.S6-T9: the first update of each older index plans no work, publishes one whole v2.6 generation, a fresh index's sections, and answers the 
+  - filename_field_test.test.S4-T13 ruling 4: the carried lexical section with a rebuilt catalog is a full build's, and the writer's check refuses what disagrees
+  - cli_test.test.S5-T11: an index with the channel takes the flag as a no-op; a repeat is safe
+  - cli_test.test.S5-T11: a crash after the fresh one-step publish leaves the complete first generation with the channel
+s-M4-load: 1 failed
+  - compat_s6t9_test.test.S6-T9 catalog C3 (M4): a v6 catalog without bit 9, or a v3 catalog under it, is refused at the eager open and at the first file-name query
+s-C2: 1 failed
+  - compat_s6t9_test.test.S6-T9 catalog C1 and C2: an id or a text in a v6 record is refused at the eager open and at the first file-name query, first, middle and l
+v-M3-oneway: 1 failed
+  - state_v3_test.test.S6-T9 state v3: the section version against flag bit 8 (M3) is refused at the next write; a HYBSTA02 section under a manifest without it is r
+v-M4-manifest-oneway: 1 failed
+  - state_v3_test.test.S6-T9 manifest v2.6 M4 at the writer's check: validateFilenameSections refuses a record v6 catalog without bit 9 and a v3 catalog under it
+v-M4-load-oneway: 1 failed
+  - compat_s6t9_test.test.S6-T9 catalog C3 (M4): a v6 catalog without bit 9, or a v3 catalog under it, is refused at the eager open and at the first file-name query
+v-ref-labels: 8 failed
+  - apply_test.test.restricted writers cannot change root policy, hidden files or labels
+  - apply_test.test.S4-T13 ruling 4: the filename sections equal a full build at every step
+  - apply_test.test.S4-T13 ruling 4: with no path changed the previous filename lexical section is carried byte for byte; its guard is the checksum
+  - apply_test.test.S4-T13 ruling 4: a damaged previous filename lexical section is rebuilt, never carried or refused
+  - apply_test.test.S4-T16 rulings 2-4: every kind of update writes a fresh index's documents, lexical, source and filename sections
+  - apply_test.test.S4-T16 ruling 5(b): a state whose entries are out of record order runs the not-in-state loop and writes the same sections
+  - apply_test.test.S4-T16 ruling 5(c): a previous path the state does not name is rebuilt from the generation, and the output equals the update where none is missi
+  - state_v3_test.test.S6-T9 state v3: a referenced record's label count past the label references, or its root past the strings, is InvalidState, first, middle and
+s-S2: 3 failed
+  - state_v3_test.test.S6-T9 state v3 S2: a reference without a source table is StateReferenceWithoutSource, first, middle and last record
+  - state_v3_test.test.S6-T9 state v3 S2: references in a generation with no source section are refused at the next write and at the pointer, first, middle and last
+  - compat_s6t9_test.test.S6-T9 state v3 S2 at the writer: a HYBSTA03 state over a HYBSRC01 source (bit 8 without bit 6, which no writer produces) is StateReference
+b-S3-loose: 2 failed
+  - state_v3_test.test.S6-T9 state v3 S3: a source record at or past the source's count is StateReferenceOutOfRange; one less is read
+  - state_v3_test.test.S6-T9 state v3: each rule is refused at the next write (a carrying write) and at the pointer, first, middle and last record; files untouched,
+b-S4-tight: 68 failed
+  - rpc.test.S3-T4: the RPC folder methods, the command-line scope and apply_changes gating
+  - source_fixture_test.test.S3-T1: --update carries retained bytes and re-chunks Markdown written by line windows
+  - text_once_test.test.S6-T7: an update carries unchanged files' records, maps and residual runs byte for byte, and the result is a fresh index's
+  - incremental_indexing_test.test.five-step fixture mutation: add, edit, delete, rename, oversize
+  - incremental_indexing_test.test.a file grown past max_file_bytes is reported too_large and its old chunks are tombstoned
+  - incremental_indexing_test.test.update with a missing section re-indexes every file instead of publishing an empty generation
+  - incremental_indexing_test.test.update with a missing MANIFEST re-indexes every file instead of publishing an empty generation
+  - incremental_indexing_test.test.S4-T11 ruling 2: seeded random mutations, each round's update equals a fresh index byte for byte
+  - apply_test.test.S3-T3: remove_root leaves no term, count, state, source or meta of the root
+  - apply_test.test.S3-T3: rename detection pairs equal hashes by sorted path and reports ambiguous moves
+  - apply_test.test.S3-T3: a crash between the manifest and the state write leaves a readable generation; the next call reports unchanged
+  - apply_test.test.S3-T3: index_folder's root and host roots share an index; --update leaves host roots alone
+  - apply_test.test.S3-T3: the family-folder lifecycle scenarios (UC-007 q11-q13) through apply_changes
+  - apply_test.test.S3-T3: find and index_status say pending_files and truncated, over the visible scope only
+  - apply_test.test.S3-T3: a generation carrying unchanged documents has the lexical section a fresh positional build gives
+  - apply_test.test.S4-T11 ruling 2: the carried merge writes a fresh build's lexical section at every step
+  - apply_test.test.S4-T11 ruling 2: a HYBLEX01 previous generation takes the fresh path and upgrades
+  - apply_test.test.restricted writers cannot change root policy, hidden files or labels
+  - apply_test.test.S4-T13 ruling 2(a): a previous lexical section with a flipped byte, or one that disagrees with the manifest, is refused at open
+  - apply_test.test.S4-T13 ruling 2(b): a re-sealed repeated ordinal in a carried posting is refused before anything is published
+  - apply_test.test.S4-T13 ruling 2(c): a re-sealed byte appended to section 4 is refused by the merge's end-of-walk check
+  - apply_test.test.S4-T13 ruling 2(d) (and 3(c)): an untouched previous generation gives a fresh index's sections
+  - apply_test.test.S4-T13 ruling 3(a): a previous source section with a flipped byte, or one that disagrees with the manifest, is refused at open
+  - apply_test.test.S4-T14 ruling 3(a): a re-sealed bad line map is carried by an update of another file, refused per file by the reader, and replaced by an update 
+  - apply_test.test.S4-T13 ruling 4: the filename sections equal a full build at every step
+  - apply_test.test.S4-T13 ruling 4: with no path changed the previous filename lexical section is carried byte for byte; its guard is the checksum
+  - apply_test.test.S4-T13 ruling 4: a damaged previous filename lexical section is rebuilt, never carried or refused
+  - apply_test.test.S4-T16 finding 14: no stage name is dropped on the writer's longest paths
+  - apply_test.test.S4-T16 rulings 2-4: every kind of update writes a fresh index's documents, lexical, source and filename sections
+  - apply_test.test.S4-T16 ruling 3: the source walk over a section that holds only some roots' files writes a fresh index's sections
+  - apply_test.test.S4-T16 ruling 2: an update of a generation whose records are out of path order writes a fresh index's sections
+  - apply_test.test.S4-T16 ruling 5(b): a state whose entries are out of record order runs the not-in-state loop and writes the same sections
+  - apply_test.test.S4-T16 ruling 5(c): a previous path the state does not name is rebuilt from the generation, and the output equals the update where none is missi
+  - find_fixture_test.test.S3-T2: --update carries exact positions; a HYBLEX01 generation is upgraded
+  - compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index
+  - compat_98c4a2b_test.test.S6-T4 ruling 4: a library before v3 refuses a v3 index at the manifest's flags (UnsupportedFlags), never reading a section
+  - compat_s6t7_test.test.S6-T7: the committed text-once fixture is 62324f9's writer output (this writer's but for HYBLEX04), and a library before v2.4 refuses it a
+  - compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same
+  - compat_s6t8_test.test.S6-T8: the committed v2.5 fixture is this writer's output, and a library before v2.5 refuses it at the flags
+  - compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same
+  - compat_s6t8_test.test.S6-T8 sites: a v4 section that ends inside a count varint is refused at a later update, carried or dropped, at three tables and at an empt
+  - compat_s6t8_test.test.S6-T8 sites: a v4 section that ends before a table's last token byte is refused at a later update, carried or dropped, at three tables
+  - compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a gap escape varint should follow is refused at a later update, carried or dropped, at three tab
+  - compat_s6t8_test.test.S6-T8 sites: a v4 section that ends where a length escape varint should follow is refused at a later update, carried or dropped, at three 
+  - compat_s6t8_test.test.S6-T8 sites: one byte after a v4 section's last table is refused by find and by the walk at a later update, a file added or the last docum
+  - compat_s6t8_test.test.S6-T8 F6: an end of exactly 2^32, and one past it, in a carried v4 table: find refuses it and a later update refuses it in the encode, at 
+  - compat_s6t8_test.test.S6-T8 Fifth Verdict: value damage (a length of 0) in a carried v4 table: find refuses it and a later update refuses it in the encode, at t
+  - compat_s6t8_test.test.S6-T8 Fifth Verdict: a stray byte after an inner v4 table: find refuses it (the next count) and a later update refuses it, a file added or
+  - state_v3_test.test.S6-T9 state v3: decode(encode(state)) is the state, references taken exactly when the entry matches its record
+  - state_v3_test.test.S6-T9 state v3 S1: a referenced record with bit 0, 2 or 3 set is StateReferenceFlags, first, middle and last record
+  - state_v3_test.test.S6-T9 state v3: a referenced record's absent fields hold zero (v2's rule, InvalidState), first, middle and last record
+  - state_v3_test.test.S6-T9 state v3 S4: a source record not above the previous reference's is StateReferenceOrder, first, middle and last record
+  - state_v3_test.test.S6-T9 state v3 S5: a table path outside the record's root is StateReferencePath, first, middle and last record
+  - state_v3_test.test.S6-T9 state v3: counts, record lengths and truncation are refused (InvalidState), never read past the payload
+  - state_v3_test.test.S6-T9 state v3: the writer's state is HYBSTA03, every retained file referenced, the pending one full; it decodes to the files
+  - state_v3_test.test.S6-T9 state v3: each rule is refused at the next write (a carrying write) and at the pointer, first, middle and last record; files untouched,
+  - state_v3_test.test.S6-T9 state v3: the section version against flag bit 8 (M3) is refused at the next write; a HYBSTA02 section under a manifest without it is r
+  - state_v3_test.test.S6-T9 state v3: the pointer resolves a HYBSTA03 state only against the documents and source sections its manifest binds; each check refused (
+  - state_v3_test.test.S6-T9 state v3 bound: a payload with no slack (36 bytes a file, nothing else) is read at its count; one more file is refused before any alloc
+  - state_v3_test.test.S6-T9 state v3: a referenced record's label count past the label references, or its root past the strings, is InvalidState, first, middle and
+  - state_v3_test.test.S6-T9 state v3 writer bound: an entry offered the same source record as the reference before it keeps its full record (the ordinals strictly 
+  - compat_s6t9_test.test.S6-T9: the committed v2.6 fixture is this writer's output, and a library before v2.6 refuses it at the flags
+  - compat_s6t9_test.test.S6-T9: the first update of each older index plans no work, publishes one whole v2.6 generation, a fresh index's sections, and answers the 
+  - compat_s6t9_test.test.S6-T9: the first publish over main's v2.5 format through apply_changes equals the same change over v2.6
+  - compat_s6t9_test.test.S6-T9 catalog: the writer does not read the previous catalog (as since S4-T13); an update over a catalog damaged by C1 publishes a catalog
+  - reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (poisoned testing allocator)
+  - reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (C allocator, as a release searchd)
+  - filename_field_test.test.opt-in folder index publishes filename channel and refresh setting is pinned
+s-S5-separator: 1 failed
+  - state_v3_test.test.S6-T9 state v3 S5 bound: the root prefix needs one byte after its slash
+b-count-bound-loose: 1 failed
+  - state_v3_test.test.S6-T9 state v3 bound: a payload with no slack (36 bytes a file, nothing else) is read at its count; one more file is refused before any alloc
+s-v2-bit6: 1 failed
+  - incremental_state.test.S4-T4: the binary state refuses every truncation, trailing bytes, unknown flags and out-of-range references
+s-ref-zero-moved: 1 failed
+  - state_v3_test.test.S6-T9 state v3: a referenced record's absent fields hold zero (v2's rule, InvalidState), first, middle and last record
+s-section-v3-version: 2 failed
+  - state_section.test.S4-T4: HYBSTA02 refuses truncation, a flipped byte anywhere and a stray magic or version
+  - state_v3_test.test.S6-T9 state v3 section header: HYBSTA03 at version 2 or 4 is UnsupportedVersion, the magics are not crossed, with the checksum recomputed
+s-writer-v1-source: 1 failed
+  - compat_s6t9_test.test.S6-T9 state v3 S2 at the writer: a HYBSTA03 state over a HYBSRC01 source (bit 8 without bit 6, which no writer produces) is StateReference
+s-M2: 1 failed
+  - state_v3_test.test.S6-T9 manifest v2.6 M1 and M2: bit 8 without a state section, bit 9 without file-name sections, are refused at decode
+v-refers-pending: 1 failed
+  - state_v3_test.test.S6-T9 state v3: decode(encode(state)) is the state, references taken exactly when the entry matches its record
+v-refers-hash: 1 failed
+  - state_v3_test.test.S6-T9 state v3: decode(encode(state)) is the state, references taken exactly when the entry matches its record
+v-apply-swallow: 3 failed
+  - state_v3_test.test.S6-T9 state v3: each rule is refused at the next write (a carrying write) and at the pointer, first, middle and last record; files untouched,
+  - state_v3_test.test.S6-T9 state v3 S2: references in a generation with no source section are refused at the next write and at the pointer, first, middle and last
+  - compat_s6t9_test.test.S6-T9 state v3 S2 at the writer: a HYBSTA03 state over a HYBSRC01 source (bit 8 without bit 6, which no writer produces) is StateReference
+v-ref-mtime: 5 failed
+  - apply_test.test.S3-T3: add, change, move, pending, add, remove and remove_root, one call each
+  - state_v3_test.test.S6-T9 state v3: decode(encode(state)) is the state, references taken exactly when the entry matches its record
+  - state_v3_test.test.S6-T9 state v3 S5: a table path outside the record's root is StateReferencePath, first, middle and last record
+  - state_v3_test.test.S6-T9 state v3: a referenced record's label count past the label references, or its root past the strings, is InvalidState, first, middle and
+  - state_v3_test.test.S6-T9 state v3 writer bound: an entry offered the same source record as the reference before it keeps its full record (the ordinals strictly 

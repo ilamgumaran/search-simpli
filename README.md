@@ -81,18 +81,19 @@ and says how to add an interface or a core feature; `scripts/check_layers.py` ch
 
 Measured, macOS arm64 unless stated (each number is linked to its record):
 
-- **Size.** `searchd` built `ReleaseSmall` is 1,133,704 B ([S6-T8](docs/tasks/S6-T8.md));
-  the shipped arm64 libraries are 959,584 B (Android) to 990,040 B (macOS)
+- **Size.** `searchd` built `ReleaseSmall` is 1,151,208 B ([S6-T9](docs/tasks/S6-T9.md));
+  the shipped arm64 libraries are 966,800 B (Android) to 1,006,456 B (macOS)
   ([`native/`](bindings/dart/search_simpli/native/)).
 - **Reading a 10,000-file index.** A whole `searchd query` process takes about 0.02 s;
   a warm query 0.1–0.2 ms ([objective plan](docs/plans/2026-11-16-objective-plan.md#where-the-engine-stands-against-it)).
 - **Searching a folder directly.** One `searchd search` answers within 100 ms up to about
   1,000 files and within 1 s up to about 10,000 (149 MiB); past that, or for a second
   question, build an index ([direct search](docs/direct-search.md#when-to-use-it-and-when-to-build-an-index)).
-- **Disk.** That index is 2.01 times its corpus (2.17 before the highlight offsets took one byte
-  per token, 3.41 before each file's text was stored once, 4.44 before lexical format v3), a
-  generated one with a large vocabulary
-  ([index size](docs/index-size.md#landed), [S6-T8](docs/tasks/S6-T8.md), [S6-T7](docs/tasks/S6-T7.md),
+- **Disk.** That index is 1.89 times its corpus (2.01 before the
+  state and the file-name catalog stopped repeating the source table, 2.17 before the highlight offsets
+  took one byte per token, 3.41 before each file's text was stored once, 4.44 before lexical format
+  v3), a generated one with a large vocabulary
+  ([index size](docs/index-size.md#landed), [S6-T9](docs/tasks/S6-T9.md), [S6-T8](docs/tasks/S6-T8.md), [S6-T7](docs/tasks/S6-T7.md),
   [objective plan](docs/plans/2026-11-16-objective-plan.md#disk-use-measured)).
 - **Relevance.** J2, a judged fixture of 290 queries over invented files, runs in CI
   through the Python reference and a `ReleaseSmall` `searchd` against a committed baseline

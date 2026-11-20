@@ -207,10 +207,11 @@ fn loadEngine(allocators: Allocators, io: std.Io, from: From, options: engine.En
 /// back cut to the old size (`Truncated`; `manifest_read_test.zig`).
 /// `buffer` is the stat's size, to be freed whole; `bytes` is what was read
 /// (shorter only if the file shrank in place, which `manifest.decode` refuses
-/// as it refuses any cut `MANIFEST`).
-const ManifestRead = struct { buffer: []u8, bytes: []u8 };
+/// as it refuses any cut `MANIFEST`). S6-T9: also the writer's previous-state
+/// read (`incremental_state.resolvePointer`, `loadBound`).
+pub const ManifestRead = struct { buffer: []u8, bytes: []u8 };
 
-fn readManifest(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !ManifestRead {
+pub fn readManifest(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !ManifestRead {
     const file = try dir.openFile(io, publication.current_manifest_file, .{});
     defer file.close(io);
     const stat = try file.stat(io);

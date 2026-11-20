@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/incremental_state.zig ARCHIVE/src/s-count-bound/zig/src/incremental_state.zig
+--- ARCHIVE/none/zig/src/incremental_state.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/s-count-bound/zig/src/incremental_state.zig	2026-11-19 12:13:29
+@@ -584,7 +584,7 @@
+     const label_ref_count = read32(header, 32);
+     // Every count is bounded by the bytes it needs before anything is
+     // allocated for it (a `HYBSTA03` record needs at least 36 bytes).
+-    const least_record: u128 = if (v3) binary_ref_length else binary_file_length;
++    const least_record: u128 = if (v3) 0 else binary_file_length;
+     const fixed = @as(u128, 4) * string_count + @as(u128, binary_root_length) * root_count + least_record * file_count + @as(u128, 4) * label_ref_count;
+     if (fixed > bytes.len - reader.at) return error.InvalidState;
+     const lengths = try reader.take(4 * @as(usize, string_count));

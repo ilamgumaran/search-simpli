@@ -1,0 +1,12 @@
+diff -ru ARCHIVE/none/zig/src/incremental_state.zig ARCHIVE/src/s-S5/zig/src/incremental_state.zig
+--- ARCHIVE/none/zig/src/incremental_state.zig	2026-11-19 12:05:57
++++ ARCHIVE/src/s-S5/zig/src/incremental_state.zig	2026-11-19 13:04:40
+@@ -655,7 +655,7 @@
+             if (last_ref) |previous| if (ordinal <= previous) return error.StateReferenceOrder;
+             last_ref = ordinal;
+             const target = try source_table.target(ordinal);
+-            const path = relativeOf(root_id, target.path) orelse return error.StateReferencePath;
++            const path = relativeOf(root_id, target.path) orelse target.path;
+             const hex = hashes[64 * i ..][0..64];
+             hex.* = std.fmt.bytesToHex(target.sha256, .lower);
+             entry.* = .{

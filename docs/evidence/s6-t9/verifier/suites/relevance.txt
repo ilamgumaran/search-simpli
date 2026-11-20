@@ -1,0 +1,152 @@
+{
+  "profile_version": 1,
+  "profile_id": "6f054895a3dc80e79176dfd4358b3eab0b5780374adc5e44d99643ff1e28faf2",
+  "corpus": "<home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/src.noindex/suite/fixtures/relevance-smoke/corpus",
+  "suite": "<home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/src.noindex/suite/fixtures/relevance-smoke/judgments.json",
+  "vector_mode": "none",
+  "index_source": "built",
+  "index_path": null,
+  "timing_ms": {
+    "build": 1.3552080000000035,
+    "evaluation": 1.5364169999999984
+  },
+  "evaluation": {
+    "suite_version": 2,
+    "index": {
+      "root": "<home>/workspace/repos/search-simpli-wt/S6-T9-vscratch/src.noindex/suite/fixtures/relevance-smoke/corpus",
+      "version": 1,
+      "vector_mode": "none",
+      "embedding": null,
+      "chunks": 10
+    },
+    "warnings": [],
+    "reports": [
+      {
+        "mode": "lexical",
+        "top_k": 10,
+        "query_count": 4,
+        "macro_recall_at_k": 1.0,
+        "success_at_k": 1.0,
+        "mean_reciprocal_rank": 1.0,
+        "mean_ndcg_at_k": 1.0,
+        "queries": [
+          {
+            "id": "lamp",
+            "query": "red ceramic table lamp",
+            "first_relevant_rank": 1,
+            "recall": 1.0,
+            "ndcg_at_k": 1.0,
+            "returned": [
+              "08baa0e4bea593168fee",
+              "29ec4c1c3072014b34e6"
+            ],
+            "returned_paths": [
+              "product-00001.md",
+              "product-00002.md"
+            ],
+            "returned_relevance_grades": [
+              2,
+              1
+            ]
+          },
+          {
+            "id": "sofa-bed",
+            "query": "queen sleeper sofa bed",
+            "first_relevant_rank": 1,
+            "recall": 1.0,
+            "ndcg_at_k": 1.0,
+            "returned": [
+              "821387e43d11abd55e20",
+              "e2e49f2f5f16916ca0ed"
+            ],
+            "returned_paths": [
+              "product-00003.md",
+              "product-00004.md"
+            ],
+            "returned_relevance_grades": [
+              2,
+              1
+            ]
+          },
+          {
+            "id": "slow-cooker",
+            "query": "stainless steel slow cooker",
+            "first_relevant_rank": 1,
+            "recall": 1.0,
+            "ndcg_at_k": 1.0,
+            "returned": [
+              "d04d3be383d6acb9ea1e",
+              "fa69efab89e6c59b1138"
+            ],
+            "returned_paths": [
+              "product-00005.md",
+              "product-00006.md"
+            ],
+            "returned_relevance_grades": [
+              2,
+              1
+            ]
+          },
+          {
+            "id": "dinosaur-decal",
+            "query": "dinosaur wall decal",
+            "first_relevant_rank": 1,
+            "recall": 1.0,
+            "ndcg_at_k": 1.0,
+            "returned": [
+              "ef2323170dbd2d7aab03",
+              "4aafe9db7139944da0e4"
+            ],
+            "returned_paths": [
+              "product-00007.md",
+              "product-00008.md"
+            ],
+            "returned_relevance_grades": [
+              2,
+              1
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "gate": {
+    "minima": {
+      "ndcg": 1.0,
+      "mrr": 1.0,
+      "recall": 1.0,
+      "success": 1.0
+    },
+    "baseline_profile_id": null,
+    "max_absolute_regression": null,
+    "passed": true,
+    "failures": []
+  }
+}
+pack family-folder (judgments version 2): 13 scenarios, 5 phrase, 5 prefix, 5 outline, 8 read_span
+words recall@5: 1.000 over 4 cases (gate >= 0.9)
+  uc007-01 4/4 expected spans in top 5: 'tide table'
+  uc007-06 1/1 expected spans in top 5: 'teacher said spelling test next week'
+  uc007-07 2/2 expected spans in top 5: 'when is the band concert'
+  uc007-10 2/2 expected spans in top 5: 'what to do after the dough rests'
+empty result for the newt question: pass
+outline exactness: 7/7 (gate 1.00)
+read_span exactness: 9/9 (gate 1.00)
+lifecycle exactness: 3/3 (gate 1.00)
+phrase_neighbour exactness: 1/1 (gate 1.00)
+phrase: precision 1.00, recall 1.00 across all pages over 6 cases (gate 1.00); expected engine misses found: 0
+  p1 3 hits, precision 1.00, recall 1.00: 'count me in'
+  p2 1 hits, precision 1.00, recall 1.00: 'the dough rests'
+  p3 0 hits, precision 1.00, recall 1.00, expected misses 1: 'round the old mill pond'
+  p4 1 hits, precision 1.00, recall 1.00: 'the the'
+  p5 2 hits, precision 1.00, recall 1.00: 'பள்ளி விடுமுறை'
+  uc007-02 3 hits, precision 1.00, recall 1.00: 'count me in'
+prefix: precision 1.00, recall 1.00 across all pages over 6 cases (gate 1.00); expected engine misses found: 0
+  x1 5 hits, precision 1.00, recall 1.00, expected misses 1: 'photosyn*'
+  x2 7 hits, precision 1.00, recall 1.00: 'spell*'
+  x3 5 hits, precision 1.00, recall 1.00: 'harbo*'
+  x4 5 hits, precision 1.00, recall 1.00: 'lighthou*'
+  x5 1 hits, precision 1.00, recall 1.00: 'கணி*'
+  uc007-03 5 hits, precision 1.00, recall 1.00, expected misses 1: 'photosyn*'
+not yet implemented: 0 skipped
+gate: pass

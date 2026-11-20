@@ -623,6 +623,20 @@ fn errorCode(err: anyerror) i64 {
         error.StateSectionUnexpected,
         error.StateSectionSizeMismatch,
         error.StateSectionChecksumMismatch,
+        // S6-T9: manifest v2.6's rules (M1 to M4), a `HYBSTA03` state's
+        // reference rules (S1 to S5, checked by the next writer) and a
+        // record v6 catalog's (C1, C2, at the first file-name query).
+        error.StateVersionFlagWithoutSection,
+        error.CatalogVersionFlagWithoutSection,
+        error.StateSectionVersionMismatch,
+        error.FilenameCatalogVersionMismatch,
+        error.StateReferenceFlags,
+        error.StateReferenceWithoutSource,
+        error.StateReferenceOutOfRange,
+        error.StateReferenceOrder,
+        error.StateReferencePath,
+        error.FilenameCatalogIdPresent,
+        error.FilenameCatalogTextPresent,
         => SS_ERR_CORRUPT_SNAPSHOT,
 
         error.DocumentCapacityTooSmall,

@@ -45,6 +45,12 @@ Raw tables: [`docs/evidence/s6-t3/`](evidence/s6-t3/README.md).
   highlight offsets at one byte per token, measured 2.01 (timing 10k), 1.85
   (prose 10k), 1.28 (Tamil 10k), 1.72 (fixtures), 1.93 (family folder) against
   the projection's 2.15, 1.92, 1.32, 1.72, 1.92.
+- **Step 4 is merged** (20 Nov 2026, on the maintainer's go-ahead) ([below](#landed); S6-T9): the
+  state section refers to the source table and the file-name catalog derives
+  its stems and chunk ids, measured 1.89 (timing 10k), 1.79 (prose 10k), 1.25
+  (Tamil 10k), 1.71 (fixtures), 1.92 (family folder) against the projection's
+  1.97, 1.82, 1.27, 1.71, 1.91. The parts saved are S6-T3's D and F figures
+  to the byte (−610,000 and −290,000 B at 10k timing).
 - **Not taken in D2 (ruled 16 Nov 2026, [below](#rulings-16-nov-2026)):**
   leaving the offsets out (to 1.81 timing, 1.63 prose, but `find` words
   measured 0.03–0.84 ms slower at the median, up to 5 ms at p95), block
@@ -160,7 +166,47 @@ slower on the first publish and up to 6.9 % on later updates). A few warm
 `both` queries on prose move by 10 to 25 µs with the code's placement in the
 `ReleaseSmall` build, as never-run code of the same size moves them. The numbers,
 bars and method are in the [S6-T8 Report](tasks/S6-T8.md) and
-`docs/evidence/s6-t8/`. Step 4 is next (03-next D2-4).
+`docs/evidence/s6-t8/`.
+
+**Step 4, state and catalog stop repeating (S6-T9, built 19 Nov 2026, merged
+20 Nov 2026 on the maintainer's go-ahead, squashed onto `main` after S6-T13).** The state section is
+[`HYBSTA03`](state-section-format-v3.md): a file whose bytes the source
+section holds is a 36-byte record naming its source-table entry (its ordinal),
+and its path, size and SHA-256 come from that entry; other files keep v2's
+76-byte record. The file-name catalog is
+[record v6](filename-catalog-format-v6.md): v3's layout with the chunk id and
+the stem not stored (both derived from the record's body anchor and path).
+Both under [manifest v2.6](manifest-format-v2.md) (bits 8 and 9). Measured
+the same way, against `main` at `a019f22` (step 3) on the same files, and
+against the step 4 column of the [projection](#projection); percentages
+from measured bytes, rounded to nearest:
+
+| Corpus | Corpus bytes | Before (step 3) | After (step 4) | Change | State before → after | Catalog before → after | Projected (step 4) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| timing-10k | 7,269,199 | 14,612,980 (2.01) | 13,712,980 (1.89) | −900,000 (−6.2 %) | 970,159 → 360,159 (−62.9 %) | 780,036 → 490,036 (−37.2 %) | 14,285,351 (1.97) |
+| prose-10k | 17,244,024 | 31,967,055 (1.85) | 30,815,993 (1.79) | −1,151,062 (−3.6 %) | 1,087,690 → 360,159 (−66.9 %) | 1,031,098 → 607,567 (−41.1 %) | 31,366,811 (1.82) |
+| tamil-10k | 27,708,457 | 35,533,368 (1.28) | 34,633,368 (1.25) | −900,000 (−2.5 %) | 970,159 → 360,159 (−62.9 %) | 780,036 → 490,036 (−37.2 %) | 35,208,050 (1.27) |
+| fixtures | 4,635,177 | 7,969,705 (1.72) | 7,946,180 (1.71) | −23,525 (−0.3 %) | 24,805 → 8,529 (−65.6 %) | 20,566 → 13,317 (−35.2 %) | 7,918,151 (1.71) |
+| family | 1,237,342 | 2,382,441 (1.93) | 2,378,262 (1.92) | −4,179 (−0.2 %) | 4,626 → 1,833 (−60.4 %) | 3,621 → 2,235 (−38.3 %) | 2,369,100 (1.91) |
+
+J2's index: 157,654 → 149,693 B (−5.0 %). The two savings are S6-T3's D and F
+figures to the byte on the 10k corpora (−610,000 and −290,000 B timing,
+−727,531 and −423,531 B prose); every other section is `main`'s byte for byte.
+The 10k corpora come in under the projection, the fixtures and family 0.4 %
+over it: the projection's step 4 column also counts F2 (the file-name lexical
+coding), which landed in step 1, so each difference is the earlier steps'
+difference carried. Nothing a query, `find`, `outline`, `read_span`,
+`list_files` or `index_status` answers changed, fresh and on `main`'s index
+updated once; an unchanged folder plans no work after the migration. The
+verifier's five gated timing runs (the [S6-T9 Verdict](tasks/S6-T9.md#verdict-verifier-fills-in),
+`docs/evidence/s6-t9/verifier/timing/`): open below T on all six corpora, the
+first file-name query after an open 13.3–33.1 % faster and the first `both`
+1.5–10.6 % faster, the first publish from step 3's format 2.5–4.4 % faster and
+one-file updates after it 2.8–3.8 % faster, planning −1.3 % to +1.1 %. Three
+warm `find` cells on timing-10k failed the rule in that set (`prefix bada*`
++34.5 µs, `words Database` +14.3, `words Distributed` +11.9; T 10.0) and passed
+in the verifier's second five-run set (−6.0, −1.8, −3.8 µs; all 25 `find` cells
+pass); the maintainer accepted them. D2's four steps are now merged.
 
 ## How it was measured
 
