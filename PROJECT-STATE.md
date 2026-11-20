@@ -60,7 +60,7 @@ through the C ABI). **Contracts 2.8.0, Dart 0.9.2**; no API, schema, C header or
   known behaviour. Open for the maintainer: whether a writer should check the tables it drops (items 14, 16). The
   folder-knowledge skill's step 3 now names `read_span`'s request fields as the contract does (`root_id`, not
   `root`; filed by S5-T10), checked against the request schema by `tests/test_example_loop.py`. No library change.
-- **Two code readings tested and fixed ([S6-T13](docs/tasks/S6-T13.md), 20 Nov, awaiting its Verdict):**
+- **Two code readings tested and fixed ([S6-T13](docs/tasks/S6-T13.md), 20 Nov, Verdict PASS, not yet merged):**
   `lifecycle.scan` over a `MANIFEST` whose documents or lexical file is missing now returns `FileNotFound` (it
   reported no current generation and every file an orphan; no caller outside tests). An open reads `MANIFEST`
   through the handle whose `stat` sized its buffer (`snapshot_open.readManifest`): a publish that replaced

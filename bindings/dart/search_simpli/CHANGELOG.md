@@ -3,9 +3,11 @@
 ## 0.9.3 (S6-T13; contract 2.8.0; patch: a fix)
 
 An open no longer fails when another process publishes while it reads
-`MANIFEST`. No API change: the same calls, JSON fields, error codes and C
-ABI; contracts stay 2.8.0; the index format is unchanged; an open that no
-publish crosses answers as before.
+`MANIFEST`. With pruning (`keep_generations: 1`) an open can still fail
+with `FileNotFound` when a publish and its prune land while it reads, as it
+already could before. No API change: the same calls, JSON fields, error
+codes and C ABI; contracts stay 2.8.0; the index format is unchanged; an
+open that no publish crosses answers as before.
 
 - **The fix.** `open` took the size of `MANIFEST` from one open of the file
   and read the bytes through a second open by name. A publish that replaced
