@@ -20,4 +20,3 @@
 zig/build.zig:63: names src/tests/extra_test.zig, which BUILD_ROOTS (scripts/check_layers.py) does not list: add it, with the step of `zig build test` it is the root of, or None
 zig/src/tests/extra_test.zig:1: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
 check_layers: 2 problem(s)
-
