@@ -1,0 +1,2 @@
+zig build lib: SS_ANDROID_NDK is not set; skipping the aarch64-linux-android libraries.
+1133704 B searchd

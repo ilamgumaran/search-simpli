@@ -1,0 +1,2 @@
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+check_requirements exit 0

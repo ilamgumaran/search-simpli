@@ -1,0 +1,27 @@
+planted w-mention2-root
+--- diff base w-mention2-root
+diff -r -u base/skills/folder-knowledge/SKILL.md w-mention2-root/skills/folder-knowledge/SKILL.md
+--- base/skills/folder-knowledge/SKILL.md	2026-11-19 22:05:48
++++ w-mention2-root/skills/folder-knowledge/SKILL.md	2026-11-19 22:17:38
+@@ -50,7 +50,7 @@
+      file's first passage, marked as not matched
+      (`match_sections.content.matched: false`):
+      it is navigation, not evidence. Read the file (`outline`, then
+-     `read_span`) before quoting anything from it, and cite the file without
++     `read_span` with the result's `root` and `path`) before quoting anything from it, and cite the file without
+      lines when only the name matched. An index built without the
+      file-name channel has no `filename_policy_id` in `index_status` and
+      refuses a `filename` or `both` request; the host says so in its own
+--- SEARCH_SIMPLI_NO_ZIG=1 tests.test_example_loop.SkillDocumentTests
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field ... ok
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.004s
+
+OK
+exit 0

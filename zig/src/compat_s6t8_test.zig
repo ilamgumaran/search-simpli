@@ -1047,10 +1047,15 @@ test "S6-T8 sites: one byte after a v4 section's last table is refused by find a
 /// The error of the first `find` on `dir` (the open, or the query), or
 /// null where both succeed.
 fn firstFindError(a: std.mem.Allocator, dir: std.Io.Dir) ?anyerror {
+    return findError(a, dir, "{\"query\":\"the\"}");
+}
+
+/// The error of one `find` (`request`, a JSON object) on `dir`, or null.
+fn findError(a: std.mem.Allocator, dir: std.Io.Dir, request: []const u8) ?anyerror {
     const opened = snapshot_open.openScoped(a, io, dir) catch |err| return err;
     defer opened.folder.close();
     const service = @import("service.zig").Service{ .engine = opened.engine, .folder = opened.folder };
-    const query = switch (ops.parseObject(a, "{\"query\":\"the\"}") catch |err| return err) {
+    const query = switch (ops.parseObject(a, request) catch |err| return err) {
         .ok => |map| map,
         .failed => return error.TestUnexpectedResult,
     };
@@ -1210,4 +1215,68 @@ test "S6-T8 boundary sweep, rule 11 on a v2-coded index: a highlight one past it
     var at_end = try v2EndsPastText(a, tmp, "r11-v2-at-end", 0);
     defer at_end.close(io);
     try std.testing.expectEqual(@as(?anyerror, null), firstFindError(a, at_end));
+}
+
+const SpanAt = enum { first, middle, last };
+
+/// The word that only the `## வீடு` chunk of `tamil-notes.md` holds.
+const tamil_marker = "\u{0BB0}\u{0BCA}\u{0B9F}\u{0BCD}\u{0B9F}\u{0BBF}";
+
+/// `main`'s fixture (v2-coded section 5) with one span of the Tamil chunk
+/// that holds `tamil_marker` (S6-T10, the Verdict's F2) made to end `past`
+/// codepoints after the chunk's text, every other span kept, every checksum
+/// resealed. The chunk's text has about three bytes per codepoint, so a
+/// rule 11 counted in bytes would let such an end through.
+fn v2TamilSpanPast(a: std.mem.Allocator, tmp: std.testing.TmpDir, name: []const u8, where: SpanAt, past: u64) !std.Io.Dir {
+    const dir = try copyOf(a, tmp, fixture_main, name);
+    const engine = try snapshot_open.open(a, io, dir);
+    const base = try v2Tables(a, dir);
+    var found: ?usize = null;
+    for (engine.documents, 0..) |document, i| {
+        if (std.mem.indexOf(u8, document.text, tamil_marker) == null) continue;
+        try std.testing.expectEqual(@as(?usize, null), found);
+        found = i;
+    }
+    const text = engine.documents[found.?].text;
+    const codepoints: u64 = @intCast(@import("analysis.zig").codepointCount(text));
+    try std.testing.expect(codepoints + past < text.len);
+    const doc = &base.docs[found.?];
+    const n = doc.tokens.len;
+    try std.testing.expect(n >= 3);
+    const k: usize = switch (where) {
+        .first => 0,
+        .middle => n / 2,
+        .last => n - 1,
+    };
+    // v2: each delta from the previous token's start, so a length moves no
+    // other span.
+    var start: u64 = 0;
+    var start_k: u64 = 0;
+    for (doc.tokens, 0..) |token, i| {
+        start += v2Value(token.delta);
+        try std.testing.expect(start + v2Value(token.length) <= codepoints);
+        if (i == k) start_k = start;
+    }
+    doc.tokens[k].length = try v2Varint(a, codepoints + past - start_k);
+    try v2Reseal(a, dir, base.good, try v2Emit(a, base.docs));
+    // v2's own rules hold: only the text shows it.
+    try oldReaderVerdict(a, dir);
+    return dir;
+}
+
+test "S6-T10 rule 11 on a v2-coded index, a Tamil chunk of several spans: an end one codepoint past the text in the first, a middle or the last span is refused by find; one at the text's end answers" {
+    for ([_]SpanAt{ .first, .middle, .last }) |where| for ([_]u64{ 1, 0 }) |past| {
+        errdefer std.debug.print("S6-T10 rule 11 v2: the {s} span ending {d} past the text\n", .{ @tagName(where), past });
+        var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+        defer arena_state.deinit();
+        const a = arena_state.allocator();
+        var tmp = std.testing.tmpDir(.{ .iterate = true });
+        defer tmp.cleanup();
+        var dir = try v2TamilSpanPast(a, tmp, "r11-v2-tamil", where, past);
+        defer dir.close(io);
+        const expected: ?anyerror = if (past > 0) error.OffsetsPastText else null;
+        try std.testing.expectEqual(expected, findError(a, dir, "{\"query\":\"" ++ tamil_marker ++ "\"}"));
+        // A find whose hits do not include that chunk still answers.
+        try std.testing.expectEqual(@as(?anyerror, null), findError(a, dir, "{\"query\":\"flour\"}"));
+    };
 }

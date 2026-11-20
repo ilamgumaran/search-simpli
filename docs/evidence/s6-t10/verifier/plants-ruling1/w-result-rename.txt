@@ -1,0 +1,45 @@
+planted w-result-rename
+--- diff base w-result-rename
+diff -r -u base/contracts/tools/read_span.result.schema.json w-result-rename/contracts/tools/read_span.result.schema.json
+--- base/contracts/tools/read_span.result.schema.json	2026-11-19 22:05:48
++++ w-result-rename/contracts/tools/read_span.result.schema.json	2026-11-19 22:17:40
+@@ -85,7 +85,7 @@
+       "type": "string",
+       "description": "The original bytes of the span, line terminators included."
+     },
+-    "context_before": {
++    "context_prior": {
+       "type": "string",
+       "description": "Context lines before the span."
+     },
+@@ -112,7 +112,7 @@
+     "start_line",
+     "end_line",
+     "text",
+-    "context_before",
++    "context_prior",
+     "context_after",
+     "byte_exact",
+     "sha256"
+--- SEARCH_SIMPLI_NO_ZIG=1 tests.test_example_loop.SkillDocumentTests
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field ... FAIL
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+======================================================================
+FAIL: test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<vscratch>/py.noindex/w-result-rename/tests/test_example_loop.py", line 108, in test_skill_names_only_the_read_span_request_fields_the_contract_has
+    self.assertIn(name, fields | set(result["properties"]) | tools, name)
+AssertionError: 'context_before' not found in {'list_files', 'request', 'end_line', 'outline', 'start_line', 'search_knowledge', 'apply_changes', 'scope', 'text', 'index_status', 'sha256', 'read_chunk', 'list_sources', 'byte_exact', 'context_prior', 'read_span', 'context_lines', 'context_after', 'find', 'root_id', 'roots', 'warnings', 'generation', 'path'} : context_before
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+FAILED (failures=1)
+exit 1

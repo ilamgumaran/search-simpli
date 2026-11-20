@@ -1,0 +1,1 @@
+check_no_home_paths exit 0

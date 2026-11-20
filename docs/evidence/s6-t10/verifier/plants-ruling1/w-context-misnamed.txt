@@ -1,0 +1,27 @@
+planted w-context-misnamed
+--- diff base w-context-misnamed
+diff -r -u base/skills/folder-knowledge/SKILL.md w-context-misnamed/skills/folder-knowledge/SKILL.md
+--- base/skills/folder-knowledge/SKILL.md	2026-11-19 22:05:48
++++ w-context-misnamed/skills/folder-knowledge/SKILL.md	2026-11-19 22:17:59
+@@ -63,7 +63,7 @@
+    `find` hit, its `root_id` and `path`; from a `search_knowledge` item, its
+    `root_id` and the citation `path` after `root_id/`), or `read_chunk` with
+    its `chunk_id`. Quote from the text those return, not from memory and not
+-   from a snippet alone. Use `context_lines` when the answer is the line after
++   from a snippet alone. Use `context` when the answer is the line after
+    or before a match. `outline` tells you which section a line sits in.
+ 4. **Answer with `[n]` markers.** Each claim carries a number that maps to one
+    returned and confirmed passage. Do not number anything you did not read.
+--- SEARCH_SIMPLI_NO_ZIG=1 tests.test_example_loop.SkillDocumentTests
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field ... ok
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.004s
+
+OK
+exit 0

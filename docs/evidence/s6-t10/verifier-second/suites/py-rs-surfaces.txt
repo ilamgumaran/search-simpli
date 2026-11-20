@@ -1,0 +1,57 @@
+test_apply_report_counts_the_fixture (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_cli_apply_checks_the_generation_and_reports (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_cli_find_human_output_and_scope (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_cli_find_pages_every_phrase_and_prefix_judgment_completely (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_cli_json_and_rpc_agree_with_no_optional_fields (tests.test_folder_surfaces.FolderSurfaceTests)
+S3-T4 Verdict finding 1: one request per method that states no ... ok
+test_cli_json_and_rpc_results_are_byte_identical_for_the_judgments (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_cli_list_files_pages_and_filters (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_cli_outline_matches_every_outline_judgment (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_cli_read_span_is_byte_exact_for_every_judgment (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_cli_read_span_refusals_exit_1_with_one_line (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_cli_roots_and_usage_errors (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_rpc_apply_changes_only_with_allow_write_and_reads_see_it (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_rpc_labels_come_from_the_command_line (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_rpc_methods_with_scope_paging_caps_and_errors (tests.test_folder_surfaces.FolderSurfaceTests) ... ok
+test_request_validation_is_the_adapters_gate (tests.test_tool_schemas.ProviderWrappingTests) ... ok
+test_the_document_names_the_three_shapes (tests.test_tool_schemas.ProviderWrappingTests) ... ok
+test_three_shapes_carry_the_file_unchanged (tests.test_tool_schemas.ProviderWrappingTests) ... ok
+test_a_response_with_an_extra_field_fails_every_schema (tests.test_tool_schemas.RecordedResponseTests) ... ok
+test_apply_changes_report_and_pending (tests.test_tool_schemas.RecordedResponseTests) ... ok
+test_find_every_mode_cli_and_rpc (tests.test_tool_schemas.RecordedResponseTests) ... ok
+test_index_status (tests.test_tool_schemas.RecordedResponseTests) ... ok
+test_outline_read_span_list_files_roots (tests.test_tool_schemas.RecordedResponseTests) ... ok
+test_search_knowledge_read_chunk_list_sources (tests.test_tool_schemas.RecordedResponseTests) ... ok
+test_eighteen_files_for_nine_tools (tests.test_tool_schemas.SchemaShapeTests) ... ok
+test_every_schema_is_2020_12_closed_and_described (tests.test_tool_schemas.SchemaShapeTests) ... ok
+test_integer_bounds_match_the_protocol (tests.test_tool_schemas.SchemaShapeTests) ... ok
+test_request_schemas_hide_principal_labels_and_vectors (tests.test_tool_schemas.SchemaShapeTests) ... ok
+test_requests_accept_documented_calls_and_refuse_the_rest (tests.test_tool_schemas.SchemaShapeTests) ... ok
+test_keywords (tests.test_tool_schemas.ValidatorTests) ... ok
+test_unknown_keyword_is_loud (tests.test_tool_schemas.ValidatorTests) ... ok
+test_unknown_keyword_off_the_instance_path_is_loud (tests.test_tool_schemas.ValidatorTests) ... ok
+test_every_structured_result_validates_against_its_result_schema (tests.test_mcp.McpServerTests) ... ok
+test_framing_and_notifications (tests.test_mcp.McpServerTests) ... ok
+test_parity_with_no_optional_fields_catches_a_changed_default (tests.test_mcp.McpServerTests)
+S3-T4 Verdict finding 1: one request per tool that states nothing ... ok
+test_parity_with_the_rpc_server_for_every_fixture_judgment (tests.test_mcp.McpServerTests) ... 
+S3-T6 parity: 66 requests, MCP structuredContent = RPC result (100%)
+ok
+test_refusals_carry_the_rpc_error_object (tests.test_mcp.McpServerTests) ... ok
+test_resources_list_pages_with_an_opaque_cursor (tests.test_mcp.McpServerTests) ... ok
+test_resources_read_of_the_bom_file_matches_the_listed_size (tests.test_mcp.McpServerTests) ... ok
+test_resources_read_through_read_span_limits (tests.test_mcp.McpServerTests) ... ok
+test_revision_negotiation_and_lifecycle (tests.test_mcp.McpServerTests) ... ok
+test_search_knowledge_names_root_section_and_completeness (tests.test_mcp.McpServerTests) ... ok
+test_the_conformance_client_passes_every_check (tests.test_mcp.McpServerTests) ... ok
+test_the_scope_comes_from_the_command_line_only (tests.test_mcp.McpServerTests) ... ok
+test_three_modes_and_the_descriptors_carry_the_schemas_verbatim (tests.test_mcp.McpServerTests) ... ok
+test_usage_errors_and_a_missing_index (tests.test_mcp.McpServerTests) ... ok
+test_writes_need_allow_write_and_stay_inside_the_roots (tests.test_mcp.McpServerTests) ... ok
+test_a_file_without_a_bom_and_wrong_sizes (tests.test_mcp.ResourceSizeComparisonTests) ... ok
+test_bom_file_of_the_fixture (tests.test_mcp.ResourceSizeComparisonTests) ... ok
+
+----------------------------------------------------------------------
+Ran 48 tests in 1.038s
+
+OK

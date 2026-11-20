@@ -1,0 +1,1030 @@
+Thu Nov 19 22:25:56 EST 2026
+planted x-r11-at-end-multi
+--- diff -r ref/zig/src x-r11-at-end-multi/src/zig/src
+diff -r -u <vscratch>/zp.noindex/ref/zig/src/postings.zig <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig
+--- <vscratch>/zp.noindex/ref/zig/src/postings.zig	2026-11-19 22:05:48
++++ <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig	2026-11-19 22:25:56
+@@ -324,7 +324,7 @@
+ /// S6-T8 rule 11: every span's end at most `codepoints` (its document's
+ /// text). The spans come from `readTokenSpans`.
+ pub fn checkSpansWithinText(spans: []const TokenSpan, codepoints: usize) error{OffsetsPastText}!void {
+-    for (spans) |span| if (@as(usize, span.start) + span.length > codepoints) return error.OffsetsPastText;
++    for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+ }
+ 
+ /// One token's codepoint range in a chunk's text (section 5).
+--- zig build test (Debug), own caches
+zig build lib: SS_ANDROID_NDK is not set; skipping the aarch64-linux-android libraries.
+test
++- run test 497 pass, 9 skip, 37 fail (543 total)
+error: 'rpc.test.S3-T4: the RPC folder methods, the command-line scope and apply_changes gating' failed:
+       S6-T4 byte flips: 5170 resealed flips, 2982 refused, 2188 accepted (each re-encodes to its own bytes); every unsealed flip refused
+       S6-T4 byte flips: 14 sections with a byte after the last offsets, all refused
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/lexical_segment.zig:299:39: 0x104d654e7 in inspect (test)
+           if (encoded.len < expected_total) return error.Truncated;
+                                             ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/lexical_segment.zig:299:39: 0x104d654e7 in inspect (test)
+           if (encoded.len < expected_total) return error.Truncated;
+                                             ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/lexical_segment.zig:302:47: 0x104d656a3 in inspect (test)
+           if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
+                                                     ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/lexical_segment.zig:302:47: 0x104d656a3 in inspect (test)
+           if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
+                                                     ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/lexical_segment.zig:302:47: 0x104d656a3 in inspect (test)
+           if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
+                                                     ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:239:36: 0x10514144b in runOperation__anon_134847 (test)
+           try writeOperation(output, id, try operation(allocator, service, params, server.caller));
+                                          ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:208:9: 0x1051475eb in handleLineWith (test)
+               try runOperation(service, server.*, allocator, id, params, output, ops.find);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:570:13: 0x10545dc0f in run (test)
+                   try handleLineWith(svc, server, line, allocator, ws, &out.writer);
+                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:578:24: 0x10545e51b in test.S3-T4: the RPC folder methods, the command-line scope and apply_changes gating (test)
+               const answer = try Call.run(service, &raw, workspaces, a, line);
+                              ^
+error: 'mcp.test.S3-T6: tools/call answers the canonical JSON of ops and refuses forged scope' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/mcp.zig:374:9: 0x10542508f in runTool (test)
+               try ops.find(allocator, service, arguments, caller)
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/mcp.zig:334:21: 0x105426723 in callTool (test)
+           const outcome = try runTool(session, service, workspaces, entry, arguments, allocator);
+                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/mcp.zig:226:9: 0x10542a1bb in handleLine (test)
+               try callTool(session, service, workspaces, params, usable_id, allocator, output);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/mcp.zig:828:14: 0x10542a6f3 in send (test)
+               if (!try handleLine(session, self.context.service, self.context.workspaces, line, a, &out.writer)) return null;
+                    ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/mcp.zig:916:19: 0x105433ceb in test.S3-T6: tools/call answers the canonical JSON of ops and refuses forged scope (test)
+           try contains((try server.send(&labelled, "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\",\"params\":{\"name\":\"find\",\"arguments\":{\"query\":\"tide\"}}}")).?, "vault");
+                         ^
+error: 'ops.test.S3-T4: the envelope, root-relative paths and the request echo' failed:
+       S4-T17 rank test: 303 rounds, 21926 ranked candidates (228 rounds shuffled); neighbours tied on score across roots 2689, on score, root and path with different start lines 4835, with equal start lines 4943
+       S4-T15 ruling 2(a): 30 corpora, 64082 candidates compared, 126 lists cut (104 inside equal scores, 22 between different scores)
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:1280:9: 0x1053adedf in run__anon_173462 (test)
+               return operation(a, self.service, params, caller);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:1313:31: 0x1053aefab in test.S3-T4: the envelope, root-relative paths and the request echo (test)
+           const text = try expectOk(try index.run(find, "{\"query\":\"harbour\",\"page_size\":5}", .{}));
+                                     ^
+error: 'ops.test.S3-T4: the scope narrows, labels come only from a trusted caller' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:1280:9: 0x1053adedf in run__anon_173462 (test)
+               return operation(a, self.service, params, caller);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:1329:35: 0x1053ae23f in test.S3-T4: the scope narrows, labels come only from a trusted caller (test)
+           const labelled = try expectOk(try index.run(find, "{\"query\":\"harbour\",\"principal_labels\":[\"adults\"]}", trusted));
+                                         ^
+error: 'source_fixture_test.test.S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPACITY); --update heals it' failed:
+       chunk-golden conformance: 56 files, 85 chunks compared, 85 identical
+       chunk-golden-md conformance: 61 files, 233 chunks, 189 headings identical
+       S3-T1 family-folder: 8 read_span exact, 5 outlines exact, 42 files read back whole (1150039 bytes retained); chunks line-window-v1 855, md-section-v1 143
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/source_fixture_test.zig:328:13: 0x10538eb0b in test.S3-T1/S3-T4: a lost source section fails only read_span and outline (CAPACITY); --update heals it (test)
+           switch (try scoped.find(arena, .{ .query = "alpha" }, .{})) {
+                   ^
+error: 'source_fixture_test.test.S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/source_fixture_test.zig:407:13: 0x10538a04b in familyAnswers (test)
+           switch (try scoped.find(arena, .{ .query = "garden beans" }, .{})) {
+                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/source_fixture_test.zig:459:19: 0x10538b78f in test.S4-T14 ruling 2(a)-(c): over the family folder, a re-sealed bad line map costs its one file; damage and a map past the maps region cost the section (test)
+           const clean = try familyAnswers(arena, out_tmp.dir);
+                         ^
+error: 'apply_test.test.S3-T3: a hidden label domain inside one root is indistinguishable from absent in every payload' failed:
+       S6-T7 ruling 3: 24 files rebuilt exactly (resident and streamed); kept whole: a-crlf.md b-lone-cr.txt e-empty.txt f-blank.txt g-controls.txt; 1000 read_span ranges equal HYBSRC01's
+       S6-T7 overlaps: recipe values 1 and 3 and an overlap of the whole previous chunk rebuilt exactly; 228 read_span ranges equal HYBSRC01's
+       S6-T7 byte-order mark: m-bom-only.md kept whole (no chunk), m-bom-text.md rebuilt (mark in the gap), m-bom-text.txt kept whole (mark in its chunk); 72 read_span ranges equal HYBSRC01's
+       S6-T7 ruling 11: 40 documents v5 rules refused with their errors; an overlong varint accepted
+       S6-T7 ruling 11: 26 HYBSRC02 rules refused with their errors, resident and streamed (two of them at a read)
+       BM25 conformance: 26 queries compared, 26 identical top-1 (within tolerance)
+       S4-T11 random merge: seeds 0x54110001..0x54110003, 30 rounds each, 1-4 mutations per round: the documents, lexical and source sections equal a fresh index's in all 90 rounds
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/apply_test.zig:172:21: 0x10531c963 in payloads (test)
+                   switch (try scoped.find(allocator, .{ .query = text, .mode = mode }, request)) {
+                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/apply_test.zig:369:19: 0x105323eb3 in test.S3-T3: a hidden label domain inside one root is indistinguishable from absent in every payload (test)
+           const adult = try payloads(a, scoped_a, .{ .principal_labels = &.{"adults"} }, &queries, hidden_ids.items, &files, &probes);
+                         ^
+error: 'apply_test.test.S3-T3: a root with more than 64 label sets counts exactly and scores like the visible corpus' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/apply_test.zig:172:21: 0x10531c963 in payloads (test)
+                   switch (try scoped.find(allocator, .{ .query = text, .mode = mode }, request)) {
+                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/apply_test.zig:414:18: 0x10531f1b7 in test.S3-T3: a root with more than 64 label sets counts exactly and scores like the visible corpus (test)
+           const left = try payloads(a, scoped_many, request, &queries, &.{}, &.{}, &.{ "w3", "w4" });
+                        ^
+error: 'apply_test.test.S3-T3: find and index_status say pending_files and truncated, over the visible scope only' failed:
+       S3-T3 family-folder lifecycle through apply_changes: 3/3 scenarios
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/apply_test.zig:985:25: 0x1052f8957 in test.S3-T3: find and index_status say pending_files and truncated, over the visible scope only (test)
+               const answer = (try scoped.find(a, .{ .query = "canal" }, .{})).ok;
+                               ^
+error: 'find_fixture_test.test.S3-T2: phrase and prefix judgments reach precision and recall 1.00 across all pages; the listed misses are missed' failed:
+       S4-T16 finding 14: the most stage slots one apply_changes call used: 54
+       S2-T1 Tamil via import-json analyzer-v2: success@1 10/10
+       S1-T14 absent Tamil queries: 12 queries x 2 doors, 0 hits; S5-T4 with fold-groups-v1 2 hits (the plural of a held word)
+       
+       import best-of-5: 125 docs 5.5 ms, 1000 docs 40.8 ms; growth 7.36x
+       
+       nfc best-of-3: 256 KB mark 6.00 ms plain 6.05 ms; 1 MB mark 23.89 ms plain 24.25 ms; growth 3.98x
+       
+       nfc jamo best-of-3: 256 KB jamo 10.62 ms twin 15.96 ms; 1 MB jamo 39.66 ms twin 63.74 ms; growth 3.73x
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:105:25: 0x10527c9b3 in allPages (test)
+               const answer = (try find.find(arena, engine, current)).ok;
+                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:182:18: 0x10527d3eb in judgeCase (test)
+           const hits = try allPages(arena, engine, .{ .query = query, .mode = mode, .page_size = page_size, .root_ids = &root_ids });
+                        ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:230:32: 0x10527e55b in test.S3-T2: phrase and prefix judgments reach precision and recall 1.00 across all pages; the listed misses are missed (test)
+                       const result = try judgeCase(arena, engine, case, page_size);
+                                      ^
+error: 'find_fixture_test.test.S3-T2: phrase handles repeated tokens, punctuation inside the phrase and Tamil; quotes force phrase' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:399:23: 0x10527904f in test.S3-T2: phrase handles repeated tokens, punctuation inside the phrase and Tamil; quotes force phrase (test)
+           const repeated = (try find.find(arena, engine, .{ .query = "the the", .mode = .phrase, .page_size = 100 })).ok;
+                             ^
+error: 'find_fixture_test.test.S3-T2: empty queries, a stray star, page size and cursors are INVALID_ARGUMENT; a stale cursor says so' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:456:20: 0x105277eff in test.S3-T2: empty queries, a stray star, page size and cursors are INVALID_ARGUMENT; a stale cursor says so (test)
+           const first = (try find.find(arena, engine, .{ .query = "alpha", .page_size = 2 })).ok;
+                          ^
+error: 'find_fixture_test.test.S3-T2: prefix expands over the visible vocabulary only, at most 1,000 terms, else CAPACITY' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:489:21: 0x10527589f in test.S3-T2: prefix expands over the visible vocabulary only, at most 1,000 terms, else CAPACITY (test)
+           const scoped = (try find.find(arena, engine, .{ .query = "zq*", .path_prefix = "public/", .page_size = 100 })).ok;
+                           ^
+error: 'find_fixture_test.test.S3-T2: ordering is score desc, then root_id, path, start_line; files and coverage count hits' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:524:21: 0x105274903 in test.S3-T2: ordering is score desc, then root_id, path, start_line; files and coverage count hits (test)
+           const answer = (try find.find(arena, folder.engine, .{ .query = "\"lantern festival\"", .page_size = 100, .root_ids = &ids })).ok;
+                           ^
+error: 'find_fixture_test.test.S3-T2: overlapping windows that show the same occurrence are deduplicated to the earlier chunk' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:561:21: 0x105273793 in test.S3-T2: overlapping windows that show the same occurrence are deduplicated to the earlier chunk (test)
+           const answer = (try find.find(arena, engine, .{ .query = "\"harbour light\"", .page_size = 100 })).ok;
+                           ^
+error: 'find_fixture_test.test.S3-T2: snippets are at most 240 codepoints around the best window, cut at token boundaries' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:589:21: 0x1052718a3 in test.S3-T2: snippets are at most 240 codepoints around the best window, cut at token boundaries (test)
+           const answer = (try find.find(arena, folder.engine, .{ .query = "kestrel osprey" })).ok;
+                           ^
+error: 'find_fixture_test.test.S3-T2: --update carries exact positions; a HYBLEX01 generation is upgraded' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find_fixture_test.zig:682:21: 0x10526840b in test.S3-T2: --update carries exact positions; a HYBLEX01 generation is upgraded (test)
+           const answer = (try find.find(arena, updated, .{ .query = "\"count me in\"", .page_size = 100 })).ok;
+                           ^
+error: 'lazy_open_test.test.S4-T1: the scoped open defers the source, the statistics and the position tables to their first use' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/lazy_open_test.zig:102:13: 0x105264767 in test.S4-T1: the scoped open defers the source, the statistics and the position tables to their first use (test)
+           switch (try scoped.find(a, .{ .query = "blue folder", .mode = .phrase }, .{})) {
+                   ^
+error: 'lazy_open_test.test.S4-T1: the lazy open answers every operation exactly as the eager open did' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/lazy_open_test.zig:136:28: 0x1052629bb in test.S4-T1: the lazy open answers every operation exactly as the eager open did (test)
+               const from_lazy = (try scoped.find(a, .{ .query = query, .mode = mode }, .{})).ok;
+                                  ^
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: a 98c4a2b (v2) index opens and answers exactly as a fresh v3 index of the same folder' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:187:18: 0x105248153 in test.S6-T4 ruling 4: a 98c4a2b (v2) index opens and answers exactly as a fresh v3 index of the same folder (test)
+           const want = try answers(a, fresh);
+                        ^
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:212:27: 0x10524625f in test.S6-T4 ruling 4: the first update of a v2 index publishes v3 (both lexical sections) and answers as a fresh index (test)
+           try expectSameAnswers(try answers(a, fresh), try answers(a, old));
+                                 ^
+error: 'compat_98c4a2b_test.test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:251:21: 0x105244283 in test.S6-T4 ruling 4: a crash between writing and publishing leaves the whole v2 generation, or after the manifest the whole v3 one (test)
+           const want_v2 = try answers(a, v2);
+                           ^
+error: 'compat_s6t7_test.test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_s6t7_test.zig:109:18: 0x1051f1edf in test.S6-T7: an index from a534678 opens and answers exactly as a fresh text-once index of the same folder (test)
+           const want = try compat.answers(a, fresh);
+                        ^
+error: 'compat_s6t7_test.test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_s6t7_test.zig:136:34: 0x1051f063f in test.S6-T7: the first update of an a534678 index publishes the text-once format, a fresh index's sections, and answers the same (test)
+           try compat.expectSameAnswers(try compat.answers(a, fresh), try compat.answers(a, old));
+                                        ^
+error: 'compat_s6t7_test.test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_s6t7_test.zig:163:22: 0x1051ee1f7 in test.S6-T7: a crash during the first publish from a534678's format leaves the whole old generation, or after the manifest the whole new one (test)
+           const want_old = try compat.answers(a, plain);
+                            ^
+error: 'compat_s6t8_test.test.S6-T8: indexes from 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.5 index, their bytes untouched' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_s6t8_test.zig:122:18: 0x1051ea763 in test.S6-T8: indexes from 62324f9, a534678 and 98c4a2b open and answer exactly as a fresh v2.5 index, their bytes untouched (test)
+           const want = try compat.answers(a, fresh);
+                        ^
+error: 'compat_s6t8_test.test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_s6t8_test.zig:143:18: 0x1051e92b7 in test.S6-T8: the first update of each older index publishes one whole v2.5 generation, a fresh index's sections, and answers the same (test)
+           const want = try compat.answers(a, fresh);
+                        ^
+error: 'compat_s6t8_test.test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_s6t8_test.zig:185:34: 0x1051e8c0f in test.S6-T8: the first publish over 62324f9's format through apply_changes equals a fresh index of the result (test)
+           try compat.expectSameAnswers(try compat.answers(a, new), try compat.answers(a, old));
+                                        ^
+error: 'compat_s6t8_test.test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_98c4a2b_test.zig:83:38: 0x1051e1bff in answers (test)
+               try out.append(a, try okJson(try ops.find(a, service, try params(a, try std.fmt.allocPrint(a, "{{\"query\":\"{s}\",\"mode\":\"{s}\"}}", .{ query, mode })), cli.cli_caller)));
+                                            ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_s6t8_test.zig:200:22: 0x1051e499b in test.S6-T8: a crash during the first publish from 62324f9's format leaves the whole old generation, or after the manifest the whole new one (test)
+           const want_old = try compat.answers(a, plain);
+                            ^
+error: 'compat_s6t8_test.test.S6-T8 boundary sweep, rule 11 on a v2-coded index: a highlight one past its chunk's text is refused by find; one ending at the text's end answers' failed:
+       expected null, found error.OffsetsPastText
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/testing.zig:197:21: 0x1051bccbf in expectEqualInner__anon_144341 (test)
+                           return error.TestExpectedEqual;
+                           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/testing.zig:83:5: 0x1051bd0c3 in expectEqual (test)
+           return expectEqualInner(T, expected, actual);
+           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/compat_s6t8_test.zig:1212:5: 0x1051bd20f in test.S6-T8 boundary sweep, rule 11 on a v2-coded index: a highlight one past its chunk's text is refused by find; one ending at the text's end answers (test)
+           try std.testing.expectEqual(@as(?anyerror, null), firstFindError(a, at_end));
+           ^
+error: 'offsets_v4_test.test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/offsets_v4_test.zig:259:25: 0x1051b5927 in test.S6-T8: boundary values 14, 15 and 16 in each field, zero and one token, through the writer, the reader and find (test)
+               const stored = (try find.find(a, engine, .{ .query = item.q, .mode = item.mode, .page_size = 100, .root_ids = &root_ids })).ok;
+                               ^
+error: 'offsets_v4_test.test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned' failed:
+       S6-T8: 27 damaged sections 5 refused with their rules' errors (rules 1-10 and 12), eager and lazy; an overlong escape and an end of 2^32 - 1 accepted
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/offsets_v4_test.zig:615:9: 0x1051a687b in test.S6-T8 rule 11: a highlight past its chunk's text is refused by find (OffsetsPastText), never returned (test)
+           _ = try ops.find(a, service, try params(a, "{\"query\":\"omega\"}"), cli.cli_caller);
+               ^
+error: 'offsets_v4_test.test.S6-T10 rule 11 on a v4-coded index, five spans in a chunk: an end past the text in the first, a middle or the last span is each refused by find (OffsetsPastText); an end at the text's end answers' failed:
+       S6-T10 rule 11: the first span ending 0 past the text
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/offsets_v4_test.zig:735:92: 0x1051a45b3 in test.S6-T10 rule 11 on a v4-coded index, five spans in a chunk: an end past the text in the first, a middle or the last span is each refused by find (OffsetsPastText); an end at the text's end answers (test)
+                   if (past > 0) try std.testing.expectError(error.OffsetsPastText, got) else _ = try got;
+                                                                                                  ^
+error: 'nfr13_arena_test.test.S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge over the family folder inside 64 MiB' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/nfr13_arena_test.zig:171:37: 0x10517964f in measureOnly (test)
+                           const answer = (try scoped.find(a, .{ .query = target.find_query }, .{})).ok;
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/nfr13_arena_test.zig:130:5: 0x10517b507 in measure (test)
+           return measureOnly(dir, cap, target, null);
+           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/nfr13_arena_test.zig:257:19: 0x10518b97b in test.S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge over the family folder inside 64 MiB (test)
+           const peaks = try measure(tmp.dir, cap_bytes, .{ .find_query = "pond", .knowledge_query = "hedgehogs in the pond", .root_id = "home", .path = "garden.md" });
+                         ^
+error: 'reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (poisoned testing allocator)' failed:
+       S4-T1 NFR-13 10k generated under a 67108864 B cap, peak live bytes: open 25303769 find 35751629 read_span 27697385 outline 27661511 list_files 34699653 search_knowledge 29814409
+       S4-T10 NFR-13 10k generated: source section resident 509604 B (header, files table, line maps), text 39778 B read per call
+       S4-T9 NFR-13 open by table, 10k generated (requested/held B): manifest 576/576 block 23917733/23917733 decode 761276/1385460 manifest_freed -576/-576 meta 2537/0 folder 41436/0; block 23917733: documents 2391120, terms 961680, vectors 0, postings 8217008, document lengths 79704, manifest 576, documents section 8050859, lexical section 4216786; not in the open: source section 549382, filename block 0; documents 19926, terms 24042, postings 1027126, vector dimensions 0; sizes Document 120, TermEntry 40, Posting 8; held 25303193, peak 25303769, measured open 25303769
+       S4-T9 NFR-13 formula bar, 10k generated: open peak 25303769 <= manifest 576 + documents section 8050859 + lexical section 4216786 + decoded tables 12410788 + 1048576 = 25727585 (margin 423816)
+       S4-T1 NFR-13 10k filename and lazy tables under a 67108864 B cap, peak live bytes: open 25304009 find 35751749 read_span 27697505 outline 27661631 list_files 34699773 search_knowledge 29814529 filename 31492709 both 31978785
+       S4-T10 NFR-13 10k filename and lazy tables: source section resident 509604 B (header, files table, line maps), text 39778 B read per call
+       S4-T9 NFR-13 open by table, 10k filename and lazy tables (requested/held B): manifest 696/696 block 23917853/23917853 decode 761276/1385460 manifest_freed -696/-696 meta 2537/0 folder 41436/0; block 23917853: documents 2391120, terms 961680, vectors 0, postings 8217008, document lengths 79704, manifest 696, documents section 8050859, lexical section 4216786; not in the open: source section 549382, filename block 2966072; documents 19926, terms 24042, postings 1027126, vector dimensions 0; sizes Document 120, TermEntry 40, Posting 8; held 25303313, peak 25304009, measured open 25304009
+       S4-T9 NFR-13 formula bar, 10k filename and lazy tables: open peak 25304009 <= manifest 696 + documents section 8050859 + lexical section 4216786 + decoded tables 12410788 + 1048576 = 25727705 (margin 423696)
+       S4-T8 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S4-T8 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T2 NFR-13 10000 files, one handle, peak live bytes: open 25304009 first content 27460179 first both 29624435; the derive alone: peak 2153560 above the live bytes before it, kept 691584 (title block 691584); working arrays peak 1541164 (left 0), block 691584
+       S5-T2 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T2 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T3 NFR-13 10000 files, one handle, typed baabcha: live before 28961033; triggering content peak 28974721 (left 28961033), both peak 29245591 (left 28961033); one scan with its group and scorer arrays: peak 435 (left 0), 3 members
+       S5-T3 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T3 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T4 NFR-13 10000 files, one handle, typed system: live before 28960969; first grouped content query keeps 64 (the key map: 4 entries, 64 B); content peak 28974673; second content query left 28961033, grouped both peak 29244831 (left 28961033); the key map's build alone: peak 468 (left 0)
+       S5-T4 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T4 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T5 NFR-13 10000 files, one handle, typed hashing: live before 28960969; first grouped content query keeps 64 (the key map: 4 entries, 64 B); content peak 28974113; second content query left 28961033, grouped both peak 29242741 (left 28961033); the key map's build alone: peak 468 (left 0)
+       S5-T5 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:239:36: 0x10514144b in runOperation__anon_134847 (test)
+           try writeOperation(output, id, try operation(allocator, service, params, server.caller));
+                                          ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:208:9: 0x1051475eb in handleLineWith (test)
+               try runOperation(service, server.*, allocator, id, params, output, ops.find);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:110:9: 0x105147fa3 in handle (test)
+               try handleLineWith(served.generation.service, &served.server, line, request_arena.allocator(), served.generation.workspaces, output);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/reload_test.zig:77:5: 0x105148293 in call (test)
+           try served.handle(line, &out.writer);
+           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/reload_test.zig:136:19: 0x105149933 in readsAfterApply (test)
+           const found = try call(&served, a, "find", "{\"query\":\"tide\"}");
+                         ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/reload_test.zig:165:5: 0x105163733 in test.S4-T6: reads after apply_changes on the reloaded generation (poisoned testing allocator) (test)
+           try readsAfterApply(poisoning.allocator(), false);
+           ^
+error: 'reload_test.test.S4-T6: reads after apply_changes on the reloaded generation (C allocator, as a release searchd)' failed:
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:239:36: 0x10514144b in runOperation__anon_134847 (test)
+           try writeOperation(output, id, try operation(allocator, service, params, server.caller));
+                                          ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:208:9: 0x1051475eb in handleLineWith (test)
+               try runOperation(service, server.*, allocator, id, params, output, ops.find);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/rpc.zig:110:9: 0x105147fa3 in handle (test)
+               try handleLineWith(served.generation.service, &served.server, line, request_arena.allocator(), served.generation.workspaces, output);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/reload_test.zig:77:5: 0x105148293 in call (test)
+           try served.handle(line, &out.writer);
+           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/reload_test.zig:136:19: 0x105149933 in readsAfterApply (test)
+           const found = try call(&served, a, "find", "{\"query\":\"tide\"}");
+                         ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/reload_test.zig:170:5: 0x10514b08f in test.S4-T6: reads after apply_changes on the reloaded generation (C allocator, as a release searchd) (test)
+           try readsAfterApply(std.heap.c_allocator, false);
+           ^
+error: 'cli_test.test.S3-T4: --json prints exactly the operation's JSON; text output and refusals' failed:
+       S2-T11 fuzz: 100000 cases per snapshot x 2 snapshots: 45529 valid, 154471 invalid (all rejected), 13140 ms
+       S5-T2 title golden: 209 file scores compared within 1e-4
+       S5-T3 fuzzy golden: 4848 chunk scores in 120 expanded queries (9 planted cases) within 1e-4
+       S5-T4 K golden: 49409 terms (42593 same, 6816 changed) equal
+       S5-T5 R golden: 2978 listed + 16214 off equal; digest over 49471 terms (27041 applies, 123482 lookups, 122865 eligible) equal
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/postings.zig:327:153: 0x105007aaf in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints or (spans.len > 1 and @as(usize, span.start) + span.length == codepoints)) return error.OffsetsPastText;
+                                                                                                                                                               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:631:37: 0x10500717f in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:711:29: 0x105003113 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, codepoints);
+                                   ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/find.zig:250:48: 0x10500164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/service.zig:541:9: 0x104fe89bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/ops.zig:285:28: 0x104feab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/cli.zig:1208:26: 0x104febebf in runFind (test)
+           return finish(arena, try ops.find(arena, service, params.map, cli_caller), args.json, output, errors, printFind);
+                                ^
+       <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig/src/cli_test.zig:306:45: 0x104ff533b in test.S3-T4: --json prints exactly the operation's JSON; text output and refusals (test)
+           try std.testing.expectEqual(@as(u8, 0), try cli.runFind(io, a, .{ .path = index, .query = "tide", .json = true }, &out.writer, &err.writer));
+                                                   ^
+failed command: <vscratch>/zp.noindex/x-r11-at-end-multi/lcache/o/d9ae10f6eceacfd4bd8cf5c9066fca7a/test --cache-dir=<vscratch>/zp.noindex/x-r11-at-end-multi/lcache --seed=0xbe5f7ed1 --listen=-
+
+Build Summary: 7/9 steps succeeded (1 failed); 503/549 tests passed (9 skipped, 37 failed)
+test transitive failure
++- run test 497 pass, 9 skip, 37 fail (543 total)
+|  +- compile test Debug native success 5s MaxRSS:1G
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 99ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
++- run test 6 pass (6 total) 972ms MaxRSS:5M
+   +- compile test Debug native success 3s MaxRSS:561M
+
+error: the following build command failed with exit code 1:
+<vscratch>/zp.noindex/x-r11-at-end-multi/lcache/o/a9187095c502b240ca71aed8807fd41a/build <home>/development/zig/zig-aarch64-macos-0.16.0/zig <home>/development/zig/zig-aarch64-macos-0.16.0/lib <vscratch>/zp.noindex/x-r11-at-end-multi/src/zig <vscratch>/zp.noindex/x-r11-at-end-multi/lcache <vscratch>/zp.noindex/x-r11-at-end-multi/gcache --seed 0xbe5f7ed1 -Ze0062c6520fd8f2f test --summary all
+exit 1
+Thu Nov 19 22:28:16 EST 2026

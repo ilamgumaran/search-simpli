@@ -1,0 +1,107 @@
+00:00 +0: loading test/search_simpli_test.dart
+00:00 +0: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +1: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +2: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +3: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +4: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +5: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +6: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +7: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +8: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +9: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +10: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +11: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +12: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +13: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +14: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +15: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +16: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +17: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +18: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +19: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +20: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +21: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +22: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +23: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +24: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +25: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +26: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +27: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +28: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +29: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +30: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +31: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +32: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +33: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +34: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +35: test/search_simpli_test.dart: a valid query vector (S2-T13) a vector with an overflowing norm or a non-finite component is rejected
+00:00 +36: test/query_report_test.dart: an unmatched word is a typed warning with its term
+00:00 +37: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +38: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +39: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +40: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +41: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +42: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +43: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +44: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +45: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +46: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +47: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +48: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +49: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +50: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +51: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +52: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +53: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +54: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +55: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +56: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +57: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +58: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +59: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +60: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +61: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +62: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +63: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +64: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +65: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +66: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +67: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +68: test/folder_knowledge_test.dart: (setUpAll)
+00:00 +68: test/conformance_test.dart: (setUpAll)
+00:00 +69: test/conformance_test.dart: (setUpAll)
+00:00 +70: test/conformance_test.dart: (setUpAll)
+00:00 +71: test/conformance_test.dart: (setUpAll)
+00:00 +72: test/conformance_test.dart: (setUpAll)
+00:00 +73: test/conformance_test.dart: (setUpAll)
+00:00 +74: test/conformance_test.dart: (setUpAll)
+00:00 +75: test/conformance_test.dart: (setUpAll)
+00:00 +76: test/conformance_test.dart: (setUpAll)
+00:00 +77: test/conformance_test.dart: (setUpAll)
+00:00 +78: test/conformance_test.dart: (setUpAll)
+00:00 +79: test/conformance_test.dart: (setUpAll)
+00:00 +80: test/conformance_test.dart: (setUpAll)
+00:00 +81: test/conformance_test.dart: (setUpAll)
+00:00 +82: test/conformance_test.dart: (setUpAll)
+00:00 +83: test/conformance_test.dart: (setUpAll)
+00:00 +84: test/conformance_test.dart: (setUpAll)
+00:00 +85: test/conformance_test.dart: (setUpAll)
+00:00 +86: test/conformance_test.dart: (setUpAll)
+00:00 +87: test/conformance_test.dart: (setUpAll)
+00:00 +88: test/conformance_test.dart: (setUpAll)
+00:00 +89: test/conformance_test.dart: (setUpAll)
+00:00 +90: test/conformance_test.dart: (setUpAll)
+00:00 +91: test/conformance_test.dart: (setUpAll)
+00:00 +92: test/conformance_test.dart: (setUpAll)
+00:06 +92: test/parity_test.dart: (setUpAll)
+00:06 +93: test/parity_test.dart: (setUpAll)
+00:06 +93: test/conformance_test.dart: BM25 conformance vs Python reference (fixtures/bm25-golden.json) and the searchd CLI app_text (analyzer-v2): 8 queries, top-1 identical to Python and to the CLI
+app_text conformance: 8 queries compared, 6 identical to the plain-BM25 Python top-1 (2 with a title part at top-1, compared with the CLI only), 8 identical to the CLI top-1
+00:06 +94: test/parity_test.dart: CLI --json, RPC and Dart return the same canonical JSON for the fixture judgments
+00:06 +94: test/conformance_test.dart: BM25 conformance vs Python reference (fixtures/bm25-golden.json) and the searchd CLI tamil (analyzer-v2): 10 queries, top-1 identical to Python and to the CLI
+tamil conformance: 10 queries compared, 10 identical to the plain-BM25 Python top-1 (0 with a title part at top-1, compared with the CLI only), 10 identical to the CLI top-1
+00:06 +95: test/parity_test.dart: CLI --json, RPC and Dart return the same canonical JSON for the fixture judgments
+S3-T4 parity: 25 requests, CLI --json = RPC = Dart (canonical JSON)
+00:06 +96: test/parity_test.dart: CLI --json, RPC and Dart agree with no optional fields
+00:06 +97: test/parity_test.dart: (tearDownAll)
+00:06 +97: All tests passed!

@@ -1,0 +1,21 @@
+--- Python reference
+run exit 0
+    precision-control  10   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-short  13   0.923 ->  0.923 (+0.000)   0.962 ->  0.962 (+0.000)   0.972 ->  0.972 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-opening  25   0.120 ->  0.120 (+0.000)   0.219 ->  0.219 (+0.000)   0.278 ->  0.278 (+0.000)   0.340 ->  0.340 (+0.000)
+J2 gate: pass
+gate exit 
+--- ReleaseSmall searchd (head)
+  content: control MRR@10 1.000, misspelling MRR@10 0.859, morphology MRR@10 0.808, accent MRR@10 0.846, tamil MRR@10 1.000, title MRR@10 0.955, phrase MRR@10 0.900, title-heldout MRR@10 1.000, misspelling-heldout MRR@10 0.958, morphology-heldout MRR@10 0.833, accent-heldout MRR@10 0.955, tamil-heldout MRR@10 0.962, verbform-heldout MRR@10 0.974, verbform-cross MRR@10 1.000, precision-control MRR@10 1.000, misspelling-short MRR@10 0.962, misspelling-opening MRR@10 0.214
+  both: control MRR@10 1.000, misspelling MRR@10 0.844, morphology MRR@10 0.795, accent MRR@10 0.847, tamil MRR@10 1.000, title MRR@10 0.955, phrase MRR@10 0.900, title-heldout MRR@10 1.000, misspelling-heldout MRR@10 0.958, morphology-heldout MRR@10 0.857, accent-heldout MRR@10 0.909, tamil-heldout MRR@10 0.962, verbform-heldout MRR@10 0.947, verbform-cross MRR@10 1.000, precision-control MRR@10 1.000, misspelling-short MRR@10 0.962, misspelling-opening MRR@10 0.219
+::notice title=J2 native run::290 queries x 2 variants, none skipped. searchd sha256 2270e20baa975794685e28e873e90ce78abaa77a11052525b6cfb0dd8a4f9fd1 (1133704 B, ReleaseSmall, zig None) built from commit 4d18ccb7d3d9018f33914bcc31cb9554a0c9ee71; natives digest 2e203ac5ddf21714cf1053253b45967efd31aa7739826fff3d031196d255bfcc (matches the committed SOURCE-SHA256: True); policies: analyzer_id analyzer-v2, chunkers ['line-window-v1', 'md-section-v1'], filename_policy_id filename-field-v1, title_policy_id title-field-v1, fuzzy_policy_id fuzzy-v1, fold_policy_id fold-groups-v3
+run exit 
+J2 native against the baseline's searchd cells (recorded 2026-11-12, binary 8b1f65c1d797): 0 rows differ
+::notice title=J2 x86_64 vs baseline::no row differs: every first grade-2 rank (452 over both variants), slice metric and negative equals the macOS arm64 baseline
+    precision-control  10   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-short  13   0.923 ->  0.923 (+0.000)   0.962 ->  0.962 (+0.000)   0.972 ->  0.972 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-opening  25   0.120 ->  0.120 (+0.000)   0.219 ->  0.219 (+0.000)   0.278 ->  0.278 (+0.000)   0.340 ->  0.340 (+0.000)
+J2 gate: pass
+gate exit 
+j2_gate j2.json exit 0
+j2_gate searchd.json exit 0

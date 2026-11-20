@@ -1,0 +1,12 @@
+identical 990040 B native/macos-arm64/libsearch_simpli.dylib
+identical 959584 B native/android-arm64/libsearch_simpli.so
+identical 959584 B example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+identical 970992 B native/ios-arm64/search_simpli.framework/search_simpli
+identical 749 B native/ios-arm64/search_simpli.framework/Info.plist
+identical 65 B native/SOURCE-SHA256
+bindings/dart/search_simpli/example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+bindings/dart/search_simpli/native/SOURCE-SHA256
+bindings/dart/search_simpli/native/android-arm64/libsearch_simpli.so
+bindings/dart/search_simpli/native/ios-arm64/search_simpli.framework/Info.plist
+bindings/dart/search_simpli/native/ios-arm64/search_simpli.framework/search_simpli
+bindings/dart/search_simpli/native/macos-arm64/libsearch_simpli.dylib

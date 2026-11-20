@@ -1,0 +1,74 @@
+planted w-loop-constant
+--- diff base w-loop-constant
+diff -r -u base/skills/folder-knowledge/example_loop.py w-loop-constant/skills/folder-knowledge/example_loop.py
+--- base/skills/folder-knowledge/example_loop.py	2026-11-19 22:05:48
++++ w-loop-constant/skills/folder-knowledge/example_loop.py	2026-11-19 22:17:40
+@@ -184,7 +184,7 @@
+         """Confirm a find hit with read_span and return the line range of its first
+         match and the text of those lines. If the span does not contain the match
+         where the hit says, fall back to the whole chunk range."""
+-        span = self.tools.call("read_span", root_id=hit["root_id"], path=hit["path"],
++        span = self.tools.call(READ_SPAN, root=hit["root_id"], path=hit["path"],
+                                start_line=hit["start_line"], end_line=hit["end_line"])
+         text = span["text"]
+         a, b = hit["match_offsets"][0]
+@@ -320,6 +320,9 @@
+         if kind == "summary":
+             return self.summary(scenario)
+         raise ValueError(f"no skill step for {kind}")
++
++
++READ_SPAN = "read_span"
+ 
+ 
+ def questions() -> list[dict]:
+--- SEARCH_SIMPLI_NO_ZIG=1 tests.test_example_loop.SkillDocumentTests
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field ... ok
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.004s
+
+OK
+exit 0
+--- with a searchd (ReleaseSmall, head): test_example_loop
+test_a_word_only_in_the_name_is_answered_through_filename_search (test_example_loop.FilenameQuestionTests) ... ok
+test_an_index_without_the_channel_refuses_filename_search (test_example_loop.FilenameQuestionTests) ... ok
+ERROR
+/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/subprocess.py:1052: ResourceWarning: subprocess 17770 is still running
+  _warn("subprocess %s is still running" % self.pid,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10): the skill said "root" for `read_span`, whose request field ... ok
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+======================================================================
+ERROR: setUpClass (test_example_loop.LoopOverTheFixtureTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<vscratch>/py.noindex/w-loop-constant/tests/test_example_loop.py", line 135, in setUpClass
+    cls.results, tools = loop.run_all(str(binary), index)
+  File "<vscratch>/py.noindex/w-loop-constant/skills/folder-knowledge/example_loop.py", line 338, in run_all
+    answer = loop.run(scenario)
+  File "<vscratch>/py.noindex/w-loop-constant/skills/folder-knowledge/example_loop.py", line 309, in run
+    return self.exact(scenario)
+  File "<vscratch>/py.noindex/w-loop-constant/skills/folder-knowledge/example_loop.py", line 216, in exact
+    line_from, line_to, quote = self.matched_lines(hit)
+  File "<vscratch>/py.noindex/w-loop-constant/skills/folder-knowledge/example_loop.py", line 187, in matched_lines
+    span = self.tools.call(READ_SPAN, root=hit["root_id"], path=hit["path"],
+  File "<vscratch>/py.noindex/w-loop-constant/skills/folder-knowledge/example_loop.py", line 79, in call
+    raise RuntimeError(f"{method}: {reply['error']}")
+RuntimeError: read_span: {'code': -32602, 'message': 'Invalid params: unknown field "root"'}
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.128s
+
+FAILED (errors=1)
+exit 1

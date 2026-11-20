@@ -11,7 +11,8 @@
 //!   recomputed, refused with that rule's own error, at the open (eager
 //!   validation) and lazily (the first `find`'s validation), each at the
 //!   last element where the rule has one; rule 11 (an offset past the text)
-//!   through a published index and `find`.
+//!   through a published index and `find`, on a one-token chunk and (S6-T10)
+//!   in the first, a middle and the last span of a five-token chunk.
 //! - The manifest's bit 7 binds `HYBLEX04` both ways.
 const std = @import("std");
 const analysis = @import("analysis.zig");
@@ -120,8 +121,10 @@ test "S6-T8: zigzag and the escape threshold" {
 
 // ------------------------------------------------------- boundary fixtures
 
+const File = struct { name: []const u8, text: []const u8 };
+
 /// One file per boundary value, each one chunk (`line-window-v1`).
-const boundary_files = [_]struct { name: []const u8, text: []const u8 }{
+const boundary_files = [_]File{
     .{ .name = "gap14.txt", .text = "aa       bb\n" }, // gap 7, z 14
     .{ .name = "gap15.txt", .text = "a\u{037E}\u{037E}\u{037E}\u{037E}\u{037E}\u{037E}\u{2126} omega\n" }, // gap -8, z 15
     .{ .name = "gap16.txt", .text = "aa        bb\n" }, // gap 8, z 16
@@ -170,10 +173,15 @@ fn uleb(bytes: []const u8, at: *usize) !u64 {
 }
 
 fn publishBoundaries(a: std.mem.Allocator, tmp: std.testing.TmpDir) !std.Io.Dir {
+    return publishFiles(a, tmp, &boundary_files);
+}
+
+/// `files` indexed by `searchd index` (a v4-coded content section).
+fn publishFiles(a: std.mem.Allocator, tmp: std.testing.TmpDir, files: []const File) !std.Io.Dir {
     try tmp.dir.createDir(io, "src", .default_dir);
     var src = try tmp.dir.openDir(io, "src", .{});
     defer src.close(io);
-    for (boundary_files) |f| try src.writeFile(io, .{ .sub_path = f.name, .data = f.text });
+    for (files) |f| try src.writeFile(io, .{ .sub_path = f.name, .data = f.text });
     var sink: std.Io.Writer.Allocating = .init(a);
     const base = try std.fmt.allocPrint(a, ".zig-cache/tmp/{s}", .{tmp.sub_path});
     try cli.runIndex(io, a, try std.fmt.allocPrint(a, "{s}/src", .{base}), try std.fmt.allocPrint(a, "{s}/idx", .{base}), .{}, &sink.writer);
@@ -554,11 +562,17 @@ test "S6-T8: the header of HYBLEX04: version 4 and flags exactly 3" {
 /// The published index in `dir` with its content section's section 5
 /// edited by `edit`, the section's checksum and the manifest resealed.
 fn rewriteOffsets(a: std.mem.Allocator, dir: std.Io.Dir, comptime edit: fn ([]Doc, []const hybrid.Document) void) !void {
-    var metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
-    const good = try dir.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
     const engine = try snapshot_open.open(a, io, dir);
     const docs = try cloneDocs(a, try parseDocs(a, engine.lexical_index.positions.?.offsets, engine.lexical_index.document_lengths));
     edit(docs, engine.documents);
+    try writeOffsets(a, dir, docs);
+}
+
+/// The published index in `dir` with its content section's section 5
+/// replaced by `docs`, the section's checksum and the manifest resealed.
+fn writeOffsets(a: std.mem.Allocator, dir: std.Io.Dir, docs: []const Doc) !void {
+    var metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+    const good = try dir.readFileAlloc(io, metadata.lexical_file, a, .unlimited);
     const damaged = try withOffsets(a, good, try emitDocs(a, docs, &.{}));
     try dir.writeFile(io, .{ .sub_path = metadata.lexical_file, .data = damaged });
     metadata.lexical_bytes = damaged.len;
@@ -607,6 +621,133 @@ test "S6-T8 rule 11: a highlight past its chunk's text is refused by find (Offse
     const clean_opened = try snapshot_open.openScoped(a, io, clean);
     defer clean_opened.folder.close();
     _ = try ops.find(a, .{ .engine = clean_opened.engine, .folder = clean_opened.folder }, try params(a, "{\"query\":\"solo\"}"), cli.cli_caller);
+}
+
+// ------------------------- rule 11 in a chunk of several spans (S6-T10)
+
+/// One chunk of five tokens (`line-window-v1`), and a file without them:
+/// rule 11 on a v4-coded index with several spans in a chunk (S6-T8's
+/// Sixth Verdict, note I6). A two-byte letter in the first and the middle
+/// token and a Tamil last token (the Verdict's F2): the chunk's bytes
+/// outnumber its codepoints before each checked span, so a check against
+/// the byte length would let an end one codepoint past the text through.
+/// U+1F33F (outside the BMP, not a token) before the last token (the Second
+/// Verdict's F4): its UTF-16 units outnumber its codepoints too.
+const span_files = [_]File{
+    .{ .name = "five.txt", .text = "\u{00E9}lan bravo caf\u{00E9} delta \u{1F33F} \u{0BAA}\u{0BB3}\u{0BCD}\u{0BB3}\u{0BBF}\n" },
+    .{ .name = "other.txt", .text = "omega\n" },
+};
+
+const SpanAt = enum { first, middle, last };
+
+/// The v4 token for `gap` and `length`, written from the format document
+/// (the two nibbles, then the whole value of each escaping field, the gap's
+/// first), independent of the library's writer.
+fn tokOf(a: std.mem.Allocator, gap: i64, length: u64) !Tok {
+    const z: u64 = if (gap >= 0) @as(u64, @intCast(gap)) * 2 else @as(u64, @intCast(-gap)) * 2 - 1;
+    const g: u8 = @intCast(@min(z, 15));
+    const l: u8 = @intCast(@min(length, 15));
+    return .{
+        .byte = g | (l << 4),
+        .esc_g = if (z >= 15) try varintBytes(a, z) else &.{},
+        .esc_l = if (length >= 15) try varintBytes(a, length) else &.{},
+    };
+}
+
+fn tokLength(tok: Tok) u64 {
+    var at: usize = 0;
+    return if (tok.byte >> 4 == 15) uleb(tok.esc_l, &at) catch unreachable else tok.byte >> 4;
+}
+
+/// `five.txt`'s starts and lengths, read from the section's bytes, and its
+/// chunk text's codepoints (as `find` counts them for rule 11).
+fn fiveSpans(a: std.mem.Allocator, dir: std.Io.Dir) !struct { docs: []Doc, at: usize, starts: []u64, lengths: []u64, codepoints: u64 } {
+    const engine = try snapshot_open.open(a, io, dir);
+    try std.testing.expectEqual(postings.OffsetsCoding.one_byte, engine.lexical_index.positions.?.coding);
+    const docs = try cloneDocs(a, try parseDocs(a, engine.lexical_index.positions.?.offsets, engine.lexical_index.document_lengths));
+    var found: ?usize = null;
+    for (engine.documents, 0..) |d, i| {
+        if (std.mem.indexOf(u8, d.text, " bravo caf") != null) found = i;
+    }
+    const doc = docs[found.?];
+    const starts = try a.alloc(u64, doc.tokens.len);
+    const lengths = try a.alloc(u64, doc.tokens.len);
+    for (doc.tokens, starts, lengths, 0..) |tok, *start, *length, i| {
+        start.* = tokenStart(doc, i);
+        length.* = tokLength(tok);
+    }
+    return .{ .docs = docs, .at = found.?, .starts = starts, .lengths = lengths, .codepoints = analysis.codepointCount(engine.documents[found.?].text) };
+}
+
+/// `five.txt`'s span at `where` made to end `past` codepoints after its
+/// chunk's text, every other span's start and length kept (the next token's
+/// gap goes negative to keep its start), the section and manifest resealed.
+/// Every rule but 11 still holds; checked here from the bytes written.
+fn spanEndsPast(a: std.mem.Allocator, dir: std.Io.Dir, where: SpanAt, past: u64) !void {
+    const base = try fiveSpans(a, dir);
+    const n = base.starts.len;
+    try std.testing.expectEqual(@as(usize, 5), n);
+    const codepoints = base.codepoints;
+    const k: usize = switch (where) {
+        .first => 0,
+        .middle => n / 2,
+        .last => n - 1,
+    };
+    for (base.starts, base.lengths) |start, length| try std.testing.expect(start + length <= codepoints);
+    // The text has more bytes and more UTF-16 units than codepoints: an end
+    // one codepoint past the text still lies within either count.
+    const text = (try snapshot_open.open(a, io, dir)).documents[base.at].text;
+    try std.testing.expect(codepoints + past < text.len);
+    try std.testing.expect(codepoints + past <= try std.unicode.calcUtf16LeLen(text));
+    const lengths = try a.dupe(u64, base.lengths);
+    lengths[k] = codepoints + past - base.starts[k];
+    var previous_end: i64 = 0;
+    for (base.docs[base.at].tokens, base.starts, lengths) |*tok, start, length| {
+        tok.* = try tokOf(a, @as(i64, @intCast(start)) - previous_end, length);
+        previous_end = @intCast(start + length);
+    }
+    try writeOffsets(a, dir, base.docs);
+    // Read back: the same starts, only span k's length moved; rules 7-10
+    // hold, and only span k ends past the text (rule 11), by `past`.
+    const got = try fiveSpans(a, dir);
+    try std.testing.expectEqualSlices(u64, base.starts, got.starts);
+    try std.testing.expectEqualSlices(u64, lengths, got.lengths);
+    for (got.starts, got.lengths, 0..) |start, length, i| {
+        try std.testing.expect(length >= 1);
+        if (i > 0) try std.testing.expect(start >= got.starts[i - 1]);
+        try std.testing.expect(start + length <= std.math.maxInt(u32));
+        try std.testing.expectEqual(i == k and past > 0, start + length > codepoints);
+    }
+    try std.testing.expectEqual(codepoints + past, got.starts[k] + got.lengths[k]);
+}
+
+test "S6-T10 rule 11 on a v4-coded index, five spans in a chunk: an end past the text in the first, a middle or the last span is each refused by find (OffsetsPastText); an end at the text's end answers" {
+    for ([_]SpanAt{ .first, .middle, .last }) |where| for ([_]u64{ 1, 0 }) |past| {
+        errdefer std.debug.print("S6-T10 rule 11: the {s} span ending {d} past the text\n", .{ @tagName(where), past });
+        var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+        defer arena_state.deinit();
+        const a = arena_state.allocator();
+        var tmp = std.testing.tmpDir(.{ .iterate = true });
+        defer tmp.cleanup();
+        var dir = try publishFiles(a, tmp, &span_files);
+        defer dir.close(io);
+        const metadata = try manifest.decode(try dir.readFileAlloc(io, publication.current_manifest_file, a, .unlimited));
+        try std.testing.expect(metadata.lexical_v4);
+        try spanEndsPast(a, dir, where, past);
+        const opened = try snapshot_open.openScoped(a, io, dir);
+        defer opened.folder.close();
+        const service = @import("service.zig").Service{ .engine = opened.engine, .folder = opened.folder };
+        // The lazy validation passes (rules 1-10, 12): only the text shows it.
+        _ = try opened.folder.positionTables();
+        // A hit on the chunk, whichever of its words matched (the first, the
+        // middle and the last).
+        for ([_][]const u8{ "{\"query\":\"\u{00E9}lan\"}", "{\"query\":\"caf\u{00E9}\"}", "{\"query\":\"\u{0BAA}\u{0BB3}\u{0BCD}\u{0BB3}\u{0BBF}\"}" }) |query| {
+            const got = ops.find(a, service, try params(a, query), cli.cli_caller);
+            if (past > 0) try std.testing.expectError(error.OffsetsPastText, got) else _ = try got;
+        }
+        // A find whose hits do not include that chunk still answers.
+        _ = try ops.find(a, service, try params(a, "{\"query\":\"omega\"}"), cli.cli_caller);
+    };
 }
 
 test "S6-T8 rule 7 through find: a damaged section 5 fails the first find and every later one with the rule's error" {

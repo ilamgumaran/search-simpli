@@ -52,6 +52,14 @@ through the C ABI). **Contracts 2.8.0, Dart 0.9.2**; no API, schema, C header or
 - **Natives.** macOS 990,040 B (`main`: 988,952), Android 959,584 B (952,384), iOS framework binary 970,992 B
   (953,488); `native/SOURCE-SHA256` `2e203ac5…`; `searchd` `ReleaseSmall` 1,133,704 B (1,132,312). **For the
   consumer app:** the next pin takes Dart 0.9.2 (03-next pin row, all three one-way notes).
+- **Follow-ups ([S6-T10](docs/tasks/S6-T10.md), 19 Nov, tests and documents, awaiting its Verdict):** rule 11 is
+  tested on a v4-coded index with five spans in a chunk (the first, a middle and the last span each past the text,
+  refused by `find`); the format document and the CHANGELOG's 0.9.2 entry carry the rebuild note (where 0.9.1's
+  incremental publish published over an index whose only damage was a removed file's offset table, this library
+  refuses it, and a full rebuild recovers it), and the format document states audit items 5, 14, 16 and note I5 as
+  known behaviour. Open for the maintainer: whether a writer should check the tables it drops (items 14, 16). The
+  folder-knowledge skill's step 3 now names `read_span`'s request fields as the contract does (`root_id`, not
+  `root`; filed by S5-T10), checked against the request schema by `tests/test_example_loop.py`. No library change.
 
 ## Text once: each file's text stored once (S6-T7, objective plan item D2 step 2, 2026-11-17; merged as `a02b2cc`)
 

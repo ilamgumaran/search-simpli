@@ -6,6 +6,7 @@ newt question must get the skill's exact negative sentence; `apply_changes`
 is never called; and the skill document carries the sentences the loop uses.
 `SEARCH_SIMPLI_NO_ZIG=1` skips the process tests."""
 
+import ast
 import importlib.util
 import json
 import os
@@ -27,6 +28,163 @@ spec = importlib.util.spec_from_file_location("example_loop", SKILL / "example_l
 loop = importlib.util.module_from_spec(spec)
 sys.modules["example_loop"] = loop
 spec.loader.exec_module(loop)
+
+
+TOOLS = REPO / "contracts" / "tools"
+
+
+def schema_names(node: object, names: set, values: set) -> None:
+    """Every property name at any depth of a JSON Schema, and every `enum`/`const` value."""
+    if isinstance(node, dict):
+        for key, value in node.get("properties", {}).items():
+            names.add(key)
+            schema_names(value, names, values)
+        for key in ("items", "additionalProperties", "oneOf", "anyOf", "allOf"):
+            value = node.get(key)
+            for part in value if isinstance(value, list) else [value]:
+                schema_names(part, names, values)
+        for key in ("$defs", "definitions"):
+            for part in node.get(key, {}).values():
+                schema_names(part, names, values)
+        values.update(str(value) for value in node.get("enum", []) if isinstance(value, str))
+        if isinstance(node.get("const"), str):
+            values.add(node["const"])
+
+
+class ReadSpanContract:
+    """`read_span`'s request fields (and which are required), every tool's names, read from
+    `contracts/tools/`. `stems` are the parts that begin a request field's name without being a
+    field (`root` of `root_id`, `start`, `end`, `context`)."""
+
+    def __init__(self) -> None:
+        schema = json.loads((TOOLS / "read_span.request.schema.json").read_text(encoding="utf-8"))
+        self.request = schema["properties"]
+        self.required = list(schema["required"])
+        self.tools = {path.name.split(".")[0] for path in TOOLS.glob("*.request.schema.json")}
+        self.names = {}
+        for tool in self.tools:
+            names, values = set(), set()
+            for part in ("request", "result"):
+                schema_names(json.loads((TOOLS / f"{tool}.{part}.schema.json").read_text(encoding="utf-8")), names, values)
+            self.names[tool] = names | values
+        self.stems = {name.split("_")[0] for name in self.request if "_" in name} - set(self.request)
+        # Programs the repository builds (`searchd`), named in the skill beside the tools.
+        build = (REPO / "zig" / "build.zig").read_text(encoding="utf-8")
+        self.programs = set(re.findall(r'addExecutable\(\.\{\s*\.name\s*=\s*"(\w+)"', build))
+
+    def allowed_in(self, block: str) -> set:
+        """The names a block may use: tool names, programs, and the names and values of the
+        schemas of the tools it names (read_span's always)."""
+        named = {"read_span"} | {name for name in backticked_names(block) if name in self.tools}
+        allowed = self.tools | self.programs
+        for tool in named:
+            allowed |= self.names[tool]
+        return allowed
+
+    def check_call(self, case: unittest.TestCase, sent: set, where: str) -> None:
+        case.assertLessEqual(sent, set(self.request), f"{where}: read_span has no field {sorted(sent - set(self.request))}")
+        case.assertLessEqual(set(self.required), sent, f"{where}: required {sorted(set(self.required) - sent)} not sent")
+
+
+def skill_blocks(text: str) -> list:
+    """SKILL.md as (kind, info, text) blocks: `fence` (a fenced block and its language),
+    `row` (one table row), `item` (a list item with its continuation lines), `para` (a
+    paragraph, quote or the front matter) and `heading`."""
+    blocks, current = [], None
+
+    def flush() -> None:
+        nonlocal current
+        if current is not None:
+            blocks.append(tuple(current))
+        current = None
+
+    lines = text.split("\n")
+    at = 0
+    while at < len(lines):
+        line = lines[at].strip()
+        at += 1
+        if line.startswith("```"):
+            flush()
+            body = []
+            while at < len(lines) and not lines[at].strip().startswith("```"):
+                body.append(lines[at])
+                at += 1
+            at += 1
+            blocks.append(("fence", line[3:].strip(), "\n".join(body)))
+        elif not line or line == "---":
+            flush()
+        elif line.startswith("#"):
+            flush()
+            blocks.append(("heading", "", line))
+        elif line.startswith("|"):
+            flush()
+            blocks.append(("row", "", line))
+        elif re.match(r"(\d+\.|[-*])\s", line):
+            flush()
+            current = ["item", "", line]
+        elif current is None:
+            current = ["para", "", line]
+        else:
+            current[2] += " " + line
+    flush()
+    return blocks
+
+
+def backticked_names(block: str) -> list:
+    """The field-like names in a block's backticked spans: an identifier (`root_id`, `root_id/`),
+    the key of `key: value`, each part of a dotted path, the keys of an inline JSON object.
+    Spans that are not names (`[n]`, `--filename-index`, `searchd index`, a file) are skipped."""
+    names = []
+    for span in re.findall(r"`([^`]+)`", block):
+        span = span.strip()
+        if span.startswith("{"):
+            names += re.findall(r'"(\w+)"\s*:', span)
+            continue
+        key = span.split(":")[0].strip().rstrip("/")
+        if re.fullmatch(r"[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*", key) and not re.search(r"\.(py|md|json|sh|txt)$", key):
+            names += key.split(".")
+    return names
+
+
+def bare_words(block: str) -> list:
+    """The words of a block outside its backticked spans."""
+    return re.findall(r"[A-Za-z_]+", re.sub(r"`[^`]*`", " ", block))
+
+
+def fenced_read_span_calls(body: str) -> list:
+    """The arguments of every read_span call in a fenced block: JSON (an MCP `tools/call`
+    `{"name": "read_span", "arguments": {...}}`, a JSON-RPC `{"method": "read_span", "params":
+    {...}}`, whole or one object per line) or call-shaped (`read_span(root_id=..., ...)`,
+    `call("read_span", root_id=...)`, `read_span({"root_id": ...})`)."""
+    found = []
+
+    def walk(node: object) -> None:
+        if isinstance(node, dict):
+            if node.get("name") == "read_span" and isinstance(node.get("arguments"), dict):
+                found.append(node["arguments"])
+            if node.get("method") == "read_span" and isinstance(node.get("params"), dict):
+                found.append(node["params"])
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    parsed = []
+    try:
+        parsed.append(json.loads(body))
+    except ValueError:
+        for line in body.splitlines():
+            try:
+                parsed.append(json.loads(line))
+            except ValueError:
+                pass
+    for node in parsed:
+        walk(node)
+    for match in re.finditer(r"""(?:\bread_span\s*\(|["']read_span["']\s*,)([^)]*)\)""", body):
+        keys = re.findall(r"(\w+)\s*=", match.group(1)) + re.findall(r"""["'](\w+)["']\s*:""", match.group(1))
+        found.append(dict.fromkeys(keys))
+    return found
 
 
 def returned_hit_lines(log: list, root_id: str, path: str):
@@ -66,6 +224,89 @@ class SkillDocumentTests(unittest.TestCase):
             self.assertIn(needle, text, needle)
         schema = json.loads((REPO / "contracts" / "tools" / "search_knowledge.request.schema.json").read_text(encoding="utf-8"))
         self.assertEqual(schema["properties"]["search_field"]["enum"], ["content", "filename", "both"])
+
+    def test_skill_names_only_the_read_span_request_fields_the_contract_has(self) -> None:
+        """S6-T10 (filed by S5-T10; widened after the Verdict's F1): the skill said "root" for
+        `read_span`, whose request field is `root_id`, and an agent sent `"root"` and was refused.
+        Every paragraph, list item and table row of SKILL.md that names `read_span`, and every
+        fenced block that holds a `read_span` call, is checked against the field names read from
+        the contract's schemas, never from a list typed here."""
+        contract = ReadSpanContract()
+        text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        blocks = skill_blocks(text)
+        named_blocks = [block for kind, _, block in blocks if kind != "fence" and re.search(r"\bread_span\b", block)]
+        # The tools row, step 2's name-only bullet and step 3 name it today.
+        self.assertGreaterEqual(len(named_blocks), 3)
+        # Known limit (the orchestrator's ruling after the Second Verdict, the maintainer may reverse
+        # it): a real field of another tool named in the same block (`line` of `outline`, `chunk_id`
+        # of `find`, `section_path` of `search_knowledge`) put to read_span passes here. A word-matching
+        # test cannot tell "send X to read_span" from "X is in the other tool's result" without
+        # flagging today's correct text; the server refuses such a call with `unknown field`.
+        for block in named_blocks:
+            allowed = contract.allowed_in(block)
+            for name in backticked_names(block):
+                self.assertIn(name, allowed, f"SKILL.md names `{name}` beside read_span, and no schema of a tool named there has it: {block[:120]!r}")
+            for word in backticked_names(block) + bare_words(block):
+                self.assertNotIn(word.lower(), contract.stems,
+                                 f"SKILL.md says {word!r} beside read_span: part of a request field's name, not a field ({sorted(contract.request)}): {block[:120]!r}")
+        # The tools row's "use it when" cell says what read_span takes: request fields and tool names
+        # only, never a result field (the Second Verdict's F3, `byte_exact`); its "returns" cell may
+        # name result fields.
+        row = next(block for kind, _, block in blocks if kind == "row" and block.startswith("| `read_span` |"))
+        cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
+        for name in backticked_names(cells[1]):
+            self.assertIn(name, set(contract.request) | contract.tools,
+                          f"the tools row offers `{name}` as something read_span takes, and its request schema does not have it")
+        for kind, info, body in blocks:
+            if kind != "fence" or not re.search(r"\bread_span\b", body):
+                continue
+            found = fenced_read_span_calls(body)
+            self.assertTrue(found, f"a fenced block ({info or 'no language'}) names read_span, but no call in it can be read: {body[:120]!r}")
+            # Today the skill has no fenced read_span example; this runs when one is added.
+            for arguments in found:
+                contract.check_call(self, set(arguments), f"fenced example {arguments}")
+
+    def test_skill_read_span_call_agrees_with_the_schema_on_what_is_required(self) -> None:
+        """S6-T10 (the Verdict's `w-optional-end`): the schema requires `root_id`, `path`,
+        `start_line` and `end_line` (read from its `required`); step 3 names exactly those as what
+        to send, and nowhere beside read_span is a required field called optional. A stated range
+        (`context_lines` (0 to 20)) is the schema's minimum and maximum."""
+        contract = ReadSpanContract()
+        text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        call = re.search(r"call\s+`read_span`\s+with\s+(.*?)(?:\(|,\s+or\s+`read_chunk`)", text, re.S)
+        self.assertIsNotNone(call, "the skill no longer says which fields to send to read_span")
+        sent = backticked_names(call.group(1))
+        self.assertEqual(sorted(sent), sorted(contract.required), f"step 3 sends {sent}; the schema requires {contract.required}")
+        for kind, _, block in skill_blocks(text):
+            if kind == "fence" or not re.search(r"\bread_span\b", block):
+                continue
+            flat = re.sub(r"\s+", " ", block)
+            for match in re.finditer(r"\boptional(?:ly)?\b([^.;:]*)", flat, re.I):
+                for name in backticked_names(match.group(1)):
+                    self.assertNotIn(name, contract.required, f"SKILL.md calls the required `{name}` optional: {match.group(0)!r}")
+            for match in re.finditer(r"`(\w+)`\s*\((?:optional|if needed|may be left out)\)", flat, re.I):
+                self.assertNotIn(match.group(1), contract.required, match.group(0))
+            for match in re.finditer(r"`(\w+)`\s*\((\d+) to (\d+)\)", flat):
+                field = contract.request.get(match.group(1))
+                if field is not None and "minimum" in field:
+                    self.assertEqual((int(match.group(2)), int(match.group(3))), (field["minimum"], field["maximum"]), match.group(0))
+
+    def test_every_read_span_call_of_the_example_loop_sends_request_fields(self) -> None:
+        """S6-T10: every read_span call of example_loop.py (the literal name, or a module constant
+        holding it) sends only request fields, and every required one."""
+        contract = ReadSpanContract()
+        tree = ast.parse((SKILL / "example_loop.py").read_text(encoding="utf-8"))
+        constants = {target.id for node in ast.walk(tree) if isinstance(node, ast.Assign)
+                     and isinstance(node.value, ast.Constant) and node.value.value == "read_span"
+                     for target in node.targets if isinstance(target, ast.Name)}
+
+        def is_read_span(arg: ast.expr) -> bool:
+            return (isinstance(arg, ast.Constant) and arg.value == "read_span") or (isinstance(arg, ast.Name) and arg.id in constants)
+
+        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and node.args and is_read_span(node.args[0])]
+        self.assertGreater(len(calls), 0)
+        for node in calls:
+            contract.check_call(self, {keyword.arg for keyword in node.keywords}, f"example_loop.py line {node.lineno}")
 
     def test_the_loop_cannot_call_apply_changes(self) -> None:
         self.assertNotIn("apply_changes", loop.READ_TOOLS)
