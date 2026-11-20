@@ -235,8 +235,9 @@ meets a v4 index as a clear refusal, never as a misread.
   after the last one, is refused while the tables are found, with
   `InvalidLexicalSection`, as before v4), and the old generation is left as it
   was. One valid v2 table cannot be written in v4: a gap whose zigzag is 2^32
-  or more (a token 2^31 codepoints or more from the previous token's end),
-  which rule 5 forbids; the publish fails with `InvalidLexicalSection`.
+  or more (a token starting at least 2^31 codepoints after the previous
+  token's end, or more than 2^31 before it; a gap of −2^31, zigzag
+  2^32 − 1, is written), which rule 5 forbids; the publish fails with `InvalidLexicalSection`.
 - At that first publish the tables of the documents it removes are not
   written, but they are checked by the same v2 rules
   (`postings.checkPairsTable`), and a table v2 refuses refuses the publish
@@ -265,8 +266,8 @@ meets a v4 index as a clear refusal, never as a misread.
 No behaviour change; each is a sentence for the maintainer.
 
 - **A v2 gap v4 cannot hold (audit item 5):** a valid v2 table with a gap
-  whose zigzag is 2^32 or more (a token 2^31 codepoints or more from the
-  previous token's end) is refused at the first publish with
+  whose zigzag is 2^32 or more (a token starting at least 2^31 codepoints
+  after the previous token's end, or more than 2^31 before it) is refused at the first publish with
   `InvalidLexicalSection`, the old generation left whole, and an undamaged
   index can hold one only if both size caps (`max_file_bytes`,
   `max_total_bytes`) were raised above 2 GiB and a file held such a run in one
