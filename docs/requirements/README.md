@@ -108,6 +108,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-20 | [Direct folder search: a query over a folder with no index directory](cap-20-direct-folder-search.md) | UC-006, UC-001, UC-002 | FR-26, NFR-15 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md), merged as `06f8c2e`; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
 | CAP-21 | [Host-supplied vectors for a `searchd`-built index](cap-21-host-supplied-vectors.md) | UC-001, UC-007, UC-002 | FR-27, FR-28, FR-29, FR-30, NFR-16 | Proposed (S6-T6: [task](../tasks/S6-T6.md); pending maintainer approval; blocked on a J2 semantic slice, CFT-24) |
 | CAP-22 | [Query warnings under every search field](cap-22-field-warnings.md) | UC-006, UC-007, UC-002 | FR-31 | Implemented (S6-T5: [task](../tasks/S6-T5.md); merged on the maintainer's decision of 17 Nov 2026; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
+| CAP-23 | [The command line keeps two generations by default](cap-23-cli-generation-retention.md) | UC-001, UC-006, UC-002 | FR-32, FR-33, NFR-17 | Proposed (S6-T11, 03-next D2-5; pending maintainer approval and answers to its open questions Q1–Q6) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
@@ -169,6 +170,8 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-29 | One embedding identity per generation, named and checked on every query vector and attach; model change is a migration | CAP-21 | Proposed (S6-T6) |
 | FR-30 | Hybrid with no query vector answers lexically with a warning; vector coverage reported over the visible scope | CAP-21 | Proposed (S6-T6) |
 | FR-31 | `ss_query` warnings under `both` and `filename`: `content`'s, less a word a visible file name holds; hidden reported as absent | CAP-22 | Implemented (S6-T5: [task](../tasks/S6-T5.md), merged on the maintainer's decision of 17 Nov 2026) |
+| FR-32 | `searchd index` and `searchd apply` keep two generations unless `--keep-generations N` or `--keep-generations all` says otherwise; C ABI and Dart defaults unchanged | CAP-23 | Proposed (S6-T11) |
+| FR-33 | A command-line publish says what retention removed (fields while retention is in effect; one stderr line when files were deleted) | CAP-23 | Proposed (S6-T11) |
 
 ## Non-functional requirements (NFR)
 
@@ -196,6 +199,7 @@ until promoted.
 | NFR-14 | Dependency-free MCP server and conformance client | CAP-19 | Diagnostic · implemented (S3-T6: `zig/src/mcp.zig` Zig only, `tests/mcp_client.py` standard library; [task](../tasks/S3-T6.md)) |
 | NFR-15 | Direct search creates no file or directory anywhere; its cost against the index path is measured, not assumed | CAP-20 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md)) |
 | NFR-16 | Vectors in their own versioned section, loaded only by vector queries; lexical answers and memory unchanged; vector costs measured before promotion | CAP-21 | Proposed (S6-T6) |
+| NFR-17 | With the command line's defaults at most two complete generations after a publish; deletion confined to the engine's own superseded section files in the index directory | CAP-23 | Proposed (S6-T11) |
 
 ## Contracts (CON)
 
@@ -264,8 +268,10 @@ section is the point of the whole register.
 | CFT-26 | CAP-21 ↔ INV-04 | The engine checks only dimensions, so host vectors could meet query vectors of another model. | One identity per generation, named and checked on every query vector and attach; model change by migration (FR-29). | Resolved (design) |
 | CFT-27 | CAP-21 ↔ NFR-13 | 384-d `f32` vectors at 10k files compute to the 64 MiB cap once loaded. | Vector section loaded only by vector queries; the vector query's bound and `int8` decided on measurement. | Resolved (scope) |
 | CFT-28 | CAP-21 ↔ NFR-12 / FR-20 | Two-phase writes two generations per embedding round, each larger. | `apply` without vectors unchanged; attach write cost measured; batching, D2-5 and delta sections bound it. | Resolved (scope) |
+| CFT-29 | CAP-23 ↔ FR-11 / FR-20 | A reader that has read `MANIFEST` but not opened the sections can find them deleted through the command line, where today nothing is. | Two kept: only a reader two publishes behind fails (`FileNotFound`, retry succeeds); open readers unaffected on macOS/Linux/Android; `--keep-generations all` keeps today's behaviour. See CAP-23 §8. | Resolved (scope) |
+| CFT-30 | CAP-23 ↔ FR-24 / FR-20 | `searchd apply` would prune by default while `ss_apply_changes`, documented as publishing exactly as `searchd apply` does, would not. | Ruling 4 keeps the C ABI and Dart defaults; the host app passes 2; the header comment names the difference. See CAP-23 §8. | Accepted with rationale |
 
-New conflicts append as `CFT-29`, … Record the conflict even if you resolve it
+New conflicts append as `CFT-31`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability
