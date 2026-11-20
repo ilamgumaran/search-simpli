@@ -631,8 +631,10 @@ test "S6-T8 rule 11: a highlight past its chunk's text is refused by find (Offse
 /// token and a Tamil last token (the Verdict's F2): the chunk's bytes
 /// outnumber its codepoints before each checked span, so a check against
 /// the byte length would let an end one codepoint past the text through.
+/// U+1F33F (outside the BMP, not a token) before the last token (the Second
+/// Verdict's F4): its UTF-16 units outnumber its codepoints too.
 const span_files = [_]File{
-    .{ .name = "five.txt", .text = "\u{00E9}lan bravo caf\u{00E9} delta \u{0BAA}\u{0BB3}\u{0BCD}\u{0BB3}\u{0BBF}\n" },
+    .{ .name = "five.txt", .text = "\u{00E9}lan bravo caf\u{00E9} delta \u{1F33F} \u{0BAA}\u{0BB3}\u{0BCD}\u{0BB3}\u{0BBF}\n" },
     .{ .name = "other.txt", .text = "omega\n" },
 };
 
@@ -692,10 +694,11 @@ fn spanEndsPast(a: std.mem.Allocator, dir: std.Io.Dir, where: SpanAt, past: u64)
         .last => n - 1,
     };
     for (base.starts, base.lengths) |start, length| try std.testing.expect(start + length <= codepoints);
-    // The text has more bytes than codepoints: an end one codepoint past the
-    // text still lies within its bytes.
+    // The text has more bytes and more UTF-16 units than codepoints: an end
+    // one codepoint past the text still lies within either count.
     const text = (try snapshot_open.open(a, io, dir)).documents[base.at].text;
     try std.testing.expect(codepoints + past < text.len);
+    try std.testing.expect(codepoints + past <= try std.unicode.calcUtf16LeLen(text));
     const lengths = try a.dupe(u64, base.lengths);
     lengths[k] = codepoints + past - base.starts[k];
     var previous_end: i64 = 0;
