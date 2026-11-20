@@ -1,0 +1,234 @@
+################ core-test
+plant core-test: diff
+--- <vscratch>/head-arch/zig/src/core/fold_test.zig	2026-11-20 11:53:56
++++ <vscratch>/zplant-core-test/zig/src/core/fold_test.zig	2026-11-20 12:22:58
+@@ -41,7 +41,7 @@
+     const same = golden.object.get("same").?.array.items;
+     const changed = golden.object.get("changed").?.array.items;
+     const count = golden.object.get("count").?.object;
+-    try std.testing.expectEqual(count.get("same").?.integer, @as(i64, @intCast(same.len)));
++    try std.testing.expectEqual(count.get("same").?.integer, @as(i64, @intCast(same.len + 1)));
+     try std.testing.expectEqual(count.get("changed").?.integer, @as(i64, @intCast(changed.len)));
+     try std.testing.expectEqual(count.get("terms").?.integer, @as(i64, @intCast(same.len + changed.len)));
+     var failures: usize = 0;
+zig build test exit 1
++- run test core 252 pass, 1 fail (253 total)
+error: 'fold_test.test.K equals the Python mirror's golden on every term, byte for byte' failed:
++- run test tests w
+Build Summary: 13/15 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
++- run test core 252 pass, 1 fail (253 total)
++- run test operations 10 pass (10 total) 191ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 299ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 977ms MaxRSS:5M
+error: the following build command failed with exit code 1:
+################ core-infile
+plant core-infile: diff
+--- <vscratch>/head-arch/zig/src/core/postings.zig	2026-11-20 11:53:56
++++ <vscratch>/zplant-core-infile/zig/src/core/postings.zig	2026-11-20 12:41:38
+@@ -866,7 +866,7 @@
+     var fills: [8]usize = undefined;
+     const index = try build(&documents, &terms, &posting_storage, &lengths, &fills);
+ 
+-    try std.testing.expectEqual(@as(usize, 3), index.terms.len);
++    try std.testing.expectEqual(@as(usize, 4), index.terms.len);
+     const zig_entry = index.terms[findTerm(index.terms, "ZIG").?];
+     try std.testing.expectEqual(@as(u32, 1), zig_entry.document_frequency);
+     try std.testing.expectEqual(@as(usize, 1), zig_entry.postings_length);
+zig build test exit 1
++- run test core 252 pass, 1 fail (253 total)
+error: 'postings.test.postings store document and term frequencies' failed:
++- run test tests w
+Build Summary: 13/15 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
++- run test core 252 pass, 1 fail (253 total)
++- run test operations 10 pass (10 total) 189ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 433ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+error: the following build command failed with exit code 1:
+################ ops
+plant ops: diff
+--- <vscratch>/head-arch/zig/src/ops/ops.zig	2026-11-20 11:53:56
++++ <vscratch>/zplant-ops/zig/src/ops/ops.zig	2026-11-20 12:43:26
+@@ -1422,7 +1422,7 @@
+     const a = arena_state.allocator();
+     const good = (try applyOptions(a, (try parseObject(a, "{\"allow_file_reads\":true,\"max_file_bytes\":5,\"keep_generations\":2,\"analyzer\":\"v1\"}")).ok)).ok;
+     try std.testing.expect(good.allow_file_reads);
+-    try std.testing.expectEqual(@as(u64, 5), good.max_file_bytes);
++    try std.testing.expectEqual(@as(u64, 6), good.max_file_bytes);
+     try std.testing.expectEqual(@as(?usize, 2), good.keep_generations);
+     for ([_][]const u8{ "{\"bogus\":1}", "{\"allow_file_reads\":1}", "{\"keep_generations\":0}", "{\"analyzer\":\"v9\"}", "{\"max_chars\":0}" }) |bad| {
+         try std.testing.expect((try applyOptions(a, (try parseObject(a, bad)).ok)) == .failed);
+zig build test exit 1
++- run test operations 9 pass, 1 fail (10 total)
+error: 'ops.test.S3-T4: apply options are strict' failed:
++- run test core w
++- run test tests w
+Build Summary: 13/15 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 36s MaxRSS:412M
++- run test operations 9 pass, 1 fail (10 total)
++- run test interfaces 26 pass (26 total) 309ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 991ms MaxRSS:5M
+error: the following build command failed with exit code 1:
+################ interfaces
+plant interfaces: diff
+--- <vscratch>/head-arch/zig/src/interfaces/field_warnings_test.zig	2026-11-20 11:53:56
++++ <vscratch>/zplant-interfaces/zig/src/interfaces/field_warnings_test.zig	2026-11-20 12:45:15
+@@ -107,7 +107,7 @@
+     try std.testing.expectEqualStrings(content, both);
+     try std.testing.expect(std.mem.indexOf(u8, both, "\"code\":\"query_term_expanded\",\"message\":\"also searched: dinosaur\",\"term\":\"dinosuar\",\"expansions\":[\"dinosaur\"]") != null);
+     try std.testing.expect(std.mem.indexOf(u8, both, "\"code\":\"query_term_grouped\"") != null);
+-    try std.testing.expect(std.mem.indexOf(u8, both, "\"members\":[\"tomatoes\"]") != null);
++    try std.testing.expect(std.mem.indexOf(u8, both, "\"members\":[\"tomatoesX\"]") != null);
+     try std.testing.expect(std.mem.indexOf(u8, both, unmatched("qqzzxx")) != null);
+ }
+ 
+zig build test exit 1
++- run test interfaces 25 pass, 1 fail (26 total)
+error: 'field_warnings_test.test.both: the warnings content gives, codes, order, wording and members unchanged' failed:
++- run test core w
++- run test tests w
+Build Summary: 13/15 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 37s MaxRSS:412M
++- run test operations 10 pass (10 total) 194ms MaxRSS:7M
++- run test interfaces 25 pass, 1 fail (26 total)
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 960ms MaxRSS:5M
+error: the following build command failed with exit code 1:
+################ tests
+plant tests: diff
+--- <vscratch>/head-arch/zig/src/tests/compat_s6t9_test.zig	2026-11-20 11:53:56
++++ <vscratch>/zplant-tests/zig/src/tests/compat_s6t9_test.zig	2026-11-20 12:47:48
+@@ -179,7 +179,7 @@
+         var sink: std.Io.Writer.Allocating = .init(a);
+         try cli.runIndex(io, a, folder, try compat.tmpPath(a, tmp, name), .{ .update = true, .caps = .{ .filename_index = true } }, &sink.writer);
+         const metadata = try expectV26(a, old);
+-        try std.testing.expectEqual(@as(u64, 2), metadata.generation);
++        try std.testing.expectEqual(@as(u64, 3), metadata.generation);
+         try expectSameSections(a, fresh, old);
+         try expectSameStateFiles(a, fresh, old);
+         try compat.expectSameAnswers(want, try compat.answers(a, old));
+zig build test exit 1
++- run test core w
++- run test tests 283 pass, 9 skip, 1 fail (293 total)
+error: 'compat_s6t9_test.test.S6-T9: the first update of each older index plans no work, publishes one whole v2.6 generation, a fresh index's sections, and answers the same' failed:
+Build Summary: 13/15 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 40s MaxRSS:412M
++- run test operations 10 pass (10 total) 1s MaxRSS:7M
++- run test interfaces 26 pass (26 total) 2s MaxRSS:10M
++- run test tests 283 pass, 9 skip, 1 fail (293 total)
++- run test 6 pass (6 total) 2s MaxRSS:5M
+error: the following build command failed with exit code 1:
+################ via-other-test
+plant via-other-test: diff
+--- <vscratch>/head-arch/zig/src/core/manifest_inplace_test.zig	2026-11-20 11:53:56
++++ <vscratch>/zplant-via-other-test/zig/src/core/manifest_inplace_test.zig	2026-11-20 12:49:44
+@@ -177,7 +177,7 @@
+     defer arena_state.deinit();
+     inline for (.{ Opener.open, Opener.open_scoped, Opener.open_source }) |opener| {
+         const outcome = try inPlace(arena_state.allocator(), .cut_in_place, opener);
+-        try std.testing.expectEqualStrings("Truncated", outcome);
++        try std.testing.expectEqualStrings("TruncatedX", outcome);
+     }
+ }
+ 
+zig build test exit 1
++- run test core 252 pass, 1 fail (253 total)
+error: 'manifest_inplace_test.test.S6-T13 verifier B: MANIFEST cut in place between the stat and the read is Truncated' failed:
++- run test tests w
+Build Summary: 13/15 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
++- run test core 252 pass, 1 fail (253 total)
++- run test operations 10 pass (10 total) 190ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 304ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+error: the following build command failed with exit code 1:
+################ fastmem
+plant fastmem: diff
+--- <vscratch>/head-arch/zig/src/core/fastmem.zig	2026-11-20 11:53:56
++++ <vscratch>/zplant-fastmem/zig/src/core/fastmem.zig	2026-11-20 12:52:48
+@@ -194,7 +194,7 @@
+             }
+         }
+     }
+-    try testing.expectEqual(@as(usize, 16 * 16 * 257), cases);
++    try testing.expectEqual(@as(usize, 16 * 16 * 258), cases);
+ }
+ 
+ test "S4-T18 memmove: every length 0..256 at every alignment 0..15 without overlap" {
+zig build test exit 1
++- run test 5 pass, 1 fail (6 total)
+error: 'fastmem.test.S4-T18 memcpy: every length 0..256 at every source and destination alignment 0..15, guards untouched' failed:
++- run test core w
++- run test tests w
+Build Summary: 13/15 steps succeeded (1 failed); 578/588 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 1m MaxRSS:412M
++- run test operations 10 pass (10 total) 243ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 438ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 5 pass, 1 fail (6 total)
+error: the following build command failed with exit code 1:
+################ unnamed
+plant unnamed: new file zig/src/core/plant_unnamed_test.zig:
+const std = @import("std");
+const scoring = @import("scoring.zig");
+
+test "plant: a new core test named in no module root" {
+    _ = scoring;
+    try std.testing.expectEqual(@as(u32, 1), 2);
+}
+zig build test exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total) 2m MaxRSS:412M
++- run test operations 10 pass (10 total) 190ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 295ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 3m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+--- the checker on this copy:
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports)
+check_layers exit 0
+################ wiring-name
+plant wiring-name: diff
+--- <vscratch>/head-arch/zig/src/core/scoring.zig	2026-11-20 11:53:56
++++ <vscratch>/zplant-wiring-name/zig/src/core/scoring.zig	2026-11-20 12:55:57
+@@ -1,4 +1,4 @@
+-const std = @import("std");
++const std = @import("std"); const plant_ops = @import("operations").service; comptime { _ = plant_ops; }
+ 
+ pub const Bm25Parameters = struct {
+     k1: f32 = 1.2,
+zig build test exit 1
++- run test operations
++- run test interfaces
++- run test core
++- run test tests
+Build Summary: 6/15 steps succeeded (4 failed); 6/6 tests passed
++- run test core transitive failure
++- run test operations transitive failure
++- run test interfaces transitive failure
++- run test tests transitive failure
++- run test 6 pass (6 total) 945ms MaxRSS:5M
+error: the following build command failed with exit code 1:
+################ wiring-path
+plant wiring-path: diff
+--- <vscratch>/head-arch/zig/src/core/scoring.zig	2026-11-20 11:53:56
++++ <vscratch>/zplant-wiring-path/zig/src/core/scoring.zig	2026-11-20 12:56:05
+@@ -1,4 +1,4 @@
+-const std = @import("std");
++const std = @import("std"); const plant_ops = @import("../ops/service.zig"); comptime { _ = plant_ops; }
+ 
+ pub const Bm25Parameters = struct {
+     k1: f32 = 1.2,
+zig build test exit 1
++- run test tests
++- run test core
++- run test operations
++- run test interfaces
+Build Summary: 6/15 steps succeeded (4 failed); 6/6 tests passed
++- run test core transitive failure
++- run test operations transitive failure
++- run test interfaces transitive failure
++- run test tests transitive failure
++- run test 6 pass (6 total) 1s MaxRSS:5M
+error: the following build command failed with exit code 1:

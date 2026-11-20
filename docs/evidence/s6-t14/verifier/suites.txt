@@ -1,0 +1,98 @@
+################ Zig, head and main, Build Summary and steps
+== head-test-debug.log
++- run test core w
++- run test tests w
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total) 35s MaxRSS:412M
++- run test operations 10 pass (10 total) 192ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 282ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 943ms MaxRSS:5M
+== head-test-rs.log
++- run test core w
++- run test tests w
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total) 3s MaxRSS:35M
++- run test operations 10 pass (10 total) 146ms MaxRSS:3M
++- run test interfaces 26 pass (26 total) 190ms MaxRSS:5M
++- run test tests 284 pass, 9 skip (293 total) 18s MaxRSS:402M
++- run test 6 pass (6 total) 286ms MaxRSS:4M
+== main-test-debug.log
++- run test w
+Build Summary: 9/9 steps succeeded; 579/588 tests passed (9 skipped)
++- run test 573 pass, 9 skip (582 total) 2m MaxRSS:935M
++- run test 6 pass (6 total) 939ms MaxRSS:5M
+== main-test-rs.log
++- run test w
+Build Summary: 9/9 steps succeeded; 579/588 tests passed (9 skipped)
++- run test 573 pass, 9 skip (582 total) 22s MaxRSS:395M
++- run test 6 pass (6 total) 255ms MaxRSS:4M
+== head-abi-debug.log
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
+== head-abi-rs.log
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
+== main-abi-debug.log
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
+== main-abi-rs.log
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
+################ Python
+## python, with zig
+OK
+
+[{"query": "benico", "ms_1k": 0.0067, "ms_10k": 0.0082, "growth": 1.22}, {"query": "hybrid retrieval", "ms_1k": 0.0172, "ms_10k": 0.049, "growth": 2.85}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.0859, "ms_10k": 0.5576, "growth": 6.49}, {"query": "the and of to in", "ms_1k": 0.096, "ms_10k": 0.7342, "growth": 7.65}]
+## python, SEARCHD_BINARY=ReleaseSmall head
+OK
+
+[{"query": "benico", "ms_1k": 0.0085, "ms_10k": 0.0104, "growth": 1.22}, {"query": "hybrid retrieval", "ms_1k": 0.0215, "ms_10k": 0.0615, "growth": 2.86}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.1077, "ms_10k": 0.6749, "growth": 6.27}, {"query": "the and of to in", "ms_1k": 0.1185, "ms_10k": 0.8487, "growth": 7.16}]
+## python, SEARCH_SIMPLI_NO_ZIG=1
+OK (skipped=43)
+
+[{"query": "benico", "ms_1k": 0.0085, "ms_10k": 0.0104, "growth": 1.22}, {"query": "hybrid retrieval", "ms_1k": 0.0215, "ms_10k": 0.0617, "growth": 2.86}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.1097, "ms_10k": 0.7258, "growth": 6.62}, {"query": "the and of to in", "ms_1k": 0.127, "ms_10k": 0.9574, "growth": 7.54}]
+(481 = unittest.defaultTestLoader.discover('tests').countTestCases())
+################ Dart
+## dart pub get
+Downloading packages...
+Got dependencies in `./example`.
+## dart analyze lib test
+Analyzing lib, test...
+No issues found!
+## dart test
+00:07 +97: test/parity_test.dart: (tearDownAll)
+00:07 +97: All tests passed!
+################ J2
+## J2 python reference
+    control rows not at rank 1: none
+    negatives: 61/64 return hits
+    misspelling-short  13   0.923 ->  0.923 (+0.000)   0.962 ->  0.962 (+0.000)   0.972 ->  0.972 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-opening  25   0.120 ->  0.120 (+0.000)   0.219 ->  0.219 (+0.000)   0.278 ->  0.278 (+0.000)   0.340 ->  0.340 (+0.000)
+J2 gate: pass
+exit 0
+## J2 native, ReleaseSmall head searchd
+  both: control MRR@10 1.000, misspelling MRR@10 0.844, morphology MRR@10 0.795, accent MRR@10 0.847, tamil MRR@10 1.000, title MRR@10 0.955, phrase MRR@10 0.900, title-heldout MRR@10 1.000, misspelling-heldout MRR@10 0.958, morphology-heldout MRR@10 0.857, accent-heldout MRR@10 0.909, tamil-heldout MRR@10 0.962, verbform-heldout MRR@10 0.947, verbform-cross MRR@10 1.000, precision-control MRR@10 1.000, misspelling-short MRR@10 0.962, misspelling-opening MRR@10 0.219
+::notice title=J2 native run::290 queries x 2 variants, none skipped. searchd sha256 394f608ac54a6499d28f1cc20f363f0bb34b4609930dba2914c046c779e72df3 (1151208 B, ReleaseSmall, zig None) built from commit None; natives digest 3224f745a7c09dc8a55523cba2f92eeb29e35e5f42803ab9734951278fb19261 (matches the committed SOURCE-SHA256: True); policies: analyzer_id analyzer-v2, chunkers ['line-window-v1', 'md-section-v1'], filename_policy_id filename-field-v1, title_policy_id title-field-v1, fuzzy_policy_id fuzzy-v1, fold_policy_id fold-groups-v3
+J2 native against the baseline's searchd cells (recorded 2026-11-12, binary 8b1f65c1d797): 0 rows differ
+::notice title=J2 x86_64 vs baseline::no row differs: every first grade-2 rank (452 over both variants), slice metric and negative equals the macOS arm64 baseline
+    misspelling-short  13   0.923 ->  0.923 (+0.000)   0.962 ->  0.962 (+0.000)   0.972 ->  0.972 (+0.000)   1.000 ->  1.000 (+0.000)
+    misspelling-opening  25   0.120 ->  0.120 (+0.000)   0.219 ->  0.219 (+0.000)   0.278 ->  0.278 (+0.000)   0.340 ->  0.340 (+0.000)
+J2 gate: pass
+gate exit 0
+################ checkers
+## check_layers
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports)
+exit 0
+## check_requirements
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+exit 0
+## check_no_home_paths
+exit 0
+## unicode goldens version
+Python 3.9.6: unicodedata 13.0.0; the tables are generated with Unicode 13.0.0
+## unicode 13 goldens (head archive)
+OK
+Unicode 13.0.0: 28 tests ran in tests.test_goldens_fresh, tests.test_analyzer_v3, tests.test_tokenize; 9 of 9 expected golden checks ran; 0 skipped, 0 failed
+::notice title=Unicode 13 goldens::all 9 golden and table checks ran and passed on Python 3.9.6 (Unicode 13.0.0); no test skipped
+exit 0

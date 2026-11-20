@@ -1,0 +1,27 @@
+# S6-T14 verifier, check 3: tool/build_native.sh in a fresh git archive of a54c7f8, fresh global and local Zig caches, SS_ANDROID_NDK = NDK 28.2.13676358
+tool/build_native.sh: building with 0.16.0 from <vscratch>/head-arch/zig
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib ( 1006456 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  966800 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  971424 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (3224f745a7c09dc8a55523cba2f92eeb29e35e5f42803ab9734951278fb19261)
+exit 0
+## each output against the head's committed file and main's (87c4ddb) committed file, cmp
+native/macos-arm64/libsearch_simpli.dylib 1006456 B sha256 ab901f1bd8e8c78c vs-committed-head:same vs-main-committed:same
+native/android-arm64/libsearch_simpli.so 966800 B sha256 5b987456bfb314b9 vs-committed-head:same vs-main-committed:same
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so 966800 B sha256 5b987456bfb314b9 vs-committed-head:same vs-main-committed:same
+native/ios-arm64/search_simpli.framework/search_simpli 971424 B sha256 1815daf3214373bc vs-committed-head:same vs-main-committed:same
+native/ios-arm64/search_simpli.framework/Info.plist 749 B sha256 8fb8f2353652106e vs-committed-head:same vs-main-committed:same
+native/SOURCE-SHA256 65 B sha256 9db94bb18b621993 vs-committed-head:same vs-main-committed:DIFF
+## check_native.sh on the rebuilt natives
+check_native: macos-arm64 memcpy at 0x740 (223 calls against 120): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5b0d4 (507 calls against 164): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (219 calls against 112): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+check_native exit 0
+## searchd, zig build -Doptimize=ReleaseSmall, each from its own fresh archive and caches
+ 1151208 head-out-rs/bin/searchd
+ 1151208 main-out-rs/bin/searchd
+cmp: identical
+394f608ac54a6499d28f1cc20f363f0bb34b4609930dba2914c046c779e72df3  head-out-rs/bin/searchd
+394f608ac54a6499d28f1cc20f363f0bb34b4609930dba2914c046c779e72df3  main-out-rs/bin/searchd

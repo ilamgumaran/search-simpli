@@ -1,0 +1,78 @@
+=== C0 unchanged copy
+--- checker on <vscratch>/cplant-c0:
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports)
+exit 0
+=== C1 a core file imports an operations file through the module name
+     try std.testing.expectEqual(bm25Contribution(2, 12, 10, 3, 100, .{}), scoped.contribution(2, 12, 3, 7, .{}));
+ }
++const plant_ops = @import("operations").service;
+--- checker on <vscratch>/cplant-c1:
+zig/src/core/scoring.zig:221: core file imports the module operations, which only files of interfaces and tests may import
+check_layers: 1 problem(s)
+exit 1
+=== C2 a file in the wrong folder (ops/report.zig moved to core/)
+<vscratch>/cplant-c2/zig/src/core/report.zig
+--- checker on <vscratch>/cplant-c2:
+scripts/check_layers.py:121: FILES names zig/src/ops/report.zig, which does not exist
+zig/src/core/report.zig:1: sits in zig/src/core/, outside its layer's folder: FILES assigns report.zig to operations as ops/report.zig (zig/src/ops/)
+zig/src/core/report.zig:18: core file imports the module core, which only files of operations, interfaces and tests may import
+zig/src/ops/filename_response.zig:5: imports report.zig, which resolves to zig/src/ops/report.zig: no such file
+zig/src/ops/operations.zig:8: imports report.zig, which resolves to zig/src/ops/report.zig: no such file
+zig/src/ops/ops.zig:42: imports report.zig, which resolves to zig/src/ops/report.zig: no such file
+check_layers: 6 problem(s)
+exit 1
+=== C3 a new unassigned file in core/
+--- checker on <vscratch>/cplant-c3:
+zig/src/core/plant_new.zig:1: not assigned to a layer: add it to FILES in scripts/check_layers.py (core, operations or interfaces), then run scripts/check_layers.py --write-doc
+check_layers: 1 problem(s)
+exit 1
+=== C4 a test in a layer folder that reaches two layers (core/plant_x_test.zig imports core and operations)
+--- checker on <vscratch>/cplant-c4:
+zig/src/core/plant_x_test.zig:2: core file imports the module operations, which only files of interfaces and tests may import
+check_layers: 1 problem(s)
+exit 1
+=== C4b the same test reaching operations by path
+--- checker on <vscratch>/cplant-c4b:
+zig/src/core/plant_y_test.zig:2: imports ../ops/service.zig (zig/src/ops/service.zig), a file of another folder: operations is reached through its module, @import("operations"), never by path
+check_layers: 1 problem(s)
+exit 1
+=== C5 a path import escaping a module root (ops/service.zig imports ../core/engine.zig)
+--- checker on <vscratch>/cplant-c5:
+zig/src/ops/service.zig:764: imports ../core/engine.zig (zig/src/core/engine.zig), a file of another folder: core is reached through its module, @import("core"), never by path
+check_layers: 1 problem(s)
+exit 1
+=== C5b a path import leaving zig/src (core/scoring.zig imports ../../build.zig)
+--- checker on <vscratch>/cplant-c5b:
+zig/src/core/scoring.zig:221: imports ../../build.zig, which is outside zig/src/
+check_layers: 1 problem(s)
+exit 1
+=== C6 --write-doc on an unchanged copy leaves docs/layers.md unchanged
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports)
+exit 0
+docs/layers.md unchanged by --write-doc
+=== C7 a test in tests/ that reaches one layer only
+--- checker on <vscratch>/cplant-c7:
+zig/src/tests/plant_one_layer_test.zig:1: imports core files only: a test, benchmark or tool of one layer sits beside its subject, in zig/src/core/
+check_layers: 1 problem(s)
+exit 1
+=== C8 an interface importing another interface, a pair not in ALLOWED (interfaces/cli.zig imports rpc.zig)
+--- checker on <vscratch>/cplant-c8:
+zig/src/interfaces/cli.zig:1404: interface file imports rpc.zig, another interface, and the pair is not in ALLOWED (scripts/check_layers.py)
+check_layers: 1 problem(s)
+exit 1
+################ the checker's own tests
+Ran 48 tests in 0.738s
+
+OK
+################ d967f09 alone
+## d967f09: its own scripts/check_layers.py
+zig/src/tests/title_field_test.zig:435: imports 'core', which is neither a .zig file nor a module listed in MODULES (scripts/check_layers.py)
+zig/src/tests/title_field_test.zig:436: imports 'operations', which is neither a .zig file nor a module listed in MODULES (scripts/check_layers.py)
+zig/src/tests/title_field_test.zig:554: imports 'core', which is neither a .zig file nor a module listed in MODULES (scripts/check_layers.py)
+check_layers: 898 problem(s)
+exit 1
+## d967f09: tests.test_analyzer_v3 and tests.test_cli_argument_scan
+ERROR: test_zig_tables_regenerate_byte_for_byte (tests.test_analyzer_v3.FoldTableTests)
+ERROR: test_main_zig_does_not_bypass_cli_parse_args (tests.test_cli_argument_scan.CliArgumentScanTest)
+Ran 18 tests in 3.827s
+FAILED (errors=2)

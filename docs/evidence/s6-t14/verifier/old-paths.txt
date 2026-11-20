@@ -1,0 +1,34 @@
+# S6-T14 verifier, check 5: old zig/src paths in living files at a54c7f8 (git grep; history excluded, see the Verdict)
+PROJECT-STATE.md:131:  old generation whole. Both reproduced first by `zig/src/manifest_read_test.zig` (the publish run between the
+PROJECT-STATE.md:364:byte identity with `main`'s binary without the flag, the J2 equivalence and both plants were reproduced by the verifier. CLI only: `zig/src/cli.zig`; no engine, format,
+PROJECT-STATE.md:462:  `zig/src/unicode_tables.zig` tables, the marks guard, the analyzer-v3, title, BM25, fuzzy and verb-forms goldens) and
+PROJECT-STATE.md:497:construction). The Zig engine (`zig/src/verb_forms.zig`, used by `zig/src/fold.zig`) and the Python mirror
+PROJECT-STATE.md:568:list) → T (seven Tamil suffix rules, an 8-word keep list, two Tamil letters kept). The Zig engine (`zig/src/fold.zig`)
+PROJECT-STATE.md:705:validated but cutting nothing); `filename` is unchanged. `zig/src/title_field.zig` derives the field from the documents
+PROJECT-STATE.md:827:is not available (the library needs `compiler_rt`'s f128 helpers, which no platform library provides). `zig/src/fastmem.zig`
+PROJECT-STATE.md:931:the Debug suites and CI passed). `searchd mcp` had the same pattern with a stack local. The fix (`zig/src/rpc.zig`
+PROJECT-STATE.md:934:`zig/src/reload_test.zig` (Debug and `ReleaseSmall`, a poisoning wrapper over the testing allocator and the C allocator), an
+PROJECT-STATE.md:992:filename-query complexity guards (`zig/src/filename_complexity_test.zig`: the body records
+PROJECT-STATE.md:1050:arena-cap test (`zig/src/nfr13_arena_test.zig`); the lexical-only fuse skips two sorts.
+PROJECT-STATE.md:1141:**Pinned MCP revision:** `2025-11-25` (`zig/src/mcp.zig`, `protocol_version`;
+PROJECT-STATE.md:1222:when `--labels` is absent). One module, `zig/src/ops.zig`, writes the JSON for
+PROJECT-STATE.md:1265:manifest; both open. `find` (Zig core `zig/src/find.zig`, Python reference
+PROJECT-STATE.md:1419:- **The NFC timing test now guards `compose` itself.** `zig/src/nfc_timing_test.zig` gains a second family: one line of decomposed jamo with no spaces (a single region of 256 KB and 1 MB) against th
+PROJECT-STATE.md:1430:- **New:** `zig/src/nfc_timing_test.zig` (growth 256 KB → 1 MB below 5×, and the line with a mark at most 2× its mark-free twin, in one run; fails with the old code at 15.5×), `zig/src/nfc_bench.zig
+PROJECT-STATE.md:1493:- **Plant:** `zig/src/import_build_timing_test.zig` checks the growth from 125 to 1,000 documents (interleaved runs, best of five, `< 24x`). It gives 7.1 to 8.1x under load and about 51x on the old 
+PROJECT-STATE.md:1553:- **Docs.** `docs/incremental-indexing.md` is rewritten to the shipped native design (and keeps the separate Python `--incremental-from` path clearly labelled as a different system); the four live "
+PROJECT-STATE.md:1563:- **Incremental folder indexing** (`ss_index_folder`, `searchd index --update`, `zig/src/indexer.zig`): per-file SHA-256 content hashes persisted in `<out>/INDEX-STATE.json`, unchanged files skipped
+PROJECT-STATE.md:1578:- **C ABI** (`zig/include/search_simpli.h`, `zig/src/abi.zig`): `ss_open`/`ss_close`/`ss_status`/`ss_query`/`ss_evidence`/`ss_import_json`/`ss_free`/`ss_version`/`ss_last_error`. `ss_query` and `ss_
+scripts/gen_unicode_tables.py:326:    out.append("//! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/unicode_tables.zig")
+zig/build.zig:43:    // together are the one step `src/root.zig` was before the move: `core`
+zig/include/search_simpli.h:5: * docs/tasks/S1-T0.md. Implementation: zig/src/abi.zig. This header is the
+zig/include/search_simpli.h:73: *          (one implementation, zig/src/ops.zig): the same bytes.
+zig/src/core/find_bench.zig:3://!     zig run -OReleaseFast zig/src/find_bench.zig -- INDEX_DIR [MODE ...]
+zig/src/core/nfc_bench.zig:3://!     zig run -OReleaseFast zig/src/nfc_bench.zig -- FILE [RUNS]
+zig/src/core/nfc_dump.zig:5://!     zig run -OReleaseFast zig/src/nfc_dump.zig -- IN OUT
+zig/src/core/unicode_tables.zig:4://! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/unicode_tables.zig
+zig/src/tests/filename_bench.zig:2://! zig run -lc -OReleaseSmall zig/src/filename_bench.zig -- INDEX [QUERY] [CAP_MIB]
+zig/src/tests/fold_bench.zig:7://!     zig run -lc -OReleaseSmall zig/src/fold_bench.zig -- INDEX [--derive-only]
+zig/src/tests/fuzzy_bench.zig:6://!     zig run -lc -OReleaseSmall zig/src/fuzzy_bench.zig -- INDEX
+zig/src/tests/mcp_bench.zig:4://!     zig run -OReleaseSmall zig/src/mcp_bench.zig -- INDEX_DIR REQUESTS ROUNDS
+zig/src/tests/title_field_bench.zig:5://!     zig run -lc -OReleaseSmall zig/src/title_field_bench.zig -- INDEX [ROUNDS]
