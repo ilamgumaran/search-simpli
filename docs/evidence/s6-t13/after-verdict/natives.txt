@@ -1,0 +1,9 @@
+build_native.sh on a fresh archive of a4e1cad, started 04:12, exit=0
+Build Summary: 28/28 steps succeeded
+identical   990120 native/macos-arm64/libsearch_simpli.dylib
+identical   959744 native/android-arm64/libsearch_simpli.so
+identical   971032 native/ios-arm64/search_simpli.framework/search_simpli
+identical      749 native/ios-arm64/search_simpli.framework/Info.plist
+identical   959744 example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+identical       65 native/SOURCE-SHA256
+Fri Nov 20 04:27:42 EST 2026

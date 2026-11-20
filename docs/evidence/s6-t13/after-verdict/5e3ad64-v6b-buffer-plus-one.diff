@@ -1,0 +1,12 @@
+diff -ru pristine/zig/src/snapshot_open.zig planted/zig/src/snapshot_open.zig
+--- pristine/zig/src/snapshot_open.zig	2026-11-20 03:53:59
++++ planted/zig/src/snapshot_open.zig	2026-11-20 03:56:51
+@@ -215,7 +215,7 @@
+     defer file.close(io);
+     const stat = try file.stat(io);
+     const size = std.math.cast(usize, stat.size) orelse return error.IndexTooLarge;
+-    const buffer = try allocator.alloc(u8, size);
++    const buffer = try allocator.alloc(u8, size + 1);
+     errdefer allocator.free(buffer);
+     // As `std.Io.Dir.readFile` reads, but through this handle.
+     var reader = file.reader(io, &.{});

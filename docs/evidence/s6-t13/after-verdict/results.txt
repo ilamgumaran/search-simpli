@@ -1,0 +1,69 @@
+== 5e3ad64-v1-short-read-ignored
+start 03:54:19
++- run test 542 pass, 9 skip, 1 fail (552 total)
+error: 'manifest_inplace_test.test.S6-T13 verifier B: MANIFEST cut in place between the stat and the read is Truncated' failed:
+       S5-T3 NFR-13 10000 files, one handle, typed baabcha: live before 28961033; triggering content peak 28974721 (left 28961033), both peak 29245591 (left 28961033); one scan with its group and scorer arrays: peak 435 (left 0), 3 members
+       Truncated␃
+       ChecksumMismatch␃
+Build Summary: 7/9 steps succeeded (1 failed); 548/558 tests passed (9 skipped, 1 failed)
++- run test 542 pass, 9 skip, 1 fail (552 total)
++- run test 6 pass (6 total) 935ms MaxRSS:5M
+exit=1 end 03:56:36
+== 5e3ad64-v6b-buffer-plus-one
+start 03:56:51
++- run test 539 pass, 9 skip, 4 fail (552 total)
+error: 'nfr13_arena_test.test.S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge over the family folder inside 64 MiB' failed:
+       expected 4696807, found 4696806
+error: 'nfr13_arena_test.test.S4-T1 NFR-13: find and search_knowledge over a 10,000-file index inside 64 MiB, the open included' failed:
+       expected 25303770, found 25303769
+error: 'nfr13_arena_test.test.filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files' failed:
+       expected 25304010, found 25304009
+error: 'manifest_inplace_test.test.S6-T13 verifier C: MANIFEST grown in place between the stat and the read reads the stat's length' failed:
+       S5-T3 NFR-13 10000 files, one handle, typed baabcha: live before 28961033; triggering content peak 28974721 (left 28961033), both peak 29245591 (left 28961033); one scan with its group and scorer arrays: peak 435 (left 0), 3 members
+       old␃
+       TrailingData␃
+Build Summary: 7/9 steps succeeded (1 failed); 545/558 tests passed (9 skipped, 4 failed)
++- run test 539 pass, 9 skip, 4 fail (552 total)
++- run test 6 pass (6 total) 951ms MaxRSS:5M
+exit=1 end 03:59:10
+== 5e3ad64-v7-scan-damaged-as-none
+start 03:59:32
++- run test 542 pass, 9 skip, 1 fail (552 total)
+error: 'manifest_inplace_test.test.S6-T13 verifier E: scan over a damaged MANIFEST or a section whose checksum does not match returns the error' failed:
+       S5-T3 NFR-13 10000 files, one handle, typed baabcha: live before 28961033; triggering content peak 28974721 (left 28961033), both peak 29245591 (left 28961033); one scan with its group and scorer arrays: peak 435 (left 0), 3 members
+       scan with cut damaged gave a report: current null
+Build Summary: 7/9 steps succeeded (1 failed); 548/558 tests passed (9 skipped, 1 failed)
++- run test 542 pass, 9 skip, 1 fail (552 total)
++- run test 6 pass (6 total) 951ms MaxRSS:5M
+exit=1 end 04:01:51
+== 5e3ad64-v8-scan-no-validate
+start 04:01:57
++- run test 542 pass, 9 skip, 1 fail (552 total)
+error: 'manifest_inplace_test.test.S6-T13 verifier E: scan over a damaged MANIFEST or a section whose checksum does not match returns the error' failed:
+       S5-T3 NFR-13 10000 files, one handle, typed baabcha: live before 28961033; triggering content peak 28974721 (left 28961033), both peak 29245591 (left 28961033); one scan with its group and scorer arrays: peak 435 (left 0), 3 members
+       scan with documents damaged gave a report: current 2
+Build Summary: 7/9 steps succeeded (1 failed); 548/558 tests passed (9 skipped, 1 failed)
++- run test 542 pass, 9 skip, 1 fail (552 total)
++- run test 6 pass (6 total) 948ms MaxRSS:5M
+exit=1 end 04:04:18
+== eb53311-v6b-buffer-plus-one
+start 04:04:49
++- run test 537 pass, 9 skip, 3 fail (549 total)
+S5-T3 NFR-13 10000 files, one handle, typed baabcha: live before 28961033; triggering content peak 28974721 (left 28961033), both peak 29245591 (left 28961033); one scan with its group and scorer arrays: peak 435 (left 0), 3 members
+error: 'nfr13_arena_test.test.S4-T1 NFR-13: find, read_span, outline, list_files and search_knowledge over the family folder inside 64 MiB' failed:
+       expected 4696807, found 4696806
+error: 'nfr13_arena_test.test.S4-T1 NFR-13: find and search_knowledge over a 10,000-file index inside 64 MiB, the open included' failed:
+       expected 25303770, found 25303769
+error: 'nfr13_arena_test.test.filename and S4 lazy tables share the unchanged 64 MiB cap at 10k files' failed:
+       expected 25304010, found 25304009
+Build Summary: 7/9 steps succeeded (1 failed); 543/555 tests passed (9 skipped, 3 failed)
++- run test 537 pass, 9 skip, 3 fail (549 total)
++- run test 6 pass (6 total) 953ms MaxRSS:5M
+exit=1 end 04:07:10
+== unplanted a4e1cad (fresh archive, fresh caches)
+Debug Build Summary: 9/9 steps succeeded; 549/558 tests passed (9 skipped)
+Debug +- run test 543 pass, 9 skip (552 total) 2m MaxRSS:933M
+Debug +- run test 6 pass (6 total) 955ms MaxRSS:5M
+ReleaseSmall Build Summary: 9/9 steps succeeded; 549/558 tests passed (9 skipped)
+ReleaseSmall +- run test 543 pass, 9 skip (552 total) 21s MaxRSS:395M
+ReleaseSmall +- run test 6 pass (6 total) 299ms MaxRSS:4M

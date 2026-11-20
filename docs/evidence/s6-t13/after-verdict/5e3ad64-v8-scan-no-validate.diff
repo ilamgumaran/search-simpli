@@ -1,0 +1,13 @@
+diff -ru pristine/zig/src/lifecycle.zig planted/zig/src/lifecycle.zig
+--- pristine/zig/src/lifecycle.zig	2026-11-20 03:53:59
++++ planted/zig/src/lifecycle.zig	2026-11-20 04:01:57
+@@ -379,7 +379,8 @@
+         const metadata = try manifest.decode(manifest_encoded);
+         const documents_encoded = try iterable_dir.readFile(io, metadata.documents_file, documents_buffer);
+         const lexical_encoded = try iterable_dir.readFile(io, metadata.lexical_file, lexical_buffer);
+-        try manifest.validateSnapshot(metadata, documents_encoded, lexical_encoded);
++        _ = documents_encoded;
++        _ = lexical_encoded;
+         break :blk metadata;
+     } else |err| switch (err) {
+         error.FileNotFound => null,
