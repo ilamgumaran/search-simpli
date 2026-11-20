@@ -1,0 +1,40 @@
+planted y-row-byte-exact
+--- diff base y-row-byte-exact
+diff -r -u base/skills/folder-knowledge/SKILL.md y-row-byte-exact/skills/folder-knowledge/SKILL.md
+--- base/skills/folder-knowledge/SKILL.md	2026-11-19 23:54:34
++++ y-row-byte-exact/skills/folder-knowledge/SKILL.md	2026-11-19 23:55:15
+@@ -22,7 +22,7 @@
+ | `find` | The question quotes words, asks for an exact phrase, a word, or "anything starting with" | Hits with `root_id`, `path`, `section_path`, lines, `snippet`, `match_offsets`; per-file counts; `exact_match`, `empty`, `truncated`, `pending_files`, `next_cursor` |
+ | `search_knowledge` | The question is open ("what did the teacher say about...", "when is..."), or names a file (see step 2) | Ranked chunks with `chunk_id`, a citation (`path` as `root_id/path`, lines), `content`, `root_id` and `section_path`; `truncated`, `pending_files`. The request takes `search_field`: `content` (the default), `filename` or `both`; `filename` and `both` need `retrieval_mode: lexical`. With `filename` or `both` a result also carries `matched_in` (`["content"]`, `["filename"]` or both), `basename` and `match_sections`; a `both` query keeps one result per file. A file's folder names and file name also count toward a `content` match, and `both` ranks each file by its best passage plus its name (the part shows as `ranking.title`; when it equals `ranking.lexical.score`, only the name matched, which is navigation, not evidence). A word of five or more letters that no file holds is also searched as up to three near spellings that start with the same letter (`retrieval.fuzzy_policy_id`), so check that a result holds the word you meant before you cite it. A word is also searched as its other forms the files hold: with or without accents, singular or plural, and Tamil words without their plural or case endings (`retrieval.fold_policy_id`; the warning `query_term_grouped` lists them), so quote the form the passage holds |
+ | `read_chunk` | Confirm a `search_knowledge` or `find` chunk by its `chunk_id` | The authoritative chunk text and citation |
+-| `read_span` | Confirm or extend a passage: exact lines of a file, with `context_lines` (0 to 20) | `text` (the original bytes), `context_before`, `context_after`, `sha256`; a warning if `end_line` was clamped |
++| `read_span` | Confirm or extend a passage: exact lines of a file, with `context_lines` (0 to 20) and `byte_exact` | `text` (the original bytes), `context_before`, `context_after`, `sha256`; a warning if `end_line` was clamped |
+ | `outline` | You need the shape of a file, or the section a line sits in, or a summary | `front_matter`, `headings` (level, text, `line`, `end_line`), `lines` |
+ | `list_files` | The person asks what files exist, or which are pending | Files with `status` (`indexed` or `pending`), `chunks`, `total` |
+ | `list_sources` | A quick listing of paths with chunk counts | `sources`, `count` |
+--- SEARCH_SIMPLI_NO_ZIG=1 tests.test_example_loop.SkillDocumentTests
+test_every_read_span_call_of_the_example_loop_sends_request_fields (test_example_loop.SkillDocumentTests)
+S6-T10: every read_span call of example_loop.py (the literal name, or a module constant ... ok
+test_skill_carries_the_required_sentences (test_example_loop.SkillDocumentTests) ... ok
+test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10; widened after the Verdict's F1): the skill said "root" for ... FAIL
+test_skill_names_the_filename_field (test_example_loop.SkillDocumentTests)
+S4-T5: a later edit must not drop the file-name option from the skill. ... ok
+test_skill_read_span_call_agrees_with_the_schema_on_what_is_required (test_example_loop.SkillDocumentTests)
+S6-T10 (the Verdict's `w-optional-end`): the schema requires `root_id`, `path`, ... ok
+test_the_loop_cannot_call_apply_changes (test_example_loop.SkillDocumentTests) ... ok
+
+======================================================================
+FAIL: test_skill_names_only_the_read_span_request_fields_the_contract_has (test_example_loop.SkillDocumentTests)
+S6-T10 (filed by S5-T10; widened after the Verdict's F1): the skill said "root" for
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<vscratch>/py.noindex/y-row-byte-exact/tests/test_example_loop.py", line 258, in test_skill_names_only_the_read_span_request_fields_the_contract_has
+    self.assertIn(name, set(contract.request) | contract.tools,
+AssertionError: 'byte_exact' not found in {'search_knowledge', 'read_span', 'context_lines', 'read_chunk', 'outline', 'list_files', 'end_line', 'root_id', 'start_line', 'index_status', 'list_sources', 'find', 'roots', 'apply_changes', 'path'} : the tools row offers `byte_exact` as something read_span takes, and its request schema does not have it
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.010s
+
+FAILED (failures=1)
+exit 1

@@ -1,0 +1,223 @@
+Thu Nov 19 23:55:21 EST 2026
+planted z-r11-utf16
+--- diff -r ref/zig/src z-r11-utf16/src/zig/src
+diff -r -u <vscratch>/zp.noindex/ref/zig/src/find.zig <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig
+--- <vscratch>/zp.noindex/ref/zig/src/find.zig	2026-11-19 23:54:34
++++ <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig	2026-11-19 23:55:21
+@@ -33,6 +33,10 @@
+ //! the caller's `allocator`, which should be an arena released after the
+ //! answer is used (nothing is freed piecemeal).
+ const std = @import("std");
++fn s6t10Utf16Units(text: []const u8) usize {
++    return std.unicode.calcUtf16LeLen(text) catch @import("analysis.zig").codepointCount(text);
++}
++
+ const analysis = @import("analysis.zig");
+ const analyzer_v2 = @import("analyzer_v2.zig");
+ const chunker = @import("chunker.zig");
+@@ -708,7 +712,7 @@
+         const allocator = context.allocator;
+         const document = context.engine.documents[candidate.document_index];
+         const codepoints = analysis.codepointCount(document.text);
+-        const token_spans = try context.spans(candidate.document_index, codepoints);
++        const token_spans = try context.spans(candidate.document_index, s6t10Utf16Units(document.text));
+         const ranges = try allocator.alloc(Range, candidate.matches.len);
+         const keys = try allocator.alloc(u32, candidate.matches.len);
+         for (candidate.matches, ranges, keys) |match, *range, *key| {
+--- zig build test (Debug), own caches
+zig build lib: SS_ANDROID_NDK is not set; skipping the aarch64-linux-android libraries.
+test
++- run test 534 pass, 9 skip, 1 fail (544 total)
+S4-T1 NFR-13 family-folder under a 67108864 B cap, peak live bytes: open 4696806 find 5274055 read_span 5286177 outline 5288291 list_files 5292947 search_knowledge 5311540
+S4-T10 NFR-13 family-folder: source section resident 20086 B (header, files table, line maps), text 1036 B read per call
+S4-T9 NFR-13 open by table, family-folder (requested/held B): manifest 869/869 block 4486003/4486003 decode 106351/209934 manifest_freed -869/-869 meta 4744/0 folder 3580/0; block 4486003: documents 119760, terms 676480, vectors 0, postings 1473896, document lengths 3992, manifest 869, documents section 1357366, lexical section 853640; not in the open: source section 21122, filename block 0; documents 998, terms 16912, postings 184237, vector dimensions 0; sizes Document 120, TermEntry 40, Posting 8; held 4695937, peak 4696806, measured open 4696806
+S4-T9 NFR-13 formula bar, family-folder: open peak 4696806 <= manifest 869 + documents section 1357366 + lexical section 853640 + decoded tables 2380479 + 1048576 = 5640930 (margin 944124)
+S4-T1 NFR-13 10k generated under a 67108864 B cap, peak live bytes: open 25303769 find 35751629 read_span 27697385 outline 27661511 list_files 34699653 search_knowledge 29814409
+S4-T10 NFR-13 10k generated: source section resident 509604 B (header, files table, line maps), text 39778 B read per call
+S4-T9 NFR-13 open by table, 10k generated (requested/held B): manifest 576/576 block 23917733/23917733 decode 761276/1385460 manifest_freed -576/-576 meta 2537/0 folder 41436/0; block 23917733: documents 2391120, terms 961680, vectors 0, postings 8217008, document lengths 79704, manifest 576, documents section 8050859, lexical section 4216786; not in the open: source section 549382, filename block 0; documents 19926, terms 24042, postings 1027126, vector dimensions 0; sizes Document 120, TermEntry 40, Posting 8; held 25303193, peak 25303769, measured open 25303769
+S4-T9 NFR-13 formula bar, 10k generated: open peak 25303769 <= manifest 576 + documents section 8050859 + lexical section 4216786 + decoded tables 12410788 + 1048576 = 25727585 (margin 423816)
+S4-T1 NFR-13 10k filename and lazy tables under a 67108864 B cap, peak live bytes: open 25304009 find 35751749 read_span 27697505 outline 27661631 list_files 34699773 search_knowledge 29814529 filename 31492709 both 31978785
+S4-T10 NFR-13 10k filename and lazy tables: source section resident 509604 B (header, files table, line maps), text 39778 B read per call
+S4-T9 NFR-13 open by table, 10k filename and lazy tables (requested/held B): manifest 696/696 block 23917853/23917853 decode 761276/1385460 manifest_freed -696/-696 meta 2537/0 folder 41436/0; block 23917853: documents 2391120, terms 961680, vectors 0, postings 8217008, document lengths 79704, manifest 696, documents section 8050859, lexical section 4216786; not in the open: source section 549382, filename block 2966072; documents 19926, terms 24042, postings 1027126, vector dimensions 0; sizes Document 120, TermEntry 40, Posting 8; held 25303313, peak 25304009, measured open 25304009
+S4-T9 NFR-13 formula bar, 10k filename and lazy tables: open peak 25304009 <= manifest 696 + documents section 8050859 + lexical section 4216786 + decoded tables 12410788 + 1048576 = 25727705 (margin 423696)
+S4-T8 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+S4-T8 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+S5-T2 NFR-13 10000 files, one handle, peak live bytes: open 25304009 first content 27460179 first both 29624435; the derive alone: peak 2153560 above the live bytes before it, kept 691584 (title block 691584); working arrays peak 1541164 (left 0), block 691584
+S5-T2 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+S5-T2 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+S5-T3 NFR-13 10000 files, one handle, typed baabcha: live before 28961033; triggering content peak 28974721 (left 28961033), both peak 29245591 (left 28961033); one scan with its group and scorer arrays: peak 435 (left 0), 3 members
+S5-T3 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+S5-T3 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+S5-T4 NFR-13 10000 files, one handle, typed system: live before 28960969; first grouped content query keeps 64 (the key map: 4 entries, 64 B); content peak 28974673; second content query left 28961033, grouped both peak 29244831 (left 28961033); the key map's build alone: peak 468 (left 0)
+S5-T4 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+S5-T4 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+S5-T5 NFR-13 10000 files, one handle, typed hashing: live before 28960969; first grouped content query keeps 64 (the key map: 4 entries, 64 B); content peak 28974113; second content query left 28961033, grouped both peak 29242741 (left 28961033); the key map's build alone: peak 468 (left 0)
+S5-T5 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+S2-T11 fuzz: 100000 cases per snapshot x 2 snapshots: 45529 valid, 154471 invalid (all rejected), 13167 ms
+S5-T2 title golden: 209 file scores compared within 1e-4
+S5-T3 fuzzy golden: 4848 chunk scores in 120 expanded queries (9 planted cases) within 1e-4
+S5-T4 K golden: 49409 terms (42593 same, 6816 changed) equal
+S5-T5 R golden: 2978 listed + 16214 off equal; digest over 49471 terms (27041 applies, 123482 lookups, 122865 eligible) equal
+error: 'offsets_v4_test.test.S6-T10 rule 11 on a v4-coded index, five spans in a chunk: an end past the text in the first, a middle or the last span is each refused by find (OffsetsPastText); an end at the text's end answers' failed:
+       S6-T4 byte flips: 5170 resealed flips, 2982 refused, 2188 accepted (each re-encodes to its own bytes); every unsealed flip refused
+       S6-T4 byte flips: 14 sections with a byte after the last offsets, all refused
+       S4-T17 rank test: 303 rounds, 21926 ranked candidates (228 rounds shuffled); neighbours tied on score across roots 2689, on score, root and path with different start lines 4835, with equal start lines 4943
+       S4-T15 ruling 2(a): 30 corpora, 64082 candidates compared, 126 lists cut (104 inside equal scores, 22 between different scores)
+       chunk-golden conformance: 56 files, 85 chunks compared, 85 identical
+       chunk-golden-md conformance: 61 files, 233 chunks, 189 headings identical
+       S3-T1 family-folder: 8 read_span exact, 5 outlines exact, 42 files read back whole (1150039 bytes retained); chunks line-window-v1 855, md-section-v1 143
+       S6-T7 ruling 3: 24 files rebuilt exactly (resident and streamed); kept whole: a-crlf.md b-lone-cr.txt e-empty.txt f-blank.txt g-controls.txt; 1000 read_span ranges equal HYBSRC01's
+       S6-T7 overlaps: recipe values 1 and 3 and an overlap of the whole previous chunk rebuilt exactly; 228 read_span ranges equal HYBSRC01's
+       S6-T7 byte-order mark: m-bom-only.md kept whole (no chunk), m-bom-text.md rebuilt (mark in the gap), m-bom-text.txt kept whole (mark in its chunk); 72 read_span ranges equal HYBSRC01's
+       S6-T7 ruling 11: 40 documents v5 rules refused with their errors; an overlong varint accepted
+       S6-T7 ruling 11: 26 HYBSRC02 rules refused with their errors, resident and streamed (two of them at a read)
+       BM25 conformance: 26 queries compared, 26 identical top-1 (within tolerance)
+       S4-T11 random merge: seeds 0x54110001..0x54110003, 30 rounds each, 1-4 mutations per round: the documents, lexical and source sections equal a fresh index's in all 90 rounds
+       S3-T3 family-folder lifecycle through apply_changes: 3/3 scenarios
+       S4-T16 finding 14: the most stage slots one apply_changes call used: 54
+       S2-T1 Tamil via import-json analyzer-v2: success@1 10/10
+       S1-T14 absent Tamil queries: 12 queries x 2 doors, 0 hits; S5-T4 with fold-groups-v1 2 hits (the plural of a held word)
+       
+       import best-of-5: 125 docs 5.4 ms, 1000 docs 40.2 ms; growth 7.42x
+       
+       nfc best-of-3: 256 KB mark 6.04 ms plain 6.00 ms; 1 MB mark 24.09 ms plain 23.83 ms; growth 3.98x
+       
+       nfc jamo best-of-3: 256 KB jamo 10.42 ms twin 15.85 ms; 1 MB jamo 39.30 ms twin 62.95 ms; growth 3.77x
+       S3-T2 p1 page 2: 3 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 p1 page 100: 3 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 p2 page 2: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 p2 page 100: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 p3 page 2: 0 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 p3 page 100: 0 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 p4 page 2: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 p4 page 100: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 p5 page 2: 2 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 p5 page 100: 2 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x1 page 2: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x1 page 100: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x2 page 2: 7 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x2 page 100: 7 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x3 page 2: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x3 page 100: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x4 page 2: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x4 page 100: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x5 page 2: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 x5 page 100: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+       S3-T2 uc007-01 (words): recall@5 1.00
+       S3-T2 uc007-06 (answer): recall@5 1.00
+       S3-T2 uc007-07 (answer): recall@5 1.00
+       S3-T2 words recall@5 over 3 cases: 1.000
+       S6-T8: 27 damaged sections 5 refused with their rules' errors (rules 1-10 and 12), eager and lazy; an overlong escape and an end of 2^32 - 1 accepted
+       expected error.OffsetsPastText, found .{ .ok = { 123, 34, 114, 101, 113, 117, 101, 115, 116, 34, 58, 123, 34, 113, 117, 101, 114, 121, 34, 58, 34, 195, 169, 108, 97, 110, 34, 44, 34, 109, 111, 100, 101, 34, 58, 34, 119, 111, 114, 100, 115, 34, 44, 34, 114, 111, 111, 116, 115, 34, 58, 110, 117, 108, 108, 44, 34, 112, 97, 116, 104, 95, 112, 114, 101, 102, 105, 120, 34, 58, 110, 117, 108, 108, 44, 34, 112, 97, 103, 101, 95, 115, 105, 122, 101, 34, 58, 50, 48, 44, 34, 99, 117, 114, 115, 111, 114, 34, 58, 110, 117, 108, 108, 125, 44, 34, 103, 101, 110, 101, 114, 97, 116, 105, 111, 110, 34, 58, 49, 44, 34, 115, 99, 111, 112, 101, 34, 58, 123, 34, 114, 111, 111, 116, 115, 34, 58, 91, 34, 114, 45, 108, 101, 103, 97, 99, 121, 34, 93, 44, 34, 108, 97, 98, 101, 108, 115, 95, 97, 112, 112, 108, 105, 101, 100, 34, 58, 116, 114, 117, 101, 125, 44, 34, 119, 97, 114, 110, 105, 110, 103, 115, 34, 58, 91, 93, 44, 34, 104, 105, 116, 115, 34, 58, 91, 123, 34, 99, 104, 117, 110, 107, 95, 105, 100, 34, 58, 34, 55, 54, 49, 98, 49, 52, 51, 102, 49, 101, 52, 53, 56, 48, 55, 56, 53, 53, 51, 55, 34, 44, 34, 114, 111, 111, 116, 95, 105, 100, 34, 58, 34, 114, 45, 108, 101, 103, 97, 99, 121, 34, 44, 34, 112, 97, 116, 104, 34, 58, 34, 102, 105, 118, 101, 46, 116, 120, 116, 34, 44, 34, 115, 101, 99, 116, 105, 111, 110, 95, 112, 97, 116, 104, 34, 58, 91, 93, 44, 34, 115, 116, 97, 114, 116, 95, 108, 105, 110, 101, 34, 58, 49, 44, 34, 101, 110, 100, 95, 108, 105, 110, 101, 34, 58, 49, 44, 34, 115, 99, 111, 114, 101, 34, 58, 48, 46, 53, 52, 52, 54, 49, 53, 54, 50, 54, 51, 51, 53, 49, 52, 52, 44, 34, 115, 110, 105, 112, 112, 101, 116, 34, 58, 34, 195, 169, 108, 97, 110, 32, 98, 114, 97, 118, 111, 32, 99, 97, 102, 195, 169, 32, 100, 101, 108, 116, 97, 32, 240, 159, 140, 191, 32, 224, 174, 170, 224, 174, 179, 224, 175, 141, 224, 174, 179, 224, 174, 191, 34, 44, 34, 115, 110, 105, 112, 112, 101, 116, 95, 115, 116, 97, 114, 116, 34, 58, 48, 44, 34, 115, 110, 105, 112, 112, 101, 116, 95, 111, 102, 102, 115, 101, 116, 115, 34, 58, 91, 93, 44, 34, 109, 97, 116, 99, 104, 95, 111, 102, 102, 115, 101, 116, 115, 34, 58, 91, 91, 48, 44, 51, 48, 93, 93, 125, 93, 44, 34, 102, 105, 108, 101, 115, 34, 58, 91, 123, 34, 114, 111, 111, 116, 95, 105, 100, 34, 58, 34, 114, 45, 108, 101, 103, 97, 99, 121, 34, 44, 34, 112, 97, 116, 104, 34, 58, 34, 102, 105, 118, 101, 46, 116, 120, 116, 34, 44, 34, 104, 105, 116, 115, 34, 58, 49, 125, 93, 44, 34, 101, 120, 97, 99, 116, 95, 109, 97, 116, 99, 104, 34, 58, 110, 117, 108, 108, 44, 34, 101, 109, 112, 116, 121, 34, 58, 102, 97, 108, 115, 101, 44, 34, 99, 111, 118, 101, 114, 97, 103, 101, 34, 58, 123, 34, 102, 105, 108, 101, 115, 34, 58, 49, 44, 34, 115, 101, 99, 116, 105, 111, 110, 115, 34, 58, 49, 125, 44, 34, 116, 114, 117, 110, 99, 97, 116, 101, 100, 34, 58, 102, 97, 108, 115, 101, 44, 34, 110, 101, 120, 116, 95, 99, 117, 114, 115, 111, 114, 34, 58, 110, 117, 108, 108, 44, 34, 112, 101, 110, 100, 105, 110, 103, 95, 102, 105, 108, 101, 115, 34, 58, 48, 125 } }
+       S6-T10 rule 11: the first span ending 1 past the text
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/lexical_segment.zig:299:39: 0x102fc54e7 in inspect (test)
+           if (encoded.len < expected_total) return error.Truncated;
+                                             ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/lexical_segment.zig:299:39: 0x102fc54e7 in inspect (test)
+           if (encoded.len < expected_total) return error.Truncated;
+                                             ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/lexical_segment.zig:302:47: 0x102fc56a3 in inspect (test)
+           if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
+                                                     ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/lexical_segment.zig:302:47: 0x102fc56a3 in inspect (test)
+           if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
+                                                     ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/lexical_segment.zig:302:47: 0x102fc56a3 in inspect (test)
+           if (actual_checksum != expected_checksum) return error.ChecksumMismatch;
+                                                     ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/postings.zig:327:79: 0x103267c53 in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints) return error.OffsetsPastText;
+                                                                                     ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:635:37: 0x1032671a3 in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:715:29: 0x103263137 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, s6t10Utf16Units(document.text));
+                                   ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:254:48: 0x10326164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/service.zig:541:9: 0x1032489bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/ops.zig:285:28: 0x10324ab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/postings.zig:327:79: 0x103267c53 in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints) return error.OffsetsPastText;
+                                                                                     ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:635:37: 0x1032671a3 in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:715:29: 0x103263137 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, s6t10Utf16Units(document.text));
+                                   ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:254:48: 0x10326164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/service.zig:541:9: 0x1032489bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/ops.zig:285:28: 0x10324ab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/postings.zig:327:79: 0x103267c53 in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints) return error.OffsetsPastText;
+                                                                                     ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:635:37: 0x1032671a3 in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:715:29: 0x103263137 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, s6t10Utf16Units(document.text));
+                                   ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:254:48: 0x10326164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/service.zig:541:9: 0x1032489bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/ops.zig:285:28: 0x10324ab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/postings.zig:327:79: 0x103267c53 in checkSpansWithinText (test)
+           for (spans) |span| if (@as(usize, span.start) + span.length > codepoints) return error.OffsetsPastText;
+                                                                                     ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:635:37: 0x1032671a3 in spans (test)
+                   if (codepoints) |count| try postings.checkSpansWithinText(read, count);
+                                           ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:715:29: 0x103263137 in makeHit (test)
+               const token_spans = try context.spans(candidate.document_index, s6t10Utf16Units(document.text));
+                                   ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/find.zig:254:48: 0x10326164f in find (test)
+           for (page, hits) |candidate, *hit| hit.* = try context.makeHit(candidate);
+                                                      ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/service.zig:541:9: 0x1032489bb in find (test)
+               return find_module.find(allocator, engine, scoped_request);
+               ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/ops.zig:285:28: 0x10324ab7f in find (test)
+           const answer = switch (try scopedOf(service).find(allocator, parsed.request, parsed.scope)) {
+                                  ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/testing.zig:65:9: 0x1033ff4d7 in expectError__anon_142965 (test)
+               return error.TestExpectedError;
+               ^
+       <vscratch>/zp.noindex/z-r11-utf16/src/zig/src/offsets_v4_test.zig:746:27: 0x103404b73 in test.S6-T10 rule 11 on a v4-coded index, five spans in a chunk: an end past the text in the first, a middle or the last span is each refused by find (OffsetsPastText); an end at the text's end answers (test)
+                   if (past > 0) try std.testing.expectError(error.OffsetsPastText, got) else _ = try got;
+                                 ^
+failed command: <vscratch>/zp.noindex/z-r11-utf16/lcache/o/8c7992104a087791a38ad05b1e77a852/test --cache-dir=<vscratch>/zp.noindex/z-r11-utf16/lcache --seed=0x8a2dd932 --listen=-
+
+Build Summary: 7/9 steps succeeded (1 failed); 540/550 tests passed (9 skipped, 1 failed)
+test transitive failure
++- run test 534 pass, 9 skip, 1 fail (544 total)
+|  +- compile test Debug native success 5s MaxRSS:1G
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 94ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
++- run test 6 pass (6 total) 948ms MaxRSS:5M
+   +- compile test Debug native success 3s MaxRSS:561M
+
+error: the following build command failed with exit code 1:
+<vscratch>/zp.noindex/z-r11-utf16/lcache/o/a9187095c502b240ca71aed8807fd41a/build <home>/development/zig/zig-aarch64-macos-0.16.0/zig <home>/development/zig/zig-aarch64-macos-0.16.0/lib <vscratch>/zp.noindex/z-r11-utf16/src/zig <vscratch>/zp.noindex/z-r11-utf16/lcache <vscratch>/zp.noindex/z-r11-utf16/gcache --seed 0x8a2dd932 -Za9ff77a3b36399b3 test --summary all
+exit 1
+Thu Nov 19 23:57:41 EST 2026
