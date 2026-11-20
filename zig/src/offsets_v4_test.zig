@@ -627,9 +627,12 @@ test "S6-T8 rule 11: a highlight past its chunk's text is refused by find (Offse
 
 /// One chunk of five tokens (`line-window-v1`), and a file without them:
 /// rule 11 on a v4-coded index with several spans in a chunk (S6-T8's
-/// Sixth Verdict, note I6).
+/// Sixth Verdict, note I6). A two-byte letter in the first and the middle
+/// token and a Tamil last token (the Verdict's F2): the chunk's bytes
+/// outnumber its codepoints before each checked span, so a check against
+/// the byte length would let an end one codepoint past the text through.
 const span_files = [_]File{
-    .{ .name = "five.txt", .text = "alpha bravo charlie delta echo\n" },
+    .{ .name = "five.txt", .text = "\u{00E9}lan bravo caf\u{00E9} delta \u{0BAA}\u{0BB3}\u{0BCD}\u{0BB3}\u{0BBF}\n" },
     .{ .name = "other.txt", .text = "omega\n" },
 };
 
@@ -662,7 +665,7 @@ fn fiveSpans(a: std.mem.Allocator, dir: std.Io.Dir) !struct { docs: []Doc, at: u
     const docs = try cloneDocs(a, try parseDocs(a, engine.lexical_index.positions.?.offsets, engine.lexical_index.document_lengths));
     var found: ?usize = null;
     for (engine.documents, 0..) |d, i| {
-        if (std.mem.startsWith(u8, d.text, "alpha bravo")) found = i;
+        if (std.mem.indexOf(u8, d.text, " bravo caf") != null) found = i;
     }
     const doc = docs[found.?];
     const starts = try a.alloc(u64, doc.tokens.len);
@@ -689,6 +692,10 @@ fn spanEndsPast(a: std.mem.Allocator, dir: std.Io.Dir, where: SpanAt, past: u64)
         .last => n - 1,
     };
     for (base.starts, base.lengths) |start, length| try std.testing.expect(start + length <= codepoints);
+    // The text has more bytes than codepoints: an end one codepoint past the
+    // text still lies within its bytes.
+    const text = (try snapshot_open.open(a, io, dir)).documents[base.at].text;
+    try std.testing.expect(codepoints + past < text.len);
     const lengths = try a.dupe(u64, base.lengths);
     lengths[k] = codepoints + past - base.starts[k];
     var previous_end: i64 = 0;
@@ -729,8 +736,9 @@ test "S6-T10 rule 11 on a v4-coded index, five spans in a chunk: an end past the
         const service = @import("service.zig").Service{ .engine = opened.engine, .folder = opened.folder };
         // The lazy validation passes (rules 1-10, 12): only the text shows it.
         _ = try opened.folder.positionTables();
-        // A hit on the chunk, whichever of its words matched.
-        for ([_][]const u8{ "{\"query\":\"alpha\"}", "{\"query\":\"charlie\"}", "{\"query\":\"echo\"}" }) |query| {
+        // A hit on the chunk, whichever of its words matched (the first, the
+        // middle and the last).
+        for ([_][]const u8{ "{\"query\":\"\u{00E9}lan\"}", "{\"query\":\"caf\u{00E9}\"}", "{\"query\":\"\u{0BAA}\u{0BB3}\u{0BCD}\u{0BB3}\u{0BBF}\"}" }) |query| {
             const got = ops.find(a, service, try params(a, query), cli.cli_caller);
             if (past > 0) try std.testing.expectError(error.OffsetsPastText, got) else _ = try got;
         }
