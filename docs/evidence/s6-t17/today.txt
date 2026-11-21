@@ -1,0 +1,32 @@
+# S6-T17: zig build test --summary all (Debug, own caches) on the tests commit: the new tests against main's library code (12b839b).
+# Lines naming S6-T17, the failures and the Build Summary; paths shortened to zig/.
++- run test core 254 pass, 2 fail (256 total)
+S6-T17 INDEX-STATE.json 94 B replaced between stat and read: recordedGeneration null, next generation 11
+error: 'manifest_read_test.test.S6-T17: a full rebuild's next generation is above every generation on disk when MANIFEST is replaced between its stat and its read' failed:
+       S6-T17 MANIFEST replaced between stat and read (new length - stat length: next generation or error): -1:3 0:3 1:Truncated 2048:Truncated
+       zig/src/core/manifest.zig:600:39: in decode (core)
+           if (encoded.len < expected_total) return error.Truncated;
+       zig/src/core/generation_alloc.zig:101:22: in currentGeneration (core)
+       zig/src/core/generation_alloc.zig:120:19: in highestGenerationOnDisk (core)
+       zig/src/core/generation_alloc.zig:159:21: in nextFreeGeneration (core)
+       zig/src/core/manifest.zig:600:39: in decode (core)
+           if (encoded.len < expected_total) return error.Truncated;
+       zig/src/core/generation_alloc.zig:101:22: in currentGeneration (core)
+       zig/src/core/generation_alloc.zig:120:19: in highestGenerationOnDisk (core)
+       zig/src/core/generation_alloc.zig:159:21: in nextFreeGeneration (core)
+       zig/src/core/manifest_read_test.zig:420:5: in test.S6-T17: a full rebuild's next generation is above every generation on disk when MANIFEST is replaced between its stat and its read (core)
+error: 'manifest_read_test.test.S6-T17: a full rebuild whose MANIFEST grows across another writer's publish goes on to publish the next generation' failed:
+       nextFreeGeneration (MANIFEST 576 bytes at the stat, 580 after the publish): Truncated
+       zig/src/core/manifest.zig:522:39: in decodeV2 (core)
+           if (encoded.len < expected_total) return error.Truncated;
+       zig/src/core/manifest.zig:581:50: in decode (core)
+       zig/src/core/generation_alloc.zig:101:22: in currentGeneration (core)
+       zig/src/core/generation_alloc.zig:120:19: in highestGenerationOnDisk (core)
+       zig/src/core/generation_alloc.zig:159:21: in nextFreeGeneration (core)
+       zig/src/core/manifest_read_test.zig:486:9: in test.S6-T17: a full rebuild whose MANIFEST grows across another writer's publish goes on to publish the next generation (core)
+Build Summary: 13/15 steps succeeded (1 failed); 580/591 tests passed (9 skipped, 2 failed)
++- run test core 254 pass, 2 fail (256 total)
++- run test operations 10 pass (10 total) 212ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 293ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 840ms MaxRSS:5M
