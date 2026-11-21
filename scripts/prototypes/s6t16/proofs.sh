@@ -36,7 +36,7 @@ names() {  # names DIR: every test binary of DIR's zig build test, run from DIR/
   for step in core operations interfaces tests test; do
     bin=$(find "$1/.zig-local-cache/o" -type f -name "$step" -perm -u+x | head -1)
     [ -n "$bin" ] || { echo "MISSING binary $step"; continue; }
-    (cd "$1/zig" && "$bin" 2>&1) | sed -E -e 's/^[0-9]+\/[0-9]+ //' -e 's/[0-9]+(\.[0-9]+)? ?ms/N ms/g' \
+    (cd "$1/zig" && "$bin" 2>&1) | sed -E -e 's/^[0-9]+\/[0-9]+ //' -e 's/[0-9]+(\.[0-9]+)? ?ms/N ms/g' -e 's/growth [0-9.]+x/growth Nx/g' \
       | sed "s/^/$step: /"
   done | LC_ALL=C sort
 }

@@ -1,0 +1,132 @@
+## plant ops-internal (zig/src/ops/report.zig)
+@@ -208,3 +208,7 @@
+         try json.endObject();
+     }
+ }
++
++test "S6-T16 plant: an internal core name from ops/" {
++    _ = @import("core").lifecycle.scan;
++}
+zig/src/ops/report.zig:213: uses core.lifecycle.scan, outside the public core API: operations and interfaces reach the core through @import("core").api (docs/core-api.md); tests in tests/ may use internals
+check_layers: 1 problem(s)
+check_layers.py exit 1
+zig build test --summary all: exit 0
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 11 pass (11 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+
+## plant interfaces-internal (zig/src/interfaces/mcp.zig)
+@@ -958,4 +958,10 @@
+     try std.testing.expect((try parseUri(a, "search:///x.md")) == null);
+     try std.testing.expect((try parseUri(a, "search://home/%zz")) == null);
+     try std.testing.expect((try parseUri(a, "search://home/a%2")) == null);
++}
++
++const plant_publication = @import("core").publication;
++
++test "S6-T16 plant: an internal core name from interfaces/" {
++    _ = plant_publication.publish;
+ }
+zig/src/interfaces/mcp.zig:963: uses core.publication, outside the public core API: operations and interfaces reach the core through @import("core").api (docs/core-api.md); tests in tests/ may use internals
+check_layers: 1 problem(s)
+check_layers.py exit 1
+zig build test --summary all: exit 0
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 27 pass (27 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+
+## plant interfaces-api-lacks (zig/src/interfaces/cli.zig)
+@@ -1400,4 +1400,8 @@
+     try output.print(" rejected={d} conflicts={d}", .{ field(value, "rejected").array.items.len, field(value, "conflicts").array.items.len });
+     if (field(value, "recovered") == .string) try output.print(" recovered={s}", .{jsonText(field(value, "recovered"))});
+     try output.writeByte('\n');
++}
++
++test "S6-T16 plant: a name api lacks" {
++    _ = @import("core").api.lifecycle.scan;
+ }
+zig/src/interfaces/cli.zig:1406: uses core.api.lifecycle.scan, which api.lifecycle does not have: add it by the rule in docs/core-api.md
+check_layers: 1 problem(s)
+check_layers.py exit 1
+zig build test --summary all: exit 1
++- run test interfaces
+Build Summary: 12/15 steps succeeded (1 failed); 553/562 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces transitive failure
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+src/interfaces/cli.zig:1406:38: error: struct 'core.api.lifecycle' has no member named 'scan'
+error: 1 compilation errors
+error: the following build command failed with exit code 1:
+
+## plant api-renamed (zig/src/core/core.zig)
+@@ -444,7 +444,7 @@
+         /// generation of `dir`, under the directory's writer lock. Allocates
+         /// nothing. Errors: `WriterBusy` when another writer holds the lock,
+         /// `std.Io` file errors, and the core's checks of the manifest.
+-        pub const publishSerialized = internal.lifecycle.publishSerialized;
++        pub const publish = internal.lifecycle.publishSerialized;
+     };
+
+     /// The synthetic ranking benchmark behind `searchd benchmark` (`benchmark.zig`).
+zig/src/core/core.zig:447: `api.lifecycle` holds something other than an alias `pub const NAME = internal.lifecycle.NAME;` (the core file's own declaration under its own name) (docs/core-api.md)
+zig/src/interfaces/abi.zig:1214: uses core.api.lifecycle.publishSerialized, which api.lifecycle does not have: add it by the rule in docs/core-api.md
+zig/src/interfaces/main.zig:178: uses core.api.lifecycle.publishSerialized, which api.lifecycle does not have: add it by the rule in docs/core-api.md
+check_layers: 3 problem(s)
+check_layers.py exit 1
+
+## plant api-undocumented (zig/src/core/core.zig)
+@@ -479,7 +479,6 @@
+
+     /// Misspelling tolerance at query time (`fuzzy.zig`).
+     pub const fuzzy = struct {
+-        /// The fuzzy policy id: "fuzzy-v1".
+         pub const policy_id = internal.fuzzy.policy_id;
+     };
+ };
+zig/src/core/core.zig:482: `api.fuzzy.policy_id` has no `///` doc comment (docs/core-api.md)
+check_layers: 1 problem(s)
+check_layers.py exit 1
+
+check_layers: OK (46 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build test`)
+## plant core-api-example (zig/src/interfaces/peek.zig)
+@@ -0,0 +1,23 @@
++const std = @import("std");
++const core = @import("core").api;
++const operations = @import("operations");
++
++/// Print the canonical JSON of one `find` request (a JSON object) over the index in
++/// `dir`. `arena` holds everything and is released by the caller.
++pub fn peek(arena: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, request: []const u8, out: *std.Io.Writer) !void {
++    const opened = try core.snapshot_open.openScoped(arena, io, dir);
++    defer core.snapshot_open.close(opened.engine, opened.folder);
++    const service = operations.service.Service{ .engine = opened.engine, .folder = opened.folder };
++    const params = switch (try operations.ops.parseObject(arena, request)) {
++        .ok => |object| object,
++        .failed => |failure| return out.print("refused: {s}\n", .{failure.message}),
++    };
++    switch (try operations.ops.find(arena, service, params, .{})) {
++        .ok => |json| try out.writeAll(json),
++        .failed => |failure| try out.print("refused: {s}\n", .{failure.message}),
++    }
++}
++
++test "S6-T16: the core-api.md example compiles" {
++    _ = &peek;
++}
+check_layers: OK (46 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build test`)
+check_layers.py exit 0
+zig build test --summary all: exit 0
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 27 pass (27 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
