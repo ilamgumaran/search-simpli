@@ -17,6 +17,7 @@ const manifest = @import("manifest.zig");
 const publication = @import("publication.zig");
 const lifecycle = @import("lifecycle.zig");
 const incremental_state = @import("incremental_state.zig");
+const snapshot_open = @import("snapshot_open.zig");
 
 /// Canonical trace kinds at the highest generation. Kept thread-local because
 /// the CLI and ABI read the diagnostic immediately after allocation fails.
@@ -88,17 +89,20 @@ fn appendLiteralCauseName(buffer: []u8, used: *usize, name: []const u8) void {
 
 /// The current generation recorded by `MANIFEST` in `dir`, or `0` if `dir`
 /// has no manifest yet (a fresh output directory).
+///
+/// S6-T17: `MANIFEST` is read through the handle its size came from
+/// (`snapshot_open.readManifest`, S6-T13). A full rebuild calls this before
+/// it takes `WRITER.LOCK` (`nextFreeGeneration`), and before, a second
+/// writer's publish between a `stat` and a second open by name gave a
+/// `MANIFEST` longer than the `stat` said, cut to that size (`Truncated`;
+/// `manifest_read_test.zig`). Now the read is the old `MANIFEST`, whole.
 pub fn currentGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !u64 {
-    var file = dir.openFile(io, publication.current_manifest_file, .{}) catch |err| switch (err) {
+    const read = snapshot_open.readManifest(allocator, io, dir) catch |err| switch (err) {
         error.FileNotFound => return 0,
         else => return err,
     };
-    const stat = try file.stat(io);
-    file.close(io);
-    const size = std.math.cast(usize, stat.size) orelse return error.IndexTooLarge;
-    const buffer = try allocator.alloc(u8, size);
-    const encoded = try dir.readFile(io, publication.current_manifest_file, buffer);
-    const metadata = try manifest.decode(encoded);
+    defer allocator.free(read.buffer);
+    const metadata = try manifest.decode(read.bytes);
     return metadata.generation;
 }
 
