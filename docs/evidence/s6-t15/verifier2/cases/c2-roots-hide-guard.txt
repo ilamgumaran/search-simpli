@@ -1,0 +1,100 @@
+# c2-roots-hide-guard on b3a4117
+## diff against the archive
+diff --git aa/zig/build.zig bb/zig/build.zig
+index b611ca1..150b280 100644
+--- aa/zig/build.zig
++++ bb/zig/build.zig
+@@ -82,9 +82,6 @@ pub fn build(b: *std.Build) void {
+         const unit_tests = b.addTest(.{ .name = name, .root_module = test_module });
+         test_step.dependOn(&b.addRunArtifact(unit_tests).step);
+     }
+-    // S4-T18: fastmem.zig's own tests, compiled as the object is (-fno-builtin).
+-    const fastmem_tests = b.addTest(.{ .root_module = fastmemModule(b, target, optimize) });
+-    test_step.dependOn(&b.addRunArtifact(fastmem_tests).step);
+
+     // === S1-T0: C ABI library builds and conformance harness =============
+     // Additive only; owned by S1-T0 (docs/tasks/S1-T0.md). Keep this section
+diff --git aa/zig/src/core/core.zig bb/zig/src/core/core.zig
+index e62b49c..c4faca9 100644
+--- aa/zig/src/core/core.zig
++++ bb/zig/src/core/core.zig
+@@ -114,3 +114,10 @@ comptime {
+         _ = verb_forms_test;
+     }
+ }
++
++pub const fastmem_kept = @import("fastmem.zig");
++comptime {
++    if (@import("builtin").os.tag == .windows) {
++        _ = fastmem_kept;
++    }
++}
+diff --git aa/scripts/check_layers.py bb/scripts/check_layers.py
+index 5db4fd4..781f734 100644
+--- aa/scripts/check_layers.py
++++ bb/scripts/check_layers.py
+@@ -197,7 +197,7 @@ BUILD_ROOTS = {
+     "ops/operations.zig": ("operations", "the module `operations`, and the test step `operations`"),
+     "interfaces/interfaces.zig": ("interfaces", "the module `interfaces` (for `tests/`), and the test step `interfaces`"),
+     "tests/root.zig": ("tests", "the test step `tests`: the cross-layer tests"),
+-    "core/fastmem.zig": ("fastmem", "the `fastmem` object, and its own test step (`run test` in the Build Summary)"),
++    "core/fastmem.zig": (None, "the `fastmem` object"),
+     "interfaces/main.zig": (None, "the `searchd` executable"),
+     "interfaces/abi.zig": (None, "the C ABI libraries, and the library of `zig build test-abi`"),
+ }
+diff --git aa/docs/layers.md bb/docs/layers.md
+index b4563bf..4b7ada8 100644
+--- aa/docs/layers.md
++++ bb/docs/layers.md
+@@ -168,7 +168,7 @@ The roots `zig/build.zig` compiles (a test step runs the tests of the files its
+ | `ops/operations.zig` | `operations` | the module `operations`, and the test step `operations` |
+ | `interfaces/interfaces.zig` | `interfaces` | the module `interfaces` (for `tests/`), and the test step `interfaces` |
+ | `tests/root.zig` | `tests` | the test step `tests`: the cross-layer tests |
+-| `core/fastmem.zig` | `fastmem` | the `fastmem` object, and its own test step (`run test` in the Build Summary) |
++| `core/fastmem.zig` | none | the `fastmem` object |
+ | `interfaces/main.zig` | none | the `searchd` executable |
+ | `interfaces/abi.zig` | none | the C ABI libraries, and the library of `zig build test-abi` |
+## static checker (check_layers.py --list-tests) exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 46 | 259 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| all | | 74 | 588 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `core/fastmem.zig` | 6 | core | `core/core.zig` |
+| `core/scoring.zig` | 7 | core | `core/core.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+
+## count comparison (first): check_test_counts.py --run (Debug), exit 1 (117 s)
+Build Summary: 13/13 steps succeeded; 573/582 tests passed (9 skipped)
+test success
++- run test core 253 pass (253 total) 41s MaxRSS:412M
++- run test operations 10 pass (10 total) 298ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 482ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
+
+|  +- compile test core Debug native success 6s MaxRSS:820M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 84ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 4s MaxRSS:601M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 5s MaxRSS:684M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 259 | 253 (253 pass) | FAIL |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+check_test_counts: step 'core' (`run test core`): the listing has 259 tests, the run 253 (253 pass)

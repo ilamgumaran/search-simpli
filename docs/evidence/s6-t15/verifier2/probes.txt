@@ -1,0 +1,66 @@
+# Zig 0.16.0 probes (zig test / zig build, own caches, in the scratch folder)
+## probe/gen2.zig
+const std = @import("std");
+fn Gen(comptime T: type) type {
+    return struct {
+        pub const t = T;
+        test "generic counted" {
+            try std.testing.expect(true);
+        }
+    };
+}
+test "instantiates twice" {
+    try std.testing.expect(Gen(u8).t == u8);
+    try std.testing.expect(Gen(u16).t == u16);
+}
+## probe/holder.zig
+const std = @import("std");
+const Unused = struct {
+    test "holder nested fails" {
+        try std.testing.expectEqual(@as(u32, 1), @as(u32, 2));
+    }
+};
+const Holder = struct {
+    const alias = Unused;
+    pub const n: u32 = 3;
+};
+test "names Holder" {
+    _ = Holder;
+    try std.testing.expectEqual(@as(u32, 3), Holder.n);
+}
+## zig test gen2.zig: a test in a generic type instantiated twice runs twice
+1/3 gen2.test.instantiates twice...OK
+2/3 gen2.Gen(u8).test.generic counted...OK
+3/3 gen2.Gen(u16).test.generic counted...OK
+All 3 tests passed.
+## zig test holder.zig: a struct named only by an alias inside a named struct: its test does not run
+1/1 holder.test.names Holder...OK
+All 1 tests passed.
+## tiny build: a step with zero tests, then a warm rerun (zig build test --summary all; the summary is on stderr, stdout empty)
+const std = @import("std");
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+    const test_step = b.step("test", "t");
+    const z = b.addTest(.{ .name = "zero", .root_module = b.createModule(.{ .root_source_file = b.path("src/zero.zig"), .target = target, .optimize = optimize }) });
+    test_step.dependOn(&b.addRunArtifact(z).step);
+    const o = b.addTest(.{ .name = "one", .root_module = b.createModule(.{ .root_source_file = b.path("src/one.zig"), .target = target, .optimize = optimize }) });
+    test_step.dependOn(&b.addRunArtifact(o).step);
+}
+### first run (stderr)
+Build Summary: 5/5 steps succeeded; 1/1 tests passed
+test success
++- run test zero success 269ms MaxRSS:2M
+|  +- compile test zero Debug native success 923ms MaxRSS:264M
++- run test one 1 pass (1 total) 163ms MaxRSS:2M
+   +- compile test one Debug native success 919ms MaxRSS:265M
+
+### second run, warm (stderr)
+Build Summary: 5/5 steps succeeded; 1/1 tests passed
+test success
++- run test zero success 2ms MaxRSS:2M
+|  +- compile test zero Debug native cached 52ms MaxRSS:31M
++- run test one 1 pass (1 total) 2ms MaxRSS:2M
+   +- compile test one Debug native cached 51ms MaxRSS:31M
+
+### the head's parse_summary on the second run: zero -> total None -> 'the run reports no total' (FAIL)

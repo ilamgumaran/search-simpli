@@ -1,0 +1,54 @@
+## git diff --name-only a104cd0..b3a4117
+.github/workflows/checks.yml
+CONTRIBUTING.md
+PROJECT-STATE.md
+docs/evidence/s6-t15/after-verdict/A-nested-unref.txt
+docs/evidence/s6-t15/after-verdict/B-generic.txt
+docs/evidence/s6-t15/after-verdict/C-fn-named-not-called.txt
+docs/evidence/s6-t15/after-verdict/D-method-uncalled.txt
+docs/evidence/s6-t15/after-verdict/E-comptime-if-false.txt
+docs/evidence/s6-t15/after-verdict/F-comptime-not-is-test.txt
+docs/evidence/s6-t15/after-verdict/G-pub-const-nontest-fn.txt
+docs/evidence/s6-t15/after-verdict/H-path-in-other-module-test.txt
+docs/evidence/s6-t15/after-verdict/I-refAllDecls.txt
+docs/evidence/s6-t15/after-verdict/J-two-modules.txt
+docs/evidence/s6-t15/after-verdict/K-usingnamespace.txt
+docs/evidence/s6-t15/after-verdict/L-bench-only.txt
+docs/evidence/s6-t15/after-verdict/M-field-name.txt
+docs/evidence/s6-t15/after-verdict/R-import-in-named-struct.txt
+docs/evidence/s6-t15/after-verdict/X-add-test-step.txt
+docs/evidence/s6-t15/after-verdict/X-change-tests-root.txt
+docs/evidence/s6-t15/after-verdict/X-copy-paste-ops-row.txt
+docs/evidence/s6-t15/after-verdict/X-remove-core-row.txt
+docs/evidence/s6-t15/after-verdict/X-remove-fastmem-step.txt
+docs/evidence/s6-t15/after-verdict/X-remove-tests-row.txt
+docs/evidence/s6-t15/after-verdict/Y-doc-ops.txt
+docs/evidence/s6-t15/after-verdict/baseline.txt
+docs/evidence/s6-t15/after-verdict/judged.txt
+docs/evidence/s6-t15/after-verdict/natives.txt
+docs/evidence/s6-t15/after-verdict/suites.txt
+docs/evidence/s6-t15/after-verdict/zig-debug.txt
+docs/journey/03-next.md
+docs/layers.md
+docs/tasks/S6-T15.md
+scripts/check_layers.py
+scripts/check_test_counts.py
+scripts/prototypes/s6t15/after_verdict.py
+scripts/prototypes/s6t15/after_verdict_order.py
+scripts/prototypes/s6t15/judge_after_verdict.py
+tests/test_check_layers.py
+tests/test_check_test_counts.py
+## scripts' own tests
+Ran 106 tests in 6.025s
+
+OK
+check_layers exit 0
+check_requirements exit 0
+check_no_home_paths exit 0
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+## whitespace
+       0
+       0
+# Python with Zig, worktree at b3a4117: env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests
+Ran 539 tests in 96.687s
+OK

@@ -1,0 +1,89 @@
+# doc-interfaces on b3a4117
+## diff against the archive
+diff --git ab/zig/src/interfaces/doc_new_test.zig bb/zig/src/interfaces/doc_new_test.zig
+new file mode 100644
+index 0000000..c8bbd86
+--- /dev/null
++++ bb/zig/src/interfaces/doc_new_test.zig
+@@ -0,0 +1,6 @@
++const std = @import("std");
++const cli = @import("cli.zig");
++test "v2 doc-followed interfaces test" {
++    _ = cli;
++    try @import("std").testing.expect(true);
++}
+diff --git aa/zig/src/interfaces/interfaces.zig bb/zig/src/interfaces/interfaces.zig
+index 75bfcc2..f3709b3 100644
+--- aa/zig/src/interfaces/interfaces.zig
++++ bb/zig/src/interfaces/interfaces.zig
+@@ -9,6 +9,7 @@ pub const cli = @import("cli.zig");
+ pub const field_warnings_test = @import("field_warnings_test.zig");
+ pub const mcp = @import("mcp.zig");
+ pub const rpc = @import("rpc.zig");
++pub const doc_new_test = @import("doc_new_test.zig");
+
+ // `zig build test` runs this module's tests in a step of their own (zig/build.zig):
+ // a test build only collects the tests of its root module's files. The reference
+@@ -20,5 +21,6 @@ comptime {
+         _ = field_warnings_test;
+         _ = mcp;
+         _ = rpc;
++        _ = doc_new_test;
+     }
+ }
+## static checker (check_layers.py --list-tests) exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 5 | 27 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 75 | 589 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `core/fastmem.zig` | 6 | fastmem | (the root) |
+| `core/scoring.zig` | 7 | core | `core/core.zig` |
+| `interfaces/doc_new_test.zig` | 1 | interfaces | `interfaces/interfaces.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build test`)
+
+## count comparison (first): check_test_counts.py --run (Debug), exit 0 (168 s)
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+test success
++- run test core 253 pass (253 total) 1m MaxRSS:412M
++- run test operations 10 pass (10 total) 190ms MaxRSS:7M
++- run test interfaces 27 pass (27 total) 320ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+
+|  +- compile test core Debug native success 4s MaxRSS:826M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 101ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 2s MaxRSS:600M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 3s MaxRSS:678M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+|  +- compile test tests Debug native success 5s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 27 | 27 (27 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 589 tests: every step ran the tests the listing has)

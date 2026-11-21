@@ -1,0 +1,89 @@
+# doc-core on b3a4117
+## diff against the archive
+diff --git aa/zig/src/core/core.zig bb/zig/src/core/core.zig
+index e62b49c..829793a 100644
+--- aa/zig/src/core/core.zig
++++ bb/zig/src/core/core.zig
+@@ -55,6 +55,7 @@ pub const unicode_tables = @import("unicode_tables.zig");
+ pub const verb_form_groups_test = @import("verb_form_groups_test.zig");
+ pub const verb_forms = @import("verb_forms.zig");
+ pub const verb_forms_test = @import("verb_forms_test.zig");
++pub const doc_new_test = @import("doc_new_test.zig");
+
+ // `zig build test` runs this module's tests in a step of their own (zig/build.zig):
+ // a test build only collects the tests of its root module's files. The reference
+@@ -112,5 +113,6 @@ comptime {
+         _ = verb_form_groups_test;
+         _ = verb_forms;
+         _ = verb_forms_test;
++        _ = doc_new_test;
+     }
+ }
+diff --git ab/zig/src/core/doc_new_test.zig bb/zig/src/core/doc_new_test.zig
+new file mode 100644
+index 0000000..a34e360
+--- /dev/null
++++ bb/zig/src/core/doc_new_test.zig
+@@ -0,0 +1,6 @@
++const std = @import("std");
++const scoring = @import("scoring.zig");
++test "v2 doc-followed core test" {
++    _ = scoring;
++    try @import("std").testing.expect(true);
++}
+## static checker (check_layers.py --list-tests) exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 46 | 254 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 75 | 589 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `core/doc_new_test.zig` | 1 | core | `core/core.zig` |
+| `core/fastmem.zig` | 6 | fastmem | (the root) |
+| `core/scoring.zig` | 7 | core | `core/core.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build test`)
+
+## count comparison (first): check_test_counts.py --run (Debug), exit 0 (160 s)
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+test success
++- run test core 254 pass (254 total) 1m MaxRSS:412M
++- run test operations 10 pass (10 total) 560ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 355ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 997ms MaxRSS:5M
+
+|  +- compile test core Debug native success 4s MaxRSS:826M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 99ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 2s MaxRSS:602M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 3s MaxRSS:677M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+|  +- compile test tests Debug native success 5s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 254 | 254 (254 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 589 tests: every step ran the tests the listing has)
