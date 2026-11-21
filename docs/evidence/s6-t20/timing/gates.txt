@@ -9,3 +9,5 @@
 2026-11-21 13:19:03 s6t20 probe gate REFUSED( load5>=4.0; ) lock=absent load=[3.89 4.71 5.82] top8: fseventsd 104.7;Finder 86.2;WindowServer 22.8;loginwindow 14.1;iTerm2 12.1;kernel_task 7.0;top 5.5;mds_stores 3.4;
 2026-11-21 13:19:39 s6t20 probe gate REFUSED( load5>=4.0; ) lock=absent load=[4.71 4.83 5.82] top8: fseventsd 103.4;Finder 51.0;WindowServer 28.2;loginwindow 18.7;iTerm2 17.9;kernel_task 11.6;top 8.5;2.1.330 5.9;
 2026-11-21 13:19:48 s6t20 probe gate REFUSED( lock; load5>=4.0; toolchain:dartaotruntime dartvm; ) lock=present load=[4.83 4.86 5.82] top8: dartvm 524.2;fseventsd 100.5;dartaotruntime 97.0;WindowServer 22.7;loginwindow 14.7;kernel_task 14.2;iTerm2 10.5;XprotectService 10.1;
+2026-11-21 13:20:33 s6t20 probe gate REFUSED( lock; load5>=4.0; ) lock=present load=[6.13 5.19 5.89] top8: fseventsd 102.0;WindowServer 22.7;loginwindow 14.7;dartvm 13.5;kernel_task 10.6;iTerm2 9.9;top 5.8;WallpaperAerials 4.4;
+2026-11-21 13:20:52 s6t20 probe gate REFUSED( lock; load5>=4.0; toolchain:dartvm; ) lock=present load=[6.70 5.37 5.94] top8: dartvm 145.1;fseventsd 102.0;WindowServer 22.8;loginwindow 13.9;iTerm2 9.5;kernel_task 6.9;top 5.9;WallpaperAerials 4.5;
