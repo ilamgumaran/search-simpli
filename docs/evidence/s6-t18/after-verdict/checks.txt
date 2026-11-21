@@ -1,0 +1,23 @@
+# Checks on the worktree at 422d807 (own Zig caches in <S>/rework)
+## zig build test --summary all (Debug): exit 0
+Build Summary: 15/15 steps succeeded; 583/592 tests passed (9 skipped)
++- run test core 257 pass (257 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+## python3 scripts/check_layers.py
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 592 tests, each run by a step of `zig build test`; the public core API `api`: 88 names in 23 namespaces)
+## python3 scripts/check_test_counts.py --run: exit 0
+check_test_counts: OK (5 steps, 592 tests: every step ran the tests the listing has, and the static checker passes)
+## python3 -m unittest tests.test_check_layers tests.test_check_test_counts
+Ran 141 tests in 15.953s
+OK
+## python3 scripts/check_requirements.py
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+## The core step's binary run directly from zig/ (the four one-shot tests)
+query_one_shot_test.test.one-shot query: the answers of deriving the field and querying, allocation for allocation...OK
+query_one_shot_test.test.one-shot query: ranks with the title field (a title-only file is found)...OK
+query_one_shot_test.test.one-shot query: invalid UTF-8 is refused, and out of memory is returned...OK
+query_one_shot_test.test.one-shot query: a scoped open ranks with its folder's field, derived once by the folder, nothing from the caller's allocator...OK
+All 257 tests passed.
