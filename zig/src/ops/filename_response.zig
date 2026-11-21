@@ -1,7 +1,7 @@
-const engine_module = @import("core").engine;
-const filename_field = @import("core").filename_field;
-const scope = @import("core").scope;
-const hybrid = @import("core").hybrid;
+const engine_module = @import("core").api.engine;
+const filename_field = @import("core").api.filename_field;
+const scope = @import("core").api.scope;
+const hybrid = @import("core").api.hybrid;
 const report = @import("report.zig");
 const std = @import("std");
 
@@ -89,17 +89,17 @@ fn writeEvidenceInternal(
     const titled = engine.titleApplies(field, options);
     if (titled) {
         try json.objectField("title_policy_id");
-        try json.write(@import("core").title_field.policy_id);
+        try json.write(@import("core").api.title_field.policy_id);
     }
     // S5-T3 (contract 2.4.0): both expands; filename never does.
     if (engine.fuzzyApplies(field, options)) {
         try json.objectField("fuzzy_policy_id");
-        try json.write(@import("core").fuzzy.policy_id);
+        try json.write(@import("core").api.fuzzy.policy_id);
     }
     // S5-T4 (contract 2.5.0): content and both group; filename never does.
     if (engine.foldApplies(field, options)) {
         try json.objectField("fold_policy_id");
-        try json.write(@import("core").fold.policy_id);
+        try json.write(@import("core").api.fold.policy_id);
     }
     try json.endObject();
     try json.objectField("results");
@@ -115,7 +115,7 @@ fn writeEvidenceInternal(
         try json.objectField("chunk_id");
         try json.write(document.id);
         try json.objectField("root_id");
-        const root_index = @import("core").scope.rootOfPath(engine.roots, document.path);
+        const root_index = @import("core").api.scope.rootOfPath(engine.roots, document.path);
         try json.write(if (root_index) |i| engine.roots[i].root_id else "r-legacy");
         try json.objectField("section_path");
         try json.beginArray();
@@ -358,7 +358,7 @@ test "filename results expose source-based match sections and readable citations
     }};
     const engine = engine_module.Engine{
         .generation = 3,
-        .analyzer_id = @import("core").analyzer_v2.analyzer_id,
+        .analyzer_id = @import("core").api.analyzer_v2.analyzer_id,
         .embedding_model_id = "none",
         .vector_dimensions = 0,
         .documents = &docs,
@@ -405,7 +405,7 @@ test "filename results expose source-based match sections and readable citations
     try std.testing.expect(std.mem.indexOf(u8, human.written(), "text: The budget grew.") != null);
 }
 
-fn entryVisible(folder: scope.Folder, entry: @import("core").manifest.PendingEntry, options: hybrid.SearchOptions) bool {
+fn entryVisible(folder: scope.Folder, entry: @import("core").api.manifest.PendingEntry, options: hybrid.SearchOptions) bool {
     for (folder.roots, 0..) |root, index| {
         if (!std.mem.eql(u8, root.root_id, entry.root_id)) continue;
         if (options.visible_roots) |mask| if (index >= mask.allowed.len or !mask.allowed[index]) return false;

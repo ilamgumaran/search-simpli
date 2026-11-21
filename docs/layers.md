@@ -163,7 +163,7 @@ Module roots (only `pub const` imports of their folder's files):
 
 | File (`zig/src/`) | Module | What it is |
 |---|---|---|
-| `core/core.zig` | `core` | the module `core`: every core file but `fastmem.zig`, and every core test |
+| `core/core.zig` | `core` | the module `core`: `api`, the public core API (`docs/core-api.md`); every core file but `fastmem.zig`, and every core test |
 | `ops/operations.zig` | `operations` | the module `operations` (it imports `core`): every operations file |
 | `interfaces/interfaces.zig` | `interfaces` | the module `interfaces`, for the tests in `tests/`: every interface file but `main.zig`, and `field_warnings_test.zig` |
 

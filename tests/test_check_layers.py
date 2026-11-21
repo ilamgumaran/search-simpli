@@ -73,17 +73,22 @@ def compiled(*names):
     return TEST_BUILD % "".join(f"        _ = {name};\n" for name in names)
 
 
+# S6-T16: the public core API at the end of the core root: one namespace, `engine`, with no name.
+API = ("/// The public core API.\npub const api = struct {\n    /// The engine.\n    pub const engine = struct {};\n"
+       "};\nconst internal = @This();\n")
+
 CLEAN = {
     "core/core.zig": 'pub const engine = @import("engine.zig");\npub const store = @import("store.zig");\n'
-                     'pub const store_test = @import("store_test.zig");\n' + compiled("engine", "store", "store_test"),
+                     'pub const store_test = @import("store_test.zig");\n' + compiled("engine", "store", "store_test")
+                     + API,
     "core/engine.zig": 'const std = @import("std");\nconst store = @import("store.zig");\n',
     "core/store.zig": 'const std = @import("std");\n',
     "core/store_test.zig": 'const store = @import("store.zig");\n',
     "ops/operations.zig": 'pub const ops = @import("ops.zig");\n' + compiled("ops"),
-    "ops/ops.zig": 'const engine = @import("core").engine;\n',
+    "ops/ops.zig": 'const engine = @import("core").api.engine;\n',
     "interfaces/interfaces.zig": 'pub const cli = @import("cli.zig");\npub const rpc = @import("rpc.zig");\n'
                                  'pub const mcp = @import("mcp.zig");\n' + compiled("cli", "rpc", "mcp"),
-    "interfaces/cli.zig": 'const ops = @import("operations").ops;\nconst engine = @import("core").engine;\n',
+    "interfaces/cli.zig": 'const ops = @import("operations").ops;\nconst engine = @import("core").api.engine;\n',
     "interfaces/rpc.zig": 'const ops = @import("operations").ops;\nconst options = @import("build_options");\n',
     "interfaces/mcp.zig": 'const ops = @import("operations").ops;\nconst cli = @import("cli.zig");\n',
     "tests/root.zig": 'const cli = @import("interfaces").cli;\nconst t = @import("core").store_test;\n'
@@ -321,7 +326,7 @@ class RuleTests(unittest.TestCase):
         self.tree.write("core/store_test.zig", 'const std = @import("std");\n')
         self.tree.write("core/core.zig", 'pub const engine = @import("engine.zig");\n'
                                          'pub const store_test = @import("store_test.zig");\n'
-                                         + compiled("engine", "store_test"))
+                                         + compiled("engine", "store_test") + API)
         problems = self.tree.check()
         self.assertEqual(len(problems), 1, problems)
         self.assertIn("FILES names zig/src/core/store.zig, which does not exist", problems[0])
@@ -500,7 +505,8 @@ class TestReachTests(unittest.TestCase):
         """core/core.zig with name.zig as a fourth pub const, compiled in its block or not."""
         head, _, _ = self.tree.read("core/core.zig").partition("comptime {")
         names = ["engine", "store", "store_test"] + ([name] if compiled_too else [])
-        self.tree.write("core/core.zig", head + f'pub const {name} = @import("{name}.zig");\n' + compiled(*names))
+        self.tree.write("core/core.zig", head + f'pub const {name} = @import("{name}.zig");\n' + compiled(*names)
+                        + API)
 
     def test_the_clean_tree_counts_its_tests_by_step(self):
         self.tree.write("core/store.zig", 'const std = @import("std");\ntest "store" {}\ntest {}\n')
@@ -946,6 +952,150 @@ FASTMEM = "\n".join([
     '    return b.createModule(.{ .root_source_file = b.path("src/core/fastmem.zig") });',
     "",
 ])
+
+
+class CoreApiTests(unittest.TestCase):
+    """S6-T16: ops/ and interfaces/ reach the core only through `api` (docs/core-api.md)."""
+
+    def setUp(self):
+        self.tree = Tree()
+        # A core name to publish: engine.zig gains `pub const Engine`, and `api.engine` lists it.
+        self.tree.write("core/engine.zig", CLEAN["core/engine.zig"] + "pub const Engine = struct {};\n"
+                                                                      "pub fn open() void {}\n")
+        self.write_api("    /// The engine.\n    pub const engine = struct {\n        /// An opened generation.\n"
+                       "        pub const Engine = internal.engine.Engine;\n    };\n")
+
+    def tearDown(self):
+        self.tree.close()
+
+    def write_api(self, body, tail="const internal = @This();\n"):
+        head, _, _ = CLEAN["core/core.zig"].partition("/// The public core API.")
+        self.tree.write("core/core.zig", head + "/// The public core API.\npub const api = struct {\n" + body
+                        + "};\n" + tail)
+
+    def use(self, rel, text):
+        self.tree.write(rel, CLEAN[rel] + text)
+        return self.tree.check()
+
+    INTERNAL = ('outside the public core API: operations and interfaces reach the core through @import("core").api '
+                "(docs/core-api.md); tests in tests/ may use internals")
+
+    def test_a_published_name_passes_inline_and_through_aliases(self):
+        self.assertEqual(self.use("ops/ops.zig", "const E = engine.Engine;\n"
+                                                 "const F = @import(\"core\").api.engine.Engine;\n"
+                                                 "const core = @import(\"core\").api;\n"
+                                                 "fn f() void { const e = core.engine; _ = e.Engine.x; }\n"), [])
+
+    def test_the_clean_tree_s_tests_use_internals_and_pass(self):
+        self.assertIn('@import("core").engine', CLEAN["tests/engine_test.zig"])
+        self.assertEqual(self.tree.check(), [])
+
+    def test_planted_internal_inline_in_ops_fails(self):
+        self.assertEqual(self.use("ops/ops.zig", 'const S = @import("core").store.Store;\n'), [
+            "zig/src/ops/ops.zig:2: uses core.store.Store, " + self.INTERNAL])
+
+    def test_planted_internal_alias_in_interfaces_fails_once_at_the_binding(self):
+        self.assertEqual(self.use("interfaces/cli.zig", 'const store = @import("core").store;\n'
+                                                        "fn f() void { _ = store.Store; _ = store.open; }\n"), [
+            "zig/src/interfaces/cli.zig:3: uses core.store, " + self.INTERNAL])
+
+    def test_an_internal_in_a_test_block_of_an_interface_fails(self):
+        self.assertEqual(self.use("interfaces/rpc.zig", 'test "x" {\n    const e = @import("core").engine;\n'
+                                                        "    _ = e.Engine;\n}\n"), [
+            "zig/src/interfaces/rpc.zig:4: uses core.engine, " + self.INTERNAL])
+
+    def test_a_name_the_namespace_lacks_fails(self):
+        self.assertEqual(self.use("ops/ops.zig", "fn f() void { _ = engine.open; }\n"), [
+            "zig/src/ops/ops.zig:2: uses core.api.engine.open, which api.engine does not have: add it by the rule "
+            "in docs/core-api.md"])
+
+    def test_a_name_the_namespace_lacks_fails_through_an_alias_of_an_alias(self):
+        problems = self.use("interfaces/cli.zig", 'const core = @import("core").api;\nconst e = core.engine;\n'
+                                                  "const O = e.open;\n")
+        self.assertEqual(problems, ["zig/src/interfaces/cli.zig:5: uses core.api.engine.open, which api.engine does "
+                                    "not have: add it by the rule in docs/core-api.md"])
+
+    def test_a_namespace_api_lacks_fails(self):
+        self.assertEqual(self.use("ops/ops.zig", 'const store = @import("core").api.store;\n'), [
+            "zig/src/ops/ops.zig:2: uses core.api.store, but api has no namespace store: add the name to api by the "
+            "rule in docs/core-api.md"])
+
+    def test_the_module_used_whole_fails_and_its_internals_through_an_alias_fail(self):
+        problems = self.use("ops/ops.zig", 'const core = @import("core");\nfn f() void { _ = core; '
+                                           "_ = core.api.engine.Engine; _ = core.engine.Engine; }\n")
+        self.assertEqual(problems, [
+            'zig/src/ops/ops.zig:3: uses the module core whole: operations and interfaces reach the core through '
+            '@import("core").api (docs/core-api.md)',
+            "zig/src/ops/ops.zig:3: uses core.engine.Engine, " + self.INTERNAL])
+
+    def test_comments_strings_and_fields_named_like_an_alias_are_not_uses(self):
+        self.assertEqual(self.use("ops/ops.zig", '// @import("core").store.Store\nconst s = "@import(\\"core\\").store";\n'
+                                                 "const T = struct { engine: u8 };\nconst v = .{ .engine = 1 };\n"
+                                                 "fn f(t: T) u8 { return t.engine; }\n"), [])
+
+    def test_without_api_every_use_of_it_fails(self):
+        head, _, _ = CLEAN["core/core.zig"].partition("/// The public core API.")
+        self.tree.write("core/core.zig", head)
+        problems = self.tree.check()
+        self.assertEqual(problems, [
+            "zig/src/interfaces/cli.zig:2: imports core.api, which zig/src/core/core.zig does not export "
+            "(no pub const api)",
+            "zig/src/interfaces/cli.zig:2: uses core.api.engine, but api has no namespace engine: add the name to api "
+            "by the rule in docs/core-api.md",
+            "zig/src/ops/ops.zig:1: imports core.api, which zig/src/core/core.zig does not export (no pub const api)",
+            "zig/src/ops/ops.zig:1: uses core.api.engine, but api has no namespace engine: add the name to api by "
+            "the rule in docs/core-api.md"])
+
+    # The shape of `api` itself.
+
+    def api_problems(self, body, tail="const internal = @This();\n"):
+        self.write_api(body, tail)
+        return [p for p in self.tree.check() if p.startswith("zig/src/core/core.zig")]
+
+    def test_an_entry_renamed_or_from_another_file_fails(self):
+        for entry in ("pub const Handle = internal.engine.Engine;", "pub const Engine = internal.store.Engine;",
+                      "pub const Engine = engine_file.Engine;", "pub fn Engine() void {}"):
+            problems = self.api_problems("    /// The engine.\n    pub const engine = struct {\n        /// E.\n"
+                                         f"        {entry}\n    }};\n")
+            self.assertEqual(len(problems), 1, (entry, problems))
+            self.assertIn("zig/src/core/core.zig:16: `api.engine` holds something other than an alias "
+                          "`pub const NAME = internal.engine.NAME;`", problems[0])
+
+    def test_a_missing_doc_comment_fails(self):
+        problems = self.api_problems("    /// The engine.\n    pub const engine = struct {\n"
+                                     "        pub const Engine = internal.engine.Engine;\n    };\n"
+                                     "    pub const store = struct {};\n")
+        self.assertEqual(problems, [
+            "zig/src/core/core.zig:15: `api.engine.Engine` has no `///` doc comment (docs/core-api.md)",
+            "zig/src/core/core.zig:17: `api.store` has no `///` doc comment (docs/core-api.md)"])
+
+    def test_a_namespace_that_is_no_exported_core_file_fails(self):
+        for ns in ("nothing", "store_test"):
+            problems = self.api_problems(f"    /// X.\n    pub const {ns} = struct {{}};\n")
+            self.assertEqual(len(problems), 1, problems)
+            self.assertIn(f"zig/src/core/core.zig:14: `api.{ns}` is not a core file the root exports", problems[0])
+
+    def test_a_name_its_file_does_not_declare_pub_fails(self):
+        self.tree.write("core/engine.zig", CLEAN["core/engine.zig"] + "const Engine = struct {};\n")
+        problems = [p for p in self.tree.check() if p.startswith("zig/src/core/core.zig")]
+        self.assertEqual(problems, ["zig/src/core/core.zig:16: `api.engine.Engine` names zig/src/core/engine.zig's "
+                                    "Engine, which is not a top-level pub declaration of it"])
+
+    def test_api_without_internal_fails(self):
+        problems = self.api_problems("    /// The engine.\n    pub const engine = struct {};\n", tail="")
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("does not declare `const internal = @This();`", problems[0])
+
+    def test_something_other_than_a_namespace_in_api_fails(self):
+        problems = self.api_problems("    /// A function.\n    pub fn helper() void {}\n")
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("zig/src/core/core.zig:14: `api` holds something other than a namespace", problems[0])
+
+    def test_the_repository_s_api(self):
+        text = (REPO / "zig" / "src" / "core" / "core.zig").read_text(encoding="utf-8")
+        api, problems = check_layers.core_api(text)
+        self.assertEqual(problems, [])
+        self.assertEqual((len(api), sum(len(names) for _, names in api.values())), (23, 88))
 
 
 if __name__ == "__main__":

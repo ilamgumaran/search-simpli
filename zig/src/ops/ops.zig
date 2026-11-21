@@ -32,19 +32,19 @@
 //!
 //! Memory: everything comes from the caller's `allocator`, an arena released
 //! after the result is written out.
-const filename_field = @import("core").filename_field;
+const filename_field = @import("core").api.filename_field;
 const filename_response = @import("filename_response.zig");
 const std = @import("std");
-const apply = @import("core").apply;
-const engine_module = @import("core").engine;
-const find_module = @import("core").find;
-const hybrid = @import("core").hybrid;
+const apply = @import("core").api.apply;
+const engine_module = @import("core").api.engine;
+const find_module = @import("core").api.find;
+const hybrid = @import("core").api.hybrid;
 const query_report = @import("report.zig");
-const scoring = @import("core").scoring;
-const scope = @import("core").scope;
-const title_field = @import("core").title_field;
+const scoring = @import("core").api.scoring;
+const scope = @import("core").api.scope;
+const title_field = @import("core").api.title_field;
 const service_module = @import("service.zig");
-const source = @import("core").source;
+const source = @import("core").api.source;
 
 pub const Failure = source.Failure;
 pub const Code = source.Code;
@@ -964,13 +964,13 @@ pub fn writeSearchResult(
     // on an analyzer-v2 generation, as for title_policy_id.
     if (service.engine.fuzzyApplies(.content, .{ .retrieval_mode = mode })) {
         try json.objectField("fuzzy_policy_id");
-        try json.write(@import("core").fuzzy.policy_id);
+        try json.write(@import("core").api.fuzzy.policy_id);
     }
     // S5-T4 (contract 2.5.0): likewise for the fold groups (fold-groups-v2
     // since contract 2.6.0, S5-T5; fold-groups-v3 since 2.7.0, S5-T8).
     if (service.engine.foldApplies(.content, .{ .retrieval_mode = mode })) {
         try json.objectField("fold_policy_id");
-        try json.write(@import("core").fold.policy_id);
+        try json.write(@import("core").api.fold.policy_id);
     }
     try json.endObject();
     try json.objectField("results");
@@ -1206,7 +1206,7 @@ fn parseApplyOptions(reader: *Reader) Error!apply.Options {
     };
     if (try reader.optionalInteger("max_file_bytes")) |value| options.max_file_bytes = value;
     if (try reader.optionalInteger("max_total_bytes")) |value| options.max_total_bytes = value;
-    if (try reader.optionalString("analyzer")) |name| options.analyzer = @import("core").indexer.AnalyzerId.parse(name) orelse
+    if (try reader.optionalString("analyzer")) |name| options.analyzer = @import("core").api.indexer.AnalyzerId.parse(name) orelse
         return reader.fail("analyzer must be v1 or v2", .{});
     if (try reader.optionalInteger("max_chars")) |value| {
         if (value == 0) return reader.fail("max_chars must be positive", .{});
@@ -1222,7 +1222,7 @@ fn parseApplyOptions(reader: *Reader) Error!apply.Options {
 
 // ------------------------------------------------------------------ tests ---
 
-const snapshot_open = @import("core").snapshot_open;
+const snapshot_open = @import("core").api.snapshot_open;
 
 /// A host index of two roots (one labelled) in a temporary directory.
 const TestIndex = struct {
