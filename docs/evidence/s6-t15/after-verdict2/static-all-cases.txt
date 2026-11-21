@@ -1,0 +1,21 @@
+# Static checker only (check_layers.py --list-tests) on 0b400eb, each of the second verifier's 20 cases in a fresh archive (v2cases.py --static-only all)
+A-nested-unref: exit 1 | zig/src/tests/plant_a_test.zig:4: holds 1 test that no step of `zig build test` runs, though a step reaches the file: each sits inside a dec
+a-warm-rerun: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build
+b1-cancel-strict: exit 1 | zig/src/tests/plant_b1_extra_test.zig:1: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/
+b2-cancel-generic: exit 1 | zig/src/tests/plant_b2_test.zig:5: holds 2 tests written inside a body (a function's, such as a generic type's returned struct, a test block
+c1-roots-hide: exit 1 | zig/src/core/fastmem.zig:178: holds 6 tests that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/core/c
+c2-roots-hide-guard: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build
+doc-core: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build
+doc-infile-core: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 589 tests, each run by a step of `zig build
+doc-interfaces: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build
+doc-ops: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build
+doc-tests: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build
+E-comptime-if-false: exit 1 | zig/src/tests/plant_e_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/
+N1-const-false-switch: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 590 tests, each run by a step of `zig build
+N2-generic-uninstantiated: exit 1 | zig/src/tests/plant_n2_test.zig:5: holds 1 test written inside a body (a function's, such as a generic type's returned struct, a test block'
+N3-alias-in-struct: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 590 tests, each run by a step of `zig build
+N4-build-loop-continue: exit 0 | check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build
+R-import-in-named-struct: exit 1 | zig/src/tests/plant_r_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/
+X-copy-paste-ops-row: exit 1 |
+X-remove-core-row: exit 1 |
+X-remove-fastmem-step: exit 1 |
