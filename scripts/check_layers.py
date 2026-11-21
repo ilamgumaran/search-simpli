@@ -61,9 +61,10 @@ internal.<file>.N;`), each namespace and entry with a `///` doc comment. A file 
 `ops/` or `interfaces/` (its tests included) reaches the core only through it: every
 core name it writes, inline after `@import("core")` or through an alias of one in
 the alias's block, must be `api`, `api.<namespace>` or `api.<namespace>.<name>` of a
-name `api` has. The checker fails, naming file, line and name, on any other, and on
-an entry of `api` that is not such an alias or has no doc comment. The tests in
-`tests/` may use any core name.
+name `api` has. The checker fails, naming file, line and name, on any other, on the
+module used whole and on any binding of the whole module (S6-T16 Verdict, finding 1),
+on an entry of `api` that is not such an alias or has no doc comment, and on a `pub`
+`internal`. The tests in `tests/` may use any core name.
 
 Usage (from anywhere; no dependencies):
 
@@ -963,6 +964,10 @@ def core_api(text: str):
                 j = min(_until(toks, j, ";"), close - 1)
         namespaces[ns] = (ns_line, names)
         i = close + 1 if close < len(toks) and toks[close][:2] == ("punct", ";") else close
+    for k, n, s, _ in items:
+        if k == "decl" and n == API_SELF and s > 0 and toks[s - 1][:2] == ("word", "pub"):
+            problems.append((line_of(s), f"`{API_SELF}` is `pub`: it names every core file, so a `pub` one would "
+                                         f"publish them all past `{API}` (`const {API_SELF} = @This();`, never `pub`)"))
     if namespaces and not any(_seq(toks, s, [("word", "const"), ("word", API_SELF), ("punct", "="),
                                              ("builtin", "@This"), ("punct", "("), ("punct", ")"), ("punct", ";")])
                               for k, n, s, _ in items if k == "decl" and n == API_SELF):
@@ -1019,8 +1024,8 @@ def core_uses(text: str):
             continue
         alias = toks[k - 2][1]
         out.append((line_of(k), chain, alias))
-        if chain and chain[0] != API:
-            continue  # reported at the binding; its uses would repeat it
+        if not chain or chain[0] != API:
+            continue  # reported at the binding (S6-T16 Verdict, finding 1); its uses would repeat it
         lo, hi = _scope(toks, k)
         for j in range(lo, hi):
             kind, value, offset = toks[j]
@@ -1048,6 +1053,11 @@ def api_use_problems(text: str, api, core_exports, exempt_files, exempt_patterns
         if not chain:
             if bound is None:
                 out.append((number, f"uses the module {CORE_MODULE} whole: operations and interfaces {how}"))
+            else:
+                # S6-T16 Verdict, finding 1: a binding of the whole module, anywhere (a block, a struct, `pub`),
+                # would carry the internals past the block the checker follows it in.
+                out.append((number, f"binds the module {CORE_MODULE} whole (const {bound} = @import(\"{CORE_MODULE}\")): "
+                                    f"operations and interfaces {how}, written `@import(\"{CORE_MODULE}\").{API}`"))
             continue
         if chain[0] != API:
             dep = core_exports.get(chain[0])

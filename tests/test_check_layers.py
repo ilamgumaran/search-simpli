@@ -1020,13 +1020,41 @@ class CoreApiTests(unittest.TestCase):
             "zig/src/ops/ops.zig:2: uses core.api.store, but api has no namespace store: add the name to api by the "
             "rule in docs/core-api.md"])
 
-    def test_the_module_used_whole_fails_and_its_internals_through_an_alias_fail(self):
+    WHOLE = ('binds the module core whole (const {} = @import("core")): operations and interfaces reach the core '
+             'through @import("core").api (docs/core-api.md), written `@import("core").api`')
+
+    def test_the_module_used_whole_fails(self):
+        self.assertEqual(self.use("ops/ops.zig", 'test { _ = @field(@import("core"), "engine").Engine; }\n'), [
+            'zig/src/ops/ops.zig:2: uses the module core whole: operations and interfaces reach the core through '
+            '@import("core").api (docs/core-api.md)'])
+
+    # S6-T16 Verdict, finding 1: a binding of the whole module fails wherever it is, once, at the binding.
+
+    def test_a_binding_of_the_whole_module_fails_once_even_if_used_through_api(self):
         problems = self.use("ops/ops.zig", 'const core = @import("core");\nfn f() void { _ = core; '
                                            "_ = core.api.engine.Engine; _ = core.engine.Engine; }\n")
-        self.assertEqual(problems, [
-            'zig/src/ops/ops.zig:3: uses the module core whole: operations and interfaces reach the core through '
-            '@import("core").api (docs/core-api.md)',
-            "zig/src/ops/ops.zig:3: uses core.engine.Engine, " + self.INTERNAL])
+        self.assertEqual(problems, ["zig/src/ops/ops.zig:2: " + self.WHOLE.format("core")])
+
+    def test_a_binding_of_the_whole_module_inside_a_struct_fails(self):
+        problems = self.use("ops/ops.zig", 'const deps = struct {\n    const c = @import("core");\n};\n'
+                                           "test { _ = deps.c.engine.Engine; }\n")
+        self.assertEqual(problems, ["zig/src/ops/ops.zig:3: " + self.WHOLE.format("c")])
+
+    def test_a_pub_binding_of_the_whole_module_fails(self):
+        problems = self.use("interfaces/rpc.zig", 'pub const all = @import("core");\n')
+        self.assertEqual(problems, ["zig/src/interfaces/rpc.zig:3: " + self.WHOLE.format("all")])
+
+    def test_a_binding_of_api_whole_passes(self):
+        self.assertEqual(self.use("ops/ops.zig", 'pub const core_api = @import("core").api;\n'
+                                                 "const deps = struct { const c = @import(\"core\").api; };\n"
+                                                 "test { _ = deps.c.engine.Engine; }\n"), [])
+
+    def test_a_pub_internal_fails(self):
+        problems = self.api_problems("    /// The engine.\n    pub const engine = struct {};\n",
+                                     tail="pub const internal = @This();\n")
+        self.assertEqual(problems, ["zig/src/core/core.zig:16: `internal` is `pub`: it names every core file, so a "
+                                    "`pub` one would publish them all past `api` (`const internal = @This();`, never "
+                                    "`pub`) (docs/core-api.md)"])
 
     def test_comments_strings_and_fields_named_like_an_alias_are_not_uses(self):
         self.assertEqual(self.use("ops/ops.zig", '// @import("core").store.Store\nconst s = "@import(\\"core\\").store";\n'

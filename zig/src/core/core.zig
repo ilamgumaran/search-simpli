@@ -29,23 +29,28 @@ pub const api = struct {
     /// built in memory, for queries (`snapshot_open.zig`).
     pub const snapshot_open = struct {
         /// Open the current generation of `dir` eagerly, for a one-shot command:
-        /// every section is read, checked and decoded, the filename sections
-        /// included. The `Engine` and everything it points to are allocated from
-        /// `allocator` (an arena, discarded wholesale; there is no close).
+        /// the manifest and the documents and lexical sections are read, checked
+        /// and decoded, and so are the two filename sections when the manifest
+        /// names them. The source section is not read (a lost or damaged one does
+        /// not fail the open). The `Engine` and everything it points to are
+        /// allocated from `allocator` (an arena, discarded wholesale; there is no
+        /// close).
         /// Errors: `OutOfMemory`, `std.Io` file errors (`FileNotFound` when `dir`
         /// holds no `MANIFEST`), and the core's format errors.
         pub const open = internal.snapshot_open.open;
-        /// `open` over `Sections` in memory: the same checks and decode, nothing
-        /// read from disk. The engine points into `sections`, which must outlive
-        /// it; the rest is allocated from `allocator`. Errors: as `open`.
+        /// `open` over `Sections` in memory: the same checks and decode of the same
+        /// sections (`Sections.source` is not read), nothing read from disk. The
+        /// engine points into `sections`, which must outlive it; the rest is
+        /// allocated from `allocator`. Errors: as `open`.
         pub const openDetached = internal.snapshot_open.openDetached;
         /// Open the current generation of `dir` for scoped operations: the engine
         /// and its `scope.Folder` (roots, pending files, chunkers), returned as
         /// `Scoped`. A lazy open: the manifest and the document and lexical
-        /// sections are checked and decoded now; the source section, the
-        /// statistics and the position tables at their first use. Everything is
-        /// allocated from `allocator`; the source section's file handle stays
-        /// open until `close` (or `folder.close()`). Errors: `OutOfMemory`,
+        /// sections are checked and decoded now; the source section, the filename
+        /// sections, the statistics and the position tables at their first use.
+        /// Everything is allocated from `allocator`; the source and filename
+        /// sections' files are opened now and stay open until `close` (or
+        /// `folder.close()`). Errors: `OutOfMemory`,
         /// `std.Io` file errors (`FileNotFound` without a `MANIFEST`), and the
         /// core's format errors.
         pub const openScoped = internal.snapshot_open.openScoped;
@@ -75,15 +80,16 @@ pub const api = struct {
     /// The opened generation (`engine.zig`).
     pub const engine = struct {
         /// An opened generation: its documents, lexical index, roots and manifest
-        /// fields, with the query methods operations call (`queryTraced`,
-        /// `queryTokenized`, `queryFields`, `evidence`, `validateQueryText`,
-        /// `titleApplies`, `foldApplies`, `fuzzyApplies`; their errors and
+        /// fields, with the query methods operations call (among them
+        /// `queryTraced`, `queryTokenized`, `queryFields`, `queryFieldsTraced`,
+        /// `evidence`, `validateQueryText`, `titleApplies`, `foldApplies` and
+        /// `fuzzyApplies`; their errors and
         /// allocations are documented in engine.zig). Made by an open; it points
         /// into what that open allocated and is valid until the open's memory is
         /// released (and `snapshot_open.close`, for a scoped open).
         pub const Engine = internal.engine.Engine;
         /// One result with its cited chunk (`Engine.evidence`): chunk id, path,
-        /// lines, the chunk's text and the scores. Its slices point into the
+        /// lines, the chunk's text, and the scores and ranks. Its slices point into the
         /// engine's documents, so it is valid as long as the engine is.
         pub const Evidence = internal.engine.Evidence;
     };
@@ -94,7 +100,7 @@ pub const api = struct {
     /// (`hybrid.zig`).
     pub const hybrid = struct {
         /// A chunk as the documents section holds it: id, text, vector, path,
-        /// lines, required labels, chunker and section data. Plain data; its
+        /// lines, required labels, chunker, section data and source document. Plain data; its
         /// slices are borrowed from whoever made it (an open's memory, or the
         /// caller's own records).
         pub const Document = internal.hybrid.Document;
@@ -110,11 +116,12 @@ pub const api = struct {
         pub const RootMask = internal.hybrid.RootMask;
         /// How a query ranks and what it may see: `top_k`, `candidate_k`, the
         /// fusion and BM25 parameters, the retrieval mode, the path prefix, the
-        /// trusted caller's labels and roots, the title field, and the fuzzy and
-        /// fold switches. Plain data; every pointer in it is borrowed.
+        /// trusted caller's labels and roots, the title field and its weight, and
+        /// the fuzzy (with its groups) and fold switches. Plain data; every pointer in it is borrowed.
         pub const SearchOptions = internal.hybrid.SearchOptions;
-        /// What a traced query reports about itself (unmatched, expanded and
-        /// grouped words, candidate counts, stage times when `profile` is set).
+        /// What a traced query reports about itself (among others the unmatched,
+        /// expanded and grouped words, the matched chunks and candidate counts,
+        /// and the stage times when `profile` is set).
         /// Its lists grow in the `allocator` the caller puts in it and are the
         /// caller's to release (an arena in every caller).
         pub const Trace = internal.hybrid.Trace;
@@ -140,7 +147,7 @@ pub const api = struct {
     /// Vector checks of the ranking (`scoring.zig`).
     pub const scoring = struct {
         /// Whether a query or document vector is valid: every component finite
-        /// and its L2 norm a finite `f32` (an all-zero vector is valid).
+        /// and the `f32` sum of their squares finite (an all-zero vector is valid).
         /// Allocates nothing; no errors.
         pub const isValidVector = internal.scoring.isValidVector;
     };
@@ -239,8 +246,8 @@ pub const api = struct {
     pub const source = struct {
         /// `read_span`: lines `start_line..end_line` of `path` plus up to
         /// `context_lines` on each side, byte for byte. `.failed` (not an error)
-        /// for a bad range, an unknown path, too many lines or bytes, or no
-        /// source section. `allocator` holds the messages and, for a streamed
+        /// for a bad range, an unknown path, more than 400 lines or 256 KiB
+        /// with the context, or no source section. `allocator` holds the messages and, for a streamed
         /// section, the file's bytes, which the span's slices point into.
         /// Errors: `OutOfMemory`.
         pub const readSpan = internal.source.readSpan;
@@ -343,10 +350,13 @@ pub const api = struct {
     /// The next free generation number of a directory (`generation_alloc.zig`).
     pub const generation_alloc = struct {
         /// The smallest generation number above every one `dir` has a trace of
-        /// whose `documents-N.hybseg` and `lexical-N.hyblex` names are both free.
+        /// whose six section names are all free: `documents-N.hybseg`,
+        /// `lexical-N.hyblex`, `source-N.hybsrc`, `filenames-N.hybseg`,
+        /// `filename-lexical-N.hyblex` and `state-N.hybstate`.
         /// `allocator` is for transient reads
         /// only (an arena is fine). Errors: `OutOfMemory`, `std.Io` file errors,
-        /// the core's format errors, and `NoFreeGeneration` at `u64` max.
+        /// the core's format errors, and `NoFreeGeneration` at `u64` max or after
+        /// a million taken numbers.
         pub const nextFreeGeneration = internal.generation_alloc.nextFreeGeneration;
         /// One line for this thread's last `error.NoFreeGeneration` (the highest
         /// generation and the file names in the way), formatted into `buffer`;
@@ -358,9 +368,10 @@ pub const api = struct {
     /// The title field: folder and file names as a title (`title_field.zig`).
     pub const title_field = struct {
         /// Derive a generation's title field from its documents and roots (a
-        /// one-shot query derives its own). The field points into one exact block from `blocks`
-        /// (release with `Derived.deinit`, or with the arena); `scratch_backing`
-        /// holds the working arrays, all freed before it returns. Errors:
+        /// one-shot query derives its own). The field points into one exact block
+        /// from `blocks` (release with `Derived.deinit`, or with the arena);
+        /// `scratch_backing` holds the working arrays, all freed before it
+        /// returns. Errors:
         /// `OutOfMemory`, `InvalidUtf8`, `IndexTooLarge`.
         pub const derive = internal.title_field.derive;
         /// The title field's policy id: "title-field-v1".
@@ -415,8 +426,9 @@ pub const api = struct {
 
     /// The lexical section format (`lexical_segment.zig`).
     pub const lexical_segment = struct {
-        /// Encode a postings index as a lexical section into the caller's
-        /// `output` (validated first; nothing is written if it is invalid); the
+        /// Encode a postings index as a lexical section (`HYBLEX01`, or `HYBLEX02`
+        /// when it carries positions) into the caller's `output` (validated
+        /// first; nothing is written if it is invalid); the
         /// result is a slice of it. Errors (`EncodeError`, which also names
         /// `OutOfMemory`): `BufferTooSmall`, the size and count overflows and the
         /// index checks (`InvalidTerm`, `DuplicateTerm`, `UnsortedTerms`, ...).
@@ -440,8 +452,8 @@ pub const api = struct {
 
     /// The writer lock and publication (`lifecycle.zig`).
     pub const lifecycle = struct {
-        /// Publish three encoded sections and their manifest as the current
-        /// generation of `dir`, under the directory's writer lock. Allocates
+        /// Publish two encoded sections (documents and lexical) and their manifest
+        /// as the current generation of `dir`, under the directory's writer lock. Allocates
         /// nothing. Errors: `WriterBusy` when another writer holds the lock,
         /// `std.Io` file errors, and the core's checks of the manifest.
         pub const publishSerialized = internal.lifecycle.publishSerialized;

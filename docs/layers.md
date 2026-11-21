@@ -293,11 +293,15 @@ folders listed there may use them; an unknown name fails. A file directly in
 `interfaces/`, every name after `@import("core")` is read, written inline or through an
 alias in the block it is bound in (an alias of an alias too), and must be `api`, one of
 its namespaces or one of their names; any other fails with file, line and name, as does
-the module used whole. A name deeper than that (`api.engine.Engine.evidence`) is a
-member of a published type and is not read. `api` itself is read from `core/core.zig`:
-only namespaces named as exported core files, holding only aliases
-`pub const NAME = internal.<file>.NAME;` of a top-level `pub` declaration, each with a
-`///` doc comment. The tests in `tests/` are not read for this rule.
+the module used whole, and any binding of the whole module (`const c = @import("core");`
+in a block, in a struct or `pub`), so no alias can carry the internals past the block the
+checker follows it in. A name deeper than that (`api.engine.Engine.evidence`) is a
+member of a published type and is not read: a type's `pub` members are public with it.
+`api` itself is read from `core/core.zig`: only namespaces named as exported core files,
+holding only aliases `pub const NAME = internal.<file>.NAME;` of a top-level `pub`
+declaration, each with a `///` doc comment, and `internal` is never `pub`. The tests in
+`tests/` are not read for this rule. [core-api.md](core-api.md) lists what the guard does
+not catch.
 
 **Which tests run.** The roots are the `"src/....zig"` strings of `zig/build.zig`, each
 listed in the roots table above with its test step (the checker fails on a root

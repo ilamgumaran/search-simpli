@@ -29,14 +29,28 @@ const engine_module = @import("core").api.engine; // or one namespace, as the fi
 
 and uses only names `api` has. `python3 scripts/check_layers.py` fails, naming the file,
 the line and the name, on any other core name there: an internal file
-(`@import("core").engine`), a namespace `api` lacks, a name its namespace lacks, or the
-module used whole. It reads the uses from Zig tokens, inline and through aliases in the
+(`@import("core").engine`), a namespace `api` lacks, a name its namespace lacks, the
+module used whole (passed, `@field`, `@typeInfo`), and any binding of the whole module,
+`const c = @import("core");`, wherever it is (a block, a struct, `pub`): an alias always
+starts at `api`. It reads the uses from Zig tokens, inline and through aliases in the
 block they are bound in, as its other rules are read. It also checks `api` itself: each
 namespace is a core file the root exports, each entry is exactly
 `pub const NAME = internal.<file>.NAME;` of a top-level `pub` declaration of that file,
-and each carries a `///` doc comment. Zig refuses a name `api` lacks when the code is
-compiled; the checker gives the line without a toolchain, and also catches the internal
-path, which compiles.
+each carries a `///` doc comment, and `internal` is never `pub`. Zig refuses a name `api`
+lacks when the code is compiled; the checker gives the line without a toolchain, and also
+catches the internal path, which compiles.
+
+**What the guard does not catch.** With every alias starting at `api`, an internal can
+only be written as `@import("core").<file>` (inline or bound) or through the module whole,
+and all of those fail. What remains:
+
+- *The members of a published type are public too.* `api.engine.Engine` brings every
+  `pub` field, method and nested declaration of `Engine` (`Engine.open`, `Engine.openWith`,
+  which open an engine without `snapshot_open`); the checker does not read past
+  `api.<namespace>.<name>`, and Zig accepts them. Publishing a type publishes its members.
+- *The tests in `tests/`,* by design.
+- *What the checker does not read at all:* `@embedFile` and `@cImport`. A path import of a
+  core file from `ops/` or `interfaces/` fails the folder rule, and Zig refuses it too.
 
 **Cross-layer tests may use internals.** A test in `zig/src/tests/` may name any `pub`
 declaration of any core file, through `@import("core").<file>`; the rule does not read
