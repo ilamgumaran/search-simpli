@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.9.5 (S6-T17; contract 2.8.0; patch: a fix)
+
+A full rebuild (`indexFolder` without `update`; `searchd index` without
+`--update` or `--generation`) no longer fails when another process publishes
+while it reads `MANIFEST` to choose its generation number. No API change:
+the same calls, JSON fields, error codes and C ABI; contracts stay 2.8.0;
+the index format is unchanged; a rebuild that no publish crosses chooses
+the same generation number as before.
+
+- **The fix.** A full rebuild chooses its number before it takes
+  `WRITER.LOCK`. It took the size of `MANIFEST` from one open of the file
+  and read the bytes through a second open by name, as `open` did before
+  0.9.3. A publish that replaced `MANIFEST` with a longer one between the
+  two made the engine's choice fail with `Truncated`, which `indexFolder`
+  throws as `SearchSimpliException` with the message
+  `ss_index_folder: Truncated` (read from the C ABI's code; reproduced in the
+  engine's tests, not through Dart). It now reads the file it measured
+  (0.9.3's read), and goes on with a number above every generation on disk.
+  Reproduced by tests that run the publish between the two steps
+  (`zig/src/core/manifest_read_test.zig`).
+- **Not changed.** The number is still chosen before the writer lock. A
+  publish by another writer after that read and before the lock can still
+  make the rebuild fail with `PathAlreadyExists`, or, when that writer also
+  pruned the chosen number's files (`keep_generations: 1`), make it publish
+  a generation number already used, with `MANIFEST` going back to it. As in
+  0.9.4.
+
 ## 0.9.4 (S6-T9; contract 2.8.0; patch: index format, one way)
 
 Carries 0.9.3's fix. A smaller index: the incremental state names each

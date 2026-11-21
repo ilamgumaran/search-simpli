@@ -1,0 +1,76 @@
+# S6-T17 verifier: zig build test --summary all, Debug, each tree a fresh git archive with its own caches.
+# main-tests = main (12b839b) + only 79694c4's zig/src/core/manifest_read_test.zig; head = 83add79.
+
+## main-tests (main-tests-debug)
++- run test core 254 pass, 2 fail (256 total)
+S6-T17 INDEX-STATE.json 94 B replaced between stat and read: recordedGeneration null, next generation 11
+error: 'manifest_read_test.test.S6-T17: a full rebuild's next generation is above every generation on disk when MANIFEST is replaced between its stat and its read' failed:
+       S6-T17 MANIFEST replaced between stat and read (new length - stat length: next generation or error): -1:3 0:3 1:Truncated 2048:Truncated
+       <tree>/zig/src/core/lexical_segment.zig:299:39: 0x1029b2d2b in inspect (core)
+       <tree>/zig/src/core/lexical_segment.zig:299:39: 0x1029b2d2b in inspect (core)
+       <tree>/zig/src/core/lexical_segment.zig:302:47: 0x1029b2ee7 in inspect (core)
+       <tree>/zig/src/core/lexical_segment.zig:302:47: 0x1029b2ee7 in inspect (core)
+       <tree>/zig/src/core/lexical_segment.zig:302:47: 0x1029b2ee7 in inspect (core)
+       <tree>/zig/src/core/manifest.zig:600:39: 0x1029ba693 in decode (core)
+       <tree>/zig/src/core/generation_alloc.zig:101:22: 0x1028929f3 in currentGeneration (core)
+       <tree>/zig/src/core/generation_alloc.zig:120:19: 0x10289c643 in highestGenerationOnDisk (core)
+       <tree>/zig/src/core/generation_alloc.zig:159:21: 0x10289cd37 in nextFreeGeneration (core)
+       <tree>/zig/src/core/manifest.zig:600:39: 0x1029ba693 in decode (core)
+       <tree>/zig/src/core/generation_alloc.zig:101:22: 0x1028929f3 in currentGeneration (core)
+       <tree>/zig/src/core/generation_alloc.zig:120:19: 0x10289c643 in highestGenerationOnDisk (core)
+       <tree>/zig/src/core/generation_alloc.zig:159:21: 0x10289cd37 in nextFreeGeneration (core)
+       <tree>/zig/src/core/manifest_read_test.zig:420:5: 0x102a092bf in test.S6-T17: a full rebuild's next generation is above every generation on disk when MANIFEST is replaced between its stat and its read (core)
+error: 'manifest_read_test.test.S6-T17: a full rebuild whose MANIFEST grows across another writer's publish goes on to publish the next generation' failed:
+       nextFreeGeneration (MANIFEST 576 bytes at the stat, 580 after the publish): Truncated
+       <tree>/zig/src/core/manifest.zig:522:39: 0x1029bd8b3 in decodeV2 (core)
+       <tree>/zig/src/core/manifest.zig:581:50: 0x1029b98bb in decode (core)
+       <tree>/zig/src/core/generation_alloc.zig:101:22: 0x1028929f3 in currentGeneration (core)
+       <tree>/zig/src/core/generation_alloc.zig:120:19: 0x10289c643 in highestGenerationOnDisk (core)
+       <tree>/zig/src/core/generation_alloc.zig:159:21: 0x10289cd37 in nextFreeGeneration (core)
+       <tree>/zig/src/core/manifest_read_test.zig:486:9: 0x102a053f3 in test.S6-T17: a full rebuild whose MANIFEST grows across another writer's publish goes on to publish the next generation (core)
+failed command: <tree>/.zc-local/o/c8e2eeae5954ae8592fbb0e875dbe030/core --cache-dir=<tree>/.zc-local --seed=0x6c5ced3d --listen=-
++- run test tests w
+failed command: <tree>/.zc-local/o/d978f6a43cf0fd21ded5d94278df4ebc/tests --cache-dir=<tree>/.zc-local --seed=0x6c5ced3d --listen=-
+Build Summary: 13/15 steps succeeded (1 failed); 580/591 tests passed (9 skipped, 2 failed)
++- run test core 254 pass, 2 fail (256 total)
++- run test operations 10 pass (10 total) 190ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 295ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 948ms MaxRSS:5M
+<tree>/.zc-local/o/9e9ba32d2c6d119d1e26ce16d9dc041d/build <home>/development/zig/zig-aarch64-macos-0.16.0/zig <home>/development/zig/zig-aarch64-macos-0.16.0/lib <tree>/zig <tree>/.zc-local <scratch>/main-tests/.zc-global --seed 0x6c5ced3d -Zc830efe24181b090 test --summary all
+
+## head (head-debug-counts)
+$ zig build test --summary all --cache-dir <tree>/.zc-local --global-cache-dir <scratch>/head/.zc-global
++- run test core w
+S6-T17 MANIFEST replaced between stat and read (new length - stat length: next generation or error): -1:3 0:3 1:3 2048:3
+S6-T17 folder MANIFEST 576 -> 580 bytes between stat and read: next generation 11, published
+S6-T17 INDEX-STATE.json 94 B replaced between stat and read: recordedGeneration null, next generation 11
+failed command: <tree>/.zc-local/o/0b110ed95dbc15fcaa9e7af85fe08231/core --cache-dir=<tree>/.zc-local --seed=0xc9400d52 --listen=-
++- run test tests w
+failed command: <tree>/.zc-local/o/3ab37a37faf130e85c1cc0507618b1fd/tests --cache-dir=<tree>/.zc-local --seed=0xc9400d52 --listen=-
+Build Summary: 15/15 steps succeeded; 582/591 tests passed (9 skipped)
++- run test core 256 pass (256 total) 35s MaxRSS:413M
++- run test operations 10 pass (10 total) 192ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 299ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 949ms MaxRSS:5M
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+check_test_counts: OK (5 steps, 591 tests: every step ran the tests the listing has, and the static checker passes)
+
+## head-release (head-release-counts)
+$ zig build test --summary all -Doptimize=ReleaseSmall --cache-dir <tree>/.zc-local --global-cache-dir <scratch>/head/.zc-global
++- run test core w
+S6-T17 MANIFEST replaced between stat and read (new length - stat length: next generation or error): -1:3 0:3 1:3 2048:3
+S6-T17 folder MANIFEST 576 -> 580 bytes between stat and read: next generation 11, published
+S6-T17 INDEX-STATE.json 94 B replaced between stat and read: recordedGeneration null, next generation 11
+failed command: <tree>/.zc-local/o/c1ff71bc8cd9519348af3564ba3d26c4/core --cache-dir=<tree>/.zc-local --seed=0xb77fe07c --listen=-
++- run test tests w
+failed command: <tree>/.zc-local/o/fc2a4e15e80c26840d7ea1750f6f3c62/tests --cache-dir=<tree>/.zc-local --seed=0xb77fe07c --listen=-
+Build Summary: 15/15 steps succeeded; 582/591 tests passed (9 skipped)
++- run test core 256 pass (256 total) 3s MaxRSS:35M
++- run test operations 10 pass (10 total) 142ms MaxRSS:3M
++- run test interfaces 26 pass (26 total) 192ms MaxRSS:5M
++- run test tests 284 pass, 9 skip (293 total) 19s MaxRSS:402M
++- run test 6 pass (6 total) 324ms MaxRSS:4M
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+check_test_counts: OK (5 steps, 591 tests: every step ran the tests the listing has, and the static checker passes)

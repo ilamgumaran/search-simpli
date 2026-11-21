@@ -1,0 +1,60 @@
+# S6-T17 rebase onto main 1b5a323 (builder, 21 Nov 2026). Zig 0.16.0, own local and global caches per build; paths shortened.
+## tool/build_native.sh in the worktree during the rebase (at the fix commit), NDK 28.2.13676358
+Build Summary: 28/28 steps succeeded
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib ( 1006328 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  966704 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  971304 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (3043c76e52bf9b19029e308cf10500c43e2ab15dc42447efc060b025885a80f3)
+## tool/build_native.sh in a fresh git archive of the rebased tree (before the documents commit; digest inputs unchanged after it)
+Build Summary: 28/28 steps succeeded
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib ( 1006328 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  966704 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  971304 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (3043c76e52bf9b19029e308cf10500c43e2ab15dc42447efc060b025885a80f3)
+## cmp of the committed outputs: with the archive build; with the verified head 1868e5d; with main 1b5a323
+native/macos-arm64/libsearch_simpli.dylib: 1006328 B; archive build: identical; 1868e5d: identical; 1b5a323: differs
+native/android-arm64/libsearch_simpli.so: 966704 B; archive build: identical; 1868e5d: identical; 1b5a323: differs
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: 966704 B; archive build: identical; 1868e5d: identical; 1b5a323: differs
+native/ios-arm64/search_simpli.framework/search_simpli: 971304 B; archive build: identical; 1868e5d: identical; 1b5a323: differs
+native/ios-arm64/search_simpli.framework/Info.plist: 749 B; archive build: identical; 1868e5d: identical; 1b5a323: identical
+native/SOURCE-SHA256: 65 B; archive build: identical; 1868e5d: differs; 1b5a323: differs
+SOURCE-SHA256 at 1b5a323: 34f5c30e9fa3206ffd76fbedb9c15765f97df48cbdb0ced22f045fd132dbe512
+SOURCE-SHA256 at 1868e5d: 1b4604ee0ca89342b402c8bdbc313141e2dd88db9d295aeb84b3ab86aa3ac6b9
+SOURCE-SHA256 rebased: 3043c76e52bf9b19029e308cf10500c43e2ab15dc42447efc060b025885a80f3
+## check_native.sh (worktree)
+check_native: macos-arm64 memcpy at 0x740 (225 calls against 120): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5b0d4 (507 calls against 164): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (219 calls against 112): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+## searchd, zig build -Doptimize=ReleaseSmall: rebased worktree; fresh archives of 1b5a323 and 1868e5d
+rebased: 1151048 B; 1b5a323: 1151208 B; 1868e5d: 1151048 B
+cmp rebased vs 1868e5d: 786780 bytes differ (main's S6-T18 changed interfaces/cli.zig, which searchd holds)
+## zig build test --summary all (Debug)
+Build Summary: 15/15 steps succeeded; 586/595 tests passed (9 skipped)
++- run test core 260 pass (260 total)
++- run test operations 9 pass (9 total)
++- run test interfaces 25 pass (25 total)
++- run test tests 286 pass, 9 skip (295 total)
++- run test 6 pass (6 total)
+S6-T17 MANIFEST replaced between stat and read (new length - stat length: next generation or error): -1:3 0:3 1:3 2048:3
+S6-T17 folder MANIFEST 576 -> 580 bytes between stat and read: next generation 11, published
+S6-T17 INDEX-STATE.json 94 B replaced between stat and read: recordedGeneration null, next generation 11
+## check_test_counts.py --run, Debug, then -Doptimize=ReleaseSmall
+Debug: check_test_counts: OK (5 steps, 595 tests: every step ran the tests the listing has, and the static checker passes)
+ReleaseSmall: Build Summary: 15/15 steps succeeded; 586/595 tests passed (9 skipped)
+ReleaseSmall: check_test_counts: OK (5 steps, 595 tests: every step ran the tests the listing has, and the static checker passes)
+## zig build test-abi, Debug and ReleaseSmall
+Debug: Build Summary: 8/8 steps succeeded; abi_test: 24/24 checks passed
+ReleaseSmall: Build Summary: 8/8 steps succeeded; abi_test: 24/24 checks passed
+## Python (python3 -m unittest discover -s tests)
+with Zig: Ran 580 tests, OK
+SEARCHD_BINARY = rebased ReleaseSmall searchd: Ran 580 tests, OK
+SEARCH_SIMPLI_NO_ZIG=1: Ran 525 tests, OK (skipped=43)
+## Dart (worktree natives)
+pub get --offline: exit 0; dart analyze lib test: No issues found!
++97: All tests passed!
+## check_layers.py, check_requirements.py
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 595 tests, each run by a step of `zig build test`; the public core API `api`: 86 names in 22 namespaces)
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.

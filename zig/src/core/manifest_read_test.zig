@@ -9,6 +9,9 @@
 //!    `fileStat` runs the publish right after the first `stat` it serves
 //!    (`StatSeam`), which in every open below is the `stat` of `MANIFEST`.
 //!    No timing is involved and the library has no seam of its own.
+//!
+//! S6-T17 adds, at the end, the same race for a full rebuild's choice of its
+//! generation number (`generation_alloc.nextFreeGeneration`).
 const std = @import("std");
 const chunker = @import("chunker.zig");
 const hybrid = @import("hybrid.zig");
@@ -20,6 +23,9 @@ const postings = @import("postings.zig");
 const publication = @import("publication.zig");
 const segment = @import("segment.zig");
 const snapshot_open = @import("snapshot_open.zig");
+// S6-T17.
+const generation_alloc = @import("generation_alloc.zig");
+const incremental_state = @import("incremental_state.zig");
 
 /// One v1 generation's three files, encoded in memory.
 const Encoded = struct {
@@ -103,11 +109,15 @@ test "S6-T13: scan returns FileNotFound when MANIFEST names a missing documents 
 // Reading 2: the MANIFEST read during a publish.
 
 /// A `std.Io` that serves every call from `base` and, right after the first
-/// `fileStat` it serves, runs one step (a publish) through `base`.
+/// `fileStat` it serves, runs one step (a publish) through `base`. S6-T17:
+/// `armFor` waits for the first `fileStat` of one file (by its inode) instead
+/// of the first of any.
 const StatSeam = struct {
     var base: std.Io = undefined;
     var table: std.Io.VTable = undefined;
     var pending: ?Step = null;
+    /// S6-T17: when set, only a `stat` of the file with this inode runs the step.
+    var inode: ?std.Io.File.INode = null;
     /// How many steps ran, the size the triggering `stat` returned, and the
     /// step's error, if any.
     var ran: usize = 0;
@@ -122,6 +132,7 @@ const StatSeam = struct {
     fn fileStat(userdata: ?*anyopaque, file: std.Io.File) std.Io.File.StatError!std.Io.File.Stat {
         const stat = try base.vtable.fileStat(userdata, file);
         if (pending) |step| {
+            if (inode) |wanted| if (stat.inode != wanted) return stat;
             pending = null;
             ran += 1;
             stat_size = stat.size;
@@ -133,10 +144,17 @@ const StatSeam = struct {
     }
 
     fn arm(io: std.Io, step: Step) std.Io {
+        return armFor(io, step, null);
+    }
+
+    /// As `arm`, but the step runs after the first `stat` of the file whose
+    /// inode is `wanted` (null: of any file).
+    fn armFor(io: std.Io, step: Step, wanted: ?std.Io.File.INode) std.Io {
         base = io;
         table = io.vtable.*;
         table.fileStat = fileStat;
         pending = step;
+        inode = wanted;
         ran = 0;
         stat_size = 0;
         step_error = null;
@@ -342,5 +360,188 @@ test "S6-T13: a damaged MANIFEST is refused with the same error as before, by ev
         try std.testing.expectError(expected[i], snapshot_open.open(a, io, tmp.dir));
         try std.testing.expectError(expected[i], snapshot_open.openScoped(a, io, tmp.dir));
         try std.testing.expectError(expected[i], snapshot_open.openSource(a, io, tmp.dir));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// S6-T17: a full rebuild chooses its generation number
+// (`generation_alloc.nextFreeGeneration`) before it takes `WRITER.LOCK`
+// (`docs/tasks/S6-T17.md`), so a second writer may publish while it reads.
+// The same seam, armed for the inode of the file being read:
+//
+// 1. `MANIFEST` replaced by a publish between the `stat` and the read in
+//    `generation_alloc.currentGeneration` (the bound above, and a real folder
+//    publish, generation 9 to 10): the rebuild must go on with a number above
+//    every generation on disk, never fail with `Truncated`.
+// 2. `INDEX-STATE.json` replaced by a publish between the `stat` and the read
+//    in `incremental_state.readStateFile`: the number chosen must still be
+//    above every generation on disk.
+
+fn inodeOf(dir: std.Io.Dir, io: std.Io, name: []const u8) !std.Io.File.INode {
+    return (try dir.statFile(io, name, .{})).inode;
+}
+
+test "S6-T17: a full rebuild's next generation is above every generation on disk when MANIFEST is replaced between its stat and its read" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+
+    var line: [256]u8 = undefined;
+    var used: usize = 0;
+    var failed = false;
+    for (deltas) |delta| {
+        var tmp = std.testing.tmpDir(.{ .iterate = true });
+        defer tmp.cleanup();
+        const old = try encodeGeneration(a, 1, "alpha evidence about recovery", old_model);
+        const new = try encodeGeneration(a, 2, "beta evidence about recovery and more", try newModel(a, delta));
+        try std.testing.expectEqual(@as(isize, @intCast(old.manifest.len)) + delta, @as(isize, @intCast(new.manifest.len)));
+        try publishGeneration(tmp.dir, io, old);
+
+        // Without a race the number is 2 (`main`'s, ruling 1).
+        try std.testing.expectEqual(@as(u64, 2), try generation_alloc.nextFreeGeneration(a, io, tmp.dir));
+
+        const publish = PublishStep{ .dir = tmp.dir, .generation = new };
+        const seam = StatSeam.armFor(io, publish.step(), try inodeOf(tmp.dir, io, publication.current_manifest_file));
+        // Every length is tried and recorded before the test fails.
+        const outcome = generation_alloc.nextFreeGeneration(a, seam, tmp.dir);
+        try StatSeam.expectRanAfterManifestStat(old.manifest.len);
+        if (outcome) |generation| {
+            used += (try std.fmt.bufPrint(line[used..], " {d}:{d}", .{ delta, generation })).len;
+            // Generations 1 and 2 are on disk; the next is 3, whichever
+            // `MANIFEST` the read saw.
+            if (generation != 3) failed = true;
+        } else |err| {
+            used += (try std.fmt.bufPrint(line[used..], " {d}:{s}", .{ delta, @errorName(err) })).len;
+            failed = true;
+        }
+    }
+    std.debug.print("S6-T17 MANIFEST replaced between stat and read (new length - stat length: next generation or error):{s}\n", .{line[0..used]});
+    try std.testing.expect(!failed);
+}
+
+/// The step of the folder tests: another writer's `--update` publish of the
+/// folder with three more files.
+const RebuildStep = struct {
+    a: std.mem.Allocator,
+    root: std.Io.Dir,
+    out: std.Io.Dir,
+    expected: u64,
+
+    fn run(context: *const anyopaque, step_io: std.Io) anyerror!void {
+        const self: *const RebuildStep = @ptrCast(@alignCast(context));
+        inline for (.{ "b.md", "c.md", "d.md" }) |name| {
+            try self.root.writeFile(step_io, .{ .sub_path = name, .data = "beta evidence about publication and more notes\n" });
+        }
+        const report = try indexer.indexFolderIncremental(self.a, step_io, self.root, self.out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+        if (report.generation != self.expected) return error.TestUnexpectedResult;
+    }
+
+    fn step(self: *const RebuildStep) StatSeam.Step {
+        return .{ .context = self, .run = run };
+    }
+};
+
+/// A folder `notes` with one file, indexed as generation 9 into `out`.
+const NotesFolder = struct {
+    root: std.Io.Dir,
+    out: std.Io.Dir,
+
+    fn init(a: std.mem.Allocator, io: std.Io, tmp: std.Io.Dir) !NotesFolder {
+        try tmp.createDir(io, "notes", .default_dir);
+        const root = try tmp.openDir(io, "notes", .{ .iterate = true });
+        try tmp.createDir(io, "out", .default_dir);
+        const out = try tmp.openDir(io, "out", .{ .iterate = true });
+        try root.writeFile(io, .{ .sub_path = "a.md", .data = "alpha evidence about recovery\n" });
+        const report = try indexer.indexFolder(a, io, root, out, .v2, 9, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+        try std.testing.expectEqual(@as(u64, 9), report.generation);
+        return .{ .root = root, .out = out };
+    }
+
+    fn deinit(self: *NotesFolder, io: std.Io) void {
+        self.out.close(io);
+        self.root.close(io);
+    }
+};
+
+test "S6-T17: a full rebuild whose MANIFEST grows across another writer's publish goes on to publish the next generation" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var folder = try NotesFolder.init(a, io, tmp.dir);
+    defer folder.deinit(io);
+    const old_len = (try folder.out.statFile(io, publication.current_manifest_file, .{})).size;
+
+    // As `searchd index` without `--update` (`cli.zig`) and `ss_index_folder`
+    // without `update` (`abi.zig`): the number first, before the lock, then
+    // the rebuild with it. The publish of generation 10 runs between the
+    // `stat` of `MANIFEST` and its read.
+    const folder_step = RebuildStep{ .a = a, .root = folder.root, .out = folder.out, .expected = 10 };
+    const seam = StatSeam.armFor(io, folder_step.step(), try inodeOf(folder.out, io, publication.current_manifest_file));
+    const generation = generation_alloc.nextFreeGeneration(a, seam, folder.out) catch |err| {
+        std.debug.print("nextFreeGeneration (MANIFEST {d} bytes at the stat, {d} after the publish): {s}\n", .{ old_len, (try folder.out.statFile(io, publication.current_manifest_file, .{})).size, @errorName(err) });
+        return err;
+    };
+    try StatSeam.expectRanAfterManifestStat(@intCast(old_len));
+    const new_len = (try folder.out.statFile(io, publication.current_manifest_file, .{})).size;
+    try std.testing.expect(new_len > old_len);
+    try std.testing.expectEqual(@as(u64, 11), generation);
+
+    const report = try indexer.indexFolder(a, io, folder.root, folder.out, .v2, generation, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    try std.testing.expectEqual(@as(u64, 11), report.generation);
+    const opened = try snapshot_open.openScoped(a, io, folder.out);
+    defer snapshot_open.close(opened.engine, opened.folder);
+    try std.testing.expectEqual(@as(u64, 11), opened.engine.generation);
+    try std.testing.expectEqual(@as(usize, 4), opened.engine.documents.len);
+    std.debug.print("S6-T17 folder MANIFEST {d} -> {d} bytes between stat and read: next generation {d}, published\n", .{ old_len, new_len, generation });
+}
+
+test "S6-T17: INDEX-STATE.json replaced between its stat and its read leaves the next generation above every generation on disk" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+
+    // The trace itself: `recordedGeneration` through the seam, the pointer
+    // replaced by generation 10's (two bytes longer) after its `stat`.
+    const recorded: ?u64 = blk: {
+        var tmp = std.testing.tmpDir(.{ .iterate = true });
+        defer tmp.cleanup();
+        var folder = try NotesFolder.init(a, io, tmp.dir);
+        defer folder.deinit(io);
+        const old_len = (try folder.out.statFile(io, incremental_state.state_file, .{})).size;
+        const folder_step = RebuildStep{ .a = a, .root = folder.root, .out = folder.out, .expected = 10 };
+        const seam = StatSeam.armFor(io, folder_step.step(), try inodeOf(folder.out, io, incremental_state.state_file));
+        const value = incremental_state.recordedGeneration(a, seam, folder.out);
+        try StatSeam.expectRanAfterManifestStat(@intCast(old_len));
+        const new_len = (try folder.out.statFile(io, incremental_state.state_file, .{})).size;
+        try std.testing.expect(new_len > old_len);
+        // Unrestricted: whatever it returns, the number chosen below must
+        // not depend on it.
+        break :blk value;
+    };
+
+    // The number: `nextFreeGeneration` through the seam, the same publish
+    // between the `stat` of `INDEX-STATE.json` and its read.
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var folder = try NotesFolder.init(a, io, tmp.dir);
+    defer folder.deinit(io);
+    const old_len = (try folder.out.statFile(io, incremental_state.state_file, .{})).size;
+    const folder_step = RebuildStep{ .a = a, .root = folder.root, .out = folder.out, .expected = 10 };
+    const seam = StatSeam.armFor(io, folder_step.step(), try inodeOf(folder.out, io, incremental_state.state_file));
+    const generation = try generation_alloc.nextFreeGeneration(a, seam, folder.out);
+    try StatSeam.expectRanAfterManifestStat(@intCast(old_len));
+    // Generations 9 and 10 are on disk: the publish that wrote the new
+    // pointer linked generation 10's sections and replaced `MANIFEST`
+    // first, and the directory is listed after the pointer's read.
+    try std.testing.expectEqual(@as(u64, 11), generation);
+    if (recorded) |number| {
+        std.debug.print("S6-T17 INDEX-STATE.json {d} B replaced between stat and read: recordedGeneration {d}, next generation {d}\n", .{ old_len, number, generation });
+    } else {
+        std.debug.print("S6-T17 INDEX-STATE.json {d} B replaced between stat and read: recordedGeneration null, next generation {d}\n", .{ old_len, generation });
     }
 }

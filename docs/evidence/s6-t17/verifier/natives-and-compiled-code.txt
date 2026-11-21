@@ -1,0 +1,73 @@
+# S6-T17 verifier: natives rebuilt with tool/build_native.sh from a fresh git archive of 83add79, own caches
+# (ZIG_LOCAL_CACHE_DIR, ZIG_GLOBAL_CACHE_DIR), Zig 0.16.0, NDK 28.2.13676358.
+Build Summary: 28/28 steps succeeded
+
+## cmp against the committed files (head) and main's sizes (git cat-file -s main:...)
+native/macos-arm64/libsearch_simpli.dylib: identical; head 1006328 B; main 1006456 B
+native/android-arm64/libsearch_simpli.so: identical; head 966704 B; main 966800 B
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: identical; head 966704 B; main 966800 B
+native/ios-arm64/search_simpli.framework/search_simpli: identical; head 971304 B; main 971424 B
+native/ios-arm64/search_simpli.framework/Info.plist: identical; head 749 B; main 749 B
+native/SOURCE-SHA256: identical; head 65 B; main 65 B
+SOURCE-SHA256 head: 1b4604ee0ca89342b402c8bdbc313141e2dd88db9d295aeb84b3ab86aa3ac6b9
+SOURCE-SHA256 main: b050953684b69ade40e2c60a58613f5dc3731f84500837c6ecd812d2ffd2d67d
+
+## searchd ReleaseSmall (zig build -Doptimize=ReleaseSmall --prefix, fresh archives, own caches)
+main 12b839b: 1151208 B; head 83add79: 1151048 B
+
+## main's libraries rebuilt (zig build lib -Doptimize=ReleaseSmall, fresh archive of main, own caches)
+main dylib rebuilt = main's committed dylib (cmp identical)
+
+## Compiled functions whose size differs, main -> head, from the static archives' local symbols
+## (libsearch_simpli.a; size = distance to the next text symbol in the object; anon/struct numbers and
+## _OUTLINED_FUNCTION_N numbers normalized; outlined fragments summed)
+### aarch64-macos
+text symbols main/head: 3590 3587
+_OUTLINED_FUNCTION_N count 2344 2341 total 34284 34252
+l_Io.File.Reader.getSize [164] [168]
+l_Io.Threaded.fileMemoryMapCreate [404] [416]
+l_apply.applyParsed [32472] [32480]
+l_filename_field.queryDecodedTraced [12516] [12520]
+l_generation_alloc.currentGeneration [240] [152]
+l_incremental_state.readStateFile [224] [228]
+l_lifecycle.publishLeasedKeepingWithExtras [9112] [9116]
+l_snapshot_open.readManifest [356] [368]
+### aarch64-ios
+text symbols main/head: 4770 4767
+_OUTLINED_FUNCTION_N count 2598 2595 total 38296 38276
+l_Io.File.Reader.getSize [164] [168]
+l_Io.Threaded.fileMemoryMapCreate [404] [416]
+l_apply.applyParsed [32424] [32432]
+l_array_hash_map.Custom([]const u8,json.dynamic.Value,array_hash_map.StringContext,true).getOrPutContext [2300] [2280]
+l_generation_alloc.currentGeneration [240] [156]
+l_incremental_state.readStateFile [224] [228]
+l_lifecycle.publishLeasedKeepingWithExtras [9140] [9144]
+l_segment.inspectCatalog [228] [232]
+l_snapshot_open.readManifest [356] [368]
+l_source.parseHeader [500] [504]
+### aarch64-linux-android: the archive's text symbols are the exports and numbered OUTLINED_FUNCTION_N only;
+### of the exports only ss_index_folder differs:
+ss_index_folder [221592] [221208]
+
+## l_snapshot_open.readManifest, macOS arm64 object, main vs head (objdump -d, addresses and symbol names replaced)
+2c2
+---
+17a18,19
+>                	adrp	x2, ADDR <SYM>
+>                	add	x2, x2, #ADDR
+19d20
+<                	bl	ADDR <SYM>
+22c23,24
+<                	bl	ADDR <SYM>
+---
+>                	mov	w3, #ADDR                ; =8
+>                	blr	x9
+27c29,30
+<                	bl	ADDR <SYM>
+---
+>                	ldp	x0, x8, [x20]
+>                	ldr	x9, [x8, #ADDR]
+
+## Branch targets (ARM64_RELOC_BRANCH26) in l_snapshot_open.readManifest, in order (objdump -dr)
+main: OUTLINED OUTLINED OUTLINED OUTLINED OUTLINED l_mem.Allocator.alignedAlloc OUTLINED l_Io.Reader.readSliceShort OUTLINED OUTLINED OUTLINED l_mem.Allocator.free OUTLINED
+head: OUTLINED OUTLINED l_mem.Allocator.alignedAlloc OUTLINED l_Io.Reader.readSliceShort OUTLINED OUTLINED OUTLINED l_mem.Allocator.free OUTLINED
