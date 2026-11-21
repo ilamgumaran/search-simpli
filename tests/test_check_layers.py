@@ -655,7 +655,7 @@ class TestReachTests(unittest.TestCase):
         self.assertEqual(problems, [
             "zig/src/tests/plant_a_test.zig:3: holds 1 test that no step of `zig build test` runs, though a step "
             "reaches the file: each sits inside a declaration nothing compiled names (a struct no test or comptime "
-            "block uses), or under a guard that is false in a test build; lines 3"])
+            "block uses); lines 3"])
         self.assertEqual(report["tests"]["tests/plant_a_test.zig"], 1)
 
     def test_verdict_c_a_function_named_and_not_called_fails(self):
@@ -693,17 +693,69 @@ class TestReachTests(unittest.TestCase):
                             '    pub const n: u32 = 3;\n};\ntest "r" {\n    _ = Fixture.n;\n}\n')
         self.assertTrue(problems and problems[0].startswith(self.UNREACHED), problems)
 
-    def test_verdict_b_a_generic_type_a_test_instantiates_counts(self):
-        problems = self.mid('fn Gen(comptime T: type) type {\n    return struct {\n        pub const t = T;\n'
-                            '        test "generic" {}\n    };\n}\ntest "b" {\n    _ = Gen(u8);\n}\n')
-        self.assertEqual(problems, [self.UNREACHED + " (name it in zig/src/tests/root.zig's test block, or from a "
-                                                     "test that zig/src/tests/root.zig reaches)"])
-        report = {}
-        self.tree.write("tests/plant_target_test.zig", 'test "t" {}\n')
-        self.tree.write("tests/plant_mid_test.zig", self.tree.read("tests/plant_mid_test.zig")
-                        + 'const target = @import("plant_target_test.zig");\ntest "t" {\n    _ = target;\n}\n')
-        self.assertEqual(self.tree.check(report=report), [])
-        self.assertEqual(report["tests"]["tests/plant_mid_test.zig"], 3)
+    BODY = ("holds 1 test written inside a body (a function's, such as a generic type's returned struct, a test "
+            "block's or a comptime block's): Zig runs such a test as often as the body is analysed, once per "
+            "instantiation, once or never, which the checker cannot count; write it at the top level of the file, "
+            "or of a struct declared at the top level; lines ")
+
+    def in_root(self, name, text):
+        """tests/<name>.zig holding text, named by tests/root.zig; the problems found."""
+        self.tree.write(f"tests/{name}.zig", text)
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + f'const p = @import("{name}.zig");\n'
+                        'test "load" {\n    _ = p;\n    _ = e;\n}\n')
+        return self.tree.check()
+
+    def test_verdict_b_a_test_in_a_generic_type_fails(self):
+        # The first Verdict's B: Zig runs it once per instantiation (here once). The checker
+        # cannot count that, so it fails the test, on the strict side.
+        problems = self.in_root("plant_b_test", 'fn Gen(comptime T: type) type {\n    return struct {\n'
+                                '        pub const t = T;\n        test "generic" {}\n    };\n}\n'
+                                'test "b" {\n    _ = Gen(u8);\n}\n')
+        self.assertEqual(problems, ["zig/src/tests/plant_b_test.zig:4: " + self.BODY + "4"])
+
+    def test_second_verdict_b2_two_generics_that_cancel_fail(self):
+        # Ring(T) instantiated twice runs its test twice; Queue named, never instantiated,
+        # runs its test never: the totals cancel, so only this rule sees it.
+        problems = self.in_root("plant_b2_test", "\n".join([
+            'const std = @import("std");',
+            "fn Ring(comptime T: type) type {",
+            "    return struct {",
+            "        pub const Item = T;",
+            '        test "ring" {}',
+            "    };",
+            "}",
+            "fn Queue(comptime T: type) type {",
+            "    return struct {",
+            "        pub const Item = T;",
+            '        test "queue fails" {}',
+            "    };",
+            "}",
+            'test "rings" {',
+            "    _ = Ring(u8).Item;",
+            "    _ = Ring(u32).Item;",
+            "}",
+            'test "queue" {',
+            "    _ = Queue;",
+            "}",
+            ""]))
+        self.assertEqual(problems, ["zig/src/tests/plant_b2_test.zig:5: " + self.BODY.replace("holds 1 test", "holds 2 tests")
+                                    + "5, 11"])
+
+    def test_a_test_in_a_local_struct_of_a_test_block_fails(self):
+        # Zig 0.16 runs it when the test block runs (scratch probe); the checker does not count it.
+        problems = self.in_root("plant_local_test", 'test "outer" {\n    const Local = struct {\n'
+                                '        test "local" {}\n    };\n    _ = Local;\n}\n')
+        self.assertEqual(problems, ["zig/src/tests/plant_local_test.zig:3: " + self.BODY + "3"])
+
+    def test_a_test_in_a_function_s_local_struct_fails(self):
+        problems = self.in_root("plant_fnlocal_test", "fn helper() void {\n    const S = struct {\n"
+                                '        test "in fn" {}\n    };\n    _ = S;\n}\ntest "calls" {\n    helper();\n}\n')
+        self.assertEqual(problems, ["zig/src/tests/plant_fnlocal_test.zig:3: " + self.BODY + "3"])
+
+    def test_a_test_in_a_top_level_struct_a_test_names_still_counts(self):
+        problems = self.in_root("plant_top_test", 'const S = struct {\n    test "in S" {}\n};\n'
+                                'test "names S" {\n    _ = S;\n}\n')
+        self.assertEqual(problems, [])
 
     def test_verdict_g_an_import_only_a_pub_fn_uses_fails(self):
         problems = self.mid('pub const target = @import("plant_target_test.zig");\npub fn helper() void {\n'
@@ -715,9 +767,7 @@ class TestReachTests(unittest.TestCase):
                         + 'test "engine" {}\ncomptime {\n    if (false) {\n        _ = struct {\n'
                           '            test "dead" {}\n        };\n    }\n}\n')
         self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + 'test "load" {\n    _ = e;\n}\n')
-        problems = self.tree.check()
-        self.assertEqual(len(problems), 1, problems)
-        self.assertIn("lines 7", problems[0])
+        self.assertEqual(self.tree.check(), ["zig/src/tests/engine_test.zig:7: " + self.BODY + "7"])
 
     def test_a_benchmark_or_a_tool_holding_a_test_fails(self):
         self.tree.write("tests/query_bench.zig", CLEAN["tests/query_bench.zig"] + 'test "bench" {}\n')

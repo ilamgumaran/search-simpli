@@ -179,6 +179,32 @@ class RepositoryTests(unittest.TestCase):
             _, problems = check_test_counts.compare(expected, ran)
             self.assertTrue(any("'core'" in p and "the run has no such step" in p for p in problems), problems)
 
+    def test_a_static_problem_fails_the_script_unless_counts_only(self):
+        # The second Verdict's finding 2: equal totals while the static checker sees a loss
+        # (here a test file named nowhere, so the listing drops it too) must not pass.
+        import shutil
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp)
+            shutil.copytree(REPO / "zig", copy / "zig", ignore=shutil.ignore_patterns(".zig-cache", "zig-out"))
+            (copy / "docs").mkdir()
+            shutil.copy(REPO / "docs" / "layers.md", copy / "docs" / "layers.md")
+            (copy / "zig" / "src" / "tests" / "lost_test.zig").write_text('test "lost" {}\n', encoding="utf-8")
+            expected, static = check_test_counts.listing(copy)
+            self.assertTrue(any("lost_test.zig" in p for p in static), static)
+            log = copy / "run.txt"
+            log.write_text("\n".join(["Build Summary: ok", "test success"] + [
+                f"+- run test {label} {count} pass ({count} total)".replace("test  ", "test ")
+                for label, (_, count) in expected.items()]) + "\n", encoding="utf-8")
+            outputs = {}
+            for extra, want in (([], 1), (["--counts-only"], 0)):
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    code = check_test_counts.main(["--root", str(copy), "--log", str(log), *extra])
+                self.assertEqual(code, want, out.getvalue())
+                outputs[want] = out.getvalue()
+            self.assertIn("check_test_counts: static: zig/src/tests/lost_test.zig:1:", outputs[1])
+            self.assertIn("not judged here (--counts-only)", outputs[0])
+
     def test_main_against_a_log_of_the_listing_passes_and_one_test_more_fails(self):
         expected, _ = check_test_counts.listing(REPO)
         lines = ["Build Summary: ok", "test success"]

@@ -12,10 +12,12 @@ fails when:
 - the output holds no Build Summary, or a step's line carries no total (a step that
   did not compile, for example).
 
-`check_layers.py` is the fast first line, with no toolchain; its reading of Zig is
-not exact (docs/layers.md, "What it cannot see"). This comparison is the authority:
-a test the reading counts and Zig does not run, or the other way round, changes a
-step's total.
+The two guards catch different losses, and both must pass. `check_layers.py` reads
+the source with no toolchain and names the file; its reading of Zig is not exact
+(docs/layers.md, "What it cannot see"). This comparison sees what the build ran, but
+only as a step's total: a test the reading counts and Zig does not run, or the other
+way round, changes it. So this script also fails when the static checker reports a
+problem, and one command (`--run`) runs both; `--counts-only` judges the totals alone.
 
 Usage (from anywhere; no dependencies but Python and, for --run, Zig 0.16 on PATH):
 
@@ -24,10 +26,10 @@ Usage (from anywhere; no dependencies but Python and, for --run, Zig 0.16 on PAT
     python3 scripts/check_test_counts.py --log FILE
         # compares a saved run's output (stdout and stderr together)
 
-It exits 1 when a comparison fails, and with --run also when the build fails (after
-printing the comparison). The listing's steps are BUILD_ROOTS' (scripts/check_layers.py),
-not what zig/build.zig holds now, so this check does not lean on the checker's reading of
-the build; the checker's own problems are noted, not counted, since it is its own step.
+It exits 1 when a comparison fails, when the static checker reports a problem (unless
+--counts-only), and with --run also when the build fails, each after printing the
+comparison. The listing's steps are BUILD_ROOTS' (scripts/check_layers.py), not what
+zig/build.zig holds now, so the totals do not lean on the checker's reading of the build.
 The steps are matched by the name the Build Summary prints after `run test`
 (check_layers.step_label).
 """
@@ -131,6 +133,8 @@ def main(argv=None) -> int:
     how = parser.add_mutually_exclusive_group(required=True)
     how.add_argument("--log", type=Path, help="a saved `zig build test --summary all` output")
     how.add_argument("--run", action="store_true", help="run `zig build test --summary all` in zig/ first")
+    parser.add_argument("--counts-only", action="store_true",
+                        help="judge the totals alone: do not fail on the static checker's problems")
     parser.add_argument("zig_args", nargs="*", help="with --run, more arguments for zig build (after --)")
     args = parser.parse_args(argv)
     root = args.root.resolve()
@@ -143,6 +147,7 @@ def main(argv=None) -> int:
         captured = []
         for line in proc.stdout:
             sys.stdout.write(line)
+            sys.stdout.flush()
             captured.append(line)
         build_code = proc.wait()
         text = "".join(captured)
@@ -157,18 +162,23 @@ def main(argv=None) -> int:
     print("|---|---|---:|---|---|")
     for step, shown, count, got, verdict in rows:
         print(f"| {step} | `{shown}` | {count} | {got} | {verdict} |")
-    if static:
-        # Not this check's verdict: scripts/check_layers.py is its own step.
-        print(f"check_test_counts: note: scripts/check_layers.py reports {len(static)} problem(s) of its own "
-              "(run it to see them); they do not change this comparison")
     for problem in problems:
         print(f"check_test_counts: {problem}")
+    if static and args.counts_only:
+        print(f"check_test_counts: note: scripts/check_layers.py reports {len(static)} problem(s), not judged "
+              "here (--counts-only)")
+    elif static:
+        for problem in static:
+            print(f"check_test_counts: static: {problem}")
+        print(f"check_test_counts: scripts/check_layers.py reports {len(static)} problem(s) (above): "
+              "a guard has failed, whatever the totals")
     if build_code:
         print(f"check_test_counts: zig build test exited {build_code}")
-    if problems or build_code:
+    if problems or build_code or (static and not args.counts_only):
         return 1
     total = sum(count for _, count in expected.values())
-    print(f"check_test_counts: OK ({len(expected)} steps, {total} tests: every step ran the tests the listing has)")
+    print(f"check_test_counts: OK ({len(expected)} steps, {total} tests: every step ran the tests the listing has"
+          f"{'' if args.counts_only else ', and the static checker passes'})")
     return 0
 
 

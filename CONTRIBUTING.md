@@ -60,8 +60,10 @@ python3 scripts/j2_gate.py .search/j2.json
 **Zig engine and C ABI** (the `native-linux` job):
 
 ```sh
+python3 scripts/check_layers.py              # the static guard: every test file reached
 python3 scripts/check_test_counts.py --run   # zig build test --summary all: none failed,
-                                             # and each step's total equals the listing
+                                             # each step's total equals the listing, and
+                                             # the static checker passes
 cd zig
 zig build test-abi --summary all    # abi_test: every check passed
 cd ..
@@ -74,6 +76,7 @@ The Python suite builds a Debug `searchd` itself when it finds Zig on `PATH`.
 `ReleaseSmall`, so the same suites run there too:
 
 ```sh
+python3 scripts/check_layers.py
 python3 scripts/check_test_counts.py --run -- -Doptimize=ReleaseSmall
 cd zig
 zig build test-abi -Doptimize=ReleaseSmall --summary all
@@ -169,10 +172,25 @@ root, as above; in `zig/src/tests/`, in `tests/root.zig` (a `pub const` and a
 `@import("core").name`, is not enough: a Zig test build runs the tests of its root
 module's files only. `python3 scripts/check_layers.py` fails, naming the file, when a
 file that holds a `test` is reached by no step, and `--list-tests` shows which step runs
-each file. Its reading of Zig is not exact (`docs/layers.md`, "What it cannot see"), so
-the authority is `python3 scripts/check_test_counts.py --run`, which runs
-`zig build test --summary all` and fails when a step's total differs from that listing;
-CI runs it in both Zig jobs.
+each file. `python3 scripts/check_test_counts.py --run` runs `zig build test --summary
+all` and fails when a step's total differs from that listing, and also when the static
+checker reports a problem. The two guards catch different losses, and both must pass.
+The checker reads Zig only approximately (`docs/layers.md`, "What it cannot see"); the
+comparison sees only totals. CI runs both, the checker in `checks` and the comparison
+in both Zig jobs.
+
+If the comparison fails, its table shows, for a step, `Listed` (the tests the checker
+finds) and `Ran` (Zig's total, skips included). The difference is the number of tests
+in question:
+- If Ran is lower, that many tests are named only through code that is never compiled:
+  an alias in a struct no test reaches into, a `comptime` switch that is false, or a
+  platform or mode guard. Name the file plainly in its root, or remove the dead code.
+- If Ran is higher, Zig runs tests the checker does not see (`refAllDecls`); name the
+  file in its root.
+- If a step is missing, extra or has no total, `zig/build.zig` changed the steps, or a
+  step failed to compile (the error is printed above the summary).
+
+`docs/layers.md`, "When the comparison fails", has the details.
 
 ## Native libraries and the source digest
 

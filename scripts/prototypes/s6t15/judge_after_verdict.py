@@ -32,7 +32,7 @@ def main():
         ck = subprocess.run([sys.executable, "-I", str(WT / "scripts/check_layers.py"), "--root", str(src)],
                             capture_output=True, text=True)
         cc = subprocess.run([sys.executable, "-I", str(WT / "scripts/check_test_counts.py"), "--root", str(src),
-                             "--log", str(log)], capture_output=True, text=True)
+                             "--log", str(log), "--counts-only"], capture_output=True, text=True)
         static = [line for line in ck.stdout.splitlines()]
         counts = [line for line in cc.stdout.splitlines() if line.startswith("check_test_counts:")
                   and "note:" not in line]

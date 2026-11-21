@@ -37,12 +37,19 @@ in CI (the `checks` job, no Zig needed) and through `python3 -m unittest`
 (`tests/test_check_layers.py`). `scripts/check_test_counts.py` runs `zig build test
 --summary all` and compares each step's total with the checker's listing; it runs in
 CI where the Zig tests run (the `native-linux` job in Debug and `native-linux-release`
-in ReleaseSmall) and is tested by `tests/test_check_test_counts.py`. Run both yourself
-with:
+in ReleaseSmall) and is tested by `tests/test_check_test_counts.py`.
+
+The two are separate guards that catch different losses of a test, and both must pass.
+The static checker reads the source without a toolchain and names the file, but reads
+Zig only approximately (below). The comparison sees what the build ran, but only as a
+step's total. CI runs both, the static checker in `checks` and the comparison in the
+two native jobs. `check_test_counts.py` also fails when the static checker reports a
+problem, so its one command runs both (`--counts-only` judges the totals alone). Run
+them yourself with:
 
 ```sh
 python3 scripts/check_layers.py
-python3 scripts/check_test_counts.py --run      # needs Zig 0.16 on PATH
+python3 scripts/check_test_counts.py --run      # needs Zig 0.16 on PATH; also runs the checker
 ```
 
 ## What each layer may import
@@ -232,9 +239,32 @@ reached test compiles. A file reached only through a module (`@import("core").na
 does not count, since a test build runs the tests of its root module's files only.
 `python3 scripts/check_layers.py` fails, naming the file, when a file that holds a
 `test` is reached by no step, and `--list-tests` prints which step runs each file's
-tests and how many there are. Whether those are the tests Zig runs is settled by
-`python3 scripts/check_test_counts.py --run`: it fails when a step's total in
-`zig build test --summary all` differs from the listing, or a step is missing or extra.
+tests and how many there are. `python3 scripts/check_test_counts.py --run` then checks
+them against the build: it fails when a step's total in `zig build test --summary all`
+differs from the listing, or a step is missing or extra.
+
+**When the comparison fails.** Its table gives, for each step, the number the checker
+lists (`Listed`: the tests the static reading finds the step's root reaching) and the
+number Zig ran (`Ran`: the step's total in the Build Summary, passed, skipped and
+failed together). The difference is the number of tests in question, in that step:
+
+- *Ran lower than Listed*: that many tests the checker counts do not run. Usual causes,
+  in the files of that folder (or `tests/`) that the change touched: a test file named
+  only through something that is never compiled (a `const` alias inside a struct no
+  test reaches into, a `comptime` switch on a `const` that is false, a guard on
+  `builtin.os.tag` or `builtin.mode`). The fix: name the file plainly, a `pub const`
+  and a `_ = name;` line in its root, or remove the dead code.
+- *Ran higher than Listed*: Zig runs tests the checker does not see, such as tests
+  pulled in by `std.testing.refAllDecls`. The static checker fails these too, naming
+  the file; name the file in its root.
+- *A step missing, extra, or with no total*: `zig/build.zig` changed which tests run.
+  The step may have been dropped, renamed or skipped (a `continue` in the loop over
+  `test_roots`), or it failed to compile; the error is printed above the Build
+  Summary. A step with no tests at all also shows no total. Restore the step, or change
+  `BUILD_ROOTS` (and `STEP_LABELS`) in `scripts/check_layers.py` with it.
+
+To find the file, compare `python3 scripts/check_layers.py --list-tests` with the
+files your change touched under `zig/src/`.
 
 ## What the check reads, and what it does not
 
@@ -273,15 +303,22 @@ called), a name under a guard that is false in a test build (`if (false)`,
 or a label), and an `@import` inside a nested `struct`, `enum`, `union` or `opaque`.
 Imports through a module are not followed for tests. A test counts when it is a
 top-level test of a reached file, or sits inside a declaration that is followed (a
-nested struct a test names, a generic function a test calls) and not under a false
-guard; a reached file with a test that does not count fails.
+nested struct a test names) and not under a false
+guard; a reached file with a test that does not count fails. So does a test written
+inside a body: a function's (a generic type's returned struct), a test block's or a
+`comptime` block's (a local struct). Zig 0.16 runs such a test as often as the body
+is analysed, once per instantiation of a generic, once, or never, which neither the
+checker nor a total can follow. Write it at the top level of the file, or of a struct
+declared at the top level.
 
-**What it cannot see, and which way it errs.** Its reading of Zig is not exact, and
-`scripts/check_test_counts.py`, which compares each step's total with a real run, is
-the authority. Its listing takes the steps from the roots table, not from
-`zig/build.zig`, so a step the build loses still shows as missing from the run; it
-matches them by the name the Build Summary prints after `run test` (the step's own
-name, and none for `fastmem`). The checker's limits:
+**What it cannot see, and which way it errs.** Its reading of Zig is not exact. The
+comparison with a real run (`scripts/check_test_counts.py`) catches what the reading
+lets through when it changes a step's total. The reading catches, by file, losses the
+totals cannot show: a loss the checker also leaves out of its listing, or two errors
+that cancel in one step. The comparison's listing takes the steps from the roots table,
+not from `zig/build.zig`, so a step the build loses still shows as missing from the
+run. It matches steps by the name the Build Summary prints after `run test`: the step's
+own name, and none for `fastmem`. The checker's limits:
 
 - *Strict* (it fails a test that does run): an import compiled only through a function
   that a test calls, in the same file or another (`std.testing.refAllDecls` included),
@@ -289,11 +326,15 @@ name, and none for `fastmem`). The checker's limits:
   fix the message names, naming the file in its root, makes both agree.
 - *Lenient* (it passes a test that does not run): a followed declaration is taken
   whole, so a name in it reaches though nothing compiled uses that part (a field's
-  default value, a `const` alias inside a struct no test reaches into); a generic
-  function a test names but never calls; a branch compiled out by a condition other
+  default value, a `const` alias inside a struct no test reaches into), and so does a
+  generic function a test names but never calls (its imports; a test inside it fails,
+  above); a branch compiled out by a condition other
   than the three false guards (`if (builtin.os.tag == .windows)`, an `else` of
-  `is_test`). The count comparison catches each, as a step's total one lower than
-  the listing.
+  `is_test`). The count comparison catches each, as a step's total lower than the
+  listing by the number of tests not run.
+- *The comparison's own safe-direction limit*: a step with no tests at all prints no
+  total in the Build Summary (`+- run test NAME success`), and the comparison fails it
+  as "no total". No step has zero tests today.
 - *Not read at all*: what a named module added with `addImport` or `addOptions`
   contains (a new one must be listed, its contents are not read); `@embedFile` and
   `@cImport`, which bring in bytes or C declarations rather than Zig files; and imports

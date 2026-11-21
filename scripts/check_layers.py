@@ -48,10 +48,11 @@ it follows the `.zig` path imports a test build compiles (test_build_reads),
 never an import through a module. It also fails when a module root leaves out a
 layer file or a test of its folder, as a `pub const` or in its test-build
 `comptime` block, and when the steps zig/build.zig's structure gives
-(build_test_steps) are not the ones BUILD_ROOTS lists. The reading of Zig is not
-exact; scripts/check_test_counts.py, which compares each step's total with a real
-`zig build test --summary all`, is the authority (docs/layers.md, "What it cannot
-see").
+(build_test_steps) are not the ones BUILD_ROOTS lists, and when a reached file
+writes a test inside a body (a generic type's returned struct, a local struct).
+The reading of Zig is not exact. scripts/check_test_counts.py compares each step's
+total with a real `zig build test --summary all`. The two guards catch different
+losses and both must pass (docs/layers.md, "What it cannot see").
 
 Usage (from anywhere; no dependencies):
 
@@ -509,10 +510,11 @@ def _nested_containers(toks, start, end):
 
 def test_build_reads(text: str):
     """What a test build of a file evaluates, read from its tokens: (tests, imports,
-    test lines, unrun lines). tests is the number of test declarations a test build of
-    the file runs, imports lists (line, target, member) for every `@import` it
-    follows, test lines the line of each test it runs, and unrun lines the line of
-    each test declaration it does not run.
+    test lines, unrun lines, body lines). tests is the number of test declarations a
+    test build of the file runs, imports lists (line, target, member) for every
+    `@import` it follows, test lines the line of each test it runs, unrun lines the line
+    of each test declaration it does not run, and body lines the line of each test
+    written inside a body (below), which is neither.
 
     A test build compiles every test of a file it collects and every container-level
     `comptime` block; a container-level declaration only when something compiled
@@ -531,9 +533,14 @@ def test_build_reads(text: str):
       `struct`/`enum`/`union`/`opaque` bodies (a nested container's declarations are
       compiled only when named through it, which is not traced).
 
-    A test counts when it is a top-level test of the file, or sits inside a declaration
-    that the build compiles (a nested container, or a generic function's returned type),
-    and not under a false guard. A followed declaration is taken whole, so a
+    A test counts when it is a top-level test of the file, or sits inside a container
+    declaration that the build compiles (a nested struct a test names), and not under a
+    false guard. A test written inside a body, a function's (a generic type's returned
+    struct), a test block's or a `comptime` block's (a local struct), is not counted
+    either way: Zig runs it as often as that body is analysed, once per instantiation of
+    a generic, once, or never (S6-T15, the second Verdict's finding 1 and a scratch
+    probe), which the checker does not trace; the checker fails such a test (body
+    lines). A followed declaration is taken whole, so a
     declaration named in it counts though only an unused member of it names it: that
     is the reading's lenient side, which the count comparison
     (scripts/check_test_counts.py) catches against a real run."""
@@ -572,14 +579,32 @@ def test_build_reads(text: str):
     top_tests = {start for kind, _, start, _ in items if kind == "test"}
     false_guards = [(a, b) for what, a, b in skipped if what == "guard"]
     skipped = [(a, b) for _, a, b in skipped]
-    run, unrun = [], []
+    # Every body in the file, at any depth: a function's, a test block's, a comptime block's.
+    bodies = []
+    for j, (kind, value, offset) in enumerate(toks):
+        if kind != "word" or text.startswith("@", offset):
+            continue
+        if value == "fn" and j + 1 < len(toks) and toks[j + 1][0] == "word":
+            body = _fn_body(toks, j, len(toks))
+            if body is not None:
+                bodies.append(body)
+        elif value == "comptime" and j + 1 < len(toks) and toks[j + 1][:2] == ("punct", "{"):
+            bodies.append((j + 1, _match(toks, j + 1)))
+        elif value == "test" and j + 1 < len(toks):
+            brace = j + 1 if toks[j + 1][:2] == ("punct", "{") else j + 2
+            if toks[j + 1][0] in ("string", "word") or brace == j + 1:
+                if brace < len(toks) and toks[brace][:2] == ("punct", "{"):
+                    bodies.append((brace, _match(toks, brace)))
+    run, unrun, in_body = [], [], []
     for j, (kind, value, offset) in enumerate(toks):
         if not (kind == "word" and value == "test" and not text.startswith("@", offset) and j + 1 < len(toks)
                 and (toks[j + 1][0] in ("string", "word") or toks[j + 1][:2] == ("punct", "{"))):
             continue
         line = text.count("\n", 0, offset) + 1
-        if j in top_tests or (inside(j, [(s, e) for s, e in live_spans if s not in top_tests])
-                              and not inside(j, false_guards)):
+        if inside(j, bodies):
+            in_body.append(line)
+        elif j in top_tests or (inside(j, [(s, e) for s, e in live_spans if s not in top_tests])
+                                and not inside(j, false_guards)):
             run.append(line)
         else:
             unrun.append(line)
@@ -588,12 +613,12 @@ def test_build_reads(text: str):
     for line, target, problem, member, k in _import_calls(text, toks):
         if problem is None and inside(k, live_spans) and not inside(k, skipped) and not inside(k, containers):
             imports.append((line, target, member))
-    return len(run), imports, run, unrun
+    return len(run), imports, run, unrun, in_body
 
 
 def test_build_imports(text: str):
     """(tests, imports, test lines) of test_build_reads, without the unrun lines."""
-    tests, imports, lines, _ = test_build_reads(text)
+    tests, imports, lines, _, _ = test_build_reads(text)
     return tests, imports, lines
 
 
@@ -922,14 +947,14 @@ def test_reach(src: Path, present, build_roots, exports, layer_modules):
     not to the step's root module, so its tests do not run there; it is recorded
     in `via_module` for the message only.
 
-    Returns (tests, lines, reached, via_module, unrun): the count and the lines of
-    the tests a test build of every file runs, file -> [(step, the file that reaches
-    it)], file -> [(importer, module)], and the lines of every file's test
-    declarations that a test build does not run (test_build_reads)."""
-    tests, lines, live, unrun = {}, {}, {}, {}
+    Returns (tests, lines, reached, via_module, unrun, in_body): the count and the lines
+    of the tests a test build of every file runs, file -> [(step, the file that reaches
+    it)], file -> [(importer, module)], the lines of every file's test declarations that
+    a test build does not run, and of those written inside a body (test_build_reads)."""
+    tests, lines, live, unrun, in_body = {}, {}, {}, {}, {}
     for rel in present:
-        count, imports, at, dead = test_build_reads((src / rel).read_text(encoding="utf-8", errors="replace"))
-        tests[rel], lines[rel], live[rel], unrun[rel] = count, at, imports, dead
+        count, imports, at, dead, body = test_build_reads((src / rel).read_text(encoding="utf-8", errors="replace"))
+        tests[rel], lines[rel], live[rel], unrun[rel], in_body[rel] = count, at, imports, dead, body
     reached, via_module = {}, {}
     for root_rel, (step, _) in sorted(build_roots.items()):
         if step is None or root_rel not in tests:
@@ -949,7 +974,7 @@ def test_reach(src: Path, present, build_roots, exports, layer_modules):
                         via_module.setdefault(dep, []).append((rel, target))
         for rel, parent in seen.items():
             reached.setdefault(rel, []).append((step, parent))
-    return tests, lines, reached, via_module, unrun
+    return tests, lines, reached, via_module, unrun, in_body
 
 
 def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patterns=None, doc=True, module_roots=None,
@@ -1195,7 +1220,8 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
     # The listing is what BUILD_ROOTS says should run, whatever zig/build.zig now does:
     # the build is checked against it above, and a real run by scripts/check_test_counts.py.
     live_roots = {rel: v for rel, v in build_roots.items() if rel in present_set}
-    tests, test_lines, reached, via_module, unrun = test_reach(src, present, live_roots, exports, layer_modules)
+    tests, test_lines, reached, via_module, unrun, in_body = test_reach(src, present, live_roots, exports,
+                                                                        layer_modules)
     roots_of = {FOLDERS[layer]: rel for rel, (layer, _, _) in module_roots.items()}
     tests_root = next((rel for rel, (step, _) in build_roots.items() if step == TESTS), "tests/root.zig")
     for rel in present:
@@ -1203,9 +1229,17 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
             count = len(unrun[rel])
             problems.append(f"{SRC}/{rel}:{unrun[rel][0]}: holds {count} test{'s' if count != 1 else ''} that no "
                             "step of `zig build test` runs, though a step reaches the file: each sits inside a "
-                            "declaration nothing compiled names (a struct no test or comptime block uses), or under "
-                            "a guard that is false in a test build; lines " + ", ".join(map(str, unrun[rel])))
-        if tests[rel] + len(unrun[rel]) == 0 or rel in reached:
+                            "declaration nothing compiled names (a struct no test or comptime block uses); lines "
+                            + ", ".join(map(str, unrun[rel])))
+        if rel in reached and in_body[rel]:
+            count = len(in_body[rel])
+            problems.append(f"{SRC}/{rel}:{in_body[rel][0]}: holds {count} test{'s' if count != 1 else ''} written "
+                            "inside a body (a function's, such as a generic type's returned struct, a test block's "
+                            "or a comptime block's): Zig runs such a test as often as the body is analysed, once per "
+                            "instantiation, once or never, which the checker cannot count; write it at the top level "
+                            "of the file, or of a struct declared at the top level; lines "
+                            + ", ".join(map(str, in_body[rel])))
+        if tests[rel] + len(unrun[rel]) + len(in_body[rel]) == 0 or rel in reached:
             continue
         folder = folder_of(rel)
         if folder in roots_of:
@@ -1217,8 +1251,8 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
             importer, module = via_module[rel][0]
             why = (f"; {SRC}/{importer} reaches it only through the module {module}, and a test build runs "
                    "the tests of its root module's files only")
-        count = tests[rel] + len(unrun[rel])
-        first = min(test_lines[rel] + unrun[rel])
+        count = tests[rel] + len(unrun[rel]) + len(in_body[rel])
+        first = min(test_lines[rel] + unrun[rel] + in_body[rel])
         problems.append(f"{SRC}/{rel}:{first}: holds {count} test{'s' if count != 1 else ''} "
                         f"that no step of `zig build test` runs: no test step's root reaches it ({how}){why}")
 
