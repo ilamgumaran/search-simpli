@@ -95,10 +95,14 @@ pub const api = struct {
         /// A one-shot lexical query (S6-T18): the best `top_k` chunks for the
         /// query text, ranked with the title field, as `searchd query` answers
         /// under `content`. An engine from a scoped open ranks with the title
-        /// field its folder holds; any other engine's field is derived for this
-        /// query. Everything is allocated from `allocator` (an arena: a buffer of
-        /// one result per chunk and the derived field are not freed separately);
-        /// the results point into that buffer and the engine's documents.
+        /// field its folder holds (`scope.Folder.titleField`): derived and kept
+        /// by the folder as for any other query, on its first use (this call's,
+        /// if no query came before), in the scoped open's memory, not from
+        /// `allocator`. Any other engine's field is derived for this query from
+        /// `allocator`. What the call allocates comes from `allocator` (an arena:
+        /// a buffer of one result per chunk and a derived field are not freed
+        /// separately); the results point into that buffer and the engine's
+        /// documents.
         /// Errors: `OutOfMemory`, `InvalidQueryText`, `InvalidUtf8`,
         /// `IndexTooLarge`, `WorkspaceTooSmall`, `VectorDimensionMismatch`,
         /// `LexicalScoreCountMismatch` (as `Engine.queryTokenized`).

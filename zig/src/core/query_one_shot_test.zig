@@ -177,7 +177,7 @@ test "one-shot query: invalid UTF-8 is refused, and out of memory is returned" {
     try std.testing.expect(fail_index > 0);
 }
 
-test "one-shot query: a scoped open's folder field is used, derived once, never by the call" {
+test "one-shot query: a scoped open ranks with its folder's field, derived once by the folder, nothing from the caller's allocator" {
     const io = std.testing.io;
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
