@@ -1,0 +1,37 @@
+# S6-T20 suites on the head, 21 Nov 2026 (the tree of 3a40535; Zig 0.16.0; measured)
+
+## zig build test-abi
+Debug: abi_test: 24/24 checks passed; Build Summary: 8/8 steps succeeded
+ReleaseSmall: abi_test: 24/24 checks passed; Build Summary: 8/8 steps succeeded
+
+## scripts/check_layers.py
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 599 tests, each run by a step of `zig build test`; the public core API `api`: 85 names in 22 namespaces)
+
+## scripts/check_requirements.py
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+
+## Python (python3 -m unittest discover -s tests)
+with Zig (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY): Ran 580 tests in 113.077s / OK
+SEARCHD_BINARY = the head's ReleaseSmall searchd: Ran 580 tests in 65.016s / OK
+SEARCH_SIMPLI_NO_ZIG=1: Ran 525 tests in 48.213s / OK (skipped=43)
+(a first run with Zig, before 3a40535: 580 tests, FAILED (failures=3): test_check_layers CoreApiTests.test_the_repository_s_api and OneShotQueryTests.test_main_prints_the_api_s_size / ..._with_one_name_more, each pinning 86 (87) names)
+
+## Dart (bindings/dart/search_simpli, rebuilt natives)
+dart pub get --offline: exit 0
+dart analyze lib test: No issues found!
+dart test: 00:08 +97: All tests passed!
+(a first dart test without Zig on PATH: 4 set-ups failed with ProcessException: No such file or directory, Command: zig build)
+
+## tool/check_native.sh
+check_native: macos-arm64 memcpy at 0x740 (225 calls against 120): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5af74 (506 calls against 163): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (219 calls against 111): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+
+## tool/build_native.sh (SS_ANDROID_NDK = NDK 28.2.13676358, fresh ZIG_LOCAL_CACHE_DIR / ZIG_GLOBAL_CACHE_DIR)
+Build Summary: 28/28 steps succeeded
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib ( 1007208 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  966112 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  972120 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (9c14539075df42be3e42200bea4d80af01918745bee5e2d310b272b288f82327)

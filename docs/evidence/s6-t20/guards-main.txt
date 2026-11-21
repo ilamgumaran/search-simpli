@@ -1,0 +1,10 @@
+# check_layers.py and check_test_counts.py --log on main (3cf188b, a git archive), the log = tests-main-3cf188b-debug.txt
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 595 tests, each run by a step of `zig build test`; the public core API `api`: 86 names in 22 namespaces)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+|---|---|---:|---|---|
+| core | `run test core` | 260 | 260 (260 pass) | ok |
+| operations | `run test operations` | 9 | 9 (9 pass) | ok |
+| interfaces | `run test interfaces` | 25 | 25 (25 pass) | ok |
+| tests | `run test tests` | 295 | 295 (286 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 595 tests: every step ran the tests the listing has, and the static checker passes)
