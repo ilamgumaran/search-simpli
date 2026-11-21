@@ -511,3 +511,364 @@ test "S5-T11: a crash after the fresh one-step publish leaves the complete first
     try std.testing.expect(std.mem.startsWith(u8, plain.out, "applied: generation=3 "));
     try std.testing.expect((try f.engine(index)).filename_index_enabled);
 }
+
+// ---------------------------------------------------------------------------
+// S6-T20: a full rebuild chooses its generation number under `WRITER.LOCK`
+// (`docs/tasks/S6-T20.md`, `docs/decisions/0003-full-rebuild-numbers-under-writer-lock.md`).
+//
+// S6-T17's verifier showed with probes that `searchd index` (and
+// `ss_index_folder`) chose the number with `nextFreeGeneration` before the
+// lock: a writer publishing in between made the rebuild fail with
+// `PathAlreadyExists` (probe B) or publish a used number again and move
+// `MANIFEST` back (probe C). These tests run that other writer inside the
+// rebuild, at one named file-system call, through a `std.Io` that serves every
+// call from `std.testing.io` and runs one step right after the call it waits
+// for (`NameSeam`, a sibling of S6-T17's `StatSeam` in
+// `core/manifest_read_test.zig`, which waits for a `stat` by inode; the names
+// waited for here do not exist yet, so this one waits for a name). No timing
+// is involved. The rebuild is `cli.runIndex`, as `searchd index` runs it.
+
+const s6t20 = struct {
+    const chunker = @import("core").chunker;
+    const generation_alloc = @import("core").generation_alloc;
+    const importer = @import("core").importer;
+    const lifecycle = @import("core").lifecycle;
+    const snapshot_open = @import("core").snapshot_open;
+
+    /// Where the other writer runs.
+    const Point = enum {
+        /// After the `stat` of `state-10.hybstate`, the last of the six names
+        /// `nextFreeGeneration` probes before it returns 10 for a folder at
+        /// generation 9: the rebuild has chosen its number and not published.
+        after_choice,
+        /// When the folder walk opens the subfolder `sub`: on the code before
+        /// S6-T20 the rebuild had chosen 10 already; after it, it has not.
+        during_walk,
+    };
+
+    /// The other writer.
+    const Other = enum {
+        /// `searchd index --update` (`indexFolderIncremental`), once.
+        update,
+        /// The same twice with `keep_generations = 1`: the second publish
+        /// prunes the first one's sections (probe C).
+        update_twice_keep_one,
+        /// Another `searchd index` full rebuild (`cli.runIndex`).
+        rebuild,
+        /// `searchd import-json` of a one-document snapshot numbered as a host
+        /// would number it from an open: the current generation plus one.
+        import_json,
+    };
+
+    const Attempt = union(enum) { published: u64, refused: anyerror };
+
+    const NameSeam = struct {
+        var base: std.Io = undefined;
+        var table: std.Io.VTable = undefined;
+        var pending: ?Step = null;
+        var wanted: []const u8 = "";
+        var on_open_dir = false;
+        var ran: usize = 0;
+
+        const Step = struct {
+            context: *anyopaque,
+            run: *const fn (*anyopaque, std.Io) void,
+        };
+
+        fn dirStatFile(userdata: ?*anyopaque, dir: std.Io.Dir, sub_path: []const u8, options: std.Io.Dir.StatFileOptions) std.Io.Dir.StatFileError!std.Io.File.Stat {
+            const result = base.vtable.dirStatFile(userdata, dir, sub_path, options);
+            if (!on_open_dir) fire(sub_path);
+            return result;
+        }
+
+        fn dirOpenDir(userdata: ?*anyopaque, dir: std.Io.Dir, sub_path: []const u8, options: std.Io.Dir.OpenOptions) std.Io.Dir.OpenError!std.Io.Dir {
+            const result = base.vtable.dirOpenDir(userdata, dir, sub_path, options);
+            if (on_open_dir) fire(sub_path);
+            return result;
+        }
+
+        fn fire(sub_path: []const u8) void {
+            const step = pending orelse return;
+            if (!std.mem.eql(u8, sub_path, wanted)) return;
+            pending = null;
+            ran += 1;
+            step.run(step.context, base);
+        }
+
+        fn arm(io: std.Io, point: Point, step: Step) std.Io {
+            base = io;
+            table = io.vtable.*;
+            table.dirStatFile = dirStatFile;
+            table.dirOpenDir = dirOpenDir;
+            pending = step;
+            on_open_dir = point == .during_walk;
+            wanted = switch (point) {
+                .after_choice => "state-10.hybstate",
+                .during_walk => "sub",
+            };
+            ran = 0;
+            return .{ .userdata = io.userdata, .vtable = &table };
+        }
+    };
+
+    /// A folder `notes` (`a.md`, `sub/b.md`) indexed as generation 9 into `out`.
+    const Folder = struct {
+        tmp: std.testing.TmpDir,
+        root: std.Io.Dir,
+        out: std.Io.Dir,
+        root_path: []const u8,
+        out_path: []const u8,
+
+        fn init(a: std.mem.Allocator) !Folder {
+            const io = std.testing.io;
+            var tmp = std.testing.tmpDir(.{ .iterate = true });
+            errdefer tmp.cleanup();
+            try tmp.dir.createDirPath(io, "notes/sub");
+            try tmp.dir.writeFile(io, .{ .sub_path = "notes/a.md", .data = "alpha evidence about recovery\n" });
+            try tmp.dir.writeFile(io, .{ .sub_path = "notes/sub/b.md", .data = "beta evidence about publication\n" });
+            try tmp.dir.createDir(io, "out", .default_dir);
+            const root = try tmp.dir.openDir(io, "notes", .{ .iterate = true });
+            const out = try tmp.dir.openDir(io, "out", .{ .iterate = true });
+            const report = try indexer.indexFolder(a, io, root, out, .v2, 9, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+            try std.testing.expectEqual(@as(u64, 9), report.generation);
+            return .{
+                .tmp = tmp,
+                .root = root,
+                .out = out,
+                .root_path = try std.fmt.allocPrint(a, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}),
+                .out_path = try std.fmt.allocPrint(a, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}),
+            };
+        }
+
+        fn deinit(self: *Folder) void {
+            self.out.close(std.testing.io);
+            self.root.close(std.testing.io);
+            self.tmp.cleanup();
+        }
+    };
+
+    /// `searchd index` (`cli.runIndex`) through `io`; the generation its line
+    /// names.
+    fn runRebuild(a: std.mem.Allocator, io: std.Io, root_path: []const u8, out_path: []const u8, options: cli.IndexOptions) !u64 {
+        var output: std.Io.Writer.Allocating = .init(a);
+        try cli.runIndex(io, std.testing.allocator, root_path, out_path, options, &output.writer);
+        const text = output.written();
+        const key = " generation=";
+        const at = std.mem.indexOf(u8, text, key) orelse return error.TestUnexpectedResult;
+        const rest = text[at + key.len ..];
+        return std.fmt.parseInt(u64, rest[0 .. std.mem.indexOfScalar(u8, rest, ' ') orelse rest.len], 10);
+    }
+
+    fn manifestGeneration(a: std.mem.Allocator, io: std.Io, out: std.Io.Dir) !u64 {
+        return generation_alloc.currentGeneration(a, io, out);
+    }
+
+    const OtherWriter = struct {
+        a: std.mem.Allocator,
+        folder: *const Folder,
+        other: Other,
+        attempts: [2]Attempt = undefined,
+        count: usize = 0,
+        manifest_after: u64 = 0,
+
+        fn run(context: *anyopaque, io: std.Io) void {
+            const self: *OtherWriter = @ptrCast(@alignCast(context));
+            switch (self.other) {
+                .update => self.record(self.update(io, null)),
+                .update_twice_keep_one => {
+                    self.record(self.update(io, 1));
+                    self.record(self.update(io, 1));
+                },
+                .rebuild => self.record(runRebuild(self.a, io, self.folder.root_path, self.folder.out_path, .{})),
+                .import_json => self.record(self.importOne(io)),
+            }
+            self.manifest_after = manifestGeneration(self.a, io, self.folder.out) catch 0;
+        }
+
+        fn record(self: *OtherWriter, outcome: anyerror!u64) void {
+            self.attempts[self.count] = if (outcome) |generation| .{ .published = generation } else |err| .{ .refused = err };
+            self.count += 1;
+        }
+
+        fn update(self: *OtherWriter, io: std.Io, keep: ?usize) !u64 {
+            const report = try indexer.indexFolderIncremental(self.a, io, self.folder.root, self.folder.out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .keep_generations = keep });
+            return report.generation;
+        }
+
+        fn importOne(self: *OtherWriter, io: std.Io) !u64 {
+            const next = (try manifestGeneration(self.a, io, self.folder.out)) + 1;
+            const json = try std.fmt.allocPrint(self.a,
+                \\{{"format_version":1,"generation":{d},"analyzer_id":"ascii-alnum-v1","embedding_model_id":"none","documents":[
+                \\{{"id":"other","path":"other.md","start_line":1,"end_line":1,"text":"another writer","vector":[],"required_labels":[]}}]}}
+            , .{next});
+            const report = try importer.importJson(self.folder.out, io, std.testing.allocator, json);
+            return report.generation;
+        }
+
+        fn step(self: *OtherWriter) NameSeam.Step {
+            return .{ .context = self, .run = run };
+        }
+    };
+
+    /// One interleaving: a folder at 9, `searchd index` through the seam, the
+    /// other writer at `point`. Appends one line to `lines` and returns whether
+    /// the rulings hold: the rebuild publishes, no number is published twice,
+    /// `MANIFEST` never goes back, and the other writer is refused with
+    /// `WriterBusy` when it comes after the rebuild's choice.
+    fn race(a: std.mem.Allocator, point: Point, other: Other, lines: *std.Io.Writer) !bool {
+        const io = std.testing.io;
+        var folder = try Folder.init(a);
+        defer folder.deinit();
+        var writer = OtherWriter{ .a = a, .folder = &folder, .other = other };
+        const before = try manifestGeneration(a, io, folder.out);
+        const seam = NameSeam.arm(io, point, writer.step());
+        const rebuild = runRebuild(a, seam, folder.root_path, folder.out_path, .{});
+        const after = try manifestGeneration(a, io, folder.out);
+
+        try lines.print("  {s} {s}: other [", .{ @tagName(point), @tagName(other) });
+        for (writer.attempts[0..writer.count], 0..) |attempt, i| {
+            if (i != 0) try lines.writeAll(", ");
+            switch (attempt) {
+                .published => |g| try lines.print("published {d}", .{g}),
+                .refused => |err| try lines.print("{s}", .{@errorName(err)}),
+            }
+        }
+        try lines.print("], MANIFEST {d} -> {d} -> {d}, rebuild ", .{ before, writer.manifest_after, after });
+        if (rebuild) |g| try lines.print("published {d}", .{g}) else |err| try lines.print("{s}", .{@errorName(err)});
+
+        var ok = NameSeam.ran == 1 and writer.count != 0;
+        const published = rebuild catch {
+            try lines.writeAll(" FAIL\n");
+            return false;
+        };
+        // No number twice; the rebuild's above every other one.
+        var numbers: [3]u64 = undefined;
+        var n: usize = 0;
+        for (writer.attempts[0..writer.count]) |attempt| switch (attempt) {
+            .published => |g| {
+                numbers[n] = g;
+                n += 1;
+            },
+            .refused => |err| if (point == .during_walk or err != error.WriterBusy) {
+                ok = false;
+            },
+        };
+        if (point == .after_choice and n != 0) ok = false;
+        for (numbers[0..n], 0..) |g, i| {
+            if (g >= published) ok = false;
+            for (numbers[0..i]) |earlier| if (earlier == g) {
+                ok = false;
+            };
+        }
+        // MANIFEST never goes back, and it ends on the rebuild's number.
+        if (writer.manifest_after < before or after < writer.manifest_after or after != published or published <= before) ok = false;
+        const opened = try snapshot_open.openScoped(a, io, folder.out);
+        defer snapshot_open.close(opened.engine, opened.folder);
+        if (opened.engine.generation != published) ok = false;
+        try lines.writeAll(if (ok) " ok\n" else " FAIL\n");
+        return ok;
+    }
+};
+
+test "S6-T20: another writer racing a full rebuild is refused with WriterBusy once the rebuild has chosen its number; no number twice, MANIFEST never back" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var lines: std.Io.Writer.Allocating = .init(a);
+    var failed: usize = 0;
+    // Every interleaving is tried and printed before the test fails.
+    inline for (.{ s6t20.Point.after_choice, s6t20.Point.during_walk }) |point| {
+        inline for (.{ s6t20.Other.update, s6t20.Other.update_twice_keep_one, s6t20.Other.rebuild, s6t20.Other.import_json }) |other| {
+            if (!try s6t20.race(a, point, other, &lines.writer)) failed += 1;
+        }
+    }
+    std.debug.print("S6-T20 interleavings (point other: other's outcomes, MANIFEST before -> after the other -> after the rebuild, rebuild's outcome):\n{s}", .{lines.written()});
+    try std.testing.expectEqual(@as(usize, 0), failed);
+}
+
+/// Every entry of `dir`, name and bytes, as one SHA-256 (a directory's bytes
+/// as `<dir>`).
+fn s6t20DirDigest(a: std.mem.Allocator, dir: std.Io.Dir) ![32]u8 {
+    const io = std.testing.io;
+    var names: std.ArrayList([]const u8) = .empty;
+    var it = dir.iterate();
+    while (try it.next(io)) |entry| try names.append(a, try a.dupe(u8, entry.name));
+    std.mem.sort([]const u8, names.items, {}, struct {
+        fn less(_: void, x: []const u8, y: []const u8) bool {
+            return std.mem.lessThan(u8, x, y);
+        }
+    }.less);
+    var hash = std.crypto.hash.sha2.Sha256.init(.{});
+    for (names.items) |name| {
+        hash.update(name);
+        hash.update("\x00");
+        hash.update(dir.readFileAlloc(io, name, a, .unlimited) catch |err| switch (err) {
+            error.IsDir => "<dir>",
+            else => return err,
+        });
+        hash.update("\x00");
+    }
+    return hash.finalResult();
+}
+
+test "S6-T20: searchd index --generation N with N not free is refused with PathAlreadyExists under the lock and changes nothing on disk" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    const Taken = enum { published_by_another_writer, lone_lexical_leftover, lone_state_leftover };
+    inline for (.{ Taken.published_by_another_writer, Taken.lone_lexical_leftover, Taken.lone_state_leftover }) |taken| {
+        var folder = try s6t20.Folder.init(a);
+        defer folder.deinit();
+        switch (taken) {
+            .published_by_another_writer => {
+                const report = try indexer.indexFolderIncremental(a, io, folder.root, folder.out, .v2, s6t20.chunker.default_max_chars, s6t20.chunker.default_overlap_lines, .{});
+                try std.testing.expectEqual(@as(u64, 10), report.generation);
+            },
+            .lone_lexical_leftover => try folder.out.writeFile(io, .{ .sub_path = "lexical-10.hyblex", .data = "a crash leftover" }),
+            .lone_state_leftover => try folder.out.writeFile(io, .{ .sub_path = "state-10.hybstate", .data = "a crash leftover" }),
+        }
+        const manifest_before = try s6t20.manifestGeneration(a, io, folder.out);
+        const before = try s6t20DirDigest(a, folder.out);
+        const outcome = s6t20.runRebuild(a, io, folder.root_path, folder.out_path, .{ .generation = 10 });
+        if (outcome) |g| {
+            std.debug.print("S6-T20 --generation 10 over {s}: published {d}\n", .{ @tagName(taken), g });
+        } else |err| std.debug.print("S6-T20 --generation 10 over {s}: {s}\n", .{ @tagName(taken), @errorName(err) });
+        try std.testing.expectError(error.PathAlreadyExists, outcome);
+        try std.testing.expectEqual(manifest_before, try s6t20.manifestGeneration(a, io, folder.out));
+        try std.testing.expectEqualSlices(u8, &before, &try s6t20DirDigest(a, folder.out));
+    }
+}
+
+test "S6-T20: searchd index with WRITER.LOCK held is refused with WriterBusy before it chooses a number" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    var folder = try s6t20.Folder.init(a);
+    defer folder.deinit();
+
+    // Probe A of S6-T17's Verdict: another writer holds the lock throughout.
+    var lease = (try s6t20.lifecycle.tryAcquireWriter(folder.out, io)).?;
+    var released = false;
+    defer if (!released) lease.release(io);
+    const before = try s6t20DirDigest(a, folder.out);
+    try std.testing.expectError(error.WriterBusy, s6t20.runRebuild(a, io, folder.root_path, folder.out_path, .{}));
+    try std.testing.expectEqualSlices(u8, &before, &try s6t20DirDigest(a, folder.out));
+    try std.testing.expectEqual(@as(u64, 9), try s6t20.manifestGeneration(a, io, folder.out));
+
+    // The order shows where the number is chosen: with no number left
+    // (a lone section at `u64` max) and the lock held, a rebuild that chose
+    // first answers `NoFreeGeneration`; one that takes the lock first answers
+    // `WriterBusy`. Released, it is `NoFreeGeneration` as before.
+    try folder.out.writeFile(io, .{ .sub_path = "lexical-18446744073709551615.hyblex", .data = "x" });
+    const held = s6t20.runRebuild(a, io, folder.root_path, folder.out_path, .{});
+    if (held) |g| {
+        std.debug.print("S6-T20 lock held, no number left: published {d}\n", .{g});
+    } else |err| std.debug.print("S6-T20 lock held, no number left: {s}\n", .{@errorName(err)});
+    try std.testing.expectError(error.WriterBusy, held);
+    lease.release(io);
+    released = true;
+    try std.testing.expectError(error.NoFreeGeneration, s6t20.runRebuild(a, io, folder.root_path, folder.out_path, .{}));
+    try std.testing.expectEqual(@as(u64, 9), try s6t20.manifestGeneration(a, io, folder.out));
+}

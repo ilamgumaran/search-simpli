@@ -135,3 +135,45 @@ test "ss_index_folder lists every max trace and resets the list between calls" {
         try std.testing.expectEqualSlices(u8, bytes, try tmp.dir.readFile(test_io, path, &buffer));
     }
 }
+
+// S6-T20: `ss_index_folder` without `update` chooses its generation number
+// under `WRITER.LOCK` (`docs/tasks/S6-T20.md`). The order of two refusals shows
+// where: with no number left and the lock held by another writer, a call that
+// chose its number first answers `NoFreeGeneration`; one that takes the lock
+// first answers `WriterBusy`.
+test "S6-T20: ss_index_folder with WRITER.LOCK held answers WriterBusy before it chooses a number" {
+    const lifecycle = @import("core").lifecycle;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const test_io = std.testing.io;
+    const lexical_max = "lexical-18446744073709551615.hyblex";
+    try tmp.dir.createDir(test_io, "notes", .default_dir);
+    try tmp.dir.writeFile(test_io, .{ .sub_path = "notes/a.md", .data = "alpha\n" });
+    const notes_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/notes", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(notes_z);
+    const out_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/out", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(out_z);
+
+    ss_free(ss_index_folder(out_z, notes_z, null) orelse return error.IndexFailed);
+    var out = try tmp.dir.openDir(test_io, "out", .{ .iterate = true });
+    defer out.close(test_io);
+    try out.writeFile(test_io, .{ .sub_path = lexical_max, .data = "x" });
+
+    var lease = (try lifecycle.tryAcquireWriter(out, test_io)).?;
+    var released = false;
+    defer if (!released) lease.release(test_io);
+    try std.testing.expect(ss_index_folder(out_z, notes_z, null) == null);
+    const held = try std.testing.allocator.dupe(u8, std.mem.span(ss_last_error()));
+    defer std.testing.allocator.free(held);
+    std.debug.print("S6-T20 ss_index_folder, lock held, no number left: {s}\n", .{held});
+    try std.testing.expectEqualStrings("ss_index_folder: WriterBusy", held);
+
+    lease.release(test_io);
+    released = true;
+    try std.testing.expect(ss_index_folder(out_z, notes_z, null) == null);
+    const free = std.mem.span(ss_last_error());
+    try std.testing.expect(std.mem.startsWith(u8, free, "ss_index_folder: NoFreeGeneration"));
+    try std.testing.expect(std.mem.indexOf(u8, free, lexical_max) != null);
+    var manifest_buffer: [4096]u8 = undefined;
+    try std.testing.expectEqual(@as(u64, 1), (try manifest.decode(try out.readFile(test_io, "MANIFEST", &manifest_buffer))).generation);
+}
