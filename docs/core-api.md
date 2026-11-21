@@ -5,6 +5,9 @@ step B3 of the [objective plan](plans/2026-11-16-objective-plan.md). It adds nam
 aliases and doc comments only: no function body, format, contract or answer changed.
 [S6-T18](tasks/S6-T18.md) (21 Nov 2026) replaced `title_field.derive` with the core call
 `engine.queryOneShot`, the first of the follow-ups below; the answers did not change.
+[S6-T19](tasks/S6-T19.md) (21 Nov 2026) moved the two tests beside the code that used
+`analyzer_v2.analyzer_id` and `manifest.decode` to `zig/src/tests/`, and those two names
+left `api`; no shipped code changed.
 
 The core is one Zig module, `core` (root `zig/src/core/core.zig`; see
 [layers.md](layers.md)). Its root has two parts:
@@ -65,12 +68,15 @@ A type's fields and methods come with the type: `api.engine.Engine` is the whole
 
 ## The names, by purpose
 
-88 names in 23 namespaces, as `python3 scripts/check_layers.py` counts them in its last
-line ("the public core API `api`: 88 names in 23 namespaces"): every core name operations
+86 names in 22 namespaces, as `python3 scripts/check_layers.py` counts them in its last
+line ("the public core API `api`: 86 names in 22 namespaces"): every core name operations
 and interfaces used at `10f3d40` (the measurement,
 [`docs/evidence/s6-t16/measure.txt`](evidence/s6-t16/measure.txt)), less
-`title_field.derive` and with `engine.queryOneShot` in its place (S6-T18), and nothing
-else. Their doc comments in `core.zig` say what each does, what it allocates and what it
+`title_field.derive` and with `engine.queryOneShot` in its place (S6-T18), less
+`analyzer_v2.analyzer_id` and `manifest.decode` (S6-T19), and nothing else. Every one of
+the 86 is used by a declaration of `ops/` or `interfaces/` that is not a test
+([`docs/evidence/s6-t19/measure.txt`](evidence/s6-t19/measure.txt) and
+[`after.txt`](evidence/s6-t19/after.txt)). Their doc comments in `core.zig` say what each does, what it allocates and what it
 returns.
 
 | Purpose | Namespace | Names | Count |
@@ -90,24 +96,26 @@ returns.
 | | `generation_alloc` | `nextFreeGeneration`, `describeNoFreeGeneration` | 2 |
 | | `title_field` | `policy_id` | 1 |
 | Write a generation by hand | `importer` | `importJson`, `importJsonKeeping` | 2 |
-| | `manifest` | `create`, `encode`, `decode`, `PendingEntry` | 4 |
+| | `manifest` | `create`, `encode`, `PendingEntry` | 3 |
 | | `segment` | `encode` | 1 |
 | | `lexical_segment` | `encode` | 1 |
 | | `postings` | `build`, `TermEntry`, `Posting` | 3 |
 | | `lifecycle` | `publishSerialized` | 1 |
 | Benchmark | `benchmark` | `run`, `max_documents`, `max_dimensions`, `max_queries` | 4 |
-| The formats' identities | `analyzer_v2` | `analyzer_id` | 1 |
-| | `fold` | `policy_id` | 1 |
+| The formats' identities | `fold` | `policy_id` | 1 |
 | | `fuzzy` | `policy_id` | 1 |
 
 By purpose: open 9, search 26, find 8, read a span 10, apply 5, build an index 11, write a
-generation by hand 12, benchmark 4, the formats' identities 3 (a fourth,
+generation by hand 11, benchmark 4, the formats' identities 2 (a third,
 `title_field.policy_id`, sits with its file under build an index). The `engine` namespace
 appears twice: `Engine` and `Evidence` open a generation, `queryOneShot` searches it.
 
-`analyzer_v2.analyzer_id` and `manifest.decode` are used only in test blocks of
-`ops/filename_response.zig` and `interfaces/abi.zig`; they are public because those tests
-sit beside the code and the rule binds them too.
+Until S6-T19, `analyzer_v2.analyzer_id` and `manifest.decode` were used only in one test
+block each, of `ops/filename_response.zig` and `interfaces/abi.zig`, and were public
+because the rule binds tests beside the code too. Those two tests now sit in
+`zig/src/tests/` (`filename_response_test.zig`, `abi_index_folder_test.zig`), where
+internals are allowed, and the names left `api`. A test that only an internal name lets
+you write belongs in `tests/`, not beside the code.
 
 ## Memory and errors
 
@@ -221,10 +229,13 @@ function bodies.
   `title_field.derive` left `api`.
 - **Writing a generation by hand.** `segment.encode`, `lexical_segment.encode`,
   `postings.build`, `postings.TermEntry`, `postings.Posting`, `manifest.create`,
-  `manifest.encode`, `manifest.decode` and `lifecycle.publishSerialized`: the section
-  encoders and the publisher, used by `searchd init-demo` (`interfaces/main.zig`) and by
-  tests in `interfaces/abi.zig`, `interfaces/rpc.zig` and `ops/service.zig`. The demo
-  could use the importer or an operation, and the tests could move to `tests/`.
+  `manifest.encode` and `lifecycle.publishSerialized`: the section encoders and the
+  publisher, used by `searchd init-demo` (`initDemoSnapshot` in `interfaces/main.zig`) and
+  by tests in `interfaces/abi.zig`, `interfaces/rpc.zig` and `ops/service.zig`. Narrowed by
+  [S6-T19](tasks/S6-T19.md): `manifest.decode` was used by a test only, which moved to
+  `tests/`, and the name left `api`. Every other name here is used by `initDemoSnapshot`,
+  so moving the tests would drop none of them; they leave `api` only if the demo uses the
+  importer or an operation instead.
 - **Generation numbering in interfaces.** `generation_alloc.nextFreeGeneration`
   (`interfaces/abi.zig`, `interfaces/cli.zig`) chooses a generation number before a
   detached build; the indexer could do it.
@@ -232,7 +243,9 @@ function bodies.
   `scope.isLegacy`, `scope.legacy_root_id` are the record-path convention
   (`root_id/relative`, bare in the legacy root), which every answer carries; they may be
   public by right, but only operations should need them.
-- **Test-only names.** `analyzer_v2.analyzer_id` and `manifest.decode` are used only by
-  tests beside the code; moving those tests to `tests/` would let them leave `api`.
+- ~~**Test-only names.** `analyzer_v2.analyzer_id` and `manifest.decode` are used only by
+  tests beside the code; moving those tests to `tests/` would let them leave `api`.~~
+  Done by [S6-T19](tasks/S6-T19.md): the two tests moved to `zig/src/tests/` and both
+  names left `api`.
 
 [03-next](journey/03-next.md) carries these as one row.

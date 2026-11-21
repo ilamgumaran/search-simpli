@@ -1,0 +1,126 @@
+# S6-T19: the `core.api` names used in operations and interfaces, code against tests
+
+Tree: working tree. Read by `scripts/prototypes/s6t19/measure.py` with `scripts/check_layers.py`'s own reading.
+
+## Summary
+
+- `api` holds 86 names in 22 namespaces.
+- Used by a non-test declaration of `ops/` or `interfaces/`: 86.
+- Used only inside `test` blocks there (the candidates): 0.
+- Used by neither: 0.
+- Uses read: 293 (246 code, 47 test).
+
+## Every `api` name
+
+`code` counts uses outside `test` blocks (with the declarations they sit in), `test` uses inside them (with the files). Class: `code` (kept by shipped code), `test only` (a candidate), `unused`.
+
+| Name | Class | code | Code uses in (file: declarations) | test | Test uses in (file: count) |
+|---|---|---:|---|---:|---|
+| `apply.Options` | code | 5 | `interfaces/cli.zig`: `runApply`; `ops/ops.zig`: `applyChanges`, `applyOptions`, `parseApplyOptions` | 0 |  |
+| `apply.applyChanges` | code | 3 | `interfaces/mcp.zig`: `TestServer`; `ops/ops.zig`: `TestIndex`, `applyChanges` | 1 | `interfaces/rpc.zig` 1 |
+| `apply.default_max_file_bytes` | code | 1 | `interfaces/cli.zig`: `SearchArgs` | 0 |  |
+| `apply.default_max_total_bytes` | code | 1 | `interfaces/cli.zig`: `SearchArgs` | 0 |  |
+| `apply.writeReportJson` | code | 1 | `ops/ops.zig`: `applyChanges` | 0 |  |
+| `benchmark.max_dimensions` | code | 1 | `interfaces/cli.zig`: `parseInner` | 0 |  |
+| `benchmark.max_documents` | code | 1 | `interfaces/cli.zig`: `parseInner` | 0 |  |
+| `benchmark.max_queries` | code | 1 | `interfaces/cli.zig`: `parseInner` | 0 |  |
+| `benchmark.run` | code | 1 | `interfaces/main.zig`: `main` | 0 |  |
+| `chunker.default_max_chars` | code | 3 | `interfaces/abi.zig`: `indexFolderImpl`; `interfaces/cli.zig`: `IndexOptions`, `buildAndOpen` | 0 |  |
+| `chunker.default_overlap_lines` | code | 3 | `interfaces/abi.zig`: `indexFolderImpl`; `interfaces/cli.zig`: `IndexOptions`, `buildAndOpen` | 0 |  |
+| `engine.Engine` | code | 12 | `interfaces/abi.zig`: `Handle`, `ss_query`; `interfaces/cli.zig`: `Searched`, `answerEvidence`, `answerQuery`; `ops/filename_response.zig`: `writeAbiEvidence`, `writeEvidence`, `writeEvidenceInternal`, `writeHuman`; `ops/ops.zig`: `parseSearch`; `ops/service.zig`: `FrequencyProvider`, `Service` | 0 |  |
+| `engine.Evidence` | code | 13 | `interfaces/abi.zig`: `queryImpl`; `interfaces/mcp.zig`: `TestServer`; `interfaces/rpc.zig`: `Generation`, `writeSearchResultValue`, `writeSearchResultValueWith`; `ops/ops.zig`: `Workspaces`, `writeSearchResult`; `ops/service.zig`: `ScopedService`, `Service` | 8 | `interfaces/abi.zig` 1, `interfaces/rpc.zig` 4, `ops/service.zig` 3 |
+| `engine.queryOneShot` | code | 2 | `interfaces/cli.zig`: `answerEvidence`, `answerQuery` | 0 |  |
+| `filename_field.Field` | code | 9 | `interfaces/abi.zig`: `queryImpl`; `interfaces/cli.zig`: `QueryOptions`, `parseQueryFlags`, `parseSearch`; `ops/filename_response.zig`: `writeAbiEvidence`, `writeEvidence`, `writeEvidenceInternal`; `ops/ops.zig`: `ParsedSearch`, `parseSearch` | 0 |  |
+| `filename_field.Hit` | code | 4 | `ops/filename_response.zig`: `writeAbiEvidence`, `writeEvidence`, `writeEvidenceInternal`, `writeHuman` | 0 |  |
+| `filename_field.tokenize` | code | 4 | `ops/filename_response.zig`: `writeEvidenceInternal`, `writeHuman`, `writeHumanSection`, `writeSection` | 0 |  |
+| `find.Mode` | code | 4 | `interfaces/cli.zig`: `FindArgs`, `parseFind`; `ops/ops.zig`: `parseFind` | 0 |  |
+| `find.Outcome` | code | 1 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `find.Request` | code | 2 | `ops/ops.zig`: `ParsedFind`; `ops/service.zig`: `ScopedService` | 0 |  |
+| `find.default_page_size` | code | 1 | `ops/ops.zig`: `parseFind` | 0 |  |
+| `find.find` | code | 1 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `find.max_page_size` | code | 1 | `interfaces/cli.zig`: `parseFind` | 0 |  |
+| `find.stale_cursor_message` | code | 1 | `ops/ops.zig`: `listFiles` | 0 |  |
+| `find.writeFields` | code | 1 | `ops/ops.zig`: `find` | 0 |  |
+| `fold.policy_id` | code | 2 | `ops/filename_response.zig`: `writeEvidenceInternal`; `ops/ops.zig`: `writeSearchResult` | 0 |  |
+| `fuzzy.policy_id` | code | 2 | `ops/filename_response.zig`: `writeEvidenceInternal`; `ops/ops.zig`: `writeSearchResult` | 0 |  |
+| `generation_alloc.describeNoFreeGeneration` | code | 3 | `interfaces/abi.zig`: `ss_apply_changes`, `ss_index_folder`; `interfaces/main.zig`: `main` | 0 |  |
+| `generation_alloc.nextFreeGeneration` | code | 2 | `interfaces/abi.zig`: `indexFolderImpl`; `interfaces/cli.zig`: `runIndex` | 0 |  |
+| `hybrid.Document` | code | 7 | `interfaces/main.zig`: `demoDocuments`; `ops/ops.zig`: `before`, `documentIndex`, `neighbours`, `writeNeighbour`; `ops/service.zig`: `Resolved` | 6 | `interfaces/abi.zig` 1, `interfaces/rpc.zig` 2, `ops/service.zig` 3 |
+| `hybrid.Result` | code | 10 | `interfaces/abi.zig`: `queryImpl`; `interfaces/main.zig`: `runDemo`; `interfaces/mcp.zig`: `TestServer`; `interfaces/rpc.zig`: `Generation`; `ops/ops.zig`: `FolderFields`, `Workspaces`, `documentIndex`; `ops/service.zig`: `ScopedService`, `Service` | 8 | `interfaces/abi.zig` 1, `interfaces/rpc.zig` 4, `ops/service.zig` 3 |
+| `hybrid.RetrievalMode` | code | 11 | `interfaces/cli.zig`: `BenchmarkArgs`, `parseRetrievalMode`; `interfaces/rpc.zig`: `parseMode`, `writeSearchResultValue`, `writeSearchResultValueWith`; `ops/ops.zig`: `ParsedSearch`, `parseRetrievalMode`, `queryVector`, `writeSearchResult`; `ops/report.zig`: `Extras`; `ops/service.zig`: `Service` | 0 |  |
+| `hybrid.RootMask` | code | 1 | `ops/service.zig`: `Resolved` | 0 |  |
+| `hybrid.SearchOptions` | code | 12 | `interfaces/abi.zig`: `queryImpl`; `interfaces/cli.zig`: `answerEvidence`, `answerQuery`; `ops/filename_response.zig`: `entryVisible`, `writeAbiEvidence`, `writeEvidence`, `writeEvidenceInternal`; `ops/ops.zig`: `searchKnowledge`; `ops/service.zig`: `ScopedService`, `Service` | 0 |  |
+| `hybrid.Trace` | code | 10 | `interfaces/abi.zig`: `queryImpl`; `ops/ops.zig`: `writeSearchResult`; `ops/report.zig`: `Extras`, `expandedWarning`, `groupedWarning`, `isUnmatched`, `write`; `ops/service.zig`: `ScopedService`, `Service` | 0 |  |
+| `hybrid.isAuthorized` | code | 3 | `ops/service.zig`: `Resolved`, `Service` | 0 |  |
+| `hybrid.matchesPath` | code | 1 | `ops/ops.zig`: `evidence` | 0 |  |
+| `hybrid.no_source_doc` | code | 1 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `hybrid.search` | code | 1 | `interfaces/main.zig`: `runDemo` | 0 |  |
+| `importer.importJson` | code | 1 | `interfaces/abi.zig`: `importImpl` | 0 |  |
+| `importer.importJsonKeeping` | code | 1 | `interfaces/main.zig`: `importSnapshot` | 0 |  |
+| `indexer.AnalyzerId` | code | 4 | `interfaces/abi.zig`: `indexFolderImpl`; `interfaces/cli.zig`: `IndexOptions`, `parseInner`; `ops/ops.zig`: `parseApplyOptions` | 0 |  |
+| `indexer.Caps` | code | 4 | `interfaces/abi.zig`: `indexFolderImpl`; `interfaces/cli.zig`: `IndexOptions`, `buildAndOpen` | 0 |  |
+| `indexer.IncrementalReport` | code | 1 | `interfaces/cli.zig`: `Searched` | 0 |  |
+| `indexer.buildFolderDetached` | code | 1 | `interfaces/cli.zig`: `buildAndOpen` | 0 |  |
+| `indexer.indexFolder` | code | 2 | `interfaces/abi.zig`: `indexFolderImpl`; `interfaces/cli.zig`: `runIndex` | 0 |  |
+| `indexer.indexFolderIncremental` | code | 2 | `interfaces/abi.zig`: `indexFolderImpl`; `interfaces/cli.zig`: `runIndex` | 0 |  |
+| `lexical_segment.encode` | code | 1 | `interfaces/main.zig`: `initDemoSnapshot` | 1 | `interfaces/abi.zig` 1 |
+| `lifecycle.publishSerialized` | code | 1 | `interfaces/main.zig`: `initDemoSnapshot` | 1 | `interfaces/abi.zig` 1 |
+| `manifest.PendingEntry` | code | 1 | `ops/filename_response.zig`: `entryVisible` | 0 |  |
+| `manifest.create` | code | 1 | `interfaces/main.zig`: `initDemoSnapshot` | 1 | `interfaces/abi.zig` 1 |
+| `manifest.encode` | code | 1 | `interfaces/main.zig`: `initDemoSnapshot` | 1 | `interfaces/abi.zig` 1 |
+| `postings.Posting` | code | 1 | `interfaces/main.zig`: `initDemoSnapshot` | 6 | `interfaces/abi.zig` 1, `interfaces/rpc.zig` 2, `ops/service.zig` 3 |
+| `postings.TermEntry` | code | 1 | `interfaces/main.zig`: `initDemoSnapshot` | 6 | `interfaces/abi.zig` 1, `interfaces/rpc.zig` 2, `ops/service.zig` 3 |
+| `postings.build` | code | 1 | `interfaces/main.zig`: `initDemoSnapshot` | 6 | `interfaces/abi.zig` 1, `interfaces/rpc.zig` 2, `ops/service.zig` 3 |
+| `scope.Folder` | code | 8 | `interfaces/abi.zig`: `Handle`; `ops/filename_response.zig`: `entryVisible`; `ops/ops.zig`: `FolderFields`, `fileSize`, `rootIdOf`; `ops/service.zig`: `Resolved`, `Service`, `sourceUnavailable` | 0 |  |
+| `scope.Request` | code | 21 | `interfaces/mcp.zig`: `serverScope`; `ops/ops.zig`: `ParsedFile`, `ParsedFind`, `ParsedList`, `ParsedSearch`, `Reader`, `evidence`, `listSources`, `parseEvidence`, `readChunk`, `writeCommon`; `ops/service.zig`: `ScopedService`, `resolve` | 0 |  |
+| `scope.View` | code | 1 | `ops/service.zig`: `FrequencyProvider` | 0 |  |
+| `scope.documentFrequency` | code | 2 | `ops/service.zig`: `FrequencyProvider`, `ScopedService` | 0 |  |
+| `scope.holdsAll` | code | 3 | `ops/filename_response.zig`: `entryVisible`; `ops/service.zig`: `Resolved` | 0 |  |
+| `scope.isLegacy` | code | 2 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `scope.legacy_root_id` | code | 2 | `ops/ops.zig`: `evidence`, `rootIdOf` | 0 |  |
+| `scope.recordPath` | code | 5 | `interfaces/mcp.zig`: `listResources`; `ops/ops.zig`: `fileSize`; `ops/service.zig`: `ScopedService` | 0 |  |
+| `scope.relativePath` | code | 1 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `scope.rootOfPath` | code | 1 | `ops/filename_response.zig`: `writeEvidenceInternal` | 0 |  |
+| `scope.visibleCollection` | code | 2 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `scoring.isValidVector` | code | 2 | `interfaces/abi.zig`: `queryImpl`; `ops/ops.zig`: `queryVector` | 0 |  |
+| `segment.encode` | code | 1 | `interfaces/main.zig`: `initDemoSnapshot` | 1 | `interfaces/abi.zig` 1 |
+| `snapshot_open.Sections` | code | 1 | `interfaces/cli.zig`: `buildAndOpen` | 0 |  |
+| `snapshot_open.close` | code | 3 | `interfaces/abi.zig`: `closeWith`; `interfaces/rpc.zig`: `Generation` | 0 |  |
+| `snapshot_open.open` | code | 2 | `interfaces/cli.zig`: `runEvidence`, `runQuery` | 0 |  |
+| `snapshot_open.openDetached` | code | 1 | `interfaces/cli.zig`: `buildAndOpen` | 0 |  |
+| `snapshot_open.openScoped` | code | 5 | `interfaces/cli.zig`: `openService`, `runEvidence`, `runQuery`; `interfaces/mcp.zig`: `TestServer`; `ops/ops.zig`: `TestIndex` | 1 | `interfaces/rpc.zig` 1 |
+| `snapshot_open.openScopedDetached` | code | 1 | `interfaces/cli.zig`: `buildAndOpen` | 0 |  |
+| `snapshot_open.openScopedWith` | code | 2 | `interfaces/abi.zig`: `openImpl`; `interfaces/rpc.zig`: `Generation` | 0 |  |
+| `source.Code` | code | 1 | `ops/ops.zig`: `Code` | 0 |  |
+| `source.Failure` | code | 2 | `ops/ops.zig`: `Failure`; `ops/service.zig`: `sourceUnavailable` | 0 |  |
+| `source.OutlineResult` | code | 1 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `source.SpanResult` | code | 1 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `source.max_context_lines` | code | 1 | `interfaces/cli.zig`: `parseReadSpan` | 0 |  |
+| `source.outline` | code | 1 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `source.readSpan` | code | 1 | `ops/service.zig`: `ScopedService` | 0 |  |
+| `source.source_absent_message` | code | 1 | `ops/service.zig`: `sourceUnavailable` | 0 |  |
+| `source.writeOutlineFields` | code | 1 | `ops/ops.zig`: `outline` | 0 |  |
+| `source.writeSpanFields` | code | 1 | `ops/ops.zig`: `readSpan` | 0 |  |
+| `title_field.policy_id` | code | 2 | `ops/filename_response.zig`: `writeEvidenceInternal`; `ops/ops.zig`: `writeSearchResult` | 0 |  |
+
+## The tests that use a candidate name
+
+| File | Test | Candidate names it uses (line: name) |
+|---|---|---|
+
+## Every test-block use of an `api` name, by file and test
+
+| File | Test | Names (line: name) |
+|---|---|---|
+| `interfaces/abi.zig` | ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence agree with the RPC path | 1062: `hybrid.Document`, 1068: `segment.encode`, 1069: `postings.TermEntry`, 1070: `postings.Posting`, 1073: `postings.build`, 1075: `lexical_segment.encode`, 1076: `manifest.create`, 1086: `manifest.encode`, 1090: `lifecycle.publishSerialized`, 1118: `hybrid.Result`, 1119: `engine.Evidence` |
+| `interfaces/rpc.zig` | JSON RPC returns parse errors and status | 530: `hybrid.Result`, 531: `engine.Evidence` |
+| `interfaces/rpc.zig` | JSON RPC search returns scoped cited evidence | 414: `hybrid.Document`, 419: `postings.TermEntry`, 420: `postings.Posting`, 423: `postings.build`, 433: `hybrid.Result`, 434: `engine.Evidence` |
+| `interfaces/rpc.zig` | JSON RPC validates vectors methods scoped reads and principal labels | 454: `hybrid.Document`, 455: `postings.TermEntry`, 456: `postings.Posting`, 459: `postings.build`, 469: `hybrid.Result`, 470: `engine.Evidence` |
+| `interfaces/rpc.zig` | S3-T4: the RPC folder methods, the command-line scope and apply_changes gating | 557: `apply.applyChanges`, 558: `snapshot_open.openScoped`, 563: `hybrid.Result`, 564: `engine.Evidence` |
+| `ops/service.zig` | service applies required labels to search read and source listing | 730: `hybrid.Document`, 734: `postings.TermEntry`, 735: `postings.Posting`, 738: `postings.build`, 747: `hybrid.Result`, 748: `engine.Evidence` |
+| `ops/service.zig` | service exposes scoped search read list and status operations | 656: `hybrid.Document`, 661: `postings.TermEntry`, 662: `postings.Posting`, 665: `postings.build`, 675: `hybrid.Result`, 676: `engine.Evidence` |
+| `ops/service.zig` | service reports evidence and source capacity errors | 708: `hybrid.Document`, 709: `postings.TermEntry`, 710: `postings.Posting`, 713: `postings.build`, 722: `hybrid.Result`, 723: `engine.Evidence` |
+
+## References that are not `api.NAMESPACE.NAME` (a namespace used whole, or a reading error)
+
+None.

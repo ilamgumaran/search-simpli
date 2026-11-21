@@ -1124,7 +1124,7 @@ class CoreApiTests(unittest.TestCase):
         text = (REPO / "zig" / "src" / "core" / "core.zig").read_text(encoding="utf-8")
         api, problems = check_layers.core_api(text)
         self.assertEqual(problems, [])
-        self.assertEqual((len(api), sum(len(names) for _, names in api.values())), (23, 88))
+        self.assertEqual((len(api), sum(len(names) for _, names in api.values())), (22, 86))
 
 
 class OneShotQueryTests(unittest.TestCase):
@@ -1164,7 +1164,7 @@ class OneShotQueryTests(unittest.TestCase):
         with redirect_stdout(out):
             code = check_layers.main(["--root", str(REPO)])
         self.assertEqual(code, 0, out.getvalue())
-        self.assertIn("; the public core API `api`: 88 names in 23 namespaces)", out.getvalue())
+        self.assertIn("; the public core API `api`: 86 names in 22 namespaces)", out.getvalue())
 
     def test_main_prints_the_size_of_an_api_with_one_name_more(self):
         path = self.root / "zig" / "src" / "core" / "core.zig"
@@ -1180,7 +1180,7 @@ class OneShotQueryTests(unittest.TestCase):
         with redirect_stdout(out):
             code = check_layers.main(["--root", str(self.root)])
         self.assertEqual(code, 0, out.getvalue())
-        self.assertIn("; the public core API `api`: 89 names in 23 namespaces)", out.getvalue())
+        self.assertIn("; the public core API `api`: 87 names in 22 namespaces)", out.getvalue())
 
     def test_a_planted_derive_in_interfaces_fails_inline_and_through_the_old_alias(self):
         first = self.plant("interfaces/cli.zig",
@@ -1205,6 +1205,69 @@ class OneShotQueryTests(unittest.TestCase):
     def test_the_call_passes_where_cli_uses_it(self):
         self.plant("interfaces/mcp.zig", 'const planted = @import("core").api.engine.queryOneShot;\n')
         self.assertEqual(check_layers.check(self.root), [])
+
+
+class TestOnlyNamesTests(unittest.TestCase):
+    """S6-T19: the two names only tests beside the code used left `api` once those tests moved to
+    tests/: `analyzer_v2.analyzer_id` (and with it the namespace `analyzer_v2`) and `manifest.decode`."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        # The repository's own sources, build file and document: the real `api`.
+        shutil.copytree(REPO / "zig" / "src", self.root / "zig" / "src")
+        shutil.copy(REPO / "zig" / "build.zig", self.root / "zig" / "build.zig")
+        (self.root / "docs").mkdir()
+        shutil.copy(REPO / "docs" / "layers.md", self.root / "docs" / "layers.md")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def plant(self, rel, text):
+        path = self.root / "zig" / "src" / rel
+        before = path.read_text(encoding="utf-8")
+        path.write_text(before + text, encoding="utf-8")
+        return before.count("\n") + 1
+
+    def test_the_api_has_neither_name(self):
+        text = (REPO / "zig" / "src" / "core" / "core.zig").read_text(encoding="utf-8")
+        api, problems = check_layers.core_api(text)
+        self.assertEqual(problems, [])
+        self.assertNotIn("analyzer_v2", api)
+        self.assertEqual(sorted(api["manifest"][1]), ["PendingEntry", "create", "encode"])
+
+    def test_the_moved_tests_use_internals_from_tests(self):
+        for rel, name in (("tests/filename_response_test.zig", "analyzer_v2"), ("tests/abi_index_folder_test.zig", "manifest")):
+            text = (REPO / "zig" / "src" / rel).read_text(encoding="utf-8")
+            self.assertIn(f'@import("core").{name}', text)
+        self.assertEqual(check_layers.check(self.root), [])
+
+    def test_a_planted_analyzer_id_fails_in_ops_inline_in_a_test(self):
+        first = self.plant("ops/filename_response.zig",
+                           'test "planted" {\n    _ = @import("core").api.analyzer_v2.analyzer_id;\n}\n')
+        self.assertEqual(check_layers.check(self.root), [
+            f"zig/src/ops/filename_response.zig:{first + 1}: uses core.api.analyzer_v2.analyzer_id, but api has no "
+            "namespace analyzer_v2: add the name to api by the rule in docs/core-api.md"])
+
+    def test_a_planted_analyzer_id_fails_in_interfaces_through_an_alias(self):
+        first = self.plant("interfaces/rpc.zig", 'const analyzer_v2 = @import("core").api.analyzer_v2;\n'
+                                                 'test "planted" {\n    _ = analyzer_v2.analyzer_id;\n}\n')
+        no_namespace = "but api has no namespace analyzer_v2: add the name to api by the rule in docs/core-api.md"
+        self.assertEqual(check_layers.check(self.root), [
+            f"zig/src/interfaces/rpc.zig:{first}: uses core.api.analyzer_v2, {no_namespace}",
+            f"zig/src/interfaces/rpc.zig:{first + 2}: uses core.api.analyzer_v2.analyzer_id, {no_namespace}"])
+
+    def test_a_planted_decode_fails_in_interfaces_through_the_file_s_alias(self):
+        first = self.plant("interfaces/abi.zig", 'test "planted" {\n    _ = manifest.decode;\n}\n')
+        self.assertEqual(check_layers.check(self.root), [
+            f"zig/src/interfaces/abi.zig:{first + 1}: uses core.api.manifest.decode, which api.manifest does not "
+            "have: add it by the rule in docs/core-api.md"])
+
+    def test_a_planted_decode_fails_in_ops_inline(self):
+        first = self.plant("ops/service.zig", 'const planted = @import("core").api.manifest.decode;\n')
+        self.assertEqual(check_layers.check(self.root), [
+            f"zig/src/ops/service.zig:{first}: uses core.api.manifest.decode, which api.manifest does not have: "
+            "add it by the rule in docs/core-api.md"])
 
 
 if __name__ == "__main__":

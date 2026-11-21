@@ -74,6 +74,9 @@ pub const nfr13_arena_test = @import("nfr13_arena_test.zig");
 pub const reload_test = @import("reload_test.zig");
 pub const both_view_test = @import("core").both_view_test;
 pub const field_warnings_test = @import("interfaces").field_warnings_test;
+// S6-T19: tests moved here from beside ops/filename_response.zig and interfaces/abi.zig.
+pub const filename_response_test = @import("filename_response_test.zig");
+pub const abi_index_folder_test = @import("abi_index_folder_test.zig");
 
 pub const Bm25Parameters = scoring.Bm25Parameters;
 pub const bm25Contribution = scoring.bm25Contribution;
@@ -181,4 +184,6 @@ test "load every engine module test suite" {
     _ = filename_complexity_test;
     _ = cli_test;
     _ = direct_search_test;
+    _ = filename_response_test;
+    _ = abi_index_folder_test;
 }
