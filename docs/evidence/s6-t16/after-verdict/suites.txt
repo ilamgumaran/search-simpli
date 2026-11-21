@@ -1,0 +1,15 @@
+# Python with Zig, worktree at b89f54e
+exit 0
+Ran 567 tests in 103.794s
+OK
+# Dart analyze: see dart.txt (the worktree package has no `dart pub get`, so an analyze there
+# reports unresolved imports, 1200 issues; rerun in a fresh archive after `pub get`)
+# the three checkers
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+check_layers exit 0
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+check_requirements exit 0
+check_no_home_paths exit 0
+Ran 134 tests in 11.489s
+
+OK
