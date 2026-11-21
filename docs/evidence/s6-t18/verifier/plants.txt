@@ -1,0 +1,22 @@
+# Plants of zig/src/core/engine.zig queryOneShot, each in a fresh git archive of 5242a38's zig/ with its own caches; zig test src/core/query_one_shot_test.zig --test-filter "one-shot query"
+# (a whole-file run in a zig/-only archive fails one unrelated source.zig test that reads fixtures outside zig/; the filter runs the 4 S6-T18 tests)
+none: no change -> All 4 tests passed
+p1: the folder branch removed (always derive into the caller's allocator) -> 1 of 4 fails (TestExpectedEqual)
+p2: candidate_k = top_k instead of max(top_k, chunks) -> 1 of 4 fails (TestExpectedEqual)
+p3: the derive's blocks from std.heap.page_allocator instead of the given allocator -> 1 of 4 fails (TestExpectedEqual)
+p4: the result buffer one slot larger -> 2 of 4 fail (TestExpectedEqual)
+
+# Plants for scripts/check_layers.py, each in a fresh git archive of 5242a38 (scripts, zig, docs); python3 -I scripts/check_layers.py --root <copy>
+c0 (no change):
+    check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 592 tests, each run by a step of `zig build test`; the public core API `api`: 88 names in 23 namespaces)
+c1 (cli.zig: const title_field = @import("core").api.title_field; and a title_field.derive(...) call in answerQuery):
+    zig/src/interfaces/cli.zig:913: uses core.api.title_field.derive, which api.title_field does not have: add it by the rule in docs/core-api.md
+    check_layers: 1 problem(s)
+c2 (ops/filename_response.zig: a test block with _ = @import("core").api.title_field.derive;):
+    zig/src/ops/filename_response.zig:418: uses core.api.title_field.derive, which api.title_field does not have: add it by the rule in docs/core-api.md
+    check_layers: 1 problem(s)
+c3 (cli.zig: const td = @import("core").internal.title_field.derive;):
+    zig/src/interfaces/cli.zig:22: imports core.internal, which zig/src/core/core.zig does not export (no pub const internal)
+    check_layers: 1 problem(s)
+c4 (cli.zig: const title_policy = @import("core").api.title_field.policy_id; (allowed)):
+    check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 592 tests, each run by a step of `zig build test`; the public core API `api`: 88 names in 23 namespaces)

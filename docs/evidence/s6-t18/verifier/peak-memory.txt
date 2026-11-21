@@ -1,0 +1,22 @@
+# The verifier's own /usr/bin/time -l, searchd query on its timing-10k index, main and head alternating, 5 runs each per query (after the timed runs)
+# query	run	build	maximum resident size (B)	peak memory footprint (B)
+from	1	main	maxrss=30326784	footprint=29294928
+from	1	head	maxrss=30326784	footprint=29294928
+from	2	main	maxrss=30326784	footprint=29294928
+from	2	head	maxrss=30326784	footprint=29294928
+from	3	main	maxrss=30326784	footprint=29294928
+from	3	head	maxrss=30310400	footprint=29278544
+from	4	main	maxrss=30326784	footprint=29294928
+from	4	head	maxrss=30326784	footprint=29294928
+from	5	main	maxrss=30326784	footprint=29294928
+from	5	head	maxrss=30326784	footprint=29294928
+doc 00000	1	main	maxrss=30507008	footprint=29458768
+doc 00000	1	head	maxrss=30507008	footprint=29458768
+doc 00000	2	main	maxrss=30490624	footprint=29442384
+doc 00000	2	head	maxrss=30507008	footprint=29458768
+doc 00000	3	main	maxrss=30507008	footprint=29458768
+doc 00000	3	head	maxrss=30507008	footprint=29458768
+doc 00000	4	main	maxrss=30507008	footprint=29458768
+doc 00000	4	head	maxrss=30507008	footprint=29458768
+doc 00000	5	main	maxrss=30507008	footprint=29458768
+doc 00000	5	head	maxrss=30507008	footprint=29458768

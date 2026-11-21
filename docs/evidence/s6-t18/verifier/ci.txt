@@ -1,0 +1,7 @@
+# CI, read once (GitHub API, actions/runs?branch=task/S6-T18&per_page=1, then its jobs_url), 21 Nov 2026
+run 44881433237 head 01626d3 completed success 2026-11-21T07:41:51Z - 2026-11-21T07:49:40Z
+  native-linux-release completed success 2026-11-21T07:41:53Z - 2026-11-21T07:46:20Z
+  unicode-13-goldens completed success 2026-11-21T07:41:54Z - 2026-11-21T07:42:18Z
+  native-linux completed success 2026-11-21T07:41:53Z - 2026-11-21T07:49:40Z
+  checks completed success 2026-11-21T07:41:53Z - 2026-11-21T07:43:08Z
+01626d3 is the verifier's orders commit on top of 5242a38: only files under docs/evidence/s6-t18/verifier/ differ between them

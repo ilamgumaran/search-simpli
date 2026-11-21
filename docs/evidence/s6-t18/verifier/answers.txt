@@ -1,0 +1,33 @@
+# vanswers.py (tools/) main 40932b0 against head 5242a38, both searchd ReleaseSmall from fresh archives; <V> is the verifier's scratch folder
+index j2: 7 files, identical
+index tamil: 7 files, identical
+index family: 7 files, identical
+index knowledge: 7 files, identical
+index mixed: 7 files, identical
+index titleonly: 7 files, identical
+index timing-10k: 7 files, identical
+index prose-10k: 7 files, identical
+index tamil-10k: 7 files, identical
+title-only query `orchard` (main's answer): {"query":"orchard","analyzer_id":"analyzer-v2","results":[{"chunk_id":"80438f25434e07112b9c","path":"orchard/apples.md","start_line":1,"end_line":3,"score":0.016393441706895828}]}
+usage ['query']: exit 2, stderr 'searchd: missing argument "<text>" (see searchd --help)'
+usage ['query', 'x', '--top-k']: exit 2, stderr 'searchd: missing value for --top-k'
+usage ['query', 'x', '--top-k', '-1']: exit 2, stderr "searchd: invalid value for --top-k: '-1' (expected a positive whole number)"
+usage ['query', 'x', '--top-k', 'abc']: exit 2, stderr "searchd: invalid value for --top-k: 'abc' (expected a positive whole number)"
+usage ['query', 'x']: exit 1, stderr 'error: FileNotFound'
+usage ['evidence']: exit 2, stderr 'searchd: missing argument "<text>" (see searchd --help)'
+usage ['search', 'x']: exit 2, stderr "searchd: invalid value for search <folder>: '<V>/answers-work/nope' ..." (cut at 100 characters; the path replaced)
+query b'\xff\xfe' on main: exit 2, stdout b'', stderr b'searchd: invalid value for query text (not valid UTF-8)\n'
+query b'' on main: exit 0, stdout b'query:  (analyzer=analyzer-v2)\n', stderr b''
+query b'garden \x80' on main: exit 2, stdout b'', stderr b'searchd: invalid value for query text (not valid UTF-8)\n'
+exit statuses of the edge cases (main = head): evidence exit 0: 351, evidence exit 2: 189, query exit 0: 702, query exit 2: 378, search exit 0: 297, search exit 2: 243
+j2 query: 290
+j2 query --json --top-k 3: 290
+j2 evidence --top-k 7: 290
+j2 search --json --top-k 5: 290
+edge query: 540
+edge query --json: 540
+edge evidence: 540
+edge search: 540
+title-only: 1
+usage: 7
+TOTAL 3328 cases, 0 differ

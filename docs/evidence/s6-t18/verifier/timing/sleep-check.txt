@@ -1,0 +1,19 @@
+# pmset -g log, Sleep/Wake/DarkWake and caffeinate lines, 21 Nov 2026 02:40-03:13 (the verifier's runs: 1 02:42:00-02:44:04, 2 02:44:08-02:46:12, 3 02:46:17-02:48:22, 4 02:48:26-02:50:32, 5 02:50:36-03:09:17 (slept; set aside), 5b 03:10:06-03:12:10 under caffeinate -s -i)
+2026-11-21 02:41:31 -0500 Assertions          	PID 62830(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:03:59  id:0x0x10000a2e4 [System: BGTask kCPU]          
+2026-11-21 02:45:31 -0500 Assertions          	PID 63941(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:03:59  id:0x0x10000a30b [System: BGTask kCPU]          
+2026-11-21 02:47:00 -0500 Assertions          	PID 71135(caffeinate) Summary PreventUserIdleSystemSleep "caffeinate command-line tool" 00:01:28  id:0x0x10000a331 [System: PrevIdle BGTask kCPU]        
+2026-11-21 02:49:31 -0500 Assertions          	PID 71135(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:03:59  id:0x0x10000a331 [System: BGTask kCPU]          
+2026-11-21 02:52:22 -0500 Sleep               	Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKeepAlive=active Using AC (Charge:80%) 997 secs  
+2026-11-21 02:52:24 -0500 Wake Requests       	[*process=dasd request=SleepService deltaSecs=995 wakeAt=2026-11-21 03:08:59 info="com.apple.dasd:501:com.apple.searchd.heartbeat"] [process=dasd request
+2026-11-21 02:52:24 -0500 PM Client Acks      	Delays to Sleep notifications: [com.apple.bluetooth.sleep is slow(1532 ms)]           
+2026-11-21 03:08:59 -0500 Assertions          	PID 78591(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:19:27  id:0x0x10000a347 [System: PrevIdle SRPrevSleep kCPU]
+2026-11-21 03:08:59 -0500 com.apple.sleepservices.sessionStarted	SleepService: window begins with cap time=180 secs                         	          
+2026-11-21 03:08:59 -0500 DarkWake            	DarkWake from Deep Idle [CDNPB] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02 nub-spmi-a0.0x0B nub-spmi-a0.0x25 rtc/SleepService Using AC (Charge:80%)         
+2026-11-21 03:08:59 -0500 Kernel Client Acks  	Delays to Sleep notifications: [AppleWLANInterfaceSTA driver is slow(msg: SetState to 0)(63 ms)] [IOUserResources driver is slow(msg: WillChangeState to 
+2026-11-21 03:08:59 -0500 Kernel Client Acks  	Delays to Wake notifications: [Codec Output driver is slow(msg: SetState to 1)(73 ms)] [usb-drd1-port-hs driver is slow(msg: SetState to 3)(94 ms)] [Appl
+2026-11-21 03:09:41 -0500 com.apple.sleepservices.sessionTerminated	SleepService: window has terminated.                                       	          
+2026-11-21 03:10:06 -0500 Assertions          	PID 85234(caffeinate) Created PreventSystemSleep "caffeinate command-line tool" 00:00:00  id:0x0x70000a3d3 [System: PrevIdle PrevSleep BGTask kCPU]      
+2026-11-21 03:12:10 -0500 Assertions          	PID 85234(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:02:03  id:0x0x10000a3d2 [System: PrevIdle PrevSleep BGTask 
+2026-11-21 03:12:10 -0500 Assertions          	PID 85234(caffeinate) ClientDied PreventSystemSleep "caffeinate command-line tool" 00:02:03  id:0x0x70000a3d3 [System: PrevIdle BGTask kCPU]          
+2026-11-21 03:12:59 -0500 Assertions          	PID 84426(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:03:59  id:0x0x10000a363 [System: PrevIdle BGTask kCPU]     
+# before run 1, 02:41:54: IOPMUserIsActive = Yes; load [1.70 1.81 2.17]; the last DarkWake before the runs was 00:35:41 (no Sleep between it and 02:52:22)

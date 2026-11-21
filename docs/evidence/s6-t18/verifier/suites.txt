@@ -1,0 +1,82 @@
+# Zig suites: scripts/prototypes/s6t18/names.sh COMMIT MODE <V>/names (the builder's script, read first): each a fresh git archive with its own caches; check_test_counts.py --run (both S6-T15 guards), every test binary run for names, zig build test-abi
+
+## 40932b0 Debug
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+40932b0 Debug: 674 lines; 579 OK, 9 SKIP, 22 FAIL or error
+40932b0 Debug: zig build test-abi: exit 0; Build Summary: 8/8 steps succeeded;    +- compile exe abi_test Debug native success 3s MaxRSS:320M
+abi_test: 24/24 checks passed
+
+## 40932b0 ReleaseSmall
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+40932b0 ReleaseSmall: 674 lines; 579 OK, 9 SKIP, 22 FAIL or error
+40932b0 ReleaseSmall: zig build test-abi: exit 0; Build Summary: 8/8 steps succeeded;    +- compile exe abi_test ReleaseSmall native success 124ms MaxRSS:68M
+abi_test: 24/24 checks passed
+
+## 5242a38 Debug
+Build Summary: 15/15 steps succeeded; 583/592 tests passed (9 skipped)
++- run test core 257 pass (257 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+check_test_counts: OK (5 steps, 592 tests: every step ran the tests the listing has, and the static checker passes)
+5242a38 Debug: 678 lines; 583 OK, 9 SKIP, 22 FAIL or error
+5242a38 Debug: zig build test-abi: exit 0; Build Summary: 8/8 steps succeeded;    +- compile exe abi_test Debug native success 3s MaxRSS:321M
+abi_test: 24/24 checks passed
+
+## 5242a38 ReleaseSmall
+Build Summary: 15/15 steps succeeded; 583/592 tests passed (9 skipped)
++- run test core 257 pass (257 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+check_test_counts: OK (5 steps, 592 tests: every step ran the tests the listing has, and the static checker passes)
+5242a38 ReleaseSmall: 678 lines; 583 OK, 9 SKIP, 22 FAIL or error
+5242a38 ReleaseSmall: zig build test-abi: exit 0; Build Summary: 8/8 steps succeeded;    +- compile exe abi_test ReleaseSmall native success 114ms MaxRSS:69M
+abi_test: 24/24 checks passed
+
+## names.txt diff, 40932b0 against 5242a38, Debug
+1c1
+< core: All 253 tests passed.
+---
+> core: All 257 tests passed.
+243a244,247
+> core: query_one_shot_test.test.one-shot query: a scoped open's folder field is used, derived once, never by the call...OK
+> core: query_one_shot_test.test.one-shot query: invalid UTF-8 is refused, and out of memory is returned...OK
+> core: query_one_shot_test.test.one-shot query: ranks with the title field (a title-only file is found)...OK
+> core: query_one_shot_test.test.one-shot query: the answers of deriving the field and querying, allocation for allocation...OK
+
+## names.txt diff, 40932b0 against 5242a38, ReleaseSmall
+1c1
+< core: All 253 tests passed.
+---
+> core: All 257 tests passed.
+243a244,247
+> core: query_one_shot_test.test.one-shot query: a scoped open's folder field is used, derived once, never by the call...OK
+> core: query_one_shot_test.test.one-shot query: invalid UTF-8 is refused, and out of memory is returned...OK
+> core: query_one_shot_test.test.one-shot query: ranks with the title field (a title-only file is found)...OK
+> core: query_one_shot_test.test.one-shot query: the answers of deriving the field and querying, allocation for allocation...OK
+
+## The 22 'FAIL or error' lines are test names containing the word 'error'; lines ending FAIL in any names.txt:
+0
+
+## Python (in the worktree, head 5242a38)
+Zig on PATH (the suite builds a Debug searchd): Ran 574 tests in 109.152s; OK
+SEARCHD_BINARY = head ReleaseSmall (<V>/bin-head): Ran 574 tests in 56.381s; OK
+SEARCH_SIMPLI_NO_ZIG=1: Ran 519 tests in 42.893s; OK (skipped=43)
+main 40932b0, git archive, SEARCH_SIMPLI_NO_ZIG=1: Ran 512 tests; FAILED (failures=2, skipped=43): test_j2_gate.PythonReferenceTests.test_reference_report_names_its_policies and test_privacy.PrivacyTest.test_file_list_is_independent_of_caller_directory, the two that need a git checkout (head = main + 7)
+tests.test_check_layers.OneShotQueryTests -v: 7 tests, OK
+python3 -I scripts/check_layers.py (worktree): check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 592 tests, each run by a step of `zig build test`; the public core API `api`: 88 names in 23 namespaces)
