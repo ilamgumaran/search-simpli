@@ -1,0 +1,64 @@
+# S6-T19 verifier: runs, 21 Nov 2026. Each variant tree a fresh `git archive` (9c38ace = main, 6ed6609 = head) with its
+# own --cache-dir and --global-cache-dir (or ZIG_LOCAL_CACHE_DIR / ZIG_GLOBAL_CACHE_DIR for build_native.sh). Zig 0.16.0.
+
+## Both guards: python3 -I scripts/check_test_counts.py --run -- [-Doptimize=ReleaseSmall] <own caches>
+main Debug        exit 0  Build Summary: 15/15 steps succeeded; 583/592 tests passed (9 skipped)
+                  core 257, operations 10, interfaces 26, tests 293 (284 pass, 9 skip), fastmem 6: all "ok"
+                  check_test_counts: OK (5 steps, 592 tests: every step ran the tests the listing has, and the static checker passes)
+main ReleaseSmall exit 0  same lines as main Debug
+head Debug        exit 0  Build Summary: 15/15 steps succeeded; 583/592 tests passed (9 skipped)
+                  core 257, operations 9, interfaces 25, tests 295 (286 pass, 9 skip), fastmem 6: all "ok"
+                  check_test_counts: OK (5 steps, 592 tests: every step ran the tests the listing has, and the static checker passes)
+head ReleaseSmall exit 0  same lines as head Debug
+
+## Each step's test binary run directly from zig/ (vnames.sh), the moved tests' lines
+main Debug/ReleaseSmall: 1/10 filename_response.test.filename results expose source-based match sections and readable citations...OK
+                         2/26 abi.test.ss_index_folder lists every max trace and resets the list between calls...OK
+head Debug/ReleaseSmall: 294/295 filename_response_test.test.filename results expose source-based match sections and readable citations...OK
+                         295/295 abi_index_folder_test.test.ss_index_folder lists every max trace and resets the list between calls...OK
+Comparison by declared name: test-names.txt (592 numbered lines each side, same (name, status) multiset, 0 FAIL).
+
+## zig build test-abi, head archives
+Debug        exit 0  abi_test: 24/24 checks passed; Build Summary: 8/8 steps succeeded
+ReleaseSmall exit 0  abi_test: 24/24 checks passed; Build Summary: 8/8 steps succeeded
+
+## Ruling 3: five plants of my own (vplants.sh), forms other than the builder's, check_layers.py of the copy
+head 6ed6609, exit 1, 6 problems:
+zig/src/interfaces/cli.zig:1390: uses core.api.analyzer_v2, but api has no namespace analyzer_v2: add the name to api by the rule in docs/core-api.md
+zig/src/interfaces/cli.zig:1391: uses core.api.analyzer_v2.analyzer_id, but api has no namespace analyzer_v2: add the name to api by the rule in docs/core-api.md
+zig/src/interfaces/field_warnings_test.zig:276: uses core.api.manifest.decode, which api.manifest does not have: add it by the rule in docs/core-api.md
+zig/src/interfaces/mcp.zig:962: uses core.api.manifest.decode, which api.manifest does not have: add it by the rule in docs/core-api.md
+zig/src/ops/ops.zig:1435: uses core.api.analyzer_v2.analyzer_id, but api has no namespace analyzer_v2: add the name to api by the rule in docs/core-api.md
+zig/src/ops/report.zig:213: uses core.api.manifest.decode, which api.manifest does not have: add it by the rule in docs/core-api.md
+main 9c38ace (control, same plants), exit 0:
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 77 files hold 595 tests, each run by a step of `zig build test`; the public core API `api`: 88 names in 23 namespaces)
+
+## Ruling 1: natives, tool/build_native.sh in a fresh archive of 6ed6609, NDK 28.2.13676358, exit 0
+file                                                         bytes    sha256 (16)       = committed head  = committed main
+native/macos-arm64/libsearch_simpli.dylib                    1006456  ab901f1bd8e8c78c  same              same
+native/android-arm64/libsearch_simpli.so                      966800  5b987456bfb314b9  same              same
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so 966800 5b987456bfb314b9 same          same
+native/ios-arm64/search_simpli.framework/search_simpli        971424  1815daf3214373bc  same              same
+native/ios-arm64/search_simpli.framework/Info.plist              749  8fb8f2353652106e  same              same
+native/SOURCE-SHA256                                              65  57b325c518bf53b6  same              differs (as it must)
+source_digest.py on the archive and on the worktree: 34f5c30e9fa3206ffd76fbedb9c15765f97df48cbdb0ced22f045fd132dbe512 (committed)
+
+## Ruling 1: searchd, zig build -Doptimize=ReleaseSmall --prefix, fresh archives
+main 9c38ace: 1151208 B, sha256 4837ffd3b0d54804...; head 6ed6609: 1151208 B, same sha256; cmp: identical
+git diff --stat d9df56d 9c38ace: docs/tasks/S6-T19.md only.
+
+## Python, in the worktree (git checkout), fresh ZIG_GLOBAL_CACHE_DIR
+with Zig (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY): Ran 580 tests, OK
+SEARCHD_BINARY = head's ReleaseSmall searchd:           Ran 580 tests, OK
+SEARCH_SIMPLI_NO_ZIG=1:                                  Ran 525 tests, OK (skipped=43)
+tests.test_check_layers: 132 OK (126 in a main archive); tests.test_check_test_counts: 15 OK (15 on main)
+python3 scripts/check_layers.py: OK (... 76 files hold 592 tests ...; the public core API `api`: 86 names in 22 namespaces)
+check_requirements.py exit 0; python3 -I scripts/check_no_home_paths.py exit 0; git diff --check main..HEAD exit 0
+
+## Repository state
+git show-ref --verify refs/stash: "not a valid ref" (exit 128); git status --porcelain: empty before the Verdict commit
+zig fmt --check: src/ops/filename_response.zig flagged on main and head alike; the two new files pass
+
+## CI, read once: actions/runs?branch=task/S6-T19&per_page=1
+run "checks" at 6ed6609: completed, success. Jobs: native-linux success, checks success, unicode-13-goldens success,
+native-linux-release success.

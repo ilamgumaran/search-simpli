@@ -1,0 +1,10 @@
+# S6-T19 suites and checkers, worktree at fcaaba8 (the .zig sources; later commits change documents, evidence and prototype scripts only)
+python3 scripts/check_layers.py: check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 592 tests, each run by a step of `zig build test`; the public core API `api`: 86 names in 22 namespaces)
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+check_requirements exit 0
+check_no_home_paths exit 0
+checker tests (tests.test_check_layers, tests.test_check_test_counts): Ran 147 tests in 20.982s OK
+the same on main 9c38ace (fresh archive): Ran 141 tests; OK
+Python with Zig (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests): Ran 580 tests in 114.686s OK
+Python, SEARCHD_BINARY=<scratch>/searchd-fcaaba8/out/bin/searchd (ReleaseSmall): Ran 580 tests in 61.090s OK
+Python, SEARCH_SIMPLI_NO_ZIG=1: Ran 525 tests in 48.044s OK (skipped=43)

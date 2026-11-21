@@ -1,0 +1,39 @@
+ok   ops/filename_response.zig: the test holds `@import("core").api.analyzer_v2.analyzer_id` once (an import expression)
+ok   tests/filename_response_test.zig: test 'filename results expose source-based match sections and readable citations' is ops/filename_response.zig's block (57 lines), text equal apart from 1 import expression
+ok   ops/filename_response.zig: a blank line follows the block at 9c38ace
+ok   ops/filename_response.zig: 9c38ace's file less that block and its blank line is fcaaba8's, byte for byte
+     tests/filename_response_test.zig, before the test (doc comment and imports):
+       //! S6-T19: a test of `ops/filename_response.zig`, moved here from beside it with its
+       //! name and body unchanged apart from imports. It names `analyzer_v2.analyzer_id`, which
+       //! no operation or interface uses; a test beside the code in ops/ reaches the core only
+       //! through the public core API, a test in tests/ may use internals (docs/core-api.md),
+       //! so the move lets that name leave `api`.
+       const std = @import("std");
+       const engine_module = @import("core").engine;
+       const filename_field = @import("core").filename_field;
+       const hybrid = @import("core").hybrid;
+       const writeEvidence = @import("operations").filename_response.writeEvidence;
+ok   tests/filename_response_test.zig: nothing follows the test
+ok   tests/abi_index_folder_test.zig: test 'ss_index_folder lists every max trace and resets the list between calls' is interfaces/abi.zig's block (123 lines), text equal
+ok   interfaces/abi.zig: a blank line follows the block at 9c38ace
+ok   interfaces/abi.zig: 9c38ace's file less that block and its blank line is fcaaba8's, byte for byte
+     tests/abi_index_folder_test.zig, before the test (doc comment and imports):
+       //! S6-T19: a test of `interfaces/abi.zig`, moved here from beside it with its name and
+       //! body unchanged apart from imports. It names `manifest.decode`, which no operation or
+       //! interface uses; a test beside the code in interfaces/ reaches the core only through
+       //! the public core API, a test in tests/ may use internals (docs/core-api.md), so the
+       //! move lets that name leave `api`.
+       const std = @import("std");
+       const generation_alloc = @import("core").generation_alloc;
+       const manifest = @import("core").manifest;
+       const ss_close = @import("interfaces").abi.ss_close;
+       const ss_free = @import("interfaces").abi.ss_free;
+       const ss_index_folder = @import("interfaces").abi.ss_index_folder;
+       const ss_last_error = @import("interfaces").abi.ss_last_error;
+       const ss_open = @import("interfaces").abi.ss_open;
+ok   tests/abi_index_folder_test.zig: nothing follows the test
+ok   core/core.zig: 9 lines removed (the two aliases, their doc comments, the namespace analyzer_v2), 0 added
+ok   tests/root.zig: 5 lines added (two names, their test-block lines, a comment), 0 removed
+ok   new .zig files: ['tests/abi_index_folder_test.zig', 'tests/filename_response_test.zig']; removed: []
+ok   every other .zig file under zig/src/ (91) is byte-identical
+all hold: yes

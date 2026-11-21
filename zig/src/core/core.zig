@@ -414,9 +414,6 @@ pub const api = struct {
         /// Encode a manifest into the caller's `output`; the result is a slice of
         /// it. Errors (`ManifestError`): `BufferTooSmall` and the field checks.
         pub const encode = internal.manifest.encode;
-        /// Decode and check an encoded manifest. The value borrows `encoded`.
-        /// Errors (`ManifestError`): the core's format errors.
-        pub const decode = internal.manifest.decode;
         /// A file the host named whose bytes have not arrived, or one left
         /// out: root id, path, size, labels and reason. Borrowed slices.
         pub const PendingEntry = internal.manifest.PendingEntry;
@@ -484,12 +481,6 @@ pub const api = struct {
     };
 
     // ------------------------------------------------------ the formats' identities
-
-    /// The Unicode analyzer (`analyzer_v2.zig`).
-    pub const analyzer_v2 = struct {
-        /// Its id, as a manifest and a report name it: "analyzer-v2".
-        pub const analyzer_id = internal.analyzer_v2.analyzer_id;
-    };
 
     /// The word-form groups (`fold.zig`).
     pub const fold = struct {
