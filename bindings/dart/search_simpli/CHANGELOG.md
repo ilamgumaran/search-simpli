@@ -20,6 +20,12 @@ the same generation number as before.
   (0.9.3's read), and goes on with a number above every generation on disk.
   Reproduced by tests that run the publish between the two steps
   (`zig/src/core/manifest_read_test.zig`).
+- **Not changed.** The number is still chosen before the writer lock. A
+  publish by another writer after that read and before the lock can still
+  make the rebuild fail with `PathAlreadyExists`, or, when that writer also
+  pruned the chosen number's files (`keep_generations: 1`), make it publish
+  a generation number already used, with `MANIFEST` going back to it. As in
+  0.9.4.
 
 ## 0.9.4 (S6-T9; contract 2.8.0; patch: index format, one way)
 
