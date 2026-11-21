@@ -1,0 +1,21 @@
+# Python with Zig on PATH (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests), worktree at b89a555 + uncommitted scripts
+exit 0
+OK
+
+[{"query": "benico", "ms_1k": 0.0072, "ms_10k": 0.0088, "growth": 1.21}, {"query": "hybrid retrieval", "ms_1k": 0.0182, "ms_10k": 0.0524, "growth": 2.88}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.0914, "ms_10k": 0.5714, "growth": 6.25}, {"query": "the and of to in", "ms_1k": 0.1007, "ms_10k": 0.7552, "growth": 7.5}]
+# Python with SEARCHD_BINARY = the head's ReleaseSmall searchd (b89a555 archive)
+exit 1
+FAILED (failures=2)
+
+[{"query": "benico", "ms_1k": 0.0429, "ms_10k": 0.0525, "growth": 1.22}, {"query": "hybrid retrieval", "ms_1k": 0.1091, "ms_10k": 0.3148, "growth": 2.89}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.558, "ms_10k": 3.5008, "growth": 6.27}, {"query": "the and of to in", "ms_1k": 0.6211, "ms_10k": 4.6404, "growth": 7.47}]
+# Python without Zig (SEARCH_SIMPLI_NO_ZIG=1)
+exit 0
+OK (skipped=43)
+
+[{"query": "benico", "ms_1k": 0.0068, "ms_10k": 0.0082, "growth": 1.2}, {"query": "hybrid retrieval", "ms_1k": 0.0172, "ms_10k": 0.049, "growth": 2.84}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.0878, "ms_10k": 0.5571, "growth": 6.35}, {"query": "the and of to in", "ms_1k": 0.0956, "ms_10k": 0.7285, "growth": 7.62}]
+# rerun: Python with SEARCHD_BINARY = the head's ReleaseSmall searchd; uptime before: load averages: 3.51 4.38 4.23
+exit 0
+Ran 503 tests in 44.009s
+OK
+
+[{"query": "benico", "ms_1k": 0.0072, "ms_10k": 0.0084, "growth": 1.17}, {"query": "hybrid retrieval", "ms_1k": 0.0182, "ms_10k": 0.0495, "growth": 2.72}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.0867, "ms_10k": 0.5651, "growth": 6.52}, {"query": "the and of to in", "ms_1k": 0.0959, "ms_10k": 0.749, "growth": 7.81}]

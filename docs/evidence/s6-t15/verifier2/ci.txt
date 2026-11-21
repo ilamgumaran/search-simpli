@@ -1,0 +1,13 @@
+# CI on task/S6-T15 (api.github.com, no credentials)
+## read 1, 23:48 UTC 20 Nov: run 44838632917 on b3a4117 in progress
+checks completed success
+unicode-13-goldens completed success
+native-linux in_progress None
+   step: Zig engine tests, each step's total against the listing completed success
+native-linux-release completed success
+   step: Zig engine tests (ReleaseSmall), each step's total against the listing completed success
+## read 2, after the local batch: the same run's jobs
+checks b3a4117 completed success 2026-11-20T23:42:09Z
+unicode-13-goldens b3a4117 completed success 2026-11-20T23:41:54Z
+native-linux b3a4117 completed success 2026-11-20T23:49:06Z
+native-linux-release b3a4117 completed success 2026-11-20T23:44:27Z

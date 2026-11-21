@@ -126,9 +126,14 @@ jobs:
           echo "$zig_dir" >> "$GITHUB_PATH"
           echo "ZIG_GLOBAL_CACHE_DIR=$RUNNER_TEMP/zig-cache" >> "$GITHUB_ENV"
 
-      - name: Zig engine tests
-        working-directory: zig
-        run: zig build test -j2 --summary all
+      # S6-T15: the engine tests, and each step's total compared with the layer
+      # checker's listing (scripts/check_test_counts.py; the checks job has no Zig,
+      # so the comparison runs where the tests do). A step that runs fewer or more
+      # tests than the listing, a missing step or an extra one fails the job, and so
+      # does a problem the static checker reports. -u: Zig's lines reach the log as
+      # they come, so a hang killed by the timeout still shows where it stopped.
+      - name: Zig engine tests, each step's total against the listing
+        run: python3 -u scripts/check_test_counts.py --run -- -j2
 
       - name: Filename query access and scratch complexity (no skips)
         working-directory: zig
@@ -203,9 +208,8 @@ jobs:
           echo "$zig_dir" >> "$GITHUB_PATH"
           echo "ZIG_GLOBAL_CACHE_DIR=$RUNNER_TEMP/zig-cache" >> "$GITHUB_ENV"
 
-      - name: Zig engine tests (ReleaseSmall)
-        working-directory: zig
-        run: zig build test -Doptimize=ReleaseSmall -j2 --summary all
+      - name: Zig engine tests (ReleaseSmall), each step's total against the listing
+        run: python3 -u scripts/check_test_counts.py --run -- -Doptimize=ReleaseSmall -j2
 
       - name: Zig C ABI tests (ReleaseSmall)
         working-directory: zig

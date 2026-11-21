@@ -1,0 +1,9 @@
+# S6-T15 rework: committed natives at ecae2c3 against main 515e3de (git show, cmp)
+bindings/dart/search_simpli/example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: 966800 B, 5b987456bfb314b9..., vs main: identical
+bindings/dart/search_simpli/native/android-arm64/libsearch_simpli.so: 966800 B, 5b987456bfb314b9..., vs main: identical
+bindings/dart/search_simpli/native/ios-arm64/search_simpli.framework/Info.plist: 749 B, 8fb8f2353652106e..., vs main: identical
+bindings/dart/search_simpli/native/ios-arm64/search_simpli.framework/search_simpli: 971424 B, 1815daf3214373bc..., vs main: identical
+bindings/dart/search_simpli/native/macos-arm64/libsearch_simpli.dylib: 1006456 B, ab901f1bd8e8c78c..., vs main: identical
+digest inputs changed since b89a555 (zig/, contracts/, bindings/): 0 files
+source_digest.py now: 3b08957494d25143e54490e171c472428be638422e13d98f171079f1d4f99bbb
+committed SOURCE-SHA256: 3b08957494d25143e54490e171c472428be638422e13d98f171079f1d4f99bbb

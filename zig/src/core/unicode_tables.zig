@@ -1,7 +1,7 @@
 //! Generated file -- do not edit by hand.
 //! Produced by scripts/gen_unicode_tables.py using Python 3.9.6's
 //! `unicodedata` module, Unicode Character Database version 13.0.0.
-//! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/unicode_tables.zig
+//! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/core/unicode_tables.zig
 //!
 //! unicode_version = "13.0.0"
 

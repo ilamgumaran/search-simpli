@@ -1,0 +1,62 @@
+# C-fn-named-not-called on ecae2c3
+ .../S6-T15-scratch.noindex/after-verdict/C-fn-named-not-called/src/zig/src/tests/plant_c_mid_test.zig}     | 7 +++++++
+ .../S6-T15-scratch.noindex/after-verdict/C-fn-named-not-called/src/zig/src/tests/plant_c_target_test.zig}  | 4 ++++
+ .../S6-T15-scratch.noindex/after-verdict/C-fn-named-not-called/{pristine => src}/zig/src/tests/root.zig    | 5 +++++
+ 3 files changed, 16 insertions(+)
+## static checker (check_layers.py --list-tests) exit 1
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 22 | 295 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 75 | 590 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `tests/plant_c_mid_test.zig` | 1 | tests | `tests/root.zig` |
+| `tests/plant_c_target_test.zig` | 1 | none | nothing |
+
+zig/src/tests/plant_c_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+check_layers: 1 problem(s)
+
+## count comparison (check_test_counts.py --run, zig build test --summary all, Debug) exit 1 (126 s)
+Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
+test success
++- run test core 253 pass (253 total) 45s MaxRSS:412M
++- run test operations 10 pass (10 total) 322ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 472ms MaxRSS:10M
++- run test tests 286 pass, 9 skip (295 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+
+|  +- compile test core Debug native success 8s MaxRSS:827M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 103ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 6s MaxRSS:608M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 6s MaxRSS:685M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+|  +- compile test tests Debug native success 9s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+|---|---|---:|---|---|
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 295 | 295 (286 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: zig/src/tests/plant_c_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)

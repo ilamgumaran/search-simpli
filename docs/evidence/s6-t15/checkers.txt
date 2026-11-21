@@ -1,0 +1,11 @@
+# the three checkers and whitespace, worktree
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+check_layers exit 0
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+check_requirements exit 0
+check_no_home_paths exit 0
+Ran 70 tests in 1.832s
+
+OK
+git diff --check 515e3de HEAD exit 0
+trailing-whitespace lines in *.md *.py: 0

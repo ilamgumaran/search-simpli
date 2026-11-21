@@ -1,0 +1,318 @@
+## baseline
+real run: Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 284 pass, 9 skip (293 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 0:
+  check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has)
+
+## X-remove-core-row
+real run: Build Summary: 13/13 steps succeeded; 326/335 tests passed (9 skipped)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 284 pass, 9 skip (293 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  scripts/check_layers.py:196: BUILD_ROOTS makes core/core.zig the root of the step 'core', but no test the `test` step of zig/build.zig runs is rooted there
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 1:
+  check_test_counts: step 'core' (`run test core`): the listing has 253 tests, and the run has no such step
+
+## X-remove-fastmem-step
+real run: Build Summary: 13/13 steps succeeded; 573/582 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 284 pass, 9 skip (293 total)
+static checker (check_layers.py) exit 1:
+  zig/build.zig:86: b.addTest (fastmem_tests) is compiled but the `test` step does not run it: add `test_step.dependOn(&b.addRunArtifact(fastmem_tests).step);`, or remove the test
+  scripts/check_layers.py:200: BUILD_ROOTS makes core/fastmem.zig the root of the step 'fastmem', but no test the `test` step of zig/build.zig runs is rooted there
+  check_layers: 2 problem(s)
+count comparison (check_test_counts.py --log) exit 1:
+  check_test_counts: step 'fastmem' (`run test`): the listing has 6 tests, and the run has no such step
+
+## X-copy-paste-ops-row
+real run: Build Summary: 15/15 steps succeeded; 822/831 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 253 pass (253 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 284 pass, 9 skip (293 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/build.zig:60: src/core/core.zig is the root of 2 test steps ('core', 'operations'); BUILD_ROOTS gives it one
+  zig/build.zig:60: the test_roots row 'operations' is rooted at src/core/core.zig, the root of the step 'core' in BUILD_ROOTS: a row's name and path go together
+  scripts/check_layers.py:197: BUILD_ROOTS makes ops/operations.zig the root of the step 'operations', but no test the `test` step of zig/build.zig runs is rooted there
+  check_layers: 3 problem(s)
+count comparison (check_test_counts.py --log) exit 1:
+  check_test_counts: step 'operations' (`run test operations`): the listing has 10 tests, the run 253 (253 pass)
+
+## X-remove-tests-row
+real run: Build Summary: 13/13 steps succeeded; 295/295 tests passed
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  scripts/check_layers.py:199: BUILD_ROOTS names tests/root.zig, which zig/build.zig does not name
+  scripts/check_layers.py:199: BUILD_ROOTS makes tests/root.zig the root of the step 'tests', but no test the `test` step of zig/build.zig runs is rooted there
+  check_layers: 2 problem(s)
+count comparison (check_test_counts.py --log) exit 1:
+  check_test_counts: step 'tests' (`run test tests`): the listing has 293 tests, and the run has no such step
+
+## X-change-tests-root
+real run: Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 284 pass, 9 skip (293 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/root2.zig:1: zig/src/tests/ holds tests, benchmarks and tools only (*_test.zig, *_bench.zig, EXEMPT_FILES); a layer's file belongs in its layer's folder
+  zig/build.zig:62: names src/tests/root2.zig, which BUILD_ROOTS (scripts/check_layers.py) does not list: add it, with the step of `zig build test` it is the root of, or None
+  scripts/check_layers.py:199: BUILD_ROOTS names tests/root.zig, which zig/build.zig does not name
+  zig/build.zig:62: a test step is rooted at src/tests/root2.zig, which BUILD_ROOTS (scripts/check_layers.py) gives no step: add the step there
+  scripts/check_layers.py:199: BUILD_ROOTS makes tests/root.zig the root of the step 'tests', but no test the `test` step of zig/build.zig runs is rooted there
+  zig/src/tests/root2.zig:110: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  ... (1 more lines)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has)
+
+## X-add-test-step
+real run: Build Summary: 17/17 steps succeeded; 580/589 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 284 pass, 9 skip (293 total)
+  +- run test extra 1 pass (1 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/build.zig:63: names src/tests/extra_test.zig, which BUILD_ROOTS (scripts/check_layers.py) does not list: add it, with the step of `zig build test` it is the root of, or None
+  zig/build.zig:63: a test step is rooted at src/tests/extra_test.zig, which BUILD_ROOTS (scripts/check_layers.py) gives no step: add the step there
+  zig/src/tests/extra_test.zig:1: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 3 problem(s)
+count comparison (check_test_counts.py --log) exit 1:
+  check_test_counts: the run has the step `run test extra` (+- run test extra 1 pass (1 total) 158ms MaxRSS:2M), which the listing lacks
+
+## A-nested-unref
+real run: Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 286 pass, 9 skip (295 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_a_test.zig:4: holds 1 test that no step of `zig build test` runs, though a step reaches the file: each sits inside a declaration nothing compiled names (a struct no test or comptime block uses), or under a guard that is false in a test build; lines 4
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 590 tests: every step ran the tests the listing has)
+
+## B-generic
+real run: Build Summary: 13/15 steps succeeded (1 failed); 581/591 tests passed (9 skipped, 1 failed)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 286 pass, 9 skip, 1 fail (296 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 0:
+  check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 591 tests, each run by a step of `zig build test`)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 591 tests: every step ran the tests the listing has)
+
+## C-fn-named-not-called
+real run: Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 286 pass, 9 skip (295 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_c_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 590 tests: every step ran the tests the listing has)
+
+## D-method-uncalled
+real run: Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 286 pass, 9 skip (295 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_d_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 590 tests: every step ran the tests the listing has)
+
+## E-comptime-if-false
+real run: Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 286 pass, 9 skip (295 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_e_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 590 tests: every step ran the tests the listing has)
+
+## F-comptime-not-is-test
+real run: Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 286 pass, 9 skip (295 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_f_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 590 tests: every step ran the tests the listing has)
+
+## G-pub-const-nontest-fn
+real run: Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 286 pass, 9 skip (295 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_g_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 590 tests: every step ran the tests the listing has)
+
+## H-path-in-other-module-test
+real run: Build Summary: 13/15 steps succeeded (1 failed); 580/590 tests passed (9 skipped, 1 failed)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 27 pass, 1 fail (28 total)
+  +- run test tests 284 pass, 9 skip (293 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/interfaces/interfaces.zig:1: does not name interfaces/plant_h_test.zig: a module root names every file of its folder (a pub const, and a line in its test-build comptime block), so the module's step of `zig build test` compiles it and runs its tests
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 590 tests: every step ran the tests the listing has)
+
+## I-refAllDecls
+real run: Build Summary: 13/15 steps succeeded (1 failed); 582/592 tests passed (9 skipped, 1 failed)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 287 pass, 9 skip, 1 fail (297 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_i_inner_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  zig/src/tests/plant_i_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 2 problem(s)
+count comparison (check_test_counts.py --log) exit 1:
+  check_test_counts: step 'tests' (`run test tests`): the listing has 295 tests, the run 297 (287 pass, 9 skip, 1 fail)
+
+## J-two-modules
+real run: Build Summary: 11/15 steps succeeded (2 failed); 295/296 tests passed (1 failed)
+  +- run test core 253 pass, 1 fail (254 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests transitive failure
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_j_mid_test.zig:2: imports ../core/plant_j_test.zig (zig/src/core/plant_j_test.zig), a file of another folder: core is reached through its module, @import("core"), never by path
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 1:
+  check_test_counts: step 'tests' (`run test tests`): the run reports no total (+- run test tests transitive failure)
+
+## K-usingnamespace
+real run: Build Summary: 12/15 steps succeeded (1 failed); 295/295 tests passed
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests transitive failure
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_k_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 1:
+  check_test_counts: step 'tests' (`run test tests`): the run reports no total (+- run test tests transitive failure)
+
+## L-bench-only
+real run: Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 284 pass, 9 skip (293 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/fold_bench.zig:389: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  zig/src/tests/plant_l_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 2 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has)
+
+## M-field-name
+real run: Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 286 pass, 9 skip (295 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_m_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 590 tests: every step ran the tests the listing has)
+
+## R-import-in-named-struct
+real run: Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass (10 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 286 pass, 9 skip (295 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 1:
+  zig/src/tests/plant_r_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+  check_layers: 1 problem(s)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 590 tests: every step ran the tests the listing has)
+
+## Y-doc-ops
+real run: Build Summary: 13/15 steps succeeded (1 failed); 579/589 tests passed (9 skipped, 1 failed)
+  +- run test core 253 pass (253 total)
+  +- run test operations 10 pass, 1 fail (11 total)
+  +- run test interfaces 26 pass (26 total)
+  +- run test tests 284 pass, 9 skip (293 total)
+  +- run test 6 pass (6 total)
+static checker (check_layers.py) exit 0:
+  check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build test`)
+count comparison (check_test_counts.py --log) exit 0:
+  check_test_counts: OK (5 steps, 589 tests: every step ran the tests the listing has)
+
+| Plant | static | count comparison |
+|---|---|---|
+| baseline | passes | passes |
+| X-remove-core-row | fails | fails: step 'core' (`run test core`): the listing has 253 tests, and the run has no such step |
+| X-remove-fastmem-step | fails | fails: step 'fastmem' (`run test`): the listing has 6 tests, and the run has no such step |
+| X-copy-paste-ops-row | fails | fails: step 'operations' (`run test operations`): the listing has 10 tests, the run 253 (253 pass) |
+| X-remove-tests-row | fails | fails: step 'tests' (`run test tests`): the listing has 293 tests, and the run has no such step |
+| X-change-tests-root | fails | passes |
+| X-add-test-step | fails | fails: the run has the step `run test extra` (+- run test extra 1 pass (1 total) 158ms MaxRSS:2M), which the listing lacks |
+| A-nested-unref | fails | passes |
+| B-generic | passes | passes |
+| C-fn-named-not-called | fails | passes |
+| D-method-uncalled | fails | passes |
+| E-comptime-if-false | fails | passes |
+| F-comptime-not-is-test | fails | passes |
+| G-pub-const-nontest-fn | fails | passes |
+| H-path-in-other-module-test | fails | passes |
+| I-refAllDecls | fails | fails: step 'tests' (`run test tests`): the listing has 295 tests, the run 297 (287 pass, 9 skip, 1 fail) |
+| J-two-modules | fails | fails: step 'tests' (`run test tests`): the run reports no total (+- run test tests transitive failure) |
+| K-usingnamespace | fails | fails: step 'tests' (`run test tests`): the run reports no total (+- run test tests transitive failure) |
+| L-bench-only | fails | passes |
+| M-field-name | fails | passes |
+| R-import-in-named-struct | fails | passes |
+| Y-doc-ops | passes | passes |

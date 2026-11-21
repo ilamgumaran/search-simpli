@@ -1,0 +1,39 @@
+# plant H-path-in-other-module-test on 6554055
+ .../src}/zig/src/interfaces/field_warnings_test.zig                   | 4 ++++
+ .../src/zig/src/interfaces/plant_h_test.zig}                          | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+## checker exit 1
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 5 | 28 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 75 | 590 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `interfaces/plant_h_test.zig` | 1 | interfaces | `interfaces/field_warnings_test.zig` |
+
+zig/src/interfaces/interfaces.zig:1: does not name interfaces/plant_h_test.zig: a module root names every file of its folder (a pub const, and a line in its test-build comptime block), so the module's step of `zig build test` compiles it and runs its tests
+check_layers: 1 problem(s)
+
+## zig build test exit 1 (166 s)
++- run test interfaces 27 pass, 1 fail (28 total)
+error: 'plant_h_test.test.plant h target fails' failed:
+       <run>/src/zig/src/interfaces/plant_h_test.zig:3:5: 0x1046df1cf in test.plant h target fails (interfaces)
+failed command: <run>/lc/o/d01600dc9af9447032ef57ef3f4b85fa/interfaces --cache-dir=<run>/lc --seed=0xa36d2b11 --listen=-
++- run test core w
+failed command: <run>/lc/o/2ead6e2d6eb30948a895e0409e7b35e2/core --cache-dir=<run>/lc --seed=0xa36d2b11 --listen=-
++- run test tests w
+S5-T3 fuzzy golden: 4848 chunk scores in 120 expanded queries (9 planted cases) within 1e-4
+failed command: <run>/lc/o/859cace4d2b26537ea5f4bf7b88507c0/tests --cache-dir=<run>/lc --seed=0xa36d2b11 --listen=-
+Build Summary: 13/15 steps succeeded (1 failed); 580/590 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 45s MaxRSS:412M
++- run test operations 10 pass (10 total) 330ms MaxRSS:7M
++- run test interfaces 27 pass, 1 fail (28 total)
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+error: the following build command failed with exit code 1:

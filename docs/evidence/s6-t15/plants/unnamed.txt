@@ -1,0 +1,28 @@
+################ plant unnamed (from b89a555)
+--- diff against the archive:
+diff -ruN <scratch>/base/zig/src/core/plant_unnamed_test.zig <scratch>/plant-unnamed/zig/src/core/plant_unnamed_test.zig
+--- <scratch>/base/zig/src/core/plant_unnamed_test.zig	1969-12-31 19:00:00
++++ <scratch>/plant-unnamed/zig/src/core/plant_unnamed_test.zig	2026-11-20 13:37:56
+@@ -0,0 +1,7 @@
++const std = @import("std");
++const scoring = @import("scoring.zig");
++
++test "plant: a new core test named in no module root" {
++    _ = scoring;
++    try std.testing.expectEqual(@as(u32, 1), 2);
++}
+--- zig build test --summary all (Debug), own caches:
++- run test core w
++- run test tests w
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total) 49s MaxRSS:412M
++- run test operations 10 pass (10 total) 243ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 532ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+zig build test exit 0
+--- the checker on this copy:
+zig/src/core/plant_unnamed_test.zig:4: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/core/core.zig: a pub const and a line in its test-build comptime block)
+zig/src/core/core.zig:1: does not name core/plant_unnamed_test.zig: a module root names every file of its folder (a pub const, and a line in its test-build comptime block), so the module's step of `zig build test` compiles it and runs its tests
+check_layers: 2 problem(s)
+check_layers exit 1

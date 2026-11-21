@@ -1,0 +1,36 @@
+# plant B-generic on 6554055
+ .../runs/B-generic/src/zig/src/tests/plant_b_test.zig}      | 13 +++++++++++++
+ .../runs/{pristine => B-generic/src}/zig/src/tests/root.zig |  5 +++++
+ 2 files changed, 18 insertions(+)
+
+## checker exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 22 | 296 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 75 | 591 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `tests/plant_b_test.zig` | 2 | tests | `tests/root.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 591 tests, each run by a step of `zig build test`)
+
+## zig build test exit 1 (191 s)
++- run test core w
+failed command: <run>/lc/o/7b53e7372d54909da1136787ce62300e/core --cache-dir=<run>/lc --seed=0x4d91642d --listen=-
++- run test tests 286 pass, 9 skip, 1 fail (296 total)
+error: 'plant_b_test.Gen(u8).test.plant b generic fails' failed:
+       S5-T3 fuzzy golden: 4848 chunk scores in 120 expanded queries (9 planted cases) within 1e-4
+       <run>/src/zig/src/tests/plant_b_test.zig:6:13: 0x10483f4c3 in test.plant b generic fails (tests)
+failed command: <run>/lc/o/3fdc839950f475bd0967334278dc8b2e/tests --cache-dir=<run>/lc --seed=0x4d91642d --listen=-
+Build Summary: 13/15 steps succeeded (1 failed); 581/591 tests passed (9 skipped, 1 failed)
++- run test core 253 pass (253 total) 1m MaxRSS:412M
++- run test operations 10 pass (10 total) 185ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 296ms MaxRSS:10M
++- run test tests 286 pass, 9 skip, 1 fail (296 total)
++- run test 6 pass (6 total) 959ms MaxRSS:5M
+error: the following build command failed with exit code 1:

@@ -1,0 +1,16 @@
+# build_native.sh in a fresh archive of 6554055; NDK 28.2.13676358
+build_native.sh exit 0
+native/macos-arm64/libsearch_simpli.dylib: 1006456 B ab901f1bd8e8c78c; vs main 515e3de committed: identical; vs head committed: identical
+native/android-arm64/libsearch_simpli.so: 966800 B 5b987456bfb314b9; vs main 515e3de committed: identical; vs head committed: identical
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: 966800 B 5b987456bfb314b9; vs main 515e3de committed: identical; vs head committed: identical
+native/ios-arm64/search_simpli.framework/search_simpli: 971424 B 1815daf3214373bc; vs main 515e3de committed: identical; vs head committed: identical
+native/ios-arm64/search_simpli.framework/Info.plist: 749 B 8fb8f2353652106e; vs main 515e3de committed: identical; vs head committed: identical
+native/SOURCE-SHA256: 65 B fc214334a1973e8c; vs main 515e3de committed: differs; vs head committed: identical
+check_native.sh exit 0
+check_native: macos-arm64 memcpy at 0x740 (223 calls against 120): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5b0d4 (507 calls against 164): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (219 calls against 112): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+searchd ReleaseSmall 6554055: exit 0 1151208 B 394f608ac54a6499
+searchd ReleaseSmall 515e3de: exit 0 1151208 B 394f608ac54a6499
+searchd: identical

@@ -1,0 +1,17 @@
+# S6-T15 rework, worktree at 95b23c8
+## Python with Zig (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests): exit 0
+Ran 539 tests in 91.796s
+OK
+## the checker's tests
+Ran 106 tests in 5.643s
+OK
+## check_layers
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+exit 0
+## check_requirements
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+exit 0
+## check_no_home_paths
+exit 0
+## trailing whitespace (git grep -nP ' +$' -- '*.md' '*.py')
+0

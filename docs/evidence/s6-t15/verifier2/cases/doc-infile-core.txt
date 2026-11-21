@@ -1,0 +1,69 @@
+# doc-infile-core on b3a4117
+## diff against the archive
+diff --git aa/zig/src/core/scoring.zig bb/zig/src/core/scoring.zig
+index 94043d6..7069624 100644
+--- aa/zig/src/core/scoring.zig
++++ bb/zig/src/core/scoring.zig
+@@ -218,3 +218,7 @@ test "global corpus statistics reproduce bm25Contribution; a provider overrides
+     scoped.document_frequency_fn = Provider.halve;
+     try std.testing.expectEqual(bm25Contribution(2, 12, 10, 3, 100, .{}), scoped.contribution(2, 12, 3, 7, .{}));
+ }
++
++test "v2 in-file scoring test" {
++    try @import("std").testing.expect(true);
++}
+## static checker (check_layers.py --list-tests) exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 254 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 74 | 589 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `core/fastmem.zig` | 6 | fastmem | (the root) |
+| `core/scoring.zig` | 8 | core | `core/core.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 589 tests, each run by a step of `zig build test`)
+
+## count comparison (first): check_test_counts.py --run (Debug), exit 0 (116 s)
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+test success
++- run test core 254 pass (254 total) 41s MaxRSS:412M
++- run test operations 10 pass (10 total) 263ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 435ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+
+|  +- compile test core Debug native success 5s MaxRSS:818M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 100ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 3s MaxRSS:605M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 4s MaxRSS:684M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+|  +- compile test tests Debug native success 7s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 254 | 254 (254 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 589 tests: every step ran the tests the listing has)

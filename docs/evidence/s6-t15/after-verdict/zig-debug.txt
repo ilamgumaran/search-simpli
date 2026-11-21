@@ -1,0 +1,37 @@
+# S6-T15 rework: python3 -I scripts/check_test_counts.py --run in the worktree at 95b23c8 (zig build test --summary all, Debug): exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total) 35s MaxRSS:412M
++- run test operations 10 pass (10 total) 33ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 135ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 821ms MaxRSS:5M
+
+|  +- compile test core Debug native cached 56ms MaxRSS:31M
+|     +- WriteFile cached
+|     +- compile obj fastmem Debug native cached 42ms MaxRSS:31M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native cached 55ms MaxRSS:31M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native cached 56ms MaxRSS:31M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options cached
+|     +- options cached
+|  +- compile test tests Debug native cached 56ms MaxRSS:32M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has)

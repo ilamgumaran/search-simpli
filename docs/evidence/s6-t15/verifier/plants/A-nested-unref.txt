@@ -1,0 +1,33 @@
+# plant A-nested-unref on 6554055
+ .../runs/A-nested-unref/src/zig/src/tests/plant_a_test.zig}        | 7 +++++++
+ .../runs/{pristine => A-nested-unref/src}/zig/src/tests/root.zig   | 5 +++++
+ 2 files changed, 12 insertions(+)
+
+## checker exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 22 | 296 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 75 | 591 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `tests/plant_a_test.zig` | 2 | tests | `tests/root.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 591 tests, each run by a step of `zig build test`)
+
+## zig build test exit 0 (108 s)
++- run test core w
+failed command: <run>/lc/o/fc582f1bba9c57a68adbea8ad6bca6c0/core --cache-dir=<run>/lc --seed=0xcb93e1a9 --listen=-
++- run test tests w
+S5-T3 fuzzy golden: 4848 chunk scores in 120 expanded queries (9 planted cases) within 1e-4
+failed command: <run>/lc/o/5d9dd553ed4feb2036ea4dbef57c1d42/tests --cache-dir=<run>/lc --seed=0xcb93e1a9 --listen=-
+Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
++- run test core 253 pass (253 total) 36s MaxRSS:412M
++- run test operations 10 pass (10 total) 184ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 295ms MaxRSS:10M
++- run test tests 286 pass, 9 skip (295 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 949ms MaxRSS:5M

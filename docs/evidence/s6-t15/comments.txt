@@ -1,0 +1,43 @@
+# S6-T15 ruling 3: prove_comments.py 515e3de on b89a555's tree
+ok  zig/src/core/find_bench.zig: 1759 code tokens, equal: True; 184 lines on both sides: True; 1 line(s) differ, all comment lines: True
+    line 3
+      - //!     zig run -OReleaseFast zig/src/find_bench.zig -- INDEX_DIR [MODE ...]
+      + //!     zig run -OReleaseFast zig/src/core/find_bench.zig -- INDEX_DIR [MODE ...]
+ok  zig/src/core/nfc_bench.zig: 289 code tokens, equal: True; 29 lines on both sides: True; 1 line(s) differ, all comment lines: True
+    line 3
+      - //!     zig run -OReleaseFast zig/src/nfc_bench.zig -- FILE [RUNS]
+      + //!     zig run -OReleaseFast zig/src/core/nfc_bench.zig -- FILE [RUNS]
+ok  zig/src/core/nfc_dump.zig: 476 code tokens, equal: True; 55 lines on both sides: True; 1 line(s) differ, all comment lines: True
+    line 5
+      - //!     zig run -OReleaseFast zig/src/nfc_dump.zig -- IN OUT
+      + //!     zig run -OReleaseFast zig/src/core/nfc_dump.zig -- IN OUT
+ok  zig/src/core/unicode_tables.zig: 115748 code tokens, equal: True; 7248 lines on both sides: True; 1 line(s) differ, all comment lines: True
+    line 4
+      - //! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/unicode_tables.zig
+      + //! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/core/unicode_tables.zig
+ok  zig/src/tests/filename_bench.zig: 635 code tokens, equal: True; 47 lines on both sides: True; 1 line(s) differ, all comment lines: True
+    line 2
+      - //! zig run -lc -OReleaseSmall zig/src/filename_bench.zig -- INDEX [QUERY] [CAP_MIB]
+      + //! zig run -lc -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/filename_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX [QUERY] [CAP_MIB]
+ok  zig/src/tests/fold_bench.zig: 4101 code tokens, equal: True; 388 lines on both sides: True; 1 line(s) differ, all comment lines: True
+    line 7
+      - //!     zig run -lc -OReleaseSmall zig/src/fold_bench.zig -- INDEX [--derive-only]
+      + //!     zig run -lc -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/fold_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX [--derive-only]
+ok  zig/src/tests/fuzzy_bench.zig: 6031 code tokens, equal: True; 550 lines on both sides: True; 1 line(s) differ, all comment lines: True
+    line 6
+      - //!     zig run -lc -OReleaseSmall zig/src/fuzzy_bench.zig -- INDEX
+      + //!     zig run -lc -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/fuzzy_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX
+ok  zig/src/tests/mcp_bench.zig: 783 code tokens, equal: True; 79 lines on both sides: True; 1 line(s) differ, all comment lines: True
+    line 4
+      - //!     zig run -OReleaseSmall zig/src/mcp_bench.zig -- INDEX_DIR REQUESTS ROUNDS
+      + //!     zig run -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/mcp_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX_DIR REQUESTS ROUNDS
+ok  zig/src/tests/title_field_bench.zig: 2897 code tokens, equal: True; 266 lines on both sides: True; 1 line(s) differ, all comment lines: True
+    line 5
+      - //!     zig run -lc -OReleaseSmall zig/src/title_field_bench.zig -- INDEX [ROUNDS]
+      + //!     zig run -lc -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/title_field_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX [ROUNDS]
+ok  scripts/gen_unicode_tables.py: 2460 Python tokens on both sides: True; 1 differ, a STRING token: True
+    line 326
+      - "//! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/unicode_tables.zig"
+      + "//! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/core/unicode_tables.zig"
+9 Zig file(s) compared; 0 with a change beyond comments
+exit 0

@@ -1,0 +1,10 @@
+zig build test-abi -Doptimize=Debug --summary all: exit 0
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
++- run exe abi_test success 248ms
+   +- compile exe abi_test Debug native success
+zig build test-abi -Doptimize=ReleaseSmall --summary all: exit 0
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
++- run exe abi_test success 177ms
+   +- compile exe abi_test ReleaseSmall native success

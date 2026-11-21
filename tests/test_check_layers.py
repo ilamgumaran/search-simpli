@@ -1,8 +1,8 @@
-"""S6-T1, S6-T14: the layer checker (scripts/check_layers.py, docs/layers.md).
+"""S6-T1, S6-T14, S6-T15: the layer checker (scripts/check_layers.py, docs/layers.md).
 
 The real repository must pass; small synthetic trees in the folder layout
-(core/, ops/, interfaces/, tests/) show that each rule fails with the file and
-line named."""
+(core/, ops/, interfaces/, tests/), with a zig/build.zig naming their roots, show
+that each rule fails with the file and line named."""
 
 from __future__ import annotations
 
@@ -33,16 +33,56 @@ MODULE_ROOTS = {
 }
 ALLOWED = {("interfaces/mcp.zig", "interfaces/cli.zig"): ("debt", "the arguments")}
 EXEMPT_FILES = {"tests/root.zig": "the test root"}
+BUILD_ROOTS = {
+    "core/core.zig": ("core", "the core module and its step"),
+    "ops/operations.zig": ("operations", "the operations module and its step"),
+    "interfaces/interfaces.zig": ("interfaces", "the interfaces module and its step"),
+    "tests/root.zig": ("tests", "the cross-layer step"),
+}
+ROWS = "\n".join([
+    '        .{ .name = "core", .path = "src/core/core.zig" },',
+    '        .{ .name = "operations", .path = "src/ops/operations.zig" },',
+    '        .{ .name = "interfaces", .path = "src/interfaces/interfaces.zig" },',
+    '        .{ .name = "tests", .path = "src/tests/root.zig" },',
+    "",
+])
+# The shape of zig/build.zig's test steps (S6-T15 rework): one row of test_roots per step.
+BUILD = "\n".join([
+    "const std = @import(\"std\");",
+    "// src/old.zig in a comment is not a root",
+    "pub fn build(b: *std.Build) void {",
+    '    const test_step = b.step("test", "Run the tests");',
+    "    const test_roots = [_]struct { name: []const u8, path: []const u8 }{",
+    ROWS + "    };",
+    "    for (test_roots) |root| {",
+    "        const module = b.createModule(.{ .root_source_file = b.path(root.path) });",
+    "        const name = root.name;",
+    "        const unit_tests = b.addTest(.{ .name = name, .root_module = module });",
+    "        test_step.dependOn(&b.addRunArtifact(unit_tests).step);",
+    "    }",
+    "    // more",
+    "}",
+    "",
+])
+MORE = "    // more\n"
+TEST_BUILD = "comptime {\n    if (@import(\"builtin\").is_test) {\n%s    }\n}\n"
+
+
+def compiled(*names):
+    """A module root's test-build comptime block naming names."""
+    return TEST_BUILD % "".join(f"        _ = {name};\n" for name in names)
+
+
 CLEAN = {
     "core/core.zig": 'pub const engine = @import("engine.zig");\npub const store = @import("store.zig");\n'
-                     'pub const store_test = @import("store_test.zig");\n',
+                     'pub const store_test = @import("store_test.zig");\n' + compiled("engine", "store", "store_test"),
     "core/engine.zig": 'const std = @import("std");\nconst store = @import("store.zig");\n',
     "core/store.zig": 'const std = @import("std");\n',
     "core/store_test.zig": 'const store = @import("store.zig");\n',
-    "ops/operations.zig": 'pub const ops = @import("ops.zig");\n',
+    "ops/operations.zig": 'pub const ops = @import("ops.zig");\n' + compiled("ops"),
     "ops/ops.zig": 'const engine = @import("core").engine;\n',
     "interfaces/interfaces.zig": 'pub const cli = @import("cli.zig");\npub const rpc = @import("rpc.zig");\n'
-                                 'pub const mcp = @import("mcp.zig");\n',
+                                 'pub const mcp = @import("mcp.zig");\n' + compiled("cli", "rpc", "mcp"),
     "interfaces/cli.zig": 'const ops = @import("operations").ops;\nconst engine = @import("core").engine;\n',
     "interfaces/rpc.zig": 'const ops = @import("operations").ops;\nconst options = @import("build_options");\n',
     "interfaces/mcp.zig": 'const ops = @import("operations").ops;\nconst cli = @import("cli.zig");\n',
@@ -57,13 +97,14 @@ class Tree:
     """A temporary repository with zig/src and docs/layers.md."""
 
     def __init__(self, sources=None, files=FILES, allowed=ALLOWED, exempt_files=EXEMPT_FILES,
-                 module_roots=MODULE_ROOTS):
+                 module_roots=MODULE_ROOTS, build_roots=BUILD_ROOTS, build=BUILD):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         self.files, self.allowed, self.exempt_files = dict(files), dict(allowed), dict(exempt_files)
-        self.module_roots = dict(module_roots)
+        self.module_roots, self.build_roots, self.outside_module = dict(module_roots), dict(build_roots), {}
         for rel, text in (CLEAN if sources is None else sources).items():
             self.write(rel, text)
+        self.write_build(build)
         doc = self.root / "docs" / "layers.md"
         doc.parent.mkdir(parents=True)
         doc.write_text("# Layers\n\n" + self.render() + "\n\nAfter.\n", encoding="utf-8")
@@ -73,15 +114,23 @@ class Tree:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
+    def write_build(self, text):
+        (self.root / "zig" / "build.zig").write_text(text, encoding="utf-8")
+
+    def read(self, rel):
+        return (self.root / "zig" / "src" / rel).read_text(encoding="utf-8")
+
     def remove(self, rel):
         (self.root / "zig" / "src" / rel).unlink()
 
     def render(self):
-        return check_layers.render_doc(self.files, self.allowed, self.exempt_files, module_roots=self.module_roots)
+        return check_layers.render_doc(self.files, self.allowed, self.exempt_files, module_roots=self.module_roots,
+                                       build_roots=self.build_roots)
 
-    def check(self, doc=True):
+    def check(self, doc=True, report=None):
         return check_layers.check(self.root, self.files, self.allowed, self.exempt_files, doc=doc,
-                                  module_roots=self.module_roots)
+                                  module_roots=self.module_roots, build_roots=self.build_roots,
+                                  outside_module=self.outside_module, report=report)
 
     def close(self):
         self.tmp.cleanup()
@@ -271,7 +320,8 @@ class RuleTests(unittest.TestCase):
         self.tree.write("core/engine.zig", 'const std = @import("std");\n')
         self.tree.write("core/store_test.zig", 'const std = @import("std");\n')
         self.tree.write("core/core.zig", 'pub const engine = @import("engine.zig");\n'
-                                         'pub const store_test = @import("store_test.zig");\n')
+                                         'pub const store_test = @import("store_test.zig");\n'
+                                         + compiled("engine", "store_test"))
         problems = self.tree.check()
         self.assertEqual(len(problems), 1, problems)
         self.assertIn("FILES names zig/src/core/store.zig, which does not exist", problems[0])
@@ -427,6 +477,475 @@ class RuleTests(unittest.TestCase):
         self.tree.allowed = {**ALLOWED, ("ops/ops.zig", "interfaces/cli.zig"): ("debt", "wrong")}
         problems = self.tree.check(doc=False)
         self.assertIn("is not between two interface files", " ".join(problems))
+
+
+class TestReachTests(unittest.TestCase):
+    """S6-T15: a file holding a test that no step of `zig build test` runs fails."""
+
+    FAILING = 'const std = @import("std");\ntest "planted" {\n    try std.testing.expect(false);\n}\n'
+    UNNAMED = "holds 1 test that no step of `zig build test` runs: no test step's root reaches it"
+
+    def setUp(self):
+        self.tree = Tree()
+
+    def tearDown(self):
+        self.tree.close()
+
+    def reach(self):
+        report = {}
+        problems = self.tree.check(report=report)
+        return problems, report
+
+    def name_in_core(self, name, compiled_too=True):
+        """core/core.zig with name.zig as a fourth pub const, compiled in its block or not."""
+        head, _, _ = self.tree.read("core/core.zig").partition("comptime {")
+        names = ["engine", "store", "store_test"] + ([name] if compiled_too else [])
+        self.tree.write("core/core.zig", head + f'pub const {name} = @import("{name}.zig");\n' + compiled(*names))
+
+    def test_the_clean_tree_counts_its_tests_by_step(self):
+        self.tree.write("core/store.zig", 'const std = @import("std");\ntest "store" {}\ntest {}\n')
+        self.tree.write("ops/ops.zig", CLEAN["ops/ops.zig"] + "test decltest {}\n")
+        problems, report = self.reach()
+        self.assertEqual(problems, [])
+        self.assertEqual(report["tests"]["core/store.zig"], 2)
+        self.assertEqual(report["reached"]["core/store.zig"], [("core", "core/core.zig")])
+        self.assertEqual(report["reached"]["ops/ops.zig"], [("operations", "ops/operations.zig")])
+
+    def test_the_verifier_s_plant_a_test_named_nowhere_fails(self):
+        self.tree.write("core/plant_unnamed_test.zig", 'const std = @import("std");\nconst store = @import("store.zig");\n'
+                        'test "plant" {\n    _ = store;\n    try std.testing.expectEqual(@as(u32, 1), 2);\n}\n')
+        problems = self.tree.check()
+        self.assertEqual(problems, [
+            "zig/src/core/plant_unnamed_test.zig:3: " + self.UNNAMED + " (name it in zig/src/core/core.zig: a pub "
+            "const and a line in its test-build comptime block)",
+            "zig/src/core/core.zig:1: does not name core/plant_unnamed_test.zig: a module root names every file of "
+            "its folder (a pub const, and a line in its test-build comptime block), so the module's step of "
+            "`zig build test` compiles it and runs its tests"])
+
+    def test_a_named_test_passes(self):
+        self.tree.write("core/plant_test.zig", self.FAILING)
+        self.name_in_core("plant_test")
+        problems, report = self.reach()
+        self.assertEqual(problems, [])
+        self.assertEqual(report["reached"]["core/plant_test.zig"], [("core", "core/core.zig")])
+
+    def test_a_test_named_only_as_a_pub_const_fails(self):
+        self.tree.write("core/plant_test.zig", self.FAILING)
+        self.name_in_core("plant_test", compiled_too=False)
+        problems = self.tree.check()
+        self.assertEqual(problems, [
+            "zig/src/core/plant_test.zig:2: " + self.UNNAMED + " (name it in zig/src/core/core.zig: a pub const and "
+            "a line in its test-build comptime block)",
+            "zig/src/core/core.zig:4: names core/plant_test.zig (pub const plant_test) but no test build compiles it: "
+            "add `_ = plant_test;` to its test-build comptime block"])
+
+    def test_a_test_reached_only_through_a_module_fails(self):
+        # tests/root.zig compiles core.plant_test in its test block, but through the module
+        # `core`: the tests step's root module does not hold it, so its tests do not run there.
+        self.tree.write("core/plant_test.zig", self.FAILING)
+        self.name_in_core("plant_test", compiled_too=False)
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + 'const p = @import("core").plant_test;\n'
+                        'test "load" {\n    _ = p;\n    _ = e;\n}\n')
+        problems = self.tree.check()
+        self.assertIn("zig/src/core/plant_test.zig:2: " + self.UNNAMED + " (name it in zig/src/core/core.zig: a pub "
+                      "const and a line in its test-build comptime block); zig/src/tests/root.zig reaches it only "
+                      "through the module core, and a test build runs the tests of its root module's files only",
+                      problems)
+
+    def test_a_test_in_tests_named_nowhere_fails(self):
+        self.tree.write("tests/plant_test.zig", self.FAILING)
+        self.assertEqual(self.tree.check(), [
+            "zig/src/tests/plant_test.zig:2: " + self.UNNAMED + " (name it in zig/src/tests/root.zig's test block, "
+            "or from a test that zig/src/tests/root.zig reaches)"])
+
+    def test_a_test_reached_by_path_through_another_test_passes(self):
+        self.tree.write("tests/plant_test.zig", self.FAILING)
+        self.tree.write("tests/engine_test.zig", CLEAN["tests/engine_test.zig"] + 'const plant = @import("plant_test.zig");\n'
+                        'test "engine" {\n    _ = plant;\n}\n')
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + 'test "load" {\n    _ = e;\n}\n')
+        problems, report = self.reach()
+        self.assertEqual(problems, [])
+        self.assertEqual(report["reached"]["tests/plant_test.zig"], [("tests", "tests/engine_test.zig")])
+        self.assertEqual(report["reached"]["tests/engine_test.zig"], [("tests", "tests/root.zig")])
+
+    def test_an_import_nothing_compiled_names_does_not_reach(self):
+        # The root's `const e = @import("engine_test.zig");` is named by no test or comptime block.
+        self.tree.write("tests/engine_test.zig", CLEAN["tests/engine_test.zig"] + 'test "engine" {}\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/tests/engine_test.zig:3: " + self.UNNAMED + " (name it in zig/src/tests/root.zig's test block, "
+            "or from a test that zig/src/tests/root.zig reaches)"])
+
+    def test_an_import_reached_through_the_file_s_own_declarations_counts(self):
+        self.tree.write("tests/engine_test.zig", CLEAN["tests/engine_test.zig"] + 'test "engine" {}\n')
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + "const more = alias;\n"
+                        "const alias = e;\ntest \"load\" {\n    _ = more;\n}\n")
+        self.assertEqual(self.tree.check(), [])
+
+    def test_an_import_named_only_in_a_function_body_is_not_followed(self):
+        # The strict side: Zig compiles helper's body because the test calls it, and runs
+        # engine_test's test; the checker does not trace calls and says it does not run.
+        self.tree.write("tests/engine_test.zig", CLEAN["tests/engine_test.zig"] + 'test "engine" {}\n')
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + "fn helper() void {\n    _ = e;\n}\n"
+                        "test \"load\" {\n    helper();\n}\n")
+        self.assertEqual(len(self.tree.check()), 1)
+
+    def test_an_import_named_only_from_an_uncompiled_function_does_not_reach(self):
+        self.tree.write("tests/engine_test.zig", CLEAN["tests/engine_test.zig"] + 'test "engine" {}\n')
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + "fn unused() void {\n    _ = e;\n}\n")
+        self.assertEqual(len(self.tree.check()), 1)
+
+    def test_a_member_of_the_same_name_is_not_a_reference(self):
+        # `x.e` and `.{ .e = 1 }` name a member and a field, not the declaration `e`.
+        self.tree.write("tests/engine_test.zig", CLEAN["tests/engine_test.zig"] + 'test "engine" {}\n')
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + 'const std = @import("std");\n'
+                        'test "load" {\n    _ = std.e;\n    _ = .{ .e = 1 };\n}\n')
+        self.assertEqual(len(self.tree.check()), 1)
+
+    def test_test_in_a_comment_a_string_or_a_name_is_not_a_test(self):
+        self.tree.write("tests/words_test.zig", "\n".join([
+            'const std = @import("std");',
+            '// test "in a comment" {}',
+            '/// test "in a doc comment" {}',
+            'const s = "test \\"in a string\\" {}";',
+            "const m =",
+            '    \\\\test "in a multiline string" {}',
+            ";",
+            "const c = 't';",
+            'const @"test" = 1;',
+            "",
+        ]))
+        problems, report = self.reach()
+        self.assertEqual(problems, [])
+        self.assertEqual(report["tests"]["tests/words_test.zig"], 0)
+
+    def test_a_test_in_a_nested_struct_counts(self):
+        self.tree.write("tests/nested_test.zig", 'const S = struct {\n    test "nested" {}\n};\n')
+        self.assertEqual(self.tree.check(), [
+            "zig/src/tests/nested_test.zig:2: " + self.UNNAMED + " (name it in zig/src/tests/root.zig's test block, "
+            "or from a test that zig/src/tests/root.zig reaches)"])
+
+    def test_a_test_in_a_nested_struct_a_test_names_counts(self):
+        self.tree.write("tests/engine_test.zig", CLEAN["tests/engine_test.zig"]
+                        + 'const S = struct {\n    test "nested" {}\n};\ntest "engine" {\n    _ = S;\n}\n')
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + 'test "load" {\n    _ = e;\n}\n')
+        problems, report = self.reach()
+        self.assertEqual(problems, [])
+        self.assertEqual(report["tests"]["tests/engine_test.zig"], 2)
+
+    # The S6-T15 Verdict's seven plants where the checker said a test ran and Zig did not
+    # (finding 2): each now fails the checker. Each is the verifier's plant, in tests/,
+    # through a file the root names (plant_mid_test.zig) and a target holding one test.
+
+    UNREACHED = ("zig/src/tests/plant_target_test.zig:2: holds 1 test that no step of `zig build test` runs: no test "
+                 "step's root reaches it")
+
+    def mid(self, body):
+        """tests/plant_mid_test.zig holding body, named by tests/root.zig; the problems found."""
+        self.tree.write("tests/plant_target_test.zig", self.FAILING)
+        self.tree.write("tests/plant_mid_test.zig", body)
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + 'const m = @import("plant_mid_test.zig");\n'
+                        'test "load" {\n    _ = m;\n    _ = e;\n}\n')
+        return self.tree.check()
+
+    def test_verdict_a_a_test_in_a_struct_nothing_names_fails(self):
+        self.tree.write("tests/plant_a_test.zig", 'test "top" {}\nconst Unused = struct {\n    test "nested" {}\n};\n')
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + 'const a = @import("plant_a_test.zig");\n'
+                        'test "load" {\n    _ = a;\n    _ = e;\n}\n')
+        problems, report = self.reach()
+        self.assertEqual(problems, [
+            "zig/src/tests/plant_a_test.zig:3: holds 1 test that no step of `zig build test` runs, though a step "
+            "reaches the file: each sits inside a declaration nothing compiled names (a struct no test or comptime "
+            "block uses); lines 3"])
+        self.assertEqual(report["tests"]["tests/plant_a_test.zig"], 1)
+
+    def test_verdict_c_a_function_named_and_not_called_fails(self):
+        problems = self.mid('const target = @import("plant_target_test.zig");\nfn helper() void {\n    _ = target;\n}\n'
+                            'test "names helper" {\n    _ = helper;\n}\n')
+        self.assertTrue(problems and problems[0].startswith(self.UNREACHED), problems)
+
+    def test_verdict_d_a_method_never_called_fails(self):
+        problems = self.mid('const std = @import("std");\nconst target = @import("plant_target_test.zig");\n'
+                            "const Helper = struct {\n    x: u32 = 0,\n    fn touch() void {\n        _ = target;\n"
+                            "    }\n};\ntest \"uses Helper\" {\n    const h = Helper{};\n    _ = h;\n}\n")
+        self.assertTrue(problems and problems[0].startswith(self.UNREACHED), problems)
+
+    def test_verdict_e_comptime_if_false_fails(self):
+        problems = self.mid('const target = @import("plant_target_test.zig");\ncomptime {\n    if (false) {\n'
+                            '        _ = target;\n    }\n}\ntest "e" {}\n')
+        self.assertTrue(problems and problems[0].startswith(self.UNREACHED), problems)
+
+    def test_verdict_f_comptime_not_is_test_fails(self):
+        problems = self.mid('const target = @import("plant_target_test.zig");\ncomptime {\n'
+                            '    if (!@import("builtin").is_test) {\n        _ = target;\n    }\n}\ntest "f" {}\n')
+        self.assertTrue(problems and problems[0].startswith(self.UNREACHED), problems)
+        problems = self.mid('const builtin = @import("builtin");\nconst target = @import("plant_target_test.zig");\n'
+                            "comptime {\n    if (!builtin.is_test) _ = target;\n}\ntest \"f\" {\n    _ = builtin;\n}\n")
+        self.assertTrue(problems and problems[0].startswith(self.UNREACHED), problems)
+
+    def test_verdict_m_a_field_of_the_import_s_name_fails(self):
+        problems = self.mid('const helpers = @import("plant_target_test.zig");\n'
+                            'test "m" {\n    const S = struct { helpers: u32 = 0 };\n    const v = S{};\n'
+                            "    _ = v.helpers;\n}\n")
+        self.assertTrue(problems and problems[0].startswith(self.UNREACHED), problems)
+
+    def test_verdict_r_an_import_in_a_named_struct_fails(self):
+        problems = self.mid('const Fixture = struct {\n    const data = @import("plant_target_test.zig");\n'
+                            '    pub const n: u32 = 3;\n};\ntest "r" {\n    _ = Fixture.n;\n}\n')
+        self.assertTrue(problems and problems[0].startswith(self.UNREACHED), problems)
+
+    BODY = ("holds 1 test written inside a body (a function's, such as a generic type's returned struct, a test "
+            "block's or a comptime block's): Zig runs such a test as often as the body is analysed, once per "
+            "instantiation, once or never, which the checker cannot count; write it at the top level of the file, "
+            "or of a struct declared at the top level; lines ")
+
+    def in_root(self, name, text):
+        """tests/<name>.zig holding text, named by tests/root.zig; the problems found."""
+        self.tree.write(f"tests/{name}.zig", text)
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + f'const p = @import("{name}.zig");\n'
+                        'test "load" {\n    _ = p;\n    _ = e;\n}\n')
+        return self.tree.check()
+
+    def test_verdict_b_a_test_in_a_generic_type_fails(self):
+        # The first Verdict's B: Zig runs it once per instantiation (here once). The checker
+        # cannot count that, so it fails the test, on the strict side.
+        problems = self.in_root("plant_b_test", 'fn Gen(comptime T: type) type {\n    return struct {\n'
+                                '        pub const t = T;\n        test "generic" {}\n    };\n}\n'
+                                'test "b" {\n    _ = Gen(u8);\n}\n')
+        self.assertEqual(problems, ["zig/src/tests/plant_b_test.zig:4: " + self.BODY + "4"])
+
+    def test_second_verdict_b2_two_generics_that_cancel_fail(self):
+        # Ring(T) instantiated twice runs its test twice; Queue named, never instantiated,
+        # runs its test never: the totals cancel, so only this rule sees it.
+        problems = self.in_root("plant_b2_test", "\n".join([
+            'const std = @import("std");',
+            "fn Ring(comptime T: type) type {",
+            "    return struct {",
+            "        pub const Item = T;",
+            '        test "ring" {}',
+            "    };",
+            "}",
+            "fn Queue(comptime T: type) type {",
+            "    return struct {",
+            "        pub const Item = T;",
+            '        test "queue fails" {}',
+            "    };",
+            "}",
+            'test "rings" {',
+            "    _ = Ring(u8).Item;",
+            "    _ = Ring(u32).Item;",
+            "}",
+            'test "queue" {',
+            "    _ = Queue;",
+            "}",
+            ""]))
+        self.assertEqual(problems, ["zig/src/tests/plant_b2_test.zig:5: " + self.BODY.replace("holds 1 test", "holds 2 tests")
+                                    + "5, 11"])
+
+    def test_a_test_in_a_local_struct_of_a_test_block_fails(self):
+        # Zig 0.16 runs it when the test block runs (scratch probe); the checker does not count it.
+        problems = self.in_root("plant_local_test", 'test "outer" {\n    const Local = struct {\n'
+                                '        test "local" {}\n    };\n    _ = Local;\n}\n')
+        self.assertEqual(problems, ["zig/src/tests/plant_local_test.zig:3: " + self.BODY + "3"])
+
+    def test_a_test_in_a_function_s_local_struct_fails(self):
+        problems = self.in_root("plant_fnlocal_test", "fn helper() void {\n    const S = struct {\n"
+                                '        test "in fn" {}\n    };\n    _ = S;\n}\ntest "calls" {\n    helper();\n}\n')
+        self.assertEqual(problems, ["zig/src/tests/plant_fnlocal_test.zig:3: " + self.BODY + "3"])
+
+    def test_a_test_in_a_top_level_struct_a_test_names_still_counts(self):
+        problems = self.in_root("plant_top_test", 'const S = struct {\n    test "in S" {}\n};\n'
+                                'test "names S" {\n    _ = S;\n}\n')
+        self.assertEqual(problems, [])
+
+    def test_verdict_g_an_import_only_a_pub_fn_uses_fails(self):
+        problems = self.mid('pub const target = @import("plant_target_test.zig");\npub fn helper() void {\n'
+                            '    _ = target;\n}\ntest "g" {}\n')
+        self.assertTrue(problems and problems[0].startswith(self.UNREACHED), problems)
+
+    def test_a_test_under_a_false_guard_in_a_reached_file_fails(self):
+        self.tree.write("tests/engine_test.zig", CLEAN["tests/engine_test.zig"]
+                        + 'test "engine" {}\ncomptime {\n    if (false) {\n        _ = struct {\n'
+                          '            test "dead" {}\n        };\n    }\n}\n')
+        self.tree.write("tests/root.zig", CLEAN["tests/root.zig"] + 'test "load" {\n    _ = e;\n}\n')
+        self.assertEqual(self.tree.check(), ["zig/src/tests/engine_test.zig:7: " + self.BODY + "7"])
+
+    def test_a_benchmark_or_a_tool_holding_a_test_fails(self):
+        self.tree.write("tests/query_bench.zig", CLEAN["tests/query_bench.zig"] + 'test "bench" {}\n')
+        self.assertEqual(len(self.tree.check()), 1)
+
+    def test_a_file_reached_by_two_roots_is_counted_in_each(self):
+        self.tree.build_roots["core/store.zig"] = ("store", "a step of its own")
+        self.tree.write_build(BUILD.replace(ROWS, ROWS + '        .{ .name = "store", .path = "src/core/store.zig" },\n'))
+        self.tree.write("core/store.zig", 'test "store" {}\n')
+        report = {}
+        self.assertEqual(self.tree.check(doc=False, report=report), [])
+        self.assertEqual(sorted(report["reached"]["core/store.zig"]), [("core", "core/core.zig"), ("store", None)])
+
+    # A module root names every file of its folder.
+
+    def test_removing_a_name_from_a_module_root_s_block_fails(self):
+        self.tree.write("core/core.zig", self.tree.read("core/core.zig").replace("        _ = store;\n", ""))
+        self.assertEqual(self.tree.check(), [
+            "zig/src/core/core.zig:2: names core/store.zig (pub const store) but no test build compiles it: "
+            "add `_ = store;` to its test-build comptime block"])
+
+    def test_removing_a_name_from_a_module_root_fails(self):
+        self.tree.write("interfaces/interfaces.zig", 'pub const cli = @import("cli.zig");\n'
+                        'pub const mcp = @import("mcp.zig");\n' + compiled("cli", "mcp"))
+        # tests/engine_test.zig's @import("interfaces").rpc now fails as well.
+        self.assertIn("zig/src/interfaces/interfaces.zig:1: does not name interfaces/rpc.zig: a module root names "
+                      "every file of its folder (a pub const, and a line in its test-build comptime block), so the "
+                      "module's step of `zig build test` compiles it and runs its tests", self.tree.check())
+
+    def test_a_file_outside_the_module_is_not_required(self):
+        self.tree.files["interfaces/main.zig"] = ("interfaces", "the executable")
+        self.tree.build_roots["interfaces/main.zig"] = (None, "the executable")
+        self.tree.outside_module["interfaces/main.zig"] = "its own root"
+        self.tree.write("interfaces/main.zig", 'const ops = @import("operations").ops;\n')
+        self.tree.write_build(BUILD.replace(MORE, '    _ = b.path("src/interfaces/main.zig");\n'))
+        self.assertEqual(self.tree.check(doc=False), [])
+
+    # The roots zig/build.zig compiles.
+
+    def test_a_root_zig_build_names_that_the_table_lacks_fails(self):
+        self.tree.write_build(BUILD.replace(MORE, '    _ = b.path("src/tests/other_root.zig");\n'))
+        self.assertEqual(self.tree.check(), [
+            "zig/build.zig:17: names src/tests/other_root.zig, which BUILD_ROOTS (scripts/check_layers.py) does not "
+            "list: add it, with the step of `zig build test` it is the root of, or None"])
+
+    def test_a_listed_root_zig_build_does_not_name_fails(self):
+        self.tree.write_build(BUILD.replace('        .{ .name = "tests", .path = "src/tests/root.zig" },\n', ""))
+        problems = self.tree.check()
+        self.assertEqual(len(problems), 2, problems)
+        self.assertIn("BUILD_ROOTS names tests/root.zig, which zig/build.zig does not name", problems[0])
+        self.assertIn("BUILD_ROOTS makes tests/root.zig the root of the step 'tests', but no test the `test` step of "
+                      "zig/build.zig runs is rooted there", problems[1])
+
+    def test_a_missing_build_file_fails(self):
+        (self.tree.root / "zig" / "build.zig").unlink()
+        self.assertIn("zig/build.zig:1: missing; the checker reads the roots of `zig build test` from it",
+                      self.tree.check())
+
+    def test_the_repository_s_build_roots_are_the_build_s(self):
+        text = (REPO / "zig" / "build.zig").read_text(encoding="utf-8")
+        self.assertEqual({rel for _, rel in check_layers.build_root_paths(text)}, set(check_layers.BUILD_ROOTS))
+        steps = [step for step, _ in check_layers.BUILD_ROOTS.values() if step]
+        self.assertEqual(sorted(steps), ["core", "fastmem", "interfaces", "operations", "tests"])
+
+    def test_the_repository_s_test_steps_are_read_from_the_build(self):
+        steps, problems = check_layers.build_test_steps((REPO / "zig" / "build.zig").read_text(encoding="utf-8"))
+        self.assertEqual(problems, [])
+        self.assertEqual(sorted((label, root) for label, root, _, _ in steps), [
+            ("", "core/fastmem.zig"), ("core", "core/core.zig"), ("interfaces", "interfaces/interfaces.zig"),
+            ("operations", "ops/operations.zig"), ("tests", "tests/root.zig")])
+
+
+# The three edits of zig/build.zig the S6-T15 Verdict found passing the checker (finding 1),
+# applied to the repository's own build file in a synthetic tree of the same roots.
+REAL_BUILD = (REPO / "zig" / "build.zig").read_text(encoding="utf-8")
+
+
+class BuildStepTests(unittest.TestCase):
+    """S6-T15 rework: the steps of `zig build test` are read from zig/build.zig's structure."""
+
+    def setUp(self):
+        roots = dict(BUILD_ROOTS)
+        roots["core/fastmem.zig"] = ("fastmem", "its own step")
+        self.tree = Tree(build_roots=roots, build=BUILD.replace(MORE, FASTMEM))
+        self.tree.files["core/fastmem.zig"] = ("core", "memcpy")
+        self.tree.outside_module["core/fastmem.zig"] = "its own object"
+        self.tree.write("core/fastmem.zig", 'test "fastmem" {}\n')
+
+    def tearDown(self):
+        self.tree.close()
+
+    def edit(self, old, new):
+        text = BUILD.replace(MORE, FASTMEM)
+        self.assertEqual(text.count(old), 1, old)
+        self.tree.write_build(text.replace(old, new))
+        return self.tree.check(doc=False)
+
+    def test_the_clean_build_passes_and_gives_each_step_its_label(self):
+        report = {}
+        self.assertEqual(self.tree.check(doc=False, report=report), [])
+        self.assertEqual(report["labels"], {"core/core.zig": "core", "ops/operations.zig": "operations",
+                                            "interfaces/interfaces.zig": "interfaces", "tests/root.zig": "tests",
+                                            "core/fastmem.zig": ""})
+
+    def test_deleting_the_core_row_fails(self):
+        problems = self.edit('        .{ .name = "core", .path = "src/core/core.zig" },\n', "")
+        self.assertIn("BUILD_ROOTS makes core/core.zig the root of the step 'core', but no test the `test` step of "
+                      "zig/build.zig runs is rooted there", " ".join(problems))
+
+    def test_a_test_the_test_step_does_not_run_fails(self):
+        problems = self.edit("    test_step.dependOn(&b.addRunArtifact(fastmem_tests).step);\n",
+                             "    _ = fastmem_tests;\n")
+        joined = " ".join(problems)
+        self.assertIn("b.addTest (fastmem_tests) is compiled but the `test` step does not run it", joined)
+        self.assertIn("BUILD_ROOTS makes core/fastmem.zig the root of the step 'fastmem'", joined)
+
+    def test_one_root_pasted_into_another_row_fails(self):
+        problems = self.edit('.{ .name = "operations", .path = "src/ops/operations.zig" }',
+                             '.{ .name = "operations", .path = "src/core/core.zig" }')
+        joined = " ".join(problems)
+        self.assertIn("src/core/core.zig is the root of 2 test steps", joined)
+        self.assertIn("the test_roots row 'operations' is rooted at src/core/core.zig, the root of the step 'core'",
+                      joined)
+        self.assertIn("BUILD_ROOTS makes ops/operations.zig the root of the step 'operations'", joined)
+
+    def test_a_row_for_a_root_without_a_step_fails(self):
+        self.tree.build_roots["interfaces/main.zig"] = (None, "the executable")
+        self.tree.files["interfaces/main.zig"] = ("interfaces", "the executable")
+        self.tree.outside_module["interfaces/main.zig"] = "its own root"
+        self.tree.write("interfaces/main.zig", 'const ops = @import("operations").ops;\n')
+        problems = self.edit(ROWS, ROWS + '        .{ .name = "main", .path = "src/interfaces/main.zig" },\n')
+        self.assertIn("a test step is rooted at src/interfaces/main.zig, which BUILD_ROOTS (scripts/check_layers.py) "
+                      "gives no step", " ".join(problems))
+
+    def test_a_loop_test_not_named_by_its_row_fails(self):
+        problems = self.edit("const name = root.name;", 'const name = "all";')
+        self.assertIn("the test compiled in the loop over test_roots is not named `root.name`", " ".join(problems))
+
+    def test_no_test_step_fails(self):
+        problems = self.edit('const test_step = b.step("test", "Run the tests");', 'const test_step = b.step("t", "");')
+        self.assertIn('no `const ... = b.step("test", ...)`', " ".join(problems))
+
+    def test_a_test_outside_the_loop_named_otherwise_than_step_labels_fails(self):
+        # The count comparison matches steps by the Build Summary's name (STEP_LABELS).
+        self.tree.write_build(BUILD.replace(MORE, FASTMEM.replace(".{ .root_module", '.{ .name = "mem", .root_module')))
+        self.assertEqual(self.tree.check(doc=False), [
+            "zig/build.zig:17: the test rooted at src/core/fastmem.zig is named 'mem', so the Build Summary shows "
+            "`run test mem`; the step 'fastmem' is expected as `run test` (STEP_LABELS in scripts/check_layers.py)"])
+
+    def test_the_verifier_s_edits_to_the_real_build_fail(self):
+        # Finding 1's three edits, on the real zig/build.zig: each makes build_test_steps
+        # disagree with the repository's BUILD_ROOTS.
+        edits = {
+            "remove the core row": ('        .{ .name = "core", .path = "src/core/core.zig" },\n', ""),
+            "drop fastmem's dependOn": ("    test_step.dependOn(&b.addRunArtifact(fastmem_tests).step);\n",
+                                        "    _ = fastmem_tests;\n"),
+            "paste core's path into the operations row": (
+                '.{ .name = "operations", .path = "src/ops/operations.zig" }',
+                '.{ .name = "operations", .path = "src/core/core.zig" }'),
+        }
+        for what, (old, new) in edits.items():
+            with self.subTest(what):
+                self.assertEqual(REAL_BUILD.count(old), 1, old)
+                steps, unread = check_layers.build_test_steps(REAL_BUILD.replace(old, new))
+                roots = sorted(root for _, root, _, _ in steps)
+                want = sorted(rel for rel, (step, _) in check_layers.BUILD_ROOTS.items() if step)
+                self.assertTrue(unread or roots != want, (what, steps))
+
+
+FASTMEM = "\n".join([
+    "    const fastmem_tests = b.addTest(.{ .root_module = fastmemModule(b) });",
+    "    test_step.dependOn(&b.addRunArtifact(fastmem_tests).step);",
+    "}",
+    "",
+    "fn fastmemModule(b: *std.Build) *std.Build.Module {",
+    '    return b.createModule(.{ .root_source_file = b.path("src/core/fastmem.zig") });',
+    "",
+])
 
 
 if __name__ == "__main__":

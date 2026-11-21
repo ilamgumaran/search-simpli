@@ -1,0 +1,35 @@
+# plant M-field-name on 6554055
+ .../runs/M-field-name/src/zig/src/tests/plant_m_mid_test.zig}      | 7 +++++++
+ .../runs/M-field-name/src/zig/src/tests/plant_m_target_test.zig}   | 4 ++++
+ .../runs/{pristine => M-field-name/src}/zig/src/tests/root.zig     | 5 +++++
+ 3 files changed, 16 insertions(+)
+
+## checker exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 23 | 296 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 76 | 591 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `tests/plant_m_mid_test.zig` | 1 | tests | `tests/root.zig` |
+| `tests/plant_m_target_test.zig` | 1 | tests | `tests/plant_m_mid_test.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 591 tests, each run by a step of `zig build test`)
+
+## zig build test exit 0 (140 s)
++- run test core w
+failed command: <run>/lc/o/3c01f43732f5c31fa700b981acc88d28/core --cache-dir=<run>/lc --seed=0x42e357c4 --listen=-
++- run test tests w
+S5-T3 fuzzy golden: 4848 chunk scores in 120 expanded queries (9 planted cases) within 1e-4
+failed command: <run>/lc/o/a42c2b1694ca42c853a47e57aa74580d/tests --cache-dir=<run>/lc --seed=0x42e357c4 --listen=-
+Build Summary: 15/15 steps succeeded; 581/590 tests passed (9 skipped)
++- run test core 253 pass (253 total) 52s MaxRSS:412M
++- run test operations 10 pass (10 total) 322ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 550ms MaxRSS:10M
++- run test tests 286 pass, 9 skip (295 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M

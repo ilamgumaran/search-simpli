@@ -2,7 +2,8 @@
 
 **State:** written by S6-T1 (16 Nov 2026, from `main` at `7cd2c16`), item B1 of the
 [objective plan](plans/2026-11-16-objective-plan.md); the folders by S6-T14 (item B2),
-which moved every file into its layer's folder without changing what it does.
+which moved every file into its layer's folder without changing what it does; the
+check that every test runs by S6-T15.
 
 The engine's Zig sources form three layers, and each layer is a folder of `zig/src/`
 and a Zig module. The core can be improved without touching an interface, and a new
@@ -28,14 +29,27 @@ a file imports another file of its own folder by path, as before. A third module
 and the `fastmem` step, because a Zig test build only collects the tests of its root
 module's files. A module root names its folder's files in a `comptime` block that is
 compiled in a test build only, so it adds no test of its own; the totals are the same
-as when every file sat in one folder.
+as when every file sat in one folder. The checker fails when a module root leaves out
+a file of its folder, and when a file holding a test is reached by no step (below).
 
 `scripts/check_layers.py` holds the assignment of every file and checks it. It runs
 in CI (the `checks` job, no Zig needed) and through `python3 -m unittest`
-(`tests/test_check_layers.py`). Run it yourself with:
+(`tests/test_check_layers.py`). `scripts/check_test_counts.py` runs `zig build test
+--summary all` and compares each step's total with the checker's listing; it runs in
+CI where the Zig tests run (the `native-linux` job in Debug and `native-linux-release`
+in ReleaseSmall) and is tested by `tests/test_check_test_counts.py`.
+
+The two are separate guards that catch different losses of a test, and both must pass.
+The static checker reads the source without a toolchain and names the file, but reads
+Zig only approximately (below). The comparison sees what the build ran, but only as a
+step's total. CI runs both, the static checker in `checks` and the comparison in the
+two native jobs. `check_test_counts.py` also fails when the static checker reports a
+problem, so its one command runs both (`--counts-only` judges the totals alone). Run
+them yourself with:
 
 ```sh
 python3 scripts/check_layers.py
+python3 scripts/check_test_counts.py --run      # needs Zig 0.16 on PATH; also runs the checker
 ```
 
 ## What each layer may import
@@ -149,9 +163,21 @@ Module roots (only `pub const` imports of their folder's files):
 
 | File (`zig/src/`) | Module | What it is |
 |---|---|---|
-| `core/core.zig` | `core` | the module `core`: every core file but `fastmem.zig`, and the core tests another folder names |
+| `core/core.zig` | `core` | the module `core`: every core file but `fastmem.zig`, and every core test |
 | `ops/operations.zig` | `operations` | the module `operations` (it imports `core`): every operations file |
 | `interfaces/interfaces.zig` | `interfaces` | the module `interfaces`, for the tests in `tests/`: every interface file but `main.zig`, and `field_warnings_test.zig` |
+
+The roots `zig/build.zig` compiles (a test step runs the tests of the files its root reaches by path):
+
+| File (`zig/src/`) | Step of `zig build test` | What it is the root of |
+|---|---|---|
+| `core/core.zig` | `core` | the module `core`, and the test step `core` |
+| `ops/operations.zig` | `operations` | the module `operations`, and the test step `operations` |
+| `interfaces/interfaces.zig` | `interfaces` | the module `interfaces` (for `tests/`), and the test step `interfaces` |
+| `tests/root.zig` | `tests` | the test step `tests`: the cross-layer tests |
+| `core/fastmem.zig` | `fastmem` | the `fastmem` object, and its own test step (`run test` in the Build Summary) |
+| `interfaces/main.zig` | none | the `searchd` executable |
+| `interfaces/abi.zig` | none | the C ABI libraries, and the library of `zig build test-abi` |
 
 Imports between interfaces that are allowed (any other fails the check):
 
@@ -180,7 +206,7 @@ Tests, benchmarks and tools (in their subject's layer folder, or `tests/` when t
 
 | File or pattern | Why |
 |---|---|
-| `*_test.zig` | a test, compiled by `zig build test` through its folder's module root or `tests/root.zig`, or run alone with `zig test` |
+| `*_test.zig` | a test: named in its folder's module root, or reached from the test block of `tests/root.zig`, so that its folder's step of `zig build test` runs it (or run alone with `zig test`) |
 | `*_bench.zig` | a benchmark, run by hand with `zig run` (zig/README.md) |
 | `core/nfc_dump.zig` | a test tool for `scripts/nfc_compare.py`, in no build |
 | `tests/root.zig` | the root of the cross-layer tests' step of `zig build test`: names every module and every test in `tests/` |
@@ -203,6 +229,43 @@ to regenerate the table above, then `python3 scripts/check_layers.py`. A change 
 contract, an index format or the C ABI still needs its
 [capability document](capability-process.md) first.
 
+**A new test** sits beside its subject (an in-file `test` block, or `core/x_test.zig`)
+or, when it crosses layers, in `tests/`, and runs only when a step's root reaches its
+file by path. In `core/`, `ops/` or `interfaces/` that means a `pub const` in the
+folder's module root and a `_ = name;` line in the root's test-build `comptime` block
+(every file of the folder is named there, tested or not); in `tests/`, a `pub const`
+in `tests/root.zig` and a `_ = name;` line in its test block, or an import that a
+reached test compiles. A file reached only through a module (`@import("core").name`)
+does not count, since a test build runs the tests of its root module's files only.
+`python3 scripts/check_layers.py` fails, naming the file, when a file that holds a
+`test` is reached by no step, and `--list-tests` prints which step runs each file's
+tests and how many there are. `python3 scripts/check_test_counts.py --run` then checks
+them against the build: it fails when a step's total in `zig build test --summary all`
+differs from the listing, or a step is missing or extra.
+
+**When the comparison fails.** Its table gives, for each step, the number the checker
+lists (`Listed`: the tests the static reading finds the step's root reaching) and the
+number Zig ran (`Ran`: the step's total in the Build Summary, passed, skipped and
+failed together). The difference is the number of tests in question, in that step:
+
+- *Ran lower than Listed*: that many tests the checker counts do not run. Usual causes,
+  in the files of that folder (or `tests/`) that the change touched: a test file named
+  only through something that is never compiled (a `const` alias inside a struct no
+  test reaches into, a `comptime` switch on a `const` that is false, a guard on
+  `builtin.os.tag` or `builtin.mode`). The fix: name the file plainly, a `pub const`
+  and a `_ = name;` line in its root, or remove the dead code.
+- *Ran higher than Listed*: Zig runs tests the checker does not see, such as tests
+  pulled in by `std.testing.refAllDecls`. The static checker fails these too, naming
+  the file; name the file in its root.
+- *A step missing, extra, or with no total*: `zig/build.zig` changed which tests run.
+  The step may have been dropped, renamed or skipped (a `continue` in the loop over
+  `test_roots`), or it failed to compile; the error is printed above the Build
+  Summary. A step with no tests at all also shows no total. Restore the step, or change
+  `BUILD_ROOTS` (and `STEP_LABELS`) in `scripts/check_layers.py` with it.
+
+To find the file, compare `python3 scripts/check_layers.py --list-tests` with the
+files your change touched under `zig/src/`.
+
 ## What the check reads, and what it does not
 
 It reads every `.zig` file under `zig/src/` (dot folders included) as Zig tokens, so
@@ -221,10 +284,63 @@ files must be named in the "Imports that are not files" table above, and only th
 folders listed there may use them; an unknown name fails. A file directly in
 `zig/src/`, in an unknown folder, or in a folder other than its layer's, fails.
 
-What it cannot see: what `zig/build.zig` wires together beyond the module names (which
-module is the root of which artifact, and what a named module added with `addImport`
-or `addOptions` contains; a new one must be listed, but its contents are not read);
-`@embedFile` and `@cImport`, which bring in bytes or C declarations rather than Zig
-files; imports in files outside `zig/src/` (`zig/build.zig`, `zig/tests/`); and
-branches that are never compiled (an import under `if (false)` still counts, so the
-check errs on the strict side). It does not judge the bindings or the Python reference.
+**Which tests run.** The roots are the `"src/....zig"` strings of `zig/build.zig`, each
+listed in the roots table above with its test step (the checker fails on a root
+missing from either side). The steps are read from the build's structure: the rows of
+`test_roots` (`.{ .name = "...", .path = "src/....zig" }`) compiled in the loop over
+them, and every other `b.addTest`, with the root of its module. The checker fails
+when the `test` step does not run a test the build compiles (a `dependOn` dropped), when
+a step's root is not the one the roots table gives that step (a row deleted, or one
+root pasted into another row), or when it cannot read that structure.
+
+From a step's root it follows the `.zig` imports a test build compiles. It starts from
+the file's `test` blocks and container-level `comptime` blocks, and adds each
+declaration of the same file they name, directly or through other declarations
+(`_ = engine;` compiles `const engine = @import("engine.zig");`); then on from file to
+file. Not followed: a name inside a function body (compiled only if the function is
+called), a name under a guard that is false in a test build (`if (false)`,
+`if (!@import("builtin").is_test)`), a name after `.` (a member) or before `:` (a field
+or a label), and an `@import` inside a nested `struct`, `enum`, `union` or `opaque`.
+Imports through a module are not followed for tests. A test counts when it is a
+top-level test of a reached file, or sits inside a declaration that is followed (a
+nested struct a test names) and not under a false
+guard; a reached file with a test that does not count fails. So does a test written
+inside a body: a function's (a generic type's returned struct), a test block's or a
+`comptime` block's (a local struct). Zig 0.16 runs such a test as often as the body
+is analysed, once per instantiation of a generic, once, or never, which neither the
+checker nor a total can follow. Write it at the top level of the file, or of a struct
+declared at the top level.
+
+**What it cannot see, and which way it errs.** Its reading of Zig is not exact. The
+comparison with a real run (`scripts/check_test_counts.py`) catches what the reading
+lets through when it changes a step's total. The reading catches, by file, losses the
+totals cannot show: a loss the checker also leaves out of its listing, or two errors
+that cancel in one step. The comparison's listing takes the steps from the roots table,
+not from `zig/build.zig`, so a step the build loses still shows as missing from the
+run. It matches steps by the name the Build Summary prints after `run test`: the step's
+own name, and none for `fastmem`. The checker's limits:
+
+- *Strict* (it fails a test that does run): an import compiled only through a function
+  that a test calls, in the same file or another (`std.testing.refAllDecls` included),
+  or through a nested container's declaration that a test names (`Fixture.data`). The
+  fix the message names, naming the file in its root, makes both agree.
+- *Lenient* (it passes a test that does not run): a followed declaration is taken
+  whole, so a name in it reaches though nothing compiled uses that part (a field's
+  default value, a `const` alias inside a struct no test reaches into), and so does a
+  generic function a test names but never calls (its imports; a test inside it fails,
+  above); a branch compiled out by a condition other
+  than the three false guards (`if (builtin.os.tag == .windows)`, an `else` of
+  `is_test`). The count comparison catches each, as a step's total lower than the
+  listing by the number of tests not run.
+- *The comparison's own safe-direction limit*: a step with no tests at all prints no
+  total in the Build Summary (`+- run test NAME success`), and the comparison fails it
+  as "no total". No step has zero tests today.
+- *Not read at all*: what a named module added with `addImport` or `addOptions`
+  contains (a new one must be listed, its contents are not read); `@embedFile` and
+  `@cImport`, which bring in bytes or C declarations rather than Zig files; and imports
+  in files outside `zig/src/` (`zig/build.zig`, `zig/tests/`).
+
+For the import rules (the layer boundary), every `@import` in a file counts wherever it
+is written, compiled or not, so an import under `if (false)` still fails a boundary it
+crosses: there the check errs on the strict side. It does not judge the bindings or the
+Python reference.

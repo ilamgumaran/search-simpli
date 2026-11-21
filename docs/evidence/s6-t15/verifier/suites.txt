@@ -1,0 +1,28 @@
+## checker tests
+Ran 1 test in 0.000s
+
+FAILED (errors=1)
+## check_layers
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+exit 0
+## check_requirements
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+exit 0
+## check_no_home_paths
+exit 0
+## python with zig
+
+FAILED (failures=2)
+
+[{"query": "benico", "ms_1k": 0.0072, "ms_10k": 0.0088, "growth": 1.21}, {"query": "hybrid retrieval", "ms_1k": 0.0182, "ms_10k": 0.0526, "growth": 2.9}, {"query": "how does the hybrid retrieval work for a search", "ms_1k": 0.0919, "ms_10k": 0.5721, "growth": 6.22}, {"query": "the and of to in", "ms_1k": 0.104, "ms_10k": 0.758, "growth": 7.29}]
+exit 1
+## python with zig, rerun (full lines)
+FAIL: test_reference_report_names_its_policies (test_j2_gate.PythonReferenceTests)
+AssertionError: None is not true
+FAIL: test_file_list_is_independent_of_caller_directory (test_privacy.PrivacyTest)
+AssertionError: 0 not greater than 10
+Ran 503 tests in 88.378s
+FAILED (failures=2)
+## checker tests (without -I, which hid the tests package)
+Ran 70 tests: OK
+## the two git-dependent tests in the worktree: Ran 2 tests, OK

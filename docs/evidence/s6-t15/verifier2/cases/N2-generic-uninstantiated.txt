@@ -1,0 +1,94 @@
+# N2-generic-uninstantiated on b3a4117
+## diff against the archive
+diff --git ab/zig/src/tests/plant_n2_test.zig bb/zig/src/tests/plant_n2_test.zig
+new file mode 100644
+index 0000000..f1090cc
+--- /dev/null
++++ bb/zig/src/tests/plant_n2_test.zig
+@@ -0,0 +1,12 @@
++const std = @import("std");
++fn Pool(comptime T: type) type {
++    return struct {
++        items: []T,
++        test "plant n2 generic fails" {
++            try @import("std").testing.expectEqual(@as(u32, 1), @as(u32, 2));
++        }
++    };
++}
++test "plant n2 names Pool" {
++    _ = Pool;
++}
+diff --git aa/zig/src/tests/root.zig bb/zig/src/tests/root.zig
+index 4b12d8f..92cb682 100644
+--- aa/zig/src/tests/root.zig
++++ bb/zig/src/tests/root.zig
+@@ -38,6 +38,7 @@ pub const ops = @import("operations").ops;
+ pub const mcp = @import("interfaces").mcp;
+ pub const cli_test = @import("cli_test.zig");
+ pub const direct_search_test = @import("direct_search_test.zig");
++pub const plant_n2_test = @import("plant_n2_test.zig");
+ pub const chunker_golden_test = @import("core").chunker_test;
+ pub const chunker_md_golden_test = @import("core").chunker_md_test;
+ pub const source_fixture_test = @import("source_fixture_test.zig");
+@@ -181,4 +182,5 @@ test "load every engine module test suite" {
+     _ = filename_complexity_test;
+     _ = cli_test;
+     _ = direct_search_test;
++    _ = plant_n2_test;
+ }
+## static checker (check_layers.py --list-tests) exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 22 | 295 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 75 | 590 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `core/fastmem.zig` | 6 | fastmem | (the root) |
+| `core/scoring.zig` | 7 | core | `core/core.zig` |
+| `tests/plant_n2_test.zig` | 2 | tests | `tests/root.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 590 tests, each run by a step of `zig build test`)
+
+## count comparison (first): check_test_counts.py --run (Debug), exit 1 (124 s)
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+test success
++- run test core 253 pass (253 total) 44s MaxRSS:412M
++- run test operations 10 pass (10 total) 318ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 481ms MaxRSS:10M
++- run test tests 285 pass, 9 skip (294 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+
+|  +- compile test core Debug native success 8s MaxRSS:824M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 100ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 5s MaxRSS:602M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 6s MaxRSS:681M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+|  +- compile test tests Debug native success 9s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 295 | 294 (285 pass, 9 skip) | FAIL |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: step 'tests' (`run test tests`): the listing has 295 tests, the run 294 (285 pass, 9 skip)

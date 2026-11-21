@@ -1,0 +1,10 @@
+zig/src/core/find_bench.zig: code without comments equal; lines 184->184; 1 changed line(s), all comment lines: True
+zig/src/core/nfc_bench.zig: code without comments equal; lines 29->29; 1 changed line(s), all comment lines: True
+zig/src/core/nfc_dump.zig: code without comments equal; lines 55->55; 1 changed line(s), all comment lines: True
+zig/src/core/unicode_tables.zig: code without comments equal; lines 7248->7248; 1 changed line(s), all comment lines: True
+zig/src/tests/filename_bench.zig: code without comments equal; lines 47->47; 1 changed line(s), all comment lines: True
+zig/src/tests/fold_bench.zig: code without comments equal; lines 388->388; 1 changed line(s), all comment lines: True
+zig/src/tests/fuzzy_bench.zig: code without comments equal; lines 550->550; 1 changed line(s), all comment lines: True
+zig/src/tests/mcp_bench.zig: code without comments equal; lines 79->79; 1 changed line(s), all comment lines: True
+zig/src/tests/title_field_bench.zig: code without comments equal; lines 266->266; 1 changed line(s), all comment lines: True
+9 Zig files changed; files differing beyond comments: 0

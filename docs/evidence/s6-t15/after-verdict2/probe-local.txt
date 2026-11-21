@@ -1,0 +1,44 @@
+# Zig 0.16.0 probe: tests inside bodies (zig test local.zig, own caches, in the scratch folder; every planted inner test fails if it runs)
+## local.zig
+const std = @import("std");
+test "outer, with a local struct holding a test" {
+    const Local = struct {
+        pub const n: u32 = 1;
+        test "local struct in a test block" {
+            try std.testing.expectEqual(@as(u32, 1), @as(u32, 2));
+        }
+    };
+    try std.testing.expectEqual(@as(u32, 1), Local.n);
+}
+fn helper() u32 {
+    const InFn = struct {
+        pub const n: u32 = 2;
+        test "local struct in a called function" {
+            try std.testing.expectEqual(@as(u32, 1), @as(u32, 2));
+        }
+    };
+    return InFn.n;
+}
+test "calls helper" {
+    try std.testing.expectEqual(@as(u32, 2), helper());
+}
+comptime {
+    _ = struct {
+        test "struct in a comptime block" {
+            try std.testing.expectEqual(@as(u32, 1), @as(u32, 2));
+        }
+    };
+}
+## the tests run (zig test exit 1)
+1/5 local.test.outer, with a local struct holding a test...OK
+2/5 local.test.calls helper...OK
+3/5 local.comptime__struct_36264.test.struct in a comptime block...expected 1, found 2
+4/5 local.helper.InFn.test.local struct in a called function...expected 1, found 2
+5/5 local.test.outer, with a local struct holding a test.Local.test.local struct in a test block...expected 1, found 2
+2 passed; 0 skipped; 3 failed.
+## direct.zig: a test written directly in a test block (zig ast-check)
+test "outer" {
+    test "inner" {}
+}
+## result
+direct.zig:2:5: error: expected statement, found 'test'

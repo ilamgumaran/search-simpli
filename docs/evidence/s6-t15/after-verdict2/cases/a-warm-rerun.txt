@@ -1,0 +1,96 @@
+# a-warm-rerun on 0b400eb
+## diff against the archive
+
+## static checker (check_layers.py --list-tests) exit 0
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 74 | 588 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `core/fastmem.zig` | 6 | fastmem | (the root) |
+| `core/scoring.zig` | 7 | core | `core/core.zig` |
+
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+
+## count comparison (first): check_test_counts.py --run (Debug), exit 0 (109 s)
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
+test success
++- run test core 253 pass (253 total) 35s MaxRSS:412M
++- run test operations 10 pass (10 total) 189ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 300ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 926ms MaxRSS:5M
+
+|  +- compile test core Debug native success 4s MaxRSS:817M
+|     +- WriteFile success
+|     +- compile obj fastmem Debug native success 100ms MaxRSS:97M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native success 2s MaxRSS:616M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native success 3s MaxRSS:688M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options success
+|     +- options success
+|  +- compile test tests Debug native success 5s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+## count comparison (second, warm cache, same copy): check_test_counts.py --run (Debug), exit 0 (156 s)
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
+test success
++- run test core 253 pass (253 total) 1m MaxRSS:412M
++- run test operations 10 pass (10 total) 29ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 135ms MaxRSS:10M
++- run test tests 284 pass, 9 skip (293 total) 2m MaxRSS:644M
++- run test 6 pass (6 total) 834ms MaxRSS:5M
+
+|  +- compile test core Debug native cached 54ms MaxRSS:32M
+|     +- WriteFile cached
+|     +- compile obj fastmem Debug native cached 46ms MaxRSS:31M
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test operations Debug native cached 55ms MaxRSS:31M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|  +- compile test interfaces Debug native cached 54ms MaxRSS:31M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options cached
+|     +- options cached
+|  +- compile test tests Debug native cached 53ms MaxRSS:32M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)

@@ -1,0 +1,46 @@
+# plant J-two-modules on 6554055
+ .../runs/{pristine => J-two-modules/src}/zig/src/core/core.zig       | 2 ++
+ .../runs/J-two-modules/src/zig/src/core/plant_j_test.zig}            | 4 ++++
+ .../runs/J-two-modules/src/zig/src/tests/plant_j_mid_test.zig}       | 3 +++
+ .../runs/{pristine => J-two-modules/src}/zig/src/tests/root.zig      | 5 +++++
+ 4 files changed, 14 insertions(+)
+
+## checker exit 1
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 46 | 254 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 23 | 296 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 77 | 592 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `core/plant_j_test.zig` | 1 | core, tests | `core/core.zig`, `tests/plant_j_mid_test.zig` |
+| `tests/plant_j_mid_test.zig` | 1 | tests | `tests/root.zig` |
+
+zig/src/tests/plant_j_mid_test.zig:2: imports ../core/plant_j_test.zig (zig/src/core/plant_j_test.zig), a file of another folder: core is reached through its module, @import("core"), never by path
+check_layers: 1 problem(s)
+
+## zig build test exit 1 (50 s)
++- run test tests
+src/tests/plant_j_mid_test.zig:1:1: error: file exists in modules 'core' and 'root'
+src/tests/plant_j_mid_test.zig:1:1: note: files must belong to only one module
+pub const plant_j_test = @import("plant_j_test.zig");
+src/tests/plant_j_mid_test.zig:2:17: note: file is imported here
+    _ = @import("../core/plant_j_test.zig");
+pub const plant_j_mid_test = @import("plant_j_mid_test.zig");
+error: 1 compilation errors
+failed command: ~/development/zig/zig-aarch64-macos-0.16.0/zig test <run>/lc/o/384daed59f6d99b57132f85de49a8f0d/fastmem.o -ODebug -I <run>/lc/o/2fb5824d4233e9fe32370ab196a5b16d --dep core --dep operations --dep build_options --dep tool_schemas --dep interfaces -Mroot=<run>/src/zig/src/tests/root.zig -ODebug -Mcore=<run>/src/zig/src/core/core.zig -ODebug --dep core -Moperations=<run>/src/zig/src/ops/operations.zig -Mbuild_options=<run>/lc/c/4fd6b6cdc604ce3805d0aff1d7b6fe74/options.zig -Mtool_schemas=<run>/lc/c/1950c69e6241f0c052cd12f5d609db3f/options.zig -ODebug --dep core --dep operations --dep build_options=build_options0 --dep tool_schemas=tool_schemas0 -Minterfaces=<run>/src/zig/src/interfaces/interfaces.zig -Mbuild_options0=<run>/lc/c/4fd6b6cdc604ce3805d0aff1d7b6fe74/options.zig -Mtool_schemas0=<run>/lc/c/1950c69e6241f0c052cd12f5d609db3f/options.zig -lc --cache-dir <run>/lc --global-cache-dir <run>/gc --name tests --zig-lib-dir ~/development/zig/zig-aarch64-macos-0.16.0/lib/ --listen=-
++- run test core 253 pass, 1 fail (254 total)
+error: 'plant_j_test.test.plant j target fails' failed:
+       <run>/src/zig/src/core/plant_j_test.zig:3:5: 0x1013f5aaf in test.plant j target fails (core)
+failed command: <run>/lc/o/aa27b17da19cfa460c488a654777e0c1/core --cache-dir=<run>/lc --seed=0x363edab5 --listen=-
+Build Summary: 11/15 steps succeeded (2 failed); 295/296 tests passed (1 failed)
++- run test core 253 pass, 1 fail (254 total)
++- run test operations 10 pass (10 total) 311ms MaxRSS:7M
++- run test interfaces 26 pass (26 total) 471ms MaxRSS:10M
++- run test tests transitive failure
++- run test 6 pass (6 total) 1s MaxRSS:5M
+error: the following build command failed with exit code 1:

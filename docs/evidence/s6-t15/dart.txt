@@ -1,0 +1,8 @@
+# Dart: fresh git archive of b89a555 (unused until now), its committed natives; Dart SDK version: 3.13.2 (stable) (Tue Aug 25 01:01:12 2026 -0700) on "macos_arm64"
+pub get exit 0
+Analyzing lib, test...
+No issues found!
+analyze exit 0
+dart test exit 0
+00:07 +97: test/parity_test.dart: (tearDownAll)
+00:07 +97: All tests passed!

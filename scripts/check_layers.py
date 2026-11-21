@@ -40,11 +40,26 @@ longer occurs, and when the generated block of docs/layers.md differs from these
 tables (`--write-doc` rewrites that block from them, so the document and the
 checker cannot disagree silently).
 
+Every test runs (S6-T15). A Zig test build runs the tests of its root module's
+files only, so the checker fails, naming the file, when a file holding a `test`
+declaration is reached from no step of `zig build test`: from a step's root
+(BUILD_ROOTS, which must list exactly the `"src/....zig"` roots zig/build.zig names)
+it follows the `.zig` path imports a test build compiles (test_build_reads),
+never an import through a module. It also fails when a module root leaves out a
+layer file or a test of its folder, as a `pub const` or in its test-build
+`comptime` block, and when the steps zig/build.zig's structure gives
+(build_test_steps) are not the ones BUILD_ROOTS lists, and when a reached file
+writes a test inside a body (a generic type's returned struct, a local struct).
+The reading of Zig is not exact. scripts/check_test_counts.py compares each step's
+total with a real `zig build test --summary all`. The two guards catch different
+losses and both must pass (docs/layers.md, "What it cannot see").
+
 Usage (from anywhere; no dependencies):
 
     python3 scripts/check_layers.py              # check; exit 1 on any problem
     python3 scripts/check_layers.py --write-doc  # regenerate docs/layers.md's block
     python3 scripts/check_layers.py --root DIR   # check another copy of the repository
+    python3 scripts/check_layers.py --list-tests # also print which step runs each file's tests
 
 Every problem is printed on its own line as `path:line: message`.
 """
@@ -132,7 +147,7 @@ FILES = {
 # `pub const NAME = @import("NAME.zig");` for files of its own folder and a reference
 # to them made in a test build; it is the one layer file that may name a test.
 MODULE_ROOTS = {
-    "core/core.zig": ("core", "core", "the module `core`: every core file but `fastmem.zig`, and the core tests another folder names"),
+    "core/core.zig": ("core", "core", "the module `core`: every core file but `fastmem.zig`, and every core test"),
     "ops/operations.zig": ("operations", "operations", "the module `operations` (it imports `core`): every operations file"),
     "interfaces/interfaces.zig": ("interfaces", "interfaces", "the module `interfaces`, for the tests in `tests/`: every interface file but `main.zig`, and `field_warnings_test.zig`"),
 }
@@ -140,7 +155,7 @@ MODULE_ROOTS = {
 # Tests, benchmarks and tools: accounted for by pattern or by path, and placed by the
 # rule above (beside their subject when they import one layer's files, else tests/).
 EXEMPT_PATTERNS = (
-    ("*_test.zig", "a test, compiled by `zig build test` through its folder's module root or `tests/root.zig`, or run alone with `zig test`"),
+    ("*_test.zig", "a test: named in its folder's module root, or reached from the test block of `tests/root.zig`, so that its folder's step of `zig build test` runs it (or run alone with `zig test`)"),
     ("*_bench.zig", "a benchmark, run by hand with `zig run` (zig/README.md)"),
 )
 EXEMPT_FILES = {
@@ -173,6 +188,38 @@ MODULES = {
     "tool_schemas": ("interfaces", "the MCP tools' JSON schemas from `contracts/tools/`, read by `zig/build.zig`"),
 }
 LAYER_MODULES = {name: rel for rel, (_, name, _) in MODULE_ROOTS.items()}
+
+# Every Zig file zig/build.zig names as the root of a compilation (`b.path("src/...")`),
+# relative to zig/src -> (the step of `zig build test` it is the root of, or None, what it
+# roots). The checker fails when zig/build.zig names a file this table lacks, or the
+# table a file zig/build.zig does not name (S6-T15).
+BUILD_ROOTS = {
+    "core/core.zig": ("core", "the module `core`, and the test step `core`"),
+    "ops/operations.zig": ("operations", "the module `operations`, and the test step `operations`"),
+    "interfaces/interfaces.zig": ("interfaces", "the module `interfaces` (for `tests/`), and the test step `interfaces`"),
+    "tests/root.zig": ("tests", "the test step `tests`: the cross-layer tests"),
+    "core/fastmem.zig": ("fastmem", "the `fastmem` object, and its own test step (`run test` in the Build Summary)"),
+    "interfaces/main.zig": (None, "the `searchd` executable"),
+    "interfaces/abi.zig": (None, "the C ABI libraries, and the library of `zig build test-abi`"),
+}
+# The name the Build Summary of `zig build test --summary all` prints after `run test`
+# for a step, where it is not the step's own name: zig/build.zig compiles fastmem's
+# tests with no `.name` (S6-T15 rework; scripts/check_test_counts.py matches by it).
+STEP_LABELS = {"fastmem": ""}
+
+
+def step_label(step: str) -> str:
+    """What the Build Summary prints after `run test` for a step of BUILD_ROOTS."""
+    return STEP_LABELS.get(step, step)
+
+
+# Files of a layer's folder that its module root leaves out: each is the root of a
+# compilation of its own (BUILD_ROOTS) and is never compiled as part of the module.
+OUTSIDE_MODULE = {
+    "core/fastmem.zig": "compiled as an object of its own, with its own test step",
+    "interfaces/main.zig": "the `searchd` executable's root; it holds no test",
+}
+BUILD = "zig/build.zig"
 BEGIN = "<!-- BEGIN generated by scripts/check_layers.py --write-doc: edit the script, not this block -->"
 END = "<!-- END generated by scripts/check_layers.py -->"
 
@@ -258,13 +305,18 @@ def import_calls(text: str):
     `@import ( "x.zig" , )`. Zig accepts only one string literal as the operand;
     anything else (a `++` expression, a name, a multiline string) gives target
     None and a problem, as does an invalid escape."""
-    toks = list(tokens(text))
+    for line, target, problem, member, _ in _import_calls(text, list(tokens(text))):
+        yield line, target, problem, member
+
+
+def _import_calls(text: str, toks):
+    """import_calls over tokens already made, each with the index of its `@import` token."""
     for k, (kind, value, offset) in enumerate(toks):
         if kind != "builtin" or value != "@import":
             continue
         line = text.count("\n", 0, offset) + 1
         if k + 1 >= len(toks) or toks[k + 1][:2] != ("punct", "("):
-            yield line, None, "@import without an argument list", None
+            yield line, None, "@import without an argument list", None, k
             continue
         depth, args, j = 1, [], k + 2
         while j < len(toks):
@@ -281,16 +333,474 @@ def import_calls(text: str):
             args = args[:-1]
         if len(args) != 1 or args[0][0] != "string":
             shown = " ".join(str(a[1]) for a in args)[:60]
-            yield line, None, f"@import's operand is not one string literal ({shown}); the checker cannot resolve it", None
+            yield line, None, f"@import's operand is not one string literal ({shown}); the checker cannot resolve it", None, k
             continue
         target = _decode(args[0][1])
         if target is None:
-            yield line, None, f"@import's string has an invalid escape ({args[0][1]})", None
+            yield line, None, f"@import's string has an invalid escape ({args[0][1]})", None, k
             continue
         member = None
         if j + 2 < len(toks) and toks[j + 1][:2] == ("punct", ".") and toks[j + 2][0] == "word":
             member = toks[j + 2][1]
-        yield line, target, None, member
+        yield line, target, None, member, k
+
+
+_OPEN, _CLOSE = "([{", ")]}"
+_TYPE_BRACES = {"error", "struct", "enum", "union", "opaque"}
+
+
+def _match(toks, i):
+    """The index just past the bracket that closes the one at toks[i]."""
+    depth, n = 0, len(toks)
+    while i < n:
+        kind, value, _ = toks[i]
+        if kind == "punct" and value in _OPEN:
+            depth += 1
+        elif kind == "punct" and value in _CLOSE:
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    return n
+
+
+def _until(toks, i, stop):
+    """The index just past the first `stop` punctuation at depth 0 from toks[i] on."""
+    depth, n = 0, len(toks)
+    while i < n:
+        kind, value, _ = toks[i]
+        if kind == "punct" and value in _OPEN:
+            depth += 1
+        elif kind == "punct" and value in _CLOSE:
+            depth -= 1
+        elif kind == "punct" and value == stop and depth == 0:
+            return i + 1
+        i += 1
+    return n
+
+
+def container_items(text: str, toks=None):
+    """The top-level items of a Zig file, as (kind, name, start, end) over its tokens:
+    kind `test` (a test declaration, its block included), `comptime` (a container-level
+    `comptime` block), or `decl` (a `const`, `var` or `fn` declaration, named). Items
+    inside a nested container are part of the declaration that holds it. `test` is
+    read as a keyword only where Zig reads one: `@"test"` is a name, and a `test` in a
+    comment or string gives no token at all."""
+    toks = list(tokens(text)) if toks is None else toks
+    items, i, n = [], 0, len(toks)
+    while i < n:
+        kind, value, offset = toks[i]
+        word = kind == "word" and not text.startswith("@", offset)
+        if word and value == "test" and i + 1 < n and (toks[i + 1][0] in ("string", "word")
+                                                       or toks[i + 1][:2] == ("punct", "{")):
+            body = i + 1 if toks[i + 1][:2] == ("punct", "{") else i + 2
+            end = _match(toks, body) if body < n and toks[body][:2] == ("punct", "{") else body
+            items.append(("test", None, i, end))
+            i = end
+        elif word and value == "comptime" and i + 1 < n and toks[i + 1][:2] == ("punct", "{"):
+            end = _match(toks, i + 1)
+            items.append(("comptime", None, i, end))
+            i = end
+        elif word and value in ("const", "var") and i + 1 < n and toks[i + 1][0] == "word":
+            end = _until(toks, i, ";")
+            items.append(("decl", toks[i + 1][1], i, end))
+            i = end
+        elif word and value == "fn" and i + 1 < n and toks[i + 1][0] == "word":
+            j, depth = i + 2, 0
+            while j < n:
+                k2, v2, _ = toks[j]
+                if k2 == "punct" and v2 == ";" and depth == 0:
+                    j += 1
+                    break
+                if k2 == "punct" and v2 == "{" and depth == 0 and toks[j - 1][1] not in _TYPE_BRACES:
+                    j = _match(toks, j)
+                    break
+                if k2 == "punct" and v2 in _OPEN:
+                    depth += 1
+                elif k2 == "punct" and v2 in _CLOSE:
+                    depth -= 1
+                j += 1
+            items.append(("decl", toks[i + 1][1], i, j))
+            i = j
+        elif kind == "punct" and value in _OPEN:
+            i = _match(toks, i)
+        else:
+            i += 1
+    return items
+
+
+_CONTAINERS = {"struct", "enum", "union", "opaque"}
+# A guard that is false in every test build: `if (false)`, `if (!@import("builtin").is_test)`,
+# `if (!builtin.is_test)`. Zig never analyses the branch it guards.
+_FALSE_GUARDS = (
+    (("word", "false"),),
+    (("punct", "!"), ("builtin", "@import"), ("punct", "("), ("string", "builtin"), ("punct", ")"),
+     ("punct", "."), ("word", "is_test")),
+    (("punct", "!"), ("word", "builtin"), ("punct", "."), ("word", "is_test")),
+)
+
+
+def _fn_body(toks, i, end):
+    """For `fn NAME` at toks[i]: (start, end) of its body, or None for a prototype."""
+    j, depth = i + 2, 0
+    while j < end:
+        kind, value, _ = toks[j]
+        if kind == "punct" and value == ";" and depth == 0:
+            return None
+        if kind == "punct" and value == "{" and depth == 0 and toks[j - 1][1] not in _TYPE_BRACES:
+            return j, _match(toks, j)
+        if kind == "punct" and value in _OPEN:
+            depth += 1
+        elif kind == "punct" and value in _CLOSE:
+            depth -= 1
+        j += 1
+    return None
+
+
+def _skipped(toks, start, end):
+    """The token ranges inside toks[start:end] that a test build does not follow from
+    there, as (what, start, end): `fn`, every function body (compiled only when the
+    function is called, which the checker does not trace), and `guard`, every branch
+    under a guard that is false in a test build (_FALSE_GUARDS)."""
+    out, i = [], start
+    while i < end:
+        kind, value, _ = toks[i]
+        if kind == "word" and value == "fn" and i + 1 < end and toks[i + 1][0] == "word":
+            body = _fn_body(toks, i, end)
+            if body is not None:
+                out.append(("fn",) + body)
+                i = body[1]
+                continue
+        if kind == "word" and value == "if" and i + 1 < end and toks[i + 1][:2] == ("punct", "("):
+            close = _match(toks, i + 1)
+            cond = tuple(t[:2] for t in toks[i + 2:close - 1])
+            if cond in _FALSE_GUARDS and close < end:
+                branch_end = _match(toks, close) if toks[close][:2] == ("punct", "{") else _until(toks, close, ";")
+                out.append(("guard", close, branch_end))
+                i = branch_end
+                continue
+        i += 1
+    return out
+
+
+def _nested_containers(toks, start, end):
+    """The token ranges of every `struct`/`enum`/`union`/`opaque` body inside toks[start:end]."""
+    out = []
+    for j in range(start, end):
+        if toks[j][:2] != ("punct", "{") or j == 0:
+            continue
+        prev = toks[j - 1]
+        if prev[0] == "word" and prev[1] in _CONTAINERS:
+            out.append((j, _match(toks, j)))
+        elif prev[:2] == ("punct", ")"):
+            # `union(enum) {`, `enum(u8) {`: the word before the matching `(`.
+            depth, k = 0, j - 1
+            while k > start:
+                if toks[k][:2] == ("punct", ")"):
+                    depth += 1
+                elif toks[k][:2] == ("punct", "("):
+                    depth -= 1
+                    if depth == 0:
+                        break
+                k -= 1
+            if k > 0 and toks[k - 1][0] == "word" and toks[k - 1][1] in ("union", "enum"):
+                out.append((j, _match(toks, j)))
+    return out
+
+
+def test_build_reads(text: str):
+    """What a test build of a file evaluates, read from its tokens: (tests, imports,
+    test lines, unrun lines, body lines). tests is the number of test declarations a
+    test build of the file runs, imports lists (line, target, member) for every
+    `@import` it follows, test lines the line of each test it runs, unrun lines the line
+    of each test declaration it does not run, and body lines the line of each test
+    written inside a body (below), which is neither.
+
+    A test build compiles every test of a file it collects and every container-level
+    `comptime` block; a container-level declaration only when something compiled
+    names it (Zig analyses lazily). So the checker starts from the file's tests and
+    `comptime` blocks and adds each declaration of the file they name, directly or
+    through other declarations (`_ = engine;` compiles
+    `const engine = @import("engine.zig");`). Where that reading is not exact, it errs
+    on the side of saying a test does not run:
+
+    - a name inside a function body is not followed (the body is compiled only if the
+      function is called, which is not traced), nor a name under a guard that is false
+      in a test build (`if (false)`, `if (!@import("builtin").is_test)`);
+    - a name after `.` is a member, and a name before `:` a field or a label, never one
+      of the file's declarations;
+    - an `@import` counts only outside function bodies, false guards and nested
+      `struct`/`enum`/`union`/`opaque` bodies (a nested container's declarations are
+      compiled only when named through it, which is not traced).
+
+    A test counts when it is a top-level test of the file, or sits inside a container
+    declaration that the build compiles (a nested struct a test names), and not under a
+    false guard. A test written inside a body, a function's (a generic type's returned
+    struct), a test block's or a `comptime` block's (a local struct), is not counted
+    either way: Zig runs it as often as that body is analysed, once per instantiation of
+    a generic, once, or never (S6-T15, the second Verdict's finding 1 and a scratch
+    probe), which the checker does not trace; the checker fails such a test (body
+    lines). A followed declaration is taken whole, so a
+    declaration named in it counts though only an unused member of it names it: that
+    is the reading's lenient side, which the count comparison
+    (scripts/check_test_counts.py) catches against a real run."""
+    toks = list(tokens(text))
+    items = container_items(text, toks)
+    live_spans, words = [], set()
+    skipped = []
+
+    def inside(k, ranges):
+        return any(a <= k < b for a, b in ranges)
+
+    def take(start, end):
+        live_spans.append((start, end))
+        found = _skipped(toks, start, end)
+        skipped.extend(found)
+        skip = [(a, b) for _, a, b in found]
+        n = len(toks)
+        words.update(v for j, (k, v, off) in enumerate(toks[start:end], start)
+                     if k == "word" and not text.startswith("@", off) and not inside(j, skip)
+                     and not (j > 0 and toks[j - 1][:2] == ("punct", "."))
+                     and not (j + 1 < n and toks[j + 1][:2] == ("punct", ":")))
+
+    for kind, _, start, end in items:
+        if kind in ("test", "comptime"):
+            take(start, end)
+    decls = [(name, start, end) for kind, name, start, end in items if kind == "decl"]
+    done = set()
+    while True:
+        more = [(name, start, end) for name, start, end in decls if name in words and (start, end) not in done]
+        if not more:
+            break
+        for name, start, end in more:
+            done.add((start, end))
+            take(start, end)
+
+    top_tests = {start for kind, _, start, _ in items if kind == "test"}
+    false_guards = [(a, b) for what, a, b in skipped if what == "guard"]
+    skipped = [(a, b) for _, a, b in skipped]
+    # Every body in the file, at any depth: a function's, a test block's, a comptime block's.
+    bodies = []
+    for j, (kind, value, offset) in enumerate(toks):
+        if kind != "word" or text.startswith("@", offset):
+            continue
+        if value == "fn" and j + 1 < len(toks) and toks[j + 1][0] == "word":
+            body = _fn_body(toks, j, len(toks))
+            if body is not None:
+                bodies.append(body)
+        elif value == "comptime" and j + 1 < len(toks) and toks[j + 1][:2] == ("punct", "{"):
+            bodies.append((j + 1, _match(toks, j + 1)))
+        elif value == "test" and j + 1 < len(toks):
+            brace = j + 1 if toks[j + 1][:2] == ("punct", "{") else j + 2
+            if toks[j + 1][0] in ("string", "word") or brace == j + 1:
+                if brace < len(toks) and toks[brace][:2] == ("punct", "{"):
+                    bodies.append((brace, _match(toks, brace)))
+    run, unrun, in_body = [], [], []
+    for j, (kind, value, offset) in enumerate(toks):
+        if not (kind == "word" and value == "test" and not text.startswith("@", offset) and j + 1 < len(toks)
+                and (toks[j + 1][0] in ("string", "word") or toks[j + 1][:2] == ("punct", "{"))):
+            continue
+        line = text.count("\n", 0, offset) + 1
+        if inside(j, bodies):
+            in_body.append(line)
+        elif j in top_tests or (inside(j, [(s, e) for s, e in live_spans if s not in top_tests])
+                                and not inside(j, false_guards)):
+            run.append(line)
+        else:
+            unrun.append(line)
+    containers = [r for start, end in live_spans for r in _nested_containers(toks, start, end)]
+    imports = []
+    for line, target, problem, member, k in _import_calls(text, toks):
+        if problem is None and inside(k, live_spans) and not inside(k, skipped) and not inside(k, containers):
+            imports.append((line, target, member))
+    return len(run), imports, run, unrun, in_body
+
+
+def test_build_imports(text: str):
+    """(tests, imports, test lines) of test_build_reads, without the unrun lines."""
+    tests, imports, lines, _, _ = test_build_reads(text)
+    return tests, imports, lines
+
+
+def _seq(toks, i, pattern):
+    """True when toks[i:] starts with pattern, a list of (kind, value) where value None matches any."""
+    if i + len(pattern) > len(toks):
+        return False
+    return all(toks[i + k][0] == kind and (value is None or toks[i + k][1] == value)
+               for k, (kind, value) in enumerate(pattern))
+
+
+def _fields(toks, start, end):
+    """`.field = value` pairs at depth 1 of the `.{ ... }` at toks[start:end]: field -> (kind, value tokens)."""
+    out, depth, j = {}, 0, start
+    while j < end:
+        kind, value, _ = toks[j]
+        if kind == "punct" and value in _OPEN:
+            depth += 1
+        elif kind == "punct" and value in _CLOSE:
+            depth -= 1
+        elif depth == 1 and _seq(toks, j, [("punct", "."), ("word", None), ("punct", "=")]):
+            stop = j + 3
+            d2 = 0
+            while stop < end:
+                k2, v2, _ = toks[stop]
+                if k2 == "punct" and v2 in _OPEN:
+                    d2 += 1
+                elif k2 == "punct" and v2 in _CLOSE:
+                    if d2 == 0:
+                        break
+                    d2 -= 1
+                elif k2 == "punct" and v2 == "," and d2 == 0:
+                    break
+                stop += 1
+            out[toks[j + 1][1]] = toks[j + 3:stop]
+            j = stop
+            continue
+        j += 1
+    return out
+
+
+def build_test_steps(text: str):
+    """The steps of `zig build test`, read from zig/build.zig's structure (S6-T15 rework):
+    (steps, problems). steps lists (label, root, line, row): label is the name the
+    Build Summary prints after `run test` ("" for a test compiled with no `.name`),
+    root the root file relative to zig/src, row whether it is a row of test_roots. problems lists (line, message) for what the reader
+    cannot follow, or a test compiled and never run.
+
+    What it reads:
+    - `const T = b.step("test", ...)`, the step;
+    - every `const N = b.addTest(.{ ... })` and every `T.dependOn(&b.addRunArtifact(N).step)`:
+      a test that the step does not run is a problem;
+    - an `addTest` inside `for (test_roots) |r| { ... }` makes one step per row of
+      `const test_roots = ...{ .{ .name = "...", .path = "src/....zig" }, ... }`, labelled
+      by the row's name (its `.name` must be `r.name`, its module's root `b.path(r.path)`);
+    - any other `addTest` makes one step: its `.name` string ("" without one), and the
+      root of its `.root_module`, a module made in the same function
+      (`const M = b.createModule(.{ .root_source_file = b.path("src/...") })`) or by a
+      function of the file holding exactly one `b.path("src/....zig")`."""
+    toks = list(tokens(text))
+    n = len(toks)
+    line_of = lambda k: text.count("\n", 0, toks[k][2]) + 1  # noqa: E731
+    problems, steps = [], []
+    step_var = None
+    for k in range(n):
+        if _seq(toks, k, [("word", "const"), ("word", None), ("punct", "="), ("word", "b"), ("punct", "."),
+                          ("word", "step"), ("punct", "("), ("string", "test")]):
+            step_var = toks[k + 1][1]
+    if step_var is None:
+        return [], [(1, 'no `const ... = b.step("test", ...)`: the checker cannot read the steps of `zig build test`')]
+    run = set()
+    for k in range(n):
+        if _seq(toks, k, [("word", step_var), ("punct", "."), ("word", "dependOn"), ("punct", "("), ("punct", "&"),
+                          ("word", "b"), ("punct", "."), ("word", "addRunArtifact"), ("punct", "("), ("word", None),
+                          ("punct", ")"), ("punct", "."), ("word", "step"), ("punct", ")")]):
+            run.add(toks[k + 9][1])
+    # The rows of test_roots.
+    rows = []
+    for k in range(n):
+        if _seq(toks, k, [("word", "const"), ("word", "test_roots"), ("punct", "=")]):
+            end = _until(toks, k, ";")
+            j = k + 3
+            # Skip the type `[_]struct { ... }` to the initializer's `{`.
+            while j < end and not (toks[j][:2] == ("punct", "{") and toks[j - 1][0] != "word"):
+                j = _match(toks, j) if toks[j][:2] == ("punct", "{") else j + 1
+            body_end = _match(toks, j) if j < end else j
+            m = j + 1
+            while m < body_end - 1:
+                if _seq(toks, m, [("punct", "."), ("punct", "{")]):
+                    close = _match(toks, m + 1)
+                    fields = _fields(toks, m + 1, close)
+                    name, path = fields.get("name", []), fields.get("path", [])
+                    if len(name) == 1 and name[0][0] == "string" and len(path) == 1 and path[0][0] == "string" \
+                            and path[0][1].startswith("src/"):
+                        rows.append((name[0][1], path[0][1][len("src/"):], line_of(m)))
+                    else:
+                        problems.append((line_of(m), "a row of test_roots that is not "
+                                                     '`.{ .name = "...", .path = "src/....zig" }`'))
+                    m = close
+                else:
+                    m += 1
+    # The loops over test_roots.
+    loops = []
+    for k in range(n):
+        if _seq(toks, k, [("word", "for"), ("punct", "("), ("word", "test_roots"), ("punct", ")"), ("punct", "|"),
+                          ("word", None), ("punct", "|"), ("punct", "{")]):
+            loops.append((toks[k + 5][1], k + 7, _match(toks, k + 7)))
+    # Functions of the file: name -> the "src/....zig" strings of b.path(...) in their bodies.
+    fn_paths = {}
+    for k in range(n):
+        if toks[k][:2] == ("word", "fn") and k + 1 < n and toks[k + 1][0] == "word":
+            body = _fn_body(toks, k, n)
+            if body:
+                fn_paths[toks[k + 1][1]] = [toks[j + 4][1] for j in range(*body)
+                                            if _seq(toks, j, [("word", "b"), ("punct", "."), ("word", "path"),
+                                                              ("punct", "("), ("string", None)])
+                                            and toks[j + 4][1].startswith("src/")]
+    for k in range(n):
+        if not _seq(toks, k, [("word", "b"), ("punct", "."), ("word", "addTest"), ("punct", "("), ("punct", "."),
+                              ("punct", "{")]):
+            continue
+        line = line_of(k)
+        bound = toks[k - 2][1] if k >= 3 and _seq(toks, k - 3, [("word", "const"), ("word", None), ("punct", "=")]) \
+            else None
+        if bound is None or bound not in run:
+            problems.append((line, f"b.addTest{' (' + bound + ')' if bound else ''} is compiled but the `test` "
+                                   f"step does not run it: add `{step_var}.dependOn(&b.addRunArtifact("
+                                   f"{bound or 'NAME'}).step);`, or remove the test"))
+            continue
+        fields = _fields(toks, k + 5, _match(toks, k + 5))
+        loop = next((lp for lp in loops if lp[1] <= k < lp[2]), None)
+        if loop is not None:
+            var, start, end = loop
+            name = [t[:2] for t in fields.get("name", [])]
+            # The name may be `r.name` or a local bound to it (`const name = r.name;`).
+            aliases = {var + ".name"}
+            for j in range(start, end):
+                if _seq(toks, j, [("word", "const"), ("word", None), ("punct", "="), ("word", var), ("punct", "."),
+                                  ("word", "name"), ("punct", ";")]):
+                    aliases.add(toks[j + 1][1])
+            shown = "".join(v for _, v in name)
+            has_path = any(_seq(toks, j, [("word", "b"), ("punct", "."), ("word", "path"), ("punct", "("),
+                                          ("word", var), ("punct", "."), ("word", "path"), ("punct", ")")])
+                           for j in range(start, end))
+            if shown not in aliases or not has_path:
+                problems.append((line, f"the test compiled in the loop over test_roots is not named `{var}.name` "
+                                       f"with its module rooted at `b.path({var}.path)`: the checker cannot tell "
+                                       "which root each step runs"))
+                continue
+            steps += [(name_, root, row_line, True) for name_, root, row_line in rows]
+            continue
+        name = fields.get("name", [])
+        label = name[0][1] if len(name) == 1 and name[0][0] == "string" else ("" if not name else None)
+        module = fields.get("root_module", [])
+        root = None
+        if module and module[0][0] == "word":
+            ident = module[0][1]
+            if len(module) > 1 and module[1][:2] == ("punct", "("):
+                paths = fn_paths.get(ident, [])
+                root = paths[0][len("src/"):] if len(paths) == 1 else None
+            else:
+                for j in range(n):
+                    if _seq(toks, j, [("word", "const"), ("word", ident), ("punct", "="), ("word", "b"), ("punct", "."),
+                                      ("word", "createModule"), ("punct", "("), ("punct", "."), ("punct", "{")]):
+                        mfields = _fields(toks, j + 8, _match(toks, j + 8))
+                        src_ = mfields.get("root_source_file", [])
+                        if _seq(src_, 0, [("word", "b"), ("punct", "."), ("word", "path"), ("punct", "("),
+                                          ("string", None)]):
+                            root = src_[4][1][len("src/"):]
+        if label is None or root is None:
+            problems.append((line, "b.addTest whose `.name` (a string, or none) or whose root module's root file the "
+                                   "checker cannot read"))
+            continue
+        steps.append((label, root, line, False))
+    return steps, problems
+
+
+def build_root_paths(text: str):
+    """(line, path relative to zig/src) for every `"src/....zig"` string zig/build.zig holds."""
+    for kind, value, offset in tokens(text):
+        if kind == "string" and value.startswith("src/") and value.endswith(".zig"):
+            yield text.count("\n", 0, offset) + 1, value[len("src/"):]
 
 
 
@@ -347,14 +857,16 @@ def root_exports(text: str):
     return out
 
 
-def _script_line(*names: str) -> str:
-    """`scripts/check_layers.py:N` for the line of this script naming all of names."""
+def _script_line(*names: str, table: str = "") -> str:
+    """`scripts/check_layers.py:N` for the line of this script naming all of names
+    (in the table that starts with `table = {`, when one is given)."""
     try:
         lines = Path(__file__).read_text(encoding="utf-8").splitlines()
     except OSError:
         lines = []
     quoted = [f'"{name}"' for name in names]
-    for number, line in enumerate(lines, 1):
+    start = next((i for i, line in enumerate(lines) if table and line.startswith(f"{table} = {{")), 0)
+    for number, line in enumerate(lines[start:], start + 1):
         if all(q in line for q in quoted):
             return f"scripts/check_layers.py:{number}"
     return "scripts/check_layers.py"
@@ -366,8 +878,10 @@ def _who(rank: str) -> str:
     return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
 
 
-def render_doc(files=None, allowed=None, exempt_files=None, exempt_patterns=None, module_roots=None) -> str:
+def render_doc(files=None, allowed=None, exempt_files=None, exempt_patterns=None, module_roots=None,
+               build_roots=None) -> str:
     """The generated block of docs/layers.md, markers included."""
+    build_roots = BUILD_ROOTS if build_roots is None else build_roots
     files = FILES if files is None else files
     allowed = ALLOWED if allowed is None else allowed
     exempt_files = EXEMPT_FILES if exempt_files is None else exempt_files
@@ -389,6 +903,10 @@ def render_doc(files=None, allowed=None, exempt_files=None, exempt_patterns=None
     out += ["| File (`zig/src/`) | Module | What it is |", "|---|---|---|"]
     for rel, (layer, name, what) in sorted(module_roots.items(), key=lambda kv: LAYER_ORDER.index(kv[1][0])):
         out.append(f"| `{rel}` | `{name}` | {what} |")
+    out += ["", "The roots `zig/build.zig` compiles (a test step runs the tests of the files its root reaches by path):", ""]
+    out += ["| File (`zig/src/`) | Step of `zig build test` | What it is the root of |", "|---|---|---|"]
+    for rel, (step, what) in build_roots.items():
+        out.append(f"| `{rel}` | {f'`{step}`' if step else 'none'} | {what} |")
     out += ["", "Imports between interfaces that are allowed (any other fails the check):", ""]
     out += ["| File | Imports | Kind | What it uses |", "|---|---|---|---|"]
     for (importer, imported), (kind, why) in sorted(allowed.items(), key=lambda kv: (kv[1][0] != "entry", kv[0])):
@@ -419,13 +937,58 @@ def doc_block(text: str):
     return start + 1, "\n".join(lines[start : end + 1])
 
 
-def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patterns=None, doc=True, module_roots=None):
-    """Every problem found, as `path:line: message` strings (empty when clean)."""
+def test_reach(src: Path, present, build_roots, exports, layer_modules):
+    """Which step of `zig build test` runs the tests of each file (S6-T15).
+
+    A test build collects the tests of its root module's files only: the step's
+    root file and the files it reaches by a `.zig` path import that the build
+    evaluates (test_build_imports), followed from file to file. A file reached
+    through a named module (`@import("core").fold_test`) belongs to that module,
+    not to the step's root module, so its tests do not run there; it is recorded
+    in `via_module` for the message only.
+
+    Returns (tests, lines, reached, via_module, unrun, in_body): the count and the lines
+    of the tests a test build of every file runs, file -> [(step, the file that reaches
+    it)], file -> [(importer, module)], the lines of every file's test declarations that
+    a test build does not run, and of those written inside a body (test_build_reads)."""
+    tests, lines, live, unrun, in_body = {}, {}, {}, {}, {}
+    for rel in present:
+        count, imports, at, dead, body = test_build_reads((src / rel).read_text(encoding="utf-8", errors="replace"))
+        tests[rel], lines[rel], live[rel], unrun[rel], in_body[rel] = count, at, imports, dead, body
+    reached, via_module = {}, {}
+    for root_rel, (step, _) in sorted(build_roots.items()):
+        if step is None or root_rel not in tests:
+            continue
+        seen, queue = {root_rel: None}, [root_rel]
+        while queue:
+            rel = queue.pop(0)
+            for _, target, member in live[rel]:
+                if target.endswith(".zig"):
+                    dep = resolve(src, rel, target)
+                    if dep is not None and dep in tests and dep not in seen:
+                        seen[dep] = rel
+                        queue.append(dep)
+                elif target in layer_modules and member is not None:
+                    dep = exports.get(target, {}).get(member)
+                    if dep is not None:
+                        via_module.setdefault(dep, []).append((rel, target))
+        for rel, parent in seen.items():
+            reached.setdefault(rel, []).append((step, parent))
+    return tests, lines, reached, via_module, unrun, in_body
+
+
+def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patterns=None, doc=True, module_roots=None,
+          build_roots=None, outside_module=None, report=None):
+    """Every problem found, as `path:line: message` strings (empty when clean).
+
+    `report`, a dict, receives the test reach (test_reach) for --list-tests."""
     files = FILES if files is None else files
     allowed = ALLOWED if allowed is None else allowed
     exempt_files = EXEMPT_FILES if exempt_files is None else exempt_files
     exempt_patterns = EXEMPT_PATTERNS if exempt_patterns is None else exempt_patterns
     module_roots = MODULE_ROOTS if module_roots is None else module_roots
+    build_roots = BUILD_ROOTS if build_roots is None else build_roots
+    outside_module = OUTSIDE_MODULE if outside_module is None else outside_module
     problems = []
     src = root / SRC
     present = zig_files(src)
@@ -601,9 +1164,132 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
             problems.append(f"{_script_line(importer, imported)}: allowed pair {importer} -> {imported} "
                             "no longer occurs: remove it from ALLOWED")
 
+    # S6-T15: the roots zig/build.zig compiles, and the tests each step of `zig build test` runs.
+    build_path = root / BUILD
+    named = {}
+    if not build_path.is_file():
+        problems.append(f"{BUILD}:1: missing; the checker reads the roots of `zig build test` from it")
+    else:
+        for number, rel in build_root_paths(build_path.read_text(encoding="utf-8")):
+            named.setdefault(rel, number)
+        for rel, number in sorted(named.items()):
+            if rel not in build_roots:
+                problems.append(f"{BUILD}:{number}: names src/{rel}, which BUILD_ROOTS (scripts/check_layers.py) "
+                                "does not list: add it, with the step of `zig build test` it is the root of, or None")
+        for rel in sorted(set(build_roots) - set(named)):
+            problems.append(f"{_script_line(rel, table='BUILD_ROOTS')}: BUILD_ROOTS names {rel}, which {BUILD} "
+                            "does not name")
+        # The steps themselves, read from the build's structure: each step BUILD_ROOTS
+        # names is a test the `test` step runs, rooted at that file, once.
+        steps, unread = build_test_steps(build_path.read_text(encoding="utf-8"))
+        for number, message in unread:
+            problems.append(f"{BUILD}:{number}: {message}")
+        by_root = {}
+        for label, rel, number, row in steps:
+            by_root.setdefault(rel, []).append((label, number, row))
+        for rel, places in sorted(by_root.items()):
+            want = build_roots.get(rel, (None, ""))[0]
+            if len(places) > 1:
+                problems.append(f"{BUILD}:{places[1][1]}: src/{rel} is the root of {len(places)} test steps "
+                                f"({', '.join(repr(label) for label, _, _ in places)}); BUILD_ROOTS gives it one")
+            for label, number, row in places:
+                if want is None:
+                    problems.append(f"{BUILD}:{number}: a test step is rooted at src/{rel}, which BUILD_ROOTS "
+                                    "(scripts/check_layers.py) gives no step: add the step there")
+                elif row and label != want:
+                    problems.append(f"{BUILD}:{number}: the test_roots row {label!r} is rooted at src/{rel}, "
+                                    f"the root of the step {want!r} in BUILD_ROOTS: a row's name and path go together")
+                elif not row and label != step_label(want):
+                    shown, expected = f"run test {label}".rstrip(), f"run test {step_label(want)}".rstrip()
+                    problems.append(f"{BUILD}:{number}: the test rooted at src/{rel} is named {label!r}, so the "
+                                    f"Build Summary shows `{shown}`; the step {want!r} is expected as "
+                                    f"`{expected}` (STEP_LABELS in scripts/check_layers.py)")
+        for rel, (step, _) in sorted(build_roots.items()):
+            if step is not None and rel not in by_root:
+                problems.append(f"{_script_line(rel, table='BUILD_ROOTS')}: BUILD_ROOTS makes {rel} the root of the "
+                                f"step {step!r}, but no test the `test` step of {BUILD} runs is rooted there")
+    for rel in sorted(build_roots):
+        # A missing file listed in another table is reported there.
+        if rel not in present_set and rel not in files and rel not in module_roots and rel not in exempt_files:
+            problems.append(f"{_script_line(rel, table='BUILD_ROOTS')}: BUILD_ROOTS names {SRC}/{rel}, "
+                            "which does not exist")
+    for rel in sorted(outside_module):
+        if rel not in build_roots:
+            problems.append(f"{_script_line(rel, table='OUTSIDE_MODULE')}: OUTSIDE_MODULE names {rel}, "
+                            "which is not in BUILD_ROOTS")
+    # The listing is what BUILD_ROOTS says should run, whatever zig/build.zig now does:
+    # the build is checked against it above, and a real run by scripts/check_test_counts.py.
+    live_roots = {rel: v for rel, v in build_roots.items() if rel in present_set}
+    tests, test_lines, reached, via_module, unrun, in_body = test_reach(src, present, live_roots, exports,
+                                                                        layer_modules)
+    roots_of = {FOLDERS[layer]: rel for rel, (layer, _, _) in module_roots.items()}
+    tests_root = next((rel for rel, (step, _) in build_roots.items() if step == TESTS), "tests/root.zig")
+    for rel in present:
+        if rel in reached and unrun[rel]:
+            count = len(unrun[rel])
+            problems.append(f"{SRC}/{rel}:{unrun[rel][0]}: holds {count} test{'s' if count != 1 else ''} that no "
+                            "step of `zig build test` runs, though a step reaches the file: each sits inside a "
+                            "declaration nothing compiled names (a struct no test or comptime block uses); lines "
+                            + ", ".join(map(str, unrun[rel])))
+        if rel in reached and in_body[rel]:
+            count = len(in_body[rel])
+            problems.append(f"{SRC}/{rel}:{in_body[rel][0]}: holds {count} test{'s' if count != 1 else ''} written "
+                            "inside a body (a function's, such as a generic type's returned struct, a test block's "
+                            "or a comptime block's): Zig runs such a test as often as the body is analysed, once per "
+                            "instantiation, once or never, which the checker cannot count; write it at the top level "
+                            "of the file, or of a struct declared at the top level; lines "
+                            + ", ".join(map(str, in_body[rel])))
+        if tests[rel] + len(unrun[rel]) + len(in_body[rel]) == 0 or rel in reached:
+            continue
+        folder = folder_of(rel)
+        if folder in roots_of:
+            how = f"name it in {SRC}/{roots_of[folder]}: a pub const and a line in its test-build comptime block"
+        else:
+            how = f"name it in {SRC}/{tests_root}'s test block, or from a test that {SRC}/{tests_root} reaches"
+        why = ""
+        if rel in via_module:
+            importer, module = via_module[rel][0]
+            why = (f"; {SRC}/{importer} reaches it only through the module {module}, and a test build runs "
+                   "the tests of its root module's files only")
+        count = tests[rel] + len(unrun[rel]) + len(in_body[rel])
+        first = min(test_lines[rel] + unrun[rel] + in_body[rel])
+        problems.append(f"{SRC}/{rel}:{first}: holds {count} test{'s' if count != 1 else ''} "
+                        f"that no step of `zig build test` runs: no test step's root reaches it ({how}){why}")
+
+    # A module root names every file its module holds, and compiles each in a test build,
+    # so the module's step runs every test of its folder.
+    for root_rel, (layer, _, _) in sorted(module_roots.items()):
+        if root_rel not in present_set or folder_of(root_rel) != FOLDERS[layer]:
+            continue  # reported above
+        text = (src / root_rel).read_text(encoding="utf-8")
+        declared = {resolve(src, root_rel, op): (number, name)
+                    for name, (number, op) in root_exports(text).items() if op}
+        compiled = {resolve(src, root_rel, target) for _, target, _ in test_build_imports(text)[1]
+                    if target.endswith(".zig")}
+        folder = FOLDERS[layer]
+        for rel in present:
+            if folder_of(rel) != folder or rel == root_rel or rel in outside_module:
+                continue
+            # The module holds its folder's layer files and tests; benchmarks and tools are run alone.
+            if files.get(rel, ("",))[0] != layer and not (rel not in files and
+                                                         fnmatch.fnmatchcase(posixpath.basename(rel), "*_test.zig")):
+                continue
+            if rel not in declared:
+                problems.append(f"{SRC}/{root_rel}:1: does not name {rel}: a module root names every file of its "
+                                "folder (a pub const, and a line in its test-build comptime block), so the module's "
+                                "step of `zig build test` compiles it and runs its tests")
+            elif rel not in compiled:
+                number, name = declared[rel]
+                problems.append(f"{SRC}/{root_rel}:{number}: names {rel} (pub const {name}) but no test build "
+                                f"compiles it: add `_ = {name};` to its test-build comptime block")
+    if report is not None:
+        report.update(tests=tests, lines=test_lines, reached=reached, via_module=via_module,
+                      steps={rel: step for rel, (step, _) in live_roots.items() if step is not None},
+                      labels={rel: step_label(step) for rel, (step, _) in live_roots.items() if step is not None})
+
     if doc:
         doc_path = root / DOC
-        expected = render_doc(files, allowed, exempt_files, exempt_patterns, module_roots)
+        expected = render_doc(files, allowed, exempt_files, exempt_patterns, module_roots, build_roots)
         if not doc_path.exists():
             problems.append(f"{DOC}:1: missing; run scripts/check_layers.py --write-doc")
         else:
@@ -634,19 +1320,56 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Check the layer boundary of zig/src (docs/layers.md).")
     parser.add_argument("--root", type=Path, default=REPO_ROOT, help="repository root (default: this script's)")
     parser.add_argument("--write-doc", action="store_true", help="regenerate the block of docs/layers.md")
+    parser.add_argument("--list-tests", action="store_true",
+                        help="also print each step of `zig build test`, the files whose tests it runs, and their counts")
     args = parser.parse_args(argv)
     root = args.root.resolve()
     if args.write_doc:
         write_doc(root)
-    problems = check(root)
+    reach = {}
+    problems = check(root, report=reach)
+    if args.list_tests:
+        print_tests(reach)
     for problem in problems:
         print(problem)
     if problems:
         print(f"check_layers: {len(problems)} problem(s)")
         return 1
+    with_tests = [rel for rel, count in reach["tests"].items() if count]
     print(f"check_layers: OK ({len(FILES)} files in layers, {len(MODULE_ROOTS)} module roots, "
-          f"{len(ALLOWED)} allowed interface imports)")
+          f"{len(ALLOWED)} allowed interface imports; {len(with_tests)} files hold "
+          f"{sum(reach['tests'].values())} tests, each run by a step of `zig build test`)")
     return 0
+
+
+def print_tests(reach) -> None:
+    """The --list-tests table: by step, then by file, with the file that reaches each."""
+    tests, reached = reach["tests"], reach["reached"]
+    by_step = {}
+    for rel, places in reached.items():
+        for step, parent in places:
+            by_step.setdefault(step, []).append((rel, parent))
+    print("| Step of `zig build test` | Root | Files with tests | Tests |")
+    print("|---|---|---:|---:|")
+    total_files = total_tests = 0
+    for root_rel, step in reach["steps"].items():
+        rows = [(rel, parent) for rel, parent in by_step.get(step, []) if tests[rel]]
+        count = sum(tests[rel] for rel, _ in rows)
+        total_files += len(rows)
+        total_tests += count
+        print(f"| {step} | `{root_rel}` | {len(rows)} | {count} |")
+    print(f"| all | | {total_files} | {total_tests} |")
+    print()
+    print("| File (`zig/src/`) | Tests | Step | Reached from |")
+    print("|---|---:|---|---|")
+    for rel in sorted(tests):
+        if not tests[rel]:
+            continue
+        places = reached.get(rel, [])
+        steps = ", ".join(step for step, _ in places) or "none"
+        parents = ", ".join(f"`{parent}`" if parent else "(the root)" for _, parent in places) or "nothing"
+        print(f"| `{rel}` | {tests[rel]} | {steps} | {parents} |")
+    print()
 
 
 if __name__ == "__main__":

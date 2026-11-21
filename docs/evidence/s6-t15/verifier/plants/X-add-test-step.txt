@@ -1,0 +1,22 @@
+# plant X-add-test-step on 6554055
+ .../runs/{pristine => X-add-test-step/src}/zig/build.zig                 | 1 +
+ .../runs/X-add-test-step/src/zig/src/tests/extra_test.zig}               | 1 +
+ 2 files changed, 2 insertions(+)
+
+## checker exit 1
+| Step of `zig build test` | Root | Files with tests | Tests |
+|---|---|---:|---:|
+| core | `core/core.zig` | 45 | 253 |
+| operations | `ops/operations.zig` | 3 | 10 |
+| interfaces | `interfaces/interfaces.zig` | 4 | 26 |
+| tests | `tests/root.zig` | 21 | 293 |
+| fastmem | `core/fastmem.zig` | 1 | 6 |
+| all | | 74 | 588 |
+
+| File (`zig/src/`) | Tests | Step | Reached from |
+|---|---:|---|---|
+| `tests/extra_test.zig` | 1 | none | nothing |
+
+zig/build.zig:63: names src/tests/extra_test.zig, which BUILD_ROOTS (scripts/check_layers.py) does not list: add it, with the step of `zig build test` it is the root of, or None
+zig/src/tests/extra_test.zig:1: holds 1 test that no step of `zig build test` runs: no test step's root reaches it (name it in zig/src/tests/root.zig's test block, or from a test that zig/src/tests/root.zig reaches)
+check_layers: 2 problem(s)

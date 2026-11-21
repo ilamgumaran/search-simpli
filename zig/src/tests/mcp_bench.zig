@@ -1,7 +1,7 @@
 //! S3-T6 timing tool (section 13 profile): the direct Zig call that the MCP
 //! adapter's overhead is measured against.
 //!
-//!     zig run -OReleaseSmall zig/src/mcp_bench.zig -- INDEX_DIR REQUESTS ROUNDS
+//!     zig run -OReleaseSmall --dep core --dep operations -Mroot=zig/src/tests/mcp_bench.zig --dep core -Moperations=zig/src/ops/operations.zig -Mcore=zig/src/core/core.zig -- INDEX_DIR REQUESTS ROUNDS
 //!
 //! REQUESTS is a file of JSON lines `{"tool": "find" | "search_knowledge",
 //! "arguments": {…}}` (written by `scripts/mcp_overhead.py`). The index is

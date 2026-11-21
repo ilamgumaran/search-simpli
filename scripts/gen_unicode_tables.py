@@ -323,7 +323,7 @@ def main():
     out.append("//! Generated file -- do not edit by hand.")
     out.append(f"//! Produced by scripts/gen_unicode_tables.py using Python {python_version}'s")
     out.append(f"//! `unicodedata` module, Unicode Character Database version {unidata_version}.")
-    out.append("//! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/unicode_tables.zig")
+    out.append("//! Regenerate with: python3 scripts/gen_unicode_tables.py > zig/src/core/unicode_tables.zig")
     out.append("//!")
     out.append(f"//! unicode_version = \"{unidata_version}\"")
     out.append("")
