@@ -7,6 +7,7 @@ that each rule fails with the file and line named."""
 from __future__ import annotations
 
 import io
+import shutil
 import sys
 import tempfile
 import unittest
@@ -1124,6 +1125,86 @@ class CoreApiTests(unittest.TestCase):
         api, problems = check_layers.core_api(text)
         self.assertEqual(problems, [])
         self.assertEqual((len(api), sum(len(names) for _, names in api.values())), (23, 88))
+
+
+class OneShotQueryTests(unittest.TestCase):
+    """S6-T18: `title_field.derive` left `api`; the one-shot query `engine.queryOneShot` took its place."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        # The repository's own sources, build file and document: the real `api`.
+        shutil.copytree(REPO / "zig" / "src", self.root / "zig" / "src")
+        shutil.copy(REPO / "zig" / "build.zig", self.root / "zig" / "build.zig")
+        (self.root / "docs").mkdir()
+        shutil.copy(REPO / "docs" / "layers.md", self.root / "docs" / "layers.md")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def plant(self, rel, text):
+        path = self.root / "zig" / "src" / rel
+        before = path.read_text(encoding="utf-8")
+        path.write_text(before + text, encoding="utf-8")
+        return before.count("\n") + 1
+
+    def test_the_api_has_the_call_and_not_the_derive(self):
+        text = (REPO / "zig" / "src" / "core" / "core.zig").read_text(encoding="utf-8")
+        api, problems = check_layers.core_api(text)
+        self.assertEqual(problems, [])
+        self.assertIn("queryOneShot", api["engine"][1])
+        self.assertNotIn("derive", api["title_field"][1])
+        self.assertEqual(sorted(api["title_field"][1]), ["policy_id"])
+
+    def test_the_copy_passes(self):
+        self.assertEqual(check_layers.check(self.root), [])
+
+    def test_main_prints_the_api_s_size(self):
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = check_layers.main(["--root", str(REPO)])
+        self.assertEqual(code, 0, out.getvalue())
+        self.assertIn("; the public core API `api`: 88 names in 23 namespaces)", out.getvalue())
+
+    def test_main_prints_the_size_of_an_api_with_one_name_more(self):
+        path = self.root / "zig" / "src" / "core" / "core.zig"
+        text = path.read_text(encoding="utf-8")
+        anchor = "        pub const queryOneShot = internal.engine.queryOneShot;\n"
+        self.assertEqual(text.count(anchor), 1)
+        path.write_text(text.replace(anchor, anchor + "        /// An open, planted.\n"
+                                     "        pub const open = internal.engine.open;\n"), encoding="utf-8")
+        (self.root / "zig" / "src" / "core" / "engine.zig").write_text(
+            (REPO / "zig" / "src" / "core" / "engine.zig").read_text(encoding="utf-8") + "pub fn open() void {}\n",
+            encoding="utf-8")
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = check_layers.main(["--root", str(self.root)])
+        self.assertEqual(code, 0, out.getvalue())
+        self.assertIn("; the public core API `api`: 89 names in 23 namespaces)", out.getvalue())
+
+    def test_a_planted_derive_in_interfaces_fails_inline_and_through_the_old_alias(self):
+        first = self.plant("interfaces/cli.zig",
+                           'const title_field = @import("core").api.title_field;\n'
+                           "fn plantedRunSearch(a: std.mem.Allocator, engine: engine_module.Engine) !void {\n"
+                           "    const title = try title_field.derive(a, a, engine.documents, engine.roots);\n"
+                           "    _ = title;\n"
+                           '    _ = @import("core").api.title_field.derive;\n'
+                           "}\n")
+        missing = ("uses core.api.title_field.derive, which api.title_field does not have: add it by the rule in "
+                   "docs/core-api.md")
+        self.assertEqual(check_layers.check(self.root), [
+            f"zig/src/interfaces/cli.zig:{first + 2}: {missing}",
+            f"zig/src/interfaces/cli.zig:{first + 4}: {missing}"])
+
+    def test_a_planted_derive_in_ops_fails(self):
+        first = self.plant("ops/ops.zig", 'const planted = @import("core").api.title_field.derive;\n')
+        self.assertEqual(check_layers.check(self.root), [
+            f"zig/src/ops/ops.zig:{first}: uses core.api.title_field.derive, which api.title_field does not have: "
+            "add it by the rule in docs/core-api.md"])
+
+    def test_the_call_passes_where_cli_uses_it(self):
+        self.plant("interfaces/mcp.zig", 'const planted = @import("core").api.engine.queryOneShot;\n')
+        self.assertEqual(check_layers.check(self.root), [])
 
 
 if __name__ == "__main__":

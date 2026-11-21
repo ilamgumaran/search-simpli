@@ -21,7 +21,6 @@ const chunker = @import("core").api.chunker;
 const engine_module = @import("core").api.engine;
 const generation_alloc = @import("core").api.generation_alloc;
 const hybrid = @import("core").api.hybrid;
-const title_field = @import("core").api.title_field;
 const indexer = @import("core").api.indexer;
 const snapshot_open = @import("core").api.snapshot_open;
 const find_module = @import("core").api.find;
@@ -876,20 +875,6 @@ pub const QueryOptions = struct {
     json: bool = false,
 };
 
-fn runSearch(
-    allocator: std.mem.Allocator,
-    engine: engine_module.Engine,
-    query_text: []const u8,
-    top_k: usize,
-) ![]hybrid.Result {
-    const result_output = try allocator.alloc(hybrid.Result, engine.documents.len);
-    // S5-T2 (ruling 3): a one-shot query derives the title field itself
-    // (`allocator` is the command's arena).
-    const title = try title_field.derive(allocator, allocator, engine.documents, engine.roots);
-    const options = hybrid.SearchOptions{ .top_k = top_k, .candidate_k = @max(top_k, engine.documents.len), .retrieval_mode = .lexical, .title = &title.field };
-    return engine.queryTokenized(allocator, query_text, &.{}, result_output, options);
-}
-
 pub fn runQuery(
     io: std.Io,
     allocator: std.mem.Allocator,
@@ -924,7 +909,7 @@ pub fn answerQuery(
         try output.writeByte('\n');
         return;
     }
-    const results = try runSearch(arena, engine, query_text, options.top_k);
+    const results = try engine_module.queryOneShot(engine, arena, query_text, options.top_k);
 
     if (options.json) {
         var json = std.json.Stringify{ .writer = output };
@@ -995,7 +980,7 @@ pub fn answerEvidence(
         try output.writeByte('\n');
         return;
     }
-    const results = try runSearch(arena, engine, query_text, options.top_k);
+    const results = try engine_module.queryOneShot(engine, arena, query_text, options.top_k);
 
     var json = std.json.Stringify{ .writer = output };
     try json.beginObject();

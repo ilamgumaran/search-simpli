@@ -172,7 +172,7 @@ and in the decoded array), and holds them for every query, lexical or not.
 | C ABI `ss_query` | `abi.zig` `ss_query`, `queryImpl` | `query_vector` + `dims`. Lexical mode, or a snapshot with 0 dimensions: ignored, reported as `vector_ignored` (`lexical_mode` / `no_vectors_in_snapshot`, `report.zig` `VectorIgnored`). Otherwise the length must equal the snapshot's dimensions (`VectorDimensionMismatch`) and the vector must pass `isValidVector` (`VectorNormNotFinite`). |
 | JSON-RPC `search_knowledge` | `ops.zig` `parseSearch`, `queryVector` | `query_vector` array. Required for `vector` and `hybrid` when the index has vectors; must hold exactly `vector_dimensions` finite numbers with a valid norm, else `-32602`. Lexical mode and 0-dimension indexes ignore it. |
 | MCP `search_knowledge` | `mcp.zig` `runTool` | `query_vector` is refused (`-32602`, "not accepted over MCP (CAP-13: no caller-supplied vectors)"). |
-| CLI `query`, `evidence`, `search` | `cli.zig` `runSearch`, `answerQuery`, `answerEvidence` | Always lexical (`retrieval_mode = .lexical`, an empty vector); there is no vector argument. |
+| CLI `query`, `evidence`, `search` | `cli.zig` `answerQuery`, `answerEvidence`, through the core's `engine.queryOneShot` (S6-T18) | Always lexical (`retrieval_mode = .lexical`, an empty vector); there is no vector argument. |
 | Dart `SearchSimpli.query` | `bindings/dart/search_simpli/lib/src/search_simpli_base.dart` | `queryVector` (`List<double>`) is copied to a `Float` array and passed to `ss_query`. |
 | Python gateway | `src/search_platform/zig_gateway.py` `EmbeddingGateway` | Refuses a caller's `query_vector`, embeds the query text itself, and forwards the vector to the engine's JSON-RPC. |
 
