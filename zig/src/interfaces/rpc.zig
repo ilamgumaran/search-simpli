@@ -1,13 +1,13 @@
-const engine_module = @import("core").engine;
-const hybrid = @import("core").hybrid;
-const postings = @import("core").postings;
+const engine_module = @import("core").api.engine;
+const hybrid = @import("core").api.hybrid;
+const postings = @import("core").api.postings;
 const report = @import("operations").report;
-const scoring = @import("core").scoring;
+const scoring = @import("core").api.scoring;
 const service_module = @import("operations").service;
 const ops = @import("operations").ops;
-const apply = @import("core").apply;
-const scope = @import("core").scope;
-const snapshot_open = @import("core").snapshot_open;
+const apply = @import("core").api.apply;
+const scope = @import("core").api.scope;
+const snapshot_open = @import("core").api.snapshot_open;
 const std = @import("std");
 
 /// S3-T4: what `searchd serve` was started with. The scope comes from the
@@ -555,7 +555,7 @@ test "S3-T4: the RPC folder methods, the command-line scope and apply_changes ga
         \\{"op":"add","root_id":"vault","path":"plan.md","content_base64":"IyBQbGFuCgp0aWRlIHNlY3JldAo="}]}
     ;
     _ = (try apply.applyChanges(a, io, tmp.dir, request, .{})).ok;
-    const opened = try @import("core").snapshot_open.openScoped(a, io, tmp.dir);
+    const opened = try @import("core").api.snapshot_open.openScoped(a, io, tmp.dir);
     const service = service_module.Service{ .engine = opened.engine, .folder = opened.folder };
     const count = service.engine.documents.len;
     const workspaces = Workspaces{

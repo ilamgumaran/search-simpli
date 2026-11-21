@@ -12,22 +12,22 @@
 //! snapshots; `runQuery`/`runEvidence` below use it, and so does
 //! `Service.searchKnowledge` (`service.zig`) -- which means `searchd serve`,
 //! stdio and `--http` alike, is analyzer-aware too, not just this CLI path.
-const apply_module = @import("core").apply;
-const filename_field = @import("core").filename_field;
+const apply_module = @import("core").api.apply;
+const filename_field = @import("core").api.filename_field;
 const filename_response = @import("operations").filename_response;
 const std = @import("std");
-const benchmark = @import("core").benchmark;
-const chunker = @import("core").chunker;
-const engine_module = @import("core").engine;
-const generation_alloc = @import("core").generation_alloc;
-const hybrid = @import("core").hybrid;
-const title_field = @import("core").title_field;
-const indexer = @import("core").indexer;
-const snapshot_open = @import("core").snapshot_open;
-const find_module = @import("core").find;
+const benchmark = @import("core").api.benchmark;
+const chunker = @import("core").api.chunker;
+const engine_module = @import("core").api.engine;
+const generation_alloc = @import("core").api.generation_alloc;
+const hybrid = @import("core").api.hybrid;
+const title_field = @import("core").api.title_field;
+const indexer = @import("core").api.indexer;
+const snapshot_open = @import("core").api.snapshot_open;
+const find_module = @import("core").api.find;
 const ops = @import("operations").ops;
 const service_module = @import("operations").service;
-const source = @import("core").source;
+const source = @import("core").api.source;
 
 pub const IndexOptions = struct {
     analyzer: indexer.AnalyzerId = .v2,

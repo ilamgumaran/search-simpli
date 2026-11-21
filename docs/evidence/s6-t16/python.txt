@@ -1,0 +1,8 @@
+# Python with Zig on PATH (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests), worktree at 5b70eb4
+exit 0
+Ran 562 tests in 99.595s
+OK
+# Python without Zig (SEARCH_SIMPLI_NO_ZIG=1)
+exit 0
+Ran 507 tests in 37.168s
+OK (skipped=43)

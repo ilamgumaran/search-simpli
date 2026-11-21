@@ -1,0 +1,22 @@
+# S6-T16 ruling 3: tool/build_native.sh in a fresh git archive of 5b70eb4, fresh caches, NDK 28.2.13676358
+tool/build_native.sh: building with 0.16.0 from <scratch>/natives-5b70eb4/zig
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib ( 1006456 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  966800 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  971424 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (9001e82b90c708da1cce550dba5d7a15ac81a8b672478e4697a924546ea4b606)
+build_native.sh exit 0
+native/macos-arm64/libsearch_simpli.dylib: 1006456 B, sha256 ab901f1bd8e8c78c...; committed at 5b70eb4: identical; committed at 10f3d40: identical
+native/android-arm64/libsearch_simpli.so: 966800 B, sha256 5b987456bfb314b9...; committed at 5b70eb4: identical; committed at 10f3d40: identical
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: 966800 B, sha256 5b987456bfb314b9...; committed at 5b70eb4: identical; committed at 10f3d40: identical
+native/ios-arm64/search_simpli.framework/search_simpli: 971424 B, sha256 1815daf3214373bc...; committed at 5b70eb4: identical; committed at 10f3d40: identical
+native/ios-arm64/search_simpli.framework/Info.plist: 749 B, sha256 8fb8f2353652106e...; committed at 5b70eb4: identical; committed at 10f3d40: identical
+native/SOURCE-SHA256: 65 B, sha256 40ec05bc21c5bada...; committed at 5b70eb4: identical; committed at 10f3d40: differs
+SOURCE-SHA256 at 10f3d40: 3b08957494d25143e54490e171c472428be638422e13d98f171079f1d4f99bbb
+SOURCE-SHA256 at 5b70eb4: 9001e82b90c708da1cce550dba5d7a15ac81a8b672478e4697a924546ea4b606
+check_native: macos-arm64 memcpy at 0x740 (223 calls against 120): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5b0d4 (507 calls against 164): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (219 calls against 112): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+check_native.sh exit 0
+every library cmp-identical to 10f3d40's, the digest to 5b70eb4's: yes

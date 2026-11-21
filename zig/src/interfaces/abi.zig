@@ -31,22 +31,21 @@
 //!   handle is not.
 
 const std = @import("std");
-const chunker = @import("core").chunker;
-const engine_module = @import("core").engine;
-const generation_alloc = @import("core").generation_alloc;
-const hybrid = @import("core").hybrid;
-const importer = @import("core").importer;
-const indexer = @import("core").indexer;
-const manifest = @import("core").manifest;
-const postings = @import("core").postings;
-const publication = @import("core").publication;
+const chunker = @import("core").api.chunker;
+const engine_module = @import("core").api.engine;
+const generation_alloc = @import("core").api.generation_alloc;
+const hybrid = @import("core").api.hybrid;
+const importer = @import("core").api.importer;
+const indexer = @import("core").api.indexer;
+const manifest = @import("core").api.manifest;
+const postings = @import("core").api.postings;
 const query_report = @import("operations").report;
 const rpc = @import("rpc.zig");
-const scoring = @import("core").scoring;
+const scoring = @import("core").api.scoring;
 const service_module = @import("operations").service;
 const ops = @import("operations").ops;
-const scope = @import("core").scope;
-const snapshot_open = @import("core").snapshot_open;
+const scope = @import("core").api.scope;
+const snapshot_open = @import("core").api.snapshot_open;
 
 /// Negative error codes returned by `ss_import_json`. Matches
 /// `docs/zig-engine-api.md`'s ABI section.
@@ -271,7 +270,7 @@ fn queryImpl(
     const candidate_k = options.candidate_k orelse 100;
     if (candidate_k < top_k or candidate_k > 10_000) return error.InvalidCandidateDepth;
 
-    const field = std.meta.stringToEnum(@import("core").filename_field.Field, options.search_field) orelse return error.InvalidSearchField;
+    const field = std.meta.stringToEnum(@import("core").api.filename_field.Field, options.search_field) orelse return error.InvalidSearchField;
     if (field != .content) {
         if (options.profile) return error.FilenameProfileUnavailable;
         if (mode != .lexical or options.retrieval_mode == null) return error.FilenameSearchRequiresLexical;
@@ -1180,9 +1179,9 @@ fn countSections(io_impl: std.Io, dir: std.Io.Dir, suffix: []const u8) !usize {
 // === end S1-T3 ==============================================================
 
 test "ss_open reads a published demo snapshot and ss_query/ss_status/ss_evidence agree with the RPC path" {
-    const segment = @import("core").segment;
-    const lexical_segment = @import("core").lexical_segment;
-    const lifecycle = @import("core").lifecycle;
+    const segment = @import("core").api.segment;
+    const lexical_segment = @import("core").api.lexical_segment;
+    const lifecycle = @import("core").api.lifecycle;
 
     const documents = [_]hybrid.Document{
         .{ .id = "both", .text = "hybrid retrieval combines ranks", .vector = &.{ 0.8, 0.2 }, .path = "guides/hybrid.md", .start_line = 1, .end_line = 6 },

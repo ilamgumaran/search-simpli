@@ -1,0 +1,84 @@
+== B1 zig build test exit 1
+src/ops/report.zig:213:24: error: 'internal' is not marked 'pub'
+error: 1 compilation errors
+Build Summary: 12/15 steps succeeded (1 failed); 569/578 tests passed (9 skipped)
+error: the following build command failed with exit code 1:
+   [105s]
+== B2 zig build test exit 1
+src/ops/report.zig:212:29: error: import of file outside module path
+error: 1 compilation errors
+src/ops/report.zig:1:1: error: file exists in modules 'core' and 'operations'
+error: 1 compilation errors
+src/ops/report.zig:1:1: error: file exists in modules 'core' and 'operations'
+error: 1 compilation errors
+Build Summary: 8/15 steps succeeded (3 failed); 259/259 tests passed
+error: the following build command failed with exit code 1:
+   [147s]
+== B3 zig build test exit 0
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+   [254s]
+== B4 zig build test exit 0
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+   [361s]
+== B5 zig build test exit 0
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+   [472s]
+== B6 zig build test exit 0
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+   [635s]
+== B7 zig build test exit 0
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+   [747s]
+== B8 zig build test exit 0
+peek answered: {"request":{"query":"tide","mode":"words","roots":null,"path_prefix":null,"page_size":20,"cursor":null},"generation":1,"scope":{"roots":["school"],"labels_applied":true},"warnings":[],"hits":[{"chunk_id":"e8c7d20471df0494c7fc","root_id":"school","path":"week.md","section_path":["Week"],"start_line":1,"end_line":3,"score":0.28768211603164673,"snippet":"# Week\n\ntide table","snippet_start":0,"snippet_offsets":[[8,12]],"match_offsets":[[8,12]]}],"files":[{"root_id":"school","path":"week.md","hits":1}],"exact_match":null,"empty":false,"coverage":{"files":1,"sections":1},"truncated":false,"next_cursor":null,"pending_files":0}
+peek refused: refused: the request is not valid JSON
+Build Summary: 15/15 steps succeeded; 580/589 tests passed (9 skipped)
+   [915s]
+== check_test_counts --run Debug exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+   [1071s]
+== check_test_counts --run ReleaseSmall exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+   [1115s]
+== test-abi Debug exit 0
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
++- run exe abi_test success 201ms
+   +- compile exe abi_test Debug native success 3s MaxRSS:319M
+   [1126s]
+== searchd 30858a8 ReleaseSmall exit 0; 1151208 B 394f608ac54a6499
+   [1138s]
+== searchd 10f3d40 ReleaseSmall exit 0; 1151208 B 394f608ac54a6499
+   [1150s]
+searchd head vs main: cmp-identical
+spot sample (school): query: school (analyzer=analyzer-v2) 1. school/contacts.txt:1-4 score=0.016393 2. school/notes.md:31-37 score=0.016129 3. school/art-club.md:1-5 score=0.015873 4. school/newsletter-oct.md:8-13 score=0.015625 5. README.md:100-109 score=0.015385 6. judgments.json:652-718 score=0.015152 7. content.py:3
+spot check: 20 of 20 queries byte-identical (searchd search, head vs main)
+== build_native.sh exit 0
+native/macos-arm64/libsearch_simpli.dylib: 1006456 B; vs main committed: identical; vs head committed: identical
+native/android-arm64/libsearch_simpli.so: 966800 B; vs main committed: identical; vs head committed: identical
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: 966800 B; vs main committed: identical; vs head committed: identical
+native/ios-arm64/search_simpli.framework/search_simpli: 971424 B; vs main committed: identical; vs head committed: identical
+native/ios-arm64/search_simpli.framework/Info.plist: 749 B; vs main committed: identical; vs head committed: identical
+native/SOURCE-SHA256: 65 B; vs main committed: differs; vs head committed: identical
+check_native.sh exit 0
+check_native: ios-arm64 memcpy at 0x587c (219 calls against 112): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+   [1180s]
+git diff main head -- zig/include contracts: 0 lines
+exports: head 18, main 18, diff lines 0
+== python with zig exit 1
+Ran 562 tests in 115.706s
+FAILED (failures=2)
+   [1296s]
+pub get exit 0
+Analyzing lib, test...
+No issues found!
+analyze exit 0
+dart test exit 0
+00:09 +97: All tests passed!
+   [1312s]
+BATCH DONE

@@ -1,0 +1,5 @@
+# C header, contracts and exports: 10f3d40 against 5b70eb4
+git diff --stat 10f3d40 5b70eb4 -- zig/include contracts: '' (empty: unchanged)
+10f3d40: 18 exported symbols (16 _ss_*)
+5b70eb4: 18 exported symbols (16 _ss_*)
+exports: the same list

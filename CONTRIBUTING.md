@@ -157,7 +157,11 @@ and ABI as it is needs none.
 one way only, and another layer is reached through its module, never by a path.
 Tests, benchmarks and tools sit beside their subject, or in `zig/src/tests/` when they
 cross layers. [docs/layers.md](docs/layers.md) lists every file and says how to add an
-interface, a core feature or a test. A new layer file under `zig/src/` (not a test,
+interface, a core feature or a test. Operations and interfaces reach the core only
+through its public API, `@import("core").api` ([docs/core-api.md](docs/core-api.md):
+the names by purpose, who owns their memory, their errors, and the rule for adding a
+name); `scripts/check_layers.py` fails any other core name in `ops/` or `interfaces/`.
+Tests in `zig/src/tests/` may use the core's internals. A new layer file under `zig/src/` (not a test,
 benchmark or tool) goes in its layer's folder, is added to `FILES` in
 `scripts/check_layers.py` and is named in its folder's module root (`core/core.zig`,
 `ops/operations.zig` or `interfaces/interfaces.zig`: a `pub const` and a `_ = name;`

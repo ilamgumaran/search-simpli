@@ -15,7 +15,7 @@
 //! | `vector_ignored`             | when a vector was passed | when passed and the snapshot has no vectors | same |
 //! | `candidate_depth_cut`        | only if candidate_k < top_k | each channel, when both channels offered candidates | only if candidate_k < top_k |
 
-const hybrid = @import("core").hybrid;
+const hybrid = @import("core").api.hybrid;
 const std = @import("std");
 
 pub const Extras = struct {

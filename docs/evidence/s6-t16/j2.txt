@@ -1,0 +1,12 @@
+# J2, Python reference
+relevance_smoke exit 0
+J2 gate: pass
+# J2, native: 5b70eb4's ReleaseSmall searchd (fresh archive)
+J2 native: 290 queries, each with a record under content and both; none skipped
+  content: control MRR@10 1.000, misspelling MRR@10 0.859, morphology MRR@10 0.808, accent MRR@10 0.846, tamil MRR@10 1.000, title MRR@10 0.955, phrase MRR@10 0.900, title-heldout MRR@10 1.000, misspelling-heldout MRR@10 0.958, morphology-heldout MRR@10 0.833, accent-heldout MRR@10 0.955, tamil-heldout MRR@10 0.962, verbform-heldout MRR@10 0.974, verbform-cross MRR@10 1.000, precision-control MRR@
+  both: control MRR@10 1.000, misspelling MRR@10 0.844, morphology MRR@10 0.795, accent MRR@10 0.847, tamil MRR@10 1.000, title MRR@10 0.955, phrase MRR@10 0.900, title-heldout MRR@10 1.000, misspelling-heldout MRR@10 0.958, morphology-heldout MRR@10 0.857, accent-heldout MRR@10 0.909, tamil-heldout MRR@10 0.962, verbform-heldout MRR@10 0.947, verbform-cross MRR@10 1.000, precision-control MRR@10
+::notice title=J2 native run::290 queries x 2 variants, none skipped. searchd sha256 394f608ac54a6499d28f1cc20f363f0bb34b4609930dba2914c046c779e72df3 (1151208 B, ReleaseSmall, zig 0.16.0) built from commit 5b70eb4e2080abbe3962ebffb6fe12e85b332842; natives digest 9001e82b90c708da1cce550dba5d7a15ac81a8b672478e4697a924546ea4b606 (matches the committed SOURCE-SHA256: True); policies: analyzer_id analy
+run exit 0
+J2 native against the baseline's searchd cells (recorded 2026-11-12, binary 8b1f65c1d797): 0 rows differ
+::notice title=J2 x86_64 vs baseline::no row differs: every first grade-2 rank (452 over both variants), slice metric and negative equals the macOS arm64 baseline
+J2 gate: pass

@@ -1,0 +1,13 @@
+   --write-doc exit 0 check_layers: OK (46 files in layers, 3 module roots, 6 allowed interface imports; 75 files hold 589 tests, each run by a step of `zig build test`)
+== P01 | core-api.md's example, verbatim, as interfaces/peek.zig, registered as layers.md says, --write-doc | expected PASS | checker OK (passes)
+== P02 | the example without the --write-doc step | expected FAIL (doc table stale) | checker FAILS (exit 1)
+      docs/layers.md:115: the generated block differs from scripts/check_layers.py; run scripts/check_layers.py --write-doc
+      check_layers: 1 problem(s)
+== N01 | add-a-name rule followed literally: scope.Statistics with doc comment, used from ops/ | expected PASS | checker OK (passes)
+== N02 | same, doc comment forgotten | expected FAIL | checker FAILS (exit 1)
+      zig/src/core/core.zig:202: `api.scope.Statistics` has no `///` doc comment (docs/core-api.md)
+      check_layers: 1 problem(s)
+== N03 | a new namespace without its doc comment, a name its file does not declare | expected FAIL | checker FAILS (exit 1)
+      zig/src/core/core.zig:480: `api.lexical_build` has no `///` doc comment (docs/core-api.md)
+      zig/src/core/core.zig:482: `api.lexical_build.NOPE` names zig/src/core/lexical_build.zig's NOPE, which is not a top-level pub declaration of it
+      check_layers: 2 problem(s)

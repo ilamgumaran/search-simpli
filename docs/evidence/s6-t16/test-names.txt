@@ -1,0 +1,89 @@
+10f3d40 Debug: check_test_counts.py --run -- -Doptimize=Debug: exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+  10f3d40: check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+  10f3d40 Debug: 674 lines; 579 OK, 9 SKIP, 22 FAIL or error
+5b70eb4 Debug: check_test_counts.py --run -- -Doptimize=Debug: exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+  5b70eb4: check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+  5b70eb4 Debug: 674 lines; 579 OK, 9 SKIP, 22 FAIL or error
+Debug: names and outcomes DIFFER:
+125c125
+< core: import best-of-5: 125 docs N ms, 1000 docs N ms; growth 7.25x
+---
+> core: import best-of-5: 125 docs N ms, 1000 docs N ms; growth 7.36x
+213c213
+< core: nfc best-of-3: 256 KB mark N ms plain N ms; 1 MB mark N ms plain N ms; growth 3.99x
+---
+> core: nfc best-of-3: 256 KB mark N ms plain N ms; 1 MB mark N ms plain N ms; growth 3.92x
+10f3d40 ReleaseSmall: check_test_counts.py --run -- -Doptimize=ReleaseSmall: exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+  10f3d40: check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+  10f3d40 ReleaseSmall: 674 lines; 579 OK, 9 SKIP, 22 FAIL or error
+5b70eb4 ReleaseSmall: check_test_counts.py --run -- -Doptimize=ReleaseSmall: exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+  5b70eb4: check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 74 files hold 588 tests, each run by a step of `zig build test`)
+  5b70eb4 ReleaseSmall: 674 lines; 579 OK, 9 SKIP, 22 FAIL or error
+ReleaseSmall: names and outcomes DIFFER:
+125c125
+< core: import best-of-5: 125 docs N ms, 1000 docs N ms; growth 4.66x
+---
+> core: import best-of-5: 125 docs N ms, 1000 docs N ms; growth 4.88x
+213,214c213,214
+< core: nfc best-of-3: 256 KB mark N ms plain N ms; 1 MB mark N ms plain N ms; growth 3.84x
+< core: nfc jamo best-of-3: 256 KB jamo N ms twin N ms; 1 MB jamo N ms twin N ms; growth 3.96x
+---
+> core: nfc best-of-3: 256 KB mark N ms plain N ms; 1 MB mark N ms plain N ms; growth 4.14x
+> core: nfc jamo best-of-3: 256 KB jamo N ms twin N ms; 1 MB jamo N ms twin N ms; growth 3.97x
+
+# Normalised (the names step of scripts/prototypes/s6t16/proofs.sh, then this): the lines above that differ are
+# the run-time ratios that three timing tests print (`growth N.NNx`); with those also shown as N, the lists compare as:
+Debug: main 674 lines (OK 579, SKIP 9, FAIL 0); head 674 lines (OK 579, SKIP 9, FAIL 0): the same lines
+ReleaseSmall: main 674 lines (OK 579, SKIP 9, FAIL 0); head 674 lines (OK 579, SKIP 9, FAIL 0): the same lines

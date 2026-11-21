@@ -20,9 +20,12 @@ tests/       the tests, benchmarks and tools that cross layers          -> any m
 `zig/build.zig` builds `core/` as the module `core` (root `core/core.zig`) and `ops/`
 as the module `operations` (root `ops/operations.zig`, which imports `core`). The
 `searchd` executable (`interfaces/main.zig`) and the C ABI libraries
-(`interfaces/abi.zig`) import both. An interface reaches a core file as
-`@import("core").engine` and an operations file as `@import("operations").service`;
-a file imports another file of its own folder by path, as before. A third module,
+(`interfaces/abi.zig`) import both. Operations and interfaces reach the core only
+through its public API, `@import("core").api.engine` (S6-T16,
+[core-api.md](core-api.md): the public names by purpose, the rule for adding one); the
+tests in `tests/` may reach any core file, `@import("core").engine`. An interface
+reaches an operations file as `@import("operations").service`; a file imports another
+file of its own folder by path, as before. A third module,
 `interfaces` (root `interfaces/interfaces.zig`), exists only for the tests in `tests/`.
 
 `zig build test` runs one test step per folder (core, operations, interfaces, tests)
@@ -163,7 +166,7 @@ Module roots (only `pub const` imports of their folder's files):
 
 | File (`zig/src/`) | Module | What it is |
 |---|---|---|
-| `core/core.zig` | `core` | the module `core`: every core file but `fastmem.zig`, and every core test |
+| `core/core.zig` | `core` | the module `core`: `api`, the public core API (`docs/core-api.md`); every core file but `fastmem.zig`, and every core test |
 | `ops/operations.zig` | `operations` | the module `operations` (it imports `core`): every operations file |
 | `interfaces/interfaces.zig` | `interfaces` | the module `interfaces`, for the tests in `tests/`: every interface file but `main.zig`, and `field_warnings_test.zig` |
 
@@ -217,12 +220,14 @@ Tests, benchmarks and tools (in their subject's layer folder, or `tests/` when t
 
 **A new interface** (a WebAssembly entry, an HTTP server, a new command) is a new file
 in `interfaces/`, assigned to `interfaces` in `scripts/check_layers.py`. It calls
-`@import("operations").service` and `.ops` (and core types through `@import("core")`
-where it must), never another interface; if it needs something an interface already
+`@import("operations").service` and `.ops` (and core types through `@import("core").api`
+where it must: [core-api.md](core-api.md) lists them, with an example), never another
+interface; if it needs something an interface already
 has (argument parsing, a result writer), move that piece into operations first.
 **A core feature** (a new section, an analyzer, a ranking rule) is a file in `core/`
-that imports core files only; add it to `core/core.zig` so the other folders can reach
-it. The interfaces reach it through operations, so add the operation (and its JSON in
+that imports core files only; add it to `core/core.zig` so the tests can reach it, and
+add the names an operation needs to `api` there, by the rule in
+[core-api.md](core-api.md). The interfaces reach it through operations, so add the operation (and its JSON in
 `ops/ops.zig`) beside it. A new operations file goes in `ops/` and in
 `ops/operations.zig`. In every case run `python3 scripts/check_layers.py --write-doc`
 to regenerate the table above, then `python3 scripts/check_layers.py`. A change to a
@@ -283,6 +288,20 @@ refuses those, and the checker reports them rather than guess. Imports that are 
 files must be named in the "Imports that are not files" table above, and only the
 folders listed there may use them; an unknown name fails. A file directly in
 `zig/src/`, in an unknown folder, or in a folder other than its layer's, fails.
+
+**The public core API** (S6-T16, [core-api.md](core-api.md)). In `ops/` and
+`interfaces/`, every name after `@import("core")` is read, written inline or through an
+alias in the block it is bound in (an alias of an alias too), and must be `api`, one of
+its namespaces or one of their names; any other fails with file, line and name, as does
+the module used whole, and any binding of the whole module (`const c = @import("core");`
+in a block, in a struct or `pub`), so no alias can carry the internals past the block the
+checker follows it in. A name deeper than that (`api.engine.Engine.evidence`) is a
+member of a published type and is not read: a type's `pub` members are public with it.
+`api` itself is read from `core/core.zig`: only namespaces named as exported core files,
+holding only aliases `pub const NAME = internal.<file>.NAME;` of a top-level `pub`
+declaration, each with a `///` doc comment, and `internal` is never `pub`. The tests in
+`tests/` are not read for this rule. [core-api.md](core-api.md) lists what the guard does
+not catch.
 
 **Which tests run.** The roots are the `"src/....zig"` strings of `zig/build.zig`, each
 listed in the roots table above with its test step (the checker fails on a root

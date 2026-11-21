@@ -1,0 +1,14 @@
+files read: 12; distinct names: 88; uses: 303; core files: 23
+api entries: 88 in 23 namespaces; shape problems: []
+measured - api: []
+api - measured: []
+declaration kinds: {'const': 46, 'fn': 42}
+zig/src/interfaces/abi.zig 29
+zig/src/interfaces/cli.zig 29
+zig/src/interfaces/main.zig 14
+zig/src/interfaces/mcp.zig 6
+zig/src/interfaces/rpc.zig 11
+zig/src/ops/filename_response.zig 14
+zig/src/ops/ops.zig 31
+zig/src/ops/report.zig 2
+zig/src/ops/service.zig 31

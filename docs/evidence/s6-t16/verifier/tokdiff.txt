@@ -1,0 +1,12 @@
+base 10f3d40: 111 .zig files; head 30858a8: 111 .zig files
+zig/src/core/core.zig: EQUAL after allowed edits; removed from head: [('api block', 1072), ('internal', 7)]
+zig/src/interfaces/abi.zig: EQUAL after allowed edits; 15 api. refs undone; 16 @import("core"). in base; publication import removed from base copy: 1; other 'publication' words base=0 head=0
+zig/src/interfaces/cli.zig: EQUAL after allowed edits; 12 api. refs undone; 12 @import("core"). in base
+zig/src/interfaces/main.zig: EQUAL after allowed edits; 12 api. refs undone; 13 @import("core"). in base; publication import removed from base copy: 1; other 'publication' words base=0 head=0
+zig/src/interfaces/mcp.zig: EQUAL after allowed edits; 5 api. refs undone; 5 @import("core"). in base
+zig/src/interfaces/rpc.zig: EQUAL after allowed edits; 8 api. refs undone; 8 @import("core"). in base
+zig/src/ops/filename_response.zig: EQUAL after allowed edits; 10 api. refs undone; 10 @import("core"). in base
+zig/src/ops/ops.zig: EQUAL after allowed edits; 13 api. refs undone; 13 @import("core"). in base
+zig/src/ops/report.zig: EQUAL after allowed edits; 1 api. refs undone; 1 @import("core"). in base
+zig/src/ops/service.zig: EQUAL after allowed edits; 16 api. refs undone; 16 @import("core"). in base
+changed files 10; api refs undone 92; unexplained 0

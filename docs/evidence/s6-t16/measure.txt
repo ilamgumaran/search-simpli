@@ -1,0 +1,426 @@
+# S6-T16: the core names used outside the core
+
+Tree: commit 10f3d40. Read by `scripts/prototypes/s6t16/measure.py`.
+
+For scale: the 35 core layer files reachable through `core.zig` (all but `fastmem.zig`, the tests, benchmarks and the tool) hold 657 top-level `pub` declarations.
+
+## Summary
+
+| Who | Files | Uses | Distinct names | Distinct core files |
+|---|---:|---:|---:|---:|
+| operations and interfaces, all code | 9 | 303 | 88 | 23 |
+| operations and interfaces, outside `test` blocks | 9 | 249 | 86 | 22 |
+| operations and interfaces, inside `test` blocks only | 2 | 2 | 2 | 2 |
+| `ops/` | 4 | 171 | 55 | 16 |
+| `interfaces/` | 5 | 132 | 53 | 20 |
+| `interfaces/` test file (`field_warnings_test.zig`) | 0 | 0 | 0 | 0 |
+| cross-layer tests (`tests/`) | 26 | 1578 | 309 | 51 |
+| everyone outside the core | 35 | 1881 | 341 | 51 |
+
+## Names used by operations and interfaces, by file and count
+
+`code` counts uses outside `test` blocks, `tests` uses inside them; the files are the layer files of `ops/` and `interfaces/`. The last column counts the uses in `tests/` and in `interfaces/field_warnings_test.zig`.
+
+| Name | Kind | code | tests | Files (uses) | Cross-layer tests (uses) |
+|---|---|---:|---:|---|---:|
+| `analyzer_v2.analyzer_id` | const | 0 | 1 | `ops/filename_response.zig` 1 | 8 |
+| `apply.Options` | const | 5 | 0 | `interfaces/cli.zig` 1, `ops/ops.zig` 4 | 11 |
+| `apply.applyChanges` | fn | 3 | 1 | `interfaces/mcp.zig` 1, `interfaces/rpc.zig` 1, `ops/ops.zig` 2 | 47 |
+| `apply.default_max_file_bytes` | const | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `apply.default_max_total_bytes` | const | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `apply.writeReportJson` | fn | 1 | 0 | `ops/ops.zig` 1 | 1 |
+| `benchmark.max_dimensions` | const | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `benchmark.max_documents` | const | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `benchmark.max_queries` | const | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `benchmark.run` | fn | 1 | 0 | `interfaces/main.zig` 1 | 1 |
+| `chunker.default_max_chars` | const | 3 | 0 | `interfaces/abi.zig` 1, `interfaces/cli.zig` 2 | 25 |
+| `chunker.default_overlap_lines` | const | 3 | 0 | `interfaces/abi.zig` 1, `interfaces/cli.zig` 2 | 25 |
+| `engine.Engine` | const | 13 | 1 | `interfaces/abi.zig` 2, `interfaces/cli.zig` 4, `ops/filename_response.zig` 5, `ops/ops.zig` 1, `ops/service.zig` 2 | 12 |
+| `engine.Evidence` | const | 13 | 8 | `interfaces/abi.zig` 2, `interfaces/mcp.zig` 1, `interfaces/rpc.zig` 7, `ops/ops.zig` 2, `ops/service.zig` 9 | 20 |
+| `filename_field.Field` | const | 9 | 0 | `interfaces/abi.zig` 1, `interfaces/cli.zig` 3, `ops/filename_response.zig` 3, `ops/ops.zig` 2 | 7 |
+| `filename_field.Hit` | const | 4 | 1 | `ops/filename_response.zig` 5 | 0 |
+| `filename_field.tokenize` | fn | 4 | 0 | `ops/filename_response.zig` 4 | 0 |
+| `find.Mode` | const | 4 | 0 | `interfaces/cli.zig` 2, `ops/ops.zig` 2 | 4 |
+| `find.Outcome` | const | 1 | 0 | `ops/service.zig` 1 | 0 |
+| `find.Request` | const | 2 | 0 | `ops/ops.zig` 1, `ops/service.zig` 1 | 1 |
+| `find.default_page_size` | const | 1 | 0 | `ops/ops.zig` 1 | 0 |
+| `find.find` | fn | 1 | 0 | `ops/service.zig` 1 | 3 |
+| `find.max_page_size` | const | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `find.stale_cursor_message` | const | 1 | 0 | `ops/ops.zig` 1 | 0 |
+| `find.writeFields` | fn | 1 | 0 | `ops/ops.zig` 1 | 0 |
+| `fold.policy_id` | const | 2 | 0 | `ops/filename_response.zig` 1, `ops/ops.zig` 1 | 1 |
+| `fuzzy.policy_id` | const | 2 | 0 | `ops/filename_response.zig` 1, `ops/ops.zig` 1 | 2 |
+| `generation_alloc.describeNoFreeGeneration` | fn | 3 | 1 | `interfaces/abi.zig` 3, `interfaces/main.zig` 1 | 0 |
+| `generation_alloc.nextFreeGeneration` | fn | 2 | 0 | `interfaces/abi.zig` 1, `interfaces/cli.zig` 1 | 1 |
+| `hybrid.Document` | const | 7 | 7 | `interfaces/abi.zig` 1, `interfaces/main.zig` 1, `interfaces/rpc.zig` 2, `ops/filename_response.zig` 1, `ops/ops.zig` 5, `ops/service.zig` 4 | 49 |
+| `hybrid.Result` | const | 12 | 8 | `interfaces/abi.zig` 2, `interfaces/cli.zig` 2, `interfaces/main.zig` 1, `interfaces/mcp.zig` 1, `interfaces/rpc.zig` 5, `ops/ops.zig` 3, `ops/service.zig` 6 | 44 |
+| `hybrid.RetrievalMode` | const | 11 | 0 | `interfaces/cli.zig` 2, `interfaces/rpc.zig` 3, `ops/ops.zig` 4, `ops/report.zig` 1, `ops/service.zig` 1 | 1 |
+| `hybrid.RootMask` | const | 1 | 0 | `ops/service.zig` 1 | 3 |
+| `hybrid.SearchOptions` | const | 13 | 0 | `interfaces/abi.zig` 2, `interfaces/cli.zig` 3, `ops/filename_response.zig` 4, `ops/ops.zig` 1, `ops/service.zig` 3 | 18 |
+| `hybrid.Trace` | const | 10 | 0 | `interfaces/abi.zig` 2, `ops/ops.zig` 1, `ops/report.zig` 5, `ops/service.zig` 2 | 14 |
+| `hybrid.isAuthorized` | fn | 3 | 0 | `ops/service.zig` 3 | 1 |
+| `hybrid.matchesPath` | fn | 1 | 0 | `ops/ops.zig` 1 | 0 |
+| `hybrid.no_source_doc` | const | 1 | 0 | `ops/service.zig` 1 | 1 |
+| `hybrid.search` | fn | 1 | 0 | `interfaces/main.zig` 1 | 1 |
+| `importer.importJson` | fn | 1 | 0 | `interfaces/abi.zig` 1 | 4 |
+| `importer.importJsonKeeping` | fn | 1 | 0 | `interfaces/main.zig` 1 | 0 |
+| `indexer.AnalyzerId` | const | 4 | 0 | `interfaces/abi.zig` 1, `interfaces/cli.zig` 2, `ops/ops.zig` 1 | 0 |
+| `indexer.Caps` | const | 4 | 0 | `interfaces/abi.zig` 2, `interfaces/cli.zig` 2 | 4 |
+| `indexer.IncrementalReport` | const | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `indexer.buildFolderDetached` | fn | 1 | 0 | `interfaces/cli.zig` 1 | 2 |
+| `indexer.indexFolder` | fn | 2 | 0 | `interfaces/abi.zig` 1, `interfaces/cli.zig` 1 | 3 |
+| `indexer.indexFolderIncremental` | fn | 2 | 0 | `interfaces/abi.zig` 1, `interfaces/cli.zig` 1 | 22 |
+| `lexical_segment.encode` | fn | 1 | 1 | `interfaces/abi.zig` 1, `interfaces/main.zig` 1 | 2 |
+| `lifecycle.publishSerialized` | fn | 1 | 1 | `interfaces/abi.zig` 1, `interfaces/main.zig` 1 | 0 |
+| `manifest.PendingEntry` | const | 1 | 0 | `ops/filename_response.zig` 1 | 0 |
+| `manifest.create` | fn | 1 | 1 | `interfaces/abi.zig` 1, `interfaces/main.zig` 1 | 0 |
+| `manifest.decode` | fn | 0 | 1 | `interfaces/abi.zig` 1 | 72 |
+| `manifest.encode` | fn | 1 | 2 | `interfaces/abi.zig` 2, `interfaces/main.zig` 1 | 21 |
+| `postings.Posting` | const | 1 | 6 | `interfaces/abi.zig` 1, `interfaces/main.zig` 1, `interfaces/rpc.zig` 2, `ops/service.zig` 3 | 10 |
+| `postings.TermEntry` | const | 1 | 6 | `interfaces/abi.zig` 1, `interfaces/main.zig` 1, `interfaces/rpc.zig` 2, `ops/service.zig` 3 | 22 |
+| `postings.build` | fn | 1 | 6 | `interfaces/abi.zig` 1, `interfaces/main.zig` 1, `interfaces/rpc.zig` 2, `ops/service.zig` 3 | 1 |
+| `scope.Folder` | const | 8 | 0 | `interfaces/abi.zig` 1, `ops/filename_response.zig` 1, `ops/ops.zig` 3, `ops/service.zig` 3 | 3 |
+| `scope.Request` | const | 21 | 0 | `interfaces/mcp.zig` 1, `ops/ops.zig` 10, `ops/service.zig` 10 | 6 |
+| `scope.View` | const | 1 | 0 | `ops/service.zig` 1 | 1 |
+| `scope.documentFrequency` | fn | 2 | 0 | `ops/service.zig` 2 | 2 |
+| `scope.holdsAll` | fn | 3 | 0 | `ops/filename_response.zig` 2, `ops/service.zig` 1 | 0 |
+| `scope.isLegacy` | fn | 2 | 0 | `ops/service.zig` 2 | 0 |
+| `scope.legacy_root_id` | const | 2 | 0 | `ops/ops.zig` 2 | 1 |
+| `scope.recordPath` | fn | 5 | 0 | `interfaces/mcp.zig` 1, `ops/ops.zig` 1, `ops/service.zig` 3 | 0 |
+| `scope.relativePath` | fn | 1 | 0 | `ops/service.zig` 1 | 1 |
+| `scope.rootOfPath` | fn | 1 | 0 | `ops/filename_response.zig` 1 | 0 |
+| `scope.visibleCollection` | fn | 2 | 0 | `ops/service.zig` 2 | 1 |
+| `scoring.isValidVector` | fn | 2 | 0 | `interfaces/abi.zig` 1, `ops/ops.zig` 1 | 0 |
+| `segment.encode` | fn | 1 | 1 | `interfaces/abi.zig` 1, `interfaces/main.zig` 1 | 2 |
+| `snapshot_open.Sections` | const | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `snapshot_open.close` | fn | 3 | 0 | `interfaces/abi.zig` 1, `interfaces/rpc.zig` 2 | 5 |
+| `snapshot_open.open` | fn | 2 | 0 | `interfaces/cli.zig` 2 | 32 |
+| `snapshot_open.openDetached` | fn | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `snapshot_open.openScoped` | fn | 5 | 1 | `interfaces/cli.zig` 3, `interfaces/mcp.zig` 1, `interfaces/rpc.zig` 1, `ops/ops.zig` 1 | 41 |
+| `snapshot_open.openScopedDetached` | fn | 1 | 0 | `interfaces/cli.zig` 1 | 2 |
+| `snapshot_open.openScopedWith` | fn | 2 | 0 | `interfaces/abi.zig` 1, `interfaces/rpc.zig` 1 | 5 |
+| `source.Code` | const | 1 | 0 | `ops/ops.zig` 1 | 19 |
+| `source.Failure` | const | 2 | 0 | `ops/ops.zig` 1, `ops/service.zig` 1 | 1 |
+| `source.OutlineResult` | const | 1 | 0 | `ops/service.zig` 1 | 1 |
+| `source.SpanResult` | const | 1 | 0 | `ops/service.zig` 1 | 3 |
+| `source.max_context_lines` | const | 1 | 0 | `interfaces/cli.zig` 1 | 0 |
+| `source.outline` | fn | 1 | 0 | `ops/service.zig` 1 | 8 |
+| `source.readSpan` | fn | 1 | 0 | `ops/service.zig` 1 | 11 |
+| `source.source_absent_message` | const | 1 | 0 | `ops/service.zig` 1 | 0 |
+| `source.writeOutlineFields` | fn | 1 | 0 | `ops/ops.zig` 1 | 0 |
+| `source.writeSpanFields` | fn | 1 | 0 | `ops/ops.zig` 1 | 0 |
+| `title_field.derive` | fn | 1 | 0 | `interfaces/cli.zig` 1 | 12 |
+| `title_field.policy_id` | const | 2 | 0 | `ops/filename_response.zig` 1, `ops/ops.zig` 1 | 0 |
+
+## Names used only by tests (`tests/` and `interfaces/field_warnings_test.zig`)
+
+| Name | Uses | Files (uses) |
+|---|---:|---|
+| `analysis` | 1 | `tests/root.zig` 1 |
+| `analysis.PositionedToken` | 4 | `tests/apply_test.zig` 2, `tests/offsets_v4_test.zig` 2 |
+| `analysis.TokenIterator` | 1 | `tests/root.zig` 1 |
+| `analysis.codepointCount` | 3 | `tests/compat_s6t8_test.zig` 2, `tests/offsets_v4_test.zig` 1 |
+| `analyzer_v2` | 1 | `tests/root.zig` 1 |
+| `analyzer_v2.tokenize` | 10 | `tests/fold_bench.zig` 1, `tests/fold_groups_test.zig` 1, `tests/fuzzy_bench.zig` 1, `tests/fuzzy_test.zig` 1, `tests/query_utf8_test.zig` 1, `tests/root.zig` 1, `tests/title_field_bench.zig` 2, `tests/title_field_test.zig` 2 |
+| `apply` | 1 | `tests/root.zig` 1 |
+| `apply.Op` | 3 | `tests/apply_test.zig` 3 |
+| `apply.Outcome` | 1 | `tests/state_v3_test.zig` 1 |
+| `apply.Report` | 1 | `tests/apply_test.zig` 1 |
+| `apply.Stages` | 6 | `tests/apply_test.zig` 6 |
+| `apply.test_not_in_state_skipped` | 2 | `tests/apply_test.zig` 2 |
+| `apply.test_not_in_state_walked` | 4 | `tests/apply_test.zig` 4 |
+| `apply.test_previous_docs_fallbacks` | 4 | `tests/apply_test.zig` 4 |
+| `benchmark` | 1 | `tests/root.zig` 1 |
+| `bm25_conformance_test` | 1 | `tests/root.zig` 1 |
+| `both_view_test` | 1 | `tests/root.zig` 1 |
+| `checksum.Kind` | 5 | `tests/compat_292cb568_test.zig` 4, `tests/lazy_open_test.zig` 1 |
+| `checksum.compute` | 14 | `tests/apply_test.zig` 1, `tests/compat_s6t8_test.zig` 1, `tests/compat_s6t9_test.zig` 1, `tests/lazy_open_test.zig` 2, `tests/offsets_v4_test.zig` 2, `tests/source_fixture_test.zig` 1, `tests/state_v3_test.zig` 3, `tests/text_once_test.zig` 3 |
+| `checksum.flag_xxh3` | 2 | `tests/text_once_test.zig` 2 |
+| `checksum.kindOfFlags` | 3 | `tests/apply_test.zig` 1, `tests/source_fixture_test.zig` 1, `tests/state_v3_test.zig` 1 |
+| `chunker` | 1 | `tests/root.zig` 1 |
+| `chunker.chunk` | 1 | `tests/root.zig` 1 |
+| `chunker.chunkId` | 3 | `tests/apply_test.zig` 1, `tests/source_fixture_test.zig` 2 |
+| `chunker.kindForPath` | 1 | `tests/source_fixture_test.zig` 1 |
+| `chunker_md` | 1 | `tests/root.zig` 1 |
+| `chunker_md_test` | 1 | `tests/root.zig` 1 |
+| `chunker_test` | 1 | `tests/root.zig` 1 |
+| `engine` | 1 | `tests/root.zig` 1 |
+| `engine.OpenBlockBytes` | 1 | `tests/nfr13_arena_test.zig` 1 |
+| `engine.open_block_alignment` | 1 | `tests/nfr13_arena_test.zig` 1 |
+| `filename_complexity_test` | 1 | `tests/root.zig` 1 |
+| `filename_field` | 1 | `tests/root.zig` 1 |
+| `filename_field.build` | 6 | `tests/apply_test.zig` 2, `tests/fold_groups_test.zig` 1, `tests/fuzzy_test.zig` 1, `tests/root.zig` 1, `tests/title_field_test.zig` 1 |
+| `filename_field.decode` | 3 | `tests/compat_98c4a2b_test.zig` 1, `tests/fold_groups_test.zig` 1, `tests/fuzzy_test.zig` 1 |
+| `filename_field.group` | 1 | `tests/title_field_test.zig` 1 |
+| `filename_field.loadReservation` | 1 | `tests/nfr13_arena_test.zig` 1 |
+| `filename_field.policy_id` | 1 | `tests/lazy_open_test.zig` 1 |
+| `filename_field.query` | 1 | `tests/title_field_test.zig` 1 |
+| `filename_field.samePaths` | 7 | `tests/apply_test.zig` 7 |
+| `filename_field.validate` | 2 | `tests/lazy_open_test.zig` 2 |
+| `filename_field_test` | 1 | `tests/root.zig` 1 |
+| `find` | 1 | `tests/root.zig` 1 |
+| `find.Range` | 2 | `tests/offsets_v4_test.zig` 2 |
+| `find.termInScope` | 1 | `tests/apply_test.zig` 1 |
+| `find.writeJson` | 2 | `tests/apply_test.zig` 1, `tests/source_fixture_test.zig` 1 |
+| `find_fixture_test` | 1 | `tests/root.zig` 1 |
+| `fold.KeyMap` | 9 | `tests/fold_bench.zig` 6, `tests/fold_groups_test.zig` 2, `tests/nfr13_arena_test.zig` 1 |
+| `fold.Keyer` | 4 | `tests/fold_bench.zig` 4 |
+| `fold.compute` | 3 | `tests/fold_groups_test.zig` 3 |
+| `fold.foldOutput` | 2 | `tests/fold_bench.zig` 2 |
+| `fold.key` | 4 | `tests/fold_bench.zig` 4 |
+| `fold_test` | 1 | `tests/root.zig` 1 |
+| `fuzzy.Context` | 6 | `tests/fold_groups_test.zig` 3, `tests/fuzzy_test.zig` 2, `tests/nfr13_arena_test.zig` 1 |
+| `fuzzy.Member` | 1 | `tests/fold_groups_test.zig` 1 |
+| `fuzzy.compute` | 1 | `tests/nfr13_arena_test.zig` 1 |
+| `fuzzy.distanceWithin` | 4 | `tests/fuzzy_test.zig` 4 |
+| `fuzzy.scan` | 4 | `tests/fuzzy_test.zig` 4 |
+| `fuzzy.scorerTerms` | 1 | `tests/nfr13_arena_test.zig` 1 |
+| `generation_alloc` | 1 | `tests/root.zig` 1 |
+| `hybrid` | 1 | `tests/root.zig` 1 |
+| `hybrid.BoundedTop` | 1 | `tests/title_field_bench.zig` 1 |
+| `hybrid.LexicalMatch` | 10 | `tests/title_field_bench.zig` 1, `tests/title_field_test.zig` 9 |
+| `import_analyzer_test` | 1 | `tests/root.zig` 1 |
+| `import_build_timing_test` | 1 | `tests/root.zig` 1 |
+| `importer` | 1 | `tests/root.zig` 1 |
+| `incremental_indexing_test` | 1 | `tests/root.zig` 1 |
+| `incremental_state` | 1 | `tests/root.zig` 1 |
+| `incremental_state.Entry` | 5 | `tests/apply_test.zig` 4, `tests/state_v3_test.zig` 1 |
+| `incremental_state.Root` | 4 | `tests/state_v3_test.zig` 4 |
+| `incremental_state.SourceRef` | 2 | `tests/compat_s6t9_test.zig` 1, `tests/state_v3_test.zig` 1 |
+| `incremental_state.SourceTable` | 1 | `tests/state_v3_test.zig` 1 |
+| `incremental_state.State` | 6 | `tests/apply_test.zig` 1, `tests/state_v3_test.zig` 5 |
+| `incremental_state.Status` | 2 | `tests/apply_test.zig` 2 |
+| `incremental_state.binary_file_length` | 1 | `tests/state_v3_test.zig` 1 |
+| `incremental_state.binary_header_length` | 5 | `tests/state_v3_test.zig` 5 |
+| `incremental_state.binary_ref_length` | 3 | `tests/state_v3_test.zig` 3 |
+| `incremental_state.binary_root_length` | 2 | `tests/state_v3_test.zig` 2 |
+| `incremental_state.decodeBinary` | 1 | `tests/state_v3_test.zig` 1 |
+| `incremental_state.decodeBinaryWith` | 32 | `tests/state_v3_test.zig` 32 |
+| `incremental_state.decodeSection` | 1 | `tests/compat_s6t9_test.zig` 1 |
+| `incremental_state.decodeSectionWith` | 1 | `tests/state_v3_test.zig` 1 |
+| `incremental_state.encode` | 1 | `tests/apply_test.zig` 1 |
+| `incremental_state.encodeBinary` | 3 | `tests/state_v3_test.zig` 3 |
+| `incremental_state.encodeBinaryRefs` | 18 | `tests/state_v3_test.zig` 18 |
+| `incremental_state.encodeSection` | 7 | `tests/apply_test.zig` 3, `tests/compat_98c4a2b_test.zig` 1, `tests/compat_s6t9_test.zig` 2, `tests/state_v3_test.zig` 1 |
+| `incremental_state.encodeSectionRefs` | 3 | `tests/compat_s6t9_test.zig` 1, `tests/state_v3_test.zig` 2 |
+| `incremental_state.legacy_root_id` | 1 | `tests/compat_s6t9_test.zig` 1 |
+| `incremental_state.load` | 21 | `tests/apply_test.zig` 14, `tests/compat_s6t9_test.zig` 2, `tests/state_v3_test.zig` 5 |
+| `incremental_state.loadBound` | 11 | `tests/apply_test.zig` 3, `tests/compat_98c4a2b_test.zig` 1, `tests/compat_s6t9_test.zig` 3, `tests/state_v3_test.zig` 4 |
+| `incremental_state.recordedGeneration` | 4 | `tests/apply_test.zig` 4 |
+| `incremental_state.relativeOf` | 8 | `tests/state_v3_test.zig` 8 |
+| `incremental_state.save` | 4 | `tests/apply_test.zig` 2, `tests/root.zig` 1, `tests/source_fixture_test.zig` 1 |
+| `incremental_state.state_file` | 13 | `tests/apply_test.zig` 13 |
+| `indexer` | 1 | `tests/root.zig` 1 |
+| `indexer.collectCandidatePaths` | 1 | `tests/apply_test.zig` 1 |
+| `indexer.legacy_root_id` | 1 | `tests/source_fixture_test.zig` 1 |
+| `indexer.tokenize` | 2 | `tests/apply_test.zig` 2 |
+| `indexer.tokenizePositioned` | 4 | `tests/apply_test.zig` 2, `tests/offsets_v4_test.zig` 2 |
+| `lexical_build` | 1 | `tests/root.zig` 1 |
+| `lexical_build.build` | 5 | `tests/fold_groups_test.zig` 1, `tests/fuzzy_test.zig` 2, `tests/root.zig` 1, `tests/title_field_test.zig` 1 |
+| `lexical_build.buildPositional` | 3 | `tests/apply_test.zig` 2, `tests/offsets_v4_test.zig` 1 |
+| `lexical_build.resolveTokensTraced` | 1 | `tests/title_field_bench.zig` 1 |
+| `lexical_segment` | 1 | `tests/root.zig` 1 |
+| `lexical_segment.Header` | 2 | `tests/lazy_open_test.zig` 2 |
+| `lexical_segment.decodeWith` | 6 | `tests/apply_test.zig` 2, `tests/compat_98c4a2b_test.zig` 1, `tests/compat_s6t8_test.zig` 2, `tests/offsets_v4_test.zig` 1 |
+| `lexical_segment.encodeV3Alloc` | 7 | `tests/apply_test.zig` 2, `tests/compat_98c4a2b_test.zig` 1, `tests/offsets_v4_test.zig` 4 |
+| `lexical_segment.encodedLength` | 2 | `tests/apply_test.zig` 1, `tests/offsets_v4_test.zig` 1 |
+| `lexical_segment.headerLengthOfBytes` | 8 | `tests/apply_test.zig` 7, `tests/lazy_open_test.zig` 1 |
+| `lexical_segment.header_length` | 1 | `tests/apply_test.zig` 1 |
+| `lexical_segment.inspect` | 16 | `tests/apply_test.zig` 3, `tests/compat_292cb568_test.zig` 1, `tests/compat_98c4a2b_test.zig` 3, `tests/compat_s6t8_test.zig` 2, `tests/lazy_open_test.zig` 2, `tests/nfr13_arena_test.zig` 1, `tests/offsets_v4_test.zig` 4 |
+| `lexical_segment.magic` | 3 | `tests/apply_test.zig` 1, `tests/compat_98c4a2b_test.zig` 2 |
+| `lexical_segment.magic_v2` | 1 | `tests/compat_98c4a2b_test.zig` 1 |
+| `lexical_segment.magic_v3` | 6 | `tests/compat_98c4a2b_test.zig` 4, `tests/compat_s6t8_test.zig` 1, `tests/offsets_v4_test.zig` 1 |
+| `lexical_segment.magic_v4` | 4 | `tests/compat_98c4a2b_test.zig` 2, `tests/compat_s6t8_test.zig` 1, `tests/offsets_v4_test.zig` 1 |
+| `lexical_segment.max_shared_v3` | 1 | `tests/compat_98c4a2b_test.zig` 1 |
+| `lexical_segment.validatePositionSections` | 2 | `tests/compat_s6t8_test.zig` 1, `tests/offsets_v4_test.zig` 1 |
+| `lexical_segment.version_v3` | 1 | `tests/apply_test.zig` 1 |
+| `lifecycle` | 1 | `tests/root.zig` 1 |
+| `lifecycle.scan` | 1 | `tests/root.zig` 1 |
+| `manifest` | 2 | `tests/nfr13_arena_test.zig` 1, `tests/root.zig` 1 |
+| `manifest.Manifest` | 12 | `tests/apply_test.zig` 2, `tests/compat_98c4a2b_test.zig` 2, `tests/compat_s6t7_test.zig` 1, `tests/compat_s6t8_test.zig` 1, `tests/compat_s6t9_test.zig` 1, `tests/lazy_open_test.zig` 1, `tests/source_fixture_test.zig` 2, `tests/state_v3_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `manifest.Meta` | 2 | `tests/nfr13_arena_test.zig` 1, `tests/source_fixture_test.zig` 1 |
+| `manifest.RootEntry` | 8 | `tests/fold_groups_test.zig` 1, `tests/fuzzy_test.zig` 2, `tests/title_field_test.zig` 5 |
+| `manifest.encodedLength` | 20 | `tests/apply_test.zig` 4, `tests/compat_s6t8_test.zig` 1, `tests/compat_s6t9_test.zig` 2, `tests/lazy_open_test.zig` 1, `tests/offsets_v4_test.zig` 2, `tests/source_fixture_test.zig` 1, `tests/state_v3_test.zig` 9 |
+| `manifest.flag_catalog_v6` | 3 | `tests/compat_s6t9_test.zig` 1, `tests/state_v3_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `manifest.flag_lexical_v3` | 1 | `tests/compat_98c4a2b_test.zig` 1 |
+| `manifest.flag_lexical_v4` | 4 | `tests/compat_s6t8_test.zig` 1, `tests/offsets_v4_test.zig` 2, `tests/text_once_test.zig` 1 |
+| `manifest.flag_state_v3` | 3 | `tests/compat_s6t9_test.zig` 1, `tests/state_v3_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `manifest.flag_text_once` | 2 | `tests/compat_s6t7_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `manifest.header_length_v2` | 1 | `tests/state_v3_test.zig` 1 |
+| `manifest.parseMeta` | 2 | `tests/nfr13_arena_test.zig` 1, `tests/source_fixture_test.zig` 1 |
+| `manifest.validateFilenameSections` | 5 | `tests/compat_98c4a2b_test.zig` 1, `tests/state_v3_test.zig` 4 |
+| `manifest.validateSnapshotHeaders` | 7 | `tests/offsets_v4_test.zig` 5, `tests/text_once_test.zig` 2 |
+| `manifest.validateSource` | 3 | `tests/text_once_test.zig` 3 |
+| `manifest.version_v2` | 1 | `tests/compat_292cb568_test.zig` 1 |
+| `manifest.withFilename` | 3 | `tests/compat_s6t9_test.zig` 2, `tests/state_v3_test.zig` 1 |
+| `manifest.withState` | 10 | `tests/apply_test.zig` 4, `tests/compat_s6t9_test.zig` 1, `tests/state_v3_test.zig` 5 |
+| `manifest_inplace_test` | 1 | `tests/lazy_open_test.zig` 1 |
+| `manifest_read_test` | 1 | `tests/lazy_open_test.zig` 1 |
+| `nfc` | 1 | `tests/root.zig` 1 |
+| `nfc.normalize` | 1 | `tests/query_utf8_test.zig` 1 |
+| `nfc_timing_test` | 1 | `tests/root.zig` 1 |
+| `postings` | 1 | `tests/root.zig` 1 |
+| `postings.Index` | 11 | `tests/apply_test.zig` 3, `tests/compat_98c4a2b_test.zig` 1, `tests/fold_bench.zig` 2, `tests/fuzzy_bench.zig` 2, `tests/nfr13_arena_test.zig` 1, `tests/offsets_v4_test.zig` 2 |
+| `postings.OffsetsCoding` | 6 | `tests/compat_98c4a2b_test.zig` 1, `tests/compat_s6t8_test.zig` 2, `tests/offsets_v4_test.zig` 3 |
+| `postings.SparseScorer` | 1 | `tests/title_field_bench.zig` 1 |
+| `postings.TokenSpan` | 6 | `tests/offsets_v4_test.zig` 6 |
+| `postings.appendOffsetsTable` | 1 | `tests/offsets_v4_test.zig` 1 |
+| `postings.appendOneByteToken` | 2 | `tests/offsets_v4_test.zig` 2 |
+| `postings.appendVarint` | 8 | `tests/offsets_v4_test.zig` 8 |
+| `postings.buildPositionTables` | 1 | `tests/offsets_v4_test.zig` 1 |
+| `postings.checkPairsTable` | 2 | `tests/offsets_v4_test.zig` 2 |
+| `postings.lookupExact` | 10 | `tests/fold_bench.zig` 4, `tests/fuzzy_bench.zig` 5, `tests/nfr13_arena_test.zig` 1 |
+| `postings.lowerBound` | 2 | `tests/fuzzy_bench.zig` 2 |
+| `postings.offsets_escape` | 6 | `tests/compat_s6t8_test.zig` 4, `tests/offsets_v4_test.zig` 2 |
+| `postings.oneByteTableEnd` | 10 | `tests/offsets_v4_test.zig` 10 |
+| `postings.readTokenSpans` | 2 | `tests/offsets_v4_test.zig` 2 |
+| `postings.readVarint` | 8 | `tests/apply_test.zig` 1, `tests/offsets_v4_test.zig` 7 |
+| `postings.transcodePairsTable` | 8 | `tests/offsets_v4_test.zig` 8 |
+| `postings.unzigzag` | 4 | `tests/compat_s6t8_test.zig` 1, `tests/offsets_v4_test.zig` 3 |
+| `postings.validateOneByteOffsets` | 1 | `tests/offsets_v4_test.zig` 1 |
+| `postings.withOffsetsCoding` | 4 | `tests/compat_98c4a2b_test.zig` 1, `tests/offsets_v4_test.zig` 3 |
+| `postings.zigzag` | 3 | `tests/offsets_v4_test.zig` 3 |
+| `publication` | 1 | `tests/root.zig` 1 |
+| `publication.LoadedSnapshot` | 1 | `tests/nfr13_arena_test.zig` 1 |
+| `publication.current_manifest_file` | 81 | `tests/apply_test.zig` 2, `tests/compat_292cb568_test.zig` 2, `tests/compat_98c4a2b_test.zig` 13, `tests/compat_s6t7_test.zig` 6, `tests/compat_s6t8_test.zig` 17, `tests/compat_s6t9_test.zig` 19, `tests/lazy_open_test.zig` 6, `tests/nfr13_arena_test.zig` 2, `tests/offsets_v4_test.zig` 5, `tests/state_v3_test.zig` 9 |
+| `publication.publish` | 1 | `tests/root.zig` 1 |
+| `publication.writeAtomicFile` | 10 | `tests/apply_test.zig` 2, `tests/compat_s6t9_test.zig` 2, `tests/state_v3_test.zig` 6 |
+| `scope` | 1 | `tests/root.zig` 1 |
+| `scope.Loads` | 1 | `tests/nfr13_arena_test.zig` 1 |
+| `scope.SourceState` | 6 | `tests/lazy_open_test.zig` 3, `tests/source_fixture_test.zig` 3 |
+| `scope.Statistics` | 2 | `tests/lazy_open_test.zig` 2 |
+| `scope.legacy_roots` | 1 | `tests/title_field_test.zig` 1 |
+| `scoring` | 1 | `tests/root.zig` 1 |
+| `scoring.Bm25Parameters` | 2 | `tests/root.zig` 1, `tests/title_field_test.zig` 1 |
+| `scoring.bm25Contribution` | 3 | `tests/root.zig` 1, `tests/title_field_bench.zig` 1, `tests/title_field_test.zig` 1 |
+| `scoring.cosineSimilarity` | 2 | `tests/root.zig` 2 |
+| `scoring.reciprocalRankContribution` | 1 | `tests/root.zig` 1 |
+| `segment` | 1 | `tests/root.zig` 1 |
+| `segment.decodeInspectedWith` | 3 | `tests/apply_test.zig` 1, `tests/compat_98c4a2b_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `segment.encodeV4` | 1 | `tests/apply_test.zig` 1 |
+| `segment.encodedLength` | 1 | `tests/compat_98c4a2b_test.zig` 1 |
+| `segment.encodedLengthV4` | 1 | `tests/apply_test.zig` 1 |
+| `segment.header_length` | 5 | `tests/apply_test.zig` 1, `tests/compat_s6t9_test.zig` 4 |
+| `segment.inspect` | 7 | `tests/apply_test.zig` 1, `tests/compat_292cb568_test.zig` 1, `tests/compat_98c4a2b_test.zig` 1, `tests/compat_s6t7_test.zig` 1, `tests/compat_s6t9_test.zig` 1, `tests/nfr13_arena_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `segment.inspectCatalog` | 2 | `tests/compat_s6t9_test.zig` 2 |
+| `segment.magic` | 1 | `tests/text_once_test.zig` 1 |
+| `segment.version_catalog_v6` | 4 | `tests/compat_s6t9_test.zig` 4 |
+| `segment.version_v5` | 3 | `tests/compat_s6t7_test.zig` 1, `tests/nfr13_arena_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `segment_v5` | 1 | `tests/root.zig` 1 |
+| `segment_v5.encodeAlloc` | 6 | `tests/text_once_test.zig` 6 |
+| `segment_v5.header_length` | 6 | `tests/state_v3_test.zig` 1, `tests/text_once_test.zig` 5 |
+| `segment_v5.putVarint` | 1 | `tests/text_once_test.zig` 1 |
+| `segment_v5.shared_cap` | 2 | `tests/text_once_test.zig` 2 |
+| `segment_v5.varintLength` | 3 | `tests/apply_test.zig` 1, `tests/source_fixture_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `segment_v5.version` | 1 | `tests/text_once_test.zig` 1 |
+| `snapshot_open` | 1 | `tests/root.zig` 1 |
+| `snapshot_open.OpenBlock` | 1 | `tests/nfr13_arena_test.zig` 1 |
+| `snapshot_open.openSource` | 10 | `tests/apply_test.zig` 2, `tests/lazy_open_test.zig` 1, `tests/source_fixture_test.zig` 7 |
+| `source` | 1 | `tests/root.zig` 1 |
+| `source.Bound` | 2 | `tests/text_once_test.zig` 2 |
+| `source.BytesResult` | 2 | `tests/text_once_test.zig` 2 |
+| `source.FileEntry` | 1 | `tests/apply_test.zig` 1 |
+| `source.InputFile` | 6 | `tests/apply_test.zig` 2, `tests/text_once_test.zig` 4 |
+| `source.NoMarks` | 2 | `tests/apply_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `source.Section` | 10 | `tests/apply_test.zig` 1, `tests/lazy_open_test.zig` 2, `tests/source_fixture_test.zig` 1, `tests/text_once_test.zig` 6 |
+| `source.carriedRecord` | 6 | `tests/apply_test.zig` 3, `tests/text_once_test.zig` 3 |
+| `source.encode` | 6 | `tests/apply_test.zig` 1, `tests/state_v3_test.zig` 1, `tests/text_once_test.zig` 4 |
+| `source.entryBytes` | 10 | `tests/apply_test.zig` 2, `tests/lazy_open_test.zig` 1, `tests/source_fixture_test.zig` 4, `tests/text_once_test.zig` 3 |
+| `source.header_length` | 17 | `tests/apply_test.zig` 6, `tests/source_fixture_test.zig` 5, `tests/state_v3_test.zig` 1, `tests/text_once_test.zig` 5 |
+| `source.inspect` | 4 | `tests/compat_292cb568_test.zig` 2, `tests/lazy_open_test.zig` 1, `tests/state_v3_test.zig` 1 |
+| `source.openIndexed` | 3 | `tests/text_once_test.zig` 3 |
+| `source.openIndexedBound` | 12 | `tests/text_once_test.zig` 12 |
+| `source.openStreamedBound` | 5 | `tests/text_once_test.zig` 5 |
+| `source.sha256_mismatch_name` | 1 | `tests/text_once_test.zig` 1 |
+| `source.unavailable_prefix` | 1 | `tests/text_once_test.zig` 1 |
+| `source.varintsEnd` | 10 | `tests/offsets_v4_test.zig` 10 |
+| `source.writeOutlineJson` | 3 | `tests/apply_test.zig` 1, `tests/source_fixture_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `source.writeSpanJson` | 3 | `tests/apply_test.zig` 1, `tests/source_fixture_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `source_v2` | 1 | `tests/root.zig` 1 |
+| `source_v2.encodeMarked` | 2 | `tests/apply_test.zig` 1, `tests/text_once_test.zig` 1 |
+| `source_v2.magic` | 3 | `tests/compat_s6t7_test.zig` 1, `tests/text_once_test.zig` 2 |
+| `source_v2.version` | 1 | `tests/text_once_test.zig` 1 |
+| `state_section` | 1 | `tests/root.zig` 1 |
+| `state_section.Form` | 2 | `tests/state_v3_test.zig` 2 |
+| `state_section.encode` | 1 | `tests/apply_test.zig` 1 |
+| `state_section.encodeBinary` | 1 | `tests/state_v3_test.zig` 1 |
+| `state_section.encodeBinaryV3` | 1 | `tests/state_v3_test.zig` 1 |
+| `state_section.header_length` | 6 | `tests/state_v3_test.zig` 6 |
+| `state_section.inspect` | 5 | `tests/state_v3_test.zig` 5 |
+| `title_field` | 1 | `tests/root.zig` 1 |
+| `title_field.Bm25Term` | 1 | `tests/title_field_test.zig` 1 |
+| `title_field.Derived` | 1 | `tests/title_field_test.zig` 1 |
+| `title_field.Field` | 13 | `tests/fold_bench.zig` 2, `tests/fold_groups_test.zig` 1, `tests/fuzzy_bench.zig` 4, `tests/fuzzy_test.zig` 1, `tests/nfr13_arena_test.zig` 1, `tests/title_field_bench.zig` 2, `tests/title_field_test.zig` 2 |
+| `title_field.Parts` | 1 | `tests/title_field_test.zig` 1 |
+| `title_field.Posting` | 1 | `tests/title_field_test.zig` 1 |
+| `title_field.Term` | 3 | `tests/fuzzy_bench.zig` 1, `tests/title_field_test.zig` 2 |
+| `title_field.Titled` | 1 | `tests/title_field_test.zig` 1 |
+| `title_field.default_weight` | 1 | `tests/title_field_bench.zig` 1 |
+| `title_field.deriveMarked` | 3 | `tests/title_field_bench.zig` 2, `tests/title_field_test.zig` 1 |
+| `title_field.pathStem` | 4 | `tests/title_field_test.zig` 4 |
+| `title_field.scoreQuery` | 3 | `tests/title_field_test.zig` 3 |
+| `title_field.tokenizeText` | 1 | `tests/title_field_test.zig` 1 |
+| `title_field.tokens` | 2 | `tests/title_field_test.zig` 2 |
+| `unicode_tables` | 1 | `tests/root.zig` 1 |
+| `unicode_tables.fold_from` | 4 | `tests/fold_bench.zig` 4 |
+| `unicode_tables.fold_offsets` | 2 | `tests/fold_bench.zig` 2 |
+| `unicode_tables.fold_pool` | 2 | `tests/fold_bench.zig` 2 |
+| `unicode_tables.fold_to` | 1 | `tests/fold_bench.zig` 1 |
+| `verb_form_groups_test` | 1 | `tests/root.zig` 1 |
+| `verb_forms` | 1 | `tests/root.zig` 1 |
+| `verb_forms_test` | 1 | `tests/root.zig` 1 |
+
+## By file
+
+| File | Uses | Distinct names |
+|---|---:|---:|
+| `interfaces/abi.zig` | 38 | 29 |
+| `interfaces/cli.zig` | 46 | 29 |
+| `interfaces/main.zig` | 14 | 14 |
+| `interfaces/mcp.zig` | 6 | 6 |
+| `interfaces/rpc.zig` | 28 | 11 |
+| `ops/filename_response.zig` | 31 | 14 |
+| `ops/ops.zig` | 59 | 31 |
+| `ops/report.zig` | 6 | 2 |
+| `ops/service.zig` | 75 | 31 |
+| `tests/apply_test.zig` | 247 | 84 |
+| `tests/cli_test.zig` | 5 | 5 |
+| `tests/compat_292cb568_test.zig` | 40 | 14 |
+| `tests/compat_98c4a2b_test.zig` | 73 | 32 |
+| `tests/compat_s6t7_test.zig` | 18 | 8 |
+| `tests/compat_s6t8_test.zig` | 76 | 21 |
+| `tests/compat_s6t9_test.zig` | 76 | 26 |
+| `tests/direct_search_test.zig` | 18 | 9 |
+| `tests/filename_bench.zig` | 2 | 2 |
+| `tests/fold_bench.zig` | 35 | 13 |
+| `tests/fold_groups_test.zig` | 44 | 19 |
+| `tests/fuzzy_bench.zig` | 23 | 13 |
+| `tests/fuzzy_test.zig` | 58 | 18 |
+| `tests/lazy_open_test.zig` | 65 | 33 |
+| `tests/mcp_bench.zig` | 3 | 3 |
+| `tests/nfr13_arena_test.zig` | 87 | 37 |
+| `tests/offsets_v4_test.zig` | 137 | 44 |
+| `tests/query_report_test.zig` | 2 | 2 |
+| `tests/query_utf8_test.zig` | 4 | 4 |
+| `tests/reload_test.zig` | 2 | 1 |
+| `tests/root.zig` | 71 | 70 |
+| `tests/source_fixture_test.zig` | 87 | 35 |
+| `tests/state_v3_test.zig` | 174 | 45 |
+| `tests/text_once_test.zig` | 130 | 47 |
+| `tests/title_field_bench.zig` | 16 | 12 |
+| `tests/title_field_test.zig` | 85 | 35 |
+
+## Deeper chains in operations and interfaces (`FILE.NAME.MEMBER`, counted under `FILE.NAME`)
+
+| Chain | Uses |
+|---|---:|
+| `engine.Engine.validateQueryText` | 2 |
+| `find.Mode.parse` | 2 |
+| `hybrid.Trace.Expanded` | 1 |
+| `hybrid.Trace.Grouped` | 1 |
+| `hybrid.Trace.stamp` | 2 |
+| `indexer.AnalyzerId.parse` | 3 |
+
+## Reading errors (a use that is not a pub declaration)
+
+None.

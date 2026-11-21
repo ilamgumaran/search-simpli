@@ -1,0 +1,43 @@
+const std = @import("std");
+const core = @import("core.zig");
+const api = core.api;
+
+fn names(comptime label: []const u8, comptime f: anytype) void {
+    const R = @typeInfo(@TypeOf(f)).@"fn".return_type.?;
+    switch (@typeInfo(R)) {
+        .error_union => |eu| {
+            const set = @typeInfo(eu.error_set).error_set.?;
+            std.debug.print("ERRSET {s} ({d}):", .{ label, set.len });
+            inline for (set) |e| std.debug.print(" {s}", .{e.name});
+            std.debug.print("\n", .{});
+        },
+        else => std.debug.print("ERRSET {s}: none ({s})\n", .{ label, @typeName(R) }),
+    }
+}
+
+test "verifier error sets" {
+    names("hybrid.search", api.hybrid.search);
+    names("find.find", api.find.find);
+    names("source.readSpan", api.source.readSpan);
+    names("source.outline", api.source.outline);
+    names("filename_field.tokenize", api.filename_field.tokenize);
+    names("title_field.derive", api.title_field.derive);
+    names("scope.visibleCollection", api.scope.visibleCollection);
+    names("scope.recordPath", api.scope.recordPath);
+    names("segment.encode", api.segment.encode);
+    names("postings.build", api.postings.build);
+    names("snapshot_open.close", api.snapshot_open.close);
+    names("scoring.isValidVector", api.scoring.isValidVector);
+    names("source.writeSpanFields", api.source.writeSpanFields);
+    names("lifecycle.publishSerialized", api.lifecycle.publishSerialized);
+    names("generation_alloc.nextFreeGeneration", api.generation_alloc.nextFreeGeneration);
+    // identity: each api alias is the same declaration
+    comptime {
+        std.debug.assert(api.engine.Engine == core.engine.Engine);
+        std.debug.assert(api.scope.Folder == core.scope.Folder);
+        std.debug.assert(&api.find.find == &core.find.find);
+        std.debug.assert(&api.snapshot_open.openScoped == &core.snapshot_open.openScoped);
+        std.debug.assert(api.source.source_absent_message.ptr == core.source.source_absent_message.ptr);
+    }
+    std.debug.print("IDENTITY ok\n", .{});
+}

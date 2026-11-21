@@ -38,11 +38,11 @@
 const std = @import("std");
 const tool_schemas = @import("tool_schemas");
 const cli = @import("cli.zig");
-const engine_module = @import("core").engine;
-const hybrid = @import("core").hybrid;
+const engine_module = @import("core").api.engine;
+const hybrid = @import("core").api.hybrid;
 const ops = @import("operations").ops;
 const rpc = @import("rpc.zig");
-const scope = @import("core").scope;
+const scope = @import("core").api.scope;
 const service_module = @import("operations").service;
 
 /// The MCP revision this server implements (recorded in S3-T6's Report).
@@ -775,8 +775,8 @@ pub fn run(io: std.Io, gpa: std.mem.Allocator, args: cli.McpArgs) !u8 {
 
 // ----------------------------------------------------------------- tests ---
 
-const apply = @import("core").apply;
-const snapshot_open = @import("core").snapshot_open;
+const apply = @import("core").api.apply;
+const snapshot_open = @import("core").api.snapshot_open;
 
 const TestServer = struct {
     arena_state: std.heap.ArenaAllocator,

@@ -1,10 +1,10 @@
-const engine_module = @import("core").engine;
-const find_module = @import("core").find;
-const scoring = @import("core").scoring;
-const hybrid = @import("core").hybrid;
-const postings = @import("core").postings;
-const scope = @import("core").scope;
-const source_section = @import("core").source;
+const engine_module = @import("core").api.engine;
+const find_module = @import("core").api.find;
+const scoring = @import("core").api.scoring;
+const hybrid = @import("core").api.hybrid;
+const postings = @import("core").api.postings;
+const scope = @import("core").api.scope;
+const source_section = @import("core").api.source;
 const std = @import("std");
 
 pub const Chunk = struct {
@@ -658,11 +658,11 @@ test "service exposes scoped search read list and status operations" {
         .{ .id = "public-vector", .text = "different wording", .vector = &.{ 1, 0 }, .path = "public/b.md", .start_line = 3, .end_line = 4 },
         .{ .id = "private", .text = "exact search phrase private", .vector = &.{ 1, 0 }, .path = "private/secret.md", .start_line = 1, .end_line = 1 },
     };
-    var terms: [16]@import("core").postings.TermEntry = undefined;
-    var posting_storage: [24]@import("core").postings.Posting = undefined;
+    var terms: [16]@import("core").api.postings.TermEntry = undefined;
+    var posting_storage: [24]@import("core").api.postings.Posting = undefined;
     var lengths: [documents.len]u32 = undefined;
     var fills: [16]usize = undefined;
-    const lexical_index = try @import("core").postings.build(&documents, &terms, &posting_storage, &lengths, &fills);
+    const lexical_index = try @import("core").api.postings.build(&documents, &terms, &posting_storage, &lengths, &fills);
     const service = Service{ .engine = .{
         .generation = 3,
         .analyzer_id = "ascii-alnum-v1",
@@ -706,11 +706,11 @@ test "service exposes scoped search read list and status operations" {
 
 test "service reports evidence and source capacity errors" {
     const document = [_]hybrid.Document{.{ .id = "one", .text = "search", .path = "one.md", .start_line = 1, .end_line = 1 }};
-    var terms: [2]@import("core").postings.TermEntry = undefined;
-    var posting_storage: [2]@import("core").postings.Posting = undefined;
+    var terms: [2]@import("core").api.postings.TermEntry = undefined;
+    var posting_storage: [2]@import("core").api.postings.Posting = undefined;
     var lengths: [1]u32 = undefined;
     var fills: [2]usize = undefined;
-    const index = try @import("core").postings.build(&document, &terms, &posting_storage, &lengths, &fills);
+    const index = try @import("core").api.postings.build(&document, &terms, &posting_storage, &lengths, &fills);
     const service = Service{ .engine = .{
         .generation = 1,
         .analyzer_id = "ascii-v1",
@@ -731,11 +731,11 @@ test "service applies required labels to search read and source listing" {
         .{ .id = "public", .text = "launch guide", .path = "public.md", .start_line = 1, .end_line = 1 },
         .{ .id = "private", .text = "confidential launch", .path = "private.md", .start_line = 1, .end_line = 1, .required_labels = "tenant:acme" },
     };
-    var terms: [8]@import("core").postings.TermEntry = undefined;
-    var posting_storage: [8]@import("core").postings.Posting = undefined;
+    var terms: [8]@import("core").api.postings.TermEntry = undefined;
+    var posting_storage: [8]@import("core").api.postings.Posting = undefined;
     var lengths: [documents.len]u32 = undefined;
     var fills: [8]usize = undefined;
-    const index = try @import("core").postings.build(&documents, &terms, &posting_storage, &lengths, &fills);
+    const index = try @import("core").api.postings.build(&documents, &terms, &posting_storage, &lengths, &fills);
     const service = Service{ .engine = .{
         .generation = 1,
         .analyzer_id = "ascii-v1",

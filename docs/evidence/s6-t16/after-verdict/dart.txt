@@ -1,0 +1,4 @@
+# Dart: fresh git archive of b89f54e, its committed natives; Dart SDK version: 3.13.2 (stable) (Tue Aug 25 01:01:12 2026 -0700) on "macos_arm64"
+pub get exit 0
+analyze exit 0
+No issues found!

@@ -1,0 +1,22 @@
+# S6-T16: no function body changed
+
+Base `10f3d40`, head `df968c0`; read by `scripts/prototypes/s6t16/prove_no_body_change.py`.
+
+Files whose text changed (every other .zig file is byte-identical):
+
+| File | `@import("core").api.` read back | Other edits undone | Tokens after the edits |
+|---|---:|---|---|
+| `zig/src/core/core.zig` | 0 | `api` (88 aliases) and `internal` removed before comparing (2 declarations) | equal |
+| `zig/src/interfaces/abi.zig` | 15 | removed unused `const publication = @import("core").publication;` | equal |
+| `zig/src/interfaces/cli.zig` | 12 | - | equal |
+| `zig/src/interfaces/main.zig` | 12 | removed unused `const publication = @import("core").publication;` | equal |
+| `zig/src/interfaces/mcp.zig` | 5 | - | equal |
+| `zig/src/interfaces/rpc.zig` | 8 | - | equal |
+| `zig/src/ops/filename_response.zig` | 10 | - | equal |
+| `zig/src/ops/ops.zig` | 13 | - | equal |
+| `zig/src/ops/report.zig` | 1 | - | equal |
+| `zig/src/ops/service.zig` | 16 | - | equal |
+
+95 .zig files at base, 95 at head; 10 changed text; 92 import references rewritten.
+
+**OK**: after the listed edits every file's tokens are equal, so no function body, test or declaration other than those listed changed; only comments, doc comments and whitespace did.
