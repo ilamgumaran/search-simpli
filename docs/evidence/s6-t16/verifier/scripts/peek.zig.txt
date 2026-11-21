@@ -1,0 +1,42 @@
+const std = @import("std");
+const core = @import("core").api;
+const operations = @import("operations");
+
+/// Print the canonical JSON of one `find` request (a JSON object) over the index in
+/// `dir`. `arena` holds everything and is released by the caller.
+pub fn peek(arena: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, request: []const u8, out: *std.Io.Writer) !void {
+    const opened = try core.snapshot_open.openScoped(arena, io, dir);
+    defer core.snapshot_open.close(opened.engine, opened.folder);
+    const service = operations.service.Service{ .engine = opened.engine, .folder = opened.folder };
+    const params = switch (try operations.ops.parseObject(arena, request)) {
+        .ok => |object| object,
+        .failed => |failure| return out.print("refused: {s}\n", .{failure.message}),
+    };
+    switch (try operations.ops.find(arena, service, params, .{})) {
+        .ok => |json| try out.writeAll(json),
+        .failed => |failure| try out.print("refused: {s}\n", .{failure.message}),
+    }
+}
+
+test "verifier: the core-api.md example runs" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const request =
+        \\{"roots":[{"root_id":"school","kind":"host"}],
+        \\"changes":[{"op":"add","root_id":"school","path":"week.md","content_base64":"IyBXZWVrCgp0aWRlIHRhYmxlCg=="}]}
+    ;
+    _ = (try core.apply.applyChanges(a, io, tmp.dir, request, .{})).ok;
+    var out: std.Io.Writer.Allocating = .init(a);
+    try peek(a, io, tmp.dir, "{\"query\":\"tide\"}", &out.writer);
+    std.debug.print("peek answered: {s}\n", .{out.written()});
+    try std.testing.expect(std.mem.indexOf(u8, out.written(), "week.md") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out.written(), "\"hits\"") != null);
+    out.clearRetainingCapacity();
+    try peek(a, io, tmp.dir, "not json", &out.writer);
+    std.debug.print("peek refused: {s}\n", .{out.written()});
+    try std.testing.expect(std.mem.startsWith(u8, out.written(), "refused: "));
+}

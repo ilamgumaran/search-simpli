@@ -1,0 +1,6 @@
+== using.zig: const v_ns = struct {     usingnamespace @import("core"); };
+using.zig:2:20: error: expected ',' after field
+== mstr.zig: const c = @import(     \core );
+mstr.zig:2:5: error: @import operand must be a string literal
+== concat.zig: const c = @import("co" ++ "re");
+concat.zig:1:24: error: @import operand must be a string literal
