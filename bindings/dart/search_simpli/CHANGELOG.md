@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.9.6 (S6-T20; contract 2.8.0; patch: a fix)
+
+A full rebuild (`indexFolder` without `update`; `searchd index` without
+`--update` or `--generation`) now chooses its generation number after it
+takes `WRITER.LOCK`, and publishes under the same lease, as `update` and
+`applyChanges` already did. No API change: the same calls, JSON fields,
+error codes and C ABI; contracts stay 2.8.0; the index format is unchanged;
+with no other writer, a rebuild chooses the same number as before.
+
+- **The fix.** Before, the number was chosen first and the lock taken
+  later. Another process that published in between made the rebuild fail
+  with `PathAlreadyExists` (`SearchSimpliException`, message
+  `ss_index_folder: PathAlreadyExists`) or, when it had also pruned that
+  number's files (`keep_generations: 1`), publish a generation number
+  already used, with `MANIFEST` going back to it. Now a writer that tries
+  to publish after the rebuild has chosen its number is refused with
+  `WriterBusy` (`ss_index_folder: WriterBusy` for another `indexFolder`;
+  the same refusal as before for one that starts while the rebuild builds),
+  and one that published earlier is seen: the rebuild takes the next number
+  above it. Shown in the engine's tests with the other writer run inside
+  the rebuild (`zig/src/tests/cli_test.zig`), not through Dart.
+- **Which error comes first.** When two refusals apply at once, the
+  writer-lock one now comes first: a directory with no generation number
+  left (`NoFreeGeneration`) whose lock another writer holds answers
+  `ss_index_folder: WriterBusy`. `NoFreeGeneration` is also found after the
+  folder's files are read, not before.
+- **Not changed.** A number the caller gives (`searchd index --generation`,
+  `importSnapshotJson`'s `generation`) is published as given; one whose section
+  files exist is refused with `PathAlreadyExists` and publishes nothing,
+  and a free one below the current generation still moves `MANIFEST` back.
+
 ## 0.9.5 (S6-T17; contract 2.8.0; patch: a fix)
 
 A full rebuild (`indexFolder` without `update`; `searchd index` without
