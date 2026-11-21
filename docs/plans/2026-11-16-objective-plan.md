@@ -173,7 +173,7 @@ whether to keep one is the maintainer's decision (03-next).
    manifest v2.6; the index 6.2 % (timing 10k), 3.6 % (prose 10k) and 2.5 %
    (Tamil 10k) smaller, 1.89 times the timing corpus, every answer unchanged;
    the fourth one-way step for a consumer (Dart 0.9.4; the app needs a second
-   pin). D2's four format steps are merged; B2 (the file move) is merged ([S6-T14](../tasks/S6-T14.md), 20 Nov 2026); B3, the small public core API, is next in B.
+   pin). D2's four format steps are merged; B2 (the file move) is merged ([S6-T14](../tasks/S6-T14.md), 20 Nov 2026); B3, the small public core API, is merged ([S6-T16](../tasks/S6-T16.md), 20 Nov 2026), which completes B; the follow-ups S6-T16 lists (core work done outside the core) are one task each.
 3. **Delta sections** for writes (already filed in 03-next) follow D2, since both
    touch the section formats.
 
