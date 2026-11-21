@@ -1,0 +1,28 @@
+# S6-T20 verifier: the mirror cases (probe_mirror.py.txt). A = the other writer, stopped before its lease under lldb; B = one or two full rebuilds (searchd index) while A is stopped.
+# update: stopped in its walk (indexer.zig:106); apply: applyParsed entry; import_json: lifecycle.tryAcquireWriter entry (payload parsed, number = the folder's generation + 1 read before A started).
+# k=1: --keep-generations 1 on A (not apply) and on every B. Builds as in two-process.txt.
+
+head  A=update      B=rebuild       k=- | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  A=update      B=rebuild       k=1 | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  A=update      B=rebuild_twice k=- | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  A=update      B=rebuild_twice k=1 | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  A=apply       B=rebuild       k=- | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  A=apply       B=rebuild       k=1 | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  A=apply       B=rebuild_twice k=- | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  A=apply       B=rebuild_twice k=1 | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  A=import_json B=rebuild       k=- | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no | ok
+head  A=import_json B=rebuild       k=1 | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no | ok
+head  A=import_json B=rebuild_twice k=- | B: published 10, published 11 | A: rc=1 PathAlreadyExists | MANIFEST 9->11->11 | twice=no back=no | ok
+head  A=import_json B=rebuild_twice k=1 | B: published 10, published 11 | A: published 10 | MANIFEST 9->11->10 | twice=YES back=YES | VIOLATION
+main  A=update      B=rebuild       k=- | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+main  A=update      B=rebuild       k=1 | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+main  A=update      B=rebuild_twice k=- | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+main  A=update      B=rebuild_twice k=1 | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+main  A=apply       B=rebuild       k=- | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+main  A=apply       B=rebuild       k=1 | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+main  A=apply       B=rebuild_twice k=- | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+main  A=apply       B=rebuild_twice k=1 | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+main  A=import_json B=rebuild       k=- | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no | ok
+main  A=import_json B=rebuild       k=1 | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no | ok
+main  A=import_json B=rebuild_twice k=- | B: published 10, published 11 | A: rc=1 PathAlreadyExists | MANIFEST 9->11->11 | twice=no back=no | ok
+main  A=import_json B=rebuild_twice k=1 | B: published 10, published 11 | A: published 10 | MANIFEST 9->11->10 | twice=YES back=YES | VIOLATION

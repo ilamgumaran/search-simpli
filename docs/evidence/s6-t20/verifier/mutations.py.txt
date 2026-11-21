@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""S6-T20 verifier: plant one mutation per fresh `git archive` of the head and
+run `zig build test --summary all` with empty caches. Prints, per mutation, the
+Build Summary and every failed test's name.
+
+Usage: python3 -I mutations.py.txt <worktree> <scratch> [name ...]
+"""
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+RETAKE = ("    if (lease) |*held| {\n        held.release(io);\n"
+          "        lease = (try lifecycle.tryAcquireWriter(dir.?, io)) orelse return error.WriterBusy;\n    }\n")
+CHOOSE_LINE = "    const generation = options.generation orelse try generation_alloc.nextFreeGeneration(allocator, io, dir.?);\n"
+LEASE_LINE = "    var lease: ?lifecycle.WriterLease = if (dir) |d| (try lifecycle.tryAcquireWriter(d, io)) orelse return error.WriterBusy else null;\n"
+
+MUTATIONS = {
+    # The full rebuild chooses its number before the folder walk, in the core (as main's interfaces did).
+    "choose_before_walk": [("zig/src/core/indexer.zig",
+        "    const walked = try walkBatch(allocator, io, root, caps);\n"
+        "    const outcome = try apply.applyBatch(allocator, io, out_dir, walked.batch(), walkOptions(analyzer, max_chars, overlap_lines, caps, fresh, generation));\n",
+        "    const chosen: ?u64 = if (fresh) (generation orelse try @import(\"generation_alloc.zig\").nextFreeGeneration(allocator, io, out_dir)) else generation;\n"
+        "    const walked = try walkBatch(allocator, io, root, caps);\n"
+        "    const outcome = try apply.applyBatch(allocator, io, out_dir, walked.batch(), walkOptions(analyzer, max_chars, overlap_lines, caps, fresh, chosen));\n")],
+    # Every self-numbered publish chooses after the walk but just before the lease.
+    "choose_before_lease": [("zig/src/core/apply.zig", LEASE_LINE,
+        "    const early: ?u64 = if (dir) |d| (options.generation orelse try generation_alloc.nextFreeGeneration(allocator, io, d)) else options.generation;\n" + LEASE_LINE),
+        ("zig/src/core/apply.zig", CHOOSE_LINE,
+        "    const generation = early orelse try generation_alloc.nextFreeGeneration(allocator, io, dir.?);\n")],
+    # The lease is released and taken again right after the number is chosen.
+    "retake_after_choice": [("zig/src/core/apply.zig", CHOOSE_LINE, CHOOSE_LINE + RETAKE)],
+    # The lease is released and taken again right before the number is chosen.
+    "retake_before_choice": [("zig/src/core/apply.zig", CHOOSE_LINE, RETAKE + CHOOSE_LINE)],
+    # The busy check is skipped: a writer that finds the lock held goes on without it.
+    "skip_busy_check": [("zig/src/core/apply.zig", LEASE_LINE,
+        LEASE_LINE.replace("orelse return error.WriterBusy else null", "orelse null else null"))],
+    # The publish's taken-name check is skipped: a section name that exists is replaced.
+    "skip_name_check": [("zig/src/core/publication.zig",
+        "            try dir.renamePreserve(&tmp_name, dir, filename, io);\n",
+        "            try dir.rename(&tmp_name, dir, filename, io);\n")],
+}
+
+
+def main():
+    worktree, scratch = Path(sys.argv[1]), Path(sys.argv[2])
+    names = sys.argv[3:] or list(MUTATIONS)
+    for name in names:
+        tree = scratch / f"mut-{name}"
+        tree.mkdir(parents=True)
+        archive = subprocess.run(["git", "-C", str(worktree), "archive", "HEAD"], capture_output=True, check=True).stdout
+        subprocess.run(["tar", "-x", "-C", str(tree)], input=archive, check=True)
+        for rel, old, new in MUTATIONS[name]:
+            path = tree / rel
+            text = path.read_text()
+            assert text.count(old) == 1, (name, rel, text.count(old))
+            path.write_text(text.replace(old, new))
+        done = subprocess.run(["zig", "build", "test", "--summary", "all",
+                               "--cache-dir", str(scratch / f"cache-mut-{name}" / "local"),
+                               "--global-cache-dir", str(scratch / f"cache-mut-{name}" / "global")],
+                              cwd=tree / "zig", capture_output=True, text=True)
+        log = done.stdout + done.stderr
+        (scratch / f"mut-{name}.log").write_text(log)
+        summary = [l for l in log.splitlines() if l.startswith("Build Summary")]
+        failed = sorted(set(re.findall(r"error: '([^']+)' failed", log)))
+        compile_errors = [l for l in log.splitlines() if ": error: " in l][:3]
+        print(f"== {name}: exit {done.returncode}; {summary[-1] if summary else 'no Build Summary'}")
+        for line in compile_errors:
+            print(f"   compile: {line.split('zig/src/')[-1]}")
+        for test in failed:
+            print(f"   failed: {test}")
+        sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()

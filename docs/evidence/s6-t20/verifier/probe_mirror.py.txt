@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""S6-T20 verifier: the mirror cases, two real `searchd` processes.
+
+Process A is now the *other* writer (`--update`, `apply`, `import-json`),
+stopped under `lldb --batch` before it takes `WRITER.LOCK`; while it is
+stopped, process B runs one or two full rebuilds (`searchd index`, no
+`--generation`, optionally `--keep-generations 1`); then A continues.
+`import-json`'s number is the host's: the folder's generation plus one, read
+before A starts (as a host numbers from an open).
+
+Usage: python3 -I probe_mirror.py.txt <probe_two_process.py.txt> <scratch> <label> <searchd> [...]
+"""
+import os
+import re
+import shlex
+import subprocess
+import sys
+from importlib.machinery import SourceFileLoader
+
+base = SourceFileLoader("probe_two_process", sys.argv[1]).load_module()
+
+A_CASES = {
+    # name: (A's argv after searchd, breakpoint, where)
+    "update": (["index", "notes", "--out", "out", "--update"], "-f indexer.zig -l 106", "in --update's walk, before its lease"),
+    "apply": (["apply", "out", "--changes", "changes.json"], "-n apply.applyParsed", "applyParsed entry, before its lease"),
+    "import_json": (["import-json", "out", "import.json"], "-n lifecycle.tryAcquireWriter", "import parsed and numbered, before its lease"),
+}
+
+B_RUNS = {"rebuild": 1, "rebuild_twice": 2}
+
+B_SCRIPT = r'''
+import json, os, struct, subprocess, sys
+case, searchd, runs_n, keep = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
+out = os.path.join(case, "out")
+def gen():
+    with open(os.path.join(out, "MANIFEST"), "rb") as h:
+        return struct.unpack_from("<Q", h.read(20), 12)[0]
+kflag = ["--keep-generations", "1"] if keep == "1" else []
+runs = []
+at_stop = gen()
+for _ in range(runs_n):
+    d = subprocess.run([searchd, "index", "notes", "--out", "out"] + kflag, cwd=case, capture_output=True, text=True)
+    runs.append({"rc": d.returncode, "out": (d.stdout + d.stderr).strip()})
+json.dump({"manifest_at_stop": at_stop, "runs": runs, "manifest_after_b": gen()}, open(os.path.join(case, "b.json"), "w"))
+print("B-RAN")
+'''
+
+
+def run_case(scratch, label, searchd, a_name, b_name, keep):
+    import json
+    case = os.path.join(scratch, f"{label}-{a_name}-{b_name}-k{keep}")
+    os.makedirs(case)
+    base.setup(case, searchd)
+    out = os.path.join(case, "out")
+    before = base.manifest_generation(out)
+    payload = {"format_version": 1, "generation": before + 1, "analyzer_id": "ascii-alnum-v1", "embedding_model_id": "none",
+               "documents": [{"id": "other", "path": "other.md", "start_line": 1, "end_line": 1, "text": "another writer",
+                              "vector": [], "required_labels": []}]}
+    with open(os.path.join(case, "import.json"), "w") as f:
+        json.dump(payload, f)
+    with open(os.path.join(case, "b.py"), "w") as f:
+        f.write(B_SCRIPT)
+    a_argv, bp, _ = A_CASES[a_name]
+    if keep == "1" and a_name != "apply":
+        a_argv = a_argv + ["--keep-generations", "1"]
+    shell = " ".join(shlex.quote(x) for x in [sys.executable, "-I", os.path.join(case, "b.py"), case, searchd, str(B_RUNS[b_name]), keep])
+    argv = ["lldb", "--batch", "-o", f"breakpoint set --one-shot true {bp}", "-o", "run",
+            "-o", f"platform shell {shell}", "-o", "continue", "--", searchd] + a_argv
+    done = subprocess.run(argv, cwd=case, capture_output=True, text=True, timeout=180)
+    log = re.sub(r"\x1b\[[0-9;]*m", "", done.stdout + done.stderr)
+    with open(os.path.join(case, "lldb.log"), "w") as f:
+        f.write(log)
+    stopped = "stop reason = one-shot breakpoint 1" in log
+    b_ran = log.find("B-RAN")
+    with open(os.path.join(case, "b.json")) as f:
+        b = json.load(f)
+    after = base.manifest_generation(out)
+    exit_m = re.search(r"exited with status = (\d+)", log)
+    a_rc = int(exit_m.group(1)) if exit_m else None
+    a_pub = base.published(log[b_ran:]) if a_rc == 0 else None
+    b_pubs = [base.published(r["out"]) for r in b["runs"] if r["rc"] == 0]
+    b_desc = ", ".join((f"published {base.published(r['out'])}" if r["rc"] == 0 else base.short(r["out"])) for r in b["runs"])
+    numbers = [n for n in b_pubs if n is not None] + ([a_pub] if a_pub is not None else [])
+    twice = len(numbers) != len(set(numbers))
+    back = not (before <= b["manifest_at_stop"] <= b["manifest_after_b"] <= after)
+    a_desc = f"published {a_pub}" if a_pub is not None else f"rc={a_rc} " + base.short(log[b_ran:])
+    verdict = "NOT-STOPPED" if not (stopped and b_ran > 0) else ("VIOLATION" if (twice or back) else "ok")
+    return (f"{label:5} A={a_name:11} B={b_name:13} k={keep or '-'} | B: {b_desc} | A: {a_desc} | "
+            f"MANIFEST {before}->{b['manifest_after_b']}->{after} | twice={'YES' if twice else 'no'} back={'YES' if back else 'no'} | {verdict}")
+
+
+def main():
+    scratch = sys.argv[2]
+    pairs = sys.argv[3:]
+    for i in range(0, len(pairs), 2):
+        label, searchd = pairs[i], pairs[i + 1]
+        for a_name in A_CASES:
+            for b_name in B_RUNS:
+                for keep in ("", "1"):
+                    print(run_case(scratch, label, searchd, a_name, b_name, keep), flush=True)
+
+
+if __name__ == "__main__":
+    main()

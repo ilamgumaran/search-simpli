@@ -1,0 +1,26 @@
+# S6-T20 verifier: mutations.py.txt, each a fresh git archive of cbc0778 with empty caches, zig build test --summary all (Debug).
+
+== choose_before_walk: exit 1; Build Summary: 13/15 steps succeeded (1 failed); 587/599 tests passed (9 skipped, 3 failed)
+   failed: abi_index_folder_test.test.S6-T20: ss_index_folder with WRITER.LOCK held answers WriterBusy before it chooses a number
+   failed: cli_test.test.S6-T20: another writer racing a full rebuild is refused with WriterBusy once the rebuild has chosen its number; no number twice, MANIFEST never back
+   failed: cli_test.test.S6-T20: searchd index with WRITER.LOCK held is refused with WriterBusy before it chooses a number
+== retake_after_choice: exit 0; Build Summary: 15/15 steps succeeded; 590/599 tests passed (9 skipped)
+== retake_before_choice: exit 0; Build Summary: 15/15 steps succeeded; 590/599 tests passed (9 skipped)
+== choose_before_lease: exit 1; Build Summary: 13/15 steps succeeded (1 failed); 587/599 tests passed (9 skipped, 3 failed)
+   failed: abi_index_folder_test.test.S6-T20: ss_index_folder with WRITER.LOCK held answers WriterBusy before it chooses a number
+   failed: cli_test.test.S6-T20: another writer racing a full rebuild is refused with WriterBusy once the rebuild has chosen its number; no number twice, MANIFEST never back
+   failed: cli_test.test.S6-T20: searchd index with WRITER.LOCK held is refused with WriterBusy before it chooses a number
+== skip_busy_check: exit 1; Build Summary: 13/15 steps succeeded (1 failed); 587/599 tests passed (9 skipped, 3 failed)
+   failed: abi_index_folder_test.test.S6-T20: ss_index_folder with WRITER.LOCK held answers WriterBusy before it chooses a number
+   failed: cli_test.test.S6-T20: another writer racing a full rebuild is refused with WriterBusy once the rebuild has chosen its number; no number twice, MANIFEST never back
+   failed: cli_test.test.S6-T20: searchd index with WRITER.LOCK held is refused with WriterBusy before it chooses a number
+== skip_name_check: exit 1; Build Summary: 12/15 steps succeeded (2 failed); 587/599 tests passed (9 skipped, 3 failed)
+   failed: cli_test.test.S6-T20: searchd index --generation N with N not free is refused with PathAlreadyExists under the lock and changes nothing on disk
+   failed: publication.test.failed immutable filename reuse leaves current generation unchanged
+   failed: publication.test.writeAtomicFile with replace_existing=false fails closed and cleans up its temp file
+
+# The surviving mutant retake_after_choice, as a searchd (Debug) under the two-process probe, stopped at its second tryAcquireWriter (released, not yet retaken):
+mut   retake    update       k=- | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+mut   retake    update       k=1 | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+mut   retake    update_twice k=- | lock held at stop: False | B: published 10, published 11 | A: rc=1 PathAlreadyExists | MANIFEST 9->11->11 | twice=no back=no query rc=0 | ok
+mut   retake    update_twice k=1 | lock held at stop: False | B: published 10, published 11 | A: published 10 | MANIFEST 9->11->10 | twice=YES back=YES query rc=0 | VIOLATION

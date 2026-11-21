@@ -1,0 +1,132 @@
+# S6-T20 verifier: two real searchd processes (probe_two_process.py.txt), 21 Nov 2026.
+# A = searchd index notes --out out [--keep-generations 1] under lldb --batch, stopped once at the point; B (another searchd, not under the debugger) runs while A is stopped; then A continues.
+# Folder at generation 9 before each case. head = Debug searchd from a git archive of cbc0778; main = Debug searchd from a git archive of 3cf188b; each its own caches.
+# Points: pre_walk = indexer.indexFolder entry; walk = indexer.zig:106 (first entry of the folder walk); choose = generation_alloc.nextFreeGeneration entry (head: under the lease; main: in cli.zig, before the walk and the lease);
+#   build = apply.buildGeneration entry; published = incremental_state.savePointer entry (after the publish); release = lifecycle.WriterLease.release entry (published, pruned, lock still held).
+# 'lock held at stop' is a non-blocking flock by B's helper on WRITER.LOCK while A is stopped. k=1: A and every B publish with --keep-generations 1 (apply has no such flag).
+# 'twice' = a number published by both A and B; 'back' = MANIFEST ever decreased (before -> after B -> after A). A rebuild that fails publishes nothing and is not 'twice'.
+
+head  pre_walk  rebuild      k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  pre_walk  rebuild      k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  pre_walk  update       k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  pre_walk  update       k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  pre_walk  update_twice k=- | lock held at stop: False | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no query rc=0 | ok
+head  pre_walk  update_twice k=1 | lock held at stop: False | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no query rc=0 | ok
+head  pre_walk  apply        k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  pre_walk  apply        k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  pre_walk  import_json  k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  pre_walk  import_json  k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  walk      rebuild      k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  walk      rebuild      k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  walk      update       k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  walk      update       k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  walk      update_twice k=- | lock held at stop: False | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no query rc=0 | ok
+head  walk      update_twice k=1 | lock held at stop: False | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no query rc=0 | ok
+head  walk      apply        k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  walk      apply        k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  walk      import_json  k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  walk      import_json  k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+head  choose    rebuild      k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  choose    rebuild      k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  choose    update       k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  choose    update       k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  choose    update_twice k=- | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  choose    update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  choose    apply        k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  choose    apply        k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  choose    import_json  k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  choose    import_json  k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     rebuild      k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     rebuild      k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     update       k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     update       k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     update_twice k=- | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     apply        k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     apply        k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     import_json  k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  build     import_json  k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+head  published rebuild      k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  published rebuild      k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  published update       k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  published update       k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  published update_twice k=- | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  published update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  published apply        k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  published apply        k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  published import_json  k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  published import_json  k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   rebuild      k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   rebuild      k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   update       k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   update       k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   update_twice k=- | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   apply        k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   apply        k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   import_json  k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head  release   import_json  k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  pre_walk  rebuild      k=- | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  pre_walk  rebuild      k=1 | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  pre_walk  update       k=- | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  pre_walk  update       k=1 | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  pre_walk  update_twice k=- | lock held at stop: False | B: published 10, published 11 | A: rc=1 PathAlreadyExists | MANIFEST 9->11->11 | twice=no back=no query rc=0 | ok
+main  pre_walk  update_twice k=1 | lock held at stop: False | B: published 10, published 11 | A: published 10 | MANIFEST 9->11->10 | twice=YES back=YES query rc=0 | VIOLATION
+main  pre_walk  apply        k=- | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  pre_walk  apply        k=1 | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  pre_walk  import_json  k=- | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  pre_walk  import_json  k=1 | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  walk      rebuild      k=- | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  walk      rebuild      k=1 | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  walk      update       k=- | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  walk      update       k=1 | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  walk      update_twice k=- | lock held at stop: False | B: published 10, published 11 | A: rc=1 PathAlreadyExists | MANIFEST 9->11->11 | twice=no back=no query rc=0 | ok
+main  walk      update_twice k=1 | lock held at stop: False | B: published 10, published 11 | A: published 10 | MANIFEST 9->11->10 | twice=YES back=YES query rc=0 | VIOLATION
+main  walk      apply        k=- | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  walk      apply        k=1 | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  walk      import_json  k=- | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  walk      import_json  k=1 | lock held at stop: False | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  choose    rebuild      k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+main  choose    rebuild      k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+main  choose    update       k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+main  choose    update       k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+main  choose    update_twice k=- | lock held at stop: False | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no query rc=0 | ok
+main  choose    update_twice k=1 | lock held at stop: False | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no query rc=0 | ok
+main  choose    apply        k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+main  choose    apply        k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+main  choose    import_json  k=- | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+main  choose    import_json  k=1 | lock held at stop: False | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no query rc=0 | ok
+main  build     rebuild      k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  build     rebuild      k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  build     update       k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  build     update       k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  build     update_twice k=- | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  build     update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  build     apply        k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  build     apply        k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  build     import_json  k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  build     import_json  k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->9->10 | twice=no back=no query rc=0 | ok
+main  published rebuild      k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  published rebuild      k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  published update       k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  published update       k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  published update_twice k=- | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  published update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  published apply        k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  published apply        k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  published import_json  k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  published import_json  k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   rebuild      k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   rebuild      k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   update       k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   update       k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   update_twice k=- | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   apply        k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   apply        k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   import_json  k=- | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+main  release   import_json  k=1 | lock held at stop: True  | B: WriterBusy | A: published 10 | MANIFEST 9->10->10 | twice=no back=no query rc=0 | ok
+head: 60 cases, 60 ok, 0 violations, 0 not stopped
+main: 60 cases, 58 ok, 2 violations, 0 not stopped
+
+# This was the second run. A first run of the same matrix, from fresh folders, gave the same 120 lines except that its parser printed A's failures as 'rc=1' without the error name.
