@@ -1,0 +1,77 @@
+
+// ---------------------------------------------------------------------------
+// S6-T17 verifier probes (evidence only, never in the suite): ruling 2's two
+// ways after a full rebuild has chosen its number before WRITER.LOCK, as
+// `cli.zig` line 845 and `abi.zig` line 845 do (number first, then
+// `indexer.indexFolder`, which takes the lease inside `apply.applyParsed`).
+// Each probe prints one `VPROBE` line and asserts nothing about the outcome.
+
+fn vprobeGen(a: std.mem.Allocator, io: std.Io, out: std.Io.Dir) u64 {
+    return generation_alloc.currentGeneration(a, io, out) catch 0;
+}
+
+test "VPROBE A: a full rebuild that meets a held WRITER.LOCK" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var folder = try NotesFolder.init(a, io, tmp.dir);
+    defer folder.deinit(io);
+    const chosen = try generation_alloc.nextFreeGeneration(a, io, folder.out);
+    var lease = (try lifecycle.tryAcquireWriter(folder.out, io)).?;
+    const outcome = indexer.indexFolder(a, io, folder.root, folder.out, .v2, chosen, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    lease.release(io);
+    if (outcome) |report| {
+        std.debug.print("VPROBE A (lock held by another writer): chosen {d}, published {d}, MANIFEST {d}\n", .{ chosen, report.generation, vprobeGen(a, io, folder.out) });
+    } else |err| {
+        std.debug.print("VPROBE A (lock held by another writer): chosen {d}, error {s}, MANIFEST {d}\n", .{ chosen, @errorName(err), vprobeGen(a, io, folder.out) });
+    }
+}
+
+test "VPROBE B: another writer publishes the chosen number before the rebuild takes the lock" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var folder = try NotesFolder.init(a, io, tmp.dir);
+    defer folder.deinit(io);
+    const chosen = try generation_alloc.nextFreeGeneration(a, io, folder.out);
+    try folder.root.writeFile(io, .{ .sub_path = "b.md", .data = "beta evidence about publication\n" });
+    const other = try indexer.indexFolderIncremental(a, io, folder.root, folder.out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    const outcome = indexer.indexFolder(a, io, folder.root, folder.out, .v2, chosen, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    if (outcome) |report| {
+        std.debug.print("VPROBE B (other writer published {d}): chosen {d}, published {d}, MANIFEST {d}\n", .{ other.generation, chosen, report.generation, vprobeGen(a, io, folder.out) });
+    } else |err| {
+        std.debug.print("VPROBE B (other writer published {d}): chosen {d}, error {s}, MANIFEST {d}\n", .{ other.generation, chosen, @errorName(err), vprobeGen(a, io, folder.out) });
+    }
+}
+
+test "VPROBE C: another writer publishes the chosen number and the next, keeping one generation, before the rebuild takes the lock" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    var folder = try NotesFolder.init(a, io, tmp.dir);
+    defer folder.deinit(io);
+    const chosen = try generation_alloc.nextFreeGeneration(a, io, folder.out);
+    try folder.root.writeFile(io, .{ .sub_path = "b.md", .data = "beta evidence about publication\n" });
+    const first = try indexer.indexFolderIncremental(a, io, folder.root, folder.out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .keep_generations = 1 });
+    try folder.root.writeFile(io, .{ .sub_path = "c.md", .data = "gamma evidence about retention\n" });
+    const second = try indexer.indexFolderIncremental(a, io, folder.root, folder.out, .v2, chunker.default_max_chars, chunker.default_overlap_lines, .{ .keep_generations = 1 });
+    const before = vprobeGen(a, io, folder.out);
+    const outcome = indexer.indexFolder(a, io, folder.root, folder.out, .v2, chosen, chunker.default_max_chars, chunker.default_overlap_lines, .{});
+    if (outcome) |report| {
+        const opened = try snapshot_open.openScoped(a, io, folder.out);
+        defer snapshot_open.close(opened.engine, opened.folder);
+        const next = try generation_alloc.nextFreeGeneration(a, io, folder.out);
+        std.debug.print("VPROBE C (other writer published {d} then {d}, keep 1; MANIFEST {d} before): chosen {d}, published {d}, MANIFEST {d} after, open generation {d}, next free {d}\n", .{ first.generation, second.generation, before, chosen, report.generation, vprobeGen(a, io, folder.out), opened.engine.generation, next });
+    } else |err| {
+        std.debug.print("VPROBE C (other writer published {d} then {d}, keep 1; MANIFEST {d} before): chosen {d}, error {s}, MANIFEST {d} after\n", .{ first.generation, second.generation, before, chosen, @errorName(err), vprobeGen(a, io, folder.out) });
+    }
+}
