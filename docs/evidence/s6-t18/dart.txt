@@ -1,0 +1,7 @@
+# Dart: fresh git archive of 907e65d, its committed natives; Dart SDK version: 3.13.2 (stable) (Tue Aug 25 01:01:12 2026 -0700) on "macos_arm64"
+pub get exit 0
+Analyzing lib, test...
+No issues found!
+analyze exit 0
+00:07 +97: All tests passed!
+dart test exit 0 (first attempt without Zig on PATH: four setUpAll/tearDownAll errors, 'ProcessException: No such file or directory, Command: zig build'; rerun with Zig on PATH)

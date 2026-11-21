@@ -1,0 +1,8 @@
+# searchd ReleaseSmall, zig build -Doptimize=ReleaseSmall --prefix <V>/bin-NAME, each tree a fresh git archive with its own --global-cache-dir and --cache-dir; size -m __text
+main 1151208 B sha256 394f608ac54a6499 Section __text: 654200
+head 1151208 B sha256 4837ffd3b0d54804 Section __text: 654228
+main2 1151208 B sha256 394f608ac54a6499 Section __text: 654200
+cr 1151160 B sha256 bc40835d8f244ab1 Section __text: 654232
+ce 1151160 B sha256 9ed0631b7579068e Section __text: 654272
+main2 cmp-identical to main; head sha256 equals the builder's (4837ffd3b0d54804) and main's equals 394f608ac54a6499; cr equals the builder's cr (bc40835d8f244ab1)
+trees: main, main2, cr, ce = git archive 40932b0 (cr, ce then edited by tools/vcontrol.py r 1 and e 1); head = git archive 5242a38

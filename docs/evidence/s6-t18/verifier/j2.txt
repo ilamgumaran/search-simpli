@@ -1,0 +1,6 @@
+# J2 in the worktree (the native run reads the commit from the worktree's HEAD, 01626d3, whose zig/ is 907e65d's); outputs in <V>/j2
+## Python reference: PYTHONHASHSEED=0 scripts/relevance_smoke.py --pack j2, then scripts/j2_gate.py: J2 gate: pass (overall 95 rows: 0.832 0.915 0.896 0.932; control rows not at rank 1: none; negatives 61/64 return hits)
+## Native head (<V>/bin-head, sha256 4837ffd3b0d54804..., 1,151,208 B): ci_j2_native.py run --expect-queries 290: 290 queries x 2 variants, none skipped; j2_gate.py: J2 gate: pass; ci_j2_native.py differences: 0 rows differ from the baseline
+## Native main (<V>/bin-main, sha256 394f608ac54a6499...): j2_gate.py: J2 gate: pass
+## head.json against main.json, every field: only /engine/binary/sha256 and the /load samples differ
+## Note: ci_j2_native.py runs J2 through searchd serve (JSON-RPC), which does not call engine.queryOneShot; the J2 queries through query, evidence and search are in answers.txt

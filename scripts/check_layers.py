@@ -1201,7 +1201,8 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
           build_roots=None, outside_module=None, report=None):
     """Every problem found, as `path:line: message` strings (empty when clean).
 
-    `report`, a dict, receives the test reach (test_reach) for --list-tests."""
+    `report`, a dict, receives the test reach (test_reach) for --list-tests, and `api`, the public core API
+    as core_api reads it (None without one), whose size main prints."""
     files = FILES if files is None else files
     allowed = ALLOWED if allowed is None else allowed
     exempt_files = EXEMPT_FILES if exempt_files is None else exempt_files
@@ -1529,7 +1530,7 @@ def check(root: Path, files=None, allowed=None, exempt_files=None, exempt_patter
                 problems.append(f"{SRC}/{root_rel}:{number}: names {rel} (pub const {name}) but no test build "
                                 f"compiles it: add `_ = {name};` to its test-build comptime block")
     if report is not None:
-        report.update(tests=tests, lines=test_lines, reached=reached, via_module=via_module,
+        report.update(api=api, tests=tests, lines=test_lines, reached=reached, via_module=via_module,
                       steps={rel: step for rel, (step, _) in live_roots.items() if step is not None},
                       labels={rel: step_label(step) for rel, (step, _) in live_roots.items() if step is not None})
 
@@ -1582,9 +1583,12 @@ def main(argv=None) -> int:
         print(f"check_layers: {len(problems)} problem(s)")
         return 1
     with_tests = [rel for rel, count in reach["tests"].items() if count]
+    api = reach.get("api") or {}
+    # S6-T18: the size of the public core API, so docs/core-api.md restates the checker's count.
     print(f"check_layers: OK ({len(FILES)} files in layers, {len(MODULE_ROOTS)} module roots, "
           f"{len(ALLOWED)} allowed interface imports; {len(with_tests)} files hold "
-          f"{sum(reach['tests'].values())} tests, each run by a step of `zig build test`)")
+          f"{sum(reach['tests'].values())} tests, each run by a step of `zig build test`; the public core API "
+          f"`{API}`: {sum(len(names) for _, names in api.values())} names in {len(api)} namespaces)")
     return 0
 
 

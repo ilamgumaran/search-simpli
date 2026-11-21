@@ -3,6 +3,8 @@
 **State:** written by [S6-T16](tasks/S6-T16.md) (20 Nov 2026, from `main` at `10f3d40`),
 step B3 of the [objective plan](plans/2026-11-16-objective-plan.md). It adds names,
 aliases and doc comments only: no function body, format, contract or answer changed.
+[S6-T18](tasks/S6-T18.md) (21 Nov 2026) replaced `title_field.derive` with the core call
+`engine.queryOneShot`, the first of the follow-ups below; the answers did not change.
 
 The core is one Zig module, `core` (root `zig/src/core/core.zig`; see
 [layers.md](layers.md)). Its root has two parts:
@@ -13,7 +15,7 @@ The core is one Zig module, `core` (root `zig/src/core/core.zig`; see
   under its own name, `pub const Engine = internal.engine.Engine;`, so it is the same
   type or function and adds no code. Every namespace and name has a doc comment: what
   it does, who owns the memory it returns, and which errors come back.
-- **The rest, every core file by name** (`@import("core").engine`, 51 files). It is
+- **The rest, every core file by name** (`@import("core").engine`, 52 files). It is
   internal: the core's own files and tests reach each other by path inside `core/`,
   and the tests in `zig/src/tests/` reach a core file through the module.
 
@@ -63,16 +65,20 @@ A type's fields and methods come with the type: `api.engine.Engine` is the whole
 
 ## The names, by purpose
 
-88 names in 23 namespaces: every core name operations and interfaces used at `10f3d40`
-(the measurement, [`docs/evidence/s6-t16/measure.txt`](evidence/s6-t16/measure.txt)),
-and nothing else. Their doc comments in `core.zig` say what each does, what it
-allocates and what it returns.
+88 names in 23 namespaces, as `python3 scripts/check_layers.py` counts them in its last
+line ("the public core API `api`: 88 names in 23 namespaces"): every core name operations
+and interfaces used at `10f3d40` (the measurement,
+[`docs/evidence/s6-t16/measure.txt`](evidence/s6-t16/measure.txt)), less
+`title_field.derive` and with `engine.queryOneShot` in its place (S6-T18), and nothing
+else. Their doc comments in `core.zig` say what each does, what it allocates and what it
+returns.
 
 | Purpose | Namespace | Names | Count |
 |---|---|---|---:|
 | Open a generation | `snapshot_open` | `open`, `openDetached`, `openScoped`, `openScopedWith`, `openScopedDetached`, `close`, `Sections` | 7 |
 | | `engine` | `Engine`, `Evidence` | 2 |
 | Search | `hybrid` | `Document`, `Result`, `RetrievalMode`, `RootMask`, `SearchOptions`, `Trace`, `search`, `isAuthorized`, `matchesPath`, `no_source_doc` | 10 |
+| | `engine` | `queryOneShot` | 1 |
 | | `scoring` | `isValidVector` | 1 |
 | | `filename_field` | `Field`, `Hit`, `tokenize` | 3 |
 | | `scope` | `Request`, `Folder`, `View`, `visibleCollection`, `documentFrequency`, `holdsAll`, `recordPath`, `relativePath`, `rootOfPath`, `isLegacy`, `legacy_root_id` | 11 |
@@ -82,7 +88,7 @@ allocates and what it returns.
 | Build an index | `indexer` | `indexFolder`, `indexFolderIncremental`, `buildFolderDetached`, `Caps`, `IncrementalReport`, `AnalyzerId` | 6 |
 | | `chunker` | `default_max_chars`, `default_overlap_lines` | 2 |
 | | `generation_alloc` | `nextFreeGeneration`, `describeNoFreeGeneration` | 2 |
-| | `title_field` | `derive`, `policy_id` | 2 |
+| | `title_field` | `policy_id` | 1 |
 | Write a generation by hand | `importer` | `importJson`, `importJsonKeeping` | 2 |
 | | `manifest` | `create`, `encode`, `decode`, `PendingEntry` | 4 |
 | | `segment` | `encode` | 1 |
@@ -94,9 +100,10 @@ allocates and what it returns.
 | | `fold` | `policy_id` | 1 |
 | | `fuzzy` | `policy_id` | 1 |
 
-By purpose: open 9, search 25, find 8, read a span 10, apply 5, build an index 12, write a
+By purpose: open 9, search 26, find 8, read a span 10, apply 5, build an index 11, write a
 generation by hand 12, benchmark 4, the formats' identities 3 (a fourth,
-`title_field.policy_id`, sits with its file under build an index).
+`title_field.policy_id`, sits with its file under build an index). The `engine` namespace
+appears twice: `Engine` and `Evidence` open a generation, `queryOneShot` searches it.
 
 `analyzer_v2.analyzer_id` and `manifest.decode` are used only in test blocks of
 `ops/filename_response.zig` and `interfaces/abi.zig`; they are public because those tests
@@ -110,8 +117,10 @@ handle) and release it whole; the doc comment says so where a function relies on
 (`applyChanges`, the indexers, `find`). Exceptions, each documented: a scoped open
 (`openScoped`, `openScopedWith`, `openScopedDetached`) keeps open files and, with
 `openScopedWith`, exact blocks outside the arena, released by `snapshot_open.close`
-before the arena goes; `title_field.derive` returns one block to free with
-`Derived.deinit`; `scope.View`'s group flags are freed with `View.deinit`; a detached
+before the arena goes; `engine.queryOneShot` needs an arena, since its result buffer
+(one slot per chunk) and the title field it derives for an engine without a folder are
+not freed separately (a scoped open's engine ranks with its folder's field, which the
+open keeps); `scope.View`'s group flags are freed with `View.deinit`; a detached
 open borrows its `Sections`, which must outlive the engine. Encoders (`segment.encode`,
 `lexical_segment.encode`, `manifest.encode`) and `postings.build`, `hybrid.search` write
 into caller memory and allocate nothing.
@@ -206,8 +215,10 @@ function bodies.
 - **The file-name channel in operations.** `filename_field.tokenize` and
   `filename_field.Hit` (`ops/filename_response.zig`) tokenize the query and rank file
   names outside the core.
-- **A query that derives its own title field.** `title_field.derive`
-  (`interfaces/cli.zig`, `runSearch`) builds a ranking input in an interface.
+- ~~**A query that derives its own title field.** `title_field.derive`
+  (`interfaces/cli.zig`, `runSearch`) builds a ranking input in an interface.~~
+  Done by [S6-T18](tasks/S6-T18.md): `engine.queryOneShot` derives it in the core, and
+  `title_field.derive` left `api`.
 - **Writing a generation by hand.** `segment.encode`, `lexical_segment.encode`,
   `postings.build`, `postings.TermEntry`, `postings.Posting`, `manifest.create`,
   `manifest.encode`, `manifest.decode` and `lifecycle.publishSerialized`: the section

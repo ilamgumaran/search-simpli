@@ -1,0 +1,19 @@
+# tool/build_native.sh in a fresh git archive of 5242a38 (<V>/natives-head), ZIG_GLOBAL_CACHE_DIR and ZIG_LOCAL_CACHE_DIR fresh, SS_ANDROID_NDK = NDK 28.2.13676358
+tool/build_native.sh: building with 0.16.0 from <V>/natives-head/zig
+Build Summary: 28/28 steps succeeded
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib ( 1006456 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  966800 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  971424 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (9feb979f3182f16df94ff007ccb7be4d9d018ba503093a0076916a49ca341d6a)
+build_native.sh exit 0
+# sha256 (first 16) of the rebuilt files against the committed ones (git show 5242a38: and 40932b0:)
+native/macos-arm64/libsearch_simpli.dylib: 1006456 B rebuilt ab901f1bd8e8c78c; committed head ab901f1bd8e8c78c (identical); main ab901f1bd8e8c78c (identical)
+native/android-arm64/libsearch_simpli.so: 966800 B rebuilt 5b987456bfb314b9; committed head 5b987456bfb314b9 (identical); main 5b987456bfb314b9 (identical)
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: 966800 B rebuilt 5b987456bfb314b9; committed head 5b987456bfb314b9 (identical); main 5b987456bfb314b9 (identical)
+native/ios-arm64/search_simpli.framework/search_simpli: 971424 B rebuilt 1815daf3214373bc; committed head 1815daf3214373bc (identical); main 1815daf3214373bc (identical)
+native/ios-arm64/search_simpli.framework/Info.plist: 749 B rebuilt 8fb8f2353652106e; committed head 8fb8f2353652106e (identical); main 8fb8f2353652106e (identical)
+native/SOURCE-SHA256: 65 B rebuilt 140aa450ef78bc3b; committed head 140aa450ef78bc3b (identical); main 7e65f725c088556b (differs)
+SOURCE-SHA256 rebuilt and committed at 5242a38: 9feb979f3182f16df94ff007ccb7be4d9d018ba503093a0076916a49ca341d6a; python3 tool/source_digest.py in the worktree: the same; at 40932b0: b050953684b69ade40e2c60a58613f5dc3731f84500837c6ecd812d2ffd2d67d
+restamped in the code commit 907e65d (git show --stat 907e65d lists native/SOURCE-SHA256)
+tool/check_native.sh (worktree): ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)

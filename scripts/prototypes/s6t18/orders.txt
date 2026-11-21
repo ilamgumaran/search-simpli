@@ -1,0 +1,54 @@
+# S6-T18 builder: the timing runs of ruling 4 (`searchd query`, by the rule of 2026-11-17, docs/process/ROLES.md).
+# Written, committed and pushed before the first timed run (21 Nov 2026). Nothing below is chosen after seeing a
+# timed number.
+#
+# Expectation (stated before measuring): every cell passes the rule of 2026-11-17 against main. The change moves
+# runSearch's four lines from interfaces/cli.zig into core/engine.zig (engine.queryOneShot): the same allocations in
+# the same order and the same calls, so no cost is expected; the raw median_r(head - main) is reported beside each
+# cell.
+#
+# Builds (searchd, `zig build -Doptimize=ReleaseSmall`, each from its own fresh `git archive` with its own global
+# and local Zig caches; macOS arm64; __text from `size -m`):
+#   main  = 40932b0: 1,151,208 B, sha256 394f608ac54a6499... (S6-T16's and the task file's size), __text 654,200 B
+#   main2 = 40932b0 built again in another archive copy: byte-identical to main
+#   head  = 907e65d: 1,151,208 B, sha256 4837ffd3b0d54804..., __text 654,228 B (+28 B)
+#   Controls: main + one never-run function (make_control.py, 0 blocks and 1 step), called under a branch never
+#   true at run time (top_k, or the chunk count, of 2^50 or more):
+#   cr = place r: interfaces/cli.zig, at the top of runSearch, beside the code this task moves:
+#        1,151,160 B, sha256 bc40835d8f244ab1..., __text 654,232 B (+32 B; the head's delta within 4 B)
+#   cd = place d: core/title_field.zig, at the top of derive (every one-shot query, in the core, away from the
+#        moved lines): 1,151,208 B, sha256 0e7b958d4a45c3a0..., __text 654,276 B (+76 B)
+# Control set (fixed now): main2, cr, cd. The three libraries are byte-identical to main's, so no library timing
+# is owed (task ruling 4).
+#
+# Corpora: timing-10k, prose-10k, tamil-10k (scripts/gen_timing_corpus.py, gen_prose_corpus.py,
+# gen_tamil_timing_corpus.py, 10,000 files each: 7,269,199 / 17,244,024 / 27,708,457 B). Index: main's `searchd
+# index <corpus> --out <dir>` (no file-name channel: the command's default); each build opens its own copy of it
+# (idx/<build>/<corpus>; the head's searchd writes the same bytes, same_answers.py).
+# Cells, per corpus: the 7 corpus-derived queries of scripts/prototypes/s6t9/bench.py `queries` (positions 8-14):
+#   timing-10k: from, were, badamo, belohu, from badamo, were belohu, doc 00000
+#   prose-10k:  the, have, within, drink, the within, have drink, across lengthy seeming 04276
+#   tamil-10k:  கீகசை, டூகனை, றூகுஞங்கள், சைகீளையில், கீகசை றூகுஞங்கள், டூகனை சைகீளையில், doc 00000
+# Each cell, per build and run: qbench.py, 3 untimed then 30 timed `searchd query <index> "<q>"` processes; the
+# cell's value is the p50 wall time (spawn to wait4). The CPU time p50 and the peak resident size (ru_maxrss) are
+# reported beside it, not judged. One qbench.py process per (corpus, build).
+# The rule: T = max(0.010 ms, 1 % of main's five-run median for the cell). A cell fails if
+# median_r(head - main) >= T and exceeds by >= T the largest of median_r(c - main) over c in {main2, cr, cd}.
+# Band excursions (head above every other build in 3 or more of 5 runs) are tabulated, never failing (analyse.py).
+#
+# The load gate (scripts/prototypes/s6t4/gate.sh: the lock absent, the 5-minute load at most 4.0, no toolchain at
+# 20 % CPU or more in top's top eight) runs before every qbench.py process; a refused gate stops the run (exit 1).
+# A stopped run's rows are set aside, unused, and the run is taken again whole, by hand and not in a loop; every
+# attempt is reported. pmset -g log is read afterwards for Sleep, Wake and DarkWake inside each run's window; a run
+# with one is reported as such and taken again whole as the same number with "b".
+# Latin square: builds rotated left by (r - 1) mod 5 in run r, corpora rotated left by (r - 1) mod 3.
+run1:main main2 head cr cd
+corpora1:timing-10k prose-10k tamil-10k
+run2:main2 head cr cd main
+corpora2:prose-10k tamil-10k timing-10k
+run3:head cr cd main main2
+corpora3:tamil-10k timing-10k prose-10k
+run4:cr cd main main2 head
+corpora4:timing-10k prose-10k tamil-10k
+run5:cd main main2 head cr
+corpora5:prose-10k tamil-10k timing-10k

@@ -77,7 +77,7 @@ pub const api = struct {
         pub const Sections = internal.snapshot_open.Sections;
     };
 
-    /// The opened generation (`engine.zig`).
+    /// The opened generation and its one-shot query (`engine.zig`).
     pub const engine = struct {
         /// An opened generation: its documents, lexical index, roots and manifest
         /// fields, with the query methods operations call (among them
@@ -92,6 +92,21 @@ pub const api = struct {
         /// lines, the chunk's text, and the scores and ranks. Its slices point into the
         /// engine's documents, so it is valid as long as the engine is.
         pub const Evidence = internal.engine.Evidence;
+        /// A one-shot lexical query (S6-T18): the best `top_k` chunks for the
+        /// query text, ranked with the title field, as `searchd query` answers
+        /// under `content`. An engine from a scoped open ranks with the title
+        /// field its folder holds (`scope.Folder.titleField`): derived and kept
+        /// by the folder as for any other query, on its first use (this call's,
+        /// if no query came before), in the scoped open's memory, not from
+        /// `allocator`. Any other engine's field is derived for this query from
+        /// `allocator`. What the call allocates comes from `allocator` (an arena:
+        /// a buffer of one result per chunk and a derived field are not freed
+        /// separately); the results point into that buffer and the engine's
+        /// documents.
+        /// Errors: `OutOfMemory`, `InvalidQueryText`, `InvalidUtf8`,
+        /// `IndexTooLarge`, `WorkspaceTooSmall`, `VectorDimensionMismatch`,
+        /// `LexicalScoreCountMismatch` (as `Engine.queryTokenized`).
+        pub const queryOneShot = internal.engine.queryOneShot;
     };
 
     // ------------------------------------------------------------------- search
@@ -367,13 +382,6 @@ pub const api = struct {
 
     /// The title field: folder and file names as a title (`title_field.zig`).
     pub const title_field = struct {
-        /// Derive a generation's title field from its documents and roots (a
-        /// one-shot query derives its own). The field points into one exact block
-        /// from `blocks` (release with `Derived.deinit`, or with the arena);
-        /// `scratch_backing` holds the working arrays, all freed before it
-        /// returns. Errors:
-        /// `OutOfMemory`, `InvalidUtf8`, `IndexTooLarge`.
-        pub const derive = internal.title_field.derive;
         /// The title field's policy id: "title-field-v1".
         pub const policy_id = internal.title_field.policy_id;
     };
@@ -540,6 +548,7 @@ pub const nfc = @import("nfc.zig");
 pub const nfc_timing_test = @import("nfc_timing_test.zig");
 pub const postings = @import("postings.zig");
 pub const publication = @import("publication.zig");
+pub const query_one_shot_test = @import("query_one_shot_test.zig");
 pub const scope = @import("scope.zig");
 pub const scoring = @import("scoring.zig");
 pub const segment = @import("segment.zig");
@@ -597,6 +606,7 @@ comptime {
         _ = nfc_timing_test;
         _ = postings;
         _ = publication;
+        _ = query_one_shot_test;
         _ = scope;
         _ = scoring;
         _ = segment;

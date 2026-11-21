@@ -1,0 +1,16 @@
+# Python suites. head = the worktree at 19a960a (907e65d's code); main = a git clone of 40932b0 in <S> (a git archive cannot run test_privacy's git ls-files or j2's commit lookup: in an archive of main those two fail, 2 failures, for that reason only)
+head, Zig on PATH, no SEARCHD_BINARY (the tests build searchd): Ran 574 tests in 109.793s; OK
+head, SEARCHD_BINARY=<S>/bin-head/bin/searchd (ReleaseSmall): Ran 574 tests in 56.377s; OK
+head, SEARCH_SIMPLI_NO_ZIG=1: Ran 519 tests in 41.723s; OK (skipped=43)
+main, SEARCHD_BINARY=<S>/bin-main/bin/searchd: Ran 567 tests in 50.916s; OK
+main, SEARCH_SIMPLI_NO_ZIG=1: Ran 512 tests in 36.061s; OK (skipped=43)
+
+## Test ids (unittest discover -s tests), main 567 against head 574
+62a63,69
+> test_check_layers.OneShotQueryTests.test_a_planted_derive_in_interfaces_fails_inline_and_through_the_old_alias
+> test_check_layers.OneShotQueryTests.test_a_planted_derive_in_ops_fails
+> test_check_layers.OneShotQueryTests.test_main_prints_the_api_s_size
+> test_check_layers.OneShotQueryTests.test_main_prints_the_size_of_an_api_with_one_name_more
+> test_check_layers.OneShotQueryTests.test_the_api_has_the_call_and_not_the_derive
+> test_check_layers.OneShotQueryTests.test_the_call_passes_where_cli_uses_it
+> test_check_layers.OneShotQueryTests.test_the_copy_passes

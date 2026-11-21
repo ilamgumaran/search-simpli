@@ -477,6 +477,41 @@ pub const Engine = struct {
     }
 };
 
+/// S6-T18: a one-shot lexical query over an opened generation, ranked with
+/// its title field (`title-field-v1`): what `searchd query`, `evidence` and
+/// `search` answer under `content` (S5-T2 ruling 3). The best `top_k` chunks
+/// for `query_text` (`Engine.queryTokenized`, lexical mode, every chunk a
+/// candidate), each with its title part.
+///
+/// The title field: an engine opened with a folder (a scoped open) already
+/// holds one, `scope.Folder.titleField`, and the query ranks with it; it is
+/// derived and kept by the folder as for any other query, nothing derived
+/// here. Otherwise (an eager or detached open, which keeps no title field)
+/// it is derived from the engine's documents and roots for this one query.
+///
+/// Memory: everything is allocated from `allocator`, which should be an
+/// arena released by the caller: a result buffer of one slot per chunk, the
+/// derived title field's block (not freed here: an arena takes it back), and
+/// the query's working memory, which the query releases. The returned slice
+/// points into that buffer, and its paths and ids into the engine's
+/// documents.
+///
+/// Errors (the set Zig infers, the same as `Engine.queryTokenized`'s):
+/// `OutOfMemory`; `InvalidQueryText` (not valid UTF-8); `InvalidUtf8` and
+/// `IndexTooLarge` from the derive (and the ranking); and the ranking's
+/// `WorkspaceTooSmall`, `VectorDimensionMismatch` and
+/// `LexicalScoreCountMismatch`.
+pub fn queryOneShot(engine: Engine, allocator: std.mem.Allocator, query_text: []const u8, top_k: usize) ![]hybrid.Result {
+    const result_output = try allocator.alloc(hybrid.Result, engine.documents.len);
+    var derived: title_field.Derived = undefined;
+    const title: *const title_field.Field = if (engine.folder) |folder| try folder.titleField() else title: {
+        derived = try title_field.derive(allocator, allocator, engine.documents, engine.roots);
+        break :title &derived.field;
+    };
+    const options = hybrid.SearchOptions{ .top_k = top_k, .candidate_k = @max(top_k, engine.documents.len), .retrieval_mode = .lexical, .title = title };
+    return engine.queryTokenized(allocator, query_text, &.{}, result_output, options);
+}
+
 test "published snapshot opens and returns cited hybrid evidence" {
     const documents = [_]hybrid.Document{
         .{ .id = "both", .text = "hybrid retrieval combines ranks", .vector = &.{ 0.8, 0.2 }, .path = "guides/hybrid.md", .start_line = 1, .end_line = 6 },

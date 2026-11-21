@@ -1,0 +1,4 @@
+# searchd ReleaseSmall (zig build -Doptimize=ReleaseSmall, macOS arm64), each from a fresh git archive with its own caches
+5242a38: 1151208 B, sha256 4837ffd3b0d54804ef0bc37a8a11b3d94a75a3a2b8bdfca4967ed640ea22c1da; Build Summary: 6/6 steps succeeded
+422d807: 1151208 B, sha256 4837ffd3b0d54804ef0bc37a8a11b3d94a75a3a2b8bdfca4967ed640ea22c1da; Build Summary: 6/6 steps succeeded
+cmp 5242a38 422d807: identical
