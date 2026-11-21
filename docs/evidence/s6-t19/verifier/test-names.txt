@@ -1,0 +1,23 @@
+## vcompare.py main-debug head-debug
+numbered test lines: main 592, head 592
+(name,status) pairs: main 592, head 592; distinct names main 590, head 590
+only main: []
+only head: []
+step/prefix changed: [('filename results expose source-based match sections and readable citations', [('operations', 'filename_response')], [('tests', 'filename_response_test')]), ('ss_index_folder lists every max trace and resets the list between calls', [('interfaces', 'abi')], [('tests', 'abi_index_folder_test')])]
+names on one side only: []
+status counts main: Counter({'OK': 547, 'other': 45})
+status counts head: Counter({'OK': 547, 'other': 45})
+other lines only main: [(('core', 'import best-of-5: 125 docs N ms, 1000 docs N ms; growth 7.33x'), 1), (('core', 'nfc best-of-3: 256 KB mark N ms plain N ms; 1 MB mark N ms plain N ms; growth 3.95x'), 1), (('core', 'nfc jamo best-of-3: 256 KB jamo N ms twin N ms; 1 MB jamo N ms twin N ms; growth 3.81x'), 1), (('interfaces', 'All 26 tests passed.'), 1), (('operations', 'All 10 tests passed.'), 1), (('tests', '284 passed; 9 skipped; 0 failed.'), 1)]
+other lines only head: [(('core', 'import best-of-5: 125 docs N ms, 1000 docs N ms; growth 7.25x'), 1), (('core', 'nfc best-of-3: 256 KB mark N ms plain N ms; 1 MB mark N ms plain N ms; growth 3.90x'), 1), (('core', 'nfc jamo best-of-3: 256 KB jamo N ms twin N ms; 1 MB jamo N ms twin N ms; growth 3.75x'), 1), (('interfaces', 'All 25 tests passed.'), 1), (('operations', 'All 9 tests passed.'), 1), (('tests', '286 passed; 9 skipped; 0 failed.'), 1)]
+
+## vcompare.py main-rs head-rs
+numbered test lines: main 592, head 592
+(name,status) pairs: main 592, head 592; distinct names main 590, head 590
+only main: []
+only head: []
+step/prefix changed: [('filename results expose source-based match sections and readable citations', [('operations', 'filename_response')], [('tests', 'filename_response_test')]), ('ss_index_folder lists every max trace and resets the list between calls', [('interfaces', 'abi')], [('tests', 'abi_index_folder_test')])]
+names on one side only: []
+status counts main: Counter({'OK': 547, 'other': 45})
+status counts head: Counter({'OK': 547, 'other': 45})
+other lines only main: [(('core', 'import best-of-5: 125 docs N ms, 1000 docs N ms; growth 4.70x'), 1), (('core', 'nfc best-of-3: 256 KB mark N ms plain N ms; 1 MB mark N ms plain N ms; growth 3.71x'), 1), (('core', 'nfc jamo best-of-3: 256 KB jamo N ms twin N ms; 1 MB jamo N ms twin N ms; growth 4.03x'), 1), (('interfaces', 'All 26 tests passed.'), 1), (('operations', 'All 10 tests passed.'), 1), (('tests', '284 passed; 9 skipped; 0 failed.'), 1)]
+other lines only head: [(('core', 'import best-of-5: 125 docs N ms, 1000 docs N ms; growth 4.67x'), 1), (('core', 'nfc best-of-3: 256 KB mark N ms plain N ms; 1 MB mark N ms plain N ms; growth 3.93x'), 1), (('core', 'nfc jamo best-of-3: 256 KB jamo N ms twin N ms; 1 MB jamo N ms twin N ms; growth 4.09x'), 1), (('interfaces', 'All 25 tests passed.'), 1), (('operations', 'All 9 tests passed.'), 1), (('tests', '286 passed; 9 skipped; 0 failed.'), 1)]
