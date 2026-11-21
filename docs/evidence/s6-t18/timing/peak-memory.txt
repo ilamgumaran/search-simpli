@@ -1,0 +1,7 @@
+# Peak memory of one `searchd query` process on timing-10k, main (40932b0) and head (907e65d), ReleaseSmall, 10 alternating runs per query, /usr/bin/time -l: count | query | build | maximum resident set size (B) | peak memory footprint (B)
+   1 doc 00000|head|30490624|29442384
+   9 doc 00000|head|30507008|29458768
+   1 doc 00000|main|30490624|29442384
+   9 doc 00000|main|30507008|29458768
+  10 from|head|30326784|29294928
+  10 from|main|30326784|29294928

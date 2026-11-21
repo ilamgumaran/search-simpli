@@ -1,0 +1,6 @@
+# The error sets, read from the compiler (a probe test in a copy of 907e65d's zig/src, <S>/probe-errors; not committed)
+1/1 zz_probe_errors.test.error sets...engine.queryOneShot -> []hybrid.Result: OutOfMemory IndexTooLarge InvalidUtf8 InvalidQueryText WorkspaceTooSmall VectorDimensionMismatch LexicalScoreCountMismatch
+engine.Engine.queryTokenized -> []hybrid.Result: OutOfMemory IndexTooLarge InvalidUtf8 InvalidQueryText WorkspaceTooSmall VectorDimensionMismatch LexicalScoreCountMismatch
+title_field.derive -> title_field.Derived: OutOfMemory IndexTooLarge InvalidUtf8
+OK
+All 1 tests passed.

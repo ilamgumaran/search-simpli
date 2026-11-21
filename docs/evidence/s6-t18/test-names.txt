@@ -1,0 +1,105 @@
+# names.sh COMMIT MODE <S> (scripts/prototypes/s6t18/names.sh): main 40932b0, head 907e65d, each a fresh git archive with its own caches
+
+## 40932b0 Debug
+40932b0 Debug: check_test_counts.py --run -- -Doptimize=Debug: exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+40932b0 Debug: 674 lines; 579 OK, 9 SKIP, 22 FAIL or error
+40932b0 Debug: zig build test-abi: exit 0; Build Summary: 8/8 steps succeeded;    +- compile exe abi_test Debug native success 3s MaxRSS:321M
+
+## 40932b0 ReleaseSmall
+40932b0 ReleaseSmall: check_test_counts.py --run -- -Doptimize=ReleaseSmall: exit 0
+Build Summary: 15/15 steps succeeded; 579/588 tests passed (9 skipped)
++- run test core 253 pass (253 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 253 | 253 (253 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 588 tests: every step ran the tests the listing has, and the static checker passes)
+40932b0 ReleaseSmall: 674 lines; 579 OK, 9 SKIP, 22 FAIL or error
+40932b0 ReleaseSmall: zig build test-abi: exit 0; Build Summary: 8/8 steps succeeded;    +- compile exe abi_test ReleaseSmall native success 114ms MaxRSS:68M
+
+## 907e65d Debug
+(summary from counts.txt)
+Build Summary: 15/15 steps succeeded; 583/592 tests passed (9 skipped)
++- run test core 257 pass (257 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 257 | 257 (257 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 592 tests: every step ran the tests the listing has, and the static checker passes)
+names.txt: 678 lines; 583 OK, 9 SKIP, 0 FAIL lines (22 lines contain FAIL or error: test names with the word error)
+abi_test: 24/24 checks passed
+Build Summary: 8/8 steps succeeded
++- run exe abi_test success 260ms
+   +- compile exe abi_test Debug native success 3s MaxRSS:322M
+
+## 907e65d ReleaseSmall
+907e65d ReleaseSmall: check_test_counts.py --run -- -Doptimize=ReleaseSmall: exit 0
+Build Summary: 15/15 steps succeeded; 583/592 tests passed (9 skipped)
++- run test core 257 pass (257 total)
++- run test operations 10 pass (10 total)
++- run test interfaces 26 pass (26 total)
++- run test tests 284 pass, 9 skip (293 total)
++- run test 6 pass (6 total)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+| core | `run test core` | 257 | 257 (257 pass) | ok |
+| operations | `run test operations` | 10 | 10 (10 pass) | ok |
+| interfaces | `run test interfaces` | 26 | 26 (26 pass) | ok |
+| tests | `run test tests` | 293 | 293 (284 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 592 tests: every step ran the tests the listing has, and the static checker passes)
+907e65d ReleaseSmall: 678 lines; 583 OK, 9 SKIP, 22 FAIL or error
+907e65d ReleaseSmall: zig build test-abi: exit 0; Build Summary: 8/8 steps succeeded;    +- compile exe abi_test ReleaseSmall native success 136ms MaxRSS:69M
+
+## names.txt, main against head, Debug
+1c1
+< core: All 253 tests passed.
+---
+> core: All 257 tests passed.
+243a244,247
+> core: query_one_shot_test.test.one-shot query: a scoped open's folder field is used, derived once, never by the call...OK
+> core: query_one_shot_test.test.one-shot query: invalid UTF-8 is refused, and out of memory is returned...OK
+> core: query_one_shot_test.test.one-shot query: ranks with the title field (a title-only file is found)...OK
+> core: query_one_shot_test.test.one-shot query: the answers of deriving the field and querying, allocation for allocation...OK
+
+## names.txt, main against head, ReleaseSmall
+1c1
+< core: All 253 tests passed.
+---
+> core: All 257 tests passed.
+243a244,247
+> core: query_one_shot_test.test.one-shot query: a scoped open's folder field is used, derived once, never by the call...OK
+> core: query_one_shot_test.test.one-shot query: invalid UTF-8 is refused, and out of memory is returned...OK
+> core: query_one_shot_test.test.one-shot query: ranks with the title field (a title-only file is found)...OK
+> core: query_one_shot_test.test.one-shot query: the answers of deriving the field and querying, allocation for allocation...OK
+FAIL lines in head's ReleaseSmall names.txt: 0
+
+## C ABI (abi_test, zig build test-abi)
+40932b0-Debug: abi_test: 24/24 checks passed
+907e65d-Debug: abi_test: 24/24 checks passed
+40932b0-ReleaseSmall: abi_test: 24/24 checks passed
+907e65d-ReleaseSmall: abi_test: 24/24 checks passed

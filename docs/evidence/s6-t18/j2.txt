@@ -1,0 +1,14 @@
+# J2, head (searchd <S>/bin-head/bin/searchd, built from 907e65d; the run reads the commit from the worktree's HEAD, 19a960a, whose zig/ is 907e65d's)
+## Python reference: PYTHONHASHSEED=0 relevance_smoke.py --pack j2, then j2_gate.py
+    overall       95      0.832   0.915    0.896     0.932
+    control rows not at rank 1: none
+    negatives: 61/64 return hits
+J2 gate: pass
+## Native: ci_j2_native.py run --expect-queries 290, then j2_gate.py and differences
+J2 native: searchd sha256 4837ffd3b0d54804ef0bc37a8a11b3d94a75a3a2b8bdfca4967ed640ea22c1da (1151208 B, ReleaseSmall, zig 0.16.0) built from commit 19a960a2005135579b96e594e71278ea2f538053; natives digest 9feb979f3182f16df94ff007ccb7be4d9d018ba503093a0076916a49ca341d6a (matches the committed SOURCE-SHA256: True); policies: analyzer_id analyzer-v2, chunkers ['line-window-v1', 'md-section-v1'], filename_policy_id filename-field-v1, title_policy_id title-field-v1, fuzzy_policy_id fuzzy-v1, fold_policy_id fold-groups-v3
+J2 native: 290 queries, each with a record under content and both; none skipped
+  content: control MRR@10 1.000, misspelling MRR@10 0.859, morphology MRR@10 0.808, accent MRR@10 0.846, tamil MRR@10 1.000, title MRR@10 0.955, phrase MRR@10 0.900, title-heldout MRR@10 1.000, misspelling-heldout MRR@10 0.958, morphology-heldout MRR@10 0.833, accent-heldout MRR@10 0.955, tamil-heldout MRR@10 0.962, verbform-heldout MRR@10 0.974, verbform-cross MRR@10 1.000, precision-control MRR@10 1.000, misspelling-short MRR@10 0.962, misspelling-opening MRR@10 0.214
+  both: control MRR@10 1.000, misspelling MRR@10 0.844, morphology MRR@10 0.795, accent MRR@10 0.847, tamil MRR@10 1.000, title MRR@10 0.955, phrase MRR@10 0.900, title-heldout MRR@10 1.000, misspelling-heldout MRR@10 0.958, morphology-heldout MRR@10 0.857, accent-heldout MRR@10 0.909, tamil-heldout MRR@10 0.962, verbform-heldout MRR@10 0.947, verbform-cross MRR@10 1.000, precision-control MRR@10 1.000, misspelling-short MRR@10 0.962, misspelling-opening MRR@10 0.219
+J2 gate: pass
+J2 native against the baseline's searchd cells (recorded 2026-11-12, binary 8b1f65c1d797): 0 rows differ
+::notice title=J2 x86_64 vs baseline::no row differs: every first grade-2 rank (452 over both variants), slice metric and negative equals the macOS arm64 baseline

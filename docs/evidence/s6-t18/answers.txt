@@ -1,0 +1,35 @@
+# same_answers.py <S>/bin-main/bin/searchd <S>/bin-head/bin/searchd (main 40932b0, head 907e65d, ReleaseSmall): each case's stdout, stderr and exit compared byte for byte
+J2 index: 9 files written by each binary; 0 differ []
+J2 queries: 290 (283 knowledge, the rest find rows, their text asked as a query too)
+timing-10k index: 7 files written by each binary; 0 differ []
+prose-10k index: 7 files written by each binary; 0 differ []
+tamil-10k index: 7 files written by each binary; 0 differ []
+j2 query: 290 cases
+j2 query --json: 290 cases
+j2 query --json --top-k 25: 290 cases
+j2 query --json --search-field both: 290 cases
+j2 query --json --search-field filename: 290 cases
+j2 evidence: 290 cases
+j2 search: 290 cases
+j2 search --json: 290 cases
+j2 search --evidence: 290 cases
+timing-10k query: 15 cases
+timing-10k query --json: 15 cases
+timing-10k evidence: 15 cases
+timing-10k search: 7 cases
+prose-10k query: 15 cases
+prose-10k query --json: 15 cases
+prose-10k evidence: 15 cases
+tamil-10k query: 15 cases
+tamil-10k query --json: 15 cases
+tamil-10k evidence: 15 cases
+all: 2752 cases, 0 differ
+
+# differential_searchd.sh: the Python suite (head's tests) with SEARCHD_BINARY a wrapper running both binaries on every call and comparing stdout, stderr and exit
+Ran 574 tests in 76.192s
+OK
+calls compared: 856; by kind:
+ 134 same evidence
+ 468 same query
+ 254 same search
+DIFFER lines: 0
