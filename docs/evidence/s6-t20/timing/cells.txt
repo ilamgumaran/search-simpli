@@ -1,0 +1,204 @@
+runs [1, 2, 3, 4, 5]; variants ['main', 'main2', 'cl', 'ci', 'head']; 1-, 5- and 15-minute load before each process 2.05-4.51
+
+## prose-10k
+cell                                           main us    d main2       d cl       d ci     d head      d%    T us    h-ctl  verdict  band  answers
+open                                           11833.6     -239.1      -93.5     -271.3     -185.7    -1.6   118.3    -92.2  pass     0/5
+warm both across lengthy seeming 04276           548.5       -1.8      -16.8       -2.5      -23.3    -4.2    10.0    -21.4  pass     0/5  1
+warm both bazecha                                 12.5       +0.0       -0.2       +0.4       -0.0    -0.3    10.0     -0.4  pass     0/5  1
+warm both benico                                  13.4       +0.0       -0.1       +0.5       -0.1    -0.6    10.0     -0.6  pass     0/5  1
+warm both drink                                  372.3       -3.6       -0.3       -2.0       +1.4    +0.4    10.0     +1.7  pass     2/5  1
+warm both hashing                                182.2       -0.6       -0.7       +0.6       +0.6    +0.3    10.0     +0.0  pass     2/5  1
+warm both have                                   343.3       +1.8       +0.3       -0.3       +2.2    +0.6    10.0     +0.4  pass     4/5  1
+warm both have drink                             573.8       -0.7      -27.5       -4.7      -18.9    -3.3    10.0    -18.3  pass     0/5  1
+warm both hybrid retrieval                        19.7       -0.2       -0.3       +0.7       +0.0    +0.2    10.0     -0.7  pass     0/5  1
+warm both retrieval hybrid                        19.3       +0.1       +0.5       +1.0       +0.0    +0.2    10.0     -1.0  pass     0/5  1
+warm both system                                 357.4       -2.5       -1.9       -1.3       -0.5    -0.1    10.0     +0.9  pass     1/5  1
+warm both system systems                         377.0       -2.0       +1.1       -1.0       -2.7    -0.7    10.0     -3.8  pass     0/5  1
+warm both systems system                         376.3       -0.0       +2.7       +1.4       -2.8    -0.7    10.0     -5.5  pass     0/5  1
+warm both the                                    509.6       -0.5       +2.7       -4.0       +0.8    +0.2    10.0     -1.9  pass     3/5  1
+warm both the within                             667.1       -6.6      -33.0      -15.8      -38.3    -5.7    10.0    -31.7  pass     0/5  1
+warm both within                                 444.5       -2.2       -1.8       +3.7       +5.9    +1.3    10.0     +2.2  pass     4/5  1
+warm content across lengthy seeming 04276        216.8       -0.2       +0.2       -0.5       -4.3    -2.0    10.0     -4.5  pass     0/5  1
+warm content bazecha                              10.0       -0.2       -0.2       +0.3       -0.2    -2.1    10.0     -0.5  pass     0/5  1
+warm content benico                               11.1       -0.1       -0.4       +0.6       +0.0    +0.0    10.0     -0.6  pass     0/5  1
+warm content drink                                64.5       -0.1       -0.3       -0.4       -0.4    -0.6    10.0     -0.3  pass     0/5  1
+warm content hashing                              27.6       -0.1       +0.0       +0.2       -0.2    -0.6    10.0     -0.4  pass     0/5  1
+warm content have                                181.3       -1.0       -0.8       -1.0       -2.7    -1.5    10.0     -1.9  pass     0/5  1
+warm content have drink                          298.1       +0.4       -1.2       -2.0       -1.2    -0.4    10.0     -1.5  pass     0/5  1
+warm content hybrid retrieval                     16.8       -0.2       -0.1       +0.5       -0.1    -0.7    10.0     -0.6  pass     0/5  1
+warm content retrieval hybrid                     16.8       -0.1       -0.2       +0.5       -0.3    -1.5    10.0     -0.8  pass     0/5  1
+warm content system                               75.4       -0.3       +0.0       -0.4       -0.6    -0.8    10.0     -0.7  pass     1/5  1
+warm content system systems                       91.1       +0.0       -0.2       -0.2       -0.1    -0.1    10.0     -0.1  pass     0/5  1
+warm content systems system                       91.3       +0.3       +0.0       -0.0       -0.3    -0.4    10.0     -0.6  pass     0/5  1
+warm content the                                 264.0       -1.2       -2.7       -0.3       -3.7    -1.4    10.0     -3.4  pass     0/5  1
+warm content the within                          348.1       -0.8       -1.6       -1.4       -1.9    -0.6    10.0     -1.1  pass     1/5  1
+warm content within                               96.2       +0.0       -0.5       -0.2       -0.9    -1.0    10.0     -0.9  pass     0/5  1
+warm filename across lengthy seeming 04276       347.9       -3.4       -3.2       +0.8       -1.3    -0.4    10.0     -2.2  pass     2/5  1
+warm filename bazecha                              3.0       -0.0       -0.0       -0.1       -0.1    -2.8    10.0     -0.0  pass     0/5  1
+warm filename benico                               2.9       +0.0       +0.0       -0.1       -0.0    -1.4    10.0     -0.0  pass     2/5  1
+warm filename drink                              201.7       -3.0       -3.4       -2.0       +0.2    +0.1    10.0     +2.2  pass     1/5  1
+warm filename hashing                              3.0       +0.0       -0.1       -0.1       +0.0    +0.0    10.0     +0.0  pass     1/5  1
+warm filename have                                 3.0       -0.2       -0.2       -0.1       -0.2    -5.6    10.0     -0.0  pass     0/5  1
+warm filename have drink                         205.9       -3.2       -4.7       -3.6       -1.8    -0.9    10.0     +1.3  pass     1/5  1
+warm filename hybrid retrieval                     3.5       +0.0       -0.1       -0.0       +0.0    +1.2    10.0     +0.0  pass     0/5  1
+warm filename retrieval hybrid                     3.5       +0.0       +0.0       +0.0       +0.1    +2.4    10.0     +0.0  pass     1/5  1
+warm filename system                             282.2       -2.6       -5.8       +1.5       +3.0    +1.1    10.0     +1.5  pass     3/5  1
+warm filename system systems                     291.5       -2.0       -3.1       -2.8       -2.8    -1.0    10.0     -0.8  pass     2/5  1
+warm filename systems system                     293.5       -0.9       -1.8       -1.8       -3.8    -1.3    10.0     -2.9  pass     0/5  1
+warm filename the                                  2.9       -0.2       -0.2       -0.1       -0.2    -5.7    10.0     -0.0  pass     1/5  1
+warm filename the within                         319.2       -1.9       -5.0       -1.1       +0.5    +0.2    10.0     +1.6  pass     1/5  1
+warm filename within                             320.2       -4.5       -6.9       -1.7       -0.1    -0.0    10.0     +1.6  pass     2/5  1
+find phrase bottle and orchard                   122.0       -7.5       -7.7      -38.4       -2.6    -2.2    10.0     +4.8  pass     0/5  1
+find phrase partly all rougher                    32.7       -1.2       -1.2       -5.6       -0.8    -2.4    10.0     +0.4  pass     2/5  1
+find phrase you get bowls                        112.0      +11.7       +0.3       +4.3       +9.0    +8.0    10.0     -2.7  pass     3/5  1
+find prefix drin*                                366.7       +2.2       +2.0       +0.2       +1.0    +0.3    10.0     -1.2  pass     1/5  1
+find prefix with*                               7761.5      -11.1      -64.9       -1.9      -45.9    -0.6    77.6    -44.0  pass     0/5  1
+find words across lengthy seeming 04276            2.7       +0.0       -0.0       -0.0       +0.0    +1.6    10.0     +0.0  pass     1/5  1
+find words the                                 13859.9      -82.3     -253.5     -130.7     -242.1    -1.7   138.6   -159.9  pass     0/5  1
+find words the within                           2157.5       -8.5      -43.1      -27.2      -26.1    -1.2    21.6    -17.6  pass     0/5  1
+find words within                               1176.2       +5.1       -3.2       -2.2       -7.9    -0.7    11.8    -13.0  pass     1/5  1
+first_query                                     4645.3      +26.4      +37.2      -39.2       -7.9    -0.2    46.5    -45.1  shown    0/5
+first_find                                     31842.7      +47.5      -24.3     -632.6    -1170.9    -3.7   318.4  -1218.4  shown    0/5
+first_filename                                  2083.5       +1.4      +23.4       +2.5       -8.5    -0.4    20.8    -31.8  shown    0/5
+first_both                                      6667.2      -39.4      +74.5      -20.2      -34.8    -0.5    66.7   -109.3  shown    0/5
+
+## tamil-10k
+cell                                           main us    d main2       d cl       d ci     d head      d%    T us    h-ctl  verdict  band  answers
+open                                            7996.5      -35.2      -96.5      -58.3      -86.9    -1.1    80.0    -51.7  pass     1/5
+warm both bazecha                                  5.9       -0.0       +0.0       +0.1       -0.0    -0.7    10.0     -0.1  pass     0/5  1
+warm both benico                                   5.8       -0.0       -0.0       -0.0       -0.0    -0.7    10.0     -0.0  pass     0/5  1
+warm both doc 00000                              784.7       +0.3       -5.0       -5.9       -3.3    -0.4    10.0     -3.6  pass     1/5  1
+warm both hashing                                  6.6       -0.1       +0.0       +0.0       -0.0    -0.6    10.0     -0.1  pass     0/5  1
+warm both hybrid retrieval                         7.8       -0.0       -0.1       +0.1       +0.4    +4.8    10.0     +0.3  pass     3/5  1
+warm both retrieval hybrid                         7.8       -0.1       +0.1       +0.1       +0.3    +4.3    10.0     +0.2  pass     2/5  1
+warm both system                                   5.8       -0.1       -0.1       -0.0       -0.0    -0.7    10.0     -0.0  pass     0/5  1
+warm both system systems                           8.5       -0.1       +0.3       +0.3       +0.3    +3.4    10.0     -0.0  pass     0/5  1
+warm both systems system                           8.6       -0.1       +0.2       +0.2       +0.2    +2.4    10.0     +0.0  pass     0/5  1
+warm both கீகசை                                  720.5       +1.2       -4.6       -7.0       -5.2    -0.7    10.0     -6.4  pass     0/5  1
+warm both கீகசை றூகுஞங்கள்                       672.4       +2.6       -4.6       -7.5       -4.3    -0.6    10.0     -6.9  pass     0/5  1
+warm both சைகீளையில்                             393.6       +0.4       -4.4       -4.6       -0.3    -0.1    10.0     -0.7  pass     0/5  1
+warm both டூகனை                                  721.1       +1.8       -4.9       -6.3       -5.3    -0.7    10.0     -7.1  pass     0/5  1
+warm both டூகனை சைகீளையில்                       673.0       +0.5       -3.2       -7.0       -1.1    -0.2    10.0     -1.6  pass     1/5  1
+warm both றூகுஞங்கள்                             386.8       +1.5       -3.6       -3.3       +1.4    +0.4    10.0     -0.1  pass     1/5  1
+warm content bazecha                               3.4       -0.1       -0.0       -0.1       -0.0    -1.2    10.0     +0.0  pass     1/5  1
+warm content benico                                3.3       -0.0       -0.0       -0.0       -0.0    -1.2    10.0     +0.0  pass     0/5  1
+warm content doc 00000                           126.6       -0.8       -2.0       -1.3       +0.4    +0.3    10.0     +1.2  pass     1/5  1
+warm content hashing                               4.1       -0.0       +0.0       -0.0       -0.0    -1.0    10.0     -0.1  pass     0/5  1
+warm content hybrid retrieval                      4.8       +0.0       +0.0       +0.0       +0.0    +0.0    10.0     -0.0  pass     0/5  1
+warm content retrieval hybrid                      4.8       +0.0       +0.0       +0.0       +0.0    +0.0    10.0     -0.0  pass     0/5  1
+warm content system                                3.3       -0.0       +0.0       -0.0       -0.0    -0.0    10.0     -0.0  pass     1/5  1
+warm content system systems                        5.6       +0.0       +0.2       +0.3       +0.0    +0.7    10.0     -0.3  pass     0/5  1
+warm content systems system                        5.6       +0.0       +0.1       +0.3       +0.0    +0.7    10.0     -0.2  pass     0/5  1
+warm content கீகசை                               234.8       +0.5       -2.2       -0.4       -2.9    -1.2    10.0     -3.4  pass     0/5  1
+warm content கீகசை றூகுஞங்கள்                    287.6       -1.0       +4.6       +3.1       +2.3    +0.8    10.0     -2.3  pass     0/5  1
+warm content சைகீளையில்                           33.4       -0.7       -1.0       -0.8       -0.1    -0.2    10.0     +0.6  pass     1/5  1
+warm content டூகனை                               231.5       -0.2       -0.3       +4.1       -4.2    -1.8    10.0     -8.3  pass     0/5  1
+warm content டூகனை சைகீளையில்                    302.0       +2.5       +2.3       +2.5       -0.9    -0.3    10.0     -3.4  pass     0/5  1
+warm content றூகுஞங்கள்                           31.1       +0.3       -0.3       -0.1       +0.0    +0.0    10.0     -0.3  pass     0/5  1
+warm filename bazecha                              2.9       +0.0       -0.0       -0.0       +0.0    +0.0    10.0     -0.0  pass     0/5  1
+warm filename benico                               2.9       +0.0       -0.0       -0.0       +0.0    +0.0    10.0     +0.0  pass     0/5  1
+warm filename doc 00000                          693.1       +3.0       -4.4       -4.7       +1.8    +0.3    10.0     -1.2  pass     0/5  1
+warm filename hashing                              2.9       -0.0       -0.0       +0.0       +0.0    +1.5    10.0     +0.0  pass     2/5  1
+warm filename hybrid retrieval                     3.5       +0.0       -0.0       -0.0       +0.0    +0.0    10.0     +0.0  pass     1/5  1
+warm filename retrieval hybrid                     3.5       -0.0       -0.0       -0.0       +0.0    +0.0    10.0     +0.0  pass     1/5  1
+warm filename system                               2.8       +0.0       -0.0       +0.0       +0.0    +0.0    10.0     +0.0  pass     0/5  1
+warm filename system systems                       3.4       +0.1       -0.0       +0.0       +0.0    +1.2    10.0     -0.0  pass     1/5  1
+warm filename systems system                       3.5       -0.1       -0.1       -0.1       +0.0    +0.0    10.0     +0.1  pass     0/5  1
+warm filename கீகசை                                3.3       -0.0       -0.1       -0.1       -0.1    -2.5    10.0     -0.0  pass     0/5  1
+warm filename கீகசை றூகுஞங்கள்                     6.6       +0.1       -0.0       +0.0       +0.0    +0.0    10.0     -0.1  pass     1/5  1
+warm filename சைகீளையில்                           5.3       -0.0       -0.1       -0.2       -0.1    -2.4    10.0     -0.1  pass     0/5  1
+warm filename டூகனை                                3.3       +0.0       -0.0       -0.1       -0.1    -3.8    10.0     -0.1  pass     0/5  1
+warm filename டூகனை சைகீளையில்                     6.8       +0.1       +0.0       +0.0       +0.0    +0.6    10.0     -0.0  pass     1/5  1
+warm filename றூகுஞங்கள்                           4.9       -0.0       -0.0       -0.1       -0.0    -0.9    10.0     -0.0  pass     0/5  1
+find phrase கேடேயி குகடம் கிகசம்                  54.1       -1.8       +0.3       -3.4       +2.2    +4.0    10.0     +1.8  pass     3/5  1
+find phrase டூகனை சேகணம் சூகஞம்                  860.1       -3.7       +3.0       +0.9       -1.9    -0.2    10.0     -4.9  pass     1/5  1
+find phrase நூடைஞத்தின் சாகறம் லேசிதையின்          8.6       -0.0       +0.1       -0.1       +0.0    +0.0    10.0     -0.1  pass     0/5  1
+find prefix சைகீ*                                 65.7       +0.0       +1.5       +0.6       +0.5    +0.7    10.0     -1.0  pass     1/5  1
+find prefix டூகன*                               2874.9       +2.2      +28.0      +19.2       +1.2    +0.0    28.7    -26.8  pass     0/5  1
+find prefix றூகு*                                 62.3       -0.1       +1.1       +0.5       +0.6    +0.9    10.0     -0.5  pass     1/5  1
+find words doc 00000                               2.0       +0.0       -0.0       -0.0       +0.0    +0.0    10.0     -0.0  pass     1/5  1
+find words கீகசை                                2849.6       +2.2      +20.4      +19.4       +9.9    +0.3    28.5    -10.5  pass     0/5  1
+find words கீகசை றூகுஞங்கள்                       49.9       +0.0       +0.9       -1.6       +2.8    +5.6    10.0     +1.9  pass     4/5  1
+find words றூகுஞங்கள்                             34.3       -0.4       +0.7       +0.3       +0.5    +1.3    10.0     -0.2  pass     1/5  1
+first_query                                    12928.9      -10.5      +99.7     +289.9     +268.2    +2.1   129.3    -21.7  shown    2/5
+first_find                                      8807.0      -73.0     +102.9     -131.3      -21.7    -0.2    88.1   -124.7  shown    0/5
+first_filename                                  1274.2       -5.5      +16.8       -9.0      -17.2    -1.3    12.7    -33.9  shown    1/5
+first_both                                     14084.5       -8.8     +161.6     +242.4     +256.9    +1.8   140.8    +14.5  shown    2/5
+
+## timing-10k
+cell                                           main us    d main2       d cl       d ci     d head      d%    T us    h-ctl  verdict  band  answers
+open                                            5389.3       -0.2      -25.1      +18.1       +3.1    +0.1    53.9    -15.0  pass     1/5
+warm both badamo                                 109.5       -0.7       -3.4       -0.0       -0.8    -0.8    10.0     -0.8  pass     0/5  1
+warm both bazecha                                110.9       -1.2       -2.1       -1.1       -0.3    -0.3    10.0     +0.8  pass     1/5  1
+warm both belohu                                 110.0       -0.3       -3.4       -1.6       -0.4    -0.4    10.0     -0.1  pass     1/5  1
+warm both benico                                 105.1       -1.4       -3.4       -2.0       -1.0    -1.0    10.0     +0.4  pass     0/5  1
+warm both doc 00000                              337.8       +3.4       +1.9       +0.6       -0.9    -0.3    10.0     -4.3  pass     1/5  1
+warm both from                                   308.3       -1.1       +1.5       -3.1       -2.8    -0.9    10.0     -4.3  pass     1/5  1
+warm both from badamo                            316.8       -1.0       -0.6       -2.0       -5.1    -1.6    10.0     -4.5  pass     0/5  1
+warm both hashing                                192.6       -0.2       -1.5       -2.5       -2.3    -1.2    10.0     -2.0  pass     0/5  1
+warm both hybrid retrieval                       158.0       -0.2       -0.7       -0.4       -0.9    -0.6    10.0     -0.7  pass     0/5  1
+warm both retrieval hybrid                       158.2       -0.4       -1.5       -0.8       -0.9    -0.6    10.0     -0.5  pass     0/5  1
+warm both system                                 216.7       -0.8       -1.9       -3.5       -3.2    -1.5    10.0     -2.3  pass     0/5  1
+warm both system systems                         250.8       -0.6       -2.5       -4.2       -4.0    -1.6    10.0     -3.5  pass     0/5  1
+warm both systems system                         250.3       -0.2       -2.8       -4.9       -4.8    -1.9    10.0     -4.7  pass     0/5  1
+warm both were                                   309.3       -1.4       +2.7       -2.5       -1.8    -0.6    10.0     -4.5  pass     0/5  1
+warm both were belohu                            325.4       -0.7       +0.6       -2.4       -2.9    -0.9    10.0     -3.5  pass     0/5  1
+warm content badamo                               12.8       -0.0       +0.1       +0.1       -0.1    -1.0    10.0     -0.3  pass     0/5  1
+warm content bazecha                              11.7       +0.0       +0.1       +0.1       -0.0    -0.4    10.0     -0.2  pass     0/5  1
+warm content belohu                               12.5       -0.0       +0.1       +0.0       -0.1    -1.0    10.0     -0.2  pass     0/5  1
+warm content benico                               11.9       +0.1       +0.1       -0.0       -0.1    -0.7    10.0     -0.2  pass     0/5  1
+warm content doc 00000                           113.2       -1.4       -1.3       -2.8       -0.4    -0.3    10.0     +0.9  pass     0/5  1
+warm content from                                156.4       +2.0       +0.9       +1.1       -1.9    -1.2    10.0     -3.9  pass     0/5  1
+warm content from badamo                         166.2       +0.5       +0.5       -0.3       -2.3    -1.4    10.0     -2.8  pass     0/5  1
+warm content hashing                              80.9       +0.4       -0.1       +0.1       -0.5    -0.6    10.0     -0.8  pass     0/5  1
+warm content hybrid retrieval                     52.0       +0.2       -0.3       +0.0       -0.1    -0.2    10.0     -0.3  pass     0/5  1
+warm content retrieval hybrid                     51.7       +0.7       +0.2       +0.2       +0.4    +0.7    10.0     -0.3  pass     2/5  1
+warm content system                              100.3       +0.4       -0.1       +0.3       -0.0    -0.0    10.0     -0.4  pass     0/5  1
+warm content system systems                      125.6       +1.8       +1.0       -0.8       -1.2    -0.9    10.0     -3.0  pass     0/5  1
+warm content systems system                      124.5       +2.0       +2.6       -0.1       +0.3    +0.2    10.0     -2.3  pass     0/5  1
+warm content were                                158.2       +2.0       +0.5       +0.7       -2.0    -1.2    10.0     -3.9  pass     0/5  1
+warm content were belohu                         167.8       +0.7       -0.2       -0.8       -1.9    -1.1    10.0     -2.6  pass     0/5  1
+warm filename badamo                               2.8       -0.0       -0.0       +0.0       +0.0    +0.0    10.0     +0.0  pass     0/5  1
+warm filename bazecha                              3.0       -0.1       -0.0       -0.0       -0.0    -1.4    10.0     +0.0  pass     0/5  1
+warm filename belohu                               2.8       +0.0       -0.0       +0.0       +0.0    +1.5    10.0     +0.0  pass     0/5  1
+warm filename benico                               2.9       -0.0       +0.0       -0.0       -0.0    -1.4    10.0     -0.0  pass     0/5  1
+warm filename doc 00000                          247.0       +0.3       +0.5       -1.0       -1.6    -0.6    10.0     -2.1  pass     0/5  1
+warm filename from                                 2.7       -0.0       +0.0       +0.0       +0.0    +0.0    10.0     +0.0  pass     1/5  1
+warm filename from badamo                          3.3       +0.0       +0.0       +0.0       +0.0    +0.0    10.0     +0.0  pass     1/5  1
+warm filename hashing                              3.0       -0.0       -0.1       -0.1       -0.1    -2.8    10.0     -0.0  pass     0/5  1
+warm filename hybrid retrieval                     3.5       -0.0       -0.1       +0.0       -0.1    -2.4    10.0     -0.1  pass     1/5  1
+warm filename retrieval hybrid                     3.5       -0.0       -0.0       +0.1       -0.0    -0.0    10.0     -0.1  pass     0/5  1
+warm filename system                               2.9       +0.0       -0.1       +0.0       -0.0    -1.5    10.0     -0.0  pass     0/5  1
+warm filename system systems                       3.4       +0.0       -0.0       +0.0       -0.0    -0.0    10.0     -0.0  pass     0/5  1
+warm filename systems system                       3.4       -0.0       -0.0       +0.0       -0.0    -0.0    10.0     -0.0  pass     0/5  1
+warm filename were                                 2.7       +0.0       +0.0       +0.0       +0.0    +0.0    10.0     +0.0  pass     0/5  1
+warm filename were belohu                          3.3       +0.0       +0.0       +0.0       +0.0    +0.0    10.0     +0.0  pass     2/5  1
+find phrase bahuki begeno bakucu                   4.2       +0.0       +0.0       -0.0       +0.0    +1.0    10.0     +0.0  pass     1/5  1
+find phrase barigo bejoju becoco                   4.3       +0.0       -0.0       -0.0       +0.0    +0.9    10.0     -0.0  pass     2/5  1
+find phrase with befewho with                     23.6       -1.0       -1.2       -0.1       +3.9   +16.4    10.0     +4.0  pass     5/5  1
+find prefix bada*                                790.4      +16.9       +4.8       -0.3       -7.9    -1.0    10.0    -24.8  pass     1/5  1
+find prefix belo*                                791.0      +13.7       +0.3       -3.8       -3.6    -0.5    10.0    -17.4  pass     1/5  1
+find words badamo                                 21.9       +0.4       +0.2       +0.0       -0.2    -1.0    10.0     -0.6  pass     1/5  1
+find words doc 00000                               2.0       +0.0       +0.0       +0.0       +0.0    +2.1    10.0     +0.0  pass     3/5  1
+find words from                                 2927.7      +74.2      +12.3      +15.3      -24.2    -0.8    29.3    -98.4  pass     1/5  1
+find words from badamo                            38.2       +0.1       -0.2       -0.4       +4.7   +12.2    10.0     +4.5  pass     5/5  1
+first_query                                     4187.8       -7.2     +104.2      +23.7      +27.8    +0.7    41.9    -76.4  shown    0/5
+first_find                                      8626.8      -34.0     +845.9    +1145.6       -3.4    -0.0    86.3  -1149.0  shown    0/5
+first_filename                                  1266.0       +7.8      +28.3       +1.0       -9.5    -0.7    12.7    -37.7  shown    0/5
+first_both                                      5531.8      +36.9      +65.3      +35.7      -22.6    -0.4    55.3    -88.0  shown    0/5
+
+## totals (judged cells: open, warm queries, finds)
+prose-10k: 55 cells, 55 pass, 0 fail, 5 band excursions
+  largest d(head)/main among find: find phrase you get bowls +9.0 us on 112.0 us (+8.0 %)
+  largest d(head)/main among open: open  -185.7 us on 11833.6 us (-1.6 %)
+  largest d(head)/main among warm: warm filename retrieval hybrid +0.1 us on 3.5 us (+2.4 %)
+tamil-10k: 56 cells, 56 pass, 0 fail, 3 band excursions
+  largest d(head)/main among find: find words கீகசை றூகுஞங்கள் +2.8 us on 49.9 us (+5.6 %)
+  largest d(head)/main among open: open  -86.9 us on 7996.5 us (-1.1 %)
+  largest d(head)/main among warm: warm both hybrid retrieval +0.4 us on 7.8 us (+4.8 %)
+timing-10k: 55 cells, 55 pass, 0 fail, 3 band excursions
+  largest d(head)/main among find: find phrase with befewho with +3.9 us on 23.6 us (+16.4 %)
+  largest d(head)/main among open: open  +3.1 us on 5389.3 us (+0.1 %)
+  largest d(head)/main among warm: warm filename belohu +0.0 us on 2.8 us (+1.5 %)
+
+expectation (ruling 5): every judged cell passes the rule: met (0 failing)
