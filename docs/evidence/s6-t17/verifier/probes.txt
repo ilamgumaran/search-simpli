@@ -1,0 +1,18 @@
+# S6-T17 verifier probes for ruling 2 (probe-ruling2.zig.txt appended to manifest_read_test.zig in a fresh archive of each tree).
+# probe-head = 83add79; probe-main = main (12b839b) + 79694c4's test file (its two S6-T17 MANIFEST tests fail there, as expected).
+
+## probe-head
++- run test core w
+VPROBE A (lock held by another writer): chosen 10, error WriterBusy, MANIFEST 9
+VPROBE B (other writer published 10): chosen 10, error PathAlreadyExists, MANIFEST 10
+VPROBE C (other writer published 10 then 11, keep 1; MANIFEST 11 before): chosen 10, published 10, MANIFEST 10 after, open generation 10, next free 12
+Build Summary: 15/15 steps succeeded; 585/594 tests passed (9 skipped)
++- run test core 259 pass (259 total) 38s MaxRSS:413M
+
+## probe-main
++- run test core 257 pass, 2 fail (259 total)
+VPROBE A (lock held by another writer): chosen 10, error WriterBusy, MANIFEST 9
+VPROBE B (other writer published 10): chosen 10, error PathAlreadyExists, MANIFEST 10
+VPROBE C (other writer published 10 then 11, keep 1; MANIFEST 11 before): chosen 10, published 10, MANIFEST 10 after, open generation 10, next free 12
+Build Summary: 13/15 steps succeeded (1 failed); 583/594 tests passed (9 skipped, 2 failed)
++- run test core 257 pass, 2 fail (259 total)

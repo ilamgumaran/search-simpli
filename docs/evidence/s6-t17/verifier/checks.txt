@@ -1,0 +1,21 @@
+# S6-T17 verifier: other checks (fresh git archive of 83add79 unless named)
+## C ABI
+test-abi debug: abi_test: 24/24 checks passed Build Summary: 8/8 steps succeeded
+test-abi release: abi_test: 24/24 checks passed Build Summary: 8/8 steps succeeded
+## Python (ZIG_LOCAL_CACHE_DIR/ZIG_GLOBAL_CACHE_DIR = the tree's own caches)
+py-zig: FAIL: test_reference_report_names_its_policies (test_j2_gate.PythonReferenceTests) FAIL: test_file_list_is_independent_of_caller_directory (test_privacy.PrivacyTest) Ran 567 tests in 101.132s FAILED (failures=2)
+py-release: FAIL: test_reference_report_names_its_policies (test_j2_gate.PythonReferenceTests) FAIL: test_file_list_is_independent_of_caller_directory (test_privacy.PrivacyTest) Ran 567 tests in 50.145s FAILED (failures=2)
+py-nozig: FAIL: test_reference_report_names_its_policies (test_j2_gate.PythonReferenceTests) FAIL: test_file_list_is_independent_of_caller_directory (test_privacy.PrivacyTest) Ran 512 tests in 35.667s FAILED (failures=2, skipped=43)
+The two failures in each Python run need a git checkout (git ls-files; the J2 report's engine commit); the archive
+is not one. Run in the worktree (SEARCH_SIMPLI_NO_ZIG=1 python3 -m unittest tests.test_privacy tests.test_j2_gate.PythonReferenceTests):
+Ran 6 tests in 3.099s
+OK
+## Dart (the rebuilt natives' tree; pub get --offline)
+No issues found!
+00:04 +97: All tests passed!
+## CI, read once (GitHub Actions API, branch task/S6-T17, per_page=1)
+run 44868876034 checks push head 83add79 completed success
+  job unicode-13-goldens success
+  job native-linux-release success
+  job checks success
+  job native-linux success
