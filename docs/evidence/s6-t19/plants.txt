@@ -1,0 +1,30 @@
+## the plants (git diff --no-index of each planted file against fcaaba8's)
+ops/filename_response.zig @@ -357,0 +358,3 @@ fn entryVisible(folder: scope.Folder, entry: @import("core").api.manifest.Pendin
++test "planted" {
++    _ = @import("core").api.analyzer_v2.analyzer_id;
++}
+interfaces/rpc.zig @@ -610,0 +611,4 @@ test "S3-T4: the RPC folder methods, the command-line scope and apply_changes ga
++const analyzer_v2 = @import("core").api.analyzer_v2;
++test "planted" {
++    _ = analyzer_v2.analyzer_id;
++}
+interfaces/abi.zig @@ -1268,0 +1269,3 @@ test "S4-T9: ss_close frees the open's block and the source and filename blocks
++test "planted" {
++    _ = manifest.decode;
++}
+ops/service.zig @@ -763,0 +764 @@ test "service applies required labels to search read and source listing" {
++const planted = @import("core").api.manifest.decode;
+## check_layers.py
+zig/src/interfaces/abi.zig:1270: uses core.api.manifest.decode, which api.manifest does not have: add it by the rule in docs/core-api.md
+zig/src/interfaces/rpc.zig:611: uses core.api.analyzer_v2, but api has no namespace analyzer_v2: add the name to api by the rule in docs/core-api.md
+zig/src/interfaces/rpc.zig:613: uses core.api.analyzer_v2.analyzer_id, but api has no namespace analyzer_v2: add the name to api by the rule in docs/core-api.md
+zig/src/ops/filename_response.zig:359: uses core.api.analyzer_v2.analyzer_id, but api has no namespace analyzer_v2: add the name to api by the rule in docs/core-api.md
+zig/src/ops/service.zig:764: uses core.api.manifest.decode, which api.manifest does not have: add it by the rule in docs/core-api.md
+check_layers: 5 problem(s)
+check_layers.py exit 1
+## zig build test --summary all, with only the plant in ops/filename_response.zig
+src/ops/filename_response.zig:359:29: error: struct 'core.api' has no member named 'analyzer_v2'
+error: 1 compilation errors
+Build Summary: 12/15 steps succeeded (1 failed); 574/583 tests passed (9 skipped)
+error: the following build command failed with exit code 1:
+zig build test exit 1
