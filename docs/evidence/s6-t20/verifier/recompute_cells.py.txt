@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""S6-T20 verifier: the rule of 2026-11-17 recomputed from the five run files,
+written without reading summarize.py, then compared with the builder's cells.txt.
+
+Usage: python3 -I recompute_cells.py.txt <timing dir with query-run1..5.jsonl and cells.txt>
+"""
+import json
+import statistics
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+CONTROLS = ["main2", "cl", "ci"]
+BUILDS = ["main", "main2", "head", "cl", "ci"]
+
+
+def cells_of(row):
+    yield ("open",), row["open"]["p50_ms"], None
+    for w in row["warm"]:
+        yield ("warm", w["field"], w["query"]), w["p50_ms"], w["answer_sha256"]
+    for f in row["find"]:
+        yield ("find", f["mode"], f["query"]), f["p50_ms"], f["answer_sha256"]
+
+
+def main():
+    d = Path(sys.argv[1])
+    values = defaultdict(dict)        # (corpus, cell) -> {(build, run): ms}
+    digests = defaultdict(set)
+    rows = 0
+    order = defaultdict(list)
+    for r in range(1, 6):
+        for line in (d / f"query-run{r}.jsonl").read_text().splitlines():
+            row = json.loads(line)
+            rows += 1
+            corpus = row["index"].rstrip("/").split("/")[-1]
+            assert int(row["round"]) == r, (row["round"], r)
+            order[r].append((corpus, row["variant"]))
+            for cell, ms, digest in cells_of(row):
+                values[(corpus, cell)][(row["variant"], r)] = ms
+                if digest is not None:
+                    digests[(corpus, cell)].add(digest)
+    print(f"rows {rows}")
+    for r in range(1, 6):
+        print(f"run{r} order: " + " ".join(f"{c}/{v}" for c, v in order[r]))
+    results = {}
+    by_corpus = defaultdict(lambda: {"cells": 0, "fail": 0, "max_ratio": (0.0, None), "band": 0, "kinds": defaultdict(int)})
+    for (corpus, cell), v in sorted(values.items()):
+        assert len(v) == 25, (corpus, cell, len(v))
+        main_med = statistics.median(v[("main", r)] for r in range(1, 6))
+        med_d = {b: statistics.median(v[(b, r)] - v[("main", r)] for r in range(1, 6)) for b in BUILDS if b != "main"}
+        t = max(0.010, 0.01 * main_med)
+        top_ctl = max(med_d[c] for c in CONTROLS)
+        fail = med_d["head"] >= t and med_d["head"] - top_ctl >= t
+        band = sum(1 for r in range(1, 6) if all(v[("head", r)] > v[(b, r)] for b in BUILDS if b != "head"))
+        results[(corpus, cell)] = (main_med, med_d, t, fail, band)
+        s = by_corpus[corpus]
+        s["cells"] += 1
+        s["kinds"][cell[0]] += 1
+        s["fail"] += fail
+        s["band"] += band >= 3
+        ratio = med_d["head"] / t
+        if ratio > s["max_ratio"][0]:
+            s["max_ratio"] = (ratio, cell)
+    for corpus, s in sorted(by_corpus.items()):
+        print(f"{corpus}: judged {s['cells']} ({dict(s['kinds'])}), fail {s['fail']}, band excursions (>=3/5) {s['band']}, "
+              f"largest d(head)/T {s['max_ratio'][0]:.2f} at {' '.join(s['max_ratio'][1])}")
+    multi = [k for k, ds in digests.items() if len(ds) != 1]
+    print(f"answer digests: {len(digests)} warm/find cells, {len(multi)} with more than one digest over 25 rows")
+    # Compare with cells.txt: main us, d head, T us, verdict.
+    mismatches, compared, corpus = 0, 0, None
+    for line in (d / "cells.txt").read_text().splitlines():
+        if line.startswith("## "):
+            corpus = line[3:].strip()
+            continue
+        parts = line.split()
+        if not parts or parts[0] not in ("open", "warm", "find"):
+            continue
+        # trailing columns: main us, d main2, d cl, d ci, d head, d%, T us, h-ctl, verdict, band (+ answers)
+        i = len(parts) - (10 if parts[0] == "open" else 11)
+        name = tuple(parts[:i])
+        cell = ("open",) if name == ("open",) else (name[0], name[1], " ".join(name[2:]))
+        nums = parts[i:]
+        main_us, d_head, t_us, verdict = float(nums[0]), float(nums[4]), float(nums[6]), nums[8]
+        mine = results[(corpus, cell)]
+        compared += 1
+        ok = (abs(mine[0] * 1000 - main_us) <= 0.051 and abs(mine[1]["head"] * 1000 - d_head) <= 0.051
+              and abs(mine[2] * 1000 - t_us) <= 0.051 and (verdict == ("fail" if mine[3] else "pass")))
+        if not ok:
+            mismatches += 1
+            print("MISMATCH", corpus, cell, nums[:9], mine[0] * 1000, mine[1]["head"] * 1000, mine[2] * 1000, mine[3])
+    print(f"cells.txt: {compared} judged lines compared, {mismatches} mismatches")
+
+
+if __name__ == "__main__":
+    main()

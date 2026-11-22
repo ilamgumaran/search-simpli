@@ -19,7 +19,6 @@ const std = @import("std");
 const benchmark = @import("core").api.benchmark;
 const chunker = @import("core").api.chunker;
 const engine_module = @import("core").api.engine;
-const generation_alloc = @import("core").api.generation_alloc;
 const hybrid = @import("core").api.hybrid;
 const indexer = @import("core").api.indexer;
 const snapshot_open = @import("core").api.snapshot_open;
@@ -34,8 +33,10 @@ pub const IndexOptions = struct {
     overlap_lines: usize = chunker.default_overlap_lines,
     /// `null` means "pick the next generation not already used in `--out`"
     /// (S1-T3 criterion 5: re-running `index` into an existing directory
-    /// re-publishes instead of failing with `PathAlreadyExists`). An
-    /// explicit value is used as-is, including a deliberate collision.
+    /// re-publishes instead of failing with `PathAlreadyExists`); since
+    /// S6-T20 the core picks it under `WRITER.LOCK`, the lease it publishes
+    /// under. An explicit value is used as-is, including a deliberate
+    /// collision, which the publish refuses with `PathAlreadyExists`.
     generation: ?u64 = null,
     /// S1-T3 criterion 1: `searchd index --update` runs incremental
     /// indexing (`indexer.indexFolderIncremental`) instead of a full
@@ -841,14 +842,15 @@ pub fn runIndex(
         return;
     }
 
-    const generation = options.generation orelse try generation_alloc.nextFreeGeneration(arena, io, out_dir);
+    // S6-T20: no number chosen here. `null` lets the core choose it under
+    // the writer lease it publishes under (`apply.applyParsed`).
     const report = try indexer.indexFolder(
         arena,
         io,
         root,
         out_dir,
         options.analyzer,
-        generation,
+        options.generation,
         options.max_chars,
         options.overlap_lines,
         options.caps,

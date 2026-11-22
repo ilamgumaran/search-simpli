@@ -91,11 +91,12 @@ fn appendLiteralCauseName(buffer: []u8, used: *usize, name: []const u8) void {
 /// has no manifest yet (a fresh output directory).
 ///
 /// S6-T17: `MANIFEST` is read through the handle its size came from
-/// (`snapshot_open.readManifest`, S6-T13). A full rebuild calls this before
-/// it takes `WRITER.LOCK` (`nextFreeGeneration`), and before, a second
+/// (`snapshot_open.readManifest`, S6-T13). A full rebuild called this before
+/// it took `WRITER.LOCK` (`nextFreeGeneration`), and before S6-T17, a second
 /// writer's publish between a `stat` and a second open by name gave a
 /// `MANIFEST` longer than the `stat` said, cut to that size (`Truncated`;
 /// `manifest_read_test.zig`). Now the read is the old `MANIFEST`, whole.
+/// Since S6-T20 every caller in the library holds the lease (`apply.zig`).
 pub fn currentGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !u64 {
     const read = snapshot_open.readManifest(allocator, io, dir) catch |err| switch (err) {
         error.FileNotFound => return 0,

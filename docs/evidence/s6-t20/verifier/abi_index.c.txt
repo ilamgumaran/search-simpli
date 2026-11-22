@@ -1,0 +1,11 @@
+/* S6-T20 verifier: one ss_index_folder call (a full rebuild, no options), printing its report or ss_last_error(). */
+#include <stdio.h>
+#include "search_simpli.h"
+int main(int argc, char **argv) {
+    if (argc != 3) return 2;
+    char *report = ss_index_folder(argv[1], argv[2], NULL);
+    if (!report) { printf("abi error: %s\n", ss_last_error()); return 1; }
+    printf("abi report: %s\n", report);
+    ss_free(report);
+    return 0;
+}

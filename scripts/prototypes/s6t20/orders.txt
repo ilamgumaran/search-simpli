@@ -1,0 +1,53 @@
+# S6-T20 builder: the timing runs the rule of 2026-11-17 requires (docs/process/ROLES.md; decision 0003, section 7).
+# Written, committed and pushed before the first timed run (21 Nov 2026). Nothing below is chosen after seeing a
+# timed number. Harness: S6-T14's (scripts/prototypes/s6t14/run_timing.sh, gate.sh, summarize.py) over
+# scripts/prototypes/s6t9/bench.py bench, unchanged; this file is its ORDERS.
+#
+# Expectation, stated before measuring: no open, query or find source changes, so every judged cell passes the rule.
+# The literal difference is reported beside it.
+#
+# Builds (macOS arm64 ReleaseSmall libsearch_simpli.dylib; __text from size -m):
+#   main  = 3cf188b, `zig build lib -Doptimize=ReleaseSmall` in a git archive with its own caches:
+#           1,006,328 B, sha256 f287de12ab286410... (= main's committed native), __text 592,136 B
+#   main2 = 3cf188b built again in another archive copy with its own caches: byte-identical to main
+#   head  = 3dac5a9, native/macos-arm64/libsearch_simpli.dylib as committed (tool/build_native.sh, fresh caches):
+#           1,007,208 B, sha256 31a431b0a72e76e7..., __text 591,880 B (-256 B)
+#   Controls: main + one never-run function (make_control.py, beside this file: S6-T13's with place i added), called
+#   under a branch never true at run time:
+#   cl = place l, 2 blocks + 2 steps: snapshot_open.loadEngine, after the MANIFEST read (every open)
+#        1,006,488 B, sha256 3e1773a5221e8a80..., __text 592,384 B (+248 B)
+#   ci = place i, 2 blocks: indexer.walkAndApply, beside the changed code (never on an open, a query or a find)
+#        1,006,328 B, sha256 a03966810f83501e..., __text 592,388 B (+252 B)
+#   The head's delta is -256 B; a control can only add code, so both match its size (248 and 252 B against 256 B),
+#   not its sign.
+#
+# Control set (fixed now): main2, cl, ci.
+# Cells, per corpus (timing-10k, prose-10k, tamil-10k, 10,000 files each), from bench.py bench:
+#   open    open_p50 (ss_open + ss_close, 30 timed after 3 warm-ups)
+#   query   every warm query p50 (each query of the set under content, filename and both; 300 timed calls)
+#   find    every find request p50 (100 timed calls)
+#   the first query and the first find after an open are reported beside them, not judged.
+# T = max(0.010 ms, 1 % of main's five-run median for the cell). A cell fails if median_r(head - main) >= T and
+# exceeds by >= T the largest median_r(control - main) over the control set (rule of 2026-11-17). Band excursions
+# (head above every other build in 3 or more of 5 runs) are tabulated, never failing.
+#
+# Indexes: main's and the head's searchd (ReleaseSmall) each indexed the three corpora; `diff -r` of the two sets:
+# identical (the index format and a lone rebuild's number do not change). Each build opens its own copy: head a
+# copy of the head's, the others copies of main's. Answers (bench.py answers, every query under the three fields
+# and every find): identical between main and head on the three corpora.
+#
+# The load gate (gate.sh: lock absent, 5-minute load below 4.0, no toolchain at 20 % CPU or more in top's top eight)
+# runs before every process; a refused gate stops that run, which is not retried in a loop: a run not taken is
+# reported as owed. pmset -g log is read for Sleep, Wake and DarkWake inside each run's window afterwards; a run with
+# a Sleep or Wake inside it is discarded whole and retaken as the same number with "b".
+# Latin square: builds rotated left by (r - 1) mod 5 in run r, corpora rotated left by (r - 1) mod 3.
+run1:main main2 head cl ci
+corpora1:timing-10k prose-10k tamil-10k
+run2:main2 head cl ci main
+corpora2:prose-10k tamil-10k timing-10k
+run3:head cl ci main main2
+corpora3:tamil-10k timing-10k prose-10k
+run4:cl ci main main2 head
+corpora4:timing-10k prose-10k tamil-10k
+run5:ci main main2 head cl
+corpora5:prose-10k tamil-10k timing-10k

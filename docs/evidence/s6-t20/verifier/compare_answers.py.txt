@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""S6-T20 verifier: index each corpus with main's and the head's ReleaseSmall
+`searchd` (full rebuild, `--filename-index`), compare the two index folders
+byte for byte, then ask each build every query (content, filename, both, top 10,
+--json) and every find (--json) of the corpus's query file against its own index
+and compare the outputs.
+
+Usage: python3 -I compare_answers.py.txt <scratch> <corpora dir> <queries dir> <main searchd> <head searchd>
+"""
+import filecmp
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+
+def same_tree(a, b):
+    cmp = filecmp.dircmp(a, b)
+    if cmp.left_only or cmp.right_only or cmp.funny_files:
+        return False
+    match, mismatch, errors = filecmp.cmpfiles(a, b, cmp.common_files, shallow=False)
+    return not mismatch and not errors
+
+
+def main():
+    scratch, corpora, queries, sd_main, sd_head = (Path(p) for p in sys.argv[1:6])
+    for corpus in ("timing-10k", "prose-10k", "tamil-10k"):
+        q = json.loads((queries / f"{corpus}.json").read_text())
+        idx = {}
+        for label, sd in (("main", sd_main), ("head", sd_head)):
+            out = scratch / f"idx-{label}-{corpus}"
+            done = subprocess.run([str(sd), "index", str(corpora / corpus), "--out", str(out), "--filename-index"],
+                                  capture_output=True, text=True)
+            assert done.returncode == 0, done.stderr
+            idx[label] = (out, done.stdout.strip())
+        same_idx = same_tree(idx["main"][0], idx["head"][0])
+        same_line = idx["main"][1] == idx["head"][1]
+        asked = differ = 0
+        for text in q["queries"]:
+            for field in ("content", "filename", "both"):
+                outs = [subprocess.run([str(sd), "query", str(idx[l][0]), text, "--search-field", field, "--top-k", "10", "--json"],
+                                       capture_output=True, text=True) for l, sd in (("main", sd_main), ("head", sd_head))]
+                asked += 1
+                differ += (outs[0].stdout, outs[0].returncode) != (outs[1].stdout, outs[1].returncode)
+        for f in q["finds"]:
+            outs = [subprocess.run([str(sd), "find", str(idx[l][0]), f["query"], "--mode", f["mode"], "--json"],
+                                   capture_output=True, text=True) for l, sd in (("main", sd_main), ("head", sd_head))]
+            asked += 1
+            differ += (outs[0].stdout, outs[0].returncode) != (outs[1].stdout, outs[1].returncode)
+        print(f"{corpus}: index folders identical={same_idx}; index line identical={same_line} "
+              f"({idx['head'][1].split(' files_indexed')[0].split(': ', 1)[1]}); answers asked {asked}, differing {differ}")
+
+
+if __name__ == "__main__":
+    main()

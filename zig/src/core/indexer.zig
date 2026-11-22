@@ -149,6 +149,13 @@ pub const legacy_root_id = scope.legacy_root_id;
 /// generation into `out_dir` (a full rebuild: the previous generation, if
 /// any, is not consulted). `allocator` is expected to be an arena.
 ///
+/// S6-T20: `generation` null publishes the next free number
+/// (`generation_alloc.nextFreeGeneration`), chosen by `apply.applyParsed`
+/// after it takes `WRITER.LOCK` and published under the same lease, as
+/// `indexFolderIncremental` does. A number given is published as given; if
+/// a section file it would write is already present, the publish fails
+/// with `PathAlreadyExists` and publishes nothing.
+///
 /// S3-T3 (ruling 2): this is a walk that builds an `apply_changes` batch
 /// (one `local` root `r-legacy`, one `walk` change per candidate file) and
 /// hands it to `apply.applyBatch`, so one code path writes every generation.
@@ -167,7 +174,7 @@ pub fn indexFolder(
     root: std.Io.Dir,
     out_dir: std.Io.Dir,
     analyzer: AnalyzerId,
-    generation: u64,
+    generation: ?u64,
     max_chars: usize,
     overlap_lines: usize,
     caps: Caps,

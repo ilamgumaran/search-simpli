@@ -476,9 +476,10 @@ test "S6-T17: a full rebuild whose MANIFEST grows across another writer's publis
     const old_len = (try folder.out.statFile(io, publication.current_manifest_file, .{})).size;
 
     // As `searchd index` without `--update` (`cli.zig`) and `ss_index_folder`
-    // without `update` (`abi.zig`): the number first, before the lock, then
-    // the rebuild with it. The publish of generation 10 runs between the
-    // `stat` of `MANIFEST` and its read.
+    // without `update` (`abi.zig`) did before S6-T20: the number first,
+    // before the lock, then the rebuild with it (since S6-T20 the core
+    // chooses it under the lock; `tests/cli_test.zig`). The publish of
+    // generation 10 runs between the `stat` of `MANIFEST` and its read.
     const folder_step = RebuildStep{ .a = a, .root = folder.root, .out = folder.out, .expected = 10 };
     const seam = StatSeam.armFor(io, folder_step.step(), try inodeOf(folder.out, io, publication.current_manifest_file));
     const generation = generation_alloc.nextFreeGeneration(a, seam, folder.out) catch |err| {

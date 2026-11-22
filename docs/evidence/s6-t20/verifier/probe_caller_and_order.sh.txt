@@ -1,0 +1,44 @@
+#!/bin/bash
+# S6-T20 verifier: the facts for the maintainer (3a, 3b) and the lease trace,
+# with real `searchd` processes. Usage: bash probe_caller_and_order.sh.txt <scratch> <label> <searchd> [<label> <searchd> ...]
+# Every case works in a new folder under <scratch>; nothing outside it is written.
+set -u
+scratch=$1; shift
+gen() { python3 -I -c 'import struct,sys; print(struct.unpack_from("<Q", open(sys.argv[1],"rb").read(20), 12)[0])' "$1/MANIFEST"; }
+fresh() { # $1 case dir, $2 searchd: notes/ indexed as generation 9
+  mkdir -p "$1/notes/sub"; printf 'alpha evidence about recovery\n' > "$1/notes/a.md"; printf 'beta evidence about publication\n' > "$1/notes/sub/b.md"
+  (cd "$1" && "$2" index notes --out out --generation 9 >/dev/null)
+}
+holding_lock() { # run "$@" while another open file description holds an exclusive flock on out/WRITER.LOCK
+  python3 -I -c 'import fcntl,os,subprocess,sys
+fd=os.open("out/WRITER.LOCK", os.O_RDWR|os.O_CREAT); fcntl.flock(fd, fcntl.LOCK_EX|fcntl.LOCK_NB)
+sys.exit(subprocess.run(sys.argv[1:]).returncode)' "$@"
+}
+first_line() { sed 's/\x1b\[[0-9;]*m//g' | grep -E '^(error|indexed|imported)' | head -1 ; }
+while [ $# -gt 0 ]; do
+  label=$1; sd=$2; shift 2
+  echo "=== $label"
+  # 3a: a free number below the current generation, no second writer.
+  c="$scratch/$label-3a-generation"; fresh "$c" "$sd"; cd "$c"
+  echo "3a searchd index --generation 5 over generation 9: $("$sd" index notes --out out --generation 5 2>&1 | first_line) | MANIFEST 9 -> $(gen out)"
+  c="$scratch/$label-3a-import"; fresh "$c" "$sd"; cd "$c"
+  printf '{"format_version":1,"generation":5,"analyzer_id":"ascii-alnum-v1","embedding_model_id":"none","documents":[{"id":"x","path":"x.md","start_line":1,"end_line":1,"text":"imported","vector":[],"required_labels":[]}]}' > imp.json
+  echo "3a searchd import-json generation 5 over generation 9: $("$sd" import-json out imp.json 2>&1 | first_line) | MANIFEST 9 -> $(gen out)"
+  # 3b: lock held and no number left.
+  c="$scratch/$label-3b"; fresh "$c" "$sd"; cd "$c"; printf x > out/lexical-18446744073709551615.hyblex
+  echo "3b lock held, no number left, full rebuild: $(holding_lock "$sd" index notes --out out 2>&1 | first_line)"
+  echo "3b lock held, no number left, --update:     $(holding_lock "$sd" index notes --out out --update 2>&1 | first_line)"
+  echo "3b lock free, no number left, full rebuild: $("$sd" index notes --out out 2>&1 | first_line) | stdout bytes $("$sd" index notes --out out 2>/dev/null | wc -c | tr -d ' ')"
+  echo "3b lock free, no number left, the calls a full rebuild makes, in order:"
+  lldb --batch -o "br s -n generation_alloc.nextFreeGeneration -G true -C 'frame info'" -o "br s -n indexer.collectCandidatePaths -G true -C 'frame info'" \
+       -o "br s -n lifecycle.tryAcquireWriter -G true -C 'frame info'" -o run -- "$sd" index notes --out out 2>&1 \
+    | sed 's/\x1b\[[0-9;]*m//g' | grep -o 'frame #0: 0x[0-9a-f]* searchd`[a-zA-Z_.]*\|^error: [A-Za-z]*\|exited with status = [0-9]*' | sed 's/frame #0: 0x[0-9a-f]* searchd`/  hit /'
+  # The lease: one rebuild, no other writer; the calls in order.
+  c="$scratch/$label-lease"; fresh "$c" "$sd"; cd "$c"
+  echo "lease trace, one full rebuild over generation 9:"
+  lldb --batch -o "br s -n lifecycle.tryAcquireWriter -G true -C 'frame info'" -o "br s -n generation_alloc.nextFreeGeneration -G true -C 'frame info'" \
+       -o "br s -n indexer.collectCandidatePaths -G true -C 'frame info'" -o "br s -n apply.readContent -G true -C 'frame info'" \
+       -o "br s -n publication.publishWithExtrasRecorded -G true -C 'frame info'" -o "br s -n incremental_state.savePointer -G true -C 'frame info'" \
+       -o "br s -n lifecycle.WriterLease.release -G true -C 'frame info'" -o run -- "$sd" index notes --out out 2>&1 \
+    | sed 's/\x1b\[[0-9;]*m//g' | grep -o 'frame #0: 0x[0-9a-f]* searchd`[a-zA-Z_.]*\|indexed notes:.*generation=[0-9]*\|exited with status = [0-9]*' | sed 's/frame #0: 0x[0-9a-f]* searchd`/  hit /'
+done

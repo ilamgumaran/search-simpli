@@ -1,0 +1,10 @@
+# S6-T20 verifier: S6-T17's verifier probes rerun (probe-s6t17-rerun.zig.txt appended to zig/src/core/manifest_read_test.zig in a fresh archive of cbc0778, Debug, own caches).
+# A, B, C are S6-T17's unchanged: they choose the number with nextFreeGeneration and pass it to indexFolder, as main's interfaces did; B0, C0 pass null, as the head's interfaces do.
+
+VPROBE A (lock held by another writer): chosen 10, error WriterBusy, MANIFEST 9
+VPROBE B (other writer published 10): chosen 10, error PathAlreadyExists, MANIFEST 10
+VPROBE C (other writer published 10 then 11, keep 1; MANIFEST 11 before): chosen 10, published 10, MANIFEST 10 after, open generation 10, next free 12
+VPROBE B0 (other writer published 10): null, published 11, MANIFEST 11
+VPROBE C0 (other writer published 10 then 11, keep 1; MANIFEST 11 before): null, published 12, MANIFEST 12 after
+Build Summary: 15/15 steps succeeded; 595/604 tests passed (9 skipped)
++- run test core 265 pass (265 total) 36s MaxRSS:413M

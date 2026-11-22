@@ -1,0 +1,46 @@
+# S6-T20 verifier: probe_caller_and_order.sh.txt (3a, 3b, and the call order of one rebuild under lldb with auto-continue breakpoints).
+
+=== head
+3a searchd index --generation 5 over generation 9: indexed notes: analyzer=analyzer-v2 generation=5 files_indexed=2 too_large=0 unreadable=0 budget_exhausted=0 documents=2 terms=6 postings=8 | MANIFEST 9 -> 5
+3a searchd import-json generation 5 over generation 9: imported generation 5: documents=1 terms=1 postings=1 vector_dimensions=0 | MANIFEST 9 -> 5
+3b lock held, no number left, full rebuild: error: WriterBusy
+3b lock held, no number left, --update:     error: WriterBusy
+3b lock free, no number left, full rebuild: error: NoFreeGeneration: no generation number above 18446744073709551615 (traces: lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair | stdout bytes 0
+3b lock free, no number left, the calls a full rebuild makes, in order:
+  hit indexer.collectCandidatePaths
+  hit lifecycle.tryAcquireWriter
+  hit generation_alloc.nextFreeGeneration
+error: NoFreeGeneration
+exited with status = 1
+lease trace, one full rebuild over generation 9:
+  hit indexer.collectCandidatePaths
+  hit lifecycle.tryAcquireWriter
+  hit apply.readContent
+  hit apply.readContent
+  hit generation_alloc.nextFreeGeneration
+  hit publication.publishWithExtrasRecorded
+  hit incremental_state.savePointer
+  hit lifecycle.WriterLease.release
+indexed notes: analyzer=analyzer-v2 generation=10
+exited with status = 0
+=== main
+3a searchd index --generation 5 over generation 9: indexed notes: analyzer=analyzer-v2 generation=5 files_indexed=2 too_large=0 unreadable=0 budget_exhausted=0 documents=2 terms=6 postings=8 | MANIFEST 9 -> 5
+3a searchd import-json generation 5 over generation 9: imported generation 5: documents=1 terms=1 postings=1 vector_dimensions=0 | MANIFEST 9 -> 5
+3b lock held, no number left, full rebuild: error: NoFreeGeneration: no generation number above 18446744073709551615 (traces: lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair
+3b lock held, no number left, --update:     error: WriterBusy
+3b lock free, no number left, full rebuild: error: NoFreeGeneration: no generation number above 18446744073709551615 (traces: lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair | stdout bytes 0
+3b lock free, no number left, the calls a full rebuild makes, in order:
+  hit generation_alloc.nextFreeGeneration
+error: NoFreeGeneration
+exited with status = 1
+lease trace, one full rebuild over generation 9:
+  hit generation_alloc.nextFreeGeneration
+  hit indexer.collectCandidatePaths
+  hit lifecycle.tryAcquireWriter
+  hit apply.readContent
+  hit apply.readContent
+  hit publication.publishWithExtrasRecorded
+  hit incremental_state.savePointer
+  hit lifecycle.WriterLease.release
+indexed notes: analyzer=analyzer-v2 generation=10
+exited with status = 0

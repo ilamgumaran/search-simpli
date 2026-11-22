@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+"""S6-T20 verifier: the two-process probe with process A a C program calling
+`ss_index_folder(out, notes, NULL)` (abi_index.c.txt) against a Debug build of
+the library, stopped under lldb at a named point; process B is `searchd` as in
+probe_two_process.py.txt.
+
+Usage: python3 -I probe_abi.py.txt <probe_two_process.py.txt> <scratch> <label> <abi_index binary> <searchd for B>
+"""
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+from importlib.machinery import SourceFileLoader
+
+base = SourceFileLoader("probe_two_process", sys.argv[1]).load_module()
+
+
+def run(scratch, label, abi, searchd, point, other, keep):
+    case = os.path.join(scratch, f"{label}-{point}-{other}-k{keep}")
+    os.makedirs(case)
+    base.setup(case, searchd)
+    with open(os.path.join(case, "b.py"), "w") as f:
+        f.write(base.B_SCRIPT)
+    out = os.path.join(case, "out")
+    before = base.manifest_generation(out)
+    bp = base.POINTS[point][0]
+    shell = " ".join(shlex.quote(x) for x in [sys.executable, "-I", os.path.join(case, "b.py"), case, searchd, other, keep])
+    argv = ["lldb", "--batch", "-o", f"breakpoint set --one-shot true {bp}", "-o", "run",
+            "-o", f"platform shell {shell}", "-o", "continue", "--", abi, "out", "notes"]
+    done = subprocess.run(argv, cwd=case, capture_output=True, text=True, timeout=180)
+    log = re.sub(r"\x1b\[[0-9;]*m", "", done.stdout + done.stderr)
+    with open(os.path.join(case, "lldb.log"), "w") as f:
+        f.write(log)
+    stopped = "stop reason = one-shot breakpoint 1" in log and 0 <= log.find("B-RAN")
+    with open(os.path.join(case, "b.json")) as f:
+        b = json.load(f)
+    after = base.manifest_generation(out)
+    m = re.search(r'abi report: \{"generation":(\d+)', log)
+    a_pub = int(m.group(1)) if m else None
+    a_desc = f"published {a_pub}" if a_pub is not None else base.short(log[log.find("B-RAN"):])
+    b_pubs = [base.published(r["out"]) for r in b["runs"] if r["rc"] == 0]
+    b_desc = ", ".join((f"published {base.published(r['out'])}" if r["rc"] == 0 else base.short(r["out"])) for r in b["runs"])
+    numbers = [n for n in b_pubs if n is not None] + ([a_pub] if a_pub is not None else [])
+    twice = len(numbers) != len(set(numbers))
+    back = not (before <= b["manifest_at_stop"] <= b["manifest_after_b"] <= after)
+    verdict = "NOT-STOPPED" if not stopped else ("VIOLATION" if (twice or back) else "ok")
+    return (f"{label:5} {point:9} {other:12} k={keep or '-'} | lock held at stop: {str(b['lock_held_at_stop']):5} | B: {b_desc} | "
+            f"A (ss_index_folder): {a_desc} | MANIFEST {before}->{b['manifest_after_b']}->{after} | "
+            f"twice={'YES' if twice else 'no'} back={'YES' if back else 'no'} | {verdict}")
+
+
+def main():
+    scratch, label, abi, searchd = sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]
+    for point in ("pre_walk", "walk", "choose", "build", "published", "release"):
+        for other, keep in (("update", ""), ("update_twice", "1"), ("rebuild", ""), ("import_json", "")):
+            print(run(scratch, label, abi, searchd, point, other, keep), flush=True)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,37 @@
+# S6-T20 sizes, measured 21 Nov 2026 (wc -c; size -m for Mach-O sections; nm -gU for exports)
+# main = 3cf188b's committed natives (git show), head = 3dac5a9's committed natives (tool/build_native.sh, Zig 0.16.0, NDK 28.2.13676358, fresh local and global caches, Build Summary 28/28)
+native/macos-arm64/libsearch_simpli.dylib main= 1006328 head= 1007208 delta=880
+native/android-arm64/libsearch_simpli.so main=  966704 head=  966112 delta=-592
+native/ios-arm64/search_simpli.framework/search_simpli main=  971304 head=  972120 delta=816
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: cmp-identical to native/android-arm64/libsearch_simpli.so
+native/SOURCE-SHA256: 9c14539075df42be3e42200bea4d80af01918745bee5e2d310b272b288f82327 (= tool/source_digest.py on the head)
+
+# macOS dylib, size -m: main then head
+1,2c1,2
+< Segment __TEXT: 820484
+< 	Section __text: 592136
+---
+> Segment __TEXT: 820156
+> 	Section __text: 591880
+5c5
+< 	Section __const: 144104
+---
+> 	Section __const: 144088
+7,9c7,9
+< 	Section __unwind_info: 9680
+< 	Section __eh_frame: 46524
+< 	total 818620
+---
+> 	Section __unwind_info: 9676
+> 	Section __eh_frame: 46468
+> 	total 818288
+22c22
+< total 1266572
+---
+> total 1266244
+# LC_SYMTAB nsyms: main 2592, head 2614 (nm: the 22 more are all _OUTLINED_FUNCTION_<n>, the linker's machine outliner); strsize main 58727, head 59255; __LINKEDIT filesize main 105208, head 106088 (otool -l)
+# so the file grows (+880 B, all in __LINKEDIT's symbol table) while the code shrinks (__text -256 B)
+# exported symbols (nm -gU): main and head identical, 18 each
+
+# searchd ReleaseSmall (zig build -Doptimize=ReleaseSmall; main from a git archive of 3cf188b with its own caches)
+main  1151048 B, head  1151240 B, delta 192

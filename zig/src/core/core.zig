@@ -326,7 +326,10 @@ pub const api = struct {
     /// Native folder indexing: walk, read, chunk, publish (`indexer.zig`).
     pub const indexer = struct {
         /// Walk `root`, chunk and tokenize every matching file, and publish a
-        /// fresh generation (a full rebuild) into `out_dir`. `allocator` should
+        /// fresh generation (a full rebuild) into `out_dir`: `generation` null
+        /// publishes the next free number, chosen after `WRITER.LOCK` is taken
+        /// and published under the same lease (S6-T20); a number given is
+        /// published as given. `allocator` should
         /// be an arena: the report lives in it. Errors: `OutOfMemory`, `std.Io`
         /// file errors, the core's format errors, `ApplyRefused`, and the
         /// directory's refusals (`WriterBusy`, `NoFreeGeneration`,
@@ -362,17 +365,10 @@ pub const api = struct {
         pub const default_overlap_lines = internal.chunker.default_overlap_lines;
     };
 
-    /// The next free generation number of a directory (`generation_alloc.zig`).
+    /// The diagnostic of a directory with no generation number left
+    /// (`generation_alloc.zig`). The number itself is chosen inside the core,
+    /// under the writer lease (S6-T20).
     pub const generation_alloc = struct {
-        /// The smallest generation number above every one `dir` has a trace of
-        /// whose six section names are all free: `documents-N.hybseg`,
-        /// `lexical-N.hyblex`, `source-N.hybsrc`, `filenames-N.hybseg`,
-        /// `filename-lexical-N.hyblex` and `state-N.hybstate`.
-        /// `allocator` is for transient reads
-        /// only (an arena is fine). Errors: `OutOfMemory`, `std.Io` file errors,
-        /// the core's format errors, and `NoFreeGeneration` at `u64` max or after
-        /// a million taken numbers.
-        pub const nextFreeGeneration = internal.generation_alloc.nextFreeGeneration;
         /// One line for this thread's last `error.NoFreeGeneration` (the highest
         /// generation and the file names in the way), formatted into `buffer`;
         /// the result is a slice of `buffer`, or a static fallback when it does

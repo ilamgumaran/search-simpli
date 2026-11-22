@@ -1,0 +1,27 @@
+# S6-T20 verifier: probe_abi.py.txt. A = abi_index.c.txt (ss_index_folder(out, notes, NULL)) built with zig cc against a Debug libsearch_simpli.dylib from the head archive
+# (zig build lib, Debug; the command exited 1 on another target, the macOS dylib was produced and is the one linked). B = the head's Debug searchd. Points as in two-process.txt.
+
+head  pre_walk  update       k=- | lock held at stop: False | B: published 10 | A (ss_index_folder): published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  pre_walk  update_twice k=1 | lock held at stop: False | B: published 10, published 11 | A (ss_index_folder): published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  pre_walk  rebuild      k=- | lock held at stop: False | B: published 10 | A (ss_index_folder): published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  pre_walk  import_json  k=- | lock held at stop: False | B: published 10 | A (ss_index_folder): published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  walk      update       k=- | lock held at stop: False | B: published 10 | A (ss_index_folder): published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  walk      update_twice k=1 | lock held at stop: False | B: published 10, published 11 | A (ss_index_folder): published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  walk      rebuild      k=- | lock held at stop: False | B: published 10 | A (ss_index_folder): published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  walk      import_json  k=- | lock held at stop: False | B: published 10 | A (ss_index_folder): published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  choose    update       k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->9->10 | twice=no back=no | ok
+head  choose    update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->9->10 | twice=no back=no | ok
+head  choose    rebuild      k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->9->10 | twice=no back=no | ok
+head  choose    import_json  k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->9->10 | twice=no back=no | ok
+head  build     update       k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->9->10 | twice=no back=no | ok
+head  build     update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->9->10 | twice=no back=no | ok
+head  build     rebuild      k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->9->10 | twice=no back=no | ok
+head  build     import_json  k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->9->10 | twice=no back=no | ok
+head  published update       k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->10->10 | twice=no back=no | ok
+head  published update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->10->10 | twice=no back=no | ok
+head  published rebuild      k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->10->10 | twice=no back=no | ok
+head  published import_json  k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->10->10 | twice=no back=no | ok
+head  release   update       k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->10->10 | twice=no back=no | ok
+head  release   update_twice k=1 | lock held at stop: True  | B: WriterBusy, WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->10->10 | twice=no back=no | ok
+head  release   rebuild      k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->10->10 | twice=no back=no | ok
+head  release   import_json  k=- | lock held at stop: True  | B: WriterBusy | A (ss_index_folder): published 10 | MANIFEST 9->10->10 | twice=no back=no | ok

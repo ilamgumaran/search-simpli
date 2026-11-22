@@ -1,0 +1,43 @@
+# S6-T20 verifier: the timing evidence checked against the rule of 2026-11-17 (docs/process/ROLES.md). No timing was retaken.
+
+## recompute_cells.py.txt over docs/evidence/s6-t20/timing/query-run1..5.jsonl (written from the rule, not from summarize.py), then compared with cells.txt
+rows 75
+run1 order: timing-10k/main timing-10k/main2 timing-10k/head timing-10k/cl timing-10k/ci prose-10k/main prose-10k/main2 prose-10k/head prose-10k/cl prose-10k/ci tamil-10k/main tamil-10k/main2 tamil-10k/head tamil-10k/cl tamil-10k/ci
+run2 order: prose-10k/main2 prose-10k/head prose-10k/cl prose-10k/ci prose-10k/main tamil-10k/main2 tamil-10k/head tamil-10k/cl tamil-10k/ci tamil-10k/main timing-10k/main2 timing-10k/head timing-10k/cl timing-10k/ci timing-10k/main
+run3 order: tamil-10k/head tamil-10k/cl tamil-10k/ci tamil-10k/main tamil-10k/main2 timing-10k/head timing-10k/cl timing-10k/ci timing-10k/main timing-10k/main2 prose-10k/head prose-10k/cl prose-10k/ci prose-10k/main prose-10k/main2
+run4 order: timing-10k/cl timing-10k/ci timing-10k/main timing-10k/main2 timing-10k/head prose-10k/cl prose-10k/ci prose-10k/main prose-10k/main2 prose-10k/head tamil-10k/cl tamil-10k/ci tamil-10k/main tamil-10k/main2 tamil-10k/head
+run5 order: prose-10k/ci prose-10k/main prose-10k/main2 prose-10k/head prose-10k/cl tamil-10k/ci tamil-10k/main tamil-10k/main2 tamil-10k/head tamil-10k/cl timing-10k/ci timing-10k/main timing-10k/main2 timing-10k/head timing-10k/cl
+prose-10k: judged 55 ({'find': 9, 'open': 1, 'warm': 45}), fail 0, band excursions (>=3/5) 5, largest d(head)/T 0.90 at find phrase you get bowls
+tamil-10k: judged 56 ({'find': 10, 'open': 1, 'warm': 45}), fail 0, band excursions (>=3/5) 3, largest d(head)/T 0.35 at find words கீகசை
+timing-10k: judged 55 ({'find': 9, 'open': 1, 'warm': 45}), fail 0, band excursions (>=3/5) 3, largest d(head)/T 0.47 at find words from badamo
+answer digests: 163 warm/find cells, 0 with more than one digest over 25 rows
+cells.txt: 166 judged lines compared, 0 mismatches
+
+## The libraries the runs loaded (the builder's scratch, LIBS_DIR/<build>/libsearch_simpli.dylib, read only): sha256 prefix, size, mtime
+main f287de12ab286410 1006328 B, modified 2026-11-21 13:13:22
+main2 f287de12ab286410 1006328 B, modified 2026-11-21 13:13:22
+head 31a431b0a72e76e7 1007208 B, modified 2026-11-21 13:13:22
+cl 3e1773a5221e8a80 1006488 B, modified 2026-11-21 13:13:22
+ci a03966810f83501e 1006328 B, modified 2026-11-21 13:13:22
+head's = committed native: yes; main's = main's committed native: yes; main2 = main: yes
+the orders (scripts/prototypes/s6t20/orders.txt) name: main f287de12ab286410, head 31a431b0a72e76e7, cl 3e1773a5221e8a80, ci a03966810f83501e
+
+## The orders came first
+a7b28be (orders.txt, make_control.py): committed 2026-11-21 13:14:08 -0500; its CI run (push) created 2026-11-21T18:14:11Z (13:14:11 -0500); first gate line 13:14:14 (refused); first timed run 17:31:41
+
+## The committed run files and gates against the builder's raw outputs (paths replaced by <scratch>)
+query-run1.jsonl: identical
+query-run2.jsonl: identical
+query-run3.jsonl: identical
+query-run4.jsonl: identical
+query-run5.jsonl: identical
+gates.txt: the run gates plus the probe gates, sorted, identical
+gate lines: 75 PASS (17:31:41 to 17:39:25), 13 REFUSED (13:14:14 to 13:20:52); 5-minute load on the PASS lines: 2.05 3.26
+
+## pmset -g log, Sleep / Wake / DarkWake entries from 17:20 to 17:45
+2026-11-21 17:23:58 -0500 DarkWake            	DarkWake from Deep Idle [CDNPB] : due to NU
+2026-11-21 17:23:58 -0500 Kernel Client Acks  	Delays to Sleep notifications: [AppleWLANIn
+2026-11-21 17:23:58 -0500 Kernel Client Acks  	Delays to Wake notifications: [AppleCS42L84
+2026-11-21 17:30:44 -0500 Wake                	DarkWake to FullWake from Deep Idle [CDNVA]
+2026-11-21 17:30:44 -0500 Kernel Client Acks  	Delays to Sleep notifications: [AppleWLANIn
+2026-11-21 17:30:44 -0500 Kernel Client Acks  	Delays to Wake notifications: [AppleCS42L84

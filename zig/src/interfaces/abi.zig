@@ -842,8 +842,9 @@ fn indexFolderImpl(dir_path: []const u8, folder_path: []const u8, opts_json: []c
         }
         try json.endObject();
     } else {
-        const generation = try generation_alloc.nextFreeGeneration(arena_allocator, gio, out_dir);
-        const report = try indexer.indexFolder(arena_allocator, gio, root, out_dir, analyzer, generation, max_chars, overlap_lines, caps);
+        // S6-T20: `null`, so the core chooses the number under the writer
+        // lease it publishes under (`apply.applyParsed`).
+        const report = try indexer.indexFolder(arena_allocator, gio, root, out_dir, analyzer, null, max_chars, overlap_lines, caps);
         try json.beginObject();
         try json.objectField("generation");
         try json.write(report.generation);

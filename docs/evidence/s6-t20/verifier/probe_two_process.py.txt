@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""S6-T20 verifier: two real `searchd` processes racing a full rebuild.
+
+Process A is `searchd index notes --out out` (a full rebuild, no
+`--generation`), run under `lldb --batch` and stopped once at a named point.
+While A is stopped, process B (another `searchd`, not under the debugger) runs
+the other writer through lldb's `platform shell`; then A continues. No timing:
+the interleaving is fixed by the breakpoint. Each case starts from a fresh
+folder indexed as generation 9.
+
+Usage: python3 -I probe_two_process.py.txt <scratch> <label> <searchd> [<label> <searchd> ...]
+Prints one line per case and a summary; writes nothing outside <scratch>.
+"""
+import base64
+import json
+import os
+import re
+import shlex
+import struct
+import subprocess
+import sys
+
+POINTS = {
+    # name: (lldb breakpoint arguments, what it is)
+    "pre_walk": ("-n indexer.indexFolder", "indexFolder entry: after the interface, before the walk"),
+    "walk": ("-f indexer.zig -l 106", "inside the folder walk, first entry"),
+    "choose": ("-n generation_alloc.nextFreeGeneration", "entry of nextFreeGeneration"),
+    "build": ("-n apply.buildGeneration", "entry of buildGeneration: number chosen, nothing published"),
+    "published": ("-n incremental_state.savePointer", "after the publish, before INDEX-STATE.json"),
+    "release": ("-n lifecycle.WriterLease.release", "entry of the lease's release: published, pruned, lock still held"),
+}
+
+OTHERS = ["rebuild", "update", "update_twice", "apply", "import_json"]
+
+
+def manifest_generation(out):
+    try:
+        with open(os.path.join(out, "MANIFEST"), "rb") as handle:
+            head = handle.read(20)
+    except FileNotFoundError:
+        return 0
+    assert head[:6] == b"HYBMAN", head[:8]
+    return struct.unpack_from("<Q", head, 12)[0]
+
+
+def setup(case, searchd):
+    notes = os.path.join(case, "notes")
+    os.makedirs(os.path.join(notes, "sub"))
+    with open(os.path.join(notes, "a.md"), "w") as f:
+        f.write("alpha evidence about recovery\n")
+    with open(os.path.join(notes, "sub", "b.md"), "w") as f:
+        f.write("beta evidence about publication\n")
+    done = subprocess.run([searchd, "index", "notes", "--out", "out", "--generation", "9"], cwd=case, capture_output=True, text=True)
+    assert done.returncode == 0, done.stderr
+    changes = {"roots": [{"root_id": "host1", "label": "Host", "kind": "host"}],
+               "changes": [{"op": "add", "root_id": "host1", "path": "c.md",
+                            "content_base64": base64.b64encode(b"gamma evidence from a host\n").decode()}]}
+    with open(os.path.join(case, "changes.json"), "w") as f:
+        json.dump(changes, f)
+
+
+B_SCRIPT = r'''
+import fcntl, json, os, struct, subprocess, sys
+case, searchd, other, keep = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+out = os.path.join(case, "out")
+def gen():
+    try:
+        with open(os.path.join(out, "MANIFEST"), "rb") as h:
+            return struct.unpack_from("<Q", h.read(20), 12)[0]
+    except FileNotFoundError:
+        return 0
+# Is WRITER.LOCK held right now (by the stopped process A)?
+held = None
+try:
+    fd = os.open(os.path.join(out, "WRITER.LOCK"), os.O_RDWR)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        held = False
+    except BlockingIOError:
+        held = True
+    os.close(fd)
+except FileNotFoundError:
+    held = "no-file"
+kflag = ["--keep-generations", "1"] if keep == "1" else []
+runs = []
+def run(argv):
+    d = subprocess.run([searchd] + argv, cwd=case, capture_output=True, text=True)
+    runs.append({"argv": argv[0], "rc": d.returncode, "out": (d.stdout + d.stderr).strip()})
+before = gen()
+if other == "rebuild":
+    run(["index", "notes", "--out", "out"] + kflag)
+elif other == "update":
+    run(["index", "notes", "--out", "out", "--update"] + kflag)
+elif other == "update_twice":
+    run(["index", "notes", "--out", "out", "--update"] + kflag)
+    run(["index", "notes", "--out", "out", "--update"] + kflag)
+elif other == "apply":
+    run(["apply", "out", "--changes", "changes.json"])
+elif other == "import_json":
+    payload = {"format_version": 1, "generation": before + 1, "analyzer_id": "ascii-alnum-v1", "embedding_model_id": "none",
+               "documents": [{"id": "other", "path": "other.md", "start_line": 1, "end_line": 1, "text": "another writer",
+                              "vector": [], "required_labels": []}]}
+    with open(os.path.join(case, "import.json"), "w") as f:
+        json.dump(payload, f)
+    run(["import-json", "out", "import.json"] + kflag)
+json.dump({"lock_held_at_stop": held, "manifest_at_stop": before, "runs": runs, "manifest_after_b": gen()},
+          open(os.path.join(case, "b.json"), "w"))
+print("B-RAN")
+'''
+
+PUB = [re.compile(r"generation=(\d+)"), re.compile(r"imported generation (\d+)"), re.compile(r"\"generation\":(\d+)")]
+
+
+def published(text):
+    for pattern in PUB:
+        m = pattern.search(text)
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def case_run(scratch, label, searchd, point, other, keep):
+    case = os.path.join(scratch, f"{label}-{point}-{other}-k{keep}")
+    if os.path.exists(case):
+        raise SystemExit(f"exists: {case}")
+    os.makedirs(case)
+    setup(case, searchd)
+    b_script = os.path.join(case, "b.py")
+    with open(b_script, "w") as f:
+        f.write(B_SCRIPT)
+    out = os.path.join(case, "out")
+    before = manifest_generation(out)
+    bp, _ = POINTS[point]
+    shell = " ".join(shlex.quote(x) for x in [sys.executable, "-I", b_script, case, searchd, other, keep])
+    kflag = ["--keep-generations", "1"] if keep == "1" else []
+    argv = ["lldb", "--batch", "-o", f"breakpoint set --one-shot true {bp}", "-o", "run",
+            "-o", f"platform shell {shell}", "-o", "continue", "--", searchd, "index", "notes", "--out", "out"] + kflag
+    done = subprocess.run(argv, cwd=case, capture_output=True, text=True, timeout=180)
+    log = done.stdout + done.stderr
+    with open(os.path.join(case, "lldb.log"), "w") as f:
+        f.write(log)
+    stopped = log.find("breakpoint 1\n") if "stop reason = one-shot breakpoint 1" in log else -1
+    b_ran = log.find("B-RAN")
+    a_line = None
+    for line in log.splitlines():
+        if line.startswith("indexed notes:") or line.startswith("error") or "searchd:" in line:
+            a_line = line.strip()
+    exit_m = re.search(r"exited with status = (\d+)", log)
+    a_rc = int(exit_m.group(1)) if exit_m else None
+    with open(os.path.join(case, "b.json")) as f:
+        b = json.load(f)
+    after = manifest_generation(out)
+    a_pub = published(a_line or "") if a_rc == 0 else None
+    b_pubs = [published(r["out"]) for r in b["runs"] if r["rc"] == 0]
+    b_desc = ", ".join((f"published {published(r['out'])}" if r["rc"] == 0 else short(r["out"])) for r in b["runs"])
+    numbers = [n for n in b_pubs if n is not None] + ([a_pub] if a_pub is not None else [])
+    twice = len(numbers) != len(set(numbers))
+    back = not (before <= b["manifest_at_stop"] <= b["manifest_after_b"] <= after)
+    order_ok = 0 <= stopped < b_ran
+    # Does the index open and answer after both? (`query` on the final MANIFEST.)
+    q = subprocess.run([searchd, "query", "out", "evidence"], cwd=case, capture_output=True, text=True)
+    verdict = "ok" if (order_ok and not twice and not back) else "VIOLATION"
+    if not order_ok:
+        verdict = "NOT-STOPPED"
+    a_desc = f"published {a_pub}" if a_pub is not None else f"rc={a_rc} " + short(re.sub(r"\x1b\[[0-9;]*m", "", log[b_ran:]))
+    return (f"{label:5} {point:9} {other:12} k={keep or '-'} | lock held at stop: {str(b['lock_held_at_stop']):5} | "
+            f"B: {b_desc} | A: {a_desc} | MANIFEST {before}->{b['manifest_after_b']}->{after} | "
+            f"twice={'YES' if twice else 'no'} back={'YES' if back else 'no'} query rc={q.returncode} | {verdict}")
+
+
+def short(text):
+    for token in ("WriterBusy", "PathAlreadyExists", "NoFreeGeneration"):
+        if token in text:
+            return token
+    return text.splitlines()[-1][:60] if text else "?"
+
+
+def main():
+    scratch = sys.argv[1]
+    pairs = sys.argv[2:]
+    builds = [(pairs[i], pairs[i + 1]) for i in range(0, len(pairs), 2)]
+    lines = []
+    for label, searchd in builds:
+        for point in POINTS:
+            for other in OTHERS:
+                for keep in ("", "1"):
+                    line = case_run(scratch, label, searchd, point, other, keep)
+                    print(line, flush=True)
+                    lines.append(line)
+    for label, _ in builds:
+        mine = [l for l in lines if l.startswith(label + " ")]
+        print(f"{label}: {len(mine)} cases, {sum('| ok' in l for l in mine)} ok, "
+              f"{sum('VIOLATION' in l for l in mine)} violations, {sum('NOT-STOPPED' in l for l in mine)} not stopped")
+
+
+if __name__ == "__main__":
+    main()

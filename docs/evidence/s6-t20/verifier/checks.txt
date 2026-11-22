@@ -1,0 +1,99 @@
+# S6-T20 verifier: checks, 21 Nov 2026. head = git archive of cbc0778, main = git archive of 3cf188b, each with its own Zig caches; Python suites in the worktree (two of them need a git checkout).
+
+## The builder's new tests on main's code (git archive of 940bbf8, own caches), Debug
++- run test tests 287 pass, 9 skip, 3 fail (299 total)
+error: 'cli_test.test.S6-T20: another writer racing a full rebuild is refused with WriterBusy once the rebuild has chosen its number; no number twice, MANIFEST never back' failed:
+after_choice update: other [published 10], MANIFEST 9 -> 10 -> 10, rebuild PathAlreadyExists FAIL
+after_choice update_twice_keep_one: other [published 10, published 11], MANIFEST 9 -> 11 -> 10, rebuild published 10 FAIL
+after_choice rebuild: other [published 10], MANIFEST 9 -> 10 -> 10, rebuild PathAlreadyExists FAIL
+after_choice import_json: other [published 10], MANIFEST 9 -> 10 -> 10, rebuild PathAlreadyExists FAIL
+during_walk update: other [published 10], MANIFEST 9 -> 10 -> 10, rebuild PathAlreadyExists FAIL
+during_walk update_twice_keep_one: other [published 10, published 11], MANIFEST 9 -> 11 -> 10, rebuild published 10 FAIL
+during_walk rebuild: other [published 10], MANIFEST 9 -> 10 -> 10, rebuild PathAlreadyExists FAIL
+during_walk import_json: other [published 10], MANIFEST 9 -> 10 -> 10, rebuild PathAlreadyExists FAIL
+error: 'cli_test.test.S6-T20: searchd index with WRITER.LOCK held is refused with WriterBusy before it chooses a number' failed:
+S6-T20 --generation 10 over published_by_another_writer: PathAlreadyExists
+S6-T20 --generation 10 over lone_lexical_leftover: PathAlreadyExists
+S6-T20 --generation 10 over lone_state_leftover: PathAlreadyExists
+S6-T20 lock held, no number left: NoFreeGeneration
+error: 'abi_index_folder_test.test.S6-T20: ss_index_folder with WRITER.LOCK held answers WriterBusy before it chooses a number' failed:
+S6-T20 ss_index_folder, lock held, no number left: ss_index_folder: NoFreeGeneration: no generation number above 18446744073709551615 (traces: lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair
+Build Summary: 13/15 steps succeeded (1 failed); 587/599 tests passed (9 skipped, 3 failed)
++- run test core 260 pass (260 total) 36s MaxRSS:413M
++- run test operations 9 pass (9 total) 202ms MaxRSS:6M
++- run test interfaces 25 pass (25 total) 294ms MaxRSS:9M
++- run test tests 287 pass, 9 skip, 3 fail (299 total)
+
+## Head, Debug: python3 scripts/check_test_counts.py --run -- --cache-dir ... --global-cache-dir ...
+Build Summary: 15/15 steps succeeded; 590/599 tests passed (9 skipped)
++- run test core 260 pass (260 total) 35s MaxRSS:413M
++- run test operations 9 pass (9 total) 230ms MaxRSS:6M
++- run test interfaces 25 pass (25 total) 291ms MaxRSS:9M
++- run test tests 290 pass, 9 skip (299 total) 1m MaxRSS:644M
++- run test 6 pass (6 total) 961ms MaxRSS:5M
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+check_test_counts: OK (5 steps, 599 tests: every step ran the tests the listing has, and the static checker passes)
+
+## Head, ReleaseSmall: the same with -Doptimize=ReleaseSmall
+after_choice update: other [WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 ok
+after_choice update_twice_keep_one: other [WriterBusy, WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 ok
+after_choice rebuild: other [WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 ok
+after_choice import_json: other [WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 ok
+during_walk update: other [published 10], MANIFEST 9 -> 10 -> 11, rebuild published 11 ok
+during_walk update_twice_keep_one: other [published 10, published 11], MANIFEST 9 -> 11 -> 12, rebuild published 12 ok
+during_walk rebuild: other [published 10], MANIFEST 9 -> 10 -> 11, rebuild published 11 ok
+during_walk import_json: other [published 10], MANIFEST 9 -> 10 -> 11, rebuild published 11 ok
+S6-T20 lock held, no number left: WriterBusy
+S6-T20 ss_index_folder, lock held, no number left: ss_index_folder: WriterBusy
+Build Summary: 15/15 steps succeeded; 590/599 tests passed (9 skipped)
++- run test core 260 pass (260 total) 3s MaxRSS:35M
++- run test operations 9 pass (9 total) 143ms MaxRSS:3M
++- run test interfaces 25 pass (25 total) 193ms MaxRSS:4M
++- run test tests 290 pass, 9 skip (299 total) 19s MaxRSS:402M
++- run test 6 pass (6 total) 316ms MaxRSS:4M
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+check_test_counts: OK (5 steps, 599 tests: every step ran the tests the listing has, and the static checker passes)
+
+## zig build test-abi, head
+Debug: abi_test: 24/24 checks passed Build Summary: 8/8 steps succeeded
+ReleaseSmall: abi_test: 24/24 checks passed Build Summary: 8/8 steps succeeded
+
+## Static checkers
+head: check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 599 tests, each run by a step of `zig build test`; the public core API `api`: 85 names in 22 namespaces)
+main: check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 595 tests, each run by a step of `zig build test`; the public core API `api`: 86 names in 22 namespaces)
+head check_requirements: Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+worktree: git diff --check main HEAD: clean; python3 -I scripts/check_no_home_paths.py: exit 0
+nextFreeGeneration in zig/src/ops and zig/src/interfaces: 0 lines
+
+## Python (worktree)
+with Zig (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY): Ran 580 tests in 114.860s OK
+SEARCHD_BINARY = head ReleaseSmall searchd: Ran 580 tests in 63.617s OK
+SEARCH_SIMPLI_NO_ZIG=1: Ran 525 tests in 46.862s OK (skipped=43)
+
+## Dart (bindings/dart/search_simpli of the natives archive below; version 0.9.6)
+pub get --offline: exit 0; dart analyze lib test: No issues found!; dart test: +97: All tests passed!
+
+## Natives: tool/build_native.sh in a fresh archive of cbc0778 (ZIG_LOCAL_CACHE_DIR/ZIG_GLOBAL_CACHE_DIR empty, SS_ANDROID_NDK = NDK 28.2.13676358)
+Build Summary: 28/28 steps succeeded
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib (1007208 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (966112 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (972120 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (9c14539075df42be3e42200bea4d80af01918745bee5e2d310b272b288f82327)
+cmp identical to committed: native/macos-arm64/libsearch_simpli.dylib (1007208 B)
+cmp identical to committed: native/android-arm64/libsearch_simpli.so (966112 B)
+cmp identical to committed: example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so (966112 B)
+cmp identical to committed: native/ios-arm64/search_simpli.framework/search_simpli (972120 B)
+cmp identical to committed: native/ios-arm64/search_simpli.framework/Info.plist (749 B)
+cmp identical to committed: native/SOURCE-SHA256 (65 B)
+source_digest.py on the worktree: 9c14539075df42be3e42200bea4d80af01918745bee5e2d310b272b288f82327; last commit touching SOURCE-SHA256: 3dac5a9
+source_digest.py on 940bbf8 (tests only): 3043c76e52bf9b19029e308cf10500c43e2ab15dc42447efc060b025885a80f3 = its committed 3043c76e52bf9b19029e308cf10500c43e2ab15dc42447efc060b025885a80f3
+check_native.sh (worktree): check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+exports (nm -gU, macOS dylib): main 18, head 18, same names: yes
+main's committed dylib: 1006328 B
+searchd ReleaseSmall (zig build -Doptimize=ReleaseSmall, own caches): main 1151048 B, head 1151240 B
+
+## Indexes and answers, main vs head ReleaseSmall searchd (compare_answers.py.txt; the builder's copies of S6-T14's three 10k corpora and query files, read only)
+timing-10k: index folders identical=True; index line identical=True (analyzer=analyzer-v2 generation=1); answers asked 54, differing 0
+prose-10k: index folders identical=True; index line identical=True (analyzer=analyzer-v2 generation=1); answers asked 54, differing 0
+tamil-10k: index folders identical=True; index line identical=True (analyzer=analyzer-v2 generation=1); answers asked 55, differing 0

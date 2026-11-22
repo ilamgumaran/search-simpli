@@ -1,0 +1,4 @@
+# S6-T20 rework 1, the static checkers on the rework's tree
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 600 tests, each run by a step of `zig build test`; the public core API `api`: 85 names in 22 namespaces)
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+tool/source_digest.py: 9c14539075df42be3e42200bea4d80af01918745bee5e2d310b272b288f82327 (= native/SOURCE-SHA256, unchanged: zig/src/tests/cli_test.zig is a *_test.zig file, not a digest input)

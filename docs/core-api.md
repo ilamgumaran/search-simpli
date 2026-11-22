@@ -7,7 +7,9 @@ aliases and doc comments only: no function body, format, contract or answer chan
 `engine.queryOneShot`, the first of the follow-ups below; the answers did not change.
 [S6-T19](tasks/S6-T19.md) (21 Nov 2026) moved the two tests beside the code that used
 `analyzer_v2.analyzer_id` and `manifest.decode` to `zig/src/tests/`, and those two names
-left `api`; no shipped code changed.
+left `api`; no shipped code changed. [S6-T20](tasks/S6-T20.md) (21 Nov 2026) moved the
+choice of a full rebuild's generation number into the core, under the writer lock, and
+`generation_alloc.nextFreeGeneration` left `api`.
 
 The core is one Zig module, `core` (root `zig/src/core/core.zig`; see
 [layers.md](layers.md)). Its root has two parts:
@@ -68,13 +70,14 @@ A type's fields and methods come with the type: `api.engine.Engine` is the whole
 
 ## The names, by purpose
 
-86 names in 22 namespaces, as `python3 scripts/check_layers.py` counts them in its last
-line ("the public core API `api`: 86 names in 22 namespaces"): every core name operations
+85 names in 22 namespaces, as `python3 scripts/check_layers.py` counts them in its last
+line ("the public core API `api`: 85 names in 22 namespaces"): every core name operations
 and interfaces used at `10f3d40` (the measurement,
 [`docs/evidence/s6-t16/measure.txt`](evidence/s6-t16/measure.txt)), less
 `title_field.derive` and with `engine.queryOneShot` in its place (S6-T18), less
-`analyzer_v2.analyzer_id` and `manifest.decode` (S6-T19), and nothing else. Every one of
-the 86 is used by a declaration of `ops/` or `interfaces/` that is not a test
+`analyzer_v2.analyzer_id` and `manifest.decode` (S6-T19), less
+`generation_alloc.nextFreeGeneration` (S6-T20), and nothing else. Every one of
+the 85 is used by a declaration of `ops/` or `interfaces/` that is not a test
 ([`docs/evidence/s6-t19/measure.txt`](evidence/s6-t19/measure.txt) and
 [`after.txt`](evidence/s6-t19/after.txt)). Their doc comments in `core.zig` say what each does, what it allocates and what it
 returns.
@@ -93,7 +96,7 @@ returns.
 | Apply changes | `apply` | `applyChanges`, `Options`, `writeReportJson`, `default_max_file_bytes`, `default_max_total_bytes` | 5 |
 | Build an index | `indexer` | `indexFolder`, `indexFolderIncremental`, `buildFolderDetached`, `Caps`, `IncrementalReport`, `AnalyzerId` | 6 |
 | | `chunker` | `default_max_chars`, `default_overlap_lines` | 2 |
-| | `generation_alloc` | `nextFreeGeneration`, `describeNoFreeGeneration` | 2 |
+| | `generation_alloc` | `describeNoFreeGeneration` | 1 |
 | | `title_field` | `policy_id` | 1 |
 | Write a generation by hand | `importer` | `importJson`, `importJsonKeeping` | 2 |
 | | `manifest` | `create`, `encode`, `PendingEntry` | 3 |
@@ -105,7 +108,7 @@ returns.
 | The formats' identities | `fold` | `policy_id` | 1 |
 | | `fuzzy` | `policy_id` | 1 |
 
-By purpose: open 9, search 26, find 8, read a span 10, apply 5, build an index 11, write a
+By purpose: open 9, search 26, find 8, read a span 10, apply 5, build an index 10, write a
 generation by hand 11, benchmark 4, the formats' identities 2 (a third,
 `title_field.policy_id`, sits with its file under build an index). The `engine` namespace
 appears twice: `Engine` and `Evidence` open a generation, `queryOneShot` searches it.
@@ -140,7 +143,7 @@ They fall in four kinds:
 - `OutOfMemory`;
 - the file and directory errors of `std.Io` (`FileNotFound` when a directory holds no
   `MANIFEST`, `AccessDenied`, `NoSpaceLeft`, ...), from the opens, the indexers, the
-  importer, `applyChanges`, `nextFreeGeneration` and `publishSerialized`;
+  importer, `applyChanges` and `publishSerialized`;
 - a damaged or foreign index (`BadMagic`, `UnsupportedVersion`, `Truncated`,
   `ChecksumMismatch`, the section size and count mismatches), from every function that
   reads one;
@@ -236,9 +239,11 @@ function bodies.
   `tests/`, and the name left `api`. Every other name here is used by `initDemoSnapshot`,
   so moving the tests would drop none of them; they leave `api` only if the demo uses the
   importer or an operation instead.
-- **Generation numbering in interfaces.** `generation_alloc.nextFreeGeneration`
+- ~~**Generation numbering in interfaces.** `generation_alloc.nextFreeGeneration`
   (`interfaces/abi.zig`, `interfaces/cli.zig`) chooses a generation number before a
-  detached build; the indexer could do it.
+  detached build; the indexer could do it.~~ Done by [S6-T20](tasks/S6-T20.md): the
+  interfaces pass no number, the core chooses it under the writer lock, and
+  `nextFreeGeneration` left `api`.
 - **Record paths.** `scope.recordPath`, `scope.relativePath`, `scope.rootOfPath`,
   `scope.isLegacy`, `scope.legacy_root_id` are the record-path convention
   (`root_id/relative`, bare in the legacy root), which every answer carries; they may be
