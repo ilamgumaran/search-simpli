@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""S6-T21 verifier, second pass: both timing sets recomputed from the raw run files by the rule of
+2026-11-17 (docs/process/ROLES.md), written from the rule's sentence (not from summarize.py), then
+compared with each set's cells.txt; plus the orders, the gates, the answers and the cross-set facts.
+
+Usage: python3 -I recompute_pass2.py <repo checkout>
+"""
+import json
+import re
+import statistics
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+CONTROLS = ["main2", "cl", "ci"]
+BUILDS = ["main", "main2", "head", "cl", "ci"]
+TOOLCHAIN = re.compile(r"^(zig|clang|cc|c\+\+|ld|ld64|swift|swiftc|swift-frontend|xcodebuild|dart|flutter|gradle|java|"
+                       r"cargo|rustc|make|ninja|cmake|python3?|node)\b", re.I)
+
+
+def cells_of(row):
+    yield ("open",), row["open"]["p50_ms"], None
+    for w in row["warm"]:
+        yield ("warm", w["field"], w["query"]), w["p50_ms"], w["answer_sha256"]
+    for f in row["find"]:
+        yield ("find", f["mode"], f["query"]), f["p50_ms"], f["answer_sha256"]
+
+
+def load_set(d):
+    values = defaultdict(dict)
+    digests = defaultdict(set)
+    order = defaultdict(list)
+    loads = []
+    index_of = {}
+    rows = 0
+    for r in range(1, 6):
+        for line in (d / f"query-run{r}.jsonl").read_text().splitlines():
+            row = json.loads(line)
+            rows += 1
+            assert int(row["round"]) == r, (row["round"], r)
+            parts = row["index"].rstrip("/").split("/")
+            corpus, idx = parts[-1], parts[-2]
+            index_of.setdefault(row["variant"], set()).add(idx)
+            order[r].append((corpus, row["variant"]))
+            loads.append(row["load_before"])
+            for cell, ms, digest in cells_of(row):
+                assert (row["variant"], r) not in values[(corpus, cell)], ("duplicate", corpus, cell, row["variant"], r)
+                values[(corpus, cell)][(row["variant"], r)] = ms
+                if digest is not None:
+                    digests[(corpus, cell)].add(digest)
+    return rows, values, digests, order, loads, index_of
+
+
+def judge(values):
+    results = {}
+    for key, v in values.items():
+        assert len(v) == 25, (key, len(v))
+        m = statistics.median(v[("main", r)] for r in range(1, 6))
+        per_run = {b: [v[(b, r)] - v[("main", r)] for r in range(1, 6)] for b in BUILDS if b != "main"}
+        d = {b: statistics.median(x) for b, x in per_run.items()}
+        t = max(0.010, 0.01 * m)
+        top = max(d[c] for c in CONTROLS)
+        fail = d["head"] >= t and d["head"] - top >= t
+        band = sum(1 for r in range(1, 6) if all(v[("head", r)] > v[(b, r)] for b in BUILDS if b != "head"))
+        results[key] = dict(m=m, d=d, t=t, top=top, fail=fail, band=band, per_run=per_run)
+    return results
+
+
+def latin(orders_text):
+    want = {}
+    for line in orders_text.splitlines():
+        mm = re.match(r"^(run|corpora)(\d):(.*)$", line)
+        if mm:
+            want.setdefault(int(mm.group(2)), {})[mm.group(1)] = mm.group(3).split()
+    b0, c0 = want[1]["run"], want[1]["corpora"]
+    ok = True
+    for r in range(1, 6):
+        rb = b0[(r - 1) % 5:] + b0[:(r - 1) % 5]
+        rc = c0[(r - 1) % 3:] + c0[:(r - 1) % 3]
+        ok &= want[r]["run"] == rb and want[r]["corpora"] == rc
+    # each build in each position once (a Latin square over the five runs)
+    for pos in range(5):
+        ok &= sorted(want[r]["run"][pos] for r in range(1, 6)) == sorted(BUILDS)
+    return want, ok
+
+
+def gates(path):
+    lines = [l for l in path.read_text().splitlines() if " gate " in l]
+    out = []
+    for l in lines:
+        mm = re.match(r"^(\S+ \S+) s6t14 r(\d+) (\S+) (\S+) gate (PASS|REFUSED\(.*?\)) lock=(\S+) load=\[([\d. ]+)\] top8: (.*)$", l)
+        assert mm, l
+        procs = [p.strip() for p in mm.group(8).split(";") if p.strip()]
+        top = []
+        for p in procs:
+            name, cpu = p.rsplit(" ", 1)
+            top.append((name, float(cpu)))
+        out.append(dict(time=mm.group(1), run=int(mm.group(2)), corpus=mm.group(3), build=mm.group(4),
+                        verdict=mm.group(5), lock=mm.group(6), load=[float(x) for x in mm.group(7).split()], top=top))
+    return out
+
+
+def parse_cells_txt(path):
+    got, corpus = {}, None
+    for line in path.read_text().splitlines():
+        if line.startswith("## "):
+            corpus = line[3:].strip()
+            continue
+        parts = line.split()
+        if not parts or parts[0] not in ("open", "warm", "find"):
+            continue
+        i = len(parts) - (10 if parts[0] == "open" else 11)
+        name = tuple(parts[:i])
+        cell = ("open",) if name == ("open",) else (name[0], name[1], " ".join(name[2:]))
+        nums = parts[i:]
+        got[(corpus, cell)] = dict(main=float(nums[0]), dm2=float(nums[1]), dcl=float(nums[2]), dci=float(nums[3]),
+                                   dh=float(nums[4]), t=float(nums[6]), hc=float(nums[7]), verdict=nums[8],
+                                   band=nums[9])
+    return got
+
+
+def fmt(cell):
+    return " ".join(cell)
+
+
+def main():
+    repo = Path(sys.argv[1])
+    tdir = repo / "docs/evidence/s6-t21/timing"
+    want, latin_ok = latin((repo / "scripts/prototypes/s6t21/orders.txt").read_text())
+    print(f"orders.txt: Latin square (builds rotated left by r-1 mod 5, corpora by r-1 mod 3; each build once per position): {latin_ok}")
+    sets = {"first": tdir, "retake": tdir / "retake"}
+    res, dig = {}, {}
+    for name, d in sets.items():
+        print(f"\n===== {name} set ({d.relative_to(repo)}) =====")
+        rows, values, digests, order, loads, index_of = load_set(d)
+        print(f"rows {rows}; judged cells {len(values)}")
+        for r in range(1, 6):
+            builds_seen = []
+            for c, v in order[r]:
+                if v not in builds_seen:
+                    builds_seen.append(v)
+            corpora_seen = []
+            for c, v in order[r]:
+                if c not in corpora_seen:
+                    corpora_seen.append(c)
+            # rows are written corpus-major: for each corpus in order, the builds in order
+            expect = [(c, b) for c in want[r]["corpora"] for b in want[r]["run"]]
+            print(f"  run{r}: rows in the order the orders give (corpus-major, builds within): {order[r] == expect}")
+        lo = [x for l in loads for x in l]
+        print(f"  load_before (1/5/15 min) over {len(loads)} processes: {min(lo):.2f} to {max(lo):.2f}; "
+              f"5-minute {min(l[1] for l in loads):.2f} to {max(l[1] for l in loads):.2f}")
+        print(f"  index folders by build: {dict((k, sorted(v)) for k, v in sorted(index_of.items()))}")
+        g = gates(d / "gates.txt")
+        verdicts = Counter(x["verdict"].split("(")[0] for x in g)
+        print(f"  gates: {len(g)} lines, {dict(verdicts)}")
+        passed = [x for x in g if x["verdict"] == "PASS"]
+        refused = [x for x in g if x["verdict"] != "PASS"]
+        for x in refused:
+            print(f"    refused: {x['time']} r{x['run']} {x['corpus']} {x['build']} {x['verdict']} load {x['load']}")
+        print(f"  passing gates: lock absent in all {all(x['lock'] == 'absent' for x in passed)}; "
+              f"5-minute load {min(x['load'][1] for x in passed):.2f} to {max(x['load'][1] for x in passed):.2f} (gate: below 4.0)")
+        tool = [(x['time'], n, c) for x in passed for n, c in x["top"] if c >= 20 and TOOLCHAIN.match(n)]
+        print(f"  toolchain-like process at >= 20 % CPU in a passing gate's top 8: {tool if tool else 'none'}")
+        heavy = Counter(n for x in passed for n, c in x["top"] if c >= 20)
+        print(f"  any process >= 20 % CPU in passing gates' top 8 (count of gates): {dict(heavy)}")
+        gate_order_ok = True
+        for r in range(1, 6):
+            seq = [(x["corpus"], x["build"]) for x in passed if x["run"] == r]
+            exp = [(c, b) for c in want[r]["corpora"] for b in want[r]["run"]]
+            gate_order_ok &= seq == exp
+        print(f"  passing gates follow the orders, one per process, 15 per run: {gate_order_ok}")
+        print(f"  first passing gate {passed[0]['time']}, last {passed[-1]['time']}")
+        results = judge(values)
+        res[name] = results
+        dig[name] = digests
+        per_corpus = defaultdict(lambda: Counter())
+        for (corpus, cell), x in results.items():
+            per_corpus[corpus][cell[0]] += 1
+            per_corpus[corpus]["fail" if x["fail"] else "pass"] += 1
+            per_corpus[corpus]["band>=3"] += x["band"] >= 3
+            per_corpus[corpus]["clause1"] += x["d"]["head"] >= x["t"]
+        for corpus in sorted(per_corpus):
+            c = per_corpus[corpus]
+            ratio_cell = max(((x["d"]["head"] / x["t"], cell) for (cc, cell), x in results.items() if cc == corpus))
+            print(f"  {corpus}: open {c['open']}, warm {c['warm']}, find {c['find']}; pass {c['pass']}, fail {c['fail']}; "
+                  f"clause 1 reached {c['clause1']}; band excursions {c['band>=3']}; largest d(head)/T {ratio_cell[0]:.2f} ({fmt(ratio_cell[1])})")
+        fails = [(k, x) for k, x in results.items() if x["fail"]]
+        print(f"  TOTAL pass {len(results) - len(fails)}, fail {len(fails)}: {[(k[0], fmt(k[1])) for k, _ in fails]}")
+        multi = [k for k, ds in digests.items() if len(ds) != 1]
+        print(f"  answer digests: {len(digests)} warm/find cells, {len(multi)} with more than one digest over 25 rows")
+        got = parse_cells_txt(d / "cells.txt")
+        mism = 0
+        for key, x in results.items():
+            y = got.get(key)
+            if y is None:
+                mism += 1
+                print("  MISSING in cells.txt", key)
+                continue
+            ok = (abs(x["m"] * 1000 - y["main"]) <= 0.051 and abs(x["d"]["head"] * 1000 - y["dh"]) <= 0.051
+                  and abs(x["d"]["main2"] * 1000 - y["dm2"]) <= 0.051 and abs(x["d"]["cl"] * 1000 - y["dcl"]) <= 0.051
+                  and abs(x["d"]["ci"] * 1000 - y["dci"]) <= 0.051 and abs(x["t"] * 1000 - y["t"]) <= 0.051
+                  and abs((x["d"]["head"] - x["top"]) * 1000 - y["hc"]) <= 0.11
+                  and y["verdict"].lower() == ("fail" if x["fail"] else "pass") and y["band"] == f"{x['band']}/5")
+            if not ok:
+                mism += 1
+                print("  MISMATCH", key, y, x["m"], x["d"], x["t"], x["fail"], x["band"])
+        print(f"  cells.txt: {len(got)} judged lines, {len(results)} recomputed, {mism} mismatches "
+              f"(main, d of every build, T, head - largest control, verdict, band)")
+
+    print("\n===== across the two sets =====")
+    keys = sorted(res["first"])
+    assert keys == sorted(res["retake"])
+    same_digest = all(dig["first"][k] == dig["retake"][k] for k in dig["first"])
+    print(f"answer digests identical between the sets too: {same_digest} ({len(dig['first'])} cells)")
+    for name, other in (("first", "retake"), ("retake", "first")):
+        for k in keys:
+            if res[name][k]["fail"]:
+                x, y = res[name][k], res[other][k]
+                print(f"{name}'s failing cell {k[0]} {fmt(k[1])}: in the {other} set "
+                      f"{'FAIL' if y['fail'] else 'pass'}, d(head) {y['d']['head'] * 1000:+.1f} us, T {y['t'] * 1000:.1f}, "
+                      f"head - largest control {(y['d']['head'] - y['top']) * 1000:+.1f}, band {y['band']}/5")
+    for k in keys:
+        if res["first"][k]["fail"] or res["retake"][k]["fail"]:
+            for name in ("first", "retake"):
+                x = res[name][k]
+                print(f"  {k[0]} {fmt(k[1])} {name}: m {x['m'] * 1000:.1f}, T {x['t'] * 1000:.1f}, "
+                      + ", ".join(f"d {b} {x['d'][b] * 1000:+.1f}" for b in ("main2", "cl", "ci", "head"))
+                      + f", head-top {(x['d']['head'] - x['top']) * 1000:+.1f}, band {x['band']}/5; head-main by run "
+                      + ", ".join(f"{v * 1000:+.1f}" for v in x["per_run"]["head"])
+                      + "; controls by run (main2/cl/ci) "
+                      + "; ".join("/".join(f"{x['per_run'][c][r] * 1000:+.1f}" for c in CONTROLS) for r in range(5)))
+
+    print("\n----- sign of d(head) - largest control, by kind, both sets -----")
+    for kind in ("open", "warm", "find"):
+        ks = [k for k in keys if k[1][0] == kind]
+        both_pos = [k for k in ks if res["first"][k]["d"]["head"] - res["first"][k]["top"] > 0
+                    and res["retake"][k]["d"]["head"] - res["retake"][k]["top"] > 0]
+        pos = {s: sum(res[s][k]["d"]["head"] - res[s][k]["top"] > 0 for k in ks) for s in res}
+        dpos = {s: sum(res[s][k]["d"]["head"] > 0 for k in ks) for s in res}
+        bothd = sum(res["first"][k]["d"]["head"] > 0 and res["retake"][k]["d"]["head"] > 0 for k in ks)
+        print(f"{kind}: {len(ks)} cells; head above the largest control: first {pos['first']}, retake {pos['retake']}, "
+              f"in both {len(both_pos)}; d(head) > 0: first {dpos['first']}, retake {dpos['retake']}, in both {bothd}")
+        if kind == "find":
+            for k in both_pos:
+                print(f"    above in both: {k[0]} {fmt(k[1])}: " + "; ".join(
+                    f"{s} {(res[s][k]['d']['head'] - res[s][k]['top']) * 1000:+.1f} us (T {res[s][k]['t'] * 1000:.1f})" for s in res))
+
+    print("\n----- each build taken as 'the head' in turn: in how many cells is its d the highest of the four "
+          "non-main builds (chance about 1/4), and highest in both sets -----")
+    for kind in ("open", "warm", "find"):
+        ks = [k for k in keys if k[1][0] == kind]
+        line = []
+        for b in ("head", "main2", "cl", "ci"):
+            top = {s: sum(res[s][k]["d"][b] == max(res[s][k]["d"].values()) for k in ks) for s in res}
+            both = sum(all(res[s][k]["d"][b] == max(res[s][k]["d"].values()) for s in res) for k in ks)
+            line.append(f"{b} {top['first']}/{top['retake']} (both {both})")
+        print(f"{kind} ({len(ks)} cells): " + "; ".join(line))
+
+    print("\n----- find cells: d(head) - largest control, us, first / retake (T) -----")
+    for k in keys:
+        if k[1][0] != "find":
+            continue
+        a, b = res["first"][k], res["retake"][k]
+        print(f"  {k[0]:10s} {fmt(k[1])[:40]:40s} {(a['d']['head'] - a['top']) * 1000:+8.1f} / "
+              f"{(b['d']['head'] - b['top']) * 1000:+8.1f}  (T {a['t'] * 1000:.1f}/{b['t'] * 1000:.1f}); "
+              f"d(head) {a['d']['head'] * 1000:+.1f} / {b['d']['head'] * 1000:+.1f}")
+
+    print("\n----- the head - largest control, pooled over both sets' ten runs (not the rule; information) -----")
+    for k in keys:
+        if not (res["first"][k]["fail"] or res["retake"][k]["fail"]):
+            continue
+        h = res["first"][k]["per_run"]["head"] + res["retake"][k]["per_run"]["head"]
+        ctl = {c: res["first"][k]["per_run"][c] + res["retake"][k]["per_run"][c] for c in CONTROLS}
+        t = max(0.010, 0.01 * statistics.median([res["first"][k]["m"], res["retake"][k]["m"]]))
+        top = max(statistics.median(v) for v in ctl.values())
+        print(f"  {k[0]} {fmt(k[1])}: ten-run median d(head) {statistics.median(h) * 1000:+.1f} us, controls "
+              + ", ".join(f"{c} {statistics.median(v) * 1000:+.1f}" for c, v in ctl.items())
+              + f"; head - largest {(statistics.median(h) - top) * 1000:+.1f} us against T about {t * 1000:.1f}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,38 @@
+S6-T21 verifier, pass 2: the two mutants rerun against the head 2efe2a9's tests.
+Script: ../mutations.py.txt (pass 1, unchanged), run as: python3 -I mutations.py <worktree> <scratch>/mut2 2 no_check_import_filename no_check_init_demo
+Each: a git archive of HEAD (2efe2a9) with one replacement in zig/src/core/lifecycle.zig (asserted to match exactly once), fresh
+local and global Zig caches, zig build test --summary all (Debug), zig build test-abi, zig build --prefix, then
+python3 -m unittest tests.test_cli_process with SEARCHD_BINARY set to the mutant's searchd.
+  no_check_import_filename: drops 'try requireCallerNumberAboveFloor(allocator, dir, io, manifest_encoded);' before
+    publishSerializedWithFilenameKeeping's 'return publishLeasedKeepingWithExtras(' (the format_version 2 import)
+  no_check_init_demo: drops 'try requireCallerNumberAboveFloor(std.heap.smp_allocator, dir, io, manifest_encoded);' (publishSerialized)
+
+== no_check_import_filename
+   zig build test: exit 1; Build Summary: 13/15 steps succeeded (1 failed); 596/606 tests passed (9 skipped, 1 failed)
+   failed: cli_test.test.S6-T21: a format_version 2 import at or below the highest generation is refused with StaleGeneration and changes nothing; above it publishes
+   test-abi: exit 0; abi_test: 24/24 checks passed
+   test_cli_process: Ran 14 tests in 1.404s OK
+== no_check_init_demo
+   zig build test: exit 1; Build Summary: 13/15 steps succeeded (1 failed); 596/606 tests passed (9 skipped, 1 failed)
+   failed: cli_test.test.S6-T21: publishSerialized (init-demo's publish) refuses generation 1 over a folder at 9 with StaleGeneration and changes nothing; into a fresh directory it publishes
+   test-abi: exit 0; abi_test: 24/24 checks passed
+   test_cli_process: Ran 14 tests in 1.716s FAILED (failures=2)
+   py failed: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (tests.test_cli_process.CliProcessTests)
+
+Lines the new tests print (from the mutants' Debug test logs):
+  no_check_import_filename: S6-T21 publishSerialized of generation 1 over 9: StaleGeneration
+  no_check_import_filename: format 2 import 5 over 9: published 5, MANIFEST 5, directory changed
+  no_check_import_filename: format 2 import 9 over 9: PathAlreadyExists, MANIFEST 5, directory unchanged
+  no_check_import_filename: format 2 import 10 over 9: published 10, MANIFEST 10
+  no_check_init_demo: format 2 import 5 over 9: StaleGeneration, MANIFEST 9, directory unchanged
+  no_check_init_demo: format 2 import 9 over 9: StaleGeneration, MANIFEST 9, directory unchanged
+  no_check_init_demo: format 2 import 10 over 9: published 10, MANIFEST 10
+  no_check_init_demo: S6-T21 publishSerialized of generation 1 over 9: published
+
+test_cli_process failures under no_check_init_demo:
+  FAIL: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (tests.test_cli_process.CliProcessTests) (command='init-demo', number=1)
+  FAIL: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (tests.test_cli_process.CliProcessTests)
+  FAILED (failures=2)
+
+Pass 1 (at 92ed47b): no_check_import_filename survived every suite; no_check_init_demo was caught only by test_cli_process.
+Pass 2 (at 2efe2a9): each is caught by zig build test, by exactly the rework's new test for it.

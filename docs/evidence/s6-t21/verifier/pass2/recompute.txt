@@ -1,0 +1,102 @@
+S6-T21 verifier, pass 2: both timing sets recomputed from the raw run files (recompute_pass2.py.txt, written from
+the rule's sentence in docs/process/ROLES.md, not from summarize.py). Run: python3 -I recompute_pass2.py.txt <worktree> at 2efe2a9.
+
+orders.txt: Latin square (builds rotated left by r-1 mod 5, corpora by r-1 mod 3; each build once per position): True
+
+===== first set (docs/evidence/s6-t21/timing) =====
+rows 75; judged cells 166
+  run1: rows in the order the orders give (corpus-major, builds within): True
+  run2: rows in the order the orders give (corpus-major, builds within): True
+  run3: rows in the order the orders give (corpus-major, builds within): True
+  run4: rows in the order the orders give (corpus-major, builds within): True
+  run5: rows in the order the orders give (corpus-major, builds within): True
+  load_before (1/5/15 min) over 75 processes: 2.22 to 4.16; 5-minute 3.07 to 3.62
+  index folders by build: {'ci': ['ci'], 'cl': ['cl'], 'head': ['head'], 'main': ['main'], 'main2': ['main2']}
+  gates: 76 lines, {'REFUSED': 1, 'PASS': 75}
+    refused: 2026-11-22 12:59:39 r1 timing-10k main REFUSED( load5>=4.0; ) load [3.45, 5.52, 5.12]
+  passing gates: lock absent in all True; 5-minute load 3.07 to 3.62 (gate: below 4.0)
+  toolchain-like process at >= 20 % CPU in a passing gate's top 8: none
+  any process >= 20 % CPU in passing gates' top 8 (count of gates): {'fseventsd': 75, 'WindowServer': 65, 'Finder': 31}
+  passing gates follow the orders, one per process, 15 per run: True
+  first passing gate 2026-11-22 13:06:34, last 2026-11-22 13:14:39
+  prose-10k: open 1, warm 45, find 9; pass 55, fail 0; clause 1 reached 6; band excursions 9; largest d(head)/T 1.32 (warm both the within)
+  tamil-10k: open 1, warm 45, find 10; pass 56, fail 0; clause 1 reached 0; band excursions 0; largest d(head)/T 0.08 (warm content கீகசை)
+  timing-10k: open 1, warm 45, find 9; pass 54, fail 1; clause 1 reached 3; band excursions 3; largest d(head)/T 2.19 (find words from)
+  TOTAL pass 165, fail 1: [('timing-10k', 'find words from')]
+  answer digests: 163 warm/find cells, 0 with more than one digest over 25 rows
+  cells.txt: 166 judged lines, 166 recomputed, 0 mismatches (main, d of every build, T, head - largest control, verdict, band)
+
+===== retake set (docs/evidence/s6-t21/timing/retake) =====
+rows 75; judged cells 166
+  run1: rows in the order the orders give (corpus-major, builds within): True
+  run2: rows in the order the orders give (corpus-major, builds within): True
+  run3: rows in the order the orders give (corpus-major, builds within): True
+  run4: rows in the order the orders give (corpus-major, builds within): True
+  run5: rows in the order the orders give (corpus-major, builds within): True
+  load_before (1/5/15 min) over 75 processes: 1.66 to 3.13; 5-minute 2.33 to 2.67
+  index folders by build: {'ci': ['ci'], 'cl': ['cl'], 'head': ['head'], 'main': ['main'], 'main2': ['main2']}
+  gates: 75 lines, {'PASS': 75}
+  passing gates: lock absent in all True; 5-minute load 2.33 to 2.67 (gate: below 4.0)
+  toolchain-like process at >= 20 % CPU in a passing gate's top 8: none
+  any process >= 20 % CPU in passing gates' top 8 (count of gates): {'WindowServer': 75, 'NordVPN': 3, 'Finder': 7}
+  passing gates follow the orders, one per process, 15 per run: True
+  first passing gate 2026-11-22 13:21:34, last 2026-11-22 13:29:36
+  prose-10k: open 1, warm 45, find 9; pass 54, fail 1; clause 1 reached 1; band excursions 10; largest d(head)/T 1.68 (find words the within)
+  tamil-10k: open 1, warm 45, find 10; pass 56, fail 0; clause 1 reached 0; band excursions 4; largest d(head)/T 0.12 (open)
+  timing-10k: open 1, warm 45, find 9; pass 55, fail 0; clause 1 reached 0; band excursions 1; largest d(head)/T 0.51 (find prefix belo*)
+  TOTAL pass 165, fail 1: [('prose-10k', 'find words the within')]
+  answer digests: 163 warm/find cells, 0 with more than one digest over 25 rows
+  cells.txt: 166 judged lines, 166 recomputed, 0 mismatches (main, d of every build, T, head - largest control, verdict, band)
+
+===== across the two sets =====
+answer digests identical between the sets too: True (163 cells)
+first's failing cell timing-10k find words from: in the retake set pass, d(head) -15.4 us, T 30.3, head - largest control -65.4, band 0/5
+retake's failing cell prose-10k find words the within: in the first set pass, d(head) +20.7 us, T 21.7, head - largest control -72.0, band 1/5
+  prose-10k find words the within first: m 2170.5, T 21.7, d main2 +92.7, d cl -4.7, d ci +17.2, d head +20.7, head-top -72.0, band 1/5; head-main by run +29.9, +20.7, -57.0, +142.2, -108.5; controls by run (main2/cl/ci) +131.3/+26.5/+43.7; +107.0/-2.8/+24.0; -66.8/-52.8/+4.7; +92.7/-4.7/+17.2; -140.6/-116.8/-117.9
+  prose-10k find words the within retake: m 2171.8, T 21.7, d main2 -10.1, d cl -13.0, d ci -0.3, d head +36.5, head-top +36.8, band 4/5; head-main by run +11.4, +48.3, +9.5, +36.5, +37.4; controls by run (main2/cl/ci) -16.3/-37.0/-15.4; +22.4/+129.7/+10.7; -33.4/-32.9/-34.6; -7.2/-13.0/-0.3; -10.1/-2.8/+1.4
+  timing-10k find words from first: m 3016.2, T 30.2, d main2 +19.0, d cl +13.0, d ci +34.2, d head +66.1, head-top +31.9, band 2/5; head-main by run -106.6, +110.6, +73.4, +66.1, -148.7; controls by run (main2/cl/ci) -127.8/-72.0/+57.3; +16.8/+148.0/+91.6; +61.0/+13.0/+15.7; +35.9/+23.8/+12.1; +19.0/-118.4/+34.2
+  timing-10k find words from retake: m 3028.5, T 30.3, d main2 -13.6, d cl +50.0, d ci +15.9, d head -15.4, head-top -65.4, band 0/5; head-main by run -79.0, -1.6, +17.3, -17.3, -15.4; controls by run (main2/cl/ci) -79.2/+560.7/+83.6; -13.6/+22.2/+59.5; +188.8/+50.0/+2.3; +3.0/+10.2/+15.9; -17.9/+59.6/+5.9
+
+----- sign of d(head) - largest control, by kind, both sets -----
+open: 3 cells; head above the largest control: first 0, retake 0, in both 0; d(head) > 0: first 0, retake 2, in both 0
+warm: 135 cells; head above the largest control: first 32, retake 29, in both 20; d(head) > 0: first 56, retake 43, in both 30
+find: 28 cells; head above the largest control: first 3, retake 6, in both 0; d(head) > 0: first 6, retake 7, in both 3
+
+----- each build taken as 'the head' in turn: in how many cells is its d the highest of the four non-main builds (chance about 1/4), and highest in both sets -----
+open (3 cells): head 0/0 (both 0); main2 0/0 (both 0); cl 0/3 (both 0); ci 3/0 (both 0)
+warm (135 cells): head 34/33 (both 20); main2 20/18 (both 2); cl 67/59 (both 36); ci 20/33 (both 12)
+find (28 cells): head 3/6 (both 0); main2 15/14 (both 8); cl 6/7 (both 2); ci 5/1 (both 0)
+
+----- find cells: d(head) - largest control, us, first / retake (T) -----
+  prose-10k  find phrase bottle and orchard               +0.2 /    -18.5  (T 10.0/10.0); d(head) +11.2 / -11.0
+  prose-10k  find phrase partly all rougher               -0.2 /     -5.1  (T 10.0/10.0); d(head) -3.3 / -7.2
+  prose-10k  find phrase you get bowls                   -11.1 /     -6.2  (T 10.0/10.0); d(head) -0.5 / -5.7
+  prose-10k  find prefix drin*                            -7.7 /     -1.9  (T 10.0/10.0); d(head) -4.2 / -1.8
+  prose-10k  find prefix with*                          -137.5 /    +12.1  (T 78.1/79.2); d(head) -15.6 / -16.3
+  prose-10k  find words across lengthy seeming 04276      -0.2 /     +0.0  (T 10.0/10.0); d(head) -0.1 / +0.0
+  prose-10k  find words the                             -322.2 /     -7.4  (T 142.2/139.3); d(head) -209.4 / -40.0
+  prose-10k  find words the within                       -72.0 /    +36.8  (T 21.7/21.7); d(head) +20.7 / +36.5
+  prose-10k  find words within                           -49.4 /     +1.7  (T 12.0/12.1); d(head) -8.9 / +0.3
+  tamil-10k  find phrase கேடேயி குகடம் கிகசம்             -5.8 /     -4.2  (T 10.0/10.0); d(head) -4.0 / -4.4
+  tamil-10k  find phrase டூகனை சேகணம் சூகஞம்             -11.1 /    -12.1  (T 10.0/10.0); d(head) -3.7 / -5.5
+  tamil-10k  find phrase நூடைஞத்தின் சாகறம் லேசிதையின     -0.2 /     -0.0  (T 10.0/10.0); d(head) -0.2 / +0.1
+  tamil-10k  find prefix சைகீ*                            -0.7 /     -1.1  (T 10.0/10.0); d(head) -0.6 / -0.4
+  tamil-10k  find prefix டூகன*                          -114.5 /     +4.8  (T 30.6/29.9); d(head) -119.2 / -6.4
+  tamil-10k  find prefix றூகு*                            -1.9 /     +0.2  (T 10.0/10.0); d(head) -2.6 / +0.4
+  tamil-10k  find words doc 00000                         -0.1 /     -0.0  (T 10.0/10.0); d(head) -0.1 / -0.0
+  tamil-10k  find words கீகசை                             -1.3 /     -0.8  (T 30.3/29.6); d(head) -0.8 / -2.4
+  tamil-10k  find words கீகசை றூகுஞங்கள்                  -4.1 /     -3.5  (T 10.0/10.0); d(head) -4.5 / -4.1
+  tamil-10k  find words றூகுஞங்கள்                        -1.5 /     -0.9  (T 10.0/10.0); d(head) -1.6 / -0.7
+  timing-10k find phrase bahuki begeno bakucu             -0.1 /     -0.1  (T 10.0/10.0); d(head) -0.1 / -0.0
+  timing-10k find phrase barigo bejoju becoco             -0.1 /     -0.3  (T 10.0/10.0); d(head) -0.0 / -0.1
+  timing-10k find phrase with befewho with                -4.6 /     -2.9  (T 10.0/10.0); d(head) -4.6 / -3.6
+  timing-10k find prefix bada*                            +3.2 /    -10.5  (T 10.0/10.0); d(head) +10.3 / -2.2
+  timing-10k find prefix belo*                            -5.8 /     -9.1  (T 10.0/10.0); d(head) +11.5 / +5.1
+  timing-10k find words badamo                            -0.0 /     -0.2  (T 10.0/10.0); d(head) +0.0 / +0.1
+  timing-10k find words doc 00000                         -0.0 /     -0.0  (T 10.0/10.0); d(head) -0.0 / -0.0
+  timing-10k find words from                             +31.9 /    -65.4  (T 30.2/30.3); d(head) +66.1 / -15.4
+  timing-10k find words from badamo                       -1.4 /     -4.2  (T 10.0/10.0); d(head) -3.5 / -4.8
+
+----- the head - largest control, pooled over both sets' ten runs (not the rule; information) -----
+  prose-10k find words the within: ten-run median d(head) +25.3 us, controls main2 -8.6, cl -8.8, ci +3.1; head - largest +22.3 us against T about 21.7
+  timing-10k find words from: ten-run median d(head) -8.5 us, controls main2 +9.9, cl +23.0, ci +25.1; head - largest -33.5 us against T about 30.2

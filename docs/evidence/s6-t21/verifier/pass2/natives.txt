@@ -1,0 +1,32 @@
+S6-T21 verifier, pass 2: natives and timing libraries.
+
+1. The natives, rebuilt from a git archive of 2efe2a9 (tool/build_native.sh, Zig 0.16.0, SS_ANDROID_NDK 28.2.13676358,
+   own ZIG_GLOBAL_CACHE_DIR and ZIG_LOCAL_CACHE_DIR), then cmp against the files committed at 2efe2a9:
+   tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib ( 1007096 bytes)
+   tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (  968048 bytes)
+   tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+   tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (  988232 bytes binary)
+   tool/build_native.sh: wrote native/SOURCE-SHA256 (dd065d977e22181bb1ee4f1fff11bcf537c1169b3a881dff6a66c06c5f4c6e4a)
+   identical: native/macos-arm64/libsearch_simpli.dylib
+   identical: native/android-arm64/libsearch_simpli.so
+   identical: example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+   identical: native/ios-arm64/search_simpli.framework/search_simpli
+   identical: native/ios-arm64/search_simpli.framework/Info.plist
+   identical: native/SOURCE-SHA256
+
+2. The committed natives at 2efe2a9 against 92ed47b's (git ls-tree blob ids, every file under native/ and the example's .so):
+   files: 6; differing: 1 (bindings/dart/search_simpli/native/SOURCE-SHA256)
+   So the dylib, the Android .so (both copies), the iOS framework binary and Info.plist are byte-identical to 92ed47b's,
+   which pass 1 rebuilt byte-identical; only the SOURCE-SHA256 stamp moved (6b38f254... -> dd065d97...), and the rebuild
+   above writes dd065d97... itself.
+
+3. The five timing libraries against orders.txt (SHA-256 prefixes as the orders give them):
+   main  = a8fc2a2's committed dylib: 31a431b0a72e76e7d44d101608c8fcfc7e0526d05e1fd11cb6eaf6cc9696150f  (orders: 31a431b0a72e76e7...)
+   head  = 2efe2a9's committed dylib: ed938358e6758fc7ee9776fc9974be13cf5dc4def3909fa64ee4672b8ba6f86d  (orders: ed938358e6758fc7...)
+   cl    = a8fc2a2 + make_control.py l 7 3, zig build lib -Doptimize=ReleaseSmall, own caches: 8d24eefc2d5fc0584a95582cd6287cd705a473bddedaba194e877c2e5a88af88, 1007416 B, __text 592556  (orders: 8d24eefc2d5fc058..., 1,007,416 B, __text 592,556)
+   ci    = a8fc2a2 + make_control.py i 7 3, the same way: 1215d0f98f4bbba97c49a1436dc34a468fe9946e1c0b44d3d4ec3550c85049dd, 1007208 B, __text 592600  (orders: 1215d0f98f4bbba9..., 1,007,208 B, __text 592,600)
+   __text: main 591880, head 592564 (orders: 591,880 and 592,564, +684)
+   main2 is a second build of a8fc2a2; the orders say it is byte-identical to main. Not rebuilt here: main's committed
+   file is the reference the orders name, and my cl and ci builds of a8fc2a2 reproduce the orders' hashes exactly.
+   I did not read the builder's scratch libraries; these are independent rebuilds. The run rows do not carry a library hash;
+   the builder's notes say the prepared libraries' SHA-256 were checked before each set.
