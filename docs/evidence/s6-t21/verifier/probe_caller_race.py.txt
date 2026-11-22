@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+"""S6-T21 verifier: a writer that brings its own generation number (process A)
+against other writers (process B), real processes, no timing.
+
+A runs under `lldb --batch`, stopped once at a named function; while it is
+stopped, B (one or more `searchd` runs, not under the debugger) runs to
+completion through lldb's `platform shell`; then A continues. Each case starts
+from a fresh folder: generation 9 indexed from `notes/` ("folder"), or an empty
+`out/` ("empty", for `init-demo`).
+
+A, each numbered as a host would number it before it starts (the folder's
+generation + 1; `init-demo` always 1):
+  idx    searchd index notes --out out --generation N
+  imp    searchd import-json out a.json            (payload generation N)
+  cimp   a C program calling ss_import_json(out, a.json's bytes)
+  demo   searchd init-demo out                     (generation 1, "empty" only)
+Points: before_lease = lifecycle.tryAcquireWriter entry (number chosen, lock
+free); in_lease = publication.publishWithExtrasRecorded entry (after the
+check, before the first link, lock held).
+B runs: see B_RUNS. After A, the case records whether a number was published
+twice, whether MANIFEST went back, and, when A was refused, whether the
+directory (names, sizes, SHA-256) is byte-for-byte what B left.
+
+Usage: python3 -I probe_caller_race.py <scratch> <label> <searchd> <abi_import> [<label> <searchd> <abi_import> ...]
+Writes nothing outside <scratch>.
+"""
+import hashlib
+import json
+import os
+import re
+import shlex
+import struct
+import subprocess
+import sys
+
+POINTS = {"before_lease": "-n lifecycle.tryAcquireWriter", "in_lease": "-n publication.publishWithExtrasRecorded"}
+
+B_RUNS = {
+    # name: list of argv templates; {n1} = A's number, {n2} = A's number + 1
+    "rebuild": [["index", "notes", "--out", "out"]],
+    "rebuild2_k1": [["index", "notes", "--out", "out", "--keep-generations", "1"]] * 2,
+    "update2_k1": [["index", "notes", "--out", "out", "--update", "--keep-generations", "1"]] * 2,
+    "imp_same": [["import-json", "out", "b_same.json"]],
+    "imp_next": [["import-json", "out", "b_next.json"]],
+    "idx_same": [["index", "notes", "--out", "out", "--generation", "{n1}"]],
+    "imp_same_k1_then_rebuild_k1": [["import-json", "out", "b_same.json", "--keep-generations", "1"],
+                                    ["index", "notes", "--out", "out", "--keep-generations", "1"]],
+    "demo": [["init-demo", "out"]],
+}
+FOLDER_B = ["rebuild", "rebuild2_k1", "update2_k1", "imp_same", "imp_next", "idx_same", "imp_same_k1_then_rebuild_k1"]
+EMPTY_B = ["rebuild", "rebuild2_k1", "demo", "imp_same", "imp_same_k1_then_rebuild_k1"]
+
+
+def payload(n, text):
+    return {"format_version": 1, "generation": n, "analyzer_id": "ascii-alnum-v1", "embedding_model_id": "none",
+            "documents": [{"id": text, "path": f"{text}.md", "start_line": 1, "end_line": 1, "text": text,
+                           "vector": [], "required_labels": []}]}
+
+
+def gen(out):
+    try:
+        with open(os.path.join(out, "MANIFEST"), "rb") as h:
+            return struct.unpack_from("<Q", h.read(20), 12)[0]
+    except FileNotFoundError:
+        return 0
+
+
+B_SCRIPT = r'''
+import fcntl, hashlib, json, os, struct, subprocess, sys
+case, searchd, runs_path = sys.argv[1], sys.argv[2], sys.argv[3]
+out = os.path.join(case, "out")
+def gen():
+    try:
+        with open(os.path.join(out, "MANIFEST"), "rb") as h:
+            return struct.unpack_from("<Q", h.read(20), 12)[0]
+    except FileNotFoundError:
+        return 0
+def listing():
+    rows = {}
+    for name in sorted(os.listdir(out)):
+        p = os.path.join(out, name)
+        if os.path.isfile(p) and name != "WRITER.LOCK":
+            rows[name] = hashlib.sha256(open(p, "rb").read()).hexdigest()[:16]
+        elif name != "WRITER.LOCK":
+            rows[name] = "non-file"
+    return rows
+held = None
+try:
+    fd = os.open(os.path.join(out, "WRITER.LOCK"), os.O_RDWR)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB); fcntl.flock(fd, fcntl.LOCK_UN); held = False
+    except BlockingIOError:
+        held = True
+    os.close(fd)
+except FileNotFoundError:
+    held = "no-file"
+at_stop = gen()
+runs = []
+for argv in json.load(open(runs_path)):
+    d = subprocess.run([searchd] + argv, cwd=case, capture_output=True, text=True)
+    runs.append({"rc": d.returncode, "out": (d.stdout + d.stderr).strip(), "after": gen()})
+json.dump({"held": held, "at_stop": at_stop, "runs": runs, "after_b": gen(), "listing": listing()}, open(os.path.join(case, "b.json"), "w"))
+print("B-RAN")
+'''
+
+PUB = [re.compile(r"indexed notes: .*generation=(\d+)"), re.compile(r"imported generation (\d+)"),
+       re.compile(r"published demo generation (\d+)"), re.compile(r"abi import: rc=(\d+) "), re.compile(r'^\{"generation":(\d+)')]
+
+
+def published(text):
+    for p in PUB:
+        m = p.search(text)
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def short(text):
+    for token in ("StaleGeneration", "WriterBusy", "PathAlreadyExists", "NoFreeGeneration", "BadMagic"):
+        if token in text:
+            return token
+    return (text.strip().splitlines() or ["?"])[-1][:70]
+
+
+def listing(out):
+    rows = {}
+    for name in sorted(os.listdir(out)):
+        p = os.path.join(out, name)
+        if os.path.isfile(p) and name != "WRITER.LOCK":
+            rows[name] = hashlib.sha256(open(p, "rb").read()).hexdigest()[:16]
+        elif name != "WRITER.LOCK":
+            rows[name] = "non-file"
+    return rows
+
+
+def setup(case, searchd, kind):
+    notes = os.path.join(case, "notes")
+    os.makedirs(os.path.join(notes, "sub"))
+    with open(os.path.join(notes, "a.md"), "w") as f:
+        f.write("alpha evidence about recovery\n")
+    with open(os.path.join(notes, "sub", "b.md"), "w") as f:
+        f.write("beta evidence about publication\n")
+    if kind == "folder":
+        d = subprocess.run([searchd, "index", "notes", "--out", "out", "--generation", "9"], cwd=case, capture_output=True, text=True)
+        assert d.returncode == 0, d.stderr
+
+
+def case_run(scratch, label, searchd, abi, a_name, point, b_name):
+    kind = "empty" if a_name == "demo" else "folder"
+    case = os.path.join(scratch, f"{label}-{a_name}-{point}-{b_name}")
+    if os.path.exists(case):
+        raise SystemExit(f"exists: {case}")
+    os.makedirs(case)
+    setup(case, searchd, kind)
+    out = os.path.join(case, "out")
+    before = gen(out)
+    n1 = 1 if a_name == "demo" else before + 1
+    for name, n, text in (("a.json", n1, "caller"), ("b_same.json", n1, "same"), ("b_next.json", n1 + 1, "next")):
+        with open(os.path.join(case, name), "w") as f:
+            json.dump(payload(n, text), f)
+    with open(os.path.join(case, "b.py"), "w") as f:
+        f.write(B_SCRIPT)
+    runs = [[x.format(n1=n1, n2=n1 + 1) for x in argv] for argv in B_RUNS[b_name]]
+    with open(os.path.join(case, "b_runs.json"), "w") as f:
+        json.dump(runs, f)
+    shell = " ".join(shlex.quote(x) for x in [sys.executable, "-I", os.path.join(case, "b.py"), case, searchd, os.path.join(case, "b_runs.json")])
+    a_argv = {"idx": [searchd, "index", "notes", "--out", "out", "--generation", str(n1)],
+              "imp": [searchd, "import-json", "out", "a.json"],
+              "cimp": [abi, "out", "a.json"],
+              "demo": [searchd, "init-demo", "out"]}[a_name]
+    argv = ["lldb", "--batch", "-o", f"breakpoint set --one-shot true {POINTS[point]}", "-o", "run",
+            "-o", f"platform shell {shell}", "-o", "continue", "--"] + a_argv
+    done = subprocess.run(argv, cwd=case, capture_output=True, text=True, timeout=180)
+    log = re.sub(r"\x1b\[[0-9;]*m", "", done.stdout + done.stderr)
+    with open(os.path.join(case, "lldb.log"), "w") as f:
+        f.write(log)
+    stopped = "stop reason = one-shot breakpoint 1" in log and log.find("B-RAN") > 0
+    with open(os.path.join(case, "b.json")) as f:
+        b = json.load(f)
+    tail = log[log.find("B-RAN"):]
+    m = re.search(r"exited with status = (\d+)", tail)
+    a_rc = int(m.group(1)) if m else None
+    a_pub = published(tail) if a_rc == 0 else None
+    after = gen(out)
+    b_pubs = [published(r["out"]) for r in b["runs"] if r["rc"] == 0]
+    numbers = [n for n in b_pubs if n is not None] + ([a_pub] if a_pub is not None else [])
+    twice = len(numbers) != len(set(numbers))
+    seq = [before, b["at_stop"]] + [r["after"] for r in b["runs"]] + [after]
+    back = any(y < x for x, y in zip(seq, seq[1:]))
+    unchanged = None
+    if a_pub is None:
+        unchanged = listing(out) == b["listing"]
+    b_desc = ", ".join(f"published {published(r['out'])}" if r["rc"] == 0 else short(r["out"]) for r in b["runs"])
+    a_desc = f"published {a_pub}" if a_pub is not None else f"rc={a_rc} {short(tail)}"
+    bad = twice or back or (unchanged is False)
+    verdict = "NOT-STOPPED" if not stopped else ("VIOLATION" if bad else "ok")
+    return (f"{label:4} A={a_name:4} {point:12} B={b_name:27} | lock held at stop: {str(b['held']):7} | B: {b_desc} | "
+            f"A({n1}): {a_desc} | MANIFEST {'->'.join(map(str, seq))} | twice={'YES' if twice else 'no'} "
+            f"back={'YES' if back else 'no'} refused-unchanged={unchanged} | {verdict}")
+
+
+def main():
+    scratch = sys.argv[1]
+    rest = sys.argv[2:]
+    builds = [rest[i:i + 3] for i in range(0, len(rest), 3)]
+    lines = []
+    for label, searchd, abi in builds:
+        for a_name in ("idx", "imp", "cimp", "demo"):
+            for point in POINTS:
+                for b_name in (EMPTY_B if a_name == "demo" else FOLDER_B):
+                    line = case_run(scratch, label, searchd, abi, a_name, point, b_name)
+                    print(line, flush=True)
+                    lines.append(line)
+    for label, _, _ in builds:
+        mine = [l for l in lines if l.startswith(label + " ")]
+        print(f"{label}: {len(mine)} cases, {sum(l.endswith('| ok') for l in mine)} ok, "
+              f"{sum('VIOLATION' in l for l in mine)} violations, {sum('NOT-STOPPED' in l for l in mine)} not stopped")
+
+
+if __name__ == "__main__":
+    main()

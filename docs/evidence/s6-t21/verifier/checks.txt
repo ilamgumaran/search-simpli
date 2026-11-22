@@ -1,0 +1,104 @@
+# S6-T21 verifier: checks, 21-22 Nov 2026, Zig 0.16.0. head = 92ed47b, main = a8fc2a2; builds from git archives with their own Zig caches unless 'worktree' is said (a detached checkout of 92ed47b).
+
+## New tests on main's code (archive of a8fc2a2 with the head's cli_test.zig and abi_index_folder_test.zig copied in), Debug
+Build Summary: 13/15 steps succeeded (1 failed); 590/604 tests passed (9 skipped, 5 failed)
+failed: S6-T21: searchd index --generation N at or below the highest trace is refused with StaleGeneration, one above it whose name is taken
+failed: S6-T21: a caller's number at or below the highest generation is refused with StaleGeneration and changes nothing; one above it publi
+failed: S6-T21: a caller's number held before its lock while other writers publish is refused with StaleGeneration; MANIFEST never back, not
+failed: S6-T21: a MANIFEST that is missing or cannot be decoded counts as absent; the section files still set the floor
+failed: S6-T21: ss_import_json refuses a number at or below the highest generation with SS_ERR_INVALID_ARGUMENT and names the floor
+  S6-T21 --generation 10 over published_by_another_writer: PathAlreadyExists
+  index_generation 5 over 9: published 5, MANIFEST 5, directory changed
+  index_generation 9 over 9: PathAlreadyExists, MANIFEST 5, directory unchanged
+  import_json 5 over 9: PathAlreadyExists, MANIFEST 5, directory unchanged
+  import_json 9 over 9: PathAlreadyExists, MANIFEST 5, directory unchanged
+  index_generation 12 over 9: published 12; import_json 13: published 13; import_json 12 over 13: PathAlreadyExists; MANIFEST 13
+  import_json 10, rebuild_once: other [published 10], MANIFEST 9 -> 10 -> 10, caller PathAlreadyExists FAIL
+  import_json 10, rebuild_twice_keep_one: other [published 10, published 11], MANIFEST 9 -> 11 -> 10, caller published 10 FAIL
+  index_generation 10, rebuild_once: other [published 10], MANIFEST 9 -> 10 -> 10, caller PathAlreadyExists FAIL
+  index_generation 10, rebuild_twice_keep_one: other [published 10, published 11], MANIFEST 9 -> 11 -> 10, caller published 10 FAIL
+  undecodable MANIFEST, import_json 5: published 5, directory changed
+  undecodable MANIFEST, import_json 9: PathAlreadyExists, directory unchanged
+  undecodable MANIFEST, index_generation 10: published 10
+  undecodable MANIFEST, import_json 10: PathAlreadyExists, MANIFEST now published 10
+  missing MANIFEST, import_json 5: published 5, directory changed
+  missing MANIFEST, import_json 9: PathAlreadyExists, directory unchanged
+  missing MANIFEST, index_generation 10: published 10
+  S6-T21 ss_import_json numbered 1 over 2: 1 ""
+
+## The new Python test against each build's Debug searchd (SEARCHD_BINARY), head archive's tests/
+main: FAIL in all four subtests: index 5 -> exit 0 (published), index 9 -> PathAlreadyExists with a 43-line trace, import-json 5 -> PathAlreadyExists (5 now published by the first subtest), init-demo -> exit 0 (published demo generation 1)
+head: Ran 1 test, OK
+
+## The new Dart test against main's committed macOS dylib (a copy of the head's package with native/macos-arm64 replaced by main's; SEARCH_SIMPLI_LIBRARY_PATH unset)
+importSnapshotJson refuses a generation at or below the directory's highest (S6-T21): FAILS on main's library: 'Expected: throws SearchSimpliException ... Actual: returned <1>' (1 published over 2)
+
+## Head, worktree: python3 -I scripts/check_test_counts.py --run -- --cache-dir <scratch> --global-cache-dir <scratch>
+Build Summary: 15/15 steps succeeded; 595/604 tests passed (9 skipped)
++- run test core 260 pass (260 total) 38s MaxRSS:413M
++- run test operations 9 pass (9 total) 219ms MaxRSS:7M
++- run test interfaces 25 pass (25 total) 299ms MaxRSS:9M
++- run test tests 295 pass, 9 skip (304 total) 1m MaxRSS:638M
++- run test 6 pass (6 total) 1s MaxRSS:5M
+check_test_counts: OK (5 steps, 604 tests: every step ran the tests the listing has, and the static checker passes)
+## The same with -Doptimize=ReleaseSmall
+Build Summary: 15/15 steps succeeded; 595/604 tests passed (9 skipped)
++- run test core 260 pass (260 total) 3s MaxRSS:35M
++- run test operations 9 pass (9 total) 167ms MaxRSS:3M
++- run test interfaces 25 pass (25 total) 214ms MaxRSS:5M
++- run test tests 295 pass, 9 skip (304 total) 20s MaxRSS:402M
++- run test 6 pass (6 total) 334ms MaxRSS:4M
+check_test_counts: OK (5 steps, 604 tests: every step ran the tests the listing has, and the static checker passes)
+
+## Static checkers (worktree), test-abi
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 604 tests, each run by a step of `zig build test`; the public core API `api`: 86 names in 22 namespaces)
+main archive: check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 600 tests, each run by a step of `zig build test`; the public core API `api`: 85 names in 22 namespaces)
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+python3 -I scripts/check_no_home_paths.py: exit 0; git diff --check a8fc2a2 HEAD: clean
+abi_test: 24/24 checks passed (Debug)
+abi_test: 24/24 checks passed (ReleaseSmall)
+
+## Python (worktree, python3 -m unittest discover -s tests)
+with Zig (SEARCHD_BINARY, SEARCH_SIMPLI_NO_ZIG unset): Ran 581 tests in 111.734s OK
+SEARCHD_BINARY = head ReleaseSmall searchd: Ran 581 tests in 61.647s OK
+
+## Dart 0.10.0 (head archive's package, committed natives; zig and dart on PATH, SEARCH_SIMPLI_LIBRARY_PATH unset)
+dart pub get --offline: exit 0; dart analyze lib test: No issues found!; dart test: 00:06 +98: All tests passed!
+(A first dart test run without zig on PATH failed 4 setUpAll steps that call zig build; not a fault of the head.)
+
+## Natives: tool/build_native.sh in a fresh archive of 92ed47b (ZIG_LOCAL_CACHE_DIR/ZIG_GLOBAL_CACHE_DIR empty, SS_ANDROID_NDK = NDK 28.2.13676358)
+Build Summary: 28/28 steps succeeded
+tool/build_native.sh: wrote native/macos-arm64/libsearch_simpli.dylib (1007096 bytes)
+tool/build_native.sh: wrote native/android-arm64/libsearch_simpli.so (968048 bytes)
+tool/build_native.sh: wrote example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so
+tool/build_native.sh: wrote native/ios-arm64/search_simpli.framework (988232 bytes binary)
+tool/build_native.sh: wrote native/SOURCE-SHA256 (6b38f2545692f37fcebf6eb2b863ebbb351c48e5a8651eabcf6e26ddc05dc3bd)
+cmp identical to committed: macOS dylib, Android .so, the example's jniLibs copy, iOS framework binary and Info.plist, SOURCE-SHA256
+source_digest.py on the worktree: 6b38f2545692f37fcebf6eb2b863ebbb351c48e5a8651eabcf6e26ddc05dc3bd = committed; the only commit since a8fc2a2 touching it or its zig/src/core, zig/include inputs: 17dc8b7 (the code commit)
+zig build lib -Doptimize=ReleaseSmall (own caches): macOS dylib cmp-identical to the committed one
+sizes, main committed / head committed (B): macOS 1007208 / 1007096 (-112); Android 966112 / 968048 (+1936); iOS 972120 / 988232 (+16112)
+iOS __DATA_CONST segment, main / head: vmsize 0x4000 filesize 16384 / vmsize 0x8000 filesize 32768; its __const section 0x3d60 / 0x3d70 B
+searchd ReleaseSmall (zig build -Doptimize=ReleaseSmall): main 1151240 B, head 1151720 B (+480)
+check_native.sh (worktree): check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three); tests/test_native_freshness.py: OK
+exports (nm -gU): macOS dylib 18 names on both, identical; Android .so and iOS framework export lists identical main vs head (md5 of sorted names)
+
+## Header, contracts, Dart mirror
+git diff a8fc2a2 HEAD -- zig/include/search_simpli.h: 13 added lines, all comment lines, none removed; SS_ERR_ defines 7 before and after
+the 10 added lines of ss_import_json's comment equal, line for line, the 10 added doc lines in bindings_generated.dart (the 3 Errors-summary lines sit in the file comment, which ffigen does not mirror)
+contracts/: only snapshot-interchange.schema.json, generation gains "description"; CONTRACTS_VERSION 2.8.0
+
+## Indexes and answers, main vs head ReleaseSmall searchd (S6-T20's compare_answers.py.txt; S6-T20's copies of the three 10k corpora and query files, read only)
+timing-10k: index folders identical=True; index line identical=True (analyzer=analyzer-v2 generation=1); answers asked 54, differing 0
+prose-10k: index folders identical=True; index line identical=True (analyzer=analyzer-v2 generation=1); answers asked 54, differing 0
+tamil-10k: index folders identical=True; index line identical=True (analyzer=analyzer-v2 generation=1); answers asked 55, differing 0
+
+## ss_import_json with generation 2^63 (pre-existing; the C program against each library)
+head Debug: publishes documents-9223372036854775808.hybseg, lexical-... and MANIFEST, then panics: 'integer does not fit in destination type' at abi.zig:544 (return @intCast(generation))
+head ReleaseSmall and main ReleaseSmall: publishes the same files, returns -9223372036854775808 with ss_last_error() empty
+
+## Recipes, each run twice as written (paths under <scratch>/recipes instead of /tmp and /srv; zig build run in a head archive with its own caches)
+zig-rpc-service.md: init-demo run 1 'published demo generation 1'; run 2 'error: StaleGeneration: generation 1 is not above 1 ... (traces: MANIFEST, documents-1.hybseg, lexical-1.hyblex)', then zig build run's own 'failed command' lines; serve index_status then answers generation 1
+python-zig-bridge.md: run 1 'imported generation 1: documents=5 terms=34 postings=68 vector_dimensions=34'; run 2 StaleGeneration 1 not above 1
+zig/README.md: import-json over the same directory again: StaleGeneration 1 not above 1
+recreation/specification.md: export_zig --generation 1, import-json into a fresh <snapshot-dir>: imported generation 1; again: StaleGeneration 1 not above 1
+incremental-indexing.md: search.py index --incremental-from, export_zig --generation 5, import-json: run 1 imported generation 5; run 2 StaleGeneration 5 not above 5

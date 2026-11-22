@@ -1,0 +1,86 @@
+# S6-T21 verifier: mutations.py.txt, one mutant per fresh git archive of 92ed47b with empty Zig caches; never committed.
+# Per mutant: zig build test --summary all (Debug), zig build test-abi, python3 -m unittest tests.test_cli_process with SEARCHD_BINARY = the mutant's Debug searchd.
+# Test names are cut at 110 characters. Real-process check of the survivor (no_check_import_filename), format_version 2 import over a --filename-index folder at 9:
+#   head:   v2 import 5 over 9: StaleGeneration, MANIFEST 9; v2 import 9 over 9: StaleGeneration, MANIFEST 9
+#   main:   v2 import 5 over 9: imported generation 5, MANIFEST 5; v2 import 9: PathAlreadyExists
+#   mutant: v2 import 5 over 9: imported generation 5, MANIFEST 5; v2 import 9: PathAlreadyExists
+
+== no_check_apply
+   zig build test (Debug): Build Summary: 13/15 steps succeeded (1 failed); 592/604 tests passed (9 skipped, 3 failed)
+   failed: S6-T21: a caller's number at or below the highest generation is refused with StaleGeneration and changes nothi
+   failed: S6-T21: a caller's number held before its lock while other writers publish is refused with StaleGeneration; MA
+   failed: S6-T21: searchd index --generation N at or below the highest trace is refused with StaleGeneration, one above
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.465s FAILED (failures=4); failed: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+   => caught
+== no_check_import_plain
+   zig build test (Debug): Build Summary: 13/15 steps succeeded (1 failed); 591/604 tests passed (9 skipped, 4 failed)
+   failed: S6-T21: ss_import_json refuses a number at or below the highest generation with SS_ERR_INVALID_ARGUMENT and na
+   failed: S6-T21: a MANIFEST that is missing or cannot be decoded counts as absent; the section files still set the floo
+   failed: S6-T21: a caller's number at or below the highest generation is refused with StaleGeneration and changes nothi
+   failed: S6-T21: a caller's number held before its lock while other writers publish is refused with StaleGeneration; MA
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.213s FAILED (failures=2); failed: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+   => caught
+== no_check_import_filename
+   zig build test (Debug): Build Summary: 15/15 steps succeeded; 595/604 tests passed (9 skipped)
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.134s OK
+   => SURVIVES every suite run
+== no_check_init_demo
+   zig build test (Debug): Build Summary: 15/15 steps succeeded; 595/604 tests passed (9 skipped)
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.397s FAILED (failures=2); failed: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+   => caught
+== manifest_only
+   zig build test (Debug): Build Summary: 13/15 steps succeeded (1 failed); 592/604 tests passed (9 skipped, 3 failed)
+   failed: S6-T21: ss_import_json refuses a number at or below the highest generation with SS_ERR_INVALID_ARGUMENT and na
+   failed: S6-T21: a MANIFEST that is missing or cannot be decoded counts as absent; the section files still set the floo
+   failed: S6-T21: searchd index --generation N at or below the highest trace is refused with StaleGeneration, one above
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.169s FAILED (failures=5); failed: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+   => caught
+== check_before_lock_apply
+   zig build test (Debug): Build Summary: 13/15 steps succeeded (1 failed); 594/604 tests passed (9 skipped, 1 failed)
+   failed: S6-T21: a caller's number held before its lock while other writers publish is refused with StaleGeneration; MA
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.194s OK
+   => caught
+== check_before_lock_lifecycle
+   zig build test (Debug): Build Summary: 13/15 steps succeeded (1 failed); 594/604 tests passed (9 skipped, 1 failed)
+   failed: S6-T21: a caller's number held before its lock while other writers publish is refused with StaleGeneration; MA
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.290s OK
+   => caught
+== undecodable_manifest_is_error
+   zig build test (Debug): Build Summary: 13/15 steps succeeded (1 failed); 594/604 tests passed (9 skipped, 1 failed)
+   failed: S6-T21: a MANIFEST that is missing or cannot be decoded counts as absent; the section files still set the floo
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.262s OK
+   => caught
+== floor_off_by_one
+   zig build test (Debug): Build Summary: 13/15 steps succeeded (1 failed); 591/604 tests passed (9 skipped, 4 failed)
+   failed: S6-T21: a MANIFEST that is missing or cannot be decoded counts as absent; the section files still set the floo
+   failed: S6-T21: a caller's number at or below the highest generation is refused with StaleGeneration and changes nothi
+   failed: S6-T21: a caller's number held before its lock while other writers publish is refused with StaleGeneration; MA
+   failed: S6-T21: searchd index --generation N at or below the highest trace is refused with StaleGeneration, one above
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.816s FAILED (failures=2); failed: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+   => caught
+== abi_code_unmapped
+   zig build test (Debug): Build Summary: 13/15 steps succeeded (1 failed); 594/604 tests passed (9 skipped, 1 failed)
+   failed: S6-T21: ss_import_json refuses a number at or below the highest generation with SS_ERR_INVALID_ARGUMENT and na
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.225s OK
+   => caught
+== abi_line_name_only
+   zig build test (Debug): Build Summary: 13/15 steps succeeded (1 failed); 594/604 tests passed (9 skipped, 1 failed)
+   failed: S6-T21: ss_import_json refuses a number at or below the highest generation with SS_ERR_INVALID_ARGUMENT and na
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 1.193s OK
+   => caught
+== cli_index_no_catch
+   zig build test (Debug): Build Summary: 15/15 steps succeeded; 595/604 tests passed (9 skipped)
+   test-abi: abi_test: 24/24 checks passed
+   tests.test_cli_process: Ran 14 tests in 2.189s FAILED (failures=2); failed: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+   => caught
