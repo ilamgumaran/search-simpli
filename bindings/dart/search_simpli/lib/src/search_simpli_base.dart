@@ -502,7 +502,9 @@ class SearchSimpli {
 /// it, this throws [SearchSimpliException] with the message
 /// `ss_import_json: StaleGeneration: generation N is not above M, ...` (the
 /// floor `M` and its traces named; `code` is null, as for every import
-/// failure) and nothing on disk changes: renumber above `M` and retry.
+/// failure) and nothing on disk changes, but for one case: in a directory
+/// with no `WRITER.LOCK` yet (a copied one, say), taking the lock creates it,
+/// empty, as for every refusal under the lock. Renumber above `M` and retry.
 ///
 /// A free function, not a [SearchSimpli] method, because it takes a
 /// directory path rather than an open handle (mirrors

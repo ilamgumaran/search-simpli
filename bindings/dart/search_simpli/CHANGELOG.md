@@ -5,7 +5,9 @@
 A caller's own generation number must now be above the highest generation the
 directory has any trace of (decision 0004). `importSnapshotJson` (and
 `searchd import-json`, `searchd index --generation N`, `searchd init-demo`)
-with a number at or below it is refused, and nothing on disk changes. Before,
+with a number at or below it is refused, and nothing on disk changes (but for
+one case: in a directory with no `WRITER.LOCK` yet, such as a copied one, taking
+the lock creates it, empty, as for every refusal under the lock). Before,
 a free number at or below the current generation was published and `MANIFEST`
 went back to it. No new call, field, error code or C ABI function; contracts
 stay 2.8.0 (the schema's `generation` gains a description); the index format

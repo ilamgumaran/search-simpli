@@ -38,7 +38,7 @@ pub const IndexOptions = struct {
     /// under. An explicit value is used as-is if it is above the highest
     /// generation `--out` has any trace of, checked under the same lease
     /// (S6-T21, decision 0004); at or below it the core refuses it with
-    /// `StaleGeneration` and changes nothing. Above it, a name taken by
+    /// `StaleGeneration` (on disk at most a new empty `WRITER.LOCK`). Above it, a name taken by
     /// something that is not a trace is refused with `PathAlreadyExists`.
     generation: ?u64 = null,
     /// S1-T3 criterion 1: `searchd index --update` runs incremental

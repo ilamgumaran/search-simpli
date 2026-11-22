@@ -26,15 +26,16 @@ under the lease (in `apply.applyParsed` before any file is read; in `lifecycle`'
 any link) against the highest generation the directory has any trace of, a `MANIFEST` that cannot be decoded counted
 as absent. At or below: `StaleGeneration`, `SS_ERR_INVALID_ARGUMENT` through `ss_import_json` with
 `ss_import_json: StaleGeneration: generation N is not above M, … (traces: …); publish a higher number`, one stderr
-line and exit 1 from `searchd` (no error trace), nothing on disk changed. Above: published; a name taken by
+line and exit 1 from `searchd` (no error trace), nothing on disk changed (but an empty `WRITER.LOCK` created in a
+directory that had none). Above: published; a name taken by
 something that is not a trace (a lone `source-N.hybsrc`) still gives `PathAlreadyExists`. `init-demo` therefore works
 only into a fresh directory. `describeStaleGeneration` joins `core.api` (86 names in 22 namespaces). No new error
 code, function, field or format; contracts 2.8.0 (the schema's `generation` gains a description); header comments
 only. Shown by `zig/src/tests/cli_test.zig` (four "S6-T21: …" tests, S6-T20's caller-number test rewritten),
 `abi_index_folder_test.zig`, `tests/test_cli_process.py` and a Dart test; the Zig and CLI tests fail on `main`'s code.
-Tests 595/604 passed, 9 skipped, Debug and ReleaseSmall (was 591/600); Python 581 (was 580); Dart +98 (was +97);
+Tests 597/606 passed, 9 skipped, Debug and ReleaseSmall (was 591/600; rework 1 after the Verdict, PASS with findings, added the format-2 import and `publishSerialized` tests and qualified "nothing on disk changes"); Python 581 (was 580); Dart +98 (was +97);
 `test-abi` 24/24; both S6-T15 guards OK. Indexes of the three 10k corpora and their 166 answers identical to `main`'s.
-Natives rebuilt and restamped (`6b38f254…`): macOS 1,007,096 B (−112), Android 968,048 B (+1,936), iOS 988,232 B
+Natives rebuilt and restamped (`dd065d97…` after rework 1's comment edits, the libraries byte-identical): macOS 1,007,096 B (−112), Android 968,048 B (+1,936), iOS 988,232 B
 (+16,112: `__DATA_CONST` crossed one 16 KiB page; `__text` +812 B); `searchd` ReleaseSmall 1,151,720 B (+480).
 Dart 0.10.0. Timing by the rule of 2026-11-17: owed; the orders, five builds and indexes are ready
 ([`scripts/prototypes/s6t21/orders.txt`](scripts/prototypes/s6t21/orders.txt), pushed before any run).

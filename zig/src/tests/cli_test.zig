@@ -1273,3 +1273,86 @@ test "S6-T21: a MANIFEST that is missing or cannot be decoded counts as absent; 
     std.debug.print("S6-T21 a damaged or missing MANIFEST over generation 9's sections:\n{s}", .{lines.written()});
     try std.testing.expectEqual(@as(usize, 0), failed);
 }
+
+// S6-T21 rework 1 (the Verdict's finding 1): every `format_version: 2` import
+// (`filename-field-v1`) publishes through
+// `lifecycle.publishSerializedWithFilenameKeeping`, a path no other S6-T21
+// test takes (they import format 1). The check must hold there too.
+test "S6-T21: a format_version 2 import at or below the highest generation is refused with StaleGeneration and changes nothing; above it publishes" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    var folder = try s6t20.Folder.init(a);
+    defer folder.deinit();
+    var lines: std.Io.Writer.Allocating = .init(a);
+    var failed: usize = 0;
+    const payload = struct {
+        fn at(arena: std.mem.Allocator, generation: u64) ![]const u8 {
+            return std.fmt.allocPrint(arena,
+                \\{{"format_version":2,"filename_policy_id":"filename-field-v1","generation":{d},"analyzer_id":"ascii-alnum-v1","embedding_model_id":"none","documents":[
+                \\{{"id":"host","path":"notes/host.md","start_line":1,"end_line":1,"text":"a host import","vector":[],"required_labels":[]}}]}}
+            , .{generation});
+        }
+    };
+    inline for (.{ 5, 9 }) |number| {
+        const before = try s6t20DirDigest(a, folder.out);
+        const outcome: anyerror!u64 = if (s6t21.importer.importJson(folder.out, io, std.testing.allocator, try payload.at(a, number))) |report| report.generation else |err| err;
+        const unchanged = std.mem.eql(u8, &before, &try s6t20DirDigest(a, folder.out));
+        const manifest_after = try s6t20.manifestGeneration(a, io, folder.out);
+        try lines.writer.print("  format 2 import {d} over 9: ", .{number});
+        try s6t21.say(&lines.writer, outcome);
+        try lines.writer.print(", MANIFEST {d}, directory {s}\n", .{ manifest_after, if (unchanged) "unchanged" else "changed" });
+        const refused = if (outcome) |_| false else |err| err == error.StaleGeneration;
+        if (!refused or manifest_after != 9 or !unchanged) failed += 1;
+    }
+    const ten: anyerror!u64 = if (s6t21.importer.importJson(folder.out, io, std.testing.allocator, try payload.at(a, 10))) |report| report.generation else |err| err;
+    const manifest_after = try s6t20.manifestGeneration(a, io, folder.out);
+    try lines.writer.writeAll("  format 2 import 10 over 9: ");
+    try s6t21.say(&lines.writer, ten);
+    try lines.writer.print(", MANIFEST {d}\n", .{manifest_after});
+    if ((ten catch 0) != 10 or manifest_after != 10) failed += 1;
+    // The file-name sections were published with it (the format-2 path).
+    if (folder.out.statFile(io, "filenames-10.hybseg", .{})) |_| {} else |_| failed += 1;
+    std.debug.print("S6-T21 format_version 2 imports over a folder at generation 9:\n{s}", .{lines.written()});
+    try std.testing.expectEqual(@as(usize, 0), failed);
+}
+
+// S6-T21 rework 1 (the Verdict's finding 2): `init-demo` publishes generation 1
+// through `lifecycle.publishSerialized`, whose check no other Zig test reaches.
+// The sections are a real format-1 import's (generation 1, published into a
+// fresh directory first), handed to `publishSerialized` as `init-demo` hands
+// its own. `main.zig`'s `catch`es end the process and are not in any test
+// build; `tests/test_cli_process.py` guards them.
+test "S6-T21: publishSerialized (init-demo's publish) refuses generation 1 over a folder at 9 with StaleGeneration and changes nothing; into a fresh directory it publishes" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const io = std.testing.io;
+    const lifecycle = @import("core").lifecycle;
+    var folder = try s6t20.Folder.init(a);
+    defer folder.deinit();
+
+    try folder.tmp.dir.createDir(io, "source-gen", .default_dir);
+    var source = try folder.tmp.dir.openDir(io, "source-gen", .{ .iterate = true });
+    defer source.close(io);
+    try std.testing.expectEqual(@as(u64, 1), try s6t21.importAt(a, io, source, 1));
+    const manifest_encoded = try source.readFileAlloc(io, "MANIFEST", a, .unlimited);
+    const documents = try source.readFileAlloc(io, "documents-1.hybseg", a, .unlimited);
+    const lexical = try source.readFileAlloc(io, "lexical-1.hyblex", a, .unlimited);
+
+    const before = try s6t20DirDigest(a, folder.out);
+    const outcome = lifecycle.publishSerialized(folder.out, io, manifest_encoded, documents, lexical);
+    if (outcome) |_| {
+        std.debug.print("S6-T21 publishSerialized of generation 1 over 9: published\n", .{});
+    } else |err| std.debug.print("S6-T21 publishSerialized of generation 1 over 9: {s}\n", .{@errorName(err)});
+    try std.testing.expectError(error.StaleGeneration, outcome);
+    try std.testing.expectEqual(@as(u64, 9), try s6t20.manifestGeneration(a, io, folder.out));
+    try std.testing.expectEqualSlices(u8, &before, &try s6t20DirDigest(a, folder.out));
+
+    try folder.tmp.dir.createDir(io, "fresh", .default_dir);
+    var fresh = try folder.tmp.dir.openDir(io, "fresh", .{ .iterate = true });
+    defer fresh.close(io);
+    try lifecycle.publishSerialized(fresh, io, manifest_encoded, documents, lexical);
+    try std.testing.expectEqual(@as(u64, 1), try s6t20.manifestGeneration(a, io, fresh));
+}
