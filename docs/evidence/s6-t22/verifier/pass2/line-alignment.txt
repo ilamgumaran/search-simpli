@@ -1,0 +1,1 @@
+passages 5364; content = the file's lines from start_line on: 5361 (of them 53 with the first line's leading spaces trimmed); ending before end_line: 2100 (every line dropped at the end is blank); misaligned: 3 [('home/garden/garden-diary-2025.txt', 715, 796), ('home/garden/garden-diary-2025.txt', 311, 391), ('home/garden/garden-diary-2025.txt', 715, 796)]

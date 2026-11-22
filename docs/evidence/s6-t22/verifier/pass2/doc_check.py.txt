@@ -1,0 +1,45 @@
+"""Verifier pass 2: every number of docs/text-search-score.md's tables and lists, against the committed baseline
+JSON and the judgments, recomputed here."""
+import json, re, sys, collections
+from pathlib import Path
+W = Path(sys.argv[1]); C = Path(sys.argv[2])
+B = json.load(open(W/"docs/evidence/s6-t22/baseline-rework-1.json")); J = json.load(open(W/"fixtures/text-search/judgments.json"))
+doc = (W/"docs/text-search-score.md").read_text()
+cfg = lambda f, form: B["configs"][f"index/{f}/{form}"]
+nr = set(B["corpus"]["files_not_read"]); bad = 0
+rows = [l for l in doc.splitlines() if l.startswith("| ") and re.match(r"\| (\*\*)?[a-z]", l) and l.count("|") == 9]
+for l in rows:
+    c = [x.strip().strip("*") for x in l.strip("|").split("|")]
+    kind = c[0]; qs = [q for q in J["questions"] if q["kind"] != "no-answer"]
+    if kind == "total": sel = qs
+    elif kind == "total without single-source": sel = [q for q in qs if not q["single_source"]]
+    else: sel = [q for q in qs if q["kind"] == kind]
+    ids = {q["id"] for q in sel}
+    def hits(f, form, key): return sum(1 for r in cfg(f, form)["questions"] if r["id"] in ids and r.get(key))
+    f1 = lambda f, form: sum(1 for r in cfg(f, form)["questions"] if r["id"] in ids and r.get("file_rank") == 1)
+    mine = [str(len(sel)), str(sum(q["single_source"] for q in sel)), str(sum(any(p in nr for p in q["files"]) for q in sel)),
+            f"{f1('both','typed')} / {f1('both','query')}", f"{hits('both','typed','complete')} / {hits('both','query','complete')}",
+            f"{f1('content','typed')} / {f1('content','query')}", f"{hits('content','typed','complete')} / {hits('content','query','complete')}"]
+    theirs = [x.replace("**", "").strip() for x in c[1:]]
+    ok = mine == theirs; bad += not ok
+    print(("OK  " if ok else "DIFF"), kind, theirs, "" if ok else f"mine {mine}")
+na = {q["id"] for q in J["questions"] if q["kind"] == "no-answer"}
+for f in ("both", "content"):
+    print("no-answer returned something", f, [sum(1 for r in cfg(f, form)["questions"] if r["id"] in na and r["returned"]) for form in ("typed", "query")])
+    for form in ("typed", "query"):
+        print("  stale first", f, form, [r["id"] for r in cfg(f, form)["questions"] if r.get("stale_first")])
+print("stale-named questions:", [q["id"] for q in J["questions"] if q.get("stale")])
+print("kinds n:", collections.Counter(q["kind"] for q in J["questions"]))
+print("Tamil-script questions:", sum(bool(re.search("[஀-௿]", q["question"])) for q in J["questions"]))
+print("not-read questions:", sum(any(p in nr for p in q["files"]) for q in J["questions"] if q["kind"] != "no-answer"), "files not read:", len(nr))
+ext = collections.Counter((p.rsplit(".", 1)[-1] if "." in p.rsplit("/", 1)[-1] else "(none)") for p in (str(x.relative_to(C)) for x in C.rglob("*") if x.is_file()))
+print("extensions:", dict(ext), "files:", sum(ext.values()), "bytes:", sum(x.stat().st_size for x in C.rglob("*") if x.is_file()))
+print("diary lines:", len((C/"home/garden/garden-diary-2025.txt").read_text().splitlines()))
+print("doc table rows checked:", len(rows), "differing:", bad)
+# typed current-copy: stale before answer
+cc = [r for r in cfg("both", "typed")["questions"] if r["kind"] == "current-copy"]
+print("current-copy typed both stale_first:", sum(r.get("stale_first", False) for r in cc), "of", len(cc), "| content:", sum(r.get("stale_first", False) for r in cfg("content","typed")["questions"] if r["kind"]=="current-copy"))
+for qid in ("syn-01","syn-03","syn-05","syn-06","syn-09","tam-04","table-05","where-08","about-09","none-10","pair-08","spell-04","spell-09"):
+    for f in ("both","content"):
+        r = next(r for r in cfg(f,"query")["questions"] if r["id"] == qid); t = next(r for r in cfg(f,"typed")["questions"] if r["id"] == qid)
+        print(qid, f, "query:", {k: r.get(k) for k in ("returned","file_rank","passage_rank","complete")}, "typed:", {k: t.get(k) for k in ("returned","file_rank","complete")})

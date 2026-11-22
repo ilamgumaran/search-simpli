@@ -1,0 +1,23 @@
+"""Verifier pass 2: is a passage's content the file's lines from start_line on (so line i maps to start_line + i,
+as judged_share assumes)? Run from the scorer's run folder: python3 -I line_alignment.py <searchd> <judgments>."""
+import json, subprocess, sys, re
+from pathlib import Path
+B, J = sys.argv[1], json.load(open(sys.argv[2]))
+total = aligned = trimmed = short = 0; bad = []
+for field in ("both", "content"):
+  for form in ("question", "query"):
+    for q in J["questions"]:
+      env = json.loads(subprocess.run([B, "evidence", "index", q[form], "--search-field", field, "--top-k", "10"], capture_output=True, check=True).stdout)
+      rows = [dict(r["citation"], content=r.get("content", "")) for r in env["results"]] if "results" in env else env["evidence"]
+      for r in rows:
+        total += 1
+        cl = r["content"].split("\n"); fl = re.split(r"\r?\n", Path("corpus", r["path"]).read_bytes().decode())
+        seg = fl[r["start_line"]-1:r["start_line"]-1+len(cl)]
+        if seg != cl and seg and [seg[0].lstrip()] + seg[1:] == cl: trimmed += 1; seg = cl
+        if seg == cl:
+            aligned += 1
+            rest = fl[r["start_line"]-1+len(cl):r["end_line"]]
+            if rest: short += 1; assert all(x.strip() == "" for x in rest), (r["path"], rest)
+        else: bad.append((r["path"], r["start_line"], r["end_line"]))
+print(f"passages {total}; content = the file's lines from start_line on: {aligned} (of them {trimmed} with the first line's leading spaces trimmed); "
+      f"ending before end_line: {short} (every line dropped at the end is blank); misaligned: {len(bad)} {bad[:5]}")

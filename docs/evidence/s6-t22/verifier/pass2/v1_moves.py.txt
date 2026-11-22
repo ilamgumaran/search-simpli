@@ -1,0 +1,16 @@
+"""Verifier pass 2: v1 questions with no change of their own whose query-form rows moved between baseline-v1 and
+baseline-rework-1 (the effect of the six added files), and whether the Report, changed-questions.txt or the document
+names them. Run in the worktree; arg: changed-audit.txt."""
+import json, re, sys
+V = json.load(open("docs/evidence/s6-t22/baseline-v1.json")); B = json.load(open("docs/evidence/s6-t22/baseline-rework-1.json"))
+changed = set(re.findall(r"^(\S+) \|", open(sys.argv[1]).read(), re.M))
+text = open("docs/tasks/S6-T22.md").read().split("## Report: Rework 1")[1] + open("docs/evidence/s6-t22/changed-questions.txt").read() + open("docs/text-search-score.md").read()
+J = {q["id"]: q for q in json.load(open("fixtures/text-search/judgments.json"))["questions"]}
+for f in ("both", "content"):
+    v = {r["id"]: r for r in V["configs"][f"index/{f}"]["questions"]}; b = {r["id"]: r for r in B["configs"][f"index/{f}/query"]["questions"]}
+    for qid, r in v.items():
+        nid = next((q["id"] for q in J.values() if q.get("was") == qid), qid)
+        if nid in changed or qid in changed: continue
+        keys = ("file_rank", "passage_rank", "complete", "returned")
+        a, c = tuple(r.get(k) for k in keys), tuple(b[nid].get(k) for k in keys)
+        if a != c: print(f, nid, dict(zip(keys, a)), "->", dict(zip(keys, c)), "| named:", nid in text, "| top", b[nid]["top_paths"][:2])

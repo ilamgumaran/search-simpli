@@ -1,0 +1,6 @@
+about-02   range home/lists/cornwall-packing.txt:1 keys ['cornwall'] -> unjudged home/trips/cornwall-2026-draft.md:[1]
+about-02   range home/trips/cornwall-2026.md:1 keys ['cornwall'] -> unjudged home/trips/cornwall-2026-draft.md:[1]
+about-03   range home/pets/pickle-walks.md:1 keys ['pickle'] -> unjudged archive/pickle-2024.md:[1]
+span-10    range school/calendar-autumn.md:9 keys ['half term'] -> unjudged home/trips/cornwall-2026-draft.md:[1]
+spell-09   range school/calendar-autumn.md:9 keys ['half term'] -> unjudged home/trips/cornwall-2026-draft.md:[1]
+syn-03     range home/house/house-notes.md:12 keys ['stopcock'] -> unjudged archive/house-notes-2024.md:[13]

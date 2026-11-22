@@ -1,0 +1,84 @@
+Verifier, second pass: reading by eye, 22 Nov 2026, head 732041f.
+Read: all 52 questions marked "added" (dump_q2.py output), the 21 changed questions of version 1
+(changed-audit.txt), and the six added files plus the archive copies they sit beside. Each line: id, verdict, reason.
+"ok" = the judged lines answer the question, and I found no other readable or unread line that answers it.
+
+== Findings 1-7 of the first Verdict
+form-10   fixed: judged lines 2-3 (the two presents not yet wrapped); line 1 no longer judged.
+word-06   fixed: naatkaatti-2027.md:3 ("பொங்கல்: ஜனவரி 14") added as an alternative to pongal-samayal.md:15.
+about-09  fixed: eight parts; the README says the site code is src/ and site/, and all four site/ files are judged.
+pair-04/06/07 (v1) moved to word-13/14/15 with their wording; single-file answers now judged. Right call (see the
+          ruling recommendations): a "two-files" question that one file answers measures nothing two-file.
+word-13   ok, but a `word` question with two parts (letter:5 or calendar:8; letter:6). Harmless.
+none-07 -> syn-01 ok: dentist.txt:1 (the brace review) answers "When is the orthodontist?"; orthodontist is
+          absent from the folder. It is a related term (the specialist for the dentist's brace review) more than
+          a synonym; acceptable under "another word or a paraphrase".
+none-07   (new) "Where did we put the hammock?": hammock is absent from every file (only "hammer" occurs). ok.
+spell-04/09 fixed: the part that judged the title / intro line is dropped. The query is still only the misspelt
+          word, so the query form now scores 0 of 1 for both; the typed form is scored separately and is complete
+          with `content`. The falls are shown in the Report's table. Honest.
+five borrowed-word queries: span-02 "sourdough prove how long oven", span-07 "tool borrowed how long back late",
+          span-11 "ladder cordless drill kept", pair-09 "release fixed reminders going out twice issue",
+          number-05 "server 2026-06-17". Each uses only words of its question or close to them, as a person would
+          pick; none takes a word from the answer line. The falls (span-02 content complete lost; span-07, span-11
+          to rank 2) are shown.
+
+== New two-file questions
+pair-04   ok, a true two-file question: orders.md:5 has the order number (delivered 2026-07-03), only
+          kitchen-care.md:4 says it was fitted ("swapped in July").
+pair-06   ok, two files: the chair in committee.md:5; her number only in contacts.tsv (unread). Stale
+          committee-2025.md:5 (Orla Quent) rightly marked. Scores incomplete until H2.
+pair-07   ok, two files: 140 pounds only in tyres-receipt.txt; 33 psi only in car-notes.md:11.
+
+== tamil-latin (10)
+The spellings are how Tamil speakers commonly type Tamil in Latin letters (Tanglish): eppo, venum, eppadi,
+seyvathu, thottathil, thanneer, kaditham, puthaandu, ethanai, koppai, pacharisi, pattiyal, seyvaanga. The register
+mixes spoken (eppo, venum, seyvaanga) and written (seyvathu, valarkirathu) forms, as typed Tamil does. "paatti"
+against the folder's "paati/" is a real variant pair; both spellings are in use.
+tam-01    ok (both dates of Pongal); note: "pongal" is also in a file name, so this mostly tests the name channel.
+tam-02/03 ok; found through Latin file names (rasam.md, kootu.md), as the document says.
+tam-04..10 ok; judged lines answer; no other file answers. tam-07 is reached through "2027".
+
+== synonym (10)
+syn-02    WRONG MARK: archive/house-notes-2024.md:23 is judged `stale`, but it is the same sentence as the
+          answer ("Black bin on Thursdays, green bin every other Monday"); the note says so. `stale` is defined
+          as a copy that disagrees. It is an alternative, as syn-08 treats the agreeing committee-2025 line.
+syn-03    UNJUDGED: archive/house-notes-2024.md:13 "The stopcock is under the kitchen sink" answers "how do I shut
+          off the mains" as well as the judged line; the note says "the 2024 notes have it too" but it is neither
+          an alternative nor stale.
+syn-04    ok; "roadworthiness" is stiff for a person but is the plain meaning of the MOT.
+syn-05..10 ok. syn-08's alternatives include the agreeing 2025 copy (the right treatment).
+
+== table (10)
+table-01..05 ok (orders.md rows, the clubs table, the YAML inventory).
+table-06..08, table-10 ok (CSV and TSV, unread today).
+table-09  CONTRADICTED: inbox/note-08.txt (readable, a sentence-pool line of version 1) says "Wilf can do the
+          Saturday desk on the 21st"; 21 November 2026 is a Saturday. The rota row says desk Ines, repairs Wilf.
+          The folder gives two answers and the judgment names one, without a stale mark or a note.
+
+== current-copy (9)
+Each has one defensible current file. Where the corpus says which is current:
+  cur-03  in the text: the draft's title ends "(draft)".
+  cur-02  in the text: boiler-2025.md's record stops at 2025 and says "Next service due in March 2026"; the current
+          file has the 2026-03-14 service.
+  cur-05  partly: the meeting notes are dated Tuesdays (the note says so), which favours the current "first Tuesday".
+  cur-01, cur-04, cur-06, cur-09 by the path only: archive/ and a year in the name (lending-rules-2024,
+          committee-2025, pickle-2024, house-notes-2024); the texts carry no date.
+  cur-07/08 by the name only: cornwall-2026-draft.md has the same title as the current file and no "draft" in its
+          text; its only hint is "Two cottages to choose from".
+  So for 6 of 9 the text alone does not say which copy is current; the path does. That is defensible (a person
+  would read archive/…-2024 and -draft the same way) but it means current-copy tests path reading, not dated text.
+  Generated files share one modification time, so a file's date cannot come from the file system either.
+
+== where-is-it (10)
+where-01..10 ok. where-05 "python loan record" reaches models.py by the words "records" and "loans" in its
+docstring, so it is closer to word-form than role. Seven of ten answers are in unread files.
+
+== Questions of version 1 that rework 1's own files now contradict (not marked stale)
+word-05   archive/lending-rules-2024.md:9 says a 10-pound deposit (current: 20); ranks first in all four configs.
+pair-01   archive/boiler-2025.md:12 "Next service due in March 2026"; ranks first in all four configs.
+span-08   archive/boiler-2025.md:8 makes 2025-03-11 the last service.
+span-10   school/calendar-autumn-draft.md:6 gives the concert as 15 December, 6 pm (current: 16 December, 2 pm).
+span-03   archive/committee-2025.md (another chair, another day; version 1 file; the note says so).
+about-02  home/trips/cornwall-2026-draft.md is a file about the Cornwall trip, neither a part nor stale.
+about-03  archive/pickle-2024.md is a file about Pickle, neither a part nor stale.

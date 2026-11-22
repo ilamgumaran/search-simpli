@@ -1,0 +1,57 @@
+OK   word ['15', '7', '4', '10 / 11', '11 / 12', '10 / 11', '11 / 12'] 
+OK   word-form ['13', '2', '0', '12 / 11', '12 / 11', '12 / 11', '12 / 11'] 
+OK   misspelt ['12', '0', '1', '10 / 11', '8 / 9', '10 / 11', '11 / 9'] 
+OK   phrase ['12', '6', '1', '11 / 11', '11 / 11', '11 / 11', '11 / 11'] 
+OK   number ['12', '6', '4', '9 / 8', '10 / 10', '9 / 8', '10 / 10'] 
+OK   two-passages ['11', '7', '1', '4 / 7', '0 / 0', '4 / 7', '6 / 9'] 
+OK   two-files ['11', '8', '1', '7 / 8', '6 / 7', '7 / 8', '6 / 7'] 
+OK   filename ['12', '5', '1', '7 / 10', '10 / 11', '7 / 10', '10 / 11'] 
+OK   about ['11', '1', '3', '8 / 10', '4 / 8', '8 / 10', '5 / 8'] 
+OK   file-content ['11', '3', '3', '3 / 7', '8 / 8', '3 / 7', '7 / 8'] 
+OK   tamil-latin ['10', '0', '0', '5 / 7', '4 / 5', '5 / 7', '4 / 5'] 
+OK   synonym ['10', '0', '0', '2 / 3', '2 / 3', '2 / 3', '2 / 2'] 
+OK   table ['10', '4', '5', '4 / 5', '6 / 6', '4 / 5', '6 / 6'] 
+OK   current-copy ['9', '0', '0', '0 / 4', '5 / 5', '0 / 4', '6 / 6'] 
+OK   where-is-it ['10', '4', '7', '1 / 2', '3 / 3', '1 / 2', '3 / 3'] 
+OK   total ['169', '53', '31', '93 / 115', '100 / 109', '93 / 115', '110 / 118'] 
+OK   total without single-source ['116', '0', '19', '61 / 79', '68 / 75', '61 / 79', '76 / 78'] 
+no-answer returned something both [11, 8]
+  stale first both typed ['syn-02', 'cur-01', 'cur-02', 'cur-03', 'cur-04', 'cur-05', 'cur-08', 'cur-09']
+  stale first both query ['cur-01', 'cur-03', 'cur-04']
+no-answer returned something content [11, 8]
+  stale first content typed ['syn-02', 'cur-01', 'cur-02', 'cur-03', 'cur-05', 'cur-08', 'cur-09']
+  stale first content query ['cur-01', 'cur-03', 'cur-04']
+stale-named questions: ['pair-06', 'syn-02', 'syn-07', 'cur-01', 'cur-02', 'cur-03', 'cur-04', 'cur-05', 'cur-06', 'cur-07', 'cur-08', 'cur-09']
+kinds n: Counter({'word': 15, 'word-form': 13, 'misspelt': 12, 'phrase': 12, 'number': 12, 'filename': 12, 'no-answer': 12, 'two-passages': 11, 'two-files': 11, 'about': 11, 'file-content': 11, 'synonym': 10, 'tamil-latin': 10, 'table': 10, 'where-is-it': 10, 'current-copy': 9})
+Tamil-script questions: 11
+not-read questions: 31 files not read: 24
+extensions: {'md': 162, '(none)': 4, 'tsv': 2, 'txt': 72, 'csv': 4, 'json': 2, 'toml': 1, 'yaml': 2, 'log': 12, 'sh': 1, 'html': 2, 'css': 1, 'xml': 1, 'js': 1, 'py': 3} files: 270 bytes: 141726
+diary lines: 1462
+doc table rows checked: 17 differing: 0
+current-copy typed both stale_first: 7 of 9 | content: 6
+syn-01 both query: {'returned': 0, 'file_rank': None, 'passage_rank': None, 'complete': False} typed: {'returned': 10, 'file_rank': None, 'complete': False}
+syn-01 content query: {'returned': 0, 'file_rank': None, 'passage_rank': None, 'complete': False} typed: {'returned': 10, 'file_rank': None, 'complete': False}
+syn-03 both query: {'returned': 10, 'file_rank': 10, 'passage_rank': 10, 'complete': True} typed: {'returned': 10, 'file_rank': None, 'complete': False}
+syn-03 content query: {'returned': 10, 'file_rank': None, 'passage_rank': None, 'complete': False} typed: {'returned': 10, 'file_rank': None, 'complete': False}
+syn-05 both query: {'returned': 10, 'file_rank': 2, 'passage_rank': 2, 'complete': True} typed: {'returned': 10, 'file_rank': 2, 'complete': True}
+syn-05 content query: {'returned': 10, 'file_rank': 2, 'passage_rank': 2, 'complete': True} typed: {'returned': 10, 'file_rank': 2, 'complete': True}
+syn-06 both query: {'returned': 10, 'file_rank': None, 'passage_rank': None, 'complete': False} typed: {'returned': 10, 'file_rank': None, 'complete': False}
+syn-06 content query: {'returned': 10, 'file_rank': None, 'passage_rank': None, 'complete': False} typed: {'returned': 10, 'file_rank': None, 'complete': False}
+syn-09 both query: {'returned': 10, 'file_rank': 8, 'passage_rank': 8, 'complete': True} typed: {'returned': 10, 'file_rank': 3, 'complete': True}
+syn-09 content query: {'returned': 10, 'file_rank': 8, 'passage_rank': 8, 'complete': True} typed: {'returned': 10, 'file_rank': 3, 'complete': True}
+tam-04 both query: {'returned': 10, 'file_rank': 1, 'passage_rank': 1, 'complete': True} typed: {'returned': 10, 'file_rank': None, 'complete': False}
+tam-04 content query: {'returned': 10, 'file_rank': 1, 'passage_rank': 1, 'complete': True} typed: {'returned': 10, 'file_rank': None, 'complete': False}
+table-05 both query: {'returned': 4, 'file_rank': 2, 'passage_rank': 2, 'complete': True} typed: {'returned': 10, 'file_rank': 2, 'complete': True}
+table-05 content query: {'returned': 10, 'file_rank': 2, 'passage_rank': 2, 'complete': True} typed: {'returned': 10, 'file_rank': 2, 'complete': True}
+where-08 both query: {'returned': 10, 'file_rank': 1, 'passage_rank': 1, 'complete': True} typed: {'returned': 10, 'file_rank': 3, 'complete': True}
+where-08 content query: {'returned': 10, 'file_rank': 1, 'passage_rank': 1, 'complete': True} typed: {'returned': 10, 'file_rank': 3, 'complete': True}
+about-09 both query: {'returned': 10, 'file_rank': 3, 'passage_rank': 3, 'complete': False} typed: {'returned': 10, 'file_rank': 5, 'complete': False}
+about-09 content query: {'returned': 10, 'file_rank': 3, 'passage_rank': 3, 'complete': False} typed: {'returned': 10, 'file_rank': 5, 'complete': False}
+none-10 both query: {'returned': 1, 'file_rank': None, 'passage_rank': None, 'complete': None} typed: {'returned': 10, 'file_rank': None, 'complete': None}
+none-10 content query: {'returned': 10, 'file_rank': None, 'passage_rank': None, 'complete': None} typed: {'returned': 10, 'file_rank': None, 'complete': None}
+pair-08 both query: {'returned': 3, 'file_rank': 1, 'passage_rank': 2, 'complete': False} typed: {'returned': 3, 'file_rank': 1, 'complete': False}
+pair-08 content query: {'returned': 4, 'file_rank': 1, 'passage_rank': 3, 'complete': False} typed: {'returned': 4, 'file_rank': 1, 'complete': False}
+spell-04 both query: {'returned': 3, 'file_rank': 1, 'passage_rank': None, 'complete': False} typed: {'returned': 3, 'file_rank': 1, 'complete': False}
+spell-04 content query: {'returned': 5, 'file_rank': 1, 'passage_rank': None, 'complete': False} typed: {'returned': 9, 'file_rank': 1, 'complete': True}
+spell-09 both query: {'returned': 4, 'file_rank': 1, 'passage_rank': None, 'complete': False} typed: {'returned': 10, 'file_rank': 1, 'complete': False}
+spell-09 content query: {'returned': 4, 'file_rank': 1, 'passage_rank': None, 'complete': False} typed: {'returned': 10, 'file_rank': 1, 'complete': True}

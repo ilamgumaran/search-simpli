@@ -1,0 +1,13 @@
+Guards at head 732041f (verify2 worktree, clean tree):
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 600 tests, each run by a step of `zig build test`; the public core API `api`: 85 names in 22 namespaces)
+exit 0
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+exit 0
+== text_search_questions.py --check
+fixtures/text-search/judgments.json: up to date
+exit 0
+== check_no_home_paths (at head, clean tree)
+exit 0
+== check_test_counts --run (last lines)
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 600 tests: every step ran the tests the listing has, and the static checker passes)

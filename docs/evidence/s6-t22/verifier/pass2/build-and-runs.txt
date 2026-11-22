@@ -1,0 +1,17 @@
+Build: git archive 87bfd35 (main) | tar -x; cd zig; zig build -Doptimize=ReleaseSmall --prefix <scratch>/p2/prefix-87bfd35, own caches; Zig 0.16.0
+sha256 5ad3de31652ab4db88302678132c86ac5e45de25b6f3ce0630b28cf33f6bd8c1  searchd (1,151,720 bytes); the Report says 5ad3de31652ab4db88302678132c86ac5e45de25b6f3ce0630b28cf33f6bd8c1
+Ruling 1: git diff 2f58f27 732041f -- zig contracts bindings: empty; git diff b8852d8 732041f -- zig contracts bindings: empty
+
+Scorer runs at head with that searchd, two new scratch folders (run-a, run-b):
+fc3734fd09126156d5e662a9539de7583e511c639d9fe5a1b1864a2a3ba916d3  <scratch>/p2/r-a.json
+fc3734fd09126156d5e662a9539de7583e511c639d9fe5a1b1864a2a3ba916d3  <scratch>/p2/r-b.json
+edf54b12980c58af8443157658ac4ff06bb8dc0e8dd66497a5692ba00626688f  <scratch>/p2/r-a.md
+edf54b12980c58af8443157658ac4ff06bb8dc0e8dd66497a5692ba00626688f  <scratch>/p2/r-b.md
+fc3734fd09126156d5e662a9539de7583e511c639d9fe5a1b1864a2a3ba916d3  docs/evidence/s6-t22/baseline-rework-1.json
+edf54b12980c58af8443157658ac4ff06bb8dc0e8dd66497a5692ba00626688f  docs/evidence/s6-t22/baseline-rework-1.md
+855b876e2512ad891069c3723922f4f8f3f65176ac592588ba77b702a2bafa77  docs/evidence/s6-t22/baseline-v1.json
+01f5f5b09e6460d1d51daf64162d7318ec2c10804e504ca9ccf210eb2cd8a784  docs/evidence/s6-t22/baseline-v1.md
+cmp run-a.json baseline-rework-1.json: identical; cmp run-a.md baseline-rework-1.md: identical; each run 12.2 s wall
+baseline-v1.json/md: byte-identical to 2f58f27 baseline.json/md (renamed; 855b876e... / 01f5f5b0...), kept
+Pass-1 searchd (b8852d8 tree, ReleaseSmall) on the rework-1 set: 0 of 1,448 rows differ, summaries equal (JSON differs only in the engine label/sha)
+direct_equals_index: 181/181 for both/typed, both/query, content/typed, content/query

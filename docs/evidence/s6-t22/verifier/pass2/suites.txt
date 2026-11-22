@@ -1,0 +1,9 @@
+no-Zig:
+Ran 552 tests in 46.813s
+OK (skipped=44)
+ReleaseSmall (searchd 87bfd35):
+Ran 608 tests in 67.159s
+OK
+Debug (suite builds searchd):
+Ran 608 tests in 129.051s
+OK

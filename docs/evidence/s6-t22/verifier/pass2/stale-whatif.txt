@@ -1,0 +1,4 @@
+both/typed: stale copy first 10 of 16: ['cur-01', 'cur-02', 'cur-03', 'cur-04', 'cur-05', 'cur-08', 'cur-09', 'word-05', 'pair-01', 'span-03']
+both/query: stale copy first 5 of 16: ['cur-01', 'cur-03', 'cur-04', 'word-05', 'pair-01']
+content/typed: stale copy first 9 of 16: ['cur-01', 'cur-02', 'cur-03', 'cur-05', 'cur-08', 'cur-09', 'word-05', 'pair-01', 'span-03']
+content/query: stale copy first 5 of 16: ['cur-01', 'cur-03', 'cur-04', 'word-05', 'pair-01']

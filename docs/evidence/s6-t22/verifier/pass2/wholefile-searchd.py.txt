@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Verifier plant: the real searchd (main 87bfd35), but every returned passage widened to its whole file,
+one passage per file (the first), so recall can only rise and tightness should fall."""
+import json, os, re, subprocess, sys
+real = "<scratch>/p2/prefix-87bfd35/bin/searchd"
+args = sys.argv[1:]
+done = subprocess.run([real] + args, capture_output=True)
+if done.returncode != 0 or args[0] not in ("search", "evidence"):
+    sys.stdout.buffer.write(done.stdout); sys.stderr.buffer.write(done.stderr); sys.exit(done.returncode)
+env = json.loads(done.stdout)
+root = os.path.join(os.getcwd(), "corpus")
+def whole(path):
+    text = open(os.path.join(root, path), encoding="utf-8").read()
+    lines = re.split(r"\r?\n", text)
+    if lines and lines[-1] == "": lines.pop()
+    return "\n".join(lines), len(lines)
+seen = set()
+if "results" in env:
+    out = []
+    for r in env["results"]:
+        p = r["citation"]["path"]
+        if p in seen: continue
+        seen.add(p); text, n = whole(p)
+        r["citation"]["start_line"], r["citation"]["end_line"], r["content"] = 1, n, text
+        out.append(r)
+    env["results"] = out
+else:
+    out = []
+    for r in env["evidence"]:
+        if r["path"] in seen: continue
+        seen.add(r["path"]); text, n = whole(r["path"])
+        r["start_line"], r["end_line"], r["content"] = 1, n, text
+        out.append(r)
+    env["evidence"] = out
+sys.stdout.write(json.dumps(env, ensure_ascii=False))

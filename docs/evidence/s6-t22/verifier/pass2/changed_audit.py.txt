@@ -1,0 +1,20 @@
+"""Verifier pass 2: every v1 question that changed (query, kind, ranges, id, wording), against the ids named in
+changed-questions.txt. Args: judgments at 2f58f27, judgments at head, changed-questions.txt."""
+import json, sys, re
+old = {q["id"]: q for q in json.load(open(sys.argv[1]))["questions"]}
+new = json.load(open(sys.argv[2]))["questions"]
+listed = set(re.findall(r"\b([a-z]+-\d\d)\b", open(sys.argv[3]).read()))
+rng = lambda q: [[(r["path"], r["start_line"], r["end_line"]) for r in p["ranges"]] for p in q["parts"]]
+seen = set(); changed = []
+for q in new:
+    if "added" in q: continue
+    vid = q.get("was", q["id"]); o = old[vid]; seen.add(vid); d = []
+    oq = o.get("query", o["question"])
+    if q["id"] != vid: d.append(f"id {vid}->{q['id']}")
+    if q["kind"] != o["kind"]: d.append(f"kind {o['kind']}->{q['kind']}")
+    if q["query"] != oq: d.append(f"query {oq!r}->{q['query']!r}")
+    if q["question"] != o["question"]: d.append("QUESTION WORDING CHANGED")
+    if rng(q) != rng(o): d.append(f"ranges {rng(o)} -> {rng(q)}")
+    if d: changed.append(q["id"]); print(q["id"], "|", "; ".join(d), "| listed:", q["id"] in listed or vid in listed)
+print("v1 questions missing from the new set:", sorted(set(old) - seen))
+print("changed:", len(changed), "| changed but not listed:", [c for c in changed if c not in listed and next((q.get('was') for q in new if q['id']==c), None) not in listed])

@@ -1,0 +1,4 @@
+v1 files 264 rework-1 files 270 | two rework-1 generations identical: True
+v1 files unchanged in rework 1: True | removed: []
+added: ['archive/boiler-2025.md', 'archive/lending-rules-2024.md', 'archive/pickle-2024.md', 'home/trips/cornwall-2026-draft.md', 'school/calendar-autumn-draft.md', 'school/clubs-autumn.md']
+rework-1 corpus bytes 141726 own digest (path NUL bytes NUL, sorted) 35a08d3237d32952

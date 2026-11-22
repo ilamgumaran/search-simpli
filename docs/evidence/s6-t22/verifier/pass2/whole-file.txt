@@ -1,0 +1,4 @@
+index/both/typed file@10 131->131 passage@10 120->131 complete 100->125 first_passage 100->125 complete_within 9->7 judged_share 0.0649->0.0465 median bytes 11814->14020 passage bytes 1584.2->5701.7
+index/both/query file@10 135->135 passage@10 123->135 complete 109->131 first_passage 109->131 complete_within 36->34 judged_share 0.1484->0.1098 median bytes 9403->12213 passage bytes 1137.2->4133.6
+index/content/typed file@10 129->129 passage@10 123->129 complete 110->123 first_passage 99->123 complete_within 91->39 judged_share 0.0688->0.048 median bytes 3479->4783 passage bytes 1679.7->5200.0
+index/content/query file@10 134->134 passage@10 125->134 complete 118->130 first_passage 108->130 complete_within 100->84 judged_share 0.1456->0.1112 median bytes 2785->3641 passage bytes 1330.1->3862.9
