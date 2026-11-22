@@ -1,0 +1,6 @@
+# S6-T21 rework 1: natives after the comment-only header and cli.zig edits (tool/build_native.sh, Zig 0.16.0, NDK 28.2.13676358)
+Build Summary: 28/28 steps succeeded
+SOURCE-SHA256: dd065d977e22181bb1ee4f1fff11bcf537c1169b3a881dff6a66c06c5f4c6e4a (was 6b38f2545692f37fcebf6eb2b863ebbb351c48e5a8651eabcf6e26ddc05dc3bd)
+cmp against 92ed47b's committed files: macOS dylib, Android .so, iOS framework binary and Info.plist, the example's .so: all identical
+cmp against the timing orders' head build (scripts/prototypes/s6t21/orders.txt, sha256 ed938358e6758fc7...): identical
+searchd ReleaseSmall: identical to the 17dc8b7 tree's build (1,151,720 B)

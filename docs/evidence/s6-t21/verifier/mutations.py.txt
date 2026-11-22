@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""S6-T21 verifier: plant one mutation per fresh `git archive` of the head and
+run, with empty Zig caches: `zig build test --summary all` (Debug),
+`zig build test-abi`, and `python3 -m unittest tests.test_cli_process` with
+SEARCHD_BINARY = the mutant's own Debug `searchd`. Prints, per mutation, each
+step's summary and every failed test's name. Never commits anything.
+
+Usage: python3 -I mutations.py <worktree> <scratch> <parallel> [name ...]
+"""
+import os
+import re
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+APPLY_CHECK = "    if (dir) |d| if (options.generation) |g| try generation_alloc.requireAboveFloor(allocator, io, d, g);\n"
+APPLY_LEASE = "    var lease: ?lifecycle.WriterLease = if (dir) |d| (try lifecycle.tryAcquireWriter(d, io)) orelse return error.WriterBusy else null;\n"
+LEASE2 = "    var lease = (try tryAcquireWriter(dir, io)) orelse return error.WriterBusy;\n    defer lease.release(io);\n"
+CALL_A = "    try requireCallerNumberAboveFloor(allocator, dir, io, manifest_encoded);\n"
+CALL_S = "    try requireCallerNumberAboveFloor(std.heap.smp_allocator, dir, io, manifest_encoded);\n"
+L = "zig/src/core/lifecycle.zig"
+G = "zig/src/core/generation_alloc.zig"
+A = "zig/src/core/apply.zig"
+ABI = "zig/src/interfaces/abi.zig"
+MAIN = "zig/src/interfaces/main.zig"
+
+# name: [(file, old, new, expected count)]
+MUTATIONS = {
+    "no_check_apply": [(A, APPLY_CHECK, "", 1)],
+    "no_check_import_plain": [(L, CALL_A + "    return publishLeasedKeepingWithSource(", "    return publishLeasedKeepingWithSource(", 1)],
+    "no_check_import_filename": [(L, CALL_A + "    return publishLeasedKeepingWithExtras(", "    return publishLeasedKeepingWithExtras(", 1)],
+    "no_check_init_demo": [(L, CALL_S, "", 1)],
+    "manifest_only": [(G, "    const floor = try highestAbove(arena, io, dir, try decodableManifestGeneration(arena, io, dir));\n",
+                       "    const floor = try decodableManifestGeneration(arena, io, dir);\n", 1)],
+    "check_before_lock_apply": [(A, APPLY_CHECK, "", 1), (A, APPLY_LEASE, APPLY_CHECK + APPLY_LEASE, 1)],
+    "check_before_lock_lifecycle": [(L, LEASE2 + CALL_A, CALL_A + LEASE2, 2), (L, LEASE2 + CALL_S, CALL_S + LEASE2, 1)],
+    "undecodable_manifest_is_error": [(G, "    const metadata = manifest.decode(read.bytes) catch return 0;\n",
+                                       "    const metadata = try manifest.decode(read.bytes);\n", 1)],
+    "floor_off_by_one": [(G, "    if (generation > floor) return;\n", "    if (generation >= floor) return;\n", 1)],
+    "abi_code_unmapped": [(ABI, "        error.StaleGeneration,\n        => SS_ERR_INVALID_ARGUMENT,", "        => SS_ERR_INVALID_ARGUMENT,", 1)],
+    "abi_line_name_only": [(ABI, 'setLastError("ss_import_json: {s}", .{generation_alloc.describeStaleGeneration(&line_buffer)});',
+                            '_ = &line_buffer; setLastError("ss_import_json: {s}", .{@errorName(err)});', 1)],
+    "cli_index_no_catch": [(MAIN, "                exitIfStaleGeneration(err);\n                return err;\n", "                return err;\n", 1)],
+}
+
+
+def sh(argv, cwd, env=None):
+    done = subprocess.run(argv, cwd=cwd, capture_output=True, text=True, env=env)
+    return done.returncode, done.stdout + done.stderr
+
+
+def one(worktree, scratch, name):
+    tree = scratch / f"mut-{name}"
+    tree.mkdir(parents=True)
+    archive = subprocess.run(["git", "-C", str(worktree), "archive", "HEAD"], capture_output=True, check=True).stdout
+    subprocess.run(["tar", "-x", "-C", str(tree)], input=archive, check=True)
+    for rel, old, new, count in MUTATIONS[name]:
+        path = tree / rel
+        text = path.read_text()
+        assert text.count(old) == count, (name, rel, text.count(old))
+        path.write_text(text.replace(old, new))
+    cache = ["--cache-dir", str(scratch / f"cache-mut-{name}" / "local"), "--global-cache-dir", str(scratch / f"cache-mut-{name}" / "global")]
+    lines = []
+    rc, log = sh(["zig", "build", "test", "--summary", "all"] + cache, tree / "zig")
+    (scratch / f"mut-{name}-test.log").write_text(log)
+    summary = [l for l in log.splitlines() if l.startswith("Build Summary")]
+    lines.append(f"   zig build test: exit {rc}; {summary[-1] if summary else 'no Build Summary'}")
+    for line in [l for l in log.splitlines() if ": error: " in l][:3]:
+        lines.append(f"   compile: {line.split('zig/src/')[-1]}")
+    for test in sorted(set(re.findall(r"^error: '(.+)' failed:?$", log, re.M))):
+        lines.append(f"   failed: {test}")
+    rc, log = sh(["zig", "build", "test-abi"] + cache, tree / "zig")
+    (scratch / f"mut-{name}-abi.log").write_text(log)
+    m = re.findall(r"abi_test: \d+/\d+ checks passed|abi_test: .*FAIL.*", log)
+    lines.append(f"   test-abi: exit {rc}; {m[-1] if m else log.strip().splitlines()[-1][:120] if log.strip() else ''}")
+    prefix = scratch / f"mut-{name}-bin"
+    rc, log = sh(["zig", "build", "--prefix", str(prefix)] + cache, tree / "zig")
+    env = dict(os.environ, SEARCHD_BINARY=str(prefix / "bin" / "searchd"))
+    env.pop("SEARCH_SIMPLI_NO_ZIG", None)
+    rc, log = sh([sys.executable, "-m", "unittest", "tests.test_cli_process"], tree, env)
+    (scratch / f"mut-{name}-py.log").write_text(log)
+    tail = [l for l in log.splitlines() if l.startswith("Ran ") or l.startswith("OK") or l.startswith("FAILED")]
+    lines.append(f"   test_cli_process: {' '.join(tail)}")
+    for test in sorted(set(re.findall(r"^(?:FAIL|ERROR): (\S+ \([^)]*\))", log, re.M))):
+        lines.append(f"   py failed: {test}")
+    return f"== {name}\n" + "\n".join(lines)
+
+
+def main():
+    worktree, scratch, parallel = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3])
+    names = sys.argv[4:] or list(MUTATIONS)
+    with ThreadPoolExecutor(parallel) as pool:
+        for text in pool.map(lambda n: one(worktree, scratch, n), names):
+            print(text, flush=True)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,262 @@
+#!/usr/bin/env python3
+"""S6-T21 verifier: a caller's number against a directory in a given state,
+one writer at a time, real processes. For each case and each build: the
+directory is prepared, its listing (names, sizes, SHA-256, WRITER.LOCK
+included) is taken, the caller runs, and the listing is taken again.
+
+Usage: python3 -I probe_edges.py <scratch> <label> <searchd> <abi_import> [<label> <searchd> <abi_import> ...]
+Writes nothing outside <scratch>.
+"""
+import hashlib
+import json
+import os
+import re
+import shutil
+import struct
+import subprocess
+import sys
+
+U64 = 18446744073709551615
+
+
+def payload(n, text="caller"):
+    return {"format_version": 1, "generation": n, "analyzer_id": "ascii-alnum-v1", "embedding_model_id": "none",
+            "documents": [{"id": text, "path": f"{text}.md", "start_line": 1, "end_line": 1, "text": text,
+                           "vector": [], "required_labels": []}]}
+
+
+def gen(out):
+    try:
+        with open(os.path.join(out, "MANIFEST"), "rb") as h:
+            head = h.read(20)
+        if head[:6] != b"HYBMAN":
+            return "undecodable"
+        return struct.unpack_from("<Q", head, 12)[0]
+    except FileNotFoundError:
+        return "absent"
+    except IsADirectoryError:
+        return "a-directory"
+
+
+def listing(out):
+    rows = {}
+    if not os.path.isdir(out):
+        return rows
+    for name in sorted(os.listdir(out)):
+        p = os.path.join(out, name)
+        if os.path.isfile(p) and not os.path.islink(p):
+            data = open(p, "rb").read()
+            rows[name] = f"{len(data)}:{hashlib.sha256(data).hexdigest()[:16]}"
+        else:
+            rows[name] = "link" if os.path.islink(p) else "dir"
+    return rows
+
+
+def notes(case):
+    os.makedirs(os.path.join(case, "notes", "sub"), exist_ok=True)
+    with open(os.path.join(case, "notes", "a.md"), "w") as f:
+        f.write("alpha evidence about recovery\n")
+    with open(os.path.join(case, "notes", "sub", "b.md"), "w") as f:
+        f.write("beta evidence about publication\n")
+
+
+def g9(case, sd):
+    notes(case)
+    d = subprocess.run([sd, "index", "notes", "--out", "out", "--generation", "9"], cwd=case, capture_output=True, text=True)
+    assert d.returncode == 0, d.stderr
+
+
+def stray(name):
+    def prep(case, sd):
+        notes(case)
+        os.makedirs(os.path.join(case, "out"))
+        with open(os.path.join(case, "out", name), "wb") as f:
+            f.write(b"x")
+    return prep
+
+
+def lost_manifest(case, sd):
+    g9(case, sd)
+    os.remove(os.path.join(case, "out", "MANIFEST"))
+
+
+def lost_manifest_and_state(case, sd):
+    lost_manifest(case, sd)
+    os.remove(os.path.join(case, "out", "INDEX-STATE.json"))
+
+
+def damaged_manifest(case, sd):
+    g9(case, sd)
+    with open(os.path.join(case, "out", "MANIFEST"), "wb") as f:
+        f.write(b"not a manifest at all\n")
+
+
+def truncated_manifest(case, sd):
+    g9(case, sd)
+    p = os.path.join(case, "out", "MANIFEST")
+    data = open(p, "rb").read()
+    open(p, "wb").write(data[:40])
+
+
+def flipped_manifest(case, sd):
+    g9(case, sd)
+    p = os.path.join(case, "out", "MANIFEST")
+    data = bytearray(open(p, "rb").read())
+    data[-1] ^= 0xFF
+    open(p, "wb").write(bytes(data))
+
+
+def damaged_manifest_only(case, sd):
+    notes(case)
+    os.makedirs(os.path.join(case, "out"))
+    with open(os.path.join(case, "out", "MANIFEST"), "wb") as f:
+        f.write(b"not a manifest at all\n")
+
+
+def state_names_20(case, sd):
+    g9(case, sd)
+    with open(os.path.join(case, "out", "INDEX-STATE.json"), "w") as f:
+        f.write('{"state_version":3,"generation":20,"analyzer_id":"analyzer-v2","state_file":"state-20.hybstate"}')
+
+
+def state_damaged(case, sd):
+    g9(case, sd)
+    with open(os.path.join(case, "out", "INDEX-STATE.json"), "w") as f:
+        f.write("{not json")
+
+
+def manifest_is_dir(case, sd):
+    g9(case, sd)
+    os.remove(os.path.join(case, "out", "MANIFEST"))
+    os.makedirs(os.path.join(case, "out", "MANIFEST"))
+
+
+def at_u64_max(case, sd):
+    g9(case, sd)
+    with open(os.path.join(case, "max.json"), "w") as f:
+        json.dump(payload(U64, "max"), f)
+    d = subprocess.run([sd, "import-json", "out", "max.json"], cwd=case, capture_output=True, text=True)
+    assert d.returncode == 0, d.stderr
+
+
+def empty(case, sd):
+    notes(case)
+
+
+def demo_published(case, sd):
+    notes(case)
+    d = subprocess.run([sd, "init-demo", "out"], cwd=case, capture_output=True, text=True)
+    assert d.returncode == 0, d.stderr
+
+
+def idx(n):
+    return ("searchd", ["index", "notes", "--out", "out", "--generation", str(n)], None)
+
+
+def imp(n):
+    return ("searchd", ["import-json", "out", "a.json"], payload(n))
+
+
+def cimp(n):
+    return ("abi", ["out", "a.json"], payload(n))
+
+
+DEMO = ("searchd", ["init-demo", "out"], None)
+
+CASES = [
+    # (name, prepare, caller)
+    ("equal-floor g9 idx 9", g9, idx(9)),
+    ("equal-floor g9 imp 9", g9, imp(9)),
+    ("equal-floor g9 cimp 9", g9, cimp(9)),
+    ("below g9 cimp 5", g9, cimp(5)),
+    ("above g9 imp 10", g9, imp(10)),
+    ("above g9 idx 10", g9, idx(10)),
+    ("stray lexical-7 only, imp 5", stray("lexical-7.hyblex"), imp(5)),
+    ("stray lexical-7 only, imp 7", stray("lexical-7.hyblex"), imp(7)),
+    ("stray lexical-7 only, imp 8", stray("lexical-7.hyblex"), imp(8)),
+    ("stray documents-7 only, idx 7", stray("documents-7.hybseg"), idx(7)),
+    ("stray filenames-7 only, imp 7", stray("filenames-7.hybseg"), imp(7)),
+    ("stray filename-lexical-7 only, imp 6", stray("filename-lexical-7.hyblex"), imp(6)),
+    ("stray state-7 only, imp 7", stray("state-7.hybstate"), imp(7)),
+    ("stray state-7 only, demo", stray("state-7.hybstate"), DEMO),
+    ("stray source-7 only, imp 7", stray("source-7.hybsrc"), imp(7)),
+    ("stray source-7 only, idx 7", stray("source-7.hybsrc"), idx(7)),
+    ("stray source-7 only, imp 5", stray("source-7.hybsrc"), imp(5)),
+    ("stray documents-7.hybseg.tmp only, imp 5", stray("documents-7.hybseg.tmp"), imp(5)),
+    ("lost MANIFEST (g9), imp 5", lost_manifest, imp(5)),
+    ("lost MANIFEST (g9), imp 9", lost_manifest, imp(9)),
+    ("lost MANIFEST (g9), idx 9", lost_manifest, idx(9)),
+    ("lost MANIFEST (g9), demo", lost_manifest, DEMO),
+    ("lost MANIFEST (g9), imp 10", lost_manifest, imp(10)),
+    ("lost MANIFEST+INDEX-STATE (g9), imp 9", lost_manifest_and_state, imp(9)),
+    ("lost MANIFEST+INDEX-STATE (g9), idx 9", lost_manifest_and_state, idx(9)),
+    ("damaged MANIFEST (g9), imp 5", damaged_manifest, imp(5)),
+    ("damaged MANIFEST (g9), cimp 9", damaged_manifest, cimp(9)),
+    ("damaged MANIFEST (g9), demo", damaged_manifest, DEMO),
+    ("damaged MANIFEST (g9), imp 10", damaged_manifest, imp(10)),
+    ("damaged MANIFEST (g9), idx 10", damaged_manifest, idx(10)),
+    ("truncated MANIFEST (g9), imp 9", truncated_manifest, imp(9)),
+    ("truncated MANIFEST (g9), imp 10", truncated_manifest, imp(10)),
+    ("last byte flipped MANIFEST (g9), imp 9", flipped_manifest, imp(9)),
+    ("damaged MANIFEST only, imp 1", damaged_manifest_only, imp(1)),
+    ("INDEX-STATE names 20 (MANIFEST 9), imp 15", state_names_20, imp(15)),
+    ("INDEX-STATE names 20 (MANIFEST 9), idx 20", state_names_20, idx(20)),
+    ("INDEX-STATE names 20 (MANIFEST 9), imp 21", state_names_20, imp(21)),
+    ("INDEX-STATE damaged (g9), imp 10", state_damaged, imp(10)),
+    ("INDEX-STATE damaged (g9), imp 9", state_damaged, imp(9)),
+    ("MANIFEST is a directory (g9), imp 10", manifest_is_dir, imp(10)),
+    ("u64 max over g9, imp max", g9, imp(U64)),
+    ("at u64 max, imp max", at_u64_max, imp(U64)),
+    ("at u64 max, idx max", at_u64_max, idx(U64)),
+    ("at u64 max, rebuild", at_u64_max, ("searchd", ["index", "notes", "--out", "out"], None)),
+    ("g9, idx 18446744073709551616", g9, ("searchd", ["index", "notes", "--out", "out", "--generation", "18446744073709551616"], None)),
+    ("g9, imp 18446744073709551616", g9, ("searchd", ["import-json", "out", "big.json"], "BIG")),
+    ("empty dir, demo", empty, DEMO),
+    ("demo published, demo again", demo_published, DEMO),
+    ("demo published, imp 1", demo_published, imp(1)),
+    ("demo published, imp 2", demo_published, imp(2)),
+]
+
+
+def run(scratch, label, sd, abi, name, prep, caller):
+    case = os.path.join(scratch, label + "-" + re.sub(r"[^A-Za-z0-9]+", "_", name))
+    if os.path.exists(case):
+        raise SystemExit(f"exists: {case}")
+    os.makedirs(case)
+    prep(case, sd)
+    kind, argv, body = caller
+    if body == "BIG":
+        with open(os.path.join(case, "big.json"), "w") as f:
+            f.write(json.dumps(payload(1)).replace('"generation": 1', '"generation": 18446744073709551616'))
+    elif body is not None:
+        with open(os.path.join(case, "a.json"), "w") as f:
+            json.dump(body, f)
+    out = os.path.join(case, "out")
+    before_list, before_gen = listing(out), gen(out)
+    exe = sd if kind == "searchd" else abi
+    d = subprocess.run([exe] + argv, cwd=case, capture_output=True, text=True)
+    after_list, after_gen = listing(out), gen(out)
+    err = re.sub(r"\x1b\[[0-9;]*m", "", d.stderr)
+    err_lines = [l for l in err.splitlines() if l.strip()]
+    first = (d.stdout.strip().splitlines() or [""])[0] if d.returncode == 0 else (err_lines[0] if err_lines else d.stdout.strip())
+    if kind == "abi":
+        first = d.stdout.strip()
+    lock_new = ("WRITER.LOCK" in after_list) and ("WRITER.LOCK" not in before_list)
+    b = {k: v for k, v in before_list.items() if k != "WRITER.LOCK"}
+    a = {k: v for k, v in after_list.items() if k != "WRITER.LOCK"}
+    changed = "unchanged" if a == b else "CHANGED"
+    return (f"{label:4} | {name:45} | rc={d.returncode} stdout_bytes={len(d.stdout)} stderr_lines={len(err_lines)} | "
+            f"MANIFEST {before_gen} -> {after_gen} | dir {changed}{' (+WRITER.LOCK created)' if lock_new else ''} | {first[:260]}")
+
+
+def main():
+    scratch = sys.argv[1]
+    rest = sys.argv[2:]
+    for i in range(0, len(rest), 3):
+        label, sd, abi = rest[i:i + 3]
+        for name, prep, caller in CASES:
+            print(run(scratch, label, sd, abi, name, prep, caller), flush=True)
+
+
+if __name__ == "__main__":
+    main()

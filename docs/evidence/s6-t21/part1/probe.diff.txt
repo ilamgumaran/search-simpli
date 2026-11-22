@@ -1,0 +1,70 @@
+--- <worktree>/zig/src/core/generation_alloc.zig	2026-11-21 19:47:25
++++ zig/src/core/generation_alloc.zig	2026-11-21 19:54:23
+@@ -360,3 +360,14 @@
+     // Nothing repairs or replaces the reserved entries.
+     try std.testing.expectEqual(std.Io.File.Kind.sym_link, (try tmp.dir.statFile(io, "filenames-1.hybseg", .{ .follow_symlinks = false })).kind);
+ }
++
++/// S6-T21 PROBE (scratch only): refuse a caller's number at or below the
++/// highest generation the directory has any trace of.
++pub fn probeCallerGeneration(io: std.Io, dir: std.Io.Dir, generation: u64, where: []const u8) !void {
++    const floor = try highestGenerationOnDisk(std.heap.page_allocator, io, dir);
++    const current = try currentGeneration(std.heap.page_allocator, io, dir);
++    if (generation <= floor) {
++        std.debug.print("S6T21-PROBE refused where={s} n={d} manifest={d} floor={d}\n", .{ where, generation, current, floor });
++        return error.StaleGeneration;
++    }
++}
+--- <worktree>/zig/src/core/apply.zig	2026-11-21 19:47:25
++++ zig/src/core/apply.zig	2026-11-21 19:54:23
+@@ -768,6 +768,7 @@
+     if (parsed.batch.expect_generation) |expected| {
+         if (expected != current) return .{ .failed = try failure(allocator, .invalid_argument, "stale: generation is {d}", .{current}) };
+     }
++    if (dir) |d| if (options.generation) |n| try generation_alloc.probeCallerGeneration(io, d, n, "apply");
+     if (parsed.deferred) |f| return .{ .failed = f };
+     const batch = parsed.batch;
+     if (current != 0 and options.filename_index == null) {
+--- <worktree>/zig/src/core/lifecycle.zig	2026-11-21 19:47:25
++++ zig/src/core/lifecycle.zig	2026-11-21 19:54:23
+@@ -2,6 +2,7 @@
+ const manifest = @import("manifest.zig");
+ const publication = @import("publication.zig");
+ const std = @import("std");
++const probe_alloc = @import("generation_alloc.zig");
+
+ pub const writer_lock_file = "WRITER.LOCK";
+
+@@ -304,6 +305,7 @@
+     if (keep_generations) |keep| if (keep == 0) return error.InvalidKeepGenerations;
+     var lease = (try tryAcquireWriter(dir, io)) orelse return error.WriterBusy;
+     defer lease.release(io);
++    try probe_alloc.probeCallerGeneration(io, dir, (try manifest.decode(manifest_encoded)).generation, "serialized_keeping");
+     return publishLeasedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, keep_generations);
+ }
+
+@@ -353,6 +355,7 @@
+ ) !void {
+     var lease = (try tryAcquireWriter(dir, io)) orelse return error.WriterBusy;
+     defer lease.release(io);
++    try probe_alloc.probeCallerGeneration(io, dir, (try manifest.decode(manifest_encoded)).generation, "serialized");
+     try publication.publish(dir, io, manifest_encoded, documents_encoded, lexical_encoded);
+ }
+
+@@ -580,5 +583,6 @@
+ pub fn publishSerializedWithFilenameKeeping(allocator: std.mem.Allocator, dir: std.Io.Dir, io: std.Io, manifest_encoded: []const u8, documents_encoded: []const u8, lexical_encoded: []const u8, catalog: []const u8, filename_lexical: []const u8, keep: ?usize) !PruneReport {
+     var lease = (try tryAcquireWriter(dir, io)) orelse return error.WriterBusy;
+     defer lease.release(io);
++    try probe_alloc.probeCallerGeneration(io, dir, (try manifest.decode(manifest_encoded)).generation, "serialized_filename");
+     return publishLeasedKeepingWithExtras(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, null, catalog, filename_lexical, null, keep);
+ }
+--- <worktree>/zig/src/interfaces/abi.zig	2026-11-21 19:47:25
++++ zig/src/interfaces/abi.zig	2026-11-21 19:54:23
+@@ -667,6 +667,7 @@
+         error.InvalidKeepGenerations,
+         // S2-T13: a document vector with a non-finite L2 norm.
+         error.VectorNormNotFinite,
++        error.StaleGeneration,
+         => SS_ERR_INVALID_ARGUMENT,
+
+         else => SS_ERR_INTERNAL,

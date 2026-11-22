@@ -1,0 +1,19 @@
+S6-T21 timing retake: pmset -g log, read 2026-11-22 after retake run 5 ended (13:29:40).
+Retake runs: 1 13:21:34-13:23:06, 2 13:23:11-13:24:44, 3 13:24:49-13:26:22, 4 13:26:27-13:28:00, 5 13:28:07-13:29:40.
+
+Event types (4th column) of every line from 13:20:00 to 13:35:00:
+   1 :
+   6 Assertions
+(the ":" line is pmset's own footer, "Showing all currently held IOKit power assertions", printed when read)
+
+No Sleep, Wake or DarkWake line in that window. The last Sleep/Wake/DarkWake events of the day before it:
+2026-11-22 12:38:02 -0500 Wake Requests       	[*process=dasd request=SleepService deltaSecs=967 wakeAt=2026-11-22 12:54
+2026-11-22 12:42:37 -0500 Wake                	Wake from Deep Idle [CDNVA] : due to MTP.DOCK.CHANNELS.AP0.IRQ RTP.keyboa
+
+Every line from 13:21:00 to 13:30:00:
+2026-11-22 13:22:20 -0500 Assertions          	PID 472(PowerUIAgent) Created MaintenanceWake "com.apple.obc" 00:00:00  id:0x0xd000080e0 [System: PrevI
+2026-11-22 13:22:20 -0500 Assertions          	PID 472(PowerUIAgent) Released MaintenanceWake "com.apple.obc" 00:00:00  id:0x0xd000080e0 [System: Prev
+2026-11-22 13:24:48 -0500 Assertions          	PID 84715(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:03:59  id
+2026-11-22 13:27:59 -0500 Assertions          	PID 731(cloudd) Created SystemIsActive "NSURLSessionTask D9CE7342-D0D3-4BCB-8B38-CEC06F5D7600" 00:00:00
+2026-11-22 13:28:02 -0500 Assertions          	PID 731(cloudd) Released SystemIsActive "NSURLSessionTask D9CE7342-D0D3-4BCB-8B38-CEC06F5D7600" 00:00:0
+2026-11-22 13:28:48 -0500 Assertions          	PID 86041(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:03:59  id

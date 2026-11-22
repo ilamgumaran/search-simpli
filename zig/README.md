@@ -31,6 +31,8 @@ zig build run -- --help
 zig build run -- demo
 zig build -Doptimize=ReleaseFast
 ./zig-out/bin/searchd benchmark 8000 32 51 hybrid
+# into a fresh directory: a number at or below the directory's highest
+# generation is refused (StaleGeneration, S6-T21)
 zig build run -- import-json /tmp/search-snapshot /tmp/zig-snapshot.json
 zig build run -- serve /tmp/search-snapshot
 ```

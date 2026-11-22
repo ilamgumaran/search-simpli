@@ -43,6 +43,9 @@ class SnapshotInterchangeV1 {
   /// Always `1`: the schema's `format_version` const.
   int get formatVersion => 1;
 
+  /// The generation number the import publishes: above the highest
+  /// generation the target directory has any trace of, or
+  /// `importSnapshotJson` refuses it with `StaleGeneration` (since 0.10.0).
   final int generation;
 
   /// Which analyzer the native import tokenizes with. Required: there is no

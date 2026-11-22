@@ -166,6 +166,8 @@ python3 zig_gateway.py <index.json> <zig-snapshot-dir>
 ```sh
 cd zig
 zig build test
+# <snapshot-dir> fresh, or holding only generations below the payload's:
+# a number at or below its highest is refused (StaleGeneration)
 zig build run -- import-json <snapshot-dir> <snapshot.json>
 zig build run -- serve <snapshot-dir>
 zig build -Doptimize=ReleaseFast

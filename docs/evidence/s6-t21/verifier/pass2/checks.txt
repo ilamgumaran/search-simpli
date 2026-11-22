@@ -1,0 +1,124 @@
+S6-T21 verifier, pass 2: checks on the head 2efe2a9 (a detached checkout in the verify worktree).
+
+== Commits since the Verdict (git log --format='%h %ad %s' 09f2629..2efe2a9)
+  2efe2a9 2026-11-22 13:31:06 -0500 S6-T21: timing retake, five gated runs: 165 of 166 cells pass, one fails; back to the maintainer
+  14829b7 2026-11-22 13:21:09 -0500 S6-T21: retake note for the timing, written before the second set
+  3954be0 2026-11-22 13:18:41 -0500 S6-T21: timing by the rule of 2026-11-17, five gated runs: 165 of 166 cells pass, one fails
+  c0c9b7a 2026-11-22 01:45:49 -0500 S6-T21 rework 1: tests for the format-2 import's and publishSerialized's checks; qualify "nothing on disk changes"
+
+== Push times (reflog of refs/remotes/origin/task/S6-T21 in the shared repository; read only)
+  2efe2a9 refs/remotes/origin/task/S6-T21@{2026-11-22 13:31:08 -0500}: update by push
+  14829b7 refs/remotes/origin/task/S6-T21@{2026-11-22 13:21:10 -0500}: update by push
+  3954be0 refs/remotes/origin/task/S6-T21@{2026-11-22 13:18:43 -0500}: update by push
+  c0c9b7a refs/remotes/origin/task/S6-T21@{2026-11-22 01:45:50 -0500}: update by push
+  09f2629 refs/remotes/origin/task/S6-T21@{2026-11-22 01:29:03 -0500}: update by push
+  92ed47b refs/remotes/origin/task/S6-T21@{2026-11-21 21:41:15 -0500}: update by push
+  47f6cb1 refs/remotes/origin/task/S6-T21@{2026-11-21 21:05:28 -0500}: update by push
+  orders.txt: last changed in 92ed47b 2026-11-21 21:41:09 -0500; git diff 92ed47b..2efe2a9 -- scripts/: 0 lines (unchanged)
+  first set's first gate line (refused, no row): 2026-11-22 12:59:39; first passing gate: 2026-11-22 13:06:34
+  -> the orders were committed and pushed (21 Nov 21:41:15) before the first gate of the first set (22 Nov 12:59:39).
+  retake note: added in 14829b7 (13:21:09), pushed 13:21:10; retake's first gate 2026-11-22 13:21:34.
+  -> the retake note was committed and pushed 24 s before the retake's first gate; git diff 14829b7..2efe2a9 of the note: 0 lines (unchanged).
+  first set's files after 3954be0 (timing/ outside retake/ and the note): 0 lines changed (untouched).
+  The first set's results (3954be0) were pushed at 13:18:43, before the note; the note states its rule (pass only if every
+  judged cell passes in the second set; no third set).
+
+== Rework 1 (c0c9b7a), git diff --stat 09f2629..c0c9b7a
+   PROJECT-STATE.md                                   |   7 +-
+   bindings/dart/search_simpli/CHANGELOG.md           |   4 +-
+   .../search_simpli/lib/src/bindings_generated.dart  |   4 +-
+   .../search_simpli/lib/src/search_simpli_base.dart  |   4 +-
+   bindings/dart/search_simpli/native/SOURCE-SHA256   |   2 +-
+   .../s6-t21/rework1/check-test-counts-debug.txt     | 180 +++++++++++++++++++++
+   .../rework1/check-test-counts-releasesmall.txt     | 180 +++++++++++++++++++++
+   docs/evidence/s6-t21/rework1/mutants.txt           |  43 +++++
+   docs/evidence/s6-t21/rework1/natives.txt           |   6 +
+   docs/generation-lifecycle.md                       |   2 +-
+   docs/journey/03-next.md                            |   2 +-
+   docs/tasks/S6-T21.md                               |  49 ++++++
+   docs/zig-engine-api.md                             |   2 +-
+   zig/include/search_simpli.h                        |   4 +-
+   zig/src/interfaces/cli.zig                         |   2 +-
+   zig/src/tests/cli_test.zig                         |  83 ++++++++++
+   16 files changed, 562 insertions(+), 12 deletions(-)
+  Code-bearing files in it (zig/, the Dart lib/, the header), with every changed line classified:
+    zig/include/search_simpli.h: 4 changed lines, 0 not comment lines
+    zig/src/interfaces/cli.zig: 2 changed lines, 0 not comment lines
+    bindings/dart/search_simpli/lib/src/bindings_generated.dart: 4 changed lines, 0 not comment lines
+    bindings/dart/search_simpli/lib/src/search_simpli_base.dart: 4 changed lines, 0 not comment lines
+    zig/src/tests/cli_test.zig: +83 lines, two new tests and their comments (test code only)
+  Every other file is a document, evidence or the SOURCE-SHA256 stamp. No change to code behaviour.
+  After c0c9b7a (3954be0, 14829b7, 2efe2a9): only PROJECT-STATE.md, docs/journey/03-next.md, docs/tasks/S6-T21.md and
+  docs/evidence/s6-t21/timing/** change; git diff --stat c0c9b7a..2efe2a9 -- zig bindings scripts tests tool: 0 lines.
+
+== Finding 3 (the empty WRITER.LOCK wording): git grep for the unqualified phrases outside docs/tasks and docs/evidence
+  PROJECT-STATE.md:29:line and exit 1 from `searchd` (no error trace), nothing on disk changed (but an empty `WRITER.LOCK` created in a
+  PROJECT-STATE.md:36:Tests 597/606 passed, 9 skipped, Debug and ReleaseSmall (was 591/600; rework 1 after the Verdict, PASS with findings, added the format-2 import and `p
+  bindings/dart/search_simpli/CHANGELOG.md:8:with a number at or below it is refused, and nothing on disk changes (but for
+  bindings/dart/search_simpli/lib/src/bindings_generated.dart:371:  /// or below it returns SS_ERR_INVALID_ARGUMENT and changes nothing on disk (but
+  bindings/dart/search_simpli/lib/src/search_simpli_base.dart:505:/// failure) and nothing on disk changes, but for one case: in a directory
+  docs/decisions/0004-callers-generation-number.md:74:- Nothing on disk changes when the refusal fires. It comes after the lease and before any link. The only possible
+  docs/decisions/0004-callers-generation-number.md:101:| `searchd index --generation 5`, `import-json`, `init-demo` | publishes 5; `MANIFEST` 9 → 5; exit 0 | stderr `error:
+  docs/generation-lifecycle.md:49:A publish that picks its own number (`ss_index_folder`, `searchd index` without `--generation`) uses one rule, in `generation_alloc.zig`:
+  docs/incremental-indexing.md:356:# (StaleGeneration, S6-T21) and changes nothing.
+  docs/journey/03-next.md:297:| ~~**Consumer app: pin bump to S4-T3**~~ | ~~The app's task, not this repository's. Pin the head of `main` after the S4-T3 merge (contracts 2
+  docs/publication-recovery.md:18:Every publish path (`searchd index`, `searchd index --update`, `searchd import-json`, `ss_index_folder`, `ss_import_json`, `init-demo`) go
+  zig/include/search_simpli.h:489: * or below it returns SS_ERR_INVALID_ARGUMENT and changes nothing on disk (but
+  (excluded from the grep: test names, EXPERIMENTS.md, scripts/, requirements and core.zig, all about other things; in the
+  list, publication-recovery.md:18 and 03-next.md:297 are about other things too.)
+  Qualified now: the header, bindings_generated.dart, search_simpli_base.dart, CHANGELOG.md, generation-lifecycle.md,
+  zig-engine-api.md, cli.zig, PROJECT-STATE.md, 03-next.md. Left unqualified: decision 0004's table row (line 101; its
+  section 2 bullet, line 74, states the exception right after) and incremental-indexing.md line 356 (an example over a
+  live index directory). Information only.
+
+== Read path: git diff --stat a8fc2a2..2efe2a9 over the open, query and find sources
+  zig/build.zig zig/build.zig.zon zig/src/ops zig/src/core/{snapshot_open,engine,find,publication}.zig zig/src/interfaces/{rpc,mcp}.zig: 0 lines (unchanged)
+  every changed file under zig/ (git diff --name-only a8fc2a2..2efe2a9 -- zig):
+    zig/README.md
+    zig/include/search_simpli.h
+    zig/src/core/apply.zig
+    zig/src/core/core.zig
+    zig/src/core/generation_alloc.zig
+    zig/src/core/lifecycle.zig
+    zig/src/interfaces/abi.zig
+    zig/src/interfaces/cli.zig
+    zig/src/interfaces/main.zig
+    zig/src/tests/abi_index_folder_test.zig
+    zig/src/tests/cli_test.zig
+  The changed sources run on a write (apply, lifecycle's serialized publishes, generation_alloc, cli, main) or only on an
+  error return (abi.zig: one more case in errorCode's switch and one branch in applyImpl's error path; core.zig: doc
+  comments and one re-export). None runs on a successful open, query or find. The compiled library does move: __text +684 B.
+
+== The head's own Zig tests, a fresh git archive of 2efe2a9, empty caches, zig build test --summary all (Debug)
+  Build Summary: 15/15 steps succeeded; 597/606 tests passed (9 skipped)  (the Report: 597/606, 9 skipped)
+  the two new tests print:
+    format 2 import 5 over 9: StaleGeneration, MANIFEST 9, directory unchanged
+    format 2 import 9 over 9: StaleGeneration, MANIFEST 9, directory unchanged
+    format 2 import 10 over 9: published 10, MANIFEST 10
+    S6-T21 publishSerialized of generation 1 over 9: StaleGeneration
+  The mutant reruns are in mutants.txt.
+
+== Sleep and wake: pmset -g log, read at 2026-11-22 15:23 (after both sets), 12:30 to 13:40
+  12:55-13:35   49 Assertions
+  Sleep, Wake or DarkWake lines from 12:30 to 13:40:
+    2026-11-22 12:38:00 -0500 Sleep               	Entering Sleep state due to 'Dark Wake Thermal Emergency':TCPKe
+    2026-11-22 12:38:02 -0500 Wake Requests       	[*process=dasd request=SleepService deltaSecs=967 wakeAt=2026-1
+    2026-11-22 12:38:02 -0500 PM Client Acks      	Delays to Sleep notifications: [com.apple.bluetooth.sleep is sl
+    2026-11-22 12:42:37 -0500 Wake                	Wake from Deep Idle [CDNVA] : due to MTP.DOCK.CHANNELS.AP0.IRQ
+    2026-11-22 12:42:37 -0500 Kernel Client Acks  	Delays to Sleep notifications: [AppleWLANInterfaceSTA driver is
+    2026-11-22 12:42:37 -0500 Kernel Client Acks  	Delays to Wake notifications: [AppleCS42L84Audio driver is slow
+  lines inside the first set (13:06:00-13:15:00): 14, all Assertions; inside the retake (13:21:00-13:30:00): 6, all Assertions.
+  -> no Sleep, Wake or DarkWake inside either set; the last Wake was 12:42:37, before the first gate.
+  The log's caffeinate assertions in both windows are the orchestrator's (allowed it for timing); I ran none.
+
+== The first set's literal-difference table in the task file (d of the head, us), recomputed (recompute_pass2.judge)
+  first timing-10k: open d -72.5 on 5582.3 (-1.3 %); main2 -13.7 cl -6.9 ci +47.5; warm median -0.1 [-6.9, +4.3]; find median -0.0 [-4.6, +66.1]
+  first prose-10k: open d -160.4 on 11875.3 (-1.4 %); main2 +43.7 cl +43.9 ci +91.0; warm median +0.2 [-9.0, +13.2]; find median -3.3 [-209.4, +20.7]
+  first tamil-10k: open d -16.0 on 8003.5 (-0.2 %); main2 +3.5 cl -8.8 ci +23.3; warm median -0.1 [-21.0, +0.8]; find median -2.1 [-119.2, -0.1]
+  -> every figure as the task file gives it. The retake, for comparison (the task file gives no such table for it):
+  retake timing-10k: open d +9.2 on 5449.8 (+0.2 %); main2 -3.3 cl +27.3 ci +23.2; warm median -0.0 [-12.2, +3.0]; find median -0.1 [-15.4, +5.1]
+  retake prose-10k: open d -8.2 on 11629.1 (-0.1 %); main2 -110.0 cl +85.9 ci -15.3; warm median -0.1 [-12.4, +9.0]; find median -5.7 [-40.0, +36.5]
+  retake tamil-10k: open d +9.1 on 7872.0 (+0.1 %); main2 +45.6 cl +50.9 ci +22.7; warm median -0.1 [-10.3, +0.9]; find median -1.5 [-6.4, +0.4]
+
+== S6-T20's figure the first set's note cites: docs/evidence/s6-t20/timing/cells.txt line 183
+  find words from  2927.7  +74.2 (main2)  +12.3  +15.3  -24.2 (head)  T 29.3  pass  -> as cited.

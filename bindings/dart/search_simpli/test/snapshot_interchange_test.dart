@@ -245,4 +245,48 @@ void main() {
       );
     });
   });
+
+  // S6-T21: the payload's generation must be above the highest generation
+  // the directory has any trace of; at or below it nothing is published.
+  test('importSnapshotJson refuses a generation at or below the directory\'s highest (S6-T21)', () {
+    final dir = Directory.systemTemp.createTempSync('ss-dart-s6t21-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    String numbered(int generation) => jsonEncode(
+      SnapshotInterchangeV1(
+        generation: generation,
+        analyzer: InterchangeAnalyzer.asciiAlnumV1,
+        embeddingModelId: 'none',
+        documents: [
+          SnapshotInterchangeDocument(
+            id: 'one',
+            path: 'a.md',
+            startLine: 1,
+            endLine: 1,
+            text: 'search evidence',
+          ),
+        ],
+      ).toJson(),
+    );
+    expect(importSnapshotJson(dir.path, numbered(2)), 2);
+    final manifest = File(p.join(dir.path, 'MANIFEST'));
+    final before = manifest.readAsBytesSync();
+    for (final stale in [1, 2]) {
+      expect(
+        () => importSnapshotJson(dir.path, numbered(stale)),
+        throwsA(
+          isA<SearchSimpliException>()
+              .having(
+                (e) => e.message,
+                'message',
+                startsWith(
+                  'ss_import_json: StaleGeneration: generation $stale is not above 2, ',
+                ),
+              )
+              .having((e) => e.code, 'code', isNull),
+        ),
+      );
+      expect(manifest.readAsBytesSync(), before);
+    }
+    expect(importSnapshotJson(dir.path, numbered(3)), 3);
+  });
 }

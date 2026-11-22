@@ -1,0 +1,8 @@
+# the same test with SEARCHD_BINARY = searchd built (Debug) from the head's tree, 21 Nov 2026: passes
+test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (test_cli_process.CliProcessTests)
+S6-T21: `index --generation`, `import-json` and `init-demo` bring their ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.225s
+
+OK

@@ -1,0 +1,22 @@
+S6-T21 timing: both sets side by side for the first set's failing cell and the retake's failing cell.
+Recomputed from query-run1..5.jsonl (first set, ../) and retake/query-run1..5.jsonl by the rule of 2026-11-17,
+with a script written from the rule (not summarize.py); it agrees with cells.txt and retake/cells.txt. Times in us.
+
+first {'prose-10k': {'pass': 55}, 'tamil-10k': {'pass': 56}, 'timing-10k': {'pass': 54, 'fail': 1}} fails: [('timing-10k', 'find', 'words from')]
+retake {'prose-10k': {'pass': 54, 'fail': 1}, 'tamil-10k': {'pass': 56}, 'timing-10k': {'pass': 55}} fails: [('prose-10k', 'find', 'words the within')]
+
+timing-10k `find words from`
+  first: m 3016.2 us, T 30.2; d main2 +19.0, cl +13.0, ci +34.2, head +66.1; head - largest control +31.9; band 2/5; FAIL
+    by run, head - main: -106.6, +110.6, +73.4, +66.1, -148.7
+    by run, controls - main (main2/cl/ci): -127.8/-72.0/+57.3; +16.8/+148.0/+91.6; +61.0/+13.0/+15.7; +35.9/+23.8/+12.1; +19.0/-118.4/+34.2
+  retake: m 3028.5 us, T 30.3; d main2 -13.6, cl +50.0, ci +15.9, head -15.4; head - largest control -65.4; band 0/5; pass
+    by run, head - main: -79.0, -1.6, +17.3, -17.3, -15.4
+    by run, controls - main (main2/cl/ci): -79.2/+560.7/+83.6; -13.6/+22.2/+59.5; +188.8/+50.0/+2.3; +3.0/+10.2/+15.9; -17.9/+59.6/+5.9
+
+prose-10k `find words the within`
+  first: m 2170.5 us, T 21.7; d main2 +92.7, cl -4.7, ci +17.2, head +20.7; head - largest control -72.0; band 1/5; pass
+    by run, head - main: +29.9, +20.7, -57.0, +142.2, -108.5
+    by run, controls - main (main2/cl/ci): +131.3/+26.5/+43.7; +107.0/-2.8/+24.0; -66.8/-52.8/+4.7; +92.7/-4.7/+17.2; -140.6/-116.8/-117.9
+  retake: m 2171.8 us, T 21.7; d main2 -10.1, cl -13.0, ci -0.3, head +36.5; head - largest control +36.8; band 4/5; FAIL
+    by run, head - main: +11.4, +48.3, +9.5, +36.5, +37.4
+    by run, controls - main (main2/cl/ci): -16.3/-37.0/-15.4; +22.4/+129.7/+10.7; -33.4/-32.9/-34.6; -7.2/-13.0/-0.3; -10.1/-2.8/+1.4

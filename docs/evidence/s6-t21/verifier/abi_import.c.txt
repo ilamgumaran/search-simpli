@@ -1,0 +1,15 @@
+/* S6-T21 verifier: one ss_import_json(dir, <file bytes>) call; prints its return and ss_last_error(). */
+#include <stdio.h>
+#include <stdlib.h>
+#include "search_simpli.h"
+int main(int argc, char **argv) {
+    if (argc != 3) return 2;
+    FILE *f = fopen(argv[2], "rb"); if (!f) return 2;
+    fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET);
+    char *buf = malloc((size_t)n + 1); if (fread(buf, 1, (size_t)n, f) != (size_t)n) return 2; fclose(f);
+    long long rc = (long long)ss_import_json(argv[1], buf, (size_t)n);
+    const char *e = ss_last_error();
+    printf("abi import: rc=%lld last_error=%s\n", rc, e ? e : "(null)");
+    free(buf);
+    return rc < 0 ? 1 : 0;
+}

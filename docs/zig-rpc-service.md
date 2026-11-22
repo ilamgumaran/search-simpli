@@ -8,6 +8,9 @@ With Zig 0.16.0:
 
 ```sh
 cd zig
+# init-demo publishes generation 1, so into a fresh directory: over an
+# existing /tmp/searchd-demo it is refused (StaleGeneration, S6-T21);
+# the demo already there serves as it is.
 zig build run -- init-demo /tmp/searchd-demo
 printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"index_status","params":{}}' \

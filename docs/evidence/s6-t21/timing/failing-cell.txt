@@ -1,0 +1,13 @@
+S6-T21 timing: the one failing cell, timing-10k `find words from`, p50 in us per run (from query-run1..5.jsonl).
+run   main      main2-main  cl-main  ci-main  head-main
+1     3015.5    -127.8     -72.0     +57.3    -106.6
+2     2979.6     +16.8    +148.0     +91.6    +110.6
+3     3016.2     +61.0     +13.0     +15.7     +73.4
+4     3021.6     +35.9     +23.8     +12.1     +66.1
+5     3086.7     +19.0    -118.4     +34.2    -148.7
+
+m = median(main) = 3016.2 us; T = max(10 us, 1 % of m) = 30.2 us
+d(v) = median over runs of (v - main): main2 +19.0, cl +13.0, ci +34.2, head +66.1
+clause 1: d(head) +66.1 >= T 30.2: True
+clause 2: d(head) - largest control d (+34.2) = +31.9 >= T 30.2: True
+verdict: FAIL by the rule as written (both clauses hold). Not rerun.

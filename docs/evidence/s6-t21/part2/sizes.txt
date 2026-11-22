@@ -1,0 +1,94 @@
+# S6-T21 sizes, measured 21 Nov 2026 (wc -c; size -m for Mach-O sections; nm -gU for exports)
+# main = a8fc2a2's committed natives (git show), head = this commit's natives (tool/build_native.sh, Zig 0.16.0, NDK 28.2.13676358, Build Summary 28/28)
+native/macos-arm64/libsearch_simpli.dylib main= 1007208 head= 1007096 delta=-112
+native/android-arm64/libsearch_simpli.so main= 966112 head= 968048 delta=1936
+native/ios-arm64/search_simpli.framework/search_simpli main= 972120 head= 988232 delta=16112
+example/android/app/src/main/jniLibs/arm64-v8a/libsearch_simpli.so: cmp-identical to native/android-arm64/libsearch_simpli.so
+native/SOURCE-SHA256: 6b38f2545692f37fcebf6eb2b863ebbb351c48e5a8651eabcf6e26ddc05dc3bd (= tool/source_digest.py on the head; main 9c14539075df42be3e42200bea4d80af01918745bee5e2d310b272b288f82327)
+
+# iOS framework, size -m: main then head (diff). __DATA_CONST grows 16,376 -> 16,392 B, past one 16 KiB page, so the segment
+# takes 32,768 B (16 KiB-aligned segments, S1-T22): +16,384 B of the +16,112; __text +812 B
+2c2
+< 	Section __text: 589424
+---
+> 	Section __text: 590236
+4,10c4,10
+< 	Section __const: 144252
+< 	Section __cstring: 23875
+< 	Section __unwind_info: 9616
+< 	Section __eh_frame: 45948
+< 	total 814111
+< Segment __DATA_CONST: 16384
+< 	Section __const: 15712
+---
+> 	Section __const: 144444
+> 	Section __cstring: 23891
+> 	Section __unwind_info: 9664
+> 	Section __eh_frame: 46164
+> 	total 815395
+> Segment __DATA_CONST: 32768
+> 	Section __const: 15728
+12c12
+< 	total 16376
+---
+> 	total 16392
+15,16c15,16
+< 	Section __thread_vars: 168
+< 	Section __thread_bss: 262696 (zerofill)
+---
+> 	Section __thread_vars: 192
+> 	Section __thread_bss: 262704 (zerofill)
+18c18
+< 	total 296768
+---
+> 	total 296800
+20c20
+< total 1277952
+---
+> total 1294336
+
+# macOS dylib, size -m: main then head (diff)
+1,2c1,2
+< Segment __TEXT: 820156
+< 	Section __text: 591880
+---
+> Segment __TEXT: 821300
+> 	Section __text: 592564
+5,9c5,9
+< 	Section __const: 144088
+< 	Section __cstring: 23920
+< 	Section __unwind_info: 9676
+< 	Section __eh_frame: 46468
+< 	total 818288
+---
+> 	Section __const: 144280
+> 	Section __cstring: 23936
+> 	Section __unwind_info: 9712
+> 	Section __eh_frame: 46684
+> 	total 819432
+13c13
+< Segment __DATA: 331392
+---
+> Segment __DATA: 331520
+15c15
+< 	Section __const: 15712
+---
+> 	Section __const: 15728
+17,18c17,18
+< 	Section __thread_vars: 168
+< 	Section __thread_bss: 262692 (zerofill)
+---
+> 	Section __thread_vars: 192
+> 	Section __thread_bss: 262700 (zerofill)
+20c20
+< 	total 331380
+---
+> 	total 331428
+22c22
+< total 1266244
+---
+> total 1267516
+# exported symbols (nm -gU): main and head identical, 18 each
+
+# searchd ReleaseSmall (zig build -Doptimize=ReleaseSmall; main from a git archive of a8fc2a2)
+main  1151240 B, head  1151720 B, delta 480

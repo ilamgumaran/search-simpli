@@ -1,0 +1,28 @@
+S6-T21 timing: pmset -g log, read 2026-11-22 after run 5 ended (13:14:43).
+Runs: 1 13:06:34-13:08:07, 2 13:08:13-13:09:46, 3 13:09:51-13:11:25, 4 13:11:29-13:13:04, 5 13:13:09-13:14:43.
+
+Event types (4th column) of every line from 12:55:00 to 13:20:00:
+   1 :
+  25 Assertions
+(the ":" line is pmset's own footer, "13:17:15 : Showing all currently held IOKit power assertions", printed when read)
+
+No Sleep, Wake or DarkWake line in that window. The last three Sleep/Wake/DarkWake events before it:
+2026-11-22 12:38:00 -0500 Sleep               	Entering Sleep state due to 'Dark Wake Thermal Emergency':TCPKeepAlive=ac
+2026-11-22 12:38:02 -0500 Wake Requests       	[*process=dasd request=SleepService deltaSecs=967 wakeAt=2026-11-22 12:54
+2026-11-22 12:42:37 -0500 Wake                	Wake from Deep Idle [CDNVA] : due to MTP.DOCK.CHANNELS.AP0.IRQ RTP.keyboa
+
+Every line from 13:06:00 to 13:15:00 (all Assertions; the caffeinate assertion is the orchestrator's, not this task's):
+2026-11-22 13:07:53 -0500 Assertions          	PID 731(cloudd) Created SystemIsActive "NSURLSessionTask 34B70FF4-9862-470E-BBD4-5178FA5B5267" 00:00:00
+2026-11-22 13:07:54 -0500 Assertions          	PID 731(cloudd) Created SystemIsActive "NSURLSessionTask EEE348DC-EEC9-4248-9C61-CDE4D6A7C68D" 00:00:00
+2026-11-22 13:07:55 -0500 Assertions          	PID 731(cloudd) Created SystemIsActive "NSURLSessionTask DBA6771B-8C53-483F-8B33-E41F0AB81883" 00:00:00
+2026-11-22 13:07:55 -0500 Assertions          	PID 731(cloudd) Created SystemIsActive "NSURLSessionTask 798C81E4-6393-4EE6-849D-2D2CBC4BFACA" 00:00:00
+2026-11-22 13:07:57 -0500 Assertions          	PID 731(cloudd) Released SystemIsActive "NSURLSessionTask 34B70FF4-9862-470E-BBD4-5178FA5B5267" 00:00:0
+2026-11-22 13:07:57 -0500 Assertions          	PID 731(cloudd) Released SystemIsActive "NSURLSessionTask EEE348DC-EEC9-4248-9C61-CDE4D6A7C68D" 00:00:0
+2026-11-22 13:07:58 -0500 Assertions          	PID 731(cloudd) Released SystemIsActive "NSURLSessionTask DBA6771B-8C53-483F-8B33-E41F0AB81883" 00:00:0
+2026-11-22 13:07:59 -0500 Assertions          	PID 731(cloudd) Released SystemIsActive "NSURLSessionTask 798C81E4-6393-4EE6-849D-2D2CBC4BFACA" 00:00:0
+2026-11-22 13:07:59 -0500 Assertions          	PID 731(cloudd) Created SystemIsActive "NSURLSessionTask 330DC410-A1DF-4BE4-BBD8-D0F2E046A10F" 00:00:00
+2026-11-22 13:08:02 -0500 Assertions          	PID 731(cloudd) Released SystemIsActive "NSURLSessionTask 330DC410-A1DF-4BE4-BBD8-D0F2E046A10F" 00:00:0
+2026-11-22 13:08:14 -0500 Assertions          	PID 472(PowerUIAgent) Created MaintenanceWake "com.apple.obc" 00:00:00  id:0x0xd00008074 [System: PrevI
+2026-11-22 13:08:14 -0500 Assertions          	PID 472(PowerUIAgent) Released MaintenanceWake "com.apple.obc" 00:00:00  id:0x0xd00008074 [System: Prev
+2026-11-22 13:10:18 -0500 Assertions          	PID 80611(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:03:59  id
+2026-11-22 13:14:18 -0500 Assertions          	PID 82018(caffeinate) ClientDied PreventUserIdleSystemSleep "caffeinate command-line tool" 00:03:59  id

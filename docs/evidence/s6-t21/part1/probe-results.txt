@@ -1,0 +1,46 @@
+# zig build test --summary all, Debug, on a git archive of a8fc2a2 plus probe.diff (scratch, never committed)
+3:+- run test core w
+54:+- run test tests 290 pass, 9 skip, 1 fail (300 total)
+57:error: 'cli_test.test.S6-T20: searchd index --generation N with N not free is refused with PathAlreadyExists under the lock and changes nothing on disk' failed:
+109:       S6T21-PROBE refused where=apply n=10 manifest=10 floor=10
+110:       S6-T20 --generation 10 over published_by_another_writer: StaleGeneration
+111:       expected error.PathAlreadyExists, found error.StaleGeneration
+141:Build Summary: 13/15 steps succeeded (1 failed); 590/600 tests passed (9 skipped, 1 failed)
+143:+- run test core 260 pass (260 total) 35s MaxRSS:414M
+148:+- run test operations 9 pass (9 total) 192ms MaxRSS:7M
+153:+- run test interfaces 25 pass (25 total) 349ms MaxRSS:9M
+160:+- run test tests 290 pass, 9 skip, 1 fail (300 total)
+169:+- run test 6 pass (6 total) 987ms MaxRSS:5M
+
+# count of S6T21-PROBE lines in the whole log
+1
+
+# zig build test-abi
+26:abi_test: 24/24 checks passed
+
+# Python: env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY python3 -m unittest discover -s tests (builds the probe's searchd)
+5:FAIL: test_reference_report_names_its_policies (test_j2_gate.PythonReferenceTests)
+14:FAIL: test_prebuilt_libraries_match_zig_source (test_native_freshness.NativeFreshnessTest)
+25:FAIL: test_file_list_is_independent_of_caller_directory (test_privacy.PrivacyTest)
+34:Ran 580 tests in 110.153s
+36:FAILED (failures=3)
+
+# The three Python failures are the archive's, not the probe's: no .git in a git archive
+# (test_j2_gate: commit None; test_privacy: git ls-files empty) and the changed source
+# (test_native_freshness: digest). None runs a publish.
+
+# Sanity, the probe's Debug searchd (zig build --prefix <scratch>/probe-prefix), first lines only:
+$ searchd index <scratch>/sanity/notes --out <scratch>/sanity/out --generation 9
+indexed <scratch>/sanity/notes: analyzer=analyzer-v2 generation=9 files_indexed=1 ...
+$ searchd index <scratch>/sanity/notes --out <scratch>/sanity/out --generation 5
+S6T21-PROBE refused where=apply n=5 manifest=9 floor=9
+error: StaleGeneration
+(then a Debug error return trace through main.zig:57 `return err`; exit 1)
+$ searchd import-json <scratch>/sanity/out p.json      # "generation": 7
+S6T21-PROBE refused where=serialized_keeping n=7 manifest=9 floor=9
+error: StaleGeneration
+(trace through main.zig:38 `try importSnapshot`; exit 1)
+$ searchd init-demo <scratch>/sanity/out
+S6T21-PROBE refused where=serialized n=1 manifest=9 floor=9
+error: StaleGeneration
+(trace through main.zig:37; exit 1)

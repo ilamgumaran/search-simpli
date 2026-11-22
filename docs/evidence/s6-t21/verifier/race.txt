@@ -1,0 +1,111 @@
+# S6-T21 verifier: probe_caller_race.py.txt, real processes, Debug builds of main (a8fc2a2) and the head (92ed47b), each from a git archive with its own Zig caches.
+# A = a writer that brings its own number (idx: searchd index --generation N; imp: searchd import-json; cimp: a C program calling ss_import_json against the build's Debug dylib; demo: searchd init-demo),
+# stopped under lldb at before_lease (lifecycle.tryAcquireWriter entry) or in_lease (publication.publishWithExtrasRecorded entry); B runs to completion while A is stopped; then A continues.
+# MANIFEST a->b->...: before, at the stop, after each B run, after A. refused-unchanged: when A was refused, the directory (names and SHA-256, WRITER.LOCK aside) equals what B left.
+
+head A=idx  before_lease B=rebuild                     | lock held at stop: False   | B: published 10 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+head A=idx  before_lease B=rebuild2_k1                 | lock held at stop: False   | B: published 10, published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=idx  before_lease B=update2_k1                  | lock held at stop: False   | B: published 10, published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=idx  before_lease B=imp_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+head A=idx  before_lease B=imp_next                    | lock held at stop: False   | B: published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=idx  before_lease B=idx_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+head A=idx  before_lease B=imp_same_k1_then_rebuild_k1 | lock held at stop: False   | B: published 10, published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=idx  in_lease     B=rebuild                     | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=idx  in_lease     B=rebuild2_k1                 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=idx  in_lease     B=update2_k1                  | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=idx  in_lease     B=imp_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=idx  in_lease     B=imp_next                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=idx  in_lease     B=idx_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=idx  in_lease     B=imp_same_k1_then_rebuild_k1 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=imp  before_lease B=rebuild                     | lock held at stop: False   | B: published 10 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+head A=imp  before_lease B=rebuild2_k1                 | lock held at stop: False   | B: published 10, published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=imp  before_lease B=update2_k1                  | lock held at stop: False   | B: published 10, published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=imp  before_lease B=imp_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+head A=imp  before_lease B=imp_next                    | lock held at stop: False   | B: published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=imp  before_lease B=idx_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+head A=imp  before_lease B=imp_same_k1_then_rebuild_k1 | lock held at stop: False   | B: published 10, published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=imp  in_lease     B=rebuild                     | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=imp  in_lease     B=rebuild2_k1                 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=imp  in_lease     B=update2_k1                  | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=imp  in_lease     B=imp_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=imp  in_lease     B=imp_next                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=imp  in_lease     B=idx_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=imp  in_lease     B=imp_same_k1_then_rebuild_k1 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=cimp before_lease B=rebuild                     | lock held at stop: False   | B: published 10 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+head A=cimp before_lease B=rebuild2_k1                 | lock held at stop: False   | B: published 10, published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=cimp before_lease B=update2_k1                  | lock held at stop: False   | B: published 10, published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=cimp before_lease B=imp_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+head A=cimp before_lease B=imp_next                    | lock held at stop: False   | B: published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=cimp before_lease B=idx_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+head A=cimp before_lease B=imp_same_k1_then_rebuild_k1 | lock held at stop: False   | B: published 10, published 11 | A(10): rc=1 StaleGeneration | MANIFEST 9->9->10->11->11 | twice=no back=no refused-unchanged=True | ok
+head A=cimp in_lease     B=rebuild                     | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=cimp in_lease     B=rebuild2_k1                 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=cimp in_lease     B=update2_k1                  | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=cimp in_lease     B=imp_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=cimp in_lease     B=imp_next                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=cimp in_lease     B=idx_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=cimp in_lease     B=imp_same_k1_then_rebuild_k1 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+head A=demo before_lease B=rebuild                     | lock held at stop: no-file | B: published 1 | A(1): rc=1 StaleGeneration | MANIFEST 0->0->1->1 | twice=no back=no refused-unchanged=True | ok
+head A=demo before_lease B=rebuild2_k1                 | lock held at stop: no-file | B: published 1, published 2 | A(1): rc=1 StaleGeneration | MANIFEST 0->0->1->2->2 | twice=no back=no refused-unchanged=True | ok
+head A=demo before_lease B=demo                        | lock held at stop: no-file | B: published 1 | A(1): rc=1 StaleGeneration | MANIFEST 0->0->1->1 | twice=no back=no refused-unchanged=True | ok
+head A=demo before_lease B=imp_same                    | lock held at stop: no-file | B: published 1 | A(1): rc=1 StaleGeneration | MANIFEST 0->0->1->1 | twice=no back=no refused-unchanged=True | ok
+head A=demo before_lease B=imp_same_k1_then_rebuild_k1 | lock held at stop: no-file | B: published 1, published 2 | A(1): rc=1 StaleGeneration | MANIFEST 0->0->1->2->2 | twice=no back=no refused-unchanged=True | ok
+head A=demo in_lease     B=rebuild                     | lock held at stop: True    | B: WriterBusy | A(1): published 1 | MANIFEST 0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+head A=demo in_lease     B=rebuild2_k1                 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(1): published 1 | MANIFEST 0->0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+head A=demo in_lease     B=demo                        | lock held at stop: True    | B: WriterBusy | A(1): published 1 | MANIFEST 0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+head A=demo in_lease     B=imp_same                    | lock held at stop: True    | B: WriterBusy | A(1): published 1 | MANIFEST 0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+head A=demo in_lease     B=imp_same_k1_then_rebuild_k1 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(1): published 1 | MANIFEST 0->0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+main A=idx  before_lease B=rebuild                     | lock held at stop: False   | B: published 10 | A(10): rc=1 PathAlreadyExists | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+main A=idx  before_lease B=rebuild2_k1                 | lock held at stop: False   | B: published 10, published 11 | A(10): published 10 | MANIFEST 9->9->10->11->10 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=idx  before_lease B=update2_k1                  | lock held at stop: False   | B: published 10, published 11 | A(10): published 10 | MANIFEST 9->9->10->11->10 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=idx  before_lease B=imp_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 PathAlreadyExists | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+main A=idx  before_lease B=imp_next                    | lock held at stop: False   | B: published 11 | A(10): published 10 | MANIFEST 9->9->11->10 | twice=no back=YES refused-unchanged=None | VIOLATION
+main A=idx  before_lease B=idx_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 PathAlreadyExists | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+main A=idx  before_lease B=imp_same_k1_then_rebuild_k1 | lock held at stop: False   | B: published 10, published 11 | A(10): published 10 | MANIFEST 9->9->10->11->10 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=idx  in_lease     B=rebuild                     | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=idx  in_lease     B=rebuild2_k1                 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=idx  in_lease     B=update2_k1                  | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=idx  in_lease     B=imp_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=idx  in_lease     B=imp_next                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=idx  in_lease     B=idx_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=idx  in_lease     B=imp_same_k1_then_rebuild_k1 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=imp  before_lease B=rebuild                     | lock held at stop: False   | B: published 10 | A(10): rc=1 PathAlreadyExists | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+main A=imp  before_lease B=rebuild2_k1                 | lock held at stop: False   | B: published 10, published 11 | A(10): published 10 | MANIFEST 9->9->10->11->10 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=imp  before_lease B=update2_k1                  | lock held at stop: False   | B: published 10, published 11 | A(10): published 10 | MANIFEST 9->9->10->11->10 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=imp  before_lease B=imp_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 PathAlreadyExists | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+main A=imp  before_lease B=imp_next                    | lock held at stop: False   | B: published 11 | A(10): published 10 | MANIFEST 9->9->11->10 | twice=no back=YES refused-unchanged=None | VIOLATION
+main A=imp  before_lease B=idx_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 PathAlreadyExists | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+main A=imp  before_lease B=imp_same_k1_then_rebuild_k1 | lock held at stop: False   | B: published 10, published 11 | A(10): published 10 | MANIFEST 9->9->10->11->10 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=imp  in_lease     B=rebuild                     | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=imp  in_lease     B=rebuild2_k1                 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=imp  in_lease     B=update2_k1                  | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=imp  in_lease     B=imp_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=imp  in_lease     B=imp_next                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=imp  in_lease     B=idx_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=imp  in_lease     B=imp_same_k1_then_rebuild_k1 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=cimp before_lease B=rebuild                     | lock held at stop: False   | B: published 10 | A(10): rc=1 PathAlreadyExists | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+main A=cimp before_lease B=rebuild2_k1                 | lock held at stop: False   | B: published 10, published 11 | A(10): published 10 | MANIFEST 9->9->10->11->10 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=cimp before_lease B=update2_k1                  | lock held at stop: False   | B: published 10, published 11 | A(10): published 10 | MANIFEST 9->9->10->11->10 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=cimp before_lease B=imp_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 PathAlreadyExists | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+main A=cimp before_lease B=imp_next                    | lock held at stop: False   | B: published 11 | A(10): published 10 | MANIFEST 9->9->11->10 | twice=no back=YES refused-unchanged=None | VIOLATION
+main A=cimp before_lease B=idx_same                    | lock held at stop: False   | B: published 10 | A(10): rc=1 PathAlreadyExists | MANIFEST 9->9->10->10 | twice=no back=no refused-unchanged=True | ok
+main A=cimp before_lease B=imp_same_k1_then_rebuild_k1 | lock held at stop: False   | B: published 10, published 11 | A(10): published 10 | MANIFEST 9->9->10->11->10 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=cimp in_lease     B=rebuild                     | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=cimp in_lease     B=rebuild2_k1                 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=cimp in_lease     B=update2_k1                  | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=cimp in_lease     B=imp_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=cimp in_lease     B=imp_next                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=cimp in_lease     B=idx_same                    | lock held at stop: True    | B: WriterBusy | A(10): published 10 | MANIFEST 9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=cimp in_lease     B=imp_same_k1_then_rebuild_k1 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(10): published 10 | MANIFEST 9->9->9->9->10 | twice=no back=no refused-unchanged=None | ok
+main A=demo before_lease B=rebuild                     | lock held at stop: no-file | B: published 1 | A(1): rc=1 PathAlreadyExists | MANIFEST 0->0->1->1 | twice=no back=no refused-unchanged=True | ok
+main A=demo before_lease B=rebuild2_k1                 | lock held at stop: no-file | B: published 1, published 2 | A(1): published 1 | MANIFEST 0->0->1->2->1 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=demo before_lease B=demo                        | lock held at stop: no-file | B: published 1 | A(1): rc=1 PathAlreadyExists | MANIFEST 0->0->1->1 | twice=no back=no refused-unchanged=True | ok
+main A=demo before_lease B=imp_same                    | lock held at stop: no-file | B: published 1 | A(1): rc=1 PathAlreadyExists | MANIFEST 0->0->1->1 | twice=no back=no refused-unchanged=True | ok
+main A=demo before_lease B=imp_same_k1_then_rebuild_k1 | lock held at stop: no-file | B: published 1, published 2 | A(1): published 1 | MANIFEST 0->0->1->2->1 | twice=YES back=YES refused-unchanged=None | VIOLATION
+main A=demo in_lease     B=rebuild                     | lock held at stop: True    | B: WriterBusy | A(1): published 1 | MANIFEST 0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+main A=demo in_lease     B=rebuild2_k1                 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(1): published 1 | MANIFEST 0->0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+main A=demo in_lease     B=demo                        | lock held at stop: True    | B: WriterBusy | A(1): published 1 | MANIFEST 0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+main A=demo in_lease     B=imp_same                    | lock held at stop: True    | B: WriterBusy | A(1): published 1 | MANIFEST 0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+main A=demo in_lease     B=imp_same_k1_then_rebuild_k1 | lock held at stop: True    | B: WriterBusy, WriterBusy | A(1): published 1 | MANIFEST 0->0->0->0->1 | twice=no back=no refused-unchanged=None | ok
+head: 52 cases, 52 ok, 0 violations, 0 not stopped
+main: 52 cases, 38 ok, 14 violations, 0 not stopped

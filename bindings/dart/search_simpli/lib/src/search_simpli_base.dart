@@ -497,6 +497,15 @@ class SearchSimpli {
 /// `"analyzer-v2"` (Unicode: see `InterchangeAnalyzer`). Returns the
 /// published generation number (>= 1).
 ///
+/// The payload's `generation` is the number published and must be above the
+/// highest generation [dirPath] has any trace of (since 0.10.0). At or below
+/// it, this throws [SearchSimpliException] with the message
+/// `ss_import_json: StaleGeneration: generation N is not above M, ...` (the
+/// floor `M` and its traces named; `code` is null, as for every import
+/// failure) and nothing on disk changes, but for one case: in a directory
+/// with no `WRITER.LOCK` yet (a copied one, say), taking the lock creates it,
+/// empty, as for every refusal under the lock. Renumber above `M` and retry.
+///
 /// A free function, not a [SearchSimpli] method, because it takes a
 /// directory path rather than an open handle (mirrors
 /// `search_simpli.h`'s own free-standing `ss_import_json`).

@@ -351,6 +351,9 @@ python3 search.py index ./knowledge \
   --incremental-from .search/index.previous.json \
   --out .search/index.next.json
 
+# 5 must be above the highest generation /srv/search has any trace of
+# (its current one or higher); import-json refuses it otherwise
+# (StaleGeneration, S6-T21) and changes nothing.
 python3 export_zig.py .search/index.next.json --generation 5 --out /tmp/generation-5.json
 cd zig
 zig build run -- import-json /srv/search /tmp/generation-5.json

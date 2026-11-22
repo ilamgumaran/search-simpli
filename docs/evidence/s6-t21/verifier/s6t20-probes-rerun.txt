@@ -1,0 +1,76 @@
+# S6-T21 verifier: S6-T20's verifier probes rerun unchanged (docs/evidence/s6-t20/verifier/probe_caller_and_order.sh.txt, probe_mirror.py.txt), main (a8fc2a2) and head Debug searchd.
+# In the mirror lines the probe's 'short' helper does not know StaleGeneration; the head's four import_json lines print the exit line instead. Their lldb logs say:
+#   rebuild k=-/k=1: StaleGeneration: generation 10 is not above 10 (traces: MANIFEST, INDEX-STATE.json, documents-10.hybseg, lexical-10.hyblex, state-10.hybstate)
+#   rebuild_twice k=-/k=1: StaleGeneration: generation 10 is not above 11 (traces: MANIFEST, INDEX-STATE.json, documents-11.hybseg, lexical-11.hyblex, state-11.hybstate)
+
+=== main
+3a searchd index --generation 5 over generation 9: indexed notes: analyzer=analyzer-v2 generation=5 files_indexed=2 too_large=0 unreadable=0 budget_exhausted=0 documents=2 terms=6 postings=8 | MANIFEST 9 -> 5
+3a searchd import-json generation 5 over generation 9: imported generation 5: documents=1 terms=1 postings=1 vector_dimensions=0 | MANIFEST 9 -> 5
+3b lock held, no number left, full rebuild: error: WriterBusy
+3b lock held, no number left, --update:     error: WriterBusy
+3b lock free, no number left, full rebuild: error: NoFreeGeneration: no generation number above 18446744073709551615 (traces: lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair | stdout bytes 0
+3b lock free, no number left, the calls a full rebuild makes, in order:
+  hit indexer.collectCandidatePaths
+  hit lifecycle.tryAcquireWriter
+  hit generation_alloc.nextFreeGeneration
+error: NoFreeGeneration
+exited with status = 1
+lease trace, one full rebuild over generation 9:
+  hit indexer.collectCandidatePaths
+  hit lifecycle.tryAcquireWriter
+  hit apply.readContent
+  hit apply.readContent
+  hit generation_alloc.nextFreeGeneration
+  hit publication.publishWithExtrasRecorded
+  hit incremental_state.savePointer
+  hit lifecycle.WriterLease.release
+indexed notes: analyzer=analyzer-v2 generation=10
+exited with status = 0
+=== head
+3a searchd index --generation 5 over generation 9: error: StaleGeneration: generation 5 is not above 9, the highest generation in this directory (traces: MANIFEST, INDEX-STATE.json, documents-9.hybseg, lexical-9.hyblex, state-9.hybstate); publish a higher number | MANIFEST 9 -> 9
+3a searchd import-json generation 5 over generation 9: error: StaleGeneration: generation 5 is not above 9, the highest generation in this directory (traces: MANIFEST, INDEX-STATE.json, documents-9.hybseg, lexical-9.hyblex, state-9.hybstate); publish a higher number | MANIFEST 9 -> 9
+3b lock held, no number left, full rebuild: error: WriterBusy
+3b lock held, no number left, --update:     error: WriterBusy
+3b lock free, no number left, full rebuild: error: NoFreeGeneration: no generation number above 18446744073709551615 (traces: lexical-18446744073709551615.hyblex); use a fresh output directory; inspect listed traces before repair | stdout bytes 0
+3b lock free, no number left, the calls a full rebuild makes, in order:
+  hit indexer.collectCandidatePaths
+  hit lifecycle.tryAcquireWriter
+  hit generation_alloc.nextFreeGeneration
+error: NoFreeGeneration
+exited with status = 1
+lease trace, one full rebuild over generation 9:
+  hit indexer.collectCandidatePaths
+  hit lifecycle.tryAcquireWriter
+  hit apply.readContent
+  hit apply.readContent
+  hit generation_alloc.nextFreeGeneration
+  hit publication.publishWithExtrasRecorded
+  hit incremental_state.savePointer
+  hit lifecycle.WriterLease.release
+indexed notes: analyzer=analyzer-v2 generation=10
+exited with status = 0
+
+main  A=update      B=rebuild       k=- | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+main  A=update      B=rebuild       k=1 | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+main  A=update      B=rebuild_twice k=- | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+main  A=update      B=rebuild_twice k=1 | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+main  A=apply       B=rebuild       k=- | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+main  A=apply       B=rebuild       k=1 | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+main  A=apply       B=rebuild_twice k=- | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+main  A=apply       B=rebuild_twice k=1 | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+main  A=import_json B=rebuild       k=- | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no | ok
+main  A=import_json B=rebuild       k=1 | B: published 10 | A: rc=1 PathAlreadyExists | MANIFEST 9->10->10 | twice=no back=no | ok
+main  A=import_json B=rebuild_twice k=- | B: published 10, published 11 | A: rc=1 PathAlreadyExists | MANIFEST 9->11->11 | twice=no back=no | ok
+main  A=import_json B=rebuild_twice k=1 | B: published 10, published 11 | A: published 10 | MANIFEST 9->11->10 | twice=YES back=YES | VIOLATION
+head  A=update      B=rebuild       k=- | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  A=update      B=rebuild       k=1 | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  A=update      B=rebuild_twice k=- | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  A=update      B=rebuild_twice k=1 | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  A=apply       B=rebuild       k=- | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  A=apply       B=rebuild       k=1 | B: published 10 | A: published 11 | MANIFEST 9->10->11 | twice=no back=no | ok
+head  A=apply       B=rebuild_twice k=- | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  A=apply       B=rebuild_twice k=1 | B: published 10, published 11 | A: published 12 | MANIFEST 9->11->12 | twice=no back=no | ok
+head  A=import_json B=rebuild       k=- | B: published 10 | A: rc=1 Process 38925 exited with status = 1 (0x00000001) | MANIFEST 9->10->10 | twice=no back=no | ok
+head  A=import_json B=rebuild       k=1 | B: published 10 | A: rc=1 Process 38933 exited with status = 1 (0x00000001) | MANIFEST 9->10->10 | twice=no back=no | ok
+head  A=import_json B=rebuild_twice k=- | B: published 10, published 11 | A: rc=1 Process 38941 exited with status = 1 (0x00000001) | MANIFEST 9->11->11 | twice=no back=no | ok
+head  A=import_json B=rebuild_twice k=1 | B: published 10, published 11 | A: rc=1 Process 38951 exited with status = 1 (0x00000001) | MANIFEST 9->11->11 | twice=no back=no | ok

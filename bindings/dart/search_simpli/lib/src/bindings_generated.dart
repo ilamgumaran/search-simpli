@@ -363,6 +363,18 @@ class SearchSimpliBindings {
   /// ss_index_folder's option: after the publish succeeds, section files of
   /// generations older than the newest N are deleted. Absent: nothing is
   /// deleted. 0 returns SS_ERR_INVALID_ARGUMENT.
+  ///
+  /// The payload's "generation" is the number published. It must be above the
+  /// highest generation `dir_path` has any trace of (its MANIFEST, INDEX-STATE.json
+  /// and the canonical section files; a MANIFEST that cannot be decoded counts as
+  /// absent), checked under the writer lock just before the publish. A number at
+  /// or below it returns SS_ERR_INVALID_ARGUMENT and changes nothing on disk (but
+  /// for one case: in a directory with no WRITER.LOCK yet, such as a copied one,
+  /// taking the lock creates it, empty, as for every refusal under the lock), and
+  /// ss_last_error() is "ss_import_json: StaleGeneration: generation N is not
+  /// above M, the highest generation in this directory (traces: ...); publish a
+  /// higher number" (since S6-T21; contract 2.8.0 unchanged: before, such a
+  /// number was published and MANIFEST went back to it).
   int ss_import_json(
     ffi.Pointer<ffi.Char> dir_path,
     ffi.Pointer<ffi.Char> bytes,

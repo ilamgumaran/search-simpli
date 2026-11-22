@@ -328,12 +328,15 @@ pub const api = struct {
         /// Walk `root`, chunk and tokenize every matching file, and publish a
         /// fresh generation (a full rebuild) into `out_dir`: `generation` null
         /// publishes the next free number, chosen after `WRITER.LOCK` is taken
-        /// and published under the same lease (S6-T20); a number given is
-        /// published as given. `allocator` should
+        /// and published under the same lease (S6-T20); a number given must be
+        /// above the highest generation the directory has any trace of, checked
+        /// under the same lease before any file is read (S6-T21), or the call
+        /// fails with `StaleGeneration`. `allocator` should
         /// be an arena: the report lives in it. Errors: `OutOfMemory`, `std.Io`
         /// file errors, the core's format errors, `ApplyRefused`, and the
         /// directory's refusals (`WriterBusy`, `NoFreeGeneration`,
-        /// `IndexTooLarge`, `FilenameSettingMismatch`, `AnalyzerMismatch`, ...).
+        /// `StaleGeneration`, `IndexTooLarge`, `FilenameSettingMismatch`,
+        /// `AnalyzerMismatch`, ...).
         pub const indexFolder = internal.indexer.indexFolder;
         /// Re-walk `root` and apply the walk as one batch over the current
         /// generation of `out_dir` (unchanged files keep their chunks), then
@@ -365,15 +368,22 @@ pub const api = struct {
         pub const default_overlap_lines = internal.chunker.default_overlap_lines;
     };
 
-    /// The diagnostic of a directory with no generation number left
-    /// (`generation_alloc.zig`). The number itself is chosen inside the core,
-    /// under the writer lease (S6-T20).
+    /// The diagnostics of a directory with no generation number left and of a
+    /// caller's number at or below its highest generation
+    /// (`generation_alloc.zig`). The number itself is chosen, or a caller's
+    /// checked, inside the core, under the writer lease (S6-T20, S6-T21).
     pub const generation_alloc = struct {
         /// One line for this thread's last `error.NoFreeGeneration` (the highest
         /// generation and the file names in the way), formatted into `buffer`;
         /// the result is a slice of `buffer`, or a static fallback when it does
         /// not fit. No errors.
         pub const describeNoFreeGeneration = internal.generation_alloc.describeNoFreeGeneration;
+        /// One line for this thread's last `error.StaleGeneration` (S6-T21,
+        /// decision 0004): the caller's number, the highest generation the
+        /// directory has any trace of, and those traces, formatted into
+        /// `buffer`; the result is a slice of `buffer`, or a static fallback
+        /// when it does not fit. No errors.
+        pub const describeStaleGeneration = internal.generation_alloc.describeStaleGeneration;
     };
 
     /// The title field: folder and file names as a title (`title_field.zig`).
@@ -387,13 +397,16 @@ pub const api = struct {
     /// Importing an interchange snapshot written by the Python reference
     /// (`importer.zig`).
     pub const importer = struct {
-        /// Parse an interchange snapshot (JSON) and publish it as the next
-        /// generation of `dir`, keeping the payload's `keep_generations`.
+        /// Parse an interchange snapshot (JSON) and publish it into `dir` under
+        /// the payload's own `generation`, keeping the payload's
+        /// `keep_generations`. The number must be above the highest generation
+        /// `dir` has any trace of, checked under the writer lease (S6-T21), or
+        /// the call fails with `StaleGeneration`.
         /// `allocator` gives the call's working memory, which it frees before it
         /// returns (the report holds no slices). Errors: `OutOfMemory`, `std.Io`
         /// file errors, the JSON parser's, the core's format errors,
-        /// `UnsupportedInterchangeVersion`, `UnsupportedFilenamePolicy` and
-        /// `WriterBusy`, among others.
+        /// `UnsupportedInterchangeVersion`, `UnsupportedFilenamePolicy`,
+        /// `WriterBusy` and `StaleGeneration`, among others.
         pub const importJson = internal.importer.importJson;
         /// `importJson` with an explicit `keep_generations` that overrides the
         /// payload's own. Errors: as `importJson`.
@@ -454,9 +467,12 @@ pub const api = struct {
     /// The writer lock and publication (`lifecycle.zig`).
     pub const lifecycle = struct {
         /// Publish two encoded sections (documents and lexical) and their manifest
-        /// as the current generation of `dir`, under the directory's writer lock. Allocates
-        /// nothing. Errors: `WriterBusy` when another writer holds the lock,
-        /// `std.Io` file errors, and the core's checks of the manifest.
+        /// as the current generation of `dir`, under the directory's writer lock. The
+        /// manifest's generation must be above the highest generation `dir` has any
+        /// trace of (S6-T21). Allocates only for that check (the `MANIFEST` and
+        /// `INDEX-STATE.json` reads), from `std.heap.smp_allocator`, and frees it
+        /// before it returns. Errors: `WriterBusy` when another writer holds the lock,
+        /// `StaleGeneration`, `std.Io` file errors, and the core's checks of the manifest.
         pub const publishSerialized = internal.lifecycle.publishSerialized;
     };
 

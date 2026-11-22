@@ -34,8 +34,14 @@ pub fn main(init: std.process.Init) !void {
         .help => try printHelp(init.io),
         .demo => try runDemo(),
         .benchmark => |b| try benchmark.run(init.io, init.gpa, b.documents, b.dimensions, b.queries, b.mode),
-        .init_demo => |path| try initDemoSnapshot(init.io, path),
-        .import_json => |i| try importSnapshot(init.io, init.gpa, i.snapshot, i.file, i.keep_generations),
+        .init_demo => |path| initDemoSnapshot(init.io, path) catch |err| {
+            exitIfStaleGeneration(err);
+            return err;
+        },
+        .import_json => |i| importSnapshot(init.io, init.gpa, i.snapshot, i.file, i.keep_generations) catch |err| {
+            exitIfStaleGeneration(err);
+            return err;
+        },
         .serve => |s| if (s.http) |address|
             try serveHttp(init.io, init.gpa, s, address)
         else
@@ -54,6 +60,7 @@ pub fn main(init: std.process.Init) !void {
                     std.debug.print("error: {s}\n", .{generation_alloc.describeNoFreeGeneration(&line_buffer)});
                     std.process.exit(1);
                 }
+                exitIfStaleGeneration(err);
                 return err;
             };
             try stdout_writer.flush();
@@ -105,6 +112,16 @@ fn printHelp(io: std.Io) !void {
     var writer = std.Io.File.stdout().writerStreaming(io, &buffer);
     try writer.interface.writeAll(cli.usage_text);
     try writer.flush();
+}
+
+/// S6-T21: a caller's own generation number at or below the directory's
+/// highest is one line naming the floor and exit 1, with no error trace;
+/// for any other error this returns, and `main` returns the error as before.
+fn exitIfStaleGeneration(err: anyerror) void {
+    if (err != error.StaleGeneration) return;
+    var line_buffer: [448]u8 = undefined;
+    std.debug.print("error: {s}\n", .{generation_alloc.describeStaleGeneration(&line_buffer)});
+    std.process.exit(1);
 }
 
 fn importSnapshot(
