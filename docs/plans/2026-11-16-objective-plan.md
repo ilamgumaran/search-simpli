@@ -7,6 +7,37 @@ everything else is a proposal until its task merges. The maintainer may overrule
 any part of it; decisions taken under this instruction are listed in
 [Decisions taken under the instruction](#decisions-taken-under-the-instruction).
 
+## The priority, set by the maintainer on 22 Nov 2026
+
+The six objectives below stand. On 22 Nov 2026 the maintainer put one outcome
+ahead of the rest, for the engine and for the app that ships on it:
+
+> **First, and very well: search the files on the device and in synced folders
+> for text, find the files relevant to a question, and answer from the relevant
+> parts of them.** Other formats (images, PDFs, word-processor documents) come
+> after text is done well.
+
+What that direction says, point by point:
+
+1. **Text first.** All the text a folder holds is taken in before work goes to
+   other formats.
+2. **Know what each file holds.** The engine can say what kind of data is in a
+   file, from analysing it, and not only match words in it.
+3. **Relevant files, then relevant parts.** A question is answered from the
+   passages that bear on it, with their citations.
+4. **Simple matching first, refinement after.** Plain token and pattern matching
+   (the kind `grep`, `sed` and `awk` do) is the base. Semantic matching and a
+   language model refine what the base finds; they do not replace it.
+5. **An index and prepared metadata are allowed.** Searching with nothing
+   prepared ([direct search](../direct-search.md)) was the starting rule. It may
+   be set aside where a prepared index, or a prepared record of what each file
+   holds, serves the outcome better. Doing the work at query time is equally
+   acceptable for a deep search. The choice is by measurement.
+
+Work is ranked by this from now on: section
+[H](#h-text-search-done-well-the-priority-of-22-nov-2026) goes ahead of E, F and
+the remaining follow-ups unless one of them blocks it.
+
 ## The objective
 
 A search engine that:
@@ -188,6 +219,23 @@ host-supplied path is measured on a judged set. Capability document first.
 
 **Capability drafted (CAP-21, Proposed), awaiting the maintainer.** Drafted by S6-T6 as [CAP-21](../requirements/cap-21-host-supplied-vectors.md) (pending approval; two-phase attach recommended; blocked on a J2 semantic slice); verified 16 Nov 2026.
 
+### H. Text search done well (the priority of 22 Nov 2026)
+
+Proposals until each task merges. Each item that changes a contract, a format or
+the C ABI gets its capability document first.
+
+| Step | What | Why it is in this order |
+| --- | --- | --- |
+| H1 | **A judged set for the outcome.** Questions over an invented mixed-text folder, each with the files and the passages a good answer needs, scored end to end: was the right file found, was the right passage returned. Today's engine is measured on it before anything changes. | Nothing below can be called "done well" without a number; the existing judged sets score ranking, not whether the answering passage came back. |
+| H2 | **All the text.** List every plain-text kind a folder can hold (notes, data files, markup, source, logs, exports), say which the engine reads today (19 extensions) and which it skips, and read the ones that are text. Files with no or an unknown extension are sniffed, not skipped. | "Take all the text in first." A file that is never read cannot be found. |
+| H3 | **Pattern search.** A query-time scan for an exact phrase or a pattern over the files' text, returning cited lines, beside the ranked search: for the question a ranked search answers badly (an exact string, a number, a code, a line shape). | The maintainer's "simple token match"; it is also the oracle a ranked answer can be checked against. |
+| H4 | **A profile per file.** A prepared record of what a file holds: its kind, script and language, title and headings, its commonest distinctive terms, dates and numbers it carries, its size and shape (prose, table, list, log). Served as its own answer ("what is in this folder", "which files are about X") and given to a language model with the evidence. | "Know what kind of data is present in each file." Prepared metadata is now allowed. |
+| H5 | **The relevant parts.** Passage choice measured on H1 and improved: the passage that answers, its neighbours when the answer spans them, and the open follow-ups in G that concern passages. | Answers are only as good as the passages handed over. |
+| H6 | **Refinement.** Semantic matches for a folder the engine indexed (E, [CAP-21](../requirements/cap-21-host-supplied-vectors.md)), and the language-model loop (query rewording, re-reading with H3, re-ranking with H4's profiles), each kept only if H1's score rises. | Refinement comes after the base, and is judged against it. |
+
+Other formats (PDF, images through text recognition, word-processor documents)
+are the host application's work today and stay after H1 to H5.
+
 ### F. Web (objective 4)
 
 A `wasm32` build of the core with an in-memory index and a small JavaScript
@@ -200,7 +248,7 @@ From S5-T10 and S5-T12, already in 03-next: warnings under `both` and
 `filename`; the skill's `read_span` wording; a name-only match's passage quoted
 as content; an agent run with the MCP server as the only tool.
 
-**Order:** A and B1 first (documents and a checker, no engine change), with C and
+**Order from 22 Nov 2026:** H1 to H5 first, in that order (H2 and H3 can run alongside H1); then H6 with E; F and the rest of G after. The order before that date: A and B1 first (documents and a checker, no engine change), with C and
 D1 alongside them since they touch different files. Then B2, D2, G. Then E and F,
 each behind its capability document.
 

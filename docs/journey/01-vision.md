@@ -112,3 +112,14 @@ The full, enforced list lives in the
 
 These are **non-negotiable**. A capability that appears to require breaking one
 is resolved as a recorded conflict — or blocked — never quietly merged.
+
+## The priority from 22 Nov 2026
+
+The maintainer put one outcome first: **text search of local and synced files
+done very well** (find the relevant files, answer from the relevant parts),
+before other formats. Plain token and pattern matching is the base; semantic
+matching and a language model refine it. A prepared index and a prepared record
+of what each file holds are allowed where they serve that outcome. The plan and
+its steps are in the
+[objective plan](../plans/2026-11-16-objective-plan.md#the-priority-set-by-the-maintainer-on-22-nov-2026).
+The invariants above still hold.
