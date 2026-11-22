@@ -71,7 +71,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Export a reference index for Zig segment construction.")
     parser.add_argument("index", type=Path)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--generation", type=int, default=1)
+    parser.add_argument(
+        "--generation", type=int, default=1,
+        help="the generation number written into the JSON (default 1); `searchd import-json` "
+        "refuses one at or below the target directory's highest generation (StaleGeneration)",
+    )
     parser.add_argument(
         "--analyzer",
         choices=SUPPORTED_ANALYZER_IDS,

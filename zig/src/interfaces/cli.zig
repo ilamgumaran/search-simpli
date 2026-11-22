@@ -35,8 +35,11 @@ pub const IndexOptions = struct {
     /// (S1-T3 criterion 5: re-running `index` into an existing directory
     /// re-publishes instead of failing with `PathAlreadyExists`); since
     /// S6-T20 the core picks it under `WRITER.LOCK`, the lease it publishes
-    /// under. An explicit value is used as-is, including a deliberate
-    /// collision, which the publish refuses with `PathAlreadyExists`.
+    /// under. An explicit value is used as-is if it is above the highest
+    /// generation `--out` has any trace of, checked under the same lease
+    /// (S6-T21, decision 0004); at or below it the core refuses it with
+    /// `StaleGeneration` and changes nothing. Above it, a name taken by
+    /// something that is not a trace is refused with `PathAlreadyExists`.
     generation: ?u64 = null,
     /// S1-T3 criterion 1: `searchd index --update` runs incremental
     /// indexing (`indexer.indexFolderIncremental`) instead of a full
@@ -71,6 +74,9 @@ pub const usage_text =
         \\                       categories; default). Re-running `index`
         \\                       into an existing --out directory publishes
         \\                       the next generation instead of failing.
+        \\                       --generation N publishes N, which must be
+        \\                       above every generation <dir> has a trace
+        \\                       of (else StaleGeneration, exit 1).
         \\                       --update runs incremental indexing instead
         \\                       of a full rebuild: per-file content hashes
         \\                       (persisted in <dir>/INDEX-STATE.json) skip
@@ -187,8 +193,11 @@ pub const usage_text =
         \\  benchmark <docs> <dimensions> <queries> <mode>
         \\                       benchmark the real in-memory engine query path
         \\  init-demo <dir>      publish a small persistent demo snapshot
+        \\                       as generation 1 (so into a fresh <dir>)
         \\  import-json <dir> <file> [--keep-generations N]
         \\                       import neutral JSON and publish a snapshot
+        \\                       under its generation, which must be above
+        \\                       every generation <dir> has a trace of
         \\  help, --help, -h     show this message on stdout (exit 0)
         \\
         \\Vector/hybrid RPC requests must provide a query_vector matching the

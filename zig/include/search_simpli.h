@@ -46,6 +46,9 @@
  *          (a span over its limits, a generation without retained source
  *          bytes or without positions, a prefix over 1,000 terms, a batch
  *          over its caps), SS_ERR_IO (WRITER.LOCK held by another writer).
+ *          ss_import_json spells its failure "ss_import_json: <Name>"; a
+ *          payload generation at or below the directory's highest is
+ *          SS_ERR_INVALID_ARGUMENT, "StaleGeneration" (see ss_import_json).
  *
  * Threads: a single ss_handle may be read concurrently from multiple
  *          threads: ss_status/ss_query/ss_evidence and the 2.0.0 read
@@ -478,6 +481,16 @@ char *ss_evidence(ss_handle *handle, const char *ids_json);
  * ss_index_folder's option: after the publish succeeds, section files of
  * generations older than the newest N are deleted. Absent: nothing is
  * deleted. 0 returns SS_ERR_INVALID_ARGUMENT.
+ *
+ * The payload's "generation" is the number published. It must be above the
+ * highest generation `dir_path` has any trace of (its MANIFEST, INDEX-STATE.json
+ * and the canonical section files; a MANIFEST that cannot be decoded counts as
+ * absent), checked under the writer lock just before the publish. A number at
+ * or below it returns SS_ERR_INVALID_ARGUMENT with nothing on disk changed, and
+ * ss_last_error() is "ss_import_json: StaleGeneration: generation N is not
+ * above M, the highest generation in this directory (traces: ...); publish a
+ * higher number" (since S6-T21; contract 2.8.0 unchanged: before, such a
+ * number was published and MANIFEST went back to it).
  */
 int64_t ss_import_json(const char *dir_path, const char *bytes, size_t bytes_len);
 

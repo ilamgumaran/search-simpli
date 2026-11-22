@@ -19,7 +19,8 @@
     },
     "generation": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 1,
+      "description": "The generation number the import publishes. A publisher refuses a number at or below the highest generation the target directory has any trace of (StaleGeneration; docs/decisions/0004-callers-generation-number.md); the schema cannot express that rule."
     },
     "analyzer_id": {
       "enum": [

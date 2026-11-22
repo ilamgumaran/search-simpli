@@ -458,5 +458,57 @@ class CliProcessTests(unittest.TestCase):
         self.assertEqual(sorted(p.name for p in out.glob("documents-*")), ["documents-5.hybseg"])
 
 
+    def test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing(self) -> None:
+        """S6-T21: `index --generation`, `import-json` and `init-demo` bring their
+        own number; one at or below the highest generation on disk is refused
+        with one stderr line naming the floor (no error trace), exit 1, empty
+        stdout, and the directory unchanged. Above the floor it publishes."""
+        base = Path(self.scratch.name) / "s6t21-caller-number"
+        folder, out, fresh = base / "docs", base / "out", base / "fresh"
+        folder.mkdir(parents=True)
+        (folder / "a.md").write_text("alpha evidence about recovery\n", encoding="utf-8")
+        first = self.run_searchd("index", str(folder), "--out", str(out), "--generation", "9")
+        self.assertEqual(first.returncode, 0, first.stderr)
+
+        def payload(generation: int) -> Path:
+            path = base / f"p{generation}.json"
+            path.write_text(json.dumps({
+                "format_version": 1, "generation": generation, "analyzer_id": "ascii-alnum-v1",
+                "embedding_model_id": "none", "documents": [],
+            }), encoding="utf-8")
+            return path
+
+        refusals = (
+            (("index", str(folder), "--out", str(out), "--generation", "5"), 5),
+            (("index", str(folder), "--out", str(out), "--generation", "9"), 9),
+            (("import-json", str(out), str(payload(5))), 5),
+            (("init-demo", str(out)), 1),
+        )
+        for args, number in refusals:
+            with self.subTest(command=args[0], number=number):
+                before = entries(out)
+                result = self.run_searchd(*args)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertEqual(len(result.stderr.splitlines()), 1, result.stderr)
+                line = result.stderr.strip()
+                self.assertTrue(line.startswith(
+                    f"error: StaleGeneration: generation {number} is not above 9, "
+                    "the highest generation in this directory (traces: MANIFEST, INDEX-STATE.json, "
+                    "documents-9.hybseg, lexical-9.hyblex, state-9.hybstate)"), line)
+                self.assertNotIn(str(out), line)
+                self.assertEqual(entries(out), before)
+
+        imported = self.run_searchd("import-json", str(out), str(payload(10)))
+        self.assertEqual(imported.returncode, 0, imported.stderr)
+        self.assertIn("imported generation 10", imported.stderr)
+        demo = self.run_searchd("init-demo", str(fresh))
+        self.assertEqual(demo.returncode, 0, demo.stderr)
+        again = self.run_searchd("init-demo", str(fresh))
+        self.assertEqual(again.returncode, 1, again.stderr)
+        self.assertTrue(again.stderr.startswith("error: StaleGeneration: generation 1 is not above 1, "), again.stderr)
+        self.assertEqual(len(again.stderr.splitlines()), 1, again.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

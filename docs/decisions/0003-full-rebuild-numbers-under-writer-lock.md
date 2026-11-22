@@ -110,6 +110,11 @@ increases over those publishes, and each new number is above every number publis
   time". **Not done; for the maintainer.** This note scopes ruling 1 to self-numbered publishes, which is what the
   task's Why is about.
 
+  *Later (S6-T21, 21 Nov 2026):* decided and done in [decision 0004](0004-callers-generation-number.md): a caller's
+  number at or below the highest generation the directory has any trace of is refused with `StaleGeneration`
+  (`SS_ERR_INVALID_ARGUMENT` through `ss_import_json`), checked under the lease. `PathAlreadyExists` stays for a
+  number above that floor whose name is taken.
+
 **Is this a reason to stop?** No, by the task's conditions. The shape is right, needs no contract, header or format
 change and no new refusal; the caller-numbered limit is pre-existing, outside the shape, and is stated here and in
 the Report as a decision for the maintainer.
@@ -125,7 +130,7 @@ build on `main` already.
 
 ## 6. What this cannot close (known limits)
 
-- **Caller-numbered publishes** (4): a free number at or below the current one goes back.
+- **Caller-numbered publishes** (4): a free number at or below the current one goes back. *Closed by S6-T21* ([decision 0004](0004-callers-generation-number.md)).
 - **A writer that does not honour the lock:** a copy or edit by hand, another program, or an older build of this
   library or `searchd` (an older full rebuild still chooses before the lock, so a mixed pair of versions keeps the
   window on the old side).

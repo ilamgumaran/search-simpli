@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.10.0 (S6-T21; contract 2.8.0; minor: a refusal that was not there)
+
+A caller's own generation number must now be above the highest generation the
+directory has any trace of (decision 0004). `importSnapshotJson` (and
+`searchd import-json`, `searchd index --generation N`, `searchd init-demo`)
+with a number at or below it is refused, and nothing on disk changes. Before,
+a free number at or below the current generation was published and `MANIFEST`
+went back to it. No new call, field, error code or C ABI function; contracts
+stay 2.8.0 (the schema's `generation` gains a description); the index format
+is unchanged; answers and the read path are unchanged. Minor, not patch, because a
+payload that was published before can now be refused.
+
+- **The refusal.** `importSnapshotJson` throws `SearchSimpliException` with
+  `ss_import_json: StaleGeneration: generation N is not above M, the highest
+  generation in this directory (traces: ...); publish a higher number`. The
+  C code is `SS_ERR_INVALID_ARGUMENT` (-1); `code` is null, as for every
+  import failure (`ss_import_json` spells its failures without the
+  `SS_ERR_<CODE>` part, and this function does not pass the integer on).
+  The floor `M` is named, so a caller can renumber even when `MANIFEST` is
+  lost and `open` cannot tell it the current generation.
+- **Where.** The check runs under `WRITER.LOCK`, just before the publish, so
+  an import numbered from an open that another writer overtook (two rebuilds
+  with `keep_generations: 1` publishing 10 and 11 while the import numbered
+  10 waits) is refused, not published again. Shown in the engine's tests
+  (`zig/src/tests/cli_test.zig`, `abi_index_folder_test.zig`).
+- **What counts.** `MANIFEST`'s generation, `INDEX-STATE.json`'s, and every
+  canonical section file (`documents-`, `lexical-`, `filenames-`,
+  `filename-lexical-`, `state-`); a `MANIFEST` that cannot be decoded counts
+  as absent, its section files still count. A number above the floor whose
+  name is taken by something else (a `source-N.hybsrc` leftover) is still
+  refused with `PathAlreadyExists`.
+- **Not changed.** `indexFolder` without a number, `update` and
+  `applyChanges` choose their own numbers and never meet this refusal.
+
 ## 0.9.6 (S6-T20; contract 2.8.0; patch: a fix)
 
 A full rebuild (`indexFolder` without `update`; `searchd index` without

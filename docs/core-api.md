@@ -70,14 +70,16 @@ A type's fields and methods come with the type: `api.engine.Engine` is the whole
 
 ## The names, by purpose
 
-85 names in 22 namespaces, as `python3 scripts/check_layers.py` counts them in its last
-line ("the public core API `api`: 85 names in 22 namespaces"): every core name operations
+86 names in 22 namespaces, as `python3 scripts/check_layers.py` counts them in its last
+line ("the public core API `api`: 86 names in 22 namespaces"): every core name operations
 and interfaces used at `10f3d40` (the measurement,
 [`docs/evidence/s6-t16/measure.txt`](evidence/s6-t16/measure.txt)), less
 `title_field.derive` and with `engine.queryOneShot` in its place (S6-T18), less
 `analyzer_v2.analyzer_id` and `manifest.decode` (S6-T19), less
-`generation_alloc.nextFreeGeneration` (S6-T20), and nothing else. Every one of
-the 85 is used by a declaration of `ops/` or `interfaces/` that is not a test
+`generation_alloc.nextFreeGeneration` (S6-T20), with
+`generation_alloc.describeStaleGeneration` added (S6-T21: `main.zig` and `abi.zig`
+print the line of a caller's number refused as stale), and nothing else. Every one of
+the 86 is used by a declaration of `ops/` or `interfaces/` that is not a test
 ([`docs/evidence/s6-t19/measure.txt`](evidence/s6-t19/measure.txt) and
 [`after.txt`](evidence/s6-t19/after.txt)). Their doc comments in `core.zig` say what each does, what it allocates and what it
 returns.
@@ -96,7 +98,7 @@ returns.
 | Apply changes | `apply` | `applyChanges`, `Options`, `writeReportJson`, `default_max_file_bytes`, `default_max_total_bytes` | 5 |
 | Build an index | `indexer` | `indexFolder`, `indexFolderIncremental`, `buildFolderDetached`, `Caps`, `IncrementalReport`, `AnalyzerId` | 6 |
 | | `chunker` | `default_max_chars`, `default_overlap_lines` | 2 |
-| | `generation_alloc` | `describeNoFreeGeneration` | 1 |
+| | `generation_alloc` | `describeNoFreeGeneration`, `describeStaleGeneration` | 2 |
 | | `title_field` | `policy_id` | 1 |
 | Write a generation by hand | `importer` | `importJson`, `importJsonKeeping` | 2 |
 | | `manifest` | `create`, `encode`, `PendingEntry` | 3 |
@@ -108,7 +110,7 @@ returns.
 | The formats' identities | `fold` | `policy_id` | 1 |
 | | `fuzzy` | `policy_id` | 1 |
 
-By purpose: open 9, search 26, find 8, read a span 10, apply 5, build an index 10, write a
+By purpose: open 9, search 26, find 8, read a span 10, apply 5, build an index 11, write a
 generation by hand 11, benchmark 4, the formats' identities 2 (a third,
 `title_field.policy_id`, sits with its file under build an index). The `engine` namespace
 appears twice: `Engine` and `Evidence` open a generation, `queryOneShot` searches it.
@@ -132,7 +134,9 @@ before the arena goes; `engine.queryOneShot` needs an arena, since its result bu
 (one slot per chunk) and the title field it derives for an engine without a folder are
 not freed separately (a scoped open's engine ranks with its folder's field, which the
 open keeps); `scope.View`'s group flags are freed with `View.deinit`; a detached
-open borrows its `Sections`, which must outlive the engine. Encoders (`segment.encode`,
+open borrows its `Sections`, which must outlive the engine; `lifecycle.publishSerialized`
+takes no allocator and, since S6-T21, reads `MANIFEST` and `INDEX-STATE.json` for its check
+of the caller's number from `std.heap.smp_allocator`, freed before it returns. Encoders (`segment.encode`,
 `lexical_segment.encode`, `manifest.encode`) and `postings.build`, `hybrid.search` write
 into caller memory and allocate nothing.
 
@@ -149,7 +153,10 @@ They fall in four kinds:
   reads one;
 - the core's refusals, named on each function: `WriterBusy` (another writer holds the
   lock), `NoFreeGeneration` (no generation number left; `describeNoFreeGeneration`
-  gives the line to print), `AnalyzerMismatch`, `FilenameSettingMismatch`,
+  gives the line to print), `StaleGeneration` (a caller's own generation number,
+  from `indexFolder`'s `generation` or an import, at or below the highest generation
+  the directory has any trace of; `describeStaleGeneration` gives the line, S6-T21),
+  `AnalyzerMismatch`, `FilenameSettingMismatch`,
   `IndexTooLarge`, `ApplyRefused`, `DetachedNeedsFreshGeneration`,
   `UnsupportedInterchangeVersion`, the encoders' `BufferTooSmall` and overflows, the
   benchmark's `Invalid...Count` and `InvalidDimensions`, and `hybrid.search`'s

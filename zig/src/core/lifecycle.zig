@@ -1,3 +1,4 @@
+const generation_alloc = @import("generation_alloc.zig");
 const incremental_state = @import("incremental_state.zig");
 const manifest = @import("manifest.zig");
 const publication = @import("publication.zig");
@@ -304,6 +305,7 @@ pub fn publishSerializedKeepingWithSource(
     if (keep_generations) |keep| if (keep == 0) return error.InvalidKeepGenerations;
     var lease = (try tryAcquireWriter(dir, io)) orelse return error.WriterBusy;
     defer lease.release(io);
+    try requireCallerNumberAboveFloor(allocator, dir, io, manifest_encoded);
     return publishLeasedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, keep_generations);
 }
 
@@ -353,7 +355,18 @@ pub fn publishSerialized(
 ) !void {
     var lease = (try tryAcquireWriter(dir, io)) orelse return error.WriterBusy;
     defer lease.release(io);
+    try requireCallerNumberAboveFloor(std.heap.smp_allocator, dir, io, manifest_encoded);
     try publication.publish(dir, io, manifest_encoded, documents_encoded, lexical_encoded);
+}
+
+/// S6-T21 (decision 0004): the serialized publishes carry their caller's
+/// number in `manifest_encoded` (the importer, `init-demo`); it must be above
+/// the directory's highest trace (`generation_alloc.requireAboveFloor`). Called
+/// under the writer lease, before any link. A manifest that does not decode is
+/// left to the publish, which refuses it as before.
+fn requireCallerNumberAboveFloor(allocator: std.mem.Allocator, dir: std.Io.Dir, io: std.Io, manifest_encoded: []const u8) !void {
+    const metadata = manifest.decode(manifest_encoded) catch return;
+    try generation_alloc.requireAboveFloor(allocator, io, dir, metadata.generation);
 }
 
 /// Classify generation files without deleting anything. Orphans may still be
@@ -580,5 +593,6 @@ test "pruning removes superseded source sections and scan counts them apart (S3-
 pub fn publishSerializedWithFilenameKeeping(allocator: std.mem.Allocator, dir: std.Io.Dir, io: std.Io, manifest_encoded: []const u8, documents_encoded: []const u8, lexical_encoded: []const u8, catalog: []const u8, filename_lexical: []const u8, keep: ?usize) !PruneReport {
     var lease = (try tryAcquireWriter(dir, io)) orelse return error.WriterBusy;
     defer lease.release(io);
+    try requireCallerNumberAboveFloor(allocator, dir, io, manifest_encoded);
     return publishLeasedKeepingWithExtras(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, null, catalog, filename_lexical, null, keep);
 }

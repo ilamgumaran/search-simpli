@@ -534,7 +534,11 @@ fn applyImpl(arena: std.mem.Allocator, dir_path: []const u8, changes_json: []con
 pub export fn ss_import_json(dir_path: [*:0]const u8, bytes: [*]const u8, bytes_len: usize) callconv(.c) i64 {
     clearLastError();
     const generation = importImpl(std.mem.span(dir_path), bytes[0..bytes_len]) catch |err| {
-        setLastError("ss_import_json: {s}", .{@errorName(err)});
+        if (err == error.StaleGeneration) {
+            // S6-T21: the line names the floor, so a caller can renumber.
+            var line_buffer: [448]u8 = undefined;
+            setLastError("ss_import_json: {s}", .{generation_alloc.describeStaleGeneration(&line_buffer)});
+        } else setLastError("ss_import_json: {s}", .{@errorName(err)});
         return errorCode(err);
     };
     return @intCast(generation);
@@ -667,6 +671,9 @@ fn errorCode(err: anyerror) i64 {
         error.InvalidKeepGenerations,
         // S2-T13: a document vector with a non-finite L2 norm.
         error.VectorNormNotFinite,
+        // S6-T21: an import's own generation number at or below the
+        // directory's highest generation (decision 0004).
+        error.StaleGeneration,
         => SS_ERR_INVALID_ARGUMENT,
 
         else => SS_ERR_INTERNAL,

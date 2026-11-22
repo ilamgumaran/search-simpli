@@ -177,3 +177,42 @@ test "S6-T20: ss_index_folder with WRITER.LOCK held answers WriterBusy before it
     var manifest_buffer: [4096]u8 = undefined;
     try std.testing.expectEqual(@as(u64, 1), (try manifest.decode(try out.readFile(test_io, "MANIFEST", &manifest_buffer))).generation);
 }
+
+// S6-T21: `ss_import_json`'s number must be above the highest generation the
+// directory has any trace of (decision 0004). Generation 1 is imported, then 2
+// with `keep_generations: 1`, which prunes 1's files; before S6-T21 a second
+// import numbered 1 was published again and moved `MANIFEST` from 2 back to 1.
+test "S6-T21: ss_import_json refuses a number at or below the highest generation with SS_ERR_INVALID_ARGUMENT and names the floor" {
+    const abi = @import("interfaces").abi;
+    var tmp = std.testing.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    const test_io = std.testing.io;
+    const dir_z = try std.fmt.allocPrintSentinel(std.testing.allocator, ".zig-cache/tmp/{s}/imp", .{tmp.sub_path}, 0);
+    defer std.testing.allocator.free(dir_z);
+    const doc = "{\"id\":\"one\",\"path\":\"a.md\",\"start_line\":1,\"end_line\":1,\"text\":\"search evidence\",\"vector\":[],\"required_labels\":[]}";
+    const first = "{\"format_version\":1,\"generation\":1,\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"documents\":[" ++ doc ++ "]}";
+    const second = "{\"format_version\":1,\"generation\":2,\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"keep_generations\":1,\"documents\":[" ++ doc ++ "]}";
+    const third = "{\"format_version\":1,\"generation\":3,\"analyzer_id\":\"ascii-alnum-v1\",\"embedding_model_id\":\"none\",\"documents\":[" ++ doc ++ "]}";
+    try std.testing.expectEqual(@as(i64, 1), abi.ss_import_json(dir_z, first.ptr, first.len));
+    try std.testing.expectEqual(@as(i64, 2), abi.ss_import_json(dir_z, second.ptr, second.len));
+
+    var dir = try tmp.dir.openDir(test_io, "imp", .{ .iterate = true });
+    defer dir.close(test_io);
+    try std.testing.expectError(error.FileNotFound, dir.statFile(test_io, "documents-1.hybseg", .{}));
+    var manifest_buffer: [4096]u8 = undefined;
+    const manifest_before = try std.testing.allocator.dupe(u8, try dir.readFile(test_io, "MANIFEST", &manifest_buffer));
+    defer std.testing.allocator.free(manifest_before);
+
+    const again = abi.ss_import_json(dir_z, first.ptr, first.len);
+    const message = try std.testing.allocator.dupe(u8, std.mem.span(ss_last_error()));
+    defer std.testing.allocator.free(message);
+    std.debug.print("S6-T21 ss_import_json numbered 1 over 2: {d} \"{s}\"\n", .{ again, message });
+    try std.testing.expectEqual(abi.SS_ERR_INVALID_ARGUMENT, again);
+    try std.testing.expect(std.mem.startsWith(u8, message, "ss_import_json: StaleGeneration: generation 1 is not above 2, the highest generation in this directory (traces: MANIFEST, documents-2.hybseg, lexical-2.hyblex)"));
+    try std.testing.expectEqualStrings(manifest_before, try dir.readFile(test_io, "MANIFEST", &manifest_buffer));
+    try std.testing.expectError(error.FileNotFound, dir.statFile(test_io, "documents-1.hybseg", .{}));
+
+    // Above the floor: published, and the thread's last error is cleared.
+    try std.testing.expectEqual(@as(i64, 3), abi.ss_import_json(dir_z, third.ptr, third.len));
+    try std.testing.expectEqualStrings("", std.mem.span(ss_last_error()));
+}

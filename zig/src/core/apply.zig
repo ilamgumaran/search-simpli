@@ -768,6 +768,9 @@ fn applyParsed(allocator: std.mem.Allocator, io: std.Io, dir: ?std.Io.Dir, parse
     if (parsed.batch.expect_generation) |expected| {
         if (expected != current) return .{ .failed = try failure(allocator, .invalid_argument, "stale: generation is {d}", .{current}) };
     }
+    // S6-T21: a caller's own number (`--generation`) must be above every trace,
+    // checked here under the lease and before any file is read or built.
+    if (dir) |d| if (options.generation) |g| try generation_alloc.requireAboveFloor(allocator, io, d, g);
     if (parsed.deferred) |f| return .{ .failed = f };
     const batch = parsed.batch;
     if (current != 0 and options.filename_index == null) {

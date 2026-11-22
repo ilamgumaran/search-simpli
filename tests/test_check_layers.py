@@ -1124,7 +1124,7 @@ class CoreApiTests(unittest.TestCase):
         text = (REPO / "zig" / "src" / "core" / "core.zig").read_text(encoding="utf-8")
         api, problems = check_layers.core_api(text)
         self.assertEqual(problems, [])
-        self.assertEqual((len(api), sum(len(names) for _, names in api.values())), (22, 85))
+        self.assertEqual((len(api), sum(len(names) for _, names in api.values())), (22, 86))
 
 
 class OneShotQueryTests(unittest.TestCase):
@@ -1164,7 +1164,7 @@ class OneShotQueryTests(unittest.TestCase):
         with redirect_stdout(out):
             code = check_layers.main(["--root", str(REPO)])
         self.assertEqual(code, 0, out.getvalue())
-        self.assertIn("; the public core API `api`: 85 names in 22 namespaces)", out.getvalue())
+        self.assertIn("; the public core API `api`: 86 names in 22 namespaces)", out.getvalue())
 
     def test_main_prints_the_size_of_an_api_with_one_name_more(self):
         path = self.root / "zig" / "src" / "core" / "core.zig"
@@ -1180,7 +1180,7 @@ class OneShotQueryTests(unittest.TestCase):
         with redirect_stdout(out):
             code = check_layers.main(["--root", str(self.root)])
         self.assertEqual(code, 0, out.getvalue())
-        self.assertIn("; the public core API `api`: 86 names in 22 namespaces)", out.getvalue())
+        self.assertIn("; the public core API `api`: 87 names in 22 namespaces)", out.getvalue())
 
     def test_a_planted_derive_in_interfaces_fails_inline_and_through_the_old_alias(self):
         first = self.plant("interfaces/cli.zig",

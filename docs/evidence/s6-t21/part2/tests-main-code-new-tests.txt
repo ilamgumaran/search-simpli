@@ -1,0 +1,434 @@
+# zig build test --summary all on main's code (a8fc2a2, a git archive) with the head's zig/src/tests/cli_test.zig and abi_index_folder_test.zig copied in, Debug, 21 Nov 2026: the five S6-T21 tests fail, every other test passes (an outcome printed after an earlier case published on main runs over a changed directory)
+zig build lib: SS_ANDROID_NDK is not set; skipping the aarch64-linux-android libraries.
+test
++- run test core w
+BM25 conformance: 26 queries compared, 26 identical top-1 (within tolerance)
+chunk-golden-md conformance: 61 files, 233 chunks, 189 headings identical
+chunk-golden conformance: 56 files, 85 chunks compared, 85 identical
+S4-T15 ruling 2(a): 30 corpora, 64082 candidates compared, 126 lists cut (104 inside equal scores, 22 between different scores)
+S4-T17 rank test: 303 rounds, 21926 ranked candidates (228 rounds shuffled); neighbours tied on score across roots 2689, on score, root and path with different start lines 4835, with equal start lines 4943
+S3-T2 p1 page 2: 3 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 p1 page 100: 3 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 p2 page 2: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 p2 page 100: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 p3 page 2: 0 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 p3 page 100: 0 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 p4 page 2: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 p4 page 100: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 p5 page 2: 2 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 p5 page 100: 2 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x1 page 2: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x1 page 100: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x2 page 2: 7 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x2 page 100: 7 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x3 page 2: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x3 page 100: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x4 page 2: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x4 page 100: 5 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x5 page 2: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 x5 page 100: 1 hits (0 deduplicated), precision 1.00, recall 1.00
+S3-T2 uc007-01 (words): recall@5 1.00
+S3-T2 uc007-06 (answer): recall@5 1.00
+S3-T2 uc007-07 (answer): recall@5 1.00
+S3-T2 words recall@5 over 3 cases: 1.000
+S5-T4 K golden: 49409 terms (42593 same, 6816 changed) equal
+S2-T1 Tamil via import-json analyzer-v2: success@1 10/10
+S1-T14 absent Tamil queries: 12 queries x 2 doors, 0 hits; S5-T4 with fold-groups-v1 2 hits (the plural of a held word)
+
+import best-of-5: 125 docs 5.8 ms, 1000 docs 42.3 ms; growth 7.24x
+S4-T11 random merge: seeds 0x54110001..0x54110003, 30 rounds each, 1-4 mutations per round: the documents, lexical and source sections equal a fresh index's in all 90 rounds
+S6-T4 byte flips: 5170 resealed flips, 2982 refused, 2188 accepted (each re-encodes to its own bytes); every unsealed flip refused
+S6-T4 byte flips: 14 sections with a byte after the last offsets, all refused
+S6-T13 MANIFEST replaced between stat and read (opener, new length - stat length: generation read): open -1:old open 0:old open 1:old open 2048:old open_scoped -1:old open_scoped 0:old open_scoped 1:old open_scoped 2048:old open_source -1:old open_source 0:old open_source 1:old open_source 2048:old
+S6-T13 folder MANIFEST 576 -> 580 bytes between stat and read: generation 9 read
+S6-T17 MANIFEST replaced between stat and read (new length - stat length: next generation or error): -1:3 0:3 1:3 2048:3
+S6-T17 folder MANIFEST 576 -> 580 bytes between stat and read: next generation 11, published
+S6-T17 INDEX-STATE.json 94 B replaced between stat and read: recordedGeneration null, next generation 11
+
+nfc best-of-3: 256 KB mark 6.44 ms plain 6.36 ms; 1 MB mark 25.42 ms plain 25.22 ms; growth 3.95x
+
+nfc jamo best-of-3: 256 KB jamo 10.96 ms twin 16.79 ms; 1 MB jamo 41.26 ms twin 66.43 ms; growth 3.76x
+S5-T5 R golden: 2978 listed + 16214 off equal; digest over 49471 terms (27041 applies, 123482 lookups, 122865 eligible) equal
+failed command: ./.zig-cache/o/9030c9288613bc45b597f4564b6025bc/core --cache-dir=./.zig-cache --seed=0x71b421ec --listen=-
+
+test
++- run test tests 290 pass, 9 skip, 5 fail (304 total)
+error: 'cli_test.test.S6-T21: searchd index --generation N at or below the highest trace is refused with StaleGeneration, one above it whose name is taken with PathAlreadyExists; nothing on disk changes' failed:
+       S3-T1 family-folder: 8 read_span exact, 5 outlines exact, 42 files read back whole (1150039 bytes retained); chunks line-window-v1 855, md-section-v1 143
+       S6-T7 ruling 3: 24 files rebuilt exactly (resident and streamed); kept whole: a-crlf.md b-lone-cr.txt e-empty.txt f-blank.txt g-controls.txt; 1000 read_span ranges equal HYBSRC01's
+       S6-T7 overlaps: recipe values 1 and 3 and an overlap of the whole previous chunk rebuilt exactly; 228 read_span ranges equal HYBSRC01's
+       S6-T7 byte-order mark: m-bom-only.md kept whole (no chunk), m-bom-text.md rebuilt (mark in the gap), m-bom-text.txt kept whole (mark in its chunk); 72 read_span ranges equal HYBSRC01's
+       S6-T7 ruling 11: 40 documents v5 rules refused with their errors; an overlong varint accepted
+       S6-T7 ruling 11: 26 HYBSRC02 rules refused with their errors, resident and streamed (two of them at a read)
+       S3-T3 family-folder lifecycle through apply_changes: 3/3 scenarios
+       S4-T16 finding 14: the most stage slots one apply_changes call used: 54
+       S6-T8: 27 damaged sections 5 refused with their rules' errors (rules 1-10 and 12), eager and lazy; an overlong escape and an end of 2^32 - 1 accepted
+       S4-T1 NFR-13 family-folder under a 67108864 B cap, peak live bytes: open 4696806 find 5274055 read_span 5286177 outline 5288291 list_files 5292947 search_knowledge 5311540
+       S4-T10 NFR-13 family-folder: source section resident 20086 B (header, files table, line maps), text 1036 B read per call
+       S4-T9 NFR-13 open by table, family-folder (requested/held B): manifest 869/869 block 4486003/4486003 decode 106351/209934 manifest_freed -869/-869 meta 4744/0 folder 3588/0; block 4486003: documents 119760, terms 676480, vectors 0, postings 1473896, document lengths 3992, manifest 869, documents section 1357366, lexical section 853640; not in the open: source section 21122, filename block 0; documents 998, terms 16912, postings 184237, vector dimensions 0; sizes Document 120, TermEntry 40, Posting 8; held 4695937, peak 4696806, measured open 4696806
+       S4-T9 NFR-13 formula bar, family-folder: open peak 4696806 <= manifest 869 + documents section 1357366 + lexical section 853640 + decoded tables 2380479 + 1048576 = 5640930 (margin 944124)
+       S4-T1 NFR-13 10k generated under a 67108864 B cap, peak live bytes: open 25303769 find 35751629 read_span 27697385 outline 27661511 list_files 34699653 search_knowledge 29814409
+       S4-T10 NFR-13 10k generated: source section resident 509604 B (header, files table, line maps), text 39778 B read per call
+       S4-T9 NFR-13 open by table, 10k generated (requested/held B): manifest 576/576 block 23917733/23917733 decode 761276/1385460 manifest_freed -576/-576 meta 2537/0 folder 41444/0; block 23917733: documents 2391120, terms 961680, vectors 0, postings 8217008, document lengths 79704, manifest 576, documents section 8050859, lexical section 4216786; not in the open: source section 549382, filename block 0; documents 19926, terms 24042, postings 1027126, vector dimensions 0; sizes Document 120, TermEntry 40, Posting 8; held 25303193, peak 25303769, measured open 25303769
+       S4-T9 NFR-13 formula bar, 10k generated: open peak 25303769 <= manifest 576 + documents section 8050859 + lexical section 4216786 + decoded tables 12410788 + 1048576 = 25727585 (margin 423816)
+       S4-T1 NFR-13 10k filename and lazy tables under a 67108864 B cap, peak live bytes: open 25304009 find 35751749 read_span 27697505 outline 27661631 list_files 34699773 search_knowledge 29814529 filename 31202709 both 31688785
+       S4-T10 NFR-13 10k filename and lazy tables: source section resident 509604 B (header, files table, line maps), text 39778 B read per call
+       S4-T9 NFR-13 open by table, 10k filename and lazy tables (requested/held B): manifest 696/696 block 23917853/23917853 decode 761276/1385460 manifest_freed -696/-696 meta 2537/0 folder 41444/0; block 23917853: documents 2391120, terms 961680, vectors 0, postings 8217008, document lengths 79704, manifest 696, documents section 8050859, lexical section 4216786; not in the open: source section 549382, filename block 2676072; documents 19926, terms 24042, postings 1027126, vector dimensions 0; sizes Document 120, TermEntry 40, Posting 8; held 25303313, peak 25304009, measured open 25304009
+       S4-T9 NFR-13 formula bar, 10k filename and lazy tables: open peak 25304009 <= manifest 696 + documents section 8050859 + lexical section 4216786 + decoded tables 12410788 + 1048576 = 25727705 (margin 423696)
+       S4-T8 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S4-T8 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T2 NFR-13 10000 files, one handle, peak live bytes: open 25304009 first content 27460179 first both 29334435; the derive alone: peak 2153560 above the live bytes before it, kept 691584 (title block 691584); working arrays peak 1541164 (left 0), block 691584
+       S5-T2 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T2 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T3 NFR-13 10000 files, one handle, typed baabcha: live before 28671033; triggering content peak 28684721 (left 28671033), both peak 28955591 (left 28671033); one scan with its group and scorer arrays: peak 435 (left 0), 3 members
+       S5-T3 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T3 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T4 NFR-13 10000 files, one handle, typed system: live before 28670969; first grouped content query keeps 64 (the key map: 4 entries, 64 B); content peak 28684673; second content query left 28671033, grouped both peak 28954831 (left 28671033); the key map's build alone: peak 468 (left 0)
+       S5-T4 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T4 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S5-T5 NFR-13 10000 files, one handle, typed hashing: live before 28670969; first grouped content query keeps 64 (the key map: 4 entries, 64 B); content peak 28684113; second content query left 28671033, grouped both peak 28952741 (left 28671033); the key map's build alone: peak 468 (left 0)
+       S5-T5 NFR-13 scale: skipped (SEARCH_SIMPLI_NFR13_SCALE=1 runs it)
+       S2-T11 fuzz: 100000 cases per snapshot x 2 snapshots: 45529 valid, 154471 invalid (all rejected), 13176 ms
+       S5-T2 title golden: 209 file scores compared within 1e-4
+       S5-T3 fuzzy golden: 4848 chunk scores in 120 expanded queries (9 planted cases) within 1e-4
+       S6-T20 interleavings (point other: other's outcomes, MANIFEST before -> after the other -> after the rebuild, rebuild's outcome):
+         after_choice update: other [WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 ok
+         after_choice update_twice_keep_one: other [WriterBusy, WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 ok
+         after_choice rebuild: other [WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 ok
+         after_choice import_json: other [WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 ok
+         during_walk update: other [published 10], MANIFEST 9 -> 10 -> 11, rebuild published 11 ok
+         during_walk update_twice_keep_one: other [published 10, published 11], MANIFEST 9 -> 11 -> 12, rebuild published 12 ok
+         during_walk rebuild: other [published 10], MANIFEST 9 -> 10 -> 11, rebuild published 11 ok
+         during_walk import_json: other [published 10], MANIFEST 9 -> 10 -> 11, rebuild published 11 ok
+       S6-T20 one lease (point other: other's outcomes, MANIFEST before -> after the other -> after the rebuild, rebuild's outcome):
+         after_choice_returned update: other [WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 (other ran after the rebuild's dirCreateFile) ok
+         after_choice_returned update_twice_keep_one: other [WriterBusy, WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 (other ran after the rebuild's dirCreateFile) ok
+         after_choice_returned rebuild: other [WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 (other ran after the rebuild's dirCreateFile) ok
+         after_choice_returned import_json: other [WriterBusy], MANIFEST 9 -> 9 -> 10, rebuild published 10 (other ran after the rebuild's dirCreateFile) ok
+       S6-T21 --generation 10 over published_by_another_writer: PathAlreadyExists
+       expected error.StaleGeneration, found error.PathAlreadyExists
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x102ea70ff in fail__anon_20420 (tests)
+               return err;
+               ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x102ea6b67 in linkat (tests)
+                   .EXIST => return syscall.fail(error.PathAlreadyExists),
+                             ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x102ea62a7 in dirHardLink (tests)
+           return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x102ea96c7 in dirRenamePreserve (tests)
+           try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Dir.zig:1140:5: 0x102f7aee3 in renamePreserve (tests)
+           return io.vtable.dirRenamePreserve(io.userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+           ^
+       <scratch>/main-full/zig/src/core/publication.zig:326:13: 0x102f5e8d7 in writeAtomicFileRecorded (tests)
+                   try dir.renamePreserve(&tmp_name, dir, filename, io);
+                   ^
+       <scratch>/main-full/zig/src/core/publication.zig:135:5: 0x102f5efaf in publishWithExtrasRecorded (tests)
+           try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:331:5: 0x102f6059b in publishLeasedKeepingWithExtras (tests)
+           try publication.publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, catalog, filename_lexical, state_encoded, null);
+           ^
+       <scratch>/main-full/zig/src/core/apply.zig:1233:17: 0x10300d1fb in applyParsed (tests)
+               prune = try lifecycle.publishLeasedKeepingWithExtras(allocator, d, io, built.manifest, built.documents, built.lexical, built.source, built.catalog, built.filename_lexical, built.state, options.keep_generations);
+                       ^
+       <scratch>/main-full/zig/src/core/apply.zig:722:5: 0x10300dd23 in applyBatch (tests)
+           return applyParsed(allocator, io, dir, .{ .batch = batch }, options, null);
+           ^
+       <scratch>/main-full/zig/src/core/indexer.zig:198:21: 0x10300e46b in walkAndApply (tests)
+           const outcome = try apply.applyBatch(allocator, io, out_dir, walked.batch(), walkOptions(analyzer, max_chars, overlap_lines, caps, fresh, generation));
+                           ^
+       <scratch>/main-full/zig/src/core/indexer.zig:182:5: 0x10300e667 in indexFolder (tests)
+           return walkAndApply(allocator, io, root, out_dir, analyzer, max_chars, overlap_lines, caps, true, generation);
+           ^
+       <scratch>/main-full/zig/src/interfaces/cli.zig:847:20: 0x1030eee13 in runIndex (tests)
+           const report = try indexer.indexFolder(
+                          ^
+       <scratch>/main-full/zig/src/tests/cli_test.zig:751:9: 0x1031a5c4b in runRebuild (tests)
+               try cli.runIndex(io, std.testing.allocator, root_path, out_path, options, &output.writer);
+               ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/testing.zig:72:13: 0x1031bab47 in expectError__anon_113638 (tests)
+                   return error.TestUnexpectedError;
+                   ^
+       <scratch>/main-full/zig/src/tests/cli_test.zig:959:9: 0x1031bcadb in test.S6-T21: searchd index --generation N at or below the highest trace is refused with StaleGeneration, one above it whose name is taken with PathAlreadyExists; nothing on disk changes (tests)
+               try std.testing.expectError(if (taken == .lone_source_leftover) error.PathAlreadyExists else error.StaleGeneration, outcome);
+               ^
+error: 'cli_test.test.S6-T21: a caller's number at or below the highest generation is refused with StaleGeneration and changes nothing; one above it publishes' failed:
+       S6-T20 lock held, no number left: WriterBusy
+       S6-T21 a caller's number over a folder at generation 9:
+         index_generation 5 over 9: published 5, MANIFEST 5, directory changed
+         index_generation 9 over 9: PathAlreadyExists, MANIFEST 5, directory unchanged
+         import_json 5 over 9: PathAlreadyExists, MANIFEST 5, directory unchanged
+         import_json 9 over 9: PathAlreadyExists, MANIFEST 5, directory unchanged
+         index_generation 12 over 9: published 12; import_json 13: published 13; import_json 12 over 13: PathAlreadyExists; MANIFEST 13
+       expected 0, found 5
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x102ea70ff in fail__anon_20420 (tests)
+               return err;
+               ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x102ea6b67 in linkat (tests)
+                   .EXIST => return syscall.fail(error.PathAlreadyExists),
+                             ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x102ea62a7 in dirHardLink (tests)
+           return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x102ea96c7 in dirRenamePreserve (tests)
+           try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Dir.zig:1140:5: 0x102f7aee3 in renamePreserve (tests)
+           return io.vtable.dirRenamePreserve(io.userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+           ^
+       <scratch>/main-full/zig/src/core/publication.zig:326:13: 0x102f5e8d7 in writeAtomicFileRecorded (tests)
+                   try dir.renamePreserve(&tmp_name, dir, filename, io);
+                   ^
+       <scratch>/main-full/zig/src/core/publication.zig:135:5: 0x102f5efaf in publishWithExtrasRecorded (tests)
+           try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:331:5: 0x102f6059b in publishLeasedKeepingWithExtras (tests)
+           try publication.publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, catalog, filename_lexical, state_encoded, null);
+           ^
+       <scratch>/main-full/zig/src/core/apply.zig:1233:17: 0x10300d1fb in applyParsed (tests)
+               prune = try lifecycle.publishLeasedKeepingWithExtras(allocator, d, io, built.manifest, built.documents, built.lexical, built.source, built.catalog, built.filename_lexical, built.state, options.keep_generations);
+                       ^
+       <scratch>/main-full/zig/src/core/apply.zig:722:5: 0x10300dd23 in applyBatch (tests)
+           return applyParsed(allocator, io, dir, .{ .batch = batch }, options, null);
+           ^
+       <scratch>/main-full/zig/src/core/indexer.zig:198:21: 0x10300e46b in walkAndApply (tests)
+           const outcome = try apply.applyBatch(allocator, io, out_dir, walked.batch(), walkOptions(analyzer, max_chars, overlap_lines, caps, fresh, generation));
+                           ^
+       <scratch>/main-full/zig/src/core/indexer.zig:182:5: 0x10300e667 in indexFolder (tests)
+           return walkAndApply(allocator, io, root, out_dir, analyzer, max_chars, overlap_lines, caps, true, generation);
+           ^
+       <scratch>/main-full/zig/src/interfaces/cli.zig:847:20: 0x1030eee13 in runIndex (tests)
+           const report = try indexer.indexFolder(
+                          ^
+       <scratch>/main-full/zig/src/tests/cli_test.zig:751:9: 0x1031a5c4b in runRebuild (tests)
+               try cli.runIndex(io, std.testing.allocator, root_path, out_path, options, &output.writer);
+               ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x102ea70ff in fail__anon_20420 (tests)
+               return err;
+               ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x102ea6b67 in linkat (tests)
+                   .EXIST => return syscall.fail(error.PathAlreadyExists),
+                             ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x102ea62a7 in dirHardLink (tests)
+           return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x102ea96c7 in dirRenamePreserve (tests)
+           try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Dir.zig:1140:5: 0x102f7aee3 in renamePreserve (tests)
+           return io.vtable.dirRenamePreserve(io.userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+           ^
+       <scratch>/main-full/zig/src/core/publication.zig:326:13: 0x102f5e8d7 in writeAtomicFileRecorded (tests)
+                   try dir.renamePreserve(&tmp_name, dir, filename, io);
+                   ^
+       <scratch>/main-full/zig/src/core/publication.zig:135:5: 0x102f5efaf in publishWithExtrasRecorded (tests)
+           try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:331:5: 0x102f6059b in publishLeasedKeepingWithExtras (tests)
+           try publication.publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, catalog, filename_lexical, state_encoded, null);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:324:5: 0x102f60b53 in publishLeasedKeepingWithSource (tests)
+           return publishLeasedKeepingWithExtras(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, null, null, null, keep_generations);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:307:5: 0x102f60e37 in publishSerializedKeepingWithSource (tests)
+           return publishLeasedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, keep_generations);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:289:5: 0x102f60f03 in publishSerializedKeeping (tests)
+           return publishSerializedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, null, keep_generations);
+           ^
+       <scratch>/main-full/zig/src/core/importer.zig:186:10: 0x102f6595f in importJsonKeeping (tests)
+           else try lifecycle.publishSerializedKeeping(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, keep);
+                ^
+       <scratch>/main-full/zig/src/core/importer.zig:80:5: 0x102f65b3b in importJson (tests)
+           return importJsonKeeping(dir, io, allocator, json_bytes, null);
+           ^
+       <scratch>/main-full/zig/src/tests/cli_test.zig:1024:24: 0x1031a5a7f in importAt (tests)
+               const report = try importer.importJson(out, io, std.testing.allocator, try importJson(a, generation));
+                              ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x102ea70ff in fail__anon_20420 (tests)
+               return err;
+               ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x102ea6b67 in linkat (tests)
+                   .EXIST => return syscall.fail(error.PathAlreadyExists),
+                             ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x102ea62a7 in dirHardLink (tests)
+           return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x102ea96c7 in dirRenamePreserve (tests)
+           try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+           ^
+       (27 additional stack frames skipped due to buffer size limitations...)
+error: 'cli_test.test.S6-T21: a caller's number held before its lock while other writers publish is refused with StaleGeneration; MANIFEST never back, nothing changed' failed:
+       S6-T21 races (caller number, other: other's outcomes, MANIFEST before -> after the other -> after the caller, caller's outcome):
+         import_json 10, rebuild_once: other [published 10], MANIFEST 9 -> 10 -> 10, caller PathAlreadyExists FAIL
+         import_json 10, rebuild_twice_keep_one: other [published 10, published 11], MANIFEST 9 -> 11 -> 10, caller published 10 FAIL
+         index_generation 10, rebuild_once: other [published 10], MANIFEST 9 -> 10 -> 10, caller PathAlreadyExists FAIL
+         index_generation 10, rebuild_twice_keep_one: other [published 10, published 11], MANIFEST 9 -> 11 -> 10, caller published 10 FAIL
+       expected 0, found 4
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/testing.zig:118:17: 0x1030e568b in expectEqualInner__anon_90877 (tests)
+                       return error.TestExpectedEqual;
+                       ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/testing.zig:83:5: 0x1031b60b7 in expectEqual (tests)
+           return expectEqualInner(T, expected, actual);
+           ^
+       <scratch>/main-full/zig/src/tests/cli_test.zig:1215:5: 0x1031b6173 in test.S6-T21: a caller's number held before its lock while other writers publish is refused with StaleGeneration; MANIFEST never back, nothing changed (tests)
+           try std.testing.expectEqual(@as(usize, 0), failed);
+           ^
+error: 'cli_test.test.S6-T21: a MANIFEST that is missing or cannot be decoded counts as absent; the section files still set the floor' failed:
+       S6-T21 a damaged or missing MANIFEST over generation 9's sections:
+         undecodable MANIFEST, import_json 5: published 5, directory changed
+         undecodable MANIFEST, import_json 9: PathAlreadyExists, directory unchanged
+         undecodable MANIFEST, index_generation 10: published 10
+         undecodable MANIFEST, import_json 10: PathAlreadyExists, MANIFEST now published 10
+         missing MANIFEST, import_json 5: published 5, directory changed
+         missing MANIFEST, import_json 9: PathAlreadyExists, directory unchanged
+         missing MANIFEST, index_generation 10: published 10
+       expected 0, found 7
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x102ea70ff in fail__anon_20420 (tests)
+               return err;
+               ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x102ea6b67 in linkat (tests)
+                   .EXIST => return syscall.fail(error.PathAlreadyExists),
+                             ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x102ea62a7 in dirHardLink (tests)
+           return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x102ea96c7 in dirRenamePreserve (tests)
+           try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Dir.zig:1140:5: 0x102f7aee3 in renamePreserve (tests)
+           return io.vtable.dirRenamePreserve(io.userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+           ^
+       <scratch>/main-full/zig/src/core/publication.zig:326:13: 0x102f5e8d7 in writeAtomicFileRecorded (tests)
+                   try dir.renamePreserve(&tmp_name, dir, filename, io);
+                   ^
+       <scratch>/main-full/zig/src/core/publication.zig:135:5: 0x102f5efaf in publishWithExtrasRecorded (tests)
+           try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:331:5: 0x102f6059b in publishLeasedKeepingWithExtras (tests)
+           try publication.publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, catalog, filename_lexical, state_encoded, null);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:324:5: 0x102f60b53 in publishLeasedKeepingWithSource (tests)
+           return publishLeasedKeepingWithExtras(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, null, null, null, keep_generations);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:307:5: 0x102f60e37 in publishSerializedKeepingWithSource (tests)
+           return publishLeasedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, keep_generations);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:289:5: 0x102f60f03 in publishSerializedKeeping (tests)
+           return publishSerializedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, null, keep_generations);
+           ^
+       <scratch>/main-full/zig/src/core/importer.zig:186:10: 0x102f6595f in importJsonKeeping (tests)
+           else try lifecycle.publishSerializedKeeping(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, keep);
+                ^
+       <scratch>/main-full/zig/src/core/importer.zig:80:5: 0x102f65b3b in importJson (tests)
+           return importJsonKeeping(dir, io, allocator, json_bytes, null);
+           ^
+       <scratch>/main-full/zig/src/tests/cli_test.zig:1024:24: 0x1031a5a7f in importAt (tests)
+               const report = try importer.importJson(out, io, std.testing.allocator, try importJson(a, generation));
+                              ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x102ea70ff in fail__anon_20420 (tests)
+               return err;
+               ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x102ea6b67 in linkat (tests)
+                   .EXIST => return syscall.fail(error.PathAlreadyExists),
+                             ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x102ea62a7 in dirHardLink (tests)
+           return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x102ea96c7 in dirRenamePreserve (tests)
+           try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Dir.zig:1140:5: 0x102f7aee3 in renamePreserve (tests)
+           return io.vtable.dirRenamePreserve(io.userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+           ^
+       <scratch>/main-full/zig/src/core/publication.zig:326:13: 0x102f5e8d7 in writeAtomicFileRecorded (tests)
+                   try dir.renamePreserve(&tmp_name, dir, filename, io);
+                   ^
+       <scratch>/main-full/zig/src/core/publication.zig:135:5: 0x102f5efaf in publishWithExtrasRecorded (tests)
+           try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:331:5: 0x102f6059b in publishLeasedKeepingWithExtras (tests)
+           try publication.publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, catalog, filename_lexical, state_encoded, null);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:324:5: 0x102f60b53 in publishLeasedKeepingWithSource (tests)
+           return publishLeasedKeepingWithExtras(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, null, null, null, keep_generations);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:307:5: 0x102f60e37 in publishSerializedKeepingWithSource (tests)
+           return publishLeasedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, keep_generations);
+           ^
+       <scratch>/main-full/zig/src/core/lifecycle.zig:289:5: 0x102f60f03 in publishSerializedKeeping (tests)
+           return publishSerializedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, null, keep_generations);
+           ^
+       <scratch>/main-full/zig/src/core/importer.zig:186:10: 0x102f6595f in importJsonKeeping (tests)
+           else try lifecycle.publishSerializedKeeping(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, keep);
+                ^
+       <scratch>/main-full/zig/src/core/importer.zig:80:5: 0x102f65b3b in importJson (tests)
+           return importJsonKeeping(dir, io, allocator, json_bytes, null);
+           ^
+       <scratch>/main-full/zig/src/tests/cli_test.zig:1024:24: 0x1031a5a7f in importAt (tests)
+               const report = try importer.importJson(out, io, std.testing.allocator, try importJson(a, generation));
+                              ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x102ea70ff in fail__anon_20420 (tests)
+               return err;
+               ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x102ea6b67 in linkat (tests)
+                   .EXIST => return syscall.fail(error.PathAlreadyExists),
+                             ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x102ea62a7 in dirHardLink (tests)
+           return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+           ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x102ea96c7 in dirRenamePreserve (tests)
+           try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+           ^
+       (13 additional stack frames skipped due to buffer size limitations...)
+error: 'abi_index_folder_test.test.S6-T21: ss_import_json refuses a number at or below the highest generation with SS_ERR_INVALID_ARGUMENT and names the floor' failed:
+       S6-T20 ss_index_folder, lock held, no number left: ss_index_folder: WriterBusy
+       S6-T21 ss_import_json numbered 1 over 2: 1 ""
+       expected -1, found 1
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/testing.zig:118:17: 0x102f4f867 in expectEqualInner__anon_48282 (tests)
+                       return error.TestExpectedEqual;
+                       ^
+       <home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/testing.zig:83:5: 0x102f50577 in expectEqual (tests)
+           return expectEqualInner(T, expected, actual);
+           ^
+       <scratch>/main-full/zig/src/tests/abi_index_folder_test.zig:210:5: 0x102f50687 in test.S6-T21: ss_import_json refuses a number at or below the highest generation with SS_ERR_INVALID_ARGUMENT and names the floor (tests)
+           try std.testing.expectEqual(abi.SS_ERR_INVALID_ARGUMENT, again);
+           ^
+failed command: ./.zig-cache/o/2f81626f353f82573289d57cb10439cf/tests --cache-dir=./.zig-cache --seed=0x71b421ec --listen=-
+
+Build Summary: 13/15 steps succeeded (1 failed); 590/604 tests passed (9 skipped, 5 failed)
+test transitive failure
++- run test core 260 pass (260 total) 35s MaxRSS:413M
+|  +- compile test core Debug native cached 65ms MaxRSS:31M
+|     +- WriteFile cached
+|     +- compile obj fastmem Debug native cached 52ms MaxRSS:31M
+|     +- compile obj fastmem Debug native (reused)
++- run test operations 9 pass (9 total) 28ms MaxRSS:6M
+|  +- compile test operations Debug native cached 64ms MaxRSS:31M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
++- run test interfaces 25 pass (25 total) 128ms MaxRSS:9M
+|  +- compile test interfaces Debug native cached 64ms MaxRSS:32M
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options cached
+|     +- options cached
++- run test tests 290 pass, 9 skip, 5 fail (304 total)
+|  +- compile test tests Debug native success 5s MaxRSS:1G
+|     +- WriteFile (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- compile obj fastmem Debug native (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
+|     +- options (reused)
++- run test 6 pass (6 total) 839ms MaxRSS:5M
+   +- compile test Debug native cached 54ms MaxRSS:31M
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/17460553401a204e0c0b13f15aaa44a5/build <home>/development/zig/zig-aarch64-macos-0.16.0/zig <home>/development/zig/zig-aarch64-macos-0.16.0/lib <scratch>/main-full/zig .zig-cache <home>/.cache/zig --seed 0x71b421ec -Zd2b551e39a2f72e3 test --summary all

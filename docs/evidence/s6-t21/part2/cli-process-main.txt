@@ -1,0 +1,180 @@
+# tests/test_cli_process.py, test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing, with SEARCHD_BINARY = searchd built (Debug) from main a8fc2a2 (a git archive), 21 Nov 2026: fails
+test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (test_cli_process.CliProcessTests)
+S6-T21: `index --generation`, `import-json` and `init-demo` bring their ... FAIL
+
+======================================================================
+FAIL: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (test_cli_process.CliProcessTests) (command='index', number=5)
+S6-T21: `index --generation`, `import-json` and `init-demo` bring their
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<worktree>/tests/test_cli_process.py", line 491, in test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+    self.assertEqual(result.returncode, 1, result.stderr)
+AssertionError: 0 != 1 :
+
+======================================================================
+FAIL: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (test_cli_process.CliProcessTests) (command='index', number=9)
+S6-T21: `index --generation`, `import-json` and `init-demo` bring their
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<worktree>/tests/test_cli_process.py", line 493, in test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+    self.assertEqual(len(result.stderr.splitlines()), 1, result.stderr)
+AssertionError: 43 != 1 : error: PathAlreadyExists
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x100b03733 in fail__anon_20367 (searchd)
+        return err;
+        ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x100b0319b in linkat (searchd)
+            .EXIST => return syscall.fail(error.PathAlreadyExists),
+                      ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x100b028db in dirHardLink (searchd)
+    return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+    ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x100b05cfb in dirRenamePreserve (searchd)
+    try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+    ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Dir.zig:1140:5: 0x100e36933 in renamePreserve (searchd)
+    return io.vtable.dirRenamePreserve(io.userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+    ^
+<scratch>/main-code/zig/src/core/publication.zig:326:13: 0x100b3a21b in writeAtomicFileRecorded (searchd)
+            try dir.renamePreserve(&tmp_name, dir, filename, io);
+            ^
+<scratch>/main-code/zig/src/core/publication.zig:135:5: 0x100b3a8f3 in publishWithExtrasRecorded (searchd)
+    try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
+    ^
+<scratch>/main-code/zig/src/core/lifecycle.zig:331:5: 0x100b41d2f in publishLeasedKeepingWithExtras (searchd)
+    try publication.publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, catalog, filename_lexical, state_encoded, null);
+    ^
+<scratch>/main-code/zig/src/core/apply.zig:1233:17: 0x100b9af23 in applyParsed (searchd)
+        prune = try lifecycle.publishLeasedKeepingWithExtras(allocator, d, io, built.manifest, built.documents, built.lexical, built.source, built.catalog, built.filename_lexical, built.state, options.keep_generations);
+                ^
+<scratch>/main-code/zig/src/core/apply.zig:722:5: 0x100bad6c7 in applyBatch (searchd)
+    return applyParsed(allocator, io, dir, .{ .batch = batch }, options, null);
+    ^
+<scratch>/main-code/zig/src/core/indexer.zig:198:21: 0x100bade0f in walkAndApply (searchd)
+    const outcome = try apply.applyBatch(allocator, io, out_dir, walked.batch(), walkOptions(analyzer, max_chars, overlap_lines, caps, fresh, generation));
+                    ^
+<scratch>/main-code/zig/src/core/indexer.zig:182:5: 0x100bae00b in indexFolder (searchd)
+    return walkAndApply(allocator, io, root, out_dir, analyzer, max_chars, overlap_lines, caps, true, generation);
+    ^
+<scratch>/main-code/zig/src/interfaces/cli.zig:847:20: 0x100bb080b in runIndex (searchd)
+    const report = try indexer.indexFolder(
+                   ^
+<scratch>/main-code/zig/src/interfaces/main.zig:57:17: 0x100bdfeb3 in main (searchd)
+                return err;
+                ^
+
+
+======================================================================
+FAIL: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (test_cli_process.CliProcessTests) (command='import-json', number=5)
+S6-T21: `index --generation`, `import-json` and `init-demo` bring their
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<worktree>/tests/test_cli_process.py", line 493, in test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+    self.assertEqual(len(result.stderr.splitlines()), 1, result.stderr)
+AssertionError: 43 != 1 : error: PathAlreadyExists
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x102367733 in fail__anon_20367 (searchd)
+        return err;
+        ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x10236719b in linkat (searchd)
+            .EXIST => return syscall.fail(error.PathAlreadyExists),
+                      ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x1023668db in dirHardLink (searchd)
+    return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+    ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x102369cfb in dirRenamePreserve (searchd)
+    try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+    ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Dir.zig:1140:5: 0x10269a933 in renamePreserve (searchd)
+    return io.vtable.dirRenamePreserve(io.userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+    ^
+<scratch>/main-code/zig/src/core/publication.zig:326:13: 0x10239e21b in writeAtomicFileRecorded (searchd)
+            try dir.renamePreserve(&tmp_name, dir, filename, io);
+            ^
+<scratch>/main-code/zig/src/core/publication.zig:135:5: 0x10239e8f3 in publishWithExtrasRecorded (searchd)
+    try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
+    ^
+<scratch>/main-code/zig/src/core/lifecycle.zig:331:5: 0x1023a5d2f in publishLeasedKeepingWithExtras (searchd)
+    try publication.publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, catalog, filename_lexical, state_encoded, null);
+    ^
+<scratch>/main-code/zig/src/core/lifecycle.zig:324:5: 0x1023a62e7 in publishLeasedKeepingWithSource (searchd)
+    return publishLeasedKeepingWithExtras(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, null, null, null, keep_generations);
+    ^
+<scratch>/main-code/zig/src/core/lifecycle.zig:307:5: 0x1023a65cb in publishSerializedKeepingWithSource (searchd)
+    return publishLeasedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, keep_generations);
+    ^
+<scratch>/main-code/zig/src/core/lifecycle.zig:289:5: 0x1023a6697 in publishSerializedKeeping (searchd)
+    return publishSerializedKeepingWithSource(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, null, keep_generations);
+    ^
+<scratch>/main-code/zig/src/core/importer.zig:186:10: 0x1023ab0f3 in importJsonKeeping (searchd)
+    else try lifecycle.publishSerializedKeeping(allocator, dir, io, manifest_encoded, documents_encoded, lexical_encoded, keep);
+         ^
+<scratch>/main-code/zig/src/interfaces/main.zig:128:20: 0x1023ab81f in importSnapshot (searchd)
+    const report = try importer.importJsonKeeping(snapshot_dir, io, allocator, source, keep_generations);
+                   ^
+<scratch>/main-code/zig/src/interfaces/main.zig:38:29: 0x102443b8b in main (searchd)
+        .import_json => |i| try importSnapshot(init.io, init.gpa, i.snapshot, i.file, i.keep_generations),
+                            ^
+
+
+======================================================================
+FAIL: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (test_cli_process.CliProcessTests) (command='init-demo', number=1)
+S6-T21: `index --generation`, `import-json` and `init-demo` bring their
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<worktree>/tests/test_cli_process.py", line 491, in test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+    self.assertEqual(result.returncode, 1, result.stderr)
+AssertionError: 0 != 1 : published demo generation 1 to <tmp>
+
+
+======================================================================
+FAIL: test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing (test_cli_process.CliProcessTests)
+S6-T21: `index --generation`, `import-json` and `init-demo` bring their
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<worktree>/tests/test_cli_process.py", line 509, in test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing
+    self.assertTrue(again.stderr.startswith("error: StaleGeneration: generation 1 is not above 1, "), again.stderr)
+AssertionError: False is not true : error: PathAlreadyExists
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:1434:9: 0x1005c7733 in fail__anon_20367 (searchd)
+        return err;
+        ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:6953:23: 0x1005c719b in linkat (searchd)
+            .EXIST => return syscall.fail(error.PathAlreadyExists),
+                      ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:9567:5: 0x1005c68db in dirHardLink (searchd)
+    return linkat(old_dir.handle, old_sub_path_posix, new_dir.handle, new_sub_path_posix, flags);
+    ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Threaded.zig:7379:5: 0x1005c9cfb in dirRenamePreserve (searchd)
+    try dirHardLink(t, old_dir, old_sub_path, new_dir, new_sub_path, .{ .follow_symlinks = false });
+    ^
+<home>/development/zig/zig-aarch64-macos-0.16.0/lib/std/Io/Dir.zig:1140:5: 0x1008fa933 in renamePreserve (searchd)
+    return io.vtable.dirRenamePreserve(io.userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+    ^
+<scratch>/main-code/zig/src/core/publication.zig:326:13: 0x1005fe21b in writeAtomicFileRecorded (searchd)
+            try dir.renamePreserve(&tmp_name, dir, filename, io);
+            ^
+<scratch>/main-code/zig/src/core/publication.zig:135:5: 0x1005fe8f3 in publishWithExtrasRecorded (searchd)
+    try writeAtomicFileRecorded(dir, io, metadata.documents_file, documents_encoded, false, recorder);
+    ^
+<scratch>/main-code/zig/src/core/publication.zig:114:5: 0x1005ffd43 in publishWithSourceRecorded (searchd)
+    return publishWithExtrasRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, source_encoded, null, null, null, recorder);
+    ^
+<scratch>/main-code/zig/src/core/publication.zig:87:5: 0x1005ffdeb in publishRecorded (searchd)
+    try publishWithSourceRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, null, recorder);
+    ^
+<scratch>/main-code/zig/src/core/publication.zig:76:5: 0x1005ffe83 in publish (searchd)
+    try publishRecorded(dir, io, manifest_encoded, documents_encoded, lexical_encoded, null);
+    ^
+<scratch>/main-code/zig/src/core/lifecycle.zig:356:5: 0x1006000ab in publishSerialized (searchd)
+    try publication.publish(dir, io, manifest_encoded, documents_encoded, lexical_encoded);
+    ^
+<scratch>/main-code/zig/src/interfaces/main.zig:178:5: 0x1006007b3 in initDemoSnapshot (searchd)
+    try lifecycle.publishSerialized(dir, io, manifest_encoded, documents_encoded, lexical_encoded);
+    ^
+<scratch>/main-code/zig/src/interfaces/main.zig:37:30: 0x1006a3b13 in main (searchd)
+        .init_demo => |path| try initDemoSnapshot(init.io, path),
+                             ^
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.972s
+
+FAILED (failures=5)

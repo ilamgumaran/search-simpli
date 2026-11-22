@@ -55,6 +55,9 @@ python3 export_zig.py /tmp/python-index.json \
   --out /tmp/zig-snapshot.json
 
 cd zig
+# Generation 1 publishes into a fresh directory: over an existing
+# /tmp/search-snapshot, import-json refuses it (StaleGeneration, S6-T21).
+# On a re-run, remove that directory first or export a higher --generation.
 zig build run -- import-json /tmp/search-snapshot /tmp/zig-snapshot.json
 zig build run -- serve /tmp/search-snapshot
 ```

@@ -59,23 +59,74 @@ fn appendGeneratedCauseName(buffer: []u8, used: *usize, comptime pattern: []cons
     used.* += name.len;
 }
 
+/// The trace names recorded at `cause_generation`, comma-separated, in `buffer`.
+fn causeNames(buffer: *[320]u8) []const u8 {
+    var used: usize = 0;
+    if (cause_mask & 1 != 0) appendLiteralCauseName(buffer, &used, "MANIFEST");
+    if (cause_mask & 2 != 0) appendLiteralCauseName(buffer, &used, "INDEX-STATE.json");
+    if (cause_mask & 4 != 0) appendGeneratedCauseName(buffer, &used, "documents-{d}.hybseg");
+    if (cause_mask & 8 != 0) appendGeneratedCauseName(buffer, &used, "lexical-{d}.hyblex");
+    if (cause_mask & 128 != 0) appendGeneratedCauseName(buffer, &used, "source-{d}.hybsrc");
+    if (cause_mask & 16 != 0) appendGeneratedCauseName(buffer, &used, "filenames-{d}.hybseg");
+    if (cause_mask & 32 != 0) appendGeneratedCauseName(buffer, &used, "filename-lexical-{d}.hyblex");
+    if (cause_mask & 64 != 0) appendGeneratedCauseName(buffer, &used, "state-{d}.hybstate");
+    return buffer[0..used];
+}
+
 /// One line for `error.NoFreeGeneration`, formatted into `buffer`.
 pub fn describeNoFreeGeneration(buffer: []u8) []const u8 {
     var names_buffer: [320]u8 = undefined;
-    var names_len: usize = 0;
-    if (cause_mask & 1 != 0) appendLiteralCauseName(&names_buffer, &names_len, "MANIFEST");
-    if (cause_mask & 2 != 0) appendLiteralCauseName(&names_buffer, &names_len, "INDEX-STATE.json");
-    if (cause_mask & 4 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "documents-{d}.hybseg");
-    if (cause_mask & 8 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "lexical-{d}.hyblex");
-    if (cause_mask & 128 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "source-{d}.hybsrc");
-    if (cause_mask & 16 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "filenames-{d}.hybseg");
-    if (cause_mask & 32 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "filename-lexical-{d}.hyblex");
-    if (cause_mask & 64 != 0) appendGeneratedCauseName(&names_buffer, &names_len, "state-{d}.hybstate");
     return std.fmt.bufPrint(
         buffer,
         "NoFreeGeneration: no generation number above {d} (traces: {s}); use a fresh output directory; inspect listed traces before repair",
-        .{ cause_generation, names_buffer[0..names_len] },
+        .{ cause_generation, causeNames(&names_buffer) },
     ) catch "NoFreeGeneration";
+}
+
+/// S6-T21: the number this thread's last `error.StaleGeneration` refused.
+threadlocal var stale_generation: u64 = 0;
+
+/// One line for `error.StaleGeneration`, formatted into `buffer`: the number
+/// refused, the floor and the traces at it (decision 0004, section 3).
+pub fn describeStaleGeneration(buffer: []u8) []const u8 {
+    var names_buffer: [320]u8 = undefined;
+    return std.fmt.bufPrint(
+        buffer,
+        "StaleGeneration: generation {d} is not above {d}, the highest generation in this directory (traces: {s}); publish a higher number",
+        .{ stale_generation, cause_generation, causeNames(&names_buffer) },
+    ) catch "StaleGeneration";
+}
+
+/// S6-T21 (decision 0004): a caller's own generation number (`searchd index
+/// --generation`, an import, `init-demo`) must be above the highest generation
+/// the directory has any trace of, the floor `nextFreeGeneration` starts above,
+/// or the call fails with `error.StaleGeneration` and
+/// `describeStaleGeneration` names the floor. The caller holds the writer
+/// lease, so no cooperating writer can move the floor before the publish. A
+/// `MANIFEST` that cannot be decoded counts as absent here (its own section
+/// files are still traces); a read failure is returned. Nothing is written.
+/// The reads go to an arena of `allocator`, freed on return (the importer
+/// passes a general allocator; `recordedGeneration` does not free).
+pub fn requireAboveFloor(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, generation: u64) !void {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    resetCause();
+    const floor = try highestAbove(arena, io, dir, try decodableManifestGeneration(arena, io, dir));
+    if (generation > floor) return;
+    stale_generation = generation;
+    return error.StaleGeneration;
+}
+
+/// `currentGeneration`, with a `MANIFEST` that fails to decode as `0`.
+fn decodableManifestGeneration(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !u64 {
+    const read = snapshot_open.readManifest(allocator, io, dir) catch |err| switch (err) {
+        error.FileNotFound => return 0,
+        else => return err,
+    };
+    defer allocator.free(read.buffer);
+    const metadata = manifest.decode(read.bytes) catch return 0;
+    return metadata.generation;
 }
 
 fn appendLiteralCauseName(buffer: []u8, used: *usize, name: []const u8) void {
@@ -122,7 +173,12 @@ fn pathExists(dir: std.Io.Dir, io: std.Io, name: []const u8) !bool {
 /// start over (S2-T14).
 pub fn highestGenerationOnDisk(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir) !u64 {
     resetCause();
-    var highest = try currentGeneration(allocator, io, dir);
+    return highestAbove(allocator, io, dir, try currentGeneration(allocator, io, dir));
+}
+
+/// `highestGenerationOnDisk` given `MANIFEST`'s generation (`0` if absent).
+fn highestAbove(allocator: std.mem.Allocator, io: std.Io, dir: std.Io.Dir, manifest_generation: u64) !u64 {
+    var highest = manifest_generation;
     if (highest != 0) recordCause(.manifest, highest);
     // S4-T4: the generation number only (a version 3 pointer carries it; a
     // version 1 or 2 file is parsed as before), never the section it names.

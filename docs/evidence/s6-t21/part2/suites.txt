@@ -1,0 +1,39 @@
+# S6-T21 suites, before (main a8fc2a2, a git archive) and after (the head's tree), 21 Nov 2026 (Zig 0.16.0; measured)
+
+## Before: main a8fc2a2
+zig build test --summary all (Debug): Build Summary: 15/15 steps succeeded; 591/600 tests passed (9 skipped) (tests-main-a8fc2a2.txt)
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 600 tests, each run by a step of `zig build test`; the public core API `api`: 85 names in 22 namespaces)
+check_test_counts --log tests-main-a8fc2a2.txt: check_test_counts: OK (5 steps, 600 tests: every step ran the tests the listing has, and the static checker passes)
+Python: 580 tests (unittest discover -s tests, countTestCases); Dart: +97 (S6-T20's suites, no Dart test changed since)
+
+## After: the head's tree
+zig build test --summary all, Debug and ReleaseSmall: Build Summary: 15/15 steps succeeded; 595/604 tests passed (9 skipped) (check-test-counts-*.txt; tests step 304, was 300)
+check_test_counts: OK (5 steps, 604 tests: every step ran the tests the listing has, and the static checker passes) (Debug)
+check_test_counts: OK (5 steps, 604 tests: every step ran the tests the listing has, and the static checker passes) (ReleaseSmall)
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 604 tests, each run by a step of `zig build test`; the public core API `api`: 86 names in 22 namespaces)
+check_no_home_paths (after git add -A): exit 0
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+git diff --cached --check: clean
+
+## zig build test-abi
+Debug: abi_test: 24/24 checks passed; Build Summary: 8/8 steps succeeded
+ReleaseSmall: abi_test: 24/24 checks passed; Build Summary: 8/8 steps succeeded
+
+## Python (python3 -m unittest discover -s tests)
+with Zig (env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY): Ran 581 tests in 112.526s / OK
+(581 = 580 + tests/test_cli_process.py's test_caller_number_at_or_below_the_floor_is_one_line_and_changes_nothing)
+
+## Dart (bindings/dart/search_simpli, rebuilt natives)
+dart pub get --offline: exit 0
+dart analyze lib test: No issues found!
+dart test: 00:01 +98: All tests passed!
+(98 = 97 + snapshot_interchange_test.dart's "importSnapshotJson refuses a generation at or below the directory's highest (S6-T21)")
+
+## tool/check_native.sh
+check_native: macos-arm64 memcpy at 0x740 (227 calls against 120): word-wise (8 q-register moves, no byte loop)
+check_native: android-arm64 memcpy at 0x5b1a4 (507 calls against 165): word-wise (8 q-register moves, no byte loop)
+check_native: ios-arm64 memcpy at 0x587c (221 calls against 111): word-wise (8 q-register moves, no byte loop)
+check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+
+## tests/test_native_freshness.py
+Ran 3 tests / OK (SOURCE-SHA256 = tool/source_digest.py)

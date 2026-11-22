@@ -30,7 +30,7 @@ Zig 0.16's `std.Io.Dir` has no sync method, and `File.sync` documents that it do
 
 The test `publish syncs the directory after the section renames and again after MANIFEST` runs the real publish with a `publication.Recorder` and asserts the exact sequence: file sync, rename documents, file sync, rename lexical, **directory sync**, file sync, rename `MANIFEST`, **directory sync**.
 
-Immutable generation files never overwrite an existing name. Reusing a filename fails with `PathAlreadyExists`, which protects already-published snapshots.
+Immutable generation files never overwrite an existing name. Reusing a filename fails with `PathAlreadyExists`, which protects already-published snapshots. Since S6-T21 a caller's own number (`--generation`, an import, `init-demo`) at or below the highest generation the directory has any trace of is refused before that, under the writer lock and before any link, with `StaleGeneration` ([generation-lifecycle.md](generation-lifecycle.md#generation-numbering-s2-t14)); `PathAlreadyExists` stays for a number above it whose name is taken by something that is not a trace (a `source-N.hybsrc` leftover, a link or a directory).
 
 ### No `O_TMPFILE` (S1-T3, docs/tasks/S1-T3.md criterion 6)
 
