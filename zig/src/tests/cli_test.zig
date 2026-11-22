@@ -544,6 +544,13 @@ const s6t20 = struct {
         /// When the folder walk opens the subfolder `sub`: on the code before
         /// S6-T20 the rebuild had chosen 10 already; after it, it has not.
         during_walk,
+        /// S6-T20 rework 1 (the Verdict's finding 1): after the choice has
+        /// returned, not inside it. Armed by the same `stat` of
+        /// `state-10.hybstate` as `after_choice`, it fires right after the
+        /// rebuild's next call that opens, creates, links, renames, deletes,
+        /// unlocks or closes a file: the first step of the publish on the
+        /// head, or, if the lease were released after the choice, its unlock.
+        after_choice_returned,
     };
 
     /// The other writer.
@@ -569,6 +576,11 @@ const s6t20 = struct {
         var wanted: []const u8 = "";
         var on_open_dir = false;
         var ran: usize = 0;
+        /// `after_choice_returned`: armed by the `stat`, and the name of the
+        /// call it then fired after.
+        var after_return = false;
+        var armed_next = false;
+        var fired_after: []const u8 = "";
 
         const Step = struct {
             context: *anyopaque,
@@ -577,8 +589,80 @@ const s6t20 = struct {
 
         fn dirStatFile(userdata: ?*anyopaque, dir: std.Io.Dir, sub_path: []const u8, options: std.Io.Dir.StatFileOptions) std.Io.Dir.StatFileError!std.Io.File.Stat {
             const result = base.vtable.dirStatFile(userdata, dir, sub_path, options);
-            if (!on_open_dir) fire(sub_path);
+            if (after_return) {
+                if (pending != null and std.mem.eql(u8, sub_path, wanted)) armed_next = true;
+            } else if (!on_open_dir) fire(sub_path);
             return result;
+        }
+
+        /// `after_choice_returned`: the other writer runs after `call`, the
+        /// first such call after the arming `stat`.
+        fn next(call: []const u8) void {
+            if (!armed_next) return;
+            armed_next = false;
+            const step = pending orelse return;
+            pending = null;
+            fired_after = call;
+            ran += 1;
+            step.run(step.context, base);
+        }
+
+        fn dirCreateFile(userdata: ?*anyopaque, dir: std.Io.Dir, sub_path: []const u8, options: std.Io.Dir.CreateFileOptions) std.Io.File.OpenError!std.Io.File {
+            const result = base.vtable.dirCreateFile(userdata, dir, sub_path, options);
+            next("dirCreateFile");
+            return result;
+        }
+
+        fn dirCreateFileAtomic(userdata: ?*anyopaque, dir: std.Io.Dir, sub_path: []const u8, options: std.Io.Dir.CreateFileAtomicOptions) std.Io.Dir.CreateFileAtomicError!std.Io.File.Atomic {
+            const result = base.vtable.dirCreateFileAtomic(userdata, dir, sub_path, options);
+            next("dirCreateFileAtomic");
+            return result;
+        }
+
+        fn dirOpenFile(userdata: ?*anyopaque, dir: std.Io.Dir, sub_path: []const u8, options: std.Io.Dir.OpenFileOptions) std.Io.File.OpenError!std.Io.File {
+            const result = base.vtable.dirOpenFile(userdata, dir, sub_path, options);
+            next("dirOpenFile");
+            return result;
+        }
+
+        fn dirDeleteFile(userdata: ?*anyopaque, dir: std.Io.Dir, sub_path: []const u8) std.Io.Dir.DeleteFileError!void {
+            const result = base.vtable.dirDeleteFile(userdata, dir, sub_path);
+            next("dirDeleteFile");
+            return result;
+        }
+
+        fn dirRename(userdata: ?*anyopaque, old_dir: std.Io.Dir, old_sub_path: []const u8, new_dir: std.Io.Dir, new_sub_path: []const u8) std.Io.Dir.RenameError!void {
+            const result = base.vtable.dirRename(userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+            next("dirRename");
+            return result;
+        }
+
+        fn dirRenamePreserve(userdata: ?*anyopaque, old_dir: std.Io.Dir, old_sub_path: []const u8, new_dir: std.Io.Dir, new_sub_path: []const u8) std.Io.Dir.RenamePreserveError!void {
+            const result = base.vtable.dirRenamePreserve(userdata, old_dir, old_sub_path, new_dir, new_sub_path);
+            next("dirRenamePreserve");
+            return result;
+        }
+
+        fn dirHardLink(userdata: ?*anyopaque, old_dir: std.Io.Dir, old_sub_path: []const u8, new_dir: std.Io.Dir, new_sub_path: []const u8, options: std.Io.Dir.HardLinkOptions) std.Io.Dir.HardLinkError!void {
+            const result = base.vtable.dirHardLink(userdata, old_dir, old_sub_path, new_dir, new_sub_path, options);
+            next("dirHardLink");
+            return result;
+        }
+
+        fn dirSymLink(userdata: ?*anyopaque, dir: std.Io.Dir, target_path: []const u8, sym_link_path: []const u8, flags: std.Io.Dir.SymLinkFlags) std.Io.Dir.SymLinkError!void {
+            const result = base.vtable.dirSymLink(userdata, dir, target_path, sym_link_path, flags);
+            next("dirSymLink");
+            return result;
+        }
+
+        fn fileUnlock(userdata: ?*anyopaque, file: std.Io.File) void {
+            base.vtable.fileUnlock(userdata, file);
+            next("fileUnlock");
+        }
+
+        fn fileClose(userdata: ?*anyopaque, files: []const std.Io.File) void {
+            base.vtable.fileClose(userdata, files);
+            next("fileClose");
         }
 
         fn dirOpenDir(userdata: ?*anyopaque, dir: std.Io.Dir, sub_path: []const u8, options: std.Io.Dir.OpenOptions) std.Io.Dir.OpenError!std.Io.Dir {
@@ -600,10 +684,23 @@ const s6t20 = struct {
             table = io.vtable.*;
             table.dirStatFile = dirStatFile;
             table.dirOpenDir = dirOpenDir;
+            table.dirCreateFile = dirCreateFile;
+            table.dirCreateFileAtomic = dirCreateFileAtomic;
+            table.dirOpenFile = dirOpenFile;
+            table.dirDeleteFile = dirDeleteFile;
+            table.dirRename = dirRename;
+            table.dirRenamePreserve = dirRenamePreserve;
+            table.dirHardLink = dirHardLink;
+            table.dirSymLink = dirSymLink;
+            table.fileUnlock = fileUnlock;
+            table.fileClose = fileClose;
             pending = step;
             on_open_dir = point == .during_walk;
+            after_return = point == .after_choice_returned;
+            armed_next = false;
+            fired_after = "";
             wanted = switch (point) {
-                .after_choice => "state-10.hybstate",
+                .after_choice, .after_choice_returned => "state-10.hybstate",
                 .during_walk => "sub",
             };
             ran = 0;
@@ -735,6 +832,7 @@ const s6t20 = struct {
         }
         try lines.print("], MANIFEST {d} -> {d} -> {d}, rebuild ", .{ before, writer.manifest_after, after });
         if (rebuild) |g| try lines.print("published {d}", .{g}) else |err| try lines.print("{s}", .{@errorName(err)});
+        if (point == .after_choice_returned) try lines.print(" (other ran after the rebuild's {s})", .{NameSeam.fired_after});
 
         var ok = NameSeam.ran == 1 and writer.count != 0;
         const published = rebuild catch {
@@ -753,7 +851,7 @@ const s6t20 = struct {
                 ok = false;
             },
         };
-        if (point == .after_choice and n != 0) ok = false;
+        if (point != .during_walk and n != 0) ok = false;
         for (numbers[0..n], 0..) |g, i| {
             if (g >= published) ok = false;
             for (numbers[0..i]) |earlier| if (earlier == g) {
@@ -783,6 +881,23 @@ test "S6-T20: another writer racing a full rebuild is refused with WriterBusy on
         }
     }
     std.debug.print("S6-T20 interleavings (point other: other's outcomes, MANIFEST before -> after the other -> after the rebuild, rebuild's outcome):\n{s}", .{lines.written()});
+    try std.testing.expectEqual(@as(usize, 0), failed);
+}
+
+test "S6-T20: one lease, taken once: another writer that runs after the rebuild's choice has returned, before its publish, is refused with WriterBusy; no number twice, MANIFEST never back" {
+    // S6-T20 rework 1 (the Verdict's finding 1). `after_choice` runs the other
+    // writer inside `nextFreeGeneration`, so a lease released and taken again
+    // after the choice would pass it; this point runs it after the choice has
+    // returned, at the rebuild's next file step.
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    var lines: std.Io.Writer.Allocating = .init(a);
+    var failed: usize = 0;
+    inline for (.{ s6t20.Other.update, s6t20.Other.update_twice_keep_one, s6t20.Other.rebuild, s6t20.Other.import_json }) |other| {
+        if (!try s6t20.race(a, .after_choice_returned, other, &lines.writer)) failed += 1;
+    }
+    std.debug.print("S6-T20 one lease (point other: other's outcomes, MANIFEST before -> after the other -> after the rebuild, rebuild's outcome):\n{s}", .{lines.written()});
     try std.testing.expectEqual(@as(usize, 0), failed);
 }
 
