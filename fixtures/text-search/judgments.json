@@ -1,27 +1,31 @@
 {
-  "schema": "text-search-judgments-v1",
-  "version": 1,
+  "schema": "text-search-judgments-v2",
+  "version": 2,
   "pack": "text-search",
   "corpus": {
     "generator": "scripts/gen_text_search_corpus.py",
     "seed": 2211,
-    "files": 264,
-    "bytes": 140622,
-    "corpus_sha256": "d2bf0314a2769cb78d9077dbe196a1c53216e8393b0c150a6781badae0e94e26"
+    "files": 270,
+    "bytes": 141726,
+    "corpus_sha256": "35a08d3237d32952ad77abfc5ea19c61098dce23e486a6bc136b2eaa3d5519d9"
   },
   "conventions": {
     "lines": "1-based; a line ends at \\n or \\r\\n; a final line without a terminator counts",
-    "query": "the words sent to the engine are `query` when present, else `question`",
+    "forms": "every question is sent twice: `question` as typed, and `query`, the words a caller would pick (the same text when none were picked)",
+    "was": "the id the question had in version 1, when it moved kind",
+    "added": "rework-1 for a question that version 1 did not have",
+    "stale": "ranges of an older or draft copy that disagrees with the answer; returning them is not an answer",
+    "single_source": "the rarest query token that any readable file holds is held by exactly one (repository analyzer, no stemming, exact copies counted once; readable = an extension the engine reads today)",
     "parts": "every part is one thing a complete answer cites; any one of a part's ranges satisfies it",
     "files": "every path named in any part; `files` is empty exactly for no-answer questions",
     "range_inside_passage": "a range is found when a returned passage has the same path and start_line <= range start and range end <= end_line",
     "keys": "each key occurs, case-folded, in the text of the range's lines joined by newlines",
-    "checks": "absent_from_corpus: no file holds the word as a token; absent_from_files: none of `files` holds it as a token (repository analyzer)"
+    "checks": "absent_from_corpus: no file holds the word as a token; absent_from_files: no file of a part's first range holds it as a token (repository analyzer); a later range is an alternative that may hold it"
   },
   "kinds": {
     "word": {
       "what": "a word the file holds",
-      "questions": 12
+      "questions": 15
     },
     "word-form": {
       "what": "a different form of a word the file holds (plural, tense, inflection)",
@@ -62,6 +66,26 @@
     "no-answer": {
       "what": "nothing in the folder answers; the right result is nothing",
       "questions": 12
+    },
+    "tamil-latin": {
+      "what": "Tamil asked in Latin letters; the file is in Tamil script",
+      "questions": 10
+    },
+    "synonym": {
+      "what": "another word or a paraphrase for what the file says, not a form of its word",
+      "questions": 10
+    },
+    "table": {
+      "what": "a row found by one column's value; the answer is another column of that row",
+      "questions": 10
+    },
+    "current-copy": {
+      "what": "two files disagree; the answer is the current one, the older or draft copy is `stale`",
+      "questions": 9
+    },
+    "where-is-it": {
+      "what": "the file asked for by its type or role (the spreadsheet with the loans)",
+      "questions": 10
     }
   },
   "questions": [
@@ -87,7 +111,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "word-02",
@@ -121,7 +146,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "word-03",
@@ -144,7 +170,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "word-04",
@@ -168,7 +195,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "word-05",
@@ -192,7 +220,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "word-06",
@@ -200,7 +229,8 @@
       "question": "பொங்கல் எப்போது வைப்போம்?",
       "query": "பொங்கல்",
       "files": [
-        "paati/pongal-samayal.md"
+        "paati/pongal-samayal.md",
+        "paati/naatkaatti-2027.md"
       ],
       "parts": [
         {
@@ -213,11 +243,21 @@
                 "பொங்கல்",
                 "தை முதல் நாள்"
               ]
+            },
+            {
+              "path": "paati/naatkaatti-2027.md",
+              "start_line": 3,
+              "end_line": 3,
+              "keys": [
+                "பொங்கல்",
+                "ஜனவரி 14"
+              ]
             }
           ]
         }
       ],
-      "note": "Tamil: when Paati makes Pongal"
+      "single_source": false,
+      "note": "Tamil: when Paati makes Pongal; the 2027 calendar gives the date"
     },
     {
       "id": "word-07",
@@ -242,6 +282,7 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "the answer is in a CSV file"
     },
     {
@@ -267,6 +308,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the answer is in a .log file"
     },
     {
@@ -292,6 +334,7 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "deep inside a 1,462-line file"
     },
     {
@@ -317,6 +360,7 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "YAML data"
     },
     {
@@ -341,6 +385,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "Python source"
     },
     {
@@ -366,6 +411,7 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "a file with no extension"
     },
     {
@@ -391,6 +437,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "repainting"
@@ -420,6 +467,7 @@
           ]
         }
       ],
+      "single_source": true,
       "checks": {
         "absent_from_files": [
           "batteries"
@@ -449,6 +497,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "knitted"
@@ -478,6 +527,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "pruned"
@@ -507,6 +557,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "swims"
@@ -536,6 +587,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "descaling"
@@ -564,6 +616,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "தோட்டம்"
@@ -593,6 +646,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "geese"
@@ -623,6 +677,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "mice"
@@ -643,21 +698,23 @@
           "ranges": [
             {
               "path": "home/lists/christmas-presents.txt",
-              "start_line": 1,
-              "end_line": 1,
+              "start_line": 2,
+              "end_line": 3,
               "keys": [
-                "wrapped"
+                "sketchbook",
+                "shawl"
               ]
             }
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "wrapping"
         ]
       },
-      "note": "the file name says presents, so only wrapping is sent"
+      "note": "the file name says presents, so only wrapping is sent; Otto's line (wrapped) is the one that needs nothing"
     },
     {
       "id": "form-11",
@@ -682,6 +739,7 @@
           ]
         }
       ],
+      "single_source": true,
       "checks": {
         "absent_from_files": [
           "invoices"
@@ -711,6 +769,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "leaking"
@@ -740,6 +799,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "பள்ளி"
@@ -769,6 +829,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "dehumidifer"
@@ -799,6 +860,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "reciept"
@@ -828,6 +890,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "trelis"
@@ -849,26 +912,6 @@
           "ranges": [
             {
               "path": "home/recipes/sourdough.md",
-              "start_line": 1,
-              "end_line": 1,
-              "keys": [
-                "sourdough"
-              ]
-            },
-            {
-              "path": "archive/sourdough-copy.md",
-              "start_line": 1,
-              "end_line": 1,
-              "keys": [
-                "sourdough"
-              ]
-            }
-          ]
-        },
-        {
-          "ranges": [
-            {
-              "path": "home/recipes/sourdough.md",
               "start_line": 14,
               "end_line": 14,
               "keys": [
@@ -886,12 +929,13 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "sourdogh"
         ]
       },
-      "note": "one letter dropped; the title names the loaf, the baking line answers"
+      "note": "one letter dropped; the baking line answers (the title, judged in v1, answers nothing)"
     },
     {
       "id": "spell-05",
@@ -916,6 +960,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "physiotherpy"
@@ -946,6 +991,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "accomodation"
@@ -975,6 +1021,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "hedghog"
@@ -1005,6 +1052,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "wadrobe"
@@ -1025,18 +1073,6 @@
           "ranges": [
             {
               "path": "school/calendar-autumn.md",
-              "start_line": 3,
-              "end_line": 3,
-              "keys": [
-                "calendar"
-              ]
-            }
-          ]
-        },
-        {
-          "ranges": [
-            {
-              "path": "school/calendar-autumn.md",
               "start_line": 9,
               "end_line": 9,
               "keys": [
@@ -1046,19 +1082,22 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "calender"
         ]
       },
-      "note": "e for a"
+      "note": "e for a; the half-term line answers (the intro line, judged in v1, answers nothing)"
     },
     {
       "id": "spell-10",
       "kind": "misspelt",
       "question": "lawnmover",
+      "query": "lawnmover",
       "files": [
-        "toolshare/data/inventory.yaml"
+        "toolshare/data/inventory.yaml",
+        "toolshare/data/loans-2026.csv"
       ],
       "parts": [
         {
@@ -1070,10 +1109,19 @@
               "keys": [
                 "lawnmower"
               ]
+            },
+            {
+              "path": "toolshare/data/loans-2026.csv",
+              "start_line": 42,
+              "end_line": 42,
+              "keys": [
+                "lawnmower"
+              ]
             }
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "lawnmover"
@@ -1103,6 +1151,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "பொங்கள்"
@@ -1133,17 +1182,19 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "rubarb"
         ]
       },
-      "note": "h dropped; crumble and topping are also in the query"
+      "note": "h dropped; the typed question also says crumble and topping, the query does not"
     },
     {
       "id": "phrase-01",
       "kind": "phrase",
       "question": "spare key under the blue pot",
+      "query": "spare key under the blue pot",
       "files": [
         "home/house/house-notes.md"
       ],
@@ -1161,12 +1212,14 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the near duplicate in archive/ has spare key and blue pot apart"
     },
     {
       "id": "phrase-02",
       "kind": "phrase",
       "question": "first Tuesday of the month",
+      "query": "first Tuesday of the month",
       "files": [
         "toolshare/docs/committee.md"
       ],
@@ -1184,12 +1237,14 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the 2025 copy says second Wednesday; meeting notes are dated Tuesdays"
     },
     {
       "id": "phrase-03",
       "kind": "phrase",
       "question": "do not tumble dry",
+      "query": "do not tumble dry",
       "files": [
         "home/notes/laundry.md"
       ],
@@ -1208,12 +1263,14 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "the next line says fine to tumble dry"
     },
     {
       "id": "phrase-04",
       "kind": "phrase",
       "question": "bring a packed lunch",
+      "query": "bring a packed lunch",
       "files": [
         "school/trip-letter-wetlands.md"
       ],
@@ -1231,12 +1288,14 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the castle letter says lunch will be provided"
     },
     {
       "id": "phrase-05",
       "kind": "phrase",
       "question": "turn the water off at the stopcock",
+      "query": "turn the water off at the stopcock",
       "files": [
         "home/house/house-notes.md"
       ],
@@ -1253,12 +1312,14 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "phrase-06",
       "kind": "phrase",
       "question": "keep in a cool dry place",
+      "query": "keep in a cool dry place",
       "files": [
         "home/recipes/spice-mix.md"
       ],
@@ -1275,12 +1336,14 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "phrase-07",
       "kind": "phrase",
       "question": "out of order",
+      "query": "out of order",
       "files": [
         "toolshare/docs/repairs.md"
       ],
@@ -1299,12 +1362,14 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "order is a common word (orders.md, the order book)"
     },
     {
       "id": "phrase-08",
       "kind": "phrase",
       "question": "மழை பெய்தால்",
+      "query": "மழை பெய்தால்",
       "files": [
         "paati/pongal-samayal.md"
       ],
@@ -1322,12 +1387,14 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "Tamil: if it rains"
     },
     {
       "id": "phrase-09",
       "kind": "phrase",
       "question": "rest the dough for an hour",
+      "query": "rest the dough for an hour",
       "files": [
         "home/recipes/flatbread.md"
       ],
@@ -1344,12 +1411,14 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "phrase-10",
       "kind": "phrase",
       "question": "cancelled direct debit",
+      "query": "cancelled direct debit",
       "files": [
         "home/money/bank-notes.tsv"
       ],
@@ -1367,12 +1436,14 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "the answer is in a TSV file; the electricity bill also says direct debit"
     },
     {
       "id": "phrase-11",
       "kind": "phrase",
       "question": "left at the second roundabout",
+      "query": "left at the second roundabout",
       "files": [
         "home/trips/directions-to-gull-cottage.txt"
       ],
@@ -1389,12 +1460,14 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "phrase-12",
       "kind": "phrase",
       "question": "no dogs on the beach",
+      "query": "no dogs on the beach",
       "files": [
         "home/trips/cornwall-2026.md"
       ],
@@ -1411,7 +1484,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "number-01",
@@ -1435,7 +1509,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "number-02",
@@ -1444,7 +1519,8 @@
       "query": "TS-017",
       "files": [
         "toolshare/data/inventory.yaml",
-        "toolshare/docs/repairs.md"
+        "toolshare/docs/repairs.md",
+        "toolshare/data/loans-2026.csv"
       ],
       "parts": [
         {
@@ -1466,10 +1542,20 @@
                 "ts-017",
                 "pressure washer"
               ]
+            },
+            {
+              "path": "toolshare/data/loans-2026.csv",
+              "start_line": 18,
+              "end_line": 18,
+              "keys": [
+                "ts-017",
+                "pressure washer"
+              ]
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "number-03",
@@ -1493,7 +1579,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "number-04",
@@ -1517,13 +1604,14 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "number-05",
       "kind": "number",
       "question": "What happened on the server on 2026-06-17?",
-      "query": "2026-06-17 error",
+      "query": "server 2026-06-17",
       "files": [
         "toolshare/logs/server-2026-06.log"
       ],
@@ -1542,6 +1630,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the answer is in a .log file"
     },
     {
@@ -1550,7 +1639,8 @@
       "question": "Whose number is 01632 960418?",
       "query": "01632 960418",
       "files": [
-        "home/lists/useful-numbers.txt"
+        "home/lists/useful-numbers.txt",
+        "home/contacts.tsv"
       ],
       "parts": [
         {
@@ -1563,11 +1653,21 @@
                 "bram hollis",
                 "01632 960418"
               ]
+            },
+            {
+              "path": "home/contacts.tsv",
+              "start_line": 2,
+              "end_line": 2,
+              "keys": [
+                "bram hollis",
+                "01632 960418"
+              ]
             }
           ]
         }
       ],
-      "note": "CRLF file; contacts.tsv holds the number too but is not read today"
+      "single_source": true,
+      "note": "CRLF file; contacts.tsv holds the number too (not read today)"
     },
     {
       "id": "number-07",
@@ -1591,7 +1691,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "number-08",
@@ -1616,6 +1717,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the answer is in a CSV file"
     },
     {
@@ -1639,7 +1741,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "number-10",
@@ -1662,7 +1765,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "number-11",
@@ -1687,6 +1791,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the school calendar also has 21 November (photographs)"
     },
     {
@@ -1711,7 +1816,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "span-01",
@@ -1747,13 +1853,14 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "span-02",
       "kind": "two-passages",
       "question": "How long does the sourdough prove and how hot is the oven?",
-      "query": "sourdough prove bake temperature",
+      "query": "sourdough prove how long oven",
       "files": [
         "home/recipes/sourdough.md",
         "archive/sourdough-copy.md"
@@ -1799,7 +1906,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "span-03",
@@ -1837,6 +1945,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the 2025 copy in archive/ has another chair and another day"
     },
     {
@@ -1875,6 +1984,7 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "the two entries are 104 days apart in a long file"
     },
     {
@@ -1910,7 +2020,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "span-06",
@@ -1945,13 +2056,14 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "span-07",
       "kind": "two-passages",
       "question": "How long can a tool be borrowed and what happens if it comes back late?",
-      "query": "borrowed how long late returns",
+      "query": "tool borrowed how long back late",
       "files": [
         "toolshare/docs/lending-rules.md"
       ],
@@ -1980,7 +2092,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "span-08",
@@ -1988,7 +2101,10 @@
       "question": "When was the boiler last serviced and who do I call?",
       "query": "boiler serviced call",
       "files": [
-        "home/house/boiler.md"
+        "home/house/boiler.md",
+        "inbox/boiler-service-2026-03-14.txt",
+        "home/lists/useful-numbers.txt",
+        "home/contacts.tsv"
       ],
       "parts": [
         {
@@ -1999,6 +2115,14 @@
               "end_line": 9,
               "keys": [
                 "2026-03-14"
+              ]
+            },
+            {
+              "path": "inbox/boiler-service-2026-03-14.txt",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "paid by card"
               ]
             }
           ]
@@ -2012,10 +2136,28 @@
               "keys": [
                 "01632 960233"
               ]
+            },
+            {
+              "path": "home/lists/useful-numbers.txt",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "01632 960233"
+              ]
+            },
+            {
+              "path": "home/contacts.tsv",
+              "start_line": 4,
+              "end_line": 4,
+              "keys": [
+                "01632 960233"
+              ]
             }
           ]
         }
-      ]
+      ],
+      "single_source": false,
+      "note": "the inbox note's file name gives the date of the last service"
     },
     {
       "id": "span-09",
@@ -2052,6 +2194,7 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "Tamil: what goes into Pongal and how it is made"
     },
     {
@@ -2087,13 +2230,14 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "span-11",
       "kind": "two-passages",
       "question": "Where are the ladder and the cordless drill kept?",
-      "query": "ladder cordless drill shelf",
+      "query": "ladder cordless drill kept",
       "files": [
         "toolshare/data/inventory.yaml"
       ],
@@ -2124,7 +2268,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "pair-01",
@@ -2133,7 +2278,8 @@
       "query": "boiler service cost next due",
       "files": [
         "home/money/receipts-note.md",
-        "home/house/boiler.md"
+        "home/house/boiler.md",
+        "inbox/boiler-service-2026-03-14.txt"
       ],
       "parts": [
         {
@@ -2157,10 +2303,19 @@
               "keys": [
                 "march 2027"
               ]
+            },
+            {
+              "path": "inbox/boiler-service-2026-03-14.txt",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "next one in a year"
+              ]
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "pair-02",
@@ -2196,7 +2351,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "pair-03",
@@ -2233,20 +2389,31 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
-      "id": "pair-04",
-      "kind": "two-files",
+      "id": "word-13",
+      "kind": "word",
       "question": "When is the wetlands trip and what does the letter say to bring?",
       "query": "wetlands trip date bring",
+      "was": "pair-04",
       "files": [
-        "school/calendar-autumn.md",
-        "school/trip-letter-wetlands.md"
+        "school/trip-letter-wetlands.md",
+        "school/calendar-autumn.md"
       ],
       "parts": [
         {
           "ranges": [
+            {
+              "path": "school/trip-letter-wetlands.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "8 october",
+                "saltmarsh wetlands"
+              ]
+            },
             {
               "path": "school/calendar-autumn.md",
               "start_line": 8,
@@ -2271,7 +2438,49 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false,
+      "note": "the letter alone answers both parts (v1 judged it as two files)"
+    },
+    {
+      "id": "pair-04",
+      "kind": "two-files",
+      "question": "Which order was the oven door seal, and when did we fit it?",
+      "query": "oven door seal order fitted",
+      "added": "rework-1",
+      "files": [
+        "home/money/orders.md",
+        "home/notes/kitchen-care.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/money/orders.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "48213-k",
+                "oven door seal"
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "path": "home/notes/kitchen-care.md",
+              "start_line": 4,
+              "end_line": 4,
+              "keys": [
+                "july"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": true,
+      "note": "new in rework 1 (v1's pair-04 is now word-13)"
     },
     {
       "id": "pair-05",
@@ -2307,13 +2516,15 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
-      "id": "pair-06",
-      "kind": "two-files",
+      "id": "word-14",
+      "kind": "word",
       "question": "Where is Gull Cottage and how do we get there?",
       "query": "Gull Cottage where directions",
+      "was": "pair-06",
       "files": [
         "home/trips/cornwall-2026.md",
         "home/trips/directions-to-gull-cottage.txt"
@@ -2327,6 +2538,15 @@
               "end_line": 10,
               "keys": [
                 "porthwenna"
+              ]
+            },
+            {
+              "path": "home/trips/directions-to-gull-cottage.txt",
+              "start_line": 3,
+              "end_line": 3,
+              "keys": [
+                "gull cottage",
+                "harbour"
               ]
             }
           ]
@@ -2343,16 +2563,22 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true,
+      "note": "the directions alone answer both parts (v1 judged it as two files)"
     },
     {
-      "id": "pair-07",
-      "kind": "two-files",
+      "id": "word-15",
+      "kind": "word",
       "question": "Who is the chimney sweep and when did he last come?",
       "query": "chimney sweep last",
+      "was": "pair-07",
       "files": [
         "home/lists/useful-numbers.txt",
-        "home/house/jobs-autumn.md"
+        "home/house/jobs-autumn.md",
+        "home/contacts.tsv",
+        "home/money/receipts-note.md",
+        "home/money/house-costs-2026.csv"
       ],
       "parts": [
         {
@@ -2362,8 +2588,24 @@
               "start_line": 2,
               "end_line": 2,
               "keys": [
+                "bram hollis"
+              ]
+            },
+            {
+              "path": "home/house/jobs-autumn.md",
+              "start_line": 6,
+              "end_line": 6,
+              "keys": [
+                "bram hollis"
+              ]
+            },
+            {
+              "path": "home/contacts.tsv",
+              "start_line": 2,
+              "end_line": 2,
+              "keys": [
                 "bram hollis",
-                "01632 960418"
+                "chimney sweep"
               ]
             }
           ]
@@ -2377,10 +2619,116 @@
               "keys": [
                 "2 september"
               ]
+            },
+            {
+              "path": "home/money/receipts-note.md",
+              "start_line": 8,
+              "end_line": 8,
+              "keys": [
+                "2 september"
+              ]
+            },
+            {
+              "path": "home/money/house-costs-2026.csv",
+              "start_line": 6,
+              "end_line": 6,
+              "keys": [
+                "2026-09-02"
+              ]
             }
           ]
         }
-      ]
+      ],
+      "single_source": false,
+      "note": "one line of jobs-autumn.md answers both parts (v1 judged it as two files)"
+    },
+    {
+      "id": "pair-06",
+      "kind": "two-files",
+      "question": "Who chairs the Tool Share and what is her phone number?",
+      "query": "Tool Share chair phone number",
+      "added": "rework-1",
+      "files": [
+        "toolshare/docs/committee.md",
+        "home/contacts.tsv"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/docs/committee.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "ines marrow"
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "path": "home/contacts.tsv",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "01632 960310"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "archive/committee-2025.md",
+          "start_line": 5,
+          "end_line": 5,
+          "keys": [
+            "orla quent"
+          ]
+        }
+      ],
+      "single_source": true,
+      "note": "new in rework 1 (v1's pair-06 is now word-14); the number is only in contacts.tsv, not read today"
+    },
+    {
+      "id": "pair-07",
+      "kind": "two-files",
+      "question": "How much did the new tyres cost and what pressure should they be?",
+      "query": "tyres cost pressure",
+      "added": "rework-1",
+      "files": [
+        "home/car/tyres-receipt.txt",
+        "home/car/car-notes.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/car/tyres-receipt.txt",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "140 pounds"
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "path": "home/car/car-notes.md",
+              "start_line": 11,
+              "end_line": 11,
+              "keys": [
+                "33 psi"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "note": "new in rework 1 (v1's pair-07 is now word-15)"
     },
     {
       "id": "pair-08",
@@ -2417,13 +2765,14 @@
           ]
         }
       ],
+      "single_source": true,
       "note": "Tamil: what to cook for Pongal and the date of the next one"
     },
     {
       "id": "pair-09",
       "kind": "two-files",
       "question": "Which release fixed the reminders going out twice, and what was the issue?",
-      "query": "reminders sent twice fixed release",
+      "query": "release fixed reminders going out twice issue",
       "files": [
         "toolshare/CHANGELOG.md",
         "toolshare/docs/issues.md"
@@ -2454,7 +2803,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "pair-10",
@@ -2491,7 +2841,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "pair-11",
@@ -2527,7 +2878,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "name-01",
@@ -2535,7 +2887,8 @@
       "question": "Find the boiler service note.",
       "query": "boiler service note",
       "files": [
-        "inbox/boiler-service-2026-03-14.txt"
+        "inbox/boiler-service-2026-03-14.txt",
+        "home/house/boiler.md"
       ],
       "parts": [
         {
@@ -2547,17 +2900,27 @@
               "keys": [
                 "paid by card"
               ]
+            },
+            {
+              "path": "home/house/boiler.md",
+              "start_line": 5,
+              "end_line": 9,
+              "keys": [
+                "service record",
+                "2026-03-14"
+              ]
             }
           ]
         }
       ],
+      "single_source": true,
       "checks": {
         "absent_from_files": [
           "boiler",
           "service"
         ]
       },
-      "note": "the date is in the name, the text says only 'Done'"
+      "note": "the date is in the name, the text says only 'Done'; boiler.md's service record also answers"
     },
     {
       "id": "name-02",
@@ -2581,6 +2944,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "passport",
@@ -2612,6 +2976,7 @@
           ]
         }
       ],
+      "single_source": true,
       "checks": {
         "absent_from_files": [
           "wifi",
@@ -2642,6 +3007,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "birthday",
@@ -2672,6 +3038,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "dentist"
@@ -2700,6 +3067,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "garage",
@@ -2730,6 +3098,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "தீபாவளி",
@@ -2761,6 +3130,7 @@
           ]
         }
       ],
+      "single_source": true,
       "checks": {
         "absent_from_files": [
           "insurance",
@@ -2791,6 +3161,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "agm"
@@ -2819,6 +3190,7 @@
           ]
         }
       ],
+      "single_source": true,
       "checks": {
         "absent_from_files": [
           "volunteer",
@@ -2850,6 +3222,7 @@
           ]
         }
       ],
+      "single_source": true,
       "checks": {
         "absent_from_files": [
           "camping",
@@ -2880,6 +3253,7 @@
           ]
         }
       ],
+      "single_source": false,
       "checks": {
         "absent_from_files": [
           "electricity",
@@ -2937,6 +3311,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "one file says bees, the others bee and beekeeping"
     },
     {
@@ -2987,6 +3362,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the directions never say Cornwall"
     },
     {
@@ -3038,7 +3414,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "about-04",
@@ -3088,6 +3465,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "Tamil: which files hold Paati's recipes; kootu.md never says recipe"
     },
     {
@@ -3098,7 +3476,8 @@
       "files": [
         "toolshare/docs/repairs.md",
         "toolshare/docs/treasurer.md",
-        "toolshare/data/inventory.yaml"
+        "toolshare/data/inventory.yaml",
+        "toolshare/data/loans-2026.csv"
       ],
       "parts": [
         {
@@ -3134,10 +3513,20 @@
               "keys": [
                 "pressure washer"
               ]
+            },
+            {
+              "path": "toolshare/data/loans-2026.csv",
+              "start_line": 18,
+              "end_line": 18,
+              "keys": [
+                "pressure washer"
+              ]
             }
           ]
         }
-      ]
+      ],
+      "single_source": false,
+      "note": "either tool list (the YAML inventory or the loans CSV) satisfies the third part"
     },
     {
       "id": "about-06",
@@ -3173,7 +3562,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "about-07",
@@ -3210,6 +3600,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "the receipt never says car; its folder does"
     },
     {
@@ -3246,7 +3637,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "about-09",
@@ -3257,7 +3649,11 @@
         "toolshare/src/app.py",
         "toolshare/src/reminders.py",
         "toolshare/src/models.py",
-        "toolshare/site/app.js"
+        "toolshare/site/app.js",
+        "toolshare/site/index.html",
+        "toolshare/site/join.html",
+        "toolshare/site/styles.css",
+        "toolshare/site/sitemap.xml"
       ],
       "parts": [
         {
@@ -3307,9 +3703,58 @@
               ]
             }
           ]
+        },
+        {
+          "ranges": [
+            {
+              "path": "toolshare/site/index.html",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "harrowdean tool share"
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "path": "toolshare/site/join.html",
+              "start_line": 3,
+              "end_line": 3,
+              "keys": [
+                "join the tool share"
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "path": "toolshare/site/styles.css",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "font-family"
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "path": "toolshare/site/sitemap.xml",
+              "start_line": 2,
+              "end_line": 2,
+              "keys": [
+                "urlset"
+              ]
+            }
+          ]
         }
       ],
-      "note": "source files; none says website or code"
+      "single_source": true,
+      "note": "the README (not read today) says the website code is in src/ and site/; none says website or code"
     },
     {
       "id": "about-10",
@@ -3354,7 +3799,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "about-11",
@@ -3404,6 +3850,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "no file says household; one name says bill"
     },
     {
@@ -3428,7 +3875,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "content-02",
@@ -3453,6 +3901,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "a file with no extension"
     },
     {
@@ -3477,6 +3926,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "a CSV file; the header says what it holds"
     },
     {
@@ -3501,7 +3951,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "content-05",
@@ -3525,7 +3976,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "content-06",
@@ -3548,7 +4000,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": true
     },
     {
       "id": "content-07",
@@ -3572,6 +4025,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "Tamil: what is in kootu.md; a Latin file name over Tamil text"
     },
     {
@@ -3595,7 +4049,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "content-09",
@@ -3618,7 +4073,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "content-10",
@@ -3641,7 +4097,8 @@
             }
           ]
         }
-      ]
+      ],
+      "single_source": false
     },
     {
       "id": "content-11",
@@ -3667,6 +4124,7 @@
           ]
         }
       ],
+      "single_source": false,
       "note": "a TSV file"
     },
     {
@@ -3676,6 +4134,7 @@
       "query": "snorkel",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "snorkel"
@@ -3689,6 +4148,7 @@
       "query": "trampoline bought",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "trampoline"
@@ -3703,6 +4163,7 @@
       "query": "piano tuner",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "tuner"
@@ -3717,6 +4178,7 @@
       "query": "burglar alarm code",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "burglar"
@@ -3731,6 +4193,7 @@
       "query": "கிரிக்கெட்",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "கிரிக்கெட்"
@@ -3745,6 +4208,7 @@
       "query": "kayak hire",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "kayak"
@@ -3755,16 +4219,50 @@
     {
       "id": "none-07",
       "kind": "no-answer",
-      "question": "When is Mira's orthodontist appointment?",
-      "query": "orthodontist",
+      "question": "Where did we put the hammock?",
+      "query": "hammock",
+      "added": "rework-1",
       "files": [],
       "parts": [],
+      "single_source": false,
+      "checks": {
+        "absent_from_corpus": [
+          "hammock"
+        ]
+      },
+      "note": "new in rework 1 (v1's none-07 is now syn-01)"
+    },
+    {
+      "id": "syn-01",
+      "kind": "synonym",
+      "question": "When is Mira's orthodontist appointment?",
+      "query": "orthodontist",
+      "was": "none-07",
+      "files": [
+        "home/health/dentist.txt"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/health/dentist.txt",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "brace review",
+                "3 february"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "orthodontist"
         ]
       },
-      "note": "near topic: the dentist note has the brace review"
+      "note": "the dentist note's brace review is the appointment (v1 judged it no-answer)"
     },
     {
       "id": "none-08",
@@ -3773,6 +4271,7 @@
       "query": "solar panel quote",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "solar"
@@ -3787,6 +4286,7 @@
       "query": "TS-999",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "999"
@@ -3801,6 +4301,7 @@
       "query": "wedding anniversary",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "wedding",
@@ -3815,6 +4316,7 @@
       "query": "flu jab",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "flu",
@@ -3830,12 +4332,1600 @@
       "query": "library van",
       "files": [],
       "parts": [],
+      "single_source": false,
       "checks": {
         "absent_from_corpus": [
           "van"
         ]
       },
       "note": "near word: library (library day, library books)"
+    },
+    {
+      "id": "tam-01",
+      "kind": "tamil-latin",
+      "question": "pongal eppo?",
+      "query": "pongal",
+      "added": "rework-1",
+      "files": [
+        "paati/naatkaatti-2027.md",
+        "paati/pongal-samayal.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/naatkaatti-2027.md",
+              "start_line": 3,
+              "end_line": 3,
+              "keys": [
+                "ஜனவரி 14"
+              ]
+            },
+            {
+              "path": "paati/pongal-samayal.md",
+              "start_line": 15,
+              "end_line": 15,
+              "keys": [
+                "தை முதல் நாள்"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "pongal"
+        ]
+      },
+      "note": "when is Pongal; pongal-samayal.md has the word in its file name"
+    },
+    {
+      "id": "tam-02",
+      "kind": "tamil-latin",
+      "question": "rasam seyya enna venum?",
+      "query": "rasam",
+      "added": "rework-1",
+      "files": [
+        "paati/rasam.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/rasam.md",
+              "start_line": 3,
+              "end_line": 3,
+              "keys": [
+                "புளி",
+                "தக்காளி"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "rasam"
+        ]
+      },
+      "note": "what goes into rasam; the file name is rasam.md"
+    },
+    {
+      "id": "tam-03",
+      "kind": "tamil-latin",
+      "question": "poosanikkai kootu eppadi seyvathu?",
+      "query": "poosanikkai kootu",
+      "added": "rework-1",
+      "files": [
+        "paati/kootu.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/kootu.md",
+              "start_line": 3,
+              "end_line": 4,
+              "keys": [
+                "பாசிப்பருப்பு"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "poosanikkai",
+          "kootu"
+        ]
+      },
+      "note": "how to make the pumpkin kootu; the file name is kootu.md"
+    },
+    {
+      "id": "tam-04",
+      "kind": "tamil-latin",
+      "question": "paatti thottathil enna valarkirathu?",
+      "query": "paatti thottam",
+      "added": "rework-1",
+      "files": [
+        "paati/chedigal.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/chedigal.md",
+              "start_line": 3,
+              "end_line": 3,
+              "keys": [
+                "கத்தரிக்கா"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "paatti",
+          "thottam"
+        ]
+      },
+      "note": "what grows in Paati's garden; no Latin word in the file or its name"
+    },
+    {
+      "id": "tam-05",
+      "kind": "tamil-latin",
+      "question": "thulasi chedikku eppo thanneer?",
+      "query": "thulasi thanneer",
+      "added": "rework-1",
+      "files": [
+        "paati/chedigal.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/chedigal.md",
+              "start_line": 4,
+              "end_line": 4,
+              "keys": [
+                "காலையில்"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "thulasi",
+          "thanneer"
+        ]
+      },
+      "note": "when to water the tulsi"
+    },
+    {
+      "id": "tam-06",
+      "kind": "tamil-latin",
+      "question": "Mira-vukku paatti ezhuthiya kaditham",
+      "query": "Mira paatti kaditham",
+      "added": "rework-1",
+      "files": [
+        "paati/mira-kaditham.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/mira-kaditham.md",
+              "start_line": 3,
+              "end_line": 5,
+              "keys": [
+                "மீரா"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "kaditham"
+        ]
+      },
+      "note": "Paati's letter to Mira; mira and kaditham are in the file name"
+    },
+    {
+      "id": "tam-07",
+      "kind": "tamil-latin",
+      "question": "tamil puthaandu 2027 eppo?",
+      "query": "tamil puthaandu 2027",
+      "added": "rework-1",
+      "files": [
+        "paati/naatkaatti-2027.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/naatkaatti-2027.md",
+              "start_line": 4,
+              "end_line": 4,
+              "keys": [
+                "ஏப்ரல் 14"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "puthaandu"
+        ]
+      },
+      "note": "Tamil New Year; 2027 is in the file name and the text"
+    },
+    {
+      "id": "tam-08",
+      "kind": "tamil-latin",
+      "question": "pongalukku ethanai koppai pacharisi?",
+      "query": "pongal pacharisi",
+      "added": "rework-1",
+      "files": [
+        "paati/pongal-samayal.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/pongal-samayal.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "பச்சரிசி"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "pacharisi"
+        ]
+      },
+      "note": "how much raw rice for Pongal"
+    },
+    {
+      "id": "tam-09",
+      "kind": "tamil-latin",
+      "question": "deepavali pattiyal",
+      "query": "deepavali pattiyal",
+      "added": "rework-1",
+      "files": [
+        "paati/தீபாவளி-பட்டியல்.txt"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/தீபாவளி-பட்டியல்.txt",
+              "start_line": 1,
+              "end_line": 5,
+              "keys": [
+                "முறுக்கு"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "deepavali",
+          "pattiyal"
+        ]
+      },
+      "note": "the Deepavali list; its file name is in Tamil script"
+    },
+    {
+      "id": "tam-10",
+      "kind": "tamil-latin",
+      "question": "murukku eppo seyvaanga?",
+      "query": "murukku",
+      "added": "rework-1",
+      "files": [
+        "paati/mira-kaditham.md",
+        "paati/தீபாவளி-பட்டியல்.txt"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "paati/mira-kaditham.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "அடுத்த முறை"
+              ]
+            },
+            {
+              "path": "paati/தீபாவளி-பட்டியல்.txt",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "முறுக்கு"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "murukku"
+        ]
+      },
+      "note": "when murukku is made: the letter (next visit) or the Deepavali list"
+    },
+    {
+      "id": "syn-02",
+      "kind": "synonym",
+      "question": "Which day is the rubbish collected?",
+      "query": "rubbish collected day",
+      "added": "rework-1",
+      "files": [
+        "home/house/house-notes.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/house/house-notes.md",
+              "start_line": 22,
+              "end_line": 22,
+              "keys": [
+                "thursdays"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "archive/house-notes-2024.md",
+          "start_line": 23,
+          "end_line": 23,
+          "keys": [
+            "thursdays"
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "rubbish",
+          "collected"
+        ]
+      },
+      "note": "bin for rubbish; the 2024 notes say the same"
+    },
+    {
+      "id": "syn-03",
+      "kind": "synonym",
+      "question": "How do I shut off the mains?",
+      "query": "shut off mains",
+      "added": "rework-1",
+      "files": [
+        "home/house/house-notes.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/house/house-notes.md",
+              "start_line": 12,
+              "end_line": 12,
+              "keys": [
+                "stopcock"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "shut",
+          "mains"
+        ]
+      },
+      "note": "the stopcock line; the 2024 notes have it too"
+    },
+    {
+      "id": "syn-04",
+      "kind": "synonym",
+      "question": "When is the car's roadworthiness check due?",
+      "query": "car roadworthiness check",
+      "added": "rework-1",
+      "files": [
+        "home/car/car-notes.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/car/car-notes.md",
+              "start_line": 7,
+              "end_line": 7,
+              "keys": [
+                "2026-11-30"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "roadworthiness",
+          "check"
+        ]
+      },
+      "note": "MOT for the check"
+    },
+    {
+      "id": "syn-05",
+      "kind": "synonym",
+      "question": "What do we do about the insects by the back door?",
+      "query": "insects back door",
+      "added": "rework-1",
+      "files": [
+        "home/house/pests.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/house/pests.md",
+              "start_line": 4,
+              "end_line": 4,
+              "keys": [
+                "chalk line"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "insects"
+        ]
+      },
+      "note": "ants for insects; back door also occurs elsewhere"
+    },
+    {
+      "id": "syn-06",
+      "kind": "synonym",
+      "question": "When is Otto's ear check?",
+      "query": "Otto ear check",
+      "added": "rework-1",
+      "files": [
+        "home/health/health-notes.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/health/health-notes.md",
+              "start_line": 4,
+              "end_line": 4,
+              "keys": [
+                "17 march",
+                "9:20"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "ear",
+          "check"
+        ]
+      },
+      "note": "hearing test for ear check"
+    },
+    {
+      "id": "syn-07",
+      "kind": "synonym",
+      "question": "What is Pickle's diet?",
+      "query": "Pickle diet",
+      "added": "rework-1",
+      "files": [
+        "home/pets/pickle.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/pets/pickle.md",
+              "start_line": 12,
+              "end_line": 12,
+              "keys": [
+                "no grapes"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "archive/pickle-2024.md",
+          "start_line": 5,
+          "end_line": 5,
+          "keys": [
+            "one scoop"
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "diet"
+        ]
+      },
+      "note": "food for diet; the 2024 note is out of date"
+    },
+    {
+      "id": "syn-08",
+      "kind": "synonym",
+      "question": "Who looks after the Tool Share's money?",
+      "query": "Tool Share money",
+      "added": "rework-1",
+      "files": [
+        "toolshare/docs/committee.md",
+        "archive/committee-2025.md",
+        "toolshare/docs/treasurer.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/docs/committee.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "treasurer",
+                "kofi dunleavy"
+              ]
+            },
+            {
+              "path": "archive/committee-2025.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "treasurer"
+              ]
+            },
+            {
+              "path": "toolshare/docs/treasurer.md",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "treasurer"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "money"
+        ]
+      },
+      "note": "treasurer for who looks after the money; both committee lists agree on him"
+    },
+    {
+      "id": "syn-09",
+      "kind": "synonym",
+      "question": "How much is the Tool Share subscription?",
+      "query": "Tool Share subscription",
+      "added": "rework-1",
+      "files": [
+        "toolshare/site/join.html"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/site/join.html",
+              "start_line": 6,
+              "end_line": 6,
+              "keys": [
+                "10 pounds a year"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "subscription"
+        ]
+      },
+      "note": "membership for subscription"
+    },
+    {
+      "id": "syn-10",
+      "kind": "synonym",
+      "question": "When is Pickle's next jab?",
+      "query": "Pickle jab",
+      "added": "rework-1",
+      "files": [
+        "home/pets/pickle.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/pets/pickle.md",
+              "start_line": 8,
+              "end_line": 8,
+              "keys": [
+                "12 january 2027"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_corpus": [
+          "jab"
+        ]
+      },
+      "note": "booster vaccination for jab"
+    },
+    {
+      "id": "table-01",
+      "kind": "table",
+      "question": "Which order did we send back?",
+      "query": "order sent back",
+      "added": "rework-1",
+      "files": [
+        "home/money/orders.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/money/orders.md",
+              "start_line": 6,
+              "end_line": 6,
+              "keys": [
+                "garden hose reel",
+                "returned"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "back"
+        ]
+      },
+      "note": "Markdown table: the row whose Status is returned, its What"
+    },
+    {
+      "id": "table-02",
+      "kind": "table",
+      "question": "When did we order Otto's school shoes?",
+      "query": "Otto school shoes order",
+      "added": "rework-1",
+      "files": [
+        "home/money/orders.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/money/orders.md",
+              "start_line": 7,
+              "end_line": 7,
+              "keys": [
+                "2026-10-01"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "note": "Markdown table: the row by What, its Date"
+    },
+    {
+      "id": "table-03",
+      "kind": "table",
+      "question": "Which room is chess club in?",
+      "query": "chess club room",
+      "added": "rework-1",
+      "files": [
+        "school/clubs-autumn.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "school/clubs-autumn.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "library"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": true,
+      "note": "Markdown table: the row by Club, its Room"
+    },
+    {
+      "id": "table-04",
+      "kind": "table",
+      "question": "Who runs the Thursday club?",
+      "query": "Thursday club",
+      "added": "rework-1",
+      "files": [
+        "school/clubs-autumn.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "school/clubs-autumn.md",
+              "start_line": 8,
+              "end_line": 8,
+              "keys": [
+                "mr ashby"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "note": "Markdown table: the row by Day, its Runs it; Thursday occurs in many files"
+    },
+    {
+      "id": "table-05",
+      "kind": "table",
+      "question": "Which shelf is the hedge trimmer on?",
+      "query": "hedge trimmer shelf",
+      "added": "rework-1",
+      "files": [
+        "toolshare/data/inventory.yaml"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/data/inventory.yaml",
+              "start_line": 68,
+              "end_line": 69,
+              "keys": [
+                "hedge trimmer",
+                "c2"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "note": "YAML records: the entry by name, its shelf"
+    },
+    {
+      "id": "table-06",
+      "kind": "table",
+      "question": "How many times was the tile cutter lent this year?",
+      "query": "tile cutter lent",
+      "added": "rework-1",
+      "files": [
+        "toolshare/data/loans-2026.csv"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/data/loans-2026.csv",
+              "start_line": 6,
+              "end_line": 6,
+              "keys": [
+                "tile cutter,1"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": true,
+      "note": "CSV (not read today): the row by tool, its loans_2026"
+    },
+    {
+      "id": "table-07",
+      "kind": "table",
+      "question": "What does Kit Arden do?",
+      "query": "Kit Arden",
+      "added": "rework-1",
+      "files": [
+        "home/contacts.tsv",
+        "home/lists/useful-numbers.txt"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/contacts.tsv",
+              "start_line": 3,
+              "end_line": 3,
+              "keys": [
+                "plumber"
+              ]
+            },
+            {
+              "path": "home/lists/useful-numbers.txt",
+              "start_line": 4,
+              "end_line": 4,
+              "keys": [
+                "plumber"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": true,
+      "note": "TSV (not read today): the row by name, its role; the numbers list says it too"
+    },
+    {
+      "id": "table-08",
+      "kind": "table",
+      "question": "What is the energy budget for March?",
+      "query": "energy budget March",
+      "added": "rework-1",
+      "files": [
+        "home/money/budget-2026.csv"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/money/budget-2026.csv",
+              "start_line": 4,
+              "end_line": 4,
+              "keys": [
+                "138"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "note": "CSV (not read today): the row by month (mar), its energy column"
+    },
+    {
+      "id": "table-09",
+      "kind": "table",
+      "question": "Who is on the desk on 21 November?",
+      "query": "desk 21 November",
+      "added": "rework-1",
+      "files": [
+        "toolshare/data/volunteer-rota.csv"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/data/volunteer-rota.csv",
+              "start_line": 4,
+              "end_line": 4,
+              "keys": [
+                "ines"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "note": "CSV (not read today): the row by date, its desk column"
+    },
+    {
+      "id": "table-10",
+      "kind": "table",
+      "question": "What did the window cleaner charge?",
+      "query": "window cleaner charge",
+      "added": "rework-1",
+      "files": [
+        "home/money/house-costs-2026.csv"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/money/house-costs-2026.csv",
+              "start_line": 2,
+              "end_line": 2,
+              "keys": [
+                "18.00"
+              ]
+            },
+            {
+              "path": "home/money/house-costs-2026.csv",
+              "start_line": 7,
+              "end_line": 7,
+              "keys": [
+                "18.00"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": true,
+      "note": "CSV (not read today): either row by who, its amount"
+    },
+    {
+      "id": "cur-01",
+      "kind": "current-copy",
+      "question": "How long can tools be borrowed for?",
+      "query": "tools borrowed how long",
+      "added": "rework-1",
+      "files": [
+        "toolshare/docs/lending-rules.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/docs/lending-rules.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "7 days"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "archive/lending-rules-2024.md",
+          "start_line": 5,
+          "end_line": 5,
+          "keys": [
+            "14 days"
+          ]
+        }
+      ],
+      "single_source": false
+    },
+    {
+      "id": "cur-02",
+      "kind": "current-copy",
+      "question": "When is the next boiler service?",
+      "query": "next boiler service",
+      "added": "rework-1",
+      "files": [
+        "home/house/boiler.md",
+        "inbox/boiler-service-2026-03-14.txt"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/house/boiler.md",
+              "start_line": 13,
+              "end_line": 13,
+              "keys": [
+                "march 2027"
+              ]
+            },
+            {
+              "path": "inbox/boiler-service-2026-03-14.txt",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "next one in a year"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "archive/boiler-2025.md",
+          "start_line": 12,
+          "end_line": 12,
+          "keys": [
+            "march 2026"
+          ]
+        }
+      ],
+      "single_source": false
+    },
+    {
+      "id": "cur-03",
+      "kind": "current-copy",
+      "question": "When is the Christmas concert?",
+      "query": "Christmas concert",
+      "added": "rework-1",
+      "files": [
+        "school/calendar-autumn.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "school/calendar-autumn.md",
+              "start_line": 14,
+              "end_line": 14,
+              "keys": [
+                "16 december",
+                "2 pm"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "school/calendar-autumn-draft.md",
+          "start_line": 6,
+          "end_line": 6,
+          "keys": [
+            "15 december"
+          ]
+        }
+      ],
+      "single_source": false
+    },
+    {
+      "id": "cur-04",
+      "kind": "current-copy",
+      "question": "Who chairs the Tool Share committee?",
+      "query": "committee chair",
+      "added": "rework-1",
+      "files": [
+        "toolshare/docs/committee.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/docs/committee.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "ines marrow"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "archive/committee-2025.md",
+          "start_line": 5,
+          "end_line": 5,
+          "keys": [
+            "orla quent"
+          ]
+        }
+      ],
+      "single_source": false
+    },
+    {
+      "id": "cur-05",
+      "kind": "current-copy",
+      "question": "When does the Tool Share committee meet?",
+      "query": "committee meet when",
+      "added": "rework-1",
+      "files": [
+        "toolshare/docs/committee.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/docs/committee.md",
+              "start_line": 9,
+              "end_line": 9,
+              "keys": [
+                "first tuesday",
+                "7:30"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "archive/committee-2025.md",
+          "start_line": 9,
+          "end_line": 9,
+          "keys": [
+            "second wednesday"
+          ]
+        }
+      ],
+      "single_source": false
+    },
+    {
+      "id": "cur-06",
+      "kind": "current-copy",
+      "question": "How much food does Pickle get?",
+      "query": "Pickle food how much",
+      "added": "rework-1",
+      "files": [
+        "home/pets/pickle.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/pets/pickle.md",
+              "start_line": 12,
+              "end_line": 12,
+              "keys": [
+                "morning and evening"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "archive/pickle-2024.md",
+          "start_line": 5,
+          "end_line": 5,
+          "keys": [
+            "morning only"
+          ]
+        }
+      ],
+      "single_source": false
+    },
+    {
+      "id": "cur-07",
+      "kind": "current-copy",
+      "question": "Where are we staying in Cornwall?",
+      "query": "Cornwall staying",
+      "added": "rework-1",
+      "files": [
+        "home/trips/cornwall-2026.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/trips/cornwall-2026.md",
+              "start_line": 10,
+              "end_line": 10,
+              "keys": [
+                "gull cottage",
+                "booked"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "home/trips/cornwall-2026-draft.md",
+          "start_line": 9,
+          "end_line": 9,
+          "keys": [
+            "heron barn"
+          ]
+        }
+      ],
+      "single_source": false
+    },
+    {
+      "id": "cur-08",
+      "kind": "current-copy",
+      "question": "When do we arrive in Cornwall?",
+      "query": "arrive Cornwall",
+      "added": "rework-1",
+      "files": [
+        "home/trips/cornwall-2026.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/trips/cornwall-2026.md",
+              "start_line": 5,
+              "end_line": 5,
+              "keys": [
+                "saturday 24 october"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "home/trips/cornwall-2026-draft.md",
+          "start_line": 5,
+          "end_line": 5,
+          "keys": [
+            "friday 23 october"
+          ]
+        }
+      ],
+      "single_source": false
+    },
+    {
+      "id": "cur-09",
+      "kind": "current-copy",
+      "question": "Where is the spare key?",
+      "query": "spare key",
+      "added": "rework-1",
+      "files": [
+        "home/house/house-notes.md"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/house/house-notes.md",
+              "start_line": 7,
+              "end_line": 7,
+              "keys": [
+                "blue pot"
+              ]
+            }
+          ]
+        }
+      ],
+      "stale": [
+        {
+          "path": "archive/house-notes-2024.md",
+          "start_line": 7,
+          "end_line": 7,
+          "keys": [
+            "key safe"
+          ]
+        }
+      ],
+      "single_source": false
+    },
+    {
+      "id": "where-01",
+      "kind": "where-is-it",
+      "question": "Where is the spreadsheet with the loans?",
+      "query": "spreadsheet loans",
+      "added": "rework-1",
+      "files": [
+        "toolshare/data/loans-2026.csv"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/data/loans-2026.csv",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "id,tool,loans_2026"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "spreadsheet"
+        ]
+      },
+      "note": "a CSV file (not read today); loans is in its name"
+    },
+    {
+      "id": "where-02",
+      "kind": "where-is-it",
+      "question": "Which script does the backup?",
+      "query": "backup script",
+      "added": "rework-1",
+      "files": [
+        "toolshare/scripts/backup.sh"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/scripts/backup.sh",
+              "start_line": 1,
+              "end_line": 3,
+              "keys": [
+                "nightly copy"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": true,
+      "checks": {
+        "absent_from_files": [
+          "backup"
+        ]
+      },
+      "note": "a shell script (not read today); backup is in its name"
+    },
+    {
+      "id": "where-03",
+      "kind": "where-is-it",
+      "question": "Where is the server log for June?",
+      "query": "server log June",
+      "added": "rework-1",
+      "files": [
+        "toolshare/logs/server-2026-06.log"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/logs/server-2026-06.log",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "2026-06-01"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": true,
+      "checks": {
+        "absent_from_files": [
+          "june"
+        ]
+      },
+      "note": "a .log file (not read today); June is 06 in its name"
+    },
+    {
+      "id": "where-04",
+      "kind": "where-is-it",
+      "question": "Where is the Tool Share website's stylesheet?",
+      "query": "website stylesheet",
+      "added": "rework-1",
+      "files": [
+        "toolshare/site/styles.css"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/site/styles.css",
+              "start_line": 1,
+              "end_line": 2,
+              "keys": [
+                "font-family"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": true,
+      "checks": {
+        "absent_from_files": [
+          "website",
+          "stylesheet"
+        ]
+      },
+      "note": "styles.css; neither word in the file"
+    },
+    {
+      "id": "where-05",
+      "kind": "where-is-it",
+      "question": "Which Python file defines the loan record?",
+      "query": "python loan record",
+      "added": "rework-1",
+      "files": [
+        "toolshare/src/models.py"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/src/models.py",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "plain records"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": true,
+      "checks": {
+        "absent_from_files": [
+          "python"
+        ]
+      },
+      "note": "models.py; the docstring says records and loans"
+    },
+    {
+      "id": "where-06",
+      "kind": "where-is-it",
+      "question": "Where is the Tool Share site map?",
+      "query": "site map",
+      "added": "rework-1",
+      "files": [
+        "toolshare/site/sitemap.xml"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "toolshare/site/sitemap.xml",
+              "start_line": 2,
+              "end_line": 2,
+              "keys": [
+                "urlset"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "map"
+        ]
+      },
+      "note": "an XML file (not read today); sitemap is one word in its name"
+    },
+    {
+      "id": "where-07",
+      "kind": "where-is-it",
+      "question": "Where is the family budget spreadsheet?",
+      "query": "budget spreadsheet",
+      "added": "rework-1",
+      "files": [
+        "home/money/budget-2026.csv"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/money/budget-2026.csv",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "month,food,energy"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "spreadsheet"
+        ]
+      },
+      "note": "a CSV file (not read today)"
+    },
+    {
+      "id": "where-08",
+      "kind": "where-is-it",
+      "question": "Where is the list of phone numbers?",
+      "query": "phone numbers list",
+      "added": "rework-1",
+      "files": [
+        "home/lists/useful-numbers.txt",
+        "home/contacts.tsv"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/lists/useful-numbers.txt",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "useful numbers"
+              ]
+            },
+            {
+              "path": "home/contacts.tsv",
+              "start_line": 1,
+              "end_line": 1,
+              "keys": [
+                "phone"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "list"
+        ]
+      },
+      "note": "the numbers list, or contacts.tsv (not read today)"
+    },
+    {
+      "id": "where-09",
+      "kind": "where-is-it",
+      "question": "Where is the to-do list?",
+      "query": "to-do list",
+      "added": "rework-1",
+      "files": [
+        "home/TODO"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/TODO",
+              "start_line": 1,
+              "end_line": 3,
+              "keys": [
+                "ring bram"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "list"
+        ]
+      },
+      "note": "a file named TODO, no extension (not read today)"
+    },
+    {
+      "id": "where-10",
+      "kind": "where-is-it",
+      "question": "Where are the smart plug timers?",
+      "query": "smart plug timers",
+      "added": "rework-1",
+      "files": [
+        "home/house/smart-plugs.json"
+      ],
+      "parts": [
+        {
+          "ranges": [
+            {
+              "path": "home/house/smart-plugs.json",
+              "start_line": 1,
+              "end_line": 7,
+              "keys": [
+                "plugs"
+              ]
+            }
+          ]
+        }
+      ],
+      "single_source": false,
+      "checks": {
+        "absent_from_files": [
+          "timers"
+        ]
+      },
+      "note": "a JSON file"
     }
   ]
 }

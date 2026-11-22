@@ -15,8 +15,15 @@ range against a freshly generated folder.
 
 `checks` keep a question honest: `absent_from_corpus` words occur in no file
 (a misspelling, a no-answer word); `absent_from_files` words occur in none of
-the answer's files (a word form, a file-name question). Both are compared as
-tokens of the repository analyzer by the test.
+the files of each part's first range (a word form, a file-name question; a
+later range is an alternative answer that may hold the word, as boiler.md does
+for name-01). Both are compared as tokens of the repository analyzer by the test.
+
+Rework 1 (after the Verdict): every question carries both forms, `question`
+as typed and `query`, the words picked (the same text when none were); a
+question that moved kind names its old id in `was`; `stale` ranges are an
+older or draft copy that disagrees with the answer; `single_source` is computed
+here, not typed.
 
 Usage:
 
@@ -32,10 +39,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import gen_text_search_corpus as corpus_mod  # noqa: E402
 
-SCHEMA = "text-search-judgments-v1"
+SCHEMA = "text-search-judgments-v2"
 
 KINDS = {
     "word": "a word the file holds",
@@ -49,16 +57,33 @@ KINDS = {
     "about": "which files are about X",
     "file-content": "what is in this file",
     "no-answer": "nothing in the folder answers; the right result is nothing",
+    # Rework 1 (the verifier's gap list)
+    "tamil-latin": "Tamil asked in Latin letters; the file is in Tamil script",
+    "synonym": "another word or a paraphrase for what the file says, not a form of its word",
+    "table": "a row found by one column's value; the answer is another column of that row",
+    "current-copy": "two files disagree; the answer is the current one, the older or draft copy is `stale`",
+    "where-is-it": "the file asked for by its type or role (the spreadsheet with the loans)",
 }
+
+# The extensions the engine reads today (docs/text-search-score.md; the
+# end-to-end test checks this list against the engine's own index).
+NEW_KINDS = ("tamil-latin", "synonym", "table", "current-copy", "where-is-it")
+
+READABLE_EXTENSIONS = (
+    ".c", ".cpp", ".css", ".go", ".h", ".html", ".java", ".js", ".json", ".md", ".py", ".rs", ".rst",
+    ".toml", ".ts", ".txt", ".yaml", ".yml", ".zig",
+)
 
 
 def R(path, anchor, keys=None, end=None):
     return {"path": path, "anchor": anchor, "end": end, "keys": keys}
 
 
-def Q(qid, kind, question, query=None, parts=(), absent_corpus=(), absent_files=(), note=None):
+def Q(qid, kind, question, query=None, parts=(), absent_corpus=(), absent_files=(), note=None,
+      was=None, stale=(), added=False):
     return {"id": qid, "kind": kind, "question": question, "query": query, "parts": list(parts),
-            "absent_from_corpus": list(absent_corpus), "absent_from_files": list(absent_files), "note": note}
+            "absent_from_corpus": list(absent_corpus), "absent_from_files": list(absent_files), "note": note,
+            "was": was, "stale": list(stale), "added": added}
 
 
 HOUSE = "home/house/"
@@ -83,8 +108,9 @@ QUESTIONS = [
     Q("word-05", "word", "How much is the deposit for power tools?", "deposit power tools",
       [[R(TS + "docs/lending-rules.md", "A refundable deposit", ["deposit", "20 pounds"])]]),
     Q("word-06", "word", "பொங்கல் எப்போது வைப்போம்?", "பொங்கல்",
-      [[R("paati/pongal-samayal.md", "புதிய பானையில் பொங்கல்", ["பொங்கல்", "தை முதல் நாள்"])]],
-      note="Tamil: when Paati makes Pongal"),
+      [[R("paati/pongal-samayal.md", "புதிய பானையில் பொங்கல்", ["பொங்கல்", "தை முதல் நாள்"]),
+        R("paati/naatkaatti-2027.md", "பொங்கல்: ஜனவரி 14", ["பொங்கல்", "ஜனவரி 14"])]],
+      note="Tamil: when Paati makes Pongal; the 2027 calendar gives the date"),
     Q("word-07", "word", "How much did the plumber charge?", "plumber charge",
       [[R("home/money/house-costs-2026.csv", "Plumber,kitchen tap", ["plumber", "45.00"])]],
       note="the answer is in a CSV file"),
@@ -133,8 +159,8 @@ QUESTIONS = [
       [[R(HOUSE + "pests.md", "Mouse droppings", ["mouse", "traps"])]],
       absent_files=["mice"], note="irregular plural"),
     Q("form-10", "word-form", "Which presents still need wrapping?", "wrapping",
-      [[R("home/lists/christmas-presents.txt", "bike lights", ["wrapped"])]],
-      absent_files=["wrapping"], note="the file name says presents, so only wrapping is sent"),
+      [[R("home/lists/christmas-presents.txt", "Mira: sketchbook", ["sketchbook", "shawl"], end="Paati: shawl")]],
+      absent_files=["wrapping"], note="the file name says presents, so only wrapping is sent; Otto's line (wrapped) is the one that needs nothing"),
     Q("form-11", "word-form", "How are the invoices numbered?", "invoices numbered",
       [[R(TS + "docs/treasurer.md", "Each invoice is numbered", ["invoice", "inv-yyyy-nnn"])]],
       absent_files=["invoices"]),
@@ -156,8 +182,8 @@ QUESTIONS = [
       [[R("home/garden/garden-plan-2026.md", "Put the trellis up", ["trellis"])]],
       absent_corpus=["trelis"], note="one letter dropped"),
     Q("spell-04", "misspelt", "sourdogh baking temperature", "sourdogh",
-      [both_copies("# Sourdough loaf", ["sourdough"]), both_copies("Bake at 240 degrees", ["240 degrees"])],
-      absent_corpus=["sourdogh"], note="one letter dropped; the title names the loaf, the baking line answers"),
+      [both_copies("Bake at 240 degrees", ["240 degrees"])],
+      absent_corpus=["sourdogh"], note="one letter dropped; the baking line answers (the title, judged in v1, answers nothing)"),
     Q("spell-05", "misspelt", "When is physiotherpy?", "physiotherpy",
       [[R("home/health/health-notes.md", "physiotherapy for the knee", ["physiotherapy", "tuesdays"])]],
       absent_corpus=["physiotherpy"], note="one letter dropped"),
@@ -171,18 +197,18 @@ QUESTIONS = [
       [[R(HOUSE + "bedroom-furniture.md", "The wardrobe in the back bedroom", ["wardrobe", "shelf pins"])]],
       absent_corpus=["wadrobe"], note="one letter dropped"),
     Q("spell-09", "misspelt", "school calender half term", "calender",
-      [[R("school/calendar-autumn.md", "Calendar from the school office", ["calendar"])],
-       [R("school/calendar-autumn.md", "half term", ["half term"])]],
-      absent_corpus=["calender"], note="e for a"),
+      [[R("school/calendar-autumn.md", "half term", ["half term"])]],
+      absent_corpus=["calender"], note="e for a; the half-term line answers (the intro line, judged in v1, answers nothing)"),
     Q("spell-10", "misspelt", "lawnmover", "lawnmover",
-      [[R(TS + "data/inventory.yaml", "name: lawnmower", ["lawnmower"])]],
+      [[R(TS + "data/inventory.yaml", "name: lawnmower", ["lawnmower"]),
+        R(TS + "data/loans-2026.csv", "TS-041,", ["lawnmower"])]],
       absent_corpus=["lawnmover"], note="one letter changed"),
     Q("spell-11", "misspelt", "பொங்கள் சமையல்", "பொங்கள்",
       [[R("paati/pongal-samayal.md", "# பொங்கல் சமையல்", ["பொங்கல்"])]],
       absent_corpus=["பொங்கள்"], note="Tamil: ல் written as ள்"),
     Q("spell-12", "misspelt", "rubarb crumble topping", "rubarb",
       [[R("home/recipes/rhubarb-crumble.md", "Topping:", ["topping", "oats"])]],
-      absent_corpus=["rubarb"], note="h dropped; crumble and topping are also in the query"),
+      absent_corpus=["rubarb"], note="h dropped; the typed question also says crumble and topping, the query does not"),
 
     # ---------------------------------------------------------------- phrase
     Q("phrase-01", "phrase", "spare key under the blue pot",
@@ -222,17 +248,19 @@ QUESTIONS = [
       parts=[[R("home/money/orders.md", "48213-K", ["48213-k", "oven door seal"])]]),
     Q("number-02", "number", "What is tool TS-017?", "TS-017",
       parts=[[R(TS + "data/inventory.yaml", "id: TS-017", ["ts-017", "pressure washer"], end="name: pressure washer"),
-              R(TS + "docs/repairs.md", "TS-017", ["ts-017", "pressure washer"])]]),
+              R(TS + "docs/repairs.md", "TS-017", ["ts-017", "pressure washer"]),
+              R(TS + "data/loans-2026.csv", "TS-017,", ["ts-017", "pressure washer"])]]),
     Q("number-03", "number", "Has INV-2026-014 been paid?", "INV-2026-014",
       parts=[[R(TS + "docs/treasurer.md", "INV-2026-014", ["inv-2026-014", "paid 12 october"])]]),
     Q("number-04", "number", "What is on 17 March?", "17 March",
       parts=[[R("home/health/health-notes.md", "17 March", ["17 march", "hearing test"])]]),
-    Q("number-05", "number", "What happened on the server on 2026-06-17?", "2026-06-17 error",
+    Q("number-05", "number", "What happened on the server on 2026-06-17?", "server 2026-06-17",
       parts=[[R(TS + "logs/server-2026-06.log", "ERROR backup failed", ["2026-06-17", "error"])]],
       note="the answer is in a .log file"),
     Q("number-06", "number", "Whose number is 01632 960418?", "01632 960418",
-      parts=[[R("home/lists/useful-numbers.txt", "960418", ["bram hollis", "01632 960418"])]],
-      note="CRLF file; contacts.tsv holds the number too but is not read today"),
+      parts=[[R("home/lists/useful-numbers.txt", "960418", ["bram hollis", "01632 960418"]),
+              R("home/contacts.tsv", "960418", ["bram hollis", "01632 960418"])]],
+      note="CRLF file; contacts.tsv holds the number too (not read today)"),
     Q("number-07", "number", "What is booking GCB-3307?", "GCB-3307",
       parts=[[R("home/trips/cornwall-2026.md", "GCB-3307", ["gcb-3307", "gull cottage"])]]),
     Q("number-08", "number", "What was the 45.00 for?", "45.00",
@@ -252,7 +280,7 @@ QUESTIONS = [
     Q("span-01", "two-passages", "What time is Otto's swimming and what goes in his bag?", "Otto swimming time bag",
       parts=[[R("home/schedules/otto-week.md", "Swimming 9:15", ["9:15"])],
              [R("home/schedules/otto-week.md", "Goggles, towel", ["goggles", "locker"])]]),
-    Q("span-02", "two-passages", "How long does the sourdough prove and how hot is the oven?", "sourdough prove bake temperature",
+    Q("span-02", "two-passages", "How long does the sourdough prove and how hot is the oven?", "sourdough prove how long oven",
       parts=[both_copies("Prove for 4 hours", ["4 hours"]), both_copies("Bake at 240 degrees", ["240 degrees"])]),
     Q("span-03", "two-passages", "Who is on the Tool Share committee and when does it meet?", "committee members meets",
       parts=[[R(TS + "docs/committee.md", "Chair: Ines Marrow", ["ines marrow", "kofi dunleavy"])],
@@ -268,12 +296,16 @@ QUESTIONS = [
     Q("span-06", "two-passages", "What time do we arrive at Gull Cottage and what is the wifi?", "arrive Gull Cottage wifi",
       parts=[[R("home/trips/cornwall-2026.md", "Arrive Saturday 24 October", ["after 4 pm"])],
              [R("home/trips/cornwall-2026.md", "Wifi at the cottage", ["gullnest"])]]),
-    Q("span-07", "two-passages", "How long can a tool be borrowed and what happens if it comes back late?", "borrowed how long late returns",
+    Q("span-07", "two-passages", "How long can a tool be borrowed and what happens if it comes back late?", "tool borrowed how long back late",
       parts=[[R(TS + "docs/lending-rules.md", "up to 7 days", ["7 days"])],
              [R(TS + "docs/lending-rules.md", "Late returns pay", ["50p a day"])]]),
     Q("span-08", "two-passages", "When was the boiler last serviced and who do I call?", "boiler serviced call",
-      parts=[[R(HOUSE + "boiler.md", "2026-03-14: serviced", ["2026-03-14"])],
-             [R(HOUSE + "boiler.md", "ask for Dara Wenlow", ["01632 960233"])]]),
+      parts=[[R(HOUSE + "boiler.md", "2026-03-14: serviced", ["2026-03-14"]),
+              R("inbox/boiler-service-2026-03-14.txt", 1, ["paid by card"], end=1)],
+             [R(HOUSE + "boiler.md", "ask for Dara Wenlow", ["01632 960233"]),
+              R("home/lists/useful-numbers.txt", "Wenlow Heating:", ["01632 960233"]),
+              R("home/contacts.tsv", "Dara Wenlow", ["01632 960233"])]],
+      note="the inbox note's file name gives the date of the last service"),
     Q("span-09", "two-passages", "பொங்கலுக்கு என்ன பொருட்கள் வேண்டும், எப்படிச் செய்வது?", "பொங்கல் பொருட்கள் செய்முறை",
       parts=[[R("paati/pongal-samayal.md", "பச்சரிசி ஒரு கோப்பை", ["பச்சரிசி", "வெல்லம்"])],
              [R("paati/pongal-samayal.md", "அரிசியையும் பருப்பையும்", ["வேக வைக்கவும்"])]],
@@ -281,37 +313,60 @@ QUESTIONS = [
     Q("span-10", "two-passages", "When is half term and when is the Christmas concert?", "half term Christmas concert",
       parts=[[R("school/calendar-autumn.md", "26 to 30 October", ["half term"])],
              [R("school/calendar-autumn.md", "Christmas concert", ["16 december"])]]),
-    Q("span-11", "two-passages", "Where are the ladder and the cordless drill kept?", "ladder cordless drill shelf",
+    Q("span-11", "two-passages", "Where are the ladder and the cordless drill kept?", "ladder cordless drill kept",
       parts=[[R(TS + "data/inventory.yaml", "name: ladder", ["ladder", "outside rack"], end="shelf: outside rack")],
              [R(TS + "data/inventory.yaml", "name: cordless drill", ["cordless drill", "a2"], end="shelf: A2")]]),
 
     # ---------------------------------------------------------------- two-files
     Q("pair-01", "two-files", "How much was the boiler service and when is the next one due?", "boiler service cost next due",
       parts=[[R("home/money/receipts-note.md", "Wenlow Heating, 14 March", ["96 pounds"])],
-             [R(HOUSE + "boiler.md", "Next service due", ["march 2027"])]]),
+             [R(HOUSE + "boiler.md", "Next service due", ["march 2027"]),
+              R("inbox/boiler-service-2026-03-14.txt", 1, ["next one in a year"], end=1)]]),
     Q("pair-02", "two-files", "What's for dinner on Wednesday and what do I need for it?", "Wednesday dinner ingredients",
       parts=[[R("home/schedules/meal-plan-week-38.md", "Wednesday: lentil dal", ["lentil dal"])],
              [R("home/recipes/lentil-dal.md", "250 g red lentils", ["red lentils"], end="cumin seeds and turmeric")]]),
     Q("pair-03", "two-files", "Which tool is out of order, and is its repair paid for?", "out of order repair paid",
       parts=[[R(TS + "docs/repairs.md", "out of order", ["pressure washer"])],
              [R(TS + "docs/treasurer.md", "INV-2026-014", ["hose", "paid 12 october"])]]),
-    Q("pair-04", "two-files", "When is the wetlands trip and what does the letter say to bring?", "wetlands trip date bring",
-      parts=[[R("school/calendar-autumn.md", "8 October: Year 6 trip", ["8 october", "saltmarsh wetlands"])],
-             [R("school/trip-letter-wetlands.md", "bring a packed lunch", ["packed lunch", "waterproof coat"])]]),
+    Q("word-13", "word", "When is the wetlands trip and what does the letter say to bring?", "wetlands trip date bring",
+      parts=[[R("school/trip-letter-wetlands.md", "On Thursday 8 October", ["8 october", "saltmarsh wetlands"]),
+              R("school/calendar-autumn.md", "8 October: Year 6 trip", ["8 october", "saltmarsh wetlands"])],
+             [R("school/trip-letter-wetlands.md", "bring a packed lunch", ["packed lunch", "waterproof coat"])]],
+      was="pair-04", note="the letter alone answers both parts (v1 judged it as two files)"),
+    Q("pair-04", "two-files", "Which order was the oven door seal, and when did we fit it?", "oven door seal order fitted",
+      parts=[[R("home/money/orders.md", "48213-K", ["48213-k", "oven door seal"])],
+             [R("home/notes/kitchen-care.md", "The oven door seal was swapped", ["july"])]],
+      added=True, note="new in rework 1 (v1's pair-04 is now word-13)"),
     Q("pair-05", "two-files", "What port does the Tool Share server use and which code reads it?", "server port code",
       parts=[[R(TS + "config/server.yaml", "port: 8086", ["8086"])],
              [R(TS + "src/app.py", "PORT = config", ["port"])]]),
-    Q("pair-06", "two-files", "Where is Gull Cottage and how do we get there?", "Gull Cottage where directions",
-      parts=[[R("home/trips/cornwall-2026.md", "Accommodation: Gull Cottage", ["porthwenna"])],
-             [R("home/trips/directions-to-gull-cottage.txt", "From the A-road", ["porthwenna turning"], end="green gate")]]),
-    Q("pair-07", "two-files", "Who is the chimney sweep and when did he last come?", "chimney sweep last",
-      parts=[[R("home/lists/useful-numbers.txt", "Chimney sweep (Bram Hollis)", ["bram hollis", "01632 960418"])],
-             [R(HOUSE + "jobs-autumn.md", "Chimney swept by Bram Hollis", ["2 september"])]]),
+    Q("word-14", "word", "Where is Gull Cottage and how do we get there?", "Gull Cottage where directions",
+      parts=[[R("home/trips/cornwall-2026.md", "Accommodation: Gull Cottage", ["porthwenna"]),
+              R("home/trips/directions-to-gull-cottage.txt", "Gull Cottage is the white one", ["gull cottage", "harbour"])],
+             [R("home/trips/directions-to-gull-cottage.txt", "From the A-road", ["porthwenna turning"], end="green gate")]],
+      was="pair-06", note="the directions alone answer both parts (v1 judged it as two files)"),
+    Q("word-15", "word", "Who is the chimney sweep and when did he last come?", "chimney sweep last",
+      parts=[[R("home/lists/useful-numbers.txt", "Chimney sweep (Bram Hollis)", ["bram hollis"]),
+              R(HOUSE + "jobs-autumn.md", "Chimney swept by Bram Hollis", ["bram hollis"]),
+              R("home/contacts.tsv", "Bram Hollis", ["bram hollis", "chimney sweep"])],
+             [R(HOUSE + "jobs-autumn.md", "Chimney swept by Bram Hollis", ["2 september"]),
+              R("home/money/receipts-note.md", "Chimney sweep, 2 September", ["2 september"]),
+              R("home/money/house-costs-2026.csv", "Chimney sweep,", ["2026-09-02"])]],
+      was="pair-07", note="one line of jobs-autumn.md answers both parts (v1 judged it as two files)"),
+    Q("pair-06", "two-files", "Who chairs the Tool Share and what is her phone number?", "Tool Share chair phone number",
+      parts=[[R(TS + "docs/committee.md", "Chair: Ines Marrow", ["ines marrow"])],
+             [R("home/contacts.tsv", "Ines Marrow", ["01632 960310"])]],
+      stale=[R("archive/committee-2025.md", "Chair: Orla Quent", ["orla quent"])],
+      added=True, note="new in rework 1 (v1's pair-06 is now word-14); the number is only in contacts.tsv, not read today"),
+    Q("pair-07", "two-files", "How much did the new tyres cost and what pressure should they be?", "tyres cost pressure",
+      parts=[[R("home/car/tyres-receipt.txt", 1, ["140 pounds"], end=1)],
+             [R("home/car/car-notes.md", "Tyre pressure:", ["33 psi"])]],
+      added=True, note="new in rework 1 (v1's pair-07 is now word-15)"),
     Q("pair-08", "two-files", "பொங்கலுக்கு என்ன சமைப்பது, அடுத்த பொங்கல் எப்போது?", "பொங்கல் சமையல் நாள்",
       parts=[[R("paati/pongal-samayal.md", "பச்சரிசி ஒரு கோப்பை", ["பச்சரிசி"])],
              [R("paati/naatkaatti-2027.md", "பொங்கல்: ஜனவரி 14", ["ஜனவரி 14"])]],
       note="Tamil: what to cook for Pongal and the date of the next one"),
-    Q("pair-09", "two-files", "Which release fixed the reminders going out twice, and what was the issue?", "reminders sent twice fixed release",
+    Q("pair-09", "two-files", "Which release fixed the reminders going out twice, and what was the issue?", "release fixed reminders going out twice issue",
       parts=[[R(TS + "CHANGELOG.md", "reminders were sent twice", ["issue 31"])],
              [R(TS + "docs/issues.md", "The overdue reminder email went out twice", ["twice", "extended"])]]),
     Q("pair-10", "two-files", "When is Mira's piano exam and which pieces is she playing?", "Mira piano exam pieces",
@@ -323,8 +378,9 @@ QUESTIONS = [
 
     # ---------------------------------------------------------------- filename
     Q("name-01", "filename", "Find the boiler service note.", "boiler service note",
-      parts=[[R("inbox/boiler-service-2026-03-14.txt", 1, ["paid by card"], end=1)]],
-      absent_files=["boiler", "service"], note="the date is in the name, the text says only 'Done'"),
+      parts=[[R("inbox/boiler-service-2026-03-14.txt", 1, ["paid by card"], end=1),
+              R(HOUSE + "boiler.md", "## Service record", ["service record", "2026-03-14"], end="2026-03-14: serviced")]],
+      absent_files=["boiler", "service"], note="the date is in the name, the text says only 'Done'; boiler.md's service record also answers"),
     Q("name-02", "filename", "Where's my passport renewal checklist?", "passport renewal checklist",
       parts=[[R("inbox/passport-renewal-checklist.txt", 1, ["two photos"], end=1)]],
       absent_files=["passport", "renewal", "checklist"]),
@@ -382,7 +438,9 @@ QUESTIONS = [
     Q("about-05", "about", "Which files are about the pressure washer?", "pressure washer",
       parts=[[R(TS + "docs/repairs.md", "Pressure washer (TS-017)", ["pressure washer"])],
              [R(TS + "docs/treasurer.md", "INV-2026-014", ["pressure washer"])],
-             [R(TS + "data/inventory.yaml", "name: pressure washer", ["pressure washer"])]]),
+             [R(TS + "data/inventory.yaml", "name: pressure washer", ["pressure washer"]),
+              R(TS + "data/loans-2026.csv", "TS-017,", ["pressure washer"])]],
+      note="either tool list (the YAML inventory or the loans CSV) satisfies the third part"),
     Q("about-06", "about", "Which files are about school trips?", "school trip",
       parts=[[R("school/trip-letter-wetlands.md", "# Year 6 trip", ["trip"])],
              [R("school/trip-letter-castle.md", "# Year 2 trip", ["trip"])]]),
@@ -397,8 +455,12 @@ QUESTIONS = [
       parts=[[R(TS + "src/app.py", "The Tool Share web app", ["web app"])],
              [R(TS + "src/reminders.py", "Overdue reminders for", ["tool share"])],
              [R(TS + "src/models.py", "Plain records for tools", ["loans"])],
-             [R(TS + "site/app.js", "Highlights the tools", ["tool list"])]],
-      note="source files; none says website or code"),
+             [R(TS + "site/app.js", "Highlights the tools", ["tool list"])],
+             [R(TS + "site/index.html", "<title>", ["harrowdean tool share"])],
+             [R(TS + "site/join.html", "<title>", ["join the tool share"])],
+             [R(TS + "site/styles.css", 1, ["font-family"], end=1)],
+             [R(TS + "site/sitemap.xml", "<urlset>", ["urlset"])]],
+      note="the README (not read today) says the website code is in src/ and site/; none says website or code"),
     Q("about-10", "about", "Which files are about sourdough?", "sourdough",
       parts=[both_copies("# Sourdough loaf", ["sourdough"]),
              [R("home/notes/baking-log.txt", "Sourdough loaf 1", ["sourdough"])]]),
@@ -448,8 +510,12 @@ QUESTIONS = [
       note="Tamil: when is the cricket match"),
     Q("none-06", "no-answer", "Where can we hire a kayak?", "kayak hire", absent_corpus=["kayak"],
       note="near word: hire (room hire)"),
-    Q("none-07", "no-answer", "When is Mira's orthodontist appointment?", "orthodontist", absent_corpus=["orthodontist"],
-      note="near topic: the dentist note has the brace review"),
+    Q("none-07", "no-answer", "Where did we put the hammock?", "hammock", absent_corpus=["hammock"], added=True,
+      note="new in rework 1 (v1's none-07 is now syn-01)"),
+    Q("syn-01", "synonym", "When is Mira's orthodontist appointment?", "orthodontist",
+      parts=[[R("home/health/dentist.txt", 1, ["brace review", "3 february"], end=1)]],
+      absent_corpus=["orthodontist"], was="none-07",
+      note="the dentist note's brace review is the appointment (v1 judged it no-answer)"),
     Q("none-08", "no-answer", "How much was the solar panel quote?", "solar panel quote", absent_corpus=["solar"],
       note="near words: panel (a fence panel), quote (the insurance quote)"),
     Q("none-09", "no-answer", "What is tool TS-999?", "TS-999", absent_corpus=["999"],
@@ -458,6 +524,170 @@ QUESTIONS = [
     Q("none-11", "no-answer", "When are the flu jabs?", "flu jab", absent_corpus=["flu", "jab", "jabs"]),
     Q("none-12", "no-answer", "When does the library van come?", "library van", absent_corpus=["van"],
       note="near word: library (library day, library books)"),
+
+    # ---------------------------------------------------------------- rework 1: tamil-latin
+    Q("tam-01", "tamil-latin", "pongal eppo?", "pongal",
+      parts=[[R("paati/naatkaatti-2027.md", "பொங்கல்: ஜனவரி 14", ["ஜனவரி 14"]),
+              R("paati/pongal-samayal.md", "புதிய பானையில் பொங்கல்", ["தை முதல் நாள்"])]],
+      absent_files=["pongal"], note="when is Pongal; pongal-samayal.md has the word in its file name"),
+    Q("tam-02", "tamil-latin", "rasam seyya enna venum?", "rasam",
+      parts=[[R("paati/rasam.md", "ரசம் செய்ய", ["புளி", "தக்காளி"])]],
+      absent_files=["rasam"], note="what goes into rasam; the file name is rasam.md"),
+    Q("tam-03", "tamil-latin", "poosanikkai kootu eppadi seyvathu?", "poosanikkai kootu",
+      parts=[[R("paati/kootu.md", "பூசணிக்காய் இருநூறு", ["பாசிப்பருப்பு"], end="தேங்காய் அரைத்து")]],
+      absent_files=["poosanikkai", "kootu"], note="how to make the pumpkin kootu; the file name is kootu.md"),
+    Q("tam-04", "tamil-latin", "paatti thottathil enna valarkirathu?", "paatti thottam",
+      parts=[[R("paati/chedigal.md", "தோட்டத்தில்", ["கத்தரிக்கா"])]],
+      absent_files=["paatti", "thottam"], note="what grows in Paati's garden; no Latin word in the file or its name"),
+    Q("tam-05", "tamil-latin", "thulasi chedikku eppo thanneer?", "thulasi thanneer",
+      parts=[[R("paati/chedigal.md", "துளசி", ["காலையில்"])]],
+      absent_files=["thulasi", "thanneer"], note="when to water the tulsi"),
+    Q("tam-06", "tamil-latin", "Mira-vukku paatti ezhuthiya kaditham", "Mira paatti kaditham",
+      parts=[[R("paati/mira-kaditham.md", "அன்புள்ள மீரா", ["மீரா"], end="முறுக்கு")]],
+      absent_files=["kaditham"], note="Paati's letter to Mira; mira and kaditham are in the file name"),
+    Q("tam-07", "tamil-latin", "tamil puthaandu 2027 eppo?", "tamil puthaandu 2027",
+      parts=[[R("paati/naatkaatti-2027.md", "தமிழ்ப் புத்தாண்டு", ["ஏப்ரல் 14"])]],
+      absent_files=["puthaandu"], note="Tamil New Year; 2027 is in the file name and the text"),
+    Q("tam-08", "tamil-latin", "pongalukku ethanai koppai pacharisi?", "pongal pacharisi",
+      parts=[[R("paati/pongal-samayal.md", "பச்சரிசி ஒரு கோப்பை", ["பச்சரிசி"])]],
+      absent_files=["pacharisi"], note="how much raw rice for Pongal"),
+    Q("tam-09", "tamil-latin", "deepavali pattiyal", "deepavali pattiyal",
+      parts=[[R("paati/தீபாவளி-பட்டியல்.txt", 1, ["முறுக்கு"], end=5)]],
+      absent_files=["deepavali", "pattiyal"], note="the Deepavali list; its file name is in Tamil script"),
+    Q("tam-10", "tamil-latin", "murukku eppo seyvaanga?", "murukku",
+      parts=[[R("paati/mira-kaditham.md", "முறுக்கு", ["அடுத்த முறை"]),
+              R("paati/தீபாவளி-பட்டியல்.txt", 1, ["முறுக்கு"], end=1)]],
+      absent_files=["murukku"], note="when murukku is made: the letter (next visit) or the Deepavali list"),
+
+    # ---------------------------------------------------------------- rework 1: synonym
+    Q("syn-02", "synonym", "Which day is the rubbish collected?", "rubbish collected day",
+      parts=[[R(HOUSE + "house-notes.md", "Black bin on Thursdays", ["thursdays"])]],
+      absent_files=["rubbish", "collected"], stale=[R("archive/house-notes-2024.md", "Black bin on Thursdays", ["thursdays"])],
+      note="bin for rubbish; the 2024 notes say the same"),
+    Q("syn-03", "synonym", "How do I shut off the mains?", "shut off mains",
+      parts=[[R(HOUSE + "house-notes.md", "stopcock", ["stopcock"])]],
+      absent_files=["shut", "mains"], note="the stopcock line; the 2024 notes have it too"),
+    Q("syn-04", "synonym", "When is the car's roadworthiness check due?", "car roadworthiness check",
+      parts=[[R("home/car/car-notes.md", "MOT due", ["2026-11-30"])]],
+      absent_files=["roadworthiness", "check"], note="MOT for the check"),
+    Q("syn-05", "synonym", "What do we do about the insects by the back door?", "insects back door",
+      parts=[[R(HOUSE + "pests.md", "Ants by the back door", ["chalk line"])]],
+      absent_files=["insects"], note="ants for insects; back door also occurs elsewhere"),
+    Q("syn-06", "synonym", "When is Otto's ear check?", "Otto ear check",
+      parts=[[R("home/health/health-notes.md", "hearing test", ["17 march", "9:20"])]],
+      absent_files=["ear", "check"], note="hearing test for ear check"),
+    Q("syn-07", "synonym", "What is Pickle's diet?", "Pickle diet",
+      parts=[[R("home/pets/pickle.md", "Half a scoop", ["no grapes"])]],
+      absent_files=["diet"], stale=[R("archive/pickle-2024.md", "One scoop", ["one scoop"])],
+      note="food for diet; the 2024 note is out of date"),
+    Q("syn-08", "synonym", "Who looks after the Tool Share's money?", "Tool Share money",
+      parts=[[R(TS + "docs/committee.md", "Treasurer: Kofi Dunleavy", ["treasurer", "kofi dunleavy"]),
+              R("archive/committee-2025.md", "Treasurer: Kofi Dunleavy", ["treasurer"]),
+              R(TS + "docs/treasurer.md", "# Treasurer's notes", ["treasurer"])]],
+      absent_files=["money"], note="treasurer for who looks after the money; both committee lists agree on him"),
+    Q("syn-09", "synonym", "How much is the Tool Share subscription?", "Tool Share subscription",
+      parts=[[R(TS + "site/join.html", "Membership is 10 pounds", ["10 pounds a year"])]],
+      absent_files=["subscription"], note="membership for subscription"),
+    Q("syn-10", "synonym", "When is Pickle's next jab?", "Pickle jab",
+      parts=[[R("home/pets/pickle.md", "Booster vaccination", ["12 january 2027"])]],
+      absent_corpus=["jab"], note="booster vaccination for jab"),
+
+    # ---------------------------------------------------------------- rework 1: table
+    Q("table-01", "table", "Which order did we send back?", "order sent back",
+      parts=[[R("home/money/orders.md", "55102-B", ["garden hose reel", "returned"])]],
+      absent_files=["back"], note="Markdown table: the row whose Status is returned, its What"),
+    Q("table-02", "table", "When did we order Otto's school shoes?", "Otto school shoes order",
+      parts=[[R("home/money/orders.md", "60977-A", ["2026-10-01"])]],
+      note="Markdown table: the row by What, its Date"),
+    Q("table-03", "table", "Which room is chess club in?", "chess club room",
+      parts=[[R("school/clubs-autumn.md", "| Chess |", ["library"])]],
+      note="Markdown table: the row by Club, its Room"),
+    Q("table-04", "table", "Who runs the Thursday club?", "Thursday club",
+      parts=[[R("school/clubs-autumn.md", "| Thursday |", ["mr ashby"])]],
+      note="Markdown table: the row by Day, its Runs it; Thursday occurs in many files"),
+    Q("table-05", "table", "Which shelf is the hedge trimmer on?", "hedge trimmer shelf",
+      parts=[[R(TS + "data/inventory.yaml", "name: hedge trimmer", ["hedge trimmer", "c2"], end="shelf: C2")]],
+      note="YAML records: the entry by name, its shelf"),
+    Q("table-06", "table", "How many times was the tile cutter lent this year?", "tile cutter lent",
+      parts=[[R(TS + "data/loans-2026.csv", "TS-005,", ["tile cutter,1"])]],
+      note="CSV (not read today): the row by tool, its loans_2026"),
+    Q("table-07", "table", "What does Kit Arden do?", "Kit Arden",
+      parts=[[R("home/contacts.tsv", "Kit Arden", ["plumber"]),
+              R("home/lists/useful-numbers.txt", "Kit Arden", ["plumber"])]],
+      note="TSV (not read today): the row by name, its role; the numbers list says it too"),
+    Q("table-08", "table", "What is the energy budget for March?", "energy budget March",
+      parts=[[R("home/money/budget-2026.csv", "mar,", ["138"])]],
+      note="CSV (not read today): the row by month (mar), its energy column"),
+    Q("table-09", "table", "Who is on the desk on 21 November?", "desk 21 November",
+      parts=[[R(TS + "data/volunteer-rota.csv", "2026-11-21", ["ines"])]],
+      note="CSV (not read today): the row by date, its desk column"),
+    Q("table-10", "table", "What did the window cleaner charge?", "window cleaner charge",
+      parts=[[R("home/money/house-costs-2026.csv", "2026-01-15,Window cleaner", ["18.00"]),
+              R("home/money/house-costs-2026.csv", "2026-10-14,Window cleaner", ["18.00"])]],
+      note="CSV (not read today): either row by who, its amount"),
+
+    # ---------------------------------------------------------------- rework 1: current-copy
+    Q("cur-01", "current-copy", "How long can tools be borrowed for?", "tools borrowed how long",
+      parts=[[R(TS + "docs/lending-rules.md", "up to 7 days", ["7 days"])]],
+      stale=[R("archive/lending-rules-2024.md", "up to 14 days", ["14 days"])]),
+    Q("cur-02", "current-copy", "When is the next boiler service?", "next boiler service",
+      parts=[[R(HOUSE + "boiler.md", "Next service due", ["march 2027"]),
+              R("inbox/boiler-service-2026-03-14.txt", 1, ["next one in a year"], end=1)]],
+      stale=[R("archive/boiler-2025.md", "Next service due", ["march 2026"])]),
+    Q("cur-03", "current-copy", "When is the Christmas concert?", "Christmas concert",
+      parts=[[R("school/calendar-autumn.md", "Christmas concert", ["16 december", "2 pm"])]],
+      stale=[R("school/calendar-autumn-draft.md", "Christmas concert", ["15 december"])]),
+    Q("cur-04", "current-copy", "Who chairs the Tool Share committee?", "committee chair",
+      parts=[[R(TS + "docs/committee.md", "Chair: Ines Marrow", ["ines marrow"])]],
+      stale=[R("archive/committee-2025.md", "Chair: Orla Quent", ["orla quent"])]),
+    Q("cur-05", "current-copy", "When does the Tool Share committee meet?", "committee meet when",
+      parts=[[R(TS + "docs/committee.md", "The committee meets on", ["first tuesday", "7:30"])]],
+      stale=[R("archive/committee-2025.md", "The committee meets on", ["second wednesday"])]),
+    Q("cur-06", "current-copy", "How much food does Pickle get?", "Pickle food how much",
+      parts=[[R("home/pets/pickle.md", "Half a scoop", ["morning and evening"])]],
+      stale=[R("archive/pickle-2024.md", "One scoop", ["morning only"])]),
+    Q("cur-07", "current-copy", "Where are we staying in Cornwall?", "Cornwall staying",
+      parts=[[R("home/trips/cornwall-2026.md", "Accommodation: Gull Cottage", ["gull cottage", "booked"])]],
+      stale=[R("home/trips/cornwall-2026-draft.md", "Two cottages to choose from", ["heron barn"])]),
+    Q("cur-08", "current-copy", "When do we arrive in Cornwall?", "arrive Cornwall",
+      parts=[[R("home/trips/cornwall-2026.md", "Arrive Saturday 24 October", ["saturday 24 october"])]],
+      stale=[R("home/trips/cornwall-2026-draft.md", "Arrive Friday 23 October", ["friday 23 october"])]),
+    Q("cur-09", "current-copy", "Where is the spare key?", "spare key",
+      parts=[[R(HOUSE + "house-notes.md", "spare key under the blue pot", ["blue pot"])]],
+      stale=[R("archive/house-notes-2024.md", "The spare key is in the key safe", ["key safe"])]),
+
+    # ---------------------------------------------------------------- rework 1: where-is-it
+    Q("where-01", "where-is-it", "Where is the spreadsheet with the loans?", "spreadsheet loans",
+      parts=[[R(TS + "data/loans-2026.csv", 1, ["id,tool,loans_2026"], end=1)]],
+      absent_files=["spreadsheet"], note="a CSV file (not read today); loans is in its name"),
+    Q("where-02", "where-is-it", "Which script does the backup?", "backup script",
+      parts=[[R(TS + "scripts/backup.sh", 1, ["nightly copy"], end=3)]],
+      absent_files=["backup"], note="a shell script (not read today); backup is in its name"),
+    Q("where-03", "where-is-it", "Where is the server log for June?", "server log June",
+      parts=[[R(TS + "logs/server-2026-06.log", 1, ["2026-06-01"], end=1)]],
+      absent_files=["june"], note="a .log file (not read today); June is 06 in its name"),
+    Q("where-04", "where-is-it", "Where is the Tool Share website's stylesheet?", "website stylesheet",
+      parts=[[R(TS + "site/styles.css", 1, ["font-family"], end=2)]],
+      absent_files=["website", "stylesheet"], note="styles.css; neither word in the file"),
+    Q("where-05", "where-is-it", "Which Python file defines the loan record?", "python loan record",
+      parts=[[R(TS + "src/models.py", 1, ["plain records"], end=1)]],
+      absent_files=["python"], note="models.py; the docstring says records and loans"),
+    Q("where-06", "where-is-it", "Where is the Tool Share site map?", "site map",
+      parts=[[R(TS + "site/sitemap.xml", "<urlset>", ["urlset"])]],
+      absent_files=["map"], note="an XML file (not read today); sitemap is one word in its name"),
+    Q("where-07", "where-is-it", "Where is the family budget spreadsheet?", "budget spreadsheet",
+      parts=[[R("home/money/budget-2026.csv", 1, ["month,food,energy"], end=1)]],
+      absent_files=["spreadsheet"], note="a CSV file (not read today)"),
+    Q("where-08", "where-is-it", "Where is the list of phone numbers?", "phone numbers list",
+      parts=[[R("home/lists/useful-numbers.txt", 1, ["useful numbers"], end=1),
+              R("home/contacts.tsv", 1, ["phone"], end=1)]],
+      absent_files=["list"], note="the numbers list, or contacts.tsv (not read today)"),
+    Q("where-09", "where-is-it", "Where is the to-do list?", "to-do list",
+      parts=[[R("home/TODO", 1, ["ring bram"], end=3)]],
+      absent_files=["list"], note="a file named TODO, no extension (not read today)"),
+    Q("where-10", "where-is-it", "Where are the smart plug timers?", "smart plug timers",
+      parts=[[R("home/house/smart-plugs.json", 1, ["plugs"], end=7)]],
+      absent_files=["timers"], note="a JSON file"),
 ]
 
 
@@ -493,32 +723,70 @@ def locate_end(lines: list[str], anchor, start: int, path: str) -> int:
     raise ValueError(f"{path}: end anchor {anchor!r} not found at or after line {start}")
 
 
+def resolve_range(corpus: dict[str, bytes], qid: str, r: dict) -> dict:
+    if r["path"] not in corpus:
+        raise ValueError(f"{qid}: no file {r['path']}")
+    lines = lines_of(corpus[r["path"]])
+    start = locate(lines, r["anchor"], r["path"])
+    end = locate_end(lines, r["end"], start, r["path"]) if r["end"] is not None else start
+    if end < start:
+        raise ValueError(f"{qid}: {r['path']} end {end} before start {start}")
+    return {"path": r["path"], "start_line": start, "end_line": end, "keys": r["keys"] or [r["anchor"]]}
+
+
+def readable(path: str) -> bool:
+    name = path.rsplit("/", 1)[-1]
+    return "." in name and name[name.rindex("."):].lower() in READABLE_EXTENSIONS
+
+
+def file_counts(corpus: dict[str, bytes]) -> dict[str, int]:
+    """For every analyzer token: how many readable files hold it, exact copies counted once."""
+    from src.search_platform.core import tokenize  # the repository analyzer, no stemming
+
+    seen: set[bytes] = set()
+    counts: dict[str, int] = {}
+    for path in sorted(corpus):
+        data = corpus[path]
+        if not readable(path) or data in seen:
+            continue
+        seen.add(data)
+        for tok in set(tokenize(data.decode("utf-8"))):
+            counts[tok] = counts.get(tok, 0) + 1
+    return counts
+
+
+def single_source(query: str, counts: dict[str, int]) -> bool:
+    """True when the rarest query token that occurs in a readable file occurs in exactly one."""
+    from src.search_platform.core import tokenize
+
+    present = [counts[tok] for tok in tokenize(query) if counts.get(tok, 0) > 0]
+    return bool(present) and min(present) == 1
+
+
 def resolve(corpus: dict[str, bytes]) -> list[dict]:
     out = []
+    counts = file_counts(corpus)
     for q in QUESTIONS:
         assert q["kind"] in KINDS, q["id"]
         parts = []
         files = []
         for part in q["parts"]:
-            ranges = []
-            for r in part:
-                if r["path"] not in corpus:
-                    raise ValueError(f"{q['id']}: no file {r['path']}")
-                lines = lines_of(corpus[r["path"]])
-                start = locate(lines, r["anchor"], r["path"])
-                end = locate_end(lines, r["end"], start, r["path"]) if r["end"] is not None else start
-                if end < start:
-                    raise ValueError(f"{q['id']}: {r['path']} end {end} before start {start}")
-                ranges.append({"path": r["path"], "start_line": start, "end_line": end,
-                               "keys": r["keys"] or [r["anchor"]]})
+            ranges = [resolve_range(corpus, q["id"], r) for r in part]
+            for r in ranges:
                 if r["path"] not in files:
                     files.append(r["path"])
             parts.append({"ranges": ranges})
-        row = {"id": q["id"], "kind": q["kind"], "question": q["question"]}
-        if q["query"] is not None and q["query"] != q["question"]:
-            row["query"] = q["query"]
+        query = q["query"] if q["query"] is not None else q["question"]
+        row = {"id": q["id"], "kind": q["kind"], "question": q["question"], "query": query}
+        if q["was"]:
+            row["was"] = q["was"]
+        if q["added"] or (q["kind"] in NEW_KINDS and not q["was"]):
+            row["added"] = "rework-1"
         row["files"] = files
         row["parts"] = parts
+        if q["stale"]:
+            row["stale"] = [resolve_range(corpus, q["id"], r) for r in q["stale"]]
+        row["single_source"] = bool(files) and single_source(query, counts)
         checks = {}
         if q["absent_from_corpus"]:
             checks["absent_from_corpus"] = q["absent_from_corpus"]
@@ -540,7 +808,7 @@ def judgments() -> dict:
     counts = {kind: sum(1 for q in questions if q["kind"] == kind) for kind in KINDS}
     return {
         "schema": SCHEMA,
-        "version": 1,
+        "version": 2,
         "pack": "text-search",
         "corpus": {
             "generator": "scripts/gen_text_search_corpus.py",
@@ -551,12 +819,16 @@ def judgments() -> dict:
         },
         "conventions": {
             "lines": "1-based; a line ends at \\n or \\r\\n; a final line without a terminator counts",
-            "query": "the words sent to the engine are `query` when present, else `question`",
+            "forms": "every question is sent twice: `question` as typed, and `query`, the words a caller would pick (the same text when none were picked)",
+            "was": "the id the question had in version 1, when it moved kind",
+            "added": "rework-1 for a question that version 1 did not have",
+            "stale": "ranges of an older or draft copy that disagrees with the answer; returning them is not an answer",
+            "single_source": "the rarest query token that any readable file holds is held by exactly one (repository analyzer, no stemming, exact copies counted once; readable = an extension the engine reads today)",
             "parts": "every part is one thing a complete answer cites; any one of a part's ranges satisfies it",
             "files": "every path named in any part; `files` is empty exactly for no-answer questions",
             "range_inside_passage": "a range is found when a returned passage has the same path and start_line <= range start and range end <= end_line",
             "keys": "each key occurs, case-folded, in the text of the range's lines joined by newlines",
-            "checks": "absent_from_corpus: no file holds the word as a token; absent_from_files: none of `files` holds it as a token (repository analyzer)",
+            "checks": "absent_from_corpus: no file holds the word as a token; absent_from_files: no file of a part's first range holds it as a token (repository analyzer); a later range is an alternative that may hold it",
         },
         "kinds": {kind: {"what": what, "questions": counts[kind]} for kind, what in KINDS.items()},
         "questions": questions,

@@ -1,0 +1,18 @@
+Rework 1: the engine, the determinism of the scorer, and the corpus.
+zig version: 0.16.0
+build: zig build -Doptimize=ReleaseSmall --prefix <scratch>/prefix-87bfd35 (in zig/ of a shared clone of main at 87bfd35, in scratch; main and its worktrees untouched)
+searchd sha256 (main 87bfd35): 5ad3de31652ab4db88302678132c86ac5e45de25b6f3ce0630b28cf33f6bd8c1
+searchd sha256 (b8852d8, the v1 baseline's): 46b9d718f6720f245b773c24a40b236230df204a9dd70dbe02e19f0f64d56fb6
+zig/src at 87bfd35 differs from b8852d8 (S6-T20, S6-T21: status lines, CLI); the engine's answers do not: both binaries scored on the final judgments, 0 of 1448 question rows differ and every summary is equal.
+this branch's zig/, contracts/, bindings/ against b8852d8: 0 lines of diff (no engine change)
+
+scorer, twice on 87bfd35 (r1-run1, r1-run2): JSON and Markdown byte-identical (cmp)
+  json sha256 fc3734fd09126156d5e662a9539de7583e511c639d9fe5a1b1864a2a3ba916d3  = fc3734fd09126156d5e662a9539de7583e511c639d9fe5a1b1864a2a3ba916d3
+  md   sha256 edf54b12980c58af8443157658ac4ff06bb8dc0e8dd66497a5692ba00626688f  = edf54b12980c58af8443157658ac4ff06bb8dc0e8dd66497a5692ba00626688f
+  committed baseline-rework-1.json sha256 fc3734fd09126156d5e662a9539de7583e511c639d9fe5a1b1864a2a3ba916d3
+  1,448 searchd calls per run, about 11 s
+
+corpus: 270 files, 141726 bytes, sha256 35a08d3237d32952ad77abfc5ea19c61098dce23e486a6bc136b2eaa3d5519d9
+the 264 files of version 1, without the 6 added: d2bf0314a2769cb78d9077dbe196a1c53216e8393b0c150a6781badae0e94e26 (v1: d2bf0314...)
+added in rework 1: home/trips/cornwall-2026-draft.md, archive/lending-rules-2024.md, archive/boiler-2025.md, school/calendar-autumn-draft.md, archive/pickle-2024.md, school/clubs-autumn.md
+changed files of version 1: none

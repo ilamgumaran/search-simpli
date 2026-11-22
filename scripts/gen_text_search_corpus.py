@@ -10,8 +10,9 @@ than their text.
 **Invented content only.** The Pellow family of 14 Copper Lane, Harrowdean
 (Tamsin, Idris, Mira in Year 6, Otto in Year 2, Valli Paati their grandmother,
 Pickle the dog) and the Harrowdean Tool Share, a lending library for tools run
-by volunteers. No real person, place, firm or product. Phone numbers are from
-the 01632 960xxx range set aside for drama.
+by volunteers. No real person, firm or product, and no real place but the
+county of Cornwall, where a trip goes. Phone numbers are from the 01632 960xxx
+range set aside for drama; web addresses are on `.invalid`.
 
 Two kinds of file: *planted* files, written out below, which hold the answers
 the questions in `fixtures/text-search/judgments.json` are judged against; and
@@ -932,6 +933,88 @@ plant("paati/தீபாவளி-பட்டியல்.txt", """\
 புதிய உடைகள்
 விளக்குகள் இருபது
 பட்டாசு வேண்டாம்
+""")
+
+# --- Rework 1: older or draft copies that disagree with the current file ------
+# Added for the `current-copy` kind. Planted text only, so the RNG draws of the
+# filler below (and every file of the first version) are unchanged.
+
+ADDED_IN_REWORK_1 = (
+    "home/trips/cornwall-2026-draft.md",
+    "archive/lending-rules-2024.md",
+    "archive/boiler-2025.md",
+    "school/calendar-autumn-draft.md",
+    "archive/pickle-2024.md",
+    "school/clubs-autumn.md",
+)
+
+plant("home/trips/cornwall-2026-draft.md", """\
+# Cornwall, half term 2026
+
+## Getting there
+
+Arrive Friday 23 October in the evening; collect the key from the farm shop.
+
+## Accommodation
+
+Two cottages to choose from: Gull Cottage or Heron Barn.
+""")
+
+plant("archive/lending-rules-2024.md", """\
+# Lending rules
+
+## How long
+
+Tools can be borrowed for up to 14 days.
+
+## Deposits
+
+A refundable deposit of 10 pounds is taken for power tools.
+""")
+
+plant("archive/boiler-2025.md", """\
+# Boiler
+
+Make: Halvard Combi 28. Installed 2019, in the airing cupboard.
+
+## Service record
+
+- 2024-03-02: serviced by Wenlow Heating, all fine.
+- 2025-03-11: serviced by Wenlow Heating, flue seal replaced.
+
+## Next service
+
+Next service due in March 2026.
+""")
+
+plant("school/calendar-autumn-draft.md", """\
+# School calendar, autumn term 2026 (draft)
+
+## Second half
+
+- 21 November: school photographs
+- 15 December: Christmas concert, 6 pm, St Aldric's church
+""")
+
+plant("archive/pickle-2024.md", """\
+# Pickle
+
+## Food
+
+One scoop in the morning only; a chew in the evening.
+""")
+
+# A Markdown table, for the `table` kind: a row found by one column, the answer
+# in another. (The other tables of the folder are CSV and TSV, not read today.)
+plant("school/clubs-autumn.md", """\
+# After-school clubs, autumn term 2026
+
+| Day | Club | Room | Runs it |
+| --- | --- | --- | --- |
+| Monday | Chess | Library | Mr Okafor |
+| Tuesday | Choir | Music room | Ms Brennan |
+| Wednesday | Coding | ICT suite | Mrs Duval |
+| Thursday | Football | Field | Mr Ashby |
 """)
 
 # ---------------------------------------------------------------------------

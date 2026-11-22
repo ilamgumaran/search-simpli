@@ -1,0 +1,76 @@
+Every question of version 1 whose judgment, query, kind, check or note changed in rework 1, or whose score moved,
+with its score before (baseline-v1, the query form) and after (baseline-rework-1, the query form), both fields, direct search.
+Question texts are unchanged (tests: test_version_1_questions_keep_their_wording). Score: file rank, passage rank, parts found.
+
+word-05: no change to it; a file added in rework 1 (archive/lending-rules-2024.md, an older copy) now ranks above its answer
+   both     file 1, passage 1, parts 1/1, complete  ->  file 2, passage 2, parts 1/1, complete
+   content  file 1, passage 1, parts 1/1, complete  ->  file 2, passage 2, parts 1/1, complete
+word-06: judged ranges; note
+   both     file 1, passage None, parts 0/1, incomplete  ->  file 1, passage 2, parts 1/1, complete
+   content  file 1, passage 3, parts 1/1, complete  ->  file 1, passage 2, parts 1/1, complete
+form-10: judged ranges; note
+   both     file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+   content  file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+spell-04: judged ranges; note
+   both     file 1, passage 1, parts 1/2, incomplete  ->  file 1, passage None, parts 0/1, incomplete
+   content  file 1, passage 1, parts 1/2, incomplete  ->  file 1, passage None, parts 0/1, incomplete
+spell-09: judged ranges; note
+   both     file 1, passage 1, parts 1/2, incomplete  ->  file 1, passage None, parts 0/1, incomplete
+   content  file 1, passage 1, parts 1/2, incomplete  ->  file 1, passage None, parts 0/1, incomplete
+spell-10: judged ranges
+   both     file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+   content  file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+spell-12: note
+   both     file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+   content  file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+number-02: judged ranges
+   both     file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+   content  file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+number-05: query '2026-06-17 error' -> 'server 2026-06-17'
+   both     file None, passage None, parts 0/1, incomplete  ->  file None, passage None, parts 0/1, incomplete
+   content  file None, passage None, parts 0/1, incomplete  ->  file None, passage None, parts 0/1, incomplete
+number-06: judged ranges; note
+   both     file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+   content  file 1, passage 1, parts 1/1, complete  ->  file 1, passage 1, parts 1/1, complete
+span-02: query 'sourdough prove bake temperature' -> 'sourdough prove how long oven'
+   both     file 1, passage 1, parts 1/2, incomplete  ->  file 3, passage None, parts 0/2, incomplete
+   content  file 1, passage 1, parts 2/2, complete  ->  file 3, passage 5, parts 1/2, incomplete
+span-07: query 'borrowed how long late returns' -> 'tool borrowed how long back late'
+   both     file 1, passage 1, parts 1/2, incomplete  ->  file 2, passage 2, parts 1/2, incomplete
+   content  file 1, passage 1, parts 2/2, complete  ->  file 2, passage 2, parts 2/2, complete
+span-08: judged ranges; note
+   both     file 1, passage 1, parts 1/2, incomplete  ->  file 1, passage 1, parts 1/2, incomplete
+   content  file 1, passage 1, parts 2/2, complete  ->  file 1, passage 1, parts 2/2, complete
+span-11: query 'ladder cordless drill shelf' -> 'ladder cordless drill kept'
+   both     file 1, passage 1, parts 1/2, incomplete  ->  file 2, passage 2, parts 1/2, incomplete
+   content  file 1, passage 1, parts 2/2, complete  ->  file 2, passage 2, parts 2/2, complete
+pair-01: judged ranges
+   both     file 1, passage 1, parts 1/2, incomplete  ->  file 2, passage 2, parts 1/2, incomplete
+   content  file 1, passage 1, parts 1/2, incomplete  ->  file 2, passage 2, parts 1/2, incomplete
+pair-04: kind two-files -> word, now word-13; judged ranges; note
+   both     file 1, passage 1, parts 2/2, complete  ->  file 1, passage 1, parts 2/2, complete
+   content  file 1, passage 1, parts 2/2, complete  ->  file 1, passage 1, parts 2/2, complete
+pair-06: kind two-files -> word, now word-14; judged ranges; note
+   both     file 1, passage 1, parts 1/2, incomplete  ->  file 1, passage 1, parts 2/2, complete
+   content  file 1, passage 1, parts 2/2, complete  ->  file 1, passage 1, parts 2/2, complete
+pair-07: kind two-files -> word, now word-15; judged ranges; note
+   both     file 1, passage 1, parts 2/2, complete  ->  file 1, passage 1, parts 2/2, complete
+   content  file 1, passage 1, parts 2/2, complete  ->  file 1, passage 1, parts 2/2, complete
+pair-09: query 'reminders sent twice fixed release' -> 'release fixed reminders going out twice issue'
+   both     file 1, passage 1, parts 2/2, complete  ->  file 1, passage 1, parts 2/2, complete
+   content  file 1, passage 1, parts 2/2, complete  ->  file 1, passage 1, parts 2/2, complete
+name-01: judged ranges; note
+   both     file 2, passage 2, parts 1/1, complete  ->  file 2, passage 2, parts 1/1, complete
+   content  file 2, passage 2, parts 1/1, complete  ->  file 2, passage 2, parts 1/1, complete
+about-05: judged ranges; note
+   both     file 1, passage 1, parts 3/3, complete  ->  file 1, passage 1, parts 3/3, complete
+   content  file 1, passage 1, parts 3/3, complete  ->  file 1, passage 1, parts 3/3, complete
+about-09: judged ranges; note
+   both     file 9, passage 9, parts 1/4, incomplete  ->  file 3, passage 3, parts 3/8, incomplete
+   content  file 9, passage 9, parts 1/4, incomplete  ->  file 3, passage 3, parts 3/8, incomplete
+none-04: no change to it; a file added in rework 1 is among its results (it has no answer)
+   both     returned 2  ->  returned 3
+   content  returned 2  ->  returned 3
+none-07: kind no-answer -> synonym, now syn-01; judged ranges; note
+   both     returned 0  ->  file None, passage None, parts 0/1, incomplete
+   content  returned 0  ->  file None, passage None, parts 0/1, incomplete

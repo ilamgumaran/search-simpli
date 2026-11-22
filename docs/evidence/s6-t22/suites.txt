@@ -50,3 +50,21 @@ exit 0
 
 == python3 -I scripts/text_search_questions.py --check fixtures/text-search/judgments.json
 fixtures/text-search/judgments.json: up to date
+
+== Rework 1
+Before: the branch at 2f58f27 (the Verdict commit; it changed only docs/ after 0cd6f5f, so its counts are the
+"after" counts above: 596 · 596 · 540, 44 skipped). After: the rework-1 tree, before the commit.
+
+== rework-1-debug
+Ran 608 tests in 129.255s
+OK
+
+== rework-1-releasesmall (SEARCHD_BINARY = the ReleaseSmall searchd built from this worktree, sha256 46b9d718...)
+Ran 608 tests in 69.874s
+OK
+
+== rework-1-no-zig
+Ran 552 tests in 49.320s
+OK (skipped=44)
+
+test_text_search_score.py: 16 -> 28 tests (+12).
