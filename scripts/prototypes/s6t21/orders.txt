@@ -1,0 +1,68 @@
+# S6-T21 builder: the timing runs the rule of 2026-11-17 requires (docs/process/ROLES.md; decision 0003, section 7,
+# read the same way here). Written, committed and pushed before the first timed run (21 Nov 2026). Nothing below is
+# chosen after seeing a timed number. Harness: S6-T14's (scripts/prototypes/s6t14/run_timing.sh, gate.sh,
+# summarize.py) over scripts/prototypes/s6t9/bench.py bench, unchanged; this file is its ORDERS.
+#
+# What the rule requires for a writer-only change: the rule compares the head with the controls "for every request,
+# changed path or not", with no exception for a change on the writer's path. No open, query or find source changes
+# here (the check runs in apply.applyParsed with a caller's number and in lifecycle's serialized publishes), but the
+# natives' compiled code moves with the rebuild. So: five gated runs in the Latin-square orders below, main, main2
+# and two placement controls matching the head's compiled-code delta, every open, query and find cell of the three
+# 10k corpora, judged by the rule.
+#
+# Expectation, stated before measuring: no open, query or find source changes, so every judged cell passes the rule.
+# The literal difference is reported beside it.
+#
+# Builds (macOS arm64 ReleaseSmall libsearch_simpli.dylib; __text from size -m):
+#   main  = a8fc2a2, `zig build lib -Doptimize=ReleaseSmall` in a git archive with its own local and global caches:
+#           1,007,208 B, sha256 31a431b0a72e76e7... (= main's committed native), __text 591,880 B
+#   main2 = a8fc2a2 built again in another archive copy with its own caches: byte-identical to main
+#   head  = this branch's native/macos-arm64/libsearch_simpli.dylib as committed (tool/build_native.sh):
+#           1,007,096 B, sha256 ed938358e6758fc7..., __text 592,564 B (+684 B)
+#   Controls: main + one never-run function (scripts/prototypes/s6t20/make_control.py, unchanged), called under a
+#   branch never true at run time:
+#   cl = place l, 7 blocks + 3 steps: snapshot_open.loadEngine, after the MANIFEST read (every open)
+#        1,007,416 B, sha256 8d24eefc2d5fc058..., __text 592,556 B (+676 B)
+#   ci = place i, 7 blocks + 3 steps: indexer.walkAndApply (a writer's path, as the change is; never on an open, a
+#        query or a find)
+#        1,007,208 B, sha256 1215d0f98f4bbba9..., __text 592,600 B (+720 B)
+#   The head's delta is +684 B; the controls match it in size and sign (+676 and +720 B). Sized by building 5 blocks
+#   + 2 steps first (cl +480 B), before any timed run.
+#
+# Control set (fixed now): main2, cl, ci.
+# Cells, per corpus (timing-10k, prose-10k, tamil-10k, 10,000 files each; S6-T14's corpora and query files, copied
+# from S6-T20's scratch), from bench.py bench:
+#   open    open_p50 (ss_open + ss_close, 30 timed after 3 warm-ups)
+#   query   every warm query p50 (each query of the set under content, filename and both; 300 timed calls)
+#   find    every find request p50 (100 timed calls)
+#   the first query and the first find after an open are reported beside them, not judged.
+# T = max(0.010 ms, 1 % of main's five-run median for the cell). A cell fails if median_r(head - main) >= T and
+# exceeds by >= T the largest median_r(control - main) over the control set (rule of 2026-11-17). Band excursions
+# (head above every other build in 3 or more of 5 runs) are tabulated, never failing.
+#
+# Indexes: main's and the head's searchd (ReleaseSmall, --filename-index) each indexed the three corpora; `diff -r` of
+# the two sets: identical, 9 files each (the index format and a lone rebuild's number do not change). Each build opens
+# its own copy: head a copy of the head's, the others copies of main's. Answers (bench.py answers, every query under
+# the three fields and every find; 55, 55 and 56): identical between main and head on the three corpora, every field
+# but the library and index paths.
+#
+# Each run, from the worktree, only when the orchestrator says the machine is awake:
+#   bash scripts/prototypes/s6t14/run_timing.sh R scripts/prototypes/s6t21/orders.txt \
+#     <scratch>/t/libs <scratch>/t/idx <scratch>/t/queries <scratch>/t/out
+# then python3 -I scripts/prototypes/s6t14/summarize.py main head main2,cl,ci <scratch>/t/out/query-run*.jsonl
+#
+# The load gate (gate.sh: lock absent, 5-minute load below 4.0, no toolchain at 20 % CPU or more in top's top eight)
+# runs before every process; a refused gate stops that run, which is not retried in a loop: a run not taken is
+# reported as owed. pmset -g log is read for Sleep, Wake and DarkWake inside each run's window afterwards; a run with
+# a Sleep or Wake inside it is discarded whole and retaken as the same number with "b".
+# Latin square: builds rotated left by (r - 1) mod 5 in run r, corpora rotated left by (r - 1) mod 3.
+run1:main main2 head cl ci
+corpora1:timing-10k prose-10k tamil-10k
+run2:main2 head cl ci main
+corpora2:prose-10k tamil-10k timing-10k
+run3:head cl ci main main2
+corpora3:tamil-10k timing-10k prose-10k
+run4:cl ci main main2 head
+corpora4:timing-10k prose-10k tamil-10k
+run5:ci main main2 head cl
+corpora5:prose-10k tamil-10k timing-10k
