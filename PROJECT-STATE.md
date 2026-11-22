@@ -15,7 +15,7 @@ and [review evidence](docs/reviews/2026-11-11-search-review-evidence.json)
 record proposals and their validation steps. They are not accepted capabilities
 or implementation tasks; current search behavior and native artifacts are unchanged.
 
-## A full rebuild chooses its generation number under the writer lock (S6-T20, after S6-T17's Verdict, 2026-11-21; merged 21 Nov 2026, Verdict PASS; rework 1 added the one-lease test; a caller-supplied number below the current one is still published, open for a separate task)
+## A full rebuild chooses its generation number under the writer lock (S6-T20, after S6-T17's Verdict, 2026-11-21; merged 21 Nov 2026, Verdict PASS; rework 1 added the one-lease test; a caller-supplied number below the current one is still published, open for [S6-T21](docs/tasks/S6-T21.md))
 
 **Merged, verified** ([task and Report](docs/tasks/S6-T20.md); [decision 0003](docs/decisions/0003-full-rebuild-numbers-under-writer-lock.md)).
 A full rebuild (`ss_index_folder` without `update`, `searchd index` without `--update` or `--generation`) chose its
