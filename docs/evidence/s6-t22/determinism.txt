@@ -1,0 +1,14 @@
+Two baseline runs, each into a new scratch folder, same binary and judgments:
+855b876e2512ad891069c3723922f4f8f3f65176ac592588ba77b702a2bafa77  <scratch>/base4.json
+855b876e2512ad891069c3723922f4f8f3f65176ac592588ba77b702a2bafa77  <scratch>/base5.json
+01f5f5b09e6460d1d51daf64162d7318ec2c10804e504ca9ccf210eb2cd8a784  <scratch>/base4.md
+01f5f5b09e6460d1d51daf64162d7318ec2c10804e504ca9ccf210eb2cd8a784  <scratch>/base5.md
+cmp: identical (JSON and Markdown)
+
+A third run, timed (wall clock, includes generating the folder and indexing it):
+both: file@10 0.88 (103/117), passage@10 0.86 (101/117), complete 0.71 (83/117)
+real 4.42
+user 2.62
+sys 1.67
+cmp run 3: identical
+load averages: 5.68 5.27 3.75

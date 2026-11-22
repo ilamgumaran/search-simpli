@@ -1,0 +1,7 @@
+zig version: 0.16.0
+build: zig build -Doptimize=ReleaseSmall --prefix <scratch>/prefix (in zig/, at b8852d8)
+searchd sha256: 46b9d718f6720f245b773c24a40b236230df204a9dd70dbe02e19f0f64d56fb6
+zig/src tree at main b8852d8: 9c224562e0789ad7cef3219cb76243c2a1506b5e
+zig/src tree at HEAD:        9c224562e0789ad7cef3219cb76243c2a1506b5e
+git diff --stat b8852d8 -- zig contracts bindings (working tree):
+(end of diff)

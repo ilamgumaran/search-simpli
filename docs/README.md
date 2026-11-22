@@ -43,6 +43,7 @@ This directory is the durable knowledge base for Search Simpli. It separates why
 - [Measured scale behavior](scale-benchmark.md)
 - [Index size: where the bytes go and what to change](index-size.md) (S6-T3, plan item D1)
 - [Product-search relevance benchmark and smoke gate](relevance-benchmark.md)
+- [Text-search score: the right file and the right passage](text-search-score.md) (S6-T22, plan step H1)
 - [Proposed E-01A real-folder judgment-pack workflow](requirements/cap-11-e01a-judgment-packs.md)
 
 ## Interfaces and safety

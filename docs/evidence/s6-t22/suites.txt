@@ -1,0 +1,52 @@
+Python suite, python3 -m unittest discover -s tests (SEARCH_SIMPLI_LIBRARY_PATH unset).
+Before: main b8852d8 (Debug: this worktree before any file was added; ReleaseSmall and no-Zig: a local clone of b8852d8 in scratch).
+After: task/S6-T22, the final tree, after the Report was written and git add -A.
+
+== before-debug
+Ran 580 tests in 111.279s
+OK
+
+== after-debug
+Ran 596 tests in 134.105s
+OK
+
+== before-releasesmall
+Ran 580 tests in 64.312s
+OK
+
+== after-releasesmall
+Ran 596 tests in 68.069s
+OK
+
+== before-no-zig
+Ran 525 tests in 53.843s
+OK (skipped=43)
+
+== after-no-zig
+Ran 540 tests in 64.940s
+OK (skipped=44)
+
+Modes: debug = env -u SEARCH_SIMPLI_NO_ZIG -u SEARCHD_BINARY (each module builds a Debug searchd);
+releasesmall = SEARCHD_BINARY=<scratch>/prefix/bin/searchd (ReleaseSmall, built from this worktree); no-zig = SEARCH_SIMPLI_NO_ZIG=1.
+
+== python3 -I scripts/check_test_counts.py --run (Debug zig build test; no Zig file changed by this task)
+| Step | Build Summary line | Listed (check_layers) | Ran (zig build test) | |
+|---|---|---:|---|---|
+| core | `run test core` | 260 | 260 (260 pass) | ok |
+| operations | `run test operations` | 9 | 9 (9 pass) | ok |
+| interfaces | `run test interfaces` | 25 | 25 (25 pass) | ok |
+| tests | `run test tests` | 300 | 300 (291 pass, 9 skip) | ok |
+| fastmem | `run test` | 6 | 6 (6 pass) | ok |
+check_test_counts: OK (5 steps, 600 tests: every step ran the tests the listing has, and the static checker passes)
+
+== python3 -I scripts/check_layers.py
+check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 600 tests, each run by a step of `zig build test`; the public core API `api`: 85 names in 22 namespaces)
+
+== python3 -I scripts/check_requirements.py
+Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+
+== python3 -I scripts/check_no_home_paths.py (after git add -A)
+exit 0
+
+== python3 -I scripts/text_search_questions.py --check fixtures/text-search/judgments.json
+fixtures/text-search/judgments.json: up to date

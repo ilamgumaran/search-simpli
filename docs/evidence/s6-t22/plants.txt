@@ -1,0 +1,7 @@
+Planted faults in a copy of fixtures/text-search/judgments.json; each test below must fail.
+1. word-01's range moved one line down: home/house/damp-bedroom.md 7 -> 8
+2. none-12's absent_from_corpus set to ['library'] (a word the folder holds)
+3. the file itself is then no longer what scripts/text_search_questions.py writes
+test_every_range_exists_and_holds_its_keys: FAILED  AssertionError: 'dehumidifier' not found in 'open the window for ten minutes after a shower next door.' : word-01: home/house/damp-bedroom.md 8-8
+test_absent_words_are_absent: FAILED  AssertionError: True is not false : none-12: library
+test_file_is_what_the_questions_script_writes: FAILED  AssertionError: '{"schema": "text-search-judgments-v1", "ve[48974 chars]"}]}' != '{\n  "schema": "text-search-judgments-v1",[91188 chars]n}\n'
