@@ -1,0 +1,26 @@
+Hit sizes (hit_size_probe.py.txt): the first passage that holds an answer range, when it has 15 or more lines.
+
+[both] first holding passage of 15+ lines: 11
+    word-09 home/garden/garden-diary-2025.txt:953-1032 (80 lines)
+    word-10 toolshare/data/inventory.yaml:86-132 (47 lines)
+    word-11 toolshare/src/reminders.py:1-22 (22 lines)
+    spell-07 home/garden/garden-diary-2025.txt:953-1032 (80 lines)
+    spell-10 toolshare/data/inventory.yaml:86-132 (47 lines)
+    span-04 home/garden/garden-diary-2025.txt:637-717 (81 lines)
+    span-11 toolshare/data/inventory.yaml:86-132 (47 lines)
+    about-09 toolshare/src/app.py:1-18 (18 lines)
+    content-01 toolshare/data/inventory.yaml:1-88 (88 lines)
+    content-04 home/garden/garden-diary-2025.txt:1-79 (79 lines)
+    content-05 toolshare/src/reminders.py:1-22 (22 lines)
+[content] first holding passage of 15+ lines: 11
+    word-09 home/garden/garden-diary-2025.txt:953-1032 (80 lines)
+    word-10 toolshare/data/inventory.yaml:86-132 (47 lines)
+    word-11 toolshare/src/reminders.py:1-22 (22 lines)
+    spell-07 home/garden/garden-diary-2025.txt:953-1032 (80 lines)
+    spell-10 toolshare/data/inventory.yaml:86-132 (47 lines)
+    span-04 home/garden/garden-diary-2025.txt:637-717 (81 lines)
+    span-11 toolshare/data/inventory.yaml:86-132 (47 lines)
+    about-09 toolshare/src/app.py:1-18 (18 lines)
+    content-01 toolshare/data/inventory.yaml:1-88 (88 lines)
+    content-04 home/garden/garden-diary-2025.txt:1-79 (79 lines)
+    content-05 toolshare/src/reminders.py:1-22 (22 lines)

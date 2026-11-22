@@ -1,0 +1,64 @@
+Every row and aggregate of baseline.json recomputed by recompute.py.txt from fresh searchd calls (own ReleaseSmall).
+
+
+direct/both: kind n f@1 f@3 f@10 p@1 p@3 p@10 complete | no-answer returned | mean evidence bytes
+  word           12   9   9   9   8   8   8   8 |  | 5610.2 (scorer 5610.2)
+  word-form      13  11  11  11  11  11  11  11 |  | 1854.7 (scorer 1854.7)
+  misspelt       12  11  11  11  11  11  11   9 |  | 3180.2 (scorer 3180.2)
+  phrase         12  11  11  11  11  11  11  11 |  | 10672.9 (scorer 10672.9)
+  number         12   8   9  10   8   9  10  10 |  | 8856.8 (scorer 8856.8)
+  two-passages   11  10  11  11   9  10  10   0 |  | 9238.0 (scorer 9238)
+  two-files      11  10  10  10   9  10  10   7 |  | 10173.7 (scorer 10173.7)
+  filename       12  10  11  11  10  11  11  11 |  | 7548.6 (scorer 7548.6)
+  about          11  10  10  11  10  10  11   8 |  | 7862.9 (scorer 7862.9)
+  file-content   11   7   8   8   7   8   8   8 |  | 7366.5 (scorer 7366.5)
+  no-answer      12   0   0   0   0   0   0   0 | 8 | 4883.2 (scorer 4883.2)
+  total         117  97 101 103  94  99 101  83 | | 7141.8
+  scorer total: {'file@1': 97, 'file@3': 101, 'file@10': 103, 'passage@1': 94, 'passage@3': 99, 'passage@10': 101, 'complete': 83, 'not_read': 11} bytes 7141.8 passage bytes 1085.7
+
+index/both: kind n f@1 f@3 f@10 p@1 p@3 p@10 complete | no-answer returned | mean evidence bytes
+  word           12   9   9   9   8   8   8   8 |  | 5610.2 (scorer 5610.2)
+  word-form      13  11  11  11  11  11  11  11 |  | 1854.7 (scorer 1854.7)
+  misspelt       12  11  11  11  11  11  11   9 |  | 3180.2 (scorer 3180.2)
+  phrase         12  11  11  11  11  11  11  11 |  | 10672.9 (scorer 10672.9)
+  number         12   8   9  10   8   9  10  10 |  | 8856.8 (scorer 8856.8)
+  two-passages   11  10  11  11   9  10  10   0 |  | 9238.0 (scorer 9238)
+  two-files      11  10  10  10   9  10  10   7 |  | 10173.7 (scorer 10173.7)
+  filename       12  10  11  11  10  11  11  11 |  | 7548.6 (scorer 7548.6)
+  about          11  10  10  11  10  10  11   8 |  | 7862.9 (scorer 7862.9)
+  file-content   11   7   8   8   7   8   8   8 |  | 7366.5 (scorer 7366.5)
+  no-answer      12   0   0   0   0   0   0   0 | 8 | 4883.2 (scorer 4883.2)
+  total         117  97 101 103  94  99 101  83 | | 7141.8
+  scorer total: {'file@1': 97, 'file@3': 101, 'file@10': 103, 'passage@1': 94, 'passage@3': 99, 'passage@10': 101, 'complete': 83, 'not_read': 11} bytes 7141.8 passage bytes 1085.7
+
+direct/content: kind n f@1 f@3 f@10 p@1 p@3 p@10 complete | no-answer returned | mean evidence bytes
+  word           12   9   9   9   8   9   9   9 |  | 2485.3 (scorer 2485.3)
+  word-form      13  11  11  11  11  11  11  11 |  | 474.2 (scorer 474.2)
+  misspelt       12  11  11  11  11  11  11   9 |  | 1036.2 (scorer 1036.2)
+  phrase         12  11  11  11  11  11  11  11 |  | 3298.9 (scorer 3298.9)
+  number         12   8   9  10   8   9  10  10 |  | 3039.4 (scorer 3039.4)
+  two-passages   11  10  11  11   9  11  11  10 |  | 3758.0 (scorer 3758)
+  two-files      11  10  10  10   9  10  10   8 |  | 3215.8 (scorer 3215.8)
+  filename       12  10  11  11  10  11  11  11 |  | 2299.3 (scorer 2299.3)
+  about          11  10  10  11  10  10  11   8 |  | 2521.1 (scorer 2521.1)
+  file-content   11   7   8   8   7   8   8   8 |  | 3025.5 (scorer 3025.5)
+  no-answer      12   0   0   0   0   0   0   0 | 8 | 2902.7 (scorer 2902.7)
+  total         117  97 101 103  94 101 103  95 | | 2476.9
+  scorer total: {'file@1': 97, 'file@3': 101, 'file@10': 103, 'passage@1': 94, 'passage@3': 101, 'passage@10': 103, 'complete': 95, 'not_read': 11} bytes 2476.9 passage bytes 1325.3
+
+index/content: kind n f@1 f@3 f@10 p@1 p@3 p@10 complete | no-answer returned | mean evidence bytes
+  word           12   9   9   9   8   9   9   9 |  | 2485.3 (scorer 2485.3)
+  word-form      13  11  11  11  11  11  11  11 |  | 474.2 (scorer 474.2)
+  misspelt       12  11  11  11  11  11  11   9 |  | 1036.2 (scorer 1036.2)
+  phrase         12  11  11  11  11  11  11  11 |  | 3298.9 (scorer 3298.9)
+  number         12   8   9  10   8   9  10  10 |  | 3039.4 (scorer 3039.4)
+  two-passages   11  10  11  11   9  11  11  10 |  | 3758.0 (scorer 3758)
+  two-files      11  10  10  10   9  10  10   8 |  | 3215.8 (scorer 3215.8)
+  filename       12  10  11  11  10  11  11  11 |  | 2299.3 (scorer 2299.3)
+  about          11  10  10  11  10  10  11   8 |  | 2521.1 (scorer 2521.1)
+  file-content   11   7   8   8   7   8   8   8 |  | 3025.5 (scorer 3025.5)
+  no-answer      12   0   0   0   0   0   0   0 | 8 | 2902.7 (scorer 2902.7)
+  total         117  97 101 103  94 101 103  95 | | 2476.9
+  scorer total: {'file@1': 97, 'file@3': 101, 'file@10': 103, 'passage@1': 94, 'passage@3': 101, 'passage@10': 103, 'complete': 95, 'not_read': 11} bytes 2476.9 passage bytes 1325.3
+
+row mismatches: 0

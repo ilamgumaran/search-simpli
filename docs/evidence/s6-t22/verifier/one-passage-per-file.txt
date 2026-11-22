@@ -1,0 +1,37 @@
+Two-passage questions: the answer file's passages per field, and how often any result list repeats a path.
+
+  [both] span-01: parts 1/2, passages of the answer file: [(31, 33)]
+  [both] span-02: parts 1/2, passages of the answer file: [(7, 11)]
+  [both] span-03: parts 1/2, passages of the answer file: [(7, 10)]
+  [both] span-04: parts 1/2, passages of the answer file: [(637, 717)]
+  [both] span-05: parts 1/2, passages of the answer file: [(9, 12)]
+  [both] span-06: parts 1/2, passages of the answer file: [(8, 12)]
+  [both] span-07: parts 1/2, passages of the answer file: [(3, 6)]
+  [both] span-08: parts 1/2, passages of the answer file: [(5, 10)]
+  [both] span-09: parts 0/2, passages of the answer file: [(1, 2)]
+  [both] span-10: parts 1/2, passages of the answer file: [(11, 15)]
+  [both] span-11: parts 1/2, passages of the answer file: [(86, 132)]
+[both] questions whose results repeat a path: 0 of 129
+  [content] span-01: parts 2/2, passages of the answer file: [(31, 33), (23, 26), (11, 14)]
+  [content] span-02: parts 2/2, passages of the answer file: [(7, 11), (1, 2), (12, 14), (3, 6)]
+  [content] span-03: parts 1/2, passages of the answer file: [(7, 10)]
+  [content] span-04: parts 2/2, passages of the answer file: [(637, 717), (234, 313)]
+  [content] span-05: parts 2/2, passages of the answer file: [(9, 12), (5, 8)]
+  [content] span-06: parts 2/2, passages of the answer file: [(8, 12), (3, 7)]
+  [content] span-07: parts 2/2, passages of the answer file: [(3, 6), (11, 13)]
+  [content] span-08: parts 2/2, passages of the answer file: [(5, 10), (15, 18), (1, 4)]
+  [content] span-09: parts 2/2, passages of the answer file: [(1, 2), (8, 12), (3, 7), (13, 16)]
+  [content] span-10: parts 2/2, passages of the answer file: [(11, 15), (5, 10), (1, 4)]
+  [content] span-11: parts 2/2, passages of the answer file: [(86, 132), (1, 88)]
+[content] questions whose results repeat a path: 38 of 129
+  span-01: part lines 25-25 and 33-33 (gap 8)
+  span-02: part lines 10-10 and 14-14 (gap 4)
+  span-03: part lines 5-5 and 9-9 (gap 4)
+  span-04: part lines 268-270 and 688-690 (gap 418)
+  span-05: part lines 7-7 and 11-11 (gap 4)
+  span-06: part lines 5-5 and 11-11 (gap 6)
+  span-07: part lines 5-5 and 13-13 (gap 8)
+  span-08: part lines 9-9 and 17-17 (gap 8)
+  span-09: part lines 5-5 and 10-10 (gap 5)
+  span-10: part lines 9-9 and 14-14 (gap 5)
+  span-11: part lines 92-93 and 26-27 (gap 67)

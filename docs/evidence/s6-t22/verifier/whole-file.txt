@@ -1,0 +1,4 @@
+Whole-file probe (whole_file_probe.py.txt): every returned passage widened to its whole file, first passage per file kept.
+
+[both] passage@10 101 -> 103; complete 83 -> 99; mean passage bytes 1086 -> 4323
+[content] passage@10 103 -> 103; complete 95 -> 99; mean passage bytes 1325 -> 3973

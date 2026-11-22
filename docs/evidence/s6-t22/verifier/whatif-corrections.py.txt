@@ -1,0 +1,24 @@
+"""Verifier what-if: the judgments with the verifier's proposed corrections, to see how far they move the score.
+Not a proposal for the committed file; evidence only."""
+import json, sys
+J = json.load(open(sys.argv[1]))
+Q = {q["id"]: q for q in J["questions"]}
+def rng(path, s, e, keys): return {"path": path, "start_line": s, "end_line": e, "keys": keys}
+def refiles(q):
+    q["files"] = []
+    for part in q["parts"]:
+        for r in part["ranges"]:
+            if r["path"] not in q["files"]: q["files"].append(r["path"])
+# A: form-10 judged the one present that is already wrapped; the answer is lines 2-3
+Q["form-10"]["parts"] = [{"ranges": [rng("home/lists/christmas-presents.txt", 2, 3, ["sketchbook", "shawl"])]}]
+# B: word-06 (when do we make Pongal): the 2027 calendar's Pongal line also answers
+Q["word-06"]["parts"][0]["ranges"].append(rng("paati/naatkaatti-2027.md", 3, 3, ["பொங்கல்", "ஜனவரி 14"])); refiles(Q["word-06"])
+# C: pair-07 part 2 (when did the sweep last come): the receipts note says 2 September too
+Q["pair-07"]["parts"][1]["ranges"].append(rng("home/money/receipts-note.md", 8, 8, ["chimney sweep", "2 september"])); refiles(Q["pair-07"])
+# D: about-09: the README says the website code is src/ and site/; add the three site files as parts
+for p, k in (("toolshare/site/index.html", "harrowdean tool share"), ("toolshare/site/join.html", "join"), ("toolshare/site/styles.css", "on-loan")):
+    Q["about-09"]["parts"].append({"ranges": [rng(p, 1, {"css": 2, "html": 5}[p.rsplit(".", 1)[1]] if p.endswith("index.html") or p.endswith("css") else 5, [k])]})
+refiles(Q["about-09"])
+# E: spell-04 and spell-09 sent as typed (the misspelt word plus what is asked)
+Q["spell-04"]["query"] = Q["spell-04"]["question"]; Q["spell-09"]["query"] = Q["spell-09"]["question"]
+json.dump(J, open(sys.argv[2], "w"), ensure_ascii=False, indent=2)

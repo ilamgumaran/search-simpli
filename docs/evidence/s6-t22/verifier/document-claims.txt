@@ -1,0 +1,148 @@
+Top results behind the per-question sentences of docs/text-search-score.md, index surface (probe.py.txt).
+
+== number-04 [both] query='17 March' rank file=3 passage=3 parts=1/1 returned=10 bytes=11341
+   judged home/health/health-notes.md:4-4
+    1. journal/2026-04-17.md:1-6  | # Friday 17 April 2026
+    2. journal/2026-10-17.md:1-7  | # Saturday 17 October 2026
+    3. home/health/health-notes.md:1-5  | # Health notes
+    4. home/house/boiler.md:11-14  | ## Next service
+    5. journal/2026-03-14.md:1-5  | # Saturday 14 March 2026
+    6. journal/2026-03-23.md:1-5  | # Monday 23 March 2026
+    7. toolshare/meetings/agm-2026.md:1-4  | # 12 March 2026
+    8. journal/2026-03-31.md:1-5  | # Tuesday 31 March 2026
+    9. journal/2026-03-27.md:1-5  | # Friday 27 March 2026
+   10. journal/2026-03-06.md:1-6  | # Friday 6 March 2026
+== number-12 [both] query='2026-11-30' rank file=8 passage=8 parts=1/1 returned=10 bytes=13648
+   judged home/car/car-notes.md:7-7
+    1. journal/2026-09-30.md:1-5  | # Wednesday 30 September 2026
+    2. journal/2026-07-30.md:1-6  | # Thursday 30 July 2026
+    3. journal/2026-05-30.md:1-6  | # Saturday 30 May 2026
+    4. journal/2026-11-11.md:1-7  | # Wednesday 11 November 2026
+    5. journal/2026-01-11.md:1-5  | # Sunday 11 January 2026
+    6. journal/2026-03-11.md:1-6  | # Wednesday 11 March 2026
+    7. journal/2026-06-11.md:1-7  | # Thursday 11 June 2026
+    8. home/car/car-notes.md:5-8  | ## MOT
+    9. school/reading-log.txt:135-158  | 2026-09-28  Captain Pudding, pages 13 to 72
+   10. journal/2026-11-20.md:1-6  | # Friday 20 November 2026
+== word-06 [both] query='பொங்கல்' rank file=1 passage=None parts=0/1 returned=2 bytes=2792
+   judged paati/pongal-samayal.md:15-15
+    1. paati/pongal-samayal.md:1-2  | # பொங்கல் சமையல்
+    2. paati/naatkaatti-2027.md:1-4  | # 2027 நாட்காட்டி
+== word-06 [content] query='பொங்கல்' rank file=1 passage=3 parts=1/1 returned=3 bytes=1165
+   judged paati/pongal-samayal.md:15-15
+    1. paati/pongal-samayal.md:1-2  | # பொங்கல் சமையல்
+    2. paati/naatkaatti-2027.md:1-4  | # 2027 நாட்காட்டி
+    3. paati/pongal-samayal.md:13-16  | ## குறிப்பு
+== form-08 [both] query='geese' rank file=None passage=None parts=0/1 returned=0 bytes=649
+   judged home/pets/pickle-walks.md:4-4
+== form-09 [both] query='mice' rank file=None passage=None parts=0/1 returned=0 bytes=648
+   judged home/house/pests.md:3-3
+== spell-11 [both] query='பொங்கள்' rank file=None passage=None parts=0/1 returned=0 bytes=665
+   judged paati/pongal-samayal.md:1-1
+== pair-02 [both] query='Wednesday dinner ingredients' rank file=None passage=None parts=0/2 returned=10 bytes=10206
+   judged home/schedules/meal-plan-week-38.md:5-5
+   judged home/recipes/lentil-dal.md:5-8
+    1. home/schedules/otto-week.md:11-14  | ## Wednesday
+    2. home/recipes/apple-cake.md:3-9  | ## Ingredients
+    3. home/recipes/banana-bread.md:3-9  | ## Ingredients
+    4. home/recipes/chickpea-stew.md:3-9  | ## Ingredients
+    5. home/recipes/scones.md:3-9  | ## Ingredients
+    6. home/recipes/egg-fried-rice.md:3-9  | ## Ingredients
+    7. home/recipes/leek-and-potato-soup.md:3-9  | ## Ingredients
+    8. home/recipes/tomato-soup.md:3-9  | ## Ingredients
+    9. home/recipes/macaroni-cheese.md:3-9  | ## Ingredients
+   10. home/recipes/pancakes.md:3-9  | ## Ingredients
+== pair-01 [both] query='boiler service cost next due' rank file=1 passage=1 parts=1/2 returned=10 bytes=10405
+   judged home/money/receipts-note.md:7-7
+   judged home/house/boiler.md:13-13
+    1. home/house/boiler.md:11-14  | ## Next service
+    2. home/house/house-notes.md:15-19  | ## Heating
+    3. inbox/boiler-service-2026-03-14.txt:1-1  | Done. Paid by card. All fine, pressure topped up, next one in a year.
+    4. inbox/note-02.txt:1-1  | Library books due back Friday.
+    5. archive/house-notes-2024.md:16-20  | ## Heating
+    6. home/car/car-notes.md:5-8  | ## MOT
+    7. home/pets/pickle.md:5-9  | ## Vet
+    8. school/bee-project.md:1-4  | # Mira's bee project
+    9. toolshare/meetings/2026-01-committee.md:13-15  | ## Next meeting
+   10. toolshare/meetings/2026-02-committee.md:12-14  | ## Next meeting
+== pair-08 [both] query='பொங்கல் சமையல் நாள்' rank file=1 passage=2 parts=1/2 returned=3 bytes=4384
+   judged paati/pongal-samayal.md:5-5
+   judged paati/naatkaatti-2027.md:3-3
+    1. paati/pongal-samayal.md:1-2  | # பொங்கல் சமையல்
+    2. paati/naatkaatti-2027.md:1-4  | # 2027 நாட்காட்டி
+    3. paati/rasam.md:1-4  | # ரசம்
+== pair-08 [content] query='பொங்கல் சமையல் நாள்' rank file=1 passage=3 parts=1/2 returned=4 bytes=1752
+   judged paati/pongal-samayal.md:5-5
+   judged paati/naatkaatti-2027.md:3-3
+    1. paati/pongal-samayal.md:1-2  | # பொங்கல் சமையல்
+    2. paati/pongal-samayal.md:13-16  | ## குறிப்பு
+    3. paati/naatkaatti-2027.md:1-4  | # 2027 நாட்காட்டி
+    4. paati/rasam.md:1-4  | # ரசம்
+== pair-06 [both] query='Gull Cottage where directions' rank file=1 passage=1 parts=1/2 returned=7 bytes=9203
+   judged home/trips/cornwall-2026.md:10-10
+   judged home/trips/directions-to-gull-cottage.txt:1-3
+    1. home/trips/directions-to-gull-cottage.txt:1-4  | From the A-road, take the Porthwenna turning.
+    2. home/trips/cornwall-2026.md:3-7  | ## Getting there
+    3. toolshare/CHANGELOG.md:3-6  | ## v2.3.1 (2026-05-04)
+    4. toolshare/meetings/2026-09-committee.md:5-10  | ## Notes
+    5. home/house/bedroom-furniture.md:1-4  | # Bedroom furniture
+    6. toolshare/meetings/2026-11-committee.md:5-11  | ## Notes
+    7. toolshare/meetings/2026-06-committee.md:5-12  | ## Notes
+== pair-06 [content] query='Gull Cottage where directions' rank file=1 passage=1 parts=2/2 returned=8 bytes=3072
+   judged home/trips/cornwall-2026.md:10-10
+   judged home/trips/directions-to-gull-cottage.txt:1-3
+    1. home/trips/directions-to-gull-cottage.txt:1-4  | From the A-road, take the Porthwenna turning.
+    2. home/trips/cornwall-2026.md:3-7  | ## Getting there
+    3. home/trips/cornwall-2026.md:8-12  | ## Accommodation
+    4. toolshare/CHANGELOG.md:3-6  | ## v2.3.1 (2026-05-04)
+    5. toolshare/meetings/2026-09-committee.md:5-10  | ## Notes
+    6. home/house/bedroom-furniture.md:1-4  | # Bedroom furniture
+    7. toolshare/meetings/2026-11-committee.md:5-11  | ## Notes
+    8. toolshare/meetings/2026-06-committee.md:5-12  | ## Notes
+== span-03 [content] query='committee members meets' rank file=1 passage=1 parts=1/2 returned=10 bytes=2800
+   judged toolshare/docs/committee.md:5-5
+   judged toolshare/docs/committee.md:9-9
+    1. toolshare/docs/committee.md:7-10  | ## Meetings
+    2. archive/committee-2025.md:7-9  | ## Meetings
+    3. toolshare/meetings/2026-01-committee.md:1-4  | # Committee meeting, 6 January 2026
+    4. toolshare/meetings/2026-06-committee.md:1-4  | # Committee meeting, 2 June 2026
+    5. toolshare/meetings/2026-07-committee.md:1-4  | # Committee meeting, 7 July 2026
+    6. toolshare/meetings/2026-08-committee.md:1-4  | # Committee meeting, 4 August 2026
+    7. toolshare/meetings/2026-10-committee.md:1-4  | # Committee meeting, 6 October 2026
+    8. toolshare/meetings/2026-02-committee.md:1-4  | # Committee meeting, 3 February 2026
+    9. toolshare/meetings/2026-05-committee.md:1-4  | # Committee meeting, 5 May 2026
+   10. toolshare/meetings/2026-11-committee.md:1-4  | # Committee meeting, 3 November 2026
+== spell-04 [both] query='sourdogh' rank file=1 passage=1 parts=1/2 returned=3 bytes=3304
+   judged home/recipes/sourdough.md:1-1
+   judged archive/sourdough-copy.md:1-1
+   judged home/recipes/sourdough.md:14-14
+   judged archive/sourdough-copy.md:14-14
+    1. archive/sourdough-copy.md:1-2  | # Sourdough loaf
+    2. home/recipes/sourdough.md:1-2  | # Sourdough loaf
+    3. home/notes/baking-log.txt:1-3  | Sourdough loaf 1: flat, starter too young.
+== spell-04 [content] query='sourdogh' rank file=1 passage=1 parts=1/2 returned=5 bytes=1286
+   judged home/recipes/sourdough.md:1-1
+   judged archive/sourdough-copy.md:1-1
+   judged home/recipes/sourdough.md:14-14
+   judged archive/sourdough-copy.md:14-14
+    1. archive/sourdough-copy.md:1-2  | # Sourdough loaf
+    2. home/recipes/sourdough.md:1-2  | # Sourdough loaf
+    3. archive/sourdough-copy.md:3-6  | ## The starter
+    4. home/recipes/sourdough.md:3-6  | ## The starter
+    5. home/notes/baking-log.txt:1-3  | Sourdough loaf 1: flat, starter too young.
+== spell-09 [both] query='calender' rank file=1 passage=1 parts=1/2 returned=3 bytes=6702
+   judged school/calendar-autumn.md:3-3
+   judged school/calendar-autumn.md:9-9
+    1. school/calendar-autumn.md:1-4  | # School calendar, autumn term 2026
+    2. school/spelling/week-06.txt:1-9  | Spelling, week 6
+    3. home/garden/garden-diary-2025.txt:637-717  | weather: fog until noon, 25C
+== spell-09 [content] query='calender' rank file=1 passage=1 parts=1/2 returned=3 bytes=2457
+   judged school/calendar-autumn.md:3-3
+   judged school/calendar-autumn.md:9-9
+    1. school/calendar-autumn.md:1-4  | # School calendar, autumn term 2026
+    2. school/spelling/week-06.txt:1-9  | Spelling, week 6
+    3. home/garden/garden-diary-2025.txt:637-717  | weather: fog until noon, 25C
+== content-06 [both] query='server.yaml' rank file=2 passage=2 parts=1/1 returned=2 bytes=3319
+   judged toolshare/config/server.yaml:1-1
+    1. toolshare/src/app.py:1-18  | """The Tool Share web app: loans, returns and the tool list."""
+    2. toolshare/config/server.yaml:1-8  | # Tool Share web server settings

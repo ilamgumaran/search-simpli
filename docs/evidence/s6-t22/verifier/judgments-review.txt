@@ -1,0 +1,85 @@
+S6-T22 verifier: the judgments read by eye.
+
+Share read: all 129 questions (100 %), each with the text of every resolved range (questions-read.txt), and the
+questions the builder edited after the first run (spell-04, spell-09, form-10, none-08) read twice. For every question
+I searched the generated folder for its answer words to find a file or passage that also answers and is not judged,
+and read in full the answer files and their neighbours (about 50 files: every planted file in home/house, home/money,
+home/health, home/pets, home/car, home/trips, home/schedules, school/, paati/, archive/, toolshare/ except the bulk
+filler). The filler pools in scripts/gen_text_search_corpus.py (WEATHER, JOURNAL, GARDEN_TASKS, SHOPPING,
+MEETING_ITEMS, LOG_EVENTS, METHOD_STEPS, HANDBOOK_*, ONE_LINERS) were read in full: none of them answers a question.
+
+Legend: ok = a question a person would type, the range is right and complete, the kind is right, no unjudged answer
+found. Otherwise the problem and whether it moves today's score.
+
+== Judgment errors and unjudged answers
+form-10  WRONG LINE. "Which presents still need wrapping?" is judged at christmas-presents.txt:1, "Otto: bike lights
+         (bought, wrapped)", the one present that does NOT need wrapping (key word "wrapped"). The answer is lines 2-3
+         (Mira's sketchbook, bought; Paati's shawl, to order). No score change today: the 3-line file comes back whole.
+word-06  UNJUDGED ANSWER. "When do we make Pongal?": naatkaatti-2027.md:3 ("பொங்கல்: ஜனவரி 14, வியாழன்.") answers
+         with the date; pair-08 judges the same line as "when is the next Pongal". With `both` the engine returns that
+         passage at rank 2 and scores a miss (passage None, complete false); judged, it is a hit (whatif.txt).
+about-09 INCOMPLETE. "Which files are the Tool Share website's code?": toolshare/README (unread) says "The website code
+         is in src/ and site/". Judged: app.py, reminders.py, models.py, app.js. Not judged: site/index.html, join.html,
+         styles.css. The engine returns index.html at rank 3 and join.html at rank 10: file@3 is a miss that judged
+         would be a hit (file rank 9 -> 3; total file@3 101 -> 102, whatif.txt).
+pair-04  WRONG KIND. "When is the wetlands trip and what does the letter say to bring?": the letter alone answers both
+         (trip-letter-wetlands.md:5 "On Thursday 8 October ..." and :6). Only calendar-autumn.md:8 is judged for the date,
+         so an engine that returns the letter's passage alone, a complete answer, scores incomplete. Complete today
+         (both files come back).
+pair-07  KIND DOUBTFUL, PART 2 INCOMPLETE. jobs-autumn.md:6 "Chimney swept by Bram Hollis on 2 September" answers who
+         and when in one line; part 1 asks for useful-numbers.txt (name and number). receipts-note.md:8 ("Chimney sweep,
+         2 September") and house-costs-2026.csv:6 also answer "when", not judged. Complete today.
+pair-06  KIND DOUBTFUL (minor). directions-to-gull-cottage.txt says where the cottage is (Porthwenna, the harbour, the
+         white one with the green gate) and how to get there. Judged as two files.
+number-06 UNJUDGED ANSWER (noted by the builder, not judged). contacts.tsv:2 holds 01632 960418 with Bram Hollis. Read
+         today: no; after H2, a correct contacts.tsv answer ranked first lowers file@1.
+number-02, about-05  UNJUDGED (after H2): loans-2026.csv lists TS-017 pressure washer.
+none-07  ARGUABLY ANSWERED. "When is Mira's orthodontist appointment?": dentist.txt says "Mira needs the brace review
+         then" (the 3 February, 8:40 check-up). A person would call that the answer. A semantic engine (H6) returning it
+         is counted as returning something for a no-answer question.
+name-01  ALTERNATIVE (minor). "Find the boiler service note." home/house/boiler.md holds the "Service record"; only the
+         inbox note is judged. The engine ranks house-notes.md first, the inbox note second, boiler.md third.
+
+== Questions that measure the query, not the engine
+spell-04 "sourdogh baking temperature" sends only `sourdogh`; part 2 is the baking line and part 1 is the title
+         "# Sourdough loaf", which answers nothing (the note says so: "the title names the loaf, the baking line answers").
+         No engine can know from `sourdogh` that the temperature is wanted. Sent as typed: content complete (whatif.txt).
+spell-09 "school calender half term" sends only `calender`; part 1 is "Calendar from the school office, ..." (the line the
+         misspelling matches, not an answer). Sent as typed: content complete (whatif.txt).
+         Both are as the builder first wrote them (ruling 3); docs/text-search-score.md attributes them to H5.
+spell-12 the note says "crumble and topping are also in the query"; the query is `rubarb` alone (the typed question has
+         them). Either the note is stale or the query changed without a mention; the Report names only form-10's query.
+All 12 misspelt questions send the misspelt word alone; the document says "Two questions sent only the misspelt word".
+
+== Queries with a word taken from the answer, not the question (query-shape.txt)
+number-05 `error` (the line says ERROR); span-02 `bake temperature` (the question says "how hot is the oven"); span-07
+`returns` ("Late returns pay"); span-11 `shelf` (the YAML field); pair-09 `sent` ("were sent twice"; the question says
+"going out twice"). 5 of the 116 queries that differ from the typed question. Effect today: none moves a score that I could
+find (number-05 is unread; pair-09 is complete under both fields; span-02, span-07 and span-11 are complete with
+content and lose a part to one-passage-per-file with both). Whether they would still be found without the borrowed word
+was not measured.
+
+== Edited after the first run
+spell-04, spell-09: see above (restored as first written; the flaw is in how they were first written).
+form-10:  the query change (`wrapping` only) is harmless; the judged line is wrong (above).
+none-08:  the correction is right: "panel" occurs (the fence panel in the weather pool), "solar" does not; nothing answers
+          "solar panel quote".
+
+== No-answer questions
+none-01 snorkel, none-02 trampoline, none-03 piano tuner, none-04 burglar alarm code (the archive's "the code is with
+Tamsin" is the key safe's), none-05 cricket (Tamil), none-06 kayak hire, none-08 solar panel quote, none-09 TS-999 (ids
+stop at TS-043), none-10 wedding anniversary, none-11 flu jab (Pickle's booster is a dog's), none-12 library van: no
+answer in the folder (searched for the words, their stems and the near topics). none-07: see above.
+
+== Read and ok (no problem found)
+word-01..05, 07..12; form-01..09, 11..13 (form-03: "What has Mira knitted?" is answered by "she is making a scarf",
+acceptable; form-05 "When does Otto have swims?" is stilted but fair); spell-01..03, 05..08, 10, 11; phrase-01..12;
+number-01, 03..05, 07..12 (number-10 "Which port is 8086?" is odd wording); span-01..11; pair-01, 02, 03, 05, 08..11;
+name-02..12; about-01..08, 10, 11 (about-11 "household bills" is under-determined: budget-2026.csv, bank-notes.tsv and
+receipts-note.md could be argued in, house-costs-2026.csv out; one reading is judged); content-01..11.
+Tamil questions (11): the Tamil is natural and the kinds fit (form-07 and form-13 locatives, spell-11 ல்/ள், name-07 a
+Tamil file name).
+
+== Kind of check the test cannot make
+The tests prove every range exists and holds the key words the builder chose (planted faults fail them: test-plants.txt).
+They cannot catch a range that is consistent but wrong (form-10 holds "wrapped") or an answer that is not judged.

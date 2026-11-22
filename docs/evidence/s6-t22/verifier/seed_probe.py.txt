@@ -1,0 +1,10 @@
+import sys
+sys.path.insert(0, sys.argv[1])
+import gen_text_search_corpus as g
+a = g.build_corpus(); b = g.build_corpus(2212)
+print("2211", g.corpus_digest(a)); print("2212", g.corpus_digest(b))
+diff = [p for p in a if a.get(p) != b.get(p)]
+print("files differ:", len(diff), "of", len(a), "same paths:", set(a)==set(b))
+planted = set(g.PLANTED)
+print("planted files that differ:", [p for p in diff if p in planted])
+print("generated files:", len(set(a)-planted), "planted:", len(planted))

@@ -1,0 +1,22 @@
+"""Verifier probe: query words that the typed question does not have (not even as a 4-letter prefix) but the
+answer range does: words a caller could only know from the answer."""
+import json, re, sys
+from pathlib import Path
+J, C = json.load(open(sys.argv[1])), Path(sys.argv[2])
+tok = lambda s: re.findall(r"\w+", s.casefold())
+def lines(p):
+    l = re.split(r"\r?\n", (C/p).read_bytes().decode());  return l
+n_diff = 0
+for q in J["questions"]:
+    if "query" not in q: continue
+    n_diff += 1
+    qt, qq = tok(q["question"]), tok(q["query"])
+    ans = set()
+    for part in q["parts"]:
+        for r in part["ranges"]:
+            ans |= set(tok(" ".join(lines(r["path"])[r["start_line"]-1:r["end_line"]])))
+    new = [w for w in qq if not any(w[:4] == t[:4] for t in qt)]
+    from_answer = [w for w in new if w in ans]
+    if new:
+        print(f"{q['id']:10s} [{q['kind']}] added words {new}; of them in the answer range: {from_answer}")
+print("questions with a query differing from the typed question:", n_diff, "of", len(J["questions"]))

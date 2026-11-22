@@ -1,0 +1,23 @@
+"""Verifier probe: does `--search-field both` ever return two passages of one file? And with `content`,
+how many of the 11 two-passage questions get both parts? Also: are the two parts ever in one passage?"""
+import json, subprocess, sys
+from pathlib import Path
+B, RUN, J = sys.argv[1], Path(sys.argv[2]), json.load(open(sys.argv[3]))
+sys.path.insert(0, sys.argv[4]); import text_search_score as sc
+for field in ("both", "content"):
+    repeats, total = 0, 0
+    for q in J["questions"]:
+        out = subprocess.run([B, "evidence", str(RUN/"index"), sc.query_of(q), "--search-field", field, "--top-k", "10"], capture_output=True, check=True).stdout
+        ps = sc.passages_of(json.loads(out)); total += 1
+        paths = [p["path"] for p in ps]
+        if len(paths) != len(set(paths)): repeats += 1
+        if q["kind"] == "two-passages":
+            r = sc.score_question(q, ps, 0)
+            same = [p for p in ps if p["path"] == q["files"][0]]
+            print(f"  [{field}] {q['id']}: parts {r['parts_found']}/2, passages of the answer file: {[(p['start_line'], p['end_line']) for p in same]}")
+    print(f"[{field}] questions whose results repeat a path: {repeats} of {total}")
+# Would a passage holding both parts exist at all? distance between the two parts' lines
+for q in J["questions"]:
+    if q["kind"] == "two-passages":
+        a, b = q["parts"][0]["ranges"][0], q["parts"][1]["ranges"][0]
+        print(f"  {q['id']}: part lines {a['start_line']}-{a['end_line']} and {b['start_line']}-{b['end_line']} (gap {abs(b['start_line']-a['end_line'])})")

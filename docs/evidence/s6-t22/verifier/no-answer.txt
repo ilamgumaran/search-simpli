@@ -1,0 +1,122 @@
+Top results for the 12 no-answer questions, both fields, index surface (probe.py.txt).
+
+== none-01 [both] query='snorkel' rank file=None passage=None parts=None/None returned=0 bytes=651
+== none-02 [both] query='trampoline bought' rank file=None passage=None parts=None/None returned=10 bytes=11263
+    1. home/lists/christmas-presents.txt:1-3  | Otto: bike lights (bought, wrapped)
+    2. home/car/car-notes.md:1-4  | # Car notes
+    3. journal/2026-06-29.md:1-5  | # Monday 29 June 2026
+    4. journal/2026-10-29.md:1-6  | # Thursday 29 October 2026
+    5. journal/2026-07-19.md:1-6  | # Sunday 19 July 2026
+    6. journal/2026-03-06.md:1-6  | # Friday 6 March 2026
+    7. journal/2026-05-30.md:1-6  | # Saturday 30 May 2026
+    8. journal/2026-05-14.md:1-6  | # Thursday 14 May 2026
+    9. journal/2026-05-04.md:1-7  | # Monday 4 May 2026
+   10. journal/2026-05-19.md:1-7  | # Tuesday 19 May 2026
+== none-03 [both] query='piano tuner' rank file=None passage=None parts=None/None returned=7 bytes=8256
+    1. school/piano-exam.md:1-4  | # Piano exam
+    2. journal/2026-03-23.md:1-5  | # Monday 23 March 2026
+    3. journal/2026-07-23.md:1-5  | # Thursday 23 July 2026
+    4. home/notes/music.md:1-4  | # Music
+    5. journal/2026-05-30.md:1-6  | # Saturday 30 May 2026
+    6. journal/2026-10-13.md:1-7  | # Tuesday 13 October 2026
+    7. journal/2026-09-16.md:1-7  | # Wednesday 16 September 2026
+== none-04 [both] query='burglar alarm code' rank file=None passage=None parts=None/None returned=2 bytes=3027
+    1. home/house/smoke-alarms.md:1-5  | # Smoke alarms
+    2. archive/house-notes-2024.md:5-10  | ## Keys
+== none-05 [both] query='கிரிக்கெட்' rank file=None passage=None parts=None/None returned=0 bytes=674
+== none-06 [both] query='kayak hire' rank file=None passage=None parts=None/None returned=1 bytes=1941
+    1. toolshare/docs/treasurer.md:5-9  | ## 2026
+== none-07 [both] query='orthodontist' rank file=None passage=None parts=None/None returned=0 bytes=656
+== none-08 [both] query='solar panel quote' rank file=None passage=None parts=None/None returned=10 bytes=11752
+    1. home/money/home-insurance-renewal.md:1-3  | # Larkspur Mutual quote
+    2. journal/2026-07-23.md:1-5  | # Thursday 23 July 2026
+    3. journal/2026-03-31.md:1-5  | # Tuesday 31 March 2026
+    4. journal/2026-03-27.md:1-5  | # Friday 27 March 2026
+    5. journal/2026-09-01.md:1-5  | # Tuesday 1 September 2026
+    6. journal/2026-04-13.md:1-6  | # Monday 13 April 2026
+    7. journal/2026-04-21.md:1-6  | # Tuesday 21 April 2026
+    8. journal/2026-09-05.md:1-7  | # Saturday 5 September 2026
+    9. journal/2026-04-24.md:1-7  | # Friday 24 April 2026
+   10. journal/2026-10-09.md:1-7  | # Friday 9 October 2026
+== none-09 [both] query='TS-999' rank file=None passage=None parts=None/None returned=2 bytes=5976
+    1. toolshare/data/inventory.yaml:1-88  | # Harrowdean Tool Share inventory: every tool, its id and its shelf.
+    2. toolshare/docs/repairs.md:1-5  | # Repairs
+== none-10 [both] query='wedding anniversary' rank file=None passage=None parts=None/None returned=1 bytes=2945
+    1. home/garden/garden-diary-2025.txt:1426-1462  | Nothing done; too wet.
+== none-11 [both] query='flu jab' rank file=None passage=None parts=None/None returned=0 bytes=651
+== none-12 [both] query='library van' rank file=None passage=None parts=None/None returned=10 bytes=10806
+    1. home/schedules/otto-week.md:15-18  | ## Thursday
+    2. inbox/note-02.txt:1-1  | Library books due back Friday.
+    3. school/spelling/week-01.txt:1-9  | Spelling, week 1
+    4. school/spelling/week-12.txt:1-9  | Spelling, week 12
+    5. journal/2026-10-22.md:1-5  | # Thursday 22 October 2026
+    6. journal/2026-11-20.md:1-6  | # Friday 20 November 2026
+    7. journal/2026-03-06.md:1-6  | # Friday 6 March 2026
+    8. journal/2026-03-18.md:1-6  | # Wednesday 18 March 2026
+    9. journal/2026-04-08.md:1-6  | # Wednesday 8 April 2026
+   10. journal/2026-09-20.md:1-7  | # Sunday 20 September 2026
+== none-01 [content] query='snorkel' rank file=None passage=None parts=None/None returned=0 bytes=62
+== none-02 [content] query='trampoline bought' rank file=None passage=None parts=None/None returned=10 bytes=3272
+    1. home/lists/christmas-presents.txt:1-3  | Otto: bike lights (bought, wrapped)
+    2. home/car/car-notes.md:1-4  | # Car notes
+    3. journal/2026-06-29.md:1-5  | # Monday 29 June 2026
+    4. journal/2026-10-29.md:1-6  | # Thursday 29 October 2026
+    5. journal/2026-07-19.md:1-6  | # Sunday 19 July 2026
+    6. journal/2026-03-06.md:1-6  | # Friday 6 March 2026
+    7. journal/2026-05-30.md:1-6  | # Saturday 30 May 2026
+    8. journal/2026-05-14.md:1-6  | # Thursday 14 May 2026
+    9. journal/2026-05-04.md:1-7  | # Monday 4 May 2026
+   10. journal/2026-05-19.md:1-7  | # Tuesday 19 May 2026
+== none-03 [content] query='piano tuner' rank file=None passage=None parts=None/None returned=7 bytes=2385
+    1. school/piano-exam.md:1-4  | # Piano exam
+    2. journal/2026-03-23.md:1-5  | # Monday 23 March 2026
+    3. journal/2026-07-23.md:1-5  | # Thursday 23 July 2026
+    4. home/notes/music.md:1-4  | # Music
+    5. journal/2026-05-30.md:1-6  | # Saturday 30 May 2026
+    6. journal/2026-10-13.md:1-7  | # Tuesday 13 October 2026
+    7. journal/2026-09-16.md:1-7  | # Wednesday 16 September 2026
+== none-04 [content] query='burglar alarm code' rank file=None passage=None parts=None/None returned=2 bytes=824
+    1. home/house/smoke-alarms.md:1-5  | # Smoke alarms
+    2. archive/house-notes-2024.md:5-10  | ## Keys
+== none-05 [content] query='கிரிக்கெட்' rank file=None passage=None parts=None/None returned=0 bytes=85
+== none-06 [content] query='kayak hire' rank file=None passage=None parts=None/None returned=1 bytes=496
+    1. toolshare/docs/treasurer.md:5-9  | ## 2026
+== none-07 [content] query='orthodontist' rank file=None passage=None parts=None/None returned=0 bytes=67
+== none-08 [content] query='solar panel quote' rank file=None passage=None parts=None/None returned=10 bytes=3491
+    1. home/money/home-insurance-renewal.md:1-3  | # Larkspur Mutual quote
+    2. journal/2026-07-23.md:1-5  | # Thursday 23 July 2026
+    3. journal/2026-03-31.md:1-5  | # Tuesday 31 March 2026
+    4. journal/2026-03-27.md:1-5  | # Friday 27 March 2026
+    5. journal/2026-09-01.md:1-5  | # Tuesday 1 September 2026
+    6. journal/2026-04-13.md:1-6  | # Monday 13 April 2026
+    7. journal/2026-04-21.md:1-6  | # Tuesday 21 April 2026
+    8. journal/2026-09-05.md:1-7  | # Saturday 5 September 2026
+    9. journal/2026-04-24.md:1-7  | # Friday 24 April 2026
+   10. journal/2026-10-09.md:1-7  | # Friday 9 October 2026
+== none-09 [content] query='TS-999' rank file=None passage=None parts=None/None returned=3 bytes=3369
+    1. toolshare/data/inventory.yaml:1-88  | # Harrowdean Tool Share inventory: every tool, its id and its shelf.
+    2. toolshare/data/inventory.yaml:86-132  | name: loppers
+    3. toolshare/docs/repairs.md:1-5  | # Repairs
+== none-10 [content] query='wedding anniversary' rank file=None passage=None parts=None/None returned=10 bytes=17670
+    1. home/garden/garden-diary-2025.txt:1426-1462  | Nothing done; too wet.
+    2. home/garden/garden-diary-2025.txt:234-313  | Pricked out the tomato seedlings.
+    3. home/garden/garden-diary-2025.txt:637-717  | weather: fog until noon, 25C
+    4. home/garden/garden-diary-2025.txt:1110-1187  | Weeded the onion bed.
+    5. home/garden/garden-diary-2025.txt:77-156  | weather: frost first thing, bright later, 5C
+    6. home/garden/garden-diary-2025.txt:953-1032  | weather: fog until noon, 6C
+    7. home/garden/garden-diary-2025.txt:311-391  | 2025-03-19 Wed
+    8. home/garden/garden-diary-2025.txt:1030-1112  | Weeded the onion bed.
+    9. home/garden/garden-diary-2025.txt:154-236  | Pricked out the tomato seedlings.
+   10. home/garden/garden-diary-2025.txt:715-796  | 2025-06-28 Sat
+== none-11 [content] query='flu jab' rank file=None passage=None parts=None/None returned=0 bytes=62
+== none-12 [content] query='library van' rank file=None passage=None parts=None/None returned=10 bytes=3049
+    1. home/schedules/otto-week.md:15-18  | ## Thursday
+    2. inbox/note-02.txt:1-1  | Library books due back Friday.
+    3. school/spelling/week-01.txt:1-9  | Spelling, week 1
+    4. school/spelling/week-12.txt:1-9  | Spelling, week 12
+    5. journal/2026-10-22.md:1-5  | # Thursday 22 October 2026
+    6. journal/2026-11-20.md:1-6  | # Friday 20 November 2026
+    7. journal/2026-03-06.md:1-6  | # Friday 6 March 2026
+    8. journal/2026-03-18.md:1-6  | # Wednesday 18 March 2026
+    9. journal/2026-04-08.md:1-6  | # Wednesday 8 April 2026
+   10. journal/2026-09-20.md:1-7  | # Sunday 20 September 2026

@@ -1,0 +1,17 @@
+import json, sys, re
+from pathlib import Path
+J = json.load(open(sys.argv[1])); C = Path(sys.argv[2])
+def lines(p):
+    t = (C/p).read_bytes().decode()
+    l = re.split(r"\r?\n", t)
+    if l and l[-1]=="": l.pop()
+    return l
+for q in J["questions"]:
+    print(f"== {q['id']} [{q['kind']}] Q: {q['question']}  | query: {q.get('query','(same)')}")
+    if q.get("checks"): print("   checks:", q["checks"])
+    if q.get("note"): print("   note:", q["note"])
+    for i, part in enumerate(q["parts"]):
+        for r in part["ranges"]:
+            L = lines(r["path"])
+            txt = " / ".join(L[r["start_line"]-1:r["end_line"]])
+            print(f"   part{i+1} {r['path']}:{r['start_line']}-{r['end_line']} keys={r['keys']}\n      > {txt}")

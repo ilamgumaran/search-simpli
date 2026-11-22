@@ -1,0 +1,576 @@
+Every question of the set, with the text of every resolved range (dump_q.py.txt), as the verifier read it.
+
+== word-01 [word] Q: Where did I write the dehumidifier setting?  | query: dehumidifier setting
+   part1 home/house/damp-bedroom.md:7-7 keys=['dehumidifier', '55 percent']
+      > Set the dehumidifier to 55 percent and empty the tank each morning.
+== word-02 [word] Q: How do I feed the sourdough starter?  | query: feed sourdough starter
+   part1 home/recipes/sourdough.md:5-5 keys=['sourdough starter', '50 g']
+      > Feed the sourdough starter the night before: 50 g flour, 50 g water.
+   part1 archive/sourdough-copy.md:5-5 keys=['sourdough starter', '50 g']
+      > Feed the sourdough starter the night before: 50 g flour, 50 g water.
+== word-03 [word] Q: Which job list mentions the gutter?  | query: gutter
+   part1 home/house/jobs-autumn.md:4-4 keys=['gutter']
+      > - [ ] Clear the gutter over the back door before the leaves come down.
+== word-04 [word] Q: What did we plan for the trellis?  | query: trellis
+   part1 home/garden/garden-plan-2026.md:5-5 keys=['trellis', 'back fence']
+      > Put the trellis up along the back fence for the climbing beans.
+== word-05 [word] Q: How much is the deposit for power tools?  | query: deposit power tools
+   part1 toolshare/docs/lending-rules.md:9-9 keys=['deposit', '20 pounds']
+      > A refundable deposit of 20 pounds is taken for power tools.
+== word-06 [word] Q: பொங்கல் எப்போது வைப்போம்?  | query: பொங்கல்
+   note: Tamil: when Paati makes Pongal
+   part1 paati/pongal-samayal.md:15-15 keys=['பொங்கல்', 'தை முதல் நாள்']
+      > தை முதல் நாள் காலையில் புதிய பானையில் பொங்கல் வைப்போம்.
+== word-07 [word] Q: How much did the plumber charge?  | query: plumber charge
+   note: the answer is in a CSV file
+   part1 home/money/house-costs-2026.csv:4-4 keys=['plumber', '45.00']
+      > 2026-04-02,Plumber,kitchen tap washer,45.00
+== word-08 [word] Q: When did the backup fail on the Tool Share server?  | query: backup failed
+   note: the answer is in a .log file
+   part1 toolshare/logs/server-2026-06.log:52-52 keys=['backup failed', '2026-06-17']
+      > 2026-06-17 03:12:44 ERROR backup failed: disk quota exceeded on the second disk
+== word-09 [word] Q: When did we see the hedgehog?  | query: hedgehog
+   note: deep inside a 1,462-line file
+   part1 home/garden/garden-diary-2025.txt:1020-1022 keys=['2025-09-12', 'hedgehog']
+      > 2025-09-12 Fri /   weather: grey and mild, 13C /   Hedgehog seen under the compost bin at dusk.
+== word-10 [word] Q: Which shelf is the lawnmower on?  | query: lawnmower shelf
+   note: YAML data
+   part1 toolshare/data/inventory.yaml:125-126 keys=['lawnmower', 'b3']
+      >     name: lawnmower (electric) /     shelf: B3
+== word-11 [word] Q: Which file sends the overdue reminder emails?  | query: overdue reminder
+   note: Python source
+   part1 toolshare/src/reminders.py:13-13 keys=['send_overdue_reminder']
+      > def send_overdue_reminder(loan: Loan, today: date | None = None) -> bool:
+== word-12 [word] Q: What did I note about the loft hatch?  | query: loft hatch
+   note: a file with no extension
+   part1 inbox/NOTES:1-1 keys=['loft hatch', 'left corner']
+      > Loft hatch sticks in damp weather; push the left corner first.
+== form-01 [word-form] Q: When did we have the front door repainting done?  | query: repainting
+   checks: {'absent_from_files': ['repainting']}
+   part1 home/house/jobs-autumn.md:3-3 keys=['repainted', '9 august']
+      > - [x] The front door was repainted in Harbour Blue on 9 August.
+== form-02 [word-form] Q: When do the smoke alarm batteries get changed?  | query: batteries
+   checks: {'absent_from_files': ['batteries']}
+   part1 home/house/smoke-alarms.md:4-4 keys=['battery', 'october']
+      > Change the smoke alarm battery every October, when the clocks go back.
+== form-03 [word-form] Q: What has Mira knitted?  | query: knitted
+   checks: {'absent_from_files': ['knitted']}
+   part1 home/notes/winter-crafts.md:3-3 keys=['knitting', 'scarf']
+      > Mira's knitting needles are in the blue tin on the bookcase. She is making a scarf for Paati.
+== form-04 [word-form] Q: When should the apple tree be pruned?  | query: pruned
+   checks: {'absent_from_files': ['pruned']}
+   part1 home/garden/garden-plan-2026.md:9-9 keys=['prune', 'february']
+      > Prune the apple tree in February, before the buds break.
+== form-05 [word-form] Q: When does Otto have swims?  | query: swims
+   checks: {'absent_from_files': ['swims']}
+   part1 home/schedules/otto-week.md:25-25 keys=['swimming', '9:15']
+      > Swimming 9:15 at Fennick Leisure Centre, lane 2 group.
+== form-06 [word-form] Q: How do I go about descaling the kettle?  | query: descaling
+   checks: {'absent_from_files': ['descaling']}
+   part1 home/notes/kitchen-care.md:3-3 keys=['descale', 'citric acid']
+      > Descale the kettle with citric acid on the first Sunday of each month.
+== form-07 [word-form] Q: தோட்டம் பற்றி பாட்டி என்ன எழுதினார்?  | query: தோட்டம்
+   checks: {'absent_from_files': ['தோட்டம்']}
+   note: Tamil: the file has the locative form
+   part1 paati/chedigal.md:3-3 keys=['தோட்டத்தில்']
+      > தோட்டத்தில் கத்தரிக்காயும் வெண்டைக்காயும் நன்றாக வளர்கின்றன.
+== form-08 [word-form] Q: Which walk has the geese?  | query: geese
+   checks: {'absent_from_files': ['geese']}
+   note: irregular plural
+   part1 home/pets/pickle-walks.md:4-4 keys=['goose']
+      > The goose by the boating lake hissed at Pickle on Sunday; go the other way round.
+== form-09 [word-form] Q: What did we do about the mice?  | query: mice
+   checks: {'absent_from_files': ['mice']}
+   note: irregular plural
+   part1 home/house/pests.md:3-3 keys=['mouse', 'traps']
+      > Mouse droppings behind the fridge in November; two traps set, peanut butter works best.
+== form-10 [word-form] Q: Which presents still need wrapping?  | query: wrapping
+   checks: {'absent_from_files': ['wrapping']}
+   note: the file name says presents, so only wrapping is sent
+   part1 home/lists/christmas-presents.txt:1-1 keys=['wrapped']
+      > Otto: bike lights (bought, wrapped)
+== form-11 [word-form] Q: How are the invoices numbered?  | query: invoices numbered
+   checks: {'absent_from_files': ['invoices']}
+   part1 toolshare/docs/treasurer.md:3-3 keys=['invoice', 'inv-yyyy-nnn']
+      > Each invoice is numbered INV-YYYY-NNN in the order it is raised.
+== form-12 [word-form] Q: Where is the shower leaking?  | query: leaking
+   checks: {'absent_from_files': ['leaking']}
+   part1 home/house/bathroom.md:3-3 keys=['leaks', 'corner seal']
+      > The shower tray leaks at the corner seal; reseal it with white silicone.
+== form-13 [word-form] Q: பள்ளி பற்றி பாட்டி மீராவுக்கு என்ன எழுதினார்?  | query: பள்ளி
+   checks: {'absent_from_files': ['பள்ளி']}
+   note: Tamil: the file has the locative form
+   part1 paati/mira-kaditham.md:4-4 keys=['பள்ளியில்', 'பாட்டு']
+      > நீ பள்ளியில் தமிழ்ப் பாட்டு பாடினாய் என்று கேட்டு மகிழ்ந்தேன்.
+== spell-01 [misspelt] Q: dehumidifer setting  | query: dehumidifer
+   checks: {'absent_from_corpus': ['dehumidifer']}
+   note: one letter dropped
+   part1 home/house/damp-bedroom.md:7-7 keys=['dehumidifier']
+      > Set the dehumidifier to 55 percent and empty the tank each morning.
+== spell-02 [misspelt] Q: Which reciept do I keep?  | query: reciept
+   checks: {'absent_from_corpus': ['reciept']}
+   note: ie/ei swapped
+   part1 home/money/receipts-note.md:3-3 keys=['receipt', 'washing machine']
+      > Keep the receipt for the washing machine until 2028 (five-year guarantee).
+== spell-03 [misspelt] Q: trelis plan  | query: trelis
+   checks: {'absent_from_corpus': ['trelis']}
+   note: one letter dropped
+   part1 home/garden/garden-plan-2026.md:5-5 keys=['trellis']
+      > Put the trellis up along the back fence for the climbing beans.
+== spell-04 [misspelt] Q: sourdogh baking temperature  | query: sourdogh
+   checks: {'absent_from_corpus': ['sourdogh']}
+   note: one letter dropped; the title names the loaf, the baking line answers
+   part1 home/recipes/sourdough.md:1-1 keys=['sourdough']
+      > # Sourdough loaf
+   part1 archive/sourdough-copy.md:1-1 keys=['sourdough']
+      > # Sourdough loaf
+   part2 home/recipes/sourdough.md:14-14 keys=['240 degrees']
+      > Bake at 240 degrees in the lidded pot for 20 minutes, then 20 minutes lid off.
+   part2 archive/sourdough-copy.md:14-14 keys=['240 degrees']
+      > Bake at 240 degrees in the lidded pot for 20 minutes, then 20 minutes lid off.
+== spell-05 [misspelt] Q: When is physiotherpy?  | query: physiotherpy
+   checks: {'absent_from_corpus': ['physiotherpy']}
+   note: one letter dropped
+   part1 home/health/health-notes.md:3-3 keys=['physiotherapy', 'tuesdays']
+      > Idris: physiotherapy for the knee, Tuesdays at 4 at the Fennick clinic.
+== spell-06 [misspelt] Q: accomodation in Cornwall  | query: accomodation
+   checks: {'absent_from_corpus': ['accomodation']}
+   note: the common one-m spelling
+   part1 home/trips/cornwall-2026.md:10-10 keys=['accommodation', 'gull cottage']
+      > Accommodation: Gull Cottage, Porthwenna, booked for 3 nights, booking reference GCB-3307.
+== spell-07 [misspelt] Q: hedghog in the garden  | query: hedghog
+   checks: {'absent_from_corpus': ['hedghog']}
+   note: one letter dropped, in a long file
+   part1 home/garden/garden-diary-2025.txt:1022-1022 keys=['hedgehog']
+      >   Hedgehog seen under the compost bin at dusk.
+== spell-08 [misspelt] Q: wadrobe shelf pins  | query: wadrobe
+   checks: {'absent_from_corpus': ['wadrobe']}
+   note: one letter dropped
+   part1 home/house/bedroom-furniture.md:3-3 keys=['wardrobe', 'shelf pins']
+      > The wardrobe in the back bedroom came flat-packed; the spare shelf pins are in the bag taped inside the door.
+== spell-09 [misspelt] Q: school calender half term  | query: calender
+   checks: {'absent_from_corpus': ['calender']}
+   note: e for a
+   part1 school/calendar-autumn.md:3-3 keys=['calendar']
+      > Calendar from the school office, Harrowdean Primary.
+   part2 school/calendar-autumn.md:9-9 keys=['half term']
+      > - 26 to 30 October: half term
+== spell-10 [misspelt] Q: lawnmover  | query: (same)
+   checks: {'absent_from_corpus': ['lawnmover']}
+   note: one letter changed
+   part1 toolshare/data/inventory.yaml:125-125 keys=['lawnmower']
+      >     name: lawnmower (electric)
+== spell-11 [misspelt] Q: பொங்கள் சமையல்  | query: பொங்கள்
+   checks: {'absent_from_corpus': ['பொங்கள்']}
+   note: Tamil: ல் written as ள்
+   part1 paati/pongal-samayal.md:1-1 keys=['பொங்கல்']
+      > # பொங்கல் சமையல்
+== spell-12 [misspelt] Q: rubarb crumble topping  | query: rubarb
+   checks: {'absent_from_corpus': ['rubarb']}
+   note: h dropped; crumble and topping are also in the query
+   part1 home/recipes/rhubarb-crumble.md:4-4 keys=['topping', 'oats']
+      > Topping: 150 g flour, 100 g butter, 75 g oats, 50 g sugar.
+== phrase-01 [phrase] Q: spare key under the blue pot  | query: (same)
+   note: the near duplicate in archive/ has spare key and blue pot apart
+   part1 home/house/house-notes.md:7-7 keys=['spare key under the blue pot']
+      > The spare key under the blue pot by the back step opens the kitchen door only.
+== phrase-02 [phrase] Q: first Tuesday of the month  | query: (same)
+   note: the 2025 copy says second Wednesday; meeting notes are dated Tuesdays
+   part1 toolshare/docs/committee.md:9-9 keys=['first tuesday of the month']
+      > The committee meets on the first Tuesday of the month at the Copper Lane hall, 7:30 pm.
+== phrase-03 [phrase] Q: do not tumble dry  | query: (same)
+   note: the next line says fine to tumble dry
+   part1 home/notes/laundry.md:3-3 keys=['do not tumble dry', 'wool']
+      > Wool jumpers: cold wash, do not tumble dry, dry flat on the rack.
+== phrase-04 [phrase] Q: bring a packed lunch  | query: (same)
+   note: the castle letter says lunch will be provided
+   part1 school/trip-letter-wetlands.md:6-6 keys=['bring a packed lunch']
+      > Please bring a packed lunch in a bag that can be thrown away, and a waterproof coat.
+== phrase-05 [phrase] Q: turn the water off at the stopcock  | query: (same)
+   part1 home/house/house-notes.md:12-12 keys=['turn the water off at the stopcock']
+      > If a pipe bursts, turn the water off at the stopcock under the kitchen sink.
+== phrase-06 [phrase] Q: keep in a cool dry place  | query: (same)
+   part1 home/recipes/spice-mix.md:4-4 keys=['keep in a cool dry place']
+      > Keep in a cool dry place for up to three months.
+== phrase-07 [phrase] Q: out of order  | query: (same)
+   note: order is a common word (orders.md, the order book)
+   part1 toolshare/docs/repairs.md:3-3 keys=['out of order', 'pressure washer']
+      > - Pressure washer (TS-017): out of order until the new hose arrives.
+== phrase-08 [phrase] Q: மழை பெய்தால்  | query: (same)
+   note: Tamil: if it rains
+   part1 paati/pongal-samayal.md:16-16 keys=['மழை பெய்தால்']
+      > மழை பெய்தால் வீட்டுக்குள்ளே அடுப்பு வைப்போம்.
+== phrase-09 [phrase] Q: rest the dough for an hour  | query: (same)
+   part1 home/recipes/flatbread.md:4-4 keys=['rest the dough for an hour']
+      > Mix, knead for five minutes, then rest the dough for an hour under a damp cloth.
+== phrase-10 [phrase] Q: cancelled direct debit  | query: (same)
+   note: the answer is in a TSV file; the electricity bill also says direct debit
+   part1 home/money/bank-notes.tsv:3-3 keys=['cancelled direct debit']
+      > 2026-02-01	cancelled direct debit to Fennick Gym
+== phrase-11 [phrase] Q: left at the second roundabout  | query: (same)
+   part1 home/trips/directions-to-gull-cottage.txt:2-2 keys=['left at the second roundabout']
+      > At the first roundabout go straight on; go left at the second roundabout, by the garage.
+== phrase-12 [phrase] Q: no dogs on the beach  | query: (same)
+   part1 home/trips/cornwall-2026.md:15-15 keys=['no dogs on the beach']
+      > No dogs on the beach between May and September; in October Pickle can come.
+== number-01 [number] Q: What was order 48213-K?  | query: 48213-K
+   part1 home/money/orders.md:5-5 keys=['48213-k', 'oven door seal']
+      > | 2026-07-03 | 48213-K | replacement oven door seal | delivered |
+== number-02 [number] Q: What is tool TS-017?  | query: TS-017
+   part1 toolshare/data/inventory.yaml:52-53 keys=['ts-017', 'pressure washer']
+      >   - id: TS-017 /     name: pressure washer
+   part1 toolshare/docs/repairs.md:3-3 keys=['ts-017', 'pressure washer']
+      > - Pressure washer (TS-017): out of order until the new hose arrives.
+== number-03 [number] Q: Has INV-2026-014 been paid?  | query: INV-2026-014
+   part1 toolshare/docs/treasurer.md:8-8 keys=['inv-2026-014', 'paid 12 october']
+      > - INV-2026-014: Fennick Hardware, new hose for the pressure washer, 23.50, paid 12 October.
+== number-04 [number] Q: What is on 17 March?  | query: 17 March
+   part1 home/health/health-notes.md:4-4 keys=['17 march', 'hearing test']
+      > 17 March: Otto's hearing test at the Fennick clinic, 9:20.
+== number-05 [number] Q: What happened on the server on 2026-06-17?  | query: 2026-06-17 error
+   note: the answer is in a .log file
+   part1 toolshare/logs/server-2026-06.log:52-52 keys=['2026-06-17', 'error']
+      > 2026-06-17 03:12:44 ERROR backup failed: disk quota exceeded on the second disk
+== number-06 [number] Q: Whose number is 01632 960418?  | query: 01632 960418
+   note: CRLF file; contacts.tsv holds the number too but is not read today
+   part1 home/lists/useful-numbers.txt:2-2 keys=['bram hollis', '01632 960418']
+      > Chimney sweep (Bram Hollis) 01632 960418
+== number-07 [number] Q: What is booking GCB-3307?  | query: GCB-3307
+   part1 home/trips/cornwall-2026.md:10-10 keys=['gcb-3307', 'gull cottage']
+      > Accommodation: Gull Cottage, Porthwenna, booked for 3 nights, booking reference GCB-3307.
+== number-08 [number] Q: What was the 45.00 for?  | query: 45.00
+   note: the answer is in a CSV file
+   part1 home/money/house-costs-2026.csv:4-4 keys=['45.00', 'plumber']
+      > 2026-04-02,Plumber,kitchen tap washer,45.00
+== number-09 [number] Q: What changed in v2.3.1?  | query: v2.3.1
+   part1 toolshare/CHANGELOG.md:3-5 keys=['v2.3.1']
+      > ## v2.3.1 (2026-05-04) /  / - Fix: reminders were sent twice after a loan was extended (issue 31).
+== number-10 [number] Q: Which port is 8086?  | query: port 8086
+   part1 toolshare/config/server.yaml:4-4 keys=['8086']
+      >   port: 8086
+== number-11 [number] Q: What is at 10:40 on 21 November?  | query: 10:40 21 November
+   note: the school calendar also has 21 November (photographs)
+   part1 school/piano-exam.md:3-3 keys=['10:40', 'piano exam']
+      > Grade 3 piano exam: Saturday 21 November at 10:40, Harrowdean Music Rooms.
+== number-12 [number] Q: What is due 2026-11-30?  | query: 2026-11-30
+   part1 home/car/car-notes.md:7-7 keys=['mot', '2026-11-30']
+      > MOT due 2026-11-30; book at Copper Lane Motors.
+== span-01 [two-passages] Q: What time is Otto's swimming and what goes in his bag?  | query: Otto swimming time bag
+   part1 home/schedules/otto-week.md:25-25 keys=['9:15']
+      > Swimming 9:15 at Fennick Leisure Centre, lane 2 group.
+   part2 home/schedules/otto-week.md:33-33 keys=['goggles', 'locker']
+      > Goggles, towel, a pound coin for the locker, and a snack for after.
+== span-02 [two-passages] Q: How long does the sourdough prove and how hot is the oven?  | query: sourdough prove bake temperature
+   part1 home/recipes/sourdough.md:10-10 keys=['4 hours']
+      > Prove for 4 hours at room temperature, folding every half hour.
+   part1 archive/sourdough-copy.md:10-10 keys=['4 hours']
+      > Prove for 4 hours at room temperature, folding every half hour.
+   part2 home/recipes/sourdough.md:14-14 keys=['240 degrees']
+      > Bake at 240 degrees in the lidded pot for 20 minutes, then 20 minutes lid off.
+   part2 archive/sourdough-copy.md:14-14 keys=['240 degrees']
+      > Bake at 240 degrees in the lidded pot for 20 minutes, then 20 minutes lid off.
+== span-03 [two-passages] Q: Who is on the Tool Share committee and when does it meet?  | query: committee members meets
+   note: the 2025 copy in archive/ has another chair and another day
+   part1 toolshare/docs/committee.md:5-5 keys=['ines marrow', 'kofi dunleavy']
+      > Chair: Ines Marrow. Treasurer: Kofi Dunleavy. Secretary: Tamsin Pellow.
+   part2 toolshare/docs/committee.md:9-9 keys=['first tuesday', '7:30']
+      > The committee meets on the first Tuesday of the month at the Copper Lane hall, 7:30 pm.
+== span-04 [two-passages] Q: When were the broad beans sown and when were they picked?  | query: broad beans sown picked
+   note: the two entries are 104 days apart in a long file
+   part1 home/garden/garden-diary-2025.txt:268-270 keys=['2025-03-08', 'broad beans']
+      > 2025-03-08 Sat /   weather: windy; the fence panel rattled, 19C /   Sowed the first broad beans in bed 2, two rows.
+   part2 home/garden/garden-diary-2025.txt:688-690 keys=['2025-06-21', 'broad beans']
+      > 2025-06-21 Sat /   weather: sunny and cold, 2C /   Picked the first broad beans; a colander full.
+== span-05 [two-passages] Q: When is the MOT and what should the tyre pressure be?  | query: MOT tyre pressure
+   part1 home/car/car-notes.md:7-7 keys=['2026-11-30']
+      > MOT due 2026-11-30; book at Copper Lane Motors.
+   part2 home/car/car-notes.md:11-11 keys=['33 psi']
+      > Tyre pressure: 33 psi front, 30 psi rear (35 front when loaded for Cornwall).
+== span-06 [two-passages] Q: What time do we arrive at Gull Cottage and what is the wifi?  | query: arrive Gull Cottage wifi
+   part1 home/trips/cornwall-2026.md:5-5 keys=['after 4 pm']
+      > Arrive Saturday 24 October after 4 pm; the owner leaves the key in the box by the door.
+   part2 home/trips/cornwall-2026.md:11-11 keys=['gullnest']
+      > Wifi at the cottage: network GullNest, password on the fridge.
+== span-07 [two-passages] Q: How long can a tool be borrowed and what happens if it comes back late?  | query: borrowed how long late returns
+   part1 toolshare/docs/lending-rules.md:5-5 keys=['7 days']
+      > Tools can be borrowed for up to 7 days; ask at the desk to extend.
+   part2 toolshare/docs/lending-rules.md:13-13 keys=['50p a day']
+      > Late returns pay 50p a day, capped at 5 pounds; three late returns and borrowing stops for a month.
+== span-08 [two-passages] Q: When was the boiler last serviced and who do I call?  | query: boiler serviced call
+   part1 home/house/boiler.md:9-9 keys=['2026-03-14']
+      > - 2026-03-14: serviced by Wenlow Heating, pressure topped up.
+   part2 home/house/boiler.md:17-17 keys=['01632 960233']
+      > Wenlow Heating, ask for Dara Wenlow: 01632 960233. Out of hours: 01632 960234.
+== span-09 [two-passages] Q: பொங்கலுக்கு என்ன பொருட்கள் வேண்டும், எப்படிச் செய்வது?  | query: பொங்கல் பொருட்கள் செய்முறை
+   note: Tamil: what goes into Pongal and how it is made
+   part1 paati/pongal-samayal.md:5-5 keys=['பச்சரிசி', 'வெல்லம்']
+      > பச்சரிசி ஒரு கோப்பை, பாசிப்பருப்பு அரை கோப்பை, வெல்லம் ஒன்றரை கோப்பை.
+   part2 paati/pongal-samayal.md:10-10 keys=['வேக வைக்கவும்']
+      > அரிசியையும் பருப்பையும் கழுவி, நான்கு கோப்பை தண்ணீரில் வேக வைக்கவும்.
+== span-10 [two-passages] Q: When is half term and when is the Christmas concert?  | query: half term Christmas concert
+   part1 school/calendar-autumn.md:9-9 keys=['half term']
+      > - 26 to 30 October: half term
+   part2 school/calendar-autumn.md:14-14 keys=['16 december']
+      > - 16 December: Christmas concert, 2 pm, school hall
+== span-11 [two-passages] Q: Where are the ladder and the cordless drill kept?  | query: ladder cordless drill shelf
+   part1 toolshare/data/inventory.yaml:92-93 keys=['ladder', 'outside rack']
+      >     name: ladder (3-section) /     shelf: outside rack
+   part2 toolshare/data/inventory.yaml:26-27 keys=['cordless drill', 'a2']
+      >     name: cordless drill /     shelf: A2
+== pair-01 [two-files] Q: How much was the boiler service and when is the next one due?  | query: boiler service cost next due
+   part1 home/money/receipts-note.md:7-7 keys=['96 pounds']
+      > - Wenlow Heating, 14 March: 96 pounds by card for the yearly visit.
+   part2 home/house/boiler.md:13-13 keys=['march 2027']
+      > Next service due in March 2027. Book in January; they get busy.
+== pair-02 [two-files] Q: What's for dinner on Wednesday and what do I need for it?  | query: Wednesday dinner ingredients
+   part1 home/schedules/meal-plan-week-38.md:5-5 keys=['lentil dal']
+      > - Wednesday: lentil dal with rice (recipe in recipes/lentil-dal.md)
+   part2 home/recipes/lentil-dal.md:5-8 keys=['red lentils']
+      > - 250 g red lentils / - 1 onion, 3 cloves garlic, a thumb of ginger / - 1 tin chopped tomatoes / - 1 teaspoon each of cumin seeds and turmeric
+== pair-03 [two-files] Q: Which tool is out of order, and is its repair paid for?  | query: out of order repair paid
+   part1 toolshare/docs/repairs.md:3-3 keys=['pressure washer']
+      > - Pressure washer (TS-017): out of order until the new hose arrives.
+   part2 toolshare/docs/treasurer.md:8-8 keys=['hose', 'paid 12 october']
+      > - INV-2026-014: Fennick Hardware, new hose for the pressure washer, 23.50, paid 12 October.
+== pair-04 [two-files] Q: When is the wetlands trip and what does the letter say to bring?  | query: wetlands trip date bring
+   part1 school/calendar-autumn.md:8-8 keys=['8 october', 'saltmarsh wetlands']
+      > - 8 October: Year 6 trip to Saltmarsh Wetlands
+   part2 school/trip-letter-wetlands.md:6-6 keys=['packed lunch', 'waterproof coat']
+      > Please bring a packed lunch in a bag that can be thrown away, and a waterproof coat.
+== pair-05 [two-files] Q: What port does the Tool Share server use and which code reads it?  | query: server port code
+   part1 toolshare/config/server.yaml:4-4 keys=['8086']
+      >   port: 8086
+   part2 toolshare/src/app.py:8-8 keys=['port']
+      > PORT = config["server"]["port"]
+== pair-06 [two-files] Q: Where is Gull Cottage and how do we get there?  | query: Gull Cottage where directions
+   part1 home/trips/cornwall-2026.md:10-10 keys=['porthwenna']
+      > Accommodation: Gull Cottage, Porthwenna, booked for 3 nights, booking reference GCB-3307.
+   part2 home/trips/directions-to-gull-cottage.txt:1-3 keys=['porthwenna turning']
+      > From the A-road, take the Porthwenna turning. / At the first roundabout go straight on; go left at the second roundabout, by the garage. / After the chapel, the lane drops to the harbour; Gull Cottage is the white one with the green gate.
+== pair-07 [two-files] Q: Who is the chimney sweep and when did he last come?  | query: chimney sweep last
+   part1 home/lists/useful-numbers.txt:2-2 keys=['bram hollis', '01632 960418']
+      > Chimney sweep (Bram Hollis) 01632 960418
+   part2 home/house/jobs-autumn.md:6-6 keys=['2 september']
+      > - [x] Chimney swept by Bram Hollis on 2 September; next sweep autumn 2027.
+== pair-08 [two-files] Q: பொங்கலுக்கு என்ன சமைப்பது, அடுத்த பொங்கல் எப்போது?  | query: பொங்கல் சமையல் நாள்
+   note: Tamil: what to cook for Pongal and the date of the next one
+   part1 paati/pongal-samayal.md:5-5 keys=['பச்சரிசி']
+      > பச்சரிசி ஒரு கோப்பை, பாசிப்பருப்பு அரை கோப்பை, வெல்லம் ஒன்றரை கோப்பை.
+   part2 paati/naatkaatti-2027.md:3-3 keys=['ஜனவரி 14']
+      > பொங்கல்: ஜனவரி 14, வியாழன்.
+== pair-09 [two-files] Q: Which release fixed the reminders going out twice, and what was the issue?  | query: reminders sent twice fixed release
+   part1 toolshare/CHANGELOG.md:5-5 keys=['issue 31']
+      > - Fix: reminders were sent twice after a loan was extended (issue 31).
+   part2 toolshare/docs/issues.md:5-5 keys=['twice', 'extended']
+      > Reported 2 May. The overdue reminder email went out twice when a loan was extended. Fixed, see the changelog.
+== pair-10 [two-files] Q: When is Mira's piano exam and which pieces is she playing?  | query: Mira piano exam pieces
+   part1 school/piano-exam.md:3-3 keys=['21 november', '10:40']
+      > Grade 3 piano exam: Saturday 21 November at 10:40, Harrowdean Music Rooms.
+   part2 home/notes/music.md:3-3 keys=['swan boat waltz']
+      > Mira's grade 3 piano pieces: Swan Boat Waltz, Rain on the Shed Roof, and the scales in D and B flat.
+== pair-11 [two-files] Q: When is Pickle's booster and what's the vet's number?  | query: Pickle booster vet number
+   part1 home/pets/pickle.md:8-8 keys=['12 january 2027']
+      > Booster vaccination due 12 January 2027.
+   part2 home/lists/useful-numbers.txt:3-3 keys=['01632 960552']
+      > Vet, Fennick Vets: 01632 960552
+== name-01 [filename] Q: Find the boiler service note.  | query: boiler service note
+   checks: {'absent_from_files': ['boiler', 'service']}
+   note: the date is in the name, the text says only 'Done'
+   part1 inbox/boiler-service-2026-03-14.txt:1-1 keys=['paid by card']
+      > Done. Paid by card. All fine, pressure topped up, next one in a year.
+== name-02 [filename] Q: Where's my passport renewal checklist?  | query: passport renewal checklist
+   checks: {'absent_from_files': ['passport', 'renewal', 'checklist']}
+   part1 inbox/passport-renewal-checklist.txt:1-1 keys=['two photos']
+      > Two photos, signed on the back. Old one goes in the envelope. Form posted?
+== name-03 [filename] Q: Open the wifi router note.  | query: wifi router
+   checks: {'absent_from_files': ['wifi', 'router']}
+   part1 home/house/wifi-router.txt:1-1 keys=['password', 'reset']
+      > Password is on the sticker underneath. If the lights go orange, hold the reset for 10 seconds.
+== name-04 [filename] Q: Find the file for Otto's birthday party.  | query: Otto birthday party
+   checks: {'absent_from_files': ['birthday', 'party', 'otto']}
+   part1 home/otto-birthday-party-2026.md:1-3 keys=['5 july', 'twelve coming']
+      > # 5 July /  / Twelve coming. Cake from Larch Bakery. Pass-the-parcel, then the garden treasure hunt.
+== name-05 [filename] Q: Where's the dentist note?  | query: dentist
+   checks: {'absent_from_files': ['dentist']}
+   part1 home/health/dentist.txt:1-1 keys=['check-up']
+      > Next check-up 3 February, 8:40. Mira needs the brace review then. Bring the referral letter.
+== name-06 [filename] Q: Find the garage clear-out list.  | query: garage clearout
+   checks: {'absent_from_files': ['garage', 'clearout']}
+   part1 home/lists/garage-clearout.txt:1-1 keys=['tip run']
+      > Tip run: paint tins, old bike, broken chair, the cracked paddling pool.
+== name-07 [filename] Q: தீபாவளி பட்டியல் எங்கே?  | query: தீபாவளி பட்டியல்
+   checks: {'absent_from_files': ['தீபாவளி', 'பட்டியல்']}
+   note: Tamil: where is the Deepavali list; a Tamil file name
+   part1 paati/தீபாவளி-பட்டியல்.txt:1-5 keys=['முறுக்கு', 'விளக்குகள்']
+      > முறுக்கு / அதிரசம் / புதிய உடைகள் / விளக்குகள் இருபது / பட்டாசு வேண்டாம்
+== name-08 [filename] Q: Find the home insurance renewal.  | query: home insurance renewal
+   checks: {'absent_from_files': ['insurance', 'renewal']}
+   part1 home/money/home-insurance-renewal.md:3-3 keys=['312.40', '1 december']
+      > Quote from Larkspur Mutual: 312.40 a year for buildings and contents. Renew by 1 December.
+== name-09 [filename] Q: Open the AGM notes.  | query: AGM
+   checks: {'absent_from_files': ['agm']}
+   part1 toolshare/meetings/agm-2026.md:1-4 keys=['12 march 2026', 'accounts approved']
+      > # 12 March 2026 /  / Present: Ines, Kofi, Tamsin and nine members. / Votes: accounts approved; fees unchanged; a second Saturday opening from May.
+== name-10 [filename] Q: Where is the volunteer rota?  | query: volunteer rota
+   checks: {'absent_from_files': ['volunteer', 'rota']}
+   note: a CSV file
+   part1 toolshare/data/volunteer-rota.csv:1-5 keys=['date,desk,repairs']
+      > date,desk,repairs / 2026-11-07,Ines,Kofi / 2026-11-14,Tamsin,Kofi / 2026-11-21,Ines,Wilf / 2026-11-28,Tamsin,Wilf
+== name-11 [filename] Q: Find the camping packing list.  | query: camping packing list
+   checks: {'absent_from_files': ['camping', 'packing', 'list']}
+   part1 home/lists/camping-packing.txt:1-5 keys=['tent', 'head torches']
+      > tent, pegs and mallet / head torches x4 / sleeping mats / stove and gas / matches in a jar
+== name-12 [filename] Q: Find the September electricity bill.  | query: electricity bill September
+   checks: {'absent_from_files': ['electricity', 'bill', 'september']}
+   note: the name has sept, the query September
+   part1 home/money/electricity-bill-sept.txt:1-1 keys=['84.17']
+      > Amount 84.17, paid 2 October by direct debit. Meter read 41,207.
+== about-01 [about] Q: Which files are about the bees?  | query: bees
+   note: one file says bees, the others bee and beekeeping
+   part1 home/garden/beekeeping-notes.md:1-1 keys=['beekeeping']
+      > # Beekeeping notes
+   part2 home/lists/bee-supplies.txt:1-1 keys=['bee suit']
+      > Bee suit (Mira's size), smoker fuel, frames x10, sugar for winter feed.
+   part3 school/bee-project.md:1-1 keys=['bee project']
+      > # Mira's bee project
+== about-02 [about] Q: Which files are about the Cornwall trip?  | query: Cornwall trip
+   note: the directions never say Cornwall
+   part1 home/trips/cornwall-2026.md:1-1 keys=['cornwall']
+      > # Cornwall, half term 2026
+   part2 home/trips/directions-to-gull-cottage.txt:1-1 keys=['porthwenna']
+      > From the A-road, take the Porthwenna turning.
+   part3 home/lists/cornwall-packing.txt:1-1 keys=['cornwall']
+      > Cornwall packing: wetsuits, Pickle's lead and towel, board games, wellies, the travel kettle.
+== about-03 [about] Q: Which files are about Pickle the dog?  | query: Pickle dog
+   part1 home/pets/pickle.md:3-3 keys=['pickle', 'dog']
+      > Pickle is our dog, a wire-haired terrier cross, born 3 May 2021.
+   part2 home/pets/pickle-walks.md:1-1 keys=['pickle']
+      > # Pickle's walks
+   part3 home/lists/pickle-shopping.txt:1-1 keys=['pickle', 'dog food']
+      > Pickle: dog food (large bag), poo bags, chew sticks, flea drops.
+== about-04 [about] Q: பாட்டியின் சமையல் குறிப்புகள் எந்தக் கோப்புகளில் உள்ளன?  | query: சமையல் குறிப்பு
+   note: Tamil: which files hold Paati's recipes; kootu.md never says recipe
+   part1 paati/pongal-samayal.md:1-1 keys=['சமையல்']
+      > # பொங்கல் சமையல்
+   part2 paati/rasam.md:3-3 keys=['ரசம்']
+      > பாட்டியின் சமையல் குறிப்பு: ரசம் செய்ய புளி, தக்காளி, மிளகு, சீரகம் தேவை.
+   part3 paati/kootu.md:1-1 keys=['கூட்டு']
+      > # பூசணிக்காய் கூட்டு
+== about-05 [about] Q: Which files are about the pressure washer?  | query: pressure washer
+   part1 toolshare/docs/repairs.md:3-3 keys=['pressure washer']
+      > - Pressure washer (TS-017): out of order until the new hose arrives.
+   part2 toolshare/docs/treasurer.md:8-8 keys=['pressure washer']
+      > - INV-2026-014: Fennick Hardware, new hose for the pressure washer, 23.50, paid 12 October.
+   part3 toolshare/data/inventory.yaml:53-53 keys=['pressure washer']
+      >     name: pressure washer
+== about-06 [about] Q: Which files are about school trips?  | query: school trip
+   part1 school/trip-letter-wetlands.md:1-1 keys=['trip']
+      > # Year 6 trip: Saltmarsh Wetlands
+   part2 school/trip-letter-castle.md:1-1 keys=['trip']
+      > # Year 2 trip: Harrow Castle
+== about-07 [about] Q: Which files are about the car?  | query: car
+   note: the receipt never says car; its folder does
+   part1 home/car/car-notes.md:1-1 keys=['car']
+      > # Car notes
+   part2 home/car/tyres-receipt.txt:1-1 keys=['tyres']
+      > Two front tyres fitted, 14 June, 140 pounds, Copper Lane Motors.
+== about-08 [about] Q: Which files are about damp and mould?  | query: damp mould
+   part1 home/house/damp-bedroom.md:1-1 keys=['damp']
+      > # Damp in Otto's bedroom
+   part2 home/house/bathroom.md:5-5 keys=['mould']
+      > Mould on the ceiling: wipe with diluted bleach, then open the window.
+== about-09 [about] Q: Which files are the Tool Share website's code?  | query: Tool Share website code
+   note: source files; none says website or code
+   part1 toolshare/src/app.py:1-1 keys=['web app']
+      > """The Tool Share web app: loans, returns and the tool list."""
+   part2 toolshare/src/reminders.py:1-1 keys=['tool share']
+      > """Overdue reminders for the Harrowdean Tool Share.
+   part3 toolshare/src/models.py:1-1 keys=['loans']
+      > """Plain records for tools, borrowers and loans."""
+   part4 toolshare/site/app.js:1-1 keys=['tool list']
+      > // Highlights the tools that are out on loan in the tool list.
+== about-10 [about] Q: Which files are about sourdough?  | query: sourdough
+   part1 home/recipes/sourdough.md:1-1 keys=['sourdough']
+      > # Sourdough loaf
+   part1 archive/sourdough-copy.md:1-1 keys=['sourdough']
+      > # Sourdough loaf
+   part2 home/notes/baking-log.txt:1-1 keys=['sourdough']
+      > Sourdough loaf 1: flat, starter too young.
+== about-11 [about] Q: Which files are about household bills?  | query: household bills
+   note: no file says household; one name says bill
+   part1 home/money/electricity-bill-sept.txt:1-1 keys=['84.17']
+      > Amount 84.17, paid 2 October by direct debit. Meter read 41,207.
+   part2 home/money/home-insurance-renewal.md:3-3 keys=['312.40']
+      > Quote from Larkspur Mutual: 312.40 a year for buildings and contents. Renew by 1 December.
+   part3 home/money/house-costs-2026.csv:1-1 keys=['amount']
+      > date,who,what,amount
+== content-01 [file-content] Q: What is in inventory.yaml?  | query: inventory.yaml
+   part1 toolshare/data/inventory.yaml:1-2 keys=['inventory', 'shelf']
+      > # Harrowdean Tool Share inventory: every tool, its id and its shelf. / # Kept by the volunteers; one entry per tool.
+== content-02 [file-content] Q: What is in the NOTES file in the inbox?  | query: inbox NOTES
+   note: a file with no extension
+   part1 inbox/NOTES:1-2 keys=['loft hatch', 'landing']
+      > Loft hatch sticks in damp weather; push the left corner first. / Measure the landing for a new runner.
+== content-03 [file-content] Q: What is in budget-2026.csv?  | query: budget-2026.csv
+   note: a CSV file; the header says what it holds
+   part1 home/money/budget-2026.csv:1-1 keys=['month,food,energy']
+      > month,food,energy,transport,school,savings
+== content-04 [file-content] Q: What is in garden-diary-2025.txt?  | query: garden-diary-2025.txt
+   part1 home/garden/garden-diary-2025.txt:1-2 keys=['garden diary 2025', 'one entry a day']
+      > Garden diary 2025, 14 Copper Lane. / One entry a day: the date, the weather and what was done.
+== content-05 [file-content] Q: What does reminders.py do?  | query: reminders.py
+   part1 toolshare/src/reminders.py:1-3 keys=['overdue reminders', 'once a day']
+      > """Overdue reminders for the Harrowdean Tool Share. /  / Runs once a day; emails each borrower whose loan is past its due date.
+== content-06 [file-content] Q: What is in server.yaml?  | query: server.yaml
+   part1 toolshare/config/server.yaml:1-1 keys=['web server settings']
+      > # Tool Share web server settings
+== content-07 [file-content] Q: kootu.md கோப்பில் என்ன இருக்கிறது?  | query: kootu.md
+   note: Tamil: what is in kootu.md; a Latin file name over Tamil text
+   part1 paati/kootu.md:1-3 keys=['கூட்டு']
+      > # பூசணிக்காய் கூட்டு /  / பூசணிக்காய் இருநூறு கிராம், பாசிப்பருப்பு கால் கோப்பை, தேங்காய் துருவல் இரண்டு கரண்டி.
+== content-08 [file-content] Q: What is the Tool Share index.html page?  | query: index.html
+   part1 toolshare/site/index.html:5-5 keys=['harrowdean tool share']
+      > <title>Harrowdean Tool Share</title>
+== content-09 [file-content] Q: What is in the Tool Share CHANGELOG.md?  | query: CHANGELOG.md
+   part1 toolshare/CHANGELOG.md:1-1 keys=['changelog']
+      > # Changelog
+== content-10 [file-content] Q: What is in otto-week.md?  | query: otto-week.md
+   part1 home/schedules/otto-week.md:1-1 keys=["otto's week"]
+      > # Otto's week (autumn term)
+== content-11 [file-content] Q: What is in contacts.tsv?  | query: contacts.tsv
+   note: a TSV file
+   part1 home/contacts.tsv:1-1 keys=['name', 'role', 'phone']
+      > name	role	phone
+== none-01 [no-answer] Q: Where did I put the snorkel?  | query: snorkel
+   checks: {'absent_from_corpus': ['snorkel']}
+== none-02 [no-answer] Q: When was the trampoline bought?  | query: trampoline bought
+   checks: {'absent_from_corpus': ['trampoline']}
+   note: bought occurs in other files
+== none-03 [no-answer] Q: When is the piano tuner coming?  | query: piano tuner
+   checks: {'absent_from_corpus': ['tuner']}
+   note: near topic: piano occurs (the exam, the journal)
+== none-04 [no-answer] Q: What is the burglar alarm code?  | query: burglar alarm code
+   checks: {'absent_from_corpus': ['burglar']}
+   note: near topic: smoke alarm, code
+== none-05 [no-answer] Q: கிரிக்கெட் போட்டி எப்போது?  | query: கிரிக்கெட்
+   checks: {'absent_from_corpus': ['கிரிக்கெட்']}
+   note: Tamil: when is the cricket match
+== none-06 [no-answer] Q: Where can we hire a kayak?  | query: kayak hire
+   checks: {'absent_from_corpus': ['kayak']}
+   note: near word: hire (room hire)
+== none-07 [no-answer] Q: When is Mira's orthodontist appointment?  | query: orthodontist
+   checks: {'absent_from_corpus': ['orthodontist']}
+   note: near topic: the dentist note has the brace review
+== none-08 [no-answer] Q: How much was the solar panel quote?  | query: solar panel quote
+   checks: {'absent_from_corpus': ['solar']}
+   note: near words: panel (a fence panel), quote (the insurance quote)
+== none-09 [no-answer] Q: What is tool TS-999?  | query: TS-999
+   checks: {'absent_from_corpus': ['999']}
+   note: a code with the shape of real ones
+== none-10 [no-answer] Q: When is our wedding anniversary?  | query: wedding anniversary
+   checks: {'absent_from_corpus': ['wedding', 'anniversary']}
+== none-11 [no-answer] Q: When are the flu jabs?  | query: flu jab
+   checks: {'absent_from_corpus': ['flu', 'jab', 'jabs']}
+== none-12 [no-answer] Q: When does the library van come?  | query: library van
+   checks: {'absent_from_corpus': ['van']}
+   note: near word: library (library day, library books)
