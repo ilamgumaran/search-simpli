@@ -1,0 +1,17 @@
+S6-T21 timing: retake note, written and pushed before any run of the second set.
+
+First set (22 Nov 2026, 13:06:34 to 13:14:43, on c0c9b7a, committed in 3954be0): 165 of 166 judged
+cells pass by the rule of 2026-11-17. One fails: timing-10k `find words from`, d(head) +66.1 us against
+T 30.2 us, 31.9 us above the largest control (ci +34.2 us). The first set's files in this folder stay
+untouched.
+
+The maintainer was shown the failing cell and chose one retake on 22 Nov 2026.
+
+The second set uses the same committed orders (scripts/prototypes/s6t21/orders.txt, pushed in 92ed47b)
+and the same libraries (SHA-256: main and main2 31a431b0a72e76e7..., head ed938358e6758fc7..., cl
+8d24eefc2d5fc058..., ci 1215d0f98f4bbba9...), index copies, queries and harness. Five gated runs, 1 to
+5. Its files go in retake/ beside this note: its own run files, cells, gates and pmset excerpt.
+
+Decision rule, fixed in advance: S6-T21 passes timing only if every judged cell passes in the second
+set. If any cell fails in the second set, it is reported as it is and goes back to the maintainer.
+There is no third set. If a gate refuses, the run is not retried in a loop; it is reported and stops.
