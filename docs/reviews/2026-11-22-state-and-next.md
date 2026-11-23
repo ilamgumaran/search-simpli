@@ -7,6 +7,15 @@ is what is proposed. `main` is at `8ffc41c` plus the commit that adds these two
 documents. Written by the orchestrator session; every number is measured and
 linked to the task that measured it.
 
+## Update, 23 Nov 2026
+
+The maintainer said go for one step of the specification: **H3, pattern search**
+([S6-T24](../tasks/S6-T24.md)), after S6-T23 merges. The orchestrator settled
+H3's open questions in the task file so the build can start; each is reversible,
+and a reviewer's objection still changes it. The task writes its design note
+first and stops for a reading before any code. Everything else below still
+waits for the review.
+
 ## The direction
 
 The six objectives of the [objective plan](../plans/2026-11-16-objective-plan.md)
