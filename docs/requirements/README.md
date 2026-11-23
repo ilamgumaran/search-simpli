@@ -109,6 +109,7 @@ require breaking one of these must be resolved as a conflict, not merged.
 | CAP-21 | [Host-supplied vectors for a `searchd`-built index](cap-21-host-supplied-vectors.md) | UC-001, UC-007, UC-002 | FR-27, FR-28, FR-29, FR-30, NFR-16 | Proposed (S6-T6: [task](../tasks/S6-T6.md); pending maintainer approval; blocked on a J2 semantic slice, CFT-24) |
 | CAP-22 | [Query warnings under every search field](cap-22-field-warnings.md) | UC-006, UC-007, UC-002 | FR-31 | Implemented (S6-T5: [task](../tasks/S6-T5.md); merged on the maintainer's decision of 17 Nov 2026; approved by the orchestrator under the maintainer's instruction of 16 Nov 2026; not Validated) |
 | CAP-23 | [The command line keeps two generations by default](cap-23-cli-generation-retention.md) | UC-001, UC-006, UC-002 | FR-32, FR-33, NFR-17 | Proposed (S6-T11, 03-next D2-5; pending maintainer approval and answers to its open questions Q1–Q6) |
+| CAP-24 | [Which files are text: a walk reads a file when its bytes are text](cap-24-which-files-are-text.md) | UC-001, UC-007, UC-006, UC-002 | FR-34, FR-35, FR-36, NFR-18 | Proposed (S6-T23: [task](../tasks/S6-T23.md); accepted under the maintainer's direction of 22 Nov 2026, text first, plan step H2; recorded for his review; build in progress) |
 
 New capabilities append here as `CAP-17`, `CAP-18`, … via the process, each with
 a filled spec (see the three above as worked examples).
@@ -172,6 +173,9 @@ index adds status and traceability. No requirement exists *only* here.
 | FR-31 | `ss_query` warnings under `both` and `filename`: `content`'s, less a word a visible file name holds; hidden reported as absent | CAP-22 | Implemented (S6-T5: [task](../tasks/S6-T5.md), merged on the maintainer's decision of 17 Nov 2026) |
 | FR-32 | `searchd index` and `searchd apply` keep two generations unless `--keep-generations N` or `--keep-generations all` says otherwise; C ABI and Dart defaults unchanged | CAP-23 | Proposed (S6-T11) |
 | FR-33 | A command-line publish says what retention removed (fields while retention is in effect; one stderr line when files were deleted) | CAP-23 | Proposed (S6-T11) |
+| FR-34 | The walk reads a file when its bytes are text (`text-sniff-v1`: name check, skip list of non-text kinds, 8,192-byte sniff); changes FR-01; the Python reference walks the same | CAP-24 | Proposed (S6-T23) |
+| FR-35 | A walk's report counts not-read files by kind, without paths (`not_read`), on every interface; not in the manifest's `skipped` | CAP-24 | Proposed (S6-T23) |
+| FR-36 | A walk-built generation records `readable` (`text-sniff-v1`) in the manifest meta; older readers ignore it; an older index takes the newly readable files at its next update | CAP-24 | Proposed (S6-T23) |
 
 ## Non-functional requirements (NFR)
 
@@ -200,6 +204,7 @@ until promoted.
 | NFR-15 | Direct search creates no file or directory anywhere; its cost against the index path is measured, not assumed | CAP-20 | Implemented and verified (S6-T2: [task](../tasks/S6-T2.md)) |
 | NFR-16 | Vectors in their own versioned section, loaded only by vector queries; lexical answers and memory unchanged; vector costs measured before promotion | CAP-21 | Proposed (S6-T6) |
 | NFR-17 | With the command line's defaults at most two complete generations after a publish; deletion confined to the engine's own superseded section files in the index directory | CAP-23 | Proposed (S6-T11) |
+| NFR-18 | The sniff costs no extra open for a known-text name and one read of at most 8,192 bytes for any other; the 10k corpora's answers byte-identical and index folders differing only in `MANIFEST` | CAP-24 | Proposed (S6-T23) |
 
 ## Contracts (CON)
 
@@ -270,8 +275,11 @@ section is the point of the whole register.
 | CFT-28 | CAP-21 ↔ NFR-12 / FR-20 | Two-phase writes two generations per embedding round, each larger. | `apply` without vectors unchanged; attach write cost measured; batching, D2-5 and delta sections bound it. | Resolved (scope) |
 | CFT-29 | CAP-23 ↔ FR-11 / FR-20 | A reader that has read `MANIFEST` but not opened the sections can find them deleted through the command line, where today nothing is. | Two kept: only a reader two publishes behind fails (`FileNotFound`, retry succeeds); open readers unaffected on macOS/Linux/Android; `--keep-generations all` keeps today's behaviour. See CAP-23 §8. | Resolved (scope) |
 | CFT-30 | CAP-23 ↔ FR-24 / FR-20 | `searchd apply` would prune by default while `ss_apply_changes`, documented as publishing exactly as `searchd apply` does, would not. | Ruling 4 keeps the C ABI and Dart defaults; the host app passes 2; the header comment names the difference. See CAP-23 §8. | Accepted with rationale |
+| CFT-31 | CAP-24 ↔ FR-01 / CAP-09 | The Zig walk mirrors the Python reference's candidate set, and the chunk goldens come from the Python walk. | The Python reference takes the same rule; every fixture folder is read in full today, so the goldens do not move. See CAP-24 §8. | Resolved |
+| CFT-32 | CAP-24 ↔ INV-07 / NFR-02 | A new meta key in every walk-built manifest. | Additive; older readers ignore unknown meta keys (tested); no format version, header or flag change; an older engine updating a newer index drops the newly read files again, recorded. See CAP-24 §8. | Resolved (design) |
+| CFT-33 | CAP-24 ↔ FR-12 / CAP-11 | Reading more files moves the ranking of judged questions whose answers were readable before (typed file@1 over readable-now 94 → 90 on the prototype). | Causes are ranking and the ten-result cut, owned by plan steps H5 and H6; each worsened question listed with its cause; ranking not tuned here. See CAP-24 §8. | Accepted with rationale |
 
-New conflicts append as `CFT-31`, … Record the conflict even if you resolve it
+New conflicts append as `CFT-34`, … Record the conflict even if you resolve it
 immediately — the record is the value.
 
 ## Traceability
