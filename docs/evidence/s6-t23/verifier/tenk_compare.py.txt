@@ -1,0 +1,74 @@
+"""S6-T23 verifier: main's and the head's searchd on a 10k corpus, each on its own index.
+
+usage: python3 -I tenk_compare.py <corpus> <scratch> <main searchd> <head searchd> <n_words>
+
+Indexes the corpus with both builds (`--filename-index`), compares every index
+file byte for byte (MANIFEST decoded: header bytes and meta), then runs `query
+--json`, `evidence` under content / filename / both and `find --json` for a
+query set derived here (words by document frequency rank, two-word pairs, file
+stems), and counts outputs that differ. The queries are the verifier's own.
+"""
+import collections
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+corpus, scratch, msd, hsd, n_words = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], sys.argv[4], int(sys.argv[5])
+name = corpus.name
+idx = {"main": scratch / f"{name}-idx-main", "head": scratch / f"{name}-idx-head"}
+for label, sd in (("main", msd), ("head", hsd)):
+    r = subprocess.run([sd, "index", str(corpus), "--out", str(idx[label]), "--filename-index"], capture_output=True, check=True)
+    print(label, r.stdout.decode().strip().split(": ", 1)[1])
+# index files
+names = sorted(set(os.listdir(idx["main"])) | set(os.listdir(idx["head"])))
+for n in names:
+    a, b = idx["main"] / n, idx["head"] / n
+    if not a.exists() or not b.exists():
+        print("only in one:", n)
+        continue
+    if a.is_dir():
+        continue
+    x, y = a.read_bytes(), b.read_bytes()
+    if x == y:
+        print(f"identical {n} ({len(x)} B)")
+    else:
+        print(f"DIFFERS {n}: {len(x)} -> {len(y)} B")
+        if n == "MANIFEST":
+            key = b'"readable":{"id":"text-sniff-v1","head_bytes":8192,"control_share_max":0.01},'
+            at = y.find(key)
+            print(f"  key at byte {at}, followed by {y[at + len(key):at + len(key) + 8]!r}")
+            stripped = y[:at] + y[at + len(key):]
+            diff = [i for i in range(len(x)) if x[i] != stripped[i]] if len(x) == len(stripped) else "length"
+            print(f"  head MANIFEST without the key: {len(stripped)} B; byte offsets differing from main's: {diff if isinstance(diff, str) else (diff[:12], len(diff))}")
+# queries
+df = collections.Counter()
+stems = []
+for path in sorted(corpus.rglob("*.md")):
+    words = set(re.findall(r"\w+", path.read_text(encoding="utf-8").lower()))
+    df.update(words)
+    stems.append(path.stem)
+ranked = [w for w, _ in sorted(df.items(), key=lambda kv: (-kv[1], kv[0])) if not w.isdigit()]
+positions = sorted({int(len(ranked) * i / n_words) for i in range(n_words)} | {0, 1, 2, 9, 99})
+words = [ranked[p] for p in positions if p < len(ranked)]
+pairs = [f"{words[i]} {words[-1 - i]}" for i in range(min(8, len(words) // 2))]
+queries = words + pairs + [stems[0], stems[len(stems) // 2], stems[-1]]
+print(f"{len(queries)} queries")
+calls = differ = 0
+examples = []
+for q in queries:
+    cmds = [["query", "{i}", q, "--json", "--top-k", "10"], ["find", "{i}", q, "--json"]]
+    cmds += [["evidence", "{i}", q, "--search-field", f, "--top-k", "10"] for f in ("content", "filename", "both")]
+    for cmd in cmds:
+        outs = []
+        for label, sd in (("main", msd), ("head", hsd)):
+            argv = [sd] + [str(idx[label]) if a == "{i}" else a for a in cmd]
+            r = subprocess.run(argv, capture_output=True)
+            outs.append((r.returncode, r.stdout, r.stderr))
+        calls += 1
+        if outs[0] != outs[1]:
+            differ += 1
+            examples.append((cmd[0], q))
+print(f"{name}: {calls} calls, {differ} differ", examples[:5])

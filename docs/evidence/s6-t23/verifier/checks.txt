@@ -1,0 +1,79 @@
+# S6-T23 verifier: checks (checks.sh.txt), 23 Nov 2026, head 2ab4e60; macOS arm64, Zig 0.16.0
+
+## exit codes
+== check_test_counts: python3 -I scripts/check_test_counts.py --run
+   exit=0
+== check_layers: python3 -I scripts/check_layers.py
+   exit=0
+== check_requirements: python3 -I scripts/check_requirements.py
+   exit=0
+== check_no_home_paths: python3 -I scripts/check_no_home_paths.py
+   exit=0
+== zig_test_rs: zig build test -Doptimize=ReleaseSmall --summary all --global-cache-dir <scratch>/gc-head --cache-dir <scratch>/lc-head-rs-test
+   exit=0
+== zig_test_abi_debug: zig build test-abi --summary all --global-cache-dir <scratch>/gc-head --cache-dir <scratch>/lc-head-test
+   exit=0
+== zig_test_abi_rs: zig build test-abi -Doptimize=ReleaseSmall --summary all --global-cache-dir <scratch>/gc-head --cache-dir <scratch>/lc-head-rs-test
+   exit=0
+== py_suite_zig: python3 -m unittest discover -s tests
+   exit=0
+== py_suite_rs: env SEARCHD_BINARY=<scratch>/prefix-head-rs/bin/searchd python3 -m unittest discover -s tests
+   exit=0
+== dart_pubget: dart pub get
+   exit=0
+== dart_analyze: dart analyze lib test
+   exit=0
+== dart_test: dart test
+   exit=0
+== check_native: ./tool/check_native.sh
+   exit=0
+
+## counts
+zig build test, Debug (fresh archive, own caches):       Build Summary: 15/15 steps succeeded; 603/612 tests passed (9 skipped)
+zig build test, ReleaseSmall (fresh archive):           Build Summary: 15/15 steps succeeded; 603/612 tests passed (9 skipped)
+zig build test, Debug, main 8ffc41c (fresh archive):    Build Summary: 15/15 steps succeeded; 597/606 tests passed (9 skipped)
+check_test_counts --run (Debug, worktree):              check_test_counts: OK (5 steps, 612 tests: every step ran the tests the listing has, and the static checker passes)
+check_layers:                                           check_layers: OK (45 files in layers, 3 module roots, 6 allowed interface imports; 76 files hold 612 tests, each run by a step of `zig build test`; the public core API `api`: 86 names in 22 namespaces)
+check_requirements:                                     Requirements register OK: consistent across register, specification, use-cases, contracts, and capability specs.
+check_no_home_paths (before my files were added):       exit 0, no output
+test-abi Debug:        abi_test: 24/24 checks passed; Build Summary: 8/8 steps succeeded
+test-abi ReleaseSmall: abi_test: 24/24 checks passed; Build Summary: 8/8 steps succeeded
+Python suite, Zig-built searchd:        Ran 622 tests in 161.542s; OK
+Python suite, SEARCHD_BINARY head RS:   Ran 622 tests in 89.979s; OK
+dart analyze lib test: No issues found!
+dart test:             00:01 +100: All tests passed!
+check_native.sh:       check_native: ok (macos-arm64, android-arm64, ios-arm64 framework; 4 segments 16 KiB aligned; memcpy word-wise in all three)
+
+## natives (committed, head 2ab4e60 vs main 8ffc41c)
+macos-arm64/libsearch_simpli.dylib: main 1007096 B, head 1007864 B
+android-arm64/libsearch_simpli.so: main 968048 B, head 976232 B
+ios-arm64/search_simpli.framework/search_simpli: main 988232 B, head 1005360 B
+example jniLibs .so identical to native/android-arm64: yes
+SOURCE-SHA256 committed: 073f962db048538abb88a9b6634509603b90faecdb3240abdf684d191dc12fdc; recomputed by tool/source_digest.py: 073f962db048538abb88a9b6634509603b90faecdb3240abdf684d191dc12fdc
+macOS __text: main 592564, head 595408
+searchd ReleaseSmall: main 1151720 B sha256 5ad3de31652ab4db..., head 1152488 B sha256 f7b608db1a3290e7...
+ss_* exports (nm -gU, committed macOS dylib): main 16, head 16, identical: yes
+header diff 8ffc41c..2ab4e60, lines that are not comments: 0
+bindings_generated.dart diff, lines that are not doc comments: 0
+contracts/ diff:  contracts/CONTRACTS_VERSION | 2 +-
+
+## Dart: IndexFolderReport.notRead through the package's native library on the edge folder copy (dart_probe.dart.txt)
+update=false added=41 unchanged=0 tooLarge=3 unreadable=8 notRead={"archive":2,"audio":1,"binary":16,"database":1,"document":5,"image":2,"program":2} notReadTotal=29
+  toJson has not_read: {"archive":2,"audio":1,"binary":16,"database":1,"document":5,"image":2,"program":2}
+update=true added=0 unchanged=41 tooLarge=3 unreadable=8 notRead={"archive":2,"audio":1,"binary":16,"database":1,"document":5,"image":2,"program":2} notReadTotal=29
+  toJson has not_read: {"archive":2,"audio":1,"binary":16,"database":1,"document":5,"image":2,"program":2}
+report without not_read: notRead={} total=0
+
+## Timing orders (scripts/prototypes/s6t23/part2/orders.txt), read against the rule of 2026-11-17; no timing taken
+- builds: main, main2 (a second build of 8ffc41c), head (the committed dylib), controls cl and ci from
+  s6t20/make_control.py: never-run code, __text +2,796 B (cl, snapshot_open.loadEngine beside the meta parse: every open)
+  and +2,848 B (ci, indexer.walkAndApply: the writer's path), against the head's +2,844 B. At least one control matches
+  the head's compiled-code delta: yes, both bracket it.
+- the committed dylibs match the orders: main sha256 ed938358e6758fc7..., __text 592,564; head 63911cf8fc39f427...,
+  __text 595,408 (verifier, size -m and shasum on each commit's committed native).
+- control set fixed before any run (main2, cl, ci); cells: every open, query and find of the three 10k corpora; T and
+  the failure clause as ROLES.md states them; band excursions tabulated, not failing.
+- builds order: run r rotates "main main2 head cl ci" left by r-1: each build once in each of the five positions
+  (a 5 x 5 Latin square). Corpora rotate mod 3, so runs 1 and 4, and 2 and 5, share a corpus order (unavoidable
+  with three corpora and five runs).
+- expectation stated before measuring; gate, pmset check and discard rule stated. Sound.

@@ -1,0 +1,26 @@
+#!/bin/zsh
+# S6-T23 verifier: every check of ruling 9, in the verifier's detached worktree of 2ab4e60 and an archive of it.
+unset SEARCH_SIMPLI_LIBRARY_PATH
+export PATH=$HOME/development/zig/zig-0.16.0-macos-aarch64:$HOME/development/flutter/bin:$PATH
+V=$HOME/workspace/repos/search-simpli-wt/S6-T23-vscratch.noindex
+W=$HOME/workspace/repos/search-simpli-wt/S6-T23-verify
+L=$V/checks
+mkdir -p $L
+step() { local name=$1; shift; print "== $name: $*" ; ( "$@" ) > $L/$name.log 2>&1; print "   exit=$?"; }
+cd $W
+step check_test_counts python3 -I scripts/check_test_counts.py --run
+step check_layers python3 -I scripts/check_layers.py
+step check_requirements python3 -I scripts/check_requirements.py
+step check_no_home_paths python3 -I scripts/check_no_home_paths.py
+cd $V/head-src/zig
+step zig_test_rs zig build test -Doptimize=ReleaseSmall --summary all --global-cache-dir $V/gc-head --cache-dir $V/lc-head-rs-test
+step zig_test_abi_debug zig build test-abi --summary all --global-cache-dir $V/gc-head --cache-dir $V/lc-head-test
+step zig_test_abi_rs zig build test-abi -Doptimize=ReleaseSmall --summary all --global-cache-dir $V/gc-head --cache-dir $V/lc-head-rs-test
+cd $W
+step py_suite_zig python3 -m unittest discover -s tests
+step py_suite_rs env SEARCHD_BINARY=$V/prefix-head-rs/bin/searchd python3 -m unittest discover -s tests
+cd $W/bindings/dart/search_simpli
+step dart_pubget dart pub get
+step dart_analyze dart analyze lib test
+step dart_test dart test
+step check_native ./tool/check_native.sh

@@ -1,0 +1,18 @@
+"""Candidate sets: the engine's (indexed + too_large_paths + unreadable_paths, head --update report and list-files)
+against the Python reference's `_iter_text_files`, and not_read counts against `not_read_counts`.
+usage: py_vs_engine.py <src> <folder> <searchd> <out index>"""
+import json, subprocess, sys
+from pathlib import Path
+src, folder, sd, out = sys.argv[1:5]
+sys.path.insert(0, f"{src}/src")
+from search_platform import core
+rep = json.loads(subprocess.run([sd, "index", folder, "--out", out, "--update"], capture_output=True, check=True).stdout)
+lf = json.loads(subprocess.run([sd, "list-files", out, "--json", "--page-size", "1000"], capture_output=True, check=True).stdout)
+engine = set(f["path"] for f in lf["files"]) | set(rep["too_large_paths"]) | set(rep["unreadable_paths"])
+root = Path(folder)
+py = set(p.relative_to(root).as_posix() for p in core._iter_text_files(root))
+print("engine candidates", len(engine), "python candidates", len(py))
+print("python only:", sorted(py - engine))
+print("engine only:", sorted(engine - py))
+print("engine not_read:", rep["not_read"])
+print("python not_read:", core.not_read_counts(root) if hasattr(core, "not_read_counts") else "n/a")

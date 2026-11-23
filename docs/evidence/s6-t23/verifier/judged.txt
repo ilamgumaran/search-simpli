@@ -1,0 +1,237 @@
+# S6-T23 verifier: the judged set, scripts/text_search_score.py as merged, run by the verifier on main's (5ad3de31...) and the head's (f7b608db...) ReleaseSmall searchd, each from a git archive with its own caches.
+# My two JSON files against the committed ones (jsoncmp.py.txt): only the engine label differs (mine has none).
+head vs docs/evidence/s6-t23/part2/after-h2.json:
+differs: /engine/label None | 'S6-T23 Part 2 head, ReleaseSmall searchd'
+main vs docs/evidence/s6-t22/baseline-rework-2.json:
+differs: /engine/label None | 'main 87bfd35, ReleaseSmall'
+
+# My own tally of the per-question rows (tally.py.txt), index surface, main -> head, typed / query
+corpus main: files 270 read 246 not_read 24
+corpus head: files 270 read 270 not_read 0
+not_read_questions main/head: 31 0
+direct_equals_index main/head: {'both/typed': {'identical': 181, 'of': 181}, 'both/query': {'identical': 181, 'of': 181}, 'content/typed': {'identical': 181, 'of': 181}, 'content/query': {'identical': 181, 'of': 181}} | {'both/typed': {'identical': 181, 'of': 181}, 'both/query': {'identical': 181, 'of': 181}, 'content/typed': {'identical': 181, 'of': 181}, 'content/query': {'identical': 181, 'of': 181}}
+both     all           n=169: file1 94 -> 97 / 116 -> 130; complete 100 -> 109 / 109 -> 127; complete_within 9 -> 10 / 36 -> 36
+both     readable_now  n=146: file1 94 -> 90 / 115 -> 115; complete 100 -> 102 / 109 -> 108; complete_within 9 -> 9 / 36 -> 32
+content  all           n=169: file1 94 -> 97 / 116 -> 130; complete 110 -> 120 / 118 -> 137; complete_within 91 -> 94 / 100 -> 102
+content  readable_now  n=146: file1 94 -> 90 / 115 -> 115; complete 110 -> 113 / 118 -> 118; complete_within 91 -> 90 / 100 -> 91
+main direct rows == index rows: True
+head direct rows == index rows: True
+
+questions worse in some configuration (rank, complete, within): 30
+  about-01 | both/typed: file 1->2, passage 1->2 ; content/typed: file 1->2, passage 1->2
+  about-05 | both/typed: file 1->2, passage 1->2 ; content/typed: file 1->2, passage 1->2 ; content/query: within lost (3917->5613)
+  about-07 | both/typed: file 2->4, passage 2->4 ; content/typed: file 2->4, passage 2->4
+  about-08 | both/typed: file 1->2, passage 4->6 ; both/query: passage 1->3, complete lost, within lost (4047->5035) ; content/typed: file 1->2, passage 2->3 ; content/query: passage 1->2
+  about-09 | both/typed: file 5->6, passage 5->6 ; both/query: file 3->4, passage 3->4 ; content/typed: file 5->6, passage 5->6 ; content/query: file 3->4, passage 3->4
+  about-10 | both/typed: file 1->2, passage 1->2 ; content/typed: file 1->2, passage 1->2
+  content-01 | both/typed: file 10->None, passage 10->None, complete lost
+  content-05 | both/typed: file 4->9, passage 4->9 ; content/typed: file 4->9, passage 4->9 ; content/query: within lost (1851->12888)
+  content-06 | both/query: within lost (3313->35568) ; content/query: within lost (979->15365)
+  content-08 | both/typed: file 1->2, passage 1->2 ; both/query: within lost (3536->30577) ; content/typed: file 1->2, passage 1->2 ; content/query: within lost (1094->13613)
+  content-09 | both/typed: file 2->3, passage 2->3 ; content/typed: file 2->3, passage 2->3
+  cur-04 | both/typed: file 10->None
+  cur-09 | both/typed: file 7->8, passage 7->8 ; content/typed: file 7->8, passage 7->8
+  name-01 | content/typed: passage 6->7
+  name-06 | both/typed: file 5->9, passage 5->9 ; content/typed: file 5->9, passage 5->9
+  name-09 | both/typed: file 8->None, passage 8->None, complete lost ; content/typed: file 8->None, passage 8->None, complete lost, within lost (3318->3387)
+  number-02 | content/query: within lost (3368->4576)
+  number-03 | content/typed: within lost (3779->4472)
+  number-12 | both/query: file 8->9, passage 8->9 ; content/query: file 8->9, passage 8->9
+  pair-05 | content/query: within lost (1811->11156)
+  span-06 | content/typed: within lost (4074->4742)
+  span-11 | both/query: file 2->3, passage 2->3 ; content/query: file 2->3, passage 2->3, within lost (3392->4594)
+  spell-01 | content/typed: within lost (2972->4589)
+  spell-10 | both/typed: within lost (3145->5980) ; both/query: within lost (3145->5980)
+  syn-02 | both/typed: file 10->None ; content/typed: file 10->None
+  syn-09 | both/typed: file 3->4, passage 3->4 ; both/query: file 8->9, passage 8->9 ; content/typed: file 3->4, passage 3->4, within lost (3825->4325) ; content/query: file 8->9, passage 8->9
+  where-05 | both/typed: file 2->3, passage 2->3 ; content/typed: file 2->3, passage 2->3
+  where-08 | content/query: within lost (3780->4210)
+  word-01 | content/query: within lost (2973->4590)
+  word-11 | content/query: within lost (1856->12974)
+
+# Spot check (spotcheck.py.txt): each build's ten paths on its own index. * = an answer file, N = a file main did not read
+
+### about-01 both/typed  answer files: ['home/garden/beekeeping-notes.md', 'home/lists/bee-supplies.txt', 'school/bee-project.md']  bytes 11168 -> 11143
+   1 *  school/bee-project.md                            |  N toolshare/README
+   2 *  home/lists/bee-supplies.txt                      | *  school/bee-project.md
+   3 *  home/garden/beekeeping-notes.md                  | *  home/lists/bee-supplies.txt
+   4    inbox/note-01.txt                                | *  home/garden/beekeeping-notes.md
+   5    inbox/note-09.txt                                |    inbox/note-01.txt
+   6    toolshare/docs/handbook.md                       |    inbox/note-09.txt
+   7    journal/2026-03-27.md                            |    toolshare/docs/handbook.md
+   8    journal/2026-09-01.md                            |    journal/2026-03-27.md
+   9    toolshare/site/app.js                            |    journal/2026-09-01.md
+  10    journal/2026-02-08.md                            |    journal/2026-02-08.md
+  new files in head's ten: 1 ; old files in the same relative order as main's: True
+
+### about-07 both/typed  answer files: ['home/car/car-notes.md', 'home/car/tyres-receipt.txt']  bytes 11244 -> 11320
+   1    journal/2026-09-01.md                            |  N toolshare/README
+   2 *  home/car/car-notes.md                            |    journal/2026-09-01.md
+   3    journal/2026-10-04.md                            |    journal/2026-10-04.md
+   4    inbox/note-01.txt                                | *  home/car/car-notes.md
+   5    inbox/note-09.txt                                |    inbox/note-01.txt
+   6    toolshare/docs/handbook.md                       |    inbox/note-09.txt
+   7    journal/2026-03-27.md                            |    toolshare/docs/handbook.md
+   8    toolshare/site/app.js                            |    journal/2026-03-27.md
+   9    journal/2026-03-14.md                            |    journal/2026-10-26.md
+  10    journal/2026-10-26.md                            |    journal/2026-02-08.md
+  new files in head's ten: 1 ; old files in the same relative order as main's: False
+
+### content-01 both/typed  answer files: ['toolshare/data/inventory.yaml']  bytes 16079 -> 13155
+   1    toolshare/src/app.py                             |    toolshare/src/app.py
+   2    toolshare/docs/treasurer.md                      |    toolshare/docs/treasurer.md
+   3    toolshare/meetings/2026-04-committee.md          |    toolshare/meetings/2026-04-committee.md
+   4    toolshare/meetings/2026-09-committee.md          |    archive/house-notes-2024.md
+   5    archive/house-notes-2024.md                      |    toolshare/meetings/2026-09-committee.md
+   6    toolshare/meetings/2026-02-committee.md          |    toolshare/meetings/2026-02-committee.md
+   7    home/money/orders.md                             |    toolshare/meetings/2026-01-committee.md
+   8    home/house/damp-bedroom.md                       |  N toolshare/README
+   9    toolshare/meetings/2026-01-committee.md          |    home/money/orders.md
+  10 *  toolshare/data/inventory.yaml                    |    toolshare/meetings/2026-07-committee.md
+  new files in head's ten: 1 ; old files in the same relative order as main's: False
+
+### content-05 content/typed  answer files: ['toolshare/src/reminders.py']  bytes 3870 -> 4038
+   1    toolshare/docs/issues.md                         |  N toolshare/Makefile
+   2    inbox/note-08.txt                                |    toolshare/docs/issues.md
+   3    toolshare/CHANGELOG.md                           |    inbox/note-08.txt
+   4 *  toolshare/src/reminders.py                       |    school/bee-project.md
+   5    toolshare/config/server.yaml                     |    home/notes/laundry.md
+   6    toolshare/docs/issues.md                         |    home/notes/kitchen-care.md
+   7    school/bee-project.md                            |    home/money/orders.md
+   8    home/money/orders.md                             |    home/house/damp-bedroom.md
+   9    home/house/damp-bedroom.md                       | *  toolshare/src/reminders.py
+  10    home/notes/laundry.md                            |  N home/money/house-costs-2026.csv
+  new files in head's ten: 2 ; old files in the same relative order as main's: False
+
+### content-05 content/query  answer files: ['toolshare/src/reminders.py']  bytes 1851 -> 12888
+   1 *  toolshare/src/reminders.py                       | *  toolshare/src/reminders.py
+   2    toolshare/CHANGELOG.md                           |  N toolshare/Makefile
+   3    toolshare/config/server.yaml                     |  N toolshare/logs/server-2026-02.log
+   4    toolshare/docs/issues.md                         |  N toolshare/logs/server-2026-07.log
+   5                                                     |  N toolshare/logs/server-2026-11.log
+   6                                                     |  N toolshare/logs/server-2026-11.log
+   7                                                     |  N toolshare/logs/server-2026-01.log
+   8                                                     |  N toolshare/logs/server-2026-08.log
+   9                                                     |  N toolshare/logs/server-2026-06.log
+  10                                                     |    toolshare/CHANGELOG.md
+  new files in head's ten: 8 ; old files in the same relative order as main's: True
+
+### content-06 content/query  answer files: ['toolshare/config/server.yaml']  bytes 979 -> 15365
+   1    toolshare/src/app.py                             |    toolshare/src/app.py
+   2 *  toolshare/config/server.yaml                     | *  toolshare/config/server.yaml
+   3                                                     |  N toolshare/logs/server-2026-01.log
+   4                                                     |  N toolshare/logs/server-2026-02.log
+   5                                                     |  N toolshare/logs/server-2026-03.log
+   6                                                     |  N toolshare/logs/server-2026-04.log
+   7                                                     |  N toolshare/logs/server-2026-05.log
+   8                                                     |  N toolshare/logs/server-2026-06.log
+   9                                                     |  N toolshare/logs/server-2026-07.log
+  10                                                     |  N toolshare/logs/server-2026-08.log
+  new files in head's ten: 8 ; old files in the same relative order as main's: True
+
+### name-06 both/typed  answer files: ['home/lists/garage-clearout.txt']  bytes 12682 -> 12682
+   1    toolshare/site/app.js                            |    toolshare/site/app.js
+   2    toolshare/docs/issues.md                         |    toolshare/docs/issues.md
+   3    toolshare/meetings/2026-02-committee.md          |    toolshare/meetings/2026-02-committee.md
+   4    toolshare/meetings/2026-11-committee.md          |    toolshare/meetings/2026-11-committee.md
+   5 *  home/lists/garage-clearout.txt                   |    toolshare/docs/handbook.md
+   6    archive/house-notes-2024.md                      |    archive/house-notes-2024.md
+   7    home/house/house-notes.md                        |    home/recipes/lentil-dal.md
+   8    home/recipes/lentil-dal.md                       |    home/house/house-notes.md
+   9    toolshare/docs/handbook.md                       | *  home/lists/garage-clearout.txt
+  10    home/house/jobs-autumn.md                        |    home/house/jobs-autumn.md
+  new files in head's ten: 0 ; old files in the same relative order as main's: False
+
+### name-09 both/typed  answer files: ['toolshare/meetings/agm-2026.md']  bytes 11670 -> 11814
+   1    home/house/house-notes.md                        |    home/house/house-notes.md
+   2    home/notes/baking-log.txt                        |    home/notes/baking-log.txt
+   3    home/car/car-notes.md                            |    home/garden/beekeeping-notes.md
+   4    home/garden/beekeeping-notes.md                  |    toolshare/docs/issues.md
+   5    archive/house-notes-2024.md                      |    home/health/health-notes.md
+   6    toolshare/docs/issues.md                         |    home/car/car-notes.md
+   7    home/health/health-notes.md                      |    archive/house-notes-2024.md
+   8 *  toolshare/meetings/agm-2026.md                   |    home/house/bathroom.md
+   9    home/house/bathroom.md                           |    home/house/damp-bedroom.md
+  10    home/house/damp-bedroom.md                       |  N home/money/bank-notes.tsv
+  new files in head's ten: 1 ; old files in the same relative order as main's: False
+
+### syn-02 both/typed  answer files: ['archive/house-notes-2024.md', 'home/house/house-notes.md']  bytes 12960 -> 13903
+   1    home/trips/cornwall-2026-draft.md                |    home/trips/cornwall-2026-draft.md
+   2    toolshare/meetings/2026-06-committee.md          |    toolshare/meetings/2026-06-committee.md
+   3    home/notes/winter-crafts.md                      |    home/notes/winter-crafts.md
+   4    toolshare/meetings/2026-10-committee.md          |    toolshare/meetings/2026-10-committee.md
+   5    toolshare/meetings/2026-08-committee.md          |    toolshare/meetings/2026-08-committee.md
+   6    toolshare/meetings/2026-04-committee.md          |    toolshare/meetings/2026-04-committee.md
+   7    toolshare/docs/treasurer.md                      |    toolshare/src/reminders.py
+   8    toolshare/meetings/2026-02-committee.md          |    toolshare/docs/treasurer.md
+   9    toolshare/meetings/2026-11-committee.md          |    toolshare/meetings/2026-02-committee.md
+  10 *  archive/house-notes-2024.md                      |    toolshare/meetings/2026-11-committee.md
+  new files in head's ten: 0 ; old files in the same relative order as main's: True
+
+### number-12 both/query  answer files: ['home/car/car-notes.md']  bytes 13646 -> 13308
+   1    journal/2026-09-30.md                            |  N toolshare/logs/server-2026-11.log
+   2    journal/2026-07-30.md                            |    journal/2026-09-30.md
+   3    journal/2026-05-30.md                            |    journal/2026-07-30.md
+   4    journal/2026-11-11.md                            |    journal/2026-05-30.md
+   5    journal/2026-01-11.md                            |    journal/2026-11-11.md
+   6    journal/2026-03-11.md                            |    journal/2026-01-11.md
+   7    journal/2026-06-11.md                            |    journal/2026-03-11.md
+   8 *  home/car/car-notes.md                            |    journal/2026-06-11.md
+   9    school/reading-log.txt                           | *  home/car/car-notes.md
+  10    journal/2026-11-20.md                            |    journal/2026-11-20.md
+  new files in head's ten: 1 ; old files in the same relative order as main's: True
+
+### span-11 content/query  answer files: ['toolshare/data/inventory.yaml']  bytes 3392 -> 4594
+   1    toolshare/docs/repairs.md                        |    toolshare/docs/repairs.md
+   2 *  toolshare/data/inventory.yaml                    |  N toolshare/data/loans-2026.csv
+   3 *  toolshare/data/inventory.yaml                    | *  toolshare/data/inventory.yaml
+   4                                                     | *  toolshare/data/inventory.yaml
+   5                                                     |    
+   6                                                     |    
+   7                                                     |    
+   8                                                     |    
+   9                                                     |    
+  10                                                     |    
+  new files in head's ten: 1 ; old files in the same relative order as main's: True
+
+### spell-10 both/query  answer files: ['toolshare/data/inventory.yaml', 'toolshare/data/loans-2026.csv']  bytes 3145 -> 5980
+   1 *  toolshare/data/inventory.yaml                    | *  toolshare/data/inventory.yaml
+   2                                                     | *N toolshare/data/loans-2026.csv
+   3                                                     |    
+   4                                                     |    
+   5                                                     |    
+   6                                                     |    
+   7                                                     |    
+   8                                                     |    
+   9                                                     |    
+  10                                                     |    
+  new files in head's ten: 1 ; old files in the same relative order as main's: True
+
+### cur-04 both/typed  answer files: ['toolshare/docs/committee.md']  bytes 12281 -> 12757
+   1    toolshare/site/index.html                        |  N home/contacts.tsv
+   2    journal/2026-07-15.md                            |    toolshare/site/index.html
+   3    toolshare/docs/handbook.md                       |    toolshare/docs/handbook.md
+   4    home/house/boiler.md                             |    journal/2026-07-15.md
+   5    journal/2026-02-16.md                            |  N toolshare/README
+   6    toolshare/config/server.yaml                     |    archive/committee-2025.md
+   7    journal/2026-05-26.md                            |    home/house/boiler.md
+   8    journal/2026-11-06.md                            |    journal/2026-02-16.md
+   9    archive/committee-2025.md                        |    journal/2026-05-26.md
+  10 *  toolshare/docs/committee.md                      |    journal/2026-11-06.md
+  new files in head's ten: 2 ; old files in the same relative order as main's: False
+
+### word-11 content/query  answer files: ['toolshare/src/reminders.py']  bytes 1856 -> 12974
+   1 *  toolshare/src/reminders.py                       | *  toolshare/src/reminders.py
+   2    toolshare/docs/issues.md                         |    toolshare/docs/issues.md
+   3    toolshare/CHANGELOG.md                           |  N toolshare/logs/server-2026-02.log
+   4    toolshare/config/server.yaml                     |  N toolshare/logs/server-2026-07.log
+   5                                                     |  N toolshare/logs/server-2026-11.log
+   6                                                     |  N toolshare/logs/server-2026-11.log
+   7                                                     |  N toolshare/logs/server-2026-01.log
+   8                                                     |  N toolshare/logs/server-2026-08.log
+   9                                                     |  N toolshare/logs/server-2026-06.log
+  10                                                     |    toolshare/CHANGELOG.md
+  new files in head's ten: 7 ; old files in the same relative order as main's: True
+
+# The judged set's inputs from 8ffc41c (fixtures/, tests/fixtures, text_search_questions.py, gen_text_search_corpus.py, text_search_score.py, gen_chunk_golden.py): lines of git diff --stat:
+       0
